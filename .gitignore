@@ -1,0 +1,6 @@
+.claude/
+
+# Capturas sueltas de foto.ps1 (herramienta de taller, no assets del juego).
+# Sólo en la raíz: si algún día hay arte de verdad, va a vivir en src/ y no
+# lo va a tocar esta regla.
+/*.png

@@ -1,0 +1,186 @@
+/* Estilos de la interfaz. El mundo del juego se dibuja en el canvas;
+   todo lo que ves acá es la capa DOM que va por encima. */
+
+:root {
+  --ink: #f2e4c9;
+  --ink-dim: #a8977c;
+  --bg: #12100f;
+  --panel: #241c1a;
+  --border: #4a382e;
+  --gold: #d9b04a;
+  --danger: #c0483a;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+/* La tipografía de TODA la interfaz.
+   Estaba en Courier New, que a 12-13px se lee mal: es una tipografía de
+   máquina de escribir y sus trazos de un píxel se deshacen. Verdana está
+   diseñada para tamaños chicos (letras anchas, aberturas grandes) y aguanta
+   sin volverse un borrón. Es la misma que usa el texto del canvas
+   (engine/renderer.js), así que la interfaz y el mundo hablan igual.
+
+   LOS TAMAÑOS NO SE TOCARON: el cambio es de tipografía, nada más. */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Verdana, Tahoma, "DejaVu Sans", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+}
+
+#stage { position: relative; line-height: 0; }
+
+canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #000;
+  cursor: crosshair;
+}
+
+/* ---------- HUD ---------- */
+
+#hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 16px;
+  pointer-events: none;
+  font-size: 16px;
+  line-height: 1.45;
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+#hud.hidden { display: none; }
+
+.hud-block { display: flex; flex-direction: column; }
+.hud-center { align-items: center; }
+.hud-right { align-items: flex-end; }
+
+#hud-timer { font-size: 22px; color: var(--ink); }
+#hud-timer.urgent { color: var(--danger); }
+
+#hud-alarm { font-size: 13px; color: transparent; }
+#hud-alarm.on { color: var(--danger); animation: blink 0.7s steps(2, end) infinite; }
+/* LIMPIO: la racha de que nadie dio la voz todavía, y que vale el DOBLE de
+   botín al salir. Va en verde apagado y sin parpadear — no es una urgencia,
+   es algo que estás conservando y que se nota cuando desaparece. */
+#hud-alarm.limpio { color: #6f9c82; animation: none; }
+#hud-cover { font-size: 12px; color: #9fd8b8; }
+
+/* En qué vagón estás y cuánto te falta para el caballo. Es la información
+   nueva de la fase 2: sin esto no se puede decidir "¿un vagón más?". */
+#hud-wagon { font-size: 12px; color: var(--ink-dim); letter-spacing: 2px; }
+#hud-exit { font-size: 12px; color: var(--ink-dim); }
+#hud-exit.close { color: #9fd8b8; }
+#hud-exit.far { color: var(--danger); }
+
+@keyframes blink { 50% { opacity: 0.25; } }
+#hud-money { color: var(--gold); }
+/* Con la alarma sonando, lo que llevás encima pesa y te frena. El dorado se
+   apaga: la misma plata, ahora convertida en un problema. */
+#hud-money.pesado { color: #b08a34; font-size: 13px; }
+#hud-health .hurt { color: #4a2c26; }
+#hud-ammo .spent { color: #4a3a26; }
+#hud-ammo.reloading { color: var(--ink-dim); }
+
+/* Dinamita. Cuando la mecha está corriendo el contador late en rojo: es la
+   única forma de acordarte de que la tenés en la mano. */
+#hud-dynamite { font-size: 13px; color: #b8452f; letter-spacing: 2px; }
+#hud-dynamite .spent { color: #4a2c26; }
+#hud-dynamite.lit { color: #ffb45c; animation: blink 0.25s steps(2, end) infinite; }
+
+/* ---------- Pantalla de resultados ---------- */
+
+#overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 8, 9, 0.88);
+  line-height: 1.5;
+}
+
+#overlay.hidden { display: none; }
+
+.panel {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 28px 36px;
+  min-width: 360px;
+  text-align: center;
+  box-shadow: 0 0 0 4px #000;
+}
+
+.panel h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+  letter-spacing: 3px;
+}
+
+.panel h1.good { color: var(--gold); }
+.panel h1.bad { color: var(--danger); }
+
+.panel .subtitle {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.panel dl {
+  margin: 0 0 22px;
+  font-size: 15px;
+  text-align: left;
+}
+
+.panel dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--border);
+}
+
+.panel dt { color: var(--ink-dim); }
+.panel dd { margin: 0; }
+.panel dd.gold { color: var(--gold); }
+.panel dd.danger { color: var(--danger); }
+
+.panel .note {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin: 0 0 18px;
+}
+
+/* El aviso de la horca cuando ya falta poco. Es la cuenta regresiva del
+   sistema de recompensa: tiene que verse distinto de un dato más, porque
+   deja de ser información y pasa a ser una advertencia. */
+.panel .note.urgente {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 8px 12px;
+}
+
+.panel button {
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--bg);
+  background: var(--gold);
+  border: none;
+  padding: 10px 26px;
+  cursor: pointer;
+}
+
+.panel button:hover { background: var(--ink); }

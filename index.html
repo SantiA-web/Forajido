@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forajido — Prototipo Fase 2</title>
+  <link rel="stylesheet" href="src/styles/main.css" />
+</head>
+<body>
+  <!-- El juego se dibuja en el canvas. La interfaz (HUD, resultados) es HTML normal
+       superpuesto: esa es la arquitectura híbrida que definimos. -->
+  <div id="stage">
+    <canvas id="game"></canvas>
+
+    <div id="hud">
+      <div class="hud-block hud-left">
+        <div id="hud-health"></div>
+        <div id="hud-ammo"></div>
+        <div id="hud-dynamite"></div>
+      </div>
+      <div class="hud-block hud-center">
+        <div id="hud-timer"></div>
+        <div id="hud-alarm"></div>
+        <div id="hud-wagon"></div>
+        <div id="hud-exit"></div>
+      </div>
+      <div class="hud-block hud-right">
+        <div id="hud-money"></div>
+        <div id="hud-cover"></div>
+      </div>
+    </div>
+
+    <div id="overlay" class="hidden"></div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

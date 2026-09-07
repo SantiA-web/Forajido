@@ -24,13 +24,15 @@
 import { CONFIG } from '../data/config.js';
 import { INTERIORES, PARED_ALTO } from '../data/interiors.js';
 import { gameState } from '../state/gameState.js';
+import { crearMenu } from '../engine/menu.js';
 import { T } from '../text/es.js';
 
 export function createInteriorScene(services) {
   const { input, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
 
-  let def, id, x, y, mensaje, scroll, dialogo;
+  let def, id, x, y, mensaje, scroll;
+  const menu = crearMenu(audio);
 
   function enter(params = {}) {
     hud.hide();
@@ -47,7 +49,7 @@ export function createInteriorScene(services) {
     x = params.x !== undefined ? params.x : def.puerta.x;
     y = params.y !== undefined ? params.y : def.puerta.y - 12;
     mensaje = null;
-    dialogo = null;
+    menu.cerrar();
     scroll = 0;
 
     // Para depurar desde la consola: FORAJIDO.services.interior
@@ -58,8 +60,7 @@ export function createInteriorScene(services) {
       get cerca() { const p = puntoCerca(); return p ? p.id : null; },
       get mensaje() { return mensaje ? mensaje.texto : null; },
       get puntos() { return def.puntos; },
-      get dialogo() { return dialogo ? dialogo.opciones.map((o) => o.id) : null; },
-      get opcion() { return dialogo ? dialogo.opciones[dialogo.sel].id : null; },
+      get dialogo() { return menu.activo(); },
       get sala() { return def.sala; },
       get muebles() { return def.muebles; },
       /** Para depurar la colisión desde la consola sin adivinarla de nuevo. */
@@ -98,17 +99,21 @@ export function createInteriorScene(services) {
    * gracias", que existe justamente para que salir sea una respuesta y no un
    * botón de cerrar.
    */
+  /**
+   * El menú en sí vive en `engine/menu.js` desde que el campamento necesitó lo
+   * mismo para elegir con qué salís. Acá queda sólo lo que es del interior: la
+   * pregunta del vendedor y qué significa cada respuesta.
+   */
   function abrirDialogo(p) {
-    dialogo = { punto: p, opciones: p.dialogo, sel: 0 };
     mensaje = null;
-    audio.play('cover');
+    menu.abrir(
+      T.interior.preguntas[p.id] || '"¿Qué desea?"',
+      p.dialogo.map((o) => ({ id: o.id, texto: T.interior.opciones[o.id] })),
+      (id) => { elegirOpcion(p, p.dialogo.find((o) => o.id === id)); return false; }
+    );
   }
 
-  function elegirOpcion() {
-    const op = dialogo.opciones[dialogo.sel];
-    const punto = dialogo.punto;
-    dialogo = null;
-
+  function elegirOpcion(punto, op) {
     if (op.tienda) {
       audio.play('loot');
       // Se le pasan los pies: la tienda los devuelve para que vuelvas al
@@ -160,7 +165,7 @@ export function createInteriorScene(services) {
     }
 
     // Hablando no se camina: la charla se atiende o se corta.
-    if (dialogo) { updateDialogo(); return; }
+    if (menu.update(input)) return;
 
     let dx = 0, dy = 0;
     if (input.anyDown('KeyA', 'ArrowLeft')) dx -= 1;
@@ -185,19 +190,6 @@ export function createInteriorScene(services) {
     if (input.wasPressed('Escape')) salir();
   }
 
-  function updateDialogo() {
-    const n = dialogo.opciones.length;
-    if (input.wasPressed('KeyW') || input.wasPressed('ArrowUp')) {
-      dialogo.sel = (dialogo.sel - 1 + n) % n;
-      audio.play('cock');
-    }
-    if (input.wasPressed('KeyS') || input.wasPressed('ArrowDown')) {
-      dialogo.sel = (dialogo.sel + 1) % n;
-      audio.play('cock');
-    }
-    if (input.wasPressed('KeyE') || input.wasPressed('Enter')) elegirOpcion();
-    if (input.wasPressed('Escape')) { dialogo = null; audio.play('cover'); }
-  }
 
   function mover(dx, dy) {
     const nx = x + dx;
@@ -609,7 +601,10 @@ export function createInteriorScene(services) {
     r.text(def.nombre, r.width / 2, 12, colors.text);
     r.text(`$${gameState.money}`, r.width - 8, 12, colors.bagLoot, 'right');
 
-    if (dialogo) { dibujarDialogo(r); return; }
+    if (menu.activo()) {
+      menu.render(r, colors, T.interior.dialogoAyuda);
+      return;
+    }
 
     const p = puntoCerca();
     if (p) r.text(T.interior.prompts[p.id], x, y - 16, colors.doorGlow);
@@ -617,42 +612,6 @@ export function createInteriorScene(services) {
 
     if (mensaje) r.text(mensaje.texto, r.width / 2, r.height - 22, colors.text);
     else if (scroll < 8) r.text(T.interior.ayuda, r.width / 2, r.height - 10, colors.textDim);
-  }
-
-  /**
-   * EL CUADRO DE LA CHARLA.
-   *
-   * Es lo más parecido a un menú que hay en el juego, y por eso está atado a
-   * una persona: no es una pantalla que se abre, es alguien que te preguntó
-   * algo. Va abajo y angosto para que se siga viendo el local por detrás —
-   * seguís parado adentro de la armería mientras hablás.
-   */
-  function dibujarDialogo(r) {
-    const opciones = dialogo.opciones;
-    const w = 184;
-    const h = 22 + opciones.length * 13;
-    const bx = Math.round(r.width / 2 - w / 2);
-    const by = r.height - 18 - h;
-
-    r.rect(bx, by, w, h, '#1a1410');
-    r.rect(bx, by, w, 2, colors.intMadera);
-    r.rect(bx, by + h - 2, w, 2, colors.intMaderaOsc);
-
-    const pregunta = T.interior.preguntas[dialogo.punto.id] || '"¿Qué desea?"';
-    r.text(pregunta, bx + 10, by + 11, colors.text, 'left');
-
-    opciones.forEach((o, i) => {
-      const oy = by + 26 + i * 13;
-      const activo = i === dialogo.sel;
-      if (activo) r.rect(bx + 6, oy - 5, w - 12, 11, '#33261b');
-      r.text(
-        (activo ? '▸ ' : '  ') + T.interior.opciones[o.id],
-        bx + 12, oy,
-        activo ? colors.doorGlow : colors.textDim, 'left'
-      );
-    });
-
-    r.text(T.interior.dialogoAyuda, r.width / 2, r.height - 8, colors.textDim, 'center', { tam: 7 });
   }
 
   return { enter, update, render };

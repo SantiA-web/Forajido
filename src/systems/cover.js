@@ -75,15 +75,24 @@ export function coverStillValid(x, y, hw, hh, surface, map) {
  *
  * Esto es lo que evita el bug de un guardia parapetado detrás de un asiento
  * disparándole a la madera para siempre.
+ *
+ * `preferSide` decide POR QUÉ LADO prueba primero. Por defecto es siempre el
+ * mismo (+1), y eso estaba bien mientras cada guardia peleara por su cuenta:
+ * con dos tipos detrás de la misma fila de asientos, los dos se asomaban por
+ * el mismo lado y cubrían el mismo ángulo — o sea que el segundo no aportaba
+ * nada que el primero no estuviera cubriendo ya. La escolta del Sheriff se
+ * reparte los lados (ver `ladoPreferido` en raidScene.js) para que entre los
+ * dos tapen las dos salidas en vez de una sola dos veces.
  */
-export function findPeek(map, point, targetX, targetY, peekSteps = CONFIG.enemy.peekSteps) {
+export function findPeek(map, point, targetX, targetY, peekSteps = CONFIG.enemy.peekSteps, preferSide = 1) {
   const dx = targetX - point.x;
   const dy = targetY - point.y;
   // Se asoma perpendicular a la dirección del objetivo.
   const axis = Math.abs(dx) > Math.abs(dy) ? { x: 0, y: 1 } : { x: 1, y: 0 };
+  const sides = preferSide < 0 ? [-1, 1] : [1, -1];
 
   for (const offset of peekSteps) {
-    for (const side of [1, -1]) {
+    for (const side of sides) {
       const px = point.x + axis.x * offset * side;
       const py = point.y + axis.y * offset * side;
       if (map.isSolidAt(px, py)) continue;
@@ -92,6 +101,83 @@ export function findPeek(map, point, targetX, targetY, peekSteps = CONFIG.enemy.
     }
   }
   return null;
+}
+
+/**
+ * COBERTURA PARA REPLEGARSE — la que está DETRÁS, no la mejor para pelear.
+ *
+ * `findCoverPoint` (abajo) contesta "¿a qué baldosa voy para tirarle bien a
+ * ese tipo?", y por eso **arrastra al guardia HACIA el jugador**: puntúa
+ * `Math.abs(distToTarget - 80)`, o sea que su cobertura ideal está a 80px del
+ * blanco, y encima descarta todo lo que quede a más de `viewDistance` (118).
+ *
+ * 🐛 ESO ROMPÍA EL REPLIEGUE DEL HERIDO, y fue lo que Santi vio jugando:
+ * *"no se repliega hasta una cobertura más atrás"*. Medido, con el guardia ya
+ * replegado a 110px, la cobertura que el buscador normal le daba estaba **a 45
+ * px del jugador**: el tipo se retiraba y a continuación caminaba 65px hacia
+ * adelante para "cubrirse". Los dos sistemas estaban bien cada uno por su lado
+ * y se contradecían: uno lo alejaba y el otro lo traía.
+ *
+ * ESTA FUNCIÓN CONTESTA LA OTRA PREGUNTA: "¿a qué baldosa me arrastro para que
+ * no me rematen?". Tres diferencias, y las tres son el punto:
+ *
+ *  1. **Sólo mira lo que lo aleja.** Una baldosa que no esté más lejos del
+ *     jugador que donde ya está, no es un repliegue.
+ *  2. **No tiene tope de `viewDistance`.** Puede terminar donde ya no te ve — y
+ *     está bien: se está escondiendo, no buscando ángulo de tiro. Es lo que
+ *     hace que herirlo te lo saque de encima de verdad.
+ *  3. **Puntúa al revés:** premia alejarse y penaliza tener que caminar mucho
+ *     para lograrlo. La de `findCoverPoint` premia acercarse al blanco.
+ *
+ * Todo lo demás lo comparte con el buscador normal, y a propósito: el mismo
+ * escudo a 13px en la dirección del jugador, el mismo `findPeek` (o sea que
+ * sigue siendo una cobertura desde la que se puede pelear, no un rincón donde
+ * mirar la pared) y el mismo respeto por la cobertura que ya eligió otro.
+ */
+export function findCoverAtras(map, fromX, fromY, targetX, targetY, occupied = [], radio = 170) {
+  const c = CONFIG.enemy;
+  const size = map.size;
+  const distActual = Math.hypot(fromX - targetX, fromY - targetY);
+  const radiusInTiles = Math.ceil(radio / size);
+
+  const centerCol = Math.floor(fromX / size);
+  const centerRow = Math.floor(fromY / size);
+
+  let best = null;
+  let bestScore = Infinity;
+
+  for (let row = centerRow - radiusInTiles; row <= centerRow + radiusInTiles; row++) {
+    for (let col = centerCol - radiusInTiles; col <= centerCol + radiusInTiles; col++) {
+      if (map.isSolidTile(col, row)) continue;
+
+      const point = map.tileCenter(col, row);
+      const distToSelf = Math.hypot(point.x - fromX, point.y - fromY);
+      if (distToSelf > radio) continue;
+
+      // LA REGLA DE ESTA FUNCIÓN: tiene que alejarlo. Si no, no es replegarse.
+      const distToTarget = Math.hypot(point.x - targetX, point.y - targetY);
+      if (distToTarget <= distActual) continue;
+
+      if (occupied.some((o) => Math.hypot(o.x - point.x, o.y - point.y) < c.coverSpacing)) continue;
+
+      // Mismo escudo que el buscador normal: algo sólido entre él y el jugador.
+      const angle = Math.atan2(targetY - point.y, targetX - point.x);
+      if (!map.isSolidAt(point.x + Math.cos(angle) * 13, point.y + Math.sin(angle) * 13)) continue;
+
+      // Y que siga siendo un lugar desde el que se puede pelear.
+      const peek = findPeek(map, point, targetX, targetY);
+      if (!peek) continue;
+
+      // Premia ganar distancia; castiga tener que cruzar medio vagón para eso.
+      const score = distToSelf * 0.8 - (distToTarget - distActual) * 0.6 + peek.offset;
+      if (score < bestScore) {
+        bestScore = score;
+        best = { x: point.x, y: point.y, peek };
+      }
+    }
+  }
+
+  return best;
 }
 
 /**

@@ -528,7 +528,7 @@ WAGONS.blindado.enemies[3].row = 5;
  * Tipos de botín. El valor se sortea entre min y max.
  *
  * La caja fuerte NO dice cuánto tiene hasta que la abrís, y el rango es ancho a
- * propósito: $150 es una decepción y $600 es el asalto de tu vida. Antes valía
+ * propósito: $150 es una decepción y $600 es una buena tarde. Antes valía
  * siempre ~$330, y eso no era una decisión sino una cuenta: el que sabía los
  * números iba siempre. Una apuesta se juega; una cuenta se resuelve.
  */
@@ -544,5 +544,50 @@ export const LOOT_TYPES = {
     name: 'Caja fuerte',
     min: 150, max: 600,
     noisy: true,   // abrirla se oye en todo el vagón
+
+    /**
+     * EL JACKPOT — de verdad el asalto de tu vida, no una figura del habla.
+     *
+     * *(pedido de Santi, siguiendo el plan del "efecto casino": "ahora vamos
+     * con el jackpot raro en la caja fuerte")*
+     *
+     * SE JUEGA AL CREAR EL VAGÓN (`createLootable`), no al abrirla — el valor
+     * ya está fijo adentro de la caja como todo lo demás; simplemente no lo
+     * sabés hasta que la abrís. `jackpotChance` (5%, 1 de cada 20) y el rango
+     * ($2500-4000) los eligió Santi sobre una tabla de tres opciones
+     * calculadas: unas 8-9 veces el promedio normal (~$375), lo bastante raro
+     * para seguir sorprendiendo, lo bastante grande para sentirse como lo que
+     * es.
+     */
+    jackpotChance: 0.05,
+    jackpotMin: 2500,
+    jackpotMax: 4000,
+  },
+
+  /**
+   * LA CAJA FUERTE OCULTA — Fase 5, ver `PAQUETES.cajaOculta` en
+   * data/paquetes.js.
+   *
+   * No viaja en el catálogo de ningún vagón: la pone un paquete, escondida, y
+   * no se ve ni se puede abrir hasta que un pasajero te dice dónde está.
+   *
+   * VALE MÁS Y TARDA MÁS QUE UNA CAJA NORMAL, y las dos cosas por el mismo
+   * motivo: estaba escondida porque adentro hay algo que no querían que
+   * viajara a la vista. 400-900 contra 150-600, y 8 segundos contra 6,5 —
+   * ocho segundos quieto, de espaldas, en un vagón que ya sabe que estás.
+   *
+   * NO TIENE JACKPOT a propósito. El golpe de suerte ya vive en la caja
+   * normal (1 de cada 20), y ahí funciona porque todas se ven iguales: la
+   * gracia es que no sabés cuál te tocó. Ésta ya ES el hallazgo —el premio de
+   * haber encontrado algo que estaba escondido— y meterle otra lotería
+   * encima sería premiar dos veces la misma jugada.
+   */
+  cajaOculta: {
+    id: 'cajaOculta',
+    name: 'Caja fuerte oculta',
+    min: 400, max: 900,
+    noisy: true,
+    /** Ocho segundos, contra los 6,5 de `CONFIG.loot.strongboxTime`. */
+    tiempo: 8,
   },
 };

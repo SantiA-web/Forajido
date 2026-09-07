@@ -24,7 +24,9 @@ import { distance, moveAndCollide } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 
 import { buildTrain, drawTrain, isInsideZone } from '../world/train.js';
-import { updatePlayer, drawPlayer, golpearEnTecho, tumbar } from '../entities/player.js';
+import {
+  updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual,
+} from '../entities/player.js';
 import {
   createRodante, updateRodante, drawRodante, TIPOS_RODANTE,
 } from '../entities/rodante.js';
@@ -36,6 +38,7 @@ import {
 } from '../systems/sheriff.js';
 import { jefeParaEsteAsalto, BOSSES } from '../data/bosses.js';
 import { guardHealth } from '../data/guards.js';
+import { robTimeDe } from '../data/paquetes.js';
 import {
   updatePassenger, drawPassenger, panic, amenazado, sePuedeAmenazar,
 } from '../entities/passenger.js';
@@ -44,7 +47,7 @@ import { createExplosive, drawExplosive } from '../entities/explosive.js';
 import { drawRider } from '../entities/rider.js';
 import { updateRiders, createRiderWatch } from '../systems/riders.js';
 import { maxJinetesPara } from '../data/riders.js';
-import { drawLootable } from '../entities/lootable.js';
+import { drawLootable, esCajaFuerte } from '../entities/lootable.js';
 import {
   updateDoor, puertaTapaVision, drawDoor, trabarPuerta, destrabarPuerta,
 } from '../entities/door.js';
@@ -70,6 +73,7 @@ export function createRaidScene(services) {
   let traqueteoTimer, traqueteoFase, traqueteoFaseTimer, traqueteoVariante, traqueteoSwayX;
   let traqueteoVelMult = 1;
   let timeLeft, duracionInicial, collected, kills, civilians, amenazados, escapeProgress;
+  let rendidosMatados, noqueadosRematados, noqueadosLimpios;
   let jefe, jefeMuerto, jefePendiente, jefeTimer;
   let sheriff, auraTimer, sheriffMuerto;
   let finished, endTimer, outcome;
@@ -82,13 +86,25 @@ export function createRaidScene(services) {
   // ---------------------------------------------------------------- entrar
 
   function enter(params = {}) {
+    // La mira dibujada reemplaza a la cruz del sistema: ver `mostrarCursorDelSistema`.
+    mostrarCursorDelSistema(false);
+
     // `boardAt` sigue aceptándose porque es lo que usa la consola para saltear
     // la pantalla de abordaje, y ahora quiere decir lo mismo que caballoEn:
     // dónde dejaste el caballo es dónde subís.
     const caballoEn = params.caballoEn ?? params.boardAt ?? 1;
     train = buildTrain(
       rng, caballoEn, params.composicion || null, params.dificultad || null,
-      gameState.weapon, params.tipoTren || null
+      gameState.weapon, params.tipoTren || null, gameState.melee,
+      {
+        climaId: params.clima || null,
+        estado: params.estado || [],
+        comportamientos: params.comportamientos || [],
+        variantes: params.variantes || [],
+        encubiertos: params.encubiertos || [],
+        paquetes: params.paquetes || [],
+        cajaOculta: !!params.cajaOculta,
+      }
     );
     map = train.map;
     player = train.player;
@@ -140,6 +156,9 @@ export function createRaidScene(services) {
     kills = 0;
     civilians = 0;
     amenazados = 0;
+    rendidosMatados = 0;
+    noqueadosRematados = 0;
+    noqueadosLimpios = 0;
     jefe = null;
     jefeMuerto = false;
     jefePendiente = null;
@@ -285,20 +304,27 @@ export function createRaidScene(services) {
     /**
      * ENTRAR CON LA ALARMA YA SONANDO.
      *
-     * Pasa cuando te vieron desde una ventanilla mientras galopabas pegado al
-     * tren. Es el castigo más caro que tiene el juego y ni siquiera hace falta
-     * explicarlo: perdés el bono de trabajo limpio antes de haber robado nada,
-     * y encima empezás con los guardias de tu vagón y del de atrás caminando
-     * hacia vos.
+     * Dos caminos posibles, y se leen distinto:
      *
-     * Es lo que le da peso al galope: adelantarte no sólo cuesta reloj y
-     * aguante, también te hace pasar al lado de más gente que puede verte.
+     *  - `params.alarmaInicial`: te vieron desde una ventanilla mientras
+     *    galopabas pegado al tren. Es el castigo más caro que tiene el juego
+     *    y ni siquiera hace falta explicarlo: perdés el bono de trabajo
+     *    limpio antes de haber robado nada, y encima empezás con los
+     *    guardias de tu vagón y del de atrás caminando hacia vos. Es lo que
+     *    le da peso al galope: adelantarte no sólo cuesta reloj y aguante,
+     *    también te hace pasar al lado de más gente que puede verte.
+     *  - `estado.includes('alertaActivada')`: no hiciste nada — este
+     *    SERVICIO en particular ya venía sobre aviso antes de que subieras
+     *    (data/modifiers.js). Mismo mecanismo, otro origen, y por eso el
+     *    aviso en pantalla es distinto: no fue un error tuyo.
      */
-    if (params.alarmaInicial) {
+    const estadoTren = params.estado || [];
+    if (params.alarmaInicial || estadoTren.includes('alertaActivada')) {
       alarm.trigger(train.boardedAt);
       floaters.push({
         x: player.x, y: player.y - 32,
-        text: T.prompts.yaTeVieron, life: 3.0, color: colors.enemyAlert,
+        text: params.alarmaInicial ? T.prompts.yaTeVieron : T.prompts.trenAlerta,
+        life: 3.0, color: colors.enemyAlert,
       });
     }
 
@@ -427,7 +453,9 @@ export function createRaidScene(services) {
 
     sheriff = createEnemy(x, y, {
       type: tipo.tipoDeGuardia,
-      health: guardHealth(tipo.tipoDeGuardia, (train.dificultad ? train.dificultad.vidaExtra : 0)),
+      // Vida FIJA, no la del tipo + la dificultad del tren: es un tipo con
+      // nombre y tiene que costar siempre lo mismo. Ver `vida` en data/bosses.js.
+      health: tipo.vida,
       path: v.ronda,
       facing: Math.PI,
       ai: train.ai,
@@ -437,6 +465,16 @@ export function createRaidScene(services) {
     sheriff.jefeTipo = tipo;
     sheriff.sheriffVelocidad = tipo.velocidadRepliegue;
     sheriff.auraTipo = tipo.auraDificultad;
+    /**
+     * DEFENSIVO: se cubre y dispara, pero no da un paso hacia vos (ver
+     * `defensivo` en systems/ai.js). Es lo que le deja pelear sin volverse un
+     * perseguidor, o sea sin pisarle la identidad al Cazarrecompensas.
+     *
+     * `grupoDefensa` los ata a él y a sus tres: es lo que hace que se turnen
+     * para asomarse en vez de exponerse los cuatro juntos.
+     */
+    sheriff.defensivo = true;
+    sheriff.grupoDefensa = sheriff;
     enemies.push(sheriff);
     v.guardiasVivos++;
 
@@ -460,6 +498,20 @@ export function createRaidScene(services) {
       g.escoltaDe = sheriff;
       g.escoltaSlot = i;
       g.escoltaConfig = tipo.escolta;
+      /**
+       * PELEAN DEFENDIENDO, NO ATACANDO — pedido de Santi después de jugarlo.
+       * `defensivo` les saca la parte de avanzar hacia el jugador (systems/
+       * ai.js) y `grupoDefensa` los pone a turnarse las asomadas con el
+       * Sheriff, así nunca están los cuatro expuestos a la vez.
+       *
+       * Y `ladoPreferido` alterna: el slot par se asoma por un lado y el
+       * impar por el otro. Sin esto los tres probaban el mismo lado primero
+       * (`findPeek` en systems/cover.js) y cubrían tres veces el mismo ángulo
+       * — que es justo lo contrario de cubrirse entre ellos.
+       */
+      g.defensivo = true;
+      g.grupoDefensa = sheriff;
+      g.ladoPreferido = i % 2 === 0 ? 1 : -1;
       /**
        * Su propio perfil de IA con `patrolSpeed` al ritmo del Sheriff: a los
        * 24 px/s de una patrulla normal lo perderían en el primer vagón. Es
@@ -485,6 +537,62 @@ export function createRaidScene(services) {
    * La blindada no se toca: ya tenía su propia llave (la dinamita) desde
    * antes de que existiera esto, y ésta no la reemplaza.
    */
+  /**
+   * EL LUGAR LIBRE MÁS CERCANO A UN PUNTO, para alguien del tamaño de un
+   * guardia. Lo usa el civil encubierto al levantarse del asiento (ver
+   * `civilRevelado`): prueba el punto mismo y después se va abriendo en
+   * anillos, primero para arriba y para abajo — que es donde está el pasillo
+   * en todos los vagones — y recién después a los costados.
+   *
+   * Si no encuentra nada (no debería pasar: el pasillo está siempre a un par
+   * de píxeles), devuelve el punto original y que el motor se arregle, igual
+   * que hacía antes.
+   */
+  function lugarLibreCerca(x, y) {
+    const solido = map.isSolidForMovementAt || map.isSolidAt;
+    const hw = CONFIG.enemy.hw, hh = CONFIG.enemy.hh;
+    const libre = (px, py) =>
+      !solido(px - hw, py - hh) && !solido(px + hw, py - hh) &&
+      !solido(px - hw, py + hh) && !solido(px + hw, py + hh);
+
+    /**
+     * 🐛 NO ALCANZA CON QUE ENTRE: TIENE QUE PODER CAMINAR.
+     *
+     * La primera versión buscaba el primer lugar donde el guardia ENTRARA, y
+     * eso lo dejaba parado en el hueco entre dos bloques de asientos —
+     * medido con una grilla de solidez alrededor suyo:
+     *
+     *     ..###G.###.      ← el hueco donde estaba sentado
+     *     .......P...      ← el pasillo, una fila más abajo
+     *
+     * Entraba perfecto y no era sólido, pero tenía asientos pegados a los dos
+     * costados: su cobertura quedaba del otro lado de un bloque, `moveToward`
+     * empujaba contra el respaldo y no avanzaba nunca. Ocho segundos en
+     * combate, viendo al jugador, sin dar un paso ni un tiro.
+     *
+     * Por eso la condición de verdad es ésta: que haya lugar también a los
+     * costados. Eso es, literalmente, la definición del pasillo.
+     */
+    const enPasillo = (px, py) => libre(px, py) && libre(px - 12, py) && libre(px + 12, py);
+
+    // Se busca primero HACIA EL CENTRO del vagón, que es donde está el
+    // pasillo en todos: los asientos van contra las dos paredes.
+    const haciaElCentro = (map.height / 2) > y ? 1 : -1;
+    const candidatos = [{ dx: 0, dy: 0 }];
+    for (let r = 4; r <= 48; r += 4) {
+      candidatos.push({ dx: 0, dy: r * haciaElCentro });
+      candidatos.push({ dx: 0, dy: -r * haciaElCentro });
+      for (const dx of [4, -4, 8, -8, 12, -12]) {
+        candidatos.push({ dx, dy: r * haciaElCentro });
+      }
+    }
+
+    for (const c of candidatos) if (enPasillo(x + c.dx, y + c.dy)) return { x: x + c.dx, y: y + c.dy };
+    // Si no hay pasillo a mano (un vagón raro, un rincón), alcanza con entrar.
+    for (const c of candidatos) if (libre(x + c.dx, y + c.dy)) return { x: x + c.dx, y: y + c.dy };
+    return { x, y };
+  }
+
   function trabarPuertasDelTren() {
     for (const d of doors) trabarPuerta(d);
     floaters.push({
@@ -502,6 +610,24 @@ export function createRaidScene(services) {
     unsubscribers.forEach((off) => off());
     unsubscribers = [];
     audio.stopAmbience();
+    mostrarCursorDelSistema(true);
+  }
+
+  /**
+   * LA CRUZ DEL SISTEMA SE APAGA MIENTRAS DURA EL ASALTO.
+   *
+   * Hasta ahora la única mira del juego era `cursor: crosshair`, o sea el
+   * cursor del sistema operativo (styles/main.css). Con la mira dibujada, los
+   * dos encimados se leen como un error gráfico — y peor: la cruz no dice
+   * nada, mientras que el círculo dice la dispersión real.
+   *
+   * Se apaga y se prende en `enter`/`exit` y no en el CSS porque el mapa de
+   * rutas TAMBIÉN se maneja con el mouse (`scenes/mapScene.js`) y ahí la cruz
+   * sí sirve: sos un tipo mirando un papel, no apuntando.
+   */
+  function mostrarCursorDelSistema(visible) {
+    const canvas = renderer.canvas || (renderer.ctx && renderer.ctx.canvas);
+    if (canvas) canvas.style.cursor = visible ? '' : 'none';
   }
 
   /** Los sistemas avisan por el bus; la escena reacciona. */
@@ -513,7 +639,7 @@ export function createRaidScene(services) {
         audio.play(kind === 'flesh' ? 'hitFlesh' : 'hitWall');
       }),
 
-      bus.on('enemyKilled', ({ enemy, byPlayer }) => {
+      bus.on('enemyKilled', ({ enemy, byPlayer, rendido, indefenso }) => {
         /**
          * MATAR AL CAZARRECOMPENSAS NO CUENTA COMO UN MUERTO MÁS.
          *
@@ -582,6 +708,23 @@ export function createRaidScene(services) {
         }
 
         kills++;
+
+        /**
+         * PARA `honor` (ver `honorDelta`, state/gameState.js): distinguir un
+         * remate de un degüello normal. Para melee viene en el propio evento
+         * (`rendido`/`indefenso`, capturados antes de que systems/melee.js
+         * mute el estado); para bala o dinamita nadie lo capturó, así que se
+         * lee directo del enemigo — nada le tocó esos campos antes de morir.
+         */
+        if (byPlayer && enemy) {
+          // Mismo criterio que systems/melee.js: si ya se estaba parando para
+          // traicionarte, matarlo de un balazo tampoco es un remate indefenso.
+          const eraRendido = rendido ?? (enemy.rendido && !enemy.traicionLevantando);
+          const eraIndefenso = indefenso ?? enemy.inconsciente > 0;
+          if (eraRendido) rendidosMatados++;
+          else if (eraIndefenso) noqueadosRematados++;
+        }
+
         // Llevamos la cuenta por vagón: un vagón sin guardias vivos es un vagón
         // del que ya no puede salir nadie. Eso es lo que hace que limpiar un
         // vagón signifique algo.
@@ -595,6 +738,92 @@ export function createRaidScene(services) {
       bus.on('passengerKilled', () => {
         civilians++;
         audio.play('kill');
+      }),
+
+      /**
+       * EL CIVIL ENCUBIERTO TERMINÓ DE SACAR EL ARMA (Fase 4, ver
+       * `actualizarEncubierto` en entities/passenger.js).
+       *
+       * DEJA DE SER UN PASAJERO Y PASA A SER UN GUARDIA, literalmente: sale
+       * de `passengers` y entra en `enemies`. No es un atajo — es lo que
+       * hace que no haya que escribir ni una línea de IA nueva: de acá en
+       * adelante pelea, se cubre, se rinde y muere con el mismo código que
+       * cualquier otro guardia del tren.
+       *
+       * NO QUEDA UN CADÁVER NI NADA TIRADO donde estaba: el que se levantó y
+       * el que está peleando son el mismo tipo, sólo que ahora vive en la
+       * otra lista.
+       *
+       * Nace ya en `combat` y sabiendo dónde estás — te estuvo mirando la
+       * espalda todo este tiempo, sería absurdo que tuviera que "descubrirte"
+       * después de haberte apuntado.
+       */
+      bus.on('civilRevelado', ({ pasajero }) => {
+        const i = passengers.indexOf(pasajero);
+        if (i < 0) return;
+        passengers.splice(i, 1);
+
+        /**
+         * 🐛 SE LEVANTA AL PASILLO, NO SE QUEDA EN EL ASIENTO.
+         *
+         * Nacía exactamente donde estaba el pasajero — y los pasajeros están
+         * SENTADOS, o sea adentro de un tile sólido. Medido: el guardia
+         * quedaba en `combat`, veía al jugador, elegía una cobertura y no se
+         * movía ni un píxel en 8 segundos; nunca disparaba, porque el disparo
+         * vive en las ramas de "ya llegué a cubrirme" o "no tengo cobertura",
+         * y él estaba para siempre en la del medio. Un enemigo perfectamente
+         * inofensivo, sin un solo error a la vista.
+         *
+         * `lugarLibreCerca` lo corre al primer lugar donde de verdad entre
+         * (el pasillo está pegado a los asientos, arriba o abajo). Y es lo
+         * que pasaría igual: el tipo se PARA para sacar el arma.
+         */
+        const sitio = lugarLibreCerca(pasajero.x, pasajero.y);
+        const guardia = createEnemy(sitio.x, sitio.y, {
+          type: 'encubierto',
+          facing: pasajero.facing,
+          path: [],
+          health: guardHealth('encubierto', train.dificultad.vidaExtra),
+          ai: train.perfilIA,
+        });
+        guardia.wagon = pasajero.wagon;
+        guardia.homePath = [];
+        guardia.state = 'combat';
+        guardia.suspicion = 1;
+        guardia.alertMark = 1;
+        guardia.lastSeen = { x: player.x, y: player.y };
+        enemies.push(guardia);
+
+        if (train.wagons[pasajero.wagon]) train.wagons[pasajero.wagon].guardiasVivos++;
+
+        camera.shake(CONFIG.feel.shakeHit, 0.18);
+        // A −26 y no a −16: ahí abajo ya está el `!` de alerta que dibuja
+        // `drawEnemy`, y mirando la captura se veían encimados. El cartel va
+        // arriba del signo, no sobre él.
+        floaters.push({
+          x: guardia.x, y: guardia.y - 26,
+          text: T.ambiente.encubierto, life: 1.8, color: colors.enemyAlert,
+        });
+      }),
+
+      // Noqueo limpio (culata, por la espalda, a alguien que nunca te vio):
+      // mueve `honor` un poco. Ver CONFIG.honor.noquearLimpio.
+      bus.on('enemyKnockedOut', ({ limpio }) => {
+        if (limpio) noqueadosLimpios++;
+      }),
+
+      /**
+       * SE RINDIÓ. El único aviso: un texto flotante, igual que el resto de
+       * los momentos que ya marcan floaters (el jefe, el sheriff). No hay
+       * ícono nuevo en el HUD — es un momento raro, no algo que haya que
+       * poder leer de un vistazo cada vez que pasa.
+       */
+      bus.on('enemySurrendered', ({ enemy }) => {
+        audio.play('takedown');
+        floaters.push({
+          x: enemy.x, y: enemy.y - 14,
+          text: T.prompts.seRinde, life: 2.2, color: colors.text,
+        });
       }),
 
       bus.on('playerHit', () => {
@@ -615,10 +844,86 @@ export function createRaidScene(services) {
         if (fueTuyo) marcarPosicion(x, y);
 
         /**
-         * Tu disparo corre la alarma por el tren, y hasta dónde llega lo decide
-         * EL ARMA. Sólo mientras la alarma ya está sonando: para que suene la
-         * primera vez te tienen que ver, si no un solo tiro te arruinaría el
-         * trabajo limpio y el sigilo dejaría de existir.
+         * UN DISPARO TUYO: TU PROPIO VAGÓN ENTERO EN ROJO, Y EL DE CADA LADO
+         * EN AMARILLO, BUSCÁNDOTE — SIEMPRE, suene o no la alarma todavía.
+         *
+         * *(pedido de Santi: "los guardias del vagón donde fue disparado
+         * deberían estar en rojo, TODOS. Y los guardias del vagón pegado al
+         * vagón donde fue el disparo en amarillo, buscando al jugador. Tanto
+         * los guardias del vagón anterior como el del siguiente")*
+         *
+         * ANTES, un disparo sólo alertaba (amarillo) a quien estuviera a
+         * `radius` píxeles — y en un vagón de hasta 640px eso podía dejar
+         * afuera a la mitad de la gente que en los hechos te tendría que
+         * haber oído. Ahora es determinístico, por VAGÓN, no por distancia:
+         * no depende de en qué punto exacto del vagón estés parado.
+         *
+         * `alertCombat`/`alertTo` son las mismas funciones que ya usa
+         * `spreadAlarm` más abajo — no hay estado nuevo. Las dos ya se
+         * cuidan solas de no tocar a un guardia que ya está en combate, así
+         * que no hace falta filtrar nada más acá.
+         *
+         * SÓLO PARA DISPAROS DE VERDAD (`wagons` sale del arma, ver
+         * data/weapons.js — nunca es `undefined` en un tiro, incluido 0). La
+         * dinamita ya tiene su propio "todo el tren se entera" en rojo
+         * (`retumbaElTren`) y el cuerpo a cuerpo silencioso sigue silencioso
+         * — esto no les suma ni les saca nada a esos dos.
+         */
+        /**
+         * 🐛 Y LOS DE AL LADO SE QUEDAN EN SU VAGÓN — NO CRUZAN.
+         *
+         * *(Santi, jugándolo: "cuando disparo en un vagón, de repente hay
+         * muchísimos guardias de otros vagones, eso no debería pasar")*
+         *
+         * Estaban recibiendo `alertTo`, que además de ponerlos amarillos les
+         * pone como destino EL LUGAR DEL RUIDO — o sea que abandonaban su
+         * vagón y se te venían encima. Medido con un tiroteo de 45 s: cruzaban
+         * 2 o 3, y con los 3-4 de tu propio vagón el pico llegaba a 6 tipos
+         * encima tuyo, todos por el mismo pasillo.
+         *
+         * `alertaEnGuardia` hace exactamente lo que hay que hacer y ya
+         * existía (es lo que hacen los de ADELANTE cuando suena la alarma):
+         * amarillo, `spooked` —ya no se vuelven a confiar— y `target` en su
+         * propio puesto, así que se quedan donde están, despiertos y mirando.
+         * Se enteran de que pasó algo sin que el tren entero se te venga
+         * encima por un tiro.
+         *
+         * LO QUE NO CAMBIA, Y ES LO IMPORTANTE: cuando suena la ALARMA de
+         * verdad, los de atrás SÍ te vienen a buscar, como siempre
+         * (`spreadAlarm`, más abajo). Eso es el corazón de la retirada y no se
+         * toca. La diferencia ahora es que un tiro suelto ya no vale lo mismo
+         * que una alarma: hasta que te descubran de verdad, lo que pasa en un
+         * vagón se queda en ese vagón.
+         */
+        if (fueTuyo && wagons !== undefined) {
+          const centro = train.wagonAt(x);
+          for (const e of enemies) {
+            if (!e.alive || e.wagon === undefined || e.rendido || e.inconsciente > 0) continue;
+            const delta = e.wagon - centro;
+            if (delta === 0) alertCombat(e, x, y, world);
+            else if (Math.abs(delta) === 1) {
+              /**
+               * 🐛 EL `alarm.active` NO ES UN DETALLE: sin él, este arreglo se
+               * comía la retirada entera. Medido: con la alarma ya sonando,
+               * cada disparo tuyo volvía a clavar a los vecinos en su vagón, y
+               * dejaban de venir a buscarte — o sea que disparar te SACABA
+               * perseguidores de encima, justo al revés de lo que tiene que
+               * pasar. Con la alarma sonando siguen recibiendo `alertTo` de
+               * siempre: se te vienen encima, como corresponde.
+               */
+              if (alarm.active) alertTo(e, x, y);
+              else alertaEnGuardia(e);
+            }
+          }
+        }
+
+        /**
+         * Y ADEMÁS, con la alarma YA sonando, el arma puede sumar TODAVÍA
+         * más vagones por encima de los de arriba (`wagons`, `noiseWagons`
+         * en data/weapons.js) — hoy el Colt y el Smith están en 0, así que
+         * no suman nada más: el vagón propio y los dos de al lado, que ya
+         * reaccionaron arriba, son todo lo que hacen. Queda para cuando
+         * exista un arma más ruidosa (escopeta, rifle).
          */
         if (fueTuyo && wagons && alarm.active) {
           spreadAlarm(wagons, train.wagonAt(x));
@@ -729,17 +1034,26 @@ export function createRaidScene(services) {
    * los de adelante te empujan hacia la salida; los de atrás te la cortan.
    */
   /**
-   * La alarma despierta a los guardias que YA ESTÁN en el tren, y NO en las dos
-   * direcciones por igual.
+   * La alarma despierta a los guardias que YA ESTÁN en el tren.
    *
-   * Los que se MOVILIZAN son los de atrás: el vagón donde sonó y hasta `radio`
-   * vagones hacia la cola. Son los que te cortan el camino al caballo, y son
-   * los únicos que abandonan su puesto. Si ya limpiaste esos vagones no viene
-   * nadie, porque no queda nadie.
+   * 🐛 ANTES, "de adelante" Y "de atrás" —dentro del mismo `radio`— quedaban
+   * los dos en ROJO (distinta conducta: los de atrás te venían a buscar, los
+   * de adelante se plantaban en su puerta a esperar, pero los dos armados y
+   * en combate). Santi, después de ver que el vagón de al lado se ponía rojo
+   * apenas alguien te veía y gritaba: "creí que habíamos dicho que no debería
+   * pasar eso" — tenía razón: eso era justo lo que se acababa de decidir
+   * distinto para un disparo suelto (vagón propio rojo, vecinos amarillo), y
+   * este sistema —el de la alarma DE VERDAD, cuando alguien te ve y avisa—
+   * seguía sin enterarse del cambio.
    *
-   * Los de ADELANTE, dentro del mismo alcance, se enteran pero se quedan:
-   * quedan despiertos esperándote en su vagón (ver alertaEnGuardia). Oyeron el
-   * mismo tiro; lo que no hacen es perseguirte.
+   * AHORA ES LO MISMO CRITERIO EN LOS DOS SISTEMAS: sólo el vagón centro
+   * (`delta === 0`, donde de verdad te vieron) queda en rojo, persiguiendo tu
+   * última posición conocida. Todo lo demás dentro de `radio` —para
+   * cualquiera de los dos lados— queda en AMARILLO, buscando, igual que ya
+   * hace un disparo con sus vecinos. `alertaEnPuerta` (systems/ai.js, "se
+   * plantan en su puerta, en rojo") queda sin ningún lugar que la llame —no
+   * se borró por si hace falta reusarla en otro sistema más adelante, pero
+   * hoy es código muerto.
    *
    * `radio` no es una constante del juego: es CUÁNTO RUIDO HICISTE. Un grito
    * alcanza `CONFIG.alert.wagonRadius`; un disparo, lo que diga el arma.
@@ -770,8 +1084,11 @@ export function createRaidScene(services) {
       const delta = e.wagon - centro;   // >0 = está adelante; <0 = hacia la cola
       if (Math.abs(delta) > radio) continue;
 
-      if (delta > 0) {
-        alertaEnGuardia(e);   // adelante: se despierta, no se mueve
+      if (delta !== 0) {
+        // Vecino, para cualquiera de los dos lados: amarillo, buscando — NO
+        // rojo. Mismo criterio que ya usa un disparo con el vagón de al lado
+        // (ver `bus.on('noise', ...)`, más arriba).
+        alertTo(e, ultimoVisto.x, ultimoVisto.y);
         continue;
       }
 
@@ -1642,7 +1959,32 @@ export function createRaidScene(services) {
     const victima = nearest ? null : nearestPassenger();
     const tranquera = (nearest || victima) ? null : tranqueraCerca();
 
+    /**
+     * EL PROGRESO DE UNA CAJA FUERTE NO SE PIERDE.
+     *
+     * *(Santi, jugándolo: "si se interrumpe la abertura de la caja, cuando el
+     * jugador quiera volver a abrirla, se reanudará desde dónde la dejó")*
+     *
+     * Antes, soltar la [E] un instante —porque te llegó un guardia, porque
+     * tuviste que cubrirte— volvía el contador a cero, y con ocho segundos eso
+     * significaba que en cualquier vagón despierto la caja era directamente
+     * inabrible: cada intento empezaba de nuevo. El precio dejaba de ser
+     * "ocho segundos" y pasaba a ser "ocho segundos SEGUIDOS", que es otra
+     * cosa mucho más cara y que no se anuncia por ningún lado.
+     *
+     * Ahora se puede pagar en cuotas: forcejeás tres segundos, te sacan de
+     * ahí, resolvés, volvés y seguís desde donde ibas. El tiempo total sigue
+     * siendo el mismo — lo que cambia es que no se castiga dos veces por la
+     * misma interrupción.
+     *
+     * SÓLO LAS CAJAS FUERTES. Las bolsas y las tranqueras se siguen
+     * reiniciando: 0,6 y 0,9 segundos son gestos, no trabajos, y guardar el
+     * progreso de algo que dura menos de un segundo no significaría nada —
+     * salvo el efecto raro de ir acumulando medio segundo en cada bolsa que
+     * rozás al pasar.
+     */
     for (const l of loot) {
+      if (esCajaFuerte(l)) continue;
       if (l !== nearest || !holding) l.progress = 0;
     }
     for (const pa of passengers) {
@@ -1661,8 +2003,35 @@ export function createRaidScene(services) {
     }
 
     if (nearest && holding) {
-      nearest.progress += dt;
-      if (nearest.progress >= nearest.duration) takeLoot(nearest);
+      /**
+       * CON EL ARMA NO SE ABRE UNA CAJA FUERTE.
+       *
+       * *(Santi, jugándolo: "el jugador no podrá recargar ni disparar
+       * mientras abre una. Si lo hace, la apertura de la caja fuerte se verá
+       * interrumpida")*
+       *
+       * No es una restricción arbitraria: forzar una caja fuerte es un
+       * trabajo de dos manos, y el juego ya venía diciendo lo mismo con el
+       * cuerpo — estás quieto, de espaldas, sin poder cubrirte. Faltaba que
+       * también te costara el arma.
+       *
+       * LO QUE ESTO CAMBIA DE VERDAD es que ya no se puede abrir una caja
+       * "mientras tanto", contestando tiros de a ratos. Ahora hay que
+       * resolver el vagón PRIMERO y después robar, que es exactamente el
+       * orden que el juego premia en todo lo demás.
+       *
+       * Y no te castiga dos veces: la interrupción no borra el progreso (ver
+       * más arriba), así que soltás el gatillo y seguís desde donde ibas.
+       *
+       * `input.mouse.down` en vez de "disparó de verdad": apretar el gatillo
+       * sin balas también interrumpe. Quisiste disparar, soltaste la caja —
+       * que la recámara estuviera vacía es problema tuyo.
+       */
+      const conElArmaOcupada = input.mouse.down || player.reloadTimer > 0;
+      if (!conElArmaOcupada) {
+        nearest.progress += dt;
+        if (nearest.progress >= nearest.duration) takeLoot(nearest);
+      }
       escapeProgress = 0;
       /**
        * ROBAR LLAMA AL CAZARRECOMPENSAS (ver `acecho` en data/bosses.js).
@@ -1680,7 +2049,9 @@ export function createRaidScene(services) {
     // que en unos segundos va a gritar.
     if (victima && holding) {
       victima.robProgress += dt;
-      if (victima.robProgress >= CONFIG.passenger.robTime) robarPasajero(victima);
+      // `robTimeDe`: el pasajero rico tarda más en soltarlo todo (2,2 s
+      // contra 1,4). Ver data/paquetes.js.
+      if (victima.robProgress >= robTimeDe(victima)) robarPasajero(victima);
       escapeProgress = 0;
       // Amenazar también es robar: para el que te está midiendo desde atrás,
       // los dos son lo mismo — te quedaste quieto.
@@ -1776,7 +2147,33 @@ export function createRaidScene(services) {
     let nearestDist = CONFIG.loot.radius;
     for (const l of loot) {
       if (l.taken) continue;
+      /**
+       * LA CAJA ESCONDIDA APARECE CUANDO LA TENÉS AL LADO (Fase 5).
+       *
+       * *(Santi, eligiendo entre tres formas: "la buscás vos — la pista es
+       * sólo texto, la caja sigue invisible y aparece recién cuando estás al
+       * lado, como cualquier botín al alcance de la mano")*
+       *
+       * Se descubre en el mismo radio en el que ya podrías agarrarla, así que
+       * no hace falta ningún gesto nuevo: caminás por donde te dijeron, y
+       * cuando pasás por encima está. Que también se pueda encontrar de pura
+       * casualidad, sin haber amenazado a nadie, es a propósito — pero hay que
+       * pasar justo por ahí, y el tren es largo.
+       */
       const d = distance(player.x, player.y, l.x, l.y);
+      if (l.oculto) {
+        if (d < CONFIG.loot.radius) {
+          l.oculto = false;
+          floaters.push({
+            x: l.x, y: l.y - 14,
+            text: T.ambiente.cajaDelatada, life: 2.2, color: colors.strongbox,
+          });
+          spawnParticles(l.x, l.y, colors.strongbox, 6);
+          audio.play('loot');
+        } else {
+          continue;
+        }
+      }
       if (d < nearestDist) { nearestDist = d; nearest = l; }
     }
     return nearest;
@@ -1796,7 +2193,10 @@ export function createRaidScene(services) {
 
   function robarPasajero(pa) {
     const c = CONFIG.passenger;
-    const valor = rng.int(c.robMin, c.robMax);
+    // `pa.botin`: el pasajero RICO lleva lo suyo (Fase 5, data/paquetes.js).
+    // Cualquier otro cae en los números de siempre.
+    const rango = pa.botin || { min: c.robMin, max: c.robMax };
+    const valor = rng.int(rango.min, rango.max);
     collected += valor;
     amenazados++;
     amenazado(pa);
@@ -1805,6 +2205,40 @@ export function createRaidScene(services) {
     spawnParticles(pa.x, pa.y, colors.bagLoot, 5);
     audio.play('loot');
     // Amenazar no hace ruido: el escándalo viene después, cuando grite.
+
+    /**
+     * Y SI ESTE SABÍA DÓNDE ESTABA LA CAJA, TE LO DICE (Fase 5, ver
+     * `PAQUETES.cajaOculta` en data/paquetes.js).
+     *
+     * *(Santi, eligiendo entre tres formas de encontrarla: "te la delata un
+     * pasajero al amenazarlo")*
+     *
+     * Es lo que le faltaba a amenazar. Hasta hoy era siempre la misma
+     * cuenta —unos pesos ahora, un grito en cuatro segundos— y por eso,
+     * pasado el primer asalto, saltear pasajeros era casi siempre lo
+     * correcto. Ahora cualquiera de ellos puede ser el que abre la mejor
+     * caja del tren, y no hay manera de saber cuál: la misma acción de
+     * siempre, con una razón nueva.
+     *
+     * LO QUE TE LLEVÁS ES INFORMACIÓN, NO UNA MARCA. Te dice el vagón y
+     * debajo de qué está — y nada más. La caja sigue invisible: hay que ir
+     * hasta ahí y encontrarla. Es la única vez que el juego te da una
+     * instrucción escrita, y se lo permite porque es una PERSONA hablándote,
+     * no la interfaz explicándote.
+     *
+     * El cartel sale sobre el pasajero (acá sí: es lo que él está diciendo) y
+     * dura más que un floater normal — tenés que llegar a leerlo mientras
+     * seguís mirando el pasillo.
+     */
+    if (pa.sabeDeCaja && pa.sabeDeCaja.oculto && pa.pistaCaja) {
+      const { vagon, escondite } = pa.pistaCaja;
+      floaters.push({
+        x: pa.x, y: pa.y - 22,
+        text: T.ambiente.pistaCaja(vagon, T.ambiente.escondites[escondite]),
+        life: 3.4, color: colors.strongbox,
+      });
+      audio.play('cock');
+    }
   }
 
   function takeLoot(l) {
@@ -1812,8 +2246,21 @@ export function createRaidScene(services) {
     l.progress = 0;
     collected += l.value;
 
-    floaters.push({ x: l.x, y: l.y - 8, text: `+$${l.value}`, life: 1.4, color: colors.bagLoot });
-    spawnParticles(l.x, l.y, colors.bagLoot, 6);
+    /**
+     * EL JACKPOT SE ANUNCIA RECIÉN ACÁ — nunca antes. La caja se veía
+     * exactamente igual a cualquier otra hasta el segundo en que la abriste:
+     * eso es lo que hace que sea una sorpresa y no una pista.
+     */
+    if (l.jackpot) {
+      floaters.push({
+        x: l.x, y: l.y - 10, text: T.prompts.jackpot(l.value), life: 2.6, color: '#ffd84a',
+      });
+      spawnParticles(l.x, l.y, '#ffd84a', 16);
+      camera.shake(7, 0.5);
+    } else {
+      floaters.push({ x: l.x, y: l.y - 8, text: `+$${l.value}`, life: 1.4, color: colors.bagLoot });
+      spawnParticles(l.x, l.y, colors.bagLoot, 6);
+    }
     audio.play(l.noisy ? 'strongbox' : 'loot');
 
     // La caja fuerte hace un ruido que se oye en el vagón entero y en los de
@@ -1870,6 +2317,20 @@ export function createRaidScene(services) {
     audio.play(result === 'escaped' ? 'escape' : 'captured');
   }
 
+  /**
+   * CUÁNTO SE RESCATA, según la distancia al caballo — ver CONFIG.raid.
+   * rescateFraccionMax/Min. Cerca (`rescateDistanciaCerca` o menos) es el
+   * techo; lejos (`rescateDistanciaLejos` o más) es el piso; en el medio,
+   * interpola lineal.
+   */
+  function fraccionRescate(distancia) {
+    const c = CONFIG.raid;
+    if (distancia <= c.rescateDistanciaCerca) return c.rescateFraccionMax;
+    if (distancia >= c.rescateDistanciaLejos) return c.rescateFraccionMin;
+    const t = (distancia - c.rescateDistanciaCerca) / (c.rescateDistanciaLejos - c.rescateDistanciaCerca);
+    return c.rescateFraccionMax + (c.rescateFraccionMin - c.rescateFraccionMax) * t;
+  }
+
   function goToResults() {
     const leftBehind = loot
       .filter((l) => !l.taken)
@@ -1878,19 +2339,67 @@ export function createRaidScene(services) {
     // Trabajo limpio: escapar sin que suene la alarma paga el doble. Es lo que
     // hace que jugar callado compita con reventar la caja fuerte a los tiros.
     const escaped = outcome === 'escaped';
-    const cleanBonus = escaped && !alarm.active
+    const limpio = escaped && !alarm.active;
+    const cleanBonus = limpio
       ? Math.round(collected * CONFIG.raid.cleanBonus)
       : 0;
 
+    /**
+     * LA RACHA — cada asalto LIMPIO seguido suma un bonus extra, aparte del
+     * de `cleanBonus`. Se corta con cualquier cosa que no sea "escapaste sin
+     * que sonara la alarma": te agarraron, o escapaste pero ya te habían
+     * oído. `gameState.rachaLimpia` es la racha ANTES de este asalto; acá se
+     * calcula la que vale para ESTE resultado — si lo extendés, el premio se
+     * siente ya, no en el próximo. `applyRaidResult` guarda `summary.racha`
+     * como el nuevo valor de la racha, la corte o la extienda.
+     *
+     * *(pedido de Santi: "avancemos con el tema de la racha sin alarma",
+     * números elegidos por él: +8% por nivel, techo en +150%)*
+     */
+    const rachaAnterior = gameState.rachaLimpia;
+    const racha = limpio ? rachaAnterior + 1 : 0;
+    const rachaFraccion = Math.min(CONFIG.raid.rachaBonusTecho, racha * CONFIG.raid.rachaBonusPorNivel);
+    const rachaBonus = limpio ? Math.round(collected * rachaFraccion) : 0;
+    // Si la cortaste, cuánto llevabas — para que perderla se sienta, no sólo
+    // que el número vuelva a cero en silencio.
+    const rachaPerdida = !limpio && rachaAnterior > 0 ? rachaAnterior : 0;
+
+    /**
+     * EL RESCATE — "casi lo logro" en vez de todo o nada. Sólo aplica si NO
+     * escapaste: mide qué tan cerca del caballo (`train.exitZone`) estabas en
+     * el instante exacto de la captura, e interpola cuánto de lo juntado te
+     * queda (`fraccionRescate`, más abajo). Morir a metros de la salida es un
+     * CASI de verdad; morir en la otra punta del tren sigue siendo un
+     * fracaso, con apenas un consuelo.
+     */
+    const centroSalida = train.exitZone.x + train.exitZone.width / 2;
+    const distanciaAlCaballo = Math.abs(player.x - centroSalida);
+    const rescate = escaped ? 0 : Math.round(collected * fraccionRescate(distanciaAlCaballo));
+
+    /**
+     * PERDONADO: se quedó `rendido` y VIVO hasta el final del asalto. No hace
+     * falta ningún gesto explícito (ver la decisión con Santi) — si no lo
+     * tocaste, contás como que lo dejaste ir.
+     */
+    const perdonados = enemies.filter((e) => e.alive && e.rendido).length;
+
     const summary = {
       outcome,
-      money: escaped ? collected + cleanBonus : 0,
+      money: escaped ? collected + cleanBonus + rachaBonus : rescate,
       collected,
       cleanBonus,
+      racha,
+      rachaBonus,
+      rachaPerdida,
+      rescate,
       leftBehind,
       kills,
       civilians,
       amenazados,
+      perdonados,
+      rendidosMatados,
+      noqueadosRematados,
+      noqueadosLimpios,
       /**
        * Matarlo cuenta AUNQUE TE CAPTUREN. No es botín (que se pierde si no
        * escapás): es un hecho, y ya pasó. La recompensa que te saca de encima
@@ -1963,7 +2472,7 @@ export function createRaidScene(services) {
     // adentro y ANTES del jugador: lo cubre a todo eso, pero no a vos.
     drawTecho(r);
 
-    drawPlayer(r, player);
+    drawPlayer(r, player, train.hearStepRadius);
     for (const b of bullets) drawBullet(r, b);
     for (const ex of explosives) drawExplosive(r, ex);
 
@@ -1981,7 +2490,57 @@ export function createRaidScene(services) {
     }
     r.ctx.globalAlpha = 1;
 
+    // La mira va ÚLTIMA: es lo único que no pertenece al mundo, y nada del
+    // tren puede taparla. Va adentro del translate porque apunta a un punto
+    // del mundo (world.aimX/aimY), no de la pantalla.
+    drawMira(r);
+
     r.ctx.restore();
+  }
+
+  /**
+   * LA MIRA — un círculo que describe el ARMA, no el punto donde apuntás.
+   * Ver CONFIG.mira.distanciaReferencia para el porqué completo.
+   *
+   * La cuenta sigue siendo la del cono de tiro (`tan(dispersión) ×
+   * distancia`), pero la distancia ya NO es "hasta donde señala el mouse":
+   * es siempre `m.distanciaReferencia` (120px), fija. Por eso el balanceo del
+   * tren veloz sigue abriendo el círculo en tu cara —eso describe el arma en
+   * ESE instante, no cambió— pero apuntar lejos o cerca ya no lo hace, porque
+   * el círculo dejó de ser una proyección del tiro puntual.
+   *
+   * No se dibuja en el techo: allá arriba no hay arma, sólo esquivar carteles.
+   */
+  function drawMira(r) {
+    if (!player.alive || player.enTecho) return;
+
+    const m = CONFIG.mira;
+    const radio = Math.max(
+      m.radioMin,
+      Math.min(m.radioMax, Math.tan(dispersionActual(player, world)) * m.distanciaReferencia * m.escala)
+    );
+
+    /**
+     * Rojo cuando el gatillo no va a hacer nada: recargando, tumbado en el
+     * piso, o escondido detrás de la cobertura sin haberte asomado. Es la
+     * misma pregunta que hace `updateWeapon` para dejarte disparar, así que no
+     * puede desincronizarse con lo que de verdad pasa al hacer clic.
+     */
+    const puedeDisparar = player.reloadTimer <= 0 && player.tumbado <= 0 &&
+      (!player.cover || player.peek >= CONFIG.player.peekShootAt);
+
+    const color = !puedeDisparar ? m.colorBloqueado
+      : player.apuntado > 0.55 ? m.colorApuntando
+      : m.color;
+
+    /**
+     * SIN PUNTO EN EL CENTRO — a propósito, y no es un detalle estético. Ver
+     * CONFIG.mira. Un punto fijo se lee como "la bala va a ir acá"; la
+     * dispersión real es uniforme, así que el borde del anillo tiene tanto
+     * derecho a recibir la bala como el medio. El círculo entero ES la
+     * respuesta.
+     */
+    r.circle(world.aimX, world.aimY, radio, color, m.alpha);
   }
 
   /**
@@ -2184,7 +2743,7 @@ export function createRaidScene(services) {
         const w = 22;
         r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
         r.rect(player.x - w / 2, player.y - 12,
-          w * (victima.robProgress / CONFIG.passenger.robTime), 3, colors.bagLoot);
+          w * (victima.robProgress / robTimeDe(victima)), 3, colors.bagLoot);
       }
       return;
     }

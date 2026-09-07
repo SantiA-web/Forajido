@@ -37,5 +37,31 @@ export function createRng(seed = Date.now()) {
 
     /** Decimal entre -amount y +amount. Útil para dispersión y partículas. */
     spread: (amount) => (next() * 2 - 1) * amount,
+
+    /**
+     * COMO `spread`, PERO PARA TIROS DE VERDAD — el círculo de la mira
+     * muestra `amount` como lo más probable, no como un techo absoluto.
+     *
+     * *(idea de Santi: "¿y si hacemos que la dispersión de las balas de
+     * cualquier arma en realidad pueda salir del círculo? El círculo es una
+     * idea de lo que puede pasar, no una garantía")*
+     *
+     * Con probabilidad `p` el pulso se va de verdad, y la dispersión de ESE
+     * tiro sale multiplicada por `mult` — pero sigue siendo uniforme adentro
+     * de ese rango más ancho, la misma regla de siempre (ver el porqué de la
+     * uniformidad en CONFIG.mira). Lo único que cambia es CUÁL es el rango:
+     * la mayoría de las veces el de siempre, a veces uno más grande que
+     * nunca se dibuja. Por eso el círculo pasa de ser una promesa a ser una
+     * expectativa: sigue siendo la referencia correcta la mayor parte del
+     * tiempo, y por eso vale la pena mirarlo, pero ya no es un seguro.
+     *
+     * No reemplaza a `spread()`: eso lo siguen usando la cámara, la deriva de
+     * los jinetes y todo lo que no es un gatillo — tocar `spread()` en sí
+     * habría cambiado esas cosas también, sin que nadie lo pidiera.
+     */
+    spreadDeTiro: (amount, p, mult) => {
+      const magnitud = next() < p ? amount * mult : amount;
+      return (next() * 2 - 1) * magnitud;
+    },
   };
 }

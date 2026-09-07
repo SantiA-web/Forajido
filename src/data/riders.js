@@ -217,6 +217,50 @@ export const RIDER_SPAWN = {
    */
   firstAfterAlarm: 25,     // segundos desde que suena la alarma hasta la tanda de 2
   interval: 15,            // y cada cuánto llega uno más, por encima de esos 2
+
+  /**
+   * `max` (de `maxPorRecompensa`) YA NO ES UN TECHO DURO — es el piso que
+   * fija tu recompensa. Mismo cambio que `CONFIG.alert` en data/config.js, y
+   * mismo pedido de Santi ("que suban guardias... o que vengan desde la
+   * locomotora" — acá es el otro lado de esa idea, la ley de afuera).
+   *
+   * Pasado el piso, siguen llegando, pero cada vez más seguido: `interval` se
+   * achica `intervalDecay` por cada jinete de más, hasta `intervalMin`. Con
+   * un forajido nuevo (`bounty` 0, piso 2) el 3º llega a los 37,5s del primer
+   * par, y de ahí en más cada vez más rápido — la misma sensación de "esto se
+   * está poniendo peor" que ya tenés adentro del tren, ahora también afuera.
+   *
+   * `maxAbsoluto` es un techo técnico, no de dificultad — ver la nota gemela
+   * en `CONFIG.alert.maxAbsoluto`.
+   */
+  intervalMin: 6,
+  intervalDecay: 2.5,
+  maxAbsoluto: 10,
+
+  /**
+   * LOS QUE LLEGAN POR LA ESCALADA ESPERAN ADELANTE, NO PERSIGUEN.
+   *
+   * *(pedido de Santi: "los jinetes son demasiados para que todos queden
+   * detrás del jugador. Algunos jinetes deberían estar detrás y otros por
+   * delante esperando a que el jugador pase por ese lugar en el que un
+   * jinete espera")*
+   *
+   * LOS 2 A 5 GARANTIZADOS (`maxPorRecompensa`) siguen igual que siempre:
+   * persiguen la ventana más cercana a vos, el comportamiento ya jugado y
+   * medido. **Sólo los que entran DESPUÉS de ese piso** —la escalada nueva
+   * de más arriba— nacen `emboscador`: reclaman un tramo ya, bien adelante
+   * (hacia la locomotora, +`distanciaEmboscada`) y se quedan clavados ahí en
+   * vez de perseguirte. Recién cuando lo alcanzás, pasa a perseguir como
+   * cualquier otro (`seguirAlJugador`, systems/riders.js).
+   *
+   * ADELANTE = HACIA LA LOCOMOTORA, siempre, no "hacia donde vas ahora". Es
+   * la misma palabra que ya usa el resto del juego (ver README, "ir hacia
+   * ADELANTE dentro del tren cuesta casi el doble que volver") y coincide
+   * con el sentido en el que crece `x` en el mapa (`puntaLocomotora` es la
+   * última plataforma, ver world/train.js) — no hace falta rastrear hacia
+   * dónde te estás moviendo vos, ni adivinarlo.
+   */
+  distanciaEmboscada: 250,
 };
 
 /** El techo de jinetes para un asalto que arranca con esta recompensa. */

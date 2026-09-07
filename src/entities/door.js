@@ -34,6 +34,7 @@ export function createDoor(x, y, { kind = 'normal', insideDir = 1 } = {}) {
     open: false,
     broken: false,
     trabada: false,
+    trabadaDeOrigen: false,   // ver `trabarPuerta`: venía así desde el sorteo
     health: CONFIG.doors.health,
     closeTimer: 0,
   };
@@ -110,9 +111,17 @@ export function volarPuerta(d) {
  * y lo que se deshace si lo matás. Sólo toca puertas de madera enteras: la
  * blindada ya tiene su propia llave (la dinamita) y no necesita ésta.
  */
-export function trabarPuerta(d) {
+export function trabarPuerta(d, deOrigen = false) {
   if (d.kind === 'blindada' || d.broken) return;
   d.trabada = true;
+  /**
+   * `deOrigen`: esta puerta ya viajaba trabada antes de que subieras — el
+   * modificador `puertaBloqueada` (Fase 4, ver data/modifiers.js), no un jefe
+   * cerrando el tren. La diferencia importa una sola vez, pero importa:
+   * matar al Cazarrecompensas destraba lo que él trabó, y no tendría por qué
+   * abrir una puerta que ya estaba así cuando llegó. Ver `destrabarPuerta`.
+   */
+  if (deOrigen) d.trabadaDeOrigen = true;
   // Se cierra de golpe, esté quien esté parado en el marco — es un cierre
   // de emergencia, no el vaivén de siempre. Si no, una puerta que justo
   // estaba abierta se quedaba abierta para siempre (`updateDoor` no la
@@ -122,6 +131,9 @@ export function trabarPuerta(d) {
 }
 
 export function destrabarPuerta(d) {
+  // La que venía trabada de fábrica no la suelta nadie: sigue siendo un
+  // problema tuyo, y la única llave sigue siendo romperla a tiros.
+  if (d.trabadaDeOrigen) return;
   d.trabada = false;
 }
 

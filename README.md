@@ -34,14 +34,20 @@ luz de la fogata, y el suelo se apaga antes de que llegues al borde.
 | Qué hay | Qué hace |
 |---|---|
 | **La fogata** | Sentarte. Y es el reloj: **encendida = de noche** |
-| **El poste** | Tu caballo: **`E` lo alimenta, `F` te lleva al pueblo** |
+| **El poste** | Tus caballos: **`E` lo atiende y elegís cuál montás, `F` te lleva al pueblo** |
 | **La carpa** | **Dormir: cambia de día a noche y al revés** |
-| **El cajón** | Con qué arma y cuánta dinamita salís |
+| **El cajón** | **Con qué salís: elegís entre todas las armas que tenés** |
 | **El cartel** | **El mapa de rutas: por acá salís a robar** |
 
 El caballo es lo único con dos verbos, porque es lo único que además de ser una
 cosa es un vehículo. Y `F` es el mismo botón con el que volvés desde el pueblo:
 montar es el verbo de viajar, para los dos lados.
+
+**Y el campamento es donde te equipás, no el pueblo.** En la tienda se COMPRA;
+acá se ELIGE, gratis y a cualquier hora. Comprar el Smith no te hace perder el
+Colt: queda en el cajón, y volver a él es abrirlo y elegirlo. Lo mismo con el
+acero y con los caballos en el poste. Ir hasta el pueblo es para conseguir algo
+nuevo, nunca para cambiarte de ropa.
 
 ### El pueblo (`F` en el caballo)
 
@@ -53,7 +59,7 @@ Una calle de tierra, de día, más ancha que la pantalla: hay que recorrerla.
 | Dónde | Cuándo abre | Qué hay adentro |
 |---|---|---|
 | **Establo** | **Sólo de día** | **Los caballos, y se los puede ir a ver** |
-| **Armería** | **Sólo de día** | **Las armas, y se las puede ir a ver** |
+| **Armería** | **Sólo de día** | **Las armas, y se las puede ir a ver.** El armero vende dos cosas: fuego y **acero** (cuchillo y hacha) |
 | **Cantina** | Siempre | Contratar compañeros. Barra, mesas y **mesa de póker** |
 | **Oficina del Sheriff** | Siempre | **Tu cartel de "se busca", y a cuánto estás de la horca** |
 
@@ -126,8 +132,11 @@ pasa a ser abrir la mitad del pueblo y cerrar la otra.
 fogata del campamento (encendida de noche, apagada de día) — lo que se puede
 mostrar no se escribe, igual que el aro del ruido o la marca del salto.
 
-> Por ahora el galope y el asalto **no** cambian con la hora: los trenes se
-> roban siempre igual. Los trenes nocturnos son una vuelta aparte.
+> **El galope sí se ve distinto según la hora:** de día el desierto es de arena,
+> el mismo ocre que rodea al campamento; de noche es tierra oscura. Pero es sólo
+> el paisaje — se roba igual. El asalto no cambia nunca, y tiene sentido: adentro
+> de un vagón la hora no se ve. Los trenes nocturnos de verdad, con la escolta
+> dormida y todo lo demás, son una vuelta aparte.
 
 Después de cada asalto volvés acá, con lo que hayas juntado y con la
 recompensa que te hayas ganado. Ese ciclo —campamento, tren, campamento— es lo
@@ -197,7 +206,7 @@ donde llegaron, no donde los dejaste.
 
 | Stat | Qué es | Qué caballo |
 |---|---|---|
-| **Velocidad** | Qué tan rápido alcanzás la cola del tren | Con el **Criollo** (el que tenés al empezar) son ~12 s galopando a fondo. Con el **Mustang** son ~7. |
+| **Velocidad** | Qué tan rápido alcanzás la cola del tren | Con el **Criollo** (el que tenés al empezar) son ~11 s galopando a fondo, desde la esquina del desierto. |
 | **Equilibrio** | Cuánto te perdona el salto al enganche | Con el Criollo, la mayoría de tus saltos van a salir sucios (despiertan el vagón) salvo que apuntes casi exacto. Con el Mustang, bastante menos. |
 | **Resistencia** | Hasta qué enganche te alcanza el aliento antes de quedarte sin fuerzas para seguir acelerando | El Criollo llega al **3º**. El Mustang, más rápido pero más corto de aliento, llega al **2º** y no más. |
 
@@ -207,9 +216,52 @@ para caer, es el único que hoy te deja empujar hasta el tercer enganche.
 
 ### Galopando a la par del tren (antes de subir)
 
-Arrancás **muy detrás del tren** y lo tenés que alcanzar. Al principio ni se
-ve —está fuera de la pantalla— y lo único que tenés adelante es **la vía**,
-con el balasto y las piedras volando, que es lo que te dice por dónde se fue.
+Arrancás **en una esquina del desierto**, abajo y muy atrás. **El tren se ve
+desde el primer segundo**: chiquito, allá arriba a la derecha, con la vía
+llegando hasta él. No galopás hacia un horizonte vacío — galopás hacia algo que
+tenés a la vista todo el tiempo.
+
+**Y el desierto tiene hora.** De día es de arena, el mismo ocre que rodea al
+campamento — porque es el mismo desierto. De noche es tierra oscura y lo único
+que se recorta son las siluetas.
+
+**Y la cámara se va cerrando sola.** Al principio el tren mide cuatro baldosas y
+ves el desierto entero; a medida que te acercás, la escena se cierra hasta
+quedar a la misma escala que el asalto. Nadie te avisa que estás llegando: se ve.
+
+**No se galopa por un pasillo.** Estás casi trescientos píxeles por debajo de la
+vía, así que llegar al tren es una **diagonal larga y libre** — elegís tu propia
+línea, esquivando **rocas, arbustos, cactus y montículos de arena**. Y esquivar
+no es gratis, porque cuanto más te arrimás al tren más te ven.
+
+**Y no todos estorban igual.** La roca es lo único sólido de verdad y la que más
+lugar ocupa; el arbusto es ancho y te enreda; el cactus es alto pero de tronco
+flaco; y el montículo de arena es el más perdonador — le podés pisar el borde y
+seguir. Por eso elegir POR DÓNDE pasar es una decisión y no sólo "esquivá todo":
+siempre hay una línea barata y una cara.
+
+**El caballo apunta a donde lo llevás, y no obedece al instante.** No manejás al
+animal: manejás al jinete que tira de las riendas. El caballo tarda medio segundo
+en terminar de virar, y cuando soltás sigue derivando un momento antes de
+enderezarse. Es la diferencia entre conducir una máquina y montar un bicho.
+
+### Y el tren se va. De verdad.
+
+**El tren viaja a su propia velocidad y no te espera.** Si te quedás quieto, si
+te demorás rodeando un cactus, si te comés una roca — el tren sigue, y lo ves
+alejarse. Alcanzarlo es algo que tenés que hacer, no algo que pasa solo.
+
+**Ahí es donde la velocidad de tu caballo significa algo nuevo:** no es sólo
+cuánto tardás en llegar, es **cuánto te podés distraer**.
+
+| | Galopando | Sin apretar nada |
+|---|---|---|
+| **Criollo** | le gana terreno al tren | **el tren se le va.** No puede demorarse |
+| **Mustang** | le gana el doble | **le sigue el paso.** Puede rodear un obstáculo con calma |
+
+Con el Criollo, cada segundo que no galopás es terreno perdido. Con el Mustang,
+esquivar sale casi gratis. Es la misma stat de siempre, pero ahora se siente en
+una decisión distinta: no "¿llego?", sino "¿me puedo dar el lujo?".
 
 Se ve desde arriba, igual que el asalto: es el mismo tren, dibujado de verdad.
 
@@ -273,14 +325,14 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 | `W A S D` o flechas | Moverse |
 | Mouse | Apuntar |
 | Clic izquierdo | Disparar |
+| **Clic derecho (mantener)** | **Afinar la puntería.** A cubierto, además te asoma |
 | **`Espacio` (mantener)** | **Agacharse**: mitad de velocidad, tardan el doble en verte |
 | `Shift` | Pegarse a una pared o a un asiento (cubrirse) |
-| Clic derecho | Asomarse (solo estando a cubierto) |
-| **Ruedita del mouse** | **Cuchillo.** Alcanza con moverla apenas, para cualquier lado |
-| `F` | Cuchillo (lo mismo, por si preferís el teclado) |
+| **Ruedita del mouse** | **Golpe cuerpo a cuerpo.** Alcanza con moverla apenas, para cualquier lado |
+| `F` | Lo mismo, por si preferís el teclado |
 | **`Q`** | **Encender un cartucho de dinamita** |
 | Clic izquierdo (con la mecha encendida) | Lanzarla |
-| `R` | Recargar |
+| `R` | **Recargar.** Mientras lo hacés caminás lento, como si fueras de costado |
 | `E` (mantener) | Robar botín / **amenazar a un pasajero** / escapar |
 
 Estando a cubierto **no podés disparar hasta asomarte**, y mientras estás
@@ -291,6 +343,64 @@ ni los guardias exponen más cuerpo del necesario.
 Agacharse y cubrirse quedaron en manos distintas a propósito: la izquierda
 sostiene la barra mientras te movés, y el cuchillo salió al mouse para no tener
 que soltar el apuntado cuando tenés a alguien pegado a la espalda.
+
+### Caminar de costado o de espaldas te cuesta
+
+**No rendís igual para todos lados** — depende de hacia dónde apuntás, no de
+hacia dónde caminás. Si apretás `D` y el arma mira hacia la derecha, vas de
+frente y a velocidad normal. Si apretás `D` y apuntás hacia abajo o hacia
+arriba, estás yendo de costado respecto a tu propia mira, y vas más lento. Si
+apretás `D` y apuntás hacia la izquierda, estás retrocediendo de espaldas —
+más lento todavía, lo mismo que ya cuesta agacharse, apuntar o cubrirse.
+
+Es continuo, no un interruptor: cuanto más de costado, más despacio, hasta el
+mínimo cuando vas exactamente de espaldas. Encarar algo pasó a valer la pena.
+
+### La mira te dice, siempre, qué tan sucia tirás
+
+El puntero no es una cruz: es **un círculo, y su tamaño es tu arma**. Es una
+medida del arma en este instante, no una predicción de dónde va a caer
+justo esta bala — apuntar cerca o lejos no lo cambia, sólo lo que ensucia tu
+puntería de verdad:
+
+| | El círculo |
+|---|---|
+| Llevás un arma sucia | Nace más grande. El Smith siempre es más ancho que el Colt |
+| **Clic derecho: apuntás** | **Se cierra** en un tercio de segundo |
+| **El tren se sacude** (tren veloz) | **Se abre de golpe, en tu cara** |
+| No podés disparar (recargando, tumbado, escondido sin asomarte) | Se pone **rojo** |
+
+**Apuntar cuesta**, y cobra en lo mismo que cobra todo en este juego: tiempo y
+exposición, nunca vida. Tarda en cerrarse, y mientras lo mantenés **caminás a
+la mitad de velocidad** — el mismo precio que ya cuesta agacharse. Así abrir
+fuego de inmediato y plantarte a apuntar primero son dos jugadas distintas.
+
+**Cuánto cierra depende del arma, y ahí la tienda vende algo que se ve.** El
+Colt casi se clava: su virtud siempre fue la puntería y apuntar la lleva al
+máximo. El Smith mejora, pero **apuntado sigue tirando más sucio que el Colt
+sin apuntar**: es mano rápida, no pulso fino. Comprarlo nunca fue un ascenso.
+
+**Y a cubierto la mira ya está cerrada.** Pegarte a una pared con `Shift` es
+estar afianzado —la misma razón por la que el sacudón del tren no te arrastra
+si estás cubierto—, así que cuando te asomás con el clic derecho salís ya
+apuntando, sin el tercio de segundo. Es la primera vez que cubrirse te da algo
+**ofensivo** y no sólo un lugar donde esconderte. El precio ya estaba puesto:
+asomado sos un blanco, los jinetes te cazan en la ventanilla y los guardias del
+blindado te tiran dinamita justamente cuando te ven parapetado.
+
+**Y el círculo es una idea, no una garantía.** La mayoría de los tiros salen
+exactamente como el círculo lo muestra, pero de vez en cuando (1 de cada 6-7)
+el pulso se te va de verdad y ese tiro sale más sucio de lo que se veía —
+aunque hayas apuntado perfecto y el guardia entrara entero adentro del
+círculo. Nadie se salva: al Cazarrecompensas, a los guardias y a los jinetes
+también se les puede ir la puntería. Nada en pantalla avisa cuándo va a pasar
+— si lo avisara, volvería a ser una promesa exacta en vez de una idea.
+
+**Y cada disparo te ensucia el próximo, un rato.** El retroceso agranda el
+círculo apenas tirás —la mitad si estás apuntando— y se apaga solo. El Colt,
+disparado a su propio ritmo, siempre se limpia justo a tiempo para el
+siguiente tiro; el Smith, más rápido, no llega a limpiarse del todo entre uno
+y otro. Lo que el Smith gana en cadencia lo paga en pulso.
 
 ### La dinamita (`Q` para encender, clic izquierdo para lanzar)
 
@@ -318,8 +428,12 @@ Otras reglas:
 - **A cubierto hay que asomarse primero** (clic derecho), igual que para
   disparar. Nadie tira nada con la espalda pegada a una pared.
 - No distingue entre guardias y pasajeros.
-- **Y retumba en casi todo el tren.** Un tiro deja sospechando (amarillo) a
-  los que lo oyeron; una explosión los deja **en combate (rojo)**, hasta tres
+- **Y retumba en casi todo el tren.** Un tiro pone en rojo a todo TU vagón y
+  en amarillo a los dos de al lado —**pero ésos no cruzan: se quedan en el
+  suyo, despiertos y mirando la puerta**. Hasta que suene la alarma de
+  verdad, lo que pasa en un vagón se queda en ese vagón; después, los de
+  atrás sí te vienen a buscar. Una explosión, en cambio, los deja
+  **en combate (rojo)**, hasta tres
   vagones para cada lado. Los de atrás te vienen a buscar; los de adelante te
   esperan en su vagón, ya con el arma levantada. Volar la puerta del blindado
   **enciende la alarma sí o sí**: no existe hacerlo y seguir limpio.
@@ -331,16 +445,94 @@ mecha se ve un `!` naranja y una chispa parpadeando sobre su cabeza: eso quiere
 decir *salí de la cobertura ahora mismo*, que es lo contrario de todo lo demás
 que aprendiste, así que el aviso es grande a propósito.
 
-### El cuchillo (ruedita del mouse)
+### El cuerpo a cuerpo (ruedita del mouse)
 
-- **Por la espalda, a un guardia que no te vio: lo matás de un solo golpe y en
-  silencio.** Es la única forma de sacar a alguien del tablero sin un disparo.
-- **De frente: no lo matás.** Le hacés daño y lo aturdís un instante, pero es
-  un escándalo y viene todo el mundo.
+Hay **dos situaciones**, y son siempre las mismas sin importar qué lleves:
+
+- **Por la espalda, a un guardia que no te vio: lo sacás del tablero de un solo
+  golpe y en silencio.** Es la única forma de hacerlo sin un disparo.
+- **De frente: es un escándalo** y viene todo el mundo.
+
+Lo que cambia según el arma es qué tan fuerte pega, qué tan rápido, y **si por
+la espalda mata o sólo lo deja inconsciente**:
+
+| | Por la espalda | De frente | Qué tan rápido |
+|---|---|---|---|
+| **La culata** de tu propia arma | **Lo deja inconsciente** | No hace daño, sólo lo aturde | **Rapidísima** — más que un tiro |
+| **El cuchillo de monte** | Lo mata | Le saca una vida | Un poco más lenta |
+| **El hacha de leñador** | Lo mata | **Le saca tres: lo mata de un golpe** | **Lentísima** |
+
+**La culata es gratis: es lo que ya tenés en la mano.** No es el arma mala que
+vas a reemplazar — es la más rápida de las tres y sirve para lo mismo que el
+cuchillo. Lo que NO compra es tiempo.
+
+> **Un desmayado se levanta a los 25 segundos**, y mientras tanto está tirado en
+> el piso delatándote igual que un cadáver: de lejos nadie distingue. Y cuando se
+> despierta ya no vuelve a confiarse nunca. Noquear no es sigilo gratis — es
+> sigilo prestado. **Comprar el filo no compra poder: compra que el problema no
+> vuelva.**
+>
+> A cambio, no matar te sale más barato en la horca: un guardia muerto con la
+> alarma sonando te sube la recompensa, uno dormido no.
+
+Y si te sobra un segundo, **al que noqueaste lo podés rematar**: un desmayado
+cuenta como alguien que no te ve.
 - **Los guardias también pegan.** Si los tenés encima dejan de disparar y te
   muelen a golpes, así que pegarse a uno ya no es refugio.
 - **Los cuerpos quedan tirados.** Un guardia que ve un cadáver da la alarma.
   Dónde matás importa tanto como a quién.
+
+### Los guardias no pelean todos igual, ni de principio a fin
+
+Un guardia no es un muñeco que dispara hasta que se le acaba la vida. Hay dos
+momentos en los que se le nota que es una persona, y los dos dependen de la
+situación exacta en la que está:
+
+- **Si lo cargás de frente, se desespera.** Un guardia que te ve, expuesto,
+  viniendo derecho hacia él, deja de esperar escondido y te suelta **una ráfaga
+  de cinco balas**. Tira más sucio que de costumbre, y si todavía no llegó a su
+  cobertura, dispara mientras camina. Correr por el pasillo apretando el gatillo
+  dejó de ser gratis.
+- **Si le queda un solo tiro de vida y tiene un compañero al lado, se
+  repliega.** Te da la espalda y se va caminando por el pasillo, **sin
+  disparar** — mientras el otro se planta y sostiene el lugar cubriéndolo.
+  Cuando termina la maniobra, el que cubría vuelve a venir por vos.
+  **Y el que se replegó ya no vuelve a avanzar nunca:** se queda atrás peleando
+  parapetado. Herirlo no lo saca del tablero, pero te lo saca de encima.
+
+**Y no le pasa a todo el tren.** Sólo **un tercio de los guardias viaja
+acompañado**; el resto va solo, y a ése no hay quién lo cubra. Que un guardia
+tenga con quién replegarse o no es algo que ya estaba decidido por dónde le tocó
+viajar, no por lo que hagas vos.
+
+**Y el que está solo, sin nadie con quién replegarse, a veces se rinde.** De
+rodillas, con las manos arriba: deja de disparar y de moverse. Ahí la decisión
+es tuya — perdonarlo (no tocarlo, seguir de largo) o rematarlo. Las dos mueven
+`honor`, el tercer número de tu reputación (junto a `fame`, cuánto te conocen, y
+`bounty`, cuánto pagan por tu cabeza): perdonar lo sube, rematar a alguien
+rendido lo baja fuerte, rematar a alguien que noqueaste vos lo baja un poco
+menos, y matar a un pasajero también pesa. **También sube un poco si elegís
+la culata en vez del filo** al noquear a alguien por la espalda que nunca te
+vio — dejarlo vivo cuando el cuchillo lo hubiera matado igual de silencioso.
+**Y `honor` retroalimenta la rendición**: cuanto más te teman, menos guardias
+se entregan — ya saben que los vas a matar igual — y cuanto más te respeten,
+más lo hacen.
+
+**Sentarte junto a la fogata del campamento te dice cómo estás parado**:
+cuánta fama tenés y qué tan bien (o mal) te ven, en una frase.
+
+**Y un rendido puede estar fingiendo.** Cada tanto, si te alejaste de verdad
+(encañonado no se anima a nada), puede decidir jugársela: **se para**, despacio,
+de rodillas a de pie, y a mitad de camino cambia de color — el mismo aviso que
+ya usa el resto del tren. Si lo tocás mientras se para (el mismo gesto de
+rematar de siempre) lo cortás ahí, y esa vez no cuenta como rematar a un
+indefenso: viste venir la traición, así que es defenderte, no una ejecución. Si
+no reaccionás, termina de pararse y te dispara por la espalda — un solo tiro,
+certero, el precio de no estar atento. **Cuanto más pagan por tu cabeza
+(`bounty`), más se anima a intentarlo.**
+
+> Los dos avisan igual que siempre: nada de esto le saca a un guardia el gesto
+> de levantar el arma antes de disparar. Le sacan la calma, no el telegrafiado.
 
 ## Qué hay que hacer
 
@@ -526,6 +718,123 @@ Entre vagón y vagón hay un **enganche al aire libre**. Ahí empezás el asalto
 esconderse de verdad: cruzar de un vagón al otro te expone siempre, aunque
 las puertas de los costados te tapen un instante (ver abajo).
 
+### Conocés los vagones, pero nunca sabés qué te vas a encontrar
+
+El tren estándar es el mismo de siempre: seis vagones, los que ya conocés.
+Lo que cambia es **quién viaja y cómo está el tren ese día**, y se sortea de
+nuevo en cada servicio. (El veloz y el de carga quedan afuera de todo esto:
+ya tienen su propia identidad, y mezclarlas la borraría.)
+
+**Cómo está el tren** — pueden salir varias a la vez, o ninguna:
+
+| | Qué pasa |
+|---|---|
+| **Tormenta** | Se oye más: un disparo o tus pasos llegan un 40% más lejos |
+| **Alerta ya activada** | Subís con la alarma sonando, antes de hacer nada. Es el que más caro se paga, así que es el más raro |
+| **Redada** | Más guardias (cada patrulla viene duplicada) **y** pelean mejor. Sólo si ya pagan bien por tu cabeza |
+| **Puerta bloqueada** | Una, dos o tres puertas vienen **trabadas**: empujarlas no las abre, hay que romperlas a tiros. Nunca sabés cuáles ni cuántas |
+
+**Qué está haciendo la gente de cada vagón** — uno por vagón:
+
+| | Qué ves |
+|---|---|
+| **Normal** | Su ronda de siempre |
+| **Conversando** | Dos guardias parados, **enfrentados**, hablando (se les ven frases cortadas arriba de la cabeza). Distraídos: sospechan más lento y ven la mitad |
+| **Vigilando la puerta** | Uno se planta en la puerta y la mira. Los demás siguen su ronda |
+| **Vigilando la caja** | Lo mismo, pero pegado a la caja fuerte. Sólo donde de verdad hay una |
+
+Los dos que vigilan dicen **VIGILANDO** arriba de la cabeza todo el tiempo:
+es un estado, no una frase suelta.
+
+**Y qué se lleva ese vagón.** Uno de cada dos trenes trae un **paquete**: un
+objetivo valioso con su custodia, metido en un vagón cualquiera. Hasta ahora
+el valor de un vagón estaba escrito en su tipo —el correo tenía la caja, el
+blindado el premio gordo—, así que sabiendo qué vagón era sabías qué te
+esperaba. Un paquete rompe eso: el vagón de pasajeros de siempre puede ser,
+esta vez, el que más plata lleva arriba.
+
+**Un pasajero rico**, en algún vagón con gente: lleva encima cuatro veces lo
+que lleva cualquiera, pero **tarda más en soltarlo** — más tiempo quieto, y
+con alguien mirando. Se lo reconoce por el **sombrero de copa**: es la
+silueta más alta del tren, asoma por encima de los respaldos.
+
+**La pista de que hay algo es el guardaespaldas**: un guardia plantado al
+lado que no patrulla y dice **VIGILANDO** arriba de la cabeza, igual que los
+que cuidan una puerta. Te avisa que ahí hay algo, y no te dice qué.
+
+### Y una caja fuerte escondida, en cualquier vagón
+
+Uno de cada cuatro trenes esconde una caja fuerte **que no se ve**. Puede
+estar en cualquier vagón menos el blindado, y no está a la vista: no se
+dibuja, no se puede abrir, para vos no existe.
+
+**Tres pasajeros del tren saben dónde está.** No hay nada que los distinga
+de los otros diez, ni tienen por qué viajar en el mismo vagón que la caja.
+Cuando amenazás a uno de los tres, además de la plata te suelta el dato:
+
+```
+VAGÓN 3: DEBAJO DE UNA MESA
+```
+
+Y eso es todo lo que te llevás: **la caja no se marca en pantalla**. Tenés
+que ir hasta ese vagón y buscarla — aparece recién cuando la tenés al lado,
+como cualquier cosa al alcance de la mano. Los escondites son cuatro y
+dependen del vagón: debajo de una ventana o debajo de un asiento en los de
+pasajeros, debajo de una mesa en el comedor y el correo, junto al corral en
+el de ganado.
+
+Vale más que una caja normal ($400-900 contra $150-600) y tarda más en
+abrirse (8 segundos contra 6,5): estaba escondida por algo.
+
+> Y por eso amenazar pasajeros dejó de ser siempre la misma cuenta. Antes
+> eran unos pesos ahora y un grito dentro de cuatro segundos, así que pasado
+> el primer asalto saltearlos era casi siempre lo correcto. Ahora cualquiera
+> de ellos puede ser el que sabe dónde está la mejor caja del tren, y no hay
+> forma de saber cuál.
+
+**Y quién viaja armado.** Acá está lo que no se ve venir — pero **hoy los
+tres están construidos y apagados**, esperando su momento igual que "Alta
+vigilancia". Ninguno sale sorteado todavía: prenderlos es cambiar un número
+en `data/modifiers.js`, no escribir código.
+
+- **El pistolero.** Dos revólveres, gatillo velocísimo y puntería floja: te
+  llena el pasillo de plomo —**tandas de cuatro tiros casi pegados, tres
+  veces y media más balas que un guardia común**— y **no se cubre nunca**:
+  se planta en medio del pasillo a disparar. Es el
+  más peligroso y el más fácil de matar a la vez: aguanta lo mismo que
+  cualquiera y siempre está a la vista. **Sólo se esconde si lo obligás**:
+  si te perdió de vista busca dónde parapetarse, y en cuanto te vuelve a ver
+  sale otra vez al pasillo. Y si un compañero suyo le tapa el tiro, se corre
+  al costado o se adelanta para recuperar el ángulo — no espera turno. Se lo reconoce por las dos culatas
+  al cinto, y por el segundo caño cuando dispara. **Sólo aparece cuando ya
+  sos alguien**: hace falta que paguen caro por tu cabeza Y que te tengan
+  miedo — las dos cosas a la vez.
+- **El civil encubierto.** Uno de los pasajeros no es un pasajero. Se lo
+  puede rodear, asustar y robar como a cualquiera, y no hay nada que lo
+  distinga — hasta que **le das la espalda**. Ahí saca el arma: se oye el
+  martillo del revólver y se lo ve sacarla, un segundo largo, antes del
+  primer tiro. Si estás atento, llegás a darte vuelta.
+
+  Encañonado no se anima: mientras le apuntes es un pasajero asustado como
+  cualquier otro. **El pánico y el temblor son parte del disfraz.**
+
+  **Y sigue vestido de civil cuando pelea.** No se convierte en un guardia
+  con sombrero: es el mismo tipo de recién, ahora en rojo y con un arma. Lo
+  que te deja no es un enemigo más — es la duda, para todo el resto de la
+  partida.
+
+- **El dinamitero.** Un guardia común que además lleva un cartucho y te lo
+  tira cuando te ve parapetado, igual que los del blindado. Espera al vagón
+  de armas, que todavía no existe.
+
+> **Por qué están apagados.** El pistolero y el civil encubierto se jugaron y
+> se afinaron (de ahí salieron dos bugs de verdad: la cadencia del pistolero
+> que no se aplicaba, y que se quedaba clavado cuando un compañero le tapaba
+> el tiro), y quedaron en reserva para volver a prenderlos cuando el resto
+> del sistema de variedad esté armado. El dinamitero nunca llegó a salir:
+> depende del vagón de armas. Son llaves, no amputaciones — la misma decisión
+> que ya se tomó con "Alta vigilancia".
+
 ### Las puertas
 
 Cada vagón tiene **dos puertas, en su propio borde** — no una compartida con
@@ -538,7 +847,9 @@ entrada desde la cola (por donde también se escapa).
 - **Cerrada, tapa la vista pero no las balas.** Es madera: alguien del otro
   lado no te ve, pero te puede tirar igual, a ciegas — no apunta, así que
   dispara en ráfagas más largas que un tiro normal. Y vos podés contestarle
-  del mismo modo.
+  del mismo modo. Pero **sólo le tiran a la puerta que tienen al lado**: nadie
+  vacía el cargador hacia un punto al que su propia bala no llega, ni con un
+  compañero metido en la línea.
 - **Se cierra sola** si nadie queda parado en el marco. Da un respiro cada
   vez que cruzás una puerta, no sólo la primera vez.
 - **Tiene vida.** Unos pocos tiros la rompen, y rota queda abierta para
@@ -574,15 +885,21 @@ movimiento, con la locomotora allá adelante. Ahí se decide todo:
 Medido con un piloto de prueba que esquiva bien, 5 corridas por fila, con el
 **Criollo** (el caballo con el que empezás):
 
-| Dónde saltás | Galope | Reloj de la persecución que sobra |
-|---|---|---|
-| La cola | ~12 s (**pura persecución**) | ~28 s |
-| Enganche 1-2 | — | ~19 s |
-| Enganche 2-3 (el máximo del Criollo) | — | **~6 s** |
+| Dónde saltás | Reloj de la persecución que sobra |
+|---|---|
+| La cola | ~34 s |
+| Enganche 1-2 | ~19 s |
+| Enganche 2-3 (el máximo del Criollo) | **~11 s** |
 
 Con el **Mustang** (más rápido, pero con menos fondo) el máximo es el
-enganche 1-2, y llega ahí con ~27 s de sobra. Cada caballo tiene su propio
+enganche 1-2, y llega ahí con ~31 s de sobra. Cada caballo tiene su propio
 techo — ver "El caballo tiene tres números", más arriba.
+
+> El reloj de la aproximación son **45 segundos**. Ese número se mueve cada vez
+> que cambia el largo de la persecución, y siempre con el mismo criterio: lo que
+> tiene que quedar igual es **lo que te sobra después de alcanzar la cola**,
+> porque ahí es donde vive la decisión de hasta qué enganche adelantarte — y ésa
+> ya está jugada y afinada.
 
 **La tensión del carril:** lejos del tren nadie te ve, pero **para saltar hay que
 arrimarse**, y arrimarse es justo donde te miran. Cuanto más tardes en acertar el
@@ -645,15 +962,44 @@ pregunta, porque la respuesta es siempre "todo".
   corriendo lo alcanzás (vos vas a 78 y ellos a 66) y frena en seco cuando le
   apuntás. Que la alarma suene temprano ya no significa perder esa plata para
   siempre: significa que sale más cara, en tiempo.
-- La caja fuerte tarda **6,5 segundos**, **hace ruido** y **no sabés cuánto
-  tiene hasta abrirla**: entre $150 y $600. A veces es el golpe de tu vida y a
-  veces te arriesgaste al pedo. Es una apuesta, no una cuenta — y son seis
-  segundos y medio quieto, de espaldas, en un vagón que ya te oyó. El blindado
+- La caja fuerte tarda **8 segundos**, **hace ruido** y **no sabés cuánto
+  tiene hasta abrirla**: entre $150 y $600. A veces es una buena tarde y a
+  veces te arriesgaste al pedo. Es una apuesta, no una cuenta — y son ocho
+  segundos quieto, de espaldas, en un vagón que ya te oyó. El blindado
   tiene **dos**.
+
+  **Con el arma en la mano no se abre.** Disparar o recargar interrumpe el
+  forcejeo: hay que resolver el vagón primero y robar después. Pero **lo que
+  llevabas no se pierde** — volvés y seguís desde donde ibas, así que los
+  ocho segundos se pueden pagar en cuotas.
+
+  **Y si no querés esperar, la reventás con dinamita.** Queda abierta con el
+  botín a la vista y levantarlo cuesta lo que una bolsa. No es gratis: te
+  come uno de tus dos cartuchos y la alarma suena sí o sí. Una caja reventada
+  se ve distinta de una cerrada, para que sepas de un vistazo cuál te falta.
+- **Y de vez en cuando, una caja fuerte es el golpe de tu vida de verdad.**
+  Una de cada veinte trae mucho más: entre $2.500 y $4.000, ocho o nueve veces
+  lo normal. Nada avisa cuál — se ve exactamente igual a cualquier otra hasta
+  el segundo en que la abrís.
 - **Si escapás sin que suene la alarma, el botín vale el doble.**
 - Para escapar hay que llegar a donde dejaste el caballo y mantener `E`.
 - **No hay otra salida.** No podés tirarte del tren, y el caballo está en un
-  solo lugar. Si te matan o se acaba el tiempo, te capturan y perdés todo.
+  solo lugar. Si te matan o se acaba el tiempo, te capturan — y ahí importa
+  DÓNDE estabas.
+
+**Morir cerca del caballo no es lo mismo que morir lejos.** Si te agarran a
+metros de la salida, te quedás con la mitad de lo que habías juntado — casi
+lo lográs, y se nota en el bolsillo. Si te agarran en la otra punta del tren,
+apenas un 10%: seguís perdiendo casi todo, pero nunca absolutamente todo. En
+el medio, escala según qué tan lejos estabas de verdad.
+
+**Y encadenar asaltos limpios paga cada vez más.** Cada uno seguido —sin que
+la alarma sonara, escapando de verdad— suma un bonus extra por encima del
+doble de siempre: +8% más por cada uno de la racha, hasta un techo de +150%.
+El premio se siente en el mismo asalto que lo extendés, no en el siguiente. Y
+se corta con **cualquier cosa que no sea un escape limpio** — te agarraron, o
+escapaste pero ya te habían oído — así que sostenerla de verdad da miedo
+perderla: en la pantalla de resultados, si la cortás, te dice cuánto llevabas.
 
 ### La ley cabalgando afuera
 
@@ -661,11 +1007,11 @@ Con la alarma sonando, a los **25 segundos** aparecen **los dos primeros
 jinetes de la ley juntos**, uno de cada lado. Tardan: la ley no está pegada
 al tren, tiene que llegar. Cuando llegan, tiran seguido — mal, pero seguido.
 
-**Cuántos llegan como máximo depende de tu recompensa** (`gameState.bounty`,
+**Cuántos llegan garantizados depende de tu recompensa** (`gameState.bounty`,
 la que ya traías al subir a este tren, no lo que hagas durante el asalto). Si
 da para más de dos, los que sobran llegan de a uno, cada 15 segundos:
 
-| Recompensa al subir | Jinetes como máximo |
+| Recompensa al subir | Jinetes garantizados |
 |---|---|
 | 0 | 2 (uno por lado — el piso, igual que siempre) |
 | 300+ | 3 |
@@ -679,7 +1025,19 @@ dos van por el mismo lado, se reparten franjas DISTINTAS a propósito, para
 que se lean como dos amenazas y no una sola detrás de la otra.
 
 El ritmo (25 s la tanda de 2, cada 15 s los siguientes) es el mismo para
-todos: lo único que cambia con la recompensa es cuántos, no qué tan rápido.
+todos hasta llegar a ese piso: lo que cambia con la recompensa es cuántos
+llegan garantizados, no qué tan rápido. **Pero ninguno de los dos es un
+techo real** — pasado el piso, siguen llegando cada vez más seguido mientras
+la alarma no se apague, la misma escalada que la gente de la locomotora.
+
+**Y esos de más no vienen todos detrás tuyo.** Los garantizados persiguen
+como siempre; los que llegan por la escalada nacen **emboscadores**: reclaman
+una ventana bien adelante —hacia la locomotora— y se quedan ahí, quietos,
+esperando. No los ves venir corriendo: los encontrás ya apostados cuando
+llegás a esa parte del tren. En cuanto los cruzás, dejan de esperar y pasan a
+perseguir como cualquier otro. Es la diferencia entre que la ley te rodee
+(todos atrás) y que la ley te espere (algunos adelante, sin que sepas
+exactamente dónde hasta que estás ahí).
 
 Te disparan **por las ventanillas**. Y ahí está lo que hace interesante a todo
 el sistema:
@@ -831,19 +1189,34 @@ guardia haya tenido mala puntería.
 Ahí está la decisión: escaparle es lo seguro, y enfrentarlo es lo único que te
 aleja de la horca sin entregarte.
 
-### El Sheriff: el que no te dispara ni una vez
+### El Sheriff: el que nunca te viene a buscar
 
 **Entre $600 y $899 de recompensa, hay chance de que viaje un sheriff en tu
 próximo tren estándar.** No es seguro: es una apuesta cada vez que subís.
 
-Es el opuesto exacto del cazarrecompensas. Aquél viene por vos; éste **no pelea
-con vos en absoluto**. Aguanta lo mismo que cualquier guardia, y apenas suena la
-alarma **sale caminando hacia la locomotora y no dispara nunca más**.
+Es el opuesto exacto del cazarrecompensas. Aquél viene por vos; éste **no da un
+solo paso hacia vos**. Aguanta **tres balazos** —entre un guardia común y uno
+blindado— y apenas suena la alarma **sale caminando hacia la locomotora**.
+
+**Se defiende, pero no te persigue.** Si lo encarás se planta, se cubre y te
+dispara como cualquier guardia; en cuanto le cortás la vista, retoma la
+caminata. O sea que esconderte de él no te da un respiro: te lo aleja.
+
+**Y no se repliega hasta la locomotora: se repliega hasta donde puede.** Si el
+vagón blindado le queda en el camino, esa puerta de chapa lo frena a él igual
+que a vos —la única llave sigue siendo la dinamita— así que termina plantado de
+espaldas a la chapa, en el último metro de tren que le queda, esperándote.
 
 Lo difícil no es matarlo. Es **llegar**:
 
 - **Se lleva tres guardias con él.** Donde va, van. Y se suman a los que ya
   viven en cada vagón que cruzás persiguiéndolo.
+- **Esos tres no te cargan: te esperan.** Pelean parapetados alrededor de él,
+  se asoman **por lados opuestos** para cubrir dos ángulos en vez de uno, y
+  **se turnan**: nunca están los cuatro expuestos a la vez. No los vas a poder
+  sacar de su cobertura haciéndolos venir. Matando al Sheriff dejan de ser
+  escolta y salen a buscarte como guardias normales — o sea que ganar tiene su
+  propio precio.
 - **Los guardias de su vagón pelean mejor** — apuntan mejor, reaccionan antes y
   te descubren más rápido. El aura se mueve con él, así que el peor vagón del
   tren es siempre donde esté parado.
@@ -866,9 +1239,13 @@ Pero **no corre igual para los dos lados**:
 - **Los de atrás vienen.** El vagón donde sonó, y los de atrás que alcance el
   ruido, **se movilizan y van caminando hasta vos**. Son los que te cortan el
   camino al caballo.
-- **Los de adelante se despiertan, pero no se mueven.** Oyeron lo mismo, así que
-  no siguen silbando tranquilos: se quedan en su vagón, alertas, esperándote.
-  No te persiguen — te esperan.
+- **Los de adelante no vienen a buscarte, pero tampoco se quedan quietos donde
+  estaban.** Van directo a la puerta de SU vagón, listos de verdad — no
+  alertas nomás, en combate — y ahí se plantan. No cruzan a buscarte, pero
+  cuando empujes esa puerta no te va a recibir nadie dormido: te va a estar
+  esperando alguien que ya tiene el arma lista. (Los guardias del blindado
+  quedan afuera de esto — ya tienen su propia regla, "nunca abandonan el
+  puesto", y con eso alcanza.)
 
 > **El ruido no te trae enemigos encima: te los pone entre vos y el caballo.**
 
@@ -900,6 +1277,14 @@ el tren no se entera solo. La presión la manejás vos.
 
 Lo único que entra de afuera viene de la **locomotora**, por la punta de
 adelante. Nunca por atrás: atrás está el aire libre y tu caballo.
+
+**Y cuanto más te quedás, más seguido vienen.** Los primeros cuatro llegan
+cada 16 segundos, pero de ahí en más el intervalo se acorta con cada uno: si
+la alarma sigue sonando pasado el minuto y medio, están entrando casi cada 6
+segundos — el mismo ritmo con el que arrancó, ahora sin techo. Quedarte a
+robar un vagón de más no es gratis nunca, pero quedarte MUCHO de más se pone
+literalmente peor con cada segundo, no sólo más caro en reloj. Con los jinetes
+de afuera pasa exactamente lo mismo.
 
 **Saben dónde te vieron, no dónde estás.** Si rompés el contacto y te movés
 callado, van al lugar equivocado. Pero cada tiro tuyo vuelve a delatarte.

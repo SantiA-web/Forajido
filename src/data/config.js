@@ -28,6 +28,53 @@ export const CONFIG = {
     cleanBonus: 1.0,     // +100% del botín si escapás sin que suene la alarma
 
     /**
+     * LA RACHA — cada asalto LIMPIO (escapaste, sin que sonara la alarma)
+     * seguido suma ESTE bonus aparte, arriba del de `cleanBonus`. Se corta
+     * con cualquier otra cosa: te agarraron, o escapaste con la alarma ya
+     * sonando.
+     *
+     * *(pedido de Santi, siguiendo la idea del "efecto casino" — un premio
+     * que crece mientras sostenés algo, y que da miedo perder: "hagamos que
+     * suba un 8% con techo en 150%")*
+     *
+     * A racha 1 (tu primer asalto limpio, sin ningún otro antes) ya suma
+     * +8% — el premio se siente apenas lo extendés, no recién en el próximo.
+     * El techo (150%) se alcanza en la racha 19 (8 × 19 = 152, topado): un
+     * asalto limpio ahí paga el botín ×3,5 entre `cleanBonus` (×2) y esto
+     * (×1,5) — un número grande a propósito, para que sostener una racha
+     * larga se sienta como el verdadero golpe de tu vida.
+     */
+    rachaBonusPorNivel: 0.08,
+    rachaBonusTecho: 1.50,
+
+    /**
+     * EL RESCATE — "casi lo logro" en vez de todo o nada.
+     *
+     * *(último de la lista que Santi dejó ordenada: "un 'casi lo logro' en
+     * vez de todo-o-nada" — hoy que te agarren o mueras te hace perder el
+     * 100% de lo juntado en el asalto, aunque hayas estado a un paso del
+     * caballo)*
+     *
+     * NO ES UNA FRACCIÓN FIJA: escala con qué tan cerca del caballo (el
+     * `exitZone` del tren) estabas en el momento exacto de la captura. Es lo
+     * que hace que el nombre sea literal — morir a metros de la salida es un
+     * CASI de verdad, y se paga distinto que morir en la otra punta del
+     * tren, que es simplemente un fracaso.
+     *
+     * `rescateFraccionMax` (50%) rige a `rescateDistanciaCerca` (200px) o
+     * menos; `rescateFraccionMin` (10%) rige a `rescateDistanciaLejos`
+     * (2500px) o más; en el medio, interpola. Elegidos por Santi sobre una
+     * tabla de tres opciones calculadas contra un botín de $1000: $500 cerca
+     * / $100 lejos con éstos — bastante para que doler menos cuando estuviste
+     * a nada, pero sigue siendo un fracaso real si morís lejos, no un premio
+     * consuelo que borra la apuesta de todo el asalto.
+     */
+    rescateFraccionMax: 0.50,
+    rescateFraccionMin: 0.10,
+    rescateDistanciaCerca: 200,
+    rescateDistanciaLejos: 2500,
+
+    /**
      * Tope de lo que la aproximación a caballo le puede comer al asalto.
      *
      * El tiempo que gastás galopando se descuenta de acá (ver data/horse.js).
@@ -85,7 +132,43 @@ export const CONFIG = {
     speed: 78,           // px por segundo
     sneakSpeed: 40,      // agachado (Ctrl): mitad de velocidad, mitad de sospecha
     coverSpeed: 40,      // pegado a una pared te movés más lento
-    hw: 5, hh: 5,        // media anchura / media altura de la caja de colisión
+
+    /**
+     * 🐛 ERAN 5x5 — UN CUADRADO GORDO, FÁCIL DE ACERTAR SIN QUERER.
+     *
+     * *(Santi, después de medir la mira: "el problema ya no se debe al
+     * círculo, sino a la hitbox de los personajes. Yo haría que los guardias
+     * y yo y las personas en general, sean rectángulos en vez de cuadrados
+     * gordos y muy fácil de disparar")*
+     *
+     * Con 5x5 (10x10 en total), la mira recién arreglada seguía sin importar
+     * en la práctica: a la distancia típica de un tiroteo (60-120px) la
+     * dispersión real del Colt daba un radio de 2 a 4px, MENOR que el propio
+     * cuerpo del guardia — así que apuntar al centro casi garantizaba
+     * pegarle, sin importar qué tan abierto se viera el círculo. El problema
+     * nunca fue sólo la mira: la caja que recibía la bala era demasiado
+     * grande para que la dispersión significara algo.
+     *
+     * POR QUÉ SE ACHICA MÁS EL ALTO (`hh`) QUE EL ANCHO (`hw`), Y NO PAREJO:
+     * los vagones son PASILLOS, mucho más largos que anchos, así que la
+     * inmensa mayoría de los tiros del juego salen casi horizontales (a lo
+     * largo del pasillo). En un tiro horizontal, lo que decide si pasa de
+     * largo o pega es la altura del blanco (`hh`), no su ancho — el ancho
+     * (`hw`) casi no entra en juego salvo en los tiros cruzados de lado a
+     * lado. Por eso el recorte tiene que ser más grande en altura: es la
+     * dimensión que de verdad protege en el 90% de los tiroteos.
+     *
+     * LOS NÚMEROS SON LOS QUE PIDIÓ SANTI: -10% de ancho, -30% de alto.
+     * 5 → 4,5 de ancho; 5 → 3,5 de alto. Sigue siendo una persona reconocible
+     * (9x7), no una regla, y ahora el Colt SUELTO ya falla alguna vez a
+     * distancia típica de combate sin apuntar — que es justo lo que hace que
+     * apuntar (y la mira que lo dibuja) valgan la pena.
+     *
+     * El sprite se dibuja con este mismo tamaño (`drawPlayer`, no un número
+     * aparte): la caja que ves siempre es la caja que te puede matar.
+     */
+    hw: 4.5, hh: 3.5,
+
     health: 4,
     invulnTime: 0.6,     // invulnerabilidad tras recibir un impacto
     knockback: 26,
@@ -95,12 +178,349 @@ export const CONFIG = {
     peekSpeed: 9,        // qué tan rápido se asoma (mayor = más brusco)
     peekShootAt: 0.5,    // hay que estar asomado más de esto para poder disparar
     dynamite: 2,         // cartuchos por asalto (después saldrá del inventario)
+
+    /**
+     * CAMINAR DE COSTADO O DE ESPALDAS, RESPECTO A HACIA DÓNDE APUNTÁS, ES MÁS
+     * LENTO.
+     *
+     * *(idea de Santi: "si el personaje está tocando la D y el arma apunta
+     * hacia enfrente, avanza normalmente. Pero si estuviera tocando la D y
+     * mirando hacia abajo con el puntero, estaría caminando de costado, y ahí
+     * es donde se debería penalizar")*
+     *
+     * HASTA ACÁ CAMINAR RENDÍA IGUAL PARA CUALQUIER LADO: de frente, de costado
+     * o de espaldas a tu propia mira, mismos px/s. Con mouse+WASD eso permite
+     * correr en una dirección mientras apuntás para otra sin pagar nada por
+     * eso — que es cómodo, pero le saca sentido a la idea de "encarar" algo.
+     *
+     * SE MIDE CON UN PRODUCTO PUNTO, no con un ángulo: `moveDirX/Y` (ver
+     * `updateFree`, entities/player.js) ya es un vector UNITARIO hacia dónde
+     * caminás, y `(cos(p.aim), sin(p.aim))` es el vector unitario hacia dónde
+     * apuntás. Su producto punto YA ES el coseno del ángulo entre los dos, sin
+     * necesidad de `atan2` ni de comparar ángulos: 1 = exactamente de frente,
+     * 0 = exactamente de costado, −1 = exactamente de espaldas.
+     *
+     * DOS TRAMOS, no una curva sola: de frente (1) a costado (0) interpola
+     * hacia `direccionCostado`, y de costado (0) a espaldas (−1) interpola
+     * hacia `direccionAtras`. Así los dos números se puede afinar cada uno por
+     * separado — con una sola interpolación de −1 a 1, el de costado saldría
+     * forzado al promedio de los otros dos y no se podría elegir.
+     */
+
+    /**
+     * RENDIMIENTO EXACTAMENTE DE COSTADO (perpendicular a la mira). 0,70 no es
+     * un número inventado para esto: junto con `direccionAtras`, se calculó
+     * contra algo que el juego ya mide en otro lado — cuánto podés correrte
+     * dentro de `enemy.aimTime` (0,30 s), la ventana entre que un guardia
+     * levanta el arma y dispara. De frente cubrís 23px en esa ventana; de
+     * costado, con 0,70, bajás a 16px.
+     */
+    direccionCostado: 0.70,
+
+    /**
+     * RENDIMIENTO EXACTAMENTE DE ESPALDAS (moverte al revés de tu propia
+     * mira). 0,50 REUSA el precio que el juego ya cobra en TRES lugares
+     * distintos (agacharse, apuntar con clic derecho, deslizarse a cubierto):
+     * `sneakSpeed`/`mira.velocidad`/`coverSpeed` son los tres 40 px/s, el 51%
+     * de `speed` (78). No se inventó un precio nuevo — se usó el que el juego
+     * ya tenía escrito para "esto cuesta caro". En la ventana de reacción de
+     * 0,30s de un guardia, retroceder así cubre apenas 12px: casi no alcanza
+     * para salir del marco de una ventana.
+     */
+    direccionAtras: 0.50,
+  },
+
+  /**
+   * LA MIRA — el círculo que reemplazó a la cruz del cursor.
+   *
+   * *(idea de Santi: "el puntero para disparar no debería ser una cruz.
+   * Debería ser un círculo. Y al tocar el clic derecho el círculo se cierra.
+   * Y dependiendo del arma se cierra más o menos. Y al estar con el shift
+   * contra una pared y tocás clic derecho para salir a apuntar, el círculo ya
+   * está cerradito")*
+   *
+   * ANTES NO HABÍA MIRA: la cruz era el cursor del sistema operativo
+   * (`cursor: crosshair` en styles/main.css). O sea que la precisión del arma
+   * —el número más importante del combate después del daño— era completamente
+   * invisible: la sentías fallando, sin saber por qué.
+   *
+   * EL RADIO ES LA DISPERSIÓN DE VERDAD, no un símbolo de ella:
+   * `tan(spread) × distancia al punto donde apuntás`. Por eso el círculo se
+   * abre solo cuando apuntás lejos (que es exactamente lo que le pasa a la
+   * bala) y por eso **el balanceo del tren veloz se ve**: `dispersionExtra` ya
+   * se sumaba al disparo desde que existe el traqueteo, y ahora esa suma tiene
+   * dónde mostrarse. No hubo que inventar una señal nueva para un sistema
+   * viejo: alcanzó con dibujar el número que ya estaba.
+   *
+   * Es la misma regla de siempre — lo que se puede mostrar no se escribe.
+   */
+  mira: {
+    /**
+     * CUÁNTO TARDA EN CERRARSE con el clic derecho apretado, y en abrirse al
+     * soltarlo. Es la mitad del precio de apuntar (la otra es `velocidad`).
+     *
+     * Si apuntar fuera instantáneo y gratis, la respuesta óptima sería
+     * "apuntá siempre" y no habría ninguna decisión: sería un botón que hay
+     * que tener apretado. 0,35 s es un tiro y pico del Colt (0,40 de cadencia)
+     * — lo suficiente para que abrir fuego de inmediato y apuntar primero sean
+     * dos jugadas distintas, y poco para que no se sienta pesado.
+     */
+    tiempoCierre: 0.35,
+
+    /**
+     * A qué velocidad caminás mientras apuntás. Es `player.coverSpeed`/
+     * `sneakSpeed` (40), o sea la misma media velocidad que ya cuesta
+     * agacharse y deslizarse pegado a una pared: el juego ya tiene UN precio
+     * de movimiento y esto no inventa otro.
+     *
+     * Cobra en tiempo y exposición, nunca en vida — la misma familia de
+     * castigo que el barril, la caja fuerte y el salto sucio.
+     */
+    velocidad: 40,
+
+    /**
+     * 🐛 HUBO UN "escala: 4" ACÁ, Y HABÍA QUE SACARLO — ROMPÍA LA PROMESA
+     * CENTRAL DE TODO EL SISTEMA.
+     *
+     * *(Santi, jugando: "si se hace el círculo más grande es para que se
+     * pierda puntería. Ahora mismo eso no pasa: mientras el enemigo esté en
+     * el puntito de adentro, le pega igual, por más que el círculo sea
+     * grande")*
+     *
+     * La causa: medí la legibilidad del círculo con una captura exportada a
+     * 3x (`foto.ps1`) y, sin tener la resolución real delante, concluí que
+     * un cono honesto era ilegible y necesitaba un empujón. Lo que no até es
+     * que **`fitToScreen`
+     * (engine/renderer.js) YA agranda el canvas entero por CSS, en un
+     * múltiplo entero según la pantalla** — medido en esta máquina, ×4. — y
+     * ANTES de que el juego dibuje un solo píxel. El `escala: 4` que agregué
+     * se multiplicaba ENCIMA de eso: el círculo que se veía en pantalla no
+     * era 4 veces más grande que la dispersión real, era **dieciséis**.
+     *
+     * Y esa mentira tiene una consecuencia jugable exacta, que es la que
+     * Santi encontró: la dispersión real del Colt a distancia de combate
+     * (¡60-120px!) es de pocos píxeles — MENOR que el propio cuerpo de un
+     * guardia (10px de diámetro). Apuntando al centro, casi cualquier tiro
+     * cae adentro del guardia sin importar qué tan "grande" se viera el
+     * círculo, porque el círculo mostraba una imprecisión que el arma nunca
+     * tuvo. El Colt siempre fue así de preciso —es su virtud, está escrito en
+     * su ficha desde la fase 1— pero antes de la mira nadie podía verlo y
+     * esperar otra cosa.
+     *
+     * AHORA EL RADIO ES LITERAL, sin ningún multiplicador. La legibilidad la
+     * da la pantalla (el ×4 de `fitToScreen`, o lo que corresponda en cada
+     * monitor), no un maquillaje encima. Un círculo grande vuelve a
+     * significar lo único que le puede dar sentido: que ESTA bala, con ESTE
+     * arma, a ESTA distancia, tiene una chance real de no pegarle a lo que
+     * apuntás.
+     */
+    escala: 1,
+
+    /**
+     * 🐛 EL CÍRCULO YA NO SE PROYECTA AL PUNTO DONDE APUNTÁS — SE MIDE
+     * SIEMPRE A LA MISMA DISTANCIA.
+     *
+     * *(Santi: "cuando el círculo está más cerca tuyo o más lejos, debería
+     * ser del mismo tamaño. El círculo mide una posible dispersión. Por más
+     * de que vos tengás el círculo cerca tuyo, la dispersión sin apuntar
+     * debería ser la misma")*
+     *
+     * HASTA ACÁ EL RADIO ERA `tan(dispersión) × distancia AL PUNTO DONDE
+     * APUNTÁS` — literal: el cono de tiro proyectado exactamente donde iba a
+     * caer la bala. Eso fue a propósito (ver el historial arriba, "el
+     * círculo ES la dispersión, no una figura que la representa") y seguía
+     * siendo cierto para lo que medía: si apuntabas lejos, el círculo se
+     * abría porque a esa distancia la MISMA dispersión angular cubre más
+     * terreno — eso es física, no una mentira.
+     *
+     * PERO ESO SIGNIFICABA QUE EL CÍRCULO CAMBIABA DE TAMAÑO SEGÚN A DÓNDE
+     * SEÑALARAS, y Santi no quiere esa lectura: quiere que el círculo diga
+     * "así de sucia es esta arma, en este estado" — una medida del ARMA, no
+     * del punto exacto que estés mirando en este instante.
+     *
+     * `distanciaReferencia` reemplaza la distancia real por una fija: el radio
+     * se calcula SIEMPRE como si apuntaras a esta distancia, apuntes a donde
+     * apuntes.
+     *
+     * LO QUE NO CAMBIA, Y ES IMPORTANTE: esto es sólo el DIBUJO.
+     * `dispersionActual()` (entities/player.js), que es la que de verdad
+     * decide hacia dónde se desvía la bala en `shoot()`, no lee este número —
+     * el tiro real sigue siendo más fácil de acertar de cerca que de lejos,
+     * exactamente igual que antes y después de este cambio. Tocar
+     * `distanciaReferencia` no mueve ni un número de letalidad ya afinado
+     * (hitbox de los guardias, vida, nada): sólo cambia qué tan grande se VE
+     * el círculo. Es la razón por la que este número es seguro de tocar solo.
+     *
+     * 🐛 SEGUNDA VUELTA · ERA 120, Y ESO HACÍA QUE APUNTAR SE SINTIERA INÚTIL.
+     *
+     * *(Santi, después de medir: "de 10 tiros a 60px, ¿9 van al medio del
+     * círculo?" — y al confirmarlo: "quiero cambiar eso, porque sino es al
+     * pedo que el jugador apunte con clic derecho si siempre la bala va a ir
+     * al medio del círculo. Hagamos que sea 6 de 10 tiros van al medio y 4 a
+     * la orilla")*
+     *
+     * MEDIDO ANTES DE TOCAR NADA: con 120, a la distancia típica de combate
+     * real (60px, la mitad de la referencia) el 91% de los tiros caían en la
+     * mitad interna del círculo — el círculo se veía mucho más grande de lo
+     * que en la práctica ibas a fallar. La causa no era la dispersión (esa
+     * medía uniforme y correcta a 120px, verificado con 4000 tiros) sino que
+     * 120 estaba calibrado para el extremo LEJANO de "distancia típica de
+     * combate (60-120px)", no para donde de verdad pasa la mayoría de los
+     * tiroteos.
+     *
+     * 80 SALIÓ DE PROBAR VARIOS VALORES CONTRA EL PEDIDO EXACTO (60% adentro
+     * de la mitad, a 60px): 70 da 53%, 78 da 59%, **80 da 61%**, 85 da 64%.
+     * Elegido el más cercano a la mitad exacta que pidió Santi. Como el radio
+     * de más arriba en este mismo archivo (120), no es casualidad que caiga
+     * cerca de 60×1,33 ≈ el punto donde `k = distancia/referencia = 0,75`,
+     * que es el mismo `k` que ya daba 60/40 al medir la distancia de 90px
+     * contra el 120 viejo — la proporción es lo único que importa, no el
+     * valor absoluto de ninguno de los dos números.
+     */
+    distanciaReferencia: 80,
+
+    /**
+     * EL RETROCESO — cada disparo te ensucia el próximo, un rato.
+     *
+     * *(idea de Santi: "que al disparar haya un pequeño retroceso, dependiendo
+     * el arma, que agrande el círculo tanto apuntando como sin apuntar. Obvio
+     * que apuntando el retroceso va a ser menor" — y al preguntarle cuánto y
+     * por cuánto tiempo: "que baje un 50%" [del kick] y "0,40s" [de duración])*
+     *
+     * El monto por disparo vive en cada arma (`weapons.js`, campo
+     * `retroceso`: 50% de su propio `spread`) porque es una característica
+     * del arma, como el daño o la cadencia. Acá sólo van los dos números que
+     * SON parejos para todo el catálogo:
+     */
+
+    /**
+     * CUÁNTO TARDA EN APAGARSE SOLO, si no volvés a disparar. 0,40s es
+     * EXACTAMENTE la cadencia del Colt (`fireRate`) — no es casualidad: a su
+     * ritmo normal, el retroceso de un tiro termina de bajar justo cuando
+     * sale el siguiente, así que el Colt disparado con calma nunca lo
+     * acumula. El Smith (0,28s entre tiros) o una ráfaga de pánico sí, porque
+     * no les da tiempo a bajar del todo entre uno y el siguiente.
+     *
+     * La baja es LINEAL y a la velocidad propia del arma equipada
+     * (`w.retroceso / retrocesoDecayTiempo` por segundo, ver `updatePlayer`
+     * en entities/player.js): si se acumularon dos kicks seguidos, tarda el
+     * doble en bajar del todo — no hay un timer que se reinicia por tiro, es
+     * una cantidad que sube y baja.
+     */
+    retrocesoDecayTiempo: 0.40,
+
+    /**
+     * TOPE DURO — no es una decisión de sensación, es una red de seguridad
+     * técnica. Sin esto, vaciar un cargador entero disparando más rápido de
+     * lo que decae (posible con el Smith, o en pánico) podría acumular
+     * retroceso sin límite. 0,12 es unas tres veces el kick del Smith
+     * (0,0425): de sobra para que se sienta "descontrolado" en una ráfaga
+     * larga, sin volverse infinito.
+     */
+    retrocesoMax: 0.12,
+
+    /**
+     * EL PULSO SE PUEDE IR — el círculo deja de ser una garantía.
+     *
+     * *(Santi: "el círculo es literalmente del tamaño del guardia, en
+     * realidad hasta más pequeño. Entonces no importa la dispersión, porque
+     * yo pongo el círculo del arma 'dentro' del guardia y es un tiro
+     * asegurado" — y después, la solución: "¿y si hacemos que la dispersión
+     * de las balas de cualquier arma en realidad pueda salir del círculo? El
+     * círculo es una idea de lo que puede pasar, no una garantía")*
+     *
+     * MEDIDO ANTES DE TOCAR NADA: el Colt apuntado da un círculo de 2,1px a
+     * distancia típica (120px) — la caja de un guardia mide 4,5×3,5. Centrado
+     * en el guardia, ESE círculo entraba entero adentro de la caja: no había
+     * ningún ángulo posible, adentro del rango que el arma podía tirar, que
+     * cayera afuera. Por eso apuntar bien con el Colt era matemáticamente un
+     * tiro seguro, no sólo "muy probable" — el máximo de la dispersión
+     * uniforme (`spread`, engine/rng.js) coincidía exacto con el radio
+     * dibujado, así que el círculo SIEMPRE decía la verdad completa.
+     *
+     * LA IDEA DE SANTI: que diga la verdad la mayoría de las veces, no
+     * todas. `fallaChance` es la probabilidad de que el pulso se vaya de
+     * verdad en un tiro puntual; `fallaMultiplicador`, cuánto se agranda la
+     * dispersión ESE tiro (ver `rng.spreadDeTiro`). El resultado, con el Colt
+     * apuntado a 120px: la mayoría de las veces sigue siendo el mismo
+     * círculo clavado de siempre, pero 15 de cada 100 tiros usan una
+     * dispersión 2,5 veces mayor — bastante para que el guardia a veces
+     * quede afuera, aunque hayas apuntado perfecto y el círculo se viera dentro
+     * suyo. El Colt sigue siendo, por lejos, el arma más precisa del juego
+     * (esto no le tocó un solo número de precisión): lo que cambió es que
+     * "más precisa" dejó de significar "infalible".
+     *
+     * PAREJO PARA TODOS, como el resto de las reglas de este archivo: se
+     * aplica en `shoot()` (jugador), `fire()` (guardias), `soltarBala()` (el
+     * Cazarrecompensas) y el disparo de los jinetes — cualquiera con un arma
+     * de verdad puede tener un tiro que se le va, no sólo vos.
+     *
+     * NO SE DIBUJA NADA QUE LO ANUNCIE, a propósito: si el círculo mostrara
+     * "esto puede fallar 15% de las veces" dejaría de ser una idea del arma
+     * para volver a ser una promesa exacta — la que Santi pidió sacar.
+     */
+    fallaChance: 0.15,
+    fallaMultiplicador: 2.5,
+
+    /**
+     * TOPES DEL DIBUJO, en píxeles de la pantalla interna (384x216).
+     *
+     * `radioMin` es sólo un piso para que el trazo no desaparezca del todo en
+     * los tiros más clavados — a esa distancia el impacto ya es prácticamente
+     * seguro pase lo que pase, así que el piso no miente nada que importe.
+     * `radioMax` frena al Smith suelto apuntando a la otra punta del vagón,
+     * que si no taparía media pantalla.
+     */
+    radioMin: 2,
+    radioMax: 40,
+
+    /**
+     * 🐛 HABÍA UN PUNTO EN EL CENTRO, Y HABÍA QUE SACARLO.
+     *
+     * *(Santi: "no debería existir un puntito dentro del círculo. Y la
+     * dispersión del tiro debería ser dentro del círculo — cierto porcentaje
+     * de que la bala vaya al medio, pero también cierto porcentaje que la
+     * bala vaya a las orillas")*
+     *
+     * La mecánica YA hacía exactamente eso: `rng.spread()` (engine/rng.js) es
+     * una distribución UNIFORME entre −dispersión y +dispersión, no una
+     * campana que favorezca el centro. Medido con 400 tiros por caso: la
+     * desviación real da `spread/√3`, que es justo lo que corresponde a una
+     * uniforme — la bala tiene la misma chance de caer cerca del borde que
+     * cerca del medio. Eso nunca fue el problema.
+     *
+     * EL PROBLEMA ERA EL DIBUJO: un puntito fijo en el centro se lee como "la
+     * bala va a ir ACÁ, el círculo de alrededor es sólo el margen de error" —
+     * la lectura exactamente contraria a la que tiene que tener una
+     * dispersión uniforme, donde el borde importa tanto como el centro. Sacar
+     * el punto y dejar sólo el anillo hace que el círculo entero sea la
+     * respuesta, no una decoración alrededor de un centro con privilegio.
+     */
+
+    color: '#f2e4c9',
+    colorApuntando: '#fff6d0',
+    /**
+     * ROJO CUANDO NO PODÉS DISPARAR — escondido detrás de la cobertura sin
+     * asomarte, recargando, o tumbado. El círculo ya está en el lugar donde
+     * mirás, así que es el mejor sitio del juego para decir "ahora no".
+     */
+    colorBloqueado: '#c86a52',
+    alpha: 0.75,
   },
 
   enemy: {
     speed: 46,
     patrolSpeed: 24,
-    hw: 5, hh: 5,
+
+    /**
+     * Mismo recorte que el jugador y por el mismo motivo — ver la nota
+     * completa en CONFIG.player.hw/hh. Vale para todo guardia común, incluido
+     * el Sheriff y su escolta (nacen con `createEnemy`, no tienen tamaño
+     * propio). El Cazarrecompensas SÍ tiene el suyo (entities/boss.js, 6x6):
+     * es un jefe con su propia vida y su propia pelea, afinada aparte, y no
+     * entra en este recorte.
+     */
+    hw: 4.5, hh: 3.5,
 
     // La vida NO está acá: depende del tipo de guardia y de qué tan escoltado
     // viaja el tren. Está en data/guards.js, con tope 4.
@@ -182,7 +602,332 @@ export const CONFIG = {
     peekSteps: [5, 8, 11],
     loseTargetTime: 9.0,    // cuánto te sigue buscando después de perderte
 
-    // --- Rutas (para cruzar de un vagón a otro) ---
+    /**
+     * EL PÁNICO — tercera versión. Ya no es "está cerca": es "lo vi, está
+     * expuesto, y viene derecho hacia mí". Historia completa en
+     * NOTAS-DISENO.md; acá el resumen de la versión que quedó.
+     *
+     * *(Santi, la definición final: "si un guardia ve al jugador sin
+     * cobertura y yendo en dirección hacia él, su prioridad será disparar una
+     * ráfaga de cinco balas a quemarropa. Si el guardia está sin cobertura,
+     * disparará la ráfaga mientras se mueve a una. Si el guardia ya está
+     * contra una cobertura, sólo hará la ráfaga")*
+     *
+     * TRES CONDICIONES, LAS TRES A LA VEZ (ver `doCombat` en systems/ai.js):
+     *  1. `engaged` — el guardia te ve de verdad, ahora, no "te vio hace rato".
+     *  2. `!isHidden(player)` — estás expuesto. Si estás tapado y sin
+     *     asomarte, esto no aplica: seguís siendo invisible como siempre.
+     *  3. Venís CAMINANDO hacia él — no apuntando hacia él, CAMINANDO. Con
+     *     mouse+WASD se puede apuntar para un lado y correr para otro, así
+     *     que el gesto de "cargar" se lee del movimiento (`player.moveDirX/Y`,
+     *     ver entities/player.js), no de la mira. `panicoCoseno` es el coseno
+     *     del cono que cuenta como "hacia él": 0,3 es un primer número, no
+     *     medido — un cono bastante abierto (±72°) para no exigir un beeline
+     *     perfecto. Si en la práctica dispara con el jugador caminando de
+     *     costado, hay que subirlo.
+     *
+     * SIN TOPE DE DISTANCIA A PROPÓSITO. La versión anterior exigía estar a
+     * menos de 42px, y por eso nunca disparaba: para cuando el jugador
+     * cruzaba esa línea, muchas veces ya lo había matado. Ahora la prioridad
+     * se activa apenas se cumplen las tres condiciones, y se vuelve
+     * "a quemarropa" sola, porque el jugador sigue acercándose mientras el
+     * guardia sigue disparando.
+     *
+     * LA RESPUESTA DEPENDE DE SI EL GUARDIA YA TIENE DÓNDE ESCONDERSE:
+     *  - Sin cobertura (todavía buscándola o yendo hacia ella): dispara
+     *    MIENTRAS camina — no abandona el plan, lo hace a la vez.
+     *  - Ya en cobertura: sólo dispara. Nada de esconderse entre ráfaga y
+     *    ráfaga (`coverHoldMin/Max` no aplica), nada de calma que fingir.
+     *
+     * LO QUE NO CAMBIA: el aviso antes de disparar (`aimTime`) sigue siendo
+     * el mismo. El pánico le saca la calma, no el telegrafiado — ningún
+     * peligro de este juego dispara sin que el cuerpo lo anuncie primero.
+     */
+    panicoCoseno: 0.3,
+    panicoBurstSize: 5,
+    panicoSpreadExtra: 0.08,
+
+    /**
+     * EL REPLIEGUE DEL HERIDO — un guardia al que le queda un tiro de vida, con
+     * un compañero cerca, se saca del medio mientras el otro sostiene.
+     *
+     * *(idea de Santi, de la misma conversación que dio la ráfaga de pánico:
+     * "que un guardia con poca vida y un compañero cerca se repliegue mientras
+     * el otro lo cubre")*
+     *
+     * ES LA SEGUNDA DE LAS TRES CONDUCTAS de esa conversación (la ráfaga de
+     * pánico ya está; rendirse de rodillas sigue sin construir). Las tres
+     * apuntan al mismo problema: *"tengo que pelear contra una situación
+     * generada por personas y no contra muñecos"*. Hasta acá un guardia peleaba
+     * exactamente igual con la vida llena que con el último punto, solo o
+     * acompañado.
+     *
+     * REUSA CASI TODO LO QUE YA EXISTÍA, como estaba anotado en NOTAS-DISENO:
+     *  - La detección del golpe es la misma que la del Cazarrecompensas
+     *    (`reaccionarAlGolpe`, systems/boss.js): comparar la vida contra el
+     *    cuadro anterior en vez de engancharse a `damageEnemy`. Así funciona
+     *    igual venga el golpe de una bala, del cuchillo o de una dinamita, sin
+     *    tocar una línea de combat.js, melee.js ni explosives.js.
+     *  - El que cubre usa `defensivo`, la misma marca que ya llevan los tres
+     *    guardias del Sheriff: no avanza, pelea desde donde está.
+     *  - El que se retira camina SIN DISPARAR, igual que `reagruparse`
+     *    (systems/sheriff.js) — mientras se va está expuesto, y ésa es tu
+     *    ventana para castigarlo. Todo lo que hace un enemigo en este juego
+     *    tiene un momento en que se le puede pegar.
+     *
+     * PASA UNA SOLA VEZ POR GUARDIA (`yaSeReplego`). Sin ese tope, un guardia
+     * con 1 de vida al que rozás dos veces se pasaría el asalto entrando y
+     * saliendo del repliegue, y eso ya no se lee como miedo: se lee como una IA
+     * en un bucle.
+     */
+
+    /**
+     * CON CUÁNTA VIDA SE QUIEBRA. 1 = el último golpe posible, sea cual sea su
+     * tipo: un guardia común (2) se repliega tras el primer balazo, uno blindado
+     * (3 o 4) tras el segundo o el tercero. Se eligió esto por sobre "la mitad
+     * de su vida máxima" porque es lo único que se lee igual para todos: **un
+     * tiro más y se muere**, y eso el jugador ya lo sabe sin ninguna barra de
+     * vida en pantalla.
+     */
+    repliegueVidaUmbral: 1,
+
+    /**
+     * QUÉ TAN CERCA TIENE QUE ESTAR EL COMPAÑERO. 90px, el mismo número que la
+     * `CORREA` de la escolta del Sheriff (systems/sheriff.js) y por el mismo
+     * motivo: es la distancia a la que dos guardias siguen siendo un grupo y no
+     * dos tipos sueltos que casualmente están en el mismo vagón.
+     *
+     * SIN COMPAÑERO NO SE REPLIEGA, Y ÉSA ES LA REGLA CENTRAL. Un guardia solo,
+     * herido y acorralado no se va caminando: ése es exactamente el caso que la
+     * otra idea pendiente (rendirse de rodillas) va a resolver algún día. Acá el
+     * repliegue es una maniobra de a dos, no una huida.
+     */
+    repliegueRadioCompanero: 90,
+
+    /**
+     * HASTA DÓNDE SE ALEJA antes de volver a pelear normal. 110px no es un
+     * número redondo: está justo por debajo de `spreadFarDistance` (130), o sea
+     * el punto donde la puntería de un guardia ya es la peor posible. Se retira
+     * hasta dejar de estar en la distancia donde se muere rápido, y ni un metro
+     * más — no está escapando del tren, se está sacando del medio.
+     *
+     * Se mide contra el JUGADOR y no contra el punto de partida, así que si lo
+     * seguís, sigue retrocediendo. El terreno lo ganás vos.
+     */
+    repliegueDistancia: 110,
+
+    /**
+     * CUÁNTO SOSTIENE EL QUE CUBRE. 3 segundos salen de una cuenta, no de una
+     * sensación: 110px a `speed` (46 px/s) son 2,4 s de caminata, más el medio
+     * segundo que tarda en arrancar. Es lo que de verdad dura la maniobra; ni
+     * uno más, para que el que cubrió vuelva enseguida a ser un guardia normal
+     * que te puede venir a buscar.
+     */
+    repliegueCubrirTiempo: 3.0,
+
+    /**
+     * EL GUARDIA SOLO, ACORRALADO, SE RINDE — en vez de pelear hasta morir.
+     *
+     * *(idea pendiente desde la conversación del pánico y el repliegue: "un
+     * guardia solo, sin salida, a veces se rinde de rodillas". Era la tercera
+     * de las tres conductas — la ráfaga de pánico y el repliegue del herido ya
+     * estaban. Retomada para engancharla con `honor`, que hasta ahora no tenía
+     * nada que lo moviera)*
+     *
+     * SE JUEGA EN EL MISMO LUGAR QUE EL REPLIEGUE (`considerarRepliegue`,
+     * systems/ai.js) y por el mismo motivo lo comparte: las dos son la
+     * respuesta de un guardia a "me quedan un tiro de vida, y alguien me está
+     * cazando". LA DIFERENCIA ES `buscarCompanero`. Si encuentra uno, se
+     * repliega (ya construido). **Si está solo, no tiene con quién retirarse —
+     * y ahí, en vez de plantarse a morir como un muñeco, tira el arma.**
+     *
+     * NO ES SEGURO: es una tirada. `rendicionChanceBase` es la chance con
+     * `honor` en cero (ni temido ni respetado); `rendicionPorHonor` la mueve
+     * por cada punto de `gameState.honor` — para arriba si sos respetado, para
+     * abajo (con piso) si sos temido. Un forajido temido de verdad casi no ve
+     * rendiciones: los guardias ya saben que los vas a matar igual, así que no
+     * tienen nada que ganar entregándose. Uno respetado ve bastantes más.
+     *
+     * SE JUEGA UNA SOLA VEZ POR GUARDIA (`yaConsideroRendirse`, en
+     * entities/enemy.js) — igual que el repliegue: si perdió la tirada, sigue
+     * peleando normal y no se le vuelve a preguntar cada cuadro.
+     *
+     * 🐛 BAJADA DE 0,25 A 0,15, Y AGREGADO `rendicionSoloMinimo` — Santi,
+     * jugándolo: "el guardia que pide piedad pasa demasiado seguido. Cuando
+     * está él y otro guardia en el mismo vagón, no importa que uno esté en
+     * una punta y otro en la otra, NO PUEDE PEDIR PIEDAD."
+     *
+     * MEDIDO ANTES DE TOCAR NADA: dos guardias del mismo vagón, arrancando a
+     * 288px (puntas opuestas), convergen a 63px en 6 segundos — SIEMPRE,
+     * porque los dos se alertan y vienen a buscarte casi al instante. Para
+     * cuando alguno baja al umbral de vida, ya están bien adentro de
+     * `repliegueRadioCompanero` (90px). Por eso "una punta y la otra" no
+     * cambiaba nada: para el momento que importa, la posición inicial ya no
+     * existe. Y con ~11 guardias en 4-6 vagones, el ÚLTIMO de cada bolsón de
+     * 2+ siempre termina solo tarde o temprano — eso es lo que se sentía
+     * "demasiado seguido": no un guardia particular tirando la moneda
+     * mucho, sino que casi todo vagón termina en ese momento.
+     *
+     * LA CHANCE BAJA (0,25 → 0,15) responde a la frecuencia. Y
+     * `rendicionSoloMinimo` responde a la otra mitad del problema: antes se
+     * tiraba la moneda en el mismo cuadro en que quedaba solo (su compañero
+     * podía morir un instante antes). Ahora tiene que llevar
+     * `rendicionSoloMinimo` segundos SEGUIDOS sin compañero antes de
+     * considerarlo — si en el medio aparece uno (o revive la cuenta porque
+     * el que lo cubría todavía no murió), el timer se corta. No cambia CÓMO
+     * se mide "solo" (sigue siendo `buscarCompanero`, tiempo real): cambia
+     * que ahora tiene que sostenerse, no ser un instante.
+     */
+    rendicionChanceBase: 0.15,
+    rendicionPorHonor: 0.0025,
+    rendicionChanceMin: 0.03,
+    rendicionChanceMax: 0.75,
+    rendicionSoloMinimo: 1.5,
+
+    /**
+     * LA TRAICIÓN — un rendido puede pararse y dispararte por la espalda.
+     *
+     * *(pedido de Santi, jugando la rendición: "quiero implementar que puede
+     * haber una cierta probabilidad de que el guardia se levante y te dispare
+     * por la espalda. Debería como irse poniendo de pie, para que si el
+     * jugador esté atento le de tiempo para reaccionar. La probabilidad
+     * debería incrementar con la recompensa")*
+     *
+     * ERA LA IDEA ORIGINAL DE LA RENDICIÓN, dejada afuera a propósito la vez
+     * pasada ("con la posibilidad de traición, avisada con el cuerpo" — ver
+     * NOTAS-DISENO.md) para no construir las dos cosas de una. Ahora se
+     * retoma.
+     *
+     * SE RE-CHEQUEA CADA `traicionCheckCada` SEGUNDOS, no una sola vez al
+     * rendirse (decidido con Santi): cuanto más lo dejás vivo cerca tuyo sin
+     * resolverlo, más chances tuvo de intentarlo — la misma idea de "el
+     * tiempo cuesta" que ya sostiene la caja fuerte, la dinamita y el galope.
+     * Volver rápido a rematarlo, o alejarte de verdad, corta el riesgo.
+     *
+     * SÓLO SI TE ALEJASTE (`traicionRadioMinimo`): "por la espalda" necesita
+     * que se la hayas dado de verdad, no que sigas parado mirándolo — un
+     * rendido no se anima a nada mientras lo tenés encañonado.
+     *
+     * LA CHANCE LA MUEVE `gameState.bounty` (cuánto pagan por tu cabeza), NO
+     * `honor` — son preguntas distintas: `honor` decidió si se arrodilló;
+     * `bounty` decide si, ya de rodillas, se anima a jugársela. Con
+     * `bounty` en 0, casi nunca; cerca de `prision.umbralHorca` (1200, el
+     * techo real de recompensa que se juega), hasta ~40%.
+     */
+    traicionCheckCada: 3.0,
+    traicionRadioMinimo: 50,
+    traicionChanceBase: 0.05,
+    traicionPorBounty: 0.0003,
+    traicionChanceMin: 0.02,
+    traicionChanceMax: 0.40,
+
+    /**
+     * CUÁNTO TARDA EN PARARSE DEL TODO. Es el tiempo de reacción real: si lo
+     * atacás en cualquier momento mientras esto corre (mismo gesto de
+     * rematar de siempre), lo cortás ahí. 1,1s — más que el `aimTime` de un
+     * guardia normal (0,30s, ya apuntando) porque acá el aviso ES la única
+     * seña: no hay brazo que se levanta aparte, el cuerpo entero parándose
+     * tiene que alcanzar para leerse y reaccionar.
+     */
+    traicionDuracion: 1.1,
+
+    /**
+     * NINGÚN GUARDIA ENTRA SOLO AL VAGÓN DONDE ESTÁS.
+     *
+     * *(decidido con Santi después de medir por qué el repliegue del herido no
+     * se veía nunca jugando)*
+     *
+     * EL PROBLEMA, MEDIDO, Y ES MÁS GRANDE QUE UNA CONDUCTA SUELTA: muestreando
+     * 64 segundos de tiroteo real, **258 de 258 muestras eran de un guardia
+     * peleando SOLO**. Nunca dos a la vez. El combate de Forajido era, en la
+     * práctica, una sucesión de duelos 1 contra 1 — y contra un duelo no hay
+     * ninguna conducta de grupo que pueda aparecer.
+     *
+     * Y EL TREN NO TENÍA LA CULPA: con el jugador plantado, la alarma sonando y
+     * sin disparar un tiro, sí se juntan (hasta 4 en el veloz). Lo que rompía
+     * los grupos era la velocidad a la que el jugador mata: dos tiros de Colt
+     * son 0,42 s, así que cada guardia moría antes de que llegara el siguiente.
+     * Medido, las llegadas se parten en dos poblaciones: los del vagón propio o
+     * el de al lado llegan con 0-0,5 s de diferencia, y los de más lejos gotean
+     * con huecos de 2,7 a 14,3 s.
+     *
+     * LA REGLA NUEVA no toca CUÁNTOS guardias hay ni CUÁNTA vida tienen — sólo
+     * CUÁNDO entran. Por eso conserva el balance medido de la fase 2 (los
+     * tiempos de ida y vuelta, la vida gastada por vagón): lo único que cambia
+     * es que te regala unos segundos antes de un encuentro más duro.
+     *
+     * Y NO ES UNA CONDUCTA NUEVA: un guardia esperando parapetado en su vagón
+     * es exactamente lo que ya hacen los de ADELANTE desde que existe la alarma
+     * (`alertaEnGuardia`, systems/ai.js) — "se despierta, no se mueve". Lo
+     * único que se agrega es un motivo más para hacerlo, y un reloj.
+     */
+
+    /**
+     * CUÁNTO ESPERA ANTES DE ENTRAR SOLO IGUAL.
+     *
+     * Elegido por Santi sobre los 13 huecos de llegada medidos: con 4 s se
+     * agrupan **7 de 13** (54%). Espera lo que tarda un compañero del vagón de
+     * al lado, pero no lo que tarda uno de tres vagones — y si nadie llega,
+     * entra igual, así que el jugador que ya limpió el tren de atrás no queda
+     * esperando a un fantasma que no existe.
+     *
+     * No es un número inventado: es `suspicionMemory` (4,0), el tiempo que este
+     * archivo ya usa para "cuánto aguanta un guardia antes de aflojar".
+     */
+    esperaCompanero: 4.0,
+
+    /**
+     * A QUÉ DISTANCIA CUENTA COMO "VENGO ACOMPAÑADO". 120px, un poco más que el
+     * radio del repliegue (90): para replegarse hace falta tener al otro al
+     * lado, pero para entrar juntos por una puerta alcanza con venir en el
+     * mismo tramo de pasillo.
+     */
+    radioGrupo: 120,
+
+    /**
+     * HASTA DÓNDE LLEGA EL LLAMADO del que no quiere entrar solo
+     * (`llamarCompaneros`). Va aparte de `radioGrupo` a propósito: es la perilla
+     * de DIFICULTAD de todo este sistema, y hay que poder moverla sin tocar la
+     * regla de con quién se considera acompañado.
+     *
+     * Es corto (120px, no los 320 de `shoutRadius`) porque está llamando al de
+     * al lado para cruzar una puerta, no dando la alarma general: si despertara
+     * medio tren, quedarse callado dejaría de servir para nada.
+     *
+     * ⚠️ EN 0 QUEDA APAGADO — el guardia espera igual, pero no llama a nadie.
+     * Es la forma de volver al balance previo sin desarmar el sistema.
+     */
+    radioLlamado: 120,
+
+    /**
+     * ESPERA UNA SOLA VEZ POR GUARDIA (`yaEsperó`). Si no, un guardia que te
+     * persigue por cuatro vagones se plantaría en cada puerta y nunca te
+     * alcanzaría — pasaría de "esperan para entrar juntos" a "no llegan nunca",
+     * que es peor que el problema original.
+     */
+    /**
+     * CUÁNTO AGUANTA SIN PODER DISPARAR EL GUARDIA QUE NO SE CUBRE (hoy, el
+     * Pistolero: `evitaCobertura` en data/guards.js) ANTES DE IR A CUBRIRSE.
+     *
+     * *(Santi, jugándolo: "hay veces que se para en medio del pasillo y
+     * empieza a dispararme. Pero luego se frena [...] Si es un bug
+     * soluciónalo, sino lo es: que se meta detrás de una cobertura")*
+     *
+     * Plantarse en el medio del pasillo lo pone justo donde caminan sus
+     * compañeros para llegar hasta el jugador, así que seguido tiene a uno
+     * en la línea de tiro y `allyInLine` no lo deja disparar. Sin esto se
+     * quedaba clavado ahí, sin disparar y sin moverse: medido, de 2,6 balas
+     * por segundo a 0,2, y 100% del tiempo quieto.
+     *
+     * 0,6 s es bastante más que el `cooldown` de 0,3 que ya se pone solo
+     * cuando hay un compañero en la línea: uno que le cruza por delante
+     * caminando no alcanza para mandarlo a esconderse — tiene que estar
+     * tapado de verdad. Y apenas recupera el tiro suelta la cobertura y
+     * vuelve al pasillo, así que su identidad se pierde sólo mientras no
+     * puede usarla.
+     */
+    descubiertoBloqueoMax: 0.6,
+
     routeDistance: 150,     // más lejos que esto, va con ruta calculada
     routeRefresh: 1.0,      // cada cuánto recalcula la ruta (el blanco se mueve)
 
@@ -230,7 +975,32 @@ export const CONFIG = {
     spookedPatience: 2.0,      // te busca el doble de tiempo antes de aflojar
   },
 
+  /**
+   * CUERPO A CUERPO — lo que es del SISTEMA, no del arma.
+   *
+   * El daño, la velocidad y si el golpe por la espalda mata o noquea salen del
+   * arma equipada (`data/melee.js`). Acá quedan las cosas que no cambian por lo
+   * que lleves en la mano: a qué distancia alcanzás a alguien, con qué arco,
+   * cuánto lo aturde el golpe y cuánto ruido hace cada situación. Un cuchillo y
+   * un hacha no cambian el largo de tu brazo.
+   */
   melee: {
+    /**
+     * CUÁNTO DURA UN DESMAYO (culata por la espalda, ver data/melee.js).
+     *
+     * 25 s es más de la mitad del asalto más corto (el tren veloz, 90 s) y casi
+     * un sexto del estándar (145 s): alcanza de sobra para cruzar el vagón,
+     * abrir lo que haya y salir. O sea que noquear SÍ resuelve el problema — lo
+     * que no hace es resolverlo para siempre, y ésa es toda la diferencia con
+     * el cuchillo.
+     *
+     * No se eligió más largo a propósito: un noqueo de un minuto sería un
+     * degüello con otro nombre, y el cuchillo dejaría de tener sentido. Ni más
+     * corto: si el tipo se levanta antes de que termines de robar el vagón, la
+     * culata no sirve para nada y volvemos a tener una sola arma.
+     */
+    noqueoDuracion: 25,
+
     range: 15,
     arc: 1.15,           // media apertura del golpe (radianes)
     cooldown: 0.5,
@@ -245,6 +1015,15 @@ export const CONFIG = {
 
   passenger: {
     speed: 66,
+
+    /**
+     * Mismo recorte proporcional que el jugador y los guardias (-10% de
+     * ancho, -30% de alto sobre el 4x4 de siempre) — ver CONFIG.player.hw/hh
+     * para el porqué completo. Un pasajero no pelea, pero también recibe
+     * balas perdidas (dinamita, tiroteos cruzados) y merece la misma regla.
+     */
+    hw: 3.6, hh: 2.8,
+
     noticeRadius: 40,      // a esta distancia te ve y entra en pánico
     noticeAngle: 1.2,      // pero solo mirando para adelante: se los puede rodear
     noticeBehind: 16,      // salvo que te le pongas literalmente encima
@@ -307,7 +1086,32 @@ export const CONFIG = {
 
     firstReinforcement: 20,  // segundos tras la alarma hasta el primero de la locomotora
     interval: 16,
+
+    /**
+     * `max` YA NO ES UN TECHO DURO — es el piso garantizado.
+     *
+     * *(pedido de Santi, probando la traición: "quiero probar eso de que a
+     * medida que pasa el tiempo más se intensifica el peligro. Podríamos
+     * hacer que suban guardias... desde la locomotora")*
+     *
+     * ANTES, pasados los primeros 4 (a los 20, 36, 52 y 68 segundos con el
+     * ritmo de siempre), no entraba nadie más aunque te quedaras el resto del
+     * asalto — la escalada se aplanaba justo cuando más debería pesar
+     * quedarse. Ahora, pasado `max`, siguen entrando, pero CADA VEZ MÁS
+     * SEGUIDO: `intervalDecay` le resta segundos al intervalo por cada uno de
+     * más, hasta el piso `intervalMin`. Con los números de abajo: el 5º llega
+     * a los 81s (13s de intervalo), el 8º ya cada 6s — el mismo ritmo que
+     * tenías al principio del asalto, pero ahora sin parar.
+     *
+     * `maxAbsoluto` sigue siendo un techo, pero técnico, no de dificultad:
+     * ningún asalto real llega tan lejos sin que pase algo antes (te agarran,
+     * escapás, o se acaba el reloj) — está para que un asalto colgado de
+     * verdad no genere guardias sin fin.
+     */
     max: 4,
+    intervalMin: 6,
+    intervalDecay: 3,
+    maxAbsoluto: 12,
   },
 
   loot: {
@@ -325,8 +1129,19 @@ export const CONFIG = {
      * No cambia cuánto dan (`data/wagons.js`): sube lo que cuestan. Es la
      * misma idea que sostiene todo el galope — lo caro no es el botín, es el
      * tiempo que te comés yendo a buscarlo.
+     *
+     * 🐛 SUBIÓ DE 6,5 A 8 — *(Santi, jugándolo: "creo que hay una caja que se
+     * abre en 6 segundos, quiero que se cambie a 8 segundos")*. Y ahora las
+     * dos cajas del juego tardan lo mismo: la oculta (data/wagons.js) ya
+     * estaba en 8. Ocho segundos quieto y de espaldas, en un vagón que ya te
+     * oyó — y el blindado tiene DOS, o sea dieciséis segundos de un asalto de
+     * 145.
+     *
+     * Y ahora ese precio se puede pagar en cuotas o esquivar del todo: el
+     * progreso ya no se pierde si te interrumpen (ver `l.progress` en
+     * scenes/raidScene.js) y la dinamita revienta la caja sin esperar nada.
      */
-    strongboxTime: 6.5,
+    strongboxTime: 8,
     radius: 15,          // distancia para poder interactuar
   },
 
@@ -670,6 +1485,69 @@ export const CONFIG = {
   },
 
   /**
+   * EL HONOR (`gameState.honor`) — CÓMO TE VEN, no cuánto te conocen (`fame`)
+   * ni si pagan por tu cabeza (`bounty`). Los tres números contestan preguntas
+   * distintas a propósito (ver la nota en NOTAS-DISENO.md).
+   *
+   * Estaba en el estado desde la fase 1 y nada lo movía nunca. Lo primero que
+   * lo engancha es la rendición (`CONFIG.enemy.rendicionChanceBase` y
+   * compañía, más arriba): un guardia solo y acorralado se arrodilla en vez de
+   * pelear a muerte, y qué hacés con él — o qué hacés SIN que te lo pregunten,
+   * matando a alguien que ya se rindió — es lo que mueve esto.
+   *
+   * NO SON NÚMEROS MEDIDOS TODAVÍA: son el primer valor razonable para
+   * arrancar a jugar y ajustar, la misma forma en que se afinó todo lo demás
+   * de este archivo.
+   */
+  honor: {
+    /** Dejaste ir a un guardia rendido — no lo tocaste, y el asalto terminó. */
+    perdonarRendido: 12,
+
+    /**
+     * NOQUEO LIMPIO: elegiste la culata en vez del filo, por la espalda, a
+     * alguien que nunca te vio venir. La mitad de la idea original que
+     * había quedado afuera cuando se construyó `rendido`/`honor` (ver la
+     * tabla en NOTAS-DISENO.md, sección "El honor").
+     *
+     * Sube POCO a propósito — sólo 3, un cuarto de `perdonarRendido` — porque
+     * es una decisión que tomás ANTES de saber si iba a hacer falta: cada vez
+     * que llevás la culata en vez del cuchillo, ya estás dejando la puerta
+     * abierta a esto. Perdonar a un rendido es una decisión consciente en el
+     * momento; noquear por la espalda es casi un hábito de equipamiento. Si
+     * pesara igual, equiparte la culata sería la jugada dominante para
+     * `honor` y el resto de la tabla dejaría de importar.
+     */
+    noquearLimpio: 3,
+
+    /**
+     * Rematar a alguien que ya se había rendido — te miraba a la cara,
+     * indefenso, y lo matarte igual. El golpe más fuerte de la lista: es
+     * literalmente romper la palabra que el juego te ofreció.
+     */
+    rematarRendido: -20,
+
+    /**
+     * Rematar a alguien que noqueaste vos mismo (culata + filo). Pesa menos
+     * que rematar a un rendido: no te miró a los ojos pidiendo que pares, ni
+     * siquiera sabe que pasó.
+     */
+    rematarNoqueado: -8,
+
+    /**
+     * Por cada pasajero muerto. Reusa `summary.civilians`, el mismo conteo
+     * que ya alimenta `bounty.pesoCivil` — no hace falta un contador aparte.
+     */
+    matarCivil: -15,
+
+    /**
+     * Bonus al escapar sin haber matado a NADIE (ni un guardia, ni un jinete,
+     * ni un civil — `summary.kills === 0`). Noquear no cuenta como matar, así
+     * que un asalto entero resuelto a culatazos y sigilo cae acá.
+     */
+    asaltoSinSangre: 15,
+  },
+
+  /**
    * LA PRISIÓN — lo que pasa cuando te agarran.
    *
    * El juego NUNCA te mata en el tren: te esposan (te cayeron a tiros) o el
@@ -795,6 +1673,32 @@ export const CONFIG = {
   },
 
   colors: {
+    /**
+     * EL SUELO DEL GALOPE — arena de día, oscuro de noche.
+     *
+     * *(Santi: "poné el suelo color arena (como el del campamento) y cuando es
+     * de noche estará oscuro y si es de día estará como el color arena del
+     * campamento")*
+     *
+     * `desiertoDia` NO es un color nuevo: es exactamente `campDesiertoDia`, el
+     * desierto que rodea al campamento de día. Reusarlo en vez de inventar otro
+     * ocre es lo que hace que las dos escenas se lean como el mismo mundo — el
+     * campamento y el galope pasan en el mismo desierto, así que tienen que
+     * tener el mismo suelo. Si algún día se retoca la paleta del campamento,
+     * este también tiene que moverse.
+     *
+     * SON DOS COLORES Y NO UNO CON UN VELO ENCIMA, por el mismo motivo que el
+     * campamento tiene dos paletas propias (ver `campSueloDia` más abajo): la
+     * noche del desierto no es "la arena, pero más oscura". Es tierra sin luz,
+     * con otro tono, no la misma imagen bajada de brillo.
+     *
+     * `outside` (el negro casi puro de antes) queda porque es el color del
+     * VACÍO —lo que se ve por los enganches del tren— y eso no es suelo ni
+     * cambia con la hora.
+     */
+    desiertoDia:   '#8a6f47',
+    desiertoNoche: '#1b1610',
+
     outside:    '#0d0b0c',
     floor:      '#6d4a30',
     floorAlt:   '#7a5436',
@@ -898,6 +1802,25 @@ export const CONFIG = {
     enemySus:   '#d8c058',
     enemyAlert: '#c86a52',
     enemyDead:  '#3d3835',
+    // Rendido: ni el gris de patrulla ni el rojo de combate — un color que no
+    // usa ningún otro estado, para que se lea como lo que es, "ya no pelea".
+    enemyRendido: '#e6ddc4',
+    /**
+     * LA CABEZA DEL GUARDIA — franja de piel entre el ala del sombrero y el
+     * cuerpo (ver `drawEnemy`, entities/enemy.js).
+     *
+     * *(Santi, jugando: "el jugador parece que mata conos en vez de guardias
+     * de ley")* — y tenía razón, aunque no era culpa del recorte de la
+     * hitbox (medido: 1px de diferencia, no alcanza). La causa era vieja: el
+     * ala del sombrero tocaba directo al cuerpo, sin un solo píxel de
+     * transición. Sin cabeza, sin brazos y con el cuerpo pintado del color de
+     * ESTADO (gris/amarillo/rojo, nunca de piel), la silueta entera son dos
+     * bloques apilados — la misma lectura que un cono o un hongo.
+     *
+     * Un color aparte, que no es el de ningún estado ni el del sombrero, es
+     * lo mínimo para que el ojo separe "cabeza" de "sombrero" y de "torso".
+     */
+    enemyPiel:  '#c8a878',
     civilian:   '#b98fa8',
     civilianRun:'#d8a8c0',
     bagLoot:    '#d9b04a',

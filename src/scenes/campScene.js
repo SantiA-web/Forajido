@@ -28,9 +28,11 @@
 
 import { CONFIG } from '../data/config.js';
 import { CAMPAMENTO } from '../data/camp.js';
-import { caballoActual } from '../data/horse.js';
+import { caballoActual, HORSES } from '../data/horse.js';
 import { WEAPONS } from '../data/weapons.js';
+import { MELEE } from '../data/melee.js';
 import { gameState } from '../state/gameState.js';
+import { crearMenu } from '../engine/menu.js';
 import { T } from '../text/es.js';
 
 export function createCampScene(services) {
@@ -38,6 +40,7 @@ export function createCampScene(services) {
   const colors = CONFIG.colors;
 
   let x, y, sentado, mensaje, scroll, avisoLejos;
+  const menu = crearMenu(audio);
 
   function enter(params = {}) {
     hud.hide();
@@ -98,7 +101,9 @@ export function createCampScene(services) {
     switch (o.id) {
       case 'fogata':
         sentado = !sentado;
-        decir(sentado ? T.camp.fogataSentado : T.camp.fogataParado);
+        decir(sentado
+          ? T.camp.fogataSentado(gameState.fame, gameState.honor)
+          : T.camp.fogataParado);
         audio.play('cover');
         break;
 
@@ -115,19 +120,15 @@ export function createCampScene(services) {
         audio.play('cover');
         break;
 
-      case 'cajon': {
-        const arma = WEAPONS[gameState.weapon] || WEAPONS.colt;
-        decir(T.camp.cajon(arma.name, CONFIG.player.dynamite));
-        audio.play('loot');
+      case 'cajon':
+        abrirCajon();
         break;
-      }
 
       case 'poste':
         // [E] lo atiende. Montarlo es [F], y va aparte (ver `update`): es el
         // único objeto del campamento con dos verbos, porque es el único que
         // además de ser una cosa es un VEHÍCULO.
-        decir(T.camp.poste(caballoActual(gameState).name));
-        audio.play('cover');
+        abrirPoste();
         break;
 
       case 'cartel':
@@ -140,9 +141,93 @@ export function createCampScene(services) {
     }
   }
 
+  /**
+   * EQUIPARSE EN EL CAMPAMENTO — el cajón y el poste dejaron de sólo informar.
+   *
+   * *(pedido de Santi: "desde el cajón de armas del campamento el jugador
+   * deberá equiparse como quiera. Y en el poste con el caballo, el caballo que
+   * quiera. El jugador no debería ir hasta el pueblo para equipar lo que
+   * quiere")*
+   *
+   * Hasta acá los dos te decían una frase con lo que llevabas puesto, y cambiar
+   * de arma significaba caminar hasta el pueblo, esperar a que fuera de día y
+   * pagarla de nuevo — porque comprar ERA equipar. Ahora la tienda decide qué
+   * TENÉS (`gameState.owned`) y estos dos objetos, qué llevás hoy.
+   *
+   * EL MENÚ SE REFRESCA SIN CERRARSE (`alElegir` devuelve `true`): cambiás de
+   * revólver y la lista se vuelve a dibujar con la marca movida, así que podés
+   * probar los dos y quedarte con uno sin volver a abrir el cajón. Es la
+   * diferencia entre revolver un cajón y navegar un menú.
+   */
+  function opcionesDe(ranura, catalogo, puesto) {
+    const tenidos = (gameState.owned && gameState.owned[ranura]) || [];
+    return tenidos
+      .filter((id) => catalogo[id])
+      .map((id) => ({
+        id,
+        // La marca de lo que llevás puesto: la misma idea que la rayita de la
+        // tienda, en texto — se ve cuál es el tuyo sin tener que recordarlo.
+        texto: (id === puesto ? '▸ ' : '  ') + catalogo[id].name,
+      }));
+  }
+
+  function abrirCajon() {
+    /**
+     * Las dos ranuras van en UNA sola lista, no en dos menús encadenados: el
+     * cajón es un cajón, y lo que hacés es revolverlo. Un revólver y un cuchillo
+     * conviven ahí adentro sin necesidad de explicar que son dos categorías.
+     */
+    const opciones = [
+      ...opcionesDe('weapon', WEAPONS, gameState.weapon),
+      ...opcionesDe('melee', MELEE, gameState.melee),
+    ];
+    if (opciones.length === 0) { decir(T.camp.cajonVacio); return; }
+
+    menu.abrir(T.camp.cajonTitulo, opciones, (id) => {
+      if (WEAPONS[id]) gameState.weapon = id;
+      else if (MELEE[id]) gameState.melee = id;
+      audio.play('loot');
+      menu.refrescar([
+        ...opcionesDe('weapon', WEAPONS, gameState.weapon),
+        ...opcionesDe('melee', MELEE, gameState.melee),
+      ]);
+      return true;   // sigue abierto: podés probar otra sin reabrir el cajón
+    });
+  }
+
+  function abrirPoste() {
+    /**
+     * ALIMENTARLO SIGUE ESTANDO, y va primero. Era lo único que hacía el poste
+     * con [E] y sacarlo para meter un menú de inventario habría cambiado un
+     * gesto de cuidar al animal por uno de administrar objetos. Ahora es la
+     * primera opción de la lista: lo normal sigue siendo lo más fácil.
+     */
+    const opciones = [
+      { id: '__comer', texto: T.camp.posteComer },
+      ...opcionesDe('horse', HORSES, gameState.horse || 'criollo'),
+    ];
+    menu.abrir(T.camp.posteTitulo, opciones, (id) => {
+      if (id === '__comer') {
+        decir(T.camp.poste(caballoActual(gameState).name));
+        audio.play('cover');
+        return false;   // se cierra: atenderlo es una sola cosa y ya está
+      }
+      gameState.horse = id;
+      audio.play('loot');
+      menu.refrescar([
+        { id: '__comer', texto: T.camp.posteComer },
+        ...opcionesDe('horse', HORSES, gameState.horse),
+      ]);
+      return true;
+    });
+  }
+
   function update(dt) {
     scroll += dt;
     avisoLejos = Math.max(0, avisoLejos - dt);
+
+    // Con el cajón abierto no caminás: tenés las dos manos adentro.
+    if (menu.update(input)) return;
 
     if (mensaje) {
       mensaje.life -= dt;
@@ -217,6 +302,9 @@ export function createCampScene(services) {
     dibujarFogata(r, dia);
     dibujarJugador(r);
     dibujarInterfaz(r);
+    // Encima de todo, pero sin tapar el campamento: seguís parado al lado de
+    // tu fogata mientras elegís.
+    menu.render(r, colors, T.interior.dialogoAyuda);
   }
 
   /**

@@ -130,7 +130,7 @@ function elegirTramo(tramos, x, actual, ocupados) {
   return mejor;
 }
 
-export function spawnRider(world, side) {
+export function spawnRider(world, side, opts = {}) {
   const map = world.map;
   const delMismoLado = world.riders.filter((r) => r.alive && r.side === side).length;
   const slot = delMismoLado % ANCLAS.length;
@@ -145,6 +145,25 @@ export function spawnRider(world, side) {
   // arrancaría nunca.
   rd.lastSeen = { x: world.player.x, y: world.player.y };
   rd.memoria = rd.tipo.suppressMemory;
+
+  /**
+   * EL EMBOSCADOR (ver RIDER_SPAWN.distanciaEmboscada): reclama YA un tramo
+   * bien adelante y nace ahí mismo, no al lado tuyo — si apareciera junto a
+   * vos y después galopara hacia adelante, verías la emboscada armarse y
+   * dejaría de ser una. `seguirAlJugador` no le vuelve a tocar `rd.tramo`
+   * mientras esto siga puesto.
+   */
+  rd.emboscador = !!opts.emboscador;
+  if (rd.emboscador) {
+    const tramos = side < 0 ? ventanasDe(map).arriba : ventanasDe(map).abajo;
+    const ocupados = world.riders
+      .filter((r) => r.alive && r.side === side)
+      .map((r) => r.tramo)
+      .filter(Boolean);
+    const objetivo = world.player.x + RIDER_SPAWN.distanciaEmboscada;
+    rd.tramo = elegirTramo(tramos, objetivo, null, ocupados);
+    rd.x = rd.tramo ? puntoEn(rd.tramo, objetivo) : objetivo;
+  }
 
   world.riders.push(rd);
   world.bus.emit('riderArrived', { x: rd.x, y: rd.y, side });
@@ -233,13 +252,25 @@ function seguirAlJugador(rd, dt, world) {
   const t = rd.tipo;
   const p = world.player;
 
-  const tramos = rd.side < 0 ? ventanasDe(world.map).arriba : ventanasDe(world.map).abajo;
-  const ocupados = world.riders
-    .filter((r) => r !== rd && r.alive && r.side === rd.side)
-    .map((r) => r.tramo)
-    .filter(Boolean);
+  if (rd.emboscador) {
+    /**
+     * SE QUEDA CLAVADO EN EL TRAMO QUE RECLAMÓ AL NACER — no lo vuelve a
+     * elegir cuadro a cuadro, que es lo que lo hace "esperar" en vez de
+     * "perseguir". En cuanto lo alcanzás (`p.x` llegó a su tramo), deja de
+     * ser una emboscada y pasa a perseguir como cualquier otro desde acá en
+     * adelante.
+     */
+    if (rd.tramo && p.x >= rd.tramo.min) rd.emboscador = false;
+  } else {
+    const tramos = rd.side < 0 ? ventanasDe(world.map).arriba : ventanasDe(world.map).abajo;
+    const ocupados = world.riders
+      .filter((r) => r !== rd && r.alive && r.side === rd.side)
+      .map((r) => r.tramo)
+      .filter(Boolean);
 
-  rd.tramo = elegirTramo(tramos, p.x, rd.tramo, ocupados);
+    rd.tramo = elegirTramo(tramos, p.x, rd.tramo, ocupados);
+  }
+
   const centro = rd.tramo ? puntoEn(rd.tramo, p.x) : (p.x + rd.slotDx);
 
   // Un hamacado chico para que no se vean clavados como estacas, sin salirse
@@ -346,7 +377,10 @@ function disparar(rd, world) {
   const dispersion = rd.suprimiendo ? t.suppressSpread : dispersionEfectiva(rd, world);
   rd.cooldown = rd.suprimiendo ? t.suppressCooldown : t.fireCooldown;
 
-  const angulo = rd.aimDir + world.rng.spread(dispersion);
+  // `spreadDeTiro`: a los jinetes también se les puede ir el pulso de vez en
+  // cuando, parejo con todo el resto. Ver CONFIG.mira.fallaChance.
+  const mira = CONFIG.mira;
+  const angulo = rd.aimDir + world.rng.spreadDeTiro(dispersion, mira.fallaChance, mira.fallaMultiplicador);
   world.spawnBullet({
     x: rd.x,
     y: rd.y - rd.side * 4,
@@ -382,7 +416,7 @@ function disparar(rd, world) {
   world.bus.emit('noise', {
     x: destino.x,
     y: destino.y,
-    radius: CONFIG.enemy.hearRadius,
+    radius: world.train ? world.train.hearRadius : CONFIG.enemy.hearRadius,
     deJinete: true,
   });
 }
@@ -425,7 +459,7 @@ export function createRiderWatch({ bus, audio, max = RIDER_SPAWN.maxPorRecompens
     },
 
     update(dt, world) {
-      if (!corriendo || salieron >= max) return;
+      if (!corriendo || salieron >= RIDER_SPAWN.maxAbsoluto) return;
       timer -= dt;
       if (timer > 0) return;
 
@@ -448,15 +482,33 @@ export function createRiderWatch({ bus, audio, max = RIDER_SPAWN.maxPorRecompens
         }
       } else {
         const side = salieron % 2 === 0 ? 1 : -1;
-        spawnRider(world, side);
+        // Más allá del piso que fija la recompensa (`max`): éste ya es de
+        // la escalada, así que nace emboscador en vez de perseguidor (ver
+        // RIDER_SPAWN.distanciaEmboscada).
+        const emboscador = salieron >= max;
+        spawnRider(world, side, { emboscador });
         salieron += 1;
-        bus.emit('riderSpawned', { number: salieron, side });
+        bus.emit('riderSpawned', { number: salieron, side, emboscador });
       }
 
-      timer = RIDER_SPAWN.interval;
+      timer = intervaloDelProximoJinete(salieron, max);
       audio.play('whistle');
     },
 
     reset() { timer = 0; salieron = 0; corriendo = false; },
   };
+}
+
+/**
+ * CADA VEZ MÁS SEGUIDO más allá de `max` (el piso que fija la recompensa) —
+ * mismo mecanismo que `intervaloDelProximoRefuerzo` en systems/alert.js, acá
+ * aplicado a los jinetes de afuera. `salieron` es cuántos ya salieron
+ * (incluido el que acaba de salir).
+ */
+function intervaloDelProximoJinete(salieron, max) {
+  if (salieron < max) return RIDER_SPAWN.interval;
+  return Math.max(
+    RIDER_SPAWN.intervalMin,
+    RIDER_SPAWN.interval - RIDER_SPAWN.intervalDecay * (salieron - max + 1)
+  );
 }

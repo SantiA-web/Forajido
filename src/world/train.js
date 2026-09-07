@@ -22,11 +22,17 @@ import { createPlayer } from '../entities/player.js';
 import { createEnemy } from '../entities/enemy.js';
 import { createPassenger } from '../entities/passenger.js';
 import { createLootable } from '../entities/lootable.js';
-import { createDoor } from '../entities/door.js';
+import { createDoor, trabarPuerta } from '../entities/door.js';
 import { WAGONS, TRAMOS } from '../data/wagons.js';
 import {
   TRAIN_TYPES, TIPO_TREN_POR_DEFECTO, DIFICULTADES, DIFICULTAD_POR_DEFECTO,
 } from '../data/train.js';
+import {
+  CLIMA, CLIMA_POR_DEFECTO, sortearCuantasPuertasTrabadas, sortearVarianteGuardia,
+} from '../data/modifiers.js';
+import {
+  PAQUETES, ESCONDITES, TILE_DE_ESCONDITE, CIVILES_QUE_SABEN,
+} from '../data/paquetes.js';
 import { guardHealth, GUARD_TYPES, DEFAULT_GUARD_TYPE } from '../data/guards.js';
 
 const ALTO = 10;   // todos los tramos miden 10 filas
@@ -53,9 +59,32 @@ const FACINGS = {
  *   - el TIPO DE TREN (`tipoTren.sospechaMult`, sólo lo tiene "veloz"):
  *     multiplica la velocidad de sospecha encima de lo que ya haya puesto
  *     la dificultad.
+ *   - el ESTADO DEL TREN (`redada`, data/modifiers.js): suma el mismo
+ *     `aiOverrides` de "dura" que ya usa la dificultad, encima de lo que
+ *     haya puesto la dificultad sorteada — un tren "tranquilo" con redada
+ *     pelea como uno "dura", sin que su vida haya cambiado.
+ *
+ * Las tres se combinan si coinciden en el mismo tren, y son independientes
+ * entre sí: nada le impide a un tren "dura" salir además con tormenta.
+ *
+ * 🐛 EL CLIMA NO VA ACÁ, Y ANTES ESTABA ACÁ, Y NO HACÍA NADA. `clima.hearMult`
+ * multiplicaba `perfil.hearRadius`/`hearStepRadius` en este mismo perfil de
+ * IA — pero nada en el juego LEE esos dos campos ahí. El alcance del oído no
+ * es una habilidad de cada guardia (como sí lo son `spreadNear` o `aimTime`,
+ * que `updateSuspicion`/`spreadAt` sí leen de `e.ai`): es una propiedad del
+ * RUIDO en sí — el radio que se manda en cada `bus.emit('noise', {radius})`
+ * — y ESE número siempre salía de `CONFIG.enemy.hearRadius` a secas, en cada
+ * lugar donde se dispara o se pisa fuerte (systems/ai.js, entities/player.js,
+ * systems/boss.js, systems/riders.js). Mismo patrón que `ruidoExtra`: ahora
+ * vive en el TREN (ver el `return` de `buildTrain`, más abajo), y esos
+ * lugares leen `world.train.hearRadius`/`hearStepRadius` en vez de la
+ * constante. Sin este cambio, tormenta se sorteaba y no hacía nada.
  */
-function construirPerfilIA(dificultad, tipoTren) {
+function construirPerfilIA(dificultad, tipoTren, estado) {
   const perfil = { ...CONFIG.enemy, ...(dificultad.aiOverrides || {}) };
+  if (estado && estado.includes('redada')) {
+    Object.assign(perfil, DIFICULTADES.dura.aiOverrides);
+  }
   if (tipoTren.sospechaMult) {
     perfil.suspicionNear *= tipoTren.sospechaMult;
     perfil.suspicionFar *= tipoTren.sospechaMult;
@@ -196,19 +225,36 @@ export function plataformasDe(tramos, tileSize) {
  *                     Decide de qué vagones está hecho (si no vino
  *                     `composicion`), cuánto dura el asalto, y si suma algo
  *                     al ruido o a la sospecha de sus guardias.
+ * @param opciones     las CAPAS del tren (data/modifiers.js): `climaId`,
+ *                     `estado` (lista), `comportamientos` (uno por vagón,
+ *                     mismo orden que `composicion`) y `variantes` (qué tipos
+ *                     de guardia pueden salir sorteados en este tren, ya
+ *                     filtrados por recompensa y honor). Agrupadas en un objeto
+ *                     y no como parámetros sueltos porque el plan de Santi
+ *                     ("variedad de lo que pasa en los trenes") va a seguir
+ *                     sumando capas nuevas acá — mejor un solo lugar que
+ *                     crece, que una firma con quince posicionales.
  */
 export function buildTrain(
-  rng, caballoEn = 1, composicion = null, dificultadId = null, weaponId = undefined, tipoTrenId = null
+  rng, caballoEn = 1, composicion = null, dificultadId = null, weaponId = undefined,
+  tipoTrenId = null, meleeId = undefined, opciones = {}
 ) {
+  const {
+    climaId = null, estado = [], comportamientos = [], variantes = [],
+    encubiertos = [], paquetes = [], cajaOculta = false,
+  } = opciones;
   const tipoTren = TRAIN_TYPES[tipoTrenId] || TRAIN_TYPES[TIPO_TREN_POR_DEFECTO];
   composicion = composicion || sortearComposicion(rng, tipoTren);
   const dificultad = DIFICULTADES[dificultadId] || DIFICULTADES[DIFICULTAD_POR_DEFECTO];
+  const clima = CLIMA[climaId] || CLIMA[CLIMA_POR_DEFECTO];
+  const redada = estado.includes('redada');
 
   // El perfil de IA de CADA guardia de este tren. Por defecto es una copia
-  // llana de CONFIG.enemy; una dificultad "dura" le suma sus overrides, y un
-  // tren "veloz" además apura la sospecha (sospechaMult) encima de eso — las
-  // dos cosas se combinan si coinciden.
-  const perfilIA = construirPerfilIA(dificultad, tipoTren);
+  // llana de CONFIG.enemy; una dificultad "dura" le suma sus overrides, una
+  // redada le suma lo mismo por otra puerta, y un tren "veloz" además apura
+  // la sospecha (sospechaMult) — las tres se combinan si coinciden. El clima
+  // NO entra acá: ver la nota completa en `construirPerfilIA`.
+  const perfilIA = construirPerfilIA(dificultad, tipoTren, estado);
 
   // Hasta dónde llega el caballo. El tope está en config para poder subirlo
   // desde la consola cuando hace falta entrar a un vagón del fondo a probar
@@ -337,6 +383,35 @@ export function buildTrain(
     }
   }
 
+  /**
+   * --- 3 ter. PUERTA(S) BLOQUEADA(S) — Fase 4, ver data/modifiers.js ---
+   *
+   * Una o más puertas de madera nacen trabadas. Reusa entero el mecanismo del
+   * Cazarrecompensas (`trabarPuerta`): sigue siendo madera, la rompen las
+   * mismas balas de siempre y se dibuja con la misma tranca roja. Lo único
+   * distinto es que ya estaba así cuando subiste.
+   *
+   * AL AZAR EN CUÁL Y EN CUÁNTAS (pedido de Santi). Las candidatas son TODAS
+   * las de madera del tren, sin distinguir vagón — si fuera siempre la del
+   * correo se volvería una regla que se aprende, y esta fase entera existe
+   * para que no se pueda saber de antemano qué te vas a encontrar.
+   *
+   * La blindada queda afuera: ya tiene su propia llave (la dinamita), y una
+   * puerta que sólo se abre con explosivos no se puede trabar "más".
+   */
+  if (estado.includes('puertaBloqueada')) {
+    const candidatas = doors.filter((d) => d.kind !== 'blindada');
+    let cuantas = Math.min(sortearCuantasPuertasTrabadas(rng), candidatas.length);
+    while (cuantas > 0) {
+      const elegida = rng.pick(candidatas);
+      candidatas.splice(candidatas.indexOf(elegida), 1);
+      // `true` = trabada DE ORIGEN: matar al Cazarrecompensas no la abre (ver
+      // `destrabarPuerta`, entities/door.js). Él no la trabó.
+      trabarPuerta(elegida, true);
+      cuantas--;
+    }
+  }
+
   // --- 4. Entidades, con las coordenadas ya corridas al lugar del tren ---
   const enemies = [];
   const passengers = [];
@@ -354,18 +429,233 @@ export function buildTrain(
     // puede pisar guardia por guardia si alguna vez hace falta.
     const tipoDelVagon = p.guardType || DEFAULT_GUARD_TYPE;
 
-    for (const def of p.enemies || []) {
+    /**
+     * REDADA: duplica cada patrulla del vagón. El blindado queda afuera —
+     * ver la nota completa en data/modifiers.js — así que esto sólo mira
+     * `p.enemies` de un vagón común.
+     *
+     * La copia lleva `redadaExtra: true`, que más abajo decide desde dónde
+     * arranca: no en el mismo punto que el original (se pisarían y
+     * patrullarían pegados todo el asalto), sino desde la MITAD de su
+     * propio recorrido, así los dos quedan desfasados de entrada.
+     */
+    const defsBase = p.enemies || [];
+    const defs = (redada && tipoDelVagon !== 'blindado')
+      ? defsBase.flatMap((def) => [def, { ...def, redadaExtra: true }])
+      : defsBase;
+
+    /**
+     * COMPORTAMIENTO DE ESTE VAGÓN — Fase 3 del plan, ver data/modifiers.js.
+     * `comportamientos[t.wagon - 1]` porque `comportamientos` es paralelo a
+     * `composicion`, que arranca en el vagón 1 (índice 0).
+     */
+    const comportamiento = comportamientos[t.wagon - 1] || 'normal';
+
+    // La puerta de entrada de ESTE vagón (lado cola) — mismo cálculo que ya
+    // usa `puertaDeEntradaDe` en systems/ai.js para "alertaEnPuerta", así que
+    // un guardia "vigilandoPuerta" nace exactamente donde ese sistema ya
+    // sabe mandar a un guardia alertado.
+    const puertaX = t.colStart * map.size + 10;
+    const puertaY = enTiles([0, 4]).y;
+
+    // La caja fuerte de este vagón, si tiene una (ver `elegibleCaja` en
+    // mapScene.js — sin ella, `vigilandoCaja` ni sale sorteado acá).
+    const caja = (p.loot || []).find((l) => l.type === 'strongbox');
+
+    defs.forEach((def, idx) => {
       const path = (def.path || []).map(enTiles);
-      const start = path[0] || enTiles([def.col ?? 4, def.row ?? 4]);
-      const tipo = def.guardType || tipoDelVagon;
+      const arranqueIndex = (def.redadaExtra && path.length > 1) ? Math.floor(path.length / 2) : 0;
+      let pathFinal = path;
+      let pathIndexFinal = arranqueIndex;
+      let start = path[arranqueIndex] || enTiles([def.col ?? 4, def.row ?? 4]);
+      let esConversando = false;
+      let esVigilando = false;
+      let facingFinal = FACINGS[def.facing] ?? Math.PI;
+
+      if (comportamiento === 'vigilandoPuerta' && idx === 0) {
+        /**
+         * 🐛 ANTES TODOS los guardias del vagón se plantaban en la misma
+         * puerta — Santi, jugándolo mentalmente: "no pueden haber varios
+         * guardias cuidando una misma puerta [...] el/los que sobra/n que
+         * hagan otra cosa". Ahora SÓLO EL PRIMERO (`idx === 0`) se planta,
+         * `path: []`, mismo patrón "centinela" que ya usa el 4to guardia
+         * del blindado. El resto (si el vagón tiene más de una patrulla)
+         * ni entra a este `if`, así que cae al camino de siempre y sigue
+         * su ronda normal — "otra cosa" es, para este primer paso, lo que
+         * ya hacía antes de que existiera este comportamiento.
+         */
+        pathFinal = [];
+        pathIndexFinal = 0;
+        start = { x: puertaX, y: puertaY };
+        /**
+         * 🐛 MIRABA PARA CUALQUIER LADO. Heredaba la `facing` de su
+         * patrulla original, que no tiene por qué apuntar hacia la puerta
+         * una vez reposicionado acá — podía terminar de espaldas a lo que
+         * se supone que vigila. `FACINGS.left`: la puerta de entrada está
+         * del lado de la cola (menor x), así que mirar "para la izquierda"
+         * es mirar hacia la pasarela por donde entra cualquiera.
+         */
+        facingFinal = FACINGS.left;
+        esVigilando = true;
+      } else if (comportamiento === 'conversando' && idx < 2) {
+        // Sólo los DOS primeros — si el vagón tiene una tercera patrulla
+        // (el correo), esa sigue su ronda de siempre.
+        pathFinal = [];
+        pathIndexFinal = 0;
+        const base = (defsBase[0].path && defsBase[0].path.length)
+          ? enTiles(defsBase[0].path[0])
+          : enTiles([defsBase[0].col ?? 4, defsBase[0].row ?? 4]);
+        /**
+         * 🐛 SE EMPUJABAN TODO EL TIEMPO. Nacían a 9px, y el mínimo que el
+         * juego permite entre dos guardias es `CONFIG.enemy.separation` (13):
+         * arrancaban pisándose y quedaban clavados JUSTO en el límite donde
+         * `separateEnemies` se enciende y se apaga.
+         *
+         * *(Santi, jugándolo: "hay veces que dos guardias parecen que están
+         * hablando entre ellos, pero en realidad uno de esos guardias empuja
+         * al otro o no sé qué pasa, pero es un bug")* — tenía razón, y era
+         * peor de lo que se veía: medido en calma, cada uno recorría **94px
+         * en 10 segundos** sin ir a ningún lado. Vibraban en el lugar.
+         *
+         * Ahora nacen a `separation + 5`, cómodamente afuera del radio de
+         * empuje, y el número sale de CONFIG en vez de estar escrito a mano:
+         * si algún día se toca `separation`, esto se acomoda solo en vez de
+         * volver a desincronizarse en silencio.
+         */
+        const aire = CONFIG.enemy.separation + 5;
+        start = { x: base.x + idx * aire, y: base.y };
+        /**
+         * 🐛 NO SE MIRABAN — Santi, jugando: "no parece que en realidad
+         * conversan [...] no se están mirando de frente [...] es como si en
+         * realidad estuvieran bugueados". Tenía razón: heredaban la
+         * `facing` de sus patrullas originales, casi nunca de cara al otro.
+         *
+         * Los dos están alineados en x (`idx * 9` arriba): el de la
+         * izquierda (`idx === 0`) mira a la derecha, el de la derecha mira
+         * a la izquierda — enfrentados, siempre, sea cual sea su patrulla
+         * de origen.
+         */
+        facingFinal = idx === 0 ? FACINGS.right : FACINGS.left;
+        esConversando = true;
+      } else if (comportamiento === 'vigilandoCaja' && idx === 0 && caja) {
+        /**
+         * VIGILANDO LA CAJA FUERTE — Santi: "recuerda que también hay un
+         * tipo de estado que vigila una caja fuerte" (estaba en el diseño
+         * original de esta fase: "vigilando lo que haya que vigilar ahí").
+         *
+         * Mismo patrón que vigilandoPuerta: sólo EL PRIMERO se planta
+         * (`idx === 0`); el resto, si el vagón tiene más de una patrulla,
+         * sigue su ronda de siempre. Se para al lado de la caja —no
+         * ENCIMA, para no taparla ni estorbar el gesto de abrirla— y la
+         * mira de frente.
+         */
+        const cajaPos = enTiles([caja.col, caja.row]);
+        pathFinal = [];
+        pathIndexFinal = 0;
+        start = { x: cajaPos.x - 18, y: cajaPos.y };
+        facingFinal = FACINGS.right;
+        esVigilando = true;
+      }
+
+      /**
+       * ¿ESTE GUARDIA ES UNA VARIANTE? — Fase 4, ver VARIANTES_GUARDIA en
+       * data/modifiers.js. Se juega por guardia (dos del mismo vagón pueden
+       * salir distintos), y sólo para los COMUNES: el blindado y cualquiera
+       * que traiga su tipo escrito en los datos del vagón (el Sheriff) quedan
+       * afuera, igual que quedan afuera de redada y de los comportamientos.
+       *
+       * `variantes` ya viene filtrada por recompensa y honor desde
+       * `mapScene.js` — este archivo no sabe nada de `gameState`.
+       */
+      const esComun = !def.guardType && tipoDelVagon === DEFAULT_GUARD_TYPE;
+      const tipo = (esComun && sortearVarianteGuardia(rng, variantes))
+        || def.guardType || tipoDelVagon;
+
+      /**
+       * Y SI LA VARIANTE PELEA DISTINTO, SU PERFIL DE IA ES OTRO.
+       *
+       * Hasta acá todos los guardias del tren compartían `perfilIA` — el
+       * mismo objeto, por referencia. Un tipo con overrides propios
+       * (`GUARD_TYPES[tipo].ai`, hoy sólo el Pistolero) necesita el suyo:
+       * `perfilIA` con lo suyo encima. Los demás siguen compartiendo el de
+       * siempre, sin copias al pedo.
+       */
+      const overridesDelTipo = (GUARD_TYPES[tipo] || {}).ai;
       const guard = createEnemy(start.x, start.y, {
-        path,
-        facing: FACINGS[def.facing] ?? Math.PI,
-        dynamite: def.dynamite || 0,
+        path: pathFinal,
+        facing: facingFinal,
+        // `def.dynamite` a secas (no `|| 0`): si el vagón no dice nada, decide
+        // el TIPO — así el Dinamitero trae la suya sin que el vagón sepa nada
+        // de él. Ver `createEnemy` en entities/enemy.js.
+        dynamite: def.dynamite,
         type: tipo,
         health: guardHealth(tipo, dificultad.vidaExtra),
-        ai: perfilIA,
+        ai: overridesDelTipo ? { ...perfilIA, ...overridesDelTipo } : perfilIA,
       });
+      if (pathIndexFinal > 0) guard.pathIndex = pathIndexFinal;
+
+      /**
+       * SU PUESTO — el lugar al que vuelve si algo lo corre de ahí (ver
+       * `volverAlPuesto`, systems/ai.js). Sólo lo tienen los que están
+       * plantados por un comportamiento: sin ronda no había nada que los
+       * devolviera, y el compañero que patrulla los iba empujando por el
+       * pasillo hasta dejarlos a medio vagón de distancia.
+       *
+       * Guarda también hacia dónde miraban: un guardia que vuelve a su puesto
+       * pero mirando para otro lado seguiría sin estar "en su puesto" — el que
+       * conversa tiene que volver a mirar a su compañero, y el que vigila una
+       * puerta, a la puerta.
+       */
+      if (pathFinal.length === 0) {
+        guard.puesto = { x: start.x, y: start.y };
+        guard.facingPuesto = facingFinal;
+      }
+      /**
+       * DISTRAÍDOS ENTRE SÍ. `systems/ai.js` (`updateSuspicion`) multiplica
+       * cuánto sospechan MIENTRAS `e.state === 'patrol'` si ven esto puesto
+       * — no hace falta apagarlo al salir de `patrol`, ese chequeo ya lo
+       * hace por sí solo.
+       *
+       * Y sólo el primero de los dos (`idx === 0`) es `charlaLider`: el que
+       * de verdad muestra el texto sobre la cabeza (`actualizarCharla`,
+       * systems/ai.js). El otro también está distraído, pero no habla — así
+       * no titilan dos frases pegadas.
+       */
+      if (esConversando) {
+        guard.conversando = true;
+        guard.charlaLider = idx === 0;
+        if (guard.charlaLider) guard.charlaTimer = rng.range(0.8, 2.2);
+        /**
+         * Y SE CONOCEN ENTRE ELLOS (`companeroCharla`, los dos apuntándose
+         * mutuamente).
+         *
+         * *(pedido de Santi, jugándolo: "cuando los guardias están hablando y
+         * uno se pone en amarillo, después de un segundo, el otro también se
+         * tiene que poner en amarillo")* — y es lo que uno esperaría: si el
+         * tipo con el que estás hablando corta la charla y se queda mirando
+         * el pasillo, mirás para donde mira. Ver `contagiarCharla` en
+         * systems/ai.js.
+         *
+         * Hasta ahora `conversando` era una marca suelta en cada uno: los dos
+         * estaban distraídos, pero ninguno sabía con quién. Sin esta
+         * referencia no había forma de avisarle al otro.
+         */
+        if (idx === 1) {
+          const primero = enemies[enemies.length - 1];
+          if (primero && primero.conversando) {
+            guard.companeroCharla = primero;
+            primero.companeroCharla = guard;
+          }
+        }
+      }
+      /**
+       * VIGILANDO — a diferencia de `conversando`, esto no usa ningún reloj:
+       * `drawEnemy` (entities/enemy.js) dibuja el estado "VIGILANDO" fijo,
+       * todo el tiempo que `e.state === 'patrol'`, leyendo sólo esta marca.
+       * Es la señal que le faltaba a este comportamiento — antes no había
+       * forma de distinguirlo de un guardia cualquiera parado en su ronda.
+       */
+      if (esVigilando) guard.vigilaLider = true;
       guard.wagon = t.wagon;      // de qué vagón es: importa para la alarma
       guard.homePath = guard.path;
 
@@ -384,14 +674,130 @@ export function buildTrain(
       enemies.push(guard);
       wagons[t.wagon].guardiasVivos++;
       revisar(avisos, map, start, `guardia del ${p.name} (vagón ${t.wagon})`);
-    }
+    });
 
+    /**
+     * ¿UNO DE LOS PASAJEROS DE ESTE VAGÓN NO ES UN PASAJERO? (Fase 4, ver
+     * data/modifiers.js). El sorteo de SI el vagón lleva uno ya vino hecho
+     * desde `mapScene.js` (`encubiertos`, paralelo a `composicion`); acá sólo
+     * se decide CUÁL de ellos es, y eso tiene que pasar en el momento de
+     * armar el tren para que cambie en cada asalto.
+     */
+    const pasajerosDelVagon = [];
     for (const def of p.passengers || []) {
       const pos = enTiles([def.col, def.row]);
       const pa = createPassenger(pos.x, pos.y, FACINGS[def.facing] ?? Math.PI);
       pa.wagon = t.wagon;
       passengers.push(pa);
+      pasajerosDelVagon.push(pa);
       revisar(avisos, map, pos, `pasajero del ${p.name} (vagón ${t.wagon})`);
+    }
+    if (encubiertos[t.wagon - 1] && pasajerosDelVagon.length) {
+      rng.pick(pasajerosDelVagon).encubierto = true;
+    }
+
+    /**
+     * --- EL PAQUETE DE ESTE VAGÓN (Fase 5, ver data/paquetes.js) ---
+     *
+     * Un objetivo valioso metido en un vagón cualquiera, con su custodia. El
+     * sorteo de CUÁL vino hecho desde `mapScene.js` (array paralelo a
+     * `composicion`); acá se arma.
+     *
+     * Va DESPUÉS de los pasajeros porque los dos paquetes de hoy necesitan
+     * uno: el rico ES un pasajero, y la caja oculta necesita quién la delate.
+     * Y ANTES del botín normal del vagón, para que la caja escondida entre en
+     * la misma lista `loot` que todo lo demás.
+     */
+    const paquete = PAQUETES[paquetes[t.wagon - 1]];
+    if (paquete && pasajerosDelVagon.length) {
+      const elegido = rng.pick(pasajerosDelVagon);
+
+      /**
+       * LOS PUNTOS DEL PASILLO de este vagón: el barrido que ya recorre un
+       * guardia buscándote (`sweep`). Están verificados como pisables en
+       * todos los vagones, así que sirven de "lugares donde una persona puede
+       * estar parada" sin tener que inventar nada nuevo ni leer el tilemap.
+       */
+      const pasillo = (p.sweep || barridoDe(t.cols)).map(enTiles);
+
+      if (paquete.id === 'pasajeroRico') {
+        elegido.botin = { min: paquete.botinMin, max: paquete.botinMax };
+        elegido.robTime = paquete.robTime;
+      }
+
+      /**
+       * LOS GUARDAESPALDAS. Guardias de más, plantados (`path: []`, el mismo
+       * patrón "centinela" que ya usan el cuarto del blindado y el que vigila
+       * una puerta) al lado de lo que cuidan, mirando hacia el pasillo.
+       *
+       * Son la PISTA del paquete: un guardia parado al lado de un pasajero,
+       * en un vagón de pasajeros, es raro de ver. El que mira antes de entrar
+       * tiene cómo darse cuenta de que ahí hay algo.
+       */
+      const cuida = elegido;
+
+      /**
+       * DÓNDE SE PARA: en el PASILLO, pegado a lo que cuida.
+       *
+       * 🐛 DOS INTENTOS FALLIDOS ANTES DE ÉSTE, los dos encontrados midiendo:
+       *  1. A 16px al costado del pasajero — pero los pasajeros viajan
+       *     SENTADOS, así que ese costado es la butaca de al lado: 25 avisos
+       *     de "colocado sobre un tile sólido" en 50 trenes. El mismo error
+       *     que ya se había cometido con el civil encubierto al revelarse.
+       *  2. En el punto del barrido (`sweep`) más cercano — ya nunca sólido,
+       *     pero el barrido tiene POCOS puntos y muy separados: el
+       *     guardaespaldas terminaba **hasta a 256px** de lo que cuidaba
+       *     (62px de promedio). A esa distancia no custodia nada y, sobre
+       *     todo, deja de ser la PISTA de que ahí hay algo.
+       *
+       * Ahora se busca a la altura del objetivo, en las dos filas del pasillo
+       * (4 y 5), corriéndose de a poco hasta encontrar lugar. Es lo que uno
+       * esperaría además: el que cuida a alguien no se sienta a su lado, se
+       * queda parado en el pasillo, al lado del asiento.
+       */
+      const filaPasillo = enTiles([0, 4]).y;
+      const puestoPara = (i) => {
+        const base = 12 + i * 14;
+        for (const dx of [base, -base, base + 10, -(base + 10)]) {
+          for (const y of [filaPasillo, filaPasillo + map.size]) {
+            const x = cuida.x + dx;
+            if (!map.isSolidAt(x, y)) return { x, y };
+          }
+        }
+        return null;
+      };
+      for (let i = 0; i < (paquete.guardaespaldas || 0); i++) {
+        const puesto = puestoPara(i);
+        if (!puesto) continue;
+        const mira = puesto.x > cuida.x ? FACINGS.left : FACINGS.right;
+        const guarda = createEnemy(puesto.x, puesto.y, {
+          path: [],
+          facing: mira,
+          type: tipoDelVagon,
+          health: guardHealth(tipoDelVagon, dificultad.vidaExtra),
+          ai: perfilIA,
+        });
+        guarda.wagon = t.wagon;
+        guarda.homePath = [];
+        /**
+         * "VIGILANDO" arriba de la cabeza — el mismo cartel que ya llevan los
+         * que cuidan una puerta o una caja fuerte (Fase 3, `vigilaLider`).
+         *
+         * Mirando una captura del vagón en frío se vio que sin esto la pista
+         * no existía: un guardaespaldas quieto en el pasillo, al lado de un
+         * pasajero, se lee igual que cualquier otro guardia — la diferencia
+         * (que no patrulla) sólo se nota mirándolo un rato largo. Con el
+         * cartel, el vagón te dice "acá hay algo que cuidar" de un vistazo,
+         * y sigue sin decirte QUÉ: eso lo tenés que ver vos.
+         *
+         * No hizo falta inventar una señal nueva: ya existía la palabra
+         * exacta para esto.
+         */
+        guarda.vigilaLider = true;
+        enemies.push(guarda);
+        wagons[t.wagon].guardiasVivos++;
+        revisar(avisos, map, guarda, `guardaespaldas del ${p.name} (vagón ${t.wagon})`);
+      }
     }
 
     for (const def of p.loot || []) {
@@ -432,6 +838,117 @@ export function buildTrain(
     wagons[t.wagon].guardType = tipoDelVagon;
   }
 
+  /**
+   * --- LA CAJA FUERTE OCULTA (Fase 5, segunda vuelta) ---
+   *
+   * *(Santi: "puede estar en cualquier vagón. Hay tres civiles por tren que
+   * pueden revelarte la información de dónde está. Esos tres civiles no sí o
+   * sí tienen que estar en el mismo vagón que la caja fuerte")*
+   *
+   * Se decide acá y no en el bucle de vagones porque es DEL TREN: primero se
+   * elige en qué vagón se esconde, después dónde adentro de ese vagón, y
+   * recién al final quiénes lo saben — que pueden viajar en cualquier otro.
+   *
+   * DÓNDE EXACTAMENTE: un tile pisable que esté pegado (arriba o abajo) al
+   * mueble que nombra el escondite — la ventanilla, el asiento, la mesa, el
+   * corral. Así lo que dice el pasajero y lo que ves al llegar son la misma
+   * cosa. Va PEGADA y no ADENTRO del mueble por un motivo práctico: adentro
+   * no habría forma de alcanzarla.
+   */
+  if (cajaOculta && passengers.length) {
+    const posibles = tramos.filter((t) => t.tipo === 'vagon' && ESCONDITES[t.plantilla.id]);
+    if (posibles.length) {
+      const tramo = rng.pick(posibles);
+      const plant = tramo.plantilla;
+      const escondite = rng.pick(ESCONDITES[plant.id]);
+      const mueble = TILE_DE_ESCONDITE[escondite];
+
+      /**
+       * 🐛 Y TIENE QUE PODER LLEGARSE CAMINANDO. No alcanza con que el tile
+       * sea pisable y tenga el mueble al lado.
+       *
+       * *(Santi, jugándolo: "un civil me dijo que la caja oculta estaba junto
+       * al corral del vagón 2. Fui al vagón de ganado y lo revisé y no
+       * encontré ninguna caja")* — y tenía razón: la caja estaba ahí, pero
+       * ENCERRADA. Los corrales del vagón de ganado son bloques huecos:
+       *
+       *     #..CCCCC..CCCCC..CCCCC.#
+       *     #..C...C..C...C..C...C.#     ← suelo libre, rodeado de corral
+       *     #..CCCCC..CCCCC..CCCCC.#
+       *
+       * El interior (donde viajan las reses) es suelo, y tiene 'C' arriba y
+       * abajo, así que pasaba el filtro de "pegado al mueble" perfectamente.
+       * Medido: **22 de 48 cajas que cayeron en el ganado quedaban
+       * inalcanzables** — casi la mitad. En los demás vagones, ninguna: por
+       * eso sólo aparecía ahí.
+       *
+       * `alcanzables` es un relleno por inundación que arranca en el PASILLO
+       * (las filas 4 y 5, por donde se camina) y se expande por todo lo que
+       * sea suelo. Un escondite sólo vale si el relleno llegó hasta él. Es
+       * genérico: cualquier vagón futuro con un rincón cerrado queda cubierto
+       * sin tener que acordarse de este caso.
+       */
+      const transitable = (ch) => ch === '.' || ch === '+' || ch === 'E';
+      const alcanzables = new Set();
+      const cola = [];
+      for (const fila of [4, 5]) {
+        for (let col = 0; col < plant.layout[fila].length; col++) {
+          if (!transitable(plant.layout[fila][col])) continue;
+          const k = col + ',' + fila;
+          if (!alcanzables.has(k)) { alcanzables.add(k); cola.push([col, fila]); }
+        }
+      }
+      while (cola.length) {
+        const [col, row] = cola.pop();
+        for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nc = col + dc, nr = row + dr;
+          if (nr < 0 || nr >= plant.layout.length) continue;
+          if (nc < 0 || nc >= plant.layout[nr].length) continue;
+          const k = nc + ',' + nr;
+          if (alcanzables.has(k) || !transitable(plant.layout[nr][nc])) continue;
+          alcanzables.add(k); cola.push([nc, nr]);
+        }
+      }
+
+      const puntos = [];
+      for (let row = 1; row < plant.layout.length - 1; row++) {
+        const fila = plant.layout[row];
+        for (let col = 0; col < fila.length; col++) {
+          if (fila[col] !== '.') continue;
+          if (!alcanzables.has(col + ',' + row)) continue;
+          if (plant.layout[row - 1][col] === mueble || plant.layout[row + 1][col] === mueble) {
+            puntos.push({ col, row });
+          }
+        }
+      }
+
+      if (puntos.length) {
+        const donde = rng.pick(puntos);
+        const pos = map.tileCenter(donde.col + tramo.colStart, donde.row);
+        const caja = createLootable(pos.x, pos.y, 'cajaOculta', rng);
+        caja.wagon = tramo.wagon;
+        caja.oculto = true;
+        loot.push(caja);
+
+        /**
+         * LOS TRES QUE SABEN, elegidos entre TODOS los pasajeros del tren sin
+         * mirar el vagón: los tres dicen lo mismo, y no hay nada que los
+         * distinga de los otros diez. Se barajan y se toman los primeros —
+         * si el tren tiene menos de tres pasajeros, saben los que haya.
+         */
+        const barajados = passengers.slice();
+        for (let i = barajados.length - 1; i > 0; i--) {
+          const j = rng.int(0, i);
+          const tmp = barajados[i]; barajados[i] = barajados[j]; barajados[j] = tmp;
+        }
+        for (const pa of barajados.slice(0, CIVILES_QUE_SABEN)) {
+          pa.sabeDeCaja = caja;
+          pa.pistaCaja = { vagon: tramo.wagon, escondite };
+        }
+      }
+    }
+  }
+
   if (avisos.length) {
     console.warn('TREN: hay cosas colocadas sobre tiles sólidos:\n' + avisos.join('\n'));
   }
@@ -457,7 +974,7 @@ export function buildTrain(
   // Un tile a la derecha del centro cuando el caballo quedó en un enganche, para
   // no aparecer adentro de la zona de escape y poder bajarse sin haber jugado.
   const entradaX = caballo === 1 ? entrada.x : entrada.x + map.size;
-  const player = createPlayer(entradaX, entrada.y, weaponId);
+  const player = createPlayer(entradaX, entrada.y, weaponId, meleeId);
 
   return {
     map,
@@ -473,8 +990,27 @@ export function buildTrain(
     plataformas,
     dificultad,
     tipoTren,
+    clima,
+    /**
+     * EL PERFIL DE IA DE ESTE TREN, para el que nazca DESPUÉS de armarlo:
+     * hoy, el civil encubierto al revelarse (ver `civilRevelado` en
+     * scenes/raidScene.js). Sin esto tendría que pelear con `CONFIG.enemy` a
+     * secas y sería el único del tren al que no le llegan la dificultad ni la
+     * redada — un agujero silencioso justo en el guardia sorpresa.
+     */
+    perfilIA,
     raidDuration: tipoTren.raidDuration || CONFIG.raid.duration,
     ruidoExtra: tipoTren.ruidoExtra || 0,
+    /**
+     * CUÁNTO SE OYE EN ESTE TREN — un disparo (`hearRadius`) y tus propios
+     * pasos (`hearStepRadius`). Por defecto son la constante de siempre
+     * (`CONFIG.enemy.hearRadius/hearStepRadius`); una tormenta (data/
+     * modifiers.js, `clima.hearMult`) los agranda. Mismo patrón que
+     * `ruidoExtra`: quien hace ruido —el jugador, un guardia, el jefe, un
+     * jinete— lee ESTO (`world.train.hearRadius`), no la constante a secas.
+     */
+    hearRadius: CONFIG.enemy.hearRadius * (clima.hearMult || 1),
+    hearStepRadius: CONFIG.enemy.hearStepRadius * (clima.hearMult || 1),
     // 0 = este tren no suelta nada adentro (ver CONFIG.rodante).
     rodantesCada: tipoTren.rodantesCada || 0,
     // ¿En este tren el botín te frena cuando suena la alarma? (CONFIG.peso)
@@ -578,15 +1114,36 @@ export function isInsideZone(entity, zone) {
  *
  * El tren son ~2700 tiles y en pantalla entran unas 24 columnas. Recortar al
  * rango visible es la diferencia entre que corra bien y que se arrastre.
+ *
+ * `vistaW`/`vistaH` — CUÁNTO MUNDO ENTRA EN LA PANTALLA, que no siempre es lo
+ * mismo que el tamaño de la pantalla.
+ *
+ * 🐛 ANTES SE RECORTABA CON `r.width`/`r.height` A SECAS, y eso daba por
+ * sentado en silencio que el dibujo va siempre a escala 1. Valía para el
+ * asalto, y por eso nunca molestó — hasta que el galope estrenó zoom dinámico
+ * (ver `zoomLejos` en data/horse.js): con la escena a 0,4 la pantalla muestra
+ * 960 px de mundo, pero esta función seguía dibujando sólo los primeros 384 a
+ * partir de `camX`. Como en el galope `camX` está bien detrás de la cola, esos
+ * 384 px caían enteros en el vacío anterior al tren y **el tren no se dibujaba
+ * nunca**.
+ *
+ * El síntoma era desconcertante: todas las mediciones daban al tren en la
+ * posición correcta (la cola calculada en x=310 de pantalla) y aun así no se
+ * veía. Sólo apareció mirando la escena ampliada con foto.ps1.
+ *
+ * Los parámetros son OPCIONALES y caen en el comportamiento de siempre, así que
+ * el asalto —que dibuja a escala 1— no cambia en nada.
  */
-export function drawTrain(r, train, colors, camX, camY) {
+export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
   const map = train.map;
   const size = map.size;
+  const anchoVista = vistaW || r.width;
+  const altoVista = vistaH || r.height;
 
   const colDesde = Math.max(0, Math.floor(camX / size) - 1);
-  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + r.width) / size) + 1);
+  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 1);
   const filaDesde = Math.max(0, Math.floor(camY / size) - 1);
-  const filaHasta = Math.min(map.rows - 1, Math.ceil((camY + r.height) / size) + 1);
+  const filaHasta = Math.min(map.rows - 1, Math.ceil((camY + altoVista) / size) + 1);
 
   for (let row = filaDesde; row <= filaHasta; row++) {
     for (let col = colDesde; col <= colHasta; col++) {

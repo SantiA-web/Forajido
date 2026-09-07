@@ -28,6 +28,14 @@ export function createNewGame() {
     honor: 0,    // cómo te ven (negativo = temido, positivo = respetado)
 
     /**
+     * CUÁNTOS ASALTOS LIMPIOS SEGUIDOS llevás — escapaste, sin que sonara la
+     * alarma. Ver `CONFIG.raid.rachaBonusPorNivel`: cada uno de más paga un
+     * bonus creciente, y se corta con cualquier otra cosa (te agarraron, o
+     * escapaste con la alarma ya sonando).
+     */
+    rachaLimpia: 0,
+
+    /**
      * DE DÍA O DE NOCHE. Lo da vuelta dormir en la carpa del campamento, y
      * decide qué está abierto en el pueblo (ver CONFIG.hora).
      *
@@ -39,9 +47,44 @@ export function createNewGame() {
 
     // Progresión (todavía sin usar, pero el hueco ya está)
     weapon: 'colt',
+    /**
+     * El arma cuerpo a cuerpo. Arranca en la culata, que no es un objeto que
+     * tengas: es NO tener nada y usar lo que ya llevás en la mano. Por eso este
+     * campo nunca puede quedar vacío, y por eso la culata vale 0. Ver
+     * data/melee.js.
+     */
+    melee: 'culata',
     skills: {},
     horse: null,
     gang: [],
+
+    /**
+     * LO QUE TENÉS, que no es lo mismo que lo que LLEVÁS PUESTO.
+     *
+     * *(pedido de Santi: "desde el cajón de armas del campamento el jugador
+     * deberá equiparse como quiera. Y en el poste con el caballo, el caballo que
+     * quiera. El jugador no debería ir hasta el pueblo para equipar lo que
+     * quiere")*
+     *
+     * Hasta acá comprar ERA equipar y no existía la diferencia — el propio
+     * comentario de scenes/shopScene.js decía "hoy no hay inventario de 'tengo
+     * dos y uso uno'". Comprar el Smith te dejaba sin el Colt, y para volver a
+     * él había que caminar hasta el pueblo, esperar a que fuera de día y pagarlo
+     * de nuevo.
+     *
+     * Ahora la tienda te lo VENDE (entra acá y se equipa, que es lo que querías
+     * al comprarlo) y el campamento te lo CAMBIA, gratis y a cualquier hora. La
+     * tienda decide qué tenés; el cajón y el poste, qué llevás hoy.
+     *
+     * Los que arrancan puestos son los que no se compran: el Colt y el Criollo
+     * valen 0 porque son con lo que empezás, y la culata directamente no es un
+     * objeto — es no tener nada. Por eso están acá desde el primer cuadro.
+     */
+    owned: {
+      weapon: ['colt'],
+      melee: ['culata'],
+      horse: ['criollo'],
+    },
 
     // Historia: banderas y contadores para las consecuencias diferidas
     flags: {},
@@ -79,8 +122,16 @@ export function applyRaidResult(summary) {
   gameState.stats.kills += summary.kills;
   gameState.stats.civilians += summary.civilians || 0;
 
+  /**
+   * `summary.money` ya no es sólo "lo que gané si escapé": desde el rescate
+   * ("casi lo logro", ver `fraccionRescate` en raidScene.js) una captura
+   * también puede traer algo, así que esto se suma SIEMPRE — 0 si te
+   * agarraron lejos del caballo, el rescate si estabas cerca, o el botín
+   * entero (con los bonos) si escapaste.
+   */
+  gameState.money += summary.money;
+
   if (summary.outcome === 'escaped') {
-    gameState.money += summary.money;
     gameState.stats.escapes += 1;
     if (summary.money > gameState.stats.bestLoot) {
       gameState.stats.bestLoot = summary.money;
@@ -90,11 +141,24 @@ export function applyRaidResult(summary) {
     // Fase 3: acá entra la prisión (pagar la recompensa o la horca).
   }
 
+  /**
+   * LA RACHA — `summary.racha` ya viene calculada de raidScene.js (ahí es
+   * donde hacía falta para poder pagar el bonus de ESTE asalto). Acá sólo se
+   * guarda como el nuevo valor: 0 la corta, cualquier otro número la sigue o
+   * la arranca.
+   */
+  gameState.rachaLimpia = summary.racha || 0;
+
   // Se guarda en el summary (no sólo en gameState.bounty) para que la
   // pantalla de resultados pueda mostrar cuánto subió ESTE asalto sin
   // duplicar la fórmula.
   summary.bountyGain = bountyDelta(summary);
   gameState.bounty += summary.bountyGain;
+
+  // Mismo patrón que `bountyGain`: se guarda en el summary para que la
+  // pantalla lo muestre sin repetir la cuenta.
+  summary.honorGain = honorDelta(summary);
+  gameState.honor += summary.honorGain;
 
   aplicarPremioDelJefe(summary);
 
@@ -224,6 +288,33 @@ function bountyDelta(summary) {
   }
   if (summary.outcome !== 'escaped') {
     delta += capturaFlat;
+  }
+
+  return delta;
+}
+
+/**
+ * QUÉ MUEVE `honor`. A diferencia de `bounty`, no depende de si sonó la
+ * alarma o te vieron: es sobre CÓMO actuaste, no sobre si te identificaron.
+ * Ver el porqué de cada peso en CONFIG.honor.
+ *
+ * `civilians` y `kills` ya existen (los usa `bountyDelta`); `perdonados`,
+ * `rendidosMatados`, `noqueadosRematados` y `noqueadosLimpios` los junta
+ * raidScene.js sobre la marcha, con la misma info que ya tenía para todo lo
+ * demás.
+ */
+function honorDelta(summary) {
+  const h = CONFIG.honor;
+  let delta = 0;
+
+  delta += (summary.perdonados || 0) * h.perdonarRendido;
+  delta += (summary.rendidosMatados || 0) * h.rematarRendido;
+  delta += (summary.noqueadosRematados || 0) * h.rematarNoqueado;
+  delta += (summary.noqueadosLimpios || 0) * h.noquearLimpio;
+  delta += (summary.civilians || 0) * h.matarCivil;
+
+  if (summary.outcome === 'escaped' && summary.kills === 0 && (summary.civilians || 0) === 0) {
+    delta += h.asaltoSinSangre;
   }
 
   return delta;

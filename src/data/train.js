@@ -49,6 +49,18 @@
  *   pesaElBotin    si es true, con la alarma sonando la plata que llevás
  *                  encima te va frenando (ver CONFIG.peso). Sin esto, cargás
  *                  lo que quieras sin costo, como en toda la fase 2.
+ *   modificadores  si es true, este tipo de tren participa del sorteo de
+ *                  CLIMA y ESTADO DEL TREN (ver data/modifiers.js). Sin
+ *                  esto, siempre sale despejado y sin ningún estado — es la
+ *                  llave que decide QUÉ TIPOS entran en ese sorteo, no el
+ *                  sorteo en sí.
+ *
+ *                  Por ahora sólo la tiene el estándar (pedido explícito de
+ *                  Santi): el veloz y el de carga ya tienen su propia
+ *                  identidad muy afinada (traqueteo, rodantes, estampida,
+ *                  el botín que pesa) y sumarles capas encima todavía no se
+ *                  probó — se abre a los otros tipos más adelante, cuando
+ *                  haga falta, sin tocar la arquitectura del sorteo.
  */
 
 export const TRAIN_TYPES = {
@@ -62,6 +74,7 @@ export const TRAIN_TYPES = {
     composition: ['pasajeros', 'pasajeros', 'comedor', 'correo', 'ganado', 'blindado'],
     posicionMinima: { blindado: 3 },
     peso: 50,
+    modificadores: true,
     color: '#c9b68d',
   },
 
@@ -297,7 +310,7 @@ export const DIFICULTAD_POR_DEFECTO = 'tranquilo';
  * Con peso 0 una entrada queda fuera de la bolsa sin desaparecer del
  * catálogo, que es lo que permite tener algo construido y apagado.
  */
-function sortearPorPeso(catalogo, rng) {
+export function sortearPorPeso(catalogo, rng) {
   const entradas = Object.values(catalogo).filter((e) => (e.peso || 0) > 0);
   const total = entradas.reduce((suma, e) => suma + e.peso, 0);
 

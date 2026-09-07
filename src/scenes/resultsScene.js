@@ -59,7 +59,10 @@ function buildPanel(s) {
   const rows = [
     row(T.results.loot, `$${escaped ? s.collected : 0}`, escaped),
     s.cleanBonus > 0 ? row(T.results.clean, `+$${s.cleanBonus}`, true) : '',
-    row(T.results.lost, `$${s.leftBehind + (escaped ? 0 : s.collected)}`),
+    s.rachaBonus > 0 ? row(T.results.racha(s.racha), `+$${s.rachaBonus}`, true) : '',
+    s.rachaPerdida > 0 ? row(T.results.rachaPerdida(s.rachaPerdida), '', false, true) : '',
+    !escaped && s.rescate > 0 ? row(T.results.rescate, `+$${s.rescate}`, true) : '',
+    row(T.results.lost, `$${s.leftBehind + (escaped ? 0 : s.collected - s.rescate)}`),
     row(T.results.kills, String(s.kills)),
     row(T.results.civilians, String(s.civilians)),
     row(T.results.alarm, s.alarm ? T.results.alarmYes : T.results.alarmNo),
@@ -80,6 +83,13 @@ function buildPanel(s) {
       ? row(T.results.jefe(s.jefeNombre), T.results.jefeSinRebaja, true) : '',
     s.famaGanada > 0 ? row(T.results.fama, `+${s.famaGanada}`, true) : '',
     row(T.results.bountyTotal, `$${gameState.bounty}`, false, gameState.bounty > 0),
+    /**
+     * `honorGain` puede ir para cualquier lado (a diferencia de `bountyGain`,
+     * que sólo sube) — por eso lleva el signo siempre, y sólo se oculta si el
+     * asalto no lo tocó para ningún lado.
+     */
+    s.honorGain ? row(T.results.honor, `${s.honorGain > 0 ? '+' : ''}${s.honorGain}`, s.honorGain > 0, s.honorGain < 0) : '',
+    row(T.results.honorTotal, `${gameState.honor > 0 ? '+' : ''}${gameState.honor}`, gameState.honor > 0, gameState.honor < 0),
   ].join('');
 
   return `

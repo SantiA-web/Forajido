@@ -33,6 +33,7 @@ import {
   TRAIN_TYPES, TIPO_TREN_POR_DEFECTO,
   DIFICULTADES, DIFICULTAD_POR_DEFECTO, SORTEAR_DIFICULTAD,
 } from '../data/train.js';
+import { CLIMA_POR_DEFECTO } from '../data/modifiers.js';
 import { gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { sortearComposicion, buildTrain, drawTrain, plataformasDe } from '../world/train.js';
@@ -45,18 +46,29 @@ export function createRideScene(services) {
   const size = CONFIG.tileSize;
 
   let caballo;
-  let composicion, dificultad, tipoTren, train, plataformas, largoTren;
+  let composicion, dificultad, tipoTren, clima, estado, comportamientos, variantes,
+    encubiertos, paquetes, cajaOculta, train, plataformas, largoTren;
   let x, y, vel, aguante, reloj, gastado, scroll, alcanzada;
   let trastabilla, choque, saltando, terminado;
   let exposicion, visto, obstaculos, aviso;
   let vida, invuln, tiradores, balas;
   let calidadSalto, techoDestino, barra;
+  /**
+   * `suelo`: cuánto terreno lleva recorrido el tren. Es lo que hace que el
+   * desierto desfile hacia atrás en vez de estar clavado a los vagones.
+   * `rumbo`: hacia dónde apunta el caballo (radianes, 0 = derecha). No es la
+   * dirección que apretás: es a dónde llegó el animal de girar hasta ahora.
+   */
+  let suelo, rumbo;
 
   /**
    * @param params lo que eligió el MAPA DE RUTAS (`scenes/mapScene.js`):
-   *   `tipoTren`, `composicion` y `dificultad`, sorteados ahí mismo al pasar
-   *   el cursor sobre la vía. Si faltan (por ejemplo, saltando el mapa desde
-   *   la consola), el galope sortea como siempre.
+   *   `tipoTren`, `composicion`, `dificultad`, `clima` y `estado`, sorteados
+   *   ahí mismo al pasar el cursor sobre la vía. Si faltan (por ejemplo,
+   *   saltando el mapa desde la consola), el galope sortea como siempre.
+   *   `clima` y `estado` sólo se leen acá para reenviarlos al asalto —
+   *   durante el galope no hay guardias simulados, así que no cambian nada
+   *   todavía.
    */
   function enter(params = {}) {
     hud.hide();
@@ -67,22 +79,44 @@ export function createRideScene(services) {
       || (SORTEAR_DIFICULTAD
         ? DIFICULTADES[Object.keys(DIFICULTADES)[rng.int(0, Object.keys(DIFICULTADES).length - 1)]]
         : DIFICULTADES[DIFICULTAD_POR_DEFECTO]);
+    clima = params.clima || CLIMA_POR_DEFECTO;
+    estado = params.estado || [];
+    comportamientos = params.comportamientos || [];
+    variantes = params.variantes || [];
+    encubiertos = params.encubiertos || [];
+    paquetes = params.paquetes || [];
+    cajaOculta = !!params.cajaOculta;
 
-    train = buildTrain(rng, 1, composicion, dificultad.id, undefined, tipoTren.id);
+    train = buildTrain(
+      rng, 1, composicion, dificultad.id, undefined, tipoTren.id, undefined,
+      { climaId: clima, estado, comportamientos, variantes, encubiertos, paquetes, cajaOculta }
+    );
     plataformas = plataformasDe(train.tramos, size);
     largoTren = train.map.width;
 
     x = plataformas[1] - A.inicioDetras;
     /**
-     * Arrancás en el MEDIO del carril, no pegado al borde de afuera.
+     * ARRANCÁS EN UNA ESQUINA, LEJOS DEL TREN Y LEJOS DE LA VÍA.
      *
-     * Estaba en `carrilLejos`, o sea a ras del borde de abajo de la pantalla,
-     * con medio caballo cortado. Con 240 px de persecución duraba dos segundos
-     * y no se notaba; con 620 te pasás siete segundos mirándolo. Y da igual
-     * para el sigilo: detrás de la cola no hay ningún vagón del que esconderse,
-     * y sobra tiempo para abrirse antes de llegar.
+     * *(Santi: "el caballo no debería empezar ahí pegado al tren, debería
+     * empezar desde una esquina mucho más atrás")*
+     *
+     * Antes arrancaba en el MEDIO del carril, que con 38 px de alto era
+     * prácticamente pegado a la vía igual. Ahora, con 150 px de campo, arrancar
+     * en el fondo (a `carrilLejos - 12`) es de verdad una esquina: abajo del
+     * todo y 1000 px atrás. La aproximación entera pasa a ser una diagonal
+     * larga hacia adelante y hacia arriba, en vez de un pasillo recto.
+     *
+     * Los 40 px de margen son para que el caballo no nazca encima de la línea
+     * del horizonte y se camufle con ella — pasó, y sólo se vio mirando la
+     * escena con foto.ps1. Sigue siendo la esquina, pero con suelo visible por
+     * detrás.
+     *
+     * Con el campo en 330, arrancar acá deja al caballo a 282 px POR DEBAJO de
+     * la vía: el tren se ve chiquito allá arriba a la derecha y toda la
+     * aproximación es una diagonal hacia él.
      */
-    y = train.map.height + (A.carrilCerca + A.carrilLejos) / 2;
+    y = train.map.height + A.carrilLejos - 70;
     vel = 0;
     aguante = caballo.aguanteMax;
     reloj = A.tiempoAproximacion;
@@ -99,6 +133,8 @@ export function createRideScene(services) {
     calidadSalto = null;
     techoDestino = null;
     barra = null;
+    suelo = 0;
+    rumbo = 0;
 
     vida = CONFIG.player.health;
     invuln = 0;
@@ -122,6 +158,9 @@ export function createRideScene(services) {
       get tiradores() { return tiradores; },
       get balas() { return balas; },
       get obstaculos() { return obstaculos; },
+      /** Hacia dónde apunta el caballo (radianes) y cuánto avanzó el tren. */
+      get rumbo() { return rumbo; },
+      get suelo() { return suelo; },
       get plataformas() { return plataformas; },
       get plataformaActual() { return plataformaBajoElCaballo(); },
       get calidad() { return calidadDelSalto(); },
@@ -135,17 +174,116 @@ export function createRideScene(services) {
     };
   }
 
+  /**
+   * SEMBRAR EL DESIERTO.
+   *
+   * *(Santi: "galopar esquivando cactus, rocas y pequeños montículos de arena")*
+   *
+   * Cuatro tipos, no dos. Los cactus y los montículos son tipos nuevos del
+   * MISMO sistema que ya existía (mismo radio, mismo frenado, misma lista): lo
+   * único que cambia es cómo se dibujan. No hacía falta un sistema aparte para
+   * que el desierto se vea variado.
+   *
+   * Y SE SIEMBRAN EN TODO EL CAMPO, hasta el borde lejano. Antes el rango
+   * llegaba sólo a `carrilLejos` (46), o sea la franja angosta de siempre; con
+   * 150 px de campo, sembrar sólo ahí habría dejado el desierto entero vacío
+   * justo por donde ahora se galopa la mayor parte del tiempo.
+   *
+   * `- 6` en el borde de afuera para que ninguno nazca cortado por el borde de
+   * la pantalla cuando el zoom está en 1.
+   */
   function sembrarObstaculos() {
     const lista = [];
+    const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
     for (let px = x - 100; px < largoTren + 200; px += A.obstaculoCada) {
-      lista.push({
-        x: px + rng.range(-40, 40),
-        y: train.map.height + rng.range(A.carrilCerca + 4, A.carrilLejos),
-        tipo: rng.range(0, 1) > 0.5 ? 'roca' : 'arbusto',
-        golpeado: false,
-      });
+      const ox = px + rng.range(-30, 30);
+      let oy = train.map.height + rng.range(A.carrilCerca + 4, A.carrilLejos - 6);
+
+      /**
+       * 🐛 NADA ENCIMA DE DONDE NACE EL CABALLO. Jugándolo aparecía "¡LA
+       * PIEDRA!" en el primer segundo, antes de tocar una tecla: el caballo se
+       * materializaba dentro de una roca. Empezar un asalto ya castigado, por
+       * algo que el jugador no pudo ver venir, contradice la regla más repetida
+       * de este juego — todo peligro se avisa antes de pegar.
+       *
+       * Se corre en vertical en vez de borrarse: así el desierto no queda con un
+       * claro sospechosamente vacío justo en la largada.
+       */
+      if (Math.abs(ox - x) < 90 && Math.abs(oy - y) < 40) {
+        oy = y + (oy < y ? -1 : 1) * rng.range(55, 90);
+        oy = Math.max(train.map.height + A.carrilCerca + 4,
+          Math.min(train.map.height + A.carrilLejos - 6, oy));
+      }
+
+      lista.push({ x: ox, y: oy, tipo: tipos[rng.int(0, tipos.length - 1)], golpeado: false });
     }
     return lista;
+  }
+
+  /**
+   * DÓNDE ESTÁ ESTE OBSTÁCULO AHORA, en el marco del tren.
+   *
+   * Los obstáculos viven en coordenadas del SUELO (que está quieto de verdad) y
+   * el tren avanza sobre él, así que hay que restar lo recorrido. Todo lo que
+   * los dibuje o los choque tiene que pasar por acá: si un lugar usa `ob.x`
+   * crudo y otro no, el cactus que ves y el cactus que te frena dejan de ser el
+   * mismo — que es la clase de bug que no se nota hasta que alguien juega.
+   */
+  function obX(ob) {
+    return ob.x - suelo;
+  }
+
+  /**
+   * EL RADIO DE ESTE OBSTÁCULO. Una sola fuente para el choque y para el
+   * dibujo: es lo que garantiza que la silueta que ves sea la que te frena.
+   * Ver `obstaculoRadios` en data/horse.js.
+   */
+  function radioDe(ob) {
+    return A.obstaculoRadios[ob.tipo] ?? A.obstaculoRadio;
+  }
+
+  /**
+   * EL DESIERTO NO SE ACABA.
+   *
+   * Con el suelo desfilando, una lista fija de obstáculos se vaciaría por
+   * detrás en unos segundos y quedarías galopando por un desierto pelado. El que
+   * queda muy atrás reaparece adelante, con tipo y altura nuevos: son los mismos
+   * objetos reusados, así que la cantidad en memoria no cambia nunca.
+   */
+  function reciclarObstaculos() {
+    const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
+    const salto = A.obstaculoCada * obstaculos.length;
+    for (const ob of obstaculos) {
+      if (obX(ob) > x - 700) continue;
+      ob.x += salto;
+      ob.y = train.map.height + rng.range(A.carrilCerca + 4, A.carrilLejos - 6);
+      ob.tipo = tipos[rng.int(0, tipos.length - 1)];
+      ob.golpeado = false;
+    }
+  }
+
+  /**
+   * EL RUMBO DEL CABALLO — la rienda.
+   *
+   * *(Santi: "cuando dije que el caballo debería poder moverse en diagonal es
+   * que quiero que su cabeza apunte a esa diagonal. Pero el jugador no controla
+   * el caballo, controla al jinete que tira de las riendas")*
+   *
+   * Por eso el rumbo NO se asigna: se PERSIGUE. Vos marcás hacia dónde querés ir
+   * y el animal tarda `giroTiempo` en llegar a apuntar ahí — y cuando soltás,
+   * sigue virado un momento antes de enderezarse. Esa demora, que en un juego de
+   * naves sería un defecto, acá es el punto: se siente que hay un bicho con
+   * inercia entre tu mano y la dirección.
+   *
+   * El rumbo objetivo sale de combinar el avance (siempre hacia adelante, por
+   * eso el 1 fijo en X) con lo que estés pidiendo en vertical. Tocando W a fondo
+   * da −45°, S a fondo +45°: una diagonal franca, no un giro de 90° que dejaría
+   * al caballo de perfil cruzando la pantalla.
+   */
+  function actualizarRumbo(dt, dy) {
+    const objetivo = Math.atan2(dy * 0.9, 1);
+    const paso = Math.min(1, dt / A.giroTiempo);
+    rumbo += (objetivo - rumbo) * paso;
   }
 
   // ------------------------------------------------------------------ lógica
@@ -454,6 +592,13 @@ export function createRideScene(services) {
           composicion,
           dificultad: dificultad.id,
           tipoTren: tipoTren.id,
+          clima,
+          estado,
+          comportamientos,
+          variantes,
+          encubiertos,
+          paquetes,
+          cajaOculta,
           tiempoGastado: A.cobrarTiempoAlAsalto ? gastado : 0,
           alarmaInicial: visto,
           saltoSucio: calidadSalto === 'sucio',
@@ -508,30 +653,57 @@ export function createRideScene(services) {
     const frena = input.anyDown('KeyA', 'ArrowLeft');
     const detrasDeLaCola = x < plataformas[1];
 
-    let objetivo = detrasDeLaCola ? A.alcanceSpeed : 0;
+    /**
+     * VELOCIDADES ABSOLUTAS: el caballo va a la suya, el tren a la suya, y lo
+     * que se ve en pantalla es LA RESTA. Ver `trenVelocidad` en data/horse.js
+     * para el porqué (y para el bug que esto arregla: antes el caballo se
+     * acercaba solo a 55 px/s y el tren nunca se podía ir).
+     *
+     * `velCaballo` es a cuánto corre el animal sobre el suelo; `objetivo` es a
+     * cuánto se acerca o se aleja del tren. Con el Criollo al trote la resta da
+     * −19 (el tren se le va) y con el Mustang da 0 (le sigue el paso): la misma
+     * fórmula produce las dos identidades sin un solo caso especial.
+     */
+    let velCaballo = caballo.sprintSpeed * A.troteFactor;
 
     if (choque > 0) {
       choque -= dt;
-      objetivo = 0;
+      velCaballo = caballo.sprintSpeed * A.choqueFactor;
     } else if (trastabilla > 0) {
       trastabilla -= dt;
-      objetivo = -A.trastabillaEmpuje;
+      velCaballo = 0;
     } else if (acelera && aguante > 0) {
-      objetivo = caballo.sprintSpeed;
+      velCaballo = caballo.sprintSpeed;
       if (!detrasDeLaCola) aguante = Math.max(0, aguante - caballo.aguanteGasto * dt);
     } else if (frena) {
-      objetivo = -caballo.brakeSpeed;
+      velCaballo = caballo.sprintSpeed * A.troteFactor - caballo.brakeSpeed;
     }
+
+    let objetivo = velCaballo - A.trenVelocidad;
+    // Trastabillar sigue siendo un empujón hacia atrás, no sólo frenar.
+    if (trastabilla > 0) objetivo -= A.trastabillaEmpuje;
 
     const paso = caballo.aceleracion * dt;
     vel += Math.max(-paso, Math.min(paso, objetivo - vel));
     x += vel * dt;
+
+    /**
+     * EL SUELO DESFILA HACIA ATRÁS a la velocidad del tren.
+     *
+     * Es la otra mitad de "el tren no se movía": aunque la mecánica ya lo dejara
+     * atrás, si los cactus están clavados al mismo marco que los vagones el tren
+     * se ve estacionado en el desierto. Con esto el tren cruza el paisaje y la
+     * persecución se lee incluso mirando una sola imagen.
+     */
+    suelo += A.trenVelocidad * dt;
+    reciclarObstaculos();
 
     if (choque <= 0) {
       let dy = 0;
       if (input.anyDown('KeyW', 'ArrowUp')) dy -= 1;
       if (input.anyDown('KeyS', 'ArrowDown')) dy += 1;
       y += dy * A.velVertical * dt;
+      actualizarRumbo(dt, dy);
     }
     y = Math.max(train.map.height + A.carrilCerca,
                  Math.min(train.map.height + A.carrilLejos, y));
@@ -540,21 +712,35 @@ export function createRideScene(services) {
     if (x > max) { x = max; vel = Math.min(0, vel); }
 
     /**
-     * Y NO SE PUEDE QUEDAR MÁS ATRÁS DE DONDE ARRANCASTE.
+     * 🐛 ACÁ ESTABA LA MITAD DEL "EL TREN NO SE MUEVE", Y ES DE LAS BUENAS.
      *
-     * Aflojando las riendas se podía retroceder hasta salirse de la pantalla
-     * (la cámara tiene tope), y quedabas manejando a ciegas un caballo que no
-     * se ve. Antes hacía falta insistir mucho para llegar ahí; con la
-     * persecución larga está a mano. Nunca sirvió para nada: atrás no hay nada
-     * que buscar.
+     * Este tope decía "no te podés quedar más atrás de donde arrancaste", y
+     * tenía sentido en el modelo viejo: como el caballo se acercaba solo, nadie
+     * llegaba acá salvo aflojando las riendas a propósito, y entonces sólo
+     * servía para que no te fueras de la pantalla.
+     *
+     * Con el tren moviéndose de verdad pasó a ser lo contrario: el jugador
+     * arranca EXACTAMENTE en este límite, así que el tope le impedía atrasarse
+     * un solo píxel. Medido después de poner las velocidades absolutas: el
+     * Criollo debía perder 19 px/s y perdía 0 — el tren seguía sin poder irse,
+     * ahora por una razón distinta. Un arreglo puede quedar tapado por una regla
+     * vieja que nadie volvió a mirar.
+     *
+     * AHORA SE PUEDE PERDER TERRENO, hasta `atrasMaximo` más atrás. Lo que
+     * cierra la escena si te demorás demasiado es el reloj, que ya existía y ya
+     * es el precio de todo en este juego — no una pared invisible.
      */
-    const minX = plataformas[1] - A.inicioDetras;
+    const minX = plataformas[1] - A.inicioDetras - A.atrasMaximo;
     if (x < minX) { x = minX; vel = Math.max(0, vel); }
 
     if (choque <= 0) {
       for (const ob of obstaculos) {
-        if (ob.golpeado || Math.abs(ob.x - x) > 20) continue;
-        if (distance(ob.x, ob.y, x, y) < A.obstaculoRadio + 6) { chocar(ob); break; }
+        const ox = obX(ob);
+        const radio = radioDe(ob);
+        // El prefiltro tiene que acompañar al radio: con un número fijo, el
+        // obstáculo más grande se descartaba antes de llegar a medirlo.
+        if (ob.golpeado || Math.abs(ox - x) > radio + 14) continue;
+        if (distance(ox, ob.y, x, y) < radio + 6) { chocar(ob); break; }
       }
     }
 
@@ -581,32 +767,100 @@ export function createRideScene(services) {
 
   // ------------------------------------------------------------------ dibujo
 
+  /**
+   * EL ZOOM DE ESTE INSTANTE — lejos 0,5, pegado a la cola 1.
+   *
+   * Ver `zoomLejos`/`zoomCerca`/`zoomDistancia` en data/horse.js para el porqué.
+   * Se calcula con la MISMA variable que ya movía la cámara (`falta`, lo que
+   * queda hasta la cola), así que el encuadre entero —posición y escala— cuenta
+   * una sola cosa: qué tan cerca estás.
+   *
+   * `suavizar` es una curva suave (smoothstep) en vez de una recta: sin ella el
+   * zoom arranca y frena de golpe, y un cambio de escala con bordes duros se lee
+   * como un tirón de cámara. Con ella, la escena se cierra sobre el tren sin que
+   * se note dónde empieza el movimiento.
+   */
+  function zoomActual() {
+    const falta = Math.max(0, plataformas[1] - x);
+    // Los últimos `zoomFijoDesde` px van a escala 1 clavada: ver el porqué en
+    // data/horse.js. Sin esto el zoom sigue corrigiéndose mientras apuntás el salto.
+    const rango = Math.max(1, A.zoomDistancia - A.zoomFijoDesde);
+    const t = Math.min(1, Math.max(0, (falta - A.zoomFijoDesde) / rango));
+    const suavizar = t * t * (3 - 2 * t);
+    return A.zoomCerca + (A.zoomLejos - A.zoomCerca) * suavizar;
+  }
+
   function render(r) {
+    const z = zoomActual();
+    /** Cuánto mundo entra en la pantalla con este zoom. */
+    const vistaW = r.width / z;
+    const vistaH = r.height / z;
+
     /**
      * MIENTRAS PERSEGUÍS, LA CÁMARA MIRA PARA ADELANTE.
      *
-     * Centrada, con el tren a 620 px, estarías galopando seis segundos hacia
+     * Centrada, con el tren a 1000 px, estarías galopando muchos segundos hacia
      * un borde de pantalla vacío. Corriendo la cámara te para en el tercio
-     * izquierdo y ves 100 px más de lo que viene, que es donde está la única
-     * cosa que te importa. Y se vuelve al centro sola en los últimos 260 px,
-     * porque una vez que estás a la par lo que importa vuelve a ser el vagón
-     * que tenés al lado.
+     * izquierdo y ves más de lo que viene, que es donde está la única cosa que
+     * te importa. Y se vuelve al centro sola en los últimos 260 px, porque una
+     * vez que estás a la par lo que importa vuelve a ser el vagón que tenés al
+     * lado.
+     *
+     * Ahora se mide en unidades de MUNDO (`vistaW`), no de pantalla: con el
+     * zoom alejado, media pantalla son 384 px de mundo y no 192.
      */
     const falta = Math.max(0, plataformas[1] - x);
     const mira = Math.min(1, falta / 260);
-    const camX = Math.max(-A.inicioDetras - 80, x - r.width * (0.5 - 0.22 * mira));
+    // El tope acompaña a `atrasMaximo`: si el jugador puede perder terreno, la
+    // cámara tiene que poder seguirlo hasta allá o lo pierde de vista.
+    const camX = Math.max(-A.inicioDetras - A.atrasMaximo - 80,
+      x - vistaW * (0.5 - 0.22 * mira));
 
-    dibujarAfuera(r, camX);
+    /**
+     * Y AHORA TAMBIÉN SIGUE EN VERTICAL, porque el campo (150 px) ya no entra
+     * entero en pantalla cuando el zoom está cerca.
+     *
+     * El tope de arriba es 0: nunca se muestra por encima del techo del tren.
+     * Que el tren quede cortado por arriba cuando estás abajo del todo no es un
+     * problema — lo que importa de un tren en esta escena es su BORDE DE ABAJO,
+     * que es donde están los enganches, las ventanillas y la marca del salto.
+     */
+    const campoAbajo = train.map.height + A.carrilLejos;
+
+    /**
+     * 🐛 Y SE BAJA TODO EL MUNDO `DESPLAZO_HUD` PÍXELES, o el tren queda tapado.
+     *
+     * Con el zoom lejano el tren se dibuja en los primeros 64 px de pantalla...
+     * que es exactamente donde vive el reloj. Medido: la cola estaba
+     * correctamente puesta en x=310, pero no se veía — la HUD la tapaba entera.
+     * O sea que "el jugador ve el tren a lo lejos" fallaba por maquetación, no
+     * por geometría.
+     *
+     * Se resta ANTES de usar `camY` (y no en cada `translate`) para que las tres
+     * capas que lo consumen —el fondo, la vía y el mundo— se muevan juntas. Va
+     * dividido por el zoom porque `camY` está en unidades de mundo: así el
+     * desplazamiento son siempre los mismos píxeles EN PANTALLA, esté el zoom
+     * donde esté.
+     */
+    const DESPLAZO_HUD = 20;
+    const camY = Math.max(0, Math.min(campoAbajo - vistaH, y - vistaH * 0.62))
+      - DESPLAZO_HUD / z;
+
+    dibujarAfuera(r, camX, z, camY, vistaW, vistaH);
 
     r.ctx.save();
-    r.ctx.translate(-camX, 0);
+    r.ctx.scale(z, z);
+    r.ctx.translate(-camX, -camY);
 
-    drawTrain(r, train, colors, camX, 0);
+    // `vistaW/vistaH`: con el zoom alejado entra MUCHO más mundo del que mide la
+    // pantalla, y sin decírselo el tren queda fuera del recorte y no se dibuja.
+    drawTrain(r, train, colors, camX, camY, vistaW, vistaH);
     dibujarFogonazos(r, camX);
 
     for (const ob of obstaculos) {
-      if (ob.x < camX - 20 || ob.x > camX + r.width + 20) continue;
-      dibujarObstaculo(r, ob);
+      const ox = obX(ob);
+      if (ox < camX - 20 || ox > camX + vistaW + 20) continue;
+      dibujarObstaculo(r, ob, ox);
     }
 
     dibujarMarcaDeSalto(r);
@@ -622,29 +876,80 @@ export function createRideScene(services) {
     dibujarPanel(r);
   }
 
-  function dibujarAfuera(r, camX) {
-    r.clear(colors.outside);
+  /**
+   * EL PAISAJE DE FONDO.
+   *
+   * Se dibuja DENTRO del mismo `scale` que el resto, para que las montañas y el
+   * horizonte se alejen junto con el tren en vez de quedarse clavados a un
+   * tamaño fijo — si no, al alejar el zoom el fondo se leería como una calcomanía
+   * pegada a la pantalla y se perdería justamente la sensación de campo abierto
+   * que motivó todo el cambio.
+   *
+   * `vistaH` reemplaza a `r.height` en los límites: con el zoom lejos hay que
+   * llenar 432 px de mundo, no 216, o quedaría media pantalla de color plano.
+   */
+  function dibujarAfuera(r, camX, z, camY, vistaW, vistaH) {
+    // El desierto cambia con la hora, igual que el campamento. Ver
+    // CONFIG.colors.desiertoDia para por qué son dos colores y no un velo.
+    r.clear(gameState.esDeDia ? colors.desiertoDia : colors.desiertoNoche);
     const base = train.map.height;
     const P = CONFIG.parallax;
+    const campoAbajo = base + A.carrilLejos;
+
+    r.ctx.save();
+    r.ctx.scale(z, z);
+    r.ctx.translate(0, -camY);
 
     drawParallax(r, P.capas.map((c, i) => ({
       ...c, v: c.v * P.velocidad, y: 4 + i * 5,
-    })), scroll, r.width);
+    })), scroll, vistaW);
 
+    /**
+     * 🐛 ESTA CAPA ESTABA EN `base + 52` Y QUEDÓ FLOTANDO EN EL AIRE.
+     *
+     * Ese número no era una posición pensada: era el borde de abajo de la
+     * pantalla vieja (160 + 52 = 212, con la pantalla de 216). O sea que estas
+     * montañas nunca se vieron enteras — eran la última rebanada del cuadro.
+     * Con el campo de 150 px quedaron colgadas justo en el medio del desierto,
+     * y se leían como una pared de sombras a mitad de camino. Sólo se descubrió
+     * MIRANDO la escena con foto.ps1; ninguna medición lo iba a mostrar.
+     *
+     * Ahora van al fondo real del campo, que es donde el desierto termina: sirven
+     * de horizonte lejano y de límite visual de por dónde se puede galopar.
+     */
+    /**
+     * `campoAbajo + 2`, o sea JUSTO AFUERA del campo jugable — no adentro.
+     *
+     * 🐛 Primero quedaron en `campoAbajo - 10`, y mirando la escena se veía el
+     * problema al instante: el caballo arranca en el fondo del campo, así que
+     * nacía pisando la línea de montañas y se camuflaba con ella. Un horizonte
+     * que se mete en la zona por la que se galopa deja de ser horizonte.
+     *
+     * Ahora marcan el borde: hasta acá llega el desierto, y de paso le dicen al
+     * jugador dónde está el tope sin dibujar ninguna pared.
+     */
     drawParallax(r, P.capas.map((c, i) => ({
-      ...c, v: c.v * P.velocidad, y: base + 52 + i * 6,
-    })), scroll, r.width);
+      ...c, v: c.v * P.velocidad, y: campoAbajo + 2 + i * 5,
+    })), scroll, vistaW);
 
-    drawSpeedLines(r, scroll, r.width, {
+    /**
+     * Las rayas de velocidad ahora barren el CAMPO ENTERO, no la rebanada de 4
+     * px que se veía antes al fondo de la pantalla (`base + 50` a `r.height`).
+     * Es lo que mantiene la sensación de velocidad en la parte del desierto que
+     * antes directamente no existía.
+     */
+    drawSpeedLines(r, scroll, vistaW, {
       ...P.rayas, velocidad: P.rayas.velocidad * P.velocidad,
-      desde: base + 50, hasta: r.height - 2,
+      desde: base + A.carrilCerca, hasta: campoAbajo - 4,
     });
-    drawSpeedLines(r, scroll * 1.3, r.width, {
+    drawSpeedLines(r, scroll * 1.3, vistaW, {
       ...P.rayas, cantidad: 4, velocidad: P.rayas.velocidad * P.velocidad,
       desde: 2, hasta: 30,
     });
 
-    dibujarVia(r, camX);
+    r.ctx.restore();
+
+    dibujarVia(r, camX, z, camY);
   }
 
   /**
@@ -669,9 +974,19 @@ export function createRideScene(services) {
    * se engancha con ninguna: lee borrón, que es lo que de verdad se ve desde
    * un caballo al galope.
    */
-  function dibujarVia(r, camX) {
-    const ancho = Math.min(r.width, Math.round(-camX));
-    if (ancho <= 0) return;
+  function dibujarVia(r, camX, z, camY) {
+    /**
+     * `vistaW`, no `r.width`: con el zoom alejado la pantalla muestra 768 px de
+     * mundo, así que la vía tiene que dibujarse hasta ahí o se cortaría en seco
+     * a mitad de pantalla — justo el tipo de borde que delata que hay una
+     * cámara. Va dentro del mismo `scale` que todo lo demás.
+     */
+    r.ctx.save();
+    r.ctx.scale(z, z);
+    r.ctx.translate(0, -camY);
+
+    const ancho = Math.min(r.width / z, Math.round(-camX));
+    if (ancho <= 0) { r.ctx.restore(); return; }
 
     const cy = train.map.height / 2;   // el eje del tren: siempre a la mitad
 
@@ -700,6 +1015,8 @@ export function createRideScene(services) {
       r.rect(0, ry, ancho, 3, '#4f463d');
       r.rect(0, ry, ancho, 1, '#6e6357');
     }
+
+    r.ctx.restore();
   }
 
   /** El fogonazo en la ventanilla: es el aviso de que ese vagón va a tirar. */
@@ -718,17 +1035,67 @@ export function createRideScene(services) {
     }
   }
 
-  function dibujarObstaculo(r, ob) {
+  /**
+   * Los cuatro del desierto. Todos miden lo mismo para el choque
+   * (`obstaculoRadio`); lo que cambia es la silueta, para que el campo no se
+   * lea como el mismo objeto repetido cien veces.
+   *
+   * Cada uno lleva su sombra en el suelo antes que nada: es lo que los despega
+   * de la arena y lo que hace legible a qué altura del campo está cada cosa
+   * cuando el zoom está lejos y todo se ve chiquito.
+   */
+  function dibujarObstaculo(r, ob, ox) {
     if (ob.golpeado) {
-      r.rect(ob.x - 5, ob.y - 2, 10, 3, '#3a2b20');
+      r.rect(ox - 5, ob.y - 2, 10, 3, '#3a2b20');
       return;
     }
+
+    /**
+     * CADA SILUETA CRECIÓ HASTA SU PROPIO RADIO (ver `obstaculoRadios` en
+     * data/horse.js). La sombra del piso usa el radio directamente, así que es
+     * la pista visual de qué tan grande es la huella de cada cosa — y es lo
+     * primero que se lee cuando el zoom está lejos y todo se ve chiquito.
+     */
+    const radio = radioDe(ob);
+    r.ctx.globalAlpha = 0.22;
+    r.rect(ox - radio, ob.y + 2, radio * 2, 3, '#000');
+    r.ctx.globalAlpha = 1;
+
     if (ob.tipo === 'roca') {
-      r.rect(ob.x - 6, ob.y - 4, 12, 8, '#5a5048');
-      r.rect(ob.x - 6, ob.y - 4, 12, 3, '#6e6359');
+      // La más grande y la única realmente sólida: 20 px de ancho.
+      r.rect(ox - 10, ob.y - 6, 20, 11, '#5a5048');
+      r.rect(ox - 10, ob.y - 6, 20, 4, '#6e6359');
+      r.rect(ox - 7, ob.y - 8, 9, 3, '#5a5048');
+    } else if (ob.tipo === 'arbusto') {
+      r.rect(ox - 9, ob.y - 4, 18, 8, '#3d4a2a');
+      r.rect(ox - 6, ob.y - 8, 12, 5, '#4d5c34');
+      r.rect(ox - 3, ob.y - 10, 6, 3, '#4d5c34');
+    } else if (ob.tipo === 'cactus') {
+      // La silueta más ALTA del desierto (la que más se distingue de lejos),
+      // pero de tronco angosto — por eso su radio no es el mayor.
+      r.rect(ox - 3, ob.y - 15, 6, 20, '#3f6b3a');
+      r.rect(ox - 3, ob.y - 15, 3, 20, '#4f8247');
+      r.rect(ox - 7, ob.y - 9, 4, 3, '#3f6b3a');
+      r.rect(ox - 8, ob.y - 13, 3, 5, '#3f6b3a');
+      r.rect(ox + 3, ob.y - 5, 4, 3, '#3f6b3a');
+      r.rect(ox + 6, ob.y - 10, 3, 6, '#3f6b3a');
     } else {
-      r.rect(ob.x - 6, ob.y - 3, 12, 6, '#3d4a2a');
-      r.rect(ob.x - 4, ob.y - 6, 8, 4, '#4d5c34');
+      /**
+       * Montículo de arena: bajo y chato, el más perdonador de los cuatro.
+       *
+       * 🐛 SUS TONOS ERAN CASI EL DEL SUELO NUEVO (#8a7350 contra #8a6f47) y
+       * sobre la arena de día **desaparecía**: quedaba un obstáculo que te
+       * frena y no se ve, que es lo único que este juego no se permite.
+       *
+       * Se arregla con RELIEVE en vez de con un color: una falda en sombra
+       * abajo y una cresta iluminada arriba. Así no depende de contrastar
+       * contra un fondo en particular — la sombra es más oscura que la arena y
+       * más clara que la noche, y la cresta al revés, así que el montículo se
+       * lee con las dos paletas sin necesidad de una versión por hora.
+       */
+      r.rect(ox - 6, ob.y - 1, 12, 4, '#6b5334');
+      r.rect(ox - 5, ob.y - 3, 10, 3, '#a68a5c');
+      r.rect(ox - 3, ob.y - 5, 6, 3, '#c4a878');
     }
   }
 
@@ -785,7 +1152,14 @@ export function createRideScene(services) {
   }
 
   function dibujarCaballo(r) {
-    const esfuerzo = Math.min(1, Math.abs(vel) / caballo.sprintSpeed);
+    /**
+     * El ritmo del trote sale de la velocidad ABSOLUTA del animal, no de `vel`
+     * (que ahora es la diferencia contra el tren y puede ser 0 mientras el
+     * caballo corre a 90 px/s). Si se leyera de `vel`, el Mustang al trote —que
+     * empata con el tren— se dibujaría como si estuviera parado.
+     */
+    const velAbsoluta = Math.abs(vel + A.trenVelocidad);
+    const esfuerzo = Math.min(1, velAbsoluta / caballo.sprintSpeed);
     const trote = Math.sin(scroll * (18 + esfuerzo * 12)) * (0.6 + esfuerzo * 1.8);
 
     if (terminado) {
@@ -799,9 +1173,26 @@ export function createRideScene(services) {
     // Parpadea mientras sos invulnerable, igual que en el asalto.
     if (invuln > 0 && Math.floor(invuln * 20) % 2 === 0) return;
 
+    // La sombra NO rota: está en el suelo, y el suelo no se inclina.
     r.ctx.globalAlpha = 0.25;
     r.box(x, y + 7, 7, 3, '#000');
     r.ctx.globalAlpha = 1;
+
+    /**
+     * EL CABALLO APUNTA A DONDE VA — pedido de Santi, y es lo que hace que la
+     * diagonal se lea como una diagonal y no como "el mismo caballo pero más
+     * abajo".
+     *
+     * Se rota todo el conjunto (animal + jinete + sombrero) alrededor del punto
+     * del caballo, así que la cabeza, la crin y el sombrero quedan orientados
+     * solos: no hay que dibujar una silueta por ángulo. `rumbo` viene con la
+     * inercia de las riendas ya aplicada (ver `actualizarRumbo`), así que el
+     * giro que se ve en pantalla ES el retraso del animal, no el de tu tecla.
+     */
+    r.ctx.save();
+    r.ctx.translate(x, y);
+    r.ctx.rotate(rumbo);
+    r.ctx.translate(-x, -y);
 
     r.rect(x - 11, y - 5 + trote, 22, 10, colors.horse);
     r.rect(x - 11, y - 5 + trote, 22, 3, colors.horseDark);
@@ -811,7 +1202,12 @@ export function createRideScene(services) {
     r.box(x - 1, y + trote, 5, 5, colors.player);
     r.rect(x - 7, y - 6 + trote, 13, 3, colors.playerHat);
 
-    const galopando = vel > 25 || (x < plataformas[1] && Math.abs(vel) > 10);
+    r.ctx.restore();
+
+    // También por velocidad absoluta: el polvo lo levanta el casco contra el
+    // suelo, no la diferencia con el tren. Con `vel` a secas, el Mustang al
+    // trote (que empata con el tren, vel = 0) galopaba sin levantar nada.
+    const galopando = velAbsoluta > 40;
     if (galopando) {
       for (let i = 0; i < 10; i++) {
         const d = (scroll * 260 + i * 9) % 76;
@@ -831,51 +1227,82 @@ export function createRideScene(services) {
     if (visto) r.circle(x, y, 16, colors.enemyAlert, 0.25);
   }
 
+  /**
+   * LA HUD SE MUDÓ ABAJO, Y POR EL MOTIVO CONTRARIO AL DE LA VEZ PASADA.
+   *
+   * Esta misma función tenía escrito que las teclas iban ARRIBA porque *"abajo
+   * es POR DONDE GALOPÁS"*: con el carril viejo de 38 px pegado al borde
+   * inferior, cualquier texto ahí se leía como parte del piso. Era correcto
+   * entonces.
+   *
+   * 🐛 CON EL DESIERTO NUEVO SE DIO VUELTA, y esto tapaba justo lo que la
+   * vuelta venía a mostrar: **arriba es donde está el tren**, o sea la única
+   * cosa que necesitás ver mientras te acercás. Medido: con el zoom lejano la
+   * cola se dibujaba correctamente en x=310 y NO SE VEÍA — los 90 px de panel
+   * la tapaban entera. "El jugador ve el tren a lo lejos" fallaba por
+   * maquetación, no por geometría.
+   *
+   * Arriba queda SÓLO EL RELOJ, que es el dato que hay que poder mirar sin
+   * dejar de mirar el tren. Todo lo demás baja al borde de abajo, que ahora es
+   * fondo lejano y no el piso por el que galopás.
+   */
   function dibujarPanel(r) {
     const centro = r.width / 2;
-
-    r.text(T.ride.title, centro, 10, colors.text);
+    const base = r.height;
 
     const urgente = reloj <= 6;
-    r.text(T.ride.reloj(Math.max(0, Math.ceil(reloj))), centro, 22,
+    r.text(T.ride.reloj(Math.max(0, Math.ceil(reloj))), centro, 9,
       urgente ? colors.enemyAlert : colors.textDim);
+
+    /**
+     * EL AGUANTE VA ARRIBA A LA IZQUIERDA, y esa esquina se eligió mirando la
+     * escena, no por gusto. Con el zoom lejano la pantalla se reparte así:
+     *
+     *   y 0-20    libre
+     *   y 20-84   el tren (y sólo de x≈310 para la derecha)
+     *   y 87-216  el desierto, o sea por donde galopás
+     *
+     * O sea que la ÚNICA zona que no tapa ni al tren ni al caballo es la franja
+     * de arriba, y dentro de ella la mitad izquierda —porque el tren aparece
+     * por la derecha—. Cualquier cosa anclada abajo se le monta encima al
+     * caballo, que es lo que pasaba con la versión anterior.
+     */
+    const ancho = 60;
+    const bx = 6;
+    const yBarra = 6;
+    r.rect(bx, yBarra, ancho, 5, '#241c18');
+    r.rect(bx, yBarra, ancho * (aguante / caballo.aguanteMax), 5,
+      aguante > 25 ? colors.doorGlow : colors.enemyAlert);
+    r.text(caballo.short, bx + ancho + 5, yBarra + 4, colors.textDim, 'left');
 
     // Vida: sólo aparece si te dieron. Si nunca te tocaron, no hay por qué
     // ocupar pantalla recordándote que estás sano.
     if (vida < CONFIG.player.health) {
       let s = '';
       for (let i = 0; i < CONFIG.player.health; i++) s += i < vida ? '●' : '○';
-      r.text(s, centro, 34, colors.enemyAlert);
+      r.text(s, bx, yBarra + 15, colors.enemyAlert, 'left');
     }
 
-    const ancho = 88;
-    const bx = centro - ancho / 2;
-    const yBarra = vida < CONFIG.player.health ? 44 : 34;
-    r.rect(bx, yBarra, ancho, 5, '#241c18');
-    r.rect(bx, yBarra, ancho * (aguante / caballo.aguanteMax), 5,
-      aguante > 25 ? colors.doorGlow : colors.enemyAlert);
-    r.text(caballo.short, bx - 6, yBarra + 4, colors.textDim, 'right');
-
+    // Lo del tren se lee una vez y no vuelve a mirarse: al borde de abajo, que
+    // es fondo lejano y queda por detrás del caballo, no encima.
     r.text(`${tipoTren.short} · ${T.boarding.escort} ${dificultad.short}`,
-      centro, yBarra + 16, dificultad.color);
+      centro, base - 7, dificultad.color);
 
     if (barra) dibujarBarra(r, centro);
-    else if (aviso) r.text(aviso.texto, centro, yBarra + 30, aviso.color);
-    else if (visto) r.text(T.ride.alarmaAviso, centro, yBarra + 30, colors.enemyAlert);
+    else if (aviso) r.text(aviso.texto, centro, 22, aviso.color);
+    else if (visto) r.text(T.ride.alarmaAviso, centro, 22, colors.enemyAlert);
 
     /**
-     * LAS TECLAS VAN ARRIBA, NO ABAJO, y no es un capricho de maquetación:
-     * abajo es POR DONDE GALOPÁS. Estaban en y=190 y 202, o sea justo encima
-     * del carril del caballo, y se leían como parte del piso. Con la
-     * persecución de dos segundos casi no se veía; ahora se ve todo el rato.
-     *
-     * Y duran lo que dura la persecución en vez de siete segundos fijos: el
+     * Las teclas duran lo que dura la persecución en vez de un tiempo fijo: el
      * cartel se va solo cuando alcanzás la cola, que es exactamente cuando
-     * dejás de necesitarlo y empezás a necesitar la pantalla.
+     * dejás de necesitarlo y empezás a necesitar la pantalla. Van arriba y al
+     * centro porque justo mientras se muestran el tren todavía está chiquito y
+     * arrinconado a la derecha: cuando el tren crece y ocupa esa franja, este
+     * cartel ya se fue.
      */
     if ((!alcanzada || scroll < 7) && !terminado && !barra) {
-      r.text(T.ride.help, centro, yBarra + 44, colors.textDim);
-      r.text(T.ride.keys, centro, yBarra + 56, colors.bagLoot);
+      r.text(T.ride.keys, centro, 36, colors.bagLoot);
+      r.text(T.ride.help, centro, 47, colors.textDim);
     }
   }
 

@@ -13,6 +13,2058 @@ Tres estados:
 
 ---
 
+## ✅ HECHA · Las tres armas cuerpo a cuerpo: culata, cuchillo y hacha
+
+*(idea de Santi: "podés golpear cuerpo a cuerpo con tu arma, pero los dejás
+inconscientes, no muertos ni le sacás una vida. Pegar con el arma tiene que ser
+muy rápido, pero no mortal. Luego podrías comprar el cuchillo: un poco más lento
+que pegar con la culata, pero ya sacaría una vida. Y luego el hacha:
+extremadamente lenta, pero elimina tres vidas")*
+
+### Las dos situaciones NO cambiaron, y ése es todo el truco
+
+El cuerpo a cuerpo ya tenía dos casos (por la espalda a alguien que no te vio =
+ejecución silenciosa; de frente = forcejeo escandaloso). El arma **no agrega un
+caso nuevo**: sólo decide qué tan fuerte, qué tan rápido y si el golpe por la
+espalda mata o noquea.
+
+| | Por la espalda | De frente | Cadencia |
+|---|---|---|---|
+| **Culata** (gratis) | **inconsciente 25 s** | 0 daño, sólo aturde | **0,30 s** |
+| **Cuchillo** ($120) | muerto, silencioso | −1 vida | 0,55 s |
+| **Hacha** ($300) | muerto, silencioso | **−3: mata de un golpe** | **1,50 s** |
+
+Los números del cuchillo son **los que ya estaban** en CONFIG.melee (daño 1,
+cooldown 0,50→0,55), a propósito: el arma ya jugada y afinada queda igual y lo
+nuevo se construye alrededor. Y el 3 del hacha no es arbitrario — los guardias
+tienen 2 o 3 de vida, así que es el número exacto que **resuelve un encuentro de
+frente sin disparar**, que es algo que ninguna otra arma del juego hace.
+
+### La decisión que hacía o rompía todo: qué es un inconsciente
+
+Si un noqueado no despierta y no delata, la culata (gratis y la más rápida)
+sería **mejor** que el cuchillo que hay que pagar, y la tienda no tendría nada
+que vender. Se le plantearon tres opciones a Santi y eligió la que sostiene la
+economía:
+
+> **Se despierta a los 25 s, y tirado delata igual que un cadáver.**
+
+Y esa frase se convirtió en tres reglas verificadas:
+
+- **Delata:** `findVisibleBody` ahora acepta a los inconscientes. De lejos nadie
+  distingue a un muerto de alguien que respira tirado. Medido: el compañero que
+  lo encuentra pasa a `combat` y queda `spooked`.
+- **Se despierta:** a los ~23 s medidos, con la vida intacta y marcado `spooked`
+  para el resto del asalto — o sea que ya nunca vuelve a bajar la guardia. Un
+  tipo al que le partieron la cabeza no retoma su ronda silbando.
+- **No hace nada mientras duerme:** el chequeo va antes que todo en
+  `updateEnemy`, incluso antes del stagger y de huir de la dinamita. Un desmayado
+  no huye de una mecha.
+
+**Comprar el filo no es comprar poder: es comprar que el problema no vuelva.** Es
+la misma economía que ya tenía la armería de fuego, donde la tienda "no te vende
+poder, te vende permiso para hacer ruido".
+
+### 🐛 Y una barra de la tienda que mentía
+
+La tercera barra decía **SILENCIO**, llena para la culata y vacía para las otras
+dos. Era falso: **las tres son silenciosas por la espalda**, usan el mismo
+`quietNoise`. Lo que la culata tiene de único es que no mata.
+
+Se renombró a **PIEDAD**, y no es una virtud decorativa: medido, un guardia
+degollado con la alarma sonando suma **15 de recompensa** (`bounty.pesoGuardia`)
+y uno noqueado suma **cero**. La barra llena de la culata es plata que no vas a
+pagar en la horca — y de paso deja la puerta abierta a que no matar mueva
+`gameState.honor`, que existe desde la fase 1 y todavía nada toca.
+
+### Lo que costó agregarlo, que es el punto
+
+`data/tienda.js` prometía que agregar un rubro debía ser *"escribir una entrada
+acá y nada más"*, y casi se cumplió: una entrada en el catálogo, un renglón en
+el diálogo del armero y su texto. **La escena de tienda no se tocó** — sigue sin
+saber si muestra un revólver, un caballo o un hacha.
+
+La única excepción fue el dibujo, y por una razón legítima: `dibujarArma` puede
+dibujar todo el catálogo de fuego con las mismas piezas porque *el Smith ES un
+Colt con otras proporciones*. Una culata, un cuchillo y un hacha son tres objetos
+distintos — con el molde del revólver habría salido un hacha con tambor y
+guardamonte. Por eso `mercaderia: 'filo'` elige otro dibujo, separado de
+`escenario`, que sigue siendo el mismo mostrador.
+
+### TENER vs. LLEVAR PUESTO — el campamento pasó a ser donde te equipás
+
+*(pedido de Santi: "desde el cajón de armas del campamento el jugador deberá
+equiparse como quiera. Y en el poste con el caballo, el caballo que quiera. El
+jugador no debería ir hasta el pueblo para equipar lo que quiere")*
+
+Hasta acá **comprar ERA equipar** y no existía la diferencia — el propio
+comentario de `shopScene.js` lo decía: *"hoy no hay inventario de 'tengo dos y
+uso uno'"*. Comprar el Smith te dejaba sin el Colt, y volver a él costaba
+caminar hasta el pueblo, esperar a que fuera de día y **pagarlo de nuevo**.
+
+Ahora hay `gameState.owned` con tres listas (arma, acero, caballo):
+
+> **La tienda decide qué TENÉS. El campamento, qué LLEVÁS hoy** — gratis y a
+> cualquier hora.
+
+- El **cajón** abre un menú con todas tus armas de fuego y aceros, en una sola
+  lista. Un cajón es un cajón: revolvés y sacás. No hacía falta explicar que son
+  dos categorías.
+- El **poste** abre el suyo con los caballos — y **"darle de comer" va primero**,
+  porque era lo único que hacía el poste con `[E]` y cambiarlo por un menú de
+  inventario habría reemplazado un gesto de cuidar al animal por uno de
+  administrar objetos. Lo normal sigue siendo lo más fácil.
+- **El menú se refresca sin cerrarse:** cambiás de revólver, la marca se mueve y
+  seguís eligiendo. Es la diferencia entre revolver un cajón y navegar un menú.
+
+**El menú salió de `interiorScene` a `engine/menu.js`.** Era el diálogo del
+armero, ya jugado y probado, y ahora lo comparten los dos — el interior quedó
+con lo suyo (la pregunta del vendedor y qué significa cada respuesta) y el
+cuadro es de todos. No sabe qué significan las opciones: recibe `{id, texto}` y
+devuelve cuál elegiste, así que el mismo menú sirve para comprar un caballo,
+cambiar de revólver o darle de comer al animal. **Le va a servir a la cantina el
+día que exista.**
+
+### La culata salió del mostrador
+
+*(pedido de Santi: "me gustaría que la culata del arma no esté en la tienda")*
+
+**No es un objeto que se compre: es no tener nada.** Ponerla en la vidriera con
+un cartel de $0 sería vender el hecho de tener manos. Rompe a propósito la regla
+de "siempre está el tuyo en la lista para comparar" —esa regla existe para que
+la pregunta sea *"¿es mejor que el que tengo?"*, y acá la contesta el precio.
+
+Sigue estando en el catálogo y en el cajón del campamento: **volver a ella es
+gratis**, que es exactamente lo que tiene que ser cuando la ventaja de no matar
+(menos recompensa) puede convenirte más que el filo.
+
+### Los precios, y el hacha guardada
+
+*(decisión de Santi: "el hacha todavía no la pongas en la tienda. Quiero que se
+desbloquee en la región bosque. Al Mustang ponle un precio de 1200 y al Revólver
+Smith de 600. Y al cuchillo un precio de 450")*
+
+| | Antes | Ahora |
+|---|---|---|
+| Cuchillo | — | **450** |
+| Revólver Smith | 250 | **600** |
+| Mustang | 400 | **1200** |
+| Hacha | — | **900, y NO se vende** |
+
+El salto es grande y va en una dirección clara: con un tren promedio dando
+~$1200 a tren limpio, el Mustang pasó de "una buena corrida" a **varios
+asaltos**. La tienda dejó de ser algo que se agota en la primera visita.
+
+**El hacha está entera y apagada**, con el mismo patrón que "Alta vigilancia"
+(`peso: 0` en data/train.js): no se amputó, se guardó. Lleva
+`desbloqueo: 'bosque'`, y `shopScene` filtra el mostrador contra
+`gameState.flags`. Poniendo `gameState.flags.bosque = true` desde la consola
+aparece y funciona — verificado en los dos sentidos.
+
+Y el campo no es del hacha, es **del sistema de tiendas**: cualquier ítem de
+cualquier catálogo puede llevarlo. El día que haya un caballo o un revólver
+atado a una región, es agregar el campo y nada más.
+
+> ⚠️ **Los 900 del hacha son una estimación mía, no de Santi** — él la dejó
+> afuera a propósito. Salen de ordenarla contra la escala nueva: tiene que
+> costar más que el cuchillo (450), porque hace todo lo que hace el cuchillo Y
+> resuelve un encuentro de frente. Con los 300 que tenía, **el arma fuerte salía
+> más barata que la débil**. Hay que confirmarlo cuando exista el bosque.
+
+### Verificado
+
+- **Las seis combinaciones** (tres armas × espalda/frente) dan exactamente lo
+  pedido, incluido que el hacha mate de un golpe de frente a un guardia de 2.
+- **El mostrador del acero muestra dos** sin la llave del bosque y **tres** con
+  ella; las otras dos tiendas no se enteraron.
+- **Comprar en las tres tiendas** cobra el precio correcto y equipa en su propia
+  ranura sin pisar a las otras (arma de fuego, acero y caballo son tres
+  preguntas separadas).
+- **El circuito entero, de punta a punta:** comprar el Smith y el cuchillo deja
+  el Colt guardado; volver al Colt desde el cajón del campamento funciona sin
+  pisar el acero; el poste da de comer sin cambiar de caballo y cambia de
+  caballo cuando se lo pide; y el asalto arranca con lo que quedó equipado.
+- **Sin regresiones:** campamento, pueblo, los tres interiores y las tres
+  tiendas renderizan, y el diálogo del armero —que ahora corre sobre el módulo
+  compartido— sigue abriendo y dibujándose igual.
+- Rematar con filo a alguien noqueado funciona: un inconsciente cuenta como "no
+  te vio", así que se puede convertir un noqueo en algo definitivo.
+- Las **tres tiendas** (armería, establo, acero) renderizan; comprar equipa.
+- **Tres asaltos completos**, uno por arma, sin errores de JS.
+
+> 🔍 El arnés volvió a mentir una vez: los primeros seis golpes no conectaban
+> ninguno. No era el código — `updatePlayer` recalcula `p.aim` desde el mouse en
+> cada cuadro y pisaba el ángulo que yo le ponía a mano. Para probar el cuerpo a
+> cuerpo hay que mover el MOUSE, no `p.aim`.
+
+---
+
+## ✅ HECHA · Caminar de costado o de espaldas, respecto a tu propia mira, es más lento
+
+*(idea de Santi: "si el personaje está tocando la D y el arma apunta hacia
+enfrente, avanza normalmente. Pero si estuviera tocando la D y mirando hacia
+abajo con el puntero, estaría caminando de costado, y ahí es donde se debería
+penalizar la velocidad")*
+
+Hasta acá caminar rendía igual para cualquier lado: de frente, de costado o de
+espaldas a tu propia mira, mismos px/s. Con mouse+WASD eso permite correr en una
+dirección mientras apuntás para otra sin pagar nada — cómodo, pero le saca
+sentido a la idea de "encarar" algo.
+
+### Cómo se mide, sin inventar geometría nueva
+
+`moveDirX/Y` (entities/player.js) ya es un vector UNITARIO hacia dónde caminás
+— existe desde antes, para que la IA de los guardias detecte si "venís hacia
+él" (`CONFIG.enemy.panicoCoseno`). Y `(cos(p.aim), sin(p.aim))` es el vector
+unitario hacia dónde apuntás. **El producto punto de dos vectores unitarios YA
+ES el coseno del ángulo entre los dos** — sin `atan2`, sin comparar ángulos:
+1 de frente, 0 de costado, −1 de espaldas.
+
+Dos tramos, no una curva sola: de frente (1) a costado (0) interpola hacia
+`direccionCostado`, y de costado (0) a espaldas (−1) interpola hacia
+`direccionAtras`. Con una sola interpolación de −1 a 1, el de costado saldría
+forzado al promedio de los otros dos y no se podría afinar por separado.
+
+### Los números — uno inventado, uno reusado
+
+| | Valor | De dónde sale |
+|---|---|---|
+| `direccionCostado` | 0,70 | Calculado contra `enemy.aimTime` (0,30s, la ventana de reacción antes de que un guardia dispare): de frente cubrís 23px en esa ventana, de costado bajás a 16px |
+| `direccionAtras` | 0,50 | **No es un número nuevo**: reusa el precio que el juego ya cobra en TRES lugares (`sneakSpeed`, `mira.velocidad`, `coverSpeed`, los tres 40 px/s = 51% de `speed`). En la misma ventana de reacción, retroceder cubre apenas 12px — casi no alcanza para salir del marco de una ventana |
+
+Elegidas de tres opciones (leve/moderada/fuerte) presentadas con esta misma
+métrica; Santi eligió la moderada.
+
+### 🐛 Un bug real, mío, de sintaxis — y por qué no se vio hasta la verificación
+
+Al insertar el bloque nuevo en `CONFIG.player` (data/config.js) se comió sin
+querer el `},` que cerraba ese objeto: el bloque `mira` quedó anidado DENTRO de
+`player` en vez de al lado. El archivo cargaba igual en el editor —es JS
+válido línea por línea— pero `import()` tiraba `Unexpected token ';'` al
+juntar todo. Se encontró enseguida porque **el primer paso de verificación es
+siempre cargar el módulo antes de jugar con él**, no asumir que compiló.
+
+### 🔍 Dos veces el arnés de prueba mintió al medir esto, y las dos son la misma familia de error
+
+1. **Fijé el mouse en coordenadas de PANTALLA en vez de MUNDO.** La cámara
+   sigue al jugador, así que a mitad de la prueba de 500ms el punto al que
+   apuntabas ya no era el mismo respecto al jugador — el ángulo se corría solo
+   mientras medía. Con el mouse resincronizado a la posición-mundo en cada
+   cuadro, los 8 casos (frente/costado/atrás en las cuatro teclas) dieron
+   EXACTO lo esperado: 78,0 / 54,6 / 39,0, coseno 1 / 0 / −1.
+2. **Un "costado" mal etiquetado en mi propia prueba.** Medí una diagonal (D+S)
+   con la mira apuntando puro horizontal y esperaba 54,6 (costado); dio 71,15
+   y por un segundo pareció un bug. No lo era: ese caso tiene coseno 0,71 (no
+   0) — el movimiento diagonal y la mira horizontal no son perpendiculares
+   entre sí. Recalculado, 78×(0,70 + 0,30×0,71) = 71,15, exacto. La prueba
+   estaba mal armada, no la fórmula.
+
+**Verificado, con el mouse arreglado:**
+
+- Los cuatro casos cardinales (D/A/W/S) en frente, costado y espaldas: exactos.
+- Diagonal (D+S) con la mira exactamente perpendicular al movimiento
+  (coseno real = 0, no aproximado): 54,6 — igual que el costado cardinal.
+- Diagonal con coseno intermedio (0,71): 71,15 — la interpolación lineal se
+  cumple en un punto que no es ninguno de los tres casos de referencia.
+- Cuatro corridas completas (los tres tipos de tren, dos dificultades): sin
+  errores de JS, sin NaN en la posición.
+
+---
+
+## ✅ HECHA · El galope dejó de ser un pasillo: zoom dinámico, desierto y diagonales
+
+*(Santi, después de ver a su hermano jugarlo por primera vez: "se siente muy
+aburrida la parte del galope previo al salto al tren". Y el pedido concreto:
+"primero que se haga menos zoom, que se vea mucho más el paisaje. Y el caballo
+no debería empezar ahí pegado al tren, debería empezar desde una esquina mucho
+más atrás, galopar esquivando cactus, rocas y pequeños montículos de arena.
+Cuando galopa llegando al tren, no tiene que ser algo recto, el jugador debería
+poder moverse en diagonal libremente hacia el tren")*
+
+### El diagnóstico: no faltaba contenido, faltaba PANTALLA
+
+Medido antes de tocar nada, y explica las cuatro quejas de una sola vez:
+
+```
+pantalla:  216 px de alto
+tren:      160 px  ← el 74%
+sobra:      56 px  → de ahí salían los 38 px de carril (de 8 a 46)
+```
+
+**En 38 px de alto no entra un desierto, no entra una diagonal y no entran
+obstáculos que valga la pena esquivar.** Apretabas W o S y en medio segundo
+estabas contra el tope: por eso se sentía sobre rieles. No era un problema de
+duración — alargar la persecución sin abrir antes el espacio habría hecho el
+problema más largo, no menor.
+
+### El zoom dinámico, que fue idea de Santi y es mejor que lo que se le ofreció
+
+Se le presentaron tres zooms FIJOS (0,5 / 0,7 / 0,8) y contestó: *"yo haría que
+el tren pase a ser 80px, pero a medida que el caballo se acerca se va haciendo
+más zoom"*.
+
+**Eso resuelve la única objeción que tenía el 0,5 fijo.** A esa escala se ve
+muchísimo paisaje, pero las ventanillas, los enganches y la marca verde del
+salto quedan diminutos — y de esas tres cosas depende clavar el salto. Atado a
+la distancia, el tren chico existe SÓLO mientras galopás lejos, que es
+exactamente cuando no necesitás ese detalle.
+
+Y hace algo que ningún zoom fijo podía: **la escena se cierra sola sobre el
+tren a medida que lo alcanzás**, así que el propio encuadre cuenta que te estás
+acercando, sin una línea de texto. Medido a lo largo de la persecución:
+
+| Falta para la cola | Zoom | El tren mide |
+|---|---|---|
+| 1000 px (largada) | 0,50 | 80 px |
+| 564 px | 0,59 | 95 px |
+| 330 px | 0,81 | 129 px |
+| 51 px | 0,99 | 159 px |
+
+La curva es un smoothstep, no una recta: un cambio de escala con bordes duros
+se lee como un tirón de cámara. Y llega a escala 1 con 220 px todavía por
+recorrer, para que **la transición termine antes de que empiece a importar el
+detalle** — un zoom moviéndose mientras apuntás un salto sería peor que
+cualquier zoom fijo.
+
+### Lo demás
+
+| | Antes | Ahora |
+|---|---|---|
+| Campo (`carrilLejos`) | 46 (38 px útiles) | **150** — cabe una diagonal de verdad |
+| Arranque | 620 px atrás, en el medio del carril | **1000 px atrás, en la esquina del fondo** |
+| Reloj | 40 s | **55 s** |
+| Obstáculos | 2 tipos, cada 130 px, sólo en la franja | **4 tipos** (+ cactus, + montículo), cada 85 px, **en todo el campo** |
+
+`carrilCerca` (8) NO se tocó, y es lo que conserva el nudo de la escena: de él
+cuelgan `saltoDistancia` y `verDistancia`, o sea *"para saltar hay que
+arrimarse, y arrimarse es donde te ven"*. Lo que se agrandó es el desierto, no
+la zona de peligro.
+
+**Y la cámara ahora también sigue en vertical**, porque 150 px de campo no
+entran en pantalla con el zoom cerca. Su tope de arriba es 0: el tren puede
+quedar cortado por arriba, y está bien — de un tren, en esta escena, lo que
+importa es su BORDE DE ABAJO, que es donde están los enganches, las ventanillas
+y la marca del salto.
+
+### El balance no se movió, y era la condición para todo lo demás
+
+`tiempoAproximacion` subió 40 → 55 en la misma proporción que la persecución
+(11,4 s → 18,3 s hasta la cola), justo para que **lo que te queda DESPUÉS de
+tocar la cola no cambie** — que es donde vive la decisión de hasta qué enganche
+adelantarte. Verificado con los dos caballos:
+
+| Caballo | Enganche | Reloj al llegar | Aguante |
+|---|---|---|---|
+| Criollo | **3º (su máximo)** | 8,3 s | 10 |
+| Criollo | 1º | 34,5 s | 160 |
+| Mustang | **2º (su máximo)** | 36,4 s | 20 |
+
+Idéntico a lo documentado desde la fase 2: el Criollo llega al 3º y el Mustang
+al 2º y no más. Si no se hubiera subido el reloj, alargar la persecución habría
+sido en los hechos recortar el alcance del Criollo — el mismo error que este
+número ya se comió y corrigió dos veces.
+
+### SEXTA VUELTA · El desierto tiene hora
+
+*(Santi: "poné el suelo color arena (como el del campamento) y cuando es de
+noche estará oscuro y si es de día estará como el color arena del campamento")*
+
+El galope se dibujaba sobre `outside` (#0d0b0c, casi negro) a cualquier hora.
+Ahora usa dos colores según `gameState.esDeDia`, y el de día **no es un color
+nuevo**: es exactamente `campDesiertoDia`, el mismo ocre que rodea al
+campamento. Reusarlo en vez de inventar otro es lo que hace que las dos escenas
+se lean como el mismo mundo — el campamento y el galope pasan en el mismo
+desierto, así que tienen que tener el mismo suelo.
+
+**Son dos colores y no uno con un velo encima**, por el mismo motivo por el que
+el campamento ya tenía dos paletas propias: la noche del desierto no es "la
+arena, pero más oscura". Es tierra sin luz, con otro tono.
+
+`outside` queda vivo porque es el color del VACÍO —lo que se ve por los
+enganches del tren— y eso no es suelo ni cambia con la hora.
+
+> Esto rompe, sólo para el galope, la nota del README que decía *"el galope y el
+> asalto no cambian con la hora"*. El asalto sigue igual: adentro de un vagón la
+> hora no se ve.
+
+#### 🐛 Y el montículo desapareció
+
+Sus tonos eran casi los del suelo nuevo (#8a7350 contra #8a6f47), así que sobre
+la arena de día quedaba **un obstáculo que te frena y no se ve** — lo único que
+este juego no se permite. Sólo se descubrió mirando la fila de los cuatro tipos
+ampliada con foto.ps1; ninguna medición lo iba a mostrar.
+
+Se arregló con RELIEVE en vez de con un color: falda en sombra abajo, cresta
+iluminada arriba. Así no depende de contrastar contra un fondo en particular —
+la sombra es más oscura que la arena y más clara que la noche, y la cresta al
+revés — y no hizo falta una versión por hora.
+
+### QUINTA VUELTA · Los obstáculos dejaron de ser todos iguales
+
+*(Santi: "haría que los obstáculos sean un poquito más peligrosos. Deberían ser
+más grandes, pero no tanto. Y no todos por igual")*
+
+🐛 **Los cuatro chocaban con el mismo radio 7**, aunque se dibujan muy distintos:
+un montículo bajo de 14 px de ancho y un cactus de tronco flaco te frenaban
+exactamente igual. Eso contradecía una regla que el proyecto tiene escrita desde
+que se afinó la hitbox de los guardias —*"la caja que ves siempre es la caja que
+te puede matar"*— y hacía que el desierto se sintiera parejo: daba lo mismo qué
+esquivaras.
+
+Los cuatro radios salen de la SILUETA, no de un ajuste al azar, y cada dibujo
+creció hasta el suyo. Medido sobre **el mismo conjunto de obstáculos** evaluado
+con las dos configuraciones (para que no lo ensucie la generación aleatoria):
+
+| | Radio | Probabilidad de chocarlo |
+|---|---|---|
+| **Roca** — lo único sólido de verdad | 10 | 8,3% → **10,1%** |
+| **Arbusto** — ancho y enredoso | 9 | 8,0% → **9,4%** |
+| **Cactus** — alto pero de tronco angosto | 8 | 8,2% → **8,8%** |
+| **Montículo** — arena, el más perdonador | 6 | 8,1% → **7,5%** |
+| **Global** | | 8,17% → **8,94% (+9%)** |
+
+Que el montículo BAJE es parte del diseño: si todo es peligroso, elegir por
+dónde pasar no es una decisión. Ahora hay una línea barata y una cara.
+
+#### 🔍 Y estuve a punto de ajustar un número calibrado contra puro ruido
+
+Después del cambio, una corrida del caso límite —el Criollo llegando al 3er
+enganche— dio **5 de 6 con 5,0 s de margen**, contra los 8,1 s de antes. Parecía
+una regresión clara contra el estándar escrito de ese caso (*"margen 5-8 s,
+consistente en 6 de 6"*), así que se subió `tiempoAproximacion` de 45 a 48 para
+compensar.
+
+**Y el resultado empeoró: 4 de 6.** Con más reloj no puede ir peor — o sea que
+la señal era ruido.
+
+Medido en serio (10 corridas por serie, misma política de piloto, mismo reloj,
+cambiando SÓLO los radios) el efecto real es de **+0,2 choques por corrida**, y
+el margen no se mueve de forma distinguible: 5,5 s con los radios viejos contra
+6,2 s con los nuevos, o sea al revés de lo que "mostraba" la muestra chica. El
+reloj volvió a 45.
+
+> **La lección:** el caso límite del Criollo es marginal POR DISEÑO, así que su
+> tasa de éxito es la métrica más ruidosa del juego — justo la peor para
+> detectar regresiones. Seis corridas no alcanzan para distinguir una regresión
+> de la varianza, y "compensar" contra eso habría metido un número inventado en
+> un archivo donde todos los demás están medidos.
+
+### 🐛 CUARTA VUELTA · El tren no se movía, y el caballo no miraba a dónde iba
+
+*(Santi: "el tren literalmente parece no moverse. Es un problema gravísimo,
+porque si yo me quedo quieto o me demoro en esquivar los obstáculos, el tren
+debería irse". Y sobre la diagonal: "cuando dije que el caballo debería poder
+moverse en diagonal es que quiero que su cabeza apunte a esa diagonal. El
+jugador no controla el caballo, controla al jinete que tira de las riendas, y
+eso se debería notar en la jugabilidad")*
+
+#### El tren quieto: dos causas independientes, más una tercera escondida
+
+Medido sin tocar una sola tecla: el caballo se acercaba **solo, a 55 px/s**.
+
+1. **Mecánica.** `alcanceSpeed` daba una velocidad relativa positiva por estar
+   detrás de la cola. Era imposible quedarse atrás: no era una persecución, era
+   una cinta transportadora.
+2. **Visual.** Los obstáculos vivían en el MISMO marco que el tren, así que el
+   tren estaba clavado respecto de los cactus — se veía **estacionado en el
+   desierto** aunque el parallax de fondo scrolleara.
+3. **Y una tercera, que sólo apareció al arreglar las otras dos:** un tope de
+   `minX` que decía "no te podés quedar más atrás de donde arrancaste". En el
+   modelo viejo casi nadie lo tocaba; en el nuevo, el jugador arranca
+   EXACTAMENTE ahí, así que impedía atrasarse un solo píxel. Medido después de
+   poner las velocidades absolutas: el Criollo debía perder 19 px/s y perdía 0.
+   **Un arreglo puede quedar tapado por una regla vieja que nadie volvió a
+   mirar.**
+
+#### El modelo de velocidades absolutas — lo corrigió Santi
+
+Se le ofreció un modelo peor ("¿qué tan rápido se te va el tren si soltás?") y
+lo rechazó: *"no funcionaría así. El tren se mueve a una cierta velocidad, los
+caballos a otra. Dependiendo la velocidad del caballo es cuánto se puede dar el
+lujo de pegarse o esquivar obstáculos"*.
+
+Antes `sprintSpeed` era la velocidad RELATIVA al tren, con el tren tratado como
+si estuviera quieto. Ahora cada caballo tiene su velocidad real y **lo que
+decide todo es la resta** contra `trenVelocidad` (90):
+
+| | Galopando | Al trote (sin apretar nada) |
+|---|---|---|
+| **Criollo** (142) | +52 · gana terreno | **71 → el tren le saca 25 px/s** |
+| **Mustang** (180) | +90 · gana el doble | **90 → le sigue el paso exacto** |
+
+Y ahí está la idea de Santi, verificada: en 8 segundos sin tocar nada el Criollo
+pierde **199 px** y el Mustang **36**. El Mustang puede rodear un cactus con
+calma; el Criollo, cada segundo que no galopa, se atrasa. **La velocidad dejó de
+ser sólo "llego antes" y pasó a ser "cuánto me puedo distraer"** — que es una
+stat mucho más interesante, y salió de una frase suya, no de un ajuste.
+
+Los absolutos se eligieron para que la resta diera exactamente las ventajas
+relativas de siempre, así que **el balance no se movió**: Criollo al 3er
+enganche (8,1 s, 16 de aguante), Mustang al 2º y al 3º nunca.
+
+El suelo desfila a `trenVelocidad`, con los obstáculos **reciclándose** adelante
+cuando quedan atrás: el desierto no se acaba y el tren se ve cruzándolo.
+
+#### Las riendas
+
+El rumbo del caballo **no se asigna: se persigue**. Vos marcás la dirección y el
+animal tarda `giroTiempo` (0,45 s, elegido por Santi) en llegar a apuntar ahí —
+y al soltar sigue virado un momento antes de enderezarse. Medido: apretando W
+llega a −33° progresivamente y vuelve igual de gradual, sin saltos. El dibujo
+entero (animal, jinete y sombrero) rota con el rumbo, así que no hizo falta una
+silueta por ángulo.
+
+En un juego de naves esa demora sería un defecto; acá es el punto: se siente que
+hay un bicho con inercia entre tu mano y la dirección.
+
+#### 🐛 Dos bugs más, encontrados mirando
+
+- **El caballo nacía dentro de una roca.** Aparecía "¡LA PIEDRA!" en el primer
+  segundo, antes de tocar una tecla — empezar castigado por algo que no se pudo
+  ver venir contradice la regla más repetida del proyecto. Ahora la siembra
+  despeja la zona de largada corriendo el obstáculo en vertical (no borrándolo,
+  para que no quede un claro sospechoso). Verificado: **0 choques al nacer en 20
+  arranques**.
+- **La HUD se le montaba encima al caballo.** Al mudarla abajo en la vuelta
+  anterior quedó justo donde ahora galopa. La repartición real de la pantalla
+  con el zoom lejano es: `y 0-20` libre · `y 20-84` el tren (y sólo de x≈310 a
+  la derecha) · `y 87-216` el desierto. O sea que **la única zona libre es la
+  franja de arriba a la izquierda**, porque el tren entra por la derecha. Ahí
+  fue el aguante; el reloj al centro; y las teclas —que desaparecen al alcanzar
+  la cola— arriba al medio, donde el tren todavía no llegó.
+
+### 🐛 TERCERA VUELTA · "Parece una pista de carreras" — el tren nunca se veía
+
+*(Santi, jugando la versión anterior: "no es lo que esperaba. Recuerda que dije
+que el caballo debería poder cabalgar en diagonal hacia el tren. Aquí parece una
+pista de carreras con obstáculos, yo no quiero eso, quiero que el tren se vea a
+lo lejos y el caballo se va acercando hacia él. (...) Quiero que el jugador
+sienta más libertad")*
+
+**La primera versión falló por geometría, y la causa es de una línea:** con el
+zoom lejano en 0,5 la pantalla muestra 768 px de mundo a lo ancho, y el tren
+estaba a **1000 px**. O sea que **el tren no entraba en pantalla**: los primeros
+diez segundos eran galopar hacia un horizonte vacío con obstáculos viniendo de
+frente. Eso es literalmente una pista de carreras, y ninguna cantidad de campo
+ni de cactus lo iba a arreglar — faltaba la única cosa hacia la que se supone
+que vas.
+
+Y la diagonal tampoco existía de verdad: 1000 px de largo contra 150 de
+profundidad es una aproximación **87% horizontal**. La diagonal era un detalle,
+no el movimiento.
+
+#### La geometría nueva
+
+| | v2 (la fallida) | v3 |
+|---|---|---|
+| Distancia al tren | 1000 px | **600 px** — para que ENTRE en pantalla |
+| Zoom lejano | 0,5 (vista de 768 px) | **0,4** (vista de 960 px) |
+| Profundidad del campo | 150 px | **330 px** |
+| Reloj | 55 s | **45 s** |
+
+Verificado en el primer cuadro: la cola queda dibujada en **x=310 de 384**,
+arriba a la derecha, con el tren midiendo **64 px** de alto; el caballo abajo a
+la izquierda (x=72, y=180), a **290 px de la vía**. Ir hacia el tren es
+literalmente ir en diagonal, hacia adelante y hacia arriba, eligiendo tu línea
+entre los obstáculos.
+
+El reloj BAJÓ de 55 a 45 y no es una inconsistencia: el criterio es siempre el
+mismo —que el margen DESPUÉS de tocar la cola no cambie— y por eso el número
+sube cuando la persecución se alarga y baja cuando se acorta. Balance
+verificado, idéntico a lo de siempre: Criollo al 3er enganche (10,9 s, 29 de
+aguante), Mustang al 2º (14 de aguante).
+
+#### 🐛 Y dos bugs de dibujo que hacían INVISIBLE al tren, los dos encontrados mirando
+
+1. **La HUD lo tapaba entero.** El panel ocupaba los 90 px de arriba y el tren,
+   con el zoom lejano, se dibuja en los primeros 64. El síntoma era
+   desconcertante: todas las mediciones daban la cola correctamente en x=310 y
+   aun así no se veía nada. Ahora arriba queda **sólo el reloj** y todo lo demás
+   bajó al borde inferior — que es la decisión CONTRARIA a la que esta misma
+   función tenía documentada (*"las teclas van arriba porque abajo es POR DONDE
+   GALOPÁS"*), y es correcto que se haya dado vuelta: con el desierto nuevo,
+   arriba es donde está el tren y abajo es fondo lejano.
+2. **`drawTrain` recortaba con `r.width`**, o sea daba por sentado en silencio
+   que el dibujo va siempre a escala 1. Con la escena a 0,4 la pantalla muestra
+   960 px de mundo pero la función dibujaba sólo los primeros 384 desde `camX`
+   — que en el galope caen enteros en el vacío detrás de la cola. **El tren no
+   se dibujaba nunca.** Ahora recibe `vistaW`/`vistaH` opcionales; el asalto,
+   que dibuja a escala 1, no cambia en nada (verificado: renderiza 20 s sin
+   errores).
+
+> Los dos son la misma familia: **código que asumía escala 1 sin decirlo**. Es
+> el precio de meterle un zoom a un motor que nunca lo tuvo, y el tipo de cosa
+> que ninguna medición encuentra porque los números están todos bien.
+
+### 🐛 Dos bugs que NINGUNA medición mostró — sólo se vieron mirando con foto.ps1
+
+1. **Una banda de montañas flotando en medio del desierto.** El parallax
+   inferior estaba en `base + 52`, que nunca fue una posición pensada: era el
+   borde de abajo de la pantalla vieja (160 + 52 = 212, con 216 de alto). O sea
+   que esas montañas jamás se vieron enteras — eran la última rebanada del
+   cuadro. Con 150 px de campo quedaron colgadas a mitad de camino, como una
+   pared de sombras. Movidas al fondo real del campo, ahora son el horizonte.
+2. **El caballo nacía camuflado con el horizonte.** Al mover las montañas quedé
+   en `campoAbajo - 10`, o sea DENTRO del campo jugable — y el caballo arranca
+   justo en el fondo, así que nacía pisando la línea y se perdía contra ella. Un
+   horizonte que se mete en la zona por la que se galopa deja de ser horizonte:
+   ahora va en `campoAbajo + 2` y el arranque bajó a `carrilLejos - 30`.
+
+> **La lección, que el proyecto ya tenía escrita y esta vuelta confirmó dos
+> veces:** para MIRAR algo hay que mirarlo. Las dos cosas estaban perfectas en
+> los números —zoom correcto, cámara correcta, nada fuera de pantalla, cero
+> errores— y las dos se veían mal. `foto.ps1` no es un lujo para sprites: es la
+> única forma de verificar composición.
+
+### 🐛 Y tres veces el mismo error de edición, mío
+
+Insertando comentarios largos en `horse.js` dejé el `*/` viejo en medio del
+bloque nuevo, tres veces seguidas. El síntoma fue siempre `Invalid or unexpected
+token`. **Y una de esas veces el arreglo pareció no funcionar**: el import
+directo daba OK pero la escena seguía rota, porque `rideScene.js` importa
+`horse.js` sin cache-buster y el navegador servía la versión vieja — exactamente
+el caché de módulo del que advierte PROMPT-CONTINUAR. Se resolvió recargando la
+pestaña, no tocando más código.
+
+---
+
+## ✅ HECHA · "Es al pedo apuntar si la bala siempre va al medio" — el círculo estaba calibrado a la distancia equivocada
+
+*(Santi pidió una prueba: "quiero que dispares muchas veces con el Colt para
+ver cuántas balas acaban en el centro del círculo sin apuntar y cuántas por la
+orilla. Esto porque la verdad es que veo que casi todas van al medio del
+círculo". Confirmado el 91% a 60px, pidió: "quiero cambiar eso, porque sino es
+al pedo que el jugador apunte con clic derecho si siempre la bala va a ir al
+medio del círculo. Hagamos que sea 6 de 10 tiros van al medio y 4 a la
+orilla")*
+
+**Primero se midió si la dispersión estaba rota, y no lo estaba.** 4000 tiros
+del Colt sin apuntar, a la distancia de referencia exacta (120px, el valor
+viejo): la desviación angular medía uniforme (std 0,0274 contra 0,0202
+esperado sin el 15% de tiros que fallan más — la diferencia es justo la que
+aporta ese 15%, verificado contra la teoría de la mezcla). El problema no era
+la aleatoriedad.
+
+**Era la distancia.** `CONFIG.mira.distanciaReferencia` calibra SIEMPRE el
+tamaño del círculo como si dispararas a esa distancia fija — decisión tomada a
+propósito en una vuelta anterior, para que el círculo describiera el arma y no
+el tiro puntual (ver más abajo, "vuelta seis"). Pero 120 era el extremo LEJANO
+de "distancia típica de combate (60-120px)", no el centro. A la distancia real
+más común (60px, la mitad de 120), el mismo ángulo de error produce la mitad
+del desvío en píxeles — así que el círculo, aun siendo matemáticamente
+honesto, se veía mucho más grande de lo que en la práctica ibas a fallar.
+
+**El arreglo, y por qué es seguro tocarlo solo:** `distanciaReferencia` sólo
+alimenta el DIBUJO del círculo (`drawMira`, raidScene.js). `dispersionActual()`
+—la que de verdad decide el ángulo del disparo en `shoot()`— no lee ese
+número. Bajarlo no mueve un solo número de letalidad ya afinado (la hitbox de
+los guardias, cuántos tiros hacen falta para matar, nada): sólo hace que el
+círculo describa mejor la distancia a la que de verdad peleás.
+
+**80 salió de probar candidatos contra el pedido exacto** (60% adentro de la
+mitad, a 60px real):
+
+| Referencia | % adentro de la mitad, a 60px |
+|---|---|
+| 70 | 53% |
+| 78 | 59% |
+| **80** | **61%** ← elegido |
+| 85 | 64% |
+| 120 (el viejo) | 91% |
+
+Y no es casualidad que ronde ese valor: la proporción `k = distancia real /
+referencia` es lo único que determina el resultado — ni la distancia ni la
+referencia importan por su valor absoluto. `k = 0,75` ya había dado 60/40 al
+medir 90px contra la referencia vieja de 120 (90/120 = 0,75); con 80 de
+referencia, 60/80 = 0,75 también — el mismo punto de la curva.
+
+**Verificado:** 59,5% adentro de la mitad a 60px (el pedido era 60%). El radio
+del Colt suelto baja de ~4,2px a **2,8px**; apuntado queda en el piso técnico
+(`radioMin: 2`) — ya estaba prácticamente ahí antes (2,1px), así que no es un
+cambio nuevo. El Smith, que comparte el mismo número, se mantiene dentro de
+`radioMin`/`radioMax` en todos sus casos (suelto 6,8px, apuntado 3,4px, con
+retroceso al tope 16,6px). Corridas completas después del cambio: sin errores.
+
+---
+
+## ✅ HECHA · La mira: el círculo que hizo visible la precisión
+
+*(idea de Santi: "el puntero para disparar no debería ser una cruz. Debería
+ser un círculo. Y al tocar el clic derecho el círculo se cierra. Y dependiendo
+del arma se cierra más o menos. Y al estar con el shift contra una pared y
+tocás clic derecho para salir a apuntar, el círculo ya está cerradito")*
+
+**El punto de partida vale anotarlo, porque nadie se había dado cuenta: NO
+HABÍA MIRA.** La cruz era el cursor del sistema operativo (`cursor: crosshair`
+en `styles/main.css`), o sea que **la precisión del arma —el número más
+importante del combate después del daño— era completamente invisible**. La
+sentías fallando, sin saber por qué. Ocho vueltas de afinar `spread` en dos
+armas y el jugador nunca vio ninguno de esos números.
+
+### La idea es mejor de lo que parece, y por un motivo que no estaba en el pedido
+
+El radio del círculo puede ser **la dispersión misma**, no un símbolo de ella:
+`tan(spread) × distancia al punto donde apuntás`. Y en cuanto se hace así,
+**un sistema viejo que era invisible pasa a verse gratis**: `dispersionExtra`
+—el sacudón del tren veloz, construido hace varias vueltas— ya se sumaba al
+disparo, y ahora esa suma tiene dónde mostrarse. El círculo se abre en tu cara
+durante un traqueteo. No hubo que inventar una señal nueva para un sistema
+viejo: alcanzó con dibujar el número que ya estaba.
+
+**Una sola fuente de verdad, y no es una comodidad.** `dispersionActual()`
+(entities/player.js) la usan las dos cosas que tienen que coincidir sí o sí: el
+radio del círculo y el ángulo del disparo. Si cada uno la calculara por su
+lado, la mira mentiría en cuanto alguien tocara un número — que es exactamente
+el error que este proyecto ya se comió dos veces (el comentario decía una cosa
+y el código hacía otra: ver la cobertura y el sigilo, más abajo).
+
+### 🔍 La versión honesta era ilegible, y sólo se supo midiendo
+
+La primera versión dibujaba el cono literal, sin tocar nada. Medido:
+
+| Apuntando a 120 px | Radio real |
+|---|---|
+| Colt suelto (0,035) | **4 px** |
+| Colt apuntado (0,010) | **1 px** |
+
+O sea que **el gesto central de todo el sistema se resolvía en un píxel**. Y no
+es un error de cuenta: es que las armas de este juego son precisas de verdad y
+la pantalla mide 384x216. Un cono honesto a esta escala es un punto.
+
+Por eso el radio se multiplica por `CONFIG.mira.escala` (4). **Lo que se
+conserva es lo único que importa: la proporción.** El doble de dispersión sigue
+siendo el doble de radio, así que comparar dos armas, ver el efecto de apuntar
+o notar el balanceo siguen siendo lecturas correctas. Lo que se pierde es poder
+medir con una regla contra la pantalla dónde va a caer la bala — que no es una
+promesa que nadie necesite. Con 4, el Colt a 120 px pasa de 17 px suelto a 5
+apuntado, y eso se ve de un vistazo.
+
+> **La lección:** *"el número real" y "el número legible" no son lo mismo, y
+> cuando chocan hay que elegir a sabiendas y dejarlo escrito.* Lo que no se
+> puede es fingir que el dibujo es literal cuando no lo es.
+
+### Qué cuesta apuntar (decidido con Santi)
+
+**Tarda 0,35 s en cerrar Y te frena a 40 px/s** mientras lo mantenés. Las dos
+cosas, no una: si apuntar fuera instantáneo y gratis, la respuesta óptima sería
+"apuntá siempre" y el clic derecho sería un botón que hay que tener apretado,
+no una decisión. 0,35 s es un tiro y pico del Colt, así que abrir fuego de
+inmediato y plantarte a apuntar primero son dos jugadas distintas.
+
+Y el 40 no es un número nuevo: es el mismo `sneakSpeed`/`coverSpeed` que ya
+cuestan agacharse y deslizarse pegado a una pared. **El juego tiene UN precio
+de movimiento y esto no inventa otro.** Cobra en tiempo y exposición, nunca en
+vida — la misma familia que el barril, la caja fuerte y el salto sucio.
+
+**El retroceso (que cada tiro abra el círculo) quedó afuera a propósito**, y es
+la misma regla con la que se construyeron los barriles antes que el traqueteo:
+una cosa a la vez. Si se metiera ahora y algo se sintiera mal, no habría forma
+de saber si fue la mira o el retroceso.
+
+### Los números por arma, y por qué la brecha es lo que importa
+
+| | Suelto | Apuntado | Radio a 120 px |
+|---|---|---|---|
+| **Colt** | 0,035 | **0,010** | 17 → 5 |
+| **Smith** | 0,085 | **0,045** | 41 → 22 |
+
+**El Smith apuntado (22 px) sigue siendo peor que el Colt sin apuntar (17).**
+Eso es la decisión, no un descuido: apuntar no le puede borrar el defecto que
+lo define, porque entonces comprarlo sería un ascenso y no una decisión. El
+Colt es pulso fino, el Smith es mano rápida. Y le da a la tienda algo nuevo que
+vender **que se ve**: no un número en una ficha, un círculo que cierra distinto.
+
+### Lo más interesante: la cobertura ganó una razón ofensiva
+
+*"Al estar con el shift contra una pared y tocás clic derecho, el círculo ya
+está cerradito"* — y esto encaja con una regla que el juego ya tenía escrita en
+otro lado: **estar pegado a una pared es estar afianzado**. Es exactamente el
+mismo motivo por el que el sacudón del tren veloz no te arrastra si estás
+cubierto (CONFIG.traqueteo). Un tipo apoyado contra un marco no necesita ese
+tercio de segundo: ya tiene dónde apoyar el brazo.
+
+**Hasta acá cubrirse era puramente defensivo**: te tapa, pero no podés disparar
+hasta asomarte, así que la única pregunta era cuándo salir. Ahora también es el
+lugar desde donde mejor se tira.
+
+**Y no hubo que agregarle ningún contrapeso, porque ya estaban todos
+construidos:** asomado sos un blanco, los jinetes de afuera te cazan en la
+ventanilla, y los guardias del blindado te tiran dinamita **justamente cuando
+te ven parapetado**. Ese último es el que lo salva de romperse: el juego ya
+tenía una herramienta para castigar quedarse quieto detrás de un asiento.
+
+**ES EL RIESGO A MIRAR JUGANDO.** Es la primera vez que la cobertura da algo
+además de protección, y si al jugarlo la respuesta a todo pasa a ser "pegate a
+una pared y asomate", la palanca es hacer que la mira a cubierto cierre rápido
+pero no instantáneo, en vez de sacarle el beneficio.
+
+### Un detalle que también hay que mirar jugando
+
+**El clic derecho pasó a hacer dos cosas según dónde estés**: suelto apunta, a
+cubierto asoma (y de paso apunta). Creo que está bien —son el mismo verbo,
+*encarar el tiro*— pero si se siente como dos botones distintos metidos en uno,
+hay que separarlo.
+
+### Verificado
+
+Ángulos exactos contra lo que promete la ficha (400 disparos por caso: la
+desviación medida da `spread/√3`, que es lo que corresponde a la dispersión
+uniforme del `rng`). Cierre en 0,35 s clavados; velocidad 78 → 40. A cubierto,
+`apuntado` sale en 1 al instante. Y **mirado con `foto.ps1`**, que es lo que
+encontró el problema de legibilidad: el círculo suelto, el apuntado, el rojo de
+"no podés disparar" estando cubierto sin asomarte, y el traqueteo abriéndolo
+con el cartel de *¡FRENA DE GOLPE!* al lado. 90 segundos de asalto en los tres
+tipos de tren, disparando y cubriéndose, sin un solo error.
+
+### 🐛 SEGUNDA VUELTA · El círculo mentía ×16, y la mentira era jugable
+
+*(Santi, jugando: "si se hace el círculo más grande es para que se pierda
+puntería. Ahora mismo eso no pasa: mientras el enemigo esté en el puntito de
+adentro, le pega igual, por más que el círculo sea grande")*
+
+**La causa era exactamente el "ajuste de legibilidad" de la vuelta anterior.**
+`CONFIG.mira.escala` multiplicaba el radio ×4 para que se viera en la captura
+de prueba (`foto.ps1`, exportada a 3x). Lo que no até en su momento: el canvas
+del juego **ya se agranda solo por CSS**, en un múltiplo entero según la
+pantalla (`fitToScreen`, engine/renderer.js) — medido en esta máquina, ×4. El
+`escala: 4` que agregué se multiplicaba ENCIMA de eso: el círculo que se veía
+en pantalla no era 4 veces más grande que la dispersión real, era
+**dieciséis**.
+
+**Y esa mentira tenía una consecuencia jugable exacta.** La dispersión real del
+Colt a distancia de combate (60-120 px, donde pasa casi todo el juego) es de
+pocos píxeles — menor que el propio cuerpo de un guardia (10px de diámetro).
+Apuntando al centro, casi cualquier tiro caía adentro del guardia sin importar
+qué tan "grande" se viera el círculo inflado. El Colt siempre fue así de
+preciso (es su virtud, escrita desde la fase 1), pero antes de la mira nadie
+podía verlo y esperar otra cosa del dibujo.
+
+**Arreglo: `escala` volvió a 1.** El radio es literal, sin ningún
+multiplicador. La legibilidad la da la ampliación de pantalla que ya existía,
+no un maquillaje encima.
+
+**Verificado con un mundo sintético sin paredes** (para aislar la dispersión
+pura de la geometría real del vagón, que la primera medición de este arreglo
+había contaminado sin que me diera cuenta):
+
+| | Radio mostrado | Impactos reales (400 tiros) |
+|---|---|---|
+| Colt suelto @60px | 2 px | 100% |
+| Colt suelto @120px | 4 px | 100% |
+| **Colt suelto @200px** | **7 px** | **69,8%** |
+| Colt apuntado @120px | 1,5 px | 100% |
+| **Smith suelto @120px** | **10 px** | **47,5%** |
+| Smith suelto @200px | 17 px | 27,3% |
+| Smith apuntado @120px | 5,4 px | 95,3% |
+
+**Ahí está la promesa cumplida.** Mientras el radio queda por debajo del medio
+cuerpo del guardia (~5px), el impacto es prácticamente seguro — que es lo que
+tiene que pasar de cerca, con cualquier arma, por diseño. En cuanto el radio lo
+supera, empiezan a aparecer fallos de verdad y en proporción al tamaño del
+círculo: el Smith suelto a 200px, con el círculo más grande de la tabla, falla
+casi tres de cada cuatro tiros.
+
+**Y mirado en la pantalla real** (no la captura de prueba, la resolución con la
+que efectivamente se juega): el anillo sigue viéndose en los casos "suelto", y
+en el "apuntado" colapsa a un puntito casi sin anillo alrededor — que si algo,
+comunica MEJOR la idea de "clavado" que un círculo chico pero visible.
+
+> **La lección que hay que dejar escrita, porque ya es la segunda vez que pasa
+> en este proyecto con esta misma forma:** un ajuste de legibilidad hecho
+> mirando una captura de prueba, sin la resolución real de juego delante, puede
+> introducir un multiplicador que nadie pidió. La próxima vez que haga falta
+> agrandar algo para que se vea en una captura, la pregunta primero tiene que
+> ser "¿esto ya se agranda solo en el juego de verdad?" — y la respuesta se
+> mide en la pantalla real, no en el archivo que exporta la herramienta.
+
+### TERCERA VUELTA · El Colt parecía un rifle, y el puntito mentía al revés que el círculo
+
+*(Santi, jugando: "por más de que el Colt tenga más puntería que el Smith, no
+puede parecer un rifle. Otra cosa: no debería existir un puntito dentro del
+círculo. Y la dispersión del tiro debería ser dentro del círculo — cierto
+porcentaje de que la bala vaya al medio, pero también cierto porcentaje que
+vaya a las orillas")*
+
+Tres pedidos, y dos resultaron ser el mismo problema mirado desde dos lados.
+
+**1. Antes de tocar nada: ¿la bala YA tenía chance real de ir a la orilla, o
+sólo al medio?** Medí `engine/rng.js` — `spread()` es `(next()*2-1) * amount`,
+o sea una distribución **uniforme** entre −amount y +amount, no una campana que
+favorezca el centro. Con 3000 tiros por caso, contando en qué tercio del
+círculo caía cada impacto (centro / medio / orilla): **960 / 1000 / 1040**,
+prácticamente parejo. **La mecánica ya hacía exactamente lo que Santi pedía.**
+Nunca hizo falta tocar el generador de números.
+
+**2. Entonces el problema era el dibujo, no la física.** Un puntito fijo en el
+centro (`CONFIG.mira.puntoCentral`) se lee como *"la bala va a cualquier lado,
+pero en el fondo apunta acá"* — la lectura EXACTAMENTE contraria a una
+dispersión uniforme, donde el borde tiene tanto derecho como el medio. Sacarlo
+(`drawMira`, scenes/raidScene.js) hace que el círculo entero sea la respuesta,
+sin un centro con privilegio dibujado encima de una mecánica que no lo tiene.
+
+**3. Y el Colt sí tenía un problema de verdad, pero era de otra vuelta.** Con
+`spreadApuntado: 0,010` (fijado en la vuelta anterior), el círculo apuntado a
+distancia de combate (120px) daba **1,2px** — por debajo del piso de dibujo,
+así que en la pantalla se veía un punto clavado sin abertura. Sin el puntito
+central de referencia, ese colapso se iba a notar todavía más: un anillo que
+prácticamente no abre se lee como mira telescópica, no como un revólver bien
+sostenido.
+
+**La regla que lo arregla es más simple que la que había, y sirve para
+cualquier arma que se agregue después: apuntar corta la dispersión A LA
+MITAD, siempre — la misma proporción para las dos armas del catálogo.**
+
+| | Suelto | Apuntado (mitad) | Radio a 120px |
+|---|---|---|---|
+| **Colt** | 0,035 | **0,0175** | 4,2 → **2,1 px** |
+| **Smith** | 0,085 | **0,0425** | 10,2 → 5,1 px |
+
+El Colt apuntado (2,1px) sigue siendo menos de la mitad del Smith apuntado
+(5,1px) — la jerarquía de precisión no se tocó, sigue siendo claramente el más
+fino del juego. Lo que cambió es que ya no desaparece: hay un anillo real,
+chico, pero un anillo. Y de paso `radioMin` subió de 1,5 a 2px, no porque el
+Colt lo necesitara más que antes, sino porque sin el puntito central de
+respaldo, el piso de legibilidad solo tenía que hacer un poco más de trabajo.
+
+**Verificado con `foto.ps1`, en la resolución real de pantalla:** el anillo del
+Colt apuntado ya se distingue de un simple punto — chico, pero con abertura
+visible — y el Smith apuntado sigue siendo notoriamente más ancho al lado
+suyo. 60 segundos de asalto en los tres tipos de tren, disparando, apuntando y
+cubriéndose, sin un solo error.
+
+### CUARTA VUELTA · El círculo por fin decía la verdad, y el blanco seguía siendo un cuadrado gordo
+
+*(Santi, jugando: "el problema ya no se debe al círculo, sino a la hitbox de
+los personajes. Yo haría que los guardias y yo y las personas en general, sean
+rectángulos en vez de cuadrados gordos y muy fácil de disparar")*
+
+Con el círculo arreglado (tercera vuelta) y la distribución uniforme
+confirmada, faltaba la última pieza: **la caja que recibe la bala.** Jugador y
+guardias medían 5x5 (10x10 en total) — el mismo cuadrado desde la fase 1, y
+nadie lo había cuestionado porque hasta ahora nada dependía de su tamaño
+exacto. Con la mira mostrando la dispersión real, sí dependía: a distancia
+típica de tiroteo (60-120px) esa dispersión daba un radio de 2 a 4px, **menor
+que el propio cuadrado del guardia**, así que apuntar al centro casi
+garantizaba pegarle sin importar qué tan abierto se viera el círculo. El
+círculo ya no mentía — el blanco seguía siendo demasiado grande para que la
+mentira hiciera falta.
+
+**Por qué el recorte es más grande en alto que en ancho.** Los vagones son
+pasillos, mucho más largos que anchos, así que casi todos los tiros del juego
+salen casi horizontales. En un tiro horizontal, lo que decide si pasa de largo
+o pega es la ALTURA del blanco (`hh`), no su ancho — el ancho (`hw`) sólo
+importa en los tiros cruzados de lado a lado, que son la minoría. Recortar
+parejo en las dos direcciones hubiera desperdiciado la mitad del efecto en la
+dimensión que menos protege.
+
+**Los números, decididos con Santi tras plantear tres paquetes concretos**
+(suave -20% de alto, recomendado -30%, agresivo -20%/-40% en las dos
+direcciones): eligió su propia mezcla, **-10% de ancho y -30% de alto**, sobre
+el 5x5 de siempre.
+
+| | Antes | Ahora |
+|---|---|---|
+| Jugador y guardia (`hw, hh`) | 5, 5 (10x10) | **4,5, 3,5 (9x7)** |
+| Pasajero (`hw, hh`) | 4, 4 (8x8) | **3,6, 2,8** — mismo recorte proporcional |
+
+**El Cazarrecompensas (6x6) y los jinetes (9x7, ya rectangulares) quedan
+afuera a propósito**: son casos con su propio ajuste fino, medido aparte
+—el jefe tiene ocho de vida justamente porque con cuatro y su vieja hitbox ya
+era demasiado fácil matarlo— y meterlos en este recorte parejo hubiera sido
+tocar un balance que no pidió nadie revisar.
+
+**El sprite se redibuja con el mismo tamaño que la hitbox, no con un número
+aparte.** `drawPlayer`, `drawEnemy` y `drawPassenger` ahora leen `hw`/`hh` de
+la propia entidad en vez de tener el `5` o el `4` escritos a mano — la caja
+que ves siempre es exactamente la caja que te puede matar, la misma regla que
+ya sostenía el resto del juego. Y como el rectángulo del sombrero del jugador
+ya se calculaba a partir de `halfW` (no de un número suelto), se angostó
+solo, sin tocarlo.
+
+**Medido, el efecto es exactamente el que se buscaba:**
+
+| | Antes (10x10) | Ahora (9x7) |
+|---|---|---|
+| Colt suelto @60px | 100% | 100% (de cerca sigue siendo casi seguro, como corresponde) |
+| **Colt suelto @120px** | **100%** | **77,7%** |
+| Colt apuntado @120px | 100% | 100% (apuntar sigue asegurando el tiro) |
+| Smith suelto @120px | 47,5% | 32% |
+
+**A distancia típica de combate, el Colt SUELTO ya falla una de cada cuatro
+veces.** Apuntar (y la mira que lo dibuja) por fin tienen un motivo real para
+existir en el caso más común del juego, no sólo a distancia larga. Y de cerca
+nada cambió: el Colt sigue siendo mortal a quemarropa, que es exactamente su
+identidad desde la fase 1.
+
+**Verificado por consola** (sin paredes, para medir la dispersión pura) y
+mirado con `foto.ps1`: las siluetas se leen claramente como personas —un
+rectángulo más ancho que alto, con el sombrero de ala natural por encima— y no
+como el cuadrado de siempre. 90 segundos de asalto en los tres tipos de tren,
+con el jugador moviéndose, disparando, apuntando y cubriéndose, sin un solo
+error ni un enganche nuevo contra puertas o paredes.
+
+### 🐛 QUINTA VUELTA · "Parece que mato conos": la causa era vieja, no del recorte de hoy
+
+*(Santi, después de jugar con la hitbox nueva: "sigue sin convencerme porque
+el jugador parece que mata conos en vez de guardias de ley. Y todavía no sé
+porqué")*
+
+**Antes de tocar nada, medí si el recorte de la vuelta anterior era el
+culpable — y no lo era.** Comparando pixel a pixel el sprite viejo (10x10)
+contra el nuevo (9x7) con el mismo renderer aislado: el cuerpo pasó de 10x8 a
+9x7 píxeles reales en pantalla. **Un píxel de diferencia por lado.** No
+alcanza ni de cerca para explicar una sensación tan fuerte como "esto no
+parece una persona". La causa tenía que ser otra, y vieja.
+
+**Mirando el sprite solo, sin el piso del vagón alrededor** (mismo truco que
+con la mira: aislar para ver sin ambigüedad), apareció clarísima: **el ala del
+sombrero tocaba directo el cuerpo, cero píxeles de transición.** Sin una
+cabeza que separe "sombrero" de "torso", y con el cuerpo pintado siempre del
+color de ESTADO (gris/amarillo/rojo, nunca de piel), la silueta entera eran
+dos bloques apilados — ala ancha arriba, base angosta abajo. Exactamente el
+perfil de un cono. Y esto **no lo introdujo el recorte de hoy**: estaba desde
+que existe el guardia. Lo que cambió es que antes se disparaba "a bulto" y
+ahora, con la mira y la hitbox de verdad, hay más motivo para mirar de cerca a
+qué le estás tirando — y ahí la silueta se quedaba corta.
+
+> **La lección, otra vez de método:** frente a un problema de sensación
+> ("esto no se siente bien"), la primera pregunta tiene que ser *¿esto lo
+> causó lo último que toqué, o ya estaba?* — y se responde MIDIENDO el cambio
+> real, no asumiendo que lo más reciente es lo culpable. Acá el sospechoso
+> obvio (la hitbox, tocada esta misma sesión) resultó inocente; el culpable
+> real llevaba viviendo en el proyecto desde la fase 1.
+
+**El arreglo, con Santi ya de acuerdo en mejorar la silueta:**
+
+1. **Una cabeza nueva** (`col.enemyPiel`, un tono de piel que no usa nadie
+   más) se inserta entre el ala del sombrero y el cuerpo — una franja angosta
+   que antes no existía. Antes el ala tapaba directo el primer píxel del
+   cuerpo; ahora hay un color de piel real en el medio.
+2. **El ala dejó de ser un número fijo.** Era `12` siempre, sin importar el
+   tamaño del cuerpo — la misma clase de bug que ya se había corregido en el
+   sombrero del jugador (que sí escalaba con `halfW`) pero que nunca se aplicó
+   al guardia. Ahora es `e.hw * 2 + 2`, así que el ala nunca vuelve a
+   desproporcionarse si el cuerpo cambia de tamaño de nuevo — que es
+   justamente lo que había pasado esta sesión.
+3. **Las variantes (`placa` del blindado, `estrella` del Sheriff) reciben el
+   mismo tratamiento:** sus platos y alas extra-anchas también escalan con
+   `e.hw` ahora (`+4` el blindado, `+6` el Sheriff — la misma jerarquía de
+   anchos de ala que ya existía, sólo que proporcional en vez de fija).
+
+**Verificado mirando los cuatro casos aislados** (guardia normal en patrulla y
+en combate, blindado, Sheriff): los cuatro muestran la franja de piel entre el
+ala y el cuerpo, y se leen como una persona con sombrero — no como un cono ni
+un hongo. 60 segundos de asalto en los tres tipos de tren después del cambio,
+sin errores.
+
+**Lo que queda para cuando llegue el arte de verdad**, y no es parte de este
+arreglo: el guardia sigue sin brazos ni piernas (sólo la línea del arma), y
+los colores siguen siendo bloques planos sin sombreado — el README ya lo dice,
+"sigue sin haber arte, todo son rectángulos de colores a propósito". Este
+arreglo achica la distancia hasta que eso llegue; no la cierra.
+
+### El resto de la conversación sobre "matar conos" — lo que se discutió y lo que se decidió construir primero
+
+Después de arreglar la silueta, Santi explicó que el problema de fondo no era
+visual: *"lo que yo hago literalmente es acercarme, disparar dos tiros, lo
+mato, y sigo. Lo que pienso es 'tengo que matarlo para avanzar', y lo que
+debería pensar es que tengo que pelear contra una situación generada por
+personas y no pelear contra muñecos simplemente."* Un guardia hoy no tiene
+ninguna conducta que diga "soy una persona con miedo": un color que cambia y
+una IA que pelea igual de principio a fin, sin importar si está solo, herido o
+acorralado.
+
+Propuso cuatro ideas para probar. Se conversaron las cuatro antes de tocar
+código:
+
+1. **Replegarse con un compañero cubriendo** cuando le queda poca vida — se
+   anotó como la más barata de construir, porque reusa directo el
+   `grupoDefensa`/turnarse-para-asomarse que ya se construyó para la escolta
+   del Sheriff. **✅ CONSTRUIDA** — ver la sección propia más abajo. La
+   predicción de "la más barata" se confirmó: reusó `defensivo` y el detector
+   de golpes del Cazarrecompensas, y no tocó una línea de combat.js, melee.js
+   ni explosives.js.
+2. **Rendirse de rodillas, con traición incierta** al perdonarlo. Se marcó una
+   tensión real con la regla de oro del juego —todo peligro avisa antes de
+   pegar— y se propuso que la traición, si existe, tenga su propio aviso
+   corporal en vez de ser una sorpresa muda. Conecta con `gameState.honor`,
+   que existe desde la fase 1 y todavía no lo mueve nada. Sin hacer todavía.
+3. **Ráfaga de pánico al cargarlo** — la que se construyó primero, ver abajo.
+4. **Asomarse por encima de la cobertura + headshot instantáneo para los dos
+   lados** — se recomendó DESCARTAR esta combinación: pedía inventar una
+   categoría de cobertura que el juego no tiene (alta/baja), y el headshot
+   instantáneo volaba por el aire todos los números de vida ya medidos del
+   juego. Además, un argumento más de fondo: la letalidad instantánea vuelve
+   la pelea MÁS mecánica y binaria, no menos — el objetivo era sentir que
+   peleás contra una persona, y esto iba en la dirección contraria.
+
+También se acordó una idea de síntesis para no dejar las conductas sueltas:
+un valor de "miedo" por guardia (parecido a la sospecha, pero sobre cuánto
+aguanta antes de quebrarse) que suba con cada bala recibida y con cada
+compañero visto caer, y que decida cuál de las tres respuestas (replegarse,
+rendirse, pánico) le toca según la situación exacta en que se rompe. Todavía
+no está construido — cada idea se sigue armando por separado, empezando por
+la 3.
+
+### ✅ HECHA · La ráfaga de pánico — el guardia deja de esperar escondido cuando lo cargás
+
+*(idea de Santi: "cuando el jugador corre por el pasillo para dispararle a un
+guardia cubierto, este se pare y tire una ráfaga larga al jugador. Esto para
+resolver el problema de que el jugador puede ir tranquilamente por el pasillo
+y disparar dos veces rápido y matar a un guardia como si fuera un cono
+estático")*
+
+**El problema medido, antes de tocar nada:** un guardia parapetado pasa entre
+`coverHoldMin` y `coverHoldMax` (0,7-1,6s) escondido entre una asomada y la
+siguiente. Dos tiros de Colt tardan 0,8s. Un jugador que corre y dispara podía
+matarlo casi siempre DENTRO de ese primer escondite, antes de que completara
+un solo ciclo de cobertura — nunca llegaba a devolver un tiro.
+
+**El disparador reusa un número que ya existía y ya significaba lo mismo.**
+`panicoDistancia` vale exactamente lo mismo que `coverMinDistance` (42px), que
+ya era —desde antes de esta vuelta— "demasiado cerca para portarse tranquilo"
+en el vocabulario del archivo: es la distancia a la que un guardia ni siquiera
+ELIGE esconderse cerca tuyo. Que la misma línea dispare el pánico cuando el
+guardia YA está escondido no es un número nuevo, es la misma idea aplicada del
+otro lado de la cobertura.
+
+**Qué cambia en pánico, y qué NO:**
+
+| | Normal | En pánico |
+|---|---|---|
+| Espera escondido entre ráfagas | `coverHoldMin`-`coverHoldMax` (0,7-1,6s) | **Ninguna** |
+| Tamaño de la ráfaga | 2 | **5** (mismo número que ya usa el disparo ciego por la puerta para decir "no apunta con cuidado") |
+| Vuelve a esconderse después | Sí | **No, mientras sigas cerca** |
+| Puntería | La de siempre | Más sucia (`panicoSpreadExtra`, se suma igual que el sacudón del tren) |
+| **Aviso antes de disparar (`aimTime`)** | **Igual** | **Igual — no se toca** |
+
+Esa última fila es la que sostiene todo lo demás: el pánico le saca el
+escondite, no el telegrafiado. Ningún peligro de este juego dispara sin que el
+cuerpo lo anuncie primero, y esto no iba a ser la excepción.
+
+#### 🐛 Dos bugs de MEDICIÓN, no del juego — y vale la pena dejarlos anotados
+
+**El primero: `engaged` no servía para esto.** La primera versión reusaba la
+variable `engaged` que ya calculaba `doCombat` (si el guardia ve al jugador
+desde la ASOMADA). Medido con un jugador que se TELETRANSPORTABA a poca
+distancia de golpe, el pánico nunca disparaba: la asomada está pensada para
+ver LEJOS por el costado de la cobertura, así que a poca distancia esa
+misma posición podía no tener línea directa al punto exacto donde había
+quedado el jugador. El pánico necesita su propio chequeo, calculado desde
+donde el guardia REALMENTE está agazapado (`e.x, e.y`), no desde por dónde se
+asomaría para un tiro lejano.
+
+**El segundo era mío, no del código.** Comparando "con pánico" contra "sin
+pánico" con el mismo jugador de prueba, salían resultados sin sentido (el
+guardia disparaba CERO veces en las dos corridas, o moría en 0 segundos sin
+que nadie disparara). La causa: `input.mouse.down` había quedado en `true` de
+una corrida anterior en la misma sesión del navegador y nunca se reseteaba
+entre pruebas — el jugador de prueba estaba disparando durante lo que yo
+pensaba que era una fase tranquila de "dejar que el guardia se asiente".
+
+> **Para la lista de trampas de medición:** un arnés de prueba que reusa el
+> mismo `input` entre corridas sucesivas arrastra estado invisible de la
+> corrida anterior. Si algo "no tiene sentido" en una medición, sospechar
+> primero del arnés antes que del sistema que se está midiendo — la mira, acá
+> mismo unas vueltas atrás, tuvo el motivo real en el 90% de los casos, pero
+> las dos veces anteriores el sospechoso correcto terminó siendo el código;
+> ésta, el sospechoso correcto fui yo.
+
+**Medido bien, con 25 corridas por lado (semillas distintas, sin parear —
+parear con la misma semilla desincroniza el resto de los números aleatorios
+compartidos entre las dos corridas, así que comparar agregados es más
+confiable que comparar una sola corrida "igual"):**
+
+| | Sin pánico | Con pánico |
+|---|---|---|
+| De los guardias que llegaron a cobertura, devolvieron al menos un tiro | 11/17 (65%) | **18/22 (82%)** |
+| Primer tiro, en promedio | 0,67s | **0,52s** |
+
+Con sólo 2 de vida (un guardia común en tren tranquilo) el jugador que carga
+sigue ganando casi siempre —dos tiros de Colt matan, y eso no se tocó— pero
+ahora el guardia **participa**: dispara antes, y en más casos llega a
+disparar. Ya no muere en silencio.
+
+**Verificado además:** la escolta del Sheriff sigue turnándose para asomarse
+en pánico (máximo 1-2 a la vez, nunca los tres juntos — el cupo `MAX_ASOMADOS`
+no se salteó). 90 segundos de asalto en los tres tipos de tren, disparando y
+apuntando, sin un solo error.
+
+**Lo que sigue sin construir:** el repliegue con compañero cubriendo y la
+rendición con traición incierta (ideas 1 y 2 de la lista de arriba), y el
+valor de "miedo" que las conectaría a las tres.
+
+### 🐛 SEGUNDA VUELTA · Jugado de verdad, nunca disparó ni una vez
+
+*(Santi, después de probarlo en el juego: "ya lo probé. Y en ningún momento me
+hicieron una ráfaga de muchas balas")*
+
+**Todo lo medido por consola en la vuelta anterior era cierto, y aun así el
+sistema no se sentía en la partida real.** Dos huecos de diseño, no de
+ejecución — los dos aparecieron recién al pensar en cómo se juega de verdad,
+no en cómo se probó por consola:
+
+**1. El chequeo de línea de vista era demasiado estricto para lo que
+pretendía medir.** La primera versión exigía `canSeeFrom(e.x, e.y, ...)` —o
+sea, visión real desde donde el guardia está agazapado— para activar el
+pánico estando ya escondido. Pero "estar en cobertura" significa, por
+definición, que hay algo SÓLIDO entre el guardia y el objetivo — pedirle
+línea de vista desde ahí era pedirle que vea a través de la misma pared que
+lo tapa. Con vos encima, lo que importa es la proximidad, no la geometría
+fina: se saca el requisito de visión y queda sólo la distancia. No se vuelve
+injusto — la bala que dispare sigue chocando contra una pared real si de
+verdad los separa algo sólido; lo único que cambia es CUÁNDO decide
+plantarse a disparar, no contra qué choca la bala.
+
+**2. El caso más común en una partida real no estaba cubierto.** Un guardia
+con `coverPoint` pero que todavía NO llegó (`!e.atCover`) **no dispara nunca
+mientras camina** — el pánico de la primera vuelta sólo se revisaba una vez
+que ya estaba escondido. Pero lo típico al entrar a un vagón es agarrar al
+guardia recién saliendo a buscar dónde meterse, no ya asentado — y en ese
+trayecto era completamente mudo. Un jugador que lo alcanzaba antes de que
+llegara a la silla lo mataba en silencio, sin que el pánico tuviera ninguna
+chance de activarse, porque sólo se lo había puesto donde el guardia YA
+estaba escondido, no en el camino hacia ahí. Es probablemente la situación
+más común de todas — y era exactamente la que quedaba sin cubrir.
+
+**El arreglo:** una sola variable `enPanico`, calculada UNA vez al principio
+de `doCombat` por pura proximidad (sin línea de vista), que ahora se usa en
+los tres lugares donde antes se decidía algo distinto:
+
+| Situación | Sin pánico | En pánico |
+|---|---|---|
+| Buscando o cambiando de cobertura | Sigue buscando | **No busca: no hay plan que armar** |
+| Caminando hacia la cobertura elegida | Sigue caminando, mudo | **Abandona el trayecto y dispara desde donde está** |
+| Ya escondido, esperando | Espera `coverHoldMin`-`coverHoldMax` | **Se planta ya, sin esperar** |
+
+**Medido de nuevo, ahora en el caso real** (el jugador ya cerca cuando el
+guardia se entera, sin darle tiempo a asentarse en ningún lado — 30 corridas
+por lado, semillas distintas):
+
+| | Sin pánico | Con pánico |
+|---|---|---|
+| Disparó al menos una vez | 17/30 (57%) | **21/30 (70%)** |
+| Tiros promedio del guardia | 1,57 | **1,73** |
+
+Con 2 de vida, casi ningún guardia sobrevive a un jugador que ya lo está
+cargando disparando desde el primer cuadro — eso no se puede arreglar sin
+tocar vida o daño, y no era el objetivo. Lo que sí cambió es que ahora
+**participa** en más casos, en vez de morir mudo caminando hacia una silla
+que nunca iba a alcanzar.
+
+**Verificado por consola** (guardia interrumpe el trayecto exactamente al
+cruzar los 42px, ráfaga de 5 confirmada) y con la corrida completa de
+regresión en los tres tipos de tren más la escolta del Sheriff, sin errores.
+
+### 🐛 TERCERA VUELTA · Rediseño completo — no era distancia, eran tres condiciones
+
+*(Santi, después de probar la segunda vuelta: "todavía no está lo que quiero.
+Y capaz me expresé mal yo. Esto es lo que quiero: si un guardia ve al jugador
+sin cobertura y yendo en dirección hacia él, su prioridad será disparar una
+ráfaga de cinco balas a quemarropa. Si el guardia está sin cobertura,
+disparará la ráfaga mientras se mueve a una. Si el guardia ya está contra una
+cobertura, sólo hará la ráfaga")*
+
+Las dos vueltas anteriores giraban alrededor de la DISTANCIA (42px,
+`coverMinDistance` reusado). Esta definición no habla de distancia en ningún
+lado: habla de tres condiciones que se cumplen a la vez —te ve, estás
+expuesto, venís hacia él— y de que la ráfaga se vuelva "a quemarropa" sola,
+porque el jugador sigue acercándose mientras dispara. Hubo que sacar el
+número fijo y reemplazarlo por las tres condiciones de verdad.
+
+**Las tres, tal como las pidió Santi:**
+
+1. `engaged` — el guardia te ve, ahora (no "te vio hace rato").
+2. `!isHidden(player)` — estás expuesto (reusa el concepto que ya existía
+   para decidir si un guardia parapetado puede tirarte dinamita).
+3. **Venís CAMINANDO hacia él** — no apuntando hacia él. Con mouse+WASD se
+   puede aimear para un lado y correr para otro, así que hubo que agregarle
+   al jugador un campo nuevo, `p.moveDirX/Y` (entities/player.js): el vector
+   unitario de hacia dónde CAMINA, actualizado en `updateFree`, y puesto en
+   cero mientras se desliza pegado a su propia cobertura (eso no es cargar a
+   nadie). Se compara con la dirección hacia el guardia vía coseno; el
+   umbral (`panicoCoseno: 0,3`, ±72°) es un primer número sin medir, anotado
+   como tal en el propio config.
+
+**La respuesta ahora depende de si el GUARDIA tiene dónde esconderse, no de
+una distancia:**
+
+| Situación del guardia | Respuesta |
+|---|---|
+| Sin cobertura (buscándola o yendo hacia ella) | Dispara MIENTRAS camina — no abandona el plan, lo hace a la vez |
+| Ya en cobertura | Sólo dispara — nada de esconderse entre ráfaga y ráfaga |
+
+#### 🐛 Dos bugs de ejecución, encontrados midiendo — ninguno era de diseño
+
+**1. El vector estaba invertido.** La primera implementación calculaba
+`dx = player.x - e.x` ("del guardia hacia el jugador") cuando lo que hacía
+falta para comparar contra `moveDir` era "del jugador hacia el guardia"
+(`e.x - player.x`). Con el signo al revés, el coseno daba NEGATIVO
+exactamente cuando el jugador cargaba de verdad — el pánico nunca se
+activaba, y encima parecía un fallo silencioso porque el resto de la lógica
+corría sin errores. Encontrado trazando el coseno cuadro a cuadro contra la
+distancia real (que sí bajaba, confirmando que el jugador SE ACERCABA
+mientras el coseno decía que no).
+
+**2. El módulo estaba cacheado en la pestaña del navegador.** Después de
+arreglar el signo, una medición "confirmaba" que ya andaba — pero la
+siguiente, en la MISMA pestaña sin recargar, volvía a dar `engaged: false`
+todo el tiempo. La pestaña había cargado `systems/ai.js` una sola vez al
+principio de la sesión; mis `import()` sueltos en cada prueba sí traían el
+archivo fresco del disco, pero el bucle real del juego (`S.scenes.update`)
+seguía corriendo con el módulo viejo en memoria. Cerrar la pestaña y abrir
+una nueva resolvió la desincronización.
+
+> **Dos trampas de medición para la lista, ninguna nueva en espíritu pero
+> vale nombrarlas:** (a) cuando algo debería estar pasando y no pasa, trazar
+> la condición exacta cuadro a cuadro contra un dato independiente que sí se
+> sabe que cambia (acá, la distancia real) separa "la condición nunca se
+> cumple" de "la condición se cumple pero algo después no reacciona"; (b) en
+> una sesión larga de pruebas por consola, un módulo importado al principio
+> puede sobrevivir varias ediciones del archivo sin que la pestaña se entere
+> — si una medición contradice a la anterior sin que el código haya cambiado
+> entre una y otra, sospechar del caché del módulo antes que del código.
+
+**Verificado, ya con las tres condiciones y los dos bugs corregidos, en
+pestaña nueva:**
+
+- Jugador cargando derecho desde 150px: `engaged` y `enPanico` se activan
+  apenas hay línea de vista real (no antes), ráfaga de 5 confirmada,
+  disparos tanto en tránsito hacia la cobertura como ya asentado.
+- Jugador QUIETO (`moveDir = (0,0)`): nunca dispara la ráfaga de pánico —
+  confirma que el gesto se lee del movimiento, no de la proximidad ni de la
+  mira.
+- Corrida completa de regresión en los tres tipos de tren y con la escolta
+  del Sheriff (que sigue turnándose, cupo respetado): sin errores.
+
+---
+
+## ✅ HECHA · El repliegue del herido — el guardia con un tiro de vida se saca del medio, y el compañero lo tapa
+
+*(idea de Santi, la número 1 de la conversación sobre "matar conos": "que un
+guardia con poca vida y un compañero cerca se repliegue mientras el otro lo
+cubre")*
+
+Es la **segunda de las tres conductas** de esa conversación. La 3 (ráfaga de
+pánico) ya estaba; la 2 (rendirse de rodillas) sigue sin construir. Las tres
+atacan lo mismo: hasta acá un guardia peleaba **exactamente igual** con la vida
+llena que con el último punto, solo que acompañado.
+
+### Lo que hace
+
+Cuando a un guardia le pegan y le queda **1 de vida**, si tiene un compañero
+despierto a menos de **90px**, se da vuelta y camina por el pasillo alejándose
+de vos — **sin disparar** — hasta ponerse a 110px o hasta que se le acaben 3
+segundos. Al compañero se le enciende `cubriendoTimer`, que mientras dure lo
+vuelve `defensivo`: **no avanza, sostiene la posición disparando.**
+
+Pasa **una sola vez por guardia** (`yaSeReplego`). Sin ese tope, un guardia con
+1 de vida al que rozás dos veces entraría y saldría del repliegue todo el
+asalto, y eso no se lee como miedo sino como una IA en un bucle.
+
+### Lo que se reusó, que era casi todo
+
+| Pieza | De dónde salió |
+|---|---|
+| Detectar el golpe | `reaccionarAlGolpe` del Cazarrecompensas: comparar la vida contra el cuadro anterior en vez de engancharse a `damageEnemy` — así la bala, el cuchillo y la dinamita disparan lo mismo **sin tocar combat.js, melee.js ni explosives.js** |
+| El que cubre | `defensivo`, la misma marca que llevan los tres guardias del Sheriff. Se agregó `esDefensivo(e)` para que las dos ramas que lo consultan (`doCombat` y `doInvestigate`) no se puedan desincronizar |
+| Caminar sin disparar | `reagruparse` (systems/sheriff.js), con el mismo argumento: mientras se va está expuesto, y ésa es tu ventana para castigarlo |
+| Ir por el eje del pasillo | La lección de `puestoDeEscolta`: **el tren es un CORREDOR**. Retroceder "en dirección opuesta al jugador" a secas lo mandaría contra una fila de asientos cada vez que lo tengas de costado |
+
+### La señal es el cuerpo, y no se dibujó nada
+
+No hay ícono ni marca nueva sobre la cabeza, a propósito. Un guardia rojo que
+te da la espalda y camina para el otro lado **sin tirar un tiro** ya dice todo.
+El juego reserva los avisos dibujados para lo que te puede lastimar (la mecha,
+la embestida, el arma levantada), y esto es lo contrario de un peligro. **Queda
+para que Santi lo juzgue jugando**: si no se lee, la señal más barata sería el
+`alertMark` que ya existe.
+
+### 🔍 Lo que dijeron los números — y el hallazgo no fue sobre el código
+
+Medido con corridas completas en los tres tipos de tren:
+
+| | |
+|---|---|
+| Guardias que llegaron a 1 de vida (17 casos, 5 asaltos) | **Sólo 3 tenían un compañero a menos de 90px** |
+| En el tren de carga | **0 de 5** — y es correcto: es el tren de "guardias sueltos, mucho espacio", su identidad escrita |
+
+Ese resultado no tenía sentido, así que **se trazó contra un dato
+independiente**: la distancia de cada guardia a su vecino más cercano, al
+empezar el asalto, sin matar a nadie. Y ahí apareció lo interesante — **el tren
+reparte a los guardias en dos poblaciones, con un hueco limpio en el medio:**
+
+```
+23  23  23  23  23  23  32  32  45  45  45  45  66  82  │  145 145 145 145 ...
+        ── viajan en grupo: 14 de 47 (30%) ──           │   ── viajan solos ──
+                                            el hueco ───┘
+```
+
+**Nada entre 82 y 145 px.** O sea que 90 cayó justo en el hueco natural del
+tren, y **subirlo no sirve de nada**: a 120 el resultado es idéntico (14/47), y
+a 150 sólo suma guardias que están a casi un vagón de distancia, que no es "un
+compañero al lado". El número no hay que tocarlo.
+
+**Y la conclusión de diseño es mejor que el número:** esta conducta le toca al
+**30% del tren, el que viaja acompañado**. El otro 70% no queda sin conducta
+por un bug — es exactamente la población que le corresponde a **la idea 2
+(rendirse de rodillas)**, que sigue pendiente. Las dos ideas de Santi se
+reparten el tren sin pisarse, y eso no se sabía hasta medirlo.
+
+### 🐛 Dos veces el arnés de prueba mintió, y las dos son las de siempre
+
+1. **"Dispara 4 balas mientras se retira".** El contador filtraba las balas por
+   distancia al herido, y el herido **pasa caminando al lado del compañero**
+   justo mientras éste dispara cubriéndolo. Medido de nuevo sobre el estado del
+   propio guardia (`aimTimer`/`burstLeft`/`peeking`/los timers de puerta y
+   techo): **0 violaciones en 62 cuadros**. Las balas eran del que cubría, que
+   es exactamente lo que tiene que pasar.
+2. **"Casi ningún guardia tiene compañero".** El piloto de prueba avanzaba
+   barriendo de a un guardia por vez, así que cuando uno quedaba herido **sus
+   compañeros ya estaban muertos: los había matado él antes**. El piloto
+   construía sin querer el peor caso posible para este sistema.
+
+### Verificado
+
+- **Aislado:** se activa al instante, camina a 46 px/s (= `speed`), corta al
+  cruzar los 110px. El compañero queda **clavado en su x** durante los 3
+  segundos de cobertura y recién ahí vuelve a avanzar hacia el jugador.
+- **Sin compañero cerca: no se repliega** (confirmado con el compañero movido a
+  400px).
+- **Una sola vez por guardia:** segundo golpe con 1 de vida → no se repite.
+- **Corridas completas** en estándar/carga/veloz, dificultades fácil y media:
+  sin errores de JS, sin guardias trabados, sin estados imposibles.
+- **Tiroteo contra un grupo** (el caso donde el sistema tiene que aparecer): se
+  activó en las 3 corridas, y en una salió **el intercambio completo** — uno se
+  repliega y el otro cubre; dos segundos después se invierten los roles, porque
+  al que cubría le tocó el balazo.
+- Un caso medido en dificultad media: el repliegue duró **0,38 s y el guardia
+  murió igual**. Está bien que pase: no es un escudo, es una reacción. Si le
+  seguís tirando, se muere.
+
+**Lo que falta: que Santi lo juegue.** Está verificado por consola de punta a
+punta, pero nadie lo vio todavía con los ojos.
+
+### 🐛 CUARTA VUELTA · "No se repliega hasta una cobertura más atrás" — tres errores encadenados
+
+*(Santi: "el guardia no se reacomoda. No se repliega hasta una cobertura más
+atrás. No sé cuál será el problema, pero analizá el código y encontrá el error o
+los errores")*
+
+Tenía razón en el plural: **eran tres**, y el arreglo de la tercera vuelta
+(dejarlo `defensivo`) sólo había tapado uno de los caminos.
+
+| # | El error | Medido |
+|---|---|---|
+| **1** | `destinoDeRetirada` **nunca buscaba una cobertura**: devolvía un punto del eje del pasillo (`techo.centroY`) a 110px | El repliegue terminaba SIEMPRE al descubierto, en el lugar más expuesto del vagón |
+| **2** | Al terminar, el buscador normal lo traía de vuelta: `findCoverPoint` puntúa `abs(distToTarget − 80)`, o sea **su cobertura ideal está a 80px del jugador** | Guardia replegado a 110 → cobertura elegida **a 45px**. Caminaba 65px hacia adelante "para cubrirse" |
+| **3** | `findCoverPoint` descarta todo lo que quede a más de `viewDistance` (118) del jugador | Una cobertura de repliegue lejana era **estructuralmente imposible** de elegir |
+
+**Los tres son el mismo malentendido**, y por eso vale la pena el resumen: todo
+el sistema de coberturas del juego estaba escrito para contestar *"¿a qué
+baldosa voy para tirarle bien a ese tipo?"*, que es una pregunta que **acerca**.
+El repliegue necesitaba la contraria — *"¿a qué baldosa me arrastro para que no
+me rematen?"* — y yo lo até al buscador que hacía justo lo opuesto.
+
+**El arreglo: `findCoverAtras` (systems/cover.js)**, un buscador propio que
+comparte todo con el normal (el escudo a 13px, el `findPeek`, el respeto por la
+cobertura ajena) y cambia sólo las tres cosas que importan: **mira únicamente
+baldosas que lo alejen**, no tiene tope de `viewDistance` (se está escondiendo,
+no buscando ángulo) y puntúa premiando la distancia ganada en vez de castigarla.
+Lo usan las dos puntas: el destino del repliegue y, de ahí en más, cualquier
+cobertura que ese guardia elija.
+
+Y el fin de la retirada dejó de medirse en píxeles: **si el destino es una
+cobertura, la meta es LLEGAR**. Antes el corte por `repliegueDistancia` la
+terminaba a un paso del asiento — la otra mitad literal de *"no termina de
+llegar"*.
+
+#### 🐛 Y un cuarto, que me lo comí yo al arreglar los otros tres
+
+Con el buscador nuevo puesto, `repositionAfter` (7 s) lo mandaba a buscar otra
+cobertura — y como para un replegado sólo valen las que lo alejan, **se iba
+retrocediendo en escalones cada siete segundos**: medido, 130 → 149 → 167 px,
+hasta quedarse sin ninguna, caminando de espaldas para siempre.
+
+**Replegarse es UN movimiento, no una huida permanente.** Ahora el que se
+replegó sólo busca cobertura si no tiene: se mete detrás de algo y ahí se queda.
+Perdió el terreno, no lo recupera — y tampoco sigue cediendo.
+
+#### Verificado
+
+| | Antes | Ahora |
+|---|---|---|
+| Dónde termina | volvía a **92px**, sin cobertura | **128px**, dentro de una cobertura, en 1,6 s |
+| Después de cubrirse | se acercaba 19px | deriva de 11-30px, **siempre alejándose** |
+| Replegados sin cobertura | la mayoría | **0** en 6 asaltos completos |
+
+Seis asaltos completos en los tres tipos de tren: **0 errores, 0 trabados**, y la
+dificultad se mantiene en su rango (6,0 impactos por asalto; 5,2 antes del
+arreglo, 6,3 con el sistema apagado). **Sin regresión del Sheriff**: su cuarteto
+conserva el cupo de 2 exacto, con 937 cuadros de asomadas observadas.
+
+> **La lección:** cuando una conducta nueva reusa un sistema viejo, hay que
+> preguntarse qué pregunta contesta ese sistema — no si "hace algo parecido".
+> `findCoverPoint` y el repliegue querían cosas opuestas, y compartir código
+> entre los dos no era ahorro: era un bug esperando a que alguien jugara.
+
+### 🐛 TERCERA VUELTA · "Se devuelve a exactamente donde estaba" — dos sistemas tirando del mismo guardia
+
+*(Santi, jugándolo: "cuando un guardia se repliega es como que no termina de
+replegarse. Camina hacia la cobertura de atrás pero no termina de llegar y ya se
+devuelve a exactamente donde estaba")*
+
+**La causa, medida cuadro a cuadro:** la retirada termina en
+`repliegueDistancia` (110px) y ahí `doCombat` retoma el mando, ve que `110 > 92`
+y **lo camina de vuelta hasta los 92px** — el umbral de acercamiento que esa
+función ya tenía desde siempre.
+
+```
+se aleja hasta 111  →  vuelve a 92 y se queda clavado ahí, SIN cobertura
+                       19 px de retroceso deshecho, delante de tus ojos
+```
+
+El 110 estaba elegido del lado equivocado de un número que ya existía: se miró
+`spreadFarDistance` (130) y no se miró este 92. **Dos sistemas tirando del mismo
+guardia para lados opuestos** — y el que ganaba era el viejo.
+
+**Se arregló con la conducta, no con el número.** Subir los 110 por encima de 92
+lo haría caminar menos de vuelta, pero seguiría caminando de vuelta. Un tipo que
+se acaba de quebrar y salir del tiroteo **no vuelve a cargar de frente**: al
+terminar el repliegue queda `defensivo` para siempre, o sea pelea parapetado
+desde donde llegó y no avanza nunca más. Es la marca que ya usaban la escolta
+del Sheriff y el que cubre, ahora también como **la cicatriz de haberse
+replegado** — la única que no se apaga.
+
+Y le da al jugador algo concreto por haberlo herido: **ese guardia deja de
+presionarte.** Sigue tirando, pero ya no te viene encima.
+
+**Verificado:** se mantiene a 110-113px en vez de volver a 92 (medido con la
+misma prueba que encontró el bug). A los ~7 segundos puede moverse a otra
+cobertura, pero eso es `repositionAfter`, la reubicación normal de cualquier
+guardia estancado, no el bug. Seis asaltos completos después del arreglo: **0
+errores, 0 guardias trabados, y la dificultad no se movió** (5,2 impactos por
+asalto contra 5,0 antes del arreglo).
+
+> **La lección, que es la misma de siempre en este proyecto:** el número nuevo no
+> se eligió contra los números que ya gobernaban al mismo personaje. `doCombat`
+> tenía un 92 escrito hace vueltas, y ningún comentario nuevo lo mencionaba.
+> Antes de elegir una distancia para un guardia, hay que leer todas las
+> distancias que ya lo mueven.
+
+### 🐛 SEGUNDA VUELTA · Santi lo jugó y no lo vio nunca — y el hallazgo es más grande que esta conducta
+
+*(Santi: "acabo de hacer un asalto y no vi en ningún momento que un guardia se
+haya replegado herido")*
+
+Descartado primero lo barato: el archivo servido y el que corre en memoria
+tienen el código nuevo, con los cuatro números correctos. No era caché.
+
+**El disparador está mal elegido, y es el MISMO error que ya se cometió dos
+veces con la ráfaga de pánico** (ver más arriba: *"exigía estar a menos de 42px,
+y por eso nunca disparaba: para cuando el jugador cruzaba esa línea, muchas
+veces ya lo había matado"*). Medido ahora:
+
+| | |
+|---|---|
+| Guardias que mueren en **menos de 1 s** desde que quedan en 1 de vida | **16 de 22** (mediana 0,82 s; el caso más común, 0,28 s) |
+| Lo que camina un herido en 0,42 s | **19 px**. Invisible |
+
+Pero al medir las alternativas (replegarse con el primer daño, replegarse al ver
+caer a un compañero) **todas daban CERO también**. Eso no tenía sentido, así que
+se trazó contra un dato independiente: **quién hay vivo alrededor del herido, en
+el instante exacto en que queda en 1 de vida.**
+
+```
+En 14 de 18 casos: NADIE vivo a menos de 150 px  ── con 5 a 17 guardias
+                                                     todavía vivos en el tren
+```
+
+Y una medición más, definitiva: muestreando guardias en combate durante 64
+segundos de tiroteo real, **258 de 258 muestras eran de un guardia peleando
+SOLO**. Nunca dos a la vez.
+
+**El juego no tiene la culpa, y se probó:** con el jugador plantado, la alarma
+sonando y **sin disparar un solo tiro**, sí se juntan — hasta 4 guardias en
+combate simultáneo en el tren veloz, 2 en el estándar y en el de carga, con
+pares a menos de 90px. El tren SABE juntar gente.
+
+**Lo que rompe los grupos es la velocidad a la que el jugador mata.** Dos tiros
+de Colt son 0,42 s: cada guardia muere antes de que el siguiente llegue a
+entrar en combate. Los pares que existen al empezar el asalto (30% del tren,
+medido en la vuelta anterior) están rotos para cuando llegás: al primero lo
+mataste, y el otro queda a más de 150px.
+
+#### La conclusión incómoda, y vale más que la feature
+
+**Esta conducta no puede resolver el problema que la motivó, porque depende de
+que el problema no exista.** Santi lo describió así: *"me acerco, disparo dos
+tiros, lo mato, y sigo"*. El repliegue necesita dos guardias vivos peleando a la
+vez; ese patrón garantiza que nunca haya dos.
+
+Y de ahí sale la lectura que ordena las tres ideas de la conversación original:
+
+> **El combate real de Forajido es una sucesión de duelos 1 contra 1** — 258 de
+> 258 muestras. La conducta que el juego necesita para que un guardia deje de
+> sentirse un muñeco es la del guardia **SOLO**: o sea **la idea 2, rendirse de
+> rodillas**, que sigue pendiente. El repliegue le habla al 22% de los casos; la
+> rendición, al 78%.
+
+**Decisión de Santi:** hacer que los guardias peleen de a dos — la opción que
+ataca la causa. Ver la sección siguiente.
+
+---
+
+## ⚠️ CONSTRUIDA PERO SIN CONFIRMAR · "Ninguno entra solo", y la lección del arnés que se comió la premisa
+
+*(decidido con Santi: de tres opciones, eligió "hacer que los guardias peleen de
+a dos" sabiendo que era la que tocaba el balance medido de la fase 2)*
+
+### Lo que se construyó
+
+**Ningún guardia cruza solo la puerta del vagón donde estás.** El que llega
+primero se planta en su vagón —parapetado, como ya hacen los de adelante desde
+que existe `alertaEnGuardia`— hasta **4 segundos** (`esperaCompanero`, el mismo
+número que `suspicionMemory`). Si llega un compañero, **entran juntos y se
+turnan para asomarse**; si no llega nadie, entra igual y **no vuelve a esperar
+en toda la partida** (`yaEsperó`).
+
+Y el que se planta **llama**: `llamarCompaneros` despierta a los guardias
+dormidos a menos de 120px. Salió de medir que, de 13 esperas, **5 tenían un
+compañero al lado que seguía durmiendo** (4 patrullando, 1 investigando). Es un
+grito más, con el mecanismo de gritos que ya existía, y de alcance corto a
+propósito (120 y no los 320 de `shoutRadius`): llama al de al lado para cruzar
+una puerta, no da la alarma general — quedarse callado tiene que seguir sirviendo.
+
+**No hay una rama de movimiento nueva.** Lo único que hace el sistema es
+encender `esperandoCompanero`, que `esDefensivo` convierte en la conducta
+defensiva ya construida. Y `MAX_ASOMADOS` pasó a ser `cupoDeAsomados`, la mitad
+del grupo redondeando arriba: **el cuarteto del Sheriff conserva su 2 exacto**
+(verificado), y una pareja pasa a tener 1 — sin eso los dos miembros de un dúo
+se asomaban a la vez y nadie cubría a nadie, que era justo lo que la pareja
+venía a resolver.
+
+### 🐛 LA LECCIÓN GRANDE · El arnés de prueba se comió la premisa entera
+
+**El "258 de 258 guardias peleando solos" que motivó todo esto no es un hecho
+del juego: era un artefacto del piloto de prueba.** Se descubrió recién al
+querer medir el después contra el antes.
+
+La métrica "% de guardias que pelean acompañados" da resultados que **cambian de
+signo** según cómo esté configurado el piloto, con el MISMO código:
+
+| Piloto | Sistema apagado | Sistema encendido |
+|---|---|---|
+| Avanza y muere (el original) | **0%** acompañado | 17% |
+| Avanza, inmortal (corridas de 80 s completas) | **52%** acompañado | 37% |
+
+O sea que con un jugador que sobrevive y se queda en la pelea, **ya había 52% de
+peleas acompañadas antes de tocar una línea**. El 0% original salía de que el
+piloto moría o mataba tan rápido que la corrida se cortaba antes de que nadie se
+juntara.
+
+> **La regla que ya estaba escrita en PROMPT-CONTINUAR y que igual hubo que
+> volver a aprender:** *sospechá del arnés de prueba tanto como del código*. Acá
+> el arnés no dio un número equivocado en un detalle — **inventó el problema
+> entero**, y sobre ese problema inventado se tomó una decisión de diseño.
+
+### Lo que SÍ quedó medido con confianza
+
+- **No sube la dificultad.** Impactos recibidos por asalto, 8 asaltos por
+  variante, piloto inmortal (así todas las corridas duran lo mismo y son
+  comparables): **6,3 apagado · 5,3 esperando sin llamar · 5,0 con todo**. Si
+  algo, baja un poco — los que esperan son guardias que no están encima tuyo.
+- **Sin errores de JS, sin guardias trabados, sin estados imposibles** en todas
+  las corridas de las tres variantes.
+- **Sin regresión del Sheriff:** su grupo sigue siendo de 4, los cuatro
+  defensivos, asomándose dentro de su cupo de 2 (802 cuadros de asomadas
+  observadas, nunca más de 1 a la vez por el ritmo natural de los `holdTimer`).
+
+### Las dos perillas, y cómo apagarlo
+
+| | |
+|---|---|
+| `enemy.esperaCompanero` | Segundos que espera antes de entrar solo. **En 0 el sistema queda apagado** |
+| `enemy.radioLlamado` | Alcance del llamado. **En 0 espera igual, pero no despierta a nadie** — es la forma de volver al balance previo sin desarmar nada |
+
+### ⚠️ Lo que falta, y es lo único que puede cerrar esto
+
+**Que Santi lo juegue.** No hay ninguna medición por consola que pueda decidir
+esto: se probó, y la métrica depende más del piloto que del código. La pregunta
+—*¿se siente que peleás contra una situación y no contra muñecos?*— es
+exactamente del tipo que sólo se responde jugando.
+
+---
+
+## ✅ HECHA · La mira, vuelta seis: el círculo pasó de predecir el tiro a describir el arma
+
+*(Santi: "cuando el círculo está más cerca tuyo o más lejos, debería ser del
+mismo tamaño. No porque vos muevas el círculo más cerca del personaje
+aumentaría la mira. El círculo mide una posible dispersión. Por más de que
+vos tengás el círculo cerca tuyo, la dispersión sin apuntar debería ser la
+misma")*
+
+Todas las vueltas anteriores de la mira (segunda a cuarta, más arriba)
+defendieron una idea: *"el círculo es la dispersión real, no una figura que
+la representa"* — el radio era literalmente `tan(dispersión) × distancia al
+punto donde apuntás`, así que apuntar lejos abría el círculo porque a esa
+distancia la misma dispersión angular cubre más terreno. Eso era físicamente
+correcto, y por eso predecía bien la chance real de acierto a cada distancia
+(lo que se verificó con Monte Carlo en la cuarta vuelta).
+
+**Santi pidió lo contrario a propósito: que el círculo deje de proyectarse al
+punto donde apuntás y pase a describir el arma.** No es un capricho estético
+— es una decisión de qué pregunta responde el círculo. Antes contestaba *"si
+disparo AHORA, a ESTE punto, ¿qué tan bien va a salir?"*. Ahora contesta
+*"¿qué tan sucia es esta arma, en este estado, en general?"* — una medida
+fija, no una proyección puntual.
+
+**El cambio es puramente de DIBUJO — la mecánica real no se tocó.**
+`dispersionActual()` (entities/player.js), la función que de verdad decide
+hacia dónde se desvía la bala en `shoot()`, sigue exactamente igual: el tiro
+real sigue siendo más fácil de acertar de cerca que de lejos, como siempre.
+Lo único que cambió es `drawMira` (scenes/raidScene.js): en vez de medir la
+distancia real hasta `world.aimX/aimY`, usa siempre `CONFIG.mira.
+distanciaReferencia` — un número fijo. El círculo sigue seteado sobre el
+punto donde apuntás (se mueve con el mouse, como siempre), pero su TAMAÑO ya
+no depende de qué tan lejos esté ese punto.
+
+**El número, elegido con Santi entre tres opciones (80/120/160px), fue
+120px** — la distancia típica de combate medida en esta misma sesión, cuando
+se afinó la hitbox de los guardias unas vueltas atrás. No es un número nuevo
+inventado para esto: es el mismo que ya se había usado como referencia de
+"distancia de tiroteo normal".
+
+**Datos actuales de cada arma** (los que pidió Santi, con el radio ya fijo a
+120px):
+
+| Arma | Dispersión suelta | Dispersión apuntada | Radio dibujado (siempre) |
+|---|---|---|---|
+| **Colt** | 0,035 rad | 0,0175 rad | 4,2px suelto → 2,1px apuntado |
+| **Smith** | 0,085 rad | 0,0425 rad | 10,2px suelto → 5,1px apuntado |
+
+**Lo que se pierde, dicho explícitamente porque es la otra cara de la
+decisión:** el círculo ya no predice la chance real de acierto en el punto
+exacto donde apuntás — un tiro a 40px y uno a 200px muestran el mismo círculo
+aunque el segundo falle mucho más seguido (eso lo demostró la medición Monte
+Carlo de la cuarta vuelta, y sigue siendo cierto por debajo, sólo que ya no
+se ve). Es la decisión correcta si lo que se quiere comunicar es "así de
+preciso es este revólver", y la decisión incorrecta si se quiere seguir
+leyendo "esta bala en particular va a pegar o no" — Santi eligió lo primero,
+con el argumento explícito de que el círculo mide al arma, no al tiro.
+
+**Lo que NO cambió, y sigue funcionando igual:** el balanceo del tren veloz
+(`traqueteo.dispersionExtra`) sigue abriendo el círculo en tu cara —eso
+describe el arma EN ESE INSTANTE, que es justo lo que el círculo ahora
+representa— medido: 4,2px en calma → 11,4px durante el sacudón.
+
+**Verificado:** el radio dibujado da exactamente 4,2px apuntando a 40, 80,
+120, 200 o 300px (cinco mediciones, mismo número); el traqueteo lo sigue
+abriendo; capturado con `foto.ps1` apuntando a 40px y a 200px — mismo círculo,
+mismo tamaño, sólo cambia de posición. 90 segundos de asalto en los tres
+tipos de tren, sin errores.
+
+### ✅ VUELTA SIETE · El círculo dejó de ser una garantía matemática
+
+*(Santi, jugando la vuelta seis: "el círculo es literalmente del tamaño del
+guardia, en realidad hasta más pequeño. Entonces no importa la dispersión,
+porque yo pongo el círculo del arma 'dentro' del guardia y es un tiro
+asegurado")*
+
+**Medido antes de tocar nada, y el número era contundente:** el Colt apuntado
+da un círculo de 2,1px a 120px; el guardia mide 4,5×3,5. El círculo entraba
+entero adentro de la caja. Eso no era una sensación — era literal: el máximo
+de la dispersión uniforme (`rng.spread`) coincidía EXACTO con el radio
+dibujado, así que ningún ángulo posible dentro de lo que el arma podía tirar
+caía afuera del guardia. Apuntar bien con el Colt no era "muy probable que
+pegue": era matemáticamente imposible que fallara.
+
+**Se le ofrecieron tres salidas** (dejarlo así porque es la identidad del
+Colt / agrandar el círculo en general / rebalancear el arma de verdad) y
+Santi propuso una cuarta, mejor que las tres: *"¿y si hacemos que la
+dispersión de las balas de cualquier arma en realidad pueda salir del
+círculo? El círculo es una idea de lo que puede pasar, no una garantía."*
+
+**La pieza nueva es una función, no un número:** `rng.spreadDeTiro(amount, p,
+mult)` en `engine/rng.js`, al lado de `spread()` pero sin tocarla —
+`spread()` la sigue usando la cámara y la deriva de los jinetes, cosas que no
+son un gatillo, y tocarla ahí las habría cambiado también sin que nadie lo
+pidiera. `spreadDeTiro` hace lo mismo que `spread` la mayoría de las veces
+(uniforme entre −amount y +amount), pero con probabilidad `p` cambia `amount`
+por `amount × mult` para ESE tiro — sigue siendo uniforme adentro del rango
+que le toque, sólo que a veces el rango es más ancho y nunca se dibuja.
+
+**Los números, elegidos entre tres intensidades con el efecto medido en el
+Colt apuntado a 120px:** `fallaChance: 0,15`, `fallaMultiplicador: 2,5`.
+
+**Verificado con 2000 tiros por caso** (mismo método Monte Carlo de toda la
+sesión):
+
+| | Sin falla (antes) | Con falla (ahora) |
+|---|---|---|
+| **Colt apuntado @120px** | 100% | **95%** |
+| Colt suelto @120px | 77,7% | 77,1% (ya tenía margen real, casi no cambia) |
+| Smith apuntado @120px | ~100% | 62,6% |
+
+El Colt apuntado sigue siendo, por lejos, el arma más precisa del juego —no
+se le tocó un solo número de precisión— pero "más precisa" dejó de significar
+"infalible". Uno de cada veinte tiros perfectos, con el círculo puesto
+adentro del guardia, ahora puede irse igual.
+
+**Parejo para todos, no sólo el jugador.** Se aplicó en los cuatro lugares
+donde de verdad hay un gatillo: `shoot()` (jugador), `fire()` (guardias),
+`soltarBala()` (el Cazarrecompensas) y el disparo de los jinetes. Los
+disparos ciegos por puerta/techo (`ai.js`) quedaron afuera a propósito: ésos
+ya representan "no apunto con cuidado" con su propia dispersión enorme —
+sumarles la falla encima hubiera sido pegarle a un sistema que ya cuenta la
+misma historia.
+
+**Nada se dibuja para anunciarlo, a propósito.** Si el círculo mostrara "esto
+puede fallar 15% de las veces" volvería a ser una promesa exacta — la
+lectura que Santi pidió sacar. El círculo sigue siendo la referencia correcta
+la mayoría de las veces, y por eso vale la pena seguir mirándolo; deja de ser
+un seguro.
+
+**Verificado:** Monte Carlo confirma el 95% esperado en el Colt apuntado; 90
+segundos de asalto en los tres tipos de tren sin errores; el Cazarrecompensas
+(que tarda 35s en aparecer — hubo que esperarlo, no un bug) dispara con
+normalidad usando el mismo mecanismo.
+
+### ✅ VUELTA OCHO · El retroceso — cada disparo ensucia el próximo, un rato
+
+*(idea de Santi: "que al disparar haya un pequeño retroceso, dependiendo el
+arma, que agrande el círculo tanto apuntando como sin apuntar. Obvio que
+apuntando el retroceso va a ser menor")*
+
+Mismo mecanismo que el traqueteo del tren (`world.dispersionExtra`, se suma a
+`dispersionActual()` y se ve en el círculo Y afecta la bala real a la vez),
+aplicado ahora por CADA disparo tuyo en vez de por el vagón entero. No hizo
+falta un sistema nuevo, sólo una fuente más para el mismo sumador.
+
+**Dos preguntas, dos respuestas, decididas por separado con Santi:**
+
+1. **¿Cuánto agranda un solo disparo?** El 50% de la propia dispersión suelta
+   del arma — mismo porcentaje que ya usa "apuntar corta la dispersión a la
+   mitad" (`spreadApuntado`), así que no es un número nuevo suelto, es la
+   misma proporción aplicada de vuelta. `retroceso` vive en cada arma
+   (`weapons.js`), como el daño o la cadencia: Colt 0,0175, Smith 0,0425.
+2. **¿Por cuánto tiempo?** *"No solo es cuánto, sino por cuánto tiempo"* —
+   Santi marcó explícitamente que la duración necesitaba su propia decisión,
+   no una que yo asumiera. `retrocesoDecayTiempo: 0,40s`, elegido porque es
+   EXACTAMENTE la cadencia del Colt (`fireRate`). No es casualidad: a su
+   ritmo normal, el retroceso de un tiro termina de bajar justo cuando sale
+   el siguiente.
+
+**Lo que sale de esa elección, y es la parte más interesante:** el Colt
+disparado con calma **nunca acumula** — cada tiro sale limpio. El Smith
+(0,28s entre tiros, más rápido que el decaimiento de 0,40s) **sí acumula,
+aunque lo dispares a su propio ritmo natural**, sin apurarte. Es la otra cara
+de ser "mano rápida": lo que gana en cadencia lo pierde en pulso, sin que
+haga falta escribir esa regla en ningún lado — sale sola de dos números que
+ya estaban puestos por otros motivos (la cadencia de cada arma, la duración
+del retroceso).
+
+**Apuntando pesa la mitad** (mismo `kick × (1 - 0,5 × p.apuntado)`, la misma
+regla de `spreadApuntado`), interpolado por `p.apuntado` en vez de un salto
+seco, para que no cambie de golpe justo cuando la mira termina de cerrarse.
+
+**Un detalle técnico que no era parte de la sensación, pero había que
+resolver:** sin un tope, vaciar un cargador más rápido de lo que decae (el
+Smith, o una ráfaga de pánico) podía acumular retroceso sin límite.
+`retrocesoMax: 0,12` — unas tres veces el kick del Smith — es sólo una red de
+seguridad técnica, no una decisión de sensación.
+
+**Verificado por consola:**
+
+| | Medido |
+|---|---|
+| Kick del Colt suelto | 0,0175 exacto (0,035 → 0,0525 justo después de disparar) |
+| Kick del Colt apuntado | 0,00875 exacto (la mitad) |
+| Colt a su ritmo normal, 5 disparos seguidos | 0,0175 en los cinco — nunca sube |
+| Colt en ráfaga rápida, 8 disparos seguidos | 0,0175 → 0,0343 → ... → topea en 0,12 |
+| Smith a SU ritmo normal, 6 disparos seguidos | 0,0425 → 0,0531 → 0,0638 → 0,0744 → 0,085 → 0,0956 — sube solo |
+
+Mirado con `foto.ps1`, con zoom sobre el círculo: se ve claramente más grande
+en el cuadro de justo después de disparar que en el de antes. 90 segundos de
+asalto en los tres tipos de tren, sin errores.
+
+**Alcance:** sólo el jugador. A diferencia de la falla del pulso (vuelta
+siete), que se aplicó parejo a guardias, jefe y jinetes porque Santi lo pidió
+para "cualquier arma", este pedido fue específicamente sobre disparar vos
+("al disparar haya un pequeño retroceso") — los guardias ya tienen su propio
+lenguaje de cadencia (`burstDelay`, `fireCooldown`) y no se tocó.
+
+---
+
+## ✅ HECHA · El Sheriff, jugado por primera vez: cuatro cosas rotas y la peor no era suya
+
+*(Santi, después de jugarlo con la recompensa forzada a 600)*
+
+La primera vez que se juega un sistema "verificado por consola" aparecen las
+cosas que ninguna medición aislada podía ver. Salieron cuatro, y **la más grave
+no tenía nada que ver con el Sheriff**: estaba en los guardias de todo el
+juego, desde hacía rato, y se destapó porque perseguir a alguien te hace cruzar
+muchas más puertas que un asalto normal.
+
+### 🐛 1. Las ráfagas largas que mataban a los propios guardias
+
+> *"Hay veces que hacen ráfagas largas de disparo, cuando sólo deberían hacerlo
+> cuando se encuentran con una puerta y saben que el jugador está del otro
+> lado. Estas ráfagas terminan matando a los guardias."*
+
+**El diagnóstico correcto tardó tres mediciones, y las dos primeras se
+equivocaron de sospechoso.** Vale anotar el camino entero porque el error es
+repetible.
+
+La primera hipótesis fue *"el disparo ciego por la puerta no revisa si hay un
+compañero en la línea"* — que es CIERTO (`dispararACiegasPorPuerta` nunca
+llamaba a `allyInLine`, a diferencia del disparo normal) y sonaba a causa
+suficiente: cinco balas con `doorSpread` 0,6, el doble de sucio que cualquier
+otro tiro del juego, por un pasillo donde los guardias caminan en fila.
+
+**Y el A/B lo desmintió.** El mismo escenario 5 veces con el chequeo de
+compañeros puesto y 5 veces sin él (`allyBlockRadius = 0` como proxy) dio
+**17 muertos por fuego amigo contra 19**. Prácticamente idéntico. O sea que el
+arreglo era correcto y no era EL arreglo.
+
+**La tercera medición fue la que sirvió, y fue contar la SITUACIÓN en vez de
+contar los muertos.** Reproduciendo desde la consola el filtro que usa la IA,
+sobre un piloto que huye hacia la cola cruzando vagones:
+
+| | |
+|---|---|
+| Veces que se dio "una puerta es lo único que me tapa" | **527** |
+| De ésas, a más de 198 px del punto al que apuntaba | **517 (98%)** |
+| Cortadas por tener un compañero en la línea | 0 |
+| El caso legítimo (la puerta que tenés al lado) | **10** |
+
+**El 98% de las ráfagas ciegas del juego eran tiros hacia un lugar al que la
+propia bala nunca llegaba.** La causa es geométrica y por eso no se veía: el
+tren es un pasillo recto, así que *"lo único que me tapa es una puerta"* se
+cumple igual con una puerta a tres vagones, y `e.lastSeen` puede ser viejísimo.
+El guardia vaciaba cinco balas por el corredor hacia un punto lejano, las balas
+morían a los 198 px (`viewDistance + 80`, su alcance real)… encima de sus
+propios compañeros.
+
+**El tope no es un número nuevo: es el alcance de su propia bala.** Nadie vacía
+el cargador hacia donde su arma no llega. El chequeo de compañeros quedó igual
+—cubre el caso del pasillo lleno y corregía una inconsistencia real frente al
+disparo normal— pero **el que arregla el problema es el tope de distancia**. Y
+el sistema no quedó amputado: las 10 situaciones legítimas siguen ahí, y una
+corrida completa contó 47 balas de puerta.
+
+> **La lección, y es de método:** un arreglo que es *correcto* no es lo mismo
+> que un arreglo que es *la causa*. Las dos veces que me equivoqué fue por
+> contar SÍNTOMAS (muertos por fuego amigo) en vez de contar la SITUACIÓN que
+> dispara el sistema sospechoso. Contar la situación separa "esto pasa mucho y
+> está mal" de "esto pasa poco y encima no es esto".
+
+### 🐛 2. El Sheriff clavado contra una pared — y la pared era la del blindado
+
+> *"El Sheriff sí puede disparar. No es que él se queda bugeado contra una
+> pared sin hacer nada."*
+
+Acá había **dos** problemas encimados, y el segundo es el que producía la
+imagen que Santi vio.
+
+**El primero era el diseño llevado al literal.** `replegarse` le apagaba toda la
+maquinaria de combate en cada cuadro: *"no dispara, no se cubre, no se asoma:
+no tiene una sola línea de combate"*. La idea de fondo era buena —su precio se
+paga en distancia hasta la salida, no en vida— pero producía un tipo que te
+daba la espalda mientras le vaciabas el tambor.
+
+**El segundo era un bug puro, y encontrarlo costó una falsa alarma.** Midiendo
+el repliegue, el Sheriff se frenaba en seco a mitad del tren y no se movía más.
+La primera traza mostró todos los timers congelados, lo que parecía un problema
+de culling… hasta darse cuenta de que **el piloto de prueba se había muerto y
+la escena entera estaba congelada**.
+
+> **Trampa de medición nueva, para la lista:** *un piloto inmortal no es una
+> comodidad, es un requisito.* Una escena que termina detiene todo lo que
+> estabas midiendo, y eso se lee exactamente igual que tu sistema trabándose.
+
+Con un piloto inmortal apareció la causa real: **el destino del repliegue era
+siempre `puntaLocomotora`, y el vagón blindado suele quedar en el medio.** Esa
+puerta de chapa es la única del tren que frena el movimiento, no se empuja
+desde afuera, y la única llave es la dinamita — que él no lleva. Se estrellaba
+contra ella y se quedaba ahí para siempre, con `findPath` devolviéndole un
+camino que no existía. Medido: **70 segundos de repliegue para terminar clavado
+a 14 px de una puerta que nunca iba a abrir.**
+
+**Y el arreglo resultó mejor diseño que el destino original.** Ahora se repliega
+hasta la última posición a la que de verdad llega: si el blindado le queda en
+el camino, se planta de espaldas a la chapa, en el último metro de tren que
+tiene, y ahí te espera. No es que se rindió — es que no hay más tren. Se
+recalcula cada cuadro, así que si volaste esa puerta con dinamita antes, el
+camino se le abre solo.
+
+Verificado: **8 de 8 corridas llegan a su destino real** (la punta de la
+locomotora cuando no hay blindado en el medio, el borde de la chapa cuando sí),
+y encarándolo dispara en las 4 corridas de prueba (de 9 a 50 tiros).
+
+**Lo que NO hace, y es lo que le conserva la identidad frente al
+Cazarrecompensas: no avanza hacia vos ni un paso.** Se planta, se cubre y
+dispara; cuando le cortás la vista, retoma la caminata. Fue la opción que
+eligió Santi entre tres — la alternativa "pelea como cualquier guardia" se
+descartó porque borra la única pregunta que este jefe hace, que es *¿vale la
+pena ir hasta allá?*.
+
+### 🐛 3. La escolta atacaba en vez de defender
+
+> *"Los guardias del Sheriff no deberían ir a atacar, deberían estar en estado
+> defensivo: esperar cubiertos, asomarse y disparar y también cubrirse entre
+> ellos: si uno se asoma del lado izquierdo, otro lo cubre del lado derecho."*
+
+**La causa era una condición de tres palabras**: `updateEscolta` sólo les
+reescribía el puesto **mientras no estaban en combate**. Apenas te veían caían
+en la IA de guardia común, que si no encuentra cobertura camina hacia vos — y
+se iban a buscarte por el pasillo **dejando solo justo al tipo que tenían que
+custodiar**. La escolta se autodestruía en el primer contacto.
+
+Tres piezas, y ninguna inventa un sistema nuevo:
+
+| | |
+|---|---|
+| **`defensivo`** (systems/ai.js) | Le saca a `doCombat` la rama de avanzar, y a `doInvestigate` la de ir hasta el último lugar donde te vio. Todo lo demás —ver, sospechar, gritar, cubrirse, disparar, morir— sigue siendo la IA de siempre |
+| **La correa** (90 px, con histéresis) | El puesto se les recuerda SIEMPRE, y si se atrasaron vuelven antes que nada. La histéresis hizo falta porque sin ella orbitaban exacto en los 90 px: cruzaban el umbral, daban un paso, volvían a pelear, se atrasaban otra vez. Medido antes: 3-14% del tiempo fuera de correa; después: **0%** |
+| **Los lados y el turno** | `findPeek` probaba siempre el mismo lado primero, así que los tres cubrían tres veces el mismo ángulo. Ahora alternan (`ladoPreferido`) y **no se asoman más de dos a la vez** (`MAX_ASOMADOS`) |
+
+**Por qué el cupo es 2 y no 1**, que fue la decisión menos obvia: con uno solo
+la formación entera dispara un cuarto del tiempo y deja de ser una amenaza; con
+todos, es un pelotón de fusilamiento y no hay nadie cubriendo. Dos se lee como
+lo que Santi pidió — una pareja expuesta, cada uno por su lado, y el resto
+tapado esperando turno. Verificado: máximo 2 asomados simultáneos.
+
+**Y una consecuencia buena que salió sola:** al morir el Sheriff dejan de ser
+defensivos y pasan a ser guardias normales del vagón, o sea que **salen a
+buscarte justo cuando ganaste**. No lo vengan: es que ya no tienen a quién
+cuidar. Matarlo dejó de ser gratis sin que hubiera que escribirle un castigo.
+
+### 4. Tres de vida, y "fijos" es la mitad de la decisión
+
+> *"Además debería tener 3 de vida."*
+
+Salía de `guardHealth('sheriff', vidaExtra)`: **2 en un tren tranquilo y 3 en
+uno escoltado**. Eso está bien para un guardia anónimo —la escolta del tren es
+justamente lo que decide cuánto aguanta— y mal para un tipo con nombre: el
+mismo Sheriff moría con dos balazos o con tres según un sorteo que el jugador
+no ve, así que no se puede aprender cuánto cuesta matarlo.
+
+Ahora es `vida: 3` fijo en su ficha de `data/bosses.js`. Lo pone entre un
+guardia común (2) y uno blindado (4, el techo del juego), que es exactamente
+donde su diseño dice que está. `MAX_GUARD_HEALTH` sigue sin excepciones: la
+única del juego sigue siendo el Cazarrecompensas.
+
+### Lo que falta: volver a jugarlo
+
+Todo lo de arriba está **verificado por consola** — corridas completas de 130 s
+con guardias, escolta, jinetes y el Sheriff juntos, sin un solo error. Pero eso
+es exactamente lo que ya estaba "verificado por consola" la vuelta pasada, y
+jugarlo destapó cuatro cosas. **La medición dice que el sistema hace lo que dice
+hacer; no dice si se siente bien.**
+
+---
+
 ## ✅✅ EL ⚠ — la duda se confirmó, jugando con la fase 2 completa
 
 **El problema original.** Santi jugó el tren completo y dijo:
@@ -4374,10 +6426,2341 @@ líneas sobre un fondo beige es lo único que no puedo contestar.
 
 ---
 
+## HECHA · El honor — la rendición del guardia solo
+
+*(pedido de Santi al retomar ideas de "más divertido y adictivo": "me gusta la
+idea de implementar el honor ya. Pero la única forma de subirlo y bajarlo no
+puede ser si le perdonas la vida a un guardia o no")*
+
+**El disparador.** Era la tercera de las tres conductas de guardia pendientes
+desde la conversación del pánico y el repliegue del herido (ver más arriba):
+"un guardia solo, sin salida, a veces se rinde de rodillas". Las otras dos ya
+estaban construidas; ésta se retomó ahora porque le da a `gameState.honor` —
+en el estado desde la fase 1, sin que nada lo tocara nunca — el primer gancho
+mecánico real.
+
+**DÓNDE VIVE, mecánicamente: es la otra rama de `considerarRepliegue`**
+(systems/ai.js). Un guardia con un tiro de vida y un compañero cerca ya se
+repliega (construido antes). Ahora, si `buscarCompanero` no encuentra a nadie,
+en vez de plantarse a pelear hasta morir tira una moneda: `considerarRendicion`.
+Se juega **una sola vez por guardia** (`yaConsideroRendirse`, el mismo candado
+que `yaSeReplego`), gane o pierda.
+
+**LA CHANCE LA MUEVE `honor`**, no es fija: `rendicionChanceBase` (0,25) más
+`gameState.honor × rendicionPorHonor` (0,0025), con piso 0,03 y techo 0,75
+(`CONFIG.enemy`). Temido de verdad, casi nadie se rinde — ya saben que los vas
+a matar igual, no tienen nada que ganar entregándose. Respetado, se rinden
+bastante más. Nunca 0% ni 100%: siempre queda alguien que se la juega, para
+cualquier lado.
+
+**RENDIDO ES UN ESTADO PROPIO** (`e.rendido`, entities/enemy.js), no una
+variación de `inconsciente`. Se queda quieto — no dispara, no se mueve, no
+investiga nada (`updateEnemy` corta al toque, igual que ya cortaba con
+`inconsciente`) — y se dibuja de rodillas, con las manos arriba, en un color
+que no usa ningún otro estado (`col.enemyRendido`, un hueso claro: ni el gris
+de patrulla ni el rojo de combate).
+
+**NO HACE FALTA NINGÚN BOTÓN PARA PERDONAR.** Decisión tomada con Santi entre
+dos opciones (automático vs. mantener `E` como amenazar a un pasajero): ganó
+"no atacarlo y seguir de largo" — si sigue vivo y rendido al terminar el
+asalto, cuenta como perdonado. Nada se anuncia en pantalla, la misma regla de
+siempre.
+
+**QUÉ MUEVE `honor`, y por qué no es sólo perdonar/no perdonar**
+(`CONFIG.honor`, `honorDelta` en state/gameState.js — calcada de `bountyDelta`):
+
+| Acción | Peso | Por qué |
+|---|---|---|
+| Perdonar a un rendido | +12 | el gesto original |
+| Rematar a un rendido | −20 | te miraba a la cara, indefenso, y lo mataste igual — el golpe más fuerte |
+| Rematar a un noqueado (culata + filo) | −8 | menos grave: nunca te vio, no sabe qué pasó |
+| Matar a un pasajero | −15 | reusa `summary.civilians`, el mismo conteo que ya alimenta `bounty.pesoCivil` |
+| Escapar sin matar a NADIE | +15 | bono aparte, premia el asalto entero resuelto a culatazos y sigilo |
+
+**RENQUE ENTRE ARMAS: LA CULATA EN UN RENDIDO NO MATA.** Si lo culateás
+(`arma.noquea`), se convierte en `inconsciente` — deja de estar rendido,
+pasa a estar desmayado — y no mueve `honor` para ningún lado: no lo mataste,
+pero tampoco lo dejaste ir. Un caso raro, no diseñado a fondo, dejado como
+zona neutra a propósito en vez de inventarle una regla.
+
+**EL DATO QUE HIZO FALTA CAPTURAR ANTES DE MUTAR NADA.** En `systems/melee.js`,
+el remate (con filo) borra `e.inconsciente` y deja `e.rendido` como estaba —
+pero el evento `enemyKilled` necesita saber DE QUÉ VENÍA antes de que el golpe
+cambie el estado, así que `eraRendido`/`eraNoqueado` se capturan primero y
+viajan en el propio payload del evento (`rendido`, `indefenso`). Para bala o
+dinamita nadie captura nada — no hace falta: como ninguna de esas dos rutas
+toca `e.rendido` ni `e.inconsciente` antes de matar, `raidScene.js` los lee
+directo del enemigo en el listener, con el payload como preferencia y el
+objeto como respaldo (`rendido ?? enemy.rendido`).
+
+**VERIFICADO POR CONSOLA** (el panel seguía sin componer frames), con
+`FORAJIDO.services.raid` y `scenes.update` a mano:
+
+- Un guardia aislado (sin nadie a 200px) forzado al umbral de vida, con
+  `honor = 1000` (chance al techo, 0,75): en 5 tiradas, 4 se rindieron y 1
+  no — acorde a la chance.
+- Un par de guardias a 22px forzado igual: el que baja de vida se repliega
+  (`yaSeReplego: true`) y **nunca** llega a tirar la moneda de rendición
+  (`yaConsideroRendirse: false`) — la exclusión por compañero funciona.
+- Un rendido se queda **exactamente quieto** dos segundos seguidos de
+  simulación (misma `x`/`y`, `burstLeft` y `aimTimer` en cero).
+- Rematarlo con filo (`playerMelee` real, no simulado) emite `enemyKilled`
+  con `rendido: true` en el payload.
+- Culatearlo lo pasa a `inconsciente` (25s) sin emitir `enemyKilled`.
+- `applyRaidResult` con un resumen fabricado de "perdonaste a uno, escapaste
+  sin matar a nadie" dio `honor: +27` (12 + 15, exacto); uno de "rematate a
+  un rendido, a un noqueado, y murió un civil" dio `honor: −43` (−20 −8 −15,
+  exacto).
+
+**LO QUE FALTA:** que Santi lo juegue de verdad — encontrarse con un guardia
+arrodillado por primera vez, sin saber que existe, es la única prueba que
+importa. Los números de `CONFIG.honor` y `CONFIG.enemy.rendicionChance*` son
+un primer valor razonable, no calibrado jugando — igual que el resto de este
+archivo, se ajustan viéndolo en la mano, no midiendo de nuevo.
+
+**Y sigue habiendo un hilo suelto, a propósito, para no sobreconstruir de una:**
+un guardia rendido cuenta como "alguien peleando" (`state === 'combat'`
+residual) para dos chequeos menores de otros guardias (`tieneConQuienEntrar`,
+`emparejar`) que no lo excluyen explícitamente — un caso raro y de bajo
+impacto, no una decisión tomada.
+
+*(la "posibilidad de traición" que mencionaba la idea original — que un
+rendido finja y ataque si te acercás desprevenido — se retomó y ya está
+hecha: ver la sección siguiente)*
+
+---
+
+## HECHA · La traición del rendido
+
+*(pedido de Santi, jugando la rendición: "quiero implementar que puede haber
+una cierta probabilidad de que el guardia se levante y te dispare por la
+espalda. Debería como irse poniendo de pie, para que si el jugador esté atento
+le de tiempo para reaccionar. La probabilidad debería incrementar con la
+cantidad de recompensa que se ofrece por la cabeza del jugador")*
+
+**Era la mitad de la idea original de la rendición**, dejada afuera a
+propósito la vez pasada para no construir las dos cosas de una vez. Ahora se
+retoma, y reusa casi toda la maquinaria que ya existía: matarlo mientras se
+está parando es LITERALMENTE el mismo gesto de rematar que ya estaba
+construido, así que "reaccionar a tiempo" no necesitó ningún input nuevo.
+
+**DÓNDE VIVE: la otra rama de `considerarTraicion`** (systems/ai.js), que
+corre en el mismo lugar donde `updateEnemy` cortaba en seco para un rendido
+(`if (e.rendido) { considerarTraicion(...); return; }`). Dos sub-estados:
+
+1. **Esperando** (`!e.traicionLevantando`): cada `traicionCheckCada` segundos
+   (3,0) re-tira la moneda — **sólo si el jugador se alejó de verdad**
+   (`traicionRadioMinimo`, 50px: encañonado no se anima a nada). La chance
+   sale de `gameState.bounty` (cuánto pagan por tu cabeza), NO de `honor`
+   —son preguntas distintas: `honor` decidió si se arrodilló, `bounty`
+   decide si, ya de rodillas, se anima a jugársela— con
+   `traicionChanceBase` (0,05) más `bounty × traicionPorBounty` (0,0003),
+   entre 0,02 y 0,40. Con `bounty` en 0, casi nunca; cerca del techo real
+   (`prision.umbralHorca`, 1200), hasta ~40%.
+2. **Levantándose** (`e.traicionLevantando`): `traicionProgreso` sube con
+   `dt` hasta `traicionDuracion` (1,1s). Si en ese lapso lo atacás —CUALQUIER
+   ataque, no hace falta saber que está "en medio de la traición"— es el
+   mismo remate de siempre y muere ahí. Si llega al final sin que lo toques,
+   `dispararPorLaEspalda` lo saca de `rendido`, lo vuelve a `combat`, y le
+   pega un tiro garantizado al jugador (`damagePlayer` directo, sin apuntado
+   ni dispersión — el aviso ya fue el cuerpo parándose, no un ángulo que se
+   pueda esquivar corriendo).
+
+**EL AVISO ES EL CUERPO, NADA MÁS** (`drawEnemy`, entities/enemy.js): sin
+ícono nuevo, sin `!` sobre la cabeza. Mientras se para, la caja de colisión
+interpola de la altura arrodillada a la de pie, y pasada la mitad el color
+salta de `enemyRendido` a `enemyAlert` — el mismo lenguaje de "esto es
+peligro" que ya usa el resto del juego. Es la misma regla de siempre: lo que
+se puede mostrar no se escribe.
+
+**MATARLO A TIEMPO NO ES LO MISMO QUE REMATAR A UN INDEFENSO.** Si ya se
+estaba parando para dispararte, el aviso ya sonó — matarlo en ese momento es
+defenderte de algo que viste venir, no ejecutar a alguien rendido. Por eso
+`eraRendido` (systems/melee.js y el listener de `enemyKilled` en
+raidScene.js) exige `e.rendido && !e.traicionLevantando`: durante la parada,
+`honorDelta` no lo cuenta como remate — ni bien ni mal, simplemente combate.
+
+**VERIFICADO POR CONSOLA**, mismo método que el resto de esta tanda:
+
+- Con `bounty = 1200` (chance ~0,41 por chequeo) y el jugador lejos, se activó
+  al segundo chequeo de tres intentos (~6s) — orden de magnitud correcto.
+- Rematarlo durante `traicionLevantando` (con `playerMelee` real): muere, y
+  el payload de `enemyKilled` trae `rendido: false` — la exención funciona.
+- Dejarlo completar la parada sin tocarlo: `rendido` pasa a `false`,
+  `traicionLevantando` a `false`, `state` vuelve a `'combat'`, la vida del
+  jugador baja de 4 a 3, y se emite `playerHit` — el ciclo completo.
+- Con el jugador a 10px (menos que `traicionRadioMinimo`) durante 10
+  segundos seguidos: nunca arranca a pararse, aunque el timer se siga
+  reseteando cada 3s — la exigencia de "te alejaste de verdad" frena el
+  chequeo antes de tirar la moneda.
+
+**LO QUE FALTA:** jugarlo. Los números (`traicionCheckCada`,
+`traicionChanceBase/PorBounty`, `traicionDuracion`) son un primer valor
+razonable — se ajustan viéndolo en la mano, como todo lo demás de este
+archivo. En particular, `traicionDuracion` (1,1s) es la variable más sensible
+a cómo se sienta jugando: si nadie llega a reaccionar nunca, subirla; si se
+siente demasiado fácil esquivarla, bajarla.
+
+---
+
+## MEDIDO · Cada cuánto un guardia se rinde, y cada cuánto ese mismo te traiciona
+
+*(pedido de Santi: "quiero que hagas una probabilidad de cada cuanto un
+guardia pide piedad y cada cuanto ese mismo guardia se para y dispara")*
+
+Medido con la fórmula real del juego, semilla fija, 50.000 tiradas por caso —
+el empírico coincidió con la fórmula en las 10 filas, así que no había ningún
+bug de cálculo escondido:
+
+| `honor` | Chance de rendirse |
+|---|---|
+| −100 o menos | 3% (piso) |
+| 0 (arranque) | 25% |
+| 50 | 38% |
+| 100 | 50% |
+| 200 o más | 75% (techo) |
+
+`honor` deja de importar fuera de −100/+200: ahí ya está en el piso o el
+techo, así que subirlo o bajarlo más allá no cambia nada.
+
+Para la traición, la chance por chequeo (cada 3s) Y el tiempo real traducido
+—simulando el proceso completo, 20.000 guardias por fila—:
+
+| `bounty` | Chance por chequeo | Mediana hasta que se anima | Chance a los 30s |
+|---|---|---|---|
+| 0 | 5% | 39s | 40% |
+| 300 | 14% | 15s | 78% |
+| 700 | 26% | 9s | 95% |
+| 1200 (techo real) | 40% (techo) | 6s | 99% |
+
+**Lo que dice esto jugando:** a recompensa 0, dejar a un rendido vivo cerca
+tuyo un rato corto es relativamente seguro. Con `bounty` alto —que es
+justamente cuando el juego ya te está castigando con más jinetes y el
+Cazarrecompensas— un rendido se vuelve peligroso casi de inmediato.
+
+Esta medición fue la que llevó a la sección siguiente: mirando estos números,
+la pregunta que siguió fue "¿y el resto del asalto también se pone peor con
+el tiempo, o sólo esto?" — y la respuesta, revisando `CONFIG.alert` y
+`RIDER_SPAWN`, fue que no: los refuerzos de la locomotora y los jinetes de
+afuera escalaban al principio y después se aplanaban en un techo fijo.
+
+---
+
+## HECHA · Los refuerzos y los jinetes ya no tienen techo, sólo un piso
+
+*(pedido de Santi, después de ver la tabla de arriba: "quiero probar eso de
+que a medida que pasa el tiempo más se intensifica el peligro. Podríamos
+hacer que suban guardias desde la parte de atrás del tren o que vengan desde
+la locomotora")*
+
+**"Por atrás" se descartó a propósito.** El comentario de `systems/alert.js`
+ya lo decía desde que existe: *"Nunca por atrás: atrás está el aire libre y
+tu caballo"* — es tu única salida, y abrirla a guardias es un cambio de
+diseño de fondo, no un ajuste de número. Elegido con Santi: escalar lo que ya
+entraba por la locomotora y por afuera (los jinetes), en vez de tocar eso.
+
+**EL PROBLEMA MEDIDO:** los dos sistemas que ya hacían "el peligro sube con
+el tiempo" —`CONFIG.alert` (refuerzos de la locomotora) y `RIDER_SPAWN`
+(jinetes de afuera)— tenían un `max` que era un TECHO DURO. Pasado ese punto
+(4 refuerzos, 2 a 5 jinetes según la recompensa), no entraba nadie más
+aunque el jugador se quedara el resto del asalto sentado en un vagón. La
+escalada se aplanaba justo cuando más debería pesar quedarse.
+
+**LA IDEA: `max` pasa a ser el PISO, no el techo.** Pasado ese punto, sigue
+entrando gente, pero cada vez MÁS SEGUIDO — no más cantidad de una: el
+intervalo entre uno y el siguiente se achica con cada uno de más
+(`intervalDecay`), hasta un piso (`intervalMin`). El mismo mecanismo en los
+dos sistemas, escrito una vez por archivo (`intervaloDelProximoRefuerzo` en
+systems/alert.js, `intervaloDelProximoJinete` en systems/riders.js) porque
+son datos separados (`CONFIG.alert` vive en data/config.js, `RIDER_SPAWN` en
+data/riders.js) y no valía la pena unificarlos en un tercer módulo para dos
+usos.
+
+**`maxAbsoluto` es un techo técnico, no de dificultad.** Ningún asalto real
+llega tan lejos sin que pase algo antes (capturan al jugador, escapa, se
+acaba el reloj) — está para que un asalto colgado de verdad no genere gente
+sin fin. 12 para la locomotora, 10 para los jinetes.
+
+**Números elegidos** (`CONFIG.alert` y `RIDER_SPAWN`, data/config.js y
+data/riders.js):
+
+| | Piso (`max`) | Intervalo base | `intervalDecay` | `intervalMin` | `maxAbsoluto` |
+|---|---|---|---|---|---|
+| Locomotora | 4 | 16s | 3s | 6s | 12 |
+| Jinetes | 2 a 5 (según `bounty`) | 15s | 2,5s | 6s | 10 |
+
+**VERIFICADO POR CONSOLA, corrida completa de 150s con recompensa 0** (el
+peor caso — el piso más bajo de los dos sistemas):
+
+- Locomotora: entran a los 20, 36, 52, 68 (el ritmo de siempre, sin tocar),
+  después 81, 91, 98, 104, 110, 116, 122, 128 — doce en total, el intervalo
+  bajando de 16s a 6s tal cual la fórmula.
+- Jinetes: la tanda de 2 a los 25s, después 37,5 / 47,5 / 55 / 61 / 67 / 73 /
+  79 / 85 — diez en total (el `maxAbsoluto`), mismo achicamiento.
+- Los dos números coinciden exactos con una corrida aparte del sistema
+  aislado (sin el resto del asalto alrededor) — no hay ninguna otra parte del
+  juego interfiriendo con el reloj de ninguno de los dos.
+
+**UN CALLEJÓN SIN SALIDA EN EL CAMINO, para que quede anotado:** la primera
+corrida "real" (con `scenes.update` completo, no el sistema aislado) dio SÓLO
+2 jinetes y 2 refuerzos en 150s enteros — parecía que el cambio no hacía nada.
+La causa NO era el código: era el arnés de prueba. Dejé al jugador de prueba
+parado, sin vida infinita, en un asalto con la alarma sonando desde el
+segundo cero — y se murió a los 25,6s, mucho antes de que el 3º refuerzo
+tuviera su turno (37,5s). El asalto terminaba (`finished = true`) y desde ahí
+`update()` corta en seco: ni la locomotora ni los jinetes se actualizan más.
+Con el jugador en modo dios sólo para la medición, los números coincidieron
+exactos con la corrida aislada. Es el mismo consejo de siempre: sospechar del
+arnés tanto como del código.
+
+---
+
+## HECHA · La rendición pasaba demasiado seguido — medido y corregido
+
+*(Santi, jugando: "el guardia que pide piedad pasa demasiado seguido. Cuando
+está él y otro guardia en el mismo vagón, no importa que uno esté en una
+punta y otro en la otra, NO PUEDE PEDIR PIEDAD")*
+
+**MEDIDO ANTES DE TOCAR NADA, con dos guardias reales del mismo vagón,
+arrancando en puntas opuestas (288px):**
+
+| Segundo | Distancia entre ellos |
+|---|---|
+| 0 | 288px |
+| 2 | 226px |
+| 4 | 135px |
+| 6 | 63px — y ahí se queda |
+
+**Los dos convergen sobre el jugador en menos de 6 segundos, siempre.** Es lo
+que la IA ya hace (vienen a buscarte apenas se alertan). Para cuando alguno
+de los dos baja al umbral de vida —que es cuando se preguntaba si hay
+compañero—, casi siempre ya están bien adentro de `repliegueRadioCompanero`
+(90px). Por eso "una punta y la otra" no cambiaba nada: para el momento que
+importa, la posición inicial ya dejó de existir. Y con ~11 guardias en 4-6
+vagones, el ÚLTIMO de cada bolsón de 2+ siempre termina solo tarde o
+temprano — eso era lo que se sentía "demasiado seguido": no un guardia
+particular tirando la moneda mucho, sino que casi todo vagón terminaba en
+ese momento.
+
+**DOS CAMBIOS, uno por cada mitad del problema** (`CONFIG.enemy`,
+`considerarRepliegue` en systems/ai.js):
+
+1. **`rendicionChanceBase` bajó de 0,25 a 0,15** — responde a la frecuencia
+   cruda.
+2. **`rendicionSoloMinimo` (1,5s), nuevo.** Antes se tiraba la moneda en el
+   mismo cuadro en que quedaba solo. Ahora tiene que llevar ese tiempo
+   SEGUIDO sin compañero — medido con `e.soloTimer`, que se acumula cuadro a
+   cuadro y no se reinicia salvo que de verdad aparezca alguien cerca. Si en
+   el medio llega un compañero, la rama de repliegue lo agarra al cuadro
+   siguiente y la cuenta nunca llega a completarse.
+
+**CAMBIO DE ARQUITECTURA QUE HIZO FALTA:** `considerarRepliegue` dejó de
+depender de "¿te acaban de pegar este cuadro?" (comparar `e.health` contra
+`e.vidaPrevia`, el mismo patrón que usa el Cazarrecompensas) y pasó a
+evaluarse TODOS los cuadros mientras la vida siga en el umbral y nada se haya
+decidido. Sin este cambio, `soloTimer` no tenía cómo acumularse — el chequeo
+viejo sólo miraba una vez, en el instante exacto del golpe. `e.vidaPrevia` ya
+no se usa en ningún lado de este archivo y se sacó de `entities/enemy.js`
+(seguía viva en `entities/boss.js`, para el Cazarrecompensas, que es una
+copia aparte y no se tocó).
+
+**VERIFICADO POR CONSOLA:**
+
+- Un guardia aislado, forzado al umbral: `soloTimer` sube parejo con el
+  reloj y `rendido` se prende exactamente al cruzar 1,5s — ni un cuadro
+  antes.
+- El mismo caso, pero con un compañero que llega a los 0,7s (antes del
+  umbral): el timer se corta, nunca se tira la moneda, y el guardia pasa a
+  replegarse con el compañero en cambio (`yaSeReplego: true`,
+  `yaConsideroRendirse: false`).
+- `rendicionChanceBase` en 50.000 tiradas dio 0,1503 — coincide con 0,15.
+
+---
+
+## HECHA · Los jinetes de la escalada esperan adelante, no persiguen
+
+*(Santi: "los jinetes son demasiados para que todos queden detrás del
+jugador. Algunos jinetes deberían estar detrás y otros por delante esperando
+a que el jugador pase por ese lugar en el que un jinete espera")*
+
+**Decidido con Santi, dos preguntas concretas:** (1) sólo los jinetes que
+entran por la escalada nueva (los que sobrepasan el piso que fija la
+recompensa) nacen emboscadores — los garantizados siguen persiguiendo, que
+es el comportamiento ya jugado; (2) esperan **~250px adelante**, medio vagón
+mediano de anticipo.
+
+**"ADELANTE" = HACIA LA LOCOMOTORA, siempre — no "hacia donde vas ahora".**
+Es la misma palabra que ya usa el resto del juego (ver README, "ir hacia
+ADELANTE dentro del tren cuesta casi el doble que volver") y coincide con
+el sentido en el que crece `x` en el mapa: `puntaLocomotora`
+(world/train.js) es la ÚLTIMA plataforma, y las columnas de los vagones se
+arman en orden creciente desde la cola. No hizo falta rastrear hacia dónde
+se mueve el jugador ni adivinarlo — el tren ya tiene una dirección fija.
+
+**MECÁNICA** (`data/riders.js`, `systems/riders.js`):
+
+- `RIDER_SPAWN.distanciaEmboscada: 250`.
+- `createRiderWatch.update`: el jinete que se manda es emboscador si
+  `salieron >= max` (ya se mandó el piso garantizado) al momento de nacer.
+- `spawnRider(world, side, { emboscador })`: si es emboscador, reclama YA un
+  tramo cerca de `jugador.x + distanciaEmboscada` (con `elegirTramo`, el
+  mismo buscador que usa la persecución normal, para no pisarle la ventana a
+  otro jinete) y **nace ahí mismo**, no al lado del jugador — si apareciera
+  cerca tuyo y después galopara hacia adelante, verías la emboscada armarse
+  y dejaría de sorprender.
+- `seguirAlJugador`: mientras `rd.emboscador` esté puesto, no vuelve a
+  elegir tramo cuadro a cuadro (lo que lo hace "esperar" y no "perseguir").
+  En cuanto `jugador.x` llega a su tramo, `rd.emboscador = false` y desde
+  ahí persigue como cualquier otro — cruzarlo es lo que dispara la
+  persecución.
+
+**VERIFICADO POR CONSOLA, corrida real de 90s con recompensa 0** (piso = 2):
+
+- Los primeros 2 salen SIN `emboscador` y terminan cerca del jugador (~96px),
+  el comportamiento de siempre.
+- Del 3º al 10º (la escalada completa hasta `maxAbsoluto`), todos nacen
+  `emboscador: true`, y sus posiciones reales quedaron entre 163 y 405px
+  adelante del jugador — coherente con el objetivo de +250px ajustado a la
+  ventana real más cercana.
+- Moví al jugador hasta cruzar el tramo del emboscador más cercano: pasó de
+  `emboscador: true` (quieto) a `emboscador: false` (moviéndose hacia el
+  jugador) en el mismo cuadro que lo cruzó.
+
+---
+
+## HECHA · El honor: el disparador que faltaba, y la fogata lo cuenta
+
+*(retomando la lista original de honor, ya con `rendido`/`traición`
+construidos: faltaba "noquear en vez de matar, por la espalda → sube un
+poco". Y pedido aparte de Santi: "algo que me gustaría que haya ya es que
+cuando te sientas al lado de la fogata, te dice la Fama y el Honor que tiene
+el jugador")*
+
+**EL DISPARADOR QUE FALTABA: `CONFIG.honor.noquearLimpio` (+3).** Elegiste
+la culata en vez del filo, por la espalda, a alguien que nunca te vio. Sube
+POCO a propósito — un cuarto de `perdonarRendido` (12) — porque es una
+decisión que tomás al equiparte, antes de saber si iba a hacer falta, no un
+gesto consciente en el momento como perdonar a un rendido. Si pesara igual,
+la culata sería la jugada dominante para `honor` y el resto de la tabla
+dejaría de importar.
+
+**"LIMPIO" EXIGE QUE NO FUERA YA UN REMATE** (`systems/melee.js`): culatear a
+alguien que ya estaba rendido o ya noqueado sigue siendo la zona neutra de
+siempre — no suma nada para ningún lado. La distinción (`limpio = !eraRendido
+&& !eraNoqueado`) viaja en el propio evento `enemyKnockedOut`, mismo patrón
+que ya usa `enemyKilled` para `rendido`/`indefenso`.
+
+**LA FOGATA.** `T.camp.fogataSentado` pasó de un string fijo a una función
+`(fama, honor) => texto`, mismo patrón que `T.camp.poste` o `T.camp.cajon`.
+Un ejemplo real: *"Junto al fuego: fama 45, honor +12 (confían en vos)."*
+Cinco tramos de palabra para el honor (`te temen` / `desconfían de vos` /
+`no saben qué pensar de vos` / `confían en vos` / `te respetan`), sin números
+mágicos calibrados — es la primera vez que estos dos números se ven en algún
+lado fuera de la pantalla de resultados.
+
+**VERIFICADO POR CONSOLA:**
+
+- Noqueo genuino por la espalda a un guardia patrullando: `enemyKnockedOut`
+  trae `limpio: true`.
+- El mismo golpe a un guardia ya `rendido` (forzado para la prueba): trae
+  `limpio: false`.
+- `applyRaidResult` con dos `noqueadosLimpios` dio exactamente `+6` de honor
+  (2 × 3).
+- La fogata, jugada de verdad (moviendo al jugador con teclas reales, no
+  simulado): con fama 45 y honor +12 dice *"confían en vos"*; con honor -60
+  dice *"te temen"*; con honor 0 dice *"no saben qué pensar de vos"*. Se vio
+  la pantalla real con `foto.ps1` — el texto entra sin cortarse.
+
+---
+
+## HECHA · La racha de asaltos limpios
+
+*(pedido de Santi, retomando la idea del "efecto casino" de la sesión
+anterior: "avancemos con el tema de la racha sin alarma")*
+
+**QUÉ LA EXTIENDE Y QUÉ LA CORTA.** Cada asalto **LIMPIO** (escapaste, sin
+que la alarma sonara nunca) seguido suma 1 a `gameState.rachaLimpia`.
+Cualquier otra cosa la corta a 0: te agarraron, o escapaste pero ya te
+habían oído. Atada a "limpio" y no a "escapaste" a secas a propósito —
+decisión ya tomada la sesión anterior al proponer la idea, para no
+diluir el peso que ya tiene `cleanBonus`.
+
+**LOS NÚMEROS, elegidos por Santi sobre una tabla de tres opciones
+calculadas** (+10%/techo 100, +15%/techo 75, +5%/techo 150): terminó
+pidiendo un cuarto punto intermedio, **+8% por nivel, techo en +150%**. El
+techo se alcanza en la racha 19 (8 × 19 = 152, topado) — ahí un asalto limpio
+paga el botín **×3,5** entre `cleanBonus` (×2) y esto (×1,5).
+
+**EL PREMIO SE SIENTE YA, NO EN EL PRÓXIMO ASALTO.** El cálculo vive en
+`raidScene.js` (`goToResults`), no en `applyRaidResult`, por el mismo motivo
+que `cleanBonus` ya vivía ahí: hace falta saber el bonus ANTES de cerrar
+`summary.money`. `racha = limpio ? gameState.rachaLimpia + 1 : 0` — tu
+PRIMER asalto limpio de la partida ya te da racha 1 y +8%, no hay que
+esperar a un segundo para verlo moverse. `applyRaidResult` sólo guarda el
+resultado (`gameState.rachaLimpia = summary.racha`), mismo patrón liviano
+que ya usa para todo lo demás.
+
+**PERDERLA SE MUESTRA, no sólo el número vuelve a cero en silencio.**
+`rachaPerdida` guarda cuánto llevabas ANTES de este asalto, si lo cortaste —
+la pantalla de resultados dice *"Se cortó la racha (llevabas 7)"* en rojo.
+Es la otra mitad del "efecto casino": tiene que doler perderla, no sólo
+alegrar tenerla.
+
+**VERIFICADO POR CONSOLA**, reproduciendo la fórmula real contra
+`applyRaidResult` 20 asaltos limpios seguidos: sube parejo 8% por nivel
+(racha 1 → +8%, racha 5 → +40%, racha 10 → +80%) y se clava en 150% justo en
+la racha 19, se mantiene ahí en la 20. Un asalto capturado con racha 7
+previa: `rachaLimpia` vuelve a 0. La pantalla de resultados real (`scenes.
+goTo('results', ...)`) mostró las dos filas correctamente, con y sin racha.
+
+---
+
+## HECHA · El jackpot raro en la caja fuerte
+
+*(pedido de Santi, siguiendo el plan: "ahora vamos con el jackpot raro en la
+caja fuerte")*
+
+**SE JUEGA AL ARMAR EL VAGÓN, no al abrir la caja** (`createLootable`,
+entities/lootable.js) — mismo momento en que ya se sorteaba el valor normal
+(150-600). El jackpot no es una mecánica nueva, es una segunda tirada sobre
+la misma: si sale, el valor sale de un rango mucho más alto en cambio
+(`LOOT_TYPES.strongbox.jackpotMin/Max`, data/wagons.js) y la caja queda
+marcada `l.jackpot`. Como el valor real ya existía adentro de la caja desde
+siempre, sin que se supiera hasta abrirla, esto no le agrega ningún paso
+nuevo a la promesa de diseño original — sólo hace que a veces esa cifra
+escondida sea mucho más grande.
+
+**NÚMEROS, elegidos por Santi sobre tres opciones calculadas** (5%/$2500-
+4000, 8%/$1500-2500, 3%/$4000-6000): **5% de chance, $2500-4000**. Contra el
+promedio normal (~$375), son unas 8-9 veces más — bastante raro para seguir
+sorprendiendo (1 de cada 20 cajas), bastante grande para sentirse como lo
+que es.
+
+**NADA LO ANUNCIA ANTES DE ABRIRLA.** `drawLootable` no cambió: una caja con
+jackpot se ve exactamente igual que cualquier otra hasta el instante en que
+`takeLoot` la resuelve — es la misma regla de siempre ("lo que se puede
+mostrar no se escribe"), aplicada acá al revés: mostrarlo ANTES arruinaría
+la sorpresa, así que no se muestra.
+
+**EL MOMENTO EN QUE SE REVELA es lo único que sí tiene tratamiento especial**
+(`takeLoot`, raidScene.js): un floater dorado más grande y más largo
+("¡EL GOLPE DE TU VIDA! +$3256"), el doble de partículas, y una sacudida de
+cámara bien por encima de cualquier otra del juego (7, contra 3,2 de recibir
+un balazo) — tiene que sentirse como el pico de todo el asalto. La plata en
+sí entra al mismo `collected` de siempre: si te toca en medio de una racha
+limpia, el bonus de racha también lo multiplica, sin ningún código extra.
+
+**VERIFICADO POR CONSOLA:**
+
+- 50.000 cajas fuertes con la fórmula real: 4,94% salieron jackpot (pedido:
+  5%), promedio $3.256 dentro del rango $2.500-4.000, y las normales
+  promediaron $376 dentro de $150-600 — ningún número se movió del rango
+  pedido.
+- Una caja fuerte abierta de verdad (jugador real manteniendo `E` los 6,5s
+  completos) se resolvió sin errores.
+- **Visto de verdad con `foto.ps1`**, no sólo medido: el floater dorado se
+  lee bien, sin cortarse, con el texto y el monto completos.
+
+---
+
+## HECHA · El rescate — "casi lo logro" en vez de todo o nada
+
+*(último punto del plan que Santi dejó ordenado: "un 'casi lo logro' en vez
+de todo-o-nada" — hasta acá, que te agarraran o murieras hacía perder el
+100% de lo juntado en el asalto, aunque hubieras estado a un paso del
+caballo)*
+
+**NO ES UNA FRACCIÓN FIJA — escala con la distancia real al caballo**
+(`train.exitZone`) en el instante exacto de la captura. Es lo que hace que
+el nombre sea literal: morir a metros de la salida es un CASI de verdad, y
+tiene que pagarse distinto que morir en la otra punta del tren, que es
+simplemente un fracaso. Decidido con Santi entre una fracción fija y ésta —
+eligió la escalada por ser la que de verdad cumple la idea del nombre.
+
+**LOS NÚMEROS, elegidos por Santi sobre una tabla de tres opciones
+calculadas contra un botín de $1000** (60%/20%, 50%/10%, 35%/5%): **50% cerca
+del caballo (≤200px) → 10% lejos (≥2500px)**, interpolando lineal en el
+medio (`fraccionRescate`, raidScene.js). Con $1000 juntados: $500 si te
+agarran a metros de la salida, $100 si te agarran lejos.
+
+**DÓNDE VIVE:** el cálculo entero vive en `goToResults()` (raidScene.js),
+mismo lugar que `cleanBonus` y la racha, por el mismo motivo — hace falta
+saber el rescate ANTES de cerrar `summary.money`. El cambio real de fondo
+está en `applyRaidResult` (state/gameState.js): `gameState.money +=
+summary.money` **pasó a correr siempre**, no sólo si `outcome === 'escaped'`
+— antes, cualquier captura sumaba cero por definición; ahora `summary.money`
+ya trae el rescate cuando corresponde, así que sumarlo siempre es correcto
+para los dos casos sin duplicar lógica.
+
+**LA PANTALLA DE "CAPTURADO" AHORA DICE ALGO MÁS QUE "PERDISTE TODO".** Fila
+nueva, en dorado, sólo si hubo rescate: *"Casi lo lográs +$X"*. Y la fila de
+"Botín que dejaste" se corrigió para restar el rescate — antes, capturado,
+siempre mostraba el `collected` entero como perdido; ahora resta lo que
+efectivamente te quedaste.
+
+**VERIFICADO POR CONSOLA:**
+
+- La fórmula aislada contra 9 distancias (0 a 3000px) dio exactamente lo
+  esperado: 500/1000 en el piso (≤200px), 100/1000 en el techo (≥2500px), e
+  interpolación lineal correcta en el medio (ej. 1350px → exactamente 300).
+- Dos asaltos reales completos (bolsa real tomada, jugador movido de
+  verdad, muerte real vía `playerDown`): capturado LEJOS del caballo con
+  $36 juntados dio "Casi lo lográs +$4" (10%, redondeado); capturado
+  literalmente ENCIMA del caballo con otra bolsa dio "+$19" sobre un valor
+  de bolsa de ~$38 (50%, redondeado). `gameState.money` reflejó el rescate
+  en los dos casos, no sólo `summary.money`.
+
+---
+
+## HECHA · Los guardias "de adelante" esperan en rojo, en la puerta
+
+*(Santi, después de que le explicara cómo funcionaba el reparto de la alarma:
+"quiero que reprogrames eso... los guardias deberían estar en rojo
+esperándote en la puerta de su vagón, no en amarillo. Los guardias del
+blindado sácalos de la ecuación")*
+
+**LO VIEJO:** cuando la alarma ya sonaba y llegaba ruido a un vagón por
+delante tuyo (`spreadAlarm`, raidScene.js), esos guardias quedaban en
+`suspicious` (amarillo) y clavados donde los agarró la alerta —
+`alertaEnGuardia`, un estado de "ya sé que hay lío, pero hasta no verte de
+verdad no reacciono del todo".
+
+**LO NUEVO: `alertaEnPuerta`** (systems/ai.js), que reemplaza a
+`alertaEnGuardia` para este caso puntual (sigue existiendo para el blindado,
+ver abajo). Hace dos cosas que antes no pasaban:
+
+1. **Entra en combate DE VERDAD** (`enterCombat(e, world, false)` — sin
+   gritar, porque ya se enteró por la alarma y gritar volvería a disparar
+   `spreadAlarm` en bucle).
+2. **Camina hasta la puerta de entrada de SU PROPIO vagón** (el lado hacia
+   la cola, de donde viene el lío) antes de plantarse. Al llegar, se marca
+   `defensivo` — la misma marca que ya usa la escolta del Sheriff — y ahí se
+   queda para siempre, armado, cubierto en el marco.
+
+**DÓNDE ESTÁ LA PUERTA, sin buscarla en `world.doors`:** cada vagón ya
+guarda su propio borde de menor `x` (`train.wagons[i].x`), que es
+exactamente el lado de la cola — no hizo falta ni una búsqueda en el array
+de puertas, sólo leer un número que ya existía.
+
+**EL BUG QUE HABÍA QUE EVITAR, y por el que el chequeo de `vaHaciaPuerta` va
+ANTES de todo lo demás en `doCombat`:** si el guardia caminara hacia la
+puerta usando la rama normal de movimiento, el reloj de "hace cuánto que no
+te veo" (`lostTimer`/`loseTargetTime`, 9s) correría en paralelo — como nunca
+te vio de verdad (`engaged` nunca es `true`, sólo lo alertó la alarma), a los
+pocos segundos lo devolvería solo a `suspicious`, deshaciendo el rojo antes
+de llegar a destino. Por eso el chequeo se resuelve primero, con su propio
+`return` mientras camina.
+
+**LOS DEL BLINDADO QUEDAN AFUERA A PROPÓSITO.** Ya tienen su propia regla
+("nunca abandonan el puesto pase lo que pase", `e.confinado`) y su propia
+puerta, que no es madera — mandarlos a caminar no tendría sentido.
+`alertaEnPuerta` los detecta (`if (e.confinado)`) y los deriva al
+`alertaEnGuardia` de siempre, sin tocarles nada.
+
+**VERIFICADO POR CONSOLA, con un asalto real** (`alarmaInicial: true`,
+`boardAt: 1`):
+
+- Un guardia normal en el vagón siguiente al de la alarma nació con
+  `state: 'combat'` y `vaHaciaPuerta: true` de inmediato, con
+  `puertaDestino` coincidiendo exacto con el borde calculado a mano
+  (`train.wagons[2].x + 10`).
+- Corriendo el asalto real 2 segundos: llegó a la puerta, `vaHaciaPuerta`
+  pasó a `false`, `defensivo` a `true`, y se quedó ahí — en rojo.
+- Un guardia del blindado, forzado al mismo escenario (con un disparo
+  simulado de alcance 3 vagones): quedó en `suspicious` (amarillo), sin
+  moverse — el comportamiento viejo, intacto.
+
+---
+
+## ✅ HECHA · "Variedad de lo que pasa en los trenes" — Fase 1, la arquitectura de capas
+
+Primer paso del plan grande que Santi dejó cerrado en diseño (charla completa
+fuera de este archivo — la frase que lo resume: *"conozco estos vagones, pero
+nunca sé exactamente qué me voy a encontrar"*). Santi lo dividió en 8 fases;
+ésta es la Fase 1: **sólo la arquitectura del sorteo**, con apenas 1-2
+modificadores reales enchufados para probar que combina bien antes de
+apilarle contenido. `redada` (con guardias extra, la pieza más cara) queda
+para la Fase 2.
+
+**DOS EJES NUEVOS, independientes de tipo de tren y dificultad, y
+DISTINTOS ENTRE SÍ A PROPÓSITO** (`data/modifiers.js`, nuevo):
+
+- **Clima** — pick-one, mismo patrón (`sortearPorPeso`, ahora exportada de
+  `data/train.js`) que ya usan tipo de tren y dificultad: un tren no puede
+  tener tormenta Y despejado a la vez. Probado con **tormenta** (20% del
+  sorteo): multiplica `hearRadius`/`hearStepRadius` del perfil de IA
+  (×1,4) — se aplica en `construirPerfilIA` (world/train.js), el mismo
+  lugar donde ya se combinan los overrides de dificultad y el
+  `sospechaMult` del tipo de tren.
+- **Estado del tren** — una LISTA combinable: cada flag se tira POR
+  SEPARADO (`rng.chance`), así que un mismo tren puede salir con dos o más
+  a la vez, o ninguno. Probado con **alertaActivada** (8% de chance):
+  arranca el asalto con la alarma ya sonando — mismo mecanismo que ya
+  existía para "te vieron galopando" (`alarmaInicial`), pero disparado
+  desde el sorteo del tren en vez de desde el galope. Por eso el aviso en
+  pantalla es otro (`T.prompts.trenAlerta`, "YA ESTABAN SOBRE AVISO") y no
+  el de siempre ("TE VIERON SUBIR"): no fue un error tuyo, el servicio ya
+  venía así.
+
+`redada`, `frenosDañados` y `listaAbierta` quedan en el catálogo con
+`chance: 0` — la misma llave-no-amputación que ya usa "Alta vigilancia"
+(`dura`, peso 0 en `data/train.js`): están anotadas para las fases que
+vienen, sin tocar nada de esta arquitectura cuando llegue el momento de
+prenderlas.
+
+**LOS MODIFICADORES NO SE MUESTRAN EN EL CARTUCHO DEL MAPA**, a diferencia
+de tipo y dificultad. Es la frase de Santi aplicada literalmente: la
+sorpresa es parte del diseño, no un descuido — sabés qué vagones tiene el
+tren, no qué te vas a encontrar arriba.
+
+**Y POR AHORA SÓLO LE PASA AL TREN ESTÁNDAR** — pedido explícito de Santi
+después de que esto ya estaba armado. `TRAIN_TYPES` suma un campo opcional,
+`modificadores` (data/train.js), y `nuevoTipo` (mapScene.js) sólo llama a
+`sortearClima`/`sortearEstadoTren` si el tipo de tren que salió lo tiene; si
+no, el tren queda fijo en despejado y sin ningún estado — mismo patrón que
+ya usan `rodantesCada`, `traqueteoCada`, `estampida` y `pesaElBotin`: un
+campo que decide si un sistema aplica, no el sistema en sí. La razón: el
+veloz y el de carga ya tienen su propia identidad muy afinada (traqueteo,
+rodantes, estampida, el botín que pesa), y sumarles capas encima todavía no
+se probó. Abrirles el sorteo más adelante es sólo agregarles el campo — no
+hace falta tocar la arquitectura.
+
+**DÓNDE SE SORTEAN Y CÓMO VIAJAN:** en `mapScene.js`, junto con el tipo de
+tren (`nuevoTipo`, misma cadencia — se resortean al completar una vuelta, NO
+en cada parada como la dificultad: son parte de qué SERVICIO es este tren,
+no de la escolta que sube y baja en cada estación). De ahí viajan como
+parámetros por `salir()` → `rideScene` (sólo pasamano, no cambian nada
+durante el galope) → `raidScene`, que es donde de verdad hacen algo.
+`buildTrain` (world/train.js) suma un octavo parámetro, `climaId`.
+
+**VERIFICADO POR CONSOLA:**
+
+- Distribución sobre 20.000 sorteos: tormenta 19,7% (vs 20% configurado),
+  alertaActivada 8,1% (vs 8%) — ambos dentro de lo esperado.
+- `buildTrain` con `climaId: 'tormenta'`: un guardia recién creado tenía
+  `ai.hearRadius = 322` y `ai.hearStepRadius = 81,2` — exactamente la base
+  (230 y 58) × 1,4.
+- `raidScene` con `estado: ['alertaActivada']` (sin `alarmaInicial`):
+  `alarm.active` quedó en `true` desde el primer cuadro, sin haber sido
+  visto galopando.
+- El camino completo mapa → galope → asalto, con una vía real: el cartucho
+  de consola (`services.mapa.trenes`) mostró un tren con
+  `clima=tormenta` y otro con `estado=alertaActivada` en el mismo sorteo,
+  confirmando que los dos ejes conviven; entrando al galope con esos
+  parámetros, `services.ride.train.clima.id` llegó como `'tormenta'` sin
+  perderse en el pasamano.
+- Corrida de 5 segundos simulados con los dos modificadores activos A LA
+  VEZ (tormenta + alertaActivada): sin errores, alarma sonando, los 13
+  guardias del tren vivos y reaccionando. Confirma lo que pedía probar esta
+  fase — que la arquitectura combina antes de apilarle contenido.
+- Después de agregar `modificadores: true` sólo al estándar: adelantando el
+  mapa 24.000 segundos simulados, **veloz (616 muestras) y carga (405
+  muestras) salieron el 100% de las veces despejado y sin ningún estado**;
+  el estándar (1043 muestras) siguió sorteando normal — tormenta 18,8% (vs
+  20%), algún estado 7,2% (vs 8%).
+
+**NO JUGADO POR SANTI TODAVÍA** (verificado por consola, como el resto de
+lo que se acumuló en la sesión anterior).
+
+---
+
+## ✅ HECHA · "Variedad de lo que pasa en los trenes" — Fase 2, redada
+
+Fase 2 del plan de Santi ("lo casi gratis") ya venía dos tercios hecha desde
+la Fase 1 sin querer: `alertaActivada` y `tormenta` eran justamente los dos
+modificadores que se habían elegido para probar la arquitectura. Lo único
+que faltaba era **redada** — mejor IA + guardias extra, la pieza más cara de
+las tres.
+
+**MEJOR IA:** `construirPerfilIA` (world/train.js) ahora suma un cuarto
+parámetro, `estado`. Si trae `'redada'`, aplica el mismo `aiOverrides` de
+"Alta vigilancia" (`DIFICULTADES.dura`, data/train.js) que ya usa la
+dificultad — no un catálogo nuevo, el mismo. Se aplica ANTES de los
+multiplicadores de tipo de tren y clima, en el mismo orden que dificultad:
+un tren "tranquilo" con redada pelea como uno "dura" (puntería, reacción,
+sospecha, asomada), sin que le haya subido la vida.
+
+**MÁS GUARDIAS:** en el armado de `enemies` (mismo archivo), si `redada`
+está activo, cada patrulla que ya existe en el vagón (`p.enemies`) se
+DUPLICA — la copia (`redadaExtra: true`) arranca desde la mitad de su
+propio recorrido (`path[Math.floor(path.length/2)]`, y `guard.pathIndex` se
+ajusta para que no vuelva primero al punto 0) para no pisarse con el
+original desde el primer cuadro. No hizo falta escribir ni un spawn nuevo
+a mano: reusa exactamente los caminos que ya estaban en `data/wagons.js`.
+
+**EL BLINDADO QUEDA AFUERA de la duplicación** — ya tiene su tope de 4 (el
+techo del juego) y sus propias reglas (nunca sale de su vagón, dinamita
+propia). Sí recibe la mejor IA, igual que el resto: eso es parejo para todo
+el tren, sólo "más guardias" lo esquiva.
+
+**LOS DOS NÚMEROS, elegidos por Santi sobre una tabla:**
+- `chance: 0.05` — más raro que `alertaActivada` (8%) porque es, de lejos,
+  el modificador más peligroso: suma guardias Y los hace pelear mejor a la
+  vez.
+- Duplicar TODAS las patrullas (no "+1 por vagón"): en el tren estándar,
+  13 guardias base pasan a 22 (+69%) cuando sale.
+
+**VERIFICADO POR CONSOLA, con un tren estándar real:**
+
+- Con `estado: ['redada']`: guardias por vagón — pasajeros 8 (2 vagones × 2
+  patrullas × 2), correo 6, comedor 2, ganado 2, **blindado 4 (sin tocar)**.
+  Total 22, exacto contra la cuenta de la tabla.
+- `ai.spreadNear` y `ai.aimTime` de un guardia común, con redada:
+  0,068 y 0,21 — los mismos números de `dura.aiOverrides`, letra por letra.
+- Corrida de 10 segundos con `redada` + `alertaActivada` + `tormenta` LOS
+  TRES A LA VEZ: sin errores, alarma sonando, clima registrado, los 22
+  guardias reaccionando (el jugador, sin control real durante la prueba,
+  terminó muerto — esperable con tres modificadores duros encima y nadie
+  esquivando, no es un bug).
+- Sorteo de `ESTADO_TREN` sobre 50.000 tiradas: redada 4,97% (vs 5%),
+  alertaActivada 7,83% (vs 8%), y las dos juntas en el mismo tren 0,43% de
+  las veces — coincide con 5% × 8% si son independientes, que es justo lo
+  que tenían que ser.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+Con esto, la Fase 2 entera ("lo casi gratis") queda cerrada. Sigue la Fase 3
+(comportamiento de guardias: conversando/vigilando puerta, después
+durmiendo) cuando Santi quiera retomar el plan.
+
+---
+
+## 🐛 ARREGLADA · Tormenta no hacía nada (el alcance del oído vivía en el lugar equivocado)
+
+Encontrada al arrancar la Fase 3, revisando cómo se lee `e.ai` en
+`systems/ai.js` antes de copiar el mismo patrón para un comportamiento
+nuevo. **`clima.hearMult` (Fase 1) multiplicaba `hearRadius`/`hearStepRadius`
+en el PERFIL DE IA de cada guardia (`e.ai`) — pero nada en el juego lee esos
+dos campos ahí.** El alcance del oído no es una habilidad por guardia como sí
+lo son `spreadNear` o `aimTime` (que `spreadAt`/`updateSuspicion` sí leen de
+`e.ai`, y por eso tormenta/redada/dura SÍ funcionan bien en esos dos): es una
+propiedad del RUIDO en sí, un número que se manda suelto en cada
+`bus.emit('noise', {radius})` — y ese número salía siempre de
+`CONFIG.enemy.hearRadius` a secas, en siete lugares distintos (el disparo del
+jugador, cuatro disparos de guardia en `ai.js`, el rifle del Cazarrecompensas,
+el disparo de un jinete) más los dos dibujos del aro de sospecha de tus
+pisadas (`entities/player.js`). Ninguno de los nueve miraba `e.ai`.
+
+**EL ARREGLO SIGUE EL MISMO PATRÓN QUE `ruidoExtra`**, que ya resolvía
+exactamente este problema para "cuántos vagones despierta un disparo": ahora
+`hearRadius`/`hearStepRadius` viven en el TREN (`buildTrain`, world/train.js),
+no en el perfil de IA — `CONFIG.enemy.hearRadius/hearStepRadius × clima.hearMult`,
+calculado una sola vez. Los nueve lugares pasaron a leer
+`world.train.hearRadius`/`hearStepRadius` en vez de la constante — con
+respaldo a la constante si `world.train` no existe (la consola, por ejemplo).
+El aro visual de las pisadas necesitó un parámetro nuevo en `drawPlayer`/
+`drawPlayerOnRoof` (antes no tenían forma de saber en qué tren estaban parados).
+
+**VERIFICADO POR CONSOLA:** interceptando `bus.emit` durante un disparo real
+del jugador con `clima: 'tormenta'`, el evento de ruido salió con
+`radius: 322` (230 × 1,4, el número correcto) en vez de 230. Con
+`clima: 'despejado'`, `train.hearRadius`/`hearStepRadius` quedan en 230/58
+sin tocar — confirma que el multiplicador no queda pegado por accidente.
+
+**A jugar la Fase 2 no le cambia nada de lo demás** (redada y alertaActivada
+ya estaban bien, esto sólo tocaba la parte de tormenta que no hacía nada) —
+pero si Santi notó que una tormenta "no se sentía", ésta era la razón exacta.
+
+---
+
+## ✅ HECHA · "Variedad de lo que pasa en los trenes" — Fase 3, primera mitad: conversando y vigilando puerta
+
+Fase 3 del plan de Santi ("comportamiento de guardias — de esto dependen
+otras piezas"). Se construyó sólo la primera mitad: `conversando` y
+`vigilandoPuerta`. `durmiendo` queda para una segunda vuelta — es "el más
+particular de los tres" (necesita su propio disparador de despertar) según
+el propio plan de Santi, y no convenía mezclarlo con esto.
+
+**UN COMPORTAMIENTO POR VAGÓN, no por el tren entero** — a diferencia de
+clima/estado. Nuevo catálogo `COMPORTAMIENTOS_VAGON` (data/modifiers.js,
+pick-one, mismo `sortearPorPeso` de siempre): `normal` (patrulla como
+siempre), `conversando`, `vigilandoPuerta`. `mapScene.js` arma un array
+paralelo a `composicion` (`tren.comportamientos`), un valor por vagón, en el
+mismo momento y con el mismo gate (`tipoTren.modificadores`, sólo estándar)
+que ya usan clima/estado. El blindado queda afuera siempre (como redada):
+sus guardias tienen sus propias reglas.
+
+- **vigilandoPuerta**: TODOS los guardias del vagón nacen plantados junto a
+  SU puerta de entrada — mismo cálculo que ya usa `puertaDeEntradaDe`
+  (systems/ai.js, para `alertaEnPuerta`: `t.colStart * map.size + 10`) — en
+  vez de patrullar. `path: []`, el mismo patrón "centinela" que ya usaba el
+  4to guardia del blindado. Cero sistema nuevo de movimiento.
+- **conversando**: los DOS PRIMEROS guardias del vagón (si tiene una
+  tercera patrulla, como el correo, ésa sigue su ronda de siempre) nacen
+  juntos, quietos (`path: []`), marcados `guard.conversando = true`.
+  Mientras sigan en `state: 'patrol'`, `updateSuspicion` (systems/ai.js)
+  multiplica cuánto sospechan por `CONVERSANDO_SUSPICION_MULT` — 0,45, EL
+  MISMO número que ya usa `suspicionSneak` (vos agachado): no se inventó un
+  precio nuevo. Se apaga solo en cuanto algo los saca de `patrol` — no hace
+  falta resetear nada a mano.
+- `conversando` sólo entra en la bolsa del vagón si tiene 2+ patrullas
+  (`sortearComportamiento(rng, elegibleConversando)`, misma lógica de
+  "sacar del catálogo sin tocarlo" que ya usa el resto del archivo) — el
+  comedor, con una sola, nunca sale conversando.
+
+**NÚMEROS, elegidos por Santi sobre una tabla de tres:** 40% normal / 30%
+conversando / 30% vigilandoPuerta, por vagón elegible. Más frecuente que
+clima/estado a propósito — es lo primero que se nota jugando (posición y
+ritmo, no un número escondido).
+
+**DE PASO, UN REFACTOR CHICO:** `buildTrain` (world/train.js) venía
+sumando parámetros posicionales sueltos cada fase (`climaId`, después
+`estado`, ahora esto). Antes de agregar el décimo, los tres —`climaId`,
+`estado`, `comportamientos`— se agruparon en un objeto `opciones` al final
+de la firma. Los primeros siete parámetros (los de siempre) no se tocaron.
+
+**VERIFICADO POR CONSOLA:**
+
+- Distribución de `sortearComportamiento` sobre 20.000 tiradas: elegible
+  30,4%/29,4%/40,2% (vs 30/30/40); no elegible (comedor) 43,2%/56,8% entre
+  vigilandoPuerta y normal, sin conversando — coincide con renormalizar
+  30/70 y 40/70.
+- Un tren armado a mano (pasajeros=conversando, correo=vigilandoPuerta,
+  comedor=conversando forzado a propósito para probar el caso límite):
+  los guardias de pasajeros y correo nacieron con `path: []` en las
+  posiciones esperadas — y el pequeño desfasaje contra la cuenta a mano
+  (13px en vez de 9, 9px en vez de 8) resultó ser `separateEnemies`
+  empujándolos al mínimo de separación (`CONFIG.enemy.separation`, 13) en
+  el primer cuadro, no un bug.
+- El multiplicador de sospecha: **el primer intento de medirlo dio un
+  resultado sin sentido** (un guardia "conversando" sospechando MÁS rápido
+  que el "de control") — la causa era el arnés, no el código: los dos
+  guardias comparados tenían `facing` distinto, así que uno veía al jugador
+  y el otro no, y la diferencia real era de línea de visión, no del
+  multiplicador. Medido de nuevo con el MISMO guardia, misma geometría,
+  corrida dos veces (con y sin el flag): 0,119 contra 0,259 de sospecha
+  tras 10 cuadros — razón 0,460, contra 0,45 esperado.
+- Corrida real de 15 segundos con un tren armado por el sorteo de verdad
+  (mina, `estado: ['redada']`, comportamientos mixtos incluyendo el
+  blindado forzado a `normal`): sin errores, 22 guardias (13 base × 2 por
+  redada, menos el ajuste del blindado sin duplicar).
+- Corrida de 10 segundos con TODO junto (tormenta + redada + alertaActivada
+  + conversando + vigilandoPuerta en el mismo tren): sin errores, 18
+  guardias, alarma sonando, clima registrado.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · Fase 3, dos correcciones tras describir el plan: la charla se ve, y una sola puerta por vagón
+
+Santi, apenas le conté cómo había quedado la Fase 3 (sin haberla jugado
+todavía, sólo con la descripción): dos pedidos concretos.
+
+**1. "¿Cómo sé si los guardias están conversando o patrullando? Debería
+aparecer el diálogo entre ellos, pero que sea medio cortado, no tan
+explícito."** Tenía razón — nada en pantalla distinguía un guardia
+"conversando" de cualquier otro, la mecánica (sospechan más lento) era
+invisible.
+
+**LA CHARLA**: fragmentos de texto sobre la cabeza del guardia, sólo
+mientras sigue en `patrol`. Nuevo catálogo `T.ambiente.charla`
+(text/es.js) — ocho frases, todas EMPIEZAN y TERMINAN con puntos
+suspensivos a propósito ("...si el jefe se entera, nos cuelga..."): ni el
+principio ni el final son tuyos, sólo pasaste al lado en el momento justo
+para agarrar el medio. Es la traducción literal de "medio cortado, no tan
+explícito" — no hay ninguna frase completa en el catálogo.
+
+**SÓLO UNO DE LOS DOS GUARDIAS HABLA** (`charlaLider`, sólo `idx === 0` de
+la pareja en world/train.js) — los dos siguen `conversando: true` (eso
+sigue moviendo la sospecha de los dos), pero mostrar el texto en los dos a
+la vez se hubiera visto como dos carteles pegados titilando. Nueva función
+`actualizarCharla` (systems/ai.js), llamada cada cuadro desde `updateEnemy`:
+alterna entre un pozo de silencio (`charlaTimer`, 2,5-4,5s) y una frase
+visible (`charlaShowUntil`, 1,8s fijos) — no es un texto pegado todo el
+rato, aparece y se corta, como charla de verdad. Se apaga sola en cuanto
+algo lo saca de `patrol`, sin resetear nada a mano. Dibujado en
+`drawEnemy` (entities/enemy.js) con el mismo gris que ya usa el cuerpo de
+un guardia en calma (`col.enemy`) — es ambiente, no una alerta.
+
+**2. "No pueden haber varios guardias cuidando una misma puerta. Tendría
+que haber uno cuidando la puerta y el/los que sobran que hagan otra
+cosa."** Bug real: la implementación original mandaba a TODOS los
+guardias del vagón a la puerta cuando salía `vigilandoPuerta`. Arreglado
+en `world/train.js` — ahora sólo el primero (`idx === 0`) se planta; el
+resto ni entra al `if` de comportamiento, así que cae al camino de
+siempre y sigue su patrulla normal ("otra cosa" es, para este primer
+paso, lo que ya hacían antes de que existiera este comportamiento — un
+guardia guardando una puerta con el resto patrullando el vagón como
+siempre, no un sistema nuevo).
+
+**VERIFICADO POR CONSOLA Y VISTO DE VERDAD con `foto.ps1`** (no sólo
+medido — la sesión anterior encontró varios bugs de composición que
+ninguna medición numérica mostraba, y esto es visual por definición):
+
+- Un tren armado a mano (pasajeros=conversando, correo=vigilandoPuerta):
+  en correo, un solo guardia con `path: []` parado en la puerta; los otros
+  dos con `pathLen` 4 y 2 — sus patrullas de siempre, intactas.
+- Forzando al líder a hablar: la frase apareció 1,82s (contra 1,8
+  configurado), silencio 3,23s (dentro del rango 2,5-4,5), después otra
+  frase distinta — el ciclo alterna de verdad, no una vez sola.
+- Sacándolo de `patrol` a mano (`state = 'combat'`) mientras hablaba:
+  `charlaShowUntil` se fue a 0 en el cuadro siguiente — se corta sola.
+- Capturas con `foto.ps1`: la frase se lee clara arriba de la pareja que
+  conversa, sin solaparse con nada importante; en correo, un guardia solo
+  en el cruce de la puerta, los otros dispersos patrullando el vagón —
+  exactamente la lectura que pidió Santi, un guardia cuidando y el resto
+  haciendo su ronda.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · Redada/alarma más frecuentes + piso de recompensa, y "vigilando puerta" con su propia señal
+
+Santi, después de jugar un par de partidas: "quiero subir las probabilidades
+de redada y alarma. Además, Redada debería aparecer su chance cuando el
+jugador tiene más de 250 de recompensa. Y otra cosa: siempre están
+patrullando. No veo ni que charlen ni que vigilen una puerta."
+
+**LOS DOS NÚMEROS**, elegidos sobre tablas de tres: `alertaActivada` 8% →
+**20%**; `redada` 5% → **15%**, pero ahora con un piso real.
+
+**EL PISO DE REDADA**: `ESTADO_TREN.redada` suma `bountyMinimo: 250`
+(data/modifiers.js). `sortearEstadoTren(rng, bounty)` filtra ANTES de tirar
+la moneda — por debajo de 250 de recompensa, redada ni entra en la bolsa,
+0% de verdad, no un número chico. `mapScene.js` le pasa `gameState.bounty`
+(la misma que ya deciden los jinetes y el mini jefe) en el mismo lugar
+donde ya sortea todo lo demás. Verificado por consola sobre 20.000
+tiradas: con bounty 0, redada salió 0 veces; con bounty 300, 15,3% (vs
+15%) — y alertaActivada, sin piso, dio ~20% en los dos casos.
+
+**"SIEMPRE ESTÁN PATRULLANDO"**: investigado antes de tocar nada. Corrí
+un galope REAL (input de verdad, `KeyD` sostenido, sin forzar nada desde
+la consola) hasta que el reloj se agotó y el juego solo mandó al jugador
+al asalto — y `comportamientos` llegó intacto: un guardia conversando, y
+en el vagón de al lado, uno solo vigilando la puerta con los otros dos
+patrullando su ronda de siempre. **El cableado no estaba roto.** Pero
+encontré dos motivos reales por los que "vigilando puerta" en particular
+es fácil no notarlo:
+
+1. **Miraba para cualquier lado.** El guardia hereda la `facing` de su
+   patrulla original, que no tiene por qué apuntar hacia la puerta una vez
+   reposicionado ahí — arreglado: ahora mira explícitamente hacia la
+   pasarela de entrada (`FACINGS.left`, el lado de la cola).
+2. **No tenía ninguna señal propia.** A diferencia de "conversando" (que
+   ya tiene el globo de texto), un guardia vigilando se veía IDÉNTICO a
+   uno que se detuvo un instante en medio de su ronda — cosa que ya hacen
+   todos (`scan()`, el mismo giro de cabeza de siempre). Se extendió el
+   mismo sistema de la charla: `actualizarCharla` (systems/ai.js) ahora
+   revisa `e.charlaLider` (conversando, pool `T.ambiente.charla`) O
+   `e.vigilaLider` (vigilando puerta, pool nuevo `T.ambiente.vigilando`:
+   "...ojo con esa puerta...", "...nadie entra sin que lo vea...") — mismo
+   reloj de silencio/frase, mismo dibujo en `drawEnemy`, sólo cambia el
+   pool según cuál flag esté puesto.
+
+**VERIFICADO POR CONSOLA:**
+
+- El galope real descripto arriba: `comportamientos` llegó sin tocarse
+  hasta `train.enemies` después de una corrida completa de la aproximación
+  (2726 cuadros, ~45s), no un atajo de consola.
+- El guardia "vigilando puerta": `facing` salió exactamente `FACINGS.left`
+  (3,14159…) y `path.length === 0`, como se esperaba.
+- El ciclo de su nuevo texto: frase visible 1,82s, silencio, otra frase
+  distinta — igual que ya se había medido para "conversando".
+- 🐛 **En el camino, casi se reporta un bug fantasma**: el primer intento
+  de medir el ciclo de texto del vigilante dio CERO eventos en 10
+  segundos. La causa no era el código nuevo: el jugador de prueba había
+  quedado a 722px del guardia, arriba del `cullPatrolDistance` (700) que
+  ya existe para no actualizar guardias lejos y todavía patrullando — el
+  MISMO sistema que ahorra trabajo en un tren de 4500px. Acercando al
+  jugador, el ciclo se midió normal. Anotado porque es la clase exacta de
+  cosa que las notas de esta sesión ya avisan que hay que sospechar del
+  arnés antes que del código.
+- Corrida de 10 segundos con TODO junto (tormenta + redada + alertaActivada
+  + conversando + vigilandoPuerta con su nueva señal): sin errores.
+
+**NO JUGADO POR SANTI TODAVÍA** — que es, comparado con las notas
+anteriores, exactamente el pendiente que hay que cerrar: confirmar que
+esto SÍ se nota jugando de verdad, ahora que tiene su propia señal.
+
+---
+
+## ✅ HECHA · Un disparo delata TODO su vagón, y avisa a los dos de al lado — no una lotería de píxeles
+
+Santi: "quiero que bajes el ruido que hacen el Colt y el Smith. Los
+guardias del vagón dónde fue disparado deberían estar en rojo, TODOS. Y
+los guardias del vagón pegado al vagón dónde fue el disparo en amarillo,
+buscando al jugador. Tanto los guardias del vagón anterior como el del
+siguiente."
+
+**CÓMO REACCIONABA UN DISPARO HASTA ACÁ**, y por qué no alcanzaba: sólo el
+radio en píxeles (`CONFIG.enemy.hearRadius`, 230) ponía a alguien en
+amarillo — y un vagón mide hasta 640px (pasajeros), así que un disparo en
+una punta podía dejar sin enterarse a la mitad de la gente de su propio
+vagón. Y el salto a ROJO por vagones enteros (`spreadAlarm`) sólo corría
+DESPUÉS de que la alarma ya estuviera sonando — antes de eso, un tiro
+nunca ponía a nadie en combate de verdad, sólo a mirar.
+
+**LA REGLA NUEVA, DETERMINÍSTICA POR VAGÓN, SIEMPRE** (no hace falta que
+la alarma ya esté sonando): el `bus.on('noise', ...)` de raidScene.js,
+cuando el ruido es TU disparo, ahora hace esto ANTES que cualquier otra
+cosa —
+
+- **Tu propio vagón, entero, en rojo** (`alertCombat`, ya existía —la usa
+  `spreadAlarm` para "los de atrás"— no hubo que inventar ningún estado).
+- **El vagón anterior Y el siguiente, en amarillo** (`alertTo`, buscando —
+  misma función que ya usa cualquier otro ruido del juego).
+- Vagones más lejos: sin cambios, siguen dependiendo del radio en píxeles
+  de siempre.
+- Rendidos e inconscientes quedan afuera a propósito — un tiro en la otra
+  punta del vagón no debería pararlos de las rodillas.
+- **No fuerza `alarm.active`.** Es exactamente lo mismo que ya hacía
+  `spreadAlarm` (que tampoco la fuerza): un guardia que entra en combate
+  por ruido no grita solo (`enterCombat(e, world, false)`). Un tiroteo
+  contenido en un vagón, resuelto rápido, todavía puede terminar LIMPIO —
+  lo que rompe el bono es que alguien te VEA de verdad y avise al resto,
+  no que hagas ruido.
+- Sólo aplica a disparos de verdad (`wagons` viene del arma). La dinamita
+  ya tiene su propio "todo el tren en rojo" (`retumbaElTren`, un evento
+  aparte) y el cuerpo a cuerpo silencioso sigue silencioso — esto no les
+  toca nada a esos dos.
+
+**EL RUIDO DEL COLT Y EL SMITH — `noiseWagons` 1 → 0.** Este número ya NO
+decide si tu propio vagón se entera (eso ahora es incondicional, ver
+arriba): decide cuánto MÁS lejos empeora un tiro una vez que la alarma YA
+está sonando, por encima de lo que la regla nueva ya garantiza. En 0, un
+Colt o un Smith disparado con el tren ya alertado no suma ningún vagón de
+más — el propio (rojo) y los dos de al lado (amarillo), que ya reaccionan
+siempre, son todo lo que hacen. Quedó anotado en el archivo que la
+escopeta o el rifle, cuando existan, son los candidatos naturales a tener
+este número arriba de 0 — el Colt ya no puede ser "la vara" que nadie
+baja, porque la vara cambió de lugar.
+
+**🐛 BUG DE JS ENCONTRADO Y ARREGLADO DE PASO**: `entities/player.js`
+armaba el evento de ruido con `w.noiseWagons || 1`. En JavaScript, `0` es
+falsy — así que apenas bajé el Colt a `noiseWagons: 0`, ese `||` lo volvía
+a subir a 1 solo, silenciosamente, sin ningún error. Cambiado a `?? 1`
+(nullish coalescing: sólo cae al default con `undefined`/`null`, nunca con
+un 0 puesto a propósito). Verificado por consola interceptando el propio
+evento: con el fix, un disparo del Colt emite `wagons: 0` de verdad.
+
+**VERIFICADO POR CONSOLA, con un tren real de 5 vagones (pasajeros /
+correo / comedor / ganado / blindado) y el jugador parado en correo:**
+
+- Un solo disparo de Colt, sin alarma sonando todavía: pasajeros
+  (anterior) quedó `suspicious` × 2, correo (propio) `combat` × 3, comedor
+  (siguiente) `suspicious` × 1, ganado y blindado sin tocar —
+  `patrol`. `alarmaActiva` siguió en `false`.
+- Interceptando el propio `bus.emit`: el disparo salió con `wagons: 0`
+  exacto (antes del fix hubiera salido `1`).
+- Corrida de 10 segundos con TODO junto (tormenta + redada + conversando +
+  vigilandoPuerta + disparando en loop): sin errores, alarma terminó
+  activa (por las reglas normales del juego, no por este cambio), 18
+  guardias.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · Los guardias "conversando" ahora se miran, y el cono se les cierra
+
+Santi: "cuando conversan entre ellos, no parece que en realidad conversan.
+Por qué? Bueno, porque no se están mirando de frente, es como si en
+realidad estuvieran bugueados. Deberían estar enfrentados al charlar y el
+cono que tienen que hace que te puedan ver debería reducirse". Tenía
+razón en las dos cosas.
+
+**1. NO SE MIRABAN.** Heredaban la `facing` de su patrulla original —
+`world/train.js` los reposiciona juntos, pero nunca les tocaba hacia dónde
+miraban, así que quedaban con la orientación que traían de su ronda vieja,
+casi nunca hacia el otro. Arreglado: como los dos quedan alineados en X
+(uno a la izquierda, el otro 9px a la derecha), el de la izquierda
+(`idx === 0`) ahora mira a la derecha y el de la derecha mira a la
+izquierda — SIEMPRE enfrentados, sea cual sea la patrulla de la que
+vinieron.
+
+**2. EL CONO SE ANGOSTA MIENTRAS CONVERSAN.** `canSeeFrom` (systems/ai.js)
+sólo aceptaba `viewDistance` como override opcional (para los mini jefes,
+que ven más lejos); le agregué `viewAngle` con el mismo patrón — por
+default el cono de siempre, y sólo lo angosta quien lo pase. Nueva
+constante `CONVERSANDO_VIEW_ANGLE` (data/modifiers.js): la MITAD del cono
+normal (`CONFIG.enemy.viewAngle × 0,5`) — no un número nuevo inventado, la
+misma proporción que ya usa `spreadApuntado` para "esto lo distrae". Se
+aplica en `updateEnemy` sólo mientras `e.conversando && e.state ===
+'patrol'`: mirando a su compañero en vez de al pasillo, literalmente tiene
+menos ojo puesto en vos. Se suma al multiplicador de sospecha (0,45×) que
+ya existía — ahora "conversando" reduce DOS cosas, no una: cuánto ve y qué
+tan rápido sospecha lo que sí ve.
+
+**VERIFICADO POR CONSOLA:**
+
+- `canSeeFrom` en aislamiento, con un mapa sin paredes: a 0,70 rad de la
+  mira (dentro del cono normal de 0,95, afuera del angosto de 0,475) —
+  cono normal `true`, angosto `false`. A 0,20 rad (dentro de los dos) —
+  los dos `true`.
+- Integración real: mismo guardia, misma geometría, corrida dos veces (con
+  y sin `conversando`) a 0,70 rad — sin el flag, ganó sospecha (0,0144);
+  con el flag, sospecha se quedó en 0 — el jugador quedó literalmente
+  afuera de su cono.
+- Los dos guardias de una pareja real: `facing` 0,005 y 3,147 (derecha e
+  izquierda casi exactas) apenas nacen.
+- **Visto de verdad con `foto.ps1`, con zoom** (10x, recortado): se leen
+  claramente como dos figuras de frente, no dos guardias sueltos mirando
+  para cualquier lado.
+- Corrida de 10 segundos con todo lo demás encima (tormenta + redada +
+  conversando + vigilandoPuerta): sin errores.
+
+**NOTA APARTE, NO ES UN BUG:** el `scan()` que ya hace cualquier guardia
+quieto (gira la cabeza mientras espera, `doPatrol`) sigue corriendo sobre
+estos dos — así que la orientación EXACTA se les va a ir desviando un poco
+con el tiempo, no quedan clavados como estatuas. Es la misma animación de
+"está vivo, no congelado" que ya tenía el centinela del blindado; se
+mantuvo a propósito.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · La cara no se les mueve, y el cono además de angosto queda corto
+
+Corrección directa sobre la entrada anterior. Santi: "pero no debería
+moverse la cara (el cono de los guardias para localizar). Y debería ser
+el cono más corto."
+
+**1. YA NO GIRAN LA CABEZA.** La nota anterior decía "no es un bug" sobre
+esto — Santi la corrigió: para esta pareja específica, sí lo es.
+`doPatrol` (systems/ai.js) llama a `scan()` —el giro de cabeza que ya hace
+cualquier guardia parado— para TODO guardia con `path: []`, sin
+distinguir. Ahora, si `e.conversando`, no lo llama: se quedan mirándose
+exacto, sin desviarse. El centinela del blindado y el guardia
+"vigilandoPuerta" siguen escaneando como siempre — están solos, mirar
+alrededor tiene sentido para ellos; estos dos se están mirando ENTRE
+ELLOS, así que girar la cabeza les deshacía justo lo que se acababa de
+arreglar.
+
+**2. EL CONO TAMBIÉN LLEGA MENOS LEJOS**, no sólo más angosto. Nueva
+constante `CONVERSANDO_VIEW_DISTANCE` (data/modifiers.js): la mitad de
+`CONFIG.enemy.viewDistance` (118 → 59px) — misma proporción que ya usa
+`CONVERSANDO_VIEW_ANGLE`. Viaja como el `viewDistance` opcional de
+`canSeeFrom` (el mismo parámetro que ya usan los mini jefes, sólo que ahí
+lo agrandan y acá se achica), con la misma condición de siempre:
+`e.conversando && e.state === 'patrol'`.
+
+**VERIFICADO POR CONSOLA:**
+
+- `facing` de los dos guardias, medido apenas nacen y de nuevo después de
+  5 segundos reales simulados (300 cuadros): 0 y 3,14159 exactos, sin
+  mover un decimal.
+- A 80px (entre el alcance corto, 59, y el normal, 118), en línea recta
+  (el ángulo no es la variable acá): un guardia normal ganó sospecha
+  (0,0169); el mismo guardia con `conversando` se quedó en 0 — quedó
+  literalmente afuera del alcance de su cono.
+- Corrida de 10 segundos con todo lo demás encima (tormenta + redada +
+  conversando + vigilandoPuerta): sin errores.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · Fase 3, tercer comportamiento: vigilando la caja fuerte
+
+Santi: "recuerda que también hay un tipo de estado que vigila una caja
+fuerte" — estaba en el diseño original de esta fase ("vigilando lo que
+haya que vigilar ahí") y se había quedado afuera de la primera vuelta
+(conversando + vigilandoPuerta).
+
+**MISMO PATRÓN QUE `vigilandoPuerta`, aplicado a otro punto fijo.** Nuevo
+`vigilandoCaja` en `COMPORTAMIENTOS_VAGON` (data/modifiers.js, peso 30,
+mismo peso que vigilandoPuerta). Sólo entra en la bolsa de un vagón si
+ESE vagón tiene una caja fuerte de verdad (`elegibleCaja`, calculado en
+`mapScene.js` mirando `WAGONS[id].loot` por un `type: 'strongbox'`) — el
+mismo mecanismo de exclusión que ya usa `conversando` con sus 2+
+patrullas. Hoy el único vagón común elegible es el correo (el blindado
+tiene sus propias dos cajas, pero ya está afuera de todo este sorteo,
+como redada).
+
+**EN `world/train.js`**: sólo el primer guardia (`idx === 0`) se planta
+—el resto sigue su ronda normal, la misma corrección que ya se había
+hecho para vigilandoPuerta—, a 18px al lado de la caja (no ENCIMA: no
+tapa el cofre ni estorba el gesto de abrirlo) y mirándola de frente.
+Reusa `esVigilando`/`vigilaLider`, así que de yapa hereda gratis la señal
+que ya existía: el mismo pool de frases sueltas ("...ojo con esa
+puerta...", genérico para "alguien vigilando algo puntual").
+
+**VERIFICADO POR CONSOLA:**
+
+- Distribución de `sortearComportamiento` sobre 20.000 tiradas: con caja
+  elegible, los cuatro (normal/conversando/vigilandoPuerta/vigilandoCaja)
+  salieron 30,8%/23,4%/22,7%/23,1% — coincide con 40/30/30/30
+  renormalizado; sin caja, `vigilandoCaja` no apareció ni una vez.
+- Un correo real con `vigilandoCaja`: el guardia nació en `x = cajaX -
+  18`, mismo `y` que la caja, `path: []`, `facing` apuntando hacia ella,
+  `vigilaLider: true` — y los otros dos guardias del vagón, con sus
+  patrullas de 4 y 2 puntos intactas.
+- **Visto de verdad con `foto.ps1`, con zoom**: el guardia parado justo al
+  lado del ícono de la caja fuerte (el cuadrado gris con el centro más
+  oscuro), mirándola — se lee exactamente como "cuidando eso".
+- Corrida de 10 segundos con los cuatro comportamientos y el resto de los
+  modificadores (tormenta, redada) en el mismo tren: sin errores.
+
+**NO JUGADO POR SANTI TODAVÍA.** Con esto, la primera mitad de la Fase 3
+queda con sus tres comportamientos completos: conversando, vigilando
+puerta, vigilando caja fuerte. Sigue `durmiendo` cuando Santi quiera
+retomarlo.
+
+---
+
+## ✅ HECHA · Más chance de guardia en la caja fuerte (11,5% → 14,3%)
+
+Santi preguntó la probabilidad real de que un tren tenga un guardia
+custodiando la caja fuerte (11,5%, calculado y verificado por consola) y
+después pidió subirla "un poco". Elegido sobre una tabla de tres (peso
+40/50/60 en `COMPORTAMIENTOS_VAGON.vigilandoCaja` → ~14,3/15,6/17,6%
+general): **40**, contra 30 de antes.
+
+Con este cambio, dentro de un vagón con caja fuerte (hoy sólo el correo),
+`vigilandoCaja` pasa a ser LIGERAMENTE más frecuente que `conversando` y
+`vigilandoPuerta` (40 contra 30 cada una) — antes de esto los tres
+comportamientos no-normales pesaban lo mismo.
+
+**VERIFICADO POR CONSOLA**, mismo método que la medición anterior (sorteo
+real de `sortearTipoTren` + `sortearComposicion` + `sortearComportamiento`,
+200.000 tiradas): **14,33%**, contra el 14,29% esperado por cuenta
+(0,5 × 40/140) — coincide.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · "VIGILANDO", fijo, arriba de quien cuida una puerta o una caja fuerte
+
+Santi: "quiero que encima de los guardias que vigilan una puerta o una
+caja fuerte, diga 'vigilando'".
+
+**"CONVERSANDO" Y "VIGILANDO" SON DOS COSAS DISTINTAS, Y AHORA SE DIBUJAN
+DISTINTO.** Hasta acá los dos usaban el mismo mecanismo (`actualizarCharla`):
+un pozo de silencio y una frase que aparece y se corta, tomada de un pool
+de texto (charla tenía el suyo, vigilar tenía el suyo — "...ojo con esa
+puerta..."). Pero "vigilando" no es una frase suelta que se le ocurre a
+alguien de a ratos: es lo que ESTÁ HACIENDO todo el tiempo. Ahora:
+
+- **`vigilaLider`** (vigilando puerta o caja fuerte) ya NO pasa por
+  `actualizarCharla` — `drawEnemy` (entities/enemy.js) dibuja
+  `T.ambiente.vigilando` (ahora un string fijo, `'VIGILANDO'`, no un pool)
+  todo el tiempo que `e.state === 'patrol'`, sin ningún reloj propio.
+  Mismo criterio que "AGACHADO" o "A CUBIERTO" en el HUD: un estado se
+  muestra fijo, no parpadea.
+- **`charlaLider`** (conversando) sigue exactamente igual que antes —
+  frases sueltas, con su pozo de silencio, tomadas de `T.ambiente.charla`.
+- Los dos siguen cediendo el lugar a la barra de sospecha o al "!" de
+  combate apenas el guardia deja de estar tranquilo — eso no cambió.
+
+**LIMPIEZA DE PASO**: `T.ambiente.vigilando` pasó de array de seis frases
+a un string único; `guard.charlaTimer` ya no se inicializa para
+`vigilaLider` en `world/train.js` (no le hace falta, no tiene reloj).
+
+**VERIFICADO POR CONSOLA Y VISTO DE VERDAD con `foto.ps1`, con zoom**: el
+guardia vigilando la caja fuerte del correo con "VIGILANDO" bien legible
+arriba de la cabeza, junto al ícono de la caja. Forzado a `combat`,
+`drawEnemy` dejó de mostrarlo (pasa al "!" de siempre, misma rama
+`if/else if` de antes). Corrida de 10 segundos con los tres comportamientos
+más el resto de los modificadores: sin errores.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## 🐛 ARREGLADA · La alarma DE VERDAD también dejaba rojo al vagón de al lado
+
+Santi: "por qué cuando disparo, los del vagón de al lado se ponen en rojo.
+Creí que habíamos dicho que no debería pasar eso." Investigado antes de
+tocar nada — un tiro suelto, aislado, ya dejaba exactamente lo pedido
+(propio rojo, vecino amarillo, verificado la vez pasada). El problema
+aparecía un rato después, jugando de verdad: armé un tiroteo completo
+(no un tiro solo) y até los eventos del juego para ver la causa exacta.
+
+**ERAN DOS SISTEMAS DISTINTOS, Y SÓLO SE HABÍA CORREGIDO UNO.** Apenas un
+guardia de tu propio vagón te ve de verdad (algo que pasa rápido, porque ya
+están todos cazándote ahí adentro) y grita, se dispara la ALARMA DE
+VERDAD — un sistema más viejo, de una sesión anterior ("los guardias de
+adelante esperan en rojo, en la puerta"), que hasta ahora ponía en rojo al
+vagón donde te vieron Y a uno de cada lado. Verificado con los eventos del
+bus: apenas sale `guardAlerted`, el vagón vecino pasa a `combat` en el
+mismo cuadro. Desde afuera se siente igual que "disparé y se puso rojo",
+pero es un camino distinto (y más largo) del que se había arreglado.
+
+**AHORA LOS DOS SISTEMAS USAN EL MISMO CRITERIO.** `spreadAlarm`
+(raidScene.js) cambió: sólo el vagón CENTRO (donde de verdad te vieron)
+queda en rojo persiguiendo tu última posición conocida; cualquier vecino
+dentro del alcance —para cualquiera de los dos lados— queda en AMARILLO,
+buscando (`alertTo`, la misma función que ya usa un disparo). Antes, "de
+adelante" y "de atrás" tenían conductas distintas pero los dos terminaban
+en rojo; ahora los dos quedan igual, amarillo.
+
+**`alertaEnPuerta` (systems/ai.js) se quedó sin ningún lugar que la
+llame.** No se borró —el concepto ("se entera pero no cruza, se planta
+armado en su puerta") puede volver a hacer falta para otro sistema— pero
+quedó marcada con una nota: si sigue sin uso en una sesión futura, es
+candidata segura para sacarla del todo junto con `puertaDeEntradaDe` y el
+chequeo de `vaHaciaPuerta` en `doCombat`.
+
+**VERIFICADO POR CONSOLA, con el mismo tiroteo completo que encontró el
+problema** (30 segundos reales, disparando sin parar): la alarma quedó
+`true` todo el tiempo, el vagón donde estabas se mantuvo en `combat` los
+tres guardias, y LOS DOS VECINOS (uno "adelante", uno "atrás") se
+mantuvieron en `suspicious` de punta a punta — nunca pasaron a rojo, ni
+una sola vez en 30 segundos de tiroteo sostenido. Corrida aparte de 15
+segundos con todo lo demás encima (tormenta + redada + alertaActivada +
+los tres comportamientos de guardia): sin errores.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · "Variedad de lo que pasa en los trenes" — Fase 4: puerta bloqueada, Pistolero, Dinamitero y civil encubierto
+
+Santi decidió **saltear la Fase 3b (durmiendo)**: *"requiere que sea de
+noche. Y que sea de noche significa otras cosas, no solo 'es de noche'"* —
+o sea que arrastra un sistema entero (la noche) que todavía no existe, y no
+tiene sentido empezar por ahí. Queda para cuando se haga esa vuelta, con el
+vagón de guardias dormidos (Fase 6) colgando de ella.
+
+Las cuatro cosas de la Fase 4 son variantes CONTENIDAS: cada una se prueba
+sola y ninguna depende de las otras.
+
+### 1. Puerta bloqueada — un estado más del tren
+
+`ESTADO_TREN.puertaBloqueada` (data/modifiers.js, chance 15%, sólo tren
+estándar como toda esta familia). Una o más puertas de madera nacen
+**trabadas**: empujarlas no las abre, hay que romperlas a tiros.
+
+**NO ES UN SISTEMA NUEVO, y eso es lo mejor que tiene.** `trabada`
+(entities/door.js) existe desde que el Cazarrecompensas traba el tren al
+despertar: tiene su tranca roja dibujada, su regla de "sólo se abre
+rompiéndola" y ya estaba contemplada en `bloqueaPuertaCerrada`
+(raidScene.js), la función que decide qué frena el paso. Lo único que
+cambia es DE DÓNDE sale el flag — del sorteo, no de un jefe.
+
+**Al azar en cuál Y en cuántas** (*Santi: "es al azar. Pero no solo en qué
+vagón, sino en cuantos"*). La cantidad sale de `PUERTAS_TRABADAS`, un
+sorteo por peso 70/20/10 para 1/2/3 puertas — promedio 1,4. Es un peso y no
+un `rng.int(1,3)` a propósito: así 3 es raro y 1 es lo normal. Las
+candidatas son TODAS las de madera del tren sin mirar qué vagón es; si
+fuera siempre la del correo se volvería una regla que se aprende, y esta
+fase entera existe para que no se pueda saber de antemano. La blindada
+nunca entra: ya tiene su propia llave (la dinamita).
+
+**🐛 CRUCE ENTRE SISTEMAS, ENCONTRADO ANTES DE QUE PASARA:** matar al
+Cazarrecompensas llama a `destrabarPuertasDelTren()`, que destrababa
+TODAS — incluidas las que nunca trabó él. Ahora `trabarPuerta(d, deOrigen)`
+marca `trabadaDeOrigen` y `destrabarPuerta` respeta esas: el jefe suelta lo
+que cerró él, y lo que ya venía cerrado sigue cerrado.
+
+**VERIFICADO JUGANDO POR CONSOLA:** 8 asaltos seguidos dieron 1/1/2/3/1/2/1/1
+puertas trabadas, ninguna blindada, y sin el modificador 0 de 0. Empujándola
+120 cuadros, el jugador avanza 11px y se frena contra ella (`open` sigue en
+false); tres impactos la rompen (vida 3 → 0) y ahí sí pasa. Y el destrabe del
+jefe: la que trabó él se abre, las dos de origen siguen trabadas.
+Distribución con 200.000 tiradas: 69,99 / 19,92 / 10,10%, promedio 1,40.
+
+### 2. El Pistolero — un tipo de guardia, no un guardia más fuerte
+
+*(Santi, definiéndolo: "gatillo velocísimo (tiene un revólver en cada mano)
+y puntería floja. Se cubre poco, se suele parar en medio del pasillo")*
+
+`GUARD_TYPES.pistolero` (data/guards.js) con **la misma vida que
+cualquiera**. Lo que cambia es cómo pelea, y las tres cosas tiran para el
+mismo lado — es un tipo que no se cuida:
+
+| | Guardia normal | Pistolero |
+|---|---|---|
+| Espera entre ráfagas | 0,75 s | 0,45 s |
+| Balas por ráfaga | 2 | 3 |
+| Entre bala y bala | 0,28 s | 0,16 s (dos caños alternándose) |
+| Dispersión cerca / lejos | 0,09 / 0,28 | 0,13 / 0,39 (+40%) |
+| Cobertura | busca siempre | **nunca** |
+
+El `burstDelay` no estaba en la tabla que Santi aprobó: se sumó al
+construir, porque es la lectura literal de "un revólver en cada mano" (los
+tiros salen pegados porque hay dos caños). Queda anotado por si lo quiere
+sacar.
+
+**"SE CUBRE POCO" NO NECESITÓ NINGUNA CONDUCTA NUEVA.** Un flag
+(`evitaCobertura`, que sale del TIPO y no de un parámetro, así vale también
+para un guardia creado a mano en la consola) apaga `needsCover` en
+`doCombat` (systems/ai.js). Con `coverPoint` siempre en null, el guardia cae
+solo en la rama de "sin cobertura" que existe desde la fase 2 para el que se
+quedó sin lugar donde esconderse: se acerca hasta ~92px y ahí dispara
+parado. Era una rama a la que casi nadie llegaba; ahora es el plan de
+alguien. **El repliegue del herido sigue funcionándole**: ése le pone un
+`coverPoint` por su cuenta, más arriba en la función.
+
+**Cuándo aparece** (*Santi: "el Pistolero con la recompensa y honor. Si el
+jugador tiene más de 300 de recompensa y honor negativo superior a -10,
+entonces ahí empieza la probabilidad de aparición"*): `VARIANTES_GUARDIA`
+(data/modifiers.js) con `bountyMinimo: 300` **y** `honorMaximo: -10`, las
+dos a la vez. Es el primer lugar del juego donde `bounty` y `honor` tienen
+que dar juntos: uno dice que vale la pena contratar gente para cazarte, el
+otro que ya te tienen miedo. Es un piso, no una rampa. Con el gate abierto,
+20% por guardia común.
+
+**TERCER EJE DE SORTEO, y por eso es un mecanismo aparte:** clima y estado
+son del TREN, los comportamientos son del VAGÓN, y esto es el primero que se
+juega POR GUARDIA — dos del mismo vagón pueden salir distintos. El permiso
+(`variantesPermitidas`) se calcula en `mapScene.js`, que sí conoce
+`gameState`, y viaja como dato hasta `buildTrain`: `world/train.js` sigue sin
+leer el estado de la partida, como siempre.
+
+**VERIFICADO POR CONSOLA, 360 guardias comunes de 40 trenes:** 20,6%
+pistoleros (esperado 20%), 0 guardias "contaminados" (el perfil de IA
+compartido por todo el tren no se ensució: los overrides van en una copia) y
+los 160 blindados intactos. Gate: bounty 300 + honor 0 → nada; bounty 0 +
+honor −10 → nada; bounty 299 + honor −20 → nada; bounty 300 + honor −10 →
+pistolero.
+
+**Y VERIFICADO PELEANDO, 3 corridas de 30 s cada uno con línea de visión
+garantizada** (los primeros intentos daban 0 balas porque el arnés ponía al
+jugador detrás de un asiento — el arnés, no el código):
+
+| | Normal | Pistolero |
+|---|---|---|
+| Balas en 30 s | ~6 | **~44** |
+| Impactos al jugador | ~1 | **~4,3** |
+| % de aciertos | ~14% | ~10% |
+| Cuadros con cobertura (de 1800) | ~1490 | **0** |
+| Distancia a la que se planta | 88-104 px | 91 px |
+
+O sea: siete veces más plomo y cuatro veces más daño, con peor puntería y
+**sin cubrirse nunca**. El intercambio se paga solo: está siempre a la
+vista, con dos de vida — dos tiros de Colt son 0,8 s.
+
+### 3. El Dinamitero — construido y apagado hasta la Fase 6
+
+*(Santi: "el Dinamitero cuando aparece el vagón de armas/dinamita")*. Ese
+vagón es de la Fase 6 y no existe todavía, así que el tipo nace con
+`chance: 0` en `VARIANTES_GUARDIA`: la misma llave-no-amputación de "Alta
+vigilancia" (`peso: 0`) y de `frenosDañados`.
+
+Un guardia común que además lleva **un cartucho** y lo usa con las mismas
+reglas que los cuatro del blindado. **No hizo falta tocar una línea de la
+IA**: `consideraTirarDinamita` (systems/ai.js) nunca preguntó de qué vagón
+es el que la tira, sólo si le queda dinamita encima. La dinamita ahora puede
+venir del TIPO (`createEnemy` lee `options.dynamite ?? tipo.dynamite ?? 0`,
+con `??` y no `||`, por la lección de `noiseWagons`) y `world/train.js` pasa
+`def.dynamite` a secas en vez de `def.dynamite || 0`.
+
+**VERIFICADO POR CONSOLA:** con `chance: 0`, 0 dinamiteros en 135 guardias
+comunes, y `variantesPermitidas` no lo devuelve ni con el gate abierto de
+par en par. Prendido a mano: sale, `look: 'bandolera'`, 1 de dinamita, vida
+2, comparte el perfil de IA del tren, y los blindados siguen con la suya.
+Con el jugador PARAPETADO a 146px (el escenario que pide el sistema), el
+dinamitero enciende la mecha y **lanza su cartucho a los 0,7 s**; el guardia
+normal de control, en el mismo escenario, cero.
+
+### 4. El civil encubierto — se revela cuando le das la espalda
+
+*(Santi, eligiendo el disparador entre tres: "al darle la espalda")* — no al
+robarlo, no al pasarle cerca. Eso convierte en peligroso el gesto más
+repetido del asalto: darte vuelta y seguir camino.
+
+**Sorteo:** una vez por vagón con pasajeros, como mucho uno por vagón, 10%
+por pasajero (`sortearCivilEncubierto` hace la cuenta de una: 1 − (1−p)^n).
+En el tren estándar (4 + 4 + 5 pasajeros) da 34,4% / 34,4% / 41,0% por
+vagón. El tope por vagón existe para que robar pasajeros siga siendo una
+apuesta y no una trampa.
+
+**Las tres condiciones, las tres a la vez:** cerca (64px, casi el
+`hearStepRadius`) con línea de visión; dándole la espalda de verdad (coseno
+−0,3 contra tu MIRA, no contra hacia dónde caminás — misma lectura que
+`direccionAtras`); y sostenido 0,8 s, que se cortan apenas te das vuelta.
+Encañonado no se anima a nada, igual que el rendido.
+
+**EL AVISO ES LA MITAD DEL SISTEMA.** 1,1 s sacando el arma —exactamente
+`traicionDuracion`, y por el mismo motivo— con el martillo del revólver
+sonando (`cock`) y el cuerpo saltando a `enemyAlert` pasado el punto medio,
+igual que el rendido que se para para traicionarte. Ningún peligro de este
+juego dispara sin que el cuerpo lo anuncie primero; la sorpresa es QUIÉN es,
+no que te mate sin que puedas hacer nada.
+
+**Al completarse deja de ser un pasajero y pasa a ser un guardia,
+literalmente:** sale de `world.passengers` y entra en `world.enemies` como
+`GUARD_TYPES.encubierto`. Por eso no hubo que escribir una línea de IA
+nueva: de ahí en adelante pelea, se rinde y muere con el código de siempre.
+**Sigue vestido de civil** (`look: 'civil'`, el sombrerito de los
+pasajeros): si al revelarse se convirtiera en un guardia con sombrero, la
+sorpresa duraría un asalto — así, no vuelve a confiar en la silueta de un
+pasajero nunca más.
+
+**🐛 TRES COSAS QUE SÓLO APARECIERON MIDIENDO EL COMPORTAMIENTO REAL:**
+
+1. **Sólo se animaba estando `idle` o `amenazado`, y así no se activaba
+   casi nunca.** Para que te dé la espalda tenés que estar cerca, y estando
+   cerca te ve — y si te ve, entra en pánico como cualquier pasajero. La
+   condición se contradecía sola. La corrección no es un parche, es lo que
+   el personaje ES: un agente encubierto **finge**. El pánico, el grito y
+   el temblor son el disfraz. Ahora se revela desde cualquier estado; lo
+   único que lo frena es que lo tengas encañonado robándole.
+2. **Nacía adentro del asiento** donde estaba sentado, y quedaba trabado.
+   `lugarLibreCerca` (raidScene.js) lo levanta al pasillo — que es lo que
+   pasaría igual: el tipo se PARA para sacar el arma.
+3. **Y con eso todavía no alcanzaba.** Trazando una grilla de solidez
+   alrededor suyo se vio que quedaba en el hueco entre dos bloques de
+   asientos (`..###G.###.`, con el pasillo una fila más abajo): entraba
+   perfecto, pero con asientos pegados a los dos costados. Su cobertura
+   quedaba del otro lado de un bloque, y a menos de `routeDistance` (150px)
+   la IA va en línea recta sin rodear: ocho segundos en combate, viendo al
+   jugador, sin dar un paso ni un tiro. El `stuckTimer > 1.2` que debería
+   soltarlo tampoco saltaba, porque se movía unos píxeles arriba y abajo y
+   lo reseteaba. Se arregló en dos capas: `lugarLibreCerca` ahora exige
+   **espacio también a los costados** (que es, literalmente, la definición
+   del pasillo), y el tipo lleva `evitaCobertura` — que además es lo que el
+   personaje es: se acaba de parar con el arma en la mano a tres metros
+   tuyos, no está buscando dónde parapetarse.
+
+   **Eso último es un agujero VIEJO del sistema de cobertura**, no algo que
+   traiga este tipo: le pasaría a cualquier guardia que empiece a pelear
+   metido entre asientos. No se veía porque todos los demás entran caminando
+   por el pasillo desde lejos, y desde lejos sí calculan ruta. Queda anotado
+   para el día que aparezca de nuevo.
+
+**VERIFICADO JUGANDO POR CONSOLA:** dándole la espalda, el aviso empieza a
+los **0,78 s** (esperado 0,80) y se convierte en guardia a los **1,88 s**
+(1,10 s exactos de aviso); apuntándole, no se revela nunca en 900 cuadros.
+Ya convertido: 18 balas en 15 s y 6-9 impactos al jugador, con el primer
+tiro a los 2,2 s (0,78 + 1,10 + el apuntado de siempre). Sorteo real, 400
+trenes: 1,07 encubiertos por tren (esperado 1,10); 26% ninguno, 44% uno, 25%
+dos, 4% tres.
+
+### Lo que se miró de verdad (foto.ps1)
+
+Las siluetas nuevas, en patrulla y en combate, al lado de un guardia normal
+y uno blindado. **Y ahí apareció un bug que no se podía medir:** las
+cartucheras del Pistolero eran dos marcas marrones a los costados del
+cuerpo, o sea SOBRE EL PISO del vagón, que es marrón — no se distinguían de
+una tabla del suelo. Se movieron ENCIMA del torso y en claro, el mismo lugar
+y la misma idea que la placa del blindado y la bandolera del dinamitero, que
+sí se leen. También se miró el aviso del encubierto (el arma saliendo del
+saco, el cuerpo en rojo) y el guardia ya revelado, y ahí se vio que el
+cartel "¡ERA DE LA LEY!" se encimaba con el `!` de alerta: subido de −16 a
+−26.
+
+### Corrida completa
+
+60 segundos de asalto con TODO junto (puerta bloqueada + alerta activada +
+pistoleros + dinamiteros forzados + tres encubiertos), con un bot avanzando
+y disparando: **sin un solo error de consola**. Y el camino real (mapa →
+sorteo → tren), con muestreo sobre trenes re-sorteados de verdad: los
+veloces y los de carga siguen saliendo con `variantes: []` y todos los
+`encubiertos` en false — el gate de "sólo el estándar" aguanta.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## 🐛 ARREGLADA · El "gatillo velocísimo" del Pistolero no existía (`tryFire` leía la constante global)
+
+*(Santi, apenas lo jugó: "no me gusta como quedó el pistolero. No siento que
+dispare rápido verdaderamente. Además, el tener que acercarse para seguir
+disparando interrumpe su ráfaga")* — y tenía razón en lo primero de una
+forma que ninguna de las mediciones de la sesión anterior había mostrado.
+
+**`tryFire` (systems/ai.js) leía `CONFIG.enemy` en vez de `e.ai`.** Esa
+función es la dueña de `burstSize`, `burstDelay` y `fireCooldown`, o sea
+**los tres números que definen "gatillo rápido"** — y era la única del
+combate que se había quedado con la constante global. El agujero nunca se
+notó porque hasta ahora nadie sobreescribía esos campos: los `aiOverrides`
+de "Alta vigilancia" tocan puntería, reacción, sospecha y asomada, y todos
+ésos SÍ se leen de `e.ai` (`spreadAt`, `startAim`, `updateSuspicion`,
+`holdCoverAndFire`). El primero que quiso cambiar la CADENCIA fue el
+Pistolero, y ahí saltó.
+
+**POR QUÉ LA MEDICIÓN ANTERIOR NO LO VIO:** la sesión pasada se midió
+"balas en 30 segundos" contra un guardia común, y dio 44 contra 6 — un 7×
+que parecía confirmar todo. Pero esa diferencia venía ENTERA de
+`evitaCobertura` (el guardia común se pasa el 80% del tiempo escondido
+detrás de una cobertura, asomándose de a ratos), no de la cadencia. Medir
+el efecto TOTAL escondió que uno de los dos ingredientes no estaba puesto.
+La medición que lo encontró fue otra: los intervalos entre bala y bala.
+Salían 0,38 s, que es exactamente `burstDelay` global (0,28) más el 0,09
+del segundo tiro — o sea el ritmo de un guardia cualquiera.
+
+| | Guardia común | Pistolero ANTES | Pistolero DESPUÉS |
+|---|---|---|---|
+| Balas por segundo | 0,77 | 1,40 | **2,80** |
+| Balas por ráfaga | 1,8 | 1,9 | **4,2** |
+| Entre bala y bala | 0,32 s | 0,38 s | **0,25 s** |
+| Entre ráfagas | 2,02 s | 1,07 s | **0,73 s** |
+
+**LOS NÚMEROS FINALES SON LA SEGUNDA VUELTA.** Con el arreglo puesto y los
+valores originales (3 balas, 0,45 s) daba 2,3 balas/s; Santi eligió sobre
+una tabla de tres la opción de **ráfagas más largas: 4 balas y 0,40 s de
+espera**, que da 2,8 balas/s en tandas largas — que es lo que se lee como
+"dos revólveres" y no como "un guardia apurado".
+
+**EL ARREGLO ES UN NO-OP PARA TODOS LOS DEMÁS, verificado:** `e.ai` es por
+defecto una copia llana de `CONFIG.enemy`, así que 350 guardias de trenes
+normales y de trenes con redada tienen exactamente los cuatro campos
+(`fireCooldown`, `burstSize`, `burstDelay`, `panicoBurstSize`) iguales a la
+constante global; los únicos con cadencia propia son los pistoleros.
+
+### Lo segundo que dijo Santi ("acercarse le interrumpe la ráfaga") era el mismo bug
+
+Medido DESPUÉS del arreglo, con el jugador retrocediendo a 40px/s durante
+30 segundos: el pistolero sostiene 2,3 balas/s, camina apenas el 12% de los
+cuadros, no te pierde de vista ni un cuadro y **no se le canceló ni un solo
+apuntado**. Entrando desde 220px, el primer tiro sale a 102px caminando y
+todos los demás ya plantado a 92px: la ráfaga no se corta.
+
+Lo que se veía era el bug: con `burstSize` 2 y `burstDelay` 0,28, la
+"ráfaga" eran dos tiros separados 0,37 s con el tipo caminando en el medio
+— exactamente la forma que tiene una ráfaga interrumpida. Se le ofreció a
+Santi una regla nueva ("que no camine mientras tenga una ráfaga en curso") y
+la descartó con el dato delante: arreglaría algo que ya no pasa.
+
+**VERIFICADO:** 3 corridas de 30 s dieron 2,80 / 2,77 / 2,77 balas por
+segundo, ráfagas de 4,2 balas y 5-11 impactos al jugador (contra 4 del
+guardia común). Corrida completa de 60 s con todo encendido (puerta
+bloqueada + alerta + pistoleros + dinamiteros forzados + encubiertos): sin
+un solo error.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## 🐛 ARREGLADA · El Pistolero "se frenaba" en el medio del pasillo (su propia virtud lo dejaba clavado)
+
+*(Santi, jugándolo: "hay veces que se para en medio del pasillo y empieza a
+dispararme. Pero luego se frena, no sé qué será eso. Si es un bug
+soluciónalo, sino lo es: que se meta detrás de una cobertura")*
+
+**ERA UN BUG, Y NACÍA DE LO QUE LO HACE INTERESANTE.** Plantarse en el medio
+del pasillo lo pone justo donde caminan sus compañeros para llegar hasta el
+jugador, así que cada dos por tres tiene a uno metido en la línea de tiro.
+Con un compañero adelante, `tryFire` no dispara (`allyInLine`, que existe
+para que nadie le vacíe el cargador a un aliado) — y como este guardia nunca
+busca cobertura ni se reubica, **no tenía absolutamente nada previsto para
+salir de ahí**: se quedaba parado, sin disparar, hasta que el otro se
+corriera solo. Un guardia normal sale de eso por su cuenta, porque
+`holdCoverAndFire` ante un compañero en la línea se manda a buscar otro
+ángulo; el que no usa cobertura no pasa nunca por ese código.
+
+**MEDIDO, con un compañero metido en el medio: de 2,6 balas por segundo a
+0,2, y 100% del tiempo quieto.** Exactamente "se frena".
+
+### Dos problemas distintos, dos respuestas distintas
+
+Al medirlo aparecieron dos formas de quedarse sin poder disparar, y meterlas
+en la misma bolsa daba una conducta mala en los dos casos:
+
+- **No te ve** (te cubriste, cruzaste una puerta, se cortó la línea): ahí no
+  hay nada que hacer parado en medio del pasillo. A los
+  `CONFIG.enemy.descubiertoBloqueoMax` (0,6 s) **se cubre como cualquiera** —
+  que es lo que pidió Santi — y apenas te vuelve a ver **suelta la cobertura
+  y vuelve al pasillo**. No pierde su identidad: la recupera enseguida.
+- **Te ve, pero un compañero le tapa el tiro**: ahí esconderse no resuelve
+  nada. **Se corre al costado** para recuperar el ángulo, y si el pasillo es
+  angosto y choca contra un asiento, **se adelanta** — la única salida que
+  siempre existe, porque el camino hacia el jugador está abierto por
+  definición (es por donde vino el compañero).
+
+**LA PRIMERA VERSIÓN DEL ARREGLO ERA "QUE SE CUBRA" A SECAS, Y NO ALCANZABA.**
+Medido: el reloj de bloqueo llegaba a 9 segundos y el guardia seguía sin
+moverse, porque `findCoverPoint` devolvía null — en el medio del pasillo
+muchas veces no hay ninguna cobertura libre. Decidía bien y no pasaba nada.
+Y la segunda versión (sólo el paso al costado) fallaba en los pasillos
+angostos: chocaba contra el asiento, cambiaba de lado, chocaba contra el
+otro y oscilaba en el lugar el 93% del tiempo. Recién las dos juntas —
+costado, y si no hay costado, adelante— lo resolvieron.
+
+### Verificado
+
+| | Antes | Ahora |
+|---|---|---|
+| Con la línea libre | 2,6 balas/s, plantado | 2,6 balas/s, plantado |
+| Con un compañero tapándolo | **0,2 balas/s, 100% quieto** | **2,6 balas/s** (recupera el tiro en **1,1 s**) |
+| Cuando te pierde de vista | se quedaba al descubierto sin hacer nada | se cubre a los **0,6 s**, y al verte suelta la cobertura |
+
+Tres corridas de cada caso, todas consistentes. **Guardia normal de
+control, sin tocar:** 0,87 balas/s y 100% del tiempo con cobertura, igual
+que siempre — el paso al costado sólo existe para el que lleva
+`evitaCobertura`, y al normal nunca se le asigna. Corrida completa de 60 s
+con todo encendido: sin errores.
+
+### Una nota sobre el arnés de prueba
+
+La primera medición del bloqueo daba resultados contradictorios (a veces se
+movía, a veces no) hasta que se vio el motivo: el arnés recolocaba al
+compañero **en el punto medio entre el guardia y el jugador en cada cuadro**,
+o sea que lo seguía. Era un bloqueo imposible de resolver por diseño del
+arnés, no del juego. Con el compañero plantado en un punto FIJO —que es lo
+que pasa jugando— las tres corridas dieron lo mismo.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · Los tres tipos de guardia nuevos quedan EN RESERVA
+
+*(Santi: "dejemos de lado a los personajes por ahora. Quiero que conserves
+los datos del pistolero actual pero dejalo como en reserva como hiciste con
+el dinamitero y pasemos a lo siguiente. Haz lo mismo con el civil
+encubierto")*
+
+`VARIANTES_GUARDIA.pistolero.chance` 0,20 → **0** y
+`CHANCE_CIVIL_ENCUBIERTO` 0,10 → **0** (el dinamitero ya estaba así). Los
+tres tipos siguen enteros en `data/guards.js` con todo lo que se midió, y
+también sigue escrito el gate de recompensa+honor del pistolero. **Lo único
+apagado es que salgan sorteados.**
+
+Es la misma llave-no-amputación de "Alta vigilancia" (`peso: 0`),
+`frenosDañados` y `listaAbierta`, y ya van cuatro veces que el patrón paga:
+construir algo entero, medirlo, y dejarlo esperando su momento sin que
+estorbe ni haya que volver a escribirlo.
+
+**LOS VALORES CON LOS QUE SE PROBÓ QUEDAN ESCRITOS AL LADO DEL CERO**, en el
+comentario de cada uno: 0,20 por guardia común para el pistolero y 0,10 por
+pasajero para el encubierto. Sin eso, "prenderlo" un día sería volver a
+inventar el número desde cero — que es exactamente lo que este archivo
+existe para evitar.
+
+**VERIFICADO:** con el gate del pistolero abierto de par en par (recompensa
+5000, honor −200), 30 trenes sorteados por el camino real dieron **0
+pistoleros, 0 dinamiteros y 0 encubiertos** sobre 270 guardias comunes, y
+`variantesPermitidas` devuelve lista vacía. Prendiéndolas a mano en la
+consola vuelven de una (23% de pistoleros sobre 135 guardias), así que la
+llave prende sin tocar código. Corrida completa de 60 s del juego normal:
+sin errores.
+
+`sortearCivilEncubierto` además corta antes de tirar el dado cuando la
+chance es 0 — así prender o apagar esta llave no corre la secuencia del
+`rng` de todos los sorteos que vienen después.
+
+---
+
+## ✅ HECHA · "Variedad de trenes" — Fase 5, primera mitad: el pasajero rico y la caja fuerte oculta
+
+Los **paquetes**: un objetivo valioso con su custodia, metido en un vagón
+cualquiera. En las palabras de Santi cuando dejó el plan ordenado:
+*"paquetes que atan un objetivo a guardias extra, en CUALQUIER vagón (ahí
+está la sorpresa)"*.
+
+**QUÉ PROBLEMA RESUELVE, Y ES EL MÁS VIEJO DE ESTE JUEGO:** el valor de un
+vagón estaba escrito en su tipo. El correo tenía la caja, el comedor la
+gente, el blindado el premio gordo — así que mirar la formación desde el
+caballo te decía exactamente qué te esperaba adentro. Un paquete rompe eso
+sin tocar un solo vagón: el de pasajeros de siempre puede ser, esta vez, el
+que más plata lleva arriba.
+
+**CUARTO EJE DE SORTEO** (`data/paquetes.js`, nuevo), y tiene forma propia
+por un motivo: es por vagón como los comportamientos, pero **con chance** —
+la mayoría de los vagones no lleva ninguno. Un comportamiento siempre sale
+(aunque sea "normal") porque es un estado; un paquete es un HALLAZGO, y si
+apareciera en todos dejaría de serlo. 20% por vagón con pasajeros, repartido
+50/50 entre los dos: **0,59 paquetes por tren, y uno de cada dos asaltos
+trae alguno** (medido: 49% calculado, 55% sobre 20 trenes del camino real).
+
+De los cuatro que tenía la fase, Santi eligió arrancar por dos — *"los dos
+más definidos y los que más reusan lo que ya existe"*. Los otros dos
+quedaron decididos pero sin construir: el **objeto especial** va a ser un
+objeto que se lleva y se vende después en el pueblo (necesita un INVENTARIO,
+que hoy no existe: sesión aparte), y el **comerciante** espera a que haya
+algún sistema de gente con la que se habla.
+
+### El pasajero rico
+
+Uno de los pasajeros lleva **$150-250** contra los $25-70 de cualquiera, y
+tarda **2,2 s** en soltarlo todo contra 1,4 (verificado: 2,22 y 1,40, cinco
+corridas de cada uno, y el rango de plata sale del catálogo correcto —
+comprobado interceptando el propio `rng.int`). Los dos números tiran para el
+mismo lado: mucho más plata, mucho más tiempo quieto, y con alguien al lado
+mirando.
+
+### La caja fuerte oculta, y lo que le hace a "amenazar"
+
+*(Santi, eligiendo entre tres formas de encontrarla: "te la delata un
+pasajero al amenazarlo")*
+
+La caja viaja escondida (`oculto` en el botín, una marca nueva en
+entities/lootable.js): no se dibuja, no aparece en el buscador de lo que
+tenés al alcance, no se puede abrir ni de casualidad. **No existe hasta que
+alguien te dice dónde está.** Y ese alguien es un pasajero del mismo vagón:
+le ponés el revólver encima, te da la plata que tenía Y te suelta el dato.
+
+**ESTO ES LO MEJOR QUE PODÍA PASARLE A AMENAZAR.** Hasta hoy robar a un
+pasajero era siempre la misma cuenta —unos pesos ahora, un grito dentro de
+cuatro segundos— y por eso, pasado el primer asalto, saltearlos era casi
+siempre lo correcto. Ahora cualquiera puede ser el que abre la mejor caja
+del tren y no hay forma de saber cuál: la misma acción de siempre, con una
+razón nueva. Es el mismo tipo de arreglo que la caja fuerte oculta le hace
+al vagón — no agrega una mecánica, le devuelve sentido a una que ya estaba.
+
+La caja vale **$400-900** (contra $150-600) y tarda **8 s** (contra 6,5), y
+las dos cosas por el mismo motivo: estaba escondida porque adentro había
+algo que no querían que viajara a la vista. **No tiene jackpot** a
+propósito: el golpe de suerte ya vive en la caja normal, donde funciona
+porque todas se ven iguales; ésta ya ES el hallazgo, y meterle otra lotería
+encima sería premiar dos veces la misma jugada.
+
+Se esconde LEJOS del pasajero que la delata (el punto del barrido del vagón
+más alejado de él, ~512px en un vagón de 640): si apareciera a sus pies, el
+dato no valdría nada. La gracia es que después de que te lo diga, todavía
+tengas que ir hasta ahí.
+
+**LIMITACIÓN CONOCIDA, avisada antes de construir:** la caja está en el
+MISMO vagón que quien la delata, así que este paquete sólo cae donde viaja
+gente. Que te delaten una caja de OTRO vagón es más interesante y estaba en
+la idea original ("en cualquier vagón"), pero necesita marcar algo fuera de
+la pantalla: queda para una segunda vuelta.
+
+### 🐛 El guardaespaldas: dos intentos fallidos antes de acertar
+
+Es la única pista de que un vagón lleva un paquete, así que dónde se para
+importa tanto como que exista.
+
+1. **A 16px al costado de lo que cuida** — pero los pasajeros viajan
+   SENTADOS, así que ese costado es la butaca de al lado: **25 avisos de
+   "colocado sobre un tile sólido" en 50 trenes**. Es exactamente el mismo
+   error que ya se había cometido con el civil encubierto al revelarse, dos
+   sesiones antes. Anotado: *cada vez que se ponga a alguien "al lado de un
+   pasajero", acordarse de que el pasajero está sentado.*
+2. **En el punto del barrido (`sweep`) más cercano** — nunca más sólido,
+   pero el barrido tiene pocos puntos y muy separados: el guardaespaldas
+   terminaba **hasta a 256px** de lo que cuidaba (62 de promedio). A esa
+   distancia no custodia nada y, sobre todo, deja de ser una pista.
+3. **Lo que quedó:** a la altura del objetivo, en las dos filas del pasillo,
+   corriéndose de a poco hasta encontrar lugar. Medido sobre 60 trenes: **0
+   avisos, 0 guardias en sólido, 12-49px del pasajero (32 de promedio) y 12px
+   de la caja**.
+
+### Y la pista tampoco se leía, hasta que se la miró
+
+Con el guardaespaldas ya bien puesto, una captura del vagón EN FRÍO (el
+jugador entrando, nadie alertado todavía) mostró que no servía de nada: un
+guardia quieto en el pasillo se ve igual que cualquier otro guardia del
+pasillo — la diferencia (que no patrulla) sólo se nota mirándolo un rato
+largo, que es justo lo que no vas a hacer entrando a un vagón.
+
+**La solución ya estaba escrita en el juego:** el cartel **"VIGILANDO"** que
+la Fase 3 le puso a los que cuidan una puerta o una caja fuerte. Es
+literalmente la misma situación, así que el guardaespaldas lo lleva también.
+Ahora el vagón te dice "acá hay algo que cuidar" de un vistazo — y sigue sin
+decirte qué.
+
+### Verificado
+
+- Sorteo, 100.000 tiradas: 79,9% sin paquete / 10,1% pasajero rico / 10,1%
+  caja oculta, y **cero** en vagones sin pasajeros.
+- Jugado por consola: con la caja oculta, **10 segundos apretando [E] encima
+  no hacen nada** (progreso 0, sigue invisible); al robar al pasajero que
+  sabe, se revela; recién ahí se abre, y tarda 8,02 s.
+- Camino real desde el mapa: 55% de los trenes estándar traen paquete y
+  **0 fugas** a los tipos veloz y de carga.
+- Corrida completa de 60 s con todo encendido: sin errores ni avisos.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · Cuatro ajustes de Santi jugando (recarga, charla, vecinos y "sobre aviso")
+
+Primera tanda de ajustes hechos MIENTRAS lo juega, que es como debería haber
+sido siempre.
+
+### 1. Recargar te frena
+
+*("recargar debería penalizar el movimiento, debería quedar como si caminara
+de costado, con esa velocidad")*
+
+Mientras `reloadTimer > 0`, la velocidad base se multiplica por
+`CONFIG.player.direccionCostado` (0,70). **Medido: 78 → 55 px/s**, que es
+exactamente la velocidad de caminar de costado.
+
+Reusa un precio que ya existía en vez de inventar uno: es el número que el
+juego ya tiene escrito para "estás haciendo otra cosa con el cuerpo mientras
+caminás". Y se MULTIPLICA en vez de pisar, como todos los precios de este
+juego: recargar agachado y de espaldas es lo más lento que podés ir, y tiene
+que serlo. Sigue cobrando en tiempo y exposición, nunca en vida.
+
+### 2. El que corta la charla arrastra al otro
+
+*("cuando los guardias están hablando y uno se pone en amarillo, después de
+un segundo, el otro también se tiene que poner en amarillo")*
+
+Hasta ahora `conversando` era una marca suelta en cada guardia: los dos
+estaban distraídos, pero **ninguno sabía con quién hablaba**, así que podía
+pasar que uno te cazara mientras el otro seguía contando su historia — que es
+justo lo que los hace ver como muñecos y no como dos tipos charlando. Ahora
+se guardan la referencia mutua (`companeroCharla`, en world/train.js) y
+`contagiarCharla` (systems/ai.js) le pasa el aviso al otro un segundo
+después.
+
+**El segundo de demora es la mitad de la idea**: sin él la pareja se alerta
+junta y en el mismo cuadro, que se lee como un interruptor; con él se ve la
+CADENA, y ese segundo es la ventana para resolver al primero antes de que
+sean dos. Reusa `alertTo`, el mismo aviso que ya se pasan los guardias por un
+ruido. **Medido: el compañero pasa a amarillo a 1,00 s exacto**, y después su
+sospecha decae sola como la de cualquiera — no hay que "desavisar" nada.
+
+### 3. 🐛 Los vecinos se enteran, pero no cruzan
+
+*("cuando disparo en un vagón, de repente hay muchísimos guardias de otros
+vagones, eso no debería pasar")*
+
+El bloque de `bus.on('noise')` les daba `alertTo`, que además de ponerlos
+amarillos **les pone como destino el lugar del ruido** — o sea que
+abandonaban su vagón y se venían. Medido antes del cambio, con un tiroteo de
+45 s: cruzaban 2-3 y el pico llegaba a 6 tipos encima, todos por el mismo
+pasillo.
+
+Ahora reciben `alertaEnGuardia`, que ya existía y hace exactamente lo que
+hacía falta (es lo que hacen los de ADELANTE cuando suena la alarma):
+amarillo, `spooked` y `target` en su propio puesto. Se enteran sin que el
+tren entero se te venga encima por un tiro.
+
+**🐛 Y EL `alarm.active` NO ES UN DETALLE — sin él este arreglo se comía la
+retirada.** Primera versión medida: con la alarma YA sonando, cada disparo
+tuyo volvía a clavar a los vecinos en su vagón y dejaban de perseguirte, o
+sea que **disparar te sacaba perseguidores de encima**, justo al revés de lo
+que tiene que pasar. Con la alarma activa siguen recibiendo `alertTo` de
+siempre.
+
+| | Antes | Ahora |
+|---|---|---|
+| Un tiro, sin alarma | vecinos en amarillo y **cruzan 2-3** | vecinos en amarillo, **cruzan 0** |
+| Pico de guardias encima, sin alarma | hasta 6 | 2-3 (sólo los de tu vagón) |
+| Con la alarma sonando | cruzan y te buscan | **igual: cruzan 2, pico 4-5** |
+
+La regla que queda es clara y se puede jugar en contra: *hasta que te
+descubran de verdad, lo que pasa en un vagón se queda en ese vagón.*
+
+### 4. Menos trenes "ya sobre aviso"
+
+*("solo quiero que bajes la probabilidad del 'ya estaban sobre aviso'")*
+
+`ESTADO_TREN.alertaActivada` de 20% a **10%** (verificado sobre 200.000
+tiradas: 10,1%). Es el modificador que más caro se paga —te saca de entrada
+el trabajo limpio, la racha y todo el sigilo, antes de que puedas hacer
+nada—, así que uno de cada diez lo deja como la mala suerte del día en vez de
+una rutina. Había subido de 8% a 20% dos sesiones atrás a pedido de Santi;
+jugarlo mostró que era demasiado.
+
+### Lo que se descartó
+
+Santi propuso además que los enganches se vieran desde el caballo (y poder
+dispararse con los guardias durante el galope), porque a veces se encontraba
+uno al subir. **Medido: en 30 asaltos, ningún guardia nace ni patrulla hasta
+un enganche** — el que se encontró llegó ahí alertado, buscándolo. Con ese
+dato, Santi lo descartó ("olvida esta última") y pidió sólo el punto 4.
+Queda anotado que el combate durante el galope sería un sistema nuevo, no un
+ajuste.
+
+**Corrida completa de 60 s con todo encendido** (puerta bloqueada + alerta +
+conversando en los seis vagones + cajas ocultas, disparando y recargando):
+sin errores ni avisos.
+
+---
+
+## ✅ HECHA · La caja fuerte oculta, segunda vuelta: la pista dejó de ser una marca y pasó a ser información
+
+*(Santi, después de jugar la primera versión: "La caja fuerte oculta puede
+estar en cualquier vagón. Hay tres civiles por tren que pueden revelarte la
+información de dónde está la caja (si es que hay). Esos tres civiles no sí o
+sí tienen que estar en el mismo vagón que la caja fuerte [...] dentro de un
+mismo vagón puede estar 'debajo de una ventana' o 'debajo de un asiento' si
+es de pasajeros, o 'debajo de una mesa' si es el comedor o el vagón de
+correos. En el de ganado sólo dice 'está junto al corral'")*
+
+**LO QUE ESTABA MAL EN LA PRIMERA VERSIÓN, Y NO SE VE HASTA JUGARLO:** la
+pista no se usaba, se miraba. Te delataban la caja y aparecía dibujada, así
+que el dato no era información — era un botón que revelaba un objeto. Y como
+el que la delataba tenía que estar en el mismo vagón, la caja no podía
+esconderse en el correo ni en el ganado, justo donde uno esconde una caja.
+
+Ahora son tres cosas separadas:
+
+1. **La caja es DEL TREN** (`CHANCE_CAJA_OCULTA`, 25% por tren) y cae en
+   cualquier vagón menos el blindado — que ya tiene las suyas. Verificado:
+   **0 de 200 en el blindado**, y repartida entre pasajeros (78), ganado
+   (43), correo (42) y comedor (37).
+2. **Tres pasajeros cualesquiera del tren saben dónde está**
+   (`CIVILES_QUE_SABEN`), elegidos entre TODOS sin mirar el vagón. Tres y no
+   uno porque con uno solo, entre trece pasajeros, sería inencontrable; tres
+   y no cinco porque si la mitad del tren sabe, amenazar deja de ser una
+   apuesta.
+3. **La pista es texto y nada más**: `VAGÓN 3: DEBAJO DE UNA MESA`. La caja
+   sigue invisible y aparece recién cuando la tenés al lado, en el mismo
+   radio en el que ya podrías agarrarla. Tenés que ir hasta ahí y buscarla.
+
+### Los escondites salen del layout, no de una lista escrita a mano
+
+Cada escondite (`ESCONDITES` en data/paquetes.js) apunta a un carácter del
+mapa del vagón: `W` ventanilla, `S` asiento, `C` mesa/carga/corral. Al armar
+el tren se buscan todos los tiles PISABLES que tengan ese mueble pegado
+arriba o abajo, y se elige uno. Por eso lo que dice el pasajero y lo que ves
+al llegar son siempre la misma cosa, sin mantener ninguna tabla de
+coordenadas — y un vagón nuevo hereda el sistema con sólo entrar en
+`ESCONDITES`.
+
+Va PEGADA al mueble y no adentro por un motivo práctico: adentro no habría
+forma de alcanzarla. Verificado sobre 20 trenes: el tile de la caja siempre
+es `.` y siempre tiene el mueble correcto arriba o abajo.
+
+### Es la única vez que el juego te escribe una instrucción
+
+Y se lo permite porque es una PERSONA hablándote, no la interfaz
+explicándote. La regla de siempre (*lo que se puede mostrar no se escribe*)
+sigue en pie donde importa: **la caja no se dibuja hasta que la encontrás**.
+El número de vagón es el mismo que el HUD ya muestra arriba, así que la pista
+se lee contra algo que el jugador ya sabe leer.
+
+Encontrarla de pura casualidad, sin haber amenazado a nadie, también se
+puede — pero hay que pasar justo por encima, y el tren es largo.
+
+### El pasajero rico ahora se ve
+
+*(Santi: "¿cómo luce el pasajero rico?" — y la respuesta honesta era: igual
+que todos. Mismo cuerpo, mismo color, mismo sombrerito que los otros doce. Lo
+único que lo delataba era el guardaespaldas, así que si lo matabas antes de
+entrar, ya no había forma de saber a quién robarle. Eligió que "se note de
+lejos")*
+
+**Sombrero de copa**: una copa alta y oscura sobre un ala más ancha. La seña
+es la SILUETA y no el color, como manda la regla del proyecto — el color del
+cuerpo sigue diciendo el estado (tranquilo / asustado / corriendo). Y es la
+silueta más alta del tren a propósito: asoma por encima de los respaldos, así
+que se lo pesca desde el pasillo sin meterse en cada hueco a mirar quién
+viaja ahí. Mirado con `foto.ps1` al lado de pasajeros comunes: se distingue
+de una.
+
+### Verificado
+
+- Chance por tren: **25,0%** sobre 100.000 tiradas. Camino real desde el mapa
+  (15 minutos de simulación, 70 trenes estándar sorteados de verdad): **29%**
+  con caja, y **0 fugas** al veloz y al de carga.
+- Jugado por consola de punta a punta: amenazás al que sabe → sale la pista y
+  **la caja sigue oculta** → vas al lugar → aparece → se abre en 8,02 s.
+- Corrida completa de 60 s con todo encendido: sin errores ni avisos.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## 🐛 ARREGLADA · Los guardias plantados se empujaban y se iban a la deriva
+
+*(Santi, jugándolo: "hay veces que dos guardias parecen que están hablando
+entre ellos, pero en realidad uno de esos guardias empuja al otro o no sé qué
+pasa, pero es un bug")*
+
+Tenía razón, y eran **dos problemas encadenados**.
+
+### 1. Nacían pisándose
+
+Los dos que conversan se colocaban a **9px** uno del otro, y el mínimo que el
+juego permite entre dos guardias (`CONFIG.enemy.separation`) es **13**.
+Arrancaban adentro del radio de empuje y quedaban clavados justo en el
+límite, donde `separateEnemies` se enciende y se apaga: medido en calma, cada
+uno recorría **94px en 10 segundos** sin ir a ningún lado. Vibraban en el
+lugar.
+
+Ahora nacen a `separation + 5`, y el número sale de CONFIG en vez de estar
+escrito a mano — si algún día se toca `separation`, esto se acomoda solo en
+vez de volver a desincronizarse en silencio.
+
+### 2. Y no tenían a dónde volver
+
+Éste era el grande. Un guardia plantado por un comportamiento (los dos que
+conversan, el que vigila una puerta o una caja, un guardaespaldas) **no tiene
+ronda**, así que nada lo devolvía a ningún lado. Y el compañero que sí
+patrulla les pasa por encima: `separateEnemies` los corre, y ahí se quedan.
+
+Medido en el vagón de correo (dos charlando y un tercero patrullando), 30
+segundos: los que charlaban recorrían hasta **326px** y terminaban a **260px
+uno del otro**, mirando para cualquier lado. Desde afuera se ve exactamente
+como lo describió Santi.
+
+**Ahora tienen `puesto`** (y `facingPuesto`): se los puede empujar como a
+cualquiera, pero después vuelven caminando a donde tienen que estar y
+recuperan hacia dónde miraban. Un tipo al que le pasan por delante se corre y
+vuelve a su lugar — que es lo que hace una persona.
+
+### 🐛 El primer arreglo fue peor que el bug
+
+Antes de esto probé hacer **inamovible** al plantado (que el empujón se lo
+llevara entero el que camina). Se ve razonable y está mal: dos que conversan
+dejan 18px entre sí, y un tercero que se meta ahí necesita 13 de cada lado —
+o sea 26. Medido: el guardia quedaba **prensado entre los dos, sin moverse un
+solo píxel**, para siempre.
+
+Por eso `separateEnemies` volvió a repartir mitad y mitad como siempre, y lo
+que se arregla es la VUELTA, no el empujón. Queda anotado: en un pasillo
+angosto, cualquier regla que haga inamovible a alguien crea una trampa para
+el que pase.
+
+### Verificado
+
+| | Antes | Ahora |
+|---|---|---|
+| Dos charlando, en calma | 94px de vibración cada 10 s | **0** |
+| Con un tercero patrullando (30 s) | recorrían 326px, terminaban a 260px | **0px, y siguen a 18px, enfrentados** |
+| Empujados a mano cada 5 s | quedaban donde los dejaran | se alejan **6px** y vuelven a **2px** |
+| El que vigila puerta / caja | igual, a la deriva | vuelve a **1,7px** y recupera la mirada |
+
+Las patrullas normales no se tocaron (`volverAlPuesto` sólo corre para quien
+no tiene ronda). Corrida completa de 60 s con todo encendido: sin errores.
+
+### De paso: los cinco guardias del correo
+
+Santi preguntó por qué en el correo se enfrentó a CINCO. Medido: el correo
+trae **3** de fábrica (y **6** con redada — duplica cada patrulla). Los cinco
+salen de sumar los de al lado con la alarma ya sonando:
+
+| Situación | Pico de guardias cerca tuyo en el correo |
+|---|---|
+| Sin alarma | **3** (sólo los del vagón) |
+| Con la alarma sonando | **5** |
+| Redada + alarma | **8** |
+
+O sea: 3 del correo + 2 que llegaron. No es un bug — es la retirada
+funcionando, que es justamente lo que se decidió NO tocar cuando se arregló
+lo de "los vecinos no cruzan por un tiro". Sin alarma, en el correo nunca hay
+más de tres.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## ✅ HECHA · Las cajas fuertes: dinamita, interrupción y progreso que no se pierde
+
+Cuatro cambios pedidos por Santi jugando, y los cuatro empujan en la misma
+dirección: **la caja fuerte deja de ser un temporizador y pasa a ser una
+decisión**.
+
+### 1. Ocho segundos, no seis y medio
+
+*("creo que hay una caja que se abre en 6 segundos, quiero que se cambie a 8
+segundos")* — `CONFIG.loot.strongboxTime` de 6,5 a **8**. Ahora las dos cajas
+del juego tardan lo mismo: la oculta ya estaba en 8. El blindado, con sus
+dos, son dieciséis segundos de un asalto de 145.
+
+### 2. Con el arma en la mano no se abre
+
+*("el jugador no podrá recargar ni disparar mientras abre una. Si lo hace, la
+apertura de la caja fuerte se verá interrumpida")*
+
+Forzar una caja es un trabajo de dos manos. El juego ya lo decía con el
+cuerpo —quieto, de espaldas, sin poder cubrirte— y le faltaba decirlo con el
+arma. **Lo que cambia de verdad**: ya no se puede abrir una caja "mientras
+tanto", contestando tiros de a ratos. Hay que resolver el vagón primero y
+después robar, que es el orden que el juego premia en todo lo demás.
+
+Se corta con el INPUT, no con el disparo efectivo: apretar el gatillo sin
+balas también interrumpe. Quisiste disparar, soltaste la caja.
+
+### 3. Y el progreso ya no se pierde
+
+*("si se interrumpe la abertura de la caja, cuando el jugador quiera volver a
+abrirla, se reanudará desde dónde la dejó")*
+
+Éste es el que hace que el 2 sea justo. Antes, soltar la [E] un instante
+volvía el contador a cero — y con ocho segundos eso significaba que en
+cualquier vagón despierto la caja era directamente inabrible: cada intento
+empezaba de nuevo. El precio dejaba de ser "ocho segundos" y pasaba a ser
+"ocho segundos SEGUIDOS", que es otra cosa mucho más cara y que no se
+anuncia por ningún lado.
+
+Ahora se paga en cuotas: forcejeás tres segundos, te sacan de ahí, resolvés,
+volvés y seguís. **Verificado: 3 s + 5,02 s = 8,02 s exactos.**
+
+**Sólo las cajas fuertes.** Las bolsas y las tranqueras se siguen
+reiniciando: 0,6 y 0,9 segundos son gestos, no trabajos, y guardarles el
+progreso sólo traería el efecto raro de ir acumulando medio segundo en cada
+bolsa que rozás al pasar. (Primera versión: le había sacado el reinicio a
+TODO el botín y encima documenté lo contrario. Se corrigió al medirlo.)
+
+### 4. La dinamita también es una llave para ellas
+
+*("si no querés intentar abrirlas, podés explotarla con dinamita")*
+
+Es la segunda cerradura que la dinamita rompe, y por el mismo motivo que la
+primera (la puerta del blindado): hay cosas que no se abren con paciencia. El
+código va literalmente al lado del que vuela la puerta, en `systems/
+explosives.js`.
+
+**NO TE REGALA LA PLATA, TE AHORRA EL FORCEJEO** (elegido por Santi sobre
+tres opciones). La caja queda REVENTADA, con el botín a la vista, y
+levantarlo cuesta lo mismo que una bolsa (0,6 s). En Forajido la plata
+siempre se junta yendo hasta ella; volarla es un atajo, no una excepción.
+
+El precio ya estaba puesto y es enorme: uno de tus dos cartuchos, y la alarma
+sonando sí o sí. Y si la caja estaba escondida, el estruendo la descubre — no
+se puede reventar algo y que siga siendo un secreto.
+
+**Se ve distinta**, y hace falta: en un vagón donde ya volaste algo tenés que
+saber de un vistazo cuál caja te va a costar ocho segundos y cuál es levantar
+y seguir. La cerrada tiene su cerradura oscura al centro; la reventada
+muestra la tapa arrancada y el oro adentro. Mirado con `foto.ps1`, una al
+lado de la otra: se distinguen de una.
+
+### Verificado
+
+- Abrir a mano: **8,02 s**. Progreso guardado: 3 + 5,02 = 8,02.
+- Interrupción: **5 segundos disparando = 0 de avance**; 1 segundo recargando
+  = 0; al soltar el gatillo vuelve a avanzar (0,98 en 1 s).
+- Dinamita, en las dos cajas: quedan reventadas, la duración pasa de 8 a 0,6,
+  se levantan en 0,6 s, y la oculta deja de estar oculta.
+- La bolsa sigue reiniciándose al alejarte; la caja no.
+- Corrida completa de 60 s con todo encendido: sin errores.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
+## 🐛 ARREGLADA · La caja oculta podía quedar ENCERRADA adentro de un corral
+
+*(Santi, jugándolo: "un civil me dijo que la caja oculta estaba junto al
+corral del vagón 2. Fui al vagón de ganado y lo revisé y no encontré ninguna
+caja")*
+
+La caja estaba ahí. **Encerrada.**
+
+Los corrales del vagón de ganado son bloques HUECOS:
+
+```
+#..CCCCC..CCCCC..CCCCC.#
+#..C...C..C...C..C...C.#     ← suelo libre, rodeado de corral
+#..CCCCC..CCCCC..CCCCC.#
+```
+
+El interior —donde viajan las reses— es suelo pisable con 'C' arriba y
+abajo, así que pasaba el filtro de "un tile libre pegado al mueble" con
+honores. La caja caía adentro del corral, sin ninguna forma de llegar; y como
+además está oculta hasta que la tenés al lado, desde afuera no había nada:
+ni caja, ni pista de que hubiera una.
+
+**MEDIDO: 22 de 48 cajas que caían en el ganado quedaban inalcanzables** —
+casi la mitad. En los otros tres vagones, cero: por eso el problema sólo
+aparecía ahí, y por eso hacía falta que Santi lo jugara para que saliera.
+
+### El arreglo: que se pueda llegar caminando
+
+Un relleno por inundación que arranca en el PASILLO (las filas 4 y 5, por
+donde se camina) y se expande por todo lo que sea suelo. Un escondite sólo
+vale si el relleno llegó hasta él.
+
+Es genérico a propósito: no chequea "estoy en el ganado" ni conoce los
+corrales. Cualquier vagón futuro con un rincón cerrado queda cubierto sin que
+haya que acordarse de este caso — que es exactamente el tipo de regla que
+este proyecto prefiere sobre una lista de excepciones.
+
+### Verificado
+
+- 300 cajas sorteadas: **0 inalcanzables** en los cuatro vagones (56 de ellas
+  cayeron en el ganado), y ningún tren se quedó sin lugar donde esconderla.
+- El caso exacto de Santi, jugado de punta a punta: pista *"vagón 2, junto al
+  corral"* → caminar el pasillo del ganado → **la caja aparece** → se abre
+  ($639).
+- De paso se verificó lo otro que podía estar mal: el número de vagón que
+  dice la pista coincide siempre con el que el juego reporta en esa posición
+  (12 de 12).
+- Corrida completa de 60 s con todo encendido: sin errores ni avisos.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
-Campamento, historia principal, fama, recompensa, honor, compañeros y sus
-relaciones, caballos, regiones, carreras, duelos, retos, tiendas, guardado.
+Campamento, historia principal, fama, compañeros y sus relaciones, caballos,
+regiones, carreras, duelos, retos, tiendas, guardado.
 
 Están en el plan grande. No se tocan hasta que el asalto completo (fase 2)
 funcione.

@@ -47,12 +47,33 @@ export function createShopScene(services) {
   const { input, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
 
-  let def, id, sel, scroll, volver, mensaje;
+  let def, id, sel, scroll, volver, mensaje, items;
+
+  /**
+   * QUÉ HAY EN EL MOSTRADOR HOY.
+   *
+   * Un ítem con `desbloqueo` no se muestra hasta que la bandera correspondiente
+   * esté puesta en `gameState.flags` — hoy lo usa el hacha, que llega con la
+   * región del bosque (ver data/melee.js). Es una LLAVE, no una amputación: el
+   * arma está entera y funcionando, sólo que el armero todavía no tiene de
+   * dónde traerla. Mismo patrón que "Alta vigilancia" en data/train.js.
+   *
+   * Vale para cualquier catálogo, no sólo el acero: el día que haya un caballo
+   * o un revólver que se desbloquee en algún lado, es agregar el campo.
+   */
+  function disponibles(d) {
+    const flags = gameState.flags || {};
+    return d.items.filter((itemId) => {
+      const llave = d.catalogo[itemId] && d.catalogo[itemId].desbloqueo;
+      return !llave || !!flags[llave];
+    });
+  }
 
   function enter(params = {}) {
     hud.hide();
     id = params.id || 'establo';
     def = TIENDAS[id];
+    items = disponibles(def);
     sel = 0;
     scroll = 0;
     mensaje = null;
@@ -67,23 +88,30 @@ export function createShopScene(services) {
     // Para depurar desde la consola: FORAJIDO.services.tienda
     services.tienda = {
       get id() { return id; },
-      get items() { return def.items; },
+      get items() { return items; },
       get sel() { return sel; },
-      get item() { return def.items[sel]; },
-      get datos() { return def.catalogo[def.items[sel]]; },
+      get item() { return items[sel]; },
+      get datos() { return def.catalogo[items[sel]]; },
       get tuyo() { return def.tuyo(gameState); },
-      get precio() { return def.precio(def.catalogo[def.items[sel]]); },
+      get precio() { return def.precio(def.catalogo[items[sel]]); },
       get mensaje() { return mensaje ? mensaje.texto : null; },
     };
   }
 
   // ------------------------------------------------------------------ lógica
 
-  function item(i) { return def.catalogo[def.items[i]]; }
-  function esTuyo(i) { return def.items[i] === def.tuyo(gameState); }
+  function item(i) { return def.catalogo[items[i]]; }
+  function esTuyo(i) { return items[i] === def.tuyo(gameState); }
+
+  /** Lo compraste: entra a la lista de lo que TENÉS, aparte de equiparse. */
+  function guardarEnInventario(itemId) {
+    if (!def.ranura || !gameState.owned) return;
+    const lista = gameState.owned[def.ranura];
+    if (lista && !lista.includes(itemId)) lista.push(itemId);
+  }
 
   function mover(paso) {
-    sel = (sel + paso + def.items.length) % def.items.length;
+    sel = (sel + paso + items.length) % items.length;
     mensaje = null;   // el mensaje era sobre el artículo anterior
     audio.play('cover');
   }
@@ -117,7 +145,17 @@ export function createShopScene(services) {
     }
 
     gameState.money -= precio;
-    def.equipar(gameState, def.items[sel]);
+
+    /**
+     * COMPRAR AHORA HACE DOS COSAS: lo guarda y te lo pone.
+     *
+     * Se equipa igual que siempre —querías esto, es razonable que salgas con
+     * ello puesto— pero además queda en `gameState.owned`, así que el Colt no
+     * desaparece cuando comprás el Smith. Cambiar entre los que tenés es gratis
+     * y se hace en el campamento (ver `owned` en state/gameState.js).
+     */
+    guardarEnInventario(items[sel]);
+    def.equipar(gameState, items[sel]);
     decir(T.tienda.comprado(datos.name));
     audio.play('loot');
   }
@@ -141,8 +179,15 @@ export function createShopScene(services) {
     r.clear('#120d0b');
 
     dibujarEscenario(r);
-    if (def.escenario === 'pesebre') dibujarCaballo(r, item(sel), def.look[def.items[sel]]);
-    else dibujarArma(r, item(sel), def.look[def.items[sel]]);
+    /**
+     * QUÉ DIBUJO USA CADA TIENDA. El escenario (dónde estás parado) y la
+     * mercadería (qué mirás) son dos cosas distintas: el acero se vende sobre
+     * el MISMO mostrador que los revólveres, pero un hacha no es un revólver
+     * con otras proporciones — es otro objeto y necesita su propio dibujo.
+     */
+    if (def.escenario === 'pesebre') dibujarCaballo(r, item(sel), def.look[items[sel]]);
+    else if (def.mercaderia === 'filo') dibujarFilo(r, item(sel), def.look[items[sel]]);
+    else dibujarArma(r, item(sel), def.look[items[sel]]);
 
     dibujarFicha(r);
     dibujarSelector(r);
@@ -470,6 +515,61 @@ export function createShopScene(services) {
    * que tienen los números: el Smith no es otro objeto, es el mismo con otras
    * proporciones.
    */
+  /**
+   * EL ACERO, SOBRE EL MISMO PAÑO — pero no son revólveres.
+   *
+   * `dibujarArma` (abajo) puede dibujar todo el catálogo de fuego con las
+   * mismas piezas porque el Smith **es** un Colt con otras proporciones. Acá no
+   * pasa eso: una culata, un cuchillo y un hacha son tres objetos distintos, y
+   * dibujarlos con el molde del revólver daría un hacha con tambor y
+   * guardamonte. Por eso son tres siluetas y no una parametrizada.
+   *
+   * Lo que sí comparten es el gesto: el mango hacia la izquierda y el filo
+   * hacia la derecha, apoyados en la misma diagonal que el revólver. Al pasar
+   * de uno a otro con A/D la mercadería cambia sin que se mueva la cámara.
+   */
+  function dibujarFilo(r, datos, look) {
+    const cx = ESCENA.x + ESCENA.w / 2 - 24;
+    const cy = ESCENA.y + 118;
+
+    if (datos.id === 'culata') {
+      // No es un objeto: es tu propio revólver dado vuelta, agarrado del caño.
+      // Se dibuja al revés que en la vidriera de al lado, y ésa es la idea.
+      r.rect(cx - 30, cy - 6, 40, 12, look.metal);
+      r.rect(cx - 30, cy - 6, 40, 3, look.brillo);
+      r.rect(cx + 8, cy - 10, 20, 20, look.madera);
+      r.rect(cx + 8, cy - 10, 20, 3, '#94663f');
+      r.rect(cx + 10, cy + 10, 16, 8, look.madera);
+      // La mano agarra por el caño: dos franjas de cuero.
+      r.rect(cx - 22, cy - 7, 4, 14, '#4a3524');
+      r.rect(cx - 12, cy - 7, 4, 14, '#4a3524');
+      return;
+    }
+
+    if (datos.id === 'cuchillo') {
+      // Hoja larga y recta, con el lomo iluminado y un cachas de madera.
+      r.rect(cx - 34, cy - 2, 26, 11, look.madera);
+      r.rect(cx - 34, cy - 2, 26, 3, '#94663f');
+      r.rect(cx - 36, cy - 3, 5, 13, '#3a2a1c');          // el pomo
+      r.rect(cx - 9, cy - 5, 6, 17, look.metal);          // la guarda
+      r.rect(cx - 3, cy - 1, 46, 9, look.metal);          // la hoja
+      r.rect(cx - 3, cy - 1, 46, 3, look.brillo);         // el lomo
+      r.rect(cx + 43, cy, 8, 6, look.metal);              // la punta
+      return;
+    }
+
+    // El hacha: cabo largo de madera y una cabeza que pesa el doble que todo
+    // lo demás del mostrador. Se lee el peso antes de leer la ficha.
+    r.rect(cx - 40, cy + 4, 62, 8, look.madera);
+    r.rect(cx - 40, cy + 4, 62, 2, '#94663f');
+    r.rect(cx - 42, cy + 3, 6, 11, '#3a2a1c');            // el talón del cabo
+    r.rect(cx + 16, cy - 14, 16, 32, look.metal);         // la cabeza
+    r.rect(cx + 16, cy - 14, 16, 4, look.brillo);
+    r.rect(cx + 32, cy - 10, 10, 24, look.metal);         // el filo, más ancho
+    r.rect(cx + 32, cy - 10, 10, 3, look.brillo);
+    r.rect(cx + 42, cy - 6, 4, 16, look.brillo);          // el corte
+  }
+
   function dibujarArma(r, datos, look) {
     const cx = ESCENA.x + ESCENA.w / 2 - 24;
     const cy = ESCENA.y + 118;
@@ -586,7 +686,7 @@ export function createShopScene(services) {
   /** Abajo: en cuál de todos estás parado, y cuántos hay. */
   function dibujarSelector(r) {
     const y = r.height - 24;
-    const total = def.items.length;
+    const total = items.length;
     const ancho = total * 46;
     const x0 = ESCENA.x + ESCENA.w / 2 - ancho / 2;
 

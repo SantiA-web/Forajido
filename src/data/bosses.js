@@ -558,6 +558,26 @@ export const BOSSES = {
     tipoDeGuardia: 'sheriff',
 
     /**
+     * TRES DE VIDA, FIJOS — y "fijos" es la mitad de la decisión.
+     *
+     * *(Santi, después de jugarlo: "además debería tener 3 de vida")*
+     *
+     * Antes salía de `guardHealth('sheriff', vidaExtra)`, o sea 2 en un tren
+     * tranquilo y 3 en uno escoltado. Eso está bien para un guardia anónimo
+     * —la escolta del tren es justamente lo que decide cuánto aguanta— pero
+     * mal para un tipo con nombre: el mismo Sheriff moría con dos balazos o
+     * con tres según un sorteo que el jugador no ve, y entonces no se puede
+     * aprender cuánto cuesta matarlo.
+     *
+     * 3 lo pone entre un guardia común (2) y uno blindado (4, el techo del
+     * juego), que es exactamente donde su diseño dice que está: aguanta más
+     * que la tropa y menos que la caja fuerte. Y sigue respetando
+     * `MAX_GUARD_HEALTH` sin excepciones — la única del juego sigue siendo el
+     * Cazarrecompensas, arriba.
+     */
+    vida: 3,
+
+    /**
      * SE REPLIEGA A 64 px/s, más rápido que un guardia (46) y más lento que
      * vos (78). El número está elegido para que perseguirlo SEA posible pero
      * CUESTE: lo alcanzás, pero tardás — y cada segundo que tardás es un

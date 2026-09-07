@@ -15,6 +15,7 @@ import { distance, hasLineOfSight } from '../engine/collision.js';
 import { damageEnemy } from '../entities/enemy.js';
 import { damagePlayer } from '../entities/player.js';
 import { volarPuerta } from '../entities/door.js';
+import { reventarCaja, esCajaFuerte } from '../entities/lootable.js';
 
 export function updateExplosives(explosives, dt, world) {
   for (const ex of explosives) {
@@ -131,6 +132,30 @@ export function explode(ex, world) {
       if (d.kind === 'blindada' && !d.broken && blastAt(ex, d.x, d.y, map)) {
         volarPuerta(d);
       }
+    }
+  }
+
+  /**
+   * --- Y LAS CAJAS FUERTES: la dinamita también es una llave para ellas ---
+   *
+   * *(Santi: "si no querés intentar abrirlas, podés explotarla con
+   * dinamita")*
+   *
+   * Mismo lugar y misma idea que la puerta del blindado, tres líneas más
+   * arriba: hay cerraduras que no se abren con paciencia. La caja no
+   * desaparece ni te da la plata sola — queda REVENTADA, con el botín a la
+   * vista, y levantarlo cuesta lo mismo que una bolsa. La dinamita te ahorra
+   * los ocho segundos de forcejeo, no el viaje hasta ahí.
+   *
+   * Vale para las dos cajas del juego, incluida la oculta: si el estruendo la
+   * alcanza deja de estar escondida — no se puede reventar algo y que siga
+   * siendo un secreto.
+   */
+  if (world.loot) {
+    for (const l of world.loot) {
+      if (!esCajaFuerte(l) || l.taken || l.reventada) continue;
+      if (!blastAt(ex, l.x, l.y, map)) continue;
+      reventarCaja(l);
     }
   }
 

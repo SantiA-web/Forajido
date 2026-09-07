@@ -781,7 +781,12 @@ function disparar(bo, dt, world, arma, dist) {
 }
 
 function soltarBala(bo, world, arma) {
-  const angulo = bo.aimDir + world.rng.spread(arma.spread + (world.dispersionExtra || 0));
+  // `spreadDeTiro`: al Cazarrecompensas también se le puede ir el pulso de
+  // vez en cuando, parejo con todo lo demás. Ver CONFIG.mira.fallaChance.
+  const mira = CONFIG.mira;
+  const angulo = bo.aimDir + world.rng.spreadDeTiro(
+    arma.spread + (world.dispersionExtra || 0), mira.fallaChance, mira.fallaMultiplicador
+  );
 
   world.spawnBullet({
     x: bo.x + Math.cos(bo.facing) * 10,
@@ -805,7 +810,7 @@ function soltarBala(bo, world, arma) {
    */
   world.bus.emit('noise', {
     x: bo.x, y: bo.y,
-    radius: CONFIG.enemy.hearRadius,
+    radius: world.train ? world.train.hearRadius : CONFIG.enemy.hearRadius,
     wagons: arma.noiseWagons,
     deJefe: true,
   });

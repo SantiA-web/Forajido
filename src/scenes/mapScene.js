@@ -34,8 +34,15 @@
 import { CONFIG } from '../data/config.js';
 import { REGION } from '../data/region.js';
 import { sortearTipoTren, sortearDificultad } from '../data/train.js';
+import {
+  CLIMA, CLIMA_POR_DEFECTO, sortearClima, sortearEstadoTren, sortearComportamiento,
+  variantesPermitidas, sortearCivilEncubierto,
+} from '../data/modifiers.js';
+import { sortearPaquete, CHANCE_CAJA_OCULTA } from '../data/paquetes.js';
+import { WAGONS } from '../data/wagons.js';
 import { sortearComposicion } from '../world/train.js';
 import { T } from '../text/es.js';
+import { gameState } from '../state/gameState.js';
 
 /**
  * Cuánto tiempo real, como mucho, se simula de una sola vez al volver al mapa.
@@ -117,9 +124,13 @@ export function createMapScene(services) {
     });
   }
 
-  /** Un tren nuevo en esa vía: tipo, escolta y formación sorteados de cero. */
+  /** Un tren nuevo en esa vía: tipo, escolta, formación, clima, estado y comportamientos sorteados de cero. */
   function arrancarTren(ruta, t) {
-    ruta.tren = { t, tipoTren: null, dificultad: null, composicion: null };
+    ruta.tren = {
+      t, tipoTren: null, dificultad: null, composicion: null,
+      clima: null, estado: null, comportamientos: null, variantes: null,
+      encubiertos: null, paquetes: null, cajaOculta: false,
+    };
     nuevoTipo(ruta.tren);
     ruta.tren.dificultad = sortearDificultad(rng);
   }
@@ -127,10 +138,85 @@ export function createMapScene(services) {
   /**
    * Otro tren. El tipo trae consigo su formación de vagones: cambiar de tipo
    * sin recomponer el tren dejaría un veloz hecho de vagones largos.
+   *
+   * Clima, estado y comportamientos se sortean en el mismo momento: son
+   * parte de qué SERVICIO es este tren, no de la escolta (que cambia en
+   * cada parada, ver `avanzarRuta`). Un tren no se moja a mitad de camino,
+   * ni cambia de qué está hablando su gente.
+   *
+   * SÓLO SI EL TIPO LO PERMITE (`tipoTren.modificadores`, data/train.js).
+   * Por ahora nada más el estándar entra en este sorteo — ver el porqué en
+   * el catálogo. Un veloz o uno de carga siempre sale despejado, sin ningún
+   * estado y con todos sus vagones patrullando normal, como si esta capa no
+   * existiera todavía para ellos.
    */
   function nuevoTipo(tren) {
     tren.tipoTren = sortearTipoTren(rng);
     tren.composicion = sortearComposicion(rng, tren.tipoTren);
+    if (tren.tipoTren.modificadores) {
+      tren.clima = sortearClima(rng);
+      // `gameState.bounty`: la recompensa que ya tenías al mirar el mapa —
+      // es lo que decide si `redada` entra en la bolsa (ver data/modifiers.js).
+      tren.estado = sortearEstadoTren(rng, gameState.bounty);
+      /**
+       * Un comportamiento por vagón. El blindado queda afuera (como redada:
+       * sus guardias tienen sus propias reglas) y siempre patrulla normal.
+       * `conversando` necesita 2+ patrullas y `vigilandoCaja` necesita una
+       * caja fuerte de verdad en ese vagón — `sortearComportamiento` ya
+       * sabe sacarlos de la bolsa si no cumplen (ver data/modifiers.js).
+       */
+      tren.comportamientos = tren.composicion.map((id) => {
+        if (id === 'blindado') return 'normal';
+        const patrullas = (WAGONS[id].enemies || []).length;
+        const tieneCaja = (WAGONS[id].loot || []).some((l) => l.type === 'strongbox');
+        return sortearComportamiento(rng, patrullas >= 2, tieneCaja);
+      });
+      /**
+       * QUÉ TIPOS DE GUARDIA PUEDEN VIAJAR EN ESTE TREN (Fase 4, ver
+       * VARIANTES_GUARDIA en data/modifiers.js). Acá sólo se decide QUÉ ESTÁ
+       * PERMITIDO — a qué guardia le toca se sortea después, uno por uno, al
+       * armar el tren (`buildTrain`).
+       *
+       * Se mira la misma foto de `gameState` que ya decide si entra `redada`:
+       * la recompensa Y el honor que traías al abrir el mapa. El Pistolero
+       * necesita las dos cosas — que paguen caro por vos y que te tengan
+       * miedo.
+       */
+      tren.variantes = variantesPermitidas(gameState.bounty, gameState.honor);
+      /**
+       * ¿QUÉ VAGONES LLEVAN UN CIVIL ENCUBIERTO? Array paralelo a
+       * `composicion`, como `comportamientos`: uno por vagón, como mucho uno
+       * por vagón, y sólo donde de verdad viaja gente (el correo o el
+       * blindado no tienen a quién disfrazar). Ver data/modifiers.js.
+       */
+      tren.encubiertos = tren.composicion.map((id) =>
+        sortearCivilEncubierto(rng, (WAGONS[id].passengers || []).length));
+      /**
+       * EL PAQUETE DE CADA VAGÓN (Fase 5, ver data/paquetes.js): un objetivo
+       * valioso con su custodia, metido en un vagón cualquiera. La mayoría
+       * de los vagones no lleva ninguno — `sortearPaquete` devuelve `null` la
+       * mayor parte de las veces, a diferencia de los comportamientos, donde
+       * siempre sale algo.
+       */
+      tren.paquetes = tren.composicion.map((id) =>
+        sortearPaquete(rng, (WAGONS[id].passengers || []).length > 0));
+      /**
+       * ¿ESTE TREN ESCONDE UNA CAJA FUERTE? Es del TREN, no de un vagón (ver
+       * data/paquetes.js): puede terminar en cualquiera menos el blindado, y
+       * los tres pasajeros que saben dónde está viajan donde les toque. Acá
+       * sólo se decide si la hay; el vagón, el escondite y quiénes lo saben
+       * se sortean al armar el tren, que es donde se conoce el mapa de verdad.
+       */
+      tren.cajaOculta = rng.chance(CHANCE_CAJA_OCULTA);
+    } else {
+      tren.clima = CLIMA[CLIMA_POR_DEFECTO];
+      tren.estado = [];
+      tren.comportamientos = tren.composicion.map(() => 'normal');
+      tren.variantes = [];
+      tren.encubiertos = tren.composicion.map(() => false);
+      tren.paquetes = tren.composicion.map(() => null);
+      tren.cajaOculta = false;
+    }
   }
 
   function enter() {
@@ -163,7 +249,9 @@ export function createMapScene(services) {
       /** Qué tren hay hoy en cada vía, en una línea legible. */
       get trenes() {
         return rutas.map((r) => `${r.id}: ` + (r.tren
-          ? `${r.tren.tipoTren.id}/${r.tren.dificultad.id} t=${r.tren.t.toFixed(2)}`
+          ? `${r.tren.tipoTren.id}/${r.tren.dificultad.id} clima=${r.tren.clima.id} `
+            + `estado=${r.tren.estado.join(',') || '-'} `
+            + `comportamientos=[${r.tren.comportamientos.join(',')}] t=${r.tren.t.toFixed(2)}`
           : (r.servicio === false ? 'sin servicio' : `esperando ${r.espera.toFixed(1)}s`)));
       },
       /** Adelantar el mapa a mano, para probar los sorteos sin esperar. */
@@ -360,6 +448,13 @@ export function createMapScene(services) {
       composicion: tren.composicion,
       dificultad: tren.dificultad.id,
       tipoTren: tren.tipoTren.id,
+      clima: tren.clima.id,
+      estado: tren.estado,
+      comportamientos: tren.comportamientos,
+      variantes: tren.variantes,
+      encubiertos: tren.encubiertos,
+      paquetes: tren.paquetes,
+      cajaOculta: tren.cajaOculta,
       ruta: ruta.id,
     });
   }

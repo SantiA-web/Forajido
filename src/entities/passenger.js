@@ -12,11 +12,15 @@
 import { CONFIG } from '../data/config.js';
 import { moveAndCollide, distance, hasLineOfSight, angleDifference } from '../engine/collision.js';
 import { isHidden } from './player.js';
+import {
+  ENCUBIERTO_RADIO, ENCUBIERTO_COSENO, ENCUBIERTO_ESPERA, ENCUBIERTO_DURACION,
+} from '../data/modifiers.js';
 
 export function createPassenger(x, y, facing = Math.PI) {
+  const c = CONFIG.passenger;
   return {
     x, y,
-    hw: 4, hh: 4,
+    hw: c.hw, hh: c.hh,
     alive: true,
     // idle | amenazado | panic | fleeing | cowering
     state: 'idle',
@@ -30,7 +34,109 @@ export function createPassenger(x, y, facing = Math.PI) {
     robProgress: 0,
     robado: false,
     yaGrito: false,
+
+    /**
+     * CIVIL ENCUBIERTO (Fase 4, ver data/modifiers.js). Hasta que se revela es
+     * un pasajero igual a todos: se lo puede rodear, asustar y robar, y no hay
+     * nada en pantalla que lo distinga — ésa es toda la idea.
+     *
+     * `espaldaTimer` cuenta cuánto lleva SEGUIDO con tu espalda de frente
+     * (se corta apenas te das vuelta); `revelando`/`revelaProgreso` son el
+     * aviso: el segundo largo en que saca el arma y se le ve venir.
+     */
+    encubierto: false,
+    espaldaTimer: 0,
+    revelando: false,
+    revelaProgreso: 0,
+
+    /**
+     * LOS PAQUETES (Fase 5, ver data/paquetes.js). Un pasajero común no tiene
+     * nada de esto puesto y se comporta exactamente igual que siempre.
+     *
+     * `botin` (min/max) y `robTime` los pone el pasajero RICO: afloja mucho
+     * más, pero hay que quedarse quieto más tiempo para sacárselo.
+     *
+     * `sabeDeCaja` es la caja fuerte oculta DEL TREN — puede estar en
+     * cualquier vagón, no necesariamente en éste. Cuando terminás de robarle,
+     * además de la plata te suelta la pista (`pistaCaja`: en qué vagón y
+     * debajo de qué). La caja NO se marca en pantalla: la información es todo
+     * lo que te llevás, y encontrarla es tu problema.
+     */
+    botin: null,
+    robTime: null,
+    sabeDeCaja: null,
+    pistaCaja: null,
   };
+}
+
+/**
+ * EL CIVIL ENCUBIERTO — ¿le estás dando la espalda lo suficiente como para
+ * que se anime?
+ *
+ * Devuelve `true` cuando este pasajero ya no tiene que seguir comportándose
+ * como pasajero (está sacando el arma): ahí `updatePassenger` corta.
+ *
+ * TRES CONDICIONES, Y LAS TRES A LA VEZ:
+ *  1. Cerca (`ENCUBIERTO_RADIO`) y con línea de visión — no te dispara desde
+ *     la otra punta del vagón ni a través de un asiento.
+ *  2. Le estás dando la espalda de verdad (`ENCUBIERTO_COSENO`, medido contra
+ *     tu MIRA). Encañonado no se anima a nada, igual que el rendido.
+ *  3. Sostenido `ENCUBIERTO_ESPERA` segundos. Darte vuelta un instante corta
+ *     el reloj y lo devuelve a cero.
+ *
+ * 🐛 AL PRINCIPIO SÓLO SE ANIMABA ESTANDO `idle` O `amenazado`, Y ASÍ NO SE
+ * ACTIVABA CASI NUNCA. Medido: para que te dé la espalda tenés que estar
+ * cerca, y estando cerca te ve — y si te ve, entra en pánico como cualquier
+ * pasajero, o sea que quedaba inhabilitado justo en el único momento en que
+ * podía servir. La condición se contradecía sola.
+ *
+ * Y LA CORRECCIÓN NO ES UN PARCHE, ES LO QUE EL PERSONAJE ES: un agente
+ * encubierto FINGE. El pánico, el grito y el temblor son su disfraz, no su
+ * estado de ánimo — por eso puede estar "muerto de miedo" y sacar el arma en
+ * cuanto te das vuelta. Lo único que lo frena es que lo tengas encañonado
+ * robándole (`robProgress`), y ahí no lo frena el miedo: lo frena que le
+ * estás apuntando.
+ */
+function actualizarEncubierto(pa, dt, world) {
+  const p = world.player;
+
+  // Ya empezó a sacar el arma: no hay vuelta atrás. Lo único que lo corta es
+  // que le pegues antes de que termine — igual que la traición del rendido.
+  if (pa.revelando) {
+    pa.revelaProgreso += dt;
+    pa.facing = Math.atan2(p.y - pa.y, p.x - pa.x);
+    pa.shakeTimer = 0;
+    if (pa.revelaProgreso >= ENCUBIERTO_DURACION) {
+      // La escena lo saca de la lista de pasajeros y lo mete como guardia:
+      // de acá en adelante pelea con la IA de combate de siempre.
+      world.bus.emit('civilRevelado', { pasajero: pa });
+    }
+    return true;
+  }
+
+  if (!p.alive || pa.robProgress > 0) { pa.espaldaTimer = 0; return false; }
+
+  if (distance(pa.x, pa.y, p.x, p.y) > ENCUBIERTO_RADIO ||
+      !hasLineOfSight(pa.x, pa.y, p.x, p.y, world.map.blocksSightAt)) {
+    pa.espaldaTimer = 0;
+    return false;
+  }
+
+  // El coseno entre hacia dónde APUNTÁS y dónde está él. −1 = está justo a
+  // tus espaldas; +1 = lo tenés en la mira.
+  const hacia = Math.atan2(pa.y - p.y, pa.x - p.x);
+  if (Math.cos(hacia - p.aim) > ENCUBIERTO_COSENO) { pa.espaldaTimer = 0; return false; }
+
+  pa.espaldaTimer += dt;
+  if (pa.espaldaTimer >= ENCUBIERTO_ESPERA) {
+    pa.revelando = true;
+    pa.revelaProgreso = 0;
+    // El martillo del revólver: el aviso llega por el oído antes que por el
+    // ojo, que es lo único justo cuando el peligro está a tus espaldas.
+    world.audio.play('cock');
+    return true;
+  }
+  return false;
 }
 
 /** Lo llama la escena cuando pasa algo que asusta (un disparo cerca). */
@@ -82,6 +188,14 @@ export function updatePassenger(pa, dt, world) {
 
   const c = CONFIG.passenger;
   const player = world.player;
+
+  /**
+   * ¿ES UNO DE LOS QUE NO ERAN PASAJEROS? Se pregunta ANTES que todo lo
+   * demás: mientras saca el arma ya no le corresponde ninguna de las
+   * conductas de abajo (ni el pánico, ni huir, ni quedarse quieto porque lo
+   * encañonás).
+   */
+  if (pa.encubierto && actualizarEncubierto(pa, dt, world)) return;
 
   /**
    * MIENTRAS LE ESTÁS APUNTANDO NO SE MUEVE, esté haciendo lo que esté haciendo.
@@ -206,17 +320,71 @@ export function drawPassenger(r, pa) {
   // Tiembla mientras entra en pánico, y más fuerte si lo acabás de asaltar.
   const tiembla = pa.state === 'panic' || pa.state === 'amenazado';
   const shake = tiembla ? Math.sin(pa.shakeTimer * 40) * 1 : 0;
+  /**
+   * SACANDO EL ARMA (el civil encubierto, ver `actualizarEncubierto`).
+   *
+   * El aviso está construido igual que el del rendido que te traiciona, y a
+   * propósito: es el mismo momento del juego —alguien que parecía inofensivo
+   * dejando de serlo— así que tiene que leerse igual. Pasado el punto medio,
+   * el cuerpo salta a `enemyAlert`: el color que en todo el tren significa
+   * "esto ya es una pelea". Antes de eso sólo se ve el brazo saliendo del
+   * saco, que es la mitad temprana del aviso — la que premia estar atento.
+   */
+  const revelaT = pa.revelando
+    ? Math.min(1, pa.revelaProgreso / ENCUBIERTO_DURACION)
+    : 0;
+
   const color = pa.hitFlash > 0
     ? '#fff'
+    : revelaT > 0.5 ? col.enemyAlert
     : pa.state === 'idle' ? col.civilian : col.civilianRun;
+
+  if (pa.revelando) {
+    // El arma que sale de adentro del saco: crece hacia vos mientras dura.
+    const largo = 3 + 9 * revelaT;
+    r.line(
+      pa.x, pa.y,
+      pa.x + Math.cos(pa.facing) * largo,
+      pa.y + Math.sin(pa.facing) * largo,
+      revelaT > 0.5 ? '#d8cdbb' : '#7a5a68'
+    );
+  }
 
   // Hacia dónde mira: hay que poder leerlo para rodearlo por atrás.
   if (pa.state === 'idle') {
     r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
   }
 
-  r.box(pa.x + shake, pa.y, 4, 4, color);
-  r.rect(pa.x + shake - 4, pa.y - 5, 8, 2, '#6a4a58');
+  // El tamaño sale de `pa.hw/pa.hh` (CONFIG.passenger): el sprite que se ve
+  // siempre es exactamente la caja que puede recibir la bala.
+  r.box(pa.x + shake, pa.y, pa.hw, pa.hh, color);
+
+  /**
+   * EL PASAJERO RICO: SOMBRERO DE COPA (Fase 5, ver data/paquetes.js).
+   *
+   * *(Santi, preguntando cómo lucía: hasta acá era IDÉNTICO a cualquier
+   * pasajero — mismo cuerpo, mismo color, mismo sombrerito. Lo único que lo
+   * delataba era el guardaespaldas al lado, así que si lo matabas antes de
+   * entrar ya no había forma de saber a quién robarle. Eligió que "se note de
+   * lejos")*
+   *
+   * LA SEÑA ES LA SILUETA, NO EL COLOR, como manda la regla de este juego: el
+   * color del cuerpo dice el ESTADO (tranquilo / asustado / corriendo) y no
+   * se toca. Lo que cambia es el perfil — una copa alta sobre el ala de
+   * siempre —, que a esta escala es lo único que se lee de una punta del
+   * vagón a la otra.
+   *
+   * Y es la silueta más alta de todo el tren a propósito: asoma por encima de
+   * los respaldos, así que se lo puede pescar desde el pasillo sin tener que
+   * meterse en cada hueco a mirar quién viaja ahí.
+   */
+  if (pa.botin) {
+    r.rect(pa.x + shake - 5, pa.y - 6, 10, 2, '#2a2028');   // el ala, más ancha
+    r.rect(pa.x + shake - 3, pa.y - 11, 6, 5, '#2a2028');   // la copa
+    r.rect(pa.x + shake - 3, pa.y - 8, 6, 1, '#6a4a58');    // la cinta
+  } else {
+    r.rect(pa.x + shake - 4, pa.y - 5, 8, 2, '#6a4a58');
+  }
 
   /**
    * El que ya asaltaste lleva las manos arriba Y un reloj encima de la cabeza.

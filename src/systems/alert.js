@@ -32,7 +32,10 @@ export function createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm 
     get active() { return active; },
     get spawned() { return spawned; },
     get radius() { return radio; },
-    get exhausted() { return spawned >= CONFIG.alert.max; },
+    // Ya no es "se acabaron los refuerzos": ahora dice si ya se mandó el piso
+    // garantizado y está en la parte que escalona más rápido. Sigue llegando
+    // gente hasta `maxAbsoluto` (el techo técnico, ver CONFIG.alert).
+    get exhausted() { return spawned >= CONFIG.alert.maxAbsoluto; },
     get nextIn() { return active && !this.exhausted ? Math.max(0, timerRefuerzo) : Infinity; },
 
     /**
@@ -61,13 +64,13 @@ export function createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm 
        * manejás vos. Lo único que sigue corriendo solo son los de la locomotora.
        */
 
-      if (spawned >= CONFIG.alert.max) return;
+      if (spawned >= CONFIG.alert.maxAbsoluto) return;
       timerRefuerzo -= dt;
       if (timerRefuerzo > 0) return;
 
       spawnReinforcement(spawned);
       spawned += 1;
-      timerRefuerzo = CONFIG.alert.interval;
+      timerRefuerzo = intervaloDelProximoRefuerzo(spawned);
       audio.play('whistle');
       bus.emit('reinforcement', { number: spawned });
     },
@@ -79,4 +82,16 @@ export function createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm 
       radio = 0;
     },
   };
+}
+
+/**
+ * CADA VEZ MÁS SEGUIDO, no una cantidad más grande. `n` es cuántos ya
+ * entraron (incluido el que acaba de salir). Antes de `max`, el ritmo de
+ * siempre; de ahí en más, el intervalo baja `intervalDecay` por cada uno de
+ * más, con piso en `intervalMin`.
+ */
+function intervaloDelProximoRefuerzo(n) {
+  const c = CONFIG.alert;
+  if (n < c.max) return c.interval;
+  return Math.max(c.intervalMin, c.interval - c.intervalDecay * (n - c.max + 1));
 }

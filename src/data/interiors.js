@@ -94,6 +94,7 @@ export const INTERIORES = {
         id: 'armero', tipo: 'persona', x: 192, y: 94, alcance: 48,
         dialogo: [
           { id: 'verArmas', tienda: 'armeria' },
+          { id: 'verAcero', tienda: 'armeriaCuerpo' },
           { id: 'nada' },
         ],
       },

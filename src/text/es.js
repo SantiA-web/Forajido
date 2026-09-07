@@ -28,12 +28,14 @@ export const T = {
 
   prompts: {
     loot: (name) => `[E] ${name}`,
+    jackpot: (valor) => `¡EL GOLPE DE TU VIDA! +$${valor}`,
     threaten: '[E] AMENAZAR',
     escape: '[E] ESCAPAR',
     empty: 'SIN BALAS  [R]',
     peek: '[CLIC DER.] ASOMARSE',
     reinforcementEngine: 'VIENEN DE LA LOCOMOTORA',
     yaTeVieron: 'TE VIERON SUBIR',
+    trenAlerta: 'YA ESTABAN SOBRE AVISO',
     caisteMal: 'TE OYERON CAER',
     cola: 'TU CABALLO',
     coupling: 'AL AIRE LIBRE',
@@ -48,6 +50,7 @@ export const T = {
     cazadorCayo: 'EL CAZADOR CAYÓ EN EL TIROTEO',
     cazadorFuria: '¡SE PUSO SERIO!',
     sheriffMuerto: 'CAYÓ EL SHERIFF',
+    seRinde: '¡NO DISPARE!',
     sheriffSeVa: 'EL SHERIFF SE REPLIEGA',
     fuseLit: 'MECHA ENCENDIDA',
     noDynamite: 'SIN DINAMITA',
@@ -61,6 +64,91 @@ export const T = {
     tranqueraAbierta: '¡SE SUELTA EL GANADO!',
     trenAcelera: '¡EL TREN ACELERA!',
     trenFrena: '¡FRENA DE GOLPE!',
+  },
+
+  /**
+   * TEXTO SUELTO, DE AMBIENTE — no le habla al jugador, es lo que el jugador
+   * ALCANZA A OÍR de algo que no es para él. Por eso las frases están
+   * cortadas a propósito, no son oraciones enteras: es la mitad de una
+   * charla ajena, no un cartel.
+   */
+  ambiente: {
+    /**
+     * LA CHARLA DE LOS GUARDIAS "CONVERSANDO" (Fase 3, data/modifiers.js).
+     *
+     * *(pedido de Santi: "debería aparecer el diálogo entre ellos, pero que
+     * sea medio cortado, no tan explícito")*
+     *
+     * Todas arrancan Y terminan con puntos suspensivos, a propósito: ni el
+     * principio ni el final de la frase son tuyos, sólo pasaste al lado en
+     * el momento justo para agarrar el medio.
+     */
+    charla: [
+      '...y yo le dije que ni loco...',
+      '...la paga es una miseria, pero...',
+      '...si el jefe se entera, nos cuelga...',
+      '...mejor no hablemos de eso acá...',
+      '...te juro que lo vi con mis ojos...',
+      '...desde lo del año pasado no confío...',
+      '...eso mismo pensé yo, pero...',
+      '...ni una palabra de esto, ¿eh?...',
+    ],
+
+    /**
+     * EL GUARDIA "VIGILANDO PUERTA" O "VIGILANDO CAJA" (Fase 3) — a
+     * diferencia de la charla (dos puntas, de a ratos), esto es un ESTADO,
+     * no una frase suelta: se muestra fijo todo el tiempo que dure, igual
+     * que "AGACHADO" o "A CUBIERTO" en el HUD (ver `T.hud`).
+     *
+     * *(Santi: "quiero que encima de los guardias que vigilan una puerta o
+     * una caja fuerte, diga 'vigilando'")*
+     */
+    vigilando: 'VIGILANDO',
+
+    /**
+     * EL CIVIL ENCUBIERTO, cuando termina de sacar el arma (Fase 4).
+     *
+     * Aparece UNA vez, en el momento exacto en que deja de ser un pasajero.
+     * No es una etiqueta permanente como "VIGILANDO": de ahí en adelante es
+     * un guardia y se lee como cualquier otro (rojo, arma en la mano). Lo que
+     * este cartelito explica es el cambio, no el estado — sin él, un pasajero
+     * que de golpe te dispara se leería como un error del juego.
+     */
+    encubierto: '¡ERA DE LA LEY!',
+
+    /**
+     * EL PASAJERO CANTÓ DÓNDE ESTÁ LA CAJA (Fase 5, ver data/paquetes.js).
+     *
+     * Sale sobre la CAJA, no sobre el pasajero: lo que hay que aprender de
+     * ese momento es el lugar, no quién habló. Y dura más que un floater
+     * normal (2,6 s) porque es una instrucción, no una celebración — tenés
+     * que llegar a leer dónde apareció mientras seguís mirando el pasillo.
+     */
+    /**
+     * LA PISTA QUE SUELTA UN PASAJERO AMENAZADO (Fase 5, data/paquetes.js).
+     *
+     * *(Santi: "una vez amenazado un civil de alguno de estos tres que el
+     * tren aleatorizará, dirá dónde está la caja fuerte diciendo una de estas
+     * cuatro pistas")*
+     *
+     * Dice VAGÓN y ESCONDITE, y nada más: no marca la caja en pantalla. El
+     * número de vagón es el mismo que el HUD ya te muestra arriba, así que la
+     * pista se lee contra algo que ya sabés leer — y el escondite te dice qué
+     * mirar cuando llegues, que es la mitad del trabajo.
+     *
+     * Es la única vez que este juego te da una instrucción escrita, y se lo
+     * permite por un motivo: es una PERSONA hablándote, no la interfaz
+     * explicándote. Lo que se puede mostrar se sigue sin escribir — la caja no
+     * se dibuja hasta que la encontrás.
+     */
+    cajaDelatada: '¡LA CAJA!',
+    pistaCaja: (vagon, donde) => `VAGÓN ${vagon}: ${donde}`,
+    escondites: {
+      ventana: 'DEBAJO DE UNA VENTANA',
+      asiento: 'DEBAJO DE UN ASIENTO',
+      mesa: 'DEBAJO DE UNA MESA',
+      corral: 'JUNTO AL CORRAL',
+    },
   },
 
   ride: {
@@ -92,10 +180,10 @@ export const T = {
       fogata: '[E] SENTARSE',
       fogataDe: '[E] LEVANTARSE',
       carpa: '[E] DORMIR',
-      cajon: '[E] ARMAS Y MUNICIÓN',
+      cajon: '[E] REVOLVER EL CAJÓN',
       // El caballo es lo único del campamento con DOS verbos: atenderlo y
       // montarlo. Por eso su cartel lleva dos líneas y no una.
-      poste: '[E] ALIMENTAR',
+      poste: '[E] ATENDER EL CABALLO',
       posteF: '[F] IR AL PUEBLO',
       cartel: '[E] RUTAS DE LA REGIÓN',
       carpaDia: '[E] DORMIR HASTA LA NOCHE',
@@ -104,11 +192,32 @@ export const T = {
 
     // Y lo que contesta al usarla. Los que todavía no tienen sistema detrás
     // dicen lo que hoy SÍ se puede saber, en vez de no hacer nada.
-    fogataSentado: 'Te sentás al fuego.',
+    /**
+     * LA FOGATA TE CUENTA CÓMO ESTÁS PARADO — fama y honor, los dos números
+     * que hoy no se ven en ningún otro lado fuera de la pantalla de
+     * resultados. No hace falta ir a buscarlos: sentarte ya te los dice.
+     */
+    fogataSentado: (fama, honor) => {
+      const palabra = honor >= 30 ? 'te respetan'
+        : honor > 0 ? 'confían en vos'
+        : honor === 0 ? 'no saben qué pensar de vos'
+        : honor > -30 ? 'desconfían de vos'
+        : 'te temen';
+      const signo = honor >= 0 ? '+' : '';
+      return `Junto al fuego: fama ${fama}, honor ${signo}${honor} (${palabra}).`;
+    },
     fogataParado: 'Te levantás.',
     amanece: 'Dormís hasta que sale el sol. El pueblo abre.',
     anochece: 'Dormís hasta que cae la noche. El establo y la armería cierran.',
     cajon: (arma, dinamita) => `${arma} · ${dinamita} cartuchos de dinamita`,
+    /**
+     * Los títulos de los dos menús del campamento. Son preguntas del lugar, no
+     * de una persona: en el pueblo te pregunta el armero, acá revolvés vos.
+     */
+    cajonTitulo: '¿Con qué salís?',
+    cajonVacio: 'No hay nada más en el cajón.',
+    posteTitulo: '¿Qué hacés con el caballo?',
+    posteComer: 'DARLE DE COMER',
     poste: (caballo) => `Le das de comer al ${caballo}. Queda tranquilo.`,
     posteMontar: 'Montás y salís para el pueblo.',
     cartelIr: 'Vas a ver qué trenes pasan por la región.',
@@ -189,6 +298,7 @@ export const T = {
 
     opciones: {
       verArmas: 'COMPRAR UN ARMA',
+      verAcero: 'VER ACERO Y FILOS',
       verCaballos: 'COMPRAR UN CABALLO',
       nada: 'NADA, GRACIAS',
     },
@@ -312,6 +422,9 @@ export const T = {
 
     loot: 'Botín',
     clean: 'Trabajo limpio',
+    racha: (n) => `Racha limpia (${n})`,
+    rachaPerdida: (n) => `Se cortó la racha (llevabas ${n})`,
+    rescate: 'Casi lo lográs',
     lost: 'Botín que dejaste',
     kills: 'Guardias muertos',
     civilians: 'Civiles muertos',
@@ -327,6 +440,8 @@ export const T = {
     jefeSinRebaja: 'SE ACABÓ',
     fama: 'Se habla de vos',
     bountyTotal: 'Recompensa por tu cabeza',
+    honor: 'Cómo te vieron ahí',
+    honorTotal: 'Cómo te ven',
     retry: 'VOLVER AL CAMPAMENTO  [R]',
 
     jailNote: 'Te llevan a prisión.',

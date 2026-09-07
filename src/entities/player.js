@@ -12,15 +12,18 @@
 
 import { CONFIG } from '../data/config.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
+import { MELEE, DEFAULT_MELEE } from '../data/melee.js';
 import { EXPLOSIVES, DEFAULT_EXPLOSIVE } from '../data/explosives.js';
 import { moveAndCollide, overlapsSolid } from '../engine/collision.js';
 import { findCoverSurface, coverStillValid } from '../systems/cover.js';
 import { playerMelee } from '../systems/melee.js';
 import { throwTarget } from '../systems/explosives.js';
 
-export function createPlayer(x, y, weaponId = DEFAULT_WEAPON) {
+export function createPlayer(x, y, weaponId = DEFAULT_WEAPON, meleeId = DEFAULT_MELEE) {
   const c = CONFIG.player;
   const weapon = WEAPONS[weaponId];
+  // Siempre hay una: la culata es "no tener nada" y por eso es el piso.
+  const melee = MELEE[meleeId] || MELEE[DEFAULT_MELEE];
 
   return {
     x, y,
@@ -32,6 +35,10 @@ export function createPlayer(x, y, weaponId = DEFAULT_WEAPON) {
     aim: 0,
     moving: false,
     sneaking: false,
+    // Hacia dónde CAMINÁS (no hacia dónde apuntás) — lo usa la IA para saber
+    // si venís derecho hacia un guardia. Ver `updateFree` más abajo.
+    moveDirX: 0,
+    moveDirY: 0,
 
     // El techo (ver updateOnRoof más abajo). `techoSalto` > 0 = estás en el
     // aire; `techoCaido` > 0 = te llevaste un cartel por delante y estás en
@@ -48,7 +55,19 @@ export function createPlayer(x, y, weaponId = DEFAULT_WEAPON) {
     peek: 0,           // 0 = escondido, 1 = totalmente asomado
     peekSide: 1,
 
+    /**
+     * CUÁNTO ESTÁS APUNTANDO: 0 = suelto, 1 = la mira cerrada del todo.
+     *
+     * Se mueve solo hacia el clic derecho (ver `actualizarApuntado`), y de él
+     * salen dos cosas a la vez: el radio del círculo de la mira y la
+     * dispersión real del próximo tiro. Que sean el MISMO número es todo el
+     * punto — el círculo no representa la precisión, es la precisión.
+     */
+    apuntado: 0,
+
     weapon,
+    /** El arma cuerpo a cuerpo equipada (data/melee.js). Nunca es null. */
+    melee,
     ammo: weapon.magazine,
     fireTimer: 0,
     reloadTimer: 0,
@@ -65,7 +84,15 @@ export function createPlayer(x, y, weaponId = DEFAULT_WEAPON) {
     invuln: 0,
     hitFlash: 0,
     muzzle: 0,
-    recoil: 0,
+    recoil: 0,     // el salto VISUAL del cañón — cosmético, se apaga en un instante
+    /**
+     * EL RETROCESO MECÁNICO — no confundir con `recoil` de arriba, que sólo
+     * mueve la línea del arma en el dibujo. Éste se suma de verdad a
+     * `dispersionActual()`, así que ensucia el próximo tiro y se ve en el
+     * círculo. Sube con cada disparo (`shoot`, más abajo) y baja solo con el
+     * tiempo (`updatePlayer`). Ver CONFIG.mira.retrocesoDecayTiempo.
+     */
+    retroceso: 0,
     knockX: 0,
     knockY: 0,
 
@@ -92,12 +119,47 @@ export function isHidden(p) {
   return !!p.cover && p.peek < 0.4;
 }
 
+/**
+ * LA DISPERSIÓN REAL DE ESTE INSTANTE — una sola fuente de verdad.
+ *
+ * La usan las DOS cosas que tienen que coincidir sí o sí: el radio del círculo
+ * de la mira (scenes/raidScene.js) y el ángulo del disparo (`shoot`, más
+ * abajo). Si cada uno la calculara por su cuenta, la mira mentiría en cuanto
+ * alguien tocara un número — que es exactamente el tipo de error que este
+ * proyecto ya se comió dos veces (el comentario decía una cosa y el código
+ * hacía otra).
+ *
+ * `dispersionExtra` es el sacudón del tren veloz (CONFIG.traqueteo) y `p.
+ * retroceso` es el kick que dejaron tus últimos disparos (ver CONFIG.mira,
+ * `weapons.js` y `shoot()` más abajo) — los dos se SUMAN al final, después de
+ * interpolar: te ensucian el tiro apuntes o no. Por eso el círculo se abre en
+ * tu cara durante un traqueteo, o después de disparar rápido, aunque tengas
+ * el clic derecho apretado — que es justamente lo que se buscaba mostrar.
+ */
+export function dispersionActual(p, world) {
+  const w = p.weapon;
+  const suelto = w.spread;
+  const apuntado = w.spreadApuntado ?? suelto;
+  const t = p.apuntado || 0;
+  return suelto + (apuntado - suelto) * t
+    + (p.retroceso || 0)
+    + ((world && world.dispersionExtra) || 0);
+}
+
 export function updatePlayer(p, dt, world) {
   p.fireTimer = Math.max(0, p.fireTimer - dt);
   p.invuln = Math.max(0, p.invuln - dt);
   p.hitFlash = Math.max(0, p.hitFlash - dt);
   p.muzzle = Math.max(0, p.muzzle - dt);
   p.recoil = Math.max(0, p.recoil - dt * 12);
+  /**
+   * El retroceso baja LINEAL, a la velocidad propia del arma equipada: un
+   * solo kick tarda exactamente `retrocesoDecayTiempo` en llegar a cero (ver
+   * CONFIG.mira). Si se acumularon dos kicks seguidos, tarda el doble — no
+   * hay timer que se reinicia por tiro, es una cantidad que sube y baja.
+   */
+  p.retroceso = Math.max(0, (p.retroceso || 0) -
+    dt * (p.weapon.retroceso / CONFIG.mira.retrocesoDecayTiempo));
   p.meleeTimer = Math.max(0, p.meleeTimer - dt);
   p.meleeSwing = Math.max(0, p.meleeSwing - dt);
   p.stepPhase = (p.stepPhase || 0) + dt;
@@ -127,6 +189,10 @@ export function updatePlayer(p, dt, world) {
   p.sneaking = input.isDown('Space');
 
   const wantsCoverToggle = input.wasPressed('ShiftLeft') || input.wasPressed('ShiftRight');
+
+  // El apuntado va ANTES de moverse: es lo que decide a qué velocidad caminás
+  // este cuadro (ver `updateFree`).
+  actualizarApuntado(p, dt, world);
 
   if (p.cover) updateInCover(p, dt, world, dx, dy, wantsCoverToggle);
   else updateFree(p, dt, world, dx, dy, wantsCoverToggle);
@@ -365,12 +431,74 @@ function updateFree(p, dt, world, dx, dy, toggle) {
   // después de que suene la alarma (lo calcula `lastreActual` en raidScene,
   // ver CONFIG.peso). Un tren limpio no te frena nunca; uno despierto te cobra
   // cada botín que cargues.
-  const speed = (p.sneaking ? c.sneakSpeed : c.speed) * (1 - (p.lastre || 0));
+  //
+  // Y apuntando (clic derecho) caminás a `CONFIG.mira.velocidad`, que es el
+  // MISMO 40 que ya cuestan agacharse y deslizarse pegado a una pared: el
+  // juego tiene un solo precio de movimiento y esto no inventa otro. Se aplica
+  // proporcional a `p.apuntado`, así que el frenazo entra junto con el cierre
+  // de la mira en vez de golpear en el cuadro en que apretás.
+  let base = p.sneaking ? c.sneakSpeed : c.speed;
+  if (p.apuntado > 0) {
+    base = base + (CONFIG.mira.velocidad - base) * p.apuntado;
+  }
+
+  /**
+   * RECARGANDO CAMINÁS COMO SI FUERAS DE COSTADO.
+   *
+   * *(pedido de Santi, jugándolo: "recargar debería penalizar el movimiento,
+   * debería quedar como si caminara de costado, con esa velocidad")*
+   *
+   * Reusa `direccionCostado` (0,70) en vez de inventar un número nuevo: es el
+   * precio que el juego ya tiene escrito para "estás haciendo otra cosa con
+   * el cuerpo mientras caminás". Recargar un revólver con las dos manos
+   * mientras corrés es exactamente eso.
+   *
+   * SE MULTIPLICA, no se pisa: si además vas agachado, apuntando o de
+   * espaldas, los precios se suman como se suman todos los de este juego —
+   * recargar de espaldas y agachado es lo más lento que podés ir, y tiene que
+   * serlo. Y cobra en lo mismo de siempre: tiempo y exposición, nunca vida.
+   *
+   * No frena el resto: seguís pudiendo cubrirte, agacharte y moverte. Lo
+   * único que no podés es disparar, que ya era así.
+   */
+  if (p.reloadTimer > 0) base *= c.direccionCostado;
 
   if (dx !== 0 && dy !== 0) {
     const inv = 1 / Math.SQRT2;
     dx *= inv; dy *= inv;
   }
+
+  /**
+   * HACIA DÓNDE CAMINÁS — no hacia dónde apuntás. Lo lee la IA de los
+   * guardias para decidir si "venís hacia él" (ver `CONFIG.enemy.panicoCoseno`
+   * y `doCombat` en systems/ai.js): con mouse+WASD podés apuntar para un lado
+   * y correr para otro, así que el gesto de "cargar" tiene que leerse del
+   * movimiento, no de la mira. Vector unitario, o (0,0) si estás quieto.
+   */
+  p.moveDirX = dx;
+  p.moveDirY = dy;
+
+  /**
+   * DE COSTADO O DE ESPALDAS RESPECTO A TU PROPIA MIRA, CAMINÁS MÁS LENTO.
+   * Ver CONFIG.player.direccionCostado/direccionAtras para el porqué completo.
+   *
+   * `dx,dy` ya es unitario (recién normalizado arriba si es diagonal), y
+   * `(cos(p.aim), sin(p.aim))` también — el producto punto de dos vectores
+   * unitarios ES el coseno del ángulo entre ambos, sin `atan2` ni comparar
+   * ángulos: 1 de frente, 0 de costado, −1 de espaldas.
+   *
+   * Quieto (`dx=dy=0`) el coseno da 0 y no importa: no hay velocidad que
+   * penalizar.
+   */
+  if (p.moving) {
+    const coseno = dx * Math.cos(p.aim) + dy * Math.sin(p.aim);
+    const factorDireccion = coseno >= 0
+      ? c.direccionCostado + (1 - c.direccionCostado) * coseno
+      : c.direccionCostado + (c.direccionCostado - c.direccionAtras) * coseno;
+    base *= factorDireccion;
+  }
+
+  const speed = base * (1 - (p.lastre || 0));
 
   const moveX = dx * speed * dt + p.knockX * dt;
   const moveY = dy * speed * dt + p.knockY * dt;
@@ -408,9 +536,52 @@ function leaveCover(p, world) {
   world.bus.emit('playerCover', { entered: false });
 }
 
+/**
+ * APUNTAR CON EL CLIC DERECHO — y por qué a cubierto es instantáneo.
+ *
+ * Suelto en el pasillo, la mira tarda `CONFIG.mira.tiempoCierre` en cerrarse y
+ * lo mismo en volver a abrirse. Ése es el precio de apuntar, junto con caminar
+ * a media velocidad: sin los dos, "apuntá siempre" sería la respuesta correcta
+ * a todo y el clic derecho sería un botón que hay que tener apretado, no una
+ * decisión.
+ *
+ * A CUBIERTO, EN CAMBIO, LA MIRA YA ESTÁ CERRADA — pedido de Santi, y encaja
+ * con una regla que este juego ya tenía escrita en otro lado: *estar pegado a
+ * una pared es estar afianzado*. Es exactamente el mismo motivo por el que el
+ * sacudón del tren veloz no te arrastra si estás cubierto (CONFIG.traqueteo).
+ * Un tipo apoyado contra un marco no necesita ese tercio de segundo: ya tiene
+ * dónde apoyar el brazo.
+ *
+ * Y eso le da a la cobertura, por primera vez, una razón OFENSIVA para
+ * existir. Hasta acá cubrirse era puramente defensivo —te tapa, pero no podés
+ * disparar hasta asomarte— así que la única pregunta era cuándo salir. Ahora
+ * también es el lugar desde donde mejor se tira. El contrapeso ya está
+ * construido y no hubo que agregar ninguno: asomado sos un blanco, los jinetes
+ * de afuera te cazan en la ventanilla, y los guardias del blindado te tiran
+ * dinamita justamente cuando te ven parapetado.
+ *
+ * Ojo con el orden: se pone en 1 mientras estás EN COBERTURA, no mientras
+ * estás asomado. Escondido y sin asomarte, la mira se ve cerrada pero en rojo
+ * (no podés disparar): estás listo, te falta salir.
+ */
+function actualizarApuntado(p, dt, world) {
+  if (p.cover) { p.apuntado = 1; return; }
+
+  const m = CONFIG.mira;
+  const paso = dt / m.tiempoCierre;
+  const objetivo = world.input.mouse.right ? 1 : 0;
+
+  if (p.apuntado < objetivo) p.apuntado = Math.min(objetivo, p.apuntado + paso);
+  else if (p.apuntado > objetivo) p.apuntado = Math.max(objetivo, p.apuntado - paso);
+}
+
 function updateInCover(p, dt, world, dx, dy, toggle) {
   const c = CONFIG.player;
   const cover = p.cover;
+
+  // Deslizarse pegado a una pared no es "cargar" a nadie.
+  p.moveDirX = 0;
+  p.moveDirY = 0;
 
   if (toggle) { leaveCover(p, world); return; }
 
@@ -491,10 +662,20 @@ function startReload(p) {
 
 function shoot(p, world) {
   const w = p.weapon;
-  // El sacudón del tren (CONFIG.traqueteo) te dispersa a vos igual que a
-  // ellos — se SUMA al spread del arma, no lo multiplica, así que un arma
-  // fina (el Colt) lo nota mucho más que una que ya tira sucio.
-  const angle = p.aim + world.rng.spread(w.spread + (world.dispersionExtra || 0));
+  /**
+   * La dispersión sale de `dispersionActual`, la MISMA función que le da el
+   * radio al círculo de la mira — el arma, cuánto estás apuntando y el
+   * sacudón del tren (CONFIG.traqueteo), que se suma para vos igual que para
+   * los guardias.
+   *
+   * `spreadDeTiro` en vez de `spread`: el círculo es la referencia, no un
+   * techo. La mayoría de los tiros usan exactamente esa dispersión, y de vez
+   * en cuando (`CONFIG.mira.fallaChance`) se te va el pulso de verdad. Ver
+   * el porqué completo en CONFIG.mira y en `rng.spreadDeTiro`.
+   */
+  const angle = p.aim + world.rng.spreadDeTiro(
+    dispersionActual(p, world), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador
+  );
 
   world.spawnBullet({
     x: p.x + Math.cos(p.aim) * 8,
@@ -511,6 +692,17 @@ function shoot(p, world) {
   p.muzzle = CONFIG.feel.muzzleTime;
   p.recoil = 1;
 
+  /**
+   * EL KICK DE ESTE DISPARO — se suma DESPUÉS de haber calculado el ángulo de
+   * arriba, a propósito: el retroceso de un tiro afecta al PRÓXIMO, no a sí
+   * mismo (así funciona de verdad un arma). Apuntando pesa la mitad —misma
+   * regla que ya usa `spreadApuntado`— interpolada por `p.apuntado` en vez de
+   * un golpe seco al cruzar el umbral, para que no salte de golpe justo
+   * cuando la mira termina de cerrar.
+   */
+  const kick = w.retroceso * (1 - 0.5 * (p.apuntado || 0));
+  p.retroceso = Math.min(CONFIG.mira.retrocesoMax, (p.retroceso || 0) + kick);
+
   world.camera.shake(CONFIG.feel.shakeShoot, 0.1);
   world.audio.play('playerShot');
 
@@ -522,8 +714,11 @@ function shoot(p, world) {
   // arma (`ruidoExtra`, ver data/train.js), sin tocar el número del arma.
   world.bus.emit('noise', {
     x: p.x, y: p.y,
-    radius: CONFIG.enemy.hearRadius,
-    wagons: (w.noiseWagons || 1) + (world.train ? world.train.ruidoExtra : 0),
+    radius: world.train ? world.train.hearRadius : CONFIG.enemy.hearRadius,
+    // 🐛 `?? 1`, NO `|| 1` — con `||`, un arma en `noiseWagons: 0` (el Colt y
+    // el Smith, ahora) se leía como "no puesto" y volvía a subir a 1 solo,
+    // porque 0 es falsy en JS. `??` sólo cae al default con `undefined`/`null`.
+    wagons: (w.noiseWagons ?? 1) + (world.train ? world.train.ruidoExtra : 0),
   });
 }
 
@@ -549,7 +744,7 @@ export function damagePlayer(p, amount, fromX, fromY) {
 
 // ------------------------------------------------------------------- dibujo
 
-export function drawPlayer(r, p) {
+export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const col = CONFIG.colors;
 
   if (!p.alive) {
@@ -558,7 +753,7 @@ export function drawPlayer(r, p) {
     return;
   }
 
-  if (p.enTecho) { drawPlayerOnRoof(r, p, col); return; }
+  if (p.enTecho) { drawPlayerOnRoof(r, p, col, hearStepRadius); return; }
 
   /**
    * TIRADO EN EL PISO. Se dibuja aplastado y con el sombrero volado al lado:
@@ -590,9 +785,8 @@ export function drawPlayer(r, p) {
    * no se ve se siente injusto, aunque sea perfectamente justo.
    */
   if (p.moving && !p.sneaking) {
-    const radio = CONFIG.enemy.hearStepRadius;
     const pulso = (p.stepPhase % 0.75) / 0.75;
-    r.circle(p.x, p.y, radio * (0.45 + pulso * 0.55), col.noiseRing, 0.28 * (1 - pulso));
+    r.circle(p.x, p.y, hearStepRadius * (0.45 + pulso * 0.55), col.noiseRing, 0.28 * (1 - pulso));
   }
 
   if (p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0) return;
@@ -605,10 +799,12 @@ export function drawPlayer(r, p) {
   r.box(p.x, p.y + 6, 5, 2, '#000');
   r.ctx.globalAlpha = 1;
 
-  // Pegado a la pared el cuerpo se aplasta contra ella.
+  // Pegado a la pared el cuerpo se aplasta contra ella. El tamaño base sale
+  // de `p.hw/p.hh` (CONFIG.player), no de un número aparte: el sprite que se
+  // ve siempre tiene que ser exactamente la caja que puede recibir la bala.
   const flat = p.cover ? 1 - 0.35 * (1 - p.peek) : 1;
-  const halfW = p.cover && p.cover.nx !== 0 ? 5 * flat : 5;
-  const halfH = p.cover && p.cover.ny !== 0 ? 5 * flat : 5;
+  const halfW = p.cover && p.cover.nx !== 0 ? p.hw * flat : p.hw;
+  const halfH = p.cover && p.cover.ny !== 0 ? p.hh * flat : p.hh;
 
   if (!p.cover || p.peek > 0.15) {
     r.line(bx, by, bx + Math.cos(p.aim) * 9, by + Math.sin(p.aim) * 9, '#241c18');
@@ -671,7 +867,7 @@ export function drawPlayer(r, p) {
  *  - **Agachado:** el cuerpo se aplasta y el sombrero baja.
  *  - **Caído:** tirado de costado, parpadeando mientras te levantás.
  */
-function drawPlayerOnRoof(r, p, col) {
+function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   const ct = CONFIG.techo;
 
   if (p.techoCaido > 0) {
@@ -701,9 +897,8 @@ function drawPlayerOnRoof(r, p, col) {
 
   // El aro del ruido, igual que abajo: agachado no hacés ninguno.
   if (p.moving && !p.techoAgachado && !enElAire) {
-    const radio = CONFIG.enemy.hearStepRadius;
     const pulso = (p.stepPhase % 0.75) / 0.75;
-    r.circle(p.x, p.y, radio * (0.45 + pulso * 0.55), col.noiseRing, 0.28 * (1 - pulso));
+    r.circle(p.x, p.y, hearStepRadius * (0.45 + pulso * 0.55), col.noiseRing, 0.28 * (1 - pulso));
   }
 
   const by = p.y - alto;

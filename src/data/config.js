@@ -590,6 +590,97 @@ export const CONFIG = {
     throwMinRange: 62,     // más cerca que esto no la tira: se volaría él
     throwMaxRange: 150,
 
+    /**
+     * EL DINAMITERO — los tres números que lo separan de los del blindado.
+     *
+     * Van aparte de `throwCooldown` a propósito, aunque hoy `dinamiteroRecarga`
+     * valga lo mismo (5 s): son dos personajes distintos usando la misma arma.
+     * Los cuatro del vagón blindado la tiran de a una, para sacarte de una
+     * cobertura, y tienen revólver para todo lo demás. Éste no tiene nada más,
+     * así que si algún día hay que aflojarlo o endurecerlo se toca acá sin
+     * mover al blindado (y al revés).
+     */
+
+    /**
+     * CUÁNTO TARDA EN VOLVER A TENER LAS DOS EN LA MANO. Elegido por Santi
+     * (pidió 4 y lo subió a 5 antes de construir).
+     *
+     * ES LA VENTANA, no un tiempo muerto: mientras corre, este tipo está
+     * literalmente desarmado — no tiene con qué contestar. Y se VE, porque los
+     * cartuchos de la bandolera se dibujan según lo que le queda (ver
+     * `drawEnemy`, entities/enemy.js). Sin eso la ventana existiría y no se
+     * podría aprovechar, que es lo mismo que no existir.
+     *
+     * Con 5 s más los 0,7 de encender la mecha, tira una tanda cada 5,7 s:
+     * **0,351 cartuchos por segundo, exactamente el doble** de lo que tira hoy
+     * un guardia del blindado (0,175 — uno cada 5,7 s).
+     */
+    dinamiteroRecarga: 5.0,
+
+    /** Cuántas lanza de una. Ver `puntosDeTanda` (systems/ai.js). */
+    dinamiteroPorTanda: 2,
+
+    /**
+     * A QUÉ DISTANCIA DEL JUGADOR CAE CADA UNA — una para cada lado, sobre la
+     * línea que va de él a vos.
+     *
+     * LA CUENTA QUE LO DECIDE: parado justo en el medio tenés que quedar en el
+     * BORDE de las dos (1 de daño cada una, 2 de tus 4) y no en el centro de
+     * ninguna. O sea que quedarse quieto duele pero no mata — lo que mata es
+     * correr hacia una de las dos sin mirar.
+     *
+     * 🐛 ERA 40, Y ESO LO HACÍA MORTAL. 40 es exactamente `lethalRadius`… y el
+     * chequeo es `d <= lethalRadius`, o sea INCLUSIVO: a 40 px clavados estás
+     * ADENTRO del radio letal de las dos, no en el borde. Medido: 3 + 3, muerto
+     * de una sola tanda. La cuenta estaba bien pensada y mal medida por un
+     * signo de igual. Con 50, `50 > 40` deja el centro afuera y `50 <= 68` te
+     * deja adentro del borde: 1 + 1, como corresponde.
+     *
+     * Y DEJA SALIDA: los dos centros quedan a 100 px entre sí, así que el
+     * primer punto seguro está a 118 px del medio. Con los 2,16 s de mecha con
+     * los que la sueltan, a 78 px/s cubrís 168. Se sale, pero hay que arrancar
+     * ya — que es exactamente lo que tiene que costar.
+     */
+    dinamiteroSeparacion: 50,
+
+    /**
+     * SU BRAZO Y SU VENTANA — los dos números que hacen que la tanda separada
+     * exista de verdad.
+     *
+     * 🐛 SIN ESTOS DOS, LA SEPARACIÓN NO PASABA NUNCA. Medido con el alcance
+     * normal de la dinamita (`throwRange`, 104 px) y el jugador a 100: la de
+     * "más allá tuyo" quería caer a 140 px del que la tira, `throwTarget` la
+     * clampeaba a 104 — o sea 4 px más allá del jugador — y la tanda terminaba
+     * separada 44 px en vez de 80, con una cayéndole **encima**. Eso son 3 + 1
+     * = las 4 vidas de una sola tanda, exactamente lo contrario de la cuenta
+     * con la que se eligió `dinamiteroSeparacion`.
+     *
+     * `dinamiteroAlcance` (150) es cuánto vuela SU cartucho: más lejos que el
+     * tuyo (104), y es lo justo — no tiene otra cosa, y vos le podés contestar
+     * con el revólver desde cualquier distancia. `dinamiteroRangoMax` (100) es
+     * hasta dónde decide tirar, y sale de una cuenta: 100 + 50 de separación =
+     * 150, o sea que **en toda su ventana útil le alcanza para poner las dos
+     * donde corresponde**. Si se mueve uno hay que mover el otro — y también
+     * si se mueve `dinamiteroSeparacion`.
+     *
+     * 100 sigue estando cómodamente por encima de los 92 px a los que se
+     * planta la rama de "sin cobertura" (systems/ai.js), que es donde este
+     * tipo pelea por no cubrirse nunca.
+     *
+     * Reemplazan a `throwMaxRange` (150) sólo para él; el del blindado sigue
+     * con los números de siempre.
+     */
+    dinamiteroAlcance: 150,
+    dinamiteroRangoMax: 100,
+
+    /**
+     * HASTA DÓNDE RETROCEDE cuando lo tenés encima, por encima de
+     * `throwMinRange`. Los 12 px de más son histéresis: sin ellos se frenaría
+     * justo en el límite y volvería a entrar en zona muerta con que te movieras
+     * un paso, entrando y saliendo del retroceso sin decidir nada.
+     */
+    dinamiteroMargen: 12,
+
     // --- Combate ---
     aimTime: 0.30,         // se detiene y levanta el arma antes de disparar
     fireCooldown: 0.75,

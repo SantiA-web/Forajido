@@ -440,12 +440,17 @@ Otras reglas:
   esperan en su vagón, ya con el arma levantada. Volar la puerta del blindado
   **enciende la alarma sí o sí**: no existe hacerlo y seguir limpio.
 
-**Los guardias del vagón blindado tienen una cada uno** — son los únicos del
-tren. Y la usan por un motivo concreto: **cuando te ven parapetado**. Si te
-estás moviendo no la necesitan, te disparan y listo. Cuando uno enciende la
-mecha se ve un `!` naranja y una chispa parpadeando sobre su cabeza: eso quiere
-decir *salí de la cobertura ahora mismo*, que es lo contrario de todo lo demás
-que aprendiste, así que el aviso es grande a propósito.
+**Los guardias del vagón blindado tienen una cada uno.** Y la usan por un motivo
+concreto: **cuando te ven parapetado**. Si te estás moviendo no la necesitan, te
+disparan y listo. Cuando uno enciende la mecha se ve un `!` naranja y una chispa
+parpadeando sobre su cabeza: eso quiere decir *salí de la cobertura ahora
+mismo*, que es lo contrario de todo lo demás que aprendiste, así que el aviso es
+grande a propósito.
+
+**El otro que la tira es el Dinamitero**, y no se parece en nada: aquéllos tienen
+revólver y usan el cartucho para sacarte de atrás de un asiento; éste **no tiene
+otra cosa**, así que te la tira estés como estés (ver "El Dinamitero", más
+abajo).
 
 ### El cuerpo a cuerpo (ruedita del mouse)
 
@@ -597,14 +602,35 @@ Lleva cinco bolsas repartidas y **ninguna caja fuerte**: su tensión es otra.
 
 **Y trae un tipo con dinamita dando vueltas.** El *Dinamitero* no se queda
 adentro: hace una ronda entre este vagón y los dos de al lado, y tarda casi un
-minuto en dar la vuelta entera. Cuando está adentro y te ve parapetado, te tira
-un cartucho — y eso vuela los tres cajones de una. **Esperar a que salga es una
+minuto en dar la vuelta entera. Si está adentro cuando empieza el lío, su
+primera tanda vuela los tres cajones de una. **Esperar a que salga es una
 jugada**, y es la primera vez que quedarse quieto y mirar resuelve algo en este
 juego.
 
 > Si el vagón vuela, ese tren se quedó sin dónde reponer. Volarlo para sacarte
 > de encima a los guardias y perder los tres cartuchos es una decisión, no un
 > accidente.
+
+### El Dinamitero: no tiene revólver, y eso lo explica todo
+
+No es un guardia con un cartucho de más. **Es lo único que sabe hacer**, y de
+ahí sale cada cosa que le pasa:
+
+| | |
+|---|---|
+| **Lanza de a DOS a la vez** | Y no al mismo lugar: **una a cada lado tuyo**. No te cierran un camino, te cierran los dos |
+| **Tarda 5 segundos en recargar** | Y en esos cinco segundos está **desarmado del todo**. Es la mejor ventana del vagón |
+| **Se le ven los cartuchos** | Dos en la bandolera cuando está cargado, dos huecos oscuros cuando no. Desde lejos se sabe si conviene entrar ahora o esperar |
+| **No se cubre nunca** | Necesita el pasillo libre: parapetado se taparía el tiro a sí mismo. Está siempre a la vista, con dos de vida |
+| **Y si te le pegás, retrocede** | Su cartucho tiene un mínimo — más cerca se volaría él. Acercarse es la respuesta, pero hay que perseguirlo |
+
+**Parado justo en el medio de una tanda perdés dos de tus cuatro vidas**: caés
+en el borde de las dos, no en el centro de ninguna. Lo que mata es correr hacia
+una de las dos sin mirar dónde cayó la otra.
+
+> Tira más lejos que vos —su brazo llega a nueve baldosas y media, contra las
+> seis y media de tu dinamita— y es lo justo: vos le podés contestar con el
+> revólver desde donde quieras, y él no tiene con qué.
 
 ### La escolta
 
@@ -1500,6 +1526,11 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `explosives.cajonPolvora.vida` | **Cuántos tiros aguanta un cajón de pólvora** antes de prenderse. Es la perilla que decide si el vagón de armas es una lotería o una decisión |
 | `explosives.cajonPolvora.fuse` / `cadena` | La mecha del cajón, y cada cuánto prende al siguiente. **Los dos números que deciden si se puede escapar de la cadena** |
 | `explosives.cajonPolvora.recarga` | Cuántos cartuchos te da abrir uno |
+| `enemy.dinamiteroRecarga` | **Cuánto tarda el Dinamitero en volver a tener las dos en la mano** — y cuánto dura la ventana en la que está desarmado |
+| `enemy.dinamiteroPorTanda` | Cuántas lanza de una |
+| `enemy.dinamiteroSeparacion` | **A qué distancia tuya cae cada una.** Decide si quedarte quieto te cuesta 2 vidas o las 4: por debajo de `explosives.dinamita.lethalRadius` te mata |
+| `enemy.dinamiteroAlcance` / `dinamiteroRangoMax` | Cuánto vuela su cartucho y hasta dónde decide tirar. **Van atados**: el alcance tiene que ser el rango más la separación, o la tanda deja de caer separada |
+| `enemy.dinamiteroMargen` | Hasta dónde retrocede cuando lo tenés encima, por encima de `throwMinRange` |
 | `TRAIN_TYPES.<id>.sustituciones` (`data/train.js`) | Cada cuánto ese tren cambia un vagón por otro. Hoy: el estándar cambia ganado por armas la mitad de las veces |
 | `loot.strongboxTime` | Cuánto tardás en abrir una caja fuerte |
 | `alert.interval` / `alert.max` | Ritmo y tope de la gente de la locomotora |

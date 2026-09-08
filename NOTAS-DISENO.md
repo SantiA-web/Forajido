@@ -8955,6 +8955,126 @@ bolsas doradas del mismo vagón.
 
 ---
 
+## ✅ HECHA · El Dinamitero deja de ser un guardia con un extra y pasa a ser otra cosa
+
+*(Santi, apenas construido el vagón de armas: "el dinamitero NO tiene arma de
+fuego. Él lanza únicamente dinamitas. Y lanza de a dos a la vez y se tarda 5
+segundos en volver a tener dos en la mano otra vez")*
+
+Parece un ajuste de números y no lo es: **le cambia la clase de enemigo**.
+Hasta acá era un guardia común con un cartucho de más, o sea un guardia; ahora
+es un tipo con UNA sola herramienta, y de ahí sale todo lo demás — tiene una
+distancia donde es peligrosísimo, una donde no puede hacer nada, y una ventana
+de cinco segundos, cada cinco segundos, en la que está literalmente desarmado.
+
+### Lo que se rompía solo, y por eso hubo que decidir tres cosas más
+
+`doCombat` (systems/ai.js) preguntaba por la dinamita **una sola vez y con una
+condición muy estrecha**: sólo si te veía PARAPETADO, entre 62 y 150 px. Tenía
+todo el sentido — los cuatro del vagón blindado la usan para romper el empate
+de "yo detrás de un asiento, vos detrás de otro", y para todo lo demás te
+disparan y listo.
+
+**El Dinamitero no tiene ese "y listo".** Sacándole el arma sin tocar esa
+condición, contra un jugador que se mueve no hacía absolutamente nada: te
+miraba. La condición nunca fue sobre la dinamita — era sobre tener con qué
+elegir.
+
+| Decisión | Qué quedó |
+|---|---|
+| **¿Cuándo tira?** | Siempre que te vea en su ventana, estés como estés |
+| **¿Dónde caen las dos?** | Separadas, una a cada lado tuyo, sobre la línea que va de él a vos |
+| **¿Y de cerca?** | Retrocede a recuperar distancia (`retrocederParaTirar`) |
+| **¿Se ven los 5 s?** | Sí: la bandolera muestra los cartuchos que le quedan |
+
+**LAS DOS SEPARADAS SON LA DECISIÓN QUE IMPORTA.** Dos cartuchos en el mismo
+lugar cubren los mismos 136 px que uno solo y no agregan ninguna pregunta;
+separados cubren ~200 px —casi medio vagón— y, sobre todo, **te cierran los dos
+lados a la vez**. Deja de ser "¿me corro?" y pasa a ser "¿para dónde, y llego?".
+
+**EL RETROCESO NO ES PIEDAD, ES LO QUE HACE QUE ACERCARSE SIGA SIENDO LA
+RESPUESTA SIN SER GRATIS.** Su arma tiene un mínimo (62 px): más cerca no la
+tira porque se volaría él. Entre los 15 px del cuerpo a cuerpo y esos 62 hay
+una franja donde no puede hacer nada, así que sin esto la jugada óptima contra
+el enemigo más peligroso del vagón habría sido caminar hasta él y quedarse ahí.
+Ahora hay que perseguirlo — y mientras retrocede está indefenso y a la vista.
+Si está acorralado contra una pared, deja de retroceder y sigue el camino
+normal de combate, para no quedarse empujando.
+
+**Y NO SE CUBRE — esto no se habló, salió construyendo.** `consideraTirarDinamita`
+exige línea de tiro DESDE EL CUERPO, y con razón: `throwTarget` traza el vuelo
+del cartucho desde ahí, así que con un asiento en el medio la dinamita cae
+contra el asiento, a sus propios pies. Un Dinamitero parapetado **no puede
+tirar**, y como ahora tampoco dispara, se habría quedado escondido el resto del
+asalto sin hacer nada. Con `evitaCobertura` cae en la rama que ya usan el
+Pistolero y el civil encubierto: se planta a unos 92 px, cómodamente dentro de
+su ventana. Es lo que el personaje ES, además: el que tira algo por el aire
+necesita el pasillo libre.
+
+### 🐛 Tres cosas que se descubrieron midiendo, y una era una cuenta mal hecha
+
+**1. Los cinco segundos no eran cinco.** El ciclo medido daba **5,01 s** en vez
+de 5,7: el `throwCooldown` arrancaba al ENCENDER la mecha, así que los 0,7 s de
+windup corrían en paralelo con la recarga y los cartuchos volvían 4,3 s después
+de soltarlos. Lo que se pidió es literal —"tarda 5 segundos en volver a tener
+dos en la mano"— y eso se mide desde que las suelta, así que su reloj pasó a
+arrancar en `lanzarDinamita`. El del blindado se dejó donde estaba: su cadencia
+es un número afinado y moverlo de 5,0 a 5,7 sería cambiarle el balance de
+contrabando en un cambio que no es sobre él.
+
+**2. Las dos NO caían separadas.** Medido con el jugador a 100 px: caían a +4 y
+−40 (separación 44, no 100), **con una encima del jugador**. La causa era el
+alcance del cartucho (`throwRange`, 104 px): la de "más allá tuyo" quería caer
+a 150 px del que la tira y `throwTarget` la clampeaba a 104, o sea 4 px más
+allá del jugador. La separación sólo habría funcionado en una franja de dos
+píxeles. Se arregla con dos números propios: `dinamiteroAlcance` (150 — su brazo
+llega más lejos que el tuyo, que es lo justo para el que no tiene otra cosa) y
+`dinamiteroRangoMax` (100 — hasta dónde decide tirar, elegido para que
+100 + 50 de separación = 150 y **en toda su ventana útil le alcance**).
+
+**3. Y la cuenta de la separación estaba mal por un signo de igual.** Se había
+elegido 40 px "para que parado en el medio quedes en el BORDE de las dos, 1 de
+daño cada una". Pero 40 es exactamente `lethalRadius` y el chequeo es
+`d <= lethalRadius`, **inclusivo**: a 40 px clavados estás ADENTRO del radio
+letal de las dos. Medido: 3 + 3, muerto de una sola tanda. Con 50 la cuenta se
+cumple de verdad — `50 > 40` deja el centro afuera y `50 <= 68` te deja en el
+borde.
+
+### VERIFICADO POR CONSOLA
+
+- **No dispara: 0 balas en 30 s** de combate cuerpo a cuerpo con el jugador a
+  la vista y al descubierto. Y los dos disparos a ciegas (por puerta y por
+  techo) también quedan cortados.
+- **Tandas de 2, cada 5,72 s exactos** (0,70 → 6,42 → 12,13 → 17,85 → 23,57 →
+  29,28): **0,350 cartuchos por segundo, el doble** de lo que tira un guardia
+  del blindado (0,175).
+- **Dónde caen, en toda la ventana:** a 92 y 100 px, +50 y −50 (separación
+  100). A 62 y 80 px la tanda se aprieta (75 y 80) porque el clamp impide que
+  la de "este lado" le caiga a sus propios pies — que es justo lo que tiene que
+  pasar.
+- **La cuenta del daño, ahora real:** quieto en el medio de la tanda, **2 de 4**
+  (borde de las dos). Corriendo apenas se ven las mechas, **ileso, 4/4**.
+- **El retroceso:** pegado a 30 px, termina a 96 — adentro de su ventana útil
+  (62-100), sin oscilar.
+- **El guardia del blindado, intacto:** 1 cartucho, con arma, se cubre.
+- **En un asalto de verdad** (jugador caminando y disparando, todos los demás
+  guardias vivos): 6 tandas en 45 s, cada 5,7 s, a distancias de 71 a 100 px —
+  toda su ventana, sin quedarse trabado en la recarga ni oscilar con el
+  retroceso.
+- **Corrida completa de 60 s con todo encendido** (tormenta + redada + alerta
+  inicial + puerta bloqueada + comportamientos + pasajero rico + caja oculta +
+  vagón de armas, 26 guardias): **sin errores ni avisos**.
+
+**MIRADO CON `foto.ps1`:** la bandolera llena (dos cartuchos rojos con su banda
+clara) y vacía (dos huecos oscuros) se distinguen de un vistazo, y se agregó la
+banda clara justamente porque **en combate el cuerpo del guardia es rojo** y los
+cartuchos también — el rojo sobre rojo era lo más difícil de leer justo cuando
+más importa saber si le quedan.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

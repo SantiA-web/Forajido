@@ -116,7 +116,59 @@ export const GUARD_TYPES = {
     name: 'Dinamitero',
     health: 2,
     look: 'bandolera',
-    dynamite: 1,
+
+    /**
+     * DOS EN LA MANO, NO UNA — y son TODO lo que tiene.
+     *
+     * *(Santi, después de verlo construido: "el dinamitero NO tiene arma de
+     * fuego. Él lanza únicamente dinamitas. Y lanza de a dos a la vez y se
+     * tarda 5 segundos en volver a tener dos en la mano otra vez")*
+     *
+     * LO QUE ESTO CAMBIA NO ES UN NÚMERO, ES QUÉ CLASE DE ENEMIGO ES. Un
+     * guardia con revólver que además tira dinamita es un guardia con un
+     * extra; éste es un tipo con UNA sola herramienta, y de ahí sale todo lo
+     * demás: tiene una distancia donde es peligrosísimo (62-150 px), una
+     * donde no puede hacer nada (pegado, ver `retrocederParaTirar` en
+     * systems/ai.js) y una ventana de cinco segundos, cada cinco segundos, en
+     * la que está literalmente desarmado.
+     *
+     * Los dos cartuchos NO caen en el mismo lugar (ver `puntosDeTanda`): dos
+     * juntos serían una dinamita más grande y no agregarían ninguna decisión.
+     * Separados te cierran el pasillo de los dos lados, y ahí está la jugada.
+     */
+    dynamite: 2,
+
+    /**
+     * NO DISPARA NUNCA. Lo leen `tryFire` y los dos disparos a ciegas
+     * (systems/ai.js): con esto puesto, ninguno de los tres llega a sacar el
+     * arma — y no es que apunte y no dispare, directamente no lo intenta. Un
+     * guardia que levanta el arma y no tira sería ilegible; el aviso de este
+     * tipo es otro, la mecha encendida.
+     */
+    sinArmaDeFuego: true,
+
+    /**
+     * TAMPOCO SE CUBRE — y esto NO es una elección de sabor, es una
+     * consecuencia forzada de lo de arriba, encontrada al construirlo.
+     *
+     * `consideraTirarDinamita` (systems/ai.js) exige línea de tiro DESDE EL
+     * CUERPO del guardia, y con razón: `throwTarget` traza el vuelo del
+     * cartucho desde ahí, así que si hay un asiento en el medio la dinamita
+     * cae contra el asiento — a sus propios pies. O sea que un Dinamitero
+     * parapetado no puede tirar. Y como ahora tampoco dispara, se quedaría
+     * escondido detrás de un asiento el resto del asalto sin hacer
+     * absolutamente nada.
+     *
+     * Con esto puesto cae en la rama de "sin cobertura" que ya usan el
+     * Pistolero y el civil encubierto: se planta a unos 92 px, que está
+     * cómodamente dentro de su rango útil (62-150). Y le queda la misma
+     * válvula que al Pistolero — si te pierde de vista un rato
+     * (`descubiertoBloqueoMax`), se cubre como cualquiera hasta volver a verte.
+     *
+     * Y es lo que el personaje ES: el que tira algo por el aire necesita el
+     * pasillo libre. Parapetarse le tapa el tiro a él mismo.
+     */
+    evitaCobertura: true,
   },
 
   /**

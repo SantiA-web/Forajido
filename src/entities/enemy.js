@@ -192,6 +192,26 @@ export function createEnemy(x, y, options = {}) {
      * comimos con `noiseWagons` en entities/player.js.
      */
     dynamite: options.dynamite ?? tipo.dynamite ?? 0,
+
+    /**
+     * CUÁNTAS LLEVA CUANDO ESTÁ LLENO. Hasta acá no hacía falta —nadie
+     * recargaba, la dinamita era un cartucho y se acababa— pero el Dinamitero
+     * repone las suyas cada `CONFIG.enemy.dinamiteroRecarga` segundos (ver
+     * `updateEnemy`, systems/ai.js), así que hay que saber hasta dónde. Y lo
+     * usa también el dibujo: la bandolera muestra los HUECOS, no sólo lo que
+     * queda, que es lo que convierte la recarga en algo que se puede mirar.
+     */
+    dynamiteMax: options.dynamite ?? tipo.dynamite ?? 0,
+
+    /**
+     * NO TIENE ARMA DE FUEGO (hoy: el Dinamitero, ver data/guards.js). Lo leen
+     * `tryFire` y los dos disparos a ciegas de systems/ai.js, y decide además
+     * dos cosas que sólo tienen sentido para el que no tiene nada más: que
+     * tire dinamita aunque NO estés parapetado, y que retroceda en vez de
+     * plantarse cuando lo tenés encima.
+     */
+    sinArmaDeFuego: tipo.sinArmaDeFuego || false,
+
     throwWindup: 0,
     throwCooldown: 0,
 
@@ -473,8 +493,40 @@ export function drawEnemy(r, e) {
    */
   if (e.look === 'bandolera') {
     r.rect(e.x - e.hw, e.y - 1, e.hw * 2, 2, '#6b4a2e');
-    for (let i = 0; i < 3; i++) {
-      r.rect(e.x - e.hw + 1 + i * 3, e.y - 1, 1, 2, col.dynamite);
+
+    /**
+     * LOS CARTUCHOS QUE LE QUEDAN, no tres fijos de adorno.
+     *
+     * Es la única señal de la ventana de cinco segundos en la que este tipo
+     * está desarmado (`CONFIG.enemy.dinamiteroRecarga`). Sin esto la ventana
+     * existiría igual y no se podría aprovechar — que es lo mismo que no
+     * existir. La regla de siempre: lo que se puede mostrar no se escribe.
+     *
+     * Los huecos se dibujan (en un marrón muerto) en vez de simplemente no
+     * dibujarse: **la bandolera vacía tiene que leerse como vacía, no como
+     * ausente**. Si el cartucho desapareciera sin dejar rastro, un Dinamitero
+     * recargando se vería igual que un guardia cualquiera.
+     *
+     * Y son de 2x4 y no de 1x2 como antes: a esta escala un píxel suelto no
+     * se ve — la misma lección que las mechas del cajón de pólvora, que
+     * tampoco existían en pantalla hasta que se engordaron.
+     */
+    const total = Math.max(1, e.dynamiteMax || 1);
+    const paso = 3;
+    const ancho = total * paso - 1;
+    for (let i = 0; i < total; i++) {
+      const x = e.x - ancho / 2 + i * paso;
+      const cargado = i < e.dynamite;
+      r.rect(x, e.y - 2, 2, 4, cargado ? col.dynamite : '#33291f');
+      /**
+       * La banda clara del cartucho, arriba. No es adorno: EN COMBATE EL
+       * CUERPO ES ROJO (`enemyAlert`) y los cartuchos también, así que
+       * justo cuando más importa saber si le quedan, el rojo sobre rojo es
+       * lo más difícil de leer. Un píxel claro los despega, y de paso es
+       * exactamente la misma marca que tienen el cartucho tirado en el piso
+       * y los del cajón de pólvora.
+       */
+      if (cargado) r.rect(x, e.y - 2, 2, 1, col.dynamiteBand);
     }
   }
 

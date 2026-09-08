@@ -29,6 +29,14 @@ salga es la jugada del vagón. Los tres guardias de adentro son comunes a
 propósito (`sinVariantes` en la plantilla): uno con dinamita ahí adentro volaría
 todo en su primer ataque y no habría nada que decidir.
 
+**El Dinamitero NO tiene arma de fuego** (segunda vuelta de la misma sesión):
+sólo lanza dinamita, **de a dos a la vez y a los dos lados tuyos**, y tarda 5 s
+en volver a tener las dos en la mano — cinco segundos en los que está desarmado
+del todo, y se ve porque los cartuchos de la bandolera se dibujan según lo que
+le queda. No se cubre nunca (parapetado se taparía el tiro a sí mismo) y si te
+le pegás retrocede, porque su cartucho tiene un mínimo. Parado justo en el medio
+de una tanda perdés 2 de 4 vidas; corriendo apenas ves las mechas, ninguna.
+
 ### Lo que hay que mirar jugándolo
 
 - **¿La cadena se lee?** Está escalonada 0,35 s justamente para que se vea
@@ -38,6 +46,12 @@ todo en su primer ataque y no habría nada que decidir.
   siguiente.
 - **¿El Dinamitero se nota, y se le puede tomar el ritmo?** Los números dicen
   que sí (dos vueltas y media por asalto), pero eso es cálculo, no juego.
+- **¿Se ve la bandolera vacía?** Es toda la señal de la ventana de 5 s en la
+  que está desarmado. Si no se lee jugando, la ventana no existe.
+- **¿Las dos dinamitas se leen como dos, y como "para dónde salgo"?** Es la
+  pregunta que reemplazó a "¿me corro?".
+- **¿0,35 cartuchos por segundo es mucho?** Es el doble de lo que tira un
+  guardia del blindado. La perilla es `CONFIG.enemy.dinamiteroRecarga`.
 - **¿El tope de 3 cartuchos cambia algo de verdad** en el vagón blindado?
 - **¿Volar el vagón se siente una decisión o un accidente?** Si vuela, ese
   tren se quedó sin dónde reponer.

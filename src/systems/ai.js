@@ -94,6 +94,27 @@ export function updateEnemy(e, dt, world) {
   } else {
     e.throwCooldown = Math.max(0, (e.throwCooldown || 0) - dt);
 
+    /**
+     * EL DINAMITERO SE REPONE SOLO (ver CONFIG.enemy.dinamiteroRecarga).
+     *
+     * *(Santi: "se tarda 5 segundos en volver a tener dos en la mano otra
+     * vez")*
+     *
+     * Va acá, en el update general y no en la rama de combate, para que la
+     * recarga corra SIEMPRE: si sólo corriera peleando, un Dinamitero que te
+     * pierde de vista con la bandolera vacía se quedaría vacío para siempre y
+     * la próxima vez que te cruzara sería inofensivo. El reloj es suyo, no de
+     * la pelea.
+     *
+     * Reusa `throwCooldown`, que ya existía y ya se descuenta acá arriba: lo
+     * único distinto es que al llegar a cero, además de habilitar el
+     * lanzamiento, le devuelve los cartuchos. Y como arranca en 0, nace con
+     * las dos en la mano.
+     */
+    if (e.sinArmaDeFuego && e.throwCooldown <= 0 && e.dynamite < e.dynamiteMax) {
+      e.dynamite = e.dynamiteMax;
+    }
+
     // Antes que cualquier otra cosa: si hay una mecha encendida al lado,
     // correr. Ningún plan sobrevive a una dinamita a dos metros.
     const peligro = explosivoPeligroso(e, world);
@@ -528,34 +549,180 @@ function consideraTirarDinamita(e, dt, world) {
   }
 
   if (e.dynamite <= 0 || e.throwCooldown > 0) return false;
-  if (!p.alive || !isHidden(p)) return false;
+  if (!p.alive) return false;
+
+  /**
+   * "SÓLO SI TE VE PARAPETADO" ES LA REGLA DEL QUE TIENE OTRA ARMA.
+   *
+   * Los cuatro del vagón blindado la usan para UNA cosa concreta: romper el
+   * empate de "yo detrás de un asiento, vos detrás de otro". Si te estás
+   * moviendo no la necesitan — te disparan y listo.
+   *
+   * EL DINAMITERO NO TIENE ESE "Y LISTO". Con esta condición puesta, un tipo
+   * sin arma de fuego se quedaría mirándote sin hacer nada cada vez que no
+   * estuvieras parapetado, que es casi todo el asalto. La condición no era
+   * sobre la dinamita: era sobre tener con qué elegir.
+   */
+  if (!e.sinArmaDeFuego && !isHidden(p)) return false;
 
   const dist = distance(e.x, e.y, p.x, p.y);
-  if (dist < c.throwMinRange || dist > c.throwMaxRange) return false;
+  // El Dinamitero tiene su propia ventana, más corta: es la que le garantiza
+  // poder separar la tanda entera (ver CONFIG.enemy.dinamiteroRangoMax).
+  const maximo = e.sinArmaDeFuego ? c.dinamiteroRangoMax : c.throwMaxRange;
+  if (dist < c.throwMinRange || dist > maximo) return false;
   if (!hasLineOfSight(e.x, e.y, p.x, p.y, world.map.blocksBulletsAt)) return false;
 
   e.throwWindup = c.throwWindup;
-  e.throwCooldown = c.throwCooldown;
+
+  /**
+   * EL RELOJ DEL BLINDADO ARRANCA ACÁ, AL ENCENDER — y el del Dinamitero NO.
+   *
+   * 🐛 Al principio los dos arrancaban acá y el ciclo medido daba 5,01 s en
+   * vez de 5,7: el `throwWindup` (0,7 s) corría EN PARALELO con la recarga, o
+   * sea que recuperaba los cartuchos 4,3 s después de soltarlos y no 5. Lo que
+   * Santi pidió es literal —*"tarda 5 segundos en volver a tener dos en la
+   * mano"*— y eso se mide desde que las suelta, así que su reloj arranca en
+   * `lanzarDinamita`.
+   *
+   * Para el del blindado se deja donde estaba: su cadencia es un número ya
+   * afinado y moverlo de 5,0 a 5,7 sería cambiarle el balance de contrabando,
+   * en un cambio que no es sobre él.
+   */
+  if (!e.sinArmaDeFuego) e.throwCooldown = c.throwCooldown;
   world.audio.play('fuse');
+  return true;
+}
+
+/**
+ * EL QUE NO TIENE ARMA DE FUEGO NO PELEA DE CERCA: RECUPERA SU DISTANCIA.
+ *
+ * *(decidido con Santi al sacarle el revólver al Dinamitero)*
+ *
+ * Su arma tiene un mínimo (`throwMinRange`, 62 px): más cerca no la tira
+ * porque se volaría él. Un guardia normal no tiene ese problema —de cerca
+ * dispara, y más de cerca te caga a golpes— pero para éste, entre los 15 px
+ * del cuerpo a cuerpo y los 62 de la dinamita hay una franja donde no puede
+ * hacer NADA. Sin esto, pegársele lo apagaba del todo: la respuesta óptima al
+ * enemigo más peligroso del vagón habría sido caminar hasta él y quedarse ahí.
+ *
+ * Así "acercarse" sigue siendo la respuesta correcta —es lo que lo anula— pero
+ * deja de ser gratis: hay que perseguirlo. Y mientras retrocede está
+ * indefenso y a la vista, que es tu ventana para resolverlo.
+ *
+ * RETROCEDE MIRÁNDOTE, no de espaldas: se está sacando de encima un problema,
+ * no huyendo. Es la misma lectura que el repliegue del herido.
+ *
+ * Y SI ESTÁ ACORRALADO (una pared atrás), devuelve `false` y sigue el camino
+ * normal de combate — que lo mandará a cubrirse o a los golpes. Sin eso se
+ * quedaría empujando la pared para siempre, que es peor que la debilidad que
+ * este código viene a darle.
+ */
+function retrocederParaTirar(e, dt, world) {
+  const c = CONFIG.enemy;
+  const p = world.player;
+  if (!p.alive) return false;
+
+  const dist = distance(e.x, e.y, p.x, p.y);
+  if (dist >= c.throwMinRange + c.dinamiteroMargen) return false;
+
+  const ang = Math.atan2(e.y - p.y, e.x - p.x);
+  const movido = moveToward(
+    e, e.x + Math.cos(ang) * 24, e.y + Math.sin(ang) * 24, e.ai.speed, dt, world.map
+  );
+  if (movido < 0.2) return false;
+
+  turnTowards(e, Math.atan2(p.y - e.y, p.x - e.x), dt, 8);
   return true;
 }
 
 function lanzarDinamita(e, world) {
   const tipo = EXPLOSIVES[DEFAULT_EXPLOSIVE];
+  const c = CONFIG.enemy;
   const p = world.player;
 
-  e.dynamite -= 1;
+  // El del blindado tira UNA; el Dinamitero, la tanda entera que tenga en la
+  // mano (ver `dinamiteroPorTanda`).
+  const cuantas = e.sinArmaDeFuego
+    ? Math.min(e.dynamite, c.dinamiteroPorTanda)
+    : 1;
 
-  const destino = throwTarget(e.x, e.y, p.x, p.y, tipo.throwRange, world.map);
-  world.spawnExplosive({
-    x: e.x, y: e.y,
-    targetX: destino.x, targetY: destino.y,
-    typeId: tipo.id, owner: 'enemy',
-    // La tira con casi toda la mecha: te da tiempo de salir de ahí. Un guardia
-    // que la cocina hasta el final sería imposible de leer y no se podría jugar.
-    fuse: tipo.fuse * 0.72,
-  });
+  e.dynamite -= cuantas;
+
+  // Los cinco segundos se cuentan desde que las SUELTA, que es cuando de
+  // verdad se queda con las manos vacías. Ver la nota en
+  // `consideraTirarDinamita`.
+  if (e.sinArmaDeFuego) e.throwCooldown = c.dinamiteroRecarga;
+
+  for (const destino of puntosDeTanda(e, p, cuantas, tipo, world)) {
+    world.spawnExplosive({
+      x: e.x, y: e.y,
+      targetX: destino.x, targetY: destino.y,
+      typeId: tipo.id, owner: 'enemy',
+      // La tira con casi toda la mecha: te da tiempo de salir de ahí. Un
+      // guardia que la cocina hasta el final sería imposible de leer y no se
+      // podría jugar.
+      fuse: tipo.fuse * 0.72,
+    });
+  }
   world.audio.play('swing');
+}
+
+/**
+ * DÓNDE CAE CADA CARTUCHO DE UNA TANDA.
+ *
+ * Con una sola, donde siempre: a los pies del jugador.
+ *
+ * CON DOS, UNA A CADA LADO, sobre la línea que va del que las tira al jugador
+ * — o sea a lo largo del pasillo, que es la única dirección en la que se puede
+ * correr adentro de un vagón.
+ *
+ * *(Santi eligió esto sobre "las dos al mismo punto" y "una a los pies y otra
+ * adelantada")*
+ *
+ * ES LO ÚNICO QUE HACE QUE DOS SIGNIFIQUE ALGO DISTINTO DE UNA MÁS GRANDE. Dos
+ * cartuchos en el mismo lugar cubren los mismos 136 px que uno solo y no
+ * agregan ninguna decisión; separados 40 px para cada lado cubren ~200 px —
+ * casi medio vagón— y, sobre todo, **te cierran los dos lados a la vez**. La
+ * pregunta deja de ser "¿me corro?" y pasa a ser "¿para dónde, y llego?".
+ *
+ * LA CUENTA QUE LO HACE JUSTO: parado exactamente en el medio quedás a 40 px
+ * de las dos, o sea en el BORDE de ambas (1 de daño cada una, 2 de tus 4) y no
+ * en el centro de ninguna. Quedarse quieto duele; lo que mata es correr hacia
+ * una de las dos sin mirar.
+ *
+ * 🛡️ Y NINGUNA PUEDE CAER ENCIMA DEL QUE LAS TIRA. La de "este lado" cae entre
+ * él y vos, así que con el jugador cerca del mínimo (62 px) quedaría a 22 px
+ * de sus propios pies. `throwMinRange * 0.8` la empuja hasta una distancia
+ * donde el estruendo ya no lo alcanza — no por piedad, sino porque un enemigo
+ * que se suicida solo convierte su ataque en un regalo.
+ */
+function puntosDeTanda(e, p, cuantas, tipo, world) {
+  if (cuantas <= 1) {
+    return [throwTarget(e.x, e.y, p.x, p.y, tipo.throwRange, world.map)];
+  }
+
+  const c = CONFIG.enemy;
+  // Su brazo llega más lejos que el tuyo, y sin eso la separación no entra:
+  // ver la nota de `dinamiteroAlcance` en data/config.js.
+  const alcance = c.dinamiteroAlcance;
+  const ang = Math.atan2(p.y - e.y, p.x - e.x);
+  const minimo = c.throwMinRange * 0.8;
+  const puntos = [];
+
+  for (let i = 0; i < cuantas; i++) {
+    // Alterna un lado y el otro: +1 (más allá tuyo), -1 (entre él y vos).
+    const lado = i % 2 === 0 ? 1 : -1;
+    const paso = c.dinamiteroSeparacion * Math.ceil((i + 1) / 2);
+    let tx = p.x + Math.cos(ang) * paso * lado;
+    let ty = p.y + Math.sin(ang) * paso * lado;
+
+    if (distance(e.x, e.y, tx, ty) < minimo) {
+      tx = e.x + Math.cos(ang) * minimo;
+      ty = e.y + Math.sin(ang) * minimo;
+    }
+    puntos.push(throwTarget(e.x, e.y, tx, ty, alcance, world.map));
+  }
+  return puntos;
 }
 
 /**
@@ -1688,7 +1855,15 @@ export function doCombat(e, dt, world) {
   }
   if (e.meleeWindup > 0) e.meleeWindup = 0;
 
-  // ¿Te tiene parapetado y tiene con qué sacarte de ahí? Entonces la dinamita.
+  /**
+   * EL QUE SÓLO TIENE DINAMITA SE SACA DE ENCIMA AL QUE SE LE PEGÓ, antes de
+   * cualquier otra cosa: en la franja entre el cuerpo a cuerpo (15 px) y el
+   * mínimo de su arma (62) no puede hacer nada. Ver `retrocederParaTirar`.
+   */
+  if (e.sinArmaDeFuego && retrocederParaTirar(e, dt, world)) return;
+
+  // ¿Tiene con qué sacarte de ahí? Entonces la dinamita. (El del blindado sólo
+  // si te ve parapetado; el Dinamitero, siempre que pueda: no tiene otra cosa.)
   if (consideraTirarDinamita(e, dt, world)) return;
 
   const aimAt = e.lastSeen || player;
@@ -2119,6 +2294,18 @@ function tryFire(e, dt, world, aimAt, enPanico) {
    */
   const c = e.ai;
 
+  /**
+   * EL QUE NO TIENE ARMA DE FUEGO NO LLEGA NI A SACARLA (hoy: el Dinamitero).
+   *
+   * Se corta ACÁ y no en `fire()` a propósito: `fire` es el disparo en sí,
+   * pero `tryFire` es la DECISIÓN de disparar, y con ella se van también el
+   * `aimTimer` y la ráfaga. Cortando más abajo, el guardia se plantaría a
+   * apuntar y no saldría ninguna bala — un tipo levantando el arma sin
+   * disparar es la señal más engañosa que podría tener el juego, justo en el
+   * lugar donde todo se lee por el cuerpo.
+   */
+  if (e.sinArmaDeFuego) return;
+
   if (e.aimTimer > 0) {
     e.aimTimer -= dt;
     if (e.aimTimer <= 0) {
@@ -2225,6 +2412,9 @@ function dispararACiegasPorPuerta(e, dt, world) {
   const c = CONFIG.enemy;
   const target = e.lastSeen;
   if (!target) return;
+  // Sin arma no hay ráfaga a ciegas: la dinamita no se tira contra una puerta
+  // cerrada esperando que pase por abajo.
+  if (e.sinArmaDeFuego) return;
 
   e.doorFireCooldown = Math.max(0, (e.doorFireCooldown || 0) - dt);
 
@@ -2289,6 +2479,9 @@ function dispararACiegasPorTecho(e, dt, world) {
   const c = CONFIG.enemy;
   const p = world.player;
   if (!p.enTecho) return;
+  // Ídem: el que no tiene arma no le tira al techo. Y encima no podría —
+  // una dinamita hacia arriba le caería en la cabeza.
+  if (e.sinArmaDeFuego) return;
 
   const target = e.lastSeen;
   if (!target) return;

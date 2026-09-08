@@ -62,6 +62,20 @@ export const T = {
     teLlevoPuesto: '¡TE LLEVÓ PUESTO!',
     tranquera: '[E] ABRIR EL CORRAL',
     tranqueraAbierta: '¡SE SUELTA EL GANADO!',
+
+    /**
+     * EL CAJÓN DE PÓLVORA (Fase 6a, el vagón de armas).
+     *
+     * "UN CARTUCHO", en singular, y no "dinamita": es exactamente lo que te
+     * llevás — uno — y el jugador ya cuenta cartuchos en el HUD. Y el aviso de
+     * lleno dice POR QUÉ no pasa nada, en vez de no decir nada: el cartel
+     * sobre tu cabeza siempre tiene que decir qué hace la [E] justo ahora,
+     * incluso cuando la respuesta es "nada".
+     */
+    cartucho: '[E] AGARRAR UN CARTUCHO',
+    cartuchoLleno: 'NO TE ENTRA OTRO CARTUCHO',
+    cartuchoTomado: '+1 DINAMITA',
+
     trenAcelera: '¡EL TREN ACELERA!',
     trenFrena: '¡FRENA DE GOLPE!',
   },
@@ -148,6 +162,9 @@ export const T = {
       asiento: 'DEBAJO DE UN ASIENTO',
       mesa: 'DEBAJO DE UNA MESA',
       corral: 'JUNTO AL CORRAL',
+      // Fase 6a: el vagón de armas. El mejor escondite del tren, y el único
+      // donde encontrarla puede costarte el vagón entero.
+      cajones: 'ENTRE LOS CAJONES',
     },
   },
 

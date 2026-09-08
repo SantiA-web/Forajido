@@ -404,7 +404,9 @@ y otro. Lo que el Smith gana en cadencia lo paga en pulso.
 
 ### La dinamita (`Q` para encender, clic izquierdo para lanzar)
 
-Llevás **dos cartuchos** por asalto.
+Salís con **dos cartuchos**, y **te pueden entrar hasta tres**: el tercero se
+consigue arriba del tren, en el vagón de armas (más abajo). Es lo único del
+juego que se repone durante un asalto.
 
 **La mecha corre desde que apretás `Q`, no desde que la tirás.** Tres segundos.
 Ahí está todo el juego de esta arma:
@@ -550,6 +552,11 @@ Seis vagones, mezclados en cada asalto: dos de pasajeros, uno de comedor, uno
 de correo, uno de ganado y uno blindado. Colgando de la parte de atrás está la
 **plataforma trasera**.
 
+**Y la mitad de las veces el de ganado no viaja: viaja el de armas** (ver "El
+vagón de armas", más abajo). Es lo primero que cambia de qué está HECHO el
+tren y no sólo quién va arriba — y lo único de todo eso que **se ve desde el
+galope**, antes de subir.
+
 **El caballo es uno solo y se queda donde lo dejaste.** Antes de subir elegís
 hasta dónde adelantarlo: la cola, el enganche entre el vagón 1 y el 2, o el del
 2 y el 3. **Ahí subís vos, y ese punto es la única forma de bajarse del tren.**
@@ -559,7 +566,45 @@ esperándote: ir para allá es meterse en un callejón sin salida.
 **No miden todos lo mismo**, y es a propósito: si todos midieran igual, el tren
 no tendría ritmo — cruzar el de ganado (una bolsa, un guardia) costaría lo
 mismo que cruzar el blindado. Anchos: pasajeros 40 baldosas, comedor 34,
-correo 32, blindado 30, ganado 24.
+correo 32, blindado 30, **armas 30**, ganado 24.
+
+### El vagón de armas: lo que te sirve es lo que te puede matar
+
+**Uno de cada dos trenes estándar cambia el vagón de ganado por uno de armas.**
+Nunca es el primero, y desde afuera se ve cuál te tocó.
+
+Adentro hay **tres cajones de pólvora**, y sirven para dos cosas opuestas:
+
+| | |
+|---|---|
+| **`[E]` sostenido** | Te llevás **un cartucho de dinamita**. Es el único lugar del juego donde se repone algo |
+| **Tres balazos** | Se prende, con una mecha corta — y **arrastra a los otros dos** |
+
+**El tope es tres cartuchos.** Si llegás con la dinamita llena, el cajón no se
+abre: lo que te queda es una bomba puesta en el mapa.
+
+**Y lo prende CUALQUIER bala, no sólo la tuya.** Un guardia que te tira y falla
+también puede volar el vagón. Por eso éste no es un lugar donde convenga
+tirotear: los tres cajones aguantan tres tiros cada uno, así que una bala
+perdida no alcanza, pero un tiroteo sostenido ahí adentro sí.
+
+**La cadena avanza, no estalla junta.** Cada cajón prende al siguiente unas
+décimas después, del más cercano al estruendo al más lejano, así que **se puede
+correr mientras llega** — pero hay que salir para el lado donde ya no quedan
+cajones. Correr a lo largo de la cadena es correr hacia el próximo.
+
+Lleva cinco bolsas repartidas y **ninguna caja fuerte**: su tensión es otra.
+
+**Y trae un tipo con dinamita dando vueltas.** El *Dinamitero* no se queda
+adentro: hace una ronda entre este vagón y los dos de al lado, y tarda casi un
+minuto en dar la vuelta entera. Cuando está adentro y te ve parapetado, te tira
+un cartucho — y eso vuela los tres cajones de una. **Esperar a que salga es una
+jugada**, y es la primera vez que quedarse quieto y mirar resuelve algo en este
+juego.
+
+> Si el vagón vuela, ese tren se quedó sin dónde reponer. Volarlo para sacarte
+> de encima a los guardias y perder los tres cartuchos es una decisión, no un
+> accidente.
 
 ### La escolta
 
@@ -778,10 +823,12 @@ VAGÓN 3: DEBAJO DE UNA MESA
 
 Y eso es todo lo que te llevás: **la caja no se marca en pantalla**. Tenés
 que ir hasta ese vagón y buscarla — aparece recién cuando la tenés al lado,
-como cualquier cosa al alcance de la mano. Los escondites son cuatro y
+como cualquier cosa al alcance de la mano. Los escondites son cinco y
 dependen del vagón: debajo de una ventana o debajo de un asiento en los de
 pasajeros, debajo de una mesa en el comedor y el correo, junto al corral en
-el de ganado.
+el de ganado, y **entre los cajones** en el de armas — que es el mejor lugar
+del tren para esconder algo, y el único donde ir a buscarla puede costarte el
+vagón entero.
 
 Vale más que una caja normal ($400-900 contra $150-600) y tarda más en
 abrirse (8 segundos contra 6,5): estaba escondida por algo.
@@ -823,17 +870,19 @@ en `data/modifiers.js`, no escribir código.
   que te deja no es un enemigo más — es la duda, para todo el resto de la
   partida.
 
-- **El dinamitero.** Un guardia común que además lleva un cartucho y te lo
-  tira cuando te ve parapetado, igual que los del blindado. Espera al vagón
-  de armas, que todavía no existe.
-
 > **Por qué están apagados.** El pistolero y el civil encubierto se jugaron y
 > se afinaron (de ahí salieron dos bugs de verdad: la cadencia del pistolero
 > que no se aplicaba, y que se quedaba clavado cuando un compañero le tapaba
 > el tiro), y quedaron en reserva para volver a prenderlos cuando el resto
-> del sistema de variedad esté armado. El dinamitero nunca llegó a salir:
-> depende del vagón de armas. Son llaves, no amputaciones — la misma decisión
-> que ya se tomó con "Alta vigilancia".
+> del sistema de variedad esté armado. Son llaves, no amputaciones — la misma
+> decisión que ya se tomó con "Alta vigilancia".
+
+**El dinamitero, en cambio, ya está en el juego** — pero no como un sorteo
+suelto, sino como un tipo con nombre y lugar: hay UNO por tren que traiga el
+vagón de armas, dando vueltas por ahí (ver "El vagón de armas", más arriba).
+Repartir además dos o tres al azar por el tren fue justamente lo que se
+descartó: si cualquiera puede tener dinamita, mirar dónde está el que la tiene
+deja de servir para nada.
 
 ### Las puertas
 
@@ -1447,6 +1496,11 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `alert.wagonRadius` | A cuántos vagones llega el GRITO de un guardia |
 | `weapons.*.noiseWagons` | A cuántos vagones llega un TIRO de esa arma |
 | `explosives.dinamita.noiseWagons` | A cuántos vagones **retumba una explosión** (y los deja en rojo, no en amarillo) |
+| `player.dynamiteMax` | **Cuántos cartuchos te entran encima** (salís con `player.dynamite`, y el vagón de armas te sube hasta acá) |
+| `explosives.cajonPolvora.vida` | **Cuántos tiros aguanta un cajón de pólvora** antes de prenderse. Es la perilla que decide si el vagón de armas es una lotería o una decisión |
+| `explosives.cajonPolvora.fuse` / `cadena` | La mecha del cajón, y cada cuánto prende al siguiente. **Los dos números que deciden si se puede escapar de la cadena** |
+| `explosives.cajonPolvora.recarga` | Cuántos cartuchos te da abrir uno |
+| `TRAIN_TYPES.<id>.sustituciones` (`data/train.js`) | Cada cuánto ese tren cambia un vagón por otro. Hoy: el estándar cambia ganado por armas la mitad de las veces |
 | `loot.strongboxTime` | Cuánto tardás en abrir una caja fuerte |
 | `alert.interval` / `alert.max` | Ritmo y tope de la gente de la locomotora |
 | `raid.duration` | Los segundos del asalto entero |

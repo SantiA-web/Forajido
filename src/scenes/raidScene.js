@@ -30,6 +30,7 @@ import {
 import {
   createRodante, updateRodante, drawRodante, TIPOS_RODANTE,
 } from '../entities/rodante.js';
+import { updateCajon, drawCajon } from '../entities/cajon.js';
 import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
@@ -44,6 +45,7 @@ import {
 } from '../entities/passenger.js';
 import { createBullet, drawBullet } from '../entities/bullet.js';
 import { createExplosive, drawExplosive } from '../entities/explosive.js';
+import { EXPLOSIVES } from '../data/explosives.js';
 import { drawRider } from '../entities/rider.js';
 import { updateRiders, createRiderWatch } from '../systems/riders.js';
 import { maxJinetesPara } from '../data/riders.js';
@@ -70,6 +72,8 @@ export function createRaidScene(services) {
   let techObstacles, techoBajarProgress, techoSpawnTimer;
   let rodantes, rodanteTimer, rodanteRafaga, rodanteRafagaTimer;
   let tranqueras, estampidas, estampidaSiguienteId;
+  // Los cajones de pólvora del vagón de armas (Fase 6a, entities/cajon.js).
+  let cajones;
   let traqueteoTimer, traqueteoFase, traqueteoFaseTimer, traqueteoVariante, traqueteoSwayX;
   let traqueteoVelMult = 1;
   let timeLeft, duracionInicial, collected, kills, civilians, amenazados, escapeProgress;
@@ -132,6 +136,8 @@ export function createRaidScene(services) {
     estampidas = [];
     estampidaSiguienteId = 0;
 
+    cajones = train.cajones || [];
+
     traqueteoTimer = train.traqueteoCada || 0;
     traqueteoFase = null;
     traqueteoFaseTimer = 0;
@@ -187,6 +193,13 @@ export function createRaidScene(services) {
       // Los barriles sueltos: `systems/combat.js` los necesita para que tus
       // balas les peguen.
       get rodantes() { return rodantes; },
+      /**
+       * LOS CAJONES DE PÓLVORA (Fase 6a). Los leen dos sistemas: `combat.js`
+       * (las balas les pegan y los prenden) y `explosives.js` (una explosión
+       * adentro del vagón los encadena). Va como getter, igual que los
+       * barriles, porque la lista se reemplaza entera en cada `enter`.
+       */
+      get cajones() { return cajones; },
       // El sacudón del tren traicionero (CONFIG.traqueteo): cuánto se le suma
       // a la dispersión de CUALQUIERA que dispare mientras dura el efecto.
       // 0 el resto del tiempo, y siempre 0 si este tren no tiene el sistema.
@@ -1508,6 +1521,59 @@ export function createRaidScene(services) {
   }
 
   /**
+   * LOS CAJONES DE PÓLVORA (Fase 6a, entities/cajon.js).
+   *
+   * Casi no tienen update: no se mueven ni piensan. Lo único que corre es el
+   * destello del golpe, y sacar de la lista a los que ya se prendieron —
+   * `prenderCajon` (systems/explosives.js) los marca `alive: false` y en ese
+   * mismo momento nace el explosivo que los reemplaza.
+   */
+  function updateCajones(dt) {
+    for (const c of cajones) updateCajon(c, dt);
+    for (let i = cajones.length - 1; i >= 0; i--) {
+      if (!cajones[i].alive) cajones.splice(i, 1);
+    }
+  }
+
+  /** El cajón de pólvora al alcance de la mano, si estás en el vagón de armas. */
+  function cajonCerca() {
+    let cerca = null;
+    let mejor = CONFIG.loot.radius + 6;
+    for (const c of cajones) {
+      if (!c.alive) continue;
+      const d = distance(player.x, player.y, c.x, c.y);
+      if (d < mejor) { mejor = d; cerca = c; }
+    }
+    return cerca;
+  }
+
+  /**
+   * AGARRAR UN CARTUCHO — el único lugar del juego donde se repone algo.
+   *
+   * *(Santi: "si tenés dos de dinamita sólo podés llevarte una de los
+   * cajones")* — o sea que el tope (`CONFIG.player.dynamiteMax`, 3) no es una
+   * sugerencia: llegando lleno, este cajón no te sirve para nada COMO
+   * reposición, y lo único que le queda es ser una bomba puesta en el mapa.
+   * Ésa es la mitad de por qué el mismo objeto hace las dos cosas.
+   *
+   * El cajón se gasta: te llevás lo que tenía y deja de existir. Si no, sería
+   * una fuente infinita de dinamita parada en el medio del tren.
+   */
+  function agarrarCajon(c) {
+    const t = EXPLOSIVES.cajonPolvora;
+    player.dynamite = Math.min(CONFIG.player.dynamiteMax, player.dynamite + t.recarga);
+    c.alive = false;
+    c.progreso = 0;
+
+    floaters.push({
+      x: c.x, y: c.y - 16,
+      text: T.prompts.cartuchoTomado, life: 1.6, color: colors.dynamite,
+    });
+    spawnParticles(c.x, c.y, colors.dynamiteBand, 6);
+    audio.play('loot');
+  }
+
+  /**
    * Abrir una tranquera: mantener [E] al lado, como la caja fuerte. El precio
    * es el mismo que el de ella — segundos quieto en el peor lugar del vagón.
    */
@@ -1822,6 +1888,7 @@ export function createRaidScene(services) {
     for (const d of doors) updateDoor(d, dt, world);
     updateBullets(bullets, dt, world);
     updateExplosives(explosives, dt, world);
+    updateCajones(dt);
     updateRiders(riders, dt, world);
     riderWatch.update(dt, world);
     alarm.update(dt);
@@ -1839,7 +1906,12 @@ export function createRaidScene(services) {
       magazine: player.weapon.magazine,
       reloading: player.reloadTimer > 0,
       dynamite: player.dynamite,
-      maxDynamite: CONFIG.player.dynamite,
+      // El TOPE, no con cuántas saliste: desde la Fase 6a los dos números
+      // dejaron de ser el mismo (los cajones del vagón de armas te dan una
+      // más). El HUD dibuja un cartucho por cada lugar, así que el tercero se
+      // ve vacío desde el primer segundo — es cómo el juego te cuenta, sin
+      // escribirlo, que existe algo que lo llena.
+      maxDynamite: CONFIG.player.dynamiteMax,
       fuseLit: player.fuse > 0,
       timeLeft,
       urgent: timeLeft <= CONFIG.raid.urgentAt,
@@ -1902,8 +1974,21 @@ export function createRaidScene(services) {
       if (e.esSheriff) { updateSheriff(e, dt, world); continue; }
       if (e.escoltaDe) { updateEscolta(e, dt, world); continue; }
 
+      /**
+       * EL DINAMITERO DEL VAGÓN DE ARMAS TAMPOCO SE CONGELA (Fase 6a).
+       *
+       * Su ronda cruza tres vagones (`rondaLarga`, ver world/train.js) y toda
+       * la jugada que el vagón propone es **esperar a que salga**. Si se
+       * congelara por lejanía, lo dejarías adentro, te irías dos vagones a
+       * esperar y seguiría adentro para siempre: la espera no terminaría
+       * nunca y el vagón sería, simplemente, inentrable.
+       *
+       * Es el mismo motivo por el que corren siempre el Cazarrecompensas y el
+       * Sheriff: lo único que se mueve por el tren aunque no lo estés mirando
+       * no se puede apagar por no estar mirándolo.
+       */
       const lejos = Math.abs(e.x - player.x) > cull;
-      if (lejos && e.state !== 'combat' && e.state !== 'suspicious') continue;
+      if (lejos && !e.rondaLarga && e.state !== 'combat' && e.state !== 'suspicious') continue;
       updateEnemy(e, dt, world);
     }
 
@@ -1957,7 +2042,8 @@ export function createRaidScene(services) {
     const holding = input.isDown('KeyE') && player.alive;
     const nearest = nearestLoot();
     const victima = nearest ? null : nearestPassenger();
-    const tranquera = (nearest || victima) ? null : tranqueraCerca();
+    const cajon = (nearest || victima) ? null : cajonCerca();
+    const tranquera = (nearest || victima || cajon) ? null : tranqueraCerca();
 
     /**
      * EL PROGRESO DE UNA CAJA FUERTE NO SE PIERDE.
@@ -1992,6 +2078,37 @@ export function createRaidScene(services) {
     }
     for (const tr of tranqueras) {
       if (tr !== tranquera || !holding) tr.progreso = 0;
+    }
+    // Los cajones se reinician como una bolsa y no como una caja fuerte: 0,6 s
+    // es un gesto, no un trabajo, y guardar el progreso de algo que dura menos
+    // de un segundo no significaría nada.
+    for (const c of cajones) {
+      if (c !== cajon || !holding) c.progreso = 0;
+    }
+
+    /**
+     * EL CAJÓN DE PÓLVORA: el mismo [E] sostenido de siempre, y ahí está la
+     * gracia. Este juego tiene UN verbo para todo lo que se agarra, así que
+     * reponer dinamita no estrena ningún gesto — es el mismo que ya usás para
+     * una bolsa, con otra recompensa.
+     */
+    if (cajon && holding) {
+      /**
+       * CON LA DINAMITA AL TOPE NO SE ABRE. No es una restricción caprichosa:
+       * el cajón SE GASTA al abrirlo, así que dejar que un jugador lleno lo
+       * consuma por +0 sería tirar a la basura la única bomba puesta del vagón
+       * sin que él lo haya elegido. El cartel arriba de la cabeza ya avisa que
+       * estás lleno (ver `drawPrompts`).
+       */
+      if (player.dynamite < CONFIG.player.dynamiteMax) {
+        cajon.progreso += dt;
+        if (cajon.progreso >= EXPLOSIVES.cajonPolvora.abrirHold) agarrarCajon(cajon);
+        escapeProgress = 0;
+        // Agarrar también es robar, para el que te mide desde atrás: te
+        // quedaste quieto. Ver `acecho` en data/bosses.js.
+        world.robando = true;
+      }
+      return;
     }
 
     // La tranquera del corral: el mismo [E] de siempre, sostenido.
@@ -2059,7 +2176,7 @@ export function createRaidScene(services) {
       return;
     }
 
-    if (!nearest && !victima && !tranquera && isInsideZone(player, train.exitZone)) {
+    if (!nearest && !victima && !cajon && !tranquera && isInsideZone(player, train.exitZone)) {
       if (holding) {
         escapeProgress += dt;
         if (escapeProgress >= CONFIG.raid.escapeHold) endRaid('escaped');
@@ -2442,6 +2559,10 @@ export function createRaidScene(services) {
 
     for (const tr of tranqueras) if (visible(tr)) dibujarTranquera(r, tr);
 
+    // Los cajones de pólvora van antes que el botín y que la gente: son parte
+    // del vagón, un bulto estibado — no algo tirado encima de todo.
+    for (const c of cajones) if (visible(c)) drawCajon(r, c);
+
     for (const l of loot) if (visible(l)) drawLootable(r, l);
 
     for (const p of particles) {
@@ -2721,6 +2842,26 @@ export function createRaidScene(services) {
     const nearest = nearestLoot();
     if (nearest) {
       r.text(T.prompts.loot(nearest.name), player.x, player.y - 16, colors.text);
+      return;
+    }
+
+    const cajon = cajonCerca();
+    if (cajon) {
+      /**
+       * DICE QUÉ VA A PASAR, Y CAMBIA SI YA NO PUEDE PASAR. Con la dinamita al
+       * tope no ofrece un `[E]` que no haría nada: avisa que estás lleno. Es
+       * la misma regla de siempre — el cartel sobre tu cabeza siempre dice qué
+       * hace la [E] justo ahora.
+       */
+      const lleno = player.dynamite >= CONFIG.player.dynamiteMax;
+      r.text(lleno ? T.prompts.cartuchoLleno : T.prompts.cartucho,
+        player.x, player.y - 16, lleno ? colors.textDim : colors.dynamiteBand);
+      if (cajon.progreso > 0) {
+        const w = 22;
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12,
+          w * (cajon.progreso / EXPLOSIVES.cajonPolvora.abrirHold), 3, colors.dynamite);
+      }
       return;
     }
 

@@ -8757,6 +8757,204 @@ este proyecto prefiere sobre una lista de excepciones.
 
 ---
 
+## ✅ HECHA · "Variedad de lo que pasa en los trenes" — Fase 6a: el vagón de armas
+
+El vagón que el Dinamitero venía esperando desde la Fase 4. Santi lo eligió
+como próximo paso por tres motivos: no arrastra ningún sistema nuevo (reusa
+los explosivos que ya existen), es contenido como cualquier otro vagón, y es
+lo que enciende a un tipo de guardia que ya estaba construido y medido.
+
+**Estaba nombrado y no diseñado**, así que la sesión empezó cerrando seis
+decisiones sobre tablas, como siempre.
+
+### El dato que cambió media pregunta antes de empezar
+
+Santi preguntó, entre otras cosas, si el vagón debía reponer munición. **Las
+balas del revólver son infinitas**: recargar llena el tambor siempre
+(`entities/player.js`), no hay reserva por asalto. O sea que "cajas de munición
+para reponer balas" no habría significado nada.
+
+**El único recurso limitado que llevás encima es la dinamita** (2 cartuchos,
+`CONFIG.player.dynamite`). Eso convirtió la pregunta secundaria en la
+principal: si el vagón da algo, sólo puede dar eso.
+
+### Lo que se decidió
+
+| | Qué quedó |
+|---|---|
+| **Qué tiene adentro** | Un solo objeto con dos verbos opuestos: `[E]` te llevás un cartucho, un tiro y vuela |
+| **Cuánta dinamita** | Tope 3 (`CONFIG.player.dynamiteMax`), +1 por cajón, 3 cajones |
+| **Al dispararle** | Lo prende **cualquier** bala, aguanta 3 tiros, mecha de 1,2 s |
+| **Tamaño y guardia** | 30 columnas, 3 guardias, **todos comunes**, 4 pares de ventanillas |
+| **Dónde entra** | Reemplaza al ganado en el **50%** de los trenes estándar, nunca en el vagón 1 |
+| **Botín** | 5 bolsas (~$237), **sin caja fuerte** |
+
+**EL VAGÓN ES UN SOLO OBJETO CON DOS VERBOS OPUESTOS.** Lo que te sirve es lo
+que te puede matar — la misma forma que ya tiene la cobertura (te salva de los
+de adentro y te entrega a los de afuera). Y resuelve solo el problema de que
+fuera únicamente una despensa: si entrás con la dinamita llena, el cajón que
+te sobra sigue siendo una bomba puesta en el mapa.
+
+**EL TOPE 3 SE ELIGIÓ CONTRA EL VAGÓN BLINDADO**, que es donde la dinamita de
+verdad se gasta: alcanza para la puerta más dos cajas reventadas (~16 s de un
+asalto de 145, el 11%), así que hay que elegir cuál caja volás y cuál abrís a
+mano. Con 4, el blindado —"el premio y la trampa"— se resolvía entero con
+explosivos sin forcejear nada.
+
+**Y ENTRA POR SORTEO, NO FIJO.** Es lo primero de todo el plan que cambia DE
+QUÉ está hecho el tren y no sólo quién viaja adentro (`sustituciones`, un campo
+nuevo de `TRAIN_TYPES`), y lo único de la familia que **se ve desde el galope**,
+antes de subir. Reemplaza y no se suma como séptimo porque sumarlo alargaba el
+tren 33 columnas — unos 18 s de ida y vuelta de un reloj de 145 (12%), y ese
+número está afinado desde que se cerró la fase 2.
+
+### La cadena, y el problema que Santi vio antes de que existiera
+
+Sobre las recomendaciones, Santi agregó tres cosas: que las dinamitas lanzadas
+también prendan los cajones, que **un cajón encendido prenda todo el vagón en
+cadena**, y —la más importante— esto:
+
+> *"Si por lo menos uno de esos guardias es un dinamitero sería una catástrofe.
+> Porque una sola dinamita lanzada acabaría con todo en el vagón. Por eso haría
+> que los tres guardias sean normales y haya un Dinamitero dando vuelta por los
+> vagones vecinos. Una estrategia sería esperar a que salga del vagón de armas."*
+
+Eso es mejor que lo que estaba propuesto, y por un motivo exacto: **un
+dinamitero plantado adentro vuela los tres cajones en su primer ataque,
+siempre**. El peligro sería total y constante, o sea ninguna decisión.
+Deambulando, el peligro tiene POSICIÓN — y una posición se puede mirar,
+cronometrar y aprovechar. Es lo primero del juego que se resuelve esperando.
+
+**LA CADENA ES POR VAGÓN, NO POR RADIO.** Los tres cajones están repartidos a
+lo largo de 480 px y la explosión alcanza 68: por cercanía no se prenderían
+nunca entre ellos. Y tiene que pasar ADENTRO del vagón (`tramoAt`), no en el
+enganche de al lado — si valiera desde la pasarela se podría volar el vagón
+entero sin entrar nunca, y este vagón existe para que entrar sea la decisión.
+
+**ESCALONADA 0,35 s Y NO JUNTA**, que es la mitad de la idea: los tres a la vez
+serían un fogonazo del que no se escapa; escalonados se ve la cadena corriendo
+por el vagón y se puede correr mientras avanza.
+
+**LOS CAJONES VAN A SEIS BALDOSAS DE CADA PUNTA** del vagón. Si uno quedara
+pegado a un borde y el blindado cayera al lado, la cadena le reventaría la
+puerta de chapa desde afuera — y esa puerta tiene UNA sola llave.
+
+### El Dinamitero deambulante
+
+Ronda de tres vagones (`rondaDinamitero`, world/train.js): de la mitad de un
+vecino a la mitad del otro, pasando por el de armas. Un vecino blindado no
+cuenta —su puerta de chapa no se empuja desde afuera, sería mandarlo a empujar
+una pared— y de ese lado la ronda se queda adentro del vagón de armas.
+
+**CAMINA A 46 px/s (`enemy.speed`) Y NO A 24 (`patrolSpeed`)**, su único número
+propio. No es que sea más rápido: su ronda es de tres vagones y no de uno. A 24
+la vuelta completa le llevaría 93 s de un asalto de ~120 reales — se leería como
+un tipo quieto, y "esperar a que salga" sería esperar el asalto entero.
+
+Dos medidas distintas, y es lo importante: la RONDA va de mitad a mitad; el
+LÍMITE (`confinado`) abarca los tres vagones enteros. Patrullando nunca llega
+ahí; peleando sí, y entonces el borde cae sobre una pared o una puerta y no
+sobre una línea invisible en el medio de un pasillo.
+
+**Y NO SE PUEDE CONGELAR POR LEJANÍA** (`rondaLarga`, exento del culling de 700
+px). Si se congelara, lo dejarías adentro, te irías a esperar afuera y seguiría
+adentro para siempre: la jugada entera se rompe. Mismo motivo que el
+Cazarrecompensas y el Sheriff.
+
+**LA VARIANTE SUELTA SIGUE EN 0.** Estaba anotado que este vagón subía
+`VARIANTES_GUARDIA.dinamitero` de 0 a 0,20, pero con ~2 dinamiteros al azar por
+tren uno podía tocarle al vagón de armas, y encima un dinamitero alertado
+camina hasta vos esté donde esté. Así que el Dinamitero pasó de ser una
+estadística a ser un personaje: hay UNO por tren con vagón de armas. Con dos
+más repartidos al azar, mirar dónde está éste dejaría de servir para nada.
+
+### 🐛 Cuatro cosas rotas, y tres eran de código nuevo
+
+**1. El detector de "no puede pasar" medía cuadro a cuadro.** El Dinamitero
+necesita darse vuelta si algo le corta el paso (su ronda cruza puertas, y
+`puertaBloqueada` traba una al azar en el 15% de los trenes estándar). La
+primera versión preguntaba "¿se movió más de 0,5 px en ESTE cuadro?" — pero a
+46 px/s un cuadro son 0,77 px, o sea el umbral estaba al 65% de su paso normal.
+Bastaba con que otro guardia lo rozara (`separateEnemies`) para que un rato de
+caminar despacio contara como estar clavado. Ahora se mide por avance
+acumulado: el reloj se reinicia cuando ganó media baldosa, no cuando tuvo un
+cuadro bueno.
+
+**2. Y la marca de referencia nunca se ponía.** `Math.abs(e.x - (e.rondaUltimoX
+?? e.x))` con la marca en `undefined` da SIEMPRE 0 —se compara contra sí
+misma—, así que nunca entraba al `if`, nunca se guardaba, y el reloj subía
+aunque estuviera caminando a paso firme. **Medido: 41 vueltas en 150 s, con
+capturas que lo muestran avanzando 0,77 px por cuadro con el reloj en 2,0.**
+Primo hermano de la lección de `campo || default`: el `??` parece un valor por
+defecto razonable y en realidad desactiva la comparación entera.
+
+**3. No todo lo que explota se lanza.** `createExplosive` nacía siempre con
+`flying: true`, y el cajón no tiene `throwSpeed` porque nadie lo tira: el paso
+daba `NaN`, `0 <= NaN` da false, y en vez de cortar el vuelo le escribía `NaN`
+a la posición. El síntoma aparecía tres cuadros después y en otro archivo (el
+tilemap reventando al preguntar por la casilla `NaN`). Se arregló en
+`createExplosive` y no dándole un `throwSpeed` de mentira al cajón, porque la
+pregunta de verdad no es a qué velocidad vuela: es si vuela.
+
+**4. El cajón era invisible, y sólo se vio mirando.** Primera versión: cuerpo
+`#4a3a2a` sobre un piso `#6d4a30` — otro marrón, apenas más oscuro— así que se
+leía como una SOMBRA en el piso y no como un bulto. Y las dos mechas de 1 px
+que asomaban por la tapa directamente no existían en pantalla. **Exactamente el
+error de las cartucheras marrones que ya nos habíamos comido.** Lo arreglan
+tres cosas y ninguna es "más color": un contorno casi negro (lo único que
+despega un objeto de un fondo del mismo tono), madera CLARA en vez de oscura
+(contra un piso marrón medio, lo que se separa es lo claro) y tres cartuchos
+rojos gordos asomando por arriba con su banda clara.
+
+### VERIFICADO POR CONSOLA
+
+- **Sorteo, 20.000 tiradas:** 49,0% de los trenes estándar traen el vagón (50%
+  configurado), nunca junto al ganado (lo reemplaza), **nunca en el vagón 1**,
+  y 0 apariciones en el veloz y en el de carga.
+- **Geometría:** 30 columnas parejas, filas 4-5 con `+` en los bordes,
+  ventanillas alineadas con los huecos entre estanterías, y **cero avisos** de
+  cosas colocadas sobre tiles sólidos.
+- **Reposición:** con 2 encima te llevás 1 → 3 (el tope); **con el tope lleno
+  el cajón no se gasta**; con 1 encima agarrás y quedás en 2.
+- **Cadena:** PUM a los 0,40 / 0,73 / 1,08 s — intervalos de 0,33 y 0,35, los
+  0,35 de diseño. Una explosión en el enganche de al lado **no** encadena.
+- **Balas:** tres tiros lo prenden (vida 3→2→1), y lo prenden igual las tuyas
+  y las de un guardia.
+- **La ventana de la mecha existe y es exacta:** un cajón solo, corriendo de
+  frente, te alejás **94 px en 1,2 s** (la explosión llega a 68) y salís
+  **ileso, 4/4**. Quieto al lado de la cadena entera: muerto.
+- **Y hay que salir para el lado correcto:** prendiendo el de la izquierda y
+  huyendo a la izquierda, 4/4; huyendo a la derecha, 0/4 — corriste a lo largo
+  de la cadena. Prendiendo el de la derecha y huyendo a la derecha, 4/4.
+- **La ronda, 150 s:** recorrido real 450→1614 sobre la ronda pedida 448→1616,
+  **0 vueltas espurias**, 39,1% del tiempo adentro del vagón. Tramos medidos:
+  adentro 10,4-12,0 s cada pasada, afuera 14,7-29,9 s. Vuelta completa ~53 s.
+  Nunca está más de ~12 s seguidos adentro.
+- **El culling:** se lo vio caminando a 1407 px del jugador, el doble del
+  `cullPatrolDistance` de 700.
+- **La catástrofe, montada a propósito:** jugador parapetado a 100 px, el
+  Dinamitero enciende la mecha a los 0 s, **lanza a los 0,68 s**, la cadena
+  revienta los 3 cajones a los 2,83 s y el jugador muere (0/4).
+- **Caja oculta:** cae en el vagón de armas con el escondite "ENTRE LOS
+  CAJONES" (38 de 400 trenes) y **0 inalcanzables** — el relleno por
+  inundación que arregló el corral encerrado la cubre gratis.
+- **Corrida completa de 60 s con TODO encendido a la vez** (tormenta + redada +
+  alerta inicial + puerta bloqueada + los cuatro comportamientos + pasajero
+  rico + caja oculta + vagón de armas, 26 guardias): **sin errores ni avisos**.
+- **Y el ciclo completo:** llegó al vagón a los 9,2 s, agarró el cartucho (2→3)
+  a los 9,7 s, el Dinamitero salió a los 13,3 s — y el jugador terminó muerto
+  por quedarse quieto al lado de los cajones mientras le disparaban, que es
+  exactamente lo que este vagón castiga.
+
+**MIRADO CON `foto.ps1`**, que es lo que encontró el problema 4 y lo confirmó
+arreglado: el verde oliva de las estanterías se separa del piso marrón y de
+todo el resto del tren, y el cajón se lee al instante sin confundirse con las
+bolsas doradas del mismo vagón.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

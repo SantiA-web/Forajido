@@ -23,6 +23,7 @@ import { createEnemy } from '../entities/enemy.js';
 import { createPassenger } from '../entities/passenger.js';
 import { createLootable } from '../entities/lootable.js';
 import { createDoor, trabarPuerta } from '../entities/door.js';
+import { createCajon } from '../entities/cajon.js';
 import { WAGONS, TRAMOS } from '../data/wagons.js';
 import {
   TRAIN_TYPES, TIPO_TREN_POR_DEFECTO, DIFICULTADES, DIFICULTAD_POR_DEFECTO,
@@ -93,6 +94,33 @@ function construirPerfilIA(dificultad, tipoTren, estado) {
 }
 
 /**
+ * A VECES EL TREN NO TRAE LOS MISMOS VAGONES (Fase 6a, `sustituciones` en
+ * data/train.js).
+ *
+ * Es lo primero de todo el plan de variedad que cambia DE QUÉ está hecho el
+ * tren y no sólo quién viaja adentro. Hoy: la mitad de los trenes estándar
+ * cambian el vagón de ganado por el de armas.
+ *
+ * SE APLICA ANTES DE BARAJAR, a propósito: así el vagón que entró queda
+ * sujeto a las mismas reglas de posición que cualquier otro (el de armas
+ * tiene `posicionMinima: 2` — nunca el primero, para que reponerse no sea
+ * gratis apenas subís).
+ *
+ * Cambia UNA sola aparición por regla. Si algún día un tipo de tren llevara
+ * tres vagones iguales, sustituir todos de golpe convertiría el sorteo en dos
+ * trenes distintos en vez de en un tren con una sorpresa.
+ */
+function aplicarSustituciones(rng, tipoTren) {
+  const composicion = [...tipoTren.composition];
+  for (const s of tipoTren.sustituciones || []) {
+    if (!rng.chance(s.chance || 0)) continue;
+    const i = composicion.indexOf(s.de);
+    if (i >= 0) composicion[i] = s.por;
+  }
+  return composicion;
+}
+
+/**
  * Mezcla la baraja de vagones de un tipo de tren, respetando sus reglas.
  * El índice 0 es el vagón 1 (el más cercano a la salida).
  *
@@ -110,7 +138,7 @@ function construirPerfilIA(dificultad, tipoTren, estado) {
  */
 export function sortearComposicion(rng, tipoTren) {
   tipoTren = tipoTren || TRAIN_TYPES[TIPO_TREN_POR_DEFECTO];
-  const composition = tipoTren.composition;
+  const composition = aplicarSustituciones(rng, tipoTren);
   const reglasMin = tipoTren.posicionMinima || {};
   const reglasFija = tipoTren.posicionFija || {};
 
@@ -150,6 +178,64 @@ export function sortearComposicion(rng, tipoTren) {
 function barridoDe(cols) {
   const fin = cols - 4;
   return [[3, 4], [fin, 4], [fin, 5], [3, 5]];
+}
+
+/**
+ * LA RONDA DEL DINAMITERO DEL VAGÓN DE ARMAS (Fase 6a).
+ *
+ * Devuelve por dónde camina (`path`, dos puntos que recorre de ida y vuelta),
+ * dónde arranca (`startX`) y hasta dónde se lo deja llegar (`x0`/`x1`).
+ *
+ * DOS MEDIDAS DISTINTAS, Y ES LO IMPORTANTE DE ESTA FUNCIÓN:
+ *
+ *   la RONDA va de la mitad de un vecino a la mitad del otro. Media vuelta le
+ *     lleva 1120 px, así que a 46 px/s la vuelta completa son ~49 s, de los
+ *     cuales ~21 los pasa adentro del vagón de armas.
+ *   el LÍMITE (`x0`/`x1`) abarca los tres vagones ENTEROS. Patrullando nunca
+ *     llega ahí; peleando sí, y entonces el borde cae sobre una pared o una
+ *     puerta y no sobre una línea invisible en el medio de un pasillo.
+ *
+ * UN VECINO BLINDADO NO CUENTA, y no es un caso raro: el blindado va del
+ * vagón 3 para adelante y el de armas del 2 para adelante, así que se tocan
+ * seguido. Su puerta es de chapa y no se empuja desde afuera —literalmente no
+ * puede entrar— así que incluirlo sería mandarlo a empujar una pared. De ese
+ * lado la ronda se queda adentro del vagón de armas.
+ */
+function rondaDinamitero(tramoArmas, tramos, map) {
+  const size = map.size;
+  const vagones = tramos.filter((t) => t.tipo === 'vagon');
+  const i = vagones.indexOf(tramoArmas);
+
+  // Se pregunta por el TIPO DE GUARDIA del vagón y no por su id: así vale
+  // igual para `blindado` y para `blindado_corto`, y para cualquier vagón
+  // cerrado que se invente después.
+  const abierto = (t) => !!t && t.plantilla.guardType !== 'blindado';
+  const antes = abierto(vagones[i - 1]) ? vagones[i - 1] : null;
+  const despues = abierto(vagones[i + 1]) ? vagones[i + 1] : null;
+
+  const centro = (t) => (t.colStart + t.cols / 2) * size;
+  const xIzq = antes ? centro(antes) : (tramoArmas.colStart + 3) * size;
+  const xDer = despues
+    ? centro(despues)
+    : (tramoArmas.colStart + tramoArmas.cols - 3) * size;
+
+  // Los 6 px de margen son los mismos que usa el confinamiento del blindado:
+  // lo justo para que no quede medio cuerpo metido en la pared.
+  const izqTramo = antes || tramoArmas;
+  const derTramo = despues || tramoArmas;
+
+  const y = map.tileCenter(0, 4).y;
+  return {
+    path: [{ x: xIzq, y }, { x: xDer, y }],
+    // Arranca en el medio del vagón de armas, mirando hacia adelante: es donde
+    // de verdad tiene que estar el tipo que cuida la pólvora, y hace que la
+    // primera vez que llegás esté ahí — la lección se aprende entrando, no
+    // leyéndola en ningún lado.
+    startX: centro(tramoArmas),
+    y,
+    x0: izqTramo.colStart * size + 6,
+    x1: (derTramo.colStart + derTramo.cols) * size - 6,
+  };
 }
 
 /**
@@ -417,6 +503,7 @@ export function buildTrain(
   const passengers = [];
   const loot = [];
   const tranqueras = [];
+  const cajones = [];
   const avisos = [];
 
   for (const t of tramos) {
@@ -566,8 +653,14 @@ export function buildTrain(
        *
        * `variantes` ya viene filtrada por recompensa y honor desde
        * `mapScene.js` — este archivo no sabe nada de `gameState`.
+       *
+       * Y UN VAGÓN PUEDE CERRARLE LA PUERTA A TODAS (`sinVariantes`, hoy el de
+       * armas): ahí adentro un Dinamitero volaría los cajones en su primer
+       * ataque y el vagón dejaría de tener juego. Ver la nota completa en
+       * data/wagons.js.
        */
-      const esComun = !def.guardType && tipoDelVagon === DEFAULT_GUARD_TYPE;
+      const esComun = !def.guardType && !p.sinVariantes
+        && tipoDelVagon === DEFAULT_GUARD_TYPE;
       const tipo = (esComun && sortearVarianteGuardia(rng, variantes))
         || def.guardType || tipoDelVagon;
 
@@ -809,6 +902,23 @@ export function buildTrain(
     }
 
     /**
+     * LOS CAJONES DE PÓLVORA (Fase 6a, hoy sólo el vagón de armas).
+     *
+     * A diferencia de las tranqueras —que dependen del TIPO DE TREN, porque
+     * el ganado tiene que poder seguir siendo un pasillo de paso en el
+     * estándar— éstos dependen sólo del VAGÓN: un vagón de armas lleva
+     * pólvora en cualquier tren que lo lleve a él. Es lo que el vagón ES, no
+     * una regla que le pone el servicio.
+     */
+    for (const def of p.cajones || []) {
+      const pos = enTiles([def.col, def.row]);
+      const cj = createCajon(pos.x, pos.y);
+      cj.wagon = t.wagon;
+      cajones.push(cj);
+      revisar(avisos, map, pos, `cajón de pólvora del ${p.name} (vagón ${t.wagon})`);
+    }
+
+    /**
      * LAS TRANQUERAS DE LOS CORRALES — sólo si este TIPO de tren las trae.
      *
      * El mismo vagón de ganado, en el tren estándar, no tiene ninguna: es el
@@ -836,6 +946,93 @@ export function buildTrain(
 
     wagons[t.wagon].ronda = (p.sweep || barridoDe(t.cols)).map(enTiles);
     wagons[t.wagon].guardType = tipoDelVagon;
+  }
+
+  /**
+   * --- EL DINAMITERO QUE DA VUELTAS (Fase 6a) ---
+   *
+   * *(Santi: "haría que los tres guardias sean normales y haya un Dinamitero
+   * dando vuelta por los vagones vecinos al de armas [...] una estrategia
+   * sería esperar a que el dinamitero salga del vagón de armas")*
+   *
+   * ES LA PIEZA QUE HACE JUGABLE AL VAGÓN. La idea original era prender la
+   * variante `dinamitero` (data/modifiers.js) y que le tocara a cualquiera;
+   * el problema, visto antes de construir nada, es que un dinamitero PLANTADO
+   * adentro vuela los tres cajones en su primer ataque, siempre. El peligro
+   * sería total y constante, o sea ninguna decisión.
+   *
+   * Deambulando, en cambio, el peligro tiene POSICIÓN — y una posición se
+   * puede mirar, cronometrar y aprovechar. Es lo primero del juego que se
+   * resuelve esperando.
+   *
+   * UNO SOLO, Y SÓLO EN LOS TRENES QUE TRAEN EL VAGÓN. La variante suelta
+   * sigue en 0 (ver VARIANTES_GUARDIA): si además hubiera dinamiteros al azar
+   * por todo el tren, mirar dónde está éste dejaría de servir para nada.
+   */
+  const tramoArmas = tramos.find((t) => t.tipo === 'vagon' && t.plantilla.id === 'armas');
+  if (tramoArmas) {
+    const ronda = rondaDinamitero(tramoArmas, tramos, map);
+    const guard = createEnemy(ronda.startX, ronda.y, {
+      path: ronda.path,
+      facing: FACINGS.right,
+      type: 'dinamitero',
+      health: guardHealth('dinamitero', dificultad.vidaExtra),
+      /**
+       * CAMINA A `enemy.speed` (46) Y NO A `patrolSpeed` (24), y es el único
+       * número propio que tiene. No es que sea más rápido: es que su ronda es
+       * de tres vagones y no de uno. A 24 px/s una vuelta completa le llevaría
+       * 93 s de un asalto de ~120 reales — se leería como un tipo quieto, y
+       * "esperar a que salga" sería esperar el asalto entero. A 46 la vuelta
+       * son 49 s: pasa 21 s adentro del vagón de armas y 28 afuera, así que
+       * en un solo asalto le ves el ritmo dos veces y media.
+       *
+       * El mismo patrón que ya usa la escolta del Sheriff, que también tiene
+       * su `patrolSpeed` propio por tener que cubrir más terreno.
+       */
+      ai: { ...perfilIA, patrolSpeed: CONFIG.enemy.speed },
+    });
+    guard.pathIndex = 1;
+    /**
+     * NO SALE DE ESOS TRES VAGONES, ni persiguiéndote. Es la misma regla que
+     * ya tienen los del blindado (`confinado`, aplicada al final de cada
+     * cuadro por `confinar` en systems/ai.js) y por un motivo parecido: éste
+     * no es escolta del tren, es el tipo asignado a la pólvora. Si te
+     * escapás tres vagones, deja de ser tu problema — y el vagón de armas
+     * sigue siendo un LUGAR peligroso en vez de convertirse en un perseguidor
+     * más.
+     *
+     * El confinamiento es más ancho que la ronda a propósito: patrulla de
+     * mitad a mitad de los vecinos, pero peleando puede llegar hasta las
+     * puntas de esos vagones. Así el límite cae siempre sobre un borde que se
+     * ve (una pared, una puerta) y no sobre una línea invisible en el medio
+     * de un pasillo.
+     */
+    guard.confinado = { x0: ronda.x0, x1: ronda.x1 };
+    /**
+     * `rondaLarga`: dos cosas que ningún otro guardia necesita.
+     *  1. No se lo puede congelar por lejanía (ver `updateEnemies` en
+     *     scenes/raidScene.js). Si se congelara, lo dejarías adentro del
+     *     vagón, te irías a esperar afuera y seguiría adentro para siempre:
+     *     la jugada entera se rompe.
+     *  2. Si algo le corta el paso —una puerta trabada del sorteo, por
+     *     ejemplo— se da vuelta en vez de quedarse empujando (ver `doPatrol`
+     *     en systems/ai.js). Su ronda cruza puertas, y las de este tren no
+     *     siempre se abren.
+     */
+    guard.rondaLarga = true;
+    /**
+     * SU VAGÓN, PARA LA ALARMA, es el de armas — aunque en este momento esté
+     * caminando por otro. Es una aproximación y se sabe: el alcance del ruido
+     * se cuenta en vagones (`e.wagon`), así que mientras esté en un vecino la
+     * cuenta se corre uno. Es el mismo vagón al que se le suma su vida, para
+     * que el cartel de "vagón limpio" no mienta mientras él siga dando
+     * vueltas por ahí.
+     */
+    guard.wagon = tramoArmas.wagon;
+    guard.homePath = guard.path;
+    enemies.push(guard);
+    wagons[tramoArmas.wagon].guardiasVivos++;
+    revisar(avisos, map, guard, 'el Dinamitero del vagón de armas');
   }
 
   /**
@@ -984,6 +1181,7 @@ export function buildTrain(
     loot,
     doors,
     tranqueras,
+    cajones,
     wagons,
     tramos,
     tipoPorColumna,

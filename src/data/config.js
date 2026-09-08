@@ -177,7 +177,30 @@ export const CONFIG = {
     peekMax: 0.7,        // pero no se asoma del todo: solo hasta el 70%
     peekSpeed: 9,        // qué tan rápido se asoma (mayor = más brusco)
     peekShootAt: 0.5,    // hay que estar asomado más de esto para poder disparar
-    dynamite: 2,         // cartuchos por asalto (después saldrá del inventario)
+    dynamite: 2,         // cartuchos con los que SALÍS (después saldrá del inventario)
+
+    /**
+     * EL TOPE — cuántos podés LLEGAR A LLEVAR encima.
+     *
+     * Sale 2 y el tope es 3: hasta la Fase 6a los dos números eran el mismo,
+     * porque no había forma de conseguir un cartucho más. Los cajones de
+     * pólvora del vagón de armas (data/wagons.js) dan +1 cada uno, y este
+     * número es lo que decide cuánto significa haber ido hasta ahí.
+     *
+     * ELEGIDO SOBRE UNA TABLA DE TRES (2 / 3 / 4), por lo que habilita cada
+     * uno contra el vagón blindado —que es donde la dinamita de verdad se
+     * gasta— y cuánto reloj te ahorra reventar una caja fuerte en vez de
+     * forcejearla (8 s cada una):
+     *
+     *   2  el vagón sólo te devuelve lo gastado; si llegás con dos, no te da
+     *      nada y la mitad de las veces es un vagón vacío.
+     *   3  puerta del blindado + DOS cajas reventadas: ~16 s de un asalto de
+     *      145 (11%). Tenés que elegir cuál caja volás y cuál abrís a mano.
+     *   4  puerta + las dos del blindado + una más: ~24 s (17%), y el vagón
+     *      blindado —"el premio y la trampa"— se resuelve entero con
+     *      explosivos sin forcejear nada.
+     */
+    dynamiteMax: 3,
 
     /**
      * CAMINAR DE COSTADO O DE ESPALDAS, RESPECTO A HACIA DÓNDE APUNTÁS, ES MÁS
@@ -1857,6 +1880,17 @@ export const CONFIG = {
       comedor:   ['#6b4526', '#8a5c33'],   // mesas de madera oscura
       correo:    ['#9c7a45', '#b89257'],   // cajones y arpillera
       ganado:    ['#5f5a4e', '#7b7466'],   // rejas de corral, madera gris
+      /**
+       * VAGÓN DE ARMAS: verde oliva apagado, el único verde del tren.
+       *
+       * No es un capricho de paleta — es lo único que hace que se note de un
+       * vistazo en qué vagón estás, y este vagón necesita decirlo más que
+       * ninguno: entrar sin darse cuenta a tirotear acá adentro es la peor
+       * cosa que te puede pasar en el tren. Verde para no confundirse con el
+       * marrón del comedor, el tostado del correo ni el gris azulado de la
+       * chapa del blindado.
+       */
+      armas:     ['#55603f', '#6e7a4e'],   // cajones de munición estibados
       blindado:  ['#4a5058', '#626a74'],   // chapa de acero
       cola:      ['#6b4f36', '#87664a'],   // equipaje amontonado
       pasajeros: ['#8a5a34', '#a06b3f'],

@@ -866,6 +866,74 @@ function doPatrol(e, dt, world) {
   if (arrived) {
     e.pathIndex = (e.pathIndex + 1) % e.path.length;
     e.waitTimer = 0.9;   // se para y mira alrededor: ahí es donde te descubre
+    e.rondaTrabado = 0;
+    return;
+  }
+
+  /**
+   * EL QUE HACE UNA RONDA LARGA SE DA VUELTA SI NO PUEDE PASAR.
+   *
+   * Sólo lo necesita el Dinamitero del vagón de armas (`rondaLarga`, ver
+   * `rondaDinamitero` en world/train.js), y por algo que ningún otro guardia
+   * tiene: **su ronda cruza puertas**. Todas las demás empiezan y terminan
+   * adentro de un vagón, donde no hay nada que pueda cerrarse en el camino.
+   *
+   * Y las puertas de este tren no siempre se abren: `puertaBloqueada`
+   * (data/modifiers.js) traba una, dos o tres al azar en el 15% de los trenes
+   * estándar. Sin esto, la que le tocara enfrente lo dejaría empujando madera
+   * para siempre — `moveAxisAligned` nunca devuelve `arrived`, así que no hay
+   * nada más que lo saque de ahí. Y un Dinamitero clavado contra una puerta no
+   * es sólo un bug feo: es la jugada de todo el vagón (esperar a que salga)
+   * rota en silencio.
+   *
+   * 2,5 s es mucho más de lo que tarda una puerta común en abrirse
+   * empujándola, así que cruzar normal nunca dispara esto.
+   */
+  if (!e.rondaLarga) return;
+
+  /**
+   * 🐛 SE MEDÍA CUADRO A CUADRO, Y ASÍ SE DABA VUELTA SIN ESTAR TRABADO.
+   *
+   * La primera versión preguntaba "¿se movió más de 0,5 px en ESTE cuadro?".
+   * Parece razonable y no lo es: a 46 px/s un cuadro son 0,77 px, así que el
+   * umbral estaba al 65% de su paso normal — bastaba con que otro guardia lo
+   * rozara (`separateEnemies` los empuja al cruzarse, y su ronda cruza tres
+   * vagones llenos de gente) para que un rato de caminar despacio contara
+   * como estar clavado.
+   *
+   * MEDIDO: en una corrida de 60 s se dio vuelta en x=827 yendo hacia 448, a
+   * once píxeles de la puerta que acababa de cruzar. En 90 s nunca completó
+   * una vuelta — el recorrido real fue de 794 a 1613 sobre una ronda de 448 a
+   * 1616. Puesto a mano en un pasillo vacío, en cambio, la cruzaba perfecta a
+   * 46 px/s: el atasco no existía, lo inventaba el detector.
+   *
+   * AHORA SE MIDE POR AVANCE ACUMULADO: el reloj se reinicia cuando de verdad
+   * ganó media baldosa (8 px) desde la última vez, no cuando tuvo un cuadro
+   * bueno. Caminando normal tarda 0,17 s en hacer esos 8 px, y hasta empujado
+   * a la mitad de velocidad tarda 0,35 — nunca llega a 2,5. Sólo se da vuelta
+   * el que de verdad no avanza ni 3,2 px por segundo, o sea el que tiene algo
+   * sólido enfrente.
+   */
+  /**
+   * 🐛 Y LA MARCA DE REFERENCIA NUNCA SE PONÍA. `Math.abs(e.x - (e.rondaUltimoX
+   * ?? e.x))` con `rondaUltimoX` en `undefined` da SIEMPRE 0 —se compara
+   * contra sí mismo—, así que nunca entraba al `if`, nunca se guardaba la
+   * marca, y el reloj subía aunque estuviera caminando a paso firme. Medido:
+   * 41 vueltas en 150 s, y en las capturas se lo ve avanzando 0,77 px por
+   * cuadro con el reloj en 2,0. El defecto no se veía porque el `??` parece
+   * un valor por defecto razonable y en realidad desactiva la comparación
+   * entera. Primo hermano de la lección de `campo || default`.
+   */
+  if (e.rondaUltimoX === undefined) e.rondaUltimoX = e.x;
+  e.rondaTrabado = (e.rondaTrabado || 0) + dt;
+  if (Math.abs(e.x - e.rondaUltimoX) > 8) {
+    e.rondaUltimoX = e.x;
+    e.rondaTrabado = 0;
+  }
+  if (e.rondaTrabado > 2.5) {
+    e.rondaTrabado = 0;
+    e.rondaUltimoX = e.x;
+    e.pathIndex = (e.pathIndex + 1) % e.path.length;
   }
 }
 

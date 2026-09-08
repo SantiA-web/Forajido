@@ -262,10 +262,27 @@ export const VARIANTES_GUARDIA = {
   },
 
   /**
-   * EL DINAMITERO — LLAVE APAGADA hasta la Fase 6 (el vagón de armas), por
-   * pedido de Santi. El tipo de guardia está entero en data/guards.js; lo
-   * único que falta es el lugar del que tiene que bajar. Subirle esta
-   * `chance` lo devuelve al juego sin tocar una línea de código.
+   * EL DINAMITERO — YA ESTÁ EN EL JUEGO, PERO NO POR ACÁ. Fase 6a.
+   *
+   * Estaba anotado que el día que existiera el vagón de armas esta `chance`
+   * subía de 0 a 0,20 (dinamiteros al azar por todo el tren estándar). Al
+   * diseñar el vagón, Santi encontró el problema antes de construirlo: *"si
+   * por lo menos uno de esos guardias es un dinamitero sería una catástrofe,
+   * porque una sola dinamita lanzada acabaría con todo en el vagón"*. Y no
+   * alcanzaba con sacarlo del vagón de armas — con 0,20 hay ~2 sueltos por
+   * tren, y un dinamitero alertado camina hasta vos, esté donde esté.
+   *
+   * ASÍ QUE EL DINAMITERO PASÓ DE SER UNA ESTADÍSTICA A SER UN PERSONAJE:
+   * hay UNO por tren con vagón de armas, y da vueltas entre ese vagón y sus
+   * dos vecinos (ver `rondaDinamitero` en world/train.js). Está construido
+   * ahí y no acá porque su lugar en el tren es parte de lo que es — la jugada
+   * que propone (esperar a que salga del vagón) sólo existe si sabés dónde
+   * anda, y con dos más repartidos al azar mirar dónde está dejaría de servir
+   * para nada.
+   *
+   * ESTA LLAVE SIGUE EN 0, entonces, pero ya no está esperando nada: es una
+   * segunda forma de meter dinamiteros al tren, por si alguna vez se quiere
+   * además de la ronda. **0,20 sigue siendo el valor con el que se probó.**
    */
   dinamitero: {
     id: 'dinamitero',

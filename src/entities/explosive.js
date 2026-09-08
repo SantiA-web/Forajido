@@ -19,9 +19,23 @@ export function createExplosive({ x, y, targetX, targetY, typeId, owner, fuse })
     fuse,                  // lo que le queda de mecha
     alive: true,
 
-    // Vuelo: va hasta el punto donde cae y ahí se queda, chispeando.
+    /**
+     * Vuelo: va hasta el punto donde cae y ahí se queda, chispeando.
+     *
+     * 🐛 NO TODO LO QUE EXPLOTA SE LANZA. Desde la Fase 6a hay explosivos que
+     * NACEN donde van a reventar: el cajón de pólvora del vagón de armas, que
+     * ya estaba puesto ahí (ver `prenderCajon`, systems/explosives.js). Con
+     * `flying: true` a secas, `moverEnVuelo` le calculaba el paso con el
+     * `throwSpeed` de su tipo — que el cajón no tiene, porque nadie lo tira —
+     * y `0 <= NaN` da false, así que en vez de cortar el vuelo seguía adelante
+     * y le escribía `NaN` en la posición. El síntoma aparecía después y en
+     * otro lado: el tilemap reventando al preguntar por la casilla `NaN`.
+     *
+     * Se arregla acá y no dándole un `throwSpeed` de mentira al cajón, porque
+     * la pregunta de verdad no es a qué velocidad vuela: es si vuela.
+     */
     targetX, targetY,
-    flying: true,
+    flying: !(targetX === x && targetY === y),
 
     // Solo para el dibujo: da vueltas en el aire y sube y baja.
     spin: 0,

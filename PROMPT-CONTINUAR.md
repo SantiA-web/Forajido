@@ -7,36 +7,41 @@ así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
 `NOTAS-DISENO.md` es grande: usá Grep para ir a la sección que necesites en vez
 de leerlo entero de punta a punta cada vez.
 
-## LO QUE VAMOS A HACER EN ESTA SESIÓN: el vagón de armas
+## LO QUE HICIMOS LA SESIÓN PASADA: el vagón de armas (Fase 6a)
 
-Es la **Fase 6a** del plan de "variedad de lo que pasa en los trenes". Lo
-elegí como próximo paso por tres motivos: no arrastra ningún sistema nuevo
-(reusa los explosivos que ya existen), es contenido como cualquier otro vagón,
-y **es lo que enciende al Dinamitero**, un tipo de guardia que ya está
-construido, medido y esperando exactamente esto.
+Quedó construido y verificado por consola, **pero todavía no lo jugué**. Está
+entero en `NOTAS-DISENO.md` (buscar "Fase 6a"); acá va lo mínimo para retomar.
 
-**Ojo: el vagón de armas NO está diseñado todavía, sólo nombrado.** No
-empieces a construir: planteame primero el plan concreto (qué archivos, en qué
-orden) y las decisiones de diseño abiertas con 2-3 opciones cada una. Cosas
-que hay que cerrar conmigo: qué tiene adentro y qué se puede hacer con eso
-(¿te reponés dinamita?, ¿las cajas de munición explotan si les disparás?),
-cuántos guardias lleva, qué tamaño tiene, si entra en la composición del tren
-estándar o es otra cosa.
+**Qué es:** un vagón nuevo (`armas`, 30 columnas, 3 guardias comunes, 5 bolsas,
+sin caja fuerte) que **reemplaza al de ganado en el 50% de los trenes
+estándar**, nunca en el vagón 1. Es lo primero de todo el plan de variedad que
+cambia de qué está HECHO el tren, y lo único que se ve desde el galope.
 
-Lo que sí está decidido de antes: **cuando exista este vagón, se prende el
-Dinamitero** (`VARIANTES_GUARDIA.dinamitero.chance` de 0 a 0,20 en
-`src/data/modifiers.js` — el valor con el que se probó está anotado ahí al
-lado).
+**Adentro hay tres cajones de pólvora, y sirven para dos cosas opuestas:**
+`[E]` te llevás un cartucho de dinamita (tope 3, `CONFIG.player.dynamiteMax` —
+es el único lugar del juego donde se repone algo), o tres balazos lo prenden y
+**arrastra a los otros dos en cadena**. Lo prende cualquier bala, tuya o de un
+guardia, y también una dinamita lanzada adentro del vagón.
 
-Dónde vive lo que vas a necesitar:
-- `src/data/wagons.js` — el catálogo de vagones (`WAGONS`), con la leyenda de
-  tiles y las reglas de forma arriba de todo: 10 filas, filas 0 y 9 todas
-  pared, filas 4 y 5 empiezan y terminan con `+`, ancho libre pero parejo.
-- `src/data/train.js` — `TRAIN_TYPES`, la composición de cada tipo de tren.
-- `src/data/explosives.js`, `src/systems/explosives.js`,
-  `src/entities/explosive.js` — todo el sistema de dinamita, que es lo que
-  este vagón tiene que reusar.
-- `src/world/train.js` — el armador del tren (`buildTrain`).
+**Y trae un Dinamitero deambulando** entre ese vagón y los dos vecinos, a 46
+px/s: vuelta completa ~53 s, nunca más de ~12 s seguidos adentro. Esperar a que
+salga es la jugada del vagón. Los tres guardias de adentro son comunes a
+propósito (`sinVariantes` en la plantilla): uno con dinamita ahí adentro volaría
+todo en su primer ataque y no habría nada que decidir.
+
+### Lo que hay que mirar jugándolo
+
+- **¿La cadena se lee?** Está escalonada 0,35 s justamente para que se vea
+  avanzar y se pueda correr. Medido: con un cajón solo te alejás 94 px en los
+  1,2 s de mecha y salís ileso — pero hay que **salir para el lado donde no
+  quedan cajones**, porque correr a lo largo de la cadena te mete en el
+  siguiente.
+- **¿El Dinamitero se nota, y se le puede tomar el ritmo?** Los números dicen
+  que sí (dos vueltas y media por asalto), pero eso es cálculo, no juego.
+- **¿El tope de 3 cartuchos cambia algo de verdad** en el vagón blindado?
+- **¿Volar el vagón se siente una decisión o un accidente?** Si vuela, ese
+  tren se quedó sin dónde reponer.
+- **¿50% es mucho o poco?** (`sustituciones` en `TRAIN_TYPES.estandar`).
 
 ## Cómo trabajar conmigo
 
@@ -66,13 +71,15 @@ Dónde vive lo que vas a necesitar:
   porque la cámara sigue al jugador).
 - Cada escena expone su estado en `FORAJIDO.services.<nombre>` (camp, town,
   interior, mapa, ride, raid, train, tienda). Ojo: `services.raid` ES el world
-  directo (`raid.enemies`, `raid.doors`, `raid.player`), no un objeto con un
-  `.world` adentro.
+  directo (`raid.enemies`, `raid.doors`, `raid.player`, `raid.cajones`), no un
+  objeto con un `.world` adentro. Y el estado de la partida es
+  `FORAJIDO.state`, no `services.state`.
 - Para forzar un asalto sin jugar el galope:
   `FORAJIDO.services.scenes.goTo('raid', { boardAt: N, alarmaInicial: true })`,
   y para probar el sistema de variedad pasale en el mismo objeto:
   `{ clima, estado: [...], comportamientos: [...], variantes: [...],
   encubiertos: [...], paquetes: [...], cajaOculta: true, composicion: [...] }`.
+  Para que salga el vagón nuevo, poné `'armas'` en `composicion`.
 
 ### Lecciones de arnés de prueba (esto ahorró horas)
 
@@ -81,7 +88,9 @@ Dónde vive lo que vas a necesitar:
   punto donde ponés al jugador NO sea sólido (`map.isSolidAt`) y que HAYA
   línea de visión de verdad (`hasLineOfSight(..., map.blocksSightAt)`). Poner
   al jugador "al lado" de alguien lo pone detrás de un asiento la mitad de las
-  veces.
+  veces. **Y no inventes objetos internos del juego**: un `player.cover` armado
+  a mano reventó el sistema de cobertura — si necesitás al jugador parapetado,
+  buscá un punto con `findCoverSurface` y mandá `Shift`, como haría él.
 - **No muevas al jugador siguiendo a lo que estás midiendo** (`player.x =
   guardia.x - 300`): crea un lazo de realimentación y los resultados salen
   cualquier cosa. Fijalo en un punto y dejalo ahí.
@@ -91,19 +100,20 @@ Dónde vive lo que vas a necesitar:
 - **El mapa NO re-sortea los trenes en cada `goTo('mapa')`** — son objetos
   persistentes que siguen su circuito. Para muestrear el sorteo real hay que
   dejar correr el tiempo con `scenes.update` y juntar los trenes nuevos a
-  medida que cierran vuelta.
+  medida que cierran vuelta. (Para muestrear SÓLO la composición alcanza con
+  importar `sortearComposicion` y llamarla miles de veces: es pura.)
 - **Cuando una entidad "no se mueve" y no se entiende por qué, dibujá una
   grilla de solidez alrededor suyo** (tile por tile, `#` sólido y `.` libre).
-  Eso mostró de un vistazo que un guardia estaba metido en el hueco entre dos
-  bloques de asientos.
-- **Cuando un cambio tiene dos ingredientes, medí cada uno por separado.** El
-  Pistolero se "verificó" midiendo balas totales (44 contra 6, un 7×) y ese
-  número tapó que su cadencia propia no se aplicaba por un bug: la diferencia
-  venía entera del otro ingrediente.
+- **Cuando un cambio tiene dos ingredientes, medí cada uno por separado.**
 - **Un guardia lejos del jugador no se actualiza** (`CONFIG.raid.
   cullPatrolDistance`, 700px): un resultado en cero puede ser el cull.
 - **`0` es falsy — cuidado con `campo || default`** cuando un campo puede valer
-  0 a propósito. Ya pasó dos veces (`noiseWagons`, `dynamite`). Usar `??`.
+  0 a propósito. Ya pasó tres veces (`noiseWagons`, `dynamite`, y ahora
+  `flying` en `createExplosive`, que daba por sentado que todo lo que explota
+  se lanza). **Y el `??` tiene su propia trampa**: `Math.abs(x - (marca ?? x))`
+  da SIEMPRE 0 la primera vez, porque compara el valor contra sí mismo — así
+  una marca de referencia nunca se inicializaba y un guardia se daba vuelta 41
+  veces en 150 s creyendo estar trabado.
 - **No le creas a una corrida chica**: miles de tiradas si es una
   probabilidad, varias corridas completas si es un comportamiento. Y cerrá
   siempre con una corrida COMPLETA de 30-60 s con todo encendido.
@@ -123,7 +133,10 @@ Dónde vive lo que vas a necesitar:
   al canvas (384x216) o la foto sale en blanco.
 - **Para cualquier cambio visual, mirar no es opcional.** Encontró cosas que
   ninguna medición podía dar: cartucheras marrones invisibles sobre un piso
-  marrón, carteles encimados, y una pista que no se leía.
+  marrón, carteles encimados, una pista que no se leía, y esta vez el cajón de
+  pólvora, que era otro marrón sobre el piso marrón y se leía como una sombra.
+  **Contra un fondo del mismo tono lo que despega un objeto es un contorno
+  oscuro y un cuerpo CLARO**, no más color; y **nada de 1 px se ve**.
 - Cerrá el receptor y borrá los .png al terminar.
 
 ### Servidor
@@ -148,11 +161,10 @@ Dónde vive lo que vas a necesitar:
 Repositorio público: `https://github.com/SantiA-web/Forajido`, publicado con
 GitHub Pages en `https://santia-web.github.io/Forajido/`.
 
-**Todo está subido** (commit `7a38439`, "Variedad de trenes: modificadores,
-comportamientos, paquetes y cajas fuertes"). Ya no hay backlog: quedamos en
-subir al cerrar cada cosa para que no se vuelva a acumular. El flujo es
-`git add -A`, `git commit`, `git push`; la identity ya está configurada en el
-repo y no hay que tocarla. Nada de `--force` salvo que yo lo pida.
+**Todo está subido.** Ya no hay backlog: quedamos en subir al cerrar cada cosa
+para que no se vuelva a acumular. El flujo es `git add -A`, `git commit`,
+`git push`; la identity ya está configurada en el repo y no hay que tocarla.
+Nada de `--force` salvo que yo lo pida.
 
 ## Estado del proyecto
 
@@ -175,13 +187,11 @@ carga tienen identidad propia y quedan afuera.
   caja. Sale algo en el 98% de los trenes.
 - **Paquetes** (`src/data/paquetes.js`): pasajero rico con guardaespaldas
   (20% por vagón con pasajeros) y **caja fuerte oculta** (25% por tren, en
-  cualquier vagón menos el blindado). Tres pasajeros al azar del tren saben
-  dónde está y te lo dicen al amenazarlos con una pista tipo
-  `VAGÓN 3: DEBAJO DE UNA MESA`; la caja no se marca, aparece recién cuando
-  la tenés al lado.
+  cualquier vagón menos el blindado, con cinco escondites posibles).
 - **Cajas fuertes**: 8 segundos, disparar o recargar interrumpe, el progreso
-  no se pierde, y la dinamita las revienta (quedan abiertas y el botín se
-  levanta como una bolsa).
+  no se pierde, y la dinamita las revienta.
+- **El vagón de armas** (nuevo, ver arriba): 50% de los trenes estándar, con
+  sus tres cajones de pólvora y su Dinamitero deambulando.
 
 ### En reserva (construidos, medidos y apagados con chance 0)
 
@@ -190,10 +200,12 @@ En `src/data/modifiers.js`, con el valor con el que se probó anotado al lado:
 - **Pistolero** (20% por guardia común, sólo con recompensa ≥300 Y honor
   ≤−10). Ojo: lo apagué ANTES de que se arreglaran sus dos bugs, así que
   nunca lo vi funcionando bien. Prenderlo es cambiar un 0.
-- **Dinamitero** (espera este vagón de armas).
 - **Civil encubierto** (10% por pasajero; se revela cuando le das la espalda).
+- La **variante suelta** del Dinamitero sigue en 0 a propósito: el Dinamitero
+  ya está en el juego como el que da vueltas por el vagón de armas, y
+  repartir dos o tres más al azar le sacaría sentido a mirar dónde está.
 
-## Lo que falta del plan, después del vagón de armas
+## Lo que falta del plan
 
 - **Fase 6b**: el vagón de guardias dormidos — depende de la Fase 3b
   ("durmiendo"), que a su vez necesita **la noche** de verdad. Sesión propia.
@@ -207,10 +219,10 @@ En `src/data/modifiers.js`, con el valor con el que se probó anotado al lado:
 
 ## Pendientes sueltos
 
-- **Calibrar jugando** los números que se eligieron sobre tablas: la
-  frecuencia de los paquetes (uno de cada dos trenes estándar trae alguno),
-  el 25% de la caja oculta, cuánto da el pasajero rico ($150-250 / 2,2 s), la
-  caja oculta ($400-900 / 8 s), y de sesiones anteriores `CONFIG.honor.*`,
+- **Calibrar jugando** los números que se eligieron sobre tablas: todo lo del
+  vagón de armas (ver arriba), la frecuencia de los paquetes, el 25% de la
+  caja oculta, cuánto da el pasajero rico ($150-250 / 2,2 s), la caja oculta
+  ($400-900 / 8 s), y de sesiones anteriores `CONFIG.honor.*`,
   `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`, `CONFIG.raid.rachaBonus*` y
   `rescate*`, `LOOT_TYPES.strongbox.jackpot*`.
 - El **`$NaN` en el HUD del campamento**, visto de pasada hace varias sesiones

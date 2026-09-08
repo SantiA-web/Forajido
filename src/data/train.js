@@ -29,6 +29,10 @@
  *   composition    la baraja de vagones (ids de `data/wagons.js`)
  *   posicionMinima { id: vagón mínimo } — ese vagón nunca antes de esa posición
  *   posicionFija   { id: 'ultima' } — ese vagón SIEMPRE ahí, nunca se mezcla
+ *   sustituciones  [{ de, por, chance }] — a veces este tren cambia un vagón
+ *                  por otro. Es la primera capa de variedad que toca DE QUÉ
+ *                  está hecho el tren y no sólo quién viaja adentro (ver
+ *                  `armas` en el estándar, más abajo)
  *   peso           cuántas fichas mete en la bolsa del sorteo (ver más abajo)
  *   raidDuration   segundos del asalto para este tren (si no está, usa
  *                  CONFIG.raid.duration)
@@ -72,9 +76,35 @@ export const TRAIN_TYPES = {
     hint: 'Reparto parejo. Nada fuera de lo común.',
     pista: 'Carga pareja',
     composition: ['pasajeros', 'pasajeros', 'comedor', 'correo', 'ganado', 'blindado'],
-    posicionMinima: { blindado: 3 },
+    posicionMinima: { blindado: 3, armas: 2 },
     peso: 50,
     modificadores: true,
+
+    /**
+     * EL VAGÓN DE ARMAS — Fase 6a. La mitad de los trenes estándar cambian el
+     * de ganado por el de armas (data/wagons.js).
+     *
+     * ES UN SORTEO Y NO UN CAMBIO FIJO, y es lo que hace que valga la pena:
+     * la frase que abre todo este plan es *"conozco estos vagones, pero nunca
+     * sé exactamente qué me voy a encontrar"*, y hasta ahora eso valía para
+     * quién viajaba adentro (clima, estado, comportamientos, paquetes) pero
+     * nunca para QUÉ VAGONES tiene el tren. Ahora también, y encima es lo
+     * único de toda la familia que **se ve desde el galope**, antes de subir.
+     *
+     * REEMPLAZA AL GANADO Y NO SE SUMA COMO SÉPTIMO, elegido sobre una tabla
+     * de tres: sumarlo alargaba el tren 33 columnas (528 px, unos 9 s de ida
+     * al fondo y 18 s de ida y vuelta de un reloj de 145 — el 12%), y ese
+     * número está afinado desde que se cerró la fase 2. Reemplazando, el tren
+     * crece 6 columnas y el asalto dura lo mismo.
+     *
+     * Y AL GANADO Y NO A OTRO porque es el vagón de paso del estándar (un
+     * guardia, una bolsa): es el único al que se le puede sacar el lugar sin
+     * que se note un agujero. Como es sorteo, además, sigue apareciendo la
+     * mitad de las veces — con él siguen vivos el escondite "junto al corral"
+     * de la caja fuerte oculta y el único vagón sin techo del tren.
+     */
+    sustituciones: [{ de: 'ganado', por: 'armas', chance: 0.50 }],
+
     color: '#c9b68d',
   },
 

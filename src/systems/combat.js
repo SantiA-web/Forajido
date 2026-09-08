@@ -13,6 +13,8 @@ import { damagePlayer, isHidden } from '../entities/player.js';
 import { damageRider } from './riders.js';
 import { dañarPuerta } from '../entities/door.js';
 import { dañarRodante } from '../entities/rodante.js';
+import { dañarCajon } from '../entities/cajon.js';
+import { prenderCajon } from './explosives.js';
 
 export function updateBullets(bullets, dt, world) {
   for (const b of bullets) {
@@ -66,6 +68,39 @@ export function updateBullets(bullets, dt, world) {
           dañarPuerta(d, b.damage);
           world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
         }
+      }
+
+      /**
+       * LOS CAJONES DE PÓLVORA DEL VAGÓN DE ARMAS (Fase 6a).
+       *
+       * FRENAN LA BALA, como cualquier bulto: por eso sirven de cobertura —
+       * una cobertura que aguanta tres tiros y después te mata.
+       *
+       * Y LOS PRENDE CUALQUIER BALA, NO SÓLO LA TUYA. Es lo contrario de la
+       * regla de los barriles del tren veloz (justo acá abajo), y es a
+       * propósito: aquel es un problema que el juego te pone a VOS para que
+       * elijas cómo resolverlo, y éste es un lugar donde **nadie** quiere
+       * tirotear. Un guardia que te tira y falla también puede volar el
+       * vagón, y eso es exactamente lo que hace que pelear ahí adentro sea
+       * mala idea para los dos.
+       *
+       * Los tres tiros de vida (`EXPLOSIVES.cajonPolvora.vida`) son lo que
+       * evita que sea una lotería: una bala perdida no basta, hace falta un
+       * tiroteo sostenido contra el MISMO cajón.
+       */
+      if (world.cajones) {
+        let pegoCajon = false;
+        for (const cj of world.cajones) {
+          if (!cj.alive || !pointInBody(b.x, b.y, cj)) continue;
+          b.alive = false;
+          pegoCajon = true;
+          world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
+          // `b.owner`: el que hizo saltar la mecha se hace cargo de lo que
+          // pase después, aunque haya sido sin querer.
+          if (dañarCajon(cj, b.damage)) prenderCajon(cj, world, b.owner);
+          break;
+        }
+        if (pegoCajon) break;
       }
 
       /**

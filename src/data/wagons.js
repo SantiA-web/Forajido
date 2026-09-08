@@ -271,6 +271,108 @@ export const WAGONS = {
     ],
   },
 
+  // ------------------------------------------------------------------ armas
+  //
+  // FASE 6a del plan "variedad de lo que pasa en los trenes". El vagón que el
+  // Dinamitero venía esperando desde la Fase 4: es de acá de donde sale su
+  // cartucho.
+  //
+  // LO QUE LO HACE DISTINTO NO ES LO QUE TIENE, ES QUE SIRVE PARA DOS COSAS
+  // OPUESTAS. Los cajones de pólvora (`cajones`, más abajo) se abren con [E] y
+  // te llevás un cartucho — es el único lugar del juego donde se repone algo—,
+  // y también revientan si les pegás tres tiros, encadenándose con el resto
+  // del vagón. Lo que te sirve es lo que te puede matar, que es la misma forma
+  // que ya tiene la cobertura (te salva de los de adentro y te entrega a los
+  // de afuera).
+  //
+  // NO LLEVA CAJA FUERTE, por pedido de Santi. Su tensión no es quedarse ocho
+  // segundos quieto: es el Dinamitero que da vueltas por acá (ver
+  // `rondaDinamitero` en world/train.js) y la cadena. Las cinco bolsas dan
+  // ~$237, la mitad de lo que da el correo, que es el vagón con el que se lo
+  // va a comparar (mismo tamaño, mismos tres guardias).
+  //
+  // Y TIENE VENTANILLAS, cuatro pares. Podría no tenerlas —es un furgón de
+  // carga— pero estar a salvo de los jinetes de afuera es la identidad del
+  // vagón blindado, y esa no se la puede robar otro vagón.
+  armas: {
+    id: 'armas',
+    name: 'Vagón de armas',
+    short: 'ARMAS',
+    hint: 'Cajones de pólvora. Acá no conviene tirotear.',
+    // Los huecos entre estanterías caen justo sobre las ventanillas, como en
+    // el correo: para llegar al vidrio hay que meterse entre los cajones.
+    layout: [
+      '####WW#####WW#####WW#####WW###',
+      '#CCC..CCCCC..CCCCC..CCCCC..CC#',
+      '#CCC..CCCCC..CCCCC..CCCCC..CC#',
+      '#............................#',
+      '+............................+',
+      '+............................+',
+      '#............................#',
+      '#CC..CCCCC..CCCCC..CCCCC..CCC#',
+      '#CC..CCCCC..CCCCC..CCCCC..CCC#',
+      '###WW#####WW#####WW#####WW####',
+    ],
+    /**
+     * ACÁ NO SALE NINGUNA VARIANTE DE GUARDIA (data/modifiers.js).
+     *
+     * *(Santi, viendo el problema antes de que existiera: "si por lo menos uno
+     * de esos guardias es un dinamitero sería una catástrofe, porque una sola
+     * dinamita lanzada acabaría con todo en el vagón")*
+     *
+     * Un Dinamitero plantado acá adentro volaría los tres cajones en su primer
+     * ataque, siempre, en todos los trenes: el peligro dejaría de tener
+     * posición y no habría nada que decidir. El de este vagón **da vueltas por
+     * afuera** (ver `rondaDinamitero` en world/train.js), que es lo que
+     * convierte la amenaza en algo que se puede mirar y esperar.
+     *
+     * Es una llave por vagón, no un `if` con el nombre escrito en el código:
+     * cualquier vagón futuro donde una variante rompa las reglas del lugar la
+     * puede usar igual.
+     */
+    sinVariantes: true,
+
+    // Tres guardias, como el correo: dos que dan vueltas por las mitades y uno
+    // que barre el pasillo de punta a punta. Todos comunes, por lo de arriba.
+    enemies: [
+      { path: [[5, 3], [14, 3], [14, 6], [5, 6]] },
+      { path: [[25, 6], [16, 6], [16, 3], [25, 3]] },
+      { path: [[3, 4], [26, 4], [26, 5], [3, 5]] },
+    ],
+    passengers: [],
+    loot: [
+      { col: 5, row: 1, type: 'bag' },
+      { col: 12, row: 2, type: 'bag' },
+      { col: 15, row: 3, type: 'bag' },
+      { col: 18, row: 8, type: 'bag' },
+      { col: 25, row: 7, type: 'bag' },
+    ],
+
+    /**
+     * LOS CAJONES DE PÓLVORA — ver data/explosives.js (`cajonPolvora`) y
+     * entities/cajon.js.
+     *
+     * TRES, y el número sale de una cuenta: con el tope de 3 cartuchos
+     * (`CONFIG.player.dynamiteMax`), tres cajones son exactamente los que
+     * hacen falta para salir lleno habiendo entrado sin nada. Con dos, la
+     * cadena cubre 272 px de los 480 del vagón y no se lee como "voló todo";
+     * con cuatro, el cuarto nunca te sirve para nada.
+     *
+     * DÓNDE VAN NO ES DECORACIÓN: los tres están a seis baldosas o más de
+     * cada punta del vagón. La explosión alcanza 68 px (4,25 baldosas) y las
+     * puertas viven en los bordes — si un cajón quedara pegado a una punta y
+     * el blindado cayera al lado, la cadena le reventaría la puerta de chapa
+     * desde afuera, y esa puerta tiene UNA sola llave, que es tu dinamita.
+     * Con este margen la explosión queda a 144 px de esa puerta, más del
+     * doble de su alcance.
+     */
+    cajones: [
+      { col: 8, row: 3 },
+      { col: 15, row: 6 },
+      { col: 21, row: 3 },
+    ],
+  },
+
   // ============================================================ TREN VELOZ
   //
   // Variantes CORTAS, escritas a mano — no son las de arriba recortadas por

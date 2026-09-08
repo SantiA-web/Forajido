@@ -16,6 +16,7 @@ import { damageEnemy } from '../entities/enemy.js';
 import { damagePlayer } from '../entities/player.js';
 import { volarPuerta } from '../entities/door.js';
 import { reventarCaja, esCajaFuerte } from '../entities/lootable.js';
+import { EXPLOSIVES } from '../data/explosives.js';
 
 export function updateExplosives(explosives, dt, world) {
   for (const ex of explosives) {
@@ -159,6 +160,21 @@ export function explode(ex, world) {
     }
   }
 
+  /**
+   * --- Y LOS CAJONES DE PÓLVORA: la cadena (Fase 6a) ---
+   *
+   * *(Santi: "las dinamitas lanzadas también hacen que exploten los barriles.
+   * Un barril explotado, explota todo en el vagón por una explosión en
+   * cadena")*
+   *
+   * Va después de todo lo demás a propósito: esta explosión ya resolvió a
+   * quién mató y qué abrió, y recién ahí prende a los demás. Cada uno de
+   * ellos hará lo mismo cuando le toque su turno, así que no hace falta
+   * ninguna lógica especial de "explosión múltiple" — es la misma explosión
+   * de siempre, varias veces.
+   */
+  encadenar(ex, world);
+
   world.camera.shake(t.shake, 0.4);
   world.audio.play('explosion');
   /**
@@ -173,6 +189,72 @@ export function explode(ex, world) {
     porJugador, wagons: t.noiseWagons,
   });
   world.bus.emit('noise', { x: ex.x, y: ex.y, radius: t.noise });
+}
+
+/**
+ * PRENDER UN CAJÓN DE PÓLVORA (entities/cajon.js).
+ *
+ * El cajón deja de existir como cajón y nace un explosivo exactamente donde
+ * estaba. Todo lo que sigue —la mecha que parpadea, el aro de aviso, los
+ * guardias que salen corriendo, el estruendo que retumba tres vagones— es el
+ * sistema de la dinamita sin una línea nueva.
+ *
+ * `owner` viaja desde lo que lo prendió (tu bala, tu cartucho, el de un
+ * guardia) y es lo que decide si los muertos cuentan como tuyos y si la
+ * explosión te delata (ver `retumbaElTren` en scenes/raidScene.js). El que
+ * hizo saltar la mecha se hace cargo de lo que pase después, incluso de lo
+ * que voló en cadena tres cajones más allá.
+ */
+export function prenderCajon(cajon, world, owner, fuse) {
+  if (!cajon.alive) return;
+  const t = EXPLOSIVES.cajonPolvora;
+  cajon.alive = false;
+  world.spawnExplosive({
+    x: cajon.x, y: cajon.y,
+    // No se lanza: nace donde estaba. `createExplosive` resuelve el vuelo de
+    // cero en el primer cuadro y se queda ahí chispeando.
+    targetX: cajon.x, targetY: cajon.y,
+    typeId: t.id,
+    owner,
+    fuse: fuse ?? t.fuse,
+  });
+  world.audio.play('fuse');
+}
+
+/**
+ * LA CADENA — una explosión adentro de un vagón prende TODOS sus cajones.
+ *
+ * DOS DECISIONES QUE IMPORTAN:
+ *
+ * 1. ES POR VAGÓN, NO POR RADIO. Los tres cajones del vagón de armas están
+ *    repartidos a lo largo de 480 px y la explosión alcanza 68: por cercanía
+ *    no se prenderían nunca entre ellos, y "explota todo en el vagón" no
+ *    pasaría. La cadena no es física, es del lugar.
+ *
+ * 2. Y TIENE QUE PASAR ADENTRO DEL VAGÓN (`tramoAt`), no en el enganche de al
+ *    lado. Si valiera desde la pasarela, se podría volar el vagón entero
+ *    desde afuera sin entrar nunca — y este vagón existe para que entrar sea
+ *    la decisión.
+ *
+ * Se ordenan por cercanía y se les da una mecha creciente: el más cerca del
+ * estruendo primero. Así la cadena AVANZA en una dirección legible en vez de
+ * ser un fogonazo, y cada eslabón te regala los píxeles que alcanzás a correr
+ * mientras llega.
+ */
+function encadenar(ex, world) {
+  const train = world.train;
+  const cajones = world.cajones;
+  if (!train || !cajones || cajones.length === 0) return;
+  if (train.tramoAt(ex.x) !== 'vagon') return;
+
+  const vagon = train.wagonAt(ex.x);
+  const enElVagon = cajones
+    .filter((c) => c.alive && c.wagon === vagon)
+    .sort((a, b) =>
+      distance(ex.x, ex.y, a.x, a.y) - distance(ex.x, ex.y, b.x, b.y));
+
+  const paso = EXPLOSIVES.cajonPolvora.cadena;
+  enElVagon.forEach((c, i) => prenderCajon(c, world, ex.owner, paso * (i + 1)));
 }
 
 /**

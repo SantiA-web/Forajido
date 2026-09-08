@@ -139,6 +139,17 @@ export const ESCONDITES = {
   correo_liviano: ['mesa'],
   ganado: ['corral'],
   ganado_corto: ['corral'],
+  /**
+   * EL VAGÓN DE ARMAS (Fase 6a). Entra en la lista aunque no lleve caja fuerte
+   * propia, y no es una contradicción: las cajas del catálogo de un vagón son
+   * del VAGÓN, y ésta es del TREN — puede terminar en cualquiera menos el
+   * blindado.
+   *
+   * Y es el mejor escondite que tiene el tren, por lo que cuesta cobrarlo: es
+   * el único vagón donde la explosión que abre una caja fuerte puede llevarse
+   * puesto todo lo demás.
+   */
+  armas: ['cajones'],
 };
 
 /** El carácter del layout al que se pega la caja en cada escondite. */
@@ -147,6 +158,7 @@ export const TILE_DE_ESCONDITE = {
   asiento: 'S',
   mesa: 'C',
   corral: 'C',
+  cajones: 'C',
 };
 
 /**

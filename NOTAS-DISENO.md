@@ -9075,6 +9075,105 @@ más importa saber si le quedan.
 
 ---
 
+## ✅ HECHA · Más pólvora y islas de cobertura en el vagón de armas
+
+*(Santi: "quiero ajustar dos cosas en el vagón de armas: una es que quiero que
+hayan más barriles de dinamita y la otra es que quiero que haya pequeñas
+coberturas por el centro del pasillo")*
+
+**Cinco cajones en vez de tres, y siete islas de carga de 2×1** en las filas 3 y
+6, escalonadas (tres arriba, cuatro abajo, desfasadas tres columnas).
+
+**LOS CAJONES DE MÁS NO DAN MÁS DINAMITA.** El tope siguen siendo 3 cartuchos y
+entrás con 2, así que **uno solo sirve como reposición y los otros cuatro son
+bombas puestas**. Lo que cambia es la cadena: repartidos cada 48-64 px, la onda
+avanza a ~160 px/s, o sea **más rápido de lo que corrés** (78). Correr a lo
+largo del vagón dejó de ser una salida.
+
+**Y AHORA HAY DOS CLASES DE COBERTURA, que es lo mejor que salió y no costó una
+línea.** Los cajones de pólvora ya frenaban balas, o sea que ya eran cobertura —
+una que aguanta tres tiros y después te mata. Al lado de las islas verdes hay
+que aprender a distinguirlas: la franja roja y los cartuchos asomando son la
+diferencia entre parapetarse y sentarse sobre una bomba.
+
+### 🐛 Tres cosas rotas, y la primera costó dos intentos
+
+**1. LAS COBERTURAS TAPONARON EL CORREDOR, Y CON ÉL LA RONDA DEL DINAMITERO.**
+
+Las islas van en las filas 3 y 6 porque por el corredor 4-5 pasan las rondas —
+incluida la del Dinamitero, que cruza el vagón de punta a punta. Un tile sólido
+en el camino de una ronda traba al guardia (`moveAxisAligned` empuja en X y no
+rodea). Así que las dos patrullas que usaban las filas 3 y 6 tuvieron que
+mudarse al corredor… y ahí empezó el problema.
+
+- **Primer intento — las tres rondas al corredor.** Medido sobre 150 s: el
+  Dinamitero **dejó de poder cruzar el vagón** (recorrido real 817-1614 sobre
+  una ronda de 448-1616) y pasó del 39% al 61% del tiempo adentro.
+- **Segundo intento — dos rondas y un centinela**, creyendo que el problema era
+  la cantidad. **Peor**: recorrido 1056-1614, ni siquiera entraba a la mitad
+  izquierda, 80% del tiempo adentro. Dos cuerpos yendo y viniendo alcanzan para
+  taponar un corredor de dos baldosas.
+- **Lo que lo resolvió no es cuántos sino EN QUÉ FILA.** El corredor tiene dos
+  filas y `CONFIG.enemy.separation` es 13 px: dos guardias en filas distintas
+  quedan a 16 px de centro a centro y **no se empujan**. El Dinamitero cruza
+  siempre por la fila 4, así que alcanza con dejarle esa fila: las rondas del
+  vagón van por la 5, en línea recta (un rectángulo tendría que pasar por las
+  dos filas). Mismo patrón que la ronda larga del correo, que existe desde la
+  fase 2.
+
+**2. Y EL ATASCO DE VERDAD NO ESTABA EN ESTE VAGÓN.** Con las rondas ya
+separadas por fila seguían apareciendo 34 vueltas espurias en 150 s. Registrando
+DÓNDE se daba vuelta, todas caían en el **vagón de pasajeros**, entre x=677 y
+x=700, con el Dinamitero en y=64-67 en vez de 72 y un tile sólido adelante.
+
+`moveAxisAligned` corrige la Y recién cuando ya llegó en X — mueve un eje por
+vez— y para una ronda de un solo vagón eso alcanza. Para el Dinamitero no:
+cruza tres vagones llenos de gente y cada cruce le deja un empujón de
+`separateEnemies`. Los empujones se acumulan, termina raspando la fila de
+asientos, y ahí ya no puede avanzar en X porque medio cuerpo está adentro del
+asiento. El turn-around hacía bien su trabajo (estaba trabado de verdad); el
+atasco no debería haber existido.
+
+Ahora el que tiene `rondaLarga` corrige la Y **en paralelo** con la X, así que
+vuelve al centro del pasillo apenas lo sueltan. Medido después: desvío máximo
+del carril **1 px** (antes 8), reloj de atasco máximo **0,33 de 2,5**, y **cero
+vueltas espurias** — idéntico con el culling normal y con todos los guardias
+moviéndose, o sea estable.
+
+**3. LOS CAJONES QUEDARON PEGADOS A LAS ISLAS, Y ESO LOS VOLVÍA TRAMPAS.** La
+primera colocación los puso justo a la izquierda de cada bloque de cobertura:
+el que estaba al lado de un cajón sacando un cartucho, al prenderse la mecha,
+**chocaba contra la isla y no podía huir**. Medido: prendiendo el último y
+corriendo, el jugador terminó a **tres píxeles** de donde arrancó, muerto. Ahora
+van en el medio de cada tramo libre, con dos baldosas a cada lado.
+
+### VERIFICADO POR CONSOLA
+
+- **La ronda, 150 s:** recorrido 450-1614 sobre 448-1616, **0 vueltas
+  espurias**, 38,3% adentro, pasadas de 10,4-10,5 s y ventanas de 14,7-17,1 s.
+  Prácticamente lo mismo que antes de las coberturas (39,1%, 10,4-12,0 s), y más
+  regular.
+- **Cadena de cinco:** 5 explosiones en 1,40 s (0,40 / 0,73 / 1,08 / 1,43 /
+  1,80), escalonadas 0,33-0,35 como manda `cadena`.
+- **Escapar, corriendo por el corredor:** prendiendo el primero y huyendo a la
+  izquierda, **4/4**; a la derecha, 0/4 (corriste a lo largo de la cadena).
+  Prendiendo el último y huyendo a la derecha, **4/4**; a la izquierda, 0/4.
+  **Desde el del medio se llega a los dos lados, 4/4**, porque el corredor está
+  libre. La regla quedó legible: hay que salir para donde no queden cajones.
+- **Geometría:** 30 columnas parejas, corredor 4-5 intacto, **cero avisos** de
+  cosas sobre tiles sólidos, cajones a 8 baldosas de cada punta.
+- **Corrida completa de 60 s con todo encendido** (tormenta + redada + alerta
+  inicial + puerta bloqueada + comportamientos + pasajero rico + caja oculta,
+  26 guardias): **sin errores ni avisos**.
+
+**MIRADO CON `foto.ps1`:** las islas verdes y los cajones de franja roja no se
+confunden entre sí ni con las bolsas doradas, y el corredor central se lee como
+lo que es — el único camino libre de punta a punta.
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

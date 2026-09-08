@@ -17,11 +17,17 @@ sin caja fuerte) que **reemplaza al de ganado en el 50% de los trenes
 estándar**, nunca en el vagón 1. Es lo primero de todo el plan de variedad que
 cambia de qué está HECHO el tren, y lo único que se ve desde el galope.
 
-**Adentro hay tres cajones de pólvora, y sirven para dos cosas opuestas:**
+**Adentro hay cinco cajones de pólvora, y sirven para dos cosas opuestas:**
 `[E]` te llevás un cartucho de dinamita (tope 3, `CONFIG.player.dynamiteMax` —
 es el único lugar del juego donde se repone algo), o tres balazos lo prenden y
-**arrastra a los otros dos en cadena**. Lo prende cualquier bala, tuya o de un
-guardia, y también una dinamita lanzada adentro del vagón.
+**arrastra a todos los demás en cadena**. Lo prende cualquier bala, tuya o de un
+guardia, y también una dinamita lanzada adentro del vagón. Con el tope en 3,
+**sólo uno sirve como reposición: los otros cuatro son bombas puestas**.
+
+**Y tiene siete islas de cobertura** de 2×1 en las filas 3 y 6, escalonadas. Las
+verdes son cobertura segura; los cajones también frenan balas pero explotan al
+tercer tiro. El corredor (filas 4-5) queda libre a propósito: por ahí pasan las
+rondas y por la fila 4 cruza el Dinamitero.
 
 **Y trae un Dinamitero deambulando** entre ese vagón y los dos vecinos, a 46
 px/s: vuelta completa ~53 s, nunca más de ~12 s seguidos adentro. Esperar a que
@@ -40,10 +46,13 @@ de una tanda perdés 2 de 4 vidas; corriendo apenas ves las mechas, ninguna.
 ### Lo que hay que mirar jugándolo
 
 - **¿La cadena se lee?** Está escalonada 0,35 s justamente para que se vea
-  avanzar y se pueda correr. Medido: con un cajón solo te alejás 94 px en los
-  1,2 s de mecha y salís ileso — pero hay que **salir para el lado donde no
-  quedan cajones**, porque correr a lo largo de la cadena te mete en el
-  siguiente.
+  avanzar y se pueda correr. Medido: los cinco explotan en 1,40 s, y hay que
+  **salir para el lado donde no quedan cajones** — correr a lo largo de la
+  cadena te mete en el siguiente, y la onda va más rápido que vos.
+- **¿Las islas de cobertura alcanzan, o el vagón sigue siendo un pasillo?** Son
+  siete y el corredor central quedó libre a propósito.
+- **¿Se distinguen las dos coberturas jugando?** Verde = segura, franja roja =
+  bomba. En una foto se distinguen; en el medio de un tiroteo no lo sé.
 - **¿El Dinamitero se nota, y se le puede tomar el ritmo?** Los números dicen
   que sí (dos vueltas y media por asalto), pero eso es cálculo, no juego.
 - **¿Se ve la bandolera vacía?** Es toda la señal de la ventana de 5 s en la

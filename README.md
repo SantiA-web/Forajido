@@ -578,12 +578,12 @@ correo 32, blindado 30, **armas 30**, ganado 24.
 **Uno de cada dos trenes estándar cambia el vagón de ganado por uno de armas.**
 Nunca es el primero, y desde afuera se ve cuál te tocó.
 
-Adentro hay **tres cajones de pólvora**, y sirven para dos cosas opuestas:
+Adentro hay **cinco cajones de pólvora**, y sirven para dos cosas opuestas:
 
 | | |
 |---|---|
 | **`[E]` sostenido** | Te llevás **un cartucho de dinamita**. Es el único lugar del juego donde se repone algo |
-| **Tres balazos** | Se prende, con una mecha corta — y **arrastra a los otros dos** |
+| **Tres balazos** | Se prende, con una mecha corta — y **arrastra a todos los demás** |
 
 **El tope es tres cartuchos.** Si llegás con la dinamita llena, el cajón no se
 abre: lo que te queda es una bomba puesta en el mapa.
@@ -595,8 +595,15 @@ perdida no alcanza, pero un tiroteo sostenido ahí adentro sí.
 
 **La cadena avanza, no estalla junta.** Cada cajón prende al siguiente unas
 décimas después, del más cercano al estruendo al más lejano, así que **se puede
-correr mientras llega** — pero hay que salir para el lado donde ya no quedan
-cajones. Correr a lo largo de la cadena es correr hacia el próximo.
+correr mientras llega** — pero la onda va más rápido que vos, así que hay que
+salir **para el lado donde ya no quedan cajones**. Correr a lo largo de la
+cadena es correr hacia el próximo.
+
+**Y hay islas de carga en el medio del pasillo**, siete, escalonadas a un lado
+y al otro. Son lo que hace que el vagón se pueda pelear en vez de sólo cruzarlo
+corriendo — y lo que obliga a mirar bien: **las verdes son cobertura, las de la
+franja roja son bomba**. Los cajones de pólvora frenan las balas igual que
+cualquier bulto, así que también son cobertura… hasta el tercer tiro.
 
 Lleva cinco bolsas repartidas y **ninguna caja fuerte**: su tensión es otra.
 

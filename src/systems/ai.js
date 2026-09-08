@@ -1030,6 +1030,33 @@ function doPatrol(e, dt, world) {
   const velocidad = e.ai.patrolSpeed ?? c.patrolSpeed;
   const arrived = moveAxisAligned(e, waypoint.x, waypoint.y, velocidad, dt, world.map);
 
+  /**
+   * EL DE RONDA LARGA VUELVE A SU CARRIL, SIEMPRE.
+   *
+   * 🐛 `moveAxisAligned` corrige la Y recién cuando ya llegó en X (mueve un eje
+   * por vez), y para una ronda de un solo vagón eso alcanza. Para el Dinamitero
+   * no: cruza tres vagones llenos de gente, y cada vez que se cruza con alguien
+   * `separateEnemies` lo empuja un poco fuera del pasillo. Los empujones se
+   * acumulan, termina raspando la fila de asientos y ahí **no puede avanzar en
+   * X**, porque su medio cuerpo de arriba ya está adentro del asiento.
+   *
+   * MEDIDO: 34 vueltas espurias en 150 s, todas en el vagón de pasajeros, con
+   * él oscilando entre x=677 y x=700, en y=64-67 en vez de 72, y con un tile
+   * sólido adelante. El turn-around estaba haciendo bien su trabajo —estaba
+   * trabado de verdad— pero el atasco no debería haber existido.
+   *
+   * Con esto la Y se corrige EN PARALELO con la X, así que vuelve al centro del
+   * pasillo apenas lo sueltan y sigue de largo. No cambia nada para el resto de
+   * los guardias: es el único con una ronda que cruza vagones.
+   */
+  if (e.rondaLarga) {
+    const dy = waypoint.y - e.y;
+    if (Math.abs(dy) > 1) {
+      const paso = Math.sign(dy) * Math.min(Math.abs(dy), velocidad * dt);
+      moveAndCollide(e, 0, paso, movSolidAt(world.map));
+    }
+  }
+
   if (arrived) {
     e.pathIndex = (e.pathIndex + 1) % e.path.length;
     e.waitTimer = 0.9;   // se para y mira alrededor: ahí es donde te descubre

@@ -118,8 +118,12 @@ export function updateEnemy(e, dt, world) {
     // Antes que cualquier otra cosa: si hay una mecha encendida al lado,
     // correr. Ningún plan sobrevive a una dinamita a dos metros.
     const peligro = explosivoPeligroso(e, world);
+    // Y justo después: un cajón de pólvora rodando por el pasillo hacia él.
+    const cajonRodando = peligro ? null : cajonQueViene(e, world);
     if (peligro) {
       huirDe(e, dt, world, peligro);
+    } else if (cajonRodando) {
+      reaccionarAlCajon(e, dt, world, cajonRodando);
     } else {
       const player = world.player;
       /**
@@ -501,6 +505,114 @@ function explosivoPeligroso(e, world) {
     return ex;
   }
   return null;
+}
+
+/**
+ * ¿VIENE UN CAJÓN DE PÓLVORA RODANDO HACIA ESTE GUARDIA? (Fase 6a)
+ *
+ * *(Santi: "el guardia tiene que saber leer el barril")*
+ *
+ * SÓLO CUENTA EL QUE LO PUEDE ALCANZAR: los cajones empujados van SIEMPRE
+ * hacia la cola (la física del tren, ver `empujarCajon` en raidScene.js), así
+ * que sólo amenazan a quien tienen delante — o sea con la x más chica. El que
+ * quedó atrás puede seguir con lo suyo.
+ *
+ * Y tiene que venir por su carril: en un pasillo de dos baldosas, uno que
+ * rueda por la otra fila le pasa al lado.
+ */
+function cajonQueViene(e, world) {
+  if (!world.rodantes || !world.rodantes.length) return null;
+  for (const ro of world.rodantes) {
+    if (ro.tipo !== 'polvora' || !ro.alive) continue;
+    if (ro.x < e.x) continue;                               // ya pasó
+    if (ro.x - e.x > LECTURA_CAJON) continue;               // todavía lejos
+    if (Math.abs(ro.y - e.y) > ro.hh + e.hh + 6) continue;  // otro carril
+    return ro;
+  }
+  return null;
+}
+
+/**
+ * DESDE TAN LEJOS LO EMPIEZA A LEER. 130 px a los 135 px/s del rodante es
+ * poco menos de un segundo de aviso — el mismo orden que el `aimTime` con el
+ * que un guardia telegrafía un disparo, y bastante para que se le vea decidir.
+ */
+const LECTURA_CAJON = 130;
+
+/**
+ * Y A PARTIR DE ACÁ YA NO LE DISPARA: no le da el tiempo. 70 px son medio
+ * segundo de rodante, menos que el `aimTime` (0,30) más la cadencia.
+ */
+const CAJON_DEMASIADO_CERCA = 70;
+
+/**
+ * QUÉ HACE EL GUARDIA CON UN CAJÓN QUE SE LE VIENE ENCIMA.
+ *
+ * *(Santi: "o correrse hacia un costado o balearlo para romperlo (si es que no
+ * lleva dinamita encima). Si el barril tiene dinamita, el guardia intentará
+ * salir del radio de una posible explosión")*
+ *
+ * SON DOS LECTURAS DISTINTAS Y LA DIFERENCIA ES LA FRANJA ROJA:
+ *
+ *  - **Vacío:** es un bulto que lo va a tumbar y nada más. Si le sobra tiempo
+ *    le dispara (tres tiros lo hacen astillas); si ya lo tiene encima, se
+ *    corre al costado y lo deja pasar. Elegido sobre "siempre se corre" porque
+ *    es lo que haría cualquiera y **se ve desde afuera**: al que le sobra
+ *    tiempo lo ves apuntarle al barril.
+ *  - **Cargado:** dispararle sería suicidarse. Primero sale del carril y
+ *    después se aleja HACIA LA LOCOMOTORA — contra el sentido del cajón, que
+ *    es la única dirección en la que el cajón se le aleja de verdad. Correr
+ *    hacia la cola sería correr delante de algo que va a 135 px/s.
+ *
+ * En los dos casos suelta lo que estaba haciendo (apuntar, asomarse): nadie
+ * sostiene una cobertura con eso viniéndole de frente.
+ */
+function reaccionarAlCajon(e, dt, world, ro) {
+  const c = e.ai;
+  if (e.state === 'patrol') e.state = 'suspicious';
+  e.alertMark = Math.max(e.alertMark, 0.4);
+
+  const dist = ro.x - e.x;
+
+  if (!ro.cargado && dist > CAJON_DEMASIADO_CERCA) {
+    // Le sobra tiempo: se planta y le tira. `tryFire` ya sabe apuntar a un
+    // punto cualquiera, así que el cajón entra como objetivo sin una línea
+    // nueva — y las balas de guardia ya le pegan (ver systems/combat.js).
+    turnTowards(e, Math.atan2(ro.y - e.y, ro.x - e.x), dt, 10);
+    tryFire(e, dt, world, ro, false);
+    return;
+  }
+
+  /**
+   * SUELTA LO QUE ESTABA HACIENDO — pero recién ACÁ, no al entrar.
+   *
+   * 🐛 Estas tres líneas estaban al principio de la función y **le cancelaban
+   * el disparo a la rama de arriba**: `tryFire` arrancaba el apuntado
+   * (`aimTimer` 0,30, ráfaga de 2) y al cuadro siguiente este reset lo ponía
+   * en cero antes de que llegara a salir la bala. Medido: `aimTimer` clavado
+   * en 0,30 y `burstLeft` en 2 durante 40 cuadros seguidos, sin una sola bala.
+   * El guardia "leía" el cajón y se quedaba apuntándole para siempre.
+   *
+   * Abajo sí corresponde: el que se va a mover no puede seguir apuntando.
+   */
+  e.aimTimer = 0;
+  e.burstLeft = 0;
+  e.peeking = false;
+
+  // Salirse del carril es lo primero, siempre: es lo único que evita el
+  // atropello, y para el cargado además lo saca de la línea de la explosión.
+  if (!e.ladoCajon) e.ladoCajon = e.y < ro.y ? -1 : 1;
+  const salido = Math.abs(e.y - ro.y) > ro.hh + e.hh + 4;
+
+  if (!salido) {
+    const movido = moveToward(e, e.x, e.y + e.ladoCajon * 24, c.speed, dt, world.map);
+    // Contra la pared: prueba el otro lado en vez de empujarla para siempre.
+    if (movido < 0.2) e.ladoCajon = -e.ladoCajon;
+  } else if (ro.cargado) {
+    // Ya está fuera del carril; ahora a ponerse lejos del estruendo.
+    moveToward(e, e.x + 40, e.y, c.speed, dt, world.map);
+  }
+  turnTowards(e, Math.atan2(ro.y - e.y, ro.x - e.x), dt, 8);
 }
 
 /** Sale corriendo en dirección contraria. No busca cobertura: se va y ya. */

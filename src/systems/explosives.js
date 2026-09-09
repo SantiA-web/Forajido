@@ -207,13 +207,26 @@ export function explode(ex, world) {
  */
 export function prenderCajon(cajon, world, owner, fuse) {
   if (!cajon.alive) return;
-  const t = EXPLOSIVES.cajonPolvora;
   cajon.alive = false;
+  soltarExplosivo(cajon.x, cajon.y, world, owner, fuse);
+}
+
+/**
+ * NACE UNA MECHA ENCENDIDA EN ESTE PUNTO.
+ *
+ * Va aparte de `prenderCajon` porque hay dos cosas que pueden prenderse y sólo
+ * una es un cajón quieto: la otra es un cajón EMPUJADO, que para entonces ya
+ * es un `rodante` y ya lo marcó como roto `dañarRodante`. Las dos terminan en
+ * el mismo lugar — un explosivo puesto donde estaba, con todo lo que eso trae
+ * gratis (la chispa que parpadea, el aro de aviso, los guardias que salen
+ * corriendo y el estruendo que retumba tres vagones).
+ */
+export function soltarExplosivo(x, y, world, owner, fuse) {
+  const t = EXPLOSIVES.cajonPolvora;
   world.spawnExplosive({
-    x: cajon.x, y: cajon.y,
     // No se lanza: nace donde estaba. `createExplosive` resuelve el vuelo de
     // cero en el primer cuadro y se queda ahí chispeando.
-    targetX: cajon.x, targetY: cajon.y,
+    x, y, targetX: x, targetY: y,
     typeId: t.id,
     owner,
     fuse: fuse ?? t.fuse,
@@ -248,8 +261,10 @@ function encadenar(ex, world) {
   if (train.tramoAt(ex.x) !== 'vagon') return;
 
   const vagon = train.wagonAt(ex.x);
+  // `c.cargado`: los que ya vaciaste no entran en la cadena. Es lo que hace
+  // que sacarles el cartucho sea desactivarlos y no sólo cobrar la dinamita.
   const enElVagon = cajones
-    .filter((c) => c.alive && c.wagon === vagon)
+    .filter((c) => c.alive && c.cargado && c.wagon === vagon)
     .sort((a, b) =>
       distance(ex.x, ex.y, a.x, a.y) - distance(ex.x, ex.y, b.x, b.y));
 

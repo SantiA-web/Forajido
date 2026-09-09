@@ -329,7 +329,7 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 | **`Espacio` (mantener)** | **Agacharse**: mitad de velocidad, tardan el doble en verte |
 | `Shift` | Pegarse a una pared o a un asiento (cubrirse) |
 | **Ruedita del mouse** | **Golpe cuerpo a cuerpo.** Alcanza con moverla apenas, para cualquier lado |
-| `F` | Lo mismo, por si preferís el teclado |
+| `F` | Lo mismo, por si preferís el teclado — **salvo al lado de un cajón de pólvora, que lo empuja** |
 | **`Q`** | **Encender un cartucho de dinamita** |
 | Clic izquierdo (con la mecha encendida) | Lanzarla |
 | `R` | **Recargar.** Mientras lo hacés caminás lento, como si fueras de costado |
@@ -578,12 +578,23 @@ correo 32, blindado 30, **armas 30**, ganado 24.
 **Uno de cada dos trenes estándar cambia el vagón de ganado por uno de armas.**
 Nunca es el primero, y desde afuera se ve cuál te tocó.
 
-Adentro hay **cinco cajones de pólvora**, y sirven para dos cosas opuestas:
+Adentro hay **cinco cajones de pólvora**, y son tres cosas a la vez:
 
 | | |
 |---|---|
 | **`[E]` sostenido** | Te llevás **un cartucho de dinamita**. Es el único lugar del juego donde se repone algo |
+| **`F`** | Lo **empujás**: sale rodando hacia la cola y se vuelve tuyo (ver abajo) |
 | **Tres balazos** | Se prende, con una mecha corta — y **arrastra a todos los demás** |
+
+**Y sacarle el cartucho lo desactiva.** El cajón no desaparece: queda **vacío**,
+y un cajón vacío ya no explota nunca más. Sigue frenando balas, sigue tapando el
+paso y se sigue pudiendo empujar — pero deja de ser una bomba. Se distinguen de
+un vistazo: el cargado lleva la franja roja y los cartuchos asomando por la tapa;
+el vacío tiene la tapa abierta y un hueco negro.
+
+> Así que el vagón entrega **cinco dinamitas en total** y se acaba. Y vaciarlos
+> es una jugada en sí misma: cada uno que abrís es una bomba menos que te puede
+> volar en la cara.
 
 **El tope es tres cartuchos.** Si llegás con la dinamita llena, el cajón no se
 abre: lo que te queda es una bomba puesta en el mapa.
@@ -605,7 +616,35 @@ corriendo — y lo que obliga a mirar bien: **las verdes son cobertura, las de l
 franja roja son bomba**. Los cajones de pólvora frenan las balas igual que
 cualquier bulto, así que también son cobertura… hasta el tercer tiro.
 
+**Y una explosión ahí adentro no deja nada.** No es una dinamita grande: es un
+vagón lleno de pólvora. Quieto en cualquier parte del centro, morís; en las
+puntas salís con la mitad de la vida; y de los cuatro guardias del vagón no
+queda uno. La mecha te da poco más de dos segundos, y **el único refugio es
+salir** — correrte adentro ya no alcanza.
+
 Lleva cinco bolsas repartidas y **ninguna caja fuerte**: su tensión es otra.
+
+### Y el cajón se puede empujar: `F`
+
+Un cajón —cargado o vacío— sale rodando **siempre hacia la cola**, nunca hacia
+la locomotora: el tren acelera y lo suelto se va para atrás. Por eso `F` no es
+tanto empujar como **destrabar**, y por eso, si estás del lado de la cola, sale
+hacia vos. Tu propia arma no te distingue.
+
+| Lo que hace rodando | |
+|---|---|
+| **Atropella** | Al que se le cruza lo tumba un segundo y medio — lo mismo que a vos. **Nunca mata**: si lo querés muerto, le disparás al cajón |
+| **Rompe la puerta** que se le cruce, de un golpe | Salvo la de chapa del blindado, que lo frena en seco |
+| **A veces salta el enganche** | Tres de cada diez cruzan al vagón vecino en vez de caerse al vacío |
+| **Y si le disparás** | Cargado, revienta donde esté; vacío, se hace astillas |
+
+**Los guardias lo leen, y no todos igual.** A uno vacío, si le sobra tiempo, le
+disparan para hacerlo astillas; si lo tienen encima, se corren al costado. Pero
+si ve la franja roja no le dispara a nada: sale del pasillo y **se aleja**.
+
+> Y de ahí sale la mejor jugada del vagón: si el blindado te queda hacia la cola,
+> podés mandarle un cajón cargado hasta su puerta de chapa —que lo frena— y
+> volarla de un tiro, **sin gastar ninguno de tus cartuchos**.
 
 **Y trae un tipo con dinamita dando vueltas.** El *Dinamitero* no se queda
 adentro: hace una ronda entre este vagón y los dos de al lado, y tarda casi un
@@ -628,7 +667,8 @@ ahí sale cada cosa que le pasa:
 | **Lanza de a DOS a la vez** | Y no al mismo lugar: **una a cada lado tuyo**. No te cierran un camino, te cierran los dos |
 | **Tarda 5 segundos en recargar** | Y en esos cinco segundos está **desarmado del todo**. Es la mejor ventana del vagón |
 | **Se le ven los cartuchos** | Dos en la bandolera cuando está cargado, dos huecos oscuros cuando no. Desde lejos se sabe si conviene entrar ahora o esperar |
-| **No se cubre nunca** | Necesita el pasillo libre: parapetado se taparía el tiro a sí mismo. Está siempre a la vista, con dos de vida |
+| **No se cubre nunca** | Necesita el pasillo libre: parapetado se taparía el tiro a sí mismo. Está siempre a la vista |
+| **Pero aguanta cuatro balazos** | El techo del juego, y el único guardia común que lo toca. No tiene con qué contestar de lejos: lo que compra es durar |
 | **Y si te le pegás, retrocede** | Su cartucho tiene un mínimo — más cerca se volaría él. Acercarse es la respuesta, pero hay que perseguirlo |
 
 **Parado justo en el medio de una tanda perdés dos de tus cuatro vidas**: caés
@@ -1533,6 +1573,10 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `explosives.cajonPolvora.vida` | **Cuántos tiros aguanta un cajón de pólvora** antes de prenderse. Es la perilla que decide si el vagón de armas es una lotería o una decisión |
 | `explosives.cajonPolvora.fuse` / `cadena` | La mecha del cajón, y cada cuánto prende al siguiente. **Los dos números que deciden si se puede escapar de la cadena** |
 | `explosives.cajonPolvora.recarga` | Cuántos cartuchos te da abrir uno |
+| `explosives.cajonPolvora.lethalRadius` / `blastRadius` | **Cuánto arrasa la cadena.** Van atados a la mecha: si crecen, hay que dar más aviso o el vagón se vuelve una trampa sin salida |
+| `explosives.cajonPolvora.enemyDamage` / `playerEdgeDamage` | El daño del BORDE. Es lo que decide si en las puntas del vagón queda alguien vivo — más barato de mover que los radios |
+| `explosives.cajonPolvora.cruzaEnganche` | Cada cuánto un cajón empujado salta al vagón vecino en vez de caerse al vacío |
+| `explosives.cajonPolvora.tumba` | Cuánto queda en el piso el guardia que atropella. Nunca lo mata |
 | `enemy.dinamiteroRecarga` | **Cuánto tarda el Dinamitero en volver a tener las dos en la mano** — y cuánto dura la ventana en la que está desarmado |
 | `enemy.dinamiteroPorTanda` | Cuántas lanza de una |
 | `enemy.dinamiteroSeparacion` | **A qué distancia tuya cae cada una.** Decide si quedarte quieto te cuesta 2 vidas o las 4: por debajo de `explosives.dinamita.lethalRadius` te mata |

@@ -114,7 +114,24 @@ export const GUARD_TYPES = {
   dinamitero: {
     id: 'dinamitero',
     name: 'Dinamitero',
-    health: 2,
+
+    /**
+     * CUATRO — el techo del juego, y el primer guardia COMÚN que lo toca.
+     *
+     * *(Santi, después de jugarlo: "el dinamitero sí o sí cuatro de vida, su
+     * muerte es muy rápida")*
+     *
+     * Con 2 se moría en dos tiros de Colt (0,42 s) y todo lo que lo hace un
+     * personaje —la ronda de tres vagones, la tanda de dos, los cinco segundos
+     * de bandolera vacía— no llegaba a pasar nunca: lo cazabas antes de verlo
+     * funcionar. Su precio ya lo paga en otro lado (no tiene arma de fuego, no
+     * se cubre, está siempre a la vista), así que lo que le faltaba era durar.
+     *
+     * NO ROMPE EL TECHO DE 4, que es lo que garantiza que un Rifle de Caza mate
+     * de un tiro a cualquier guardia del juego: `guardHealth` topea en
+     * `MAX_GUARD_HEALTH`, así que en un tren escoltado sigue teniendo 4 y no 5.
+     */
+    health: 4,
     look: 'bandolera',
 
     /**

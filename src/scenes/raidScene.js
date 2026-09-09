@@ -30,7 +30,7 @@ import {
 import {
   createRodante, updateRodante, drawRodante, TIPOS_RODANTE,
 } from '../entities/rodante.js';
-import { updateCajon, drawCajon } from '../entities/cajon.js';
+import { updateCajon, drawCajon, vaciarCajon } from '../entities/cajon.js';
 import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
@@ -51,7 +51,7 @@ import { updateRiders, createRiderWatch } from '../systems/riders.js';
 import { maxJinetesPara } from '../data/riders.js';
 import { drawLootable, esCajaFuerte } from '../entities/lootable.js';
 import {
-  updateDoor, puertaTapaVision, drawDoor, trabarPuerta, destrabarPuerta,
+  updateDoor, puertaTapaVision, drawDoor, trabarPuerta, destrabarPuerta, dañarPuerta,
 } from '../entities/door.js';
 import {
   updateEnemy, alertTo, alertCombat, alertaEnGuardia, separateEnemies,
@@ -200,6 +200,24 @@ export function createRaidScene(services) {
        * barriles, porque la lista se reemplaza entera en cada `enter`.
        */
       get cajones() { return cajones; },
+      /**
+       * `F` EMPUJA UN CAJÓN SI TENÉS UNO AL LADO; SI NO, GOLPEA.
+       *
+       * Lo pregunta `updatePlayer` (entities/player.js) y devuelve si hubo
+       * empujón, para no hacer las dos cosas con la misma tecla. Es el mismo
+       * criterio que ya tiene `[E]`, que roba, amenaza, abre una tranquera o
+       * escapa según qué tengas más cerca — un verbo, varias cosas, y el cartel
+       * sobre la cabeza dice cuál.
+       *
+       * LA RUEDITA SIGUE SIENDO SIEMPRE EL CUCHILLO, a propósito: si querés
+       * golpear a alguien parado al lado de un cajón, ése es el gesto. Las dos
+       * teclas del cuerpo a cuerpo dejaron de ser idénticas y ésa es la
+       * diferencia.
+       */
+      empujarCajon: () => {
+        const c = cajonCerca(false);
+        return c ? empujarCajon(c) : false;
+      },
       // El sacudón del tren traicionero (CONFIG.traqueteo): cuánto se le suma
       // a la dispersión de CUALQUIERA que dispare mientras dura el efecto.
       // 0 el resto del tiempo, y siempre 0 si este tren no tiene el sistema.
@@ -275,7 +293,33 @@ export function createRaidScene(services) {
       }
       return false;
     };
-    map.isSolidForMovementAt = (x, y) => map.isSolidAt(x, y) || bloqueaPuertaCerrada(x, y);
+    /**
+     * LOS CAJONES DE PÓLVORA TAMBIÉN FRENAN EL PASO (Fase 6a).
+     *
+     * *(Santi, jugándolo: "los barriles también deberían tener colisión")*
+     *
+     * Antes se les caminaba por encima como a una bolsa, y eso les sacaba la
+     * mitad de lo que son: ya frenaban balas —o sea que ya eran cobertura— pero
+     * no se los podía usar para tapar un pasillo ni se sentían un bulto. Ahora
+     * son las dos cosas a la vez.
+     *
+     * Va acá adentro y no en `map.isSolidAt` por el mismo motivo que las
+     * puertas: `systems/cover.js` pregunta por `isSolidAt` para decidir contra
+     * qué pegarse, y no queremos que el jugador se parapete contra una bomba
+     * sin haberlo elegido. Frena el paso; para cubrirte, tenés que caminar.
+     *
+     * Y no entra el que va ROLANDO (ése ya no está en `cajones`): un bulto que
+     * viene hacia vos tiene que poder pasarte por encima, no frenarse contra
+     * tus pies.
+     */
+    const bloqueaCajon = (x, y) => {
+      for (const c of cajones) {
+        if (c.alive && Math.abs(x - c.x) < c.hw && Math.abs(y - c.y) < c.hh) return true;
+      }
+      return false;
+    };
+    map.isSolidForMovementAt = (x, y) =>
+      map.isSolidAt(x, y) || bloqueaPuertaCerrada(x, y) || bloqueaCajon(x, y);
 
     alarm = createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm });
     /**
@@ -1337,14 +1381,24 @@ export function createRaidScene(services) {
        * píxeles que corre antes de perderse adelante) y no por el borde del
        * vagón: si se frenara en el primer enganche no serviría para nada.
        */
-      const seAcabo = ro.tipo === 'res'
-        ? (ro.alcance <= 0 || chocaConElBlindado(ro))
-        : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200);
-      if (seAcabo) { rodantes.splice(i, 1); continue; }
+      /**
+       * EL CAJÓN DE PÓLVORA EMPUJADO TIENE SUS PROPIAS REGLAS (Fase 6a): a
+       * veces cruza el enganche, rompe la puerta que se le cruza y atropella
+       * guardias. Devuelve true si se terminó (se cayó del tren o explotó).
+       */
+      if (ro.tipo === 'polvora') {
+        if (actualizarPolvora(ro)) { rodantes.splice(i, 1); continue; }
+      } else {
+        const seAcabo = ro.tipo === 'res'
+          ? (ro.alcance <= 0 || chocaConElBlindado(ro))
+          : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200);
+        if (seAcabo) { rodantes.splice(i, 1); continue; }
+      }
 
       // Una res atropella a los guardias que se le cruzan. Un barril no: pesa,
-      // pero no viene corriendo con doscientos kilos de miedo encima.
-      if (ro.tipo === 'res') atropellarGuardias(ro);
+      // pero no viene corriendo con doscientos kilos de miedo encima. Un cajón
+      // de pólvora empujado sí — es un arma, no decorado.
+      if (ro.tipo === 'res' || ro.tipo === 'polvora') atropellarGuardias(ro);
 
       // ¿Te llevó puesto? Sólo una vez por barril (o por res).
       if (ro.golpeo || player.tumbado > 0) continue;
@@ -1381,6 +1435,69 @@ export function createRaidScene(services) {
     return !!vagon && vagon.guardType === 'blindado';
   }
 
+  /**
+   * EL CAJÓN DE PÓLVORA EMPUJADO, cuadro a cuadro. Devuelve true si se terminó.
+   *
+   * Tiene tres reglas propias que un barril del tren veloz no tiene, y las
+   * tres salen de que **esto es un arma tuya y no una molestia del tren**.
+   */
+  function actualizarPolvora(ro) {
+    const t = EXPLOSIVES.cajonPolvora;
+
+    /**
+     * 1. ROMPE LA PUERTA QUE SE LE CRUCE. *(Santi: "si el barril choca contra
+     * una puerta, la romperá, a no ser que sea una puerta blindada")*
+     *
+     * De un golpe y no a fuerza de daño: son cien kilos de madera y pólvora
+     * contra una hoja que aguanta tres balazos. `puertasRotas` evita contarla
+     * dos veces mientras la cruza, igual que hacen las balas.
+     */
+    for (const d of doors) {
+      if (d.broken || Math.abs(ro.x - d.x) >= d.hw + ro.hw) continue;
+      if (d.kind === 'blindada') {
+        /**
+         * SALVO LA DE CHAPA, QUE LO FRENA. Y ahí queda, apoyado contra la
+         * única puerta del tren que no se abre empujando — así que si venía
+         * cargado, un tiro tuyo la vuela sin gastar tu propia dinamita.
+         * Es la jugada más cara que habilita todo este sistema, y sale sola
+         * de juntar dos reglas que ya existían.
+         */
+        ro.velocidad = 0;
+        return false;
+      }
+      ro.puertasRotas = ro.puertasRotas || new Set();
+      if (ro.puertasRotas.has(d)) continue;
+      ro.puertasRotas.add(d);
+      dañarPuerta(d, CONFIG.doors.health + 1);
+      spawnParticles(d.x, d.y, '#7a5836', 10);
+      audio.play('hitWall');
+    }
+
+    /**
+     * 2. A VECES CRUZA EL ENGANCHE. Un barril suelto se cae al vacío en la
+     * pasarela —esa regla hace del enganche el único refugio contra los
+     * rodantes y no se toca— pero un cajón bien lanzado salta de vez en
+     * cuando (`cruzaEnganche`, 30%). Se tira UNA vez por enganche.
+     */
+    if (train.tramoAt(ro.x) !== 'vagon') {
+      if (ro.tiroEnganche === undefined) {
+        ro.tiroEnganche = rng.chance(t.cruzaEnganche);
+        if (ro.tiroEnganche) {
+          floaters.push({
+            x: ro.x, y: ro.y - 18,
+            text: T.prompts.cajonCruza, life: 1.4, color: colors.dynamiteBand,
+          });
+        }
+      }
+      if (!ro.tiroEnganche) return true;      // se fue al vacío
+    } else if (ro.tiroEnganche !== undefined) {
+      ro.tiroEnganche = undefined;            // ya está en el vagón siguiente
+    }
+
+    // 3. Y se pierde si quedó muy atrás, como cualquier rodante.
+    return ro.x < player.x - 400;
+  }
+
   function atropellarGuardias(ro) {
     const c = CONFIG.estampida;
     ro.atropellados = ro.atropellados || new Set();
@@ -1410,6 +1527,30 @@ export function createRaidScene(services) {
        */
       const yaEstabaEnElPiso = e.stagger > 0;
       const esOtraManada = e.aturdidoPor !== ro.estampidaId;
+
+      /**
+       * UN CAJÓN DE PÓLVORA NO MATA POR ATROPELLO, NUNCA.
+       *
+       * *(Santi: "si un barril rodando toca a un guardia no explota, sino que
+       * lo tumba unos segundos")* — ni siquiera al que ya está en el piso. Es
+       * lo que separa las dos formas de usarlo: si lo querés muerto, le
+       * disparás al cajón; si sólo lo querés fuera del medio, lo empujás. Que
+       * el empujón matara solo borraría esa diferencia, que es toda la libertad
+       * que el arma agrega.
+       */
+      if (ro.tipo === 'polvora') {
+        if (yaEstabaEnElPiso) continue;
+        e.aturdidoPor = null;
+        e.stagger = EXPLOSIVES.cajonPolvora.tumba;
+        e.aimTimer = 0;
+        e.burstLeft = 0;
+        e.peeking = false;
+        e.coverPoint = null;
+        e.atCover = false;
+        spawnParticles(e.x, e.y, '#c9b28a', 6);
+        audio.play('hitWall');
+        continue;
+      }
 
       if (c.matalAturdido && yaEstabaEnElPiso && esOtraManada) {
         e.alive = false;
@@ -1535,12 +1676,18 @@ export function createRaidScene(services) {
     }
   }
 
-  /** El cajón de pólvora al alcance de la mano, si estás en el vagón de armas. */
-  function cajonCerca() {
+  /**
+   * El cajón de pólvora al alcance de la mano.
+   *
+   * `soloCargados`: para el `[E]` sólo cuentan los que todavía tienen algo
+   * adentro —de uno vacío no hay nada que sacar— pero para el `F` cuentan
+   * todos, porque un cajón vacío se empuja igual y sigue sirviendo de ariete.
+   */
+  function cajonCerca(soloCargados = true) {
     let cerca = null;
     let mejor = CONFIG.loot.radius + 6;
     for (const c of cajones) {
-      if (!c.alive) continue;
+      if (!c.alive || (soloCargados && !c.cargado)) continue;
       const d = distance(player.x, player.y, c.x, c.y);
       if (d < mejor) { mejor = d; cerca = c; }
     }
@@ -1556,13 +1703,25 @@ export function createRaidScene(services) {
    * reposición, y lo único que le queda es ser una bomba puesta en el mapa.
    * Ésa es la mitad de por qué el mismo objeto hace las dos cosas.
    *
-   * El cajón se gasta: te llevás lo que tenía y deja de existir. Si no, sería
-   * una fuente infinita de dinamita parada en el medio del tren.
+   * EL CAJÓN NO DESAPARECE: QUEDA VACÍO.
+   *
+   * *(Santi, jugándolo: "una vez agarrada una dinamita de un barril, el barril
+   * no desaparece [...] vos sacás la dinamita de un barril y ya no se puede
+   * explotar, pero el barril sigue estando")*
+   *
+   * Antes se lo tragaba la tierra, y eso borraba de un saque tres cosas que el
+   * cajón es además de una reposición: un bulto que frena balas, una cobertura
+   * y algo que se puede empujar. Ahora **sacarle el cartucho es desactivar una
+   * bomba**, y el mueble queda.
+   *
+   * Y le pone el techo que antes le faltaba: cada uno da UNA y queda vacío, así
+   * que el vagón entrega cinco en total. Sin eso, no gastarse al agarrarlo lo
+   * habría vuelto una fuente inagotable con sólo volver a pasar.
    */
   function agarrarCajon(c) {
     const t = EXPLOSIVES.cajonPolvora;
     player.dynamite = Math.min(CONFIG.player.dynamiteMax, player.dynamite + t.recarga);
-    c.alive = false;
+    vaciarCajon(c);
     c.progreso = 0;
 
     floaters.push({
@@ -1571,6 +1730,57 @@ export function createRaidScene(services) {
     });
     spawnParticles(c.x, c.y, colors.dynamiteBand, 6);
     audio.play('loot');
+  }
+
+  /**
+   * EMPUJAR UN CAJÓN — `F`, y sale rodando hacia la cola.
+   *
+   * *(Santi: "se debería poder empujarlos con F para que rueden hacia atrás y
+   * así el jugador puede usar el barril como arma. Esto da más libertad a la
+   * hora del asalto")*
+   *
+   * SIEMPRE HACIA LA COLA, NUNCA HACIA LA LOCOMOTORA, y no es una limitación
+   * de comodidad: es la física que este juego ya tiene escrita desde el tren
+   * veloz — el tren acelera, y lo que está suelto adentro se va para atrás. Por
+   * eso `F` no es tanto "empujar" como **destrabar**: lo soltás y el tren hace
+   * el resto, estés parado donde estés.
+   *
+   * Y por eso mismo tiene un costo que no hay que explicar: si estás del lado
+   * de la cola, el cajón sale hacia vos. Tu propia arma no te distingue, igual
+   * que la estampida del tren de carga.
+   */
+  function empujarCajon(c) {
+    const i = cajones.indexOf(c);
+    if (i >= 0) cajones.splice(i, 1);
+
+    /**
+     * 🐛 SALE AL PASILLO, NO RUEDA POR SU PROPIA FILA.
+     *
+     * Los cajones viven en las filas 3 y 6, al costado del corredor. Dejarlo
+     * rodar por ahí parecía lo natural y estaba mal: **en el enganche esas
+     * filas no existen** —son el vacío de afuera del tren— así que un cajón
+     * que cruzaba al vagón vecino viajaba literalmente por el aire, y las
+     * balas se le morían antes de llegar. Se descubrió probando la jugada de
+     * volarle la puerta al blindado: el cajón llegaba, se frenaba contra la
+     * chapa y era imposible dispararle.
+     *
+     * Empujado cae al corredor (fila 4 o 5, la que le quede más cerca), que es
+     * la única franja que existe de punta a punta del tren. Y de paso es lo que
+     * uno esperaría: lo destrabás de la pila y se va al pasillo.
+     */
+    const yCorredor = c.y < CONFIG.techo.centroY
+      ? CONFIG.techo.centroY - map.size / 2      // fila 4
+      : CONFIG.techo.centroY + map.size / 2;     // fila 5
+
+    const ro = createRodante(c.x, yCorredor, 'polvora', rng, {
+      cargado: c.cargado,
+      vida: c.vida,
+      hw: c.hw + 1, hh: c.hh + 2,
+    });
+    rodantes.push(ro);
+    spawnParticles(c.x, c.y, '#c49b63', 5);
+    audio.play('cover');
+    return true;
   }
 
   /**
@@ -2845,22 +3055,31 @@ export function createRaidScene(services) {
       return;
     }
 
-    const cajon = cajonCerca();
+    /**
+     * EL CAJÓN TIENE DOS VERBOS, ASÍ QUE EL CARTEL TIENE DOS LÍNEAS — el mismo
+     * caso que el poste del campamento, que es lo único que se atiende y se
+     * monta. Arriba lo que hace la `[E]` (o por qué no hace nada), abajo el
+     * `[F]` que siempre está disponible.
+     *
+     * Un cajón VACÍO ya no tiene nada que sacar, así que sólo muestra el
+     * empujón: es toda la diferencia que el jugador necesita para saber cuál
+     * de los dos tiene delante sin mirarle la franja.
+     */
+    const cajon = cajonCerca(false);
     if (cajon) {
-      /**
-       * DICE QUÉ VA A PASAR, Y CAMBIA SI YA NO PUEDE PASAR. Con la dinamita al
-       * tope no ofrece un `[E]` que no haría nada: avisa que estás lleno. Es
-       * la misma regla de siempre — el cartel sobre tu cabeza siempre dice qué
-       * hace la [E] justo ahora.
-       */
       const lleno = player.dynamite >= CONFIG.player.dynamiteMax;
-      r.text(lleno ? T.prompts.cartuchoLleno : T.prompts.cartucho,
-        player.x, player.y - 16, lleno ? colors.textDim : colors.dynamiteBand);
-      if (cajon.progreso > 0) {
-        const w = 22;
-        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
-        r.rect(player.x - w / 2, player.y - 12,
-          w * (cajon.progreso / EXPLOSIVES.cajonPolvora.abrirHold), 3, colors.dynamite);
+      if (cajon.cargado) {
+        r.text(lleno ? T.prompts.cartuchoLleno : T.prompts.cartucho,
+          player.x, player.y - 16, lleno ? colors.textDim : colors.dynamiteBand);
+        if (cajon.progreso > 0) {
+          const w = 22;
+          r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+          r.rect(player.x - w / 2, player.y - 12,
+            w * (cajon.progreso / EXPLOSIVES.cajonPolvora.abrirHold), 3, colors.dynamite);
+        }
+        r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim);
+      } else {
+        r.text(T.prompts.empujarCajon, player.x, player.y - 16, colors.text);
       }
       return;
     }

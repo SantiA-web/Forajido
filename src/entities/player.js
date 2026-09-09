@@ -205,8 +205,24 @@ export function updatePlayer(p, dt, world) {
    * estirar el meñique para matar a alguien que tenés pegado a la espalda.
    * F sigue funcionando como respaldo.
    */
+  /**
+   * Y `F` TIENE UN SEGUNDO USO: EMPUJAR UN CAJÓN DE PÓLVORA (Fase 6a).
+   *
+   * Si tenés uno al lado, `F` lo destraba y sale rodando hacia la cola en vez
+   * de dar un culatazo al aire. Es el mismo criterio contextual que ya tiene
+   * `[E]` —que roba, amenaza, abre una tranquera o escapa según qué tengas más
+   * cerca— y la escena es la que sabe qué hay alrededor, así que la decisión
+   * vive allá (`world.empujarCajon`) y acá sólo se pregunta.
+   *
+   * LA RUEDITA NO EMPUJA NUNCA, sólo `F`. Así las dos formas de pegar dejan de
+   * ser idénticas pero ninguna se pierde: al lado de un cajón, la ruedita
+   * sigue siendo el cuchillo.
+   */
   const quiereCuchillo = input.wheelMoved() || input.wasPressed('KeyF');
-  if (quiereCuchillo && p.meleeTimer <= 0) playerMelee(p, world);
+  if (quiereCuchillo && p.meleeTimer <= 0) {
+    const empujó = input.wasPressed('KeyF') && world.empujarCajon && world.empujarCajon();
+    if (!empujó) playerMelee(p, world);
+  }
 
   // La dinamita va ANTES que el arma y puede quedarse con el clic: si tenés una
   // encendida en la mano, el clic izquierdo la lanza en vez de disparar.

@@ -34,6 +34,23 @@ export function createCajon(x, y) {
     vidaMax: t.vida,
     alive: true,
 
+    /**
+     * ¿TODAVÍA TIENE PÓLVORA ADENTRO?
+     *
+     * *(Santi: "vos sacás la dinamita de un barril y ya no se puede explotar,
+     * pero el barril sigue estando")*
+     *
+     * Es la pieza que le da al vagón su decisión más linda: **sacarle el
+     * cartucho a un cajón es desactivar una bomba**. Un cajón vacío sigue ahí
+     * —sigue frenando balas, sigue siendo cobertura, se sigue pudiendo
+     * empujar— pero ya no vuela ni entra en la cadena.
+     *
+     * Y de paso pone el techo que hacía falta: cada cajón da UNA dinamita y
+     * queda vacío, así que el vagón entrega cinco en total y se acaba. Sin
+     * esto sería una fuente inagotable con sólo volver a pasar.
+     */
+    cargado: true,
+
     /** Lo que llevás abierto con [E]. Se reinicia si soltás, como una bolsa. */
     progreso: 0,
 
@@ -44,7 +61,13 @@ export function createCajon(x, y) {
   };
 }
 
-/** Devuelve true si con este golpe hay que prenderlo. */
+/**
+ * Devuelve true si con este golpe se rompió.
+ *
+ * QUÉ PASA DESPUÉS DEPENDE DE SI TENÍA PÓLVORA: uno cargado se prende (y
+ * arrastra al vagón entero), uno vacío se hace astillas y ya. Esta función no
+ * decide eso — sólo dice que se rompió; quien la llama mira `c.cargado`.
+ */
 export function dañarCajon(c, cantidad) {
   if (!c.alive) return false;
   c.vida -= cantidad;
@@ -54,6 +77,14 @@ export function dañarCajon(c, cantidad) {
     return true;
   }
   return false;
+}
+
+/**
+ * LE SACASTE EL CARTUCHO. Deja de ser una bomba para siempre, y sigue siendo
+ * todo lo demás: un bulto que frena balas, tapa el paso y se puede empujar.
+ */
+export function vaciarCajon(c) {
+  c.cargado = false;
 }
 
 export function updateCajon(c, dt) {
@@ -85,14 +116,57 @@ export function updateCajon(c, dt) {
  *     franja roja cruzada dice "peligro"; los cartuchos dicen QUÉ hay adentro,
  *     que es la mitad que faltaba (el cajón también es la reposición).
  */
-export function drawCajon(r, c) {
+/**
+ * EL CUERPO DEL CAJÓN. Lo comparten el que está quieto en el vagón y el que
+ * va rodando por el pasillo (`drawRodante`), para que sean obviamente la misma
+ * cosa en dos situaciones y no dos dibujos parecidos.
+ *
+ * LA DIFERENCIA ENTRE CARGADO Y VACÍO ES TODA LA LECTURA DEL VAGÓN: con
+ * pólvora lleva la franja roja cruzada y los tres cartuchos asomando; sin
+ * pólvora es un cajón de madera pelado, con la tapa abierta. Uno explota y el
+ * otro no, y hay que poder decirlo de un vistazo en medio de un tiroteo.
+ */
+export function dibujarCuerpoCajon(r, x, y, hw, hh, cargado, golpeado) {
   const col = CONFIG.colors;
-  const w = c.hw, h = c.hh;
-  const golpeado = c.hitFlash > 0;
-
   const madera = golpeado ? '#fff' : '#a8814e';
   const tapa   = golpeado ? '#fff' : '#c49b63';
   const borde  = golpeado ? '#fff' : '#241b14';
+
+  // LOS CARTUCHOS, asomando por detrás de la tapa. Van ANTES del cuerpo para
+  // que la tapa los tape por abajo y se lea que salen de adentro del cajón.
+  if (cargado && !golpeado) {
+    for (const dx of [-4, 0, 4]) {
+      r.rect(x + dx - 1, y - hh - 4, 3, 5, col.dynamite);
+      r.rect(x + dx - 1, y - hh - 3, 3, 1, col.dynamiteBand);
+    }
+  }
+
+  // El contorno, y encima el cuerpo: el borde oscuro es lo que lo separa del
+  // piso marrón, que es del mismo tono que cualquier madera del tren.
+  r.rect(x - hw - 1, y - hh - 1, hw * 2 + 2, hh * 2 + 2, borde);
+  r.rect(x - hw, y - hh, hw * 2, hh * 2, madera);
+  r.rect(x - hw, y - hh, hw * 2, 2, tapa);
+
+  if (cargado && !golpeado) {
+    // LA FRANJA ROJA, cruzada de lado a lado: se lee aunque el cajón quede
+    // medio tapado por un guardia que le pasa por delante.
+    r.rect(x - hw, y - 1, hw * 2, 4, col.dynamite);
+    r.rect(x - hw, y - 1, hw * 2, 1, col.dynamiteBand);
+  } else if (!golpeado) {
+    /**
+     * VACÍO: la tapa abierta y el hueco oscuro adentro, en el mismo lugar
+     * donde el cargado tiene la franja. No alcanza con SACAR el rojo — un
+     * cajón liso se leería como "todavía no lo abrí". El agujero dice
+     * "de acá ya saqué lo que había".
+     */
+    r.rect(x - hw + 2, y - 1, hw * 2 - 4, 4, '#2f2419');
+    r.rect(x - hw + 2, y - 1, hw * 2 - 4, 1, '#6b5842');
+  }
+}
+
+export function drawCajon(r, c) {
+  const w = c.hw, h = c.hh;
+  const golpeado = c.hitFlash > 0;
 
   // La sombra: lo despega del piso y lo hace leer como un bulto y no como una
   // mancha pintada en el suelo. Mismo truco que los barriles.
@@ -100,27 +174,7 @@ export function drawCajon(r, c) {
   r.box(c.x, c.y + h, w - 1, 2, '#000');
   r.ctx.globalAlpha = 1;
 
-  // LOS CARTUCHOS, asomando por detrás de la tapa. Van ANTES del cuerpo para
-  // que la tapa los tape por abajo y se lea que salen de adentro del cajón.
-  if (!golpeado) {
-    for (const dx of [-4, 0, 4]) {
-      r.rect(c.x + dx - 1, c.y - h - 4, 3, 5, col.dynamite);
-      r.rect(c.x + dx - 1, c.y - h - 3, 3, 1, col.dynamiteBand);
-    }
-  }
-
-  // El contorno, y encima el cuerpo: el borde oscuro es lo que lo separa del
-  // piso marrón, que es del mismo tono que cualquier madera del tren.
-  r.rect(c.x - w - 1, c.y - h - 1, w * 2 + 2, h * 2 + 2, borde);
-  r.rect(c.x - w, c.y - h, w * 2, h * 2, madera);
-  r.rect(c.x - w, c.y - h, w * 2, 2, tapa);
-
-  // LA FRANJA ROJA, cruzada de lado a lado: se lee aunque el cajón quede medio
-  // tapado por un guardia que le pasa por delante.
-  if (!golpeado) {
-    r.rect(c.x - w, c.y - 1, w * 2, 4, col.dynamite);
-    r.rect(c.x - w, c.y - 1, w * 2, 1, col.dynamiteBand);
-  }
+  dibujarCuerpoCajon(r, c.x, c.y, w, h, c.cargado, golpeado);
 
   /**
    * CUÁNTO LE QUEDA, sólo si ya le pegaste. Las mismas rayitas que usan los

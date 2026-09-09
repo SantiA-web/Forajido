@@ -17,12 +17,22 @@ sin caja fuerte) que **reemplaza al de ganado en el 50% de los trenes
 estándar**, nunca en el vagón 1. Es lo primero de todo el plan de variedad que
 cambia de qué está HECHO el tren, y lo único que se ve desde el galope.
 
-**Adentro hay cinco cajones de pólvora, y sirven para dos cosas opuestas:**
-`[E]` te llevás un cartucho de dinamita (tope 3, `CONFIG.player.dynamiteMax` —
-es el único lugar del juego donde se repone algo), o tres balazos lo prenden y
-**arrastra a todos los demás en cadena**. Lo prende cualquier bala, tuya o de un
-guardia, y también una dinamita lanzada adentro del vagón. Con el tope en 3,
-**sólo uno sirve como reposición: los otros cuatro son bombas puestas**.
+**Adentro hay cinco cajones de pólvora, y son tres cosas a la vez:** `[E]` te
+llevás un cartucho (tope 3) **y el cajón queda VACÍO — ya no explota nunca más**,
+pero sigue frenando balas y el paso; `F` lo **empuja** y sale rodando hacia la
+cola; y tres balazos lo prenden y **arrastra a todos los demás en cadena**.
+Vaciar un cajón es desactivar una bomba, y el vagón entrega cinco dinamitas en
+total.
+
+**El cajón empujado es un arma tuya:** atropella tumbando 1,5 s (nunca mata),
+rompe la puerta que se le cruce, cruza el enganche el 30% de las veces, y si le
+disparás revienta donde esté. Los guardias lo leen: al vacío le disparan si les
+sobra tiempo o se corren si no, y al cargado se alejan sin dispararle. **Y si el
+blindado te queda hacia la cola, un cajón cargado se frena contra su chapa y un
+tiro tuyo le vuela la puerta sin gastar tu dinamita.**
+
+**Una explosión ahí adentro no deja nada:** 0 de 4 guardias, y el jugador muere
+en todo el centro. La mecha da 2,2 s y el único refugio es SALIR del vagón.
 
 **Y tiene siete islas de cobertura** de 2×1 en las filas 3 y 6, escalonadas. Las
 verdes son cobertura segura; los cajones también frenan balas pero explotan al
@@ -45,10 +55,12 @@ de una tanda perdés 2 de 4 vidas; corriendo apenas ves las mechas, ninguna.
 
 ### Lo que hay que mirar jugándolo
 
-- **¿La cadena se lee?** Está escalonada 0,35 s justamente para que se vea
-  avanzar y se pueda correr. Medido: los cinco explotan en 1,40 s, y hay que
-  **salir para el lado donde no quedan cajones** — correr a lo largo de la
-  cadena te mete en el siguiente, y la onda va más rápido que vos.
+- **¿La cadena se lee, y 2,2 s de mecha alcanzan para salir del vagón?** Es lo
+  más crítico: ahora la explosión no perdona adentro, así que si el aviso no se
+  entiende jugando, el vagón pasa a ser una trampa.
+- **¿Empujar cajones se usa de verdad, o es una curiosidad?** Es lo que más
+  libertad agrega y lo que menos puedo medir yo.
+- **¿Se distingue el cajón cargado del vacío en medio de un tiroteo?**
 - **¿Las islas de cobertura alcanzan, o el vagón sigue siendo un pasillo?** Son
   siete y el corredor central quedó libre a propósito.
 - **¿Se distinguen las dos coberturas jugando?** Verde = segura, franja roja =

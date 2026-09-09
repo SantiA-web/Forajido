@@ -14,7 +14,7 @@ import { damageRider } from './riders.js';
 import { dañarPuerta } from '../entities/door.js';
 import { dañarRodante } from '../entities/rodante.js';
 import { dañarCajon } from '../entities/cajon.js';
-import { prenderCajon } from './explosives.js';
+import { prenderCajon, soltarExplosivo } from './explosives.js';
 
 export function updateBullets(bullets, dt, world) {
   for (const b of bullets) {
@@ -95,9 +95,24 @@ export function updateBullets(bullets, dt, world) {
           b.alive = false;
           pegoCajon = true;
           world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
-          // `b.owner`: el que hizo saltar la mecha se hace cargo de lo que
-          // pase después, aunque haya sido sin querer.
-          if (dañarCajon(cj, b.damage)) prenderCajon(cj, world, b.owner);
+          /**
+           * `b.owner`: el que hizo saltar la mecha se hace cargo de lo que
+           * pase después, aunque haya sido sin querer.
+           *
+           * Y SÓLO SI TODAVÍA TIENE PÓLVORA. Uno al que ya le sacaste el
+           * cartucho se hace astillas como cualquier cajón — es la mitad del
+           * sentido de vaciarlos: dejan de ser un peligro. Se reusa
+           * `rodanteRoto` para las astillas y el ruido porque es exactamente
+           * el mismo efecto que ya existe para un barril reventado.
+           */
+          if (dañarCajon(cj, b.damage)) {
+            if (cj.cargado) {
+              prenderCajon(cj, world, b.owner);
+            } else {
+              cj.alive = false;
+              world.bus.emit('rodanteRoto', { x: cj.x, y: cj.y, tipo: 'cajon' });
+            }
+          }
           break;
         }
         if (pegoCajon) break;
@@ -114,17 +129,34 @@ export function updateBullets(bullets, dt, world) {
        * sería resolverte el problema por vos, y este es un problema que el
        * juego te pone a vos para que elijas: esquivarlo o gastarle balas.
        */
-      if (b.owner === 'player' && world.rodantes) {
+      if (world.rodantes) {
         let pegoRodante = false;
         for (const ro of world.rodantes) {
           // `balea: false` son las reses de una estampida: pasan de largo, no
           // se revientan. Dispararle a tu propia manada no la frena.
           if (!ro.balea || !ro.alive || !pointInBody(b.x, b.y, ro)) continue;
+          /**
+           * LOS BARRILES DEL TREN VELOZ SÓLO LOS REVIENTAN TUS BALAS: que un
+           * guardia te resolviera el problema de casualidad sería sacarte una
+           * decisión que el juego te puso a vos.
+           *
+           * EL CAJÓN DE PÓLVORA EMPUJADO ES AL REVÉS y lo baleás vos o lo
+           * balean ellos: *(Santi: "el guardia tiene que saber leer el barril
+           * y tener dos opciones: o correrse hacia un costado o balearlo para
+           * romperlo")*. Ahí está la mitad de la gracia del arma — la mandás
+           * rodando y el que la ve venir tiene que decidir algo.
+           */
+          if (b.owner !== 'player' && ro.tipo !== 'polvora') continue;
           b.alive = false;
           pegoRodante = true;
           const rompio = dañarRodante(ro, b.damage);
           world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
-          if (rompio) world.bus.emit('rodanteRoto', { x: ro.x, y: ro.y, tipo: ro.tipo });
+          if (rompio) {
+            // Cargado, deja una mecha encendida donde estaba; vacío, se hace
+            // astillas y ya. La misma madera, dos finales.
+            if (ro.tipo === 'polvora' && ro.cargado) soltarExplosivo(ro.x, ro.y, world, b.owner);
+            else world.bus.emit('rodanteRoto', { x: ro.x, y: ro.y, tipo: ro.tipo });
+          }
           break;
         }
         if (pegoRodante) break;

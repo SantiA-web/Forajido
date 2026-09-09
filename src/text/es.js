@@ -75,6 +75,10 @@ export const T = {
     cartucho: '[E] AGARRAR UN CARTUCHO',
     cartuchoLleno: 'NO TE ENTRA OTRO CARTUCHO',
     cartuchoTomado: '+1 DINAMITA',
+    // Empujar el cajón: sale rodando hacia la cola, y a veces salta al vagón
+    // de al lado en vez de caerse en la pasarela.
+    empujarCajon: '[F] EMPUJAR EL CAJÓN',
+    cajonCruza: '¡SALTÓ AL OTRO VAGÓN!',
 
     trenAcelera: '¡EL TREN ACELERA!',
     trenFrena: '¡FRENA DE GOLPE!',

@@ -9174,6 +9174,177 @@ lo que es — el único camino libre de punta a punta.
 
 ---
 
+## ✅ HECHA · El barril como arma: se empuja, se vacía, y la cadena ya no deja nada
+
+Cinco ajustes de Santi después de jugar el vagón de armas por primera vez. Los
+dos primeros son números; los otros tres convierten al cajón de pólvora en algo
+que el jugador **usa** en vez de sólo evitar.
+
+### 1. El Dinamitero, a cuatro de vida
+
+*("su muerte es muy rápida")*. Con 2 se moría en dos tiros de Colt (0,42 s) y
+todo lo que lo hace un personaje —la ronda de tres vagones, la tanda de dos, los
+cinco segundos de bandolera vacía— no llegaba a pasar nunca. Es el primer
+guardia COMÚN que toca el techo de 4, y no lo rompe: `guardHealth` topea ahí, así
+que en un tren escoltado sigue teniendo 4.
+
+### 2. El cajón no desaparece: QUEDA VACÍO
+
+*("vos sacás la dinamita de un barril y ya no se puede explotar, pero el barril
+sigue estando")*
+
+Es la corrección más importante de toda la vuelta, y arregla de paso una
+advertencia que había quedado mal dada. Antes se lo tragaba la tierra al sacarle
+el cartucho; después de la primera versión de este cambio quedaba **inagotable**.
+Con los dos estados, ninguna de las dos cosas:
+
+| | Cargado | Vacío |
+|---|---|---|
+| Explota | Sí | **No, nunca más** |
+| Frena balas y el paso | Sí | Sí |
+| Se puede empujar | Sí | Sí |
+| Baleado | Se prende y encadena | Se hace astillas |
+| Atropella | Tumba 1,5 s | Tumba 1,5 s |
+
+**SACARLE EL CARTUCHO ES DESACTIVAR UNA BOMBA**, y ésa es la decisión nueva del
+vagón. Y le pone el techo que le faltaba: cada uno da UNA dinamita y queda
+vacío, así que el vagón entrega cinco en total.
+
+### 3. Colisión
+
+*("los barriles también deberían tener colisión")*. Antes se les caminaba por
+encima como a una bolsa. Va en `isSolidForMovementAt` y no en `map.isSolidAt`,
+por el mismo motivo que las puertas: `systems/cover.js` pregunta por `isSolidAt`
+para decidir contra qué parapetarse, y no queremos que el jugador se cubra
+detrás de una bomba sin haberlo elegido.
+
+### 4. Se empujan con `F`, y ruedan hacia la cola
+
+*("se debería poder empujarlos con F para que rueden hacia atrás y así el
+jugador puede usar el barril como arma. Esto da más libertad")* — y
+*("solo va hacia atrás (a la cola), no puede ir hacia la locomotora por una
+cuestión de físicas")*.
+
+Por eso `F` no es tanto "empujar" como **destrabar**: lo soltás y el tren hace el
+resto, estés parado donde estés. Es la misma física que el juego ya tenía escrita
+desde el tren veloz. Y tiene un costo que no hay que explicar: si estás del lado
+de la cola, sale hacia vos.
+
+`F` era el cuerpo a cuerpo alternativo y ahora es contextual, como `[E]`: si hay
+un cajón al alcance lo empuja, si no golpea. **La ruedita del mouse sigue siendo
+siempre el cuchillo**, así que ninguna de las dos formas de pegar se pierde.
+
+Reusa entero el sistema `rodante` del tren veloz (rodar, tumbar al jugador,
+caerse en el enganche, reventarse a tiros) y le agrega tres reglas propias:
+
+- **Rompe la puerta que se le cruce**, de un golpe. Salvo la de chapa del
+  blindado, que lo frena — **y ahí un tiro tuyo la vuela sin gastar tu propia
+  dinamita**. Es la jugada más cara que habilita todo el sistema y sale sola de
+  juntar dos reglas que ya existían.
+- **Cruza el enganche el 30% de las veces** en vez de caerse al vacío. Se tira
+  una vez por enganche, así que cruzar dos seguidos es un 9%: la chance existe
+  pero no se puede planear una cadena de vagones.
+- **Atropella guardias y los tumba 1,5 s** — exactamente lo que un barril te
+  hace a vos. Y NUNCA los mata, ni a los que ya están en el piso: si lo querés
+  muerto, le disparás al cajón; si sólo lo querés fuera del medio, lo empujás.
+  Que el empujón matara solo borraría esa diferencia.
+
+**Y EL GUARDIA LO LEE** (*"tiene que saber leer el barril"*), con tres
+reacciones según la franja roja:
+
+| Qué ve | Qué hace |
+|---|---|
+| Vacío, y le sobra tiempo (>70 px) | **Le dispara**: tres tiros lo hacen astillas |
+| Vacío, encima | Se corre al costado y lo deja pasar |
+| **Cargado** | Sale del carril y **se aleja hacia la locomotora** — contra el sentido del cajón, la única dirección en la que se le aleja de verdad |
+
+Elegido "por distancia" sobre "siempre se corre" porque es lo que haría
+cualquiera y **se ve desde afuera**: al que le sobra tiempo lo ves apuntarle al
+barril.
+
+### 5. La cadena ya no deja nada
+
+*("que una vez se arme la cadena no quede nada en ese vagón. Es decir, que haya
+una explosión allí debería ser casi mortal para el jugador, hoy es más mortal
+para los guardias que para él")*
+
+**MEDIDO ANTES DE TOCAR NADA, y corrige la premisa a medias:** la explosión ya
+mataba al jugador en todo el centro del vagón (x+160 a x+320) y lo dejaba con 3
+de 4 en las puntas. Lo que sobrevivía no era el jugador — era que **el vagón
+tenía dos zonas muertas donde no llegaba nada**, para él y para los guardias
+(sobrevivían 2 de 4, los de x=93 y x=414).
+
+Se arregló con dos perillas y no con una:
+
+- **Radios propios** (68/110 contra los 40/68 del cartucho): la unión de los
+  cinco cubre de x+26 a x+470 de un vagón de 480.
+- **Y el daño del borde a 2**, porque con los radios solos seguían vivos los
+  mismos dos guardias — caían justo afuera del radio letal, y 1 de daño no
+  alcanza contra sus 2 de vida. Agrandar más los radios habría tapado el vagón
+  entero y dejado al jugador sin salida; la perilla correcta era el daño.
+- **Y la mecha de 1,2 a 2,2 s**, atada a lo anterior: con la explosión cubriendo
+  casi todo, el único refugio pasó a ser SALIR, y del centro al enganche hay
+  240 px (3,1 s corriendo). Con 1,2 s no llegaba nadie y el vagón se volvía una
+  trampa sin jugada.
+
+### 🐛 Cuatro cosas rotas
+
+**1. El cajón vacío explotaba igual.** Dos lugares no miraban `cargado`: la bala
+que lo rompe (`combat.js`) y la cadena (`encadenar`). Vaciarlo no servía de nada.
+
+**2. El "suelta lo que estabas haciendo" le cancelaba el disparo al guardia.**
+Las tres líneas que apagan el apuntado estaban al PRINCIPIO de
+`reaccionarAlCajon`, así que corrían cada cuadro: `tryFire` arrancaba el
+apuntado y al cuadro siguiente el reset lo ponía en cero. Medido: `aimTimer`
+clavado en 0,30 y `burstLeft` en 2 durante 40 cuadros, sin una sola bala — el
+guardia "leía" el cajón y se quedaba apuntándole para siempre.
+
+**3. El cajón empujado rodaba por una fila que en el enganche no existe.** Los
+cajones viven en las filas 3 y 6, y ahí el tramo de enganche es el vacío de
+afuera del tren: un cajón que cruzaba al vagón vecino viajaba por el aire y las
+balas se le morían antes de llegar. Se descubrió probando la jugada de volarle
+la puerta al blindado — el cajón llegaba, se frenaba contra la chapa y era
+imposible dispararle. Ahora al empujarlo **cae al corredor**, que es la única
+franja que existe de punta a punta del tren.
+
+**4. Y dos falsos negativos del arnés, los dos de manual:** un guardia "que no
+se movía" estaba metido adentro de una isla de cobertura (la lección de siempre:
+verificar que el punto NO sea sólido), y otro "que no reaccionaba" estaba
+congelado por el culling a 856 px del jugador.
+
+### VERIFICADO POR CONSOLA
+
+- **Vaciar:** `[E]` da +1 dinamita, el cajón queda `cargado=false` y **sigue en
+  la lista**. Baleado después: 0 explosiones. Cargado: 1.
+- **La cadena saltea los vacíos:** con dos vaciados de cinco, explotan 3 y
+  quedan los 2 vacíos en pie.
+- **Colisión:** sólido encima del cajón, libre a 30 px.
+- **Empujón:** sale del vagón, `tipo=polvora`, `dir=-1` (hacia la cola), y cae
+  al corredor.
+- **Rodando:** tres tiros lo rompen (cargado explota, vacío hace astillas);
+  atropella tumbando **1,48 s** sin sacar vida ni matar; **rompe la puerta**
+  (x=824, rota); y **cruza el enganche el 33,5%** sobre 30% configurado (200
+  tiradas).
+- **La jugada del blindado:** el cajón cruza, se frena contra la chapa (x=1302,
+  vel=0) y al dispararle **vuela la puerta blindada** sin gastar tu dinamita.
+- **La IA del guardia:** vacío a 120 px → le dispara (91 cuadros con bala);
+  vacío a 45 px → se corre 16 px del carril; cargado → se corre 16 px y **se
+  aleja 99 px**.
+- **La cadena, ahora:** **0 guardias vivos de 4**. El jugador quieto muere de
+  x+120 a x+360 y sale con 2 de 4 en las puntas; corriendo, se salva.
+- **Corrida completa de 70 s con todo encendido** (tormenta + redada + alerta
+  inicial + puerta bloqueada + comportamientos + pasajero rico + caja oculta +
+  el vagón de armas, 26 guardias): **sin errores ni avisos**.
+
+**MIRADO CON `foto.ps1`:** el cargado (franja roja gruesa y tres cartuchos
+asomando) y el vacío (tapa abierta, hueco negro, sin nada de rojo) se distinguen
+de un vistazo. Hizo falta dibujar el hueco y no simplemente sacar el rojo: un
+cajón liso se habría leído como "todavía no lo abrí".
+
+**NO JUGADO POR SANTI TODAVÍA.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

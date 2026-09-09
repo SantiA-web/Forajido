@@ -18,6 +18,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { dibujarCuerpoCajon } from './cajon.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -64,6 +65,16 @@ export function createRodante(x, y, tipo, rng, opciones = {}) {
 
     /** A quiénes ya atropelló, para no aturdir dos veces al mismo guardia. */
     atropellados: null,
+
+    /**
+     * SÓLO EL CAJÓN DE PÓLVORA EMPUJADO (`tipo: 'polvora'`, Fase 6a).
+     *
+     * `cargado` decide lo único que importa de él: si al romperse explota o se
+     * hace astillas. Y `puertasRotas` evita que le pegue dos veces a la misma
+     * puerta mientras la cruza — el mismo truco que ya usan las balas.
+     */
+    cargado: opciones.cargado ?? false,
+    puertasRotas: null,
   };
 }
 
@@ -119,6 +130,7 @@ export function drawRodante(r, ro) {
   r.ctx.globalAlpha = 1;
 
   if (ro.tipo === 'res') dibujarRes(r, ro, col);
+  else if (ro.tipo === 'polvora') dibujarPolvora(r, ro);
   else if (ro.tipo === 'cajon') dibujarCajon(r, ro, col);
   else dibujarBarril(r, ro, col);
 
@@ -228,6 +240,25 @@ function dibujarRes(r, ro, col) {
   const paso = Math.sin(ro.giro * 5) > 0 ? 1 : -1;
   r.rect(cuerpoAtras + (d > 0 ? 2 : -4), y + h - 2, 2, 2 + paso, oscuro);
   r.rect(cuello - (d > 0 ? 2 : 0), y + h - 2, 2, 2 - paso, oscuro);
+}
+
+/**
+ * EL CAJÓN DE PÓLVORA EMPUJADO (Fase 6a).
+ *
+ * Se dibuja con **el mismo cuerpo** que el que está quieto en el vagón
+ * (`dibujarCuerpoCajon`, entities/cajon.js) y no con un sprite parecido: es la
+ * misma cosa en otra situación, y si se vieran distinto habría que aprender dos
+ * objetos donde hay uno. Lo único que se le agrega es el tumbo — un cajón no
+ * rueda liso, va de canto.
+ *
+ * Y la franja roja sigue diciendo lo único que importa mientras viene hacia
+ * vos: si el que se te viene encima te tumba o te mata.
+ */
+function dibujarPolvora(r, ro) {
+  const tumbo = Math.abs(Math.sin(ro.giro * 1.6));
+  const w = ro.hw - 1 + tumbo * 1.5;
+  const h = ro.hh - 3 - tumbo * 1.5;
+  dibujarCuerpoCajon(r, ro.x, ro.y, w, h, ro.cargado, ro.hitFlash > 0);
 }
 
 /** El cajón: cuadrado, angular, y va dando tumbos de canto en vez de rodar. */

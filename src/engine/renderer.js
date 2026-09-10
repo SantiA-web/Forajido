@@ -44,6 +44,14 @@ const HALO = [
   [-1, 1],  [0, 1],  [1, 1],
 ];
 
+/** '#8a7a5c' -> [138, 122, 92]. Para poder interpolar entre dos colores. */
+function hexARgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+const mezcla = (a, b, t) => Math.round(a + (b - a) * t);
+
 export function createRenderer(canvas, width, height) {
   const ctx = canvas.getContext('2d');
 
@@ -73,6 +81,33 @@ export function createRenderer(canvas, width, height) {
     clear(color) {
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, width, height);
+    },
+
+    /**
+     * UN DEGRADADO VERTICAL DIBUJADO POR BANDAS, no con el gradient del canvas.
+     *
+     * El gradient real produce cientos de tonos intermedios y bordes
+     * difuminados: en una pantalla de 384x216 donde todo lo demás es de color
+     * plano, eso se lee como un error de compresión, no como un cielo. Ocho
+     * bandas se leen como pixel art y son lo que hace cualquier juego del
+     * género.
+     *
+     * Existe por el cielo del pueblo, pero no sabe nada de pueblos: es un
+     * degradado, y el galope lo usa para las bandas del desierto.
+     */
+    cielo(x, y, w, h, colorArriba, colorAbajo, bandas = 8) {
+      const a = hexARgb(colorArriba);
+      const b = hexARgb(colorAbajo);
+      const alto = h / bandas;
+      for (let i = 0; i < bandas; i++) {
+        const t = bandas === 1 ? 0 : i / (bandas - 1);
+        ctx.fillStyle = `rgb(${mezcla(a[0], b[0], t)},${mezcla(a[1], b[1], t)},${mezcla(a[2], b[2], t)})`;
+        // El último se estira hasta el final: con alturas que no dividen justo,
+        // redondear cada banda por separado deja una costura de fondo a la vista.
+        const y0 = Math.round(y + i * alto);
+        const y1 = i === bandas - 1 ? Math.round(y + h) : Math.round(y + (i + 1) * alto);
+        ctx.fillRect(Math.round(x), y0, Math.round(w), y1 - y0);
+      }
     },
 
     /** Rectángulo lleno, con coordenadas redondeadas para no ver bordes borrosos. */

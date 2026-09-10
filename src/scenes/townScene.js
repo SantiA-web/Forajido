@@ -31,6 +31,14 @@ import { gameState } from '../state/gameState.js';
 import { createCamera } from '../engine/camera.js';
 import { T } from '../text/es.js';
 
+/**
+ * Alto de la loma del fondo. Lo comparten el cielo (que llega hasta donde ella
+ * empieza) y ella misma: si sólo lo supiera uno de los dos, el degradado se
+ * dibujaría por debajo y perdería justo el tramo pálido del horizonte, que es
+ * el que da la distancia.
+ */
+const ALTO_LOMA = 16;
+
 export function createTownScene(services) {
   const { renderer, input, scenes, hud, audio, rng } = services;
   const colors = CONFIG.colors;
@@ -188,7 +196,14 @@ export function createTownScene(services) {
 
   function render(r) {
     const dia = gameState.esDeDia;
-    r.clear(colors.puebloCielo);
+    /**
+     * EL CIELO VA ANTES DEL `translate`, y no es un detalle: está
+     * infinitamente lejos, así que no puede correrse con la cámara. Si entrara
+     * en el desplazamiento, caminar por el pueblo movería el horizonte y el
+     * pueblo se sentiría del tamaño de una habitación.
+     */
+    r.cielo(0, 0, r.width, PUEBLO.calleY - 78 - ALTO_LOMA,
+      colors.puebloCielo, colors.puebloCieloHorizonte);
 
     r.ctx.save();
     r.ctx.translate(-camera.renderX, 0);
@@ -247,8 +262,12 @@ export function createTownScene(services) {
 
   function dibujarTierra(r) {
     const calle = PUEBLO.calleY;
-    // El fondo lejano: la loma detrás del pueblo.
-    r.rect(0, 0, PUEBLO.ancho, calle - 78, '#7a6a4e');
+    /**
+     * La loma detrás del pueblo: una FRANJA apoyada en el horizonte, no un
+     * fondo. Antes salía de `y=0` y se comía el cielo entero — ver la nota de
+     * `puebloCielo` en data/config.js.
+     */
+    r.rect(0, calle - 78 - ALTO_LOMA, PUEBLO.ancho, ALTO_LOMA, colors.puebloLoma);
     // La calle de tierra, con dos tonos para que se lea el polvo.
     r.rect(0, calle - 78, PUEBLO.ancho, PUEBLO.alto, colors.puebloTierra);
     for (let i = 0; i < PUEBLO.ancho; i += 24) {

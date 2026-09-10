@@ -1877,7 +1877,31 @@ export const CONFIG = {
      * lugares no se parezcan en nada es lo que hace que viajar se sienta como
      * ir a otro lado y no como cambiar de pantalla.
      */
-    puebloCielo:   '#8a7a5c',
+    /**
+     * EL CIELO DEL PUEBLO — y por qué antes no existía.
+     *
+     * 🐛 `puebloCielo` era CÓDIGO MUERTO. `render` limpiaba la pantalla con él,
+     * pero `dibujarTierra` pintaba "la loma detrás del pueblo" desde `y=0`
+     * (`townScene.js`) y lo tapaba entero, en un marrón escrito a mano que ni
+     * siquiera estaba en esta paleta. O sea que el pueblo no tenía cielo: tenía
+     * una loma de 72 px de alto, del mismo tono que la tierra.
+     *
+     * *(Santi, jugándolo: "las mecánicas se sienten muy bien pero no me siento
+     * dentro del Viejo Oeste")* — mirando las cuatro pantallas, ésta era la
+     * causa más grande y la más barata de arreglar. TODA la paleta de exteriores
+     * vivía en la misma franja de marrones (`desiertoDia` #8a6f47, `puebloTierra`
+     * #9c7f56, `campSueloDia` #a08053) y no había un solo color frío en el juego
+     * contra el cual esos ocres se leyeran como cálidos.
+     *
+     * Son DOS colores porque un cielo plano no es un cielo: el aire se aclara y
+     * se ensucia hacia el horizonte, y esa diferencia es la que da la distancia.
+     * Se dibuja con `r.cielo` (engine/renderer.js), en bandas y no en degradado
+     * continuo — el porqué está allá.
+     */
+    puebloCielo:          '#7c96a8',
+    puebloCieloHorizonte: '#cdc5ac',
+    /** La loma de atrás, ya empolvada por la distancia. */
+    puebloLoma:    '#9c8a6e',
     puebloTierra:  '#9c7f56',
     puebloTierra2: '#8d7149',
     puebloVereda:  '#6b5236',

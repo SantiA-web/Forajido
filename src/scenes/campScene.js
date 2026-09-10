@@ -35,6 +35,28 @@ import { gameState } from '../state/gameState.js';
 import { crearMenu } from '../engine/menu.js';
 import { T } from '../text/es.js';
 
+/**
+ * DE DÓNDE VIENE EL SOL. Un desplazamiento chico y para un solo lado: lo que
+ * hace leer el mediodía no es el tamaño de la sombra sino que TODAS caigan
+ * para el mismo lado. Con cada una centrada bajo su objeto —como estaba la del
+ * jugador— no hay sol, hay objetos flotando.
+ */
+const SOL = { dx: 3, dy: 2 };
+
+/**
+ * Un entero revuelto a partir de otro, SIEMPRE EL MISMO para el mismo número.
+ *
+ * Sirve para sembrar cosas quietas —las matas del desierto— sin guardar una
+ * lista y sin usar el `rng` del juego: éste se llama en cada cuadro del dibujo,
+ * y un rng de verdad avanza su estado, así que las matas titilarían de un
+ * cuadro al otro. Acá la posición es una función pura del índice.
+ */
+function revolver(n) {
+  let t = (n * 374761393 + 668265263) | 0;
+  t = Math.imul(t ^ (t >>> 13), 1274126177);
+  return (t ^ (t >>> 16)) >>> 0;
+}
+
 export function createCampScene(services) {
   const { input, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
@@ -295,6 +317,7 @@ export function createCampScene(services) {
     const dia = gameState.esDeDia;
     r.clear(dia ? colors.campDesiertoDia : colors.campNoche);
     dibujarSuelo(r, dia);
+    if (dia) dibujarSombras(r);
     dibujarCartel(r);
     dibujarCarpa(r);
     dibujarCajon(r);
@@ -350,6 +373,45 @@ export function createCampScene(services) {
       }
     }
 
+    /**
+     * Y AFUERA DEL CLARO, DESIERTO — no un vacío.
+     *
+     * De día el fondo era un relleno liso, así que el campamento se leía como
+     * un disco marrón apoyado sobre un campo marrón, sin nada que dijera que
+     * eso de alrededor es un lugar. Con matorrales y piedras el claro pasa a
+     * estar EN algo.
+     *
+     * Los verdes son los mismos del costado de la vía en el galope: es el
+     * mismo desierto, así que tiene que tener la misma vegetación. Y son los
+     * únicos que no son marrones en toda la escena, que es justamente lo que
+     * hace que los ocres se lean como ocres.
+     *
+     * Sólo de día: de noche el sentido del fondo negro es que la luz se
+     * termina, y sembrarlo de matas contaría lo contrario.
+     */
+    if (dia) {
+      r.ctx.globalAlpha = 0.75;
+      for (let i = 0; i < 130; i++) {
+        /**
+         * 🐛 Primero era `(i * 97 + 23) % ancho` y `(i * 53 + 31) % alto`, y
+         * las matas salieron en DIAGONALES perfectas: las dos cuentas son
+         * lineales en `i`, así que los puntos marchan en fila como un ejército.
+         * Se vio a la primera foto. Hace falta un revoltijo de verdad, no dos
+         * progresiones.
+         */
+        const px = revolver(i) % r.width;
+        const py = revolver(i + 977) % r.height;
+        // El claro y su borde quedan libres: ahí ya hay tierra pisada.
+        if (Math.hypot(px - c.x, py - c.y) < CAMPAMENTO.radio + 16) continue;
+        if (i % 3 === 0) {
+          r.rect(px, py, 3, 2, i % 2 ? '#4d5c34' : '#3d4a2a');   // mata
+        } else {
+          r.rect(px, py, 2, 1, colors.campBordeDia);              // piedra
+        }
+      }
+      r.ctx.globalAlpha = 1;
+    }
+
     // Unas piedritas para que el claro no sea un disco liso.
     r.ctx.globalAlpha = dia ? 0.35 : 0.5;
     for (let i = 0; i < 14; i++) {
@@ -359,6 +421,43 @@ export function createCampScene(services) {
         dia ? colors.campBordeDia : colors.campSueloLejos);
     }
     r.ctx.globalAlpha = 1;
+  }
+
+  /**
+   * LAS SOMBRAS, Y SÓLO DE DÍA.
+   *
+   * De noche la fogata ya cuenta de dónde viene la luz: el suelo es un charco
+   * que se apaga hacia afuera, y eso hace todo el trabajo. De día no había
+   * NINGUNA pista de que hubiera un sol — todo estaba parejo, y una escena
+   * cenital sin sombras se lee como recortes apoyados sobre un papel.
+   *
+   * No es una convención nueva: el jugador ya tenía la suya (`dibujarJugador`,
+   * un box negro al 30%), y era el único objeto del campamento que la tenía.
+   * Esto es esa misma sombra repartida al resto.
+   *
+   * VAN TODAS JUNTAS Y ACÁ, y no adentro de cada `dibujarX`, para que ninguna
+   * caiga ENCIMA de un objeto dibujado antes: primero el suelo, después todas
+   * las sombras, después todas las cosas.
+   */
+  function dibujarSombras(r) {
+    const o = (id) => objetosEnMundo().find((z) => z.id === id);
+    const carpa = o('carpa'), cajon = o('cajon');
+    const poste = o('poste'), cartel = o('cartel'), fogata = o('fogata');
+
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.3;
+    // La carpa: la sombra más grande, y la que da la escala del claro.
+    r.box(carpa.x + SOL.dx, carpa.y + 2 + SOL.dy, 19, 3, '#000');
+    r.box(cajon.x + SOL.dx, cajon.y + 6 + SOL.dy, 9, 3, '#000');
+    r.box(cartel.x + SOL.dx, cartel.y + 9 + SOL.dy, 8, 2, '#000');
+    // Los dos postes por separado: una sola sombra de 28 px de ancho sería un
+    // bloque, y lo que hay ahí arriba son dos palos con aire en el medio.
+    r.box(poste.x - 12 + SOL.dx, poste.y + 10 + SOL.dy, 3, 2, '#000');
+    r.box(poste.x + 13 + SOL.dx, poste.y + 10 + SOL.dy, 3, 2, '#000');
+    // El caballo, apoyado sobre sus patas y no sobre el poste.
+    r.box(poste.x + SOL.dx, poste.y + 11 + SOL.dy, 11, 3, '#000');
+    r.box(fogata.x + SOL.dx, fogata.y + 4 + SOL.dy, 11, 2, '#000');
+    r.ctx.restore();
   }
 
   /**
@@ -448,8 +547,13 @@ export function createCampScene(services) {
   }
 
   function dibujarJugador(r) {
+    // De día su sombra cae para el mismo lado que las demás; de noche queda
+    // centrada, porque ahí la luz es la fogata y no el sol — y según de qué
+    // lado del fuego estés parado te tocaría para otro lado. Centrada no
+    // afirma nada, y es lo que ya venía haciendo.
+    const sol = gameState.esDeDia ? SOL : { dx: 0, dy: 0 };
     r.ctx.globalAlpha = 0.3;
-    r.box(x, y + 6, 5, 2, '#000');
+    r.box(x + sol.dx, y + 6 + sol.dy, 5, 2, '#000');
     r.ctx.globalAlpha = 1;
 
     if (sentado) {

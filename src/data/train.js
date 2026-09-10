@@ -81,7 +81,7 @@ export const TRAIN_TYPES = {
     modificadores: true,
 
     /**
-     * EL VAGÓN DE ARMAS — Fase 6a. La mitad de los trenes estándar cambian el
+     * EL VAGÓN DE ARMAS — Fase 6a. Uno de cada cuatro trenes estándar cambia el
      * de ganado por el de armas (data/wagons.js).
      *
      * ES UN SORTEO Y NO UN CAMBIO FIJO, y es lo que hace que valga la pena:
@@ -99,11 +99,22 @@ export const TRAIN_TYPES = {
      *
      * Y AL GANADO Y NO A OTRO porque es el vagón de paso del estándar (un
      * guardia, una bolsa): es el único al que se le puede sacar el lugar sin
-     * que se note un agujero. Como es sorteo, además, sigue apareciendo la
-     * mitad de las veces — con él siguen vivos el escondite "junto al corral"
-     * de la caja fuerte oculta y el único vagón sin techo del tren.
+     * que se note un agujero. Como es sorteo, además, el ganado sigue
+     * apareciendo casi siempre — con él siguen vivos el escondite "junto al
+     * corral" de la caja fuerte oculta y el único vagón sin techo del tren.
+     *
+     * 🔻 BAJÓ DE 0,50 A 0,25 DESPUÉS DE JUGARLO *(Santi: "baja la probabilidad
+     * de que aparezca este vagón a un 25%")*.
+     *
+     * El 50% era el primer número, elegido sin jugar. Y lo que cambió en el
+     * medio es que este vagón dejó de afectar sólo a su propio pasillo: desde
+     * que hay pólvora repartida por el tren entero cuando él aparece (ver
+     * `cajonesExtra` en data/wagons.js), la mitad de los asaltos eran asaltos
+     * con barriles por todos lados. A uno de cada cuatro vuelve a ser lo que
+     * tenía que ser — algo que reconocés desde el galope y que te cambia el
+     * plan del día, no el tren de siempre.
      */
-    sustituciones: [{ de: 'ganado', por: 'armas', chance: 0.50 }],
+    sustituciones: [{ de: 'ganado', por: 'armas', chance: 0.25 }],
 
     color: '#c9b68d',
   },

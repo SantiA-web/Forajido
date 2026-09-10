@@ -286,7 +286,23 @@ export function createRaidScene(services) {
      */
     const bloqueaPuertaCerrada = (x, y) => {
       for (const d of doors) {
-        if ((d.kind === 'blindada' || d.trabada) && !d.broken &&
+        /**
+         * La trabada frena MIENTRAS ESTÉ CERRADA. El `!d.open` es nuevo y
+         * antes no hacía falta: una trabada no se abría nunca, así que
+         * preguntarlo habría sido preguntar por algo imposible. Ahora el
+         * Dinamitero lleva la llave (`tieneLlave`, ver entities/door.js), y
+         * sin esto la abría y se la comía igual — la puerta se veía abierta y
+         * seguía siendo un muro, para él y para vos.
+         *
+         * Y ahí está la ventana que gana el que lo viene siguiendo: mientras
+         * él la sostiene, y los 1,6 s del vaivén hasta que se cierra sola, esa
+         * puerta se cruza. Después vuelve a ser pared.
+         *
+         * La blindada no mira `open` a propósito: es chapa y su única llave
+         * sigue siendo la dinamita.
+         */
+        const frena = d.kind === 'blindada' || (d.trabada && !d.open);
+        if (frena && !d.broken &&
             Math.abs(x - d.x) < d.hw && Math.abs(y - d.y) < d.hh) {
           return true;
         }
@@ -1679,15 +1695,20 @@ export function createRaidScene(services) {
   /**
    * El cajón de pólvora al alcance de la mano.
    *
-   * `soloCargados`: para el `[E]` sólo cuentan los que todavía tienen algo
-   * adentro —de uno vacío no hay nada que sacar— pero para el `F` cuentan
-   * todos, porque un cajón vacío se empuja igual y sigue sirviendo de ariete.
+   * `soloConCartucho`: para el `[E]` sólo cuentan los que tienen un cartucho
+   * armado adentro — de la pólvora suelta no se saca nada, y de uno ya vaciado
+   * tampoco. Para el `F` cuentan TODOS, porque cualquiera se empuja igual y
+   * sigue sirviendo de ariete, tenga o no algo para vos.
+   *
+   * Antes el filtro era `cargado` y alcanzaba, porque tener pólvora y tener un
+   * cartucho para llevarse eran la misma cosa. Dejaron de serlo cuando la
+   * pólvora se repartió por todo el tren (ver `chanceCartucho`).
    */
-  function cajonCerca(soloCargados = true) {
+  function cajonCerca(soloConCartucho = true) {
     let cerca = null;
     let mejor = CONFIG.loot.radius + 6;
     for (const c of cajones) {
-      if (!c.alive || (soloCargados && !c.cargado)) continue;
+      if (!c.alive || (soloConCartucho && !c.tieneCartucho)) continue;
       const d = distance(player.x, player.y, c.x, c.y);
       if (d < mejor) { mejor = d; cerca = c; }
     }
@@ -1774,6 +1795,7 @@ export function createRaidScene(services) {
 
     const ro = createRodante(c.x, yCorredor, 'polvora', rng, {
       cargado: c.cargado,
+      tieneCartucho: c.tieneCartucho,
       vida: c.vida,
       hw: c.hw + 1, hh: c.hh + 2,
     });
@@ -3061,14 +3083,19 @@ export function createRaidScene(services) {
      * monta. Arriba lo que hace la `[E]` (o por qué no hace nada), abajo el
      * `[F]` que siempre está disponible.
      *
-     * Un cajón VACÍO ya no tiene nada que sacar, así que sólo muestra el
-     * empujón: es toda la diferencia que el jugador necesita para saber cuál
-     * de los dos tiene delante sin mirarle la franja.
+     * SON TRES CASOS, y el cartel los separa sin que haya que mirar la franja:
+     *   con cartucho  → la [E] y su barrita, más el empujón abajo.
+     *   pólvora suelta → "nada que llevarse", pero SIGUE SIENDO UNA BOMBA, y
+     *                    por eso lo dice con esas palabras y no callándose.
+     *   ya vaciado     → sólo el empujón: no explota ni da nada.
      */
     const cajon = cajonCerca(false);
     if (cajon) {
       const lleno = player.dynamite >= CONFIG.player.dynamiteMax;
-      if (cajon.cargado) {
+      if (cajon.cargado && !cajon.tieneCartucho) {
+        r.text(T.prompts.cajonSinCartucho, player.x, player.y - 16, colors.textDim);
+        r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim);
+      } else if (cajon.tieneCartucho) {
         r.text(lleno ? T.prompts.cartuchoLleno : T.prompts.cartucho,
           player.x, player.y - 16, lleno ? colors.textDim : colors.dynamiteBand);
         if (cajon.progreso > 0) {

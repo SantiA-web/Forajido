@@ -178,6 +178,30 @@ export const EXPLOSIVES = {
     /** Cuántos cartuchos te da abrirlo con [E]. */
     recarga: 1,
 
+    /**
+     * QUÉ PROPORCIÓN DE BARRILES TRAE UN CARTUCHO PARA LLEVARSE.
+     *
+     * *(Santi: "no siempre vas a poder sacar un trozo de dinamita de un barril.
+     * Al acercarte te vas a dar cuenta de si se puede o no")*
+     *
+     * Es lo que permite que la pólvora esté por TODO el tren sin que la
+     * dinamita se vuelva infinita. Todos los barriles explotan igual —el
+     * peligro es parejo— pero sólo uno de cada tres tiene un cartucho armado
+     * que puedas guardarte; en los demás hay pólvora suelta y nada más.
+     *
+     * LA CUENTA: un tren con vagón de armas lleva ~8-9 barriles, así que salen
+     * ~3 cartuchos, que es exactamente `CONFIG.player.dynamiteMax`. O sea que
+     * recorrer el tren entero te llena la cartuchera y ni uno más — un poco
+     * MENOS de lo que daban los cinco cajones del vagón viejo, con mucha más
+     * pólvora a la vista.
+     *
+     * Y no se ve de lejos a propósito: la franja roja (que la tienen todos)
+     * dice "esto explota"; los tres cartuchos asomando por la tapa, que son
+     * chicos, dicen "acá hay uno para vos". De lejos, todos los barriles son
+     * la misma amenaza.
+     */
+    chanceCartucho: 0.34,
+
     /** Lo que tardás en abrirlo: lo mismo que una bolsa (CONFIG.loot.bagTime). */
     abrirHold: 0.6,
 

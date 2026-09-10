@@ -75,6 +75,20 @@ export const T = {
     cartucho: '[E] AGARRAR UN CARTUCHO',
     cartuchoLleno: 'NO TE ENTRA OTRO CARTUCHO',
     cartuchoTomado: '+1 DINAMITA',
+    /**
+     * PÓLVORA SUELTA: explota igual, pero no hay nada que guardarse.
+     *
+     * *(Santi: "no siempre vas a poder sacar un trozo de dinamita de un barril.
+     * Al acercarte te vas a dar cuenta de si se puede o no")* — esto es el "al
+     * acercarte". El dibujo ya lo dice (no le asoman los cartuchos por la
+     * tapa), pero el cartel tiene que decir SIEMPRE qué hace la [E] ahora
+     * mismo, aunque la respuesta sea "nada", igual que `cartuchoLleno`.
+     *
+     * Y nombra la pólvora a propósito: sin eso, un barril sin cartucho se
+     * leería como uno ya vaciado, y son cosas muy distintas — éste todavía
+     * vuela por los aires.
+     */
+    cajonSinCartucho: 'PÓLVORA SUELTA · NADA QUE LLEVARSE',
     // Empujar el cajón: sale rodando hacia la cola, y a veces salta al vagón
     // de al lado en vez de caerse en la pasarela.
     empujarCajon: '[F] EMPUJAR EL CAJÓN',

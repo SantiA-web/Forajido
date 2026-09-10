@@ -23,12 +23,28 @@
 import { CONFIG } from '../data/config.js';
 import { EXPLOSIVES } from '../data/explosives.js';
 
-export function createCajon(x, y) {
+export function createCajon(x, y, tieneCartucho = true) {
   const t = EXPLOSIVES.cajonPolvora;
 
   return {
     x, y,
     hw: 7, hh: 6,
+
+    /**
+     * ¿HAY UN CARTUCHO ARMADO ADENTRO, O SÓLO PÓLVORA SUELTA?
+     *
+     * *(Santi: "no siempre vas a poder sacar un trozo de dinamita de un barril.
+     * Al acercarte te vas a dar cuenta de si se puede o no")*
+     *
+     * NO ES LO MISMO QUE `cargado`, y la diferencia es todo el sistema:
+     * `cargado` dice si EXPLOTA —lo tienen todos— y esto dice si te podés
+     * llevar algo. Un barril sin cartucho es igual de peligroso y no te da
+     * nada.
+     *
+     * Es lo que permitió repartir pólvora por todo el tren sin volver
+     * infinita la dinamita (ver `chanceCartucho` en data/explosives.js).
+     */
+    tieneCartucho,
 
     vida: t.vida,
     vidaMax: t.vida,
@@ -85,6 +101,8 @@ export function dañarCajon(c, cantidad) {
  */
 export function vaciarCajon(c) {
   c.cargado = false;
+  // Sacaste el único que había: ya no queda nada que llevarse ni que explote.
+  c.tieneCartucho = false;
 }
 
 export function updateCajon(c, dt) {
@@ -121,12 +139,19 @@ export function updateCajon(c, dt) {
  * va rodando por el pasillo (`drawRodante`), para que sean obviamente la misma
  * cosa en dos situaciones y no dos dibujos parecidos.
  *
- * LA DIFERENCIA ENTRE CARGADO Y VACÍO ES TODA LA LECTURA DEL VAGÓN: con
- * pólvora lleva la franja roja cruzada y los tres cartuchos asomando; sin
- * pólvora es un cajón de madera pelado, con la tapa abierta. Uno explota y el
- * otro no, y hay que poder decirlo de un vistazo en medio de un tiroteo.
+ * SON TRES ESTADOS Y CADA SEÑAL DICE UNA COSA DISTINTA:
+ *
+ *   franja roja cruzada  → ESTO EXPLOTA. La tienen todos los cargados, se ve
+ *                          de lejos, y es lo único que importa en un tiroteo.
+ *   cartuchos asomando   → y además hay uno para llevarte. Son chicos: se ven
+ *                          cuando estás al lado, no desde la otra punta.
+ *   tapa abierta y hueco → ya le sacaste el cartucho. No explota más.
+ *
+ * El del medio es el que trajo la pólvora al resto del tren: un barril con
+ * franja y sin cartuchos es igual de peligroso y no te da nada (ver
+ * `chanceCartucho` en data/explosives.js).
  */
-export function dibujarCuerpoCajon(r, x, y, hw, hh, cargado, golpeado) {
+export function dibujarCuerpoCajon(r, x, y, hw, hh, cargado, golpeado, tieneCartucho = cargado) {
   const col = CONFIG.colors;
   const madera = golpeado ? '#fff' : '#a8814e';
   const tapa   = golpeado ? '#fff' : '#c49b63';
@@ -134,7 +159,7 @@ export function dibujarCuerpoCajon(r, x, y, hw, hh, cargado, golpeado) {
 
   // LOS CARTUCHOS, asomando por detrás de la tapa. Van ANTES del cuerpo para
   // que la tapa los tape por abajo y se lea que salen de adentro del cajón.
-  if (cargado && !golpeado) {
+  if (tieneCartucho && !golpeado) {
     for (const dx of [-4, 0, 4]) {
       r.rect(x + dx - 1, y - hh - 4, 3, 5, col.dynamite);
       r.rect(x + dx - 1, y - hh - 3, 3, 1, col.dynamiteBand);
@@ -174,7 +199,7 @@ export function drawCajon(r, c) {
   r.box(c.x, c.y + h, w - 1, 2, '#000');
   r.ctx.globalAlpha = 1;
 
-  dibujarCuerpoCajon(r, c.x, c.y, w, h, c.cargado, golpeado);
+  dibujarCuerpoCajon(r, c.x, c.y, w, h, c.cargado, golpeado, c.tieneCartucho);
 
   /**
    * CUÁNTO LE QUEDA, sólo si ya le pegaste. Las mismas rayitas que usan los

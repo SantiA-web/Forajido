@@ -74,6 +74,8 @@ export function createRodante(x, y, tipo, rng, opciones = {}) {
      * puerta mientras la cruza — el mismo truco que ya usan las balas.
      */
     cargado: opciones.cargado ?? false,
+    /** Si el que empujaste todavía tenía su cartucho, sigue teniéndolo rodando. */
+    tieneCartucho: opciones.tieneCartucho ?? false,
     puertasRotas: null,
   };
 }
@@ -258,7 +260,7 @@ function dibujarPolvora(r, ro) {
   const tumbo = Math.abs(Math.sin(ro.giro * 1.6));
   const w = ro.hw - 1 + tumbo * 1.5;
   const h = ro.hh - 3 - tumbo * 1.5;
-  dibujarCuerpoCajon(r, ro.x, ro.y, w, h, ro.cargado, ro.hitFlash > 0);
+  dibujarCuerpoCajon(r, ro.x, ro.y, w, h, ro.cargado, ro.hitFlash > 0, ro.tieneCartucho);
 }
 
 /** El cajón: cuadrado, angular, y va dando tumbos de canto en vez de rodar. */

@@ -24,6 +24,7 @@ import { createPassenger } from '../entities/passenger.js';
 import { createLootable } from '../entities/lootable.js';
 import { createDoor, trabarPuerta } from '../entities/door.js';
 import { createCajon } from '../entities/cajon.js';
+import { EXPLOSIVES } from '../data/explosives.js';
 import { WAGONS, TRAMOS } from '../data/wagons.js';
 import {
   TRAIN_TYPES, TIPO_TREN_POR_DEFECTO, DIFICULTADES, DIFICULTAD_POR_DEFECTO,
@@ -201,7 +202,7 @@ function barridoDe(cols) {
  * puede entrar— así que incluirlo sería mandarlo a empujar una pared. De ese
  * lado la ronda se queda adentro del vagón de armas.
  */
-function rondaDinamitero(tramoArmas, tramos, map) {
+function rondaDinamitero(rng, tramoArmas, tramos, map) {
   const size = map.size;
   const vagones = tramos.filter((t) => t.tipo === 'vagon');
   const i = vagones.indexOf(tramoArmas);
@@ -225,13 +226,34 @@ function rondaDinamitero(tramoArmas, tramos, map) {
   const derTramo = despues || tramoArmas;
 
   const y = map.tileCenter(0, 4).y;
+  /**
+   * ARRANCA EN UN PUNTO CUALQUIERA DE SU VUELTA, PARA UN LADO CUALQUIERA.
+   *
+   * 🐛 Antes arrancaba SIEMPRE en el centro del vagón de armas y SIEMPRE hacia
+   * adelante. Como nada más de su ronda es aleatorio, eso hacía que su vuelta
+   * fuera idéntica en todos los asaltos: medido, estaba adentro del vagón en
+   * los segundos 0-4, 26-36, 54-63 y 81-91, y dos asaltos distintos daban la
+   * misma tira segundo por segundo. Y llegar al vagón de armas lleva 17,4 s
+   * caminando derecho —más, peleando—, así que la llegada real caía siempre
+   * sobre la misma ventana y el tipo estaba adentro SIEMPRE. La jugada del
+   * vagón (esperar a que salga) no existía: no había nada que esperar.
+   *
+   * *(Santi, jugándolo: "habíamos decidido que el dinamitero no siempre estará
+   * en su vagón, pero cada vez que hago un asalto lo encuentro ahí")*
+   *
+   * El comentario viejo decía que arrancar en el centro hacía que "la primera
+   * vez que llegás esté ahí". No era cierto: a los 17 s ya había salido. Lo que
+   * te lo ponía enfrente era su SEGUNDA pasada, o sea el ciclo, no el arranque.
+   */
+  const startX = rng.range(xIzq, xDer);
+  // Hacia qué punta va. Si sale hacia el que tiene DETRÁS, camina la vuelta
+  // entera para el otro lado: es lo que desfasa el ciclo de verdad.
+  const haciaDerecha = rng.chance(0.5);
   return {
     path: [{ x: xIzq, y }, { x: xDer, y }],
-    // Arranca en el medio del vagón de armas, mirando hacia adelante: es donde
-    // de verdad tiene que estar el tipo que cuida la pólvora, y hace que la
-    // primera vez que llegás esté ahí — la lección se aprende entrando, no
-    // leyéndola en ningún lado.
-    startX: centro(tramoArmas),
+    startX,
+    pathIndex: haciaDerecha ? 1 : 0,
+    facing: haciaDerecha ? FACINGS.right : FACINGS.left,
     y,
     x0: izqTramo.colStart * size + 6,
     x1: (derTramo.colStart + derTramo.cols) * size - 6,
@@ -505,6 +527,15 @@ export function buildTrain(
   const tranqueras = [];
   const cajones = [];
   const avisos = [];
+
+  /**
+   * ¿ESTE TREN LLEVA PÓLVORA REPARTIDA? Es la llave del sistema entero: sin
+   * vagón de armas, ni un barril fuera de él — el tren es exactamente el de
+   * siempre. Se pregunta por los TRAMOS ya sorteados y no por `composicion`,
+   * porque las sustituciones (ganado → armas) ya se aplicaron acá.
+   */
+  const hayVagonDeArmas = tramos.some(
+    (t) => t.tipo === 'vagon' && t.plantilla.id === 'armas');
 
   for (const t of tramos) {
     if (t.tipo !== 'vagon') continue;
@@ -902,20 +933,49 @@ export function buildTrain(
     }
 
     /**
-     * LOS CAJONES DE PÓLVORA (Fase 6a, hoy sólo el vagón de armas).
+     * LOS BARRILES DE PÓLVORA — y son DOS reglas distintas, no una.
      *
-     * A diferencia de las tranqueras —que dependen del TIPO DE TREN, porque
-     * el ganado tiene que poder seguir siendo un pasillo de paso en el
-     * estándar— éstos dependen sólo del VAGÓN: un vagón de armas lleva
-     * pólvora en cualquier tren que lo lleve a él. Es lo que el vagón ES, no
-     * una regla que le pone el servicio.
+     * 1. `p.cajones` depende sólo del VAGÓN: un vagón de armas lleva pólvora
+     *    en cualquier tren que lo lleve a él. Es lo que el vagón ES.
+     *
+     * 2. `p.cajonesExtra` depende del TREN: los demás vagones sólo llevan
+     *    pólvora **si en la composición hay un vagón de armas**. Es el mismo
+     *    patrón que las tranqueras del ganado, que sólo existen en el tren de
+     *    carga.
+     *
+     * *(Santi: "cuando hay un vagón de armas en el tren, no sólo ahí dentro
+     * habrían barriles de dinamita, sino que afectaría a todo el tren [...]
+     * puede haber en todos menos en el de pasajeros")*
+     *
+     * EL VAGÓN DE PASAJEROS QUEDA AFUERA SIN NINGÚN `if` CON SU NOMBRE: no
+     * tiene `cajonesExtra` y listo. Cualquier vagón futuro entra o no entra
+     * según si le escribís candidatas, igual que `sinVariantes`.
+     *
+     * Y SON CANDIDATAS, NO UNA LISTA FIJA: se sortean una o dos por vagón, así
+     * que dos asaltos al mismo tipo de vagón no tienen la pólvora en el mismo
+     * lugar. Es lo único de este sistema que cambia entre asalto y asalto.
      */
-    for (const def of p.cajones || []) {
+    const defsCajones = [...(p.cajones || [])];
+    if (hayVagonDeArmas && p.cajonesExtra) {
+      const candidatas = [...p.cajonesExtra];
+      const cuantas = Math.min(candidatas.length, rng.int(1, 2));
+      for (let i = 0; i < cuantas; i++) {
+        defsCajones.push(candidatas.splice(rng.int(0, candidatas.length - 1), 1)[0]);
+      }
+    }
+
+    for (const def of defsCajones) {
       const pos = enTiles([def.col, def.row]);
-      const cj = createCajon(pos.x, pos.y);
+      /**
+       * ¿TRAE UN CARTUCHO PARA LLEVARSE? Se juega barril por barril (ver
+       * `chanceCartucho` en data/explosives.js). Todos explotan igual: esto
+       * decide sólo si además te da algo.
+       */
+      const cj = createCajon(pos.x, pos.y,
+        rng.chance(EXPLOSIVES.cajonPolvora.chanceCartucho));
       cj.wagon = t.wagon;
       cajones.push(cj);
-      revisar(avisos, map, pos, `cajón de pólvora del ${p.name} (vagón ${t.wagon})`);
+      revisar(avisos, map, pos, `barril de pólvora del ${p.name} (vagón ${t.wagon})`);
     }
 
     /**
@@ -971,10 +1031,10 @@ export function buildTrain(
    */
   const tramoArmas = tramos.find((t) => t.tipo === 'vagon' && t.plantilla.id === 'armas');
   if (tramoArmas) {
-    const ronda = rondaDinamitero(tramoArmas, tramos, map);
+    const ronda = rondaDinamitero(rng, tramoArmas, tramos, map);
     const guard = createEnemy(ronda.startX, ronda.y, {
       path: ronda.path,
-      facing: FACINGS.right,
+      facing: ronda.facing,
       type: 'dinamitero',
       health: guardHealth('dinamitero', dificultad.vidaExtra),
       /**
@@ -991,7 +1051,7 @@ export function buildTrain(
        */
       ai: { ...perfilIA, patrolSpeed: CONFIG.enemy.speed },
     });
-    guard.pathIndex = 1;
+    guard.pathIndex = ronda.pathIndex;
     /**
      * NO SALE DE ESOS TRES VAGONES, ni persiguiéndote. Es la misma regla que
      * ya tienen los del blindado (`confinado`, aplicada al final de cada
@@ -1020,6 +1080,18 @@ export function buildTrain(
      *     siempre se abren.
      */
     guard.rondaLarga = true;
+    /**
+     * LA LLAVE DEL TREN. Es guardia de a bordo: una puerta trabada del sorteo
+     * (`puertaBloqueada`) no lo frena, la abre y sigue. Sin esto, una traba
+     * que cayera sobre su recorrido lo dejaba rebotando adentro del vagón de
+     * armas — 52% del tiempo adentro con una puerta, 70% con dos, contra el
+     * 36% normal — y la jugada de esperar a que salga no existía.
+     *
+     * ABRIRLA NO LA DESTRABA: se cierra detrás suyo y sigue trabada para vos
+     * (ver `updateDoor` en entities/door.js). Lo que te deja es la ventana de
+     * 1,6 s del vaivén de siempre, si lo venías siguiendo.
+     */
+    guard.tieneLlave = true;
     /**
      * SU VAGÓN, PARA LA ALARMA, es el de armas — aunque en este momento esté
      * caminando por otro. Es una aproximación y se sabe: el alcance del ruido

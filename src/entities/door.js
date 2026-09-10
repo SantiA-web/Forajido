@@ -43,11 +43,27 @@ export function createDoor(x, y, { kind = 'normal', insideDir = 1 } = {}) {
 export function updateDoor(d, dt, world) {
   if (d.broken) return;
 
-  // Trabada: nadie la abre empujando, ni vos ni un guardia. Sólo se abre
-  // rompiéndola (`dañarPuerta`) — ver `trabarPuertasDelTren` en raidScene.js.
-  if (d.trabada) return;
+  /**
+   * Trabada: no la abre empujando ni vos ni un guardia común. Sólo se abre
+   * rompiéndola (`dañarPuerta`) — ver `trabarPuertasDelTren` en raidScene.js.
+   *
+   * LA EXCEPCIÓN ES EL QUE LLEVA LA LLAVE (`tieneLlave`, hoy sólo el
+   * Dinamitero del vagón de armas). No es un permiso de lujo: es el único
+   * guardia con una ronda que CRUZA puertas, y sin esto una traba del sorteo
+   * le partía la vuelta al medio. Medido antes de arreglarlo: con una puerta
+   * trabada sobre su recorrido cubría 889 px de 1216 y pasaba 52% del tiempo
+   * adentro del vagón de armas en vez de 36% — con dos, 70%. O sea que el
+   * modificador lo encerraba justo donde la gracia del vagón es que salga.
+   *
+   * ABRIR NO ES DESTRABAR, y ahí está la decisión: la puerta se abre mientras
+   * él la ocupa y se vuelve a cerrar con el `closeDelay` de siempre, todavía
+   * trabada. Para vos sigue siendo un problema y la llave sigue siendo
+   * romperla a tiros (ver `trabadaDeOrigen`) — pero si lo venías siguiendo,
+   * te deja 1,6 s para colarte detrás suyo.
+   */
+  const laAbreAlguien = d.trabada ? ocupada(d, world, true) : ocupada(d, world);
 
-  if (ocupada(d, world)) {
+  if (laAbreAlguien) {
     d.open = true;
     d.closeTimer = CONFIG.doors.closeDelay;
     return;
@@ -63,18 +79,34 @@ export function updateDoor(d, dt, world) {
  * ¿Hay alguien empujándola AHORA MISMO? Para una puerta 'normal', cualquiera
  * de los dos lados la abre. Para la 'blindada', SÓLO cuenta alguien parado del
  * lado de ADENTRO — de afuera no hay forma de abrirla empujando.
+ *
+ * `soloConLlave` recorta eso a los que pueden abrir una TRABADA: el jugador
+ * nunca cuenta ahí (para él la llave sigue siendo el plomo).
  */
-function ocupada(d, world) {
+function ocupada(d, world, soloConLlave = false) {
+  /**
+   * El de la llave la abre desde un poco más lejos, y no es un lujo: una
+   * trabada FRENA EL PASO (`bloqueaPuertaCerrada`, scenes/raidScene.js), así
+   * que el colisionador lo clava a ~25 px del centro de la hoja — bastante
+   * antes de los 12,5 px del empujón normal. Medido: se quedaba oscilando en
+   * x=1313 contra la puerta de 1288, sin alcanzarla nunca. Con el margen de
+   * siempre, la llave sólo habría servido si además pudiera atravesarla, que
+   * es exactamente lo que no puede hacer.
+   *
+   * 32 px son dos baldosas: estira la mano y la abre antes de chocarla.
+   */
+  const margenX = soloConLlave ? 32 : d.hw;
   const cerca = (e) =>
     e && e.alive !== false &&
-    Math.abs(e.x - d.x) < d.hw + (e.hw || 6) &&
+    Math.abs(e.x - d.x) < margenX + (e.hw || 6) &&
     Math.abs(e.y - d.y) < d.hh + (e.hh || 6);
 
   const ladoDeAdentro = (e) => Math.sign(e.x - d.x || d.insideDir) === d.insideDir;
   const cuenta = (e) => d.kind !== 'blindada' || ladoDeAdentro(e);
 
-  if (cerca(world.player) && cuenta(world.player)) return true;
+  if (!soloConLlave && cerca(world.player) && cuenta(world.player)) return true;
   for (const e of world.enemies) {
+    if (soloConLlave && !e.tieneLlave) continue;
     if (cerca(e) && cuenta(e)) return true;
   }
   return false;

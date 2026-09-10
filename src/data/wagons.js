@@ -127,6 +127,33 @@ export const WAGONS = {
       { col: 19, row: 6, type: 'bag' },
       { col: 31, row: 4, type: 'bag' },
     ],
+    /**
+     * ACÁ VAN EN EL PASILLO (filas 4-5) Y NO CONTRA LA PARED. Ver
+     * `cajonesExtra` en el correo para qué son.
+     *
+     * *(Santi, después de jugarlo: "los barriles en el comedor ponlos dónde
+     * todos: en el pasillo")*
+     *
+     * En todos los demás vagones van en las filas 3 y 6, que están pegadas al
+     * corredor: se ven al entrar y se usan de cobertura. Acá no se puede —esas
+     * dos filas son las mesas— así que la primera versión los mandó a las filas
+     * 1 y 8, contra la pared. El resultado era que quedaban **detrás de dos
+     * hileras de mesas**: no se veían al pasar, no servían de cobertura y no
+     * entraban en ninguna decisión. Estaban puestos donde había lugar, no donde
+     * importaban.
+     *
+     * En el pasillo un barril no frena el paso (como cualquier barril), pero
+     * está en el camino de todos: tuyo, de los guardias y de la gente que sale
+     * corriendo. Y de paso es la única cobertura de un vagón que no tenía
+     * ninguna a la altura del corredor.
+     *
+     * Ninguno cae sobre un pasajero: los del comedor viajan en (2,4) y (26,5).
+     */
+    cajonesExtra: [
+      { col: 10, row: 4 },
+      { col: 17, row: 5 },
+      { col: 29, row: 4 },
+    ],
   },
 
   // ----------------------------------------------------------------- correo
@@ -161,6 +188,29 @@ export const WAGONS = {
       { col: 10, row: 6, type: 'bag' },
       { col: 22, row: 3, type: 'bag' },
       { col: 30, row: 6, type: 'strongbox' },
+    ],
+    /**
+     * BARRILES DE PÓLVORA, PERO SÓLO SI EL TREN LLEVA VAGÓN DE ARMAS.
+     *
+     * *(Santi: "cuando hay un vagón de armas en el tren, no sólo ahí dentro
+     * habrían barriles de dinamita, sino que afectaría a todo el tren")*
+     *
+     * ES UNA REGLA DE TREN, NO DE VAGÓN, y por eso las posiciones viven acá
+     * pero la decisión de usarlas vive en `buildTrain` (world/train.js). El
+     * mismo vagón de correo, en un tren sin armas, no lleva ni un barril — es
+     * el mismo patrón que las tranqueras del ganado, que sólo existen en el
+     * tren de carga.
+     *
+     * De cuántas se usan y cuáles se encarga el sorteo: son CANDIDATAS, no una
+     * lista fija, así que dos asaltos al mismo tipo de vagón no tienen la
+     * pólvora en el mismo lugar.
+     *
+     * Van en las filas 3 y 6, fuera del corredor, donde iría la carga.
+     */
+    cajonesExtra: [
+      { col: 13, row: 3 },
+      { col: 25, row: 6 },
+      { col: 6,  row: 6 },
     ],
   },
 
@@ -269,6 +319,20 @@ export const WAGONS = {
       { col: 8, row: 2, type: 'strongbox' },
       { col: 26, row: 7, type: 'strongbox' },
     ],
+    /**
+     * Ver `cajonesExtra` en el correo. Acá hay una regla de más: van LEJOS DE
+     * LAS PUERTAS, en el centro del vagón.
+     *
+     * La puerta del blindado es de chapa y tiene UNA sola llave, que es tu
+     * dinamita. Un barril explotando cerca se la volaría gratis desde adentro
+     * y le sacaría al vagón lo que lo hace el vagón blindado. Desde la columna
+     * 14 hasta la puerta más cercana hay 224 px y la explosión alcanza 110.
+     */
+    cajonesExtra: [
+      { col: 14, row: 3 },
+      { col: 20, row: 6 },
+      { col: 9,  row: 6 },
+    ],
   },
 
   // ------------------------------------------------------------------ armas
@@ -303,42 +367,42 @@ export const WAGONS = {
      * Los huecos entre estanterías caen justo sobre las ventanillas, como en
      * el correo: para llegar al vidrio hay que meterse entre los cajones.
      *
-     * Y LAS FILAS 3 Y 6 LLEVAN ISLAS DE CARGA — siete bloques de 2×1,
-     * escalonados (tres arriba, cuatro abajo, desfasados tres columnas).
+     * SE ACORTÓ A 24 COLUMNAS Y PERDIÓ SUS ISLAS DE COBERTURA.
      *
-     * *(Santi: "quiero que haya pequeñas coberturas por el centro del
-     * pasillo")*
+     * *(Santi: "el vagón de armas pasaría a ser un vagón de paso como el de
+     * ganado, a pesar que sí tendría un par de guardias y más barriles")*
      *
-     * ANTES ERAN CUATRO FILAS PELADAS (3, 4, 5 y 6): el vagón más abierto del
-     * tren, así que un tiroteo acá adentro era pararse en el medio y aguantar.
-     * Con las islas se puede cruzar saltando de una a otra.
+     * Es el mismo largo que el ganado y por el mismo motivo: **es un vagón para
+     * cruzar, no para quedarse**. Dejó de ser el depósito donde estaba toda la
+     * pólvora del tren —ahora hay barriles repartidos por casi todos los
+     * vagones— y pasó a ser el lugar donde hay MÁS, con lo justo para robar.
      *
-     * VAN EN 3 Y 6, NUNCA EN 4 NI 5, y no es estético: por el corredor 4-5
-     * pasan las rondas — incluida la del Dinamitero, que cruza este vagón de
-     * punta a punta. Un tile sólido en el camino de una ronda traba al guardia
-     * (`moveAxisAligned` empuja en X y no rodea), y al Dinamitero encima lo
-     * haría rebotar con su turn-around y le rompería la vuelta de tres vagones.
-     * Por eso las tres patrullas de abajo se mudaron al corredor: las
-     * coberturas son para el tiroteo, no para las rondas.
+     * LAS FILAS 3 Y 6 QUEDARON PELADAS, y no es un olvido: las siete islas
+     * escalonadas se fueron con las 30 columnas. Lo que ocupa su lugar son LOS
+     * BARRILES, que ya frenaban balas — o sea que la única cobertura del vagón
+     * pasa a ser la cosa que explota. Es mejor de lo que había: antes podías
+     * elegir entre una isla verde segura y un barril; ahora te cubrís detrás de
+     * una bomba o no te cubrís.
      *
-     * Y AHORA EL VAGÓN TIENE DOS CLASES DE COBERTURA, que es lo mejor que
-     * salió de esto y no costó una línea: los cajones de pólvora ya frenaban
-     * balas, o sea que ya eran cobertura — una que aguanta tres tiros y
-     * después te mata. Al lado de estas islas verdes, hay que aprender a
-     * distinguirlas: la franja roja y los cartuchos asomando son la diferencia
-     * entre parapetarse y sentarse sobre una bomba.
+     * LOS HUECOS ENTRE ESTANTERÍAS SIGUEN CAYENDO SOBRE LAS VENTANILLAS, como
+     * en el correo: para llegar al vidrio hay que meterse entre los cajones.
+     *
+     * Y EL CORREDOR 4-5 SIGUE LIBRE DE TILES SÓLIDOS. Por ahí pasan las rondas
+     * —incluida la del Dinamitero, que cruza este vagón de punta a punta por la
+     * fila 4— y un tile sólido en el camino de una ronda traba al guardia
+     * (`moveAxisAligned` empuja en X y no rodea).
      */
     layout: [
-      '####WW#####WW#####WW#####WW###',
-      '#CCC..CCCCC..CCCCC..CCCCC..CC#',
-      '#CCC..CCCCC..CCCCC..CCCCC..CC#',
-      '#......CC.....CC.....CC......#',
-      '+............................+',
-      '+............................+',
-      '#...CC.....CC.....CC.....CC..#',
-      '#CC..CCCCC..CCCCC..CCCCC..CCC#',
-      '#CC..CCCCC..CCCCC..CCCCC..CCC#',
-      '###WW#####WW#####WW#####WW####',
+      '####WW######WW######WW##',
+      '#CCC..CCCCCC..CCCCCC..C#',
+      '#CCC..CCCCCC..CCCCCC..C#',
+      '#......................#',
+      '+......................+',
+      '+......................+',
+      '#......................#',
+      '#CC..CCCCCC..CCCCCC..CC#',
+      '#CC..CCCCCC..CCCCCC..CC#',
+      '###WW######WW######WW###',
     ],
     /**
      * ACÁ NO SALE NINGUNA VARIANTE DE GUARDIA (data/modifiers.js).
@@ -394,64 +458,63 @@ export const WAGONS = {
      * larga del correo (`[[8,5],[29,5]]`), que existe desde la fase 2.
      */
     enemies: [
-      { path: [[4, 5], [13, 5]] },
-      { path: [[25, 5], [16, 5]] },
-      // El centinela: en la fila 3, fuera del corredor, mirando el pasillo y a
-      // un paso del cajón de la columna 20.
-      { path: [], col: 17, row: 3, facing: 'down' },
+      { path: [[3, 5], [11, 5]] },
+      { path: [[20, 5], [13, 5]] },
     ],
     passengers: [],
-    // Cuatro metidas en los huecos entre estanterías (hay que salirse del
-    // corredor para llegar) y una a la vista, cerca de la punta.
+    /**
+     * UNA SOLA BOLSA, como el ganado — y ahí está la parte "de paso".
+     *
+     * Eran cinco (~$237). Un vagón donde te quedás a juntar cinco bolsas no es
+     * un vagón de paso por más corto que sea: lo que te hace quedarte es el
+     * botín, no los metros. Con una sola, entrás por la pólvora o entrás
+     * porque está en el camino.
+     *
+     * Metida en un hueco entre estanterías: hay que salirse del corredor.
+     */
     loot: [
-      { col: 5, row: 1, type: 'bag' },
-      { col: 12, row: 2, type: 'bag' },
-      { col: 10, row: 8, type: 'bag' },
-      { col: 24, row: 7, type: 'bag' },
-      { col: 23, row: 6, type: 'bag' },
+      { col: 12, row: 1, type: 'bag' },
     ],
 
     /**
      * LOS CAJONES DE PÓLVORA — ver data/explosives.js (`cajonPolvora`) y
      * entities/cajon.js.
      *
-     * CINCO. Eran tres, y Santi los subió: *"quiero que haya más barriles de
-     * dinamita"*.
+     * CUATRO, en un vagón de 24 columnas — la mayor concentración del tren,
+     * que es lo que le queda de identidad ahora que hay pólvora repartida por
+     * casi todos los vagones (ver `cajonesExtra`, más abajo, y la regla de tren
+     * en world/train.js). Eran cinco en 30 columnas: quedan MÁS juntos que
+     * antes, no menos.
      *
-     * LO QUE CAMBIA NO ES CUÁNTA DINAMITA TE LLEVÁS — el tope siguen siendo 3
-     * cartuchos (`CONFIG.player.dynamiteMax`) y entrás con 2, así que **uno
-     * solo te sirve como reposición y los otros cuatro son bombas puestas**.
-     * Lo que cambia es la cadena: repartidos cada 48-64 px, la onda avanza a
-     * unos 160 px/s, o sea **más rápido de lo que corrés** (78). Correr a lo
-     * largo del vagón dejó de ser una salida; hay que salir por el lado corto.
+     * NO TODOS TRAEN UN CARTUCHO PARA LLEVARSE (`chanceCartucho`): todos
+     * explotan, pero de la pólvora suelta no se saca nada. Por eso cuatro acá
+     * no son cuatro dinamitas.
      *
-     * DÓNDE VAN NO ES DECORACIÓN: van repartidos entre las columnas 6 y 20,
-     * o sea a seis baldosas de la punta izquierda y diez de la derecha. La
-     * explosión alcanza 68 px (4,25 baldosas) y las puertas viven en los
-     * bordes — si un cajón quedara pegado a una punta y el blindado cayera al
-     * lado, la cadena le reventaría la puerta de chapa desde afuera, y esa
-     * puerta tiene UNA sola llave, que es tu dinamita. Con este margen la
-     * explosión queda a 96 px de la puerta más cercana, y esos mismos seis
-     * tiles libres de cada punta son **la salida**: el único lugar del vagón
-     * al que la cadena no llega.
+     * ALTERNAN FILA 3 Y FILA 6, y ahora eso hace dos trabajos en vez de uno: la
+     * cadena cruza en zigzag —no es una línea recta— y de paso **son la única
+     * cobertura del vagón**, desde que se fueron las islas. Cubrirse acá es
+     * elegir una bomba.
      *
-     * Y ALTERNAN FILA 3 Y FILA 6 para que la cadena no sea una línea recta:
-     * cruzarla en zigzag entre las islas de cobertura es la jugada.
+     * DÓNDE VAN NO ES DECORACIÓN: entre las columnas 5 y 18, o sea a cinco
+     * baldosas de la punta izquierda y cinco de la derecha. La explosión
+     * alcanza 68 px (4,25 baldosas) y las puertas viven en los bordes — si un
+     * barril quedara pegado a una punta y el blindado cayera al lado, la cadena
+     * le reventaría la puerta de chapa desde afuera, y esa puerta tiene UNA
+     * sola llave, que es tu dinamita. Esos mismos tiles libres de cada punta
+     * son **la salida**: el único lugar del vagón al que la cadena no llega.
      *
-     * 🐛 VAN EN EL MEDIO DE CADA TRAMO LIBRE, NO PEGADOS A UNA ISLA. La primera
-     * versión los puso justo a la izquierda de cada bloque de cobertura y eso
-     * los volvía trampas mortales: el que estaba al lado de un cajón sacando un
-     * cartucho, al prenderse la mecha, **chocaba contra la isla y no podía
-     * huir**. Medido: prendiendo el último y corriendo, el jugador terminó a
-     * TRES píxeles de donde arrancó, muerto. Ahora cada uno tiene dos baldosas
-     * libres a cada lado en su propia fila.
+     * 🐛 Y CADA UNO TIENE DOS BALDOSAS LIBRES A CADA LADO en su propia fila.
+     * La primera versión (con islas) los puso pegados a los bloques de
+     * cobertura y eso los volvía trampas mortales: el que estaba sacando un
+     * cartucho, al prenderse la mecha, chocaba contra la isla y no podía huir.
+     * Medido entonces: terminó a TRES píxeles de donde arrancó, muerto. Sin
+     * islas el problema no puede volver, pero el criterio se queda escrito.
      */
     cajones: [
-      { col: 8, row: 6 },
-      { col: 11, row: 3 },
-      { col: 15, row: 6 },
+      { col: 5,  row: 6 },
+      { col: 9,  row: 3 },
+      { col: 14, row: 6 },
       { col: 18, row: 3 },
-      { col: 22, row: 6 },
     ],
   },
 

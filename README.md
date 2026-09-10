@@ -597,6 +597,12 @@ repartidos por casi todos los vagones — el comedor, el correo, el blindado. El
 único que nunca lleva es el de pasajeros. Un tren con vagón de armas es un tren
 distinto de punta a punta, y por eso es uno de cada cuatro y no la mitad.
 
+**Y siempre viene antes que el blindado**, con un vagón de por medio: si el de
+armas es el 3, el blindado no puede estar antes del 5. Así que **la pólvora
+queda siempre de camino a la caja fuerte** — que es lindo, porque la puerta del
+blindado tiene una sola llave y es tu dinamita. (El motivo original era otro:
+pegados, la ronda del Dinamitero se rompía. Ver más abajo.)
+
 Un barril de pólvora es tres cosas a la vez:
 
 | | |
@@ -691,6 +697,14 @@ juego.
 un punto cualquiera de su vuelta y para un lado cualquiera, así que dos asaltos
 al mismo tipo de tren no te lo ponen en el mismo lado. Cronometrarlo sirve
 **dentro** de un asalto, no entre uno y otro.
+
+> **Por qué el blindado nunca cae pegado al vagón de armas.** Su ronda va de la
+> mitad de un vecino a la mitad del otro — pero el blindado no cuenta como
+> vecino, porque su puerta de chapa no se empuja desde afuera y él no puede
+> entrar. Con el blindado al lado, la vuelta se le acortaba casi a la mitad y
+> pasaba **48-60% del tiempo adentro** en vez de 33%: "esperá a que salga"
+> dejaba de existir. Pasaba en el 43% de los trenes con vagón de armas. Ahora el
+> sorteo los separa siempre.
 
 > Si el vagón vuela, ese tren se quedó sin dónde reponer. Volarlo para sacarte
 > de encima a los guardias y perder los tres cartuchos es una decisión, no un

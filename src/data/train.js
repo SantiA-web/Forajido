@@ -77,6 +77,19 @@ export const TRAIN_TYPES = {
     pista: 'Carga pareja',
     composition: ['pasajeros', 'pasajeros', 'comedor', 'correo', 'ganado', 'blindado'],
     posicionMinima: { blindado: 3, armas: 2 },
+
+    /**
+     * EL BLINDADO VA SIEMPRE MÁS ADENTRO QUE EL VAGÓN DE ARMAS, con un vagón de
+     * por medio. Ver `cumpleRelativas` en world/train.js para el problema que
+     * arregla (la ronda del Dinamitero se rompía cuando caían pegados, en el
+     * 43% de los trenes con vagón de armas) y por qué el hueco es lo que
+     * importa y no el orden.
+     *
+     * El precio: el vagón de armas ya no puede caer en los vagones 5 ni 6 — con
+     * seis vagones y un hueco de por medio, no queda lugar para el blindado
+     * detrás. Queda repartido entre el 2, el 3 y el 4.
+     */
+    posicionRelativa: { blindado: { detrasDe: 'armas', hueco: 2 } },
     peso: 50,
     modificadores: true,
 

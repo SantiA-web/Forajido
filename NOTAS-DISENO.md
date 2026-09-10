@@ -9685,6 +9685,86 @@ de una pared. Lo encontró la medición, no la vista.
 
 ---
 
+## 🐛 ARREGLADA · El blindado pegado al vagón de armas le rompía la ronda al Dinamitero
+
+Quedaba anotado en la entrada anterior como "viejo y sin resolver". Es esto.
+
+**El problema, medido:** la ronda del Dinamitero va de la mitad de un vecino a la
+mitad del otro, pero **el vagón blindado no cuenta como vecino** — su puerta es
+de chapa, no se empuja desde afuera, y él literalmente no puede entrar. De ese
+lado la ronda se queda adentro del propio vagón de armas. Con el blindado al
+lado, la vuelta se acortaba a **640 px en vez de ~1070**, y pasaba **48-60% del
+tiempo adentro** en vez del 33% de diseño. O sea que "esperá a que salga" —la
+jugada sobre la que se construyó todo el vagón— no existía. **Pasaba en el 43%
+de los trenes con vagón de armas.**
+
+### La idea de Santi, y el caso que se contradecía
+
+*("yo pondría que el blindado siempre se encuentre después del de armas. O sea,
+si armas está en el vagón 3, el blindado va a estar en el cinco. Si el de armas
+está en el 2, el blindado estará en el cuatro. Y si el de armas está en el 4 o
+cinco, el blindado estará en el 6")*
+
+Tres de los cuatro ejemplos dejan **un vagón de por medio**. El cuarto no: armas
+en el 5 y blindado en el 6 quedan pegados, que es justo lo que se estaba
+arreglando. Se le marcó y se implementó con el hueco garantizado.
+
+**Y el hueco es lo que importa, no el orden.** Medido sobre 30.000 sorteos:
+
+| Regla | Quedan pegados |
+|---|---|
+| Hoy (blindado en el vagón 3 o más adentro) | **44%** |
+| Blindado en el 4 o más | 41% |
+| Blindado en el 5 o más | 39% |
+| Blindado **siempre último** | 24% |
+| **Blindado después del de armas** (regla literal) | **40%** |
+| **Blindado ≥ armas + 2** (con hueco) | **0%** |
+
+Correr el blindado hacia adentro casi no mueve la aguja, y el motivo es
+geométrico: **no lo despega, sólo le va sacando vecinos**. En los vagones 3, 4 y
+5 tiene dos; recién en el 6 tiene uno solo, y por eso ahí cae a la mitad. Y la
+regla literal de Santi falla por lo mismo — "después" incluye "justo después".
+
+También se descartó **"blindado siempre último"** (que sí bajaba a 24%) por dos
+costos: le copia al **tren veloz** la regla que lo distinguía del estándar
+(`posicionFija: 'ultima'`, puesta a propósito para que no se parezcan), y aleja
+el premio más grande de una posición media de 4,5 a 6,0, encareciendo la
+pregunta que sostiene la fase 2.
+
+### Cómo quedó
+
+Una regla nueva en el sorteo, hermana de `posicionMinima` y `posicionFija`:
+
+```
+posicionRelativa: { blindado: { detrasDe: 'armas', hueco: 2 } }
+```
+
+Si el vagón de armas no viaja (tres de cada cuatro trenes), la regla no aplica.
+
+**Y de yapa ordena el tren:** la pólvora viene siempre **antes** que la caja
+fuerte. La puerta del blindado tiene una sola llave, que es tu dinamita, y ahora
+el lugar donde te reponés queda siempre de camino a ella. No se buscó; salió.
+
+**El precio:** el vagón de armas ya no puede caer en los vagones 5 ni 6 — con
+seis vagones y un hueco de por medio no queda lugar para el blindado detrás.
+Queda repartido entre el 2 (50%), el 3 (33%) y el 4 (17%).
+
+### VERIFICADO POR CONSOLA
+
+- **40.000 sorteos:** 0 pegados, 0 con el blindado antes del de armas, 0 sin el
+  hueco. El 25% del vagón de armas sigue clavado.
+- **Seis trenes reales, sorteados de verdad y jugados 90 s cada uno:** el
+  Dinamitero pasa **32-34% del tiempo adentro** en los seis, contra 48-60% de
+  antes. Longitud de ronda 1008-1120 px (era 640). Promedio: **33%**, que es
+  exactamente el número de diseño.
+- **Cuesta 1,18 barajadas** de más en promedio y **nunca falló** en 30.000
+  intentos (el sorteo reintenta hasta 50 veces).
+- Las cuatro escenas, un mapa corriendo 90 s (que sortea trenes de verdad), un
+  asalto de 90 s con todo encendido, y 500 sorteos del **tren veloz** y del **de
+  carga** —que no llevan la regla nueva— sin un error.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

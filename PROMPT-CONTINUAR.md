@@ -59,6 +59,23 @@ sino que afectaría a todo el tren."*
 - Y **bajó del 50% al 25%** de los trenes estándar, porque ahora no cambia un
   vagón: cambia el tren entero.
 
+### 4. El blindado ya no cae pegado al vagón de armas
+
+Era el problema que quedaba anotado de la sesión anterior. Su ronda va de la
+mitad de un vecino a la mitad del otro, pero **el blindado no cuenta como vecino**
+(su puerta de chapa no se empuja desde afuera), así que con él al lado la vuelta
+se acortaba a 640 px en vez de ~1070 y el Dinamitero pasaba 48-60% del tiempo
+adentro en vez de 33%. Pasaba en el **43%** de los trenes con vagón de armas.
+
+*(Santi: "yo pondría que el blindado siempre se encuentre después del de armas")*
+— con un vagón de por medio, que es lo que de verdad lo arregla: la regla literal
+("después") dejaba 40% pegados, porque incluye "justo después".
+
+Hay una regla nueva en el sorteo, `posicionRelativa`. Y salió una propiedad que
+no se buscó: **la pólvora viene siempre antes que la caja fuerte**, y la puerta
+del blindado se abre justamente con dinamita. Medido en seis trenes reales: 32-34%
+adentro, exactamente el número de diseño.
+
 ## LO QUE HAY QUE MIRAR JUGÁNDOLO
 
 La pólvora la jugué una vez y salieron dos ajustes (los barriles del comedor al
@@ -75,6 +92,9 @@ pasillo, y el 25%). **Lo demás no se jugó nunca.**
 - **¿Se nota que el vagón de armas es especial ahora que sale 1 de cada 4?**
 - **¿El Dinamitero se siente impredecible?** Ya no lo vas a encontrar en el mismo
   momento dos asaltos seguidos.
+- **¿Se nota que el vagón de armas quedó siempre en la primera mitad del tren?**
+  Es el precio de separarlo del blindado: ya no puede caer en los vagones 5 ni 6,
+  y queda repartido entre el 2 (50%), el 3 (33%) y el 4 (17%).
 - **¿Los 3,2 s de la puerta que él abre se usan, o no se notan?** Es la jugada
   más escondida de todo lo que se construyó.
 - **¿El cielo del pueblo y las sombras del campamento cambian algo de verdad?**
@@ -236,10 +256,6 @@ Dinamitero sigue en 0 a propósito.
   allá del techo del tren), y el degradado en el suelo ya se probó y se descartó
   — se lee como rayas pintadas. Lo que le falta son **siluetas de meseta en la
   capa lejana del parallax**.
-- **El blindado pegado al vagón de armas** le acorta la ronda al Dinamitero a
-  640 px en vez de ~1070, así que pasa 48-60% del tiempo adentro en vez de 33% y
-  "esperá a que salga" casi no existe. **Pasa en el 43% de los trenes con vagón
-  de armas.** Es viejo, no lo causó nada de esta sesión, y está sin resolver.
 - **Etapa 2 de la pólvora, planificada y no construida**: que el `traqueteo` (el
   tren traicionero, hoy sólo del tren veloz) se prenda en los trenes con pólvora
   y que el sacudón **tumbe un barril al pasillo**. El sistema ya existe entero y

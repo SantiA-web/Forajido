@@ -136,12 +136,18 @@ function aplicarSustituciones(rng, tipoTren) {
  *                                    veloz lo usa para el blindado: siempre
  *                                    pegado a la locomotora, no "3 o más
  *                                    adelante" como el estándar.)
+ *   `posicionRelativa: { id: { detrasDe, hueco } }`
+ *                                  — ese vagón va SIEMPRE más adentro que
+ *                                    otro, con al menos `hueco` vagones de
+ *                                    diferencia. Si el otro no viaja en este
+ *                                    tren, la regla no aplica.
  */
 export function sortearComposicion(rng, tipoTren) {
   tipoTren = tipoTren || TRAIN_TYPES[TIPO_TREN_POR_DEFECTO];
   const composition = aplicarSustituciones(rng, tipoTren);
   const reglasMin = tipoTren.posicionMinima || {};
   const reglasFija = tipoTren.posicionFija || {};
+  const reglasRel = tipoTren.posicionRelativa || {};
 
   const fijos = composition.filter((id) => reglasFija[id] !== undefined);
   const resto = composition.filter((id) => reglasFija[id] === undefined);
@@ -163,10 +169,50 @@ export function sortearComposicion(rng, tipoTren) {
     const valida = resultado.every((id, i) => {
       const minimo = reglasMin[id];
       return minimo === undefined || i + 1 >= minimo;
-    });
+    }) && cumpleRelativas(resultado, reglasRel);
     if (valida) return resultado;
   }
   return [...composition];
+}
+
+/**
+ * ¿Este orden respeta las reglas de "uno siempre más adentro que el otro"?
+ *
+ * Hoy la usa una sola: **el blindado va siempre más adentro que el vagón de
+ * armas, con un vagón de por medio.**
+ *
+ * *(Santi: "yo pondría que el blindado siempre se encuentre después del de
+ * armas [...] si armas está en el vagón 3, el blindado va a estar en el
+ * cinco")*
+ *
+ * SALIÓ DE UN PROBLEMA MEDIDO: cuando los dos caían pegados, la ronda del
+ * Dinamitero se acortaba a 640 px en vez de ~1070 —el vagón blindado no cuenta
+ * como vecino, su puerta de chapa no se empuja desde afuera— así que pasaba
+ * 48-60% del tiempo adentro en vez de 33% y "esperá a que salga", que es la
+ * jugada de todo el vagón, casi no existía. Pasaba en el 43% de los trenes con
+ * vagón de armas.
+ *
+ * EL HUECO ES LO QUE LO ARREGLA, no el orden. Con la regla literal —blindado
+ * después del de armas, sin más— quedaban pegados el 40% de las veces, apenas
+ * mejor que el 44% de antes: "después" incluye "justo después". Con un vagón de
+ * por medio, 0%.
+ *
+ * Y de yapa ordena el tren: **la pólvora viene siempre ANTES que la caja
+ * fuerte**. La puerta del blindado tiene una sola llave, que es tu dinamita, y
+ * ahora el lugar donde te reponés queda siempre de camino a ella.
+ *
+ * Si el vagón de armas no viaja (tres de cada cuatro trenes), la regla no
+ * aplica y el blindado se sortea como siempre.
+ */
+function cumpleRelativas(orden, reglas) {
+  for (const id of Object.keys(reglas)) {
+    const { detrasDe, hueco = 1 } = reglas[id];
+    const i = orden.indexOf(id);
+    const j = orden.indexOf(detrasDe);
+    if (i < 0 || j < 0) continue;
+    if (i - j < hueco) return false;
+  }
+  return true;
 }
 
 /**

@@ -7,76 +7,80 @@ así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
 `NOTAS-DISENO.md` es grande: usá Grep para ir a la sección que necesites en vez
 de leerlo entero de punta a punta cada vez.
 
-## LO QUE HICIMOS LA SESIÓN PASADA: el vagón de armas (Fase 6a)
+## LO QUE HICIMOS LA SESIÓN PASADA
 
-Quedó construido y verificado por consola, **pero todavía no lo jugué**. Está
-entero en `NOTAS-DISENO.md` (buscar "Fase 6a"); acá va lo mínimo para retomar.
+Tres cosas, y las tres están **subidas** (tres commits separados). Sólo la
+tercera la jugué; las otras dos no.
 
-**Qué es:** un vagón nuevo (`armas`, 30 columnas, 3 guardias comunes, 5 bolsas,
-sin caja fuerte) que **reemplaza al de ganado en el 50% de los trenes
-estándar**, nunca en el vagón 1. Es lo primero de todo el plan de variedad que
-cambia de qué está HECHO el tren, y lo único que se ve desde el galope.
+### 1. Dos arreglos del Dinamitero (salieron de jugarlo)
 
-**Adentro hay cinco cajones de pólvora, y son tres cosas a la vez:** `[E]` te
-llevás un cartucho (tope 3) **y el cajón queda VACÍO — ya no explota nunca más**,
-pero sigue frenando balas y el paso; `F` lo **empuja** y sale rodando hacia la
-cola; y tres balazos lo prenden y **arrastra a todos los demás en cadena**.
-Vaciar un cajón es desactivar una bomba, y el vagón entrega cinco dinamitas en
-total.
+*"Habíamos decidido que el dinamitero no siempre estará en su vagón, pero cada
+vez que hago un asalto lo encuentro ahí."*
 
-**El cajón empujado es un arma tuya:** atropella tumbando 1,5 s (nunca mata),
-rompe la puerta que se le cruce, cruza el enganche el 30% de las veces, y si le
-disparás revienta donde esté. Los guardias lo leen: al vacío le disparan si les
-sobra tiempo o se corren si no, y al cargado se alejan sin dispararle. **Y si el
-blindado te queda hacia la cola, un cajón cargado se frena contra su chapa y un
-tiro tuyo le vuela la puerta sin gastar tu dinamita.**
+- **Su ronda era idéntica en todos los asaltos.** Arrancaba siempre en el centro
+  del vagón y siempre hacia adelante, y nada más de su ronda era al azar: estaba
+  adentro en los segundos 0-4, 26-36, 54-63 y 81-91, **siempre**. Y llegar al
+  vagón lleva 17,4 s caminando derecho (más peleando), así que la llegada real
+  caía siempre sobre la misma ventana. Ahora arranca en un punto al azar de su
+  vuelta y para un lado al azar.
+- **Una puerta trabada del sorteo lo encerraba** (52% del tiempo adentro con
+  una, 70% con dos). Ahora lleva **la llave del tren**: la abre y sigue. Abrirla
+  no la destraba — se cierra detrás suyo y para vos sigue trabada — pero te deja
+  **3,2 s** para colarte si lo venías siguiendo.
 
-**Una explosión ahí adentro no deja nada:** 0 de 4 guardias, y el jugador muere
-en todo el centro. La mecha da 2,2 s y el único refugio es SALIR del vagón.
+### 2. Atmósfera: el pueblo tiene cielo
 
-**Y tiene siete islas de cobertura** de 2×1 en las filas 3 y 6, escalonadas. Las
-verdes son cobertura segura; los cajones también frenan balas pero explotan al
-tercer tiro. El corredor (filas 4-5) queda libre a propósito: por ahí pasan las
-rondas y por la fila 4 cruza el Dinamitero.
+*"Las mecánicas se sienten muy bien pero no me siento dentro del Viejo Oeste."*
 
-**Y trae un Dinamitero deambulando** entre ese vagón y los dos vecinos, a 46
-px/s: vuelta completa ~53 s, nunca más de ~12 s seguidos adentro. Esperar a que
-salga es la jugada del vagón. Los tres guardias de adentro son comunes a
-propósito (`sinVariantes` en la plantilla): uno con dinamita ahí adentro volaría
-todo en su primer ataque y no habría nada que decidir.
+El cielo del pueblo era **código muerto**: `puebloCielo` existía en la paleta
+pero la "loma detrás del pueblo" se dibujaba desde `y=0` y lo tapaba entero.
+Toda la paleta de exteriores vivía en la misma franja de marrones y no había un
+solo color frío contra el cual leerlos como cálidos.
 
-**El Dinamitero NO tiene arma de fuego** (segunda vuelta de la misma sesión):
-sólo lanza dinamita, **de a dos a la vez y a los dos lados tuyos**, y tarda 5 s
-en volver a tener las dos en la mano — cinco segundos en los que está desarmado
-del todo, y se ve porque los cartuchos de la bandolera se dibujan según lo que
-le queda. No se cubre nunca (parapetado se taparía el tiro a sí mismo) y si te
-le pegás retrocede, porque su cartucho tiene un mínimo. Parado justo en el medio
-de una tanda perdés 2 de 4 vidas; corriendo apenas ves las mechas, ninguna.
+Ahora el pueblo tiene cielo (azul polvoriento de día, degradado por bandas) y el
+campamento de día tiene **sombras** —todas para el mismo lado— y **matorrales y
+piedras** afuera del claro. La noche no se tocó.
 
-### Lo que hay que mirar jugándolo
+### 3. La pólvora se reparte por todo el tren
 
-- **¿La cadena se lee, y 2,2 s de mecha alcanzan para salir del vagón?** Es lo
-  más crítico: ahora la explosión no perdona adentro, así que si el aviso no se
-  entiende jugando, el vagón pasa a ser una trampa.
-- **¿Empujar cajones se usa de verdad, o es una curiosidad?** Es lo que más
-  libertad agrega y lo que menos puedo medir yo.
-- **¿Se distingue el cajón cargado del vacío en medio de un tiroteo?**
-- **¿Las islas de cobertura alcanzan, o el vagón sigue siendo un pasillo?** Son
-  siete y el corredor central quedó libre a propósito.
-- **¿Se distinguen las dos coberturas jugando?** Verde = segura, franja roja =
-  bomba. En una foto se distinguen; en el medio de un tiroteo no lo sé.
-- **¿El Dinamitero se nota, y se le puede tomar el ritmo?** Los números dicen
-  que sí (dos vueltas y media por asalto), pero eso es cálculo, no juego.
-- **¿Se ve la bandolera vacía?** Es toda la señal de la ventana de 5 s en la
-  que está desarmado. Si no se lee jugando, la ventana no existe.
-- **¿Las dos dinamitas se leen como dos, y como "para dónde salgo"?** Es la
-  pregunta que reemplazó a "¿me corro?".
-- **¿0,35 cartuchos por segundo es mucho?** Es el doble de lo que tira un
-  guardia del blindado. La perilla es `CONFIG.enemy.dinamiteroRecarga`.
-- **¿El tope de 3 cartuchos cambia algo de verdad** en el vagón blindado?
-- **¿Volar el vagón se siente una decisión o un accidente?** Si vuela, ese
-  tren se quedó sin dónde reponer.
-- **¿50% es mucho o poco?** (`sustituciones` en `TRAIN_TYPES.estandar`).
+*"Cuando hay un vagón de armas en el tren, no sólo ahí dentro habrían barriles,
+sino que afectaría a todo el tren."*
+
+- Cuando hay vagón de armas, **casi todos los vagones llevan barriles** (el de
+  pasajeros nunca). Son ~8-9 por tren.
+- **No todos te dan dinamita.** Todos explotan (franja roja, se ve de lejos),
+  pero sólo uno de cada tres tiene un cartucho para llevarse — y ésos se ven
+  porque tienen **tres cartuchos asomando por la tapa**, que es una señal que ya
+  existía. Salen ~3 cartuchos por tren: justo lo que te entra encima.
+- **El vagón de armas es ahora un vagón de paso**: 24 columnas (como el ganado),
+  dos guardias, una bolsa, cuatro barriles y **ninguna isla de cobertura**. Los
+  barriles frenan balas, así que la única cobertura del vagón es la cosa que
+  explota.
+- Y **bajó del 50% al 25%** de los trenes estándar, porque ahora no cambia un
+  vagón: cambia el tren entero.
+
+## LO QUE HAY QUE MIRAR JUGÁNDOLO
+
+La pólvora la jugué una vez y salieron dos ajustes (los barriles del comedor al
+pasillo, y el 25%). **Lo demás no se jugó nunca.**
+
+- **¿8-9 barriles por tren es mucho?** La perilla de cuántos es
+  `cajonesExtra` en cada vagón (se sortean 1-2 de las candidatas).
+- **¿3 cartuchos por tren alcanzan?** Es un cargamento lleno justo. La perilla es
+  `EXPLOSIVES.cajonPolvora.chanceCartucho` (0,34).
+- **¿Se distingue de cerca el que tiene cartucho del que no?** Es toda la idea
+  de "al acercarte te das cuenta". Ampliado se distingue; jugando no lo sé.
+- **¿El vagón de armas sin islas es tenso o es injusto?** Perdió sus siete
+  coberturas y lo único que queda son los barriles.
+- **¿Se nota que el vagón de armas es especial ahora que sale 1 de cada 4?**
+- **¿El Dinamitero se siente impredecible?** Ya no lo vas a encontrar en el mismo
+  momento dos asaltos seguidos.
+- **¿Los 3,2 s de la puerta que él abre se usan, o no se notan?** Es la jugada
+  más escondida de todo lo que se construyó.
+- **¿El cielo del pueblo y las sombras del campamento cambian algo de verdad?**
+- Y de sesiones anteriores, sin calibrar: la frecuencia de los paquetes, el 25%
+  de la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
+  `CONFIG.raid.rachaBonus*` y `rescate*`, `LOOT_TYPES.strongbox.jackpot*`.
 
 ## Cómo trabajar conmigo
 
@@ -88,91 +92,81 @@ de una tanda perdés 2 de 4 vidas; corriendo apenas ves las mechas, ninguna.
   abierto. Esto funciona muy bien: cada vez que hubo un número por decidir se
   me mostró en una tabla con el resultado de cada opción y elegí con eso
   delante. Y tené en cuenta que muchas veces NO elijo ninguna de las tres: las
-  opciones sirven para que yo vea el rango, no para que elija una sí o sí.
+  opciones sirven para que yo vea el rango, no para que elija una sí o sí. La
+  última vez elegí una opción y le agregué una condición propia encima — la de
+  los barriles sin cartucho salió así.
 - Cuando te doy una idea y la implementación termina siendo distinta de lo que
   pedí, decímelo directo y ajustá. Y si en el medio de construir tenés que
   apartarte de lo acordado, decímelo AL ENTREGAR, no lo dejes escondido en el
   código.
+- **Mostrame las cosas visuales en vez de describírmelas.** Lo del cielo del
+  pueblo se decidió viendo dos maquetas (azul y atardecer) pintadas encima del
+  juego sin tocar un archivo. Eso valió más que cualquier explicación.
 - Cuando algo se pueda verificar jugando, hacelo de verdad, no sólo midiendo
-  código — pero el panel del navegador de este entorno casi nunca compone
-  frames (el screenshot normal falla con "not displayed, so the page is not
-  compositing"). Verificá igual, por consola, manejando el motor a mano:
-  `FORAJIDO.services.scenes.update(1/60)` + `FORAJIDO.services.input.endFrame()`
-  en loop, disparando teclas con
-  `window.dispatchEvent(new KeyboardEvent('keydown'/'keyup', {code: 'KeyE'}))`
-  (los eventos de teclado sí llegan; los de mouse no, ahí hay que mutar
-  `input.mouse.x/y/down` directamente — y la cuenta para apuntar a un punto del
-  mundo es `input.mouse.x = puntoX - camera.x`, recalculada EN CADA CUADRO
-  porque la cámara sigue al jugador).
-- Cada escena expone su estado en `FORAJIDO.services.<nombre>` (camp, town,
-  interior, mapa, ride, raid, train, tienda). Ojo: `services.raid` ES el world
-  directo (`raid.enemies`, `raid.doors`, `raid.player`, `raid.cajones`), no un
-  objeto con un `.world` adentro. Y el estado de la partida es
-  `FORAJIDO.state`, no `services.state`.
-- Para forzar un asalto sin jugar el galope:
-  `FORAJIDO.services.scenes.goTo('raid', { boardAt: N, alarmaInicial: true })`,
-  y para probar el sistema de variedad pasale en el mismo objeto:
-  `{ clima, estado: [...], comportamientos: [...], variantes: [...],
-  encubiertos: [...], paquetes: [...], cajaOculta: true, composicion: [...] }`.
-  Para que salga el vagón nuevo, poné `'armas'` en `composicion`.
+  código.
 
 ### Lecciones de arnés de prueba (esto ahorró horas)
 
 - **La mitad de los "no funciona" son del arnés, no del código.** Antes de
   creerle a una medición en cero, verificá que el escenario sea válido: que el
   punto donde ponés al jugador NO sea sólido (`map.isSolidAt`) y que HAYA
-  línea de visión de verdad (`hasLineOfSight(..., map.blocksSightAt)`). Poner
-  al jugador "al lado" de alguien lo pone detrás de un asiento la mitad de las
-  veces. **Y no inventes objetos internos del juego**: un `player.cover` armado
-  a mano reventó el sistema de cobertura — si necesitás al jugador parapetado,
-  buscá un punto con `findCoverSurface` y mandá `Shift`, como haría él.
+  línea de visión de verdad (`hasLineOfSight(..., map.blocksSightAt)`).
+- **🆕 Y que el mundo siga VIVO.** Un Dinamitero "trabado 80 segundos" resultó
+  ser el mundo entero congelado: el jugador había muerto y la escena ya no se
+  actualizaba. Ningún enemigo se movía, ni los que estaban disparando. Si medís
+  corridas largas, forzá `player.health` y `player.alive` cada cuadro, o chequeá
+  que sigan vivos antes de creerle a nada.
+- **🆕 `Math.round(y / tileSize)` sobre un `tileCenter` miente.** `tileCenter`
+  devuelve `row*16+8`, así que redondear da SIEMPRE la fila siguiente. Es
+  `Math.floor`. Me hizo creer que unos barriles estaban en la fila equivocada.
+- **No inventes objetos internos del juego**: un `player.cover` armado a mano
+  reventó el sistema de cobertura — si necesitás al jugador parapetado, buscá un
+  punto con `findCoverSurface` y mandá `Shift`, como haría él.
 - **No muevas al jugador siguiendo a lo que estás midiendo** (`player.x =
-  guardia.x - 300`): crea un lazo de realimentación y los resultados salen
-  cualquier cosa. Fijalo en un punto y dejalo ahí.
+  guardia.x - 300`): crea un lazo de realimentación. Fijalo y dejalo ahí.
 - **No reasignes los arrays del mundo** (`w.passengers = [...]`): la escena
-  guarda su propia referencia, así que reasignar deja a la escena actualizando
-  el array viejo. Usá `splice` sobre el mismo array.
-- **El mapa NO re-sortea los trenes en cada `goTo('mapa')`** — son objetos
-  persistentes que siguen su circuito. Para muestrear el sorteo real hay que
-  dejar correr el tiempo con `scenes.update` y juntar los trenes nuevos a
-  medida que cierran vuelta. (Para muestrear SÓLO la composición alcanza con
-  importar `sortearComposicion` y llamarla miles de veces: es pura.)
-- **Cuando una entidad "no se mueve" y no se entiende por qué, dibujá una
-  grilla de solidez alrededor suyo** (tile por tile, `#` sólido y `.` libre).
+  guarda su propia referencia. Usá `splice` sobre el mismo array.
+- **El mapa NO re-sortea los trenes en cada `goTo('mapa')`.** Para muestrear el
+  sorteo real hay que dejar correr el tiempo. (Para la composición sola alcanza
+  con importar `sortearComposicion` y llamarla miles de veces: es pura.)
+- **Cuando una entidad "no se mueve", dibujá una grilla de solidez alrededor
+  suyo** (tile por tile, `#` sólido y `.` libre).
 - **Cuando un cambio tiene dos ingredientes, medí cada uno por separado.**
 - **Un guardia lejos del jugador no se actualiza** (`CONFIG.raid.
-  cullPatrolDistance`, 700px): un resultado en cero puede ser el cull.
-- **`0` es falsy — cuidado con `campo || default`** cuando un campo puede valer
-  0 a propósito. Ya pasó tres veces (`noiseWagons`, `dynamite`, y ahora
-  `flying` en `createExplosive`, que daba por sentado que todo lo que explota
-  se lanza). **Y el `??` tiene su propia trampa**: `Math.abs(x - (marca ?? x))`
-  da SIEMPRE 0 la primera vez, porque compara el valor contra sí mismo — así
-  una marca de referencia nunca se inicializaba y un guardia se daba vuelta 41
-  veces en 150 s creyendo estar trabado.
-- **No le creas a una corrida chica**: miles de tiradas si es una
+  cullPatrolDistance`, 700px): un resultado en cero puede ser el cull. El
+  Dinamitero, el Sheriff y el jefe están exentos.
+- **`0` es falsy — cuidado con `campo || default`**, y **el `??` tiene su propia
+  trampa**: `Math.abs(x - (marca ?? x))` da SIEMPRE 0 la primera vez.
+- **No le creas a una corrida chica.** 🆕 Con 6 tiradas el arranque al azar del
+  Dinamitero parecía sesgado (5 de 6 para el mismo lado, 0 de 6 adentro del
+  vagón); con 200, perfectamente uniforme. Era ruido. Miles de tiradas si es una
   probabilidad, varias corridas completas si es un comportamiento. Y cerrá
   siempre con una corrida COMPLETA de 30-60 s con todo encendido.
-- **Ojo con el caché del módulo**: si editás un .js y volvés a medir en la
-  misma pestaña sin recargar, el bucle real del juego puede seguir con el
-  código viejo.
+- **Ojo con el caché del módulo**: si editás un .js y volvés a medir en la misma
+  pestaña sin recargar, el bucle real puede seguir con el código viejo.
+- **Y el bucle real del juego corre en paralelo a tus mediciones.** Entre dos
+  llamadas a la consola el mundo avanza solo. Si necesitás un estado exacto,
+  hacé todo en una sola llamada.
 
 ### Mirar
 
-- Para MIRAR de verdad un dibujo, una composición o un color, usá `foto.ps1`
-  (raíz del proyecto): se levanta con
+- **🆕 El panel del navegador de este entorno SÍ compone frames** (antes casi
+  nunca): `computer{action:"screenshot"}` funciona. Para ver algo chico,
+  `zoom` no está soportado — lo que sí funciona es **redibujar un recorte
+  ampliado sobre el propio canvas** con `getImageData` + `drawImage`, dentro de
+  un `requestAnimationFrame` propio (si no, el bucle del juego te lo pisa).
+- **🆕 `FORAJIDO.config` (minúscula) es el CONFIG vivo**, y mutarle un color y
+  volver a renderizar cambia la pantalla al instante. Es la forma de probar
+  paletas sin tocar archivos.
+- También está `foto.ps1` (raíz del proyecto): se levanta con
   `powershell -NoProfile -ExecutionPolicy Bypass -File foto.ps1` y desde la
-  consola del navegador se le manda un recorte ampliado con `fetch` a
-  `http://localhost:8099/<nombre>`. Hay que forzar un `render()` antes
-  (`FORAJIDO.services.scenes.render(FORAJIDO.services.renderer)`), y para
-  encuadrar bien calculá la posición en pantalla (`x - camera.x`) y clampeala
-  al canvas (384x216) o la foto sale en blanco.
+  consola se le manda un recorte ampliado con `fetch` a
+  `http://localhost:8099/<nombre>`. Hay que forzar un `render()` antes.
+  Cerrá el receptor y borrá los .png al terminar.
 - **Para cualquier cambio visual, mirar no es opcional.** Encontró cosas que
   ninguna medición podía dar: cartucheras marrones invisibles sobre un piso
-  marrón, carteles encimados, una pista que no se leía, y esta vez el cajón de
-  pólvora, que era otro marrón sobre el piso marrón y se leía como una sombra.
-  **Contra un fondo del mismo tono lo que despega un objeto es un contorno
-  oscuro y un cuerpo CLARO**, no más color; y **nada de 1 px se ve**.
-- Cerrá el receptor y borrá los .png al terminar.
+  marrón, y esta vez **las matas del campamento saliendo en diagonales
+  perfectas** porque las dos fórmulas de posición eran lineales en el índice.
 
 ### Servidor
 
@@ -180,8 +174,11 @@ de una tanda perdés 2 de 4 vidas; corriendo apenas ves las mechas, ninguna.
   (el `-ExecutionPolicy Bypass` hace falta). **Si hay un `servidor.ps1` sin
   `-Port` corriendo, ése es MÍO (el 8080) y no se toca**: levantá el tuyo en
   otro puerto y cerrá sólo ése al terminar, filtrando por CommandLine.
-- Ojo: al filtrar procesos por CommandLine, el propio proceso de la consulta
-  se cuenta a sí mismo — no te asustes si "queda 1".
+- Ojo: al filtrar procesos por CommandLine, el propio proceso de la consulta se
+  cuenta a sí mismo.
+- 🆕 El servidor de fondo se cae al terminar la sesión. Si el juego "no aparece
+  en el navegador", es eso: no hay nada roto, hay que volver a levantarlo. Yo lo
+  abro con `jugar.bat`.
 
 ### Documentación
 
@@ -190,81 +187,82 @@ de una tanda perdés 2 de 4 vidas; corriendo apenas ves las mechas, ninguna.
   (`PROMPT-CONTINUAR.md`) al final de la sesión, enfocado en la sesión que
   termina — no lo vayas acumulando: el detalle histórico ya vive en los otros
   dos y en el git log.
+- Los commits de este repo van en **español sin tildes**, con título de una
+  línea, y el cuerpo cuenta qué se pidió, qué se rompió y qué se midió.
 
 ## El proyecto está publicado, y AL DÍA en git
 
 Repositorio público: `https://github.com/SantiA-web/Forajido`, publicado con
 GitHub Pages en `https://santia-web.github.io/Forajido/`.
 
-**Todo está subido.** Ya no hay backlog: quedamos en subir al cerrar cada cosa
-para que no se vuelva a acumular. El flujo es `git add -A`, `git commit`,
-`git push`; la identity ya está configurada en el repo y no hay que tocarla.
-Nada de `--force` salvo que yo lo pida.
+**Todo está subido.** El flujo es `git add <archivos>`, `git commit`, `git push`.
+Nada de `--force` salvo que yo lo pida. Se sube al cerrar cada cosa: la última
+vez se acumularon doce archivos sin commitear y hubo que separarlos después.
 
 ## Estado del proyecto
 
-**Fase 2** (el asalto) y **Fase 3** (campamento → pueblo → mapa → tienda)
-están construidas y jugables, con reputación completa (`fame`/`bounty`/
-`honor`) y refuerzos que escalan.
+**Fase 2** (el asalto) y **Fase 3** (campamento → pueblo → mapa → tienda) están
+construidas y jugables, con reputación completa (`fame`/`bounty`/`honor`) y
+refuerzos que escalan.
 
-El plan en curso es **"variedad de lo que pasa en los trenes"**: *"conozco
-estos vagones, pero nunca sé exactamente qué me voy a encontrar."* Todo esto
-SÓLO le pasa al tren estándar (`tipoTren.modificadores`): el veloz y el de
-carga tienen identidad propia y quedan afuera.
+El plan en curso es **"variedad de lo que pasa en los trenes"**: *"conozco estos
+vagones, pero nunca sé exactamente qué me voy a encontrar."* Todo esto SÓLO le
+pasa al tren estándar (`tipoTren.modificadores`).
 
 ### Lo que está prendido y jugable hoy
 
 - **Clima**: tormenta (se oye 40% más lejos), 20% de los trenes estándar.
 - **Estado del tren**: alerta ya activada (10%), redada (15%, sólo con
-  recompensa ≥250), puerta bloqueada (15%, y traba 1/2/3 puertas con pesos
-  70/20/10).
-- **Comportamiento por vagón**: conversando / vigilando puerta / vigilando
-  caja. Sale algo en el 98% de los trenes.
-- **Paquetes** (`src/data/paquetes.js`): pasajero rico con guardaespaldas
-  (20% por vagón con pasajeros) y **caja fuerte oculta** (25% por tren, en
-  cualquier vagón menos el blindado, con cinco escondites posibles).
-- **Cajas fuertes**: 8 segundos, disparar o recargar interrumpe, el progreso
-  no se pierde, y la dinamita las revienta.
-- **El vagón de armas** (nuevo, ver arriba): 50% de los trenes estándar, con
-  sus tres cajones de pólvora y su Dinamitero deambulando.
+  recompensa ≥250), puerta bloqueada (15%).
+- **Comportamiento por vagón**: conversando / vigilando puerta / vigilando caja.
+- **Paquetes**: pasajero rico con guardaespaldas (20% por vagón con pasajeros) y
+  caja fuerte oculta (25% por tren, cinco escondites).
+- **El vagón de armas y la pólvora repartida** (25% de los trenes estándar).
 
 ### En reserva (construidos, medidos y apagados con chance 0)
 
 En `src/data/modifiers.js`, con el valor con el que se probó anotado al lado:
+**Pistolero** (ojo: se apagó ANTES de que se arreglaran sus dos bugs, así que
+nunca se lo vio funcionando bien) y **civil encubierto**. La variante suelta del
+Dinamitero sigue en 0 a propósito.
 
-- **Pistolero** (20% por guardia común, sólo con recompensa ≥300 Y honor
-  ≤−10). Ojo: lo apagué ANTES de que se arreglaran sus dos bugs, así que
-  nunca lo vi funcionando bien. Prenderlo es cambiar un 0.
-- **Civil encubierto** (10% por pasajero; se revela cuando le das la espalda).
-- La **variante suelta** del Dinamitero sigue en 0 a propósito: el Dinamitero
-  ya está en el juego como el que da vueltas por el vagón de armas, y
-  repartir dos o tres más al azar le sacaría sentido a mirar dónde está.
+## Lo que falta
 
-## Lo que falta del plan
-
-- **Fase 6b**: el vagón de guardias dormidos — depende de la Fase 3b
-  ("durmiendo"), que a su vez necesita **la noche** de verdad. Sesión propia.
-- **Fase 5b**: el objeto especial, que decidí que no sea plata sino algo que
-  se lleva y **se vende después en el pueblo** — necesita un INVENTARIO, que
-  hoy no existe. Sesión propia. (El "comerciante" lo dejé para cuando haya
-  algún sistema de gente con la que se habla.)
-- **Fase 7**: curva, enganche roto, incendio, y noche con oscuridad extrema
-  (un sistema de visión limitada que no existe).
+- **Sonido.** Es lo más grande que le falta a la atmósfera y lo más barato por
+  hora: `startAmbience` se llama **sólo en el asalto**, así que el campamento, el
+  pueblo, el mapa y el galope están **mudos**. No hay ni un archivo de audio —
+  todo es osciladores— y no hay música.
+- **El galope no tiene paisaje.** No puede tener cielo (la cámara nunca sube más
+  allá del techo del tren), y el degradado en el suelo ya se probó y se descartó
+  — se lee como rayas pintadas. Lo que le falta son **siluetas de meseta en la
+  capa lejana del parallax**.
+- **El blindado pegado al vagón de armas** le acorta la ronda al Dinamitero a
+  640 px en vez de ~1070, así que pasa 48-60% del tiempo adentro en vez de 33% y
+  "esperá a que salga" casi no existe. **Pasa en el 43% de los trenes con vagón
+  de armas.** Es viejo, no lo causó nada de esta sesión, y está sin resolver.
+- **Etapa 2 de la pólvora, planificada y no construida**: que el `traqueteo` (el
+  tren traicionero, hoy sólo del tren veloz) se prenda en los trenes con pólvora
+  y que el sacudón **tumbe un barril al pasillo**. El sistema ya existe entero y
+  la variante "acelera" ya sacude la carga: es conectarlo, no construirlo.
+- **Fase 6b**: el vagón de guardias dormidos — depende de la noche de verdad.
+- **Fase 5b**: el objeto especial que se vende después en el pueblo — necesita un
+  INVENTARIO, que hoy no existe.
+- **Fase 7**: curva, enganche roto, incendio, y noche con oscuridad extrema.
 - **Fase 8**: el ladrón rival. No bloquea nada, pero es lo más grande.
 
 ## Pendientes sueltos
 
-- **Calibrar jugando** los números que se eligieron sobre tablas: todo lo del
-  vagón de armas (ver arriba), la frecuencia de los paquetes, el 25% de la
-  caja oculta, cuánto da el pasajero rico ($150-250 / 2,2 s), la caja oculta
-  ($400-900 / 8 s), y de sesiones anteriores `CONFIG.honor.*`,
-  `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`, `CONFIG.raid.rachaBonus*` y
-  `rescate*`, `LOOT_TYPES.strongbox.jackpot*`.
-- El **`$NaN` en el HUD del campamento**, visto de pasada hace varias sesiones
-  y todavía sin mirar.
-- El precio del hacha (900) sigue sin confirmar: la región del bosque no
-  existe.
-- La **cantina** (contratar compañeros) sigue sin existir. Ahora que hay un
-  menú compartido (`src/engine/menu.js`) es más barato de construir.
+- **La partida empieza de noche** (`esDeDia: false` en `gameState`), así que lo
+  primero que ve alguien es la versión más oscura de todo — y el cielo nuevo del
+  pueblo no se ve hasta que dormís. Fue una decisión deliberada (que quieras
+  dormir y aprendas el sistema solo); ahora tiene un costo nuevo.
+- El **`$NaN` en el HUD del campamento**, visto de pasada hace varias sesiones y
+  todavía sin mirar.
+- El precio del hacha (900) sigue sin confirmar: la región del bosque no existe.
+- La **cantina** (contratar compañeros) sigue sin existir. Ahora que hay un menú
+  compartido (`src/engine/menu.js`) es más barato de construir.
 - `alertaEnPuerta` (systems/ai.js) sigue sin que nadie la llame: candidata a
   limpieza.
+- En el código los barriles de pólvora se llaman `cajon` / `cajonPolvora`: el
+  nombre `barril` ya estaba tomado por los rodantes del tren veloz. Renombrar
+  tocaría seis archivos y no cambia nada del juego.

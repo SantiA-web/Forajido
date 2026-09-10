@@ -9345,6 +9345,346 @@ cajón liso se habría leído como "todavía no lo abrí".
 
 ---
 
+## 🐛 ARREGLADA · El Dinamitero salía siempre en el mismo momento, y una puerta trabada lo encerraba
+
+*(Santi, jugándolo: "habíamos decidido que el dinamitero no siempre estará en su
+vagón, pero cada vez que hago un asalto lo encuentro en el vagón de armas")*
+
+Dos defectos distintos con el mismo síntoma. El primero es el interesante,
+porque **el código no tenía ningún bug**: hacía exactamente lo que decía.
+
+### 1. La ronda era idéntica en todos los asaltos
+
+Arrancaba siempre en el centro exacto del vagón (`startX: centro(tramoArmas)`) y
+siempre hacia adelante (`pathIndex = 1`), y **nada más de su ronda es
+aleatorio**. Así que su posición en el segundo *T* de un asalto era la misma en
+todos los asaltos. Medido: estaba adentro del vagón en los segundos **0-4,
+26-36, 54-63 y 81-91**, y dos asaltos distintos dieron la misma tira segundo por
+segundo, bit a bit.
+
+Y ahí se cierra el círculo: **caminando derecho, sin pelear ni saquear, se llega
+al vagón de armas a los 17,4 s**. Un asalto real —limpiar el primer vagón, abrir
+puertas, agarrar plata— te deja llegando entre los 25 y los 40. Justo encima de
+la ventana 26-36. No era mala suerte: el reloj del Dinamitero y el ritmo del
+jugador arrancaban juntos y no cambiaban nunca.
+
+**Y el comentario del código se equivocaba.** Decía que arrancar en el centro
+hacía que "la primera vez que llegás esté ahí". No es cierto: a los 17 s ya
+había salido, estaba en x=1542. Lo que te lo ponía enfrente era su **segunda
+pasada**, o sea el ciclo, no el arranque. La intención estaba bien; la ejecutaba
+otra cosa.
+
+Ahora arranca en un punto al azar de su recorrido y para un lado al azar.
+Verificado sobre 200 asaltos: reparto uniforme (80 arrancan adentro del vagón
+contra 79 esperados, 93/107 de dirección), promedio 1042 contra un centro
+teórico de 1056, y **cero arranques sobre un tile sólido o fuera del pasillo** en
+320 asaltos sobre cuatro composiciones, con vagón blindado de cada lado.
+
+> Y una lección de arnés: con **6 tiradas** el arranque parecía sesgado (5 de 6
+> para el mismo lado, 0 de 6 adentro del vagón). Con 200, uniforme. Era ruido.
+
+### 2. Una puerta trabada del sorteo lo encerraba
+
+`puertaBloqueada` (15% de los trenes estándar) traba una, dos o tres puertas. Si
+alguna caía **sobre su recorrido**, le partía la vuelta al medio:
+
+| Puerta trabada | Recorrido real (de 1216 px) | Tiempo adentro |
+|---|---|---|
+| ninguna | 1211 px — completo | 31-37% |
+| lejos de su ronda | 1211 px — completo | 39-42% |
+| **una sobre su ronda** | **889 px** | **52%** |
+| dos sobre su ronda | 554 px | **70%** |
+
+El turn-around funcionaba —no se quedaba empujando madera— pero el efecto neto
+era que rebotaba del lado del vagón de armas, que es justo donde la gracia es que
+salga.
+
+**Ahora lleva la llave del tren** (`tieneLlave`). Es el único guardia con una
+ronda que cruza puertas, así que es el único que la necesita. **Abrir no es
+destrabar**: la puerta se abre mientras él la ocupa y se vuelve a cerrar con el
+`closeDelay` de siempre, todavía trabada. Para el jugador la única llave sigue
+siendo el plomo (`trabadaDeOrigen` no la suelta nadie) — pero al que lo venía
+siguiendo le queda una ventana para colarse detrás suyo.
+
+**Tres cosas rotas antes de que funcionara:**
+
+1. **La llave sola no alcanzaba.** Una puerta trabada frenaba el paso *sin mirar
+   si estaba abierta* (`bloqueaPuertaCerrada`), lo cual era correcto mientras una
+   trabada no pudiera abrirse nunca. El Dinamitero la abría y se la comía igual:
+   se veía abierta y seguía siendo un muro.
+2. **Y tampoco llegaba a tocarla.** El colisionador lo clava a **25 px** del
+   centro de la hoja y `ocupada` pedía menos de 12,5. Se quedaba oscilando contra
+   la puerta sin alcanzarla nunca. El de la llave la abre desde 32 px (dos
+   baldosas): estira la mano antes de chocarla.
+3. **Mi primera versión dejaba la puerta abierta para siempre.** Al irse él,
+   `updateDoor` retornaba antes de correr el `closeTimer`, así que se quedaba
+   abierta —y trabada— hasta el final del asalto. O sea que la destrababa de
+   hecho, que era exactamente lo que no queríamos.
+
+**La ventana quedó en 3,2 s y no en 1,6**, porque él la sostiene mientras se
+acerca y cruza, y el `closeDelay` recién arranca cuando la suelta. Se decidió el
+1,6 sobre una tabla creyendo que ése iba a ser el total; el número real está más
+cerca de la opción de 4 s que se había descartado. Queda anotado por si molesta.
+
+### VERIFICADO POR CONSOLA
+
+- **La ronda, con una puerta trabada encima:** recorrido 1211 de 1216 px en 6
+  casos de 6, y 39% de tiempo adentro (el mismo que sin puerta).
+- **Sigue siendo un muro para el jugador:** entera, en 6 casos, nunca la abre
+  empujando y se frena a 13 px. Cerrada = sólida en **5235 cuadros**, abierta =
+  se cruza en **765**, cero fugas en ninguno de los dos sentidos.
+- **Efecto secundario, medido y aceptado:** también abre las que traba el
+  **Cazarrecompensas** al cerrar el tren. Con todas las puertas trabadas siguió
+  circulando completo (1211 px). No se distinguió por origen.
+
+### Y UN PROBLEMA VIEJO QUE RECIÉN AHORA ESTÁ MEDIDO
+
+**Cuando el vagón blindado queda pegado al de armas, la ronda se acorta a 640 px
+en vez de ~1070** — su puerta es de chapa y no se empuja desde afuera, así que
+ese vecino no cuenta y la ronda se queda adentro del propio vagón de ese lado.
+Ahí pasa **48-60% del tiempo adentro** en vez de 33%, y "esperá a que salga"
+casi no existe. **Pasa en el 43% de los trenes con vagón de armas** (20.000
+sorteos). No lo causó ninguno de estos dos arreglos: antes era peor (65%, con el
+vagón de 480 px). Sin resolver.
+
+---
+
+## ✅ HECHA · El pueblo tiene cielo, y el campamento de día tiene sol
+
+*(Santi, jugándolo: "hay algo que me molestaba y ahora me di cuenta de que es:
+la atmósfera. Las mecánicas del juego se sienten muy bien pero no me siento
+dentro del Viejo Oeste")*
+
+Mirando las cuatro pantallas apareció una causa que se podía medir: **toda la
+paleta de exteriores vivía en la misma franja de marrones** — `desiertoDia`
+#8a6f47, `puebloTierra` #9c7f56, `campSueloDia` #a08053 — y no había **un solo
+color frío** en el juego contra el cual esos ocres se leyeran como cálidos.
+
+La prueba de que no era falta de dibujo: **el mapa de rutas sí se siente
+western**. Sepia, "MINA LA VIUDA", la rosa de los vientos. Es la única pantalla
+con una paleta propia, y cuando el juego se separa del marrón único, el Oeste
+aparece solo.
+
+### El cielo del pueblo era CÓDIGO MUERTO
+
+`render` limpiaba la pantalla con `colors.puebloCielo`, pero `dibujarTierra`
+pintaba *"la loma detrás del pueblo"* **desde `y=0`** y lo tapaba entero, en un
+marrón escrito a mano (#7a6a4e) que ni siquiera estaba en la paleta. O sea que el
+pueblo no tenía cielo: tenía una loma de 72 px de alto, del mismo tono que la
+tierra. **Partir ese rectángulo en dos es todo lo que hay entre el antes y el
+después.**
+
+- **`r.cielo()`** nuevo en el renderer: degradado vertical **por bandas** (ocho)
+  y no con el gradient del canvas. Un gradient real mete cientos de tonos
+  intermedios y en 384x216, donde todo lo demás es color plano, se lee como un
+  error de compresión y no como aire.
+- **Va antes del `translate` de la cámara**: está infinitamente lejos, así que si
+  se corriera con ella, caminar por el pueblo movería el horizonte y el pueblo se
+  sentiría del tamaño de una habitación.
+- La loma pasa de tapar 72 px a ser una franja de 16, con `ALTO_LOMA` compartido
+  entre los dos. Si sólo lo supiera uno, el degradado se dibujaría por debajo y
+  perdería justo el tramo pálido del horizonte, que es el que da la distancia.
+
+**De regalo, la noche mejoró sola:** el velo cae sobre el cielo y el pueblo
+nocturno se lee como un atardecer en vez de una pared marrón.
+
+### Y el campamento de día no tenía ninguna pista de que hubiera un sol
+
+El jugador ya tenía sombra y era **el único objeto de la escena** que la tenía.
+Una escena cenital sin sombras se lee como recortes apoyados sobre un papel.
+
+- Sombras para la carpa, el cajón, el cartel, los dos postes por separado, el
+  caballo y la fogata, **todas para el mismo lado** con una constante `SOL`
+  compartida. Lo que hace leer el sol no es el tamaño de cada sombra sino que
+  **todas apunten igual**.
+- La del jugador sigue ese sol **sólo de día**; de noche vuelve a quedar
+  centrada, porque ahí la luz es la fogata y según de qué lado del fuego estés
+  parado le tocaría para otro lado. Centrada no afirma nada.
+- **El desierto de alrededor dejó de ser un relleno liso:** matorrales y piedras,
+  con los mismos verdes del costado de la vía en el galope (#4d5c34, #3d4a2a).
+  Son los únicos no-marrones del campamento, que es lo que hace que los ocres se
+  lean como ocres.
+
+### DOS COSAS QUE SE PROBARON Y SE SACARON
+
+**1. El degradado en el galope no funciona.** Se veía como **rayas pintadas en el
+piso**: con contraste, rayas; sin contraste, no se veía nada. La razón, que
+recién se entendió mirándolo: en el pueblo el cielo es un **telón fijo** y un
+degradado se lee como aire, pero en el galope el suelo es una **superficie que
+recorrés** con la cámara moviéndose encima, así que el mismo degradado se lee
+como pintura. Revertido junto con sus dos colores para no dejar nada muerto.
+
+> **Y el galope no puede tener cielo**, que es lo primero que se intentó: la
+> cámara nunca sube más allá del techo del tren (`camY = Math.max(0, …)`), así
+> que "arriba" es el otro lado de la vía y no el aire. Meterle cielo sería
+> rediseñar la cámara. Lo que sí puede tener son **siluetas de meseta en la capa
+> lejana del parallax**, y eso es una sesión propia.
+
+**2. Las matas del campamento salieron en diagonales perfectas.** `(i*97+23) %
+ancho` y `(i*53+31) % alto` son las dos **lineales en `i`**, así que los puntos
+marchaban en fila como un ejército. Se vio a la primera foto. Ahora hay un
+`revolver(n)` que revuelve el entero, y **tiene que ser una función pura del
+índice y no el `rng` del juego**: esto corre en cada cuadro del dibujo y un rng
+de verdad avanza su estado, así que las matas titilarían.
+
+### LO QUE QUEDA ANOTADO
+
+- **La partida sigue empezando de noche** (`esDeDia: false` en `gameState`, y por
+  una buena razón: que lo primero que quieras hacer sea dormir y aprendas el
+  sistema solo). El efecto es que **lo primero que ve alguien es la versión más
+  oscura de todo**, y nada de esto se ve en la primera pantalla.
+- Falta el **sonido**, que es la otra mitad de la atmósfera: `startAmbience` se
+  llama **sólo en el asalto** (`raidScene.js`), así que el campamento, el pueblo,
+  el mapa y el galope están **mudos**. Sin viento, sin cascos, sin música. Es el
+  mayor efecto por hora de trabajo que queda en el juego.
+
+**Verificado:** las cuatro escenas de día y de noche más un asalto de 300
+cuadros, sin un error de consola. Mirado en el navegador. **NO JUGADO POR SANTI
+TODAVÍA** al momento de escribir esto.
+
+---
+
+## ✅ HECHA · La pólvora sale del vagón de armas y se reparte por el tren
+
+*(Santi: "cuando hay un vagón de armas en el tren, no sólo ahí dentro habrían
+barriles de dinamita, sino que afectaría a todo el tren, haciendo que haya
+vagones con barriles de dinamita (puede haber en todos menos en el de
+pasajeros). Y el vagón de armas pasaría a ser un vagón de paso como el de ganado
+(a pesar que sí tendría un par de guardias y más barriles)")*
+
+El vagón de armas dejó de ser **el depósito donde está toda la pólvora** y pasó a
+ser **el lugar donde hay más**. Es un cambio de geografía, no de cantidad.
+
+### Ahora son DOS reglas y no una
+
+- `p.cajones` depende del **VAGÓN**: un vagón de armas lleva pólvora en cualquier
+  tren que lo lleve a él. Es lo que el vagón ES.
+- `p.cajonesExtra` depende del **TREN**: los demás vagones sólo llevan pólvora si
+  en la composición hay un vagón de armas. Mismo patrón que las tranqueras del
+  ganado, que sólo existen en el tren de carga.
+
+**El vagón de pasajeros queda afuera sin ningún `if` con su nombre:** no tiene
+candidatas y listo. Cualquier vagón futuro entra o no según si le escribís
+posiciones, igual que `sinVariantes`.
+
+Y son **candidatas, no una lista fija**: se sortean una o dos por vagón, así que
+dos asaltos al mismo tipo de vagón no tienen la pólvora en el mismo lugar. Es lo
+único de este sistema que cambia entre asalto y asalto.
+
+### El problema era la economía, y lo resolvió Santi
+
+Pólvora en cuatro vagones multiplicaba la dinamita, y el techo de cinco del vagón
+viejo estaba puesto a propósito (*"sin esto sería una fuente inagotable con sólo
+volver a pasar"*).
+
+*(Santi: "no siempre vas a poder sacar un trozo de dinamita de un barril. Al
+acercarte te vas a dar cuenta de si se puede o no")*
+
+**`tieneCartucho` es un estado nuevo y distinto de `cargado`.** Uno dice si
+EXPLOTA —lo tienen todos— y el otro si te da algo. Un barril sin cartucho es
+igual de peligroso y no te da nada.
+
+**Y no hizo falta inventar ninguna señal**, que es lo mejor que salió de esto: el
+cargado ya tenía la franja roja cruzada (gruesa, se ve de lejos) y tres cartuchos
+asomando por la tapa (chicos, se ven al lado). Ahora la franja la tienen todos y
+los cartuchos sólo los que te dan uno. De lejos, todos los barriles son la misma
+amenaza; de cerca se distinguen. Eso es literalmente lo que pidió Santi.
+
+Son **tres estados** y cada señal dice una cosa distinta:
+
+| Señal | Qué dice | Explota | Te da algo |
+|---|---|---|---|
+| Franja roja cruzada | ESTO EXPLOTA | Sí | — |
+| \+ tres cartuchos asomando | y hay uno para vos | Sí | Sí |
+| Tapa abierta y hueco negro | ya lo vaciaste | **No** | No |
+
+El cartel sobre la cabeza pasó a tener tres casos, y **el del medio nombra la
+pólvora a propósito**: sin eso, un barril sin cartucho se leería como uno ya
+vaciado, y son cosas muy distintas — éste todavía vuela por los aires.
+
+### El vagón de armas, ahora de paso
+
+*(Santi eligió "se acorta como el de ganado" sobre una tabla de tres, sabiendo
+que perdía las siete islas de cobertura de la sesión anterior.)*
+
+De **30 columnas a 24** (lo mismo que el ganado), de **tres guardias a dos**, de
+**cinco bolsas a una**, y de cinco barriles a **cuatro**. Un vagón donde te
+quedás a juntar cinco bolsas no es de paso por más corto que sea: lo que te hace
+quedarte es el botín, no los metros.
+
+**Y lo que ocupa el lugar de las islas son los barriles**, que ya frenaban balas.
+Así que la única cobertura del vagón pasa a ser la cosa que explota: **cubrirse
+acá es elegir una bomba**. Es mejor que lo que había — antes podías elegir entre
+una isla verde segura y un barril; ahora no hay isla.
+
+El corredor 4-5 sigue libre de tiles sólidos, y las rondas de los dos guardias
+van por la fila 5: la 4 es por donde cruza el Dinamitero, y eso no se toca.
+
+### DOS AJUSTES DESPUÉS DE JUGARLO
+
+**1. Los barriles del comedor, al pasillo.** *(Santi: "los barriles en el comedor
+ponlos dónde todos: en el pasillo")*. En todos los demás vagones van en las filas
+3 y 6, pegadas al corredor. En el comedor esas filas son **las mesas**, así que
+la primera versión los mandó a las filas 1 y 8, contra la pared — y quedaban
+**detrás de dos hileras de mesas**: no se veían al pasar, no servían de cobertura
+y no entraban en ninguna decisión. Estaban puestos donde había lugar, no donde
+importaban. Ahora van en el corredor, donde están en el camino de todos.
+
+**2. El vagón de armas bajó del 50% al 25%.** *(Santi: "baja la probabilidad de
+que aparezca este vagón a un 25%")*. El 50% era el primer número, elegido sin
+jugar. Y lo que cambió en el medio es que este vagón **dejó de afectar sólo a su
+propio pasillo**: desde que su presencia reparte pólvora por el tren entero, la
+mitad de los asaltos eran asaltos con barriles por todos lados. A uno de cada
+cuatro vuelve a ser lo que tenía que ser. De paso el ganado recupera presencia
+(75% en vez de 50%), así que vuelven a estar vivos el escondite "junto al corral"
+de la caja oculta y el único vagón sin techo del tren.
+
+### VERIFICADO POR CONSOLA
+
+Sobre **250 trenes** con vagón de armas:
+
+| | Resultado |
+|---|---|
+| Barriles por tren | **8,58** (entre 7 y 10) |
+| Cartuchos por tren | **2,95** — el objetivo eran 3 |
+| Proporción con cartucho | 34%, clavada en `chanceCartucho` |
+| Barriles sobre un tile sólido | **0** |
+| Trenes **sin** vagón de armas | **0 barriles**: idéntico al de siempre |
+
+- **La cadena sigue siendo por vagón:** prendí uno del comedor, volaron sus 2 y
+  los otros 7 del tren quedaron intactos.
+- **El Dinamitero pasa 29-34% adentro** con vecinos normales, así que acortar el
+  vagón no le rompió la vuelta.
+- **El sorteo del 25%:** clavado sobre 40.000 tiradas, con 75% de ganado.
+- **Los barriles del comedor:** siempre en el corredor (fila 4 col 10, fila 4 col
+  29, fila 5 col 17), ninguno sobre un tile sólido **ni encima de un pasajero**
+  (los del comedor viajan en (2,4) y (26,5)).
+- **El escondite de la caja oculta sobrevivió al recorte:** 59 de 300 caen en el
+  vagón de armas, ninguna sobre sólido y todas con un tile pisable al lado. Se
+  define por tipo de tile (`C`), no por columna, así que el vagón más corto no lo
+  rompió.
+- **Asalto de 90 s** con clima, puerta bloqueada, comportamientos y paquetes: sin
+  errores.
+
+### UN ERROR PROPIO, Y DOS DEL ARNÉS
+
+**El error:** un barril del blindado quedó en la **columna 11 de la fila 6**, que
+en ese layout es un cajón sólido y no piso. En **126 de 250 trenes** nacía dentro
+de una pared. Lo encontró la medición, no la vista.
+
+**Los del arnés**, los dos de manual:
+
+1. Una medición del Dinamitero "trabado" durante 80 segundos era en realidad **el
+   mundo entero congelado**: el jugador había muerto y la escena ya no se
+   actualizaba. Ningún enemigo se movía, ni los que estaban disparando. La
+   lección de siempre — antes de creerle a una medición en cero, verificar que el
+   escenario siga vivo.
+2. Las filas de los barriles del comedor "salían en la 5 y la 6" y estaban en la
+   4 y la 5: `Math.round(y / 16)` sobre un `tileCenter` (que devuelve `row*16+8`)
+   redondea siempre para arriba. Era `Math.floor`.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

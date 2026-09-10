@@ -138,6 +138,18 @@ mostrar no se escribe, igual que el aro del ruido o la marca del salto.
 > de un vagón la hora no se ve. Los trenes nocturnos de verdad, con la escolta
 > dormida y todo lo demás, son una vuelta aparte.
 
+**Y el pueblo tiene cielo.** De día es un azul polvoriento que se va aclarando
+hacia el horizonte, con una loma detrás de las fachadas; de noche el mismo cielo
+bajo el velo se lee como un atardecer. Es el único color frío del juego, y está
+para que los ocres de todo lo demás se lean como cálidos: hasta que existió, el
+cielo del pueblo era del mismo marrón que la tierra.
+
+**El campamento de día tiene sombras y desierto alrededor.** Todo lo que hay en
+el claro —la carpa, el cajón, el cartel, los postes, el caballo, vos— tira su
+sombra para el mismo lado, y afuera del círculo de tierra pisada hay matorrales
+y piedras. De noche no: ahí la única luz es la fogata, y el fondo negro significa
+que la luz se termina.
+
 Después de cada asalto volvés acá, con lo que hayas juntado y con la
 recompensa que te hayas ganado. Ese ciclo —campamento, tren, campamento— es lo
 que hace que un asalto tenga consecuencias en el siguiente.
@@ -329,7 +341,7 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 | **`Espacio` (mantener)** | **Agacharse**: mitad de velocidad, tardan el doble en verte |
 | `Shift` | Pegarse a una pared o a un asiento (cubrirse) |
 | **Ruedita del mouse** | **Golpe cuerpo a cuerpo.** Alcanza con moverla apenas, para cualquier lado |
-| `F` | Lo mismo, por si preferís el teclado — **salvo al lado de un cajón de pólvora, que lo empuja** |
+| `F` | Lo mismo, por si preferís el teclado — **salvo al lado de un barril de pólvora, que lo empuja** |
 | **`Q`** | **Encender un cartucho de dinamita** |
 | Clic izquierdo (con la mecha encendida) | Lanzarla |
 | `R` | **Recargar.** Mientras lo hacés caminás lento, como si fueras de costado |
@@ -557,10 +569,11 @@ Seis vagones, mezclados en cada asalto: dos de pasajeros, uno de comedor, uno
 de correo, uno de ganado y uno blindado. Colgando de la parte de atrás está la
 **plataforma trasera**.
 
-**Y la mitad de las veces el de ganado no viaja: viaja el de armas** (ver "El
+**Y uno de cada cuatro trenes cambia el de ganado por el de armas** (ver "El
 vagón de armas", más abajo). Es lo primero que cambia de qué está HECHO el
 tren y no sólo quién va arriba — y lo único de todo eso que **se ve desde el
-galope**, antes de subir.
+galope**, antes de subir. Es uno de cada cuatro y no la mitad porque no cambia
+un vagón: cuando aparece, **hay pólvora repartida por todo el tren**.
 
 **El caballo es uno solo y se queda donde lo dejaste.** Antes de subir elegís
 hasta dónde adelantarlo: la cola, el enganche entre el vagón 1 y el 2, o el del
@@ -571,69 +584,90 @@ esperándote: ir para allá es meterse en un callejón sin salida.
 **No miden todos lo mismo**, y es a propósito: si todos midieran igual, el tren
 no tendría ritmo — cruzar el de ganado (una bolsa, un guardia) costaría lo
 mismo que cruzar el blindado. Anchos: pasajeros 40 baldosas, comedor 34,
-correo 32, blindado 30, **armas 30**, ganado 24.
+correo 32, blindado 30, ganado 24 y **armas 24** — el de armas mide lo mismo
+que el de ganado porque, como él, es un vagón de paso.
 
-### El vagón de armas: lo que te sirve es lo que te puede matar
+### El vagón de armas: cuando aparece, cambia el tren entero
 
-**Uno de cada dos trenes estándar cambia el vagón de ganado por uno de armas.**
-Nunca es el primero, y desde afuera se ve cuál te tocó.
+**Uno de cada cuatro trenes estándar cambia el vagón de ganado por uno de
+armas.** Nunca es el primero, y desde afuera se ve cuál te tocó.
 
-Adentro hay **cinco cajones de pólvora**, y son tres cosas a la vez:
+Y cuando aparece **no cambia sólo su propio pasillo**: hay barriles de pólvora
+repartidos por casi todos los vagones — el comedor, el correo, el blindado. El
+único que nunca lleva es el de pasajeros. Un tren con vagón de armas es un tren
+distinto de punta a punta, y por eso es uno de cada cuatro y no la mitad.
+
+Un barril de pólvora es tres cosas a la vez:
 
 | | |
 |---|---|
-| **`[E]` sostenido** | Te llevás **un cartucho de dinamita**. Es el único lugar del juego donde se repone algo |
+| **`[E]` sostenido** | Te llevás **un cartucho de dinamita** — si ese barril tiene uno. Es el único lugar del juego donde se repone algo |
 | **`F`** | Lo **empujás**: sale rodando hacia la cola y se vuelve tuyo (ver abajo) |
-| **Tres balazos** | Se prende, con una mecha corta — y **arrastra a todos los demás** |
+| **Tres balazos** | Se prende, con una mecha corta — y **arrastra a todos los del vagón** |
 
-**Y sacarle el cartucho lo desactiva.** El cajón no desaparece: queda **vacío**,
-y un cajón vacío ya no explota nunca más. Sigue frenando balas, sigue tapando el
-paso y se sigue pudiendo empujar — pero deja de ser una bomba. Se distinguen de
-un vistazo: el cargado lleva la franja roja y los cartuchos asomando por la tapa;
-el vacío tiene la tapa abierta y un hueco negro.
+**No todos te dan dinamita, y ésa es la regla nueva.** Todos explotan igual:
+todos llevan la franja roja cruzada, que se ve de lejos. Pero sólo uno de cada
+tres tiene un cartucho armado adentro; en los demás hay pólvora suelta y nada
+que guardarse. **Se sabe al acercarse**: a los que te dan uno se les ven tres
+cartuchos asomando por la tapa. De lejos, todos son exactamente la misma
+amenaza.
 
-> Así que el vagón entrega **cinco dinamitas en total** y se acaba. Y vaciarlos
-> es una jugada en sí misma: cada uno que abrís es una bomba menos que te puede
-> volar en la cara.
+> Un tren con pólvora repartida trae unos ocho o nueve barriles, y de ésos salen
+> unos **tres cartuchos** — justo lo que te entra encima. Recorrer el tren entero
+> te llena la cartuchera y ni uno más.
 
-**El tope es tres cartuchos.** Si llegás con la dinamita llena, el cajón no se
+**Y sacarle el cartucho lo desactiva.** El barril no desaparece: queda **vacío**,
+y un barril vacío ya no explota nunca más. Sigue frenando balas y se sigue
+pudiendo empujar — pero deja de ser una bomba. Son tres estados y cada señal
+dice una cosa: la franja roja, *esto explota*; los cartuchos asomando, *y además
+hay uno para vos*; la tapa abierta con un hueco negro, *de acá ya sacaste*.
+
+**El tope es tres cartuchos.** Si llegás con la dinamita llena, el barril no se
 abre: lo que te queda es una bomba puesta en el mapa.
 
 **Y lo prende CUALQUIER bala, no sólo la tuya.** Un guardia que te tira y falla
-también puede volar el vagón. Por eso éste no es un lugar donde convenga
-tirotear: los tres cajones aguantan tres tiros cada uno, así que una bala
-perdida no alcanza, pero un tiroteo sostenido ahí adentro sí.
+también puede volar un vagón. Cada barril aguanta tres tiros, así que una bala
+perdida no alcanza — pero un tiroteo sostenido ahí adentro sí.
 
-**La cadena avanza, no estalla junta.** Cada cajón prende al siguiente unas
+**La cadena es del VAGÓN, no del tren.** Cuando algo explota, se prenden los
+barriles **de ese vagón** y ninguno más: no hay una reacción que recorra el tren
+de punta a punta. Y avanza, no estalla junta — cada uno prende al siguiente unas
 décimas después, del más cercano al estruendo al más lejano, así que **se puede
-correr mientras llega** — pero la onda va más rápido que vos, así que hay que
-salir **para el lado donde ya no quedan cajones**. Correr a lo largo de la
-cadena es correr hacia el próximo.
+correr mientras llega**. Pero la onda va más rápido que vos, así que hay que
+salir **para el lado donde ya no quedan barriles**.
 
-**Y hay islas de carga en el medio del pasillo**, siete, escalonadas a un lado
-y al otro. Son lo que hace que el vagón se pueda pelear en vez de sólo cruzarlo
-corriendo — y lo que obliga a mirar bien: **las verdes son cobertura, las de la
-franja roja son bomba**. Los cajones de pólvora frenan las balas igual que
-cualquier bulto, así que también son cobertura… hasta el tercer tiro.
+#### Y el vagón de armas propiamente dicho es un vagón de paso
+
+Es **corto**, como el de ganado, con **dos guardias** y **una sola bolsa**. No
+está hecho para quedarse: entrás por la pólvora, o porque está en el camino.
+
+Adentro hay **cuatro barriles** —la mayor concentración del tren— y **ninguna
+otra cobertura**. Ahí está toda su tensión: los barriles frenan balas igual que
+cualquier bulto, así que son lo único detrás de lo que te podés parapetar, y
+aguantan tres tiros antes de matarte. **Cubrirse acá es elegir una bomba.**
 
 **Y una explosión ahí adentro no deja nada.** No es una dinamita grande: es un
 vagón lleno de pólvora. Quieto en cualquier parte del centro, morís; en las
-puntas salís con la mitad de la vida; y de los cuatro guardias del vagón no
-queda uno. La mecha te da poco más de dos segundos, y **el único refugio es
-salir** — correrte adentro ya no alcanza.
+puntas salís con la mitad de la vida; y de los guardias no queda uno. La mecha
+te da poco más de dos segundos, y **el único refugio es salir** — correrte
+adentro ya no alcanza.
 
-Lleva cinco bolsas repartidas y **ninguna caja fuerte**: su tensión es otra.
+**Ninguna caja fuerte**, tampoco: su tensión es otra.
 
-### Y el cajón se puede empujar: `F`
+### Y el barril se puede empujar: `F`
 
-Un cajón —cargado o vacío— sale rodando **siempre hacia la cola**, nunca hacia
+> *(En el código estos barriles se llaman `cajon` / `cajonPolvora` — el nombre
+> `barril` ya estaba tomado por los que ruedan solos en el tren veloz. Son cosas
+> distintas: éstos están quietos hasta que vos los movés.)*
+
+Un barril —cargado o vacío— sale rodando **siempre hacia la cola**, nunca hacia
 la locomotora: el tren acelera y lo suelto se va para atrás. Por eso `F` no es
 tanto empujar como **destrabar**, y por eso, si estás del lado de la cola, sale
 hacia vos. Tu propia arma no te distingue.
 
 | Lo que hace rodando | |
 |---|---|
-| **Atropella** | Al que se le cruza lo tumba un segundo y medio — lo mismo que a vos. **Nunca mata**: si lo querés muerto, le disparás al cajón |
+| **Atropella** | Al que se le cruza lo tumba un segundo y medio — lo mismo que a vos. **Nunca mata**: si lo querés muerto, le disparás al barril |
 | **Rompe la puerta** que se le cruce, de un golpe | Salvo la de chapa del blindado, que lo frena en seco |
 | **A veces salta el enganche** | Tres de cada diez cruzan al vagón vecino en vez de caerse al vacío |
 | **Y si le disparás** | Cargado, revienta donde esté; vacío, se hace astillas |
@@ -643,15 +677,20 @@ disparan para hacerlo astillas; si lo tienen encima, se corren al costado. Pero
 si ve la franja roja no le dispara a nada: sale del pasillo y **se aleja**.
 
 > Y de ahí sale la mejor jugada del vagón: si el blindado te queda hacia la cola,
-> podés mandarle un cajón cargado hasta su puerta de chapa —que lo frena— y
+> podés mandarle un barril cargado hasta su puerta de chapa —que lo frena— y
 > volarla de un tiro, **sin gastar ninguno de tus cartuchos**.
 
 **Y trae un tipo con dinamita dando vueltas.** El *Dinamitero* no se queda
-adentro: hace una ronda entre este vagón y los dos de al lado, y tarda casi un
-minuto en dar la vuelta entera. Si está adentro cuando empieza el lío, su
-primera tanda vuela los tres cajones de una. **Esperar a que salga es una
+adentro: hace una ronda entre el vagón de armas y los dos de al lado, y tarda
+casi un minuto en dar la vuelta entera. Si está adentro cuando empieza el lío,
+su primera tanda vuela los barriles de una. **Esperar a que salga es una
 jugada**, y es la primera vez que quedarse quieto y mirar resuelve algo en este
 juego.
+
+**Y no lo vas a encontrar siempre en el mismo momento.** Arranca cada asalto en
+un punto cualquiera de su vuelta y para un lado cualquiera, así que dos asaltos
+al mismo tipo de tren no te lo ponen en el mismo lado. Cronometrarlo sirve
+**dentro** de un asalto, no entre uno y otro.
 
 > Si el vagón vuela, ese tren se quedó sin dónde reponer. Volarlo para sacarte
 > de encima a los guardias y perder los tres cartuchos es una decisión, no un
@@ -670,6 +709,7 @@ ahí sale cada cosa que le pasa:
 | **No se cubre nunca** | Necesita el pasillo libre: parapetado se taparía el tiro a sí mismo. Está siempre a la vista |
 | **Pero aguanta cuatro balazos** | El techo del juego, y el único guardia común que lo toca. No tiene con qué contestar de lejos: lo que compra es durar |
 | **Y si te le pegás, retrocede** | Su cartucho tiene un mínimo — más cerca se volaría él. Acercarse es la respuesta, pero hay que perseguirlo |
+| **Lleva la llave del tren** | Una puerta trabada no lo frena: la abre y sigue. Es el único del tren que puede — y si lo venís siguiendo, te deja unos **tres segundos** para colarte detrás suyo antes de que se cierre |
 
 **Parado justo en el medio de una tanda perdés dos de tus cuatro vidas**: caés
 en el borde de las dos, no en el centro de ninguna. Lo que mata es correr hacia
@@ -899,7 +939,7 @@ que ir hasta ese vagón y buscarla — aparece recién cuando la tenés al lado,
 como cualquier cosa al alcance de la mano. Los escondites son cinco y
 dependen del vagón: debajo de una ventana o debajo de un asiento en los de
 pasajeros, debajo de una mesa en el comedor y el correo, junto al corral en
-el de ganado, y **entre los cajones** en el de armas — que es el mejor lugar
+el de ganado, y **entre las estanterías** en el de armas — que es el mejor lugar
 del tren para esconder algo, y el único donde ir a buscarla puede costarte el
 vagón entero.
 
@@ -983,6 +1023,11 @@ entrada desde la cola (por donde también se escapa).
   una vez volada la puerta queda abierta para siempre.
 - **Los guardias del blindado nunca salen de su vagón.** Ni persiguiéndote,
   ni con la puerta ya volada: no abandonan el puesto pase lo que pase.
+- **Y una puerta trabada sí la abre el Dinamitero**, que lleva la llave del
+  tren. La cruza y **se cierra detrás suyo, todavía trabada**: para vos la
+  única llave sigue siendo el plomo. Lo que te deja es una ventana de **unos
+  tres segundos** —la sostiene mientras cruza, más el vaivén de siempre— si
+  estabas cerca cuando pasó.
 
 ### La decisión que abre el asalto: el galope
 
@@ -1570,12 +1615,14 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `weapons.*.noiseWagons` | A cuántos vagones llega un TIRO de esa arma |
 | `explosives.dinamita.noiseWagons` | A cuántos vagones **retumba una explosión** (y los deja en rojo, no en amarillo) |
 | `player.dynamiteMax` | **Cuántos cartuchos te entran encima** (salís con `player.dynamite`, y el vagón de armas te sube hasta acá) |
-| `explosives.cajonPolvora.vida` | **Cuántos tiros aguanta un cajón de pólvora** antes de prenderse. Es la perilla que decide si el vagón de armas es una lotería o una decisión |
-| `explosives.cajonPolvora.fuse` / `cadena` | La mecha del cajón, y cada cuánto prende al siguiente. **Los dos números que deciden si se puede escapar de la cadena** |
+| `explosives.cajonPolvora.vida` | **Cuántos tiros aguanta un barril de pólvora** antes de prenderse. Es la perilla que decide si el vagón de armas es una lotería o una decisión |
+| `explosives.cajonPolvora.fuse` / `cadena` | La mecha del barril, y cada cuánto prende al siguiente. **Los dos números que deciden si se puede escapar de la cadena** |
 | `explosives.cajonPolvora.recarga` | Cuántos cartuchos te da abrir uno |
+| `explosives.cajonPolvora.chanceCartucho` | **Qué proporción de barriles trae un cartucho para llevarse.** Todos explotan igual; esto decide sólo cuántos además te dan algo, y es lo que mantiene la dinamita escasa con pólvora repartida por todo el tren |
+| `TRAIN_TYPES.estandar.sustituciones` | **Cada cuánto sale el vagón de armas** (y con él la pólvora en todo el tren) |
 | `explosives.cajonPolvora.lethalRadius` / `blastRadius` | **Cuánto arrasa la cadena.** Van atados a la mecha: si crecen, hay que dar más aviso o el vagón se vuelve una trampa sin salida |
 | `explosives.cajonPolvora.enemyDamage` / `playerEdgeDamage` | El daño del BORDE. Es lo que decide si en las puntas del vagón queda alguien vivo — más barato de mover que los radios |
-| `explosives.cajonPolvora.cruzaEnganche` | Cada cuánto un cajón empujado salta al vagón vecino en vez de caerse al vacío |
+| `explosives.cajonPolvora.cruzaEnganche` | Cada cuánto un barril empujado salta al vagón vecino en vez de caerse al vacío |
 | `explosives.cajonPolvora.tumba` | Cuánto queda en el piso el guardia que atropella. Nunca lo mata |
 | `enemy.dinamiteroRecarga` | **Cuánto tarda el Dinamitero en volver a tener las dos en la mano** — y cuánto dura la ventana en la que está desarmado |
 | `enemy.dinamiteroPorTanda` | Cuántas lanza de una |

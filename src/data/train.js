@@ -79,17 +79,47 @@ export const TRAIN_TYPES = {
     posicionMinima: { blindado: 3, armas: 2 },
 
     /**
-     * EL BLINDADO VA SIEMPRE MÁS ADENTRO QUE EL VAGÓN DE ARMAS, con un vagón de
-     * por medio. Ver `cumpleRelativas` en world/train.js para el problema que
-     * arregla (la ronda del Dinamitero se rompía cuando caían pegados, en el
-     * 43% de los trenes con vagón de armas) y por qué el hueco es lo que
-     * importa y no el orden.
+     * EL VAGÓN DE ARMAS NUNCA ES EL ÚLTIMO.
      *
-     * El precio: el vagón de armas ya no puede caer en los vagones 5 ni 6 — con
-     * seis vagones y un hueco de por medio, no queda lugar para el blindado
-     * detrás. Queda repartido entre el 2, el 3 y el 4.
+     * Es la otra cara del mismo problema que resuelve `posicionRelativa`: el
+     * Dinamitero necesita un vecino AL QUE PUEDA ENTRAR de los dos lados, y al
+     * final del tren no hay nada de un lado. Medido con el de armas último: la
+     * ronda baja a 656-704 px en vez de ~1000 y pasa **40-61% del tiempo
+     * adentro** contra el 33% de diseño — exactamente el mismo defecto que tener
+     * el blindado pegado.
+     *
+     * Con seis vagones esto lo deja en el 2, 3, 4 o 5.
      */
-    posicionRelativa: { blindado: { detrasDe: 'armas', hueco: 2 } },
+    posicionMaxima: { armas: 5 },
+
+    /**
+     * EL BLINDADO Y EL VAGÓN DE ARMAS NUNCA VIAJAN PEGADOS, y **una de cada
+     * cuatro veces el blindado queda ADELANTE** en vez de más adentro.
+     *
+     * El hueco arregla un problema medido: pegados, la ronda del Dinamitero se
+     * le acorta a 640 px en vez de ~1050 y pasa **55% del tiempo adentro contra
+     * el 41% de una configuración sana**. Pasaba en el 43% de los trenes con
+     * vagón de armas.
+     *
+     * 🔻 Y EL 25% NO ES EL 50% QUE SE PIDIÓ, por una razón que apareció
+     * midiendo. *(Santi: "50% de probabilidad que se encuentre después (actual)
+     * y 50% de probabilidades que se encuentre antes")* — pero con el de armas
+     * sin poder ser primero ni último, y el blindado sin poder ir antes del
+     * vagón 3, **del lado "antes" queda UNA SOLA combinación posible**: armas en
+     * el 5 y blindado en el 3. Contra seis del otro lado.
+     *
+     * O sea que un 50/50 habría hecho que la mitad de los trenes con vagón de
+     * armas tuvieran siempre exactamente el mismo par de posiciones — mucha
+     * repetición justo en la mitad que se agregaba para tener variedad. Con 25%
+     * el blindado adelante pasa a ser una excepción reconocible en vez del tren
+     * de todos los días, y no hubo que tocar ninguna otra regla.
+     *
+     * Ver `cumpleRelativas` en world/train.js — ahí está por qué la moneda se
+     * tira una sola vez por tren y no adentro del bucle de intentos.
+     */
+    posicionRelativa: {
+      blindado: { respectoDe: 'armas', hueco: 2, chanceAntes: 0.25 },
+    },
     peso: 50,
     modificadores: true,
 

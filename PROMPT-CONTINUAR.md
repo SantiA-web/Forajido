@@ -59,22 +59,27 @@ sino que afectaría a todo el tren."*
 - Y **bajó del 50% al 25%** de los trenes estándar, porque ahora no cambia un
   vagón: cambia el tren entero.
 
-### 4. El blindado ya no cae pegado al vagón de armas
+### 4. Dónde cae el vagón de armas respecto del blindado
 
-Era el problema que quedaba anotado de la sesión anterior. Su ronda va de la
-mitad de un vecino a la mitad del otro, pero **el blindado no cuenta como vecino**
-(su puerta de chapa no se empuja desde afuera), así que con él al lado la vuelta
-se acortaba a 640 px en vez de ~1070 y el Dinamitero pasaba 48-60% del tiempo
-adentro en vez de 33%. Pasaba en el **43%** de los trenes con vagón de armas.
+Era el problema que quedaba anotado de la sesión anterior, y terminó siendo más
+grande de lo que parecía. **El Dinamitero necesita vecinos en los que se pueda
+entrar de los DOS lados.** El blindado no lo es (su puerta de chapa no se empuja
+desde afuera) y el final del tren tampoco. Con cualquiera de los dos al lado, su
+ronda se acorta a 640-700 px en vez de ~1050 y pasa **55% del tiempo adentro
+contra el 41% normal**: "esperá a que salga" deja de existir.
 
-*(Santi: "yo pondría que el blindado siempre se encuentre después del de armas")*
-— con un vagón de por medio, que es lo que de verdad lo arregla: la regla literal
-("después") dejaba 40% pegados, porque incluye "justo después".
+Ahora el sorteo garantiza tres cosas: el de armas **nunca es el primero ni el
+último**, y **nunca cae pegado al blindado** (siempre un vagón de por medio).
+Hay dos reglas nuevas, `posicionMaxima` y `posicionRelativa`.
 
-Hay una regla nueva en el sorteo, `posicionRelativa`. Y salió una propiedad que
-no se buscó: **la pólvora viene siempre antes que la caja fuerte**, y la puerta
-del blindado se abre justamente con dinamita. Medido en seis trenes reales: 32-34%
-adentro, exactamente el número de diseño.
+*(Santi: "50% de probabilidad que se encuentre después y 50% que se encuentre
+antes")* — quedó en **25% antes / 75% después**, y no por capricho: con todas
+las restricciones, del lado "antes" existe **una sola combinación posible**
+(armas 5 / blindado 3) contra seis del otro. Un 50/50 habría hecho que la mitad
+de los trenes tuvieran siempre el mismo par de posiciones.
+
+Y salió una propiedad que no se buscó: tres de cada cuatro veces **la pólvora
+queda de camino a la caja fuerte**, cuya puerta se abre justamente con dinamita.
 
 ## LO QUE HAY QUE MIRAR JUGÁNDOLO
 
@@ -92,9 +97,12 @@ pasillo, y el 25%). **Lo demás no se jugó nunca.**
 - **¿Se nota que el vagón de armas es especial ahora que sale 1 de cada 4?**
 - **¿El Dinamitero se siente impredecible?** Ya no lo vas a encontrar en el mismo
   momento dos asaltos seguidos.
-- **¿Se nota que el vagón de armas quedó siempre en la primera mitad del tren?**
-  Es el precio de separarlo del blindado: ya no puede caer en los vagones 5 ni 6,
-  y queda repartido entre el 2 (50%), el 3 (33%) y el 4 (17%).
+- **¿Se nota dónde cae el vagón de armas?** Queda en el 2 (38%), el 3 (24%), el
+  4 (12%) o el 5 (25%) — nunca el primero ni el último.
+- **¿Se siente distinto el tren donde el blindado aparece ANTES que el de
+  armas?** Es una de cada cuatro veces, y es siempre la misma forma: armas en el
+  5, blindado en el 3. Si se vuelve reconocible de más, la perilla es
+  `chanceAntes`.
 - **¿Los 3,2 s de la puerta que él abre se usan, o no se notan?** Es la jugada
   más escondida de todo lo que se construyó.
 - **¿El cielo del pueblo y las sombras del campamento cambian algo de verdad?**
@@ -157,6 +165,11 @@ pasillo, y el 25%). **Lo demás no se jugó nunca.**
   Dinamitero, el Sheriff y el jefe están exentos.
 - **`0` es falsy — cuidado con `campo || default`**, y **el `??` tiene su propia
   trampa**: `Math.abs(x - (marca ?? x))` da SIEMPRE 0 la primera vez.
+- **🆕 Si lo que medís es un CICLO, muestreá por cuadro y no por segundo.** Una
+  muestra por segundo simulado sobre una ronda de ~44 s aliasea feo: dio "32-34%
+  del tiempo adentro" donde la medición cuadro a cuadro (6.000 muestras en vez
+  de 80) da 41%. El error fue lo bastante grande como para hacerme reportar que
+  un número estaba clavado en el objetivo cuando no lo estaba.
 - **No le creas a una corrida chica.** 🆕 Con 6 tiradas el arranque al azar del
   Dinamitero parecía sesgado (5 de 6 para el mismo lado, 0 de 6 adentro del
   vagón); con 200, perfectamente uniforme. Era ruido. Miles de tiradas si es una

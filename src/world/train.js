@@ -136,54 +136,134 @@ function aplicarSustituciones(rng, tipoTren) {
  *                                    veloz lo usa para el blindado: siempre
  *                                    pegado a la locomotora, no "3 o más
  *                                    adelante" como el estándar.)
- *   `posicionRelativa: { id: { detrasDe, hueco } }`
- *                                  — ese vagón va SIEMPRE más adentro que
- *                                    otro, con al menos `hueco` vagones de
- *                                    diferencia. Si el otro no viaja en este
+ *   `posicionMaxima: { id: N }`     — ese vagón nunca más adentro que N. Hoy
+ *                                    lo usa el de armas: **nunca el último**,
+ *                                    porque el Dinamitero necesita un vecino
+ *                                    al que entrar de los DOS lados.
+ *   `posicionRelativa: { id: { respectoDe, hueco, chanceAntes } }`
+ *                                  — ese vagón va SIEMPRE separado de otro por
+ *                                    al menos `hueco` vagones, y `chanceAntes`
+ *                                    decide de qué lado cae (0 = siempre más
+ *                                    adentro). Si el otro no viaja en este
  *                                    tren, la regla no aplica.
  */
 export function sortearComposicion(rng, tipoTren) {
   tipoTren = tipoTren || TRAIN_TYPES[TIPO_TREN_POR_DEFECTO];
   const composition = aplicarSustituciones(rng, tipoTren);
   const reglasMin = tipoTren.posicionMinima || {};
+  const reglasMax = tipoTren.posicionMaxima || {};
   const reglasFija = tipoTren.posicionFija || {};
   const reglasRel = tipoTren.posicionRelativa || {};
+
+  /**
+   * DE QUÉ LADO CAE CADA REGLA RELATIVA — se sortea UNA VEZ por tren, acá
+   * afuera, y no adentro del bucle de intentos.
+   *
+   * Si se tirara la moneda en cada intento, el lado MÁS FÁCIL DE CUMPLIR
+   * ganaría casi siempre: el primer barajado que cumpla se acepta, y hay muchos
+   * más órdenes que satisfacen "el blindado más adentro" que al revés (el
+   * blindado no puede ir antes del vagón 3, así que para quedar DELANTE del de
+   * armas necesita que el de armas esté en el 5 o el 6). Un 50/50 tirado
+   * adentro del bucle habría dado algo como 90/10 sin que se notara.
+   */
+  const lados = {};
+  for (const id of Object.keys(reglasRel)) {
+    const r = reglasRel[id];
+    lados[id] = rng.chance(r.chanceAntes || 0) ? 'antes' : 'despues';
+  }
 
   const fijos = composition.filter((id) => reglasFija[id] !== undefined);
   const resto = composition.filter((id) => reglasFija[id] === undefined);
 
-  for (let intento = 0; intento < 50; intento++) {
-    const baraja = [...resto];
-    for (let i = baraja.length - 1; i > 0; i--) {
-      const j = rng.int(0, i);
-      [baraja[i], baraja[j]] = [baraja[j], baraja[i]];
-    }
+  function intentar(ladosDeEstaVuelta, intentos = INTENTOS) {
+    for (let intento = 0; intento < intentos; intento++) {
+      const baraja = [...resto];
+      for (let i = baraja.length - 1; i > 0; i--) {
+        const j = rng.int(0, i);
+        [baraja[i], baraja[j]] = [baraja[j], baraja[i]];
+      }
 
-    const resultado = [...baraja];
-    for (const id of fijos) {
-      const regla = reglasFija[id];
-      if (regla === 'ultima') resultado.push(id);
-      else resultado.splice(Math.max(0, Math.min(resultado.length, regla)), 0, id);
-    }
+      const resultado = [...baraja];
+      for (const id of fijos) {
+        const regla = reglasFija[id];
+        if (regla === 'ultima') resultado.push(id);
+        else resultado.splice(Math.max(0, Math.min(resultado.length, regla)), 0, id);
+      }
 
-    const valida = resultado.every((id, i) => {
-      const minimo = reglasMin[id];
-      return minimo === undefined || i + 1 >= minimo;
-    }) && cumpleRelativas(resultado, reglasRel);
-    if (valida) return resultado;
+      const valida = resultado.every((id, i) => {
+        const minimo = reglasMin[id];
+        const maximo = reglasMax[id];
+        return (minimo === undefined || i + 1 >= minimo)
+          && (maximo === undefined || i + 1 <= maximo);
+      }) && cumpleRelativas(resultado, reglasRel, ladosDeEstaVuelta);
+      if (valida) return resultado;
+    }
+    return null;
   }
-  return [...composition];
+
+  /**
+   * 🐛 Y SI EL LADO SORTEADO NO SE PUEDE CUMPLIR, SE PRUEBA EL OTRO — no se
+   * devuelve la baraja sin mezclar.
+   *
+   * Los dos lados no son igual de fáciles. Para que el blindado caiga DELANTE
+   * del de armas con un hueco, el de armas tiene que estar en el 5 o el 6 (el
+   * blindado no puede ir antes del 3): son tres pares posibles contra seis del
+   * otro lado, así que un barajado al azar acierta mucho menos seguido.
+   *
+   * Medido con el escape viejo (50 intentos y después la composición cruda):
+   * **23 trenes de 9921 salían con el blindado y el de armas PEGADOS** — o sea
+   * exactamente el defecto que esta regla existe para evitar, colándose por la
+   * puerta de atrás. Y encima eran el tren menos mezclado posible, siempre el
+   * mismo.
+   *
+   * Probar el otro lado le rompe el 50/50 en menos de medio por ciento de los
+   * trenes, que es infinitamente mejor que un tren pegado y sin barajar.
+   */
+  const otros = {};
+  for (const id of Object.keys(lados)) {
+    otros[id] = lados[id] === 'antes' ? 'despues' : 'antes';
+  }
+  return intentar(lados) || intentar(otros) || [...composition];
 }
 
 /**
- * ¿Este orden respeta las reglas de "uno siempre más adentro que el otro"?
+ * CUÁNTAS BARAJADAS SE LE DAN A UN LADO ANTES DE PROBAR EL OTRO. 250, y el
+ * número está calculado, no elegido a ojo.
  *
- * Hoy la usa una sola: **el blindado va siempre más adentro que el vagón de
- * armas, con un vagón de por medio.**
+ * 🐛 ERAN 50 Y LA PERILLA MENTÍA. Con `chanceAntes: 0.25` salía **20,2%**
+ * medido sobre 60.000 sorteos. El motivo: del lado "antes" hay UNA SOLA
+ * disposición válida (el de armas en el 5 y el blindado en el 3), o sea 24 de
+ * los 720 órdenes posibles — 3,33% por barajada. La chance de fallar 50 veces
+ * seguidas es 0,9667^50 = 18,4%, y esos trenes se iban al otro lado. La cuenta
+ * daba exactamente la fuga observada.
+ *
+ * Con 250 la chance de fallar cae a 0,9667^250 = 0,02%, así que la perilla dice
+ * lo que hace. Y no cuesta nada: el promedio real son ~30 barajadas de un array
+ * de seis, y sólo para el cuarto de los trenes que sacan "antes".
+ */
+const INTENTOS = 250;
+
+/**
+ * ¿Este orden respeta las reglas de separación entre dos vagones?
+ *
+ * Hoy la usa una sola: **el blindado y el vagón de armas nunca viajan pegados,
+ * y a cada tren le toca de qué lado cae** — mitad y mitad.
  *
  * *(Santi: "yo pondría que el blindado siempre se encuentre después del de
  * armas [...] si armas está en el vagón 3, el blindado va a estar en el
- * cinco")*
+ * cinco")*, y después *("quiero añadir una probabilidad: que el vagón blindado
+ * se encuentre antes que el de armas. 50% de probabilidad que se encuentre
+ * después (actual) y 50% de probabilidades que se encuentre antes")*.
+ *
+ * EL LADO NO ES SIMÉTRICO, y sale de una regla vieja: el blindado nunca viaja
+ * antes del vagón 3 (`posicionMinima`). Así que para caer DELANTE del de armas
+ * y dejarle un hueco, el de armas tiene que estar en el 5 o en el 6. O sea que
+ * la moneda no reparte posiciones parejas: reparte **qué mitad del tren ocupa
+ * el vagón de armas**. Con "después" queda entre el 2 y el 4; con "antes",
+ * en el 5 o el 6.
+ *
+ * Y eso devuelve lo que la primera versión de esta regla había sacado: el vagón
+ * de armas volvió a poder aparecer al fondo del tren.
  *
  * SALIÓ DE UN PROBLEMA MEDIDO: cuando los dos caían pegados, la ronda del
  * Dinamitero se acortaba a 640 px en vez de ~1070 —el vagón blindado no cuenta
@@ -197,20 +277,20 @@ export function sortearComposicion(rng, tipoTren) {
  * mejor que el 44% de antes: "después" incluye "justo después". Con un vagón de
  * por medio, 0%.
  *
- * Y de yapa ordena el tren: **la pólvora viene siempre ANTES que la caja
- * fuerte**. La puerta del blindado tiene una sola llave, que es tu dinamita, y
- * ahora el lugar donde te reponés queda siempre de camino a ella.
- *
  * Si el vagón de armas no viaja (tres de cada cuatro trenes), la regla no
  * aplica y el blindado se sortea como siempre.
+ *
+ * @param lados  qué le tocó a cada regla en ESTE tren ('antes' | 'despues'),
+ *   sorteado una sola vez en `sortearComposicion` — ver la nota de ahí.
  */
-function cumpleRelativas(orden, reglas) {
+function cumpleRelativas(orden, reglas, lados) {
   for (const id of Object.keys(reglas)) {
-    const { detrasDe, hueco = 1 } = reglas[id];
+    const { respectoDe, hueco = 1 } = reglas[id];
     const i = orden.indexOf(id);
-    const j = orden.indexOf(detrasDe);
+    const j = orden.indexOf(respectoDe);
     if (i < 0 || j < 0) continue;
-    if (i - j < hueco) return false;
+    const separacion = lados[id] === 'antes' ? j - i : i - j;
+    if (separacion < hueco) return false;
   }
   return true;
 }

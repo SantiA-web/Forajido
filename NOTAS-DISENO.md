@@ -9765,6 +9765,92 @@ Queda repartido entre el 2 (50%), el 3 (33%) y el 4 (17%).
 
 ---
 
+## ✅ HECHA · El blindado a veces viaja ADELANTE del vagón de armas (y el de armas nunca es el último)
+
+*(Santi: "aún así, quiero añadir una probabilidad: que el vagón blindado se
+encuentre antes que el de armas. 50% de probabilidad que se encuentre después
+(actual) y 50% de probabilidades que se encuentre antes. Siempre teniendo en
+cuenta que hay que dejar un hueco en medio")*
+
+Segunda vuelta sobre la entrada anterior. La regla de separación se queda; lo
+que cambia es que **el lado se sortea**.
+
+### Lo que apareció midiendo, y que cambió el pedido
+
+**1. El requisito real no era "que no esté pegado al blindado".** Es que **el
+vagón de armas tenga un vecino AL QUE SE PUEDA ENTRAR de los dos lados**. El
+blindado no cuenta (su puerta de chapa no se empuja desde afuera) y el final del
+tren tampoco. Con el de armas de último vagón medí la ronda en 656-704 px y
+**40-61% del tiempo adentro** — exactamente el mismo defecto con otra cara. Por
+eso ahora hay una regla nueva, `posicionMaxima`, y el de armas nunca es el
+último.
+
+**2. Y el lado "antes" tiene UNA SOLA combinación posible.** Con el de armas sin
+poder ser primero ni último, y el blindado sin poder ir antes del vagón 3, del
+lado "antes" sólo entra **armas en el 5 y blindado en el 3**. Contra seis del
+otro lado:
+
+| Lado | Combinaciones |
+|---|---|
+| después | armas 2/blindado 4, 2/5, 2/6, 3/5, 3/6, 4/6 — **seis** |
+| antes | armas 5/blindado 3 — **una** |
+
+Así que un 50/50 habría hecho que **la mitad de los trenes con vagón de armas
+tuvieran siempre exactamente el mismo par de posiciones** — mucha repetición
+justo en la mitad que se agregaba para tener variedad. Se le mostró a Santi la
+tabla y eligió bajarlo a **25%**: el blindado adelante pasa a ser una excepción
+reconocible en vez del tren de todos los días, y no hubo que tocar ninguna otra
+regla. (La alternativa era dejar al blindado viajar desde el vagón 2, que abría
+el lado "antes" a tres combinaciones pero ponía el premio más grande a un vagón
+de la salida. Descartada.)
+
+### DOS BUGS PROPIOS, LOS DOS ENCONTRADOS MIDIENDO
+
+**1. El escape del sorteo devolvía trenes pegados.** Cuando la moneda decía
+"antes" y en 50 barajadas no encontraba un orden válido, `sortearComposicion`
+devolvía la composición **sin barajar** — que justo tiene el de armas en el 5 y
+el blindado en el 6, pegados. Medido: **23 trenes de 9921**. O sea el defecto que
+esta regla existe para evitar, colándose por la puerta de atrás, y encima siempre
+con el tren menos mezclado posible. Ahora, si el lado sorteado no se puede
+cumplir, **se prueba el otro** antes de rendirse.
+
+**2. La perilla mentía: `chanceAntes: 0.25` daba 20,2%.** Del lado "antes" hay
+una sola disposición válida, o sea 24 de los 720 órdenes posibles: **3,33% por
+barajada**. La chance de fallar 50 veces seguidas es `0,9667^50 = 18,4%`, y esos
+trenes se iban al otro lado — la cuenta da exactamente la fuga observada. Con 250
+intentos la falla cae a 0,02% y la perilla dice lo que hace. Cuesta 0,0019 ms por
+sorteo.
+
+### 🔻 Y UNA CORRECCIÓN A LA ENTRADA ANTERIOR
+
+La entrada de arriba dice que el Dinamitero pasa **"32-34% adentro, exactamente
+el número de diseño"**. Ese número estaba **submuestreado**: medía una vez por
+segundo simulado sobre un ciclo de ~44 s, y eso aliasea feo. Midiendo cuadro a
+cuadro (6.000 muestras en vez de 80), los números reales son:
+
+| Configuración | Ronda | Adentro |
+|---|---|---|
+| armas 5 / blindado 3 (la nueva) | 1008 px | **41%** |
+| armas 2 / blindado 4 | 1072 px | **42%** |
+| armas 5 / blindado 4 (pegados, hoy prohibida) | 640 px | **55%** |
+
+El arreglo sigue siendo real y grande —41% contra 55%, y la ronda casi al doble—
+pero el "exactamente el número de diseño" era optimismo del muestreo. Vale como
+lección: **una muestra por segundo sobre un ciclo de decenas de segundos no
+alcanza**; si lo que medís es un ciclo, muestreá por cuadro.
+
+### VERIFICADO POR CONSOLA
+
+- **60.000 sorteos:** 0 pegados, 0 con el de armas primero, 0 con el de armas
+  último, 0 composiciones sin barajar. `blindadoAdelante` = **25,1%** contra una
+  perilla de 25%. Las siete combinaciones válidas aparecen todas.
+- El vagón de armas queda en el 2 (38%), 3 (24%), 4 (12%) y 5 (25%).
+- Las cuatro escenas, un mapa corriendo 90 s (que sortea trenes de verdad), un
+  asalto de 90 s con todo encendido, y 2.000 sorteos del **tren veloz** y del
+  **de carga** —que no llevan ninguna de estas reglas— sin un error.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

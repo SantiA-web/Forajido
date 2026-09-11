@@ -268,15 +268,18 @@ export function createCampScene(services) {
       audio.ambiente('fuego', { cutoff: 700, q: 0.8, type: 'lowpass', gain: a.campFuegoGain });
     }
     chispaTimer = 0;
+    audio.arrancarMusica();
   }
 
   function exit() {
     audio.quitarAmbiente('desierto');
     audio.quitarAmbiente('fuego');
+    audio.pararMusica();
   }
 
   /** Los chasquidos del fuego, irregulares. De día no hay fuego que chasquee. */
   function updateSonido(dt) {
+    audio.updateMusica(dt);
     if (gameState.esDeDia) return;
     const a = CONFIG.ambiente;
     chispaTimer -= dt;

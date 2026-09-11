@@ -1902,6 +1902,22 @@ export const CONFIG = {
     zancadaCada: 0.62,
 
     /**
+     * CUÁNTO SE OYE EL CABALLO. Multiplica las tres pisadas de una zancada a la
+     * vez (ver `zancada` en engine/audio.js).
+     *
+     * 🔺 SUBIÓ DE 1 A 2,6 DESPUÉS DE JUGARLO — *(Santi: "el sonido de los cascos
+     * del caballo quedaron muy bajos en volumen")*. La primera versión se eligió
+     * con el criterio de "un fondo que se nota deja de ser un fondo", y para los
+     * cascos ese criterio estaba mal: **no son un fondo, son el personaje**. Son
+     * lo único que te dice cómo está corriendo el animal que llevás abajo.
+     *
+     * Las tres pisadas se mueven juntas a propósito: lo que se ajusta es cuánto
+     * se oye el caballo, no el equilibrio interno de la zancada — el acento de
+     * la tercera es lo que le da la forma de "tucu-TÚN" y no se toca.
+     */
+    zancadaVolumen: 2.6,
+
+    /**
      * CUÁNTO RESPIRA EL VIENTO — ver `soplar` en engine/audio.js.
      *
      * `profundidad` cerca de 1 es lo que hace que **entre ráfaga y ráfaga casi
@@ -1913,6 +1929,27 @@ export const CONFIG = {
      */
     vientoProfundidad: 0.85,
     vientoCada: 6.5,
+
+    /**
+     * LA MÚSICA — ver `updateMusica` en engine/audio.js para por qué no es un
+     * bucle sino frases sueltas.
+     *
+     * LOS SILENCIOS SON EL INSTRUMENTO MÁS IMPORTANTE de los dos. Una frase de
+     * armónica cada 14-32 segundos suena a alguien tocando para sí mismo al
+     * lado de un fuego; cada 4 segundos suena a música de ascensor. Si algo hay
+     * que corregir jugando, lo primero a probar es ALARGAR estos números, no
+     * bajar el volumen.
+     *
+     * La guitarra va más seguido porque es una sola nota grave que se apaga —
+     * es el suelo sobre el que pasa la armónica, no una melodía.
+     */
+    armonicaVolumen: 0.045,
+    armonicaCada: 14,
+    armonicaVariacion: 18,
+
+    guitarraVolumen: 0.055,
+    guitarraCada: 5.5,
+    guitarraVariacion: 6,
   },
 
   colors: {

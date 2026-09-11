@@ -1882,6 +1882,24 @@ Hay dos clases de sonido y se manejan distinto:
   `audio.volumen`). Es lo que permite que la lluvia cambie al salir del vagón
   en vez de prenderse y apagarse de golpe.
 
+### Y hay música, pero no hay un tema
+
+**Una armónica y una guitarra, y ninguna de las dos toca una canción.** Un tema
+de ocho compases repitiéndose es insoportable a los cinco minutos, y este juego
+se juega mirando la misma pantalla un buen rato. Así que no hay bucle: hay
+**frases sueltas separadas por silencios**, sorteadas cada vez.
+
+- La **guitarra** pone una nota grave cada tanto — el suelo.
+- La **armónica** pasa por arriba con frases de dos a cuatro notas, cada quince
+  o treinta segundos, y después se calla.
+- Las notas salen de una **escala pentatónica menor**, que además de sonar a
+  desierto tiene una propiedad práctica: no tiene notas que suenen mal juntas,
+  así que se pueden sortear al azar sin que salga nunca una frase fea.
+
+**Sólo suena en el campamento y en el pueblo** — los dos lugares donde no hay
+nadie apuntándote. En el asalto y en el galope no hay música a propósito: ahí
+el sonido es información, y una melodía encima taparía justo lo que hay que oír.
+
 **Y el viento respira.** Ruido filtrado a volumen constante no suena a aire:
 suena a estática, a disco rayado. Lo que hace que el oído lea "viento" no es el
 filtro sino que **varíe** — así que las capas de viento van moduladas por dos
@@ -1902,7 +1920,7 @@ nunca es un fondo permanente.
 
 ## Lo que todavía NO existe (a propósito)
 
-Arte, **música**, sonido grabado, historia, fama, compañeros y guardado. (`recompensa` ya
+Arte, sonido grabado, historia, fama, compañeros y guardado. (`recompensa` ya
 se mueve — ver más abajo — pero todavía no hace nada: nadie la gasta ni la usa
 para nada, y los mini jefes que iba a destrabar siguen sin construirse. La
 plata SÍ se gasta ya, en el establo y la armería.)

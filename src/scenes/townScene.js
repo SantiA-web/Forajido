@@ -80,6 +80,7 @@ export function createTownScene(services) {
         cada: CONFIG.ambiente.vientoCada,
       },
     });
+    audio.arrancarMusica();
 
     // Para depurar desde la consola: FORAJIDO.services.town
     services.town = {
@@ -149,6 +150,7 @@ export function createTownScene(services) {
 
   function update(dt) {
     scroll += dt;
+    audio.updateMusica(dt);
     if (mensaje) {
       mensaje.life -= dt;
       if (mensaje.life <= 0) mensaje = null;
@@ -379,6 +381,7 @@ export function createTownScene(services) {
 
   function exit() {
     audio.quitarAmbiente('calle');
+    audio.pararMusica();
   }
 
   return { enter, exit, update, render };

@@ -10097,6 +10097,95 @@ verdad**, que era lo que decía la opción elegida.
 
 ---
 
+## ✅ HECHA · Hay música, y justamente por eso no hay un tema
+
+*(Santi: "me gustaría que añadieras una pequeña armónica y una guitarra de
+fondo")*, y en el mismo mensaje: *"el sonido de los cascos del caballo quedaron
+muy bajos en volumen"*.
+
+### Los cascos: el criterio estaba mal, no el número
+
+Se habían elegido con la regla que gobierna todo el ambiente de este juego —
+*"un fondo que se nota deja de ser un fondo"*— y **para los cascos esa regla
+estaba equivocada: no son un fondo, son el personaje.** Son lo único que te dice
+cómo está corriendo el animal que llevás abajo.
+
+Subieron ×2,6, y el volumen salió a una perilla propia
+(`CONFIG.ambiente.zancadaVolumen`) que mueve las tres pisadas a la vez: lo que
+hay que poder ajustar es cuánto se oye el caballo, no el equilibrio interno de la
+zancada — el acento de la tercera es lo que le da la forma de "tucu-TÚN".
+
+### La música: frases, no un bucle
+
+**Es la decisión que sostiene todo lo demás.** Un tema de ocho compases
+repitiéndose es insoportable a los cinco minutos, y este juego se juega mirando
+la misma pantalla un buen rato (el campamento, el pueblo). Así que no hay tema:
+hay **frases sueltas separadas por silencios**, sorteadas cada vez. No se repite
+porque no hay nada que repetir.
+
+- La **guitarra** pone una nota grave cada 5-11 s — el suelo.
+- La **armónica** pasa por arriba con frases de 2 a 4 notas cada 14-32 s.
+- **No tocan juntas a propósito.** Si sonaran a la vez y al mismo ritmo serían
+  una canción, y una canción compite con el juego. Así son dos cosas que pasan
+  en el mismo lugar.
+
+**LA ESCALA ES PENTATÓNICA MENOR**, y no sólo por el color (es la de la armónica
+de blues, la que el oído asocia con desierto). Tiene una propiedad práctica que
+acá vale más: **no tiene notas que suenen mal juntas**, así que se pueden sortear
+al azar sin que salga nunca una frase fea. Una escala mayor completa habría
+necesitado reglas de armonía.
+
+Y las frases **caminan** por la escala en vez de saltar al azar: notas
+independientes suenan a alguien probando un instrumento, moverse de a uno o dos
+escalones suena a melodía. La última nota dura el doble — una frase que termina
+cortada se oye como un error; una que se apoya al final, como una frase.
+
+**Los instrumentos son la FORMA de la nota, no la onda.** La armónica son tres
+osciladores apenas desafinados (una armónica tiene varias lengüetas y nunca están
+perfectamente afinadas; ese batido es lo que el oído reconoce) con ataque lento,
+porque es un instrumento de aire. La guitarra es ataque instantáneo, caída larga
+y **el filtro cerrándose mientras cae** — una cuerda pierde los agudos antes que
+los graves, y sin eso suena a órgano apagándose.
+
+### DÓNDE SUENA, Y DÓNDE NO
+
+**Sólo campamento y pueblo.** En el asalto y en el galope no hay música a
+propósito: ahí el sonido es INFORMACIÓN —las pisadas, el radio del oído, la
+lluvia que te dice si estás expuesto— y una melodía encima taparía justo lo que
+hay que oír. No es una limitación, es la misma regla de siempre.
+
+### UNA LECCIÓN DE MEDICIÓN QUE COSTÓ TRES INTENTOS
+
+Medir "¿cuántas notas suenan acá?" contando osciladores **no funciona**, y el
+motivo es una trampa fina: `tone()` programa la frecuencia con
+`setValueAtTime` para un instante futuro, así que **al arrancar el oscilador
+`frequency.value` todavía lee 440**, el valor por defecto. Y 440 es La, o sea una
+nota de la escala. Resultado: cada disparo de un jinete contaba como nota de
+armónica, y el galope parecía tener música.
+
+Filtrar el 440 tampoco alcanzó (`293,66 × 1,5 = 440,5` volvía a atraparlo). Lo
+que resolvió la pregunta fue **mirar la estructura en vez del sonido**:
+`updateMusica` se llama desde exactamente dos lugares (`campScene.js` y
+`townScene.js`) y de ningún otro, así que en las demás escenas no puede generarse
+una sola nota. La verificación correcta no siempre es la más parecida a lo que
+querés saber.
+
+### VERIFICADO POR CONSOLA
+
+- **90 s de campamento: 9 notas de guitarra y 17 de armónica**, todas de la
+  escala (se listaron las frecuencias y ninguna quedó fuera).
+- **`updateMusica` se llama desde dos lugares y sólo dos** — verificado por
+  búsqueda en todo el proyecto.
+- El ciclo completo del juego, de día y de noche, con y sin tormenta: **sin un
+  error de consola**.
+
+**Y sigue sin escucharse desde acá.** Las perillas están en `CONFIG.ambiente`
+(`armonicaCada`, `armonicaVariacion`, `guitarraCada`, y los dos volúmenes). Si
+algo molesta, **lo primero a probar es ALARGAR los silencios, no bajar el
+volumen**: los silencios son el instrumento más importante de los dos.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

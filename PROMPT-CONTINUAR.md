@@ -117,6 +117,27 @@ apuntaban al mismo error: **sonido regular = sonido de máquina**.
   SILENCIO entre zancadas, no la zancada. El total de pisadas quedó igual que
   antes: no se bajó la cantidad, se la agrupó.
 
+### 7. Los cascos más fuertes, y hay música
+
+- **Los cascos subieron ×2,6** *(Santi: "quedaron muy bajos en volumen")*. El
+  criterio estaba mal, no el número: se habían elegido con la regla de "un fondo
+  que se nota deja de ser un fondo", y **los cascos no son un fondo, son el
+  personaje**. Perilla nueva: `zancadaVolumen`.
+- **Hay una armónica y una guitarra, y por eso mismo NO hay un tema.** Son frases
+  sueltas separadas por silencios, sorteadas de una escala pentatónica menor (que
+  no tiene notas que suenen mal juntas, así que el azar nunca saca una frase
+  fea). Un bucle de ocho compases sería insoportable en una pantalla donde te
+  quedás un rato.
+- **Suena sólo en el campamento y el pueblo.** En el asalto y el galope no, a
+  propósito: ahí el sonido es información.
+
+> Y una lección de medición: contar osciladores para saber "¿cuántas notas suenan
+> acá?" NO funciona. `tone()` programa la frecuencia para un instante futuro, así
+> que al arrancar `frequency.value` todavía lee **440** — que es La, o sea una
+> nota de la escala. Cada disparo contaba como música. Lo que resolvió la
+> pregunta fue mirar la ESTRUCTURA (`updateMusica` se llama desde dos lugares y
+> sólo dos), no el sonido.
+
 ## ⚠️ EL SONIDO CASI NO SE ESCUCHÓ
 
 Es la advertencia más importante de esta sesión. Se verificó por consola que las
@@ -165,6 +186,11 @@ pasillo, y el 25%). **Lo demás no se jugó nunca.**
 - **¿Se elige el tren por el clima?** Es lo que el cambio busca: que la lluvia en
   el mapa sea un motivo para tomar ESA vía. Si eso no pasa jugando, el clima
   sigue siendo decorado.
+- **¿La música cansa?** Si molesta, **lo primero a probar es ALARGAR los
+  silencios (`armonicaCada`, `guitarraCada`), no bajar el volumen**: los
+  silencios son el instrumento más importante de los dos. Y si suena a alguien
+  probando el instrumento en vez de a una melodía, la perilla es cuántas notas
+  tiene cada frase (`tocarFrase` en engine/audio.js).
 - **¿Los 3,2 s de la puerta que él abre se usan, o no se notan?** Es la jugada
   más escondida de todo lo que se construyó.
 - **¿El cielo del pueblo y las sombras del campamento cambian algo de verdad?**
@@ -327,10 +353,10 @@ Dinamitero sigue en 0 a propósito.
 
 ## Lo que falta
 
-- **Música.** Es lo único que queda del sonido: no hay un solo tema, y una
-  armónica o una guitarra sintetizada es lo que más cambiaría cómo se siente el
-  juego. Es un problema distinto del ruido ambiente — se dejó afuera a propósito
-  para no terminar las dos cosas a medias.
+- **Música en el asalto y el galope**, si alguna vez se quiere. Hoy suena sólo en
+  el campamento y el pueblo, y afuera de ahí se dejó vacío A PROPÓSITO: en el
+  asalto el sonido es información y una melodía taparía lo que hay que oír. Si
+  se agrega, tendría que apagarse sola con la alarma.
 - **El galope no tiene paisaje.** No puede tener cielo (la cámara nunca sube más
   allá del techo del tren), y el degradado en el suelo ya se probó y se descartó
   — se lee como rayas pintadas. Lo que le falta son **siluetas de meseta en la

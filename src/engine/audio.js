@@ -104,6 +104,92 @@ export function createAudio() {
     osc.stop(t + duration + 0.02);
   }
 
+  /**
+   * --- LOS DOS INSTRUMENTOS ---
+   *
+   * *(Santi: "me gustaría que añadieras una pequeña armónica y una guitarra de
+   * fondo")*
+   *
+   * Siguen la misma regla que todo el audio del juego: no hay un solo archivo,
+   * son osciladores. Lo que los hace sonar a instrumento y no a pitido es la
+   * FORMA DE LA NOTA, no la onda — el ataque, la caída y qué armónicos deja
+   * pasar el filtro.
+   */
+
+  /**
+   * LA ARMÓNICA. Tres osciladores apenas desafinados entre sí.
+   *
+   * Ese desafine es todo el truco: una armónica tiene varias lengüetas sonando
+   * juntas y nunca están perfectamente afinadas, y ese batido es lo que el oído
+   * reconoce. Con un solo oscilador esto sería un pitido de consola.
+   *
+   * El ataque es LENTO (60 ms) porque es un instrumento de aire: el sonido
+   * empieza cuando el aire ya está pasando, no de golpe como una cuerda.
+   */
+  function armonica(freq, duracion, gain, delay = 0) {
+    if (!ctx) return;
+    const t = now() + delay;
+
+    const filtro = ctx.createBiquadFilter();
+    filtro.type = 'bandpass';
+    filtro.frequency.value = freq * 2.2;
+    filtro.Q.value = 1.4;
+
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(0.0001, t);
+    amp.gain.exponentialRampToValueAtTime(gain, t + 0.06);
+    amp.gain.setValueAtTime(gain, t + duracion * 0.55);
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + duracion);
+
+    for (const [mult, tipo, parte] of [[1, 'square', 0.5], [1.004, 'sawtooth', 0.32], [0.996, 'square', 0.28]]) {
+      const osc = ctx.createOscillator();
+      osc.type = tipo;
+      osc.frequency.value = freq * mult;
+      const g = ctx.createGain();
+      g.gain.value = parte;
+      osc.connect(g).connect(filtro);
+      osc.start(t);
+      osc.stop(t + duracion + 0.05);
+    }
+    filtro.connect(amp).connect(master);
+  }
+
+  /**
+   * LA GUITARRA. Una cuerda pulsada: ataque instantáneo y caída larga.
+   *
+   * Es la forma opuesta a la armónica, y por eso se distinguen aunque sean los
+   * mismos osciladores. Acá el filtro además SE CIERRA mientras la nota cae —
+   * una cuerda pierde los agudos antes que los graves, y sin eso la nota suena
+   * a órgano apagándose en vez de a cuerda.
+   */
+  function guitarra(freq, duracion, gain, delay = 0) {
+    if (!ctx) return;
+    const t = now() + delay;
+
+    const filtro = ctx.createBiquadFilter();
+    filtro.type = 'lowpass';
+    filtro.frequency.setValueAtTime(freq * 6, t);
+    filtro.frequency.exponentialRampToValueAtTime(Math.max(120, freq * 1.4), t + duracion * 0.7);
+    filtro.Q.value = 0.8;
+
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(0.0001, t);
+    amp.gain.exponentialRampToValueAtTime(gain, t + 0.006);
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + duracion);
+
+    for (const [mult, tipo, parte] of [[1, 'sawtooth', 0.55], [1, 'triangle', 0.4], [2.01, 'triangle', 0.12]]) {
+      const osc = ctx.createOscillator();
+      osc.type = tipo;
+      osc.frequency.value = freq * mult;
+      const g = ctx.createGain();
+      g.gain.value = parte;
+      osc.connect(g).connect(filtro);
+      osc.start(t);
+      osc.stop(t + duracion + 0.05);
+    }
+    filtro.connect(amp).connect(master);
+  }
+
   const sfx = {
     playerShot() {
       noise({ duration: 0.14, cutoff: 3200, endCutoff: 240, gain: 0.5 });
@@ -260,9 +346,16 @@ export function createAudio() {
      * oyen tres golpes iguales y vuelve a sonar a máquina, sólo que de a tres.
      */
     zancada() {
-      noise({ duration: 0.045, cutoff: 400, endCutoff: 100, gain: 0.085 });
-      noise({ duration: 0.045, cutoff: 360, endCutoff: 95,  gain: 0.075, delay: 0.085 });
-      noise({ duration: 0.065, cutoff: 300, endCutoff: 70,  gain: 0.125, delay: 0.175 });
+      // 🔺 El volumen salió a una perilla (`CONFIG.ambiente.zancadaVolumen`)
+      // porque la primera versión quedó muy baja jugándola — *(Santi: "el
+      // sonido de los cascos del caballo quedaron muy bajos en volumen")*. Las
+      // tres pisadas se mueven JUNTAS: lo que hay que poder cambiar es cuánto
+      // se oye el caballo, no el equilibrio interno de la zancada, que es lo
+      // que le da la forma de "tucu-TÚN".
+      const v = CONFIG.ambiente.zancadaVolumen;
+      noise({ duration: 0.045, cutoff: 400, endCutoff: 100, gain: 0.085 * v });
+      noise({ duration: 0.045, cutoff: 360, endCutoff: 95,  gain: 0.075 * v, delay: 0.085 });
+      noise({ duration: 0.065, cutoff: 300, endCutoff: 70,  gain: 0.125 * v, delay: 0.175 });
     },
 
     /**
@@ -446,6 +539,98 @@ export function createAudio() {
     for (const [nombre, receta] of [...capasPendientes]) ambiente(nombre, receta);
   }
 
+  /**
+   * --- LA MÚSICA ---
+   *
+   * NO ES UN BUCLE, Y ÉSA ES LA DECISIÓN QUE LA SOSTIENE. Un tema de ocho
+   * compases repitiéndose es insoportable a los cinco minutos, y este juego se
+   * juega en sesiones largas mirando la misma pantalla (el campamento, el
+   * pueblo). Así que no hay tema: hay **frases sueltas separadas por
+   * silencios**, sorteadas de una escala.
+   *
+   * LA ESCALA ES PENTATÓNICA MENOR, que es la de la armónica de blues y la que
+   * el oído asocia sin pensarlo con desierto y soledad. Y tiene una propiedad
+   * que acá importa más que su color: **no tiene notas que suenen mal juntas**,
+   * así que se pueden sortear al azar sin que salga nunca una frase fea. Una
+   * escala mayor completa necesitaría reglas de armonía; ésta no necesita
+   * ninguna.
+   *
+   * LOS DOS INSTRUMENTOS NO TOCAN JUNTOS a propósito: la guitarra pone una nota
+   * grave cada tanto —el suelo— y la armónica pasa por arriba con frases
+   * cortas. Si sonaran a la vez y al mismo ritmo serían una canción, y una
+   * canción compite con el juego. Así son dos cosas que pasan en el mismo lugar.
+   */
+
+  /** La menor pentatónica: A, C, D, E, G, en dos octavas. */
+  const ESCALA = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
+  /** Las graves para la guitarra: A2, D3, E3, y la quinta. */
+  const GRAVES = [110.00, 146.83, 164.81, 130.81];
+
+  let musicaOn = false;
+  let armonicaTimer = 0;
+  let guitarraTimer = 0;
+
+  function arrancarMusica() {
+    musicaOn = true;
+    // No arrancan las dos juntas ni de inmediato: entrar a una pantalla y que
+    // te reciba un acorde se siente a menú, no a lugar.
+    armonicaTimer = 4 + Math.random() * 6;
+    guitarraTimer = 1.5 + Math.random() * 3;
+  }
+
+  function pararMusica() {
+    musicaOn = false;
+  }
+
+  /**
+   * El reloj va por `dt` desde la escena, igual que el trueno: así se para solo
+   * cuando la escena se para.
+   */
+  function updateMusica(dt) {
+    if (!musicaOn || !ctx || !CONFIG.audio.enabled) return;
+    const m = CONFIG.ambiente;
+
+    guitarraTimer -= dt;
+    if (guitarraTimer <= 0) {
+      guitarraTimer = m.guitarraCada + Math.random() * m.guitarraVariacion;
+      const raiz = GRAVES[Math.floor(Math.random() * GRAVES.length)];
+      guitarra(raiz, 1.6, m.guitarraVolumen);
+      // A veces una segunda nota, como quien puntea sin ganas. Nunca las dos
+      // iguales de seguido: eso ya sería un ritmo.
+      if (Math.random() < 0.45) {
+        guitarra(raiz * 1.5, 1.2, m.guitarraVolumen * 0.7, 0.55 + Math.random() * 0.3);
+      }
+    }
+
+    armonicaTimer -= dt;
+    if (armonicaTimer <= 0) {
+      armonicaTimer = m.armonicaCada + Math.random() * m.armonicaVariacion;
+      tocarFrase(m);
+    }
+  }
+
+  /**
+   * Una frase de 2 a 4 notas que CAMINA por la escala en vez de saltar al azar.
+   *
+   * Notas sorteadas independientes suenan a alguien probando un instrumento;
+   * moverse de a uno o dos escalones desde la anterior es lo que las convierte
+   * en una melodía. Y la última dura el doble: una frase que termina cortada se
+   * oye como un error, una que se apoya al final se oye como una frase.
+   */
+  function tocarFrase(m) {
+    const cuantas = 2 + Math.floor(Math.random() * 3);
+    let i = Math.floor(Math.random() * ESCALA.length);
+    let cuando = 0;
+    for (let n = 0; n < cuantas; n++) {
+      const ultima = n === cuantas - 1;
+      const dur = ultima ? 0.85 + Math.random() * 0.5 : 0.3 + Math.random() * 0.25;
+      armonica(ESCALA[i], dur, m.armonicaVolumen * (ultima ? 1 : 0.85), cuando);
+      cuando += dur * (ultima ? 1 : 0.75 + Math.random() * 0.4);
+      const paso = (Math.random() < 0.5 ? 1 : -1) * (1 + Math.floor(Math.random() * 2));
+      i = Math.max(0, Math.min(ESCALA.length - 1, i + paso));
+    }
+  }
+
   /** Fondo continuo: el traqueteo del tren. Es lo que hace que el vagón viva. */
   function startAmbience() {
     wantAmbience = true;
@@ -475,6 +660,10 @@ export function createAudio() {
     volumen,
     quitarAmbiente,
     quitarTodoElAmbiente,
+    /** La música: frases sueltas, no un bucle. Ver la nota de `updateMusica`. */
+    arrancarMusica,
+    pararMusica,
+    updateMusica,
     /** Toca un efecto por nombre; si el audio no arrancó todavía, no pasa nada. */
     play(name) {
       if (!ctx || !CONFIG.audio.enabled) return;

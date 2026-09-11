@@ -41,14 +41,37 @@ export const CLIMA = {
    * *(del plan de Fase 2: "un multiplicador sobre hearRadius/hearStepRadius,
    * nada más — la separé de 'noche' a propósito, es mucho más barata")*
    *
-   * Se aplica en `construirPerfilIA` (world/train.js), el mismo lugar donde
-   * ya se combinan los overrides de dificultad y el `sospechaMult` del tipo
-   * de tren — no es un sistema aparte.
+   * Se aplica en `buildTrain` (world/train.js): el alcance del oído es una
+   * propiedad del RUIDO y vive en el tren, no en cada guardia.
+   *
+   * 🔻 IBA PARA EL LADO CONTRARIO. Era `1.4` —o sea que con tormenta te oían un
+   * 40% MÁS LEJOS— desde la Fase 1, y nunca se escribió por qué. La única
+   * entrada posterior de las notas arregló la cañería (el multiplicador no se
+   * estaba aplicando en ningún lado), no la dirección.
+   *
+   * *(Santi: "la tormenta debería hacer lo contrario. Debería hacer que los
+   * guardias oigan menos al jugador")* — y es lo obvio apenas se dice en voz
+   * alta: **la lluvia y los truenos TAPAN el ruido**. Que te delataran más era
+   * al revés de lo que pasa afuera de la pantalla.
+   *
+   * Y CAMBIA LO QUE LA TORMENTA SIGNIFICA. Antes era "este tren es más
+   * difícil"; ahora es "en este tren se entra callado". Como el clima **se ve
+   * en el mapa antes de elegir la vía**, pasa de ser una lotería que sufrís a
+   * una decisión que tomás: te esperás la lluvia para hacer el trabajo limpio.
+   *
+   * 0,55 con `hearRadius` 230 y `hearStepRadius` 58 deja el disparo en 127 px
+   * (8 baldosas, contra 14) y las pisadas en 32 px (2 baldosas): **casi hay que
+   * estar al lado tuyo para oírte caminar**.
+   *
+   * LO QUE NO TOCA, y es lo que lo mantiene acotado: a cuántos VAGONES despierta
+   * un disparo. Eso es `noiseWagons` (del arma) y `ruidoExtra` (del tipo de
+   * tren), aparte. Un tiro en una tormenta sigue despertando lo mismo — la
+   * tormenta te ayuda a MOVERTE, no a tirotear.
    */
   tormenta: {
     id: 'tormenta',
     peso: 20,
-    hearMult: 1.4,
+    hearMult: 0.55,
     color: '#7a8a9c',
   },
 };

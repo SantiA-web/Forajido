@@ -904,12 +904,32 @@ ya tienen su propia identidad, y mezclarlas la borraría.)
 
 | | Qué pasa |
 |---|---|
-| **Tormenta** | Se oye más: un disparo o tus pasos llegan un 40% más lejos. Y **se oye**: lluvia sobre la chapa del techo y truenos (ver abajo) |
+| **Tormenta** | **Te tapa**: la lluvia se come el ruido, así que te oyen mucho menos. Y se oye de verdad — lluvia sobre la chapa del techo y truenos (ver abajo) |
 | **Alerta ya activada** | Subís con la alarma sonando, antes de hacer nada. Es el que más caro se paga, así que es el más raro |
 | **Redada** | Más guardias (cada patrulla viene duplicada) **y** pelean mejor. Sólo si ya pagan bien por tu cabeza |
 | **Puerta bloqueada** | Una, dos o tres puertas vienen **trabadas**: empujarlas no las abre, hay que romperlas a tiros. Nunca sabés cuáles ni cuántas |
 
-#### Y la tormenta te dice cuándo estás expuesto
+#### La tormenta es la noche del ladrón
+
+**La lluvia tapa el ruido**, así que con tormenta te oyen bastante menos:
+
+| | Despejado | Tormenta |
+|---|---|---|
+| Un disparo se oye a | 14 baldosas | **8** |
+| Tus pasos, a | 3,6 baldosas | **2** |
+
+Medido con un guardia quieto y de espaldas: **pegado a él te oye catorce veces
+menos, y a dos baldosas y media ya no te oye nada**. Caminar deja de delatarte.
+
+> **Y el clima se ve en el mapa antes de elegir la vía**, así que la tormenta no
+> es una lotería que sufrís: es una decisión. Esperar el tren con lluvia para
+> hacer el trabajo limpio es una jugada.
+
+**Lo que NO cambia** es a cuántos vagones despierta un disparo — eso lo deciden
+tu arma y el tipo de tren, y siguen igual. La tormenta te ayuda a **moverte**,
+no a tirotear.
+
+#### Y además te dice cuándo estás expuesto
 
 La lluvia no suena igual en todos lados, y ahí está lo que la hace útil además
 de linda:

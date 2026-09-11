@@ -10039,6 +10039,64 @@ jugara, no de una medición. Es el camino que va a seguir teniendo el sonido.
 
 ---
 
+## 🐛 ARREGLADA · La tormenta iba para el lado contrario
+
+*(Santi: "la tormenta debería hacer lo contrario. Debería hacer que los guardias
+oigan menos al jugador")*
+
+`hearMult` era **1,4** — con tormenta te oían un 40% MÁS LEJOS. Y es al revés de
+lo que pasa afuera de la pantalla: **la lluvia y los truenos tapan el ruido**.
+
+**Nunca se escribió por qué iba en esa dirección.** Se puso en la Fase 1 junto
+con la arquitectura de modificadores, y la única entrada posterior de estas notas
+("Tormenta no hacía nada") arregló **la cañería** —el multiplicador no se estaba
+aplicando en ningún lado— no la dirección. O sea que se verificó con cuidado que
+un número estuviera llegando bien, sin preguntarse si el número estaba bien.
+
+### Lo que cambia no es un número, es lo que la tormenta SIGNIFICA
+
+Antes: *"este tren es más difícil"*. Ahora: *"en este tren se entra callado"*.
+
+Y como **el clima se ve en el mapa antes de elegir la vía**, eso la saca de ser
+una lotería que sufrís y la convierte en una decisión: esperar el tren con lluvia
+para hacer el trabajo limpio. Es la primera vez que el clima es información
+sobre la que se actúa y no un modificador que te toca.
+
+De paso queda atada a lo que se construyó en la sesión anterior: **la tormenta
+ahora se oye, y lo que oís es justamente lo que te está tapando.**
+
+### El número, y lo que NO toca
+
+0,55, elegido sobre una tabla de tres (0,85 / 0,7 / 0,55). Con `hearRadius` 230
+y `hearStepRadius` 58 queda en 127 y 32 px.
+
+| | Despejado | Tormenta |
+|---|---|---|
+| Disparo | 230 px (14,4 baldosas) | **127 px (7,9)** |
+| Pisadas | 58 px (3,6) | **32 px (2,0)** |
+
+**No toca a cuántos VAGONES despierta un disparo** — eso es `noiseWagons` (del
+arma) y `ruidoExtra` (del tipo de tren), aparte. Un tiro en una tormenta sigue
+despertando lo mismo. Es lo que mantiene el modificador acotado: **te ayuda a
+moverte, no a tirotear.**
+
+### VERIFICADO POR CONSOLA
+
+Interceptando el evento de ruido de un disparo REAL: `radius` 127 con tormenta
+contra 230 despejado. Y con un guardia quieto y de espaldas, midiendo cuánta
+sospecha acumula en 4 segundos de caminata:
+
+| Distancia | Despejado | Tormenta |
+|---|---|---|
+| 20 px (pegado) | 2,829 | **0,198** — catorce veces menos |
+| 30 px | 0,144 | **0** |
+| 45 px | 0,019 | **0** |
+
+O sea que a dos baldosas y media ya no te oye nada. **0,55 tapa fuerte de
+verdad**, que era lo que decía la opción elegida.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

@@ -158,6 +158,13 @@ pasillo, y el 25%). **Lo demás no se jugó nunca.**
   son `CONFIG.ambiente` y `CONFIG.tormenta`, y casi seguro hay que bajarlas.
 - **¿Se nota al cruzar un enganche que cambia la lluvia?** Es la única parte del
   sonido que además es información.
+- **¿La tormenta quedó DEMASIADO buena?** `hearMult` pasó de 1,4 a **0,55** y
+  ahora es la noche del ladrón: a dos baldosas y media un guardia ya no te oye
+  caminar. Se eligió el valor más fuerte de tres a propósito. Si un vagón con un
+  solo guardia se vuelve trivial, la perilla está en `data/modifiers.js`.
+- **¿Se elige el tren por el clima?** Es lo que el cambio busca: que la lluvia en
+  el mapa sea un motivo para tomar ESA vía. Si eso no pasa jugando, el clima
+  sigue siendo decorado.
 - **¿Los 3,2 s de la puerta que él abre se usan, o no se notan?** Es la jugada
   más escondida de todo lo que se construyó.
 - **¿El cielo del pueblo y las sombras del campamento cambian algo de verdad?**
@@ -299,7 +306,11 @@ pasa al tren estándar (`tipoTren.modificadores`).
 
 ### Lo que está prendido y jugable hoy
 
-- **Clima**: tormenta (se oye 40% más lejos), 20% de los trenes estándar.
+- **Clima**: tormenta (20% de los trenes estándar). **Te TAPA**: `hearMult` 0,55,
+  o sea que te oyen la mitad de lejos. Iba al revés (1,4) desde la Fase 1 y nadie
+  lo había cuestionado. Y como el clima se ve en el mapa antes de elegir la vía,
+  la tormenta pasó a ser una decisión —esperarla para entrar callado— en vez de
+  una lotería que sufrís.
 - **Estado del tren**: alerta ya activada (10%), redada (15%, sólo con
   recompensa ≥250), puerta bloqueada (15%).
 - **Comportamiento por vagón**: conversando / vigilando puerta / vigilando caja.

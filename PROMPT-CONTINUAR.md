@@ -99,7 +99,25 @@ era **un solo número** (`hearMult: 1.4`): te cambiaba el sigilo y no se oía.
   apagada), **pueblo**, **mapa** (lo más callado: es un papel, no un lugar) y
   **galope** (viento + cascos, con la cadencia atada a la velocidad del caballo).
 
-## ⚠️ EL SONIDO NO SE ESCUCHÓ NUNCA
+### 6. Dos arreglos de sonido salidos de escucharlo
+
+Los primeros que vinieron del oído y no de una medición. Los dos diagnósticos
+apuntaban al mismo error: **sonido regular = sonido de máquina**.
+
+- *"El viento parece un disco rayado"* — y era literalmente eso: ruido filtrado a
+  volumen constante. Lo que hace que se lea como aire no es el filtro, es que
+  VARÍE. Ahora dos osciladores lentos de períodos que no encajan (6,5 y 10,5 s)
+  modulan el volumen **y el filtro** — una ráfaga real además se abre, no es sólo
+  más fuerte. Y como cae casi a cero entre ráfagas, el viento dejó de ser
+  permanente. Perillas: `vientoProfundidad` y `vientoCada`.
+- *"Los cascos galopan muy rápido, debería ser tucutún-tucutún"* — el error era
+  conceptual: **la unidad no es el casco, es la zancada**. Un cuadrúpedo pisa en
+  grupos y después hay silencio (las cuatro patas en el aire). Ahora son tres
+  pisadas apretadas con la tercera acentuada, y lo que se estira al aflojar es el
+  SILENCIO entre zancadas, no la zancada. El total de pisadas quedó igual que
+  antes: no se bajó la cantidad, se la agrupó.
+
+## ⚠️ EL SONIDO CASI NO SE ESCUCHÓ
 
 Es la advertencia más importante de esta sesión. Se verificó por consola que las
 capas existen, que los volúmenes cambian cuando corresponde, que la cadencia de

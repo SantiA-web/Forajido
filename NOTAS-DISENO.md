@@ -9957,6 +9957,88 @@ fondo.
 
 ---
 
+## ✅ HECHA · El viento respira y el caballo galopa como un cuadrúpedo
+
+Los dos primeros arreglos de sonido salidos de **escucharlo**, que es lo que
+faltaba en la entrada anterior. Los dos diagnósticos de Santi fueron exactos y
+los dos apuntaban al mismo error de fondo: **sonido regular = sonido de
+máquina**.
+
+### 1. El viento sonaba a disco rayado
+
+*(Santi: "el 'viento' no debería estar como sonido permanente y además no parece
+sonido de viento, sino como que fuera un disco rayado")*
+
+Y es literalmente lo que era: **ruido blanco filtrado a volumen constante**. Lo
+que hace que el oído lea "aire moviéndose" no es el filtro — es que VARÍE. Un
+nivel fijo se lee como estática o como vinilo rayado, que es exactamente la
+palabra que usó.
+
+El arreglo (`soplar`, engine/audio.js):
+
+- **Dos osciladores lentos con períodos que no encajan** (6,5 s y 10,5 s). Con
+  uno solo el viento sube y baja como un metrónomo y se oye el bucle; con dos
+  que nunca coinciden, la suma no se repite de forma audible. Es el mismo truco
+  que el juego ya usaba para el latido de la fogata (`sin(scroll*7) +
+  sin(scroll*13)` en campScene), sólo que en el grafo de audio.
+- **Sopla también sobre el FILTRO, no sólo sobre el volumen.** Una ráfaga real
+  no es "lo mismo más fuerte": además se abre, se vuelve más aguda. Modular las
+  dos cosas juntas es lo que separa una ráfaga de una perilla de volumen.
+- **Y con `profundidad` en 0,85 el fondo casi desaparece entre ráfagas**, que
+  resuelve la otra mitad del pedido: el viento deja de ser permanente sin que
+  nadie lo apague. Con 0 vuelve a ser el disco rayado.
+
+Va en todas las capas de viento (el desierto del campamento y del mapa, la calle
+del pueblo, el viento del galope y el de la tormenta). **No** en el traqueteo del
+tren ni en la chapa bajo la lluvia: ésos son constantes por naturaleza, y
+hacerlos respirar sonaría mal al revés.
+
+### 2. El caballo sonaba a máquina de coser
+
+*(Santi: "los cascos del caballo galopan muy rápido. Hoy es más un
+'tuc-tuc-tuc-tuc-tuc' rápido, y debería ser un 'tucutún-tucutún' más pausado y
+acorde a un cuadrúpedo")*
+
+El error era conceptual, no de número: **la unidad no es el casco, es la
+ZANCADA**. Un animal de cuatro patas no pisa a intervalos iguales — pisa en
+GRUPOS y después hay un silencio, que es el momento en que las cuatro patas
+están en el aire. Golpes parejos suenan a máquina por más que se les baje la
+velocidad.
+
+Ahora `zancada()` toca **tres pisadas apretadas** (0 / 85 / 175 ms) y el silencio
+lo pone el intervalo hasta la próxima. **La tercera va acentuada** —más grave y
+más fuerte—: es la que hace el "TÚN" y la que convierte tres ruiditos en un ritmo
+con forma. Sin ella se oyen tres golpes iguales y vuelve a sonar a máquina, sólo
+que de a tres.
+
+Y lo que se estira al aflojar **es el silencio entre zancadas, no la zancada**:
+las tres pisadas de adentro van siempre igual de juntas, porque eso es el ANDAR
+del animal y no su velocidad. Un caballo más lento no pisa en cámara lenta — da
+menos zancadas.
+
+> **El total de pisadas quedó igual que antes** (3,6 por segundo a galope contra
+> 3,7 de la versión vieja). No se bajó la cantidad: se la agrupó. Lo que cambia
+> no es cuánto suena sino qué FORMA tiene, y eso solo es lo que lo convierte en
+> un animal.
+
+### VERIFICADO POR CONSOLA
+
+- **Zancadas: 1,2 por segundo galopando, 0,8 al trote, 0,4 aflojando** (o sea
+  3,6 / 2,4 / 1,2 pisadas).
+- **Los LFOs del soplido existen y tienen los períodos correctos** (6,5 y 10,5 s,
+  que no coinciden).
+- **No se filtra ni un oscilador**: tres vueltas completas al ciclo del juego
+  (campamento → mapa → galope → asalto → pueblo → campamento), de día y de
+  noche, con y sin tormenta, y la cuenta de LFOs vivos sube y baja bien —
+  siempre 2, salvo el galope con tormenta que tiene 4 (dos capas de viento) y el
+  asalto despejado que tiene 0 (ni el traqueteo ni la chapa respiran). Sin
+  errores de consola.
+
+**Sigue sin escucharse desde acá** — estos dos arreglos salieron de que Santi lo
+jugara, no de una medición. Es el camino que va a seguir teniendo el sonido.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

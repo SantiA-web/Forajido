@@ -229,7 +229,11 @@ export function createMapScene(services) {
      * más bajo todavía — lo justo para que abrir el cartel no corte el mundo.
      */
     audio.ambiente('desierto', { cutoff: 300, q: 0.6, type: 'lowpass',
-      gain: CONFIG.ambiente.mapaGain });
+      gain: CONFIG.ambiente.mapaGain,
+      respira: {
+        profundidad: CONFIG.ambiente.vientoProfundidad,
+        cada: CONFIG.ambiente.vientoCada,
+      } });
 
     if (!rutas) {
       prepararRutas();

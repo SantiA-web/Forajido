@@ -257,9 +257,11 @@ export function createCampScene(services) {
   function arrancarSonido() {
     const a = CONFIG.ambiente;
     const dia = gameState.esDeDia;
-    // El desierto: viento grave, siempre.
+    // El desierto: viento grave, en ráfagas. Sin el `respira` esto es estática
+    // — ver `soplar` en engine/audio.js.
     audio.ambiente('desierto', { cutoff: 300, q: 0.6, type: 'lowpass',
-      gain: dia ? a.campDiaGain : a.campNocheGain });
+      gain: dia ? a.campDiaGain : a.campNocheGain,
+      respira: { profundidad: a.vientoProfundidad, cada: a.vientoCada } });
     if (dia) {
       audio.quitarAmbiente('fuego');
     } else {

@@ -1862,6 +1862,14 @@ Hay dos clases de sonido y se manejan distinto:
   `audio.volumen`). Es lo que permite que la lluvia cambie al salir del vagón
   en vez de prenderse y apagarse de golpe.
 
+**Y el viento respira.** Ruido filtrado a volumen constante no suena a aire:
+suena a estática, a disco rayado. Lo que hace que el oído lea "viento" no es el
+filtro sino que **varíe** — así que las capas de viento van moduladas por dos
+osciladores lentos de períodos que no encajan (6,5 y 10,5 segundos), sobre el
+volumen **y** sobre el filtro: una ráfaga real no es lo mismo más fuerte,
+además se abre. Y entre ráfaga y ráfaga casi no queda nada, así que el viento
+nunca es un fondo permanente.
+
 **Cada lugar suena a lo suyo**, y el fondo dice cosas que no están escritas:
 
 | Dónde | Qué se oye |
@@ -1869,7 +1877,7 @@ Hay dos clases de sonido y se manejan distinto:
 | **El campamento** | El desierto, y **la fogata sólo de noche** — porque de día está apagada, que es el reloj del juego |
 | **El pueblo** | La calle. De noche, más callada |
 | **El mapa** | Casi nada: es un papel que mirás en tu campamento, no un lugar |
-| **El galope** | El viento, y **los cascos**, cuyo ritmo sigue a lo que corre el caballo: galope, trote y aflojando suenan distinto |
+| **El galope** | El viento, y **las zancadas** — un "tucu-TÚN" de tres pisadas y después silencio, no un pulso parejo: un cuadrúpedo no pisa a intervalos iguales. El ritmo sigue a lo que corre el caballo |
 | **El asalto** | El traqueteo y el clac-clac de las juntas de la vía |
 
 ## Lo que todavía NO existe (a propósito)

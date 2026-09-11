@@ -75,6 +75,10 @@ export function createTownScene(services) {
     audio.ambiente('calle', {
       cutoff: 340, q: 0.6, type: 'lowpass',
       gain: gameState.esDeDia ? CONFIG.ambiente.puebloDiaGain : CONFIG.ambiente.puebloNocheGain,
+      respira: {
+        profundidad: CONFIG.ambiente.vientoProfundidad,
+        cada: CONFIG.ambiente.vientoCada,
+      },
     });
 
     // Para depurar desde la consola: FORAJIDO.services.town

@@ -240,16 +240,29 @@ export function createAudio() {
     },
 
     /**
-     * UN CASCO CONTRA LA TIERRA. Corto, grave y seco.
+     * UNA ZANCADA ENTERA — el "tucu-TÚN", no un tic.
      *
-     * No es un golpe fuerte: son cuatro por zancada y suenan todo el galope, así
-     * que cualquier cosa con cuerpo se vuelve insoportable en diez segundos. Lo
-     * que tiene que hacer es marcar el RITMO — que se oiga cuándo el caballo
-     * está lanzado y cuándo aflojó— y para eso alcanza con un `thump` apenas
-     * audible. El volumen real lo pone la cadencia, no cada golpe.
+     * *(Santi, jugándolo: "los cascos del caballo galopan muy rápido. Hoy es más
+     * un 'tuc-tuc-tuc-tuc-tuc' rápido, y debería ser un 'tucutún-tucutún' más
+     * pausado y acorde a un cuadrúpedo")*
+     *
+     * 🐛 LA PRIMERA VERSIÓN TOCABA UN GOLPE SUELTO cada X segundos, parejo. Eso
+     * no es un caballo: **un animal de cuatro patas no pisa a intervalos
+     * iguales**. Un galope es un GRUPO de pisadas juntas y después un silencio —
+     * el momento en que las cuatro patas están en el aire. Golpes parejos suenan
+     * a máquina, y era exactamente lo que se oía.
+     *
+     * Así que la unidad no es el casco: es la ZANCADA. Tres pisadas apretadas
+     * (0 / 85 / 175 ms) y el silencio lo pone el intervalo hasta la próxima.
+     *
+     * LA TERCERA ES LA ACENTUADA — más grave y más fuerte. Es la que hace el
+     * "TÚN" y la que convierte tres ruiditos en un ritmo con forma; sin ella se
+     * oyen tres golpes iguales y vuelve a sonar a máquina, sólo que de a tres.
      */
-    casco() {
-      noise({ duration: 0.05, cutoff: 380, endCutoff: 90, gain: 0.13 });
+    zancada() {
+      noise({ duration: 0.045, cutoff: 400, endCutoff: 100, gain: 0.085 });
+      noise({ duration: 0.045, cutoff: 360, endCutoff: 95,  gain: 0.075, delay: 0.085 });
+      noise({ duration: 0.065, cutoff: 300, endCutoff: 70,  gain: 0.125, delay: 0.175 });
     },
 
     /**
@@ -330,7 +343,7 @@ export function createAudio() {
     capasPendientes.set(nombre, receta);
     if (!ctx || capas.has(nombre)) return;
 
-    const { cutoff = 400, q = 1, type = 'lowpass', gain = 0.1 } = receta;
+    const { cutoff = 400, q = 1, type = 'lowpass', gain = 0.1, respira = null } = receta;
     const src = ctx.createBufferSource();
     src.buffer = noiseBuffer;
     src.loop = true;
@@ -345,7 +358,56 @@ export function createAudio() {
 
     src.connect(filter).connect(amp).connect(master);
     src.start();
-    capas.set(nombre, { src, amp, filter });
+
+    const lfos = respira ? soplar(amp, filter, gain, cutoff, respira) : [];
+    capas.set(nombre, { src, amp, filter, lfos });
+  }
+
+  /**
+   * EL VIENTO TIENE QUE RESPIRAR, O SUENA A DISCO RAYADO.
+   *
+   * *(Santi, jugándolo: "el 'viento' no debería estar como sonido permanente y
+   * además no parece sonido de viento, sino como que fuera un disco rayado")*
+   *
+   * Y tenía toda la razón: **ruido blanco filtrado a volumen constante no suena
+   * a aire, suena a estática.** Lo que hace que el oído lea "viento" no es el
+   * filtro — es que VARÍE. Un nivel fijo lo lee como una máquina.
+   *
+   * DOS OSCILADORES LENTOS Y DE PERÍODOS QUE NO ENCAJAN, que es el mismo truco
+   * que el juego ya usa para el latido de la fogata (`Math.sin(scroll*7)` +
+   * `Math.sin(scroll*13)` en campScene). Con uno solo el viento sube y baja como
+   * un metrónomo y se nota el bucle; con dos que nunca coinciden, la suma no se
+   * repite de forma audible.
+   *
+   * SOPLA TAMBIÉN SOBRE EL FILTRO, no sólo sobre el volumen. Una ráfaga real no
+   * es "lo mismo más fuerte": además se abre, se vuelve más aguda. Modular las
+   * dos cosas a la vez es lo que separa una ráfaga de una perilla de volumen.
+   *
+   * Y CON `profundidad` CERCA DE 1 EL FONDO DESAPARECE ENTRE RÁFAGA Y RÁFAGA,
+   * que es la otra mitad del pedido: el viento deja de ser permanente sin que
+   * nadie lo apague.
+   */
+  function soplar(amp, filter, base, cutoff, { profundidad = 0.7, cada = 7 }) {
+    const lfos = [];
+    // Los dos períodos son primos entre sí a propósito: 1 y 1,61 no vuelven a
+    // coincidir nunca en un tiempo que se pueda oír como repetición.
+    for (const [periodo, parte] of [[cada, 0.6], [cada * 1.61, 0.4]]) {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 1 / periodo;
+
+      const prof = ctx.createGain();
+      prof.gain.value = base * profundidad * parte;
+      osc.connect(prof).connect(amp.gain);
+      osc.start();
+      lfos.push(osc);
+
+      // Y la misma ráfaga abre el filtro: más fuerte Y más aguda.
+      const brillo = ctx.createGain();
+      brillo.gain.value = cutoff * 0.35 * parte;
+      osc.connect(brillo).connect(filter.frequency);
+    }
+    return lfos;
   }
 
   /**
@@ -368,6 +430,9 @@ export function createAudio() {
     const c = capas.get(nombre);
     if (!c) return;
     try { c.src.stop(); } catch { /* ya estaba parado */ }
+    // Los osciladores del soplido también, o quedan corriendo para siempre
+    // modulando un nodo que ya no suena.
+    for (const osc of c.lfos || []) { try { osc.stop(); } catch { /* ya estaba */ } }
     capas.delete(nombre);
   }
 

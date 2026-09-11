@@ -713,7 +713,8 @@ export function createRaidScene(services) {
     // sonar a chapa y no a "ruido agudo" — una chapa bajo la lluvia CANTA.
     audio.ambiente('chapa',  { cutoff: 2900, q: 3.2, type: 'bandpass', gain: t.chapaAdentro });
     audio.ambiente('agua',   { cutoff: 1400, q: 0.7, type: 'highpass', gain: t.aguaAdentro });
-    audio.ambiente('viento', { cutoff: 240,  q: 0.6, type: 'lowpass',  gain: t.vientoAdentro });
+    audio.ambiente('viento', { cutoff: 240,  q: 0.6, type: 'lowpass',  gain: t.vientoAdentro,
+      respira: { profundidad: CONFIG.ambiente.vientoProfundidad, cada: CONFIG.ambiente.vientoCada } });
 
     // El primer trueno no cae en el segundo cero: arrancar con un estruendo
     // pisaría el cartel de "en qué vagón caíste".

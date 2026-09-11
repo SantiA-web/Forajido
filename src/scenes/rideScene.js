@@ -596,8 +596,10 @@ export function createRideScene(services) {
    */
   function arrancarTormenta() {
     // El viento de ir rápido: está siempre, llueva o no.
+    const a = CONFIG.ambiente;
     audio.ambiente('galope', { cutoff: 420, q: 0.6, type: 'lowpass',
-      gain: CONFIG.ambiente.galopeVientoGain });
+      gain: a.galopeVientoGain,
+      respira: { profundidad: a.vientoProfundidad, cada: a.vientoCada } });
     cascoTimer = 0;
     velCaballoActual = 0;
 
@@ -607,7 +609,8 @@ export function createRideScene(services) {
 
     const t = CONFIG.tormenta;
     audio.ambiente('agua',   { cutoff: 1400, q: 0.7, type: 'highpass', gain: t.aguaAfuera * t.galopeMult });
-    audio.ambiente('viento', { cutoff: 240,  q: 0.6, type: 'lowpass',  gain: t.vientoAfuera * t.galopeMult });
+    audio.ambiente('viento', { cutoff: 240,  q: 0.6, type: 'lowpass',  gain: t.vientoAfuera * t.galopeMult,
+      respira: { profundidad: a.vientoProfundidad, cada: a.vientoCada } });
     audio.ambiente('chapa',  { cutoff: 2900, q: 3.2, type: 'bandpass', gain: t.chapaAfuera * 2 });
     truenoTimer = t.truenoCada * 0.5;
   }
@@ -659,10 +662,17 @@ export function createRideScene(services) {
     if (velocidad < 2) { cascoTimer = 0; return; }
     cascoTimer -= dt;
     if (cascoTimer > 0) return;
-    // A tope, `cascoCada`; al trote o frenando, el intervalo se estira solo.
+    /**
+     * A tope, `zancadaCada`; al trote o frenando, el intervalo se estira solo.
+     *
+     * Lo que se estira es EL SILENCIO ENTRE ZANCADAS, no la zancada misma: las
+     * tres pisadas de adentro van siempre igual de juntas, porque eso es el
+     * andar del animal y no su velocidad. Un caballo más lento no pisa en
+     * cámara lenta — da menos zancadas.
+     */
     const proporcion = Math.max(0.25, velocidad / caballo.sprintSpeed);
-    cascoTimer = CONFIG.ambiente.cascoCada / proporcion;
-    audio.play('casco');
+    cascoTimer = CONFIG.ambiente.zancadaCada / proporcion;
+    audio.play('zancada');
   }
 
   /**

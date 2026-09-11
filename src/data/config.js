@@ -1886,15 +1886,33 @@ export const CONFIG = {
     mapaGain: 0.012,
 
     /**
-     * EL GALOPE. El viento de ir rápido, y los cascos.
+     * EL GALOPE. El viento de ir rápido, y las zancadas.
      *
-     * LA CADENCIA DE LOS CASCOS SIGUE A LA VELOCIDAD, que es lo único que
-     * importa acá: es la señal de si el caballo está lanzado o aflojando, y ya
-     * existe en pantalla (la barra de aguante) pero no en el oído. `cascoCada`
-     * es el intervalo a velocidad máxima; al aflojar se estira solo.
+     * 🔻 `zancadaCada` REEMPLAZÓ A `cascoCada`, y no es un cambio de nombre.
+     * Antes se tocaba UN golpe cada 0,20 s, parejo: 3,7 por segundo, que es lo
+     * que Santi oyó como *"tuc-tuc-tuc-tuc rápido"*. Un cuadrúpedo no pisa a
+     * intervalos iguales — pisa en GRUPOS con un silencio en el medio (las
+     * cuatro patas en el aire). Ahora la unidad es la zancada entera, que ya
+     * trae sus tres pisadas adentro (ver `zancada` en engine/audio.js).
+     *
+     * 0,62 s a fondo son **1,6 zancadas por segundo**, que es el ritmo real de
+     * un caballo a galope tendido. Al trote y aflojando se estira solo.
      */
     galopeVientoGain: 0.030,
-    cascoCada: 0.20,
+    zancadaCada: 0.62,
+
+    /**
+     * CUÁNTO RESPIRA EL VIENTO — ver `soplar` en engine/audio.js.
+     *
+     * `profundidad` cerca de 1 es lo que hace que **entre ráfaga y ráfaga casi
+     * no se oiga nada**: el viento deja de ser un fondo permanente sin que nadie
+     * lo apague. Con 0 vuelve a ser el disco rayado de antes.
+     *
+     * `cada` son los segundos de la ráfaga larga; adentro hay otra de período
+     * distinto para que la suma no se repita de forma audible.
+     */
+    vientoProfundidad: 0.85,
+    vientoCada: 6.5,
   },
 
   colors: {

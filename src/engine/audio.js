@@ -155,12 +155,25 @@ export function createAudio() {
   }
 
   /**
-   * LA GUITARRA. Una cuerda pulsada: ataque instantáneo y caída larga.
+   * LA GUITARRA CRIOLLA. Cuerda de nailon, no de acero.
    *
-   * Es la forma opuesta a la armónica, y por eso se distinguen aunque sean los
-   * mismos osciladores. Acá el filtro además SE CIERRA mientras la nota cae —
-   * una cuerda pierde los agudos antes que los graves, y sin eso la nota suena
-   * a órgano apagándose en vez de a cuerda.
+   * *(Santi: "la guitarra tiene que sonar más criolla")*
+   *
+   * 🔺 LA PRIMERA VERSIÓN ERA UNA CUERDA DE ACERO: ataque de 6 ms y mucha
+   * sierra en la mezcla, o sea brillante y con filo. Una criolla es lo
+   * contrario, y son tres cosas concretas:
+   *
+   *  1. **El ataque es más blando** (18 ms contra 6). El nailon tarda más en
+   *     arrancar que el acero; ese pequeño retardo es la mitad de por qué una
+   *     criolla suena "dulce" y una eléctrica "filosa".
+   *  2. **Menos armónicos agudos.** Ahora manda el triángulo y la sierra quedó
+   *     de acompañamiento. El nailon tiene mucho menos contenido agudo.
+   *  3. **El filtro abre mucho menos** (×3,2 en vez de ×6) y se cierra más
+   *     rápido: la nota se redondea enseguida en vez de quedar sonando brillante.
+   *
+   * El filtro cerrándose mientras la nota cae se queda, porque eso no es del
+   * material sino de cualquier cuerda: pierde los agudos antes que los graves, y
+   * sin eso suena a órgano apagándose en vez de a cuerda.
    */
   function guitarra(freq, duracion, gain, delay = 0) {
     if (!ctx) return;
@@ -168,16 +181,16 @@ export function createAudio() {
 
     const filtro = ctx.createBiquadFilter();
     filtro.type = 'lowpass';
-    filtro.frequency.setValueAtTime(freq * 6, t);
-    filtro.frequency.exponentialRampToValueAtTime(Math.max(120, freq * 1.4), t + duracion * 0.7);
-    filtro.Q.value = 0.8;
+    filtro.frequency.setValueAtTime(freq * 3.2, t);
+    filtro.frequency.exponentialRampToValueAtTime(Math.max(110, freq * 1.15), t + duracion * 0.5);
+    filtro.Q.value = 0.6;
 
     const amp = ctx.createGain();
     amp.gain.setValueAtTime(0.0001, t);
-    amp.gain.exponentialRampToValueAtTime(gain, t + 0.006);
+    amp.gain.exponentialRampToValueAtTime(gain, t + 0.018);
     amp.gain.exponentialRampToValueAtTime(0.0001, t + duracion);
 
-    for (const [mult, tipo, parte] of [[1, 'sawtooth', 0.55], [1, 'triangle', 0.4], [2.01, 'triangle', 0.12]]) {
+    for (const [mult, tipo, parte] of [[1, 'triangle', 0.62], [1, 'sawtooth', 0.16], [2.005, 'sine', 0.14]]) {
       const osc = ctx.createOscillator();
       osc.type = tipo;
       osc.frequency.value = freq * mult;
@@ -563,19 +576,53 @@ export function createAudio() {
 
   /** La menor pentatónica: A, C, D, E, G, en dos octavas. */
   const ESCALA = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
-  /** Las graves para la guitarra: A2, D3, E3, y la quinta. */
-  const GRAVES = [110.00, 146.83, 164.81, 130.81];
+
+  /**
+   * LOS ACORDES DEL ARPEGIO — Am, F, G, Am.
+   *
+   * Los cuatro son de La menor, así que **la escala pentatónica de la armónica
+   * cae bien sobre cualquiera de ellos**, en cualquier momento. Eso es lo que
+   * permite que los dos instrumentos toquen sueltos, sin coordinarse: no hay
+   * forma de que choquen.
+   *
+   * Se descartó la cadencia andaluza (Am-G-F-**E**), que es más criolla todavía,
+   * justamente por eso: el Mi mayor trae un Sol sostenido que pelea con el Sol
+   * natural de la pentatónica, y habría obligado a sincronizar la armónica con
+   * el acorde. No vale la pena esa complejidad para un fondo.
+   *
+   * Cada acorde es grave + tres notas de arriba: el pulgar y tres dedos, que es
+   * como se puntea una criolla.
+   */
+  const ACORDES = [
+    [110.00, 164.81, 220.00, 261.63],   // Am
+    [ 87.31, 174.61, 220.00, 261.63],   // F
+    [ 98.00, 146.83, 196.00, 246.94],   // G
+    [110.00, 164.81, 220.00, 329.63],   // Am
+  ];
+
+  /**
+   * EL PATRÓN DEL PUNTEO: grave, y después los de arriba.
+   *
+   * El 0 es la cuerda grave y suena dos veces por acorde — es lo que marca
+   * dónde empieza el compás. Los demás son los dedos subiendo y bajando.
+   */
+  const PATRON = [0, 1, 2, 3, 0, 2, 3, 1];
 
   let musicaOn = false;
   let armonicaTimer = 0;
-  let guitarraTimer = 0;
+  let pulsoTimer = 0;
+  let pasoDelPatron = 0;
+  let acordeActual = 0;
 
   function arrancarMusica() {
     musicaOn = true;
-    // No arrancan las dos juntas ni de inmediato: entrar a una pantalla y que
-    // te reciba un acorde se siente a menú, no a lugar.
-    armonicaTimer = 4 + Math.random() * 6;
-    guitarraTimer = 1.5 + Math.random() * 3;
+    // La guitarra entra casi enseguida (es la base, y sin base no hay música);
+    // la armónica se toma su tiempo, porque entrar a una pantalla y que te
+    // reciba una melodía se siente a menú, no a lugar.
+    pulsoTimer = 0.4;
+    pasoDelPatron = 0;
+    acordeActual = 0;
+    armonicaTimer = 6 + Math.random() * 8;
   }
 
   function pararMusica() {
@@ -585,21 +632,30 @@ export function createAudio() {
   /**
    * El reloj va por `dt` desde la escena, igual que el trueno: así se para solo
    * cuando la escena se para.
+   *
+   * 🔺 ANTES ESTO ERAN NOTAS SUELTAS Y NO SONABA A MÚSICA — *(Santi: "no parece
+   * música, sino sonidos aislados")*. La primera versión evitaba el bucle
+   * separando todo con silencios largos, y se pasó de largo: sin NADA que una
+   * una nota con la siguiente, lo que queda son ruiditos, por más afinados que
+   * estén.
+   *
+   * Lo que convierte sonidos aislados en música es la CONTINUIDAD. Así que la
+   * guitarra dejó de ser un evento cada tantos segundos y pasó a ser lo que una
+   * guitarra criolla de fondo es de verdad: **un arpegio que no para**. La
+   * armónica sigue entrando de a ratos, pero ahora tiene sobre qué apoyarse.
+   *
+   * Y el bucle deja de importar cuando el que se repite es el acompañamiento:
+   * nadie se cansa de un punteo suave: de lo que uno se cansa es de una MELODÍA
+   * repetida, y la melodía —la armónica— sigue sin repetirse nunca.
    */
   function updateMusica(dt) {
     if (!musicaOn || !ctx || !CONFIG.audio.enabled) return;
     const m = CONFIG.ambiente;
 
-    guitarraTimer -= dt;
-    if (guitarraTimer <= 0) {
-      guitarraTimer = m.guitarraCada + Math.random() * m.guitarraVariacion;
-      const raiz = GRAVES[Math.floor(Math.random() * GRAVES.length)];
-      guitarra(raiz, 1.6, m.guitarraVolumen);
-      // A veces una segunda nota, como quien puntea sin ganas. Nunca las dos
-      // iguales de seguido: eso ya sería un ritmo.
-      if (Math.random() < 0.45) {
-        guitarra(raiz * 1.5, 1.2, m.guitarraVolumen * 0.7, 0.55 + Math.random() * 0.3);
-      }
+    pulsoTimer -= dt;
+    if (pulsoTimer <= 0) {
+      pulsoTimer = m.pulsoCada;
+      puntear(m);
     }
 
     armonicaTimer -= dt;
@@ -607,6 +663,40 @@ export function createAudio() {
       armonicaTimer = m.armonicaCada + Math.random() * m.armonicaVariacion;
       tocarFrase(m);
     }
+  }
+
+  /**
+   * Una púa del arpegio. La cuerda grave suena más fuerte y dura más: es la que
+   * sostiene el acorde mientras las de arriba pasan por encima.
+   *
+   * LA VARIACIÓN ES CHIQUITA A PROPÓSITO — algún dedo que se saltea y un poco de
+   * volumen al azar. Alcanza para que el punteo no se oiga como una máquina, y
+   * es poca para que siga siendo una BASE. Un acompañamiento que llama la
+   * atención dejó de ser un acompañamiento.
+   */
+  function puntear(m) {
+    const cuerda = PATRON[pasoDelPatron % PATRON.length];
+    /**
+     * 🐛 EL ACORDE SE ADELANTABA UNA NOTA. Avanzaba antes de calcular la
+     * frecuencia, así que la última púa del patrón ya sonaba con el acorde
+     * siguiente — medido: a los 3,4 s aparecía un Fa en medio del La menor.
+     * Musicalmente no quedaba mal (es una anticipación, que existe de verdad),
+     * pero era un accidente del orden de dos líneas, no una decisión. Ahora se
+     * toca la nota y RECIÉN DESPUÉS cambia el acorde.
+     */
+    const esGrave = cuerda === 0;
+    const freq = ACORDES[acordeActual][cuerda];
+
+    pasoDelPatron++;
+    if (pasoDelPatron % PATRON.length === 0) {
+      acordeActual = (acordeActual + 1) % ACORDES.length;
+    }
+
+    // Un dedo que se saltea de vez en cuando. Nunca el grave: ése marca el pulso.
+    if (!esGrave && Math.random() < 0.12) return;
+
+    const vol = m.guitarraVolumen * (esGrave ? 1 : 0.66) * (0.88 + Math.random() * 0.24);
+    guitarra(freq, esGrave ? 2.2 : 1.5, vol);
   }
 
   /**
@@ -618,14 +708,20 @@ export function createAudio() {
    * oye como un error, una que se apoya al final se oye como una frase.
    */
   function tocarFrase(m) {
-    const cuantas = 2 + Math.floor(Math.random() * 3);
+    const cuantas = 3 + Math.floor(Math.random() * 3);
     let i = Math.floor(Math.random() * ESCALA.length);
     let cuando = 0;
     for (let n = 0; n < cuantas; n++) {
       const ultima = n === cuantas - 1;
-      const dur = ultima ? 0.85 + Math.random() * 0.5 : 0.3 + Math.random() * 0.25;
-      armonica(ESCALA[i], dur, m.armonicaVolumen * (ultima ? 1 : 0.85), cuando);
-      cuando += dur * (ultima ? 1 : 0.75 + Math.random() * 0.4);
+      const dur = ultima ? 1.1 + Math.random() * 0.6 : 0.32 + Math.random() * 0.28;
+      /**
+       * La última NO suena más fuerte, sólo más larga. Es música de fondo: si la
+       * frase termina en un golpe, te hace levantar la vista — que es
+       * exactamente lo que un fondo no puede hacer. Se apoya durando, no
+       * subiendo.
+       */
+      armonica(ESCALA[i], dur, m.armonicaVolumen * (ultima ? 0.9 : 0.85), cuando);
+      cuando += dur * (ultima ? 1 : 0.7 + Math.random() * 0.35);
       const paso = (Math.random() < 0.5 ? 1 : -1) * (1 + Math.floor(Math.random() * 2));
       i = Math.max(0, Math.min(ESCALA.length - 1, i + paso));
     }

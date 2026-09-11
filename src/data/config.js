@@ -1931,25 +1931,37 @@ export const CONFIG = {
     vientoCada: 6.5,
 
     /**
-     * LA MÚSICA — ver `updateMusica` en engine/audio.js para por qué no es un
-     * bucle sino frases sueltas.
+     * LA MÚSICA — ver `updateMusica` en engine/audio.js.
      *
-     * LOS SILENCIOS SON EL INSTRUMENTO MÁS IMPORTANTE de los dos. Una frase de
-     * armónica cada 14-32 segundos suena a alguien tocando para sí mismo al
-     * lado de un fuego; cada 4 segundos suena a música de ascensor. Si algo hay
-     * que corregir jugando, lo primero a probar es ALARGAR estos números, no
-     * bajar el volumen.
+     * 🔺 LA PRIMERA VERSIÓN NO SONABA A MÚSICA — *(Santi: "no parece música,
+     * sino sonidos aislados")*. Estaba armada toda con silencios para no caer en
+     * un bucle, y se pasó: **sin nada que una una nota con la siguiente quedan
+     * ruiditos**, por afinados que estén. Ahora la guitarra es un arpegio
+     * CONTINUO —la base— y la armónica pasa por arriba cada tanto.
      *
-     * La guitarra va más seguido porque es una sola nota grave que se apaga —
-     * es el suelo sobre el que pasa la armónica, no una melodía.
+     * Y ES MÚSICA DE FONDO, o sea que la regla que manda es *no alterar al
+     * jugador* — *(Santi: "no puede alterar al jugador")*. De ahí salen tres
+     * decisiones que parecen tímidas y no lo son:
+     *
+     *  - **La guitarra suena MENOS que antes** aunque ahora toque todo el
+     *    tiempo (0,055 → 0,034). Lo que decide cuánto molesta un fondo no es el
+     *    volumen de cada nota sino cuánto ocupa en total.
+     *  - **Ninguna nota entra de golpe**: la criolla tiene ataque blando y la
+     *    armónica más todavía. Nada acá tiene que poder sobresaltarte.
+     *  - **El pulso es lento** (0,42 s). Un arpegio rápido arrastra la atención
+     *    y te apura; uno lento se vuelve parte del lugar.
+     *
+     * Si al jugarlo molesta, la perilla es `armonicaCada` (que entre menos
+     * seguido) antes que el volumen: lo que cansa de una música de fondo casi
+     * siempre es la MELODÍA repetida, nunca el acompañamiento.
      */
-    armonicaVolumen: 0.045,
-    armonicaCada: 14,
-    armonicaVariacion: 18,
+    armonicaVolumen: 0.040,
+    armonicaCada: 11,
+    armonicaVariacion: 13,
 
-    guitarraVolumen: 0.055,
-    guitarraCada: 5.5,
-    guitarraVariacion: 6,
+    guitarraVolumen: 0.034,
+    /** Cada cuánto cae una púa del arpegio. Es el pulso de todo lo demás. */
+    pulsoCada: 0.42,
   },
 
   colors: {

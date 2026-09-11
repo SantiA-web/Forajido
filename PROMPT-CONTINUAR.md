@@ -123,11 +123,17 @@ apuntaban al mismo error: **sonido regular = sonido de máquina**.
   criterio estaba mal, no el número: se habían elegido con la regla de "un fondo
   que se nota deja de ser un fondo", y **los cascos no son un fondo, son el
   personaje**. Perilla nueva: `zancadaVolumen`.
-- **Hay una armónica y una guitarra, y por eso mismo NO hay un tema.** Son frases
-  sueltas separadas por silencios, sorteadas de una escala pentatónica menor (que
-  no tiene notas que suenen mal juntas, así que el azar nunca saca una frase
-  fea). Un bucle de ocho compases sería insoportable en una pantalla donde te
-  quedás un rato.
+- **Hay una guitarra criolla y una armónica.** La criolla puntea un arpegio que
+  **no para** (Am-F-G-Am, vuelta cada ~14 s): es la base. La armónica pasa por
+  arriba con frases sorteadas de una pentatónica menor y **nunca repite**.
+
+  > La primera versión eran frases sueltas separadas por silencios largos, para
+  > evitar el bucle — y Santi escuchándola: *"no parece música, sino sonidos
+  > aislados"*. Tenía razón: **sin nada que una una nota con la siguiente quedan
+  > ruiditos**. El razonamiento de evitar el bucle no estaba mal, estaba aplicado
+  > al instrumento equivocado: lo que no puede repetirse es la MELODÍA, no el
+  > acompañamiento. Medido: se pasó de 26 notas en 90 s a 195, con el hueco más
+  > largo bajando de más de 10 s a 1,73.
 - **Suena sólo en el campamento y el pueblo.** En el asalto y el galope no, a
   propósito: ahí el sonido es información.
 
@@ -186,11 +192,14 @@ pasillo, y el 25%). **Lo demás no se jugó nunca.**
 - **¿Se elige el tren por el clima?** Es lo que el cambio busca: que la lluvia en
   el mapa sea un motivo para tomar ESA vía. Si eso no pasa jugando, el clima
   sigue siendo decorado.
-- **¿La música cansa?** Si molesta, **lo primero a probar es ALARGAR los
-  silencios (`armonicaCada`, `guitarraCada`), no bajar el volumen**: los
-  silencios son el instrumento más importante de los dos. Y si suena a alguien
-  probando el instrumento en vez de a una melodía, la perilla es cuántas notas
-  tiene cada frase (`tocarFrase` en engine/audio.js).
+- **¿La música cansa, o molesta mientras jugás?** Es fondo: no tiene que poder
+  hacerte levantar la vista. Si molesta, **la perilla es `armonicaCada` (que la
+  melodía entre menos seguido) antes que el volumen** — lo que cansa de un fondo
+  casi siempre es la melodía repetida, no el acompañamiento. Y si el punteo se
+  nota de más, `guitarraVolumen`; si apura, `pulsoCada`.
+- **¿La guitarra suena criolla?** Se le bajaron los agudos y se le ablandó el
+  ataque (nailon, no acero). Si todavía suena metálica, los tres números están en
+  `guitarra()` en engine/audio.js.
 - **¿Los 3,2 s de la puerta que él abre se usan, o no se notan?** Es la jugada
   más escondida de todo lo que se construyó.
 - **¿El cielo del pueblo y las sombras del campamento cambian algo de verdad?**

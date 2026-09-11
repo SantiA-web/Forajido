@@ -10186,6 +10186,87 @@ volumen**: los silencios son el instrumento más importante de los dos.
 
 ---
 
+## 🐛 ARREGLADA · La música eran sonidos aislados, y la guitarra no era criolla
+
+*(Santi, escuchándolo: "no parece música, sino sonidos aislados. Además, recuerda
+que la guitarra tiene que sonar más criolla. Y no olvides que es música de fondo,
+es decir que no puede alterar al jugador")*
+
+Los tres comentarios apuntaban al mismo lugar, y el primero es el que importa.
+
+### Me pasé de mano evitando el bucle
+
+La entrada anterior explica con orgullo por qué la música **no** es un bucle:
+frases sueltas separadas por silencios largos. El razonamiento era correcto y la
+ejecución se fue al otro extremo. **Sin nada que una una nota con la siguiente,
+lo que queda son ruiditos**, por afinados que estén.
+
+Medido en la primera versión: 26 notas en 90 segundos, con huecos de más de diez
+segundos. Eso no es música espaciada — es silencio con interrupciones.
+
+**Lo que convierte sonidos aislados en música es la CONTINUIDAD.** Así que la
+guitarra dejó de ser un evento cada tantos segundos y pasó a ser lo que una
+criolla de fondo es de verdad: **un arpegio que no para**, sobre cuatro acordes
+(Am, F, G, Am) que dan la vuelta cada ~14 s. La armónica sigue entrando de a
+ratos, pero ahora tiene sobre qué apoyarse.
+
+| | Antes | Ahora |
+|---|---|---|
+| Notas en 90 s | 26 | **195** |
+| Hueco promedio | varios segundos | **0,46 s** |
+| Hueco más largo | más de 10 s | **1,73 s** |
+| Huecos de más de 3 s | muchos | **0** |
+
+**Y el bucle deja de ser un problema cuando el que se repite es el
+ACOMPAÑAMIENTO.** Nadie se cansa de un punteo suave; de lo que uno se cansa es de
+una melodía repetida — y la melodía, que es la armónica, sigue sin repetirse
+nunca. El razonamiento original no estaba mal: estaba aplicado al instrumento
+equivocado.
+
+### La guitarra criolla son tres cosas concretas
+
+La primera versión era una cuerda de **acero**: ataque de 6 ms y mucha sierra en
+la mezcla, o sea brillante y con filo. Una criolla es nailon:
+
+1. **Ataque más blando** (18 ms contra 6). El nailon tarda más en arrancar que el
+   acero, y ese retardo chico es la mitad de por qué una criolla suena "dulce".
+2. **Menos armónicos agudos**: ahora manda el triángulo y la sierra quedó de
+   acompañamiento.
+3. **El filtro abre mucho menos** (×3,2 contra ×6) y se cierra más rápido: la
+   nota se redondea enseguida en vez de quedar sonando brillante.
+
+### "No puede alterar al jugador" mandó sobre el resto
+
+De esa frase salen tres decisiones que parecen tímidas y no lo son:
+
+- **La guitarra suena MENOS que antes** (0,055 → 0,034) aunque ahora toque todo
+  el tiempo. Lo que decide cuánto molesta un fondo no es el volumen de cada nota
+  sino cuánto ocupa en total.
+- **Ninguna nota entra de golpe**, ni la criolla ni la armónica.
+- **Las frases de armónica ya no terminan en un acento**: la última nota dura
+  más, pero no suena más fuerte. Una frase que termina en un golpe te hace
+  levantar la vista, que es exactamente lo que un fondo no puede hacer.
+
+### Y un bug propio: el acorde se adelantaba una nota
+
+`acordeActual` avanzaba **antes** de calcular la frecuencia, así que la última
+púa de cada patrón ya sonaba con el acorde siguiente. Medido: a los 3,4 s
+aparecía un Fa en medio del La menor. Musicalmente no quedaba mal —una
+anticipación es un recurso real— pero era un accidente del orden de dos líneas,
+no una decisión, y las notas que salen de un accidente se convierten en deuda.
+
+### VERIFICADO POR CONSOLA
+
+- **195 notas en 90 s, hueco promedio 0,46 s, el más largo 1,73 s, y ninguno
+  mayor a 3 s.** La música no se corta nunca.
+- **Cero notas fuera de los acordes** (66 notas de guitarra revisadas una por
+  una contra las cuatro posiciones).
+- **La progresión avanza limpia en el borde del patrón**: Am hasta 3,4 s, F hasta
+  6,9, G después. Sin notas cruzadas.
+- El ciclo completo del juego, de día y de noche: **sin un error de consola**.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

@@ -1882,19 +1882,24 @@ Hay dos clases de sonido y se manejan distinto:
   `audio.volumen`). Es lo que permite que la lluvia cambie al salir del vagón
   en vez de prenderse y apagarse de golpe.
 
-### Y hay música, pero no hay un tema
+### Y hay música: una criolla y una armónica
 
-**Una armónica y una guitarra, y ninguna de las dos toca una canción.** Un tema
-de ocho compases repitiéndose es insoportable a los cinco minutos, y este juego
-se juega mirando la misma pantalla un buen rato. Así que no hay bucle: hay
-**frases sueltas separadas por silencios**, sorteadas cada vez.
-
-- La **guitarra** pone una nota grave cada tanto — el suelo.
-- La **armónica** pasa por arriba con frases de dos a cuatro notas, cada quince
-  o treinta segundos, y después se calla.
+- La **guitarra criolla** puntea un arpegio suave que **no para**: es la base, y
+  es lo que hace que esto sea música y no ruiditos sueltos. Va sobre cuatro
+  acordes de La menor (Am, F, G, Am) que dan la vuelta cada catorce segundos.
+- La **armónica** pasa por arriba con frases de tres a cinco notas cada diez o
+  veinte segundos, **y nunca toca la misma dos veces**: se sortean.
 - Las notas salen de una **escala pentatónica menor**, que además de sonar a
-  desierto tiene una propiedad práctica: no tiene notas que suenen mal juntas,
-  así que se pueden sortear al azar sin que salga nunca una frase fea.
+  desierto tiene una propiedad práctica: no tiene notas que suenen mal juntas.
+  Por eso los dos instrumentos pueden tocar sueltos, sin coordinarse, y no hay
+  forma de que choquen.
+
+**Es música de FONDO, y eso manda sobre todo lo demás:** la criolla tiene ataque
+blando, nada entra de golpe, el pulso es lento y ninguna frase termina en un
+acento. Nada acá tiene que poder hacerte levantar la vista.
+
+> El acompañamiento se repite y la melodía no, y es a propósito: de lo que uno
+> se cansa es de una melodía repetida, nunca de un punteo suave.
 
 **Sólo suena en el campamento y en el pueblo** — los dos lugares donde no hay
 nadie apuntándote. En el asalto y en el galope no hay música a propósito: ahí

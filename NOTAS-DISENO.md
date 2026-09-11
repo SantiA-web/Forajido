@@ -10267,6 +10267,138 @@ no una decisión, y las notas que salen de un accidente se convierten en deuda.
 
 ---
 
+## ✅ HECHA · Se acabó el "rápido / lento / punto medio": dos trenes que se distinguen por su contenido
+
+*(Santi: "quiero hacer algo que tal vez sea catastrófico [...] que a partir de
+ahora no haya más tren veloz, sino tren de pasajeros (el estándar) y el de carga
+[...] Ya no sería este es el rápido, este el lento y este el punto medio, sino
+que su contenido sería diferente. ¿Qué piensas honestamente?")*
+
+### Por qué el eje viejo estaba mal
+
+Los tres tipos se distinguían por **la velocidad**: veloz 90 s, estándar 145 s,
+carga 165 s. Eso es un eje de DIFICULTAD disfrazado de variedad — un tren que se
+distingue por su reloj es el mismo tren con otro cronómetro. La prueba está en
+el historial del propio veloz: **tres vueltas de calibración discutiendo un solo
+número** (100 → 70 → 90).
+
+Y había un problema más grande, y medible: **`modificadores: true` lo tenía sólo
+el estándar**. O sea que el clima, la redada, la puerta trabada, los
+comportamientos por vagón, los paquetes y la caja oculta —el plan entero de
+"variedad de lo que pasa en los trenes", meses de trabajo— **le pasaba a la
+mitad de los trenes y a la otra mitad no**.
+
+### Lo que se cambió del plan de Santi antes de construirlo
+
+El plan decía *"ambos tendrían los mismos sistemas"*. Eso sí habría sido
+catastrófico: dos trenes con las mismas mecánicas no son dos trenes, son uno con
+distinto empapelado. Él lo intuía al escribir *"pero más separados entre
+mecánicas"*; se convirtió en regla dura:
+
+> **Una mecánica, una sola casa.** Si aparece en los dos, no distingue nada.
+
+| | **Pasajeros** · la gente te delata | **Carga** · el tren te ataca a vos |
+|---|---|---|
+| Mecánicas | paquete, caja oculta, testigos, encubierto, Cazarrecompensas, Sheriff | rodantes, traqueteo, estampida, vagón de armas + pólvora, el botín que pesa |
+| Capa de variedad | clima, estado, comportamientos, tipos de guardia | **lo mismo** |
+
+**Los rodantes y el traqueteo se mudaron al de carga por la ficción, no por
+conveniencia**: un barril que se suelta en el pasillo ES carga suelta. Nunca
+pertenecieron a "el tren rápido".
+
+Y apareció sola una lectura que nadie buscó: en el tren del sigilo, un rodante
+no es un peligro de combate —no saca vida— pero **el porrazo se oye**
+(`CONFIG.rodante.ruidoGolpe`). En el de carga, la carga suelta es lo que te
+delata. Encaja con `pesaElBotin` en vez de pelearse con él.
+
+### Las tres cosas acopladas que se marcaron ANTES de construir
+
+Lo natural, con el vagón de armas mudado, era mandar el ganado también. Eso
+rompía tres cosas que no se ven de entrada — y por eso Santi eligió la opción
+que las conserva (el ganado se queda en el de pasajeros):
+
+1. **Es el único vagón sin techo del tren.** Es el que hace que la tormenta
+   suene distinto (la chapa se apaga, suben agua y viento) y el peor lugar para
+   que te agarren los jinetes. Sin él, el tren de pasajeros se quedaba sin un
+   solo momento de "estás expuesto" que no fuera un enganche — y la tormenta
+   sonora se había construido la sesión anterior, sin jugarse todavía.
+2. **Es el escondite "junto al corral"** de la caja fuerte oculta, uno de cinco.
+3. **Es su vagón de paso** (un guardia, una bolsa). Sin él, seis vagones todos
+   caros de cruzar, sin ritmo.
+
+### Y una cuarta que apareció construyendo: la pólvora se quedaba sin dónde
+
+`cajonesExtra` —la pólvora repartida por el tren cuando hay vagón de armas— vive
+en tres plantillas: comedor, correo y blindado. **El tren de carga sólo lleva
+comedor y blindado**, así que el sistema se le caía a dos vagones de ocho: "un
+tren distinto de punta a punta" habría pasado a ser "un tren con pólvora en dos
+lugares". Se le agregaron a `correo_liviano`, que además es donde más sentido
+tiene (un furgón de correo liviano es carga estibada).
+
+### Qué se perdió, dicho claro
+
+**El reloj de 90 s.** Es lo único real que se va con el veloz: "¿un vagón más o
+me bajo?" a 90 s es una pregunta distinta que a 145. El tren quedó **en reserva
+con `peso: 0`** (llave, no amputación — igual que Alta vigilancia y el
+Pistolero) y sus seis vagones cortos siguen escritos en `data/wagons.js`. Si
+alguna vez se lo quiere de vuelta, el lugar correcto ya no es un tipo de tren
+sino **un estado más** ("tren expreso"), que se le puede tocar a cualquiera de
+los dos.
+
+### El riesgo que queda vivo
+
+**El de carga pasó del 20% al 50% del sorteo**: es el tren MENOS jugado de los
+dos y ahora es la mitad de los asaltos, cargando cinco sistemas a la vez. Es lo
+que hay que mirar jugando. La perilla para bajarle el ruido sin desarmar nada es
+subir `rodantesCada` y después `traqueteoCada`; la perilla para que aparezca
+menos es su `peso`.
+
+### VERIFICADO POR CONSOLA
+
+- **120.000 trenes sorteados**: 50/50 exacto entre los dos tipos, el veloz nunca
+  sale. **El vagón de armas aparece en el 12,5% de TODOS los asaltos** — el
+  mismo número que antes de la reestructuración, sin haber tocado su `chance`
+  (0,25 sobre un tren que pasó de ser el 50% a ser el 50%).
+- **Las reglas de posición del vagón de armas sobreviven a los ocho vagones**:
+  en 20.000 trenes, **nunca** primero (0), **nunca** último (0), **nunca** pegado
+  al blindado (0), y el blindado cae adelante el **24,1%** de las veces (contra
+  el 25% de diseño).
+- **La ronda del Dinamitero sigue sana**, que era lo que más riesgo corría al
+  mudarlo a un tren de vagones más cortos: medido sobre 8 composiciones reales,
+  45 s cada una → **ronda de 934 px y 40% del tiempo adentro del vagón**. El
+  diseño pide ~1050 px y 41%; los casos rotos que motivaron las reglas daban
+  640-704 px y 55%. "Esperá a que salga" sigue existiendo.
+- **Las mecánicas quedaron donde tienen que estar**: 120 s simulados de cada
+  tren. Carga → 16 rodantes y 4 sacudones, reloj 165 s. Pasajeros → **0 y 0**,
+  reloj 145 s.
+- **La pólvora subió un 35%**: el estándar con armas traía 8,5 barriles y 2,7
+  cartuchos; el de carga con armas trae **11,5 barriles y 3,9 cartuchos** (300
+  trenes de cada uno). El tope del jugador son 3, así que por primera vez
+  recorrer el tren entero deja un cartucho sin poder llevarse. Sin decidir.
+- **Cero errores de consola** en 90 s de asalto simulado de cada tipo.
+
+### Y la lección de arnés de esta sesión, que costó cuatro mediciones falsas
+
+Las tres primeras mediciones de rodantes y traqueteo dieron **0 y 0** en los dos
+trenes, y las tres veces el código estaba bien:
+
+1. El parámetro de escena se llama `tipoTren`, no `tipoTrenId`. Con el nombre
+   mal, el asalto salía con el tipo por defecto — y lo delató `raidDuration: 145`
+   en un tren de carga.
+2. `soltarRodante` exige estar **dentro de un vagón**, y el jugador siempre
+   arranca en un enganche. Plantado ahí, no aparece un solo barril: correcto.
+3. Y la peor: **el panel del navegador estaba oculto, así que
+   `requestAnimationFrame` no corría y el mundo estaba congelado.** 35 segundos
+   de "medición" sobre un juego que no avanzó un cuadro. Se detectó con
+   `document.hidden` y comparando la posición de los guardias contra sí misma.
+
+La solución fue dejar de depender del bucle: **`FORAJIDO.services.scenes.update(1/60)`
+llamado a mano**, en pasos fijos, adentro de una sola llamada de consola. Es más
+rápido que el tiempo real, es determinista, y no depende de que la ventana esté
+visible. **Para medir comportamiento del asalto, ése es el instrumento.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

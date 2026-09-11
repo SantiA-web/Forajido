@@ -54,115 +54,151 @@
  *                  encima te va frenando (ver CONFIG.peso). Sin esto, cargás
  *                  lo que quieras sin costo, como en toda la fase 2.
  *   modificadores  si es true, este tipo de tren participa del sorteo de
- *                  CLIMA y ESTADO DEL TREN (ver data/modifiers.js). Sin
- *                  esto, siempre sale despejado y sin ningún estado — es la
- *                  llave que decide QUÉ TIPOS entran en ese sorteo, no el
- *                  sorteo en sí.
+ *                  CLIMA, ESTADO DEL TREN, comportamiento por vagón y tipos
+ *                  de guardia (ver data/modifiers.js). Sin esto, siempre sale
+ *                  despejado y sin ningún estado — es la llave que decide QUÉ
+ *                  TIPOS entran en ese sorteo, no el sorteo en sí.
  *
- *                  Por ahora sólo la tiene el estándar (pedido explícito de
- *                  Santi): el veloz y el de carga ya tienen su propia
- *                  identidad muy afinada (traqueteo, rodantes, estampida,
- *                  el botín que pesa) y sumarles capas encima todavía no se
- *                  probó — se abre a los otros tipos más adelante, cuando
- *                  haga falta, sin tocar la arquitectura del sorteo.
+ *                  LO TIENEN LOS DOS TRENES. Hasta la reestructuración de los
+ *                  tipos lo tenía sólo el estándar, y eso significaba que la
+ *                  MITAD de los asaltos —todo el trabajo del plan "variedad de
+ *                  lo que pasa en los trenes"— no le pasaba nunca al que
+ *                  agarrara otro tren. El clima, la redada y una puerta
+ *                  trabada no son la identidad de ningún tren: son el día que
+ *                  le tocó a ese servicio, y eso le puede tocar a cualquiera.
+ *
+ *   gente          si es true, este tren además sortea PAQUETES (el pasajero
+ *                  rico con su guardaespaldas), CIVILES ENCUBIERTOS y la CAJA
+ *                  FUERTE OCULTA (ver data/paquetes.js).
+ *
+ *                  VA APARTE DE `modificadores` PORQUE LAS TRES DEPENDEN DE
+ *                  QUE HAYA PASAJEROS A QUIENES ROBARLES. La caja oculta es el
+ *                  caso más claro: la única forma de enterarse dónde está es
+ *                  amenazando pasajeros, y tres de ellos saben el dato. En un
+ *                  tren de carga —que lleva un solo vagón con gente— esconder
+ *                  una caja sería esconderla de verdad: nadie a quien
+ *                  preguntarle. Un paquete sin vagones de pasajeros es lo
+ *                  mismo. Por eso ésta es la capa que SÍ distingue a un tren
+ *                  del otro, y `modificadores` no.
  */
 
+/**
+ * ---------------------------------------------------------------------------
+ * DOS TRENES, Y SE DISTINGUEN POR SU CONTENIDO — no por su reloj.
+ *
+ * *(Santi: "que a partir de ahora no haya más tren veloz, sino tren de
+ * pasajeros y el de carga. Ya no sería este es el rápido, este el lento y este
+ * el punto medio, sino que su contenido sería diferente")*
+ *
+ * ANTES ERAN TRES Y EL EJE ERA LA VELOCIDAD: rápido (veloz, 90 s), lento
+ * (carga, 165 s) y punto medio (estándar, 145 s). Eso es un eje de DIFICULTAD
+ * disfrazado de variedad — un tren que se distingue por su reloj es el mismo
+ * tren con otro cronómetro. La prueba está en el historial del veloz, tres
+ * vueltas de calibración discutiendo un único número (ver `raidDuration` en la
+ * entrada de abajo, que quedó en reserva).
+ *
+ * Y HABÍA UN PROBLEMA MÁS GRANDE, MEDIBLE: `modificadores: true` lo tenía sólo
+ * el estándar. O sea que el clima, la redada, la puerta trabada, los
+ * comportamientos por vagón, los paquetes y la caja oculta —el trabajo entero
+ * del plan "variedad de lo que pasa en los trenes"— **le pasaba a la mitad de
+ * los trenes y a la otra mitad no**.
+ *
+ * LA REGLA DEL REPARTO NUEVO: **una mecánica, una sola casa.** Si una mecánica
+ * aparece en los dos trenes, no distingue nada — y dos trenes con los mismos
+ * sistemas no son dos trenes, son uno con distinto empapelado.
+ *
+ *   PASAJEROS · la gente te delata
+ *     Paquetes, caja fuerte oculta, testigos, civil encubierto, y los dos mini
+ *     jefes (Cazarrecompensas y Sheriff, ver data/bosses.js). Ninguna mecánica
+ *     de tren: acá el tren es el escenario, como en toda la fase 2.
+ *
+ *   CARGA · el tren te ataca a vos
+ *     Rodantes, traqueteo, estampida, el vagón de armas con su pólvora y su
+ *     Dinamitero, y el botín que pesa. Ningún mini jefe.
+ *
+ * LOS RODANTES Y EL TRAQUETEO SE MUDARON AL DE CARGA POR LA FICCIÓN, y no por
+ * conveniencia: un barril que se suelta en el pasillo ES carga suelta. Nunca
+ * pertenecieron a "el tren rápido" — pertenecen al tren que lleva carga.
+ *
+ * Y DEJAN A LA ETAPA 2 DE LA PÓLVORA A UN PASO, pero **todavía no la
+ * resuelven**: el sacudón "acelera" suelta barriles y cajones de utilería
+ * (`TIPOS_RODANTE`, entities/rodante.js), no barriles de pólvora. Lo que
+ * cambió es que ahora el traqueteo y el vagón de armas viven en el MISMO tren,
+ * que era la condición que faltaba. Conectarlos es un cambio chico en
+ * `updateTraqueteo` (scenes/raidScene.js), y sigue sin construirse.
+ *
+ * Y HAY UNA LECTURA QUE NO SE BUSCÓ Y APARECIÓ SOLA: en el tren del sigilo, un
+ * rodante no es un peligro de combate — te tumba sin sacarte vida y **el
+ * porrazo se oye** (`CONFIG.rodante.ruidoGolpe`). O sea que en el de carga la
+ * carga suelta es lo que te delata. Encaja con `pesaElBotin` en vez de pelearse
+ * con él.
+ * ---------------------------------------------------------------------------
+ */
 export const TRAIN_TYPES = {
-  /** El tren de siempre. Ningún número fuera de lo común. */
-  estandar: {
-    id: 'estandar',
-    name: 'Tren estándar',
-    short: 'ESTÁNDAR',
-    hint: 'Reparto parejo. Nada fuera de lo común.',
-    pista: 'Carga pareja',
+  /**
+   * EL TREN DE PASAJEROS — el estándar de siempre, con su nombre verdadero.
+   *
+   * No cambió ni un vagón ni un número: es la misma formación de seis, el mismo
+   * reloj de 145 s y las mismas reglas que se jugaron y se afinaron durante toda
+   * la fase 2. Lo único que se le sacó es el vagón de armas, que se mudó al de
+   * carga con toda su familia (pólvora, Dinamitero, empujar barriles).
+   *
+   * EL GANADO SE QUEDA, y fue una decisión explícita. Con el de armas mudado, lo
+   * natural habría sido mandar el ganado también — y eso rompía tres cosas
+   * acopladas que no se ven de entrada:
+   *
+   *   1. Es el ÚNICO vagón sin techo del tren. Es el que hace que la tormenta
+   *      suene distinto (la chapa se apaga, suben el agua y el viento) y el peor
+   *      lugar para que te agarren los jinetes. Sin él, este tren se quedaba sin
+   *      un solo momento de "estás expuesto" que no fuera un enganche.
+   *   2. Es el escondite "junto al corral" de la caja fuerte oculta — uno de los
+   *      cinco, y el único de este tren que no es una mesa o un asiento.
+   *   3. Es su vagón de paso: un guardia y una bolsa. Sacarlo dejaba seis
+   *      vagones todos caros de cruzar, sin ritmo.
+   */
+  pasajeros: {
+    id: 'pasajeros',
+    name: 'Tren de pasajeros',
+    short: 'PASAJEROS',
+    hint: 'Gente, equipaje y plata encima. Cualquiera puede ser un testigo.',
+    pista: 'Mucha gente a bordo',
     composition: ['pasajeros', 'pasajeros', 'comedor', 'correo', 'ganado', 'blindado'],
-    posicionMinima: { blindado: 3, armas: 2 },
-
-    /**
-     * EL VAGÓN DE ARMAS NUNCA ES EL ÚLTIMO.
-     *
-     * Es la otra cara del mismo problema que resuelve `posicionRelativa`: el
-     * Dinamitero necesita un vecino AL QUE PUEDA ENTRAR de los dos lados, y al
-     * final del tren no hay nada de un lado. Medido con el de armas último: la
-     * ronda baja a 656-704 px en vez de ~1000 y pasa **40-61% del tiempo
-     * adentro** contra el 33% de diseño — exactamente el mismo defecto que tener
-     * el blindado pegado.
-     *
-     * Con seis vagones esto lo deja en el 2, 3, 4 o 5.
-     */
-    posicionMaxima: { armas: 5 },
-
-    /**
-     * EL BLINDADO Y EL VAGÓN DE ARMAS NUNCA VIAJAN PEGADOS, y **una de cada
-     * cuatro veces el blindado queda ADELANTE** en vez de más adentro.
-     *
-     * El hueco arregla un problema medido: pegados, la ronda del Dinamitero se
-     * le acorta a 640 px en vez de ~1050 y pasa **55% del tiempo adentro contra
-     * el 41% de una configuración sana**. Pasaba en el 43% de los trenes con
-     * vagón de armas.
-     *
-     * 🔻 Y EL 25% NO ES EL 50% QUE SE PIDIÓ, por una razón que apareció
-     * midiendo. *(Santi: "50% de probabilidad que se encuentre después (actual)
-     * y 50% de probabilidades que se encuentre antes")* — pero con el de armas
-     * sin poder ser primero ni último, y el blindado sin poder ir antes del
-     * vagón 3, **del lado "antes" queda UNA SOLA combinación posible**: armas en
-     * el 5 y blindado en el 3. Contra seis del otro lado.
-     *
-     * O sea que un 50/50 habría hecho que la mitad de los trenes con vagón de
-     * armas tuvieran siempre exactamente el mismo par de posiciones — mucha
-     * repetición justo en la mitad que se agregaba para tener variedad. Con 25%
-     * el blindado adelante pasa a ser una excepción reconocible en vez del tren
-     * de todos los días, y no hubo que tocar ninguna otra regla.
-     *
-     * Ver `cumpleRelativas` en world/train.js — ahí está por qué la moneda se
-     * tira una sola vez por tren y no adentro del bucle de intentos.
-     */
-    posicionRelativa: {
-      blindado: { respectoDe: 'armas', hueco: 2, chanceAntes: 0.25 },
-    },
+    posicionMinima: { blindado: 3 },
     peso: 50,
     modificadores: true,
 
     /**
-     * EL VAGÓN DE ARMAS — Fase 6a. Uno de cada cuatro trenes estándar cambia el
-     * de ganado por el de armas (data/wagons.js).
-     *
-     * ES UN SORTEO Y NO UN CAMBIO FIJO, y es lo que hace que valga la pena:
-     * la frase que abre todo este plan es *"conozco estos vagones, pero nunca
-     * sé exactamente qué me voy a encontrar"*, y hasta ahora eso valía para
-     * quién viajaba adentro (clima, estado, comportamientos, paquetes) pero
-     * nunca para QUÉ VAGONES tiene el tren. Ahora también, y encima es lo
-     * único de toda la familia que **se ve desde el galope**, antes de subir.
-     *
-     * REEMPLAZA AL GANADO Y NO SE SUMA COMO SÉPTIMO, elegido sobre una tabla
-     * de tres: sumarlo alargaba el tren 33 columnas (528 px, unos 9 s de ida
-     * al fondo y 18 s de ida y vuelta de un reloj de 145 — el 12%), y ese
-     * número está afinado desde que se cerró la fase 2. Reemplazando, el tren
-     * crece 6 columnas y el asalto dura lo mismo.
-     *
-     * Y AL GANADO Y NO A OTRO porque es el vagón de paso del estándar (un
-     * guardia, una bolsa): es el único al que se le puede sacar el lugar sin
-     * que se note un agujero. Como es sorteo, además, el ganado sigue
-     * apareciendo casi siempre — con él siguen vivos el escondite "junto al
-     * corral" de la caja fuerte oculta y el único vagón sin techo del tren.
-     *
-     * 🔻 BAJÓ DE 0,50 A 0,25 DESPUÉS DE JUGARLO *(Santi: "baja la probabilidad
-     * de que aparezca este vagón a un 25%")*.
-     *
-     * El 50% era el primer número, elegido sin jugar. Y lo que cambió en el
-     * medio es que este vagón dejó de afectar sólo a su propio pasillo: desde
-     * que hay pólvora repartida por el tren entero cuando él aparece (ver
-     * `cajonesExtra` en data/wagons.js), la mitad de los asaltos eran asaltos
-     * con barriles por todos lados. A uno de cada cuatro vuelve a ser lo que
-     * tenía que ser — algo que reconocés desde el galope y que te cambia el
-     * plan del día, no el tren de siempre.
+     * LA CAPA DE GENTE ES SUYA Y DE NADIE MÁS — ver `gente` en la cabecera.
+     * Paquetes, encubiertos y caja oculta necesitan pasajeros a quienes
+     * amenazar, y éste es el único tren que los lleva de verdad (dos vagones
+     * llenos más el comedor, que es el que más gente tiene del juego).
      */
-    sustituciones: [{ de: 'ganado', por: 'armas', chance: 0.25 }],
+    gente: true,
 
     color: '#c9b68d',
   },
 
   /**
+   * ⚠️ EN RESERVA (`peso: 0`) — YA NO SALE SORTEADO.
+   *
+   * *(Santi: "que a partir de ahora no haya más tren veloz")*. Su eje era la
+   * velocidad, que es el eje que se descartó (ver la nota grande de arriba), y
+   * sus dos mecánicas —rodantes y traqueteo— se mudaron al de carga, que es
+   * donde pertenecían por ficción.
+   *
+   * ES UNA LLAVE, NO UNA AMPUTACIÓN, igual que "Alta vigilancia" acá abajo y
+   * que el Pistolero en data/modifiers.js. Queda entero: sus seis vagones
+   * cortos siguen escritos a mano en data/wagons.js (`pasajeros_corto` y
+   * compañía) y nadie más los nombra. Subirle el peso lo devuelve al juego sin
+   * tocar una línea.
+   *
+   * LO ÚNICO QUE SE PIERDE DE VERDAD ES EL RELOJ DE 90 s, y vale anotarlo: "¿un
+   * vagón más o me bajo?" a 90 s es una pregunta distinta que a 145. Si alguna
+   * vez se lo quiere de vuelta, la forma correcta ya no es un tipo de tren sino
+   * un ESTADO más en data/modifiers.js ("tren expreso: llega antes"), que se lo
+   * puede tocar a cualquiera de los dos.
+   *
+   * ---------------------------------------------------------------------------
    * EL VELOZ — frenético, sin sigilo. Una apuesta distinta, no una versión
    * más difícil del estándar: los vagones son mucho más cortos (variantes
    * escritas a mano en `data/wagons.js`, no recortadas por código — la
@@ -229,7 +265,7 @@ export const TRAIN_TYPES = {
       'correo_corto', 'ganado_corto', 'blindado_corto',
     ],
     posicionFija: { blindado_corto: 'ultima' },
-    peso: 30,
+    peso: 0,
     raidDuration: 90,
     ruidoExtra: 1,
     sospechaMult: 1.5,
@@ -239,32 +275,157 @@ export const TRAIN_TYPES = {
   },
 
   /**
-   * EL DE CARGA — el opuesto del veloz. Más vagones (8), la mayoría mercancía
-   * y casi sin pasajeros, con MENOS guardias en total (no diluidos por más
-   * vagones: genuinamente menos — ver `correo_liviano` en `data/wagons.js`,
-   * un vagón de correo con un solo guardia y el botín repartido en bolsas en
-   * vez de concentrado en una caja fuerte). Es la primera respuesta real al
-   * problema medido y anotado en NOTAS-DISENO.md: el botín estaba demasiado
-   * concentrado en blindado + correo.
+   * EL DE CARGA — ocho vagones, la mayoría mercancía y casi sin pasajeros, con
+   * MENOS guardias en total (no diluidos por más vagones: genuinamente menos —
+   * ver `correo_liviano` en `data/wagons.js`, un vagón de correo con un solo
+   * guardia y el botín repartido en bolsas en vez de concentrado en una caja
+   * fuerte). Es la primera respuesta real al problema medido y anotado en
+   * NOTAS-DISENO.md: el botín estaba demasiado concentrado en blindado + correo.
    *
-   * Ningún cambio de comportamiento: la única diferencia con el estándar es
-   * DE QUÉ está hecho el tren y cuánto dura el asalto (un poco más, porque
-   * hay más terreno que cubrir).
+   * Y AHORA ES **EL TREN QUE TE ATACA A VOS**. Antes su única diferencia era de
+   * qué estaba hecho; con la reestructuración se quedó con todas las mecánicas
+   * en las que el tren deja de ser el escenario: la carga que se suelta
+   * (`rodantesCada`), el piso que traiciona (`traqueteoCada`), el ganado que se
+   * puede soltar (`estampida`), la pólvora del vagón de armas (`sustituciones`)
+   * y el botín que pesa (`pesaElBotin`).
+   *
+   * SON CINCO SISTEMAS EN UN SOLO TREN, y es el riesgo grande de todo esto: hay
+   * que jugarlo mirando si se siente como un tren con carácter o como un tren
+   * con demasiadas cosas pasando a la vez. La perilla para bajar el ruido sin
+   * desarmar nada es subir `rodantesCada` y `traqueteoCada` — en ese orden.
    */
   carga: {
     id: 'carga',
     name: 'Tren de carga',
     short: 'CARGA',
-    hint: 'Mucha mercancía, poca gente. Repartido en vez de concentrado.',
-    pista: 'Carga pesada y repartida',
+    hint: 'Mucha mercancía, poca gente. Y la carga se te viene encima.',
+    pista: 'Carga pesada y suelta',
     composition: [
       'correo_liviano', 'correo_liviano', 'correo_liviano',
       'ganado', 'ganado', 'ganado',
       'comedor', 'blindado',
     ],
-    posicionMinima: { blindado: 3 },
-    peso: 20,
+
+    /**
+     * EL VAGÓN DE ARMAS SE MUDÓ ACÁ, con las mismas tres reglas de posición que
+     * tenía en el estándar y por el mismo motivo (la ronda del Dinamitero, ver
+     * abajo). Lo único que cambió son los topes, porque el tren tiene ocho
+     * vagones en vez de seis: nunca el primero (`armas: 2`) ni el último
+     * (`armas: 7`).
+     */
+    posicionMinima: { blindado: 3, armas: 2 },
+
+    /**
+     * EL VAGÓN DE ARMAS NUNCA ES EL ÚLTIMO.
+     *
+     * Es la otra cara del mismo problema que resuelve `posicionRelativa`: el
+     * Dinamitero necesita un vecino AL QUE PUEDA ENTRAR de los dos lados, y al
+     * final del tren no hay nada de un lado. Medido con el de armas último: la
+     * ronda baja a 656-704 px en vez de ~1000 y pasa **40-61% del tiempo
+     * adentro** contra el 33% de diseño — exactamente el mismo defecto que tener
+     * el blindado pegado.
+     */
+    posicionMaxima: { armas: 7 },
+
+    /**
+     * EL BLINDADO Y EL VAGÓN DE ARMAS NUNCA VIAJAN PEGADOS, y **una de cada
+     * cuatro veces el blindado queda ADELANTE** en vez de más adentro.
+     *
+     * El hueco arregla un problema medido: pegados, la ronda del Dinamitero se
+     * le acorta a 640 px en vez de ~1050 y pasa **55% del tiempo adentro contra
+     * el 41% de una configuración sana**. Pasaba en el 43% de los trenes con
+     * vagón de armas.
+     *
+     * EL 25% SE MANTIENE, pero acá quiere decir algo distinto y para mejor. En
+     * el estándar de seis vagones, del lado "antes" quedaba **una sola
+     * combinación posible** (armas en el 5, blindado en el 3), así que subirlo
+     * habría hecho repetitiva justo la mitad que se agregó para tener variedad.
+     * Con ocho vagones hay mucho más lugar de los dos lados, así que el mismo
+     * número ya no arrastra esa repetición. Si jugando se quiere que el blindado
+     * adelante deje de ser una rareza, ahora sí se le puede subir.
+     *
+     * Ver `cumpleRelativas` en world/train.js — ahí está por qué la moneda se
+     * tira una sola vez por tren y no adentro del bucle de intentos.
+     */
+    posicionRelativa: {
+      blindado: { respectoDe: 'armas', hueco: 2, chanceAntes: 0.25 },
+    },
+
+    /**
+     * EL VAGÓN DE ARMAS — Fase 6a, mudado del estándar sin tocarle un número.
+     *
+     * 🔺 EL 0,25 ES EL QUE ELIGIÓ SANTI JUGANDO *("baja la probabilidad de que
+     * aparezca este vagón a un 25%")*, y se conserva a propósito — pero lo que
+     * él eligió no era el 25% en abstracto: era **cada cuánto lo veía**. Con el
+     * estándar en el 50% del sorteo, ese 0,25 daba el 12,5% de los asaltos.
+     *
+     * Con el de carga en el 50% del sorteo (ver `peso`, abajo), 0,25 vuelve a
+     * dar **exactamente el 12,5%**. O sea que el vagón de armas aparece con la
+     * misma frecuencia que antes de la reestructuración, sin haber tocado nada.
+     * Si algún día se mueven los pesos, hay que mover esta chance en sentido
+     * contrario o la frecuencia real cambia sin que nadie lo haya pedido.
+     *
+     * REEMPLAZA A UN GANADO Y NO SE SUMA COMO NOVENO, por el mismo motivo de
+     * siempre: sumarlo alarga el tren y el reloj está afinado. Y de los tres
+     * vagones de ganado sobran dos, así que la estampida —la identidad de este
+     * tren— sigue teniendo con qué jugarse.
+     */
+    sustituciones: [{ de: 'ganado', por: 'armas', chance: 0.25 }],
+
+    peso: 50,
     raidDuration: 165,
+
+    /**
+     * LA CAPA DE VARIEDAD TAMBIÉN ES SUYA. Clima, estado del tren,
+     * comportamientos por vagón y tipos de guardia — ver `modificadores` en la
+     * cabecera. Lo que NO tiene es `gente`: sin vagones de pasajeros no hay a
+     * quién amenazar, así que un paquete o una caja oculta acá serían un premio
+     * sin forma de encontrarlo.
+     */
+    modificadores: true,
+
+    /**
+     * LA CARGA SE SUELTA — mudado del tren veloz.
+     *
+     * ⚠️ EL NÚMERO NO ES EL DEL VELOZ (3,8) Y NO PODÍA SERLO. Los rodantes
+     * estaban calibrados para vagones CORTOS: `CONFIG.rodante.pistaMinima` (150)
+     * exige que entre el barril y vos quepa ese tramo, y en los vagones de 224 px
+     * del veloz eso suprimía un montón de tandas antes de nacer (ver la nota de
+     * `pistaMinima` en config.js). En los vagones de este tren —de 384 a 640 px—
+     * no se suprime casi ninguna.
+     *
+     * LA CUENTA: con 3,8 en un asalto de 165 s salían ~43 tandas de 2 o 3
+     * barriles, más de 100 barriles, prácticamente ninguna suprimida. Eso no es
+     * un tren traicionero: es una cinta transportadora. Con 14 salen ~12 tandas,
+     * o sea una cada catorce segundos — aproximadamente la MITAD del ritmo real
+     * que tenía el veloz una vez descontadas las suprimidas.
+     *
+     * Y tiene que ser la mitad y no el mismo, porque acá los rodantes no son la
+     * identidad del tren sino una traición ocasional: el que manda es el sigilo.
+     *
+     * ES UN NÚMERO CALCULADO, NO JUGADO. Es la primera perilla a mover si el
+     * tren se siente atiborrado.
+     */
+    rodantesCada: 14,
+
+    /**
+     * EL PISO TAMBIÉN — mudado del tren veloz, y también con otro número.
+     *
+     * El veloz tenía 10, que en un asalto de 90 s son ~9 sacudones. Acá 24 da
+     * ~7 en 165 s: el mismo orden de magnitud por asalto, repartido en un tren
+     * mucho más largo.
+     *
+     * PERO EL 24 ESTÁ ELEGIDO PENSANDO EN LA ETAPA 2 DE LA PÓLVORA, que todavía
+     * NO está construida: el día que la variante "acelera" tumbe un barril de
+     * pólvora al pasillo (hoy suelta utilería, ver la nota de arriba), con 24
+     * serían ~7 sacudones por asalto, la mitad "acelera" → unos **3 barriles
+     * tumbados** en un tren que trae 9-14. Con el 10 del veloz serían ~8: el
+     * tren se desarmaría solo y empujar barriles dejaría de ser tu jugada.
+     *
+     * Salió de una tabla de tres (10 / 24 / 40) calculada contra cuántos
+     * barriles tumba cada uno. Tampoco está jugado todavía.
+     */
+    traqueteoCada: 24,
 
     /**
      * EL GANADO SE PUEDE SOLTAR. Es la identidad de este tren, y sale de algo
@@ -287,16 +448,16 @@ export const TRAIN_TYPES = {
      * es el único donde despertarlo tiene que costarte algo mientras seguís
      * adentro. Ver CONFIG.peso.
      *
-     * En el estándar y en el veloz NO pesa: el estándar tiene su decisión en
-     * los caminos y el veloz en el reflejo, y sumarles esto sería mudarle a
-     * los tres la misma pregunta.
+     * En el de pasajeros NO pesa: allá la decisión está en los caminos y en a
+     * quién le creés, y mudarle la misma pregunta a los dos sería borrar
+     * justamente lo que los separa.
      */
     pesaElBotin: true,
     color: '#7a8f6b',
   },
 };
 
-export const TIPO_TREN_POR_DEFECTO = 'estandar';
+export const TIPO_TREN_POR_DEFECTO = 'pasajeros';
 
 /**
  * DIFICULTAD DEL TREN.
@@ -388,8 +549,14 @@ export const DIFICULTAD_POR_DEFECTO = 'tranquilo';
  * sumen 100 —el total se calcula solo— pero están escritos como porcentajes
  * porque así se leen de un vistazo:
  *
- *   Tipo de tren:  50% estándar · 30% veloz · 20% carga
+ *   Tipo de tren:  50% pasajeros · 50% carga  (el veloz está en 0: no sale)
  *   Dificultad:    65% fácil · 35% media  (alta está en 0: no sale)
+ *
+ * EL 50/50 NO ES PEREZA, es lo que hace que el vagón de armas siga apareciendo
+ * en el 12,5% de los asaltos igual que antes (ver `sustituciones` en el de
+ * carga). Y es la perilla a mirar primero si el de carga se siente demasiado
+ * presente: pasó del 20% al 50% de golpe, así que es el tren MENOS jugado de
+ * los dos y ahora es la mitad de tus asaltos.
  *
  * Con peso 0 una entrada queda fuera de la bolsa sin desaparecer del
  * catálogo, que es lo que permite tener algo construido y apagado.

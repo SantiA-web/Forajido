@@ -379,7 +379,7 @@ puntería de verdad:
 |---|---|
 | Llevás un arma sucia | Nace más grande. El Smith siempre es más ancho que el Colt |
 | **Clic derecho: apuntás** | **Se cierra** en un tercio de segundo |
-| **El tren se sacude** (tren veloz) | **Se abre de golpe, en tu cara** |
+| **El tren se sacude** (tren de carga) | **Se abre de golpe, en tu cara** |
 | No podés disparar (recargando, tumbado, escondido sin asomarte) | Se pone **rojo** |
 
 **Apuntar cuesta**, y cobra en lo mismo que cobra todo en este juego: tiempo y
@@ -589,8 +589,15 @@ que el de ganado porque, como él, es un vagón de paso.
 
 ### El vagón de armas: cuando aparece, cambia el tren entero
 
-**Uno de cada cuatro trenes estándar cambia el vagón de ganado por uno de
+**Uno de cada cuatro trenes de CARGA cambia un vagón de ganado por uno de
 armas.** Nunca es el primero, y desde afuera se ve cuál te tocó.
+
+> Antes vivía en el tren estándar y se mudó con la reestructuración de los
+> tipos. Como el de carga pasó a ser la mitad del sorteo (antes el estándar era
+> la otra mitad), **el vagón de armas sigue apareciendo en el 12,5% de los
+> asaltos, exactamente igual que antes** — medido con 120.000 trenes. Y como en
+> el de carga sobran dos vagones de ganado, la estampida sigue teniendo con qué
+> jugarse.
 
 Y cuando aparece **no cambia sólo su propio pasillo**: hay barriles de pólvora
 repartidos por casi todos los vagones — el comedor, el correo, el blindado. El
@@ -665,7 +672,7 @@ adentro ya no alcanza.
 ### Y el barril se puede empujar: `F`
 
 > *(En el código estos barriles se llaman `cajon` / `cajonPolvora` — el nombre
-> `barril` ya estaba tomado por los que ruedan solos en el tren veloz. Son cosas
+> `barril` ya estaba tomado por los que ruedan solos por el pasillo. Son cosas
 > distintas: éstos están quietos hasta que vos los movés.)*
 
 Un barril —cargado o vacío— sale rodando **siempre hacia la cola**, nunca hacia
@@ -756,31 +763,61 @@ tiempo de reacción, velocidad de sospecha y cada cuánto se asoman. Sale en 0%
 por ahora. Es una llave (`peso: 0` en `data/train.js`), no una amputación:
 subirle el peso la devuelve al juego sin tocar una línea de código.
 
-### Los tres tipos de tren
+### Los dos tipos de tren
 
 Además de qué tan escoltado viaja, cada tren tiene un TIPO — un catálogo en
 `data/train.js` (`TRAIN_TYPES`), igual patrón que las armas o los caballos.
 
-| | Sale | Vagones | El asalto dura | Particularidad |
+**Hubo tres, y el eje era la velocidad**: rápido, lento y punto medio. Eso es un
+eje de dificultad disfrazado de variedad — un tren que se distingue por su reloj
+es el mismo tren con otro cronómetro. Ahora son dos y **se distinguen por lo que
+traen adentro**:
+
+| | Sale | Vagones | El asalto dura | Qué te ataca |
 |---|---|---|---|---|
-| **Estándar** | 50% | 6, normales | 145s (de siempre) | El blindado, vagón 3 o más adelante |
-| **Veloz** | 30% | 6, MUCHO más cortos | 90s | **Se te suelta la carga encima, y el propio piso te traiciona** (ver abajo). Los disparos se oyen 1 vagón más lejos, la sospecha y el grito son ×1.5, y el blindado va SIEMPRE al último vagón (nunca se mezcla) |
-| **De carga** | 20% | 8, mayoría mercancía | 165s | **El tren del sigilo** (ver abajo): se puede soltar el ganado para abrir camino sin disparar, y si suena la alarma el botín te pesa encima |
+| **De pasajeros** | 50% | 6, normales | 145s | **La gente te delata** |
+| **De carga** | 50% | 8, mayoría mercancía | 165s | **El tren te ataca a vos** |
 
-**El veloz es una apuesta distinta, no una versión más difícil**: todo pasa
-rápido, para vos y para ellos. Sólo cambian esas tres cosas — nunca las armas
-de los guardias ni la dinamita fuera del blindado.
+La regla del reparto es **una mecánica, una sola casa**: si algo aparece en los
+dos trenes, no distingue nada.
 
-**El de carga es la primera respuesta real** al botín demasiado concentrado que
-median las notas de diseño (ver NOTAS-DISENO.md): en vez de una caja fuerte
-grande en un vagón, varias bolsas chicas repartidas en varios.
+| | **De pasajeros** | **De carga** |
+|---|---|---|
+| **Suyo, y de nadie más** | El pasajero rico con su guardaespaldas, la caja fuerte oculta, los testigos, el civil encubierto, y los dos que suben por vos (**el Cazarrecompensas y el Sheriff**) | **La carga que se suelta** y **el piso que traiciona**, el ganado que se puede soltar, **el vagón de armas** con su pólvora y su Dinamitero, y el botín que te pesa tras la alarma |
+| **La pregunta** | ¿podés robarles sin que ninguno grite? | ¿podés cruzarlo sin que el tren te mate? |
+
+**Los barriles que ruedan y el piso traicionero eran del tren veloz y se mudaron
+al de carga**, y no por conveniencia: un barril que se suelta en el pasillo **es
+carga suelta**. Nunca pertenecieron a "el tren rápido" — pertenecen al tren que
+lleva carga.
+
+Y ahí apareció algo que no se buscaba: en el tren del sigilo, un barril no es un
+peligro de combate —no te saca vida— pero **el porrazo se oye**. O sea que en el
+de carga, la carga suelta es lo que te delata. Encaja con el botín que pesa en
+vez de pelearse con él.
+
+**El de carga es además la primera respuesta real** al botín demasiado
+concentrado que anotan las notas de diseño (ver NOTAS-DISENO.md): en vez de una
+caja fuerte grande en un vagón, varias bolsas chicas repartidas en varios.
+
+> **El tren veloz no se borró: quedó apagado** (`peso: 0`), igual que "Alta
+> vigilancia" y el Pistolero. Sus seis vagones cortos siguen escritos en
+> `data/wagons.js`. Lo único que se pierde de verdad es su reloj de 90 s — y si
+> alguna vez se lo quiere de vuelta, el lugar correcto ya no es un tipo de tren
+> sino un estado más ("tren expreso"), que se le puede tocar a cualquiera de los
+> dos.
 
 ### En el tren de carga, la pregunta es: ¿podés llevártelo entero sin que nadie grite?
 
-Los otros dos trenes te preguntan **cómo llegar** (el estándar) y **qué tan
-rápido** (el veloz). Éste pregunta otra cosa: **si podés hacerlo sin
-despertarlo**. Es el único donde eso es realmente jugable — guardias sueltos,
-mucho espacio y tiempo de sobra.
+El de pasajeros te pregunta **cómo llegar** y **a quién le creés**. Éste
+pregunta otra cosa: **si podés hacerlo sin despertarlo**. Es el único donde eso
+es realmente jugable — guardias sueltos, mucho espacio y tiempo de sobra.
+
+Y desde la reestructuración de los tipos, es también el tren al que **el propio
+tren le juega en contra** (los barriles que ruedan, el piso que tironea, la
+pólvora). Las dos cosas parecen contradecirse y no lo hacen: un barril no te
+saca vida, **te tumba y hace ruido**. En el tren del sigilo, la carga suelta es
+justamente lo que te delata.
 
 **El premio ya existía y ahora se ve.** Salir sin que suene la alarma da el
 DOBLE de botín, pero antes era un número que te enterabas en la pantalla de
@@ -818,9 +855,9 @@ tren. Mientras nadie dio la voz, cargás lo que quieras sin costo. Apenas suena,
 que agarres a partir de ahí te frena más. Un tren limpio te lo podés llevar
 entero; uno que se despertó te obliga a elegir qué soltar y qué no ir a buscar.
 
-> En el estándar y en el veloz el botín **no** pesa: el estándar tiene su
-> decisión en los caminos y el veloz en el reflejo. Mudarle la misma pregunta a
-> los tres sería borrar justamente lo que los separa.
+> En el de pasajeros el botín **no** pesa: allá la decisión está en los caminos
+> y en a quién le creés. Mudarle la misma pregunta a los dos sería borrar
+> justamente lo que los separa.
 
 > Es la misma familia de castigo que sostiene todo lo demás: acá nada te quita
 > vida por equivocarte — el barril te tumba, la caja fuerte tarda, el salto
@@ -828,7 +865,7 @@ entero; uno que se despertó te obliga a elegir qué soltar y qué no ir a busca
 > alarma te vuelva lento en vez de sacarte algo es esa regla, aplicada por
 > primera vez a *cuánto llevás* en lugar de *cuánto tardaste*.
 
-### En el tren veloz, el tren también es tu enemigo
+### Y en el de carga, el tren también es tu enemigo
 
 Cada tanto **se suelta una tanda de barriles y cajones** que bajan rodando por
 el pasillo hacia la cola. No es decorado y no se puede ignorar:
@@ -895,10 +932,22 @@ las puertas de los costados te tapen un instante (ver abajo).
 
 ### Conocés los vagones, pero nunca sabés qué te vas a encontrar
 
-El tren estándar es el mismo de siempre: seis vagones, los que ya conocés.
+El tren de pasajeros es el mismo de siempre: seis vagones, los que ya conocés.
 Lo que cambia es **quién viaja y cómo está el tren ese día**, y se sortea de
-nuevo en cada servicio. (El veloz y el de carga quedan afuera de todo esto:
-ya tienen su propia identidad, y mezclarlas la borraría.)
+nuevo en cada servicio.
+
+**Y ahora esto le pasa a los DOS trenes.** Antes era exclusivo del estándar, o
+sea que la mitad de tus asaltos no veía nunca una tormenta, ni una redada, ni
+una puerta trabada, ni un vagón conversando: todo el trabajo de "variedad de lo
+que pasa en los trenes" le tocaba a la mitad del juego. El clima y una redada no
+son la identidad de nadie — son el día que le tocó a ese servicio, y eso le
+puede tocar a cualquiera.
+
+Lo que **sí** es exclusivo del tren de pasajeros son las tres cosas que
+dependen de tener a quién amenazar: **el paquete, el civil encubierto y la caja
+fuerte oculta**. La única forma de enterarte dónde está la caja escondida es que
+te lo suelte un pasajero, y el de carga lleva un solo vagón con gente: esconder
+una caja ahí sería esconderla de verdad.
 
 **Cómo está el tren** — pueden salir varias a la vez, o ninguna:
 
@@ -1306,7 +1355,7 @@ el que de verdad sale.
 
 ### El Cazarrecompensas: cuando tu recompensa sube demasiado, alguien sube al tren por vos
 
-**Con $900 o más de recompensa, en los trenes ESTÁNDAR ya no viajás solo.**
+**Con $900 o más de recompensa, en los trenes DE PASAJEROS ya no viajás solo.**
 Sube un cazarrecompensas — por la cola, igual que vos — y aprieta hacia la
 locomotora. O sea que se te mete **entre vos y tu caballo**.
 
@@ -1331,8 +1380,8 @@ mismas balas de siempre (no hace falta dinamita), como a cualquier otra cosa
 que se interponga. La de chapa del blindado sigue igual, con la dinamita
 como única llave. Si lo matás, el tren se destraba entero.
 
-**Y no aparece en el tren veloz ni en el de carga**, a propósito: ésos ya
-tienen su propio enemigo (el tren mismo en uno, el sigilo en el otro).
+**Y no aparece en el tren de carga**, a propósito: ése ya tiene su propio
+enemigo — el tren mismo, y la pregunta del sigilo.
 
 #### Primero te mide. Después viene.
 
@@ -1413,7 +1462,7 @@ aleja de la horca sin entregarte.
 ### El Sheriff: el que nunca te viene a buscar
 
 **Entre $600 y $899 de recompensa, hay chance de que viaje un sheriff en tu
-próximo tren estándar.** No es seguro: es una apuesta cada vez que subís.
+próximo tren de pasajeros.** No es seguro: es una apuesta cada vez que subís.
 
 Es el opuesto exacto del cazarrecompensas. Aquél viene por vos; éste **no da un
 solo paso hacia vos**. Aguanta **tres balazos** —entre un guardia común y uno
@@ -1683,11 +1732,14 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `enemy.dinamiteroSeparacion` | **A qué distancia tuya cae cada una.** Decide si quedarte quieto te cuesta 2 vidas o las 4: por debajo de `explosives.dinamita.lethalRadius` te mata |
 | `enemy.dinamiteroAlcance` / `dinamiteroRangoMax` | Cuánto vuela su cartucho y hasta dónde decide tirar. **Van atados**: el alcance tiene que ser el rango más la separación, o la tanda deja de caer separada |
 | `enemy.dinamiteroMargen` | Hasta dónde retrocede cuando lo tenés encima, por encima de `throwMinRange` |
-| `TRAIN_TYPES.<id>.sustituciones` (`data/train.js`) | Cada cuánto ese tren cambia un vagón por otro. Hoy: el estándar cambia ganado por armas la mitad de las veces |
+| `TRAIN_TYPES.<id>.sustituciones` (`data/train.js`) | Cada cuánto ese tren cambia un vagón por otro. Hoy: **el de carga** cambia ganado por armas una de cada cuatro veces |
+| `TRAIN_TYPES.<id>.peso` (`data/train.js`) | **Cada cuánto sale ese tipo de tren.** Hoy 50/50 entre pasajeros y carga; el veloz está en 0. Si se mueve, hay que mover `sustituciones` en sentido contrario o el vagón de armas cambia de frecuencia sin que nadie lo pida |
+| `TRAIN_TYPES.<id>.modificadores` (`data/train.js`) | Si ese tren entra en el sorteo de **clima, estado, comportamientos y tipos de guardia**. Hoy: los dos |
+| `TRAIN_TYPES.<id>.gente` (`data/train.js`) | Si ese tren sortea **paquete, civil encubierto y caja fuerte oculta**. Hoy: sólo el de pasajeros — las tres necesitan pasajeros a quienes amenazar |
 | `loot.strongboxTime` | Cuánto tardás en abrir una caja fuerte |
 | `alert.interval` / `alert.max` | Ritmo y tope de la gente de la locomotora |
 | `raid.duration` | Los segundos del asalto entero |
-| `rodante.vida` / `velocidad` | **Los barriles del tren veloz:** cuántos tiros aguantan y qué tan rápido vienen |
+| `rodante.vida` / `velocidad` | **Los barriles del tren de carga:** cuántos tiros aguantan y qué tan rápido vienen |
 | `rodante.rafagaMin` / `rafagaMax` / `rafagaGap` | **Cuántos vienen por tanda y cada cuánto sale el siguiente.** Los tres números que deciden si se pueden esquivar de a uno o hay que quedarse afuera del pasillo |
 | `rodante.adelanto` / `pistaMinima` | Desde dónde aparecen y cuánta pista te dejan como mínimo para reaccionar |
 | `rodante.levantarse` | Cuánto tardás en levantarte si te lleva puesto uno |

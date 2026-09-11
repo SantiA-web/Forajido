@@ -48,16 +48,20 @@ export const BOSSES = {
      * data/riders.js). Es lo que hace que la recompensa deje de ser un número
      * en un cartel y pase a ser algo que te persigue.
      *
-     * `soloEnTipos` — sólo en el tren estándar. No es una limitación técnica:
-     * el veloz ya tiene su enemigo propio (el tren mismo: barriles y
-     * traqueteo) y el de carga tiene el suyo (la pregunta del sigilo). Meterle
-     * un cazador encima a esos dos les taparía la identidad que costó
-     * construirles. El estándar es el que tiene lugar libre — su decisión son
-     * los caminos, y un cazador que te corta el camino JUEGA con eso en vez de
-     * pisarlo.
+     * `soloEnTipos` — sólo en el tren de PASAJEROS. No es una limitación
+     * técnica: el de carga se quedó con todas las mecánicas en las que el tren
+     * es el enemigo (rodantes, traqueteo, pólvora) más la pregunta del sigilo,
+     * así que meterle un cazador encima le taparía la identidad que costó
+     * construirle. El de pasajeros es el que tiene lugar libre — su decisión son
+     * los caminos y a quién le creés, y un cazador que te corta el camino JUEGA
+     * con eso en vez de pisarlo.
+     *
+     * Y encaja con el reparto: en el de pasajeros lo que te caza es GENTE (el
+     * testigo, el encubierto, el cazarrecompensas, el sheriff); en el de carga,
+     * el tren.
      */
     bountyMinimo: 900,
-    soloEnTipos: ['estandar'],
+    soloEnTipos: ['pasajeros'],
 
     /**
      * OCHO DE VIDA — la única cosa de todo el juego que pasa el techo de 4, y
@@ -521,7 +525,7 @@ export const BOSSES = {
      * APARECE EN UNA BANDA, Y NO SIEMPRE — decisión de Santi.
      *
      * Entre 600 y 899 de recompensa hay un `probabilidad` de que suba a tu
-     * próximo tren estándar. Arriba de 900 ya no aparece: ahí empieza la
+     * próximo tren de pasajeros. Arriba de 900 ya no aparece: ahí empieza la
      * banda del Cazarrecompensas, y las dos NO se superponen a propósito —
      * nunca hay ambigüedad sobre cuál de los dos te tocó, ni riesgo de
      * comerte los dos juntos.
@@ -529,21 +533,23 @@ export const BOSSES = {
      * Que sea probabilidad y no un umbral duro fue lo que pidió Santi, y
      * mejora el sistema: un umbral fijo se aprende una vez y después es un
      * trámite ("a partir de X aparece"). Una probabilidad hace que subir a
-     * un tren estándar en esa banda sea una apuesta cada vez.
+     * un tren de pasajeros en esa banda sea una apuesta cada vez.
      *
      * Con 40%, en los ~300 puntos de recompensa que dura la banda te lo vas
      * a cruzar un par de veces antes de que aparezca el Cazarrecompensas:
      * suficiente para conocerlo y aprender a leerlo, no tanto como para que
      * se sienta obligatorio.
      *
-     * Y va al ESTÁNDAR, no al veloz (que fue la primera idea): el veloz ya es
-     * caos con los barriles y el traqueteo, y meterle un jefe encima era
-     * apilar dos sistemas de presión que no se hablan entre sí.
+     * Y va al de PASAJEROS, no al de carga: el de carga ya es caos con los
+     * barriles y el traqueteo, y meterle un jefe encima es apilar dos sistemas
+     * de presión que no se hablan entre sí. (Cuando esto se escribió, el que
+     * llevaba los barriles era el tren veloz; la razón no cambió, cambió de
+     * tren.)
      */
     bountyMinimo: 600,
     bountyMaximo: 899,
     probabilidad: 0.40,
-    soloEnTipos: ['estandar'],
+    soloEnTipos: ['pasajeros'],
 
     /**
      * NACE COMO UN GUARDIA COMÚN (`createEnemy`), no como un jefe.

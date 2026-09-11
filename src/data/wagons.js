@@ -715,6 +715,31 @@ export const WAGONS = {
       { col: 22, row: 6, type: 'bag' },
       { col: 28, row: 3, type: 'bag' },
     ],
+
+    /**
+     * BARRILES DE PÓLVORA, PERO SÓLO SI EL TREN LLEVA VAGÓN DE ARMAS — ver la
+     * nota completa en `correo`, que es de donde salen estas posiciones (los
+     * dos vagones comparten el layout exacto).
+     *
+     * HUBO QUE AGREGÁRSELAS AL MUDAR EL VAGÓN DE ARMAS AL TREN DE CARGA. La
+     * pólvora repartida por todo el tren la llevan los vagones que tienen
+     * `cajonesExtra`, y hasta ahora eran tres: comedor, correo y blindado. De
+     * ésos, el tren de carga sólo lleva comedor y blindado — o sea que el
+     * sistema entero se le habría caído a dos vagones de ocho, y "un tren
+     * distinto de punta a punta" habría pasado a ser "un tren con pólvora en
+     * dos lugares".
+     *
+     * Y es el vagón donde más sentido tiene: un furgón de correo liviano es
+     * literalmente carga estibada. Si algo lleva pólvora, es esto.
+     *
+     * Elegidas para no pisar ninguna de las cinco bolsas de este vagón (que
+     * están en las columnas 4, 10, 16, 22 y 28).
+     */
+    cajonesExtra: [
+      { col: 13, row: 3 },
+      { col: 25, row: 6 },
+      { col: 6,  row: 6 },
+    ],
   },
 
 };

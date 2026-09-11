@@ -144,11 +144,16 @@ export function createMapScene(services) {
    * cada parada, ver `avanzarRuta`). Un tren no se moja a mitad de camino,
    * ni cambia de qué está hablando su gente.
    *
-   * SÓLO SI EL TIPO LO PERMITE (`tipoTren.modificadores`, data/train.js).
-   * Por ahora nada más el estándar entra en este sorteo — ver el porqué en
-   * el catálogo. Un veloz o uno de carga siempre sale despejado, sin ningún
-   * estado y con todos sus vagones patrullando normal, como si esta capa no
-   * existiera todavía para ellos.
+   * SON DOS LLAVES, NO UNA (ver data/train.js):
+   *
+   *   `modificadores` — clima, estado del tren, comportamiento por vagón y
+   *     tipos de guardia. La tienen LOS DOS trenes: el clima y una redada no
+   *     son la identidad de nadie, son el día que le tocó a ese servicio.
+   *
+   *   `gente` — paquetes, civiles encubiertos y caja fuerte oculta. Sólo el de
+   *     pasajeros, porque las tres dependen de tener a quién amenazar: la
+   *     única forma de saber dónde está la caja oculta es que te lo suelte un
+   *     pasajero, y el de carga lleva un solo vagón con gente.
    */
   function nuevoTipo(tren) {
     tren.tipoTren = sortearTipoTren(rng);
@@ -183,6 +188,14 @@ export function createMapScene(services) {
        * miedo.
        */
       tren.variantes = variantesPermitidas(gameState.bounty, gameState.honor);
+    } else {
+      tren.clima = CLIMA[CLIMA_POR_DEFECTO];
+      tren.estado = [];
+      tren.comportamientos = tren.composicion.map(() => 'normal');
+      tren.variantes = [];
+    }
+
+    if (tren.tipoTren.gente) {
       /**
        * ¿QUÉ VAGONES LLEVAN UN CIVIL ENCUBIERTO? Array paralelo a
        * `composicion`, como `comportamientos`: uno por vagón, como mucho uno
@@ -209,10 +222,6 @@ export function createMapScene(services) {
        */
       tren.cajaOculta = rng.chance(CHANCE_CAJA_OCULTA);
     } else {
-      tren.clima = CLIMA[CLIMA_POR_DEFECTO];
-      tren.estado = [];
-      tren.comportamientos = tren.composicion.map(() => 'normal');
-      tren.variantes = [];
       tren.encubiertos = tren.composicion.map(() => false);
       tren.paquetes = tren.composicion.map(() => null);
       tren.cajaOculta = false;

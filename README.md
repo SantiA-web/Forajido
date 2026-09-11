@@ -776,7 +776,7 @@ traen adentro**:
 | | Sale | Vagones | El asalto dura | Qué te ataca |
 |---|---|---|---|---|
 | **De pasajeros** | 50% | 6, normales | 145s | **La gente te delata** |
-| **De carga** | 50% | 8, mayoría mercancía | 165s | **El tren te ataca a vos** |
+| **De carga** | 50% | 8, mayoría mercancía (uno es el **almacén**) | 165s | **El tren te ataca a vos** |
 
 La regla del reparto es **una mecánica, una sola casa**: si algo aparece en los
 dos trenes, no distingue nada.
@@ -795,6 +795,24 @@ Y ahí apareció algo que no se buscaba: en el tren del sigilo, un barril no es 
 peligro de combate —no te saca vida— pero **el porrazo se oye**. O sea que en el
 de carga, la carga suelta es lo que te delata. Encaja con el botín que pesa en
 vez de pelearse con él.
+
+### El vagón almacén: el depósito, y viaja siempre
+
+El tren de carga lleva **un vagón almacén**, y a diferencia del de armas **no se
+sortea: está siempre**. Es a propósito — el de armas es una sorpresa que te
+cambia el plan del día; éste es la razón por la que subís a un tren de carga, y
+algo que decide la identidad de un tren no puede aparecer una de cada cuatro
+veces.
+
+| | |
+|---|---|
+| **Dos cajas fuertes** | Es el único lugar del tren donde vale la pena quedarse ocho segundos quieto, dos veces. El resto del de carga reparte su botín en bolsas |
+| **Estanterías gruesas** | Pasillos más angostos que los del correo: adentro se pelea peor. Es un depósito, no un furgón de reparto |
+| **Nadie a quien preguntarle** | No lleva pasajeros, como todo este tren |
+| **Nunca es el primer vagón** | Lo más caro del tren no puede quedar a un paso de la salida |
+
+Mide lo mismo que el vagón de correo liviano al que reemplaza, así que el tren
+no cambia de largo ni su reloj de 165 s.
 
 **El de carga es además la primera respuesta real** al botín demasiado
 concentrado que anotan las notas de diseño (ver NOTAS-DISENO.md): en vez de una

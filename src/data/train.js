@@ -300,8 +300,13 @@ export const TRAIN_TYPES = {
     short: 'CARGA',
     hint: 'Mucha mercancía, poca gente. Y la carga se te viene encima.',
     pista: 'Carga pesada y suelta',
+    /**
+     * EL ALMACÉN VIAJA SIEMPRE, y reemplaza a uno de los tres correos livianos
+     * (mide lo mismo: el tren no cambia de largo). Ver `almacen` en
+     * data/wagons.js para por qué es fijo y no sorteado.
+     */
     composition: [
-      'correo_liviano', 'correo_liviano', 'correo_liviano',
+      'almacen', 'correo_liviano', 'correo_liviano',
       'ganado', 'ganado', 'ganado',
       'comedor', 'blindado',
     ],
@@ -313,7 +318,12 @@ export const TRAIN_TYPES = {
      * vagones en vez de seis: nunca el primero (`armas: 2`) ni el último
      * (`armas: 7`).
      */
-    posicionMinima: { blindado: 3, armas: 2 },
+    /**
+     * `almacen: 2` — nunca el primer vagón. Es donde vive lo más caro del tren,
+     * y el primero es el que sale gratis: se entra por ahí y la salida queda a
+     * un paso. Misma regla, y por el mismo motivo, que el vagón de armas.
+     */
+    posicionMinima: { blindado: 3, armas: 2, almacen: 2 },
 
     /**
      * EL VAGÓN DE ARMAS NUNCA ES EL ÚLTIMO.

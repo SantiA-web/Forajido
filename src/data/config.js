@@ -2184,6 +2184,24 @@ export const CONFIG = {
        * chapa del blindado.
        */
       armas:     ['#55603f', '#6e7a4e'],   // cajones de munición estibados
+
+      /**
+       * VAGÓN ALMACÉN: estantería clara, el interior más luminoso del tren.
+       *
+       * LA INTENCIÓN ERA QUE SE PARECIERA AL CORREO Y MIRÁNDOLO NO SE PARECE:
+       * salta a la vista. Se deja así después de ver las dos pantallas una al
+       * lado de la otra, por algo que sólo apareció mirando — **las estanterías
+       * del correo casi se funden con el piso** (su `#9c7a45` está a un paso
+       * del `#6d4a30` del suelo), así que ese vagón no tiene de dónde ceder
+       * contraste. Un almacén igual de apagado habría sido un segundo vagón
+       * ilegible en vez de uno reconocible.
+       *
+       * Y es el único vagón del tren de carga donde de verdad conviene frenar,
+       * así que que se note de lejos no está mal. Si alguna vez molesta, el
+       * arreglo es bajarle luz a estos dos tonos — no subírsela al correo, que
+       * es de otro tren y ya está jugado.
+       */
+      almacen:   ['#8a7a5c', '#a39371'],
       blindado:  ['#4a5058', '#626a74'],   // chapa de acero
       cola:      ['#6b4f36', '#87664a'],   // equipaje amontonado
       pasajeros: ['#8a5a34', '#a06b3f'],

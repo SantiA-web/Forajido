@@ -10399,6 +10399,135 @@ visible. **Para medir comportamiento del asalto, ése es el instrumento.**
 
 ---
 
+## 🐛 ARREGLADA · Un guardia chocaba un barril de pólvora y se quedaba ahí para siempre
+
+*(Santi, jugando: "creo que los guardias no ven a los barriles (de pólvora) como
+un obstáculo, porque vi uno caminando, chocó contra el barril y se quedó chocado
+contra el barril y no se volvió a mover")*
+
+### La causa: dos sistemas que no se hablan
+
+Un cajón de pólvora **frena el paso** (`isSolidForMovementAt`, scenes/raidScene.js)
+pero **no es un tile**. Y `map.isSolidTile` —lo único que miran el buscador de
+rutas y la ronda— no lo ve. El guardia camina hacia un punto que para él está
+libre, se choca, y `moveAxisAligned` **nunca devuelve `arrived`**: el `pathIndex`
+no avanza nunca más.
+
+Lo que lo volvía permanente es que **el destrabe ya existía y estaba gateado**:
+
+```js
+if (!e.rondaLarga) return;   // o sea: sólo el Dinamitero
+```
+
+Se había escrito para él porque su ronda cruza puertas. Ningún otro guardia tenía
+red. (El que va a investigar sí la tenía —`stuckTimer` en `doInvestigate`—, así
+que el agujero era exactamente un estado: `patrol`.)
+
+### Lo que costó encontrarlo, y la lección
+
+**Sorteando no salía.** Cinco corridas de 90 a 150 segundos, con la alarma
+sonando y con un piloto de prueba moviéndose por un recorrido fijo para que los
+guardias lo persiguieran: **cero casos**. Dos veces el detector marcó al
+*centinela del blindado*, que está quieto a propósito, y una tercera al
+Dinamitero, que ya tenía el destrabe — tres falsos positivos seguidos, todos del
+arnés.
+
+Apareció **cruzando estáticamente cada ronda contra cada posición de cajón**, sin
+simular nada:
+
+| Vagón | Tramo | Cajón | |
+|---|---|---|---|
+| correo | `6,3 → 16,3` | `13,3` | le cruza el camino |
+| correo | `6,6 → 6,3` | `6,6` | **encima del waypoint** |
+| correo | `20,6 → 28,6` | `25,6` | le cruza el camino |
+
+El del waypoint es el caso sin salida: a un punto tapado por un bulto sólido no
+se puede "llegar" jamás, así que no hay nada que pueda destrabarlo.
+
+> **La verificación correcta no siempre es la más parecida a lo que querés
+> saber** — otra vez. Para un bug que depende de dónde están dibujadas las cosas,
+> el instrumento no era jugar mil veces: era mirar los datos.
+
+### El arreglo, en tres capas
+
+1. **`systems/ai.js`** — el destrabe de `doPatrol` deja de ser del Dinamitero y
+   pasa a ser de todos. **Y el avance se mide ahora en los dos ejes**: medir
+   sólo X alcanzaba para una ronda horizontal, pero el tramo `6,6 → 6,3` del
+   correo es vertical y con la medición vieja un guardia subiendo a paso firme
+   habría contado como trabado.
+2. **`world/train.js`** — `revisarRondas()`, hermano de `revisar()`: avisa por
+   consola si un cajón cae sobre el recorrido de un guardia. Para que el próximo
+   vagón que se escriba dé el error al armar el tren y no meses después jugando.
+3. **`data/wagons.js`** — las tres posiciones del correo se mueven a las columnas
+   que ninguna ronda pisa.
+
+### VERIFICADO POR CONSOLA
+
+- **Antes y después con el mismo test**, usando el **sitio publicado como
+  control del código viejo** (que es una forma barata de tener un "antes" real
+  en vez de recordado):
+
+| | Publicado (viejo) | Local (arreglado) |
+|---|---|---|
+| Peor congelado | **28,6 s** | **2,3-4,0 s** |
+| Cambios de waypoint en 40 s | **0** | 2 |
+| Píxeles recorridos | 274 | **838-911** |
+
+- El validador nuevo **salta con el mensaje correcto** cuando se le devuelve a
+  mano la posición mala, y se queda callado con las plantillas de hoy.
+- Cero choques en las plantillas, y ciclo completo de nueve escenas sin un error
+  ni un aviso.
+
+---
+
+## ✅ HECHA · El vagón almacén, y por qué viaja siempre
+
+*(Santi: "agregaría el vagón 'almacén' para el tren de carga [...] (lugar fijo)")*
+
+Es la primera pieza del rediseño económico: **en el de pasajeros robás dinero y
+en el de carga objetos que después vendés**. El almacén es de dónde salen.
+
+**No se sortea, y ahí está la diferencia con el vagón de armas.** El de armas es
+una sorpresa que te cambia el plan del día, y por eso es uno de cada cuatro.
+Éste es *la razón por la que subís a un tren de carga*: algo que decide la
+identidad económica de un tren no puede aparecer una de cada cuatro veces.
+
+| | |
+|---|---|
+| **Dos cajas fuertes** | El resto del tren reparte en bolsas; acá se concentra otra vez, a propósito |
+| **Estanterías de cuatro columnas** | Más gruesas que las del correo: pasillos más angostos, se pelea peor |
+| **Sin pasajeros** | Como todo el tren — y es lo que obliga a que la pista de la caja oculta acá sea otra cosa |
+| **Nunca el primer vagón** | Misma regla que el de armas: lo más caro no puede quedar a un paso de la salida |
+
+Mide **lo mismo (32 columnas) que el correo liviano al que reemplaza**, así que
+el tren no cambia de largo ni su reloj de 165 s.
+
+**Sus dos rondas son rectas a propósito**, y eso salió del bug de arriba: las
+columnas que no pisan (1-4 y 27-30) son las que quedan libres para la pólvora, y
+con rondas en L eso es mucho más difícil de garantizar. La lección del vagón de
+correo, aplicada al escribir en vez de descubierta jugando.
+
+### Y el color se decidió MIRANDO, no razonando
+
+El comentario que escribí antes de verlo decía que tenía que parecerse al correo
+y no saltar a la vista. **Mirando las dos pantallas una al lado de la otra, salta
+a la vista — y se dejó así**, por algo que ninguna medición daba: **las
+estanterías del correo casi se funden con el piso**, así que un almacén igual de
+apagado habría sido un segundo vagón ilegible en vez de uno reconocible.
+
+### VERIFICADO POR CONSOLA
+
+- **5.000 composiciones**: el almacén viaja en **todas**, **nunca** es el primero,
+  y cae repartido entre las posiciones 2 y 8. El tren sigue midiendo 8 vagones,
+  el vagón de armas sigue en 24,3% y nunca pegado al blindado.
+- El layout cumple las reglas del tren: 10 filas de 32 columnas, con `+` en las
+  puntas de las filas 4 y 5.
+- **20 trenes armados de verdad**: 4 traen pólvora en el almacén (el ~25% que
+  corresponde), y el validador de rondas no dice nada.
+- Un asalto de 60 s parado adentro: sin errores, con sus dos cajas fuertes.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

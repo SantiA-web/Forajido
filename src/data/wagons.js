@@ -701,6 +701,83 @@ export const WAGONS = {
   // Es la pieza que responde a la nota "el botín está demasiado concentrado"
   // (NOTAS-DISENO.md): en vez de una apuesta grande en un solo punto, varias
   // chicas a lo largo del vagón.
+  // ---------------------------------------------------------------- almacén
+  /**
+   * EL VAGÓN ALMACÉN — el depósito del tren de carga.
+   *
+   * *(Santi: "agregaría el vagón 'almacén' para el tren de carga [...] el objeto
+   * raro sólo se PUEDE LLEGAR a encontrar en el almacén (abriendo las cajas
+   * fuertes) o las cajas fuertes ocultas")*
+   *
+   * VIAJA SIEMPRE, no se sortea (`composition` en data/train.js). Es la
+   * diferencia con el vagón de armas, y es a propósito: el de armas es una
+   * sorpresa que te cambia el plan del día, y éste es **la razón por la que
+   * subís a un tren de carga**. Algo que decide la identidad económica de un
+   * tren no puede aparecer una de cada cuatro veces.
+   *
+   * MIDE LO MISMO QUE EL CORREO LIVIANO AL QUE REEMPLAZA (32 columnas), así que
+   * el tren de carga no cambia de largo ni un píxel y su reloj de 165 s sigue
+   * valiendo exactamente lo que valía.
+   *
+   * DOS CAJAS FUERTES, que es lo que lo separa de todo lo demás de este tren.
+   * El de carga reparte su botín en bolsas (ésa fue su respuesta al botín
+   * concentrado) y acá se concentra otra vez, a propósito: es el único lugar
+   * del tren donde vale la pena quedarse ocho segundos quieto, dos veces.
+   *
+   * LAS ESTANTERÍAS SON MÁS GRUESAS que las del correo (cuatro columnas contra
+   * tres) y dejan pasillos más angostos: adentro se pelea peor. Es un depósito,
+   * no un furgón de reparto.
+   *
+   * SIN PASAJEROS, como todo este tren. Y eso es justamente lo que obliga a que
+   * la pista de la caja fuerte oculta acá sea otra cosa — no hay a quién
+   * amenazar (ver data/train.js, `gente`).
+   */
+  almacen: {
+    id: 'almacen',
+    name: 'Vagón almacén',
+    short: 'ALMACÉN',
+    hint: 'El depósito. Dos cajas fuertes y nadie a quien preguntarle.',
+    layout: [
+      '#####WW###WW###WW###WW###WW#####',
+      '#.CCCC..CCCC..CCCC..CCCC..CCC..#',
+      '#.CCCC..CCCC..CCCC..CCCC..CCC..#',
+      '#..............................#',
+      '+..............................+',
+      '+..............................+',
+      '#..............................#',
+      '#.CCCC..CCCC..CCCC..CCCC..CCC..#',
+      '#.CCCC..CCCC..CCCC..CCCC..CCC..#',
+      '####WW####WW####WW####WW####WW##',
+    ],
+    /**
+     * DOS RONDAS PARALELAS, una por cada fila de carga, y las dos rectas.
+     *
+     * Rectas a propósito: las columnas que NO pisan (1-4 y 27-30) son las que
+     * quedan libres para los barriles de pólvora, y con rondas en L eso se
+     * vuelve mucho más difícil de garantizar. Es la lección del vagón de correo
+     * aplicada al escribir en vez de descubierta jugando — ver `revisarRondas`
+     * en world/train.js, que ahora lo chequea solo.
+     */
+    enemies: [
+      { path: [[5, 3], [26, 3]] },
+      { path: [[26, 6], [5, 6]] },
+    ],
+    passengers: [],
+    loot: [
+      { col: 30, row: 3, type: 'strongbox' },
+      { col: 30, row: 6, type: 'strongbox' },
+      { col: 10, row: 6, type: 'bag' },
+      { col: 20, row: 3, type: 'bag' },
+      { col: 15, row: 6, type: 'bag' },
+    ],
+    /** En las columnas que ninguna de las dos rondas pisa. */
+    cajonesExtra: [
+      { col: 28, row: 3 },
+      { col: 2,  row: 6 },
+      { col: 28, row: 6 },
+    ],
+  },
+
   correo_liviano: {
     id: 'correo_liviano',
     name: 'Vagón de correo (liviano)',

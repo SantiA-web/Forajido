@@ -48,6 +48,7 @@ export function createRideScene(services) {
   let caballo;
   let composicion, dificultad, tipoTren, clima, estado, comportamientos, variantes,
     encubiertos, paquetes, cajaOculta, train, plataformas, largoTren;
+  let hayTormenta, truenoTimer, cascoTimer, velCaballoActual;
   let x, y, vel, aguante, reloj, gastado, scroll, alcanzada;
   let trastabilla, choque, saltando, terminado;
   let exposicion, visto, obstaculos, aviso;
@@ -141,6 +142,7 @@ export function createRideScene(services) {
     tiradores = [];
     balas = [];
     obstaculos = sembrarObstaculos();
+    arrancarTormenta();
 
     services.ride = {
       get caballo() { return caballo; },
@@ -579,9 +581,107 @@ export function createRideScene(services) {
     aviso = { texto: T.ride.choque, color: colors.enemyAlert, life: 0.9 };
   }
 
+  // ---------------------------------------------------------------- tormenta
+
+  /**
+   * LA TORMENTA EN EL GALOPE — acá no hay techo que valga.
+   *
+   * Es el único lugar del juego donde estás **a la intemperie de verdad**: a
+   * caballo, en el desierto, al lado de un tren. Por eso van los volúmenes de
+   * "afuera" multiplicados (`CONFIG.tormenta.galopeMult`) y no los de adentro.
+   *
+   * Y queda un resto de chapa a propósito: el tren va ahí nomás, con su techo
+   * de metal recibiendo la misma lluvia. Es lo que ata el galope al asalto —
+   * cuando saltás adentro, el sonido no empieza de cero, se da vuelta.
+   */
+  function arrancarTormenta() {
+    // El viento de ir rápido: está siempre, llueva o no.
+    audio.ambiente('galope', { cutoff: 420, q: 0.6, type: 'lowpass',
+      gain: CONFIG.ambiente.galopeVientoGain });
+    cascoTimer = 0;
+    velCaballoActual = 0;
+
+    hayTormenta = clima === 'tormenta' || (clima && clima.id === 'tormenta');
+    truenoTimer = 0;
+    if (!hayTormenta) return;
+
+    const t = CONFIG.tormenta;
+    audio.ambiente('agua',   { cutoff: 1400, q: 0.7, type: 'highpass', gain: t.aguaAfuera * t.galopeMult });
+    audio.ambiente('viento', { cutoff: 240,  q: 0.6, type: 'lowpass',  gain: t.vientoAfuera * t.galopeMult });
+    audio.ambiente('chapa',  { cutoff: 2900, q: 3.2, type: 'bandpass', gain: t.chapaAfuera * 2 });
+    truenoTimer = t.truenoCada * 0.5;
+  }
+
+  function updateTormenta(dt) {
+    if (!hayTormenta) return;
+    const t = CONFIG.tormenta;
+    truenoTimer -= dt;
+    if (truenoTimer <= 0) {
+      truenoTimer = t.truenoCada + rng.range(0, t.truenoVariacion);
+      audio.play(rng.chance(t.chanceCerca) ? 'truenoCerca' : 'truenoLejos');
+    }
+  }
+
+  /**
+   * LOS CASCOS, Y SU CADENCIA SIGUE A LA VELOCIDAD.
+   *
+   * Es lo único que hacía falta acá: el galope ya te dice en pantalla si el
+   * caballo está lanzado o aflojando (la barra de aguante), pero **no se oía**,
+   * y el ritmo del casco es la forma en que eso se siente sin mirar nada.
+   *
+   * Parado no suena. Es intencional: el silencio es la otra mitad de la señal.
+   */
+  function updateCascos(dt) {
+    /**
+     * 🐛 VA POR `velCaballoActual` Y NO POR `vel`, y la diferencia importa: en
+     * esta escena `vel` es la velocidad RELATIVA AL TREN (ver `trenVelocidad`
+     * en data/horse.js). Un Mustang que le sigue el paso al tren tiene `vel`
+     * cero — y con la primera versión habría sonado a caballo parado justo
+     * cuando está corriendo a fondo. `velCaballoActual` es lo que corre el
+     * animal sobre el suelo, que es lo único que decide cómo pisa.
+     *
+     * 🐛 Y antes usaba `caballo.velMax`, que NO EXISTE (el campo es
+     * `sprintSpeed`), con un `|| velocidad` de red que lo tapaba: la proporción
+     * daba 1 siempre y la cadencia nunca se habría estirado. La trampa de
+     * `campo || default` de siempre.
+     */
+    /**
+     * Y VA EN VALOR ABSOLUTO, porque `velCaballo` PUEDE SER NEGATIVA: frenando
+     * es `sprintSpeed * troteFactor - brakeSpeed`, que con el Criollo da −14. No
+     * es que el animal vaya marcha atrás — es cómo la escena expresa "quedate
+     * atrás del tren". Para el oído eso es un trote lento, no un silencio, y
+     * sin el `abs` el caballo enmudecía justo cuando aflojabas.
+     *
+     * El silencio queda sólo para cuando de verdad se para: trastabillar pone
+     * `velCaballo` en 0 clavado.
+     */
+    const velocidad = Math.abs(velCaballoActual || 0);
+    if (velocidad < 2) { cascoTimer = 0; return; }
+    cascoTimer -= dt;
+    if (cascoTimer > 0) return;
+    // A tope, `cascoCada`; al trote o frenando, el intervalo se estira solo.
+    const proporcion = Math.max(0.25, velocidad / caballo.sprintSpeed);
+    cascoTimer = CONFIG.ambiente.cascoCada / proporcion;
+    audio.play('casco');
+  }
+
+  /**
+   * La lluvia no se apaga al saltar al tren: el asalto la vuelve a pedir con
+   * sus propios volúmenes en el mismo cuadro. Lo que sí se limpia es el caso
+   * de volver al mapa o al campamento.
+   */
+  function exit() {
+    audio.quitarAmbiente('agua');
+    audio.quitarAmbiente('viento');
+    audio.quitarAmbiente('chapa');
+    audio.quitarAmbiente('galope');
+  }
+
   function update(dt) {
     scroll += dt;
     invuln = Math.max(0, invuln - dt);
+    updateTormenta(dt);
+    updateCascos(dt);
 
     if (terminado) {
       saltando -= dt;
@@ -678,6 +778,10 @@ export function createRideScene(services) {
     } else if (frena) {
       velCaballo = caballo.sprintSpeed * A.troteFactor - caballo.brakeSpeed;
     }
+
+    // Para los cascos: lo que corre el animal SOBRE EL SUELO, que es lo único
+    // que decide a qué ritmo pisa. `vel` no sirve — es la resta contra el tren.
+    velCaballoActual = velCaballo;
 
     let objetivo = velCaballo - A.trenVelocidad;
     // Trastabillar sigue siendo un empujón hacia atrás, no sólo frenar.
@@ -1335,5 +1439,5 @@ export function createRideScene(services) {
     r.rect(px - 1, by - 4, 3, alto + 8, colors.text);
   }
 
-  return { enter, update, render };
+  return { enter, exit, update, render };
 }

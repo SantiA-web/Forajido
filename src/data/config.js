@@ -1786,6 +1786,117 @@ export const CONFIG = {
     master: 0.5,
   },
 
+  /**
+   * LA TORMENTA, QUE HASTA AHORA NO SE OÍA.
+   *
+   * *(Santi: "recuerda que en la Tormenta se tiene que sentir como una: truenos
+   * y lluvia impactando en un techo de chapa")*
+   *
+   * Existía desde la Fase 1 como UN SOLO NÚMERO (`hearMult: 1.4`, los guardias
+   * te oyen 40% más lejos) y nada más. O sea: una tormenta que te cambiaba el
+   * sigilo y que no se veía ni se escuchaba. El jugador pagaba un precio por
+   * algo que no estaba ahí.
+   *
+   * SON TRES CAPAS Y NO UNA, y es lo que la hace sonar a tormenta de verdad:
+   *
+   *   `chapa`  el repiqueteo sobre el techo del vagón. Es un ruido con una
+   *            resonancia metálica alta (`q` grande, `cutoff` en la zona donde
+   *            canta una chapa). Es la capa que sólo existe BAJO TECHO.
+   *   `agua`   el siseo del agua cayendo. Está siempre, y sube a la intemperie
+   *            — afuera te moja a vos, no a la chapa de arriba.
+   *   `viento` el fondo grave. Sólo afuera: adentro del vagón no hay viento.
+   *
+   * Y ESO CONVIERTE AL SONIDO EN INFORMACIÓN. Al cruzar un enganche, al entrar
+   * al vagón de ganado (que va al aire libre) o al subirte al techo, la chapa
+   * se apaga y el agua y el viento suben. **Se oye cuándo estás expuesto**, que
+   * es exactamente cuando los jinetes de afuera te pueden pegar un tiro. No
+   * hizo falta inventar una señal: el clima ya era la señal.
+   */
+  tormenta: {
+    /** Volumen de cada capa, bajo techo y a la intemperie. */
+    chapaAdentro:  0.085,
+    chapaAfuera:   0.006,
+    aguaAdentro:   0.020,
+    aguaAfuera:    0.060,
+    vientoAdentro: 0.004,
+    vientoAfuera:  0.045,
+
+    /**
+     * Cuánto tarda en cruzar de un estado al otro. 0,35 s: lo suficiente para
+     * que no se oiga un click al pisar el enganche, y poco para que el cambio
+     * se sienta al pasar la puerta y no tres pasos después.
+     */
+    rampa: 0.35,
+
+    /**
+     * CADA CUÁNTO UN TRUENO, en segundos, y cuánto varía. Un trueno cada 9-22 s
+     * en un asalto de ~145 s son unos ocho o nueve: suficiente para que la
+     * tormenta esté viva, lejos del ruido constante que deja de oírse.
+     */
+    truenoCada: 9,
+    truenoVariacion: 13,
+
+    /**
+     * QUÉ PROPORCIÓN CAE CERCA. Uno de cada cuatro. El cercano es el único que
+     * corta el fondo y levanta la cabeza, así que si fueran la mitad dejaría de
+     * ser un susto y pasaría a ser el ritmo de la tormenta.
+     */
+    chanceCerca: 0.25,
+
+    /** En el galope estás a la intemperie y sobre un caballo: suena más. */
+    galopeMult: 1.35,
+  },
+
+  /**
+   * EL FONDO DE CADA LUGAR — y por qué antes no había ninguno.
+   *
+   * `startAmbience` se llamaba en UN solo lugar de todo el juego (el asalto), o
+   * sea que el campamento, el pueblo, el mapa y el galope estaban **mudos**:
+   * cuatro de las seis pantallas, incluido el galope, que es la más cinética
+   * que tiene el juego.
+   *
+   * LA REGLA DE TODOS ESTOS NÚMEROS ES QUE SON CHICOS. Un fondo que se nota
+   * deja de ser un fondo y se vuelve un zumbido: lo que tiene que pasar es que
+   * el silencio se sienta raro cuando lo sacás, no que el ruido se oiga cuando
+   * está. Si algo hay que corregir jugando, casi seguro es para abajo.
+   */
+  ambiente: {
+    /**
+     * EL CAMPAMENTO. De noche el fondo es el fuego y el desierto; de día no hay
+     * fogata encendida (es el reloj del juego), así que queda sólo el viento.
+     *
+     * `chispaCada` tiene variación grande a propósito: un chasquido cada 0,9 s
+     * exactos suena a metrónomo, no a fuego.
+     */
+    campNocheGain: 0.030,
+    campDiaGain:   0.022,
+    campFuegoGain: 0.026,
+    chispaCada: 0.55,
+    chispaVariacion: 1.1,
+
+    /** El pueblo: una calle de tierra al sol. De noche baja y se aquieta. */
+    puebloDiaGain:   0.026,
+    puebloNocheGain: 0.014,
+
+    /**
+     * EL MAPA es lo más callado del juego, y tiene que serlo: estás en tu
+     * campamento mirando un papel. Es el mismo viento del campamento, más bajo
+     * todavía — lo justo para que no se corte el mundo al abrir el cartel.
+     */
+    mapaGain: 0.012,
+
+    /**
+     * EL GALOPE. El viento de ir rápido, y los cascos.
+     *
+     * LA CADENCIA DE LOS CASCOS SIGUE A LA VELOCIDAD, que es lo único que
+     * importa acá: es la señal de si el caballo está lanzado o aflojando, y ya
+     * existe en pantalla (la barra de aguante) pero no en el oído. `cascoCada`
+     * es el intervalo a velocidad máxima; al aflojar se estira solo.
+     */
+    galopeVientoGain: 0.030,
+    cascoCada: 0.20,
+  },
+
   colors: {
     /**
      * EL SUELO DEL GALOPE — arena de día, oscuro de noche.

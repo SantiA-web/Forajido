@@ -61,7 +61,7 @@ export function createCampScene(services) {
   const { input, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
 
-  let x, y, sentado, mensaje, scroll, avisoLejos;
+  let x, y, sentado, mensaje, scroll, avisoLejos, chispaTimer;
   const menu = crearMenu(audio);
 
   function enter(params = {}) {
@@ -79,6 +79,7 @@ export function createCampScene(services) {
     mensaje = null;
     avisoLejos = 0;
     scroll = 0;
+    arrancarSonido();
 
     // Para depurar desde la consola: FORAJIDO.services.camp
     services.camp = {
@@ -244,9 +245,49 @@ export function createCampScene(services) {
     });
   }
 
+  // ----------------------------------------------------------------- sonido
+
+  /**
+   * EL FONDO DEL CAMPAMENTO — ver `CONFIG.ambiente` para los volúmenes.
+   *
+   * Son dos capas y la segunda es el reloj del juego: **la fogata sólo suena de
+   * noche**, porque de día está apagada. Es la misma regla que ya dice la hora
+   * sin escribirla (fuego encendido = de noche); ahora también se oye.
+   */
+  function arrancarSonido() {
+    const a = CONFIG.ambiente;
+    const dia = gameState.esDeDia;
+    // El desierto: viento grave, siempre.
+    audio.ambiente('desierto', { cutoff: 300, q: 0.6, type: 'lowpass',
+      gain: dia ? a.campDiaGain : a.campNocheGain });
+    if (dia) {
+      audio.quitarAmbiente('fuego');
+    } else {
+      audio.ambiente('fuego', { cutoff: 700, q: 0.8, type: 'lowpass', gain: a.campFuegoGain });
+    }
+    chispaTimer = 0;
+  }
+
+  function exit() {
+    audio.quitarAmbiente('desierto');
+    audio.quitarAmbiente('fuego');
+  }
+
+  /** Los chasquidos del fuego, irregulares. De día no hay fuego que chasquee. */
+  function updateSonido(dt) {
+    if (gameState.esDeDia) return;
+    const a = CONFIG.ambiente;
+    chispaTimer -= dt;
+    if (chispaTimer <= 0) {
+      chispaTimer = a.chispaCada + Math.random() * a.chispaVariacion;
+      audio.play('chispa');
+    }
+  }
+
   function update(dt) {
     scroll += dt;
     avisoLejos = Math.max(0, avisoLejos - dt);
+    updateSonido(dt);
 
     // Con el cajón abierto no caminás: tenés las dos manos adentro.
     if (menu.update(input)) return;
@@ -595,5 +636,5 @@ export function createCampScene(services) {
     else if (scroll < 9) r.text(T.camp.keys, r.width / 2, r.height - 14, colors.textDim);
   }
 
-  return { enter, update, render };
+  return { enter, exit, update, render };
 }

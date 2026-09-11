@@ -223,6 +223,14 @@ export function createMapScene(services) {
     hud.hide();
     encima = null;
 
+    /**
+     * Lo más callado del juego, y tiene que serlo: el mapa no es un lugar, es
+     * un papel que estás mirando en tu campamento. Va el mismo viento de allá,
+     * más bajo todavía — lo justo para que abrir el cartel no corte el mundo.
+     */
+    audio.ambiente('desierto', { cutoff: 300, q: 0.6, type: 'lowpass',
+      gain: CONFIG.ambiente.mapaGain });
+
     if (!rutas) {
       prepararRutas();
 
@@ -824,5 +832,9 @@ export function createMapScene(services) {
     r.text(T.mapa.salir, cx, y + 48, vivo ? colors.mapaSello : colors.mapaTinta, 'center', sin);
   }
 
-  return { enter, update, render };
+  function exit() {
+    audio.quitarAmbiente('desierto');
+  }
+
+  return { enter, exit, update, render };
 }

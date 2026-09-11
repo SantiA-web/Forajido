@@ -67,6 +67,16 @@ export function createTownScene(services) {
 
     camera.snap(x, y, bounds);
 
+    /**
+     * EL FONDO DEL PUEBLO: una calle de tierra al aire libre. De noche baja —
+     * no porque haya menos viento, sino porque un pueblo cerrado suena menos, y
+     * el juego ya usa la noche para decir que el establo y la armería cerraron.
+     */
+    audio.ambiente('calle', {
+      cutoff: 340, q: 0.6, type: 'lowpass',
+      gain: gameState.esDeDia ? CONFIG.ambiente.puebloDiaGain : CONFIG.ambiente.puebloNocheGain,
+    });
+
     // Para depurar desde la consola: FORAJIDO.services.town
     services.town = {
       get x() { return x; },
@@ -363,5 +373,9 @@ export function createTownScene(services) {
     else if (scroll < 9) r.text(T.pueblo.keys, r.width / 2, r.height - 14, colors.textDim);
   }
 
-  return { enter, update, render };
+  function exit() {
+    audio.quitarAmbiente('calle');
+  }
+
+  return { enter, exit, update, render };
 }

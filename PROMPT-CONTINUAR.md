@@ -81,6 +81,37 @@ de los trenes tuvieran siempre el mismo par de posiciones.
 Y salió una propiedad que no se buscó: tres de cada cuatro veces **la pólvora
 queda de camino a la caja fuerte**, cuya puerta se abre justamente con dinamita.
 
+### 5. El sonido: la tormenta y las cuatro pantallas mudas
+
+`startAmbience` se llamaba en **un solo lugar de todo el juego** (el asalto), así
+que el campamento, el pueblo, el mapa y el galope estaban mudos. Y la tormenta
+era **un solo número** (`hearMult: 1.4`): te cambiaba el sigilo y no se oía.
+
+- El motor pasó a tener **capas con nombre y volumen ajustable en vivo**, en vez
+  de un fondo único y fijo. Es la base de todo lo demás.
+- **La tormenta son tres capas**: `chapa` (el repiqueteo del techo, sólo bajo
+  techo), `agua` y `viento` (suben a la intemperie). Al cruzar un enganche,
+  entrar al vagón de ganado o subir al techo, **se oye que quedaste expuesto** —
+  que es justo cuando los jinetes te pueden pegar un tiro.
+- **Truenos** cada 9-22 s, uno de cada cuatro cerca. No hacen nada todavía: se
+  decidió que esta vuelta sólo se oyeran.
+- **Campamento** (desierto + fogata, que sólo suena de noche porque de día está
+  apagada), **pueblo**, **mapa** (lo más callado: es un papel, no un lugar) y
+  **galope** (viento + cascos, con la cadencia atada a la velocidad del caballo).
+
+## ⚠️ EL SONIDO NO SE ESCUCHÓ NUNCA
+
+Es la advertencia más importante de esta sesión. Se verificó por consola que las
+capas existen, que los volúmenes cambian cuando corresponde, que la cadencia de
+los cascos sigue a la velocidad y que no se filtra ninguna capa entre escenas.
+Pero **si suena a lluvia sobre una chapa, a un trueno o a cascos, no lo sabe
+nadie todavía.**
+
+No hay un `foto.ps1` para el oído: un cambio visual se puede mirar, éste no. Los
+números de `CONFIG.ambiente` y `CONFIG.tormenta` salieron de razonar, no de
+escuchar, y **la corrección casi seguro es para abajo** — un fondo que se nota
+deja de ser un fondo.
+
 ## LO QUE HAY QUE MIRAR JUGÁNDOLO
 
 La pólvora la jugué una vez y salieron dos ajustes (los barriles del comedor al
@@ -103,6 +134,12 @@ pasillo, y el 25%). **Lo demás no se jugó nunca.**
   armas?** Es una de cada cuatro veces, y es siempre la misma forma: armas en el
   5, blindado en el 3. Si se vuelve reconocible de más, la perilla es
   `chanceAntes`.
+- **TODO EL SONIDO.** Es lo que más necesita oídos y lo único que no pude probar:
+  ¿la lluvia suena a chapa? ¿el trueno suena a trueno y no a explosión? ¿los
+  cascos marcan el ritmo o molestan? ¿algún fondo se nota de más? Las perillas
+  son `CONFIG.ambiente` y `CONFIG.tormenta`, y casi seguro hay que bajarlas.
+- **¿Se nota al cruzar un enganche que cambia la lluvia?** Es la única parte del
+  sonido que además es información.
 - **¿Los 3,2 s de la puerta que él abre se usan, o no se notan?** Es la jugada
   más escondida de todo lo que se construyó.
 - **¿El cielo del pueblo y las sombras del campamento cambian algo de verdad?**
@@ -261,10 +298,10 @@ Dinamitero sigue en 0 a propósito.
 
 ## Lo que falta
 
-- **Sonido.** Es lo más grande que le falta a la atmósfera y lo más barato por
-  hora: `startAmbience` se llama **sólo en el asalto**, así que el campamento, el
-  pueblo, el mapa y el galope están **mudos**. No hay ni un archivo de audio —
-  todo es osciladores— y no hay música.
+- **Música.** Es lo único que queda del sonido: no hay un solo tema, y una
+  armónica o una guitarra sintetizada es lo que más cambiaría cómo se siente el
+  juego. Es un problema distinto del ruido ambiente — se dejó afuera a propósito
+  para no terminar las dos cosas a medias.
 - **El galope no tiene paisaje.** No puede tener cielo (la cámara nunca sube más
   allá del techo del tren), y el degradado en el suelo ya se probó y se descartó
   — se lee como rayas pintadas. Lo que le falta son **siluetas de meseta en la

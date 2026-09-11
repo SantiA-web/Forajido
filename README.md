@@ -904,10 +904,27 @@ ya tienen su propia identidad, y mezclarlas la borraría.)
 
 | | Qué pasa |
 |---|---|
-| **Tormenta** | Se oye más: un disparo o tus pasos llegan un 40% más lejos |
+| **Tormenta** | Se oye más: un disparo o tus pasos llegan un 40% más lejos. Y **se oye**: lluvia sobre la chapa del techo y truenos (ver abajo) |
 | **Alerta ya activada** | Subís con la alarma sonando, antes de hacer nada. Es el que más caro se paga, así que es el más raro |
 | **Redada** | Más guardias (cada patrulla viene duplicada) **y** pelean mejor. Sólo si ya pagan bien por tu cabeza |
 | **Puerta bloqueada** | Una, dos o tres puertas vienen **trabadas**: empujarlas no las abre, hay que romperlas a tiros. Nunca sabés cuáles ni cuántas |
+
+#### Y la tormenta te dice cuándo estás expuesto
+
+La lluvia no suena igual en todos lados, y ahí está lo que la hace útil además
+de linda:
+
+| Dónde estás | Qué oís |
+|---|---|
+| **Bajo techo**, adentro de un vagón | El agua **golpeando la chapa** encima tuyo. Es el sonido más fuerte de la tormenta |
+| **En un enganche**, en el **vagón de ganado** o **arriba del techo** | La chapa se apaga y suben **el agua y el viento**: ahora te está lloviendo a vos |
+
+Y eso es exactamente cuándo los jinetes de afuera te pueden pegar un tiro. **Se
+oye que saliste** sin que ningún cartel lo diga — el clima ya era la señal.
+
+Los truenos caen cada nueve a veintidós segundos, y uno de cada cuatro cae
+cerca: ése es el único que corta el fondo y te hace levantar la cabeza. No hacen
+nada — todavía.
 
 **Qué está haciendo la gente de cada vagón** — uno por vagón:
 
@@ -1829,9 +1846,35 @@ FORAJIDO.services.scenes.goTo('raid', { caballoEn: 6 })
 
 ---
 
+## El sonido
+
+**No hay ni un archivo de audio.** Todo se genera con osciladores y ruido
+filtrado (`src/engine/audio.js`): cuesta cero y se cambia moviendo un número.
+Cuando el juego funcione, cada función se reemplaza por un sample sin tocar
+nada más.
+
+Hay dos clases de sonido y se manejan distinto:
+
+- **Efectos** — un disparo, un golpe, un trueno. Se piden por nombre
+  (`audio.play('explosion')`) y se apagan solos.
+- **Capas de fondo** — el traqueteo del tren, la lluvia, el viento, el fuego.
+  Tienen nombre y **volumen que se mueve en vivo** (`audio.ambiente`,
+  `audio.volumen`). Es lo que permite que la lluvia cambie al salir del vagón
+  en vez de prenderse y apagarse de golpe.
+
+**Cada lugar suena a lo suyo**, y el fondo dice cosas que no están escritas:
+
+| Dónde | Qué se oye |
+|---|---|
+| **El campamento** | El desierto, y **la fogata sólo de noche** — porque de día está apagada, que es el reloj del juego |
+| **El pueblo** | La calle. De noche, más callada |
+| **El mapa** | Casi nada: es un papel que mirás en tu campamento, no un lugar |
+| **El galope** | El viento, y **los cascos**, cuyo ritmo sigue a lo que corre el caballo: galope, trote y aflojando suenan distinto |
+| **El asalto** | El traqueteo y el clac-clac de las juntas de la vía |
+
 ## Lo que todavía NO existe (a propósito)
 
-Arte, sonido grabado, historia, fama, compañeros y guardado. (`recompensa` ya
+Arte, **música**, sonido grabado, historia, fama, compañeros y guardado. (`recompensa` ya
 se mueve — ver más abajo — pero todavía no hace nada: nadie la gasta ni la usa
 para nada, y los mini jefes que iba a destrabar siguen sin construirse. La
 plata SÍ se gasta ya, en el establo y la armería.)

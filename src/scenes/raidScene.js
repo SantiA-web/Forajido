@@ -74,6 +74,9 @@ export function createRaidScene(services) {
   let tranqueras, estampidas, estampidaSiguienteId;
   // Los cajones de pólvora del vagón de armas (Fase 6a, entities/cajon.js).
   let cajones;
+  // La tormenta que se oye (CONFIG.tormenta). `cubiertoAntes` guarda el estado
+  // anterior para tocar el volumen sólo cuando cambia, no cada cuadro.
+  let hayTormenta, truenoTimer, cubiertoAntes;
   let traqueteoTimer, traqueteoFase, traqueteoFaseTimer, traqueteoVariante, traqueteoSwayX;
   let traqueteoVelMult = 1;
   let timeLeft, duracionInicial, collected, kills, civilians, amenazados, escapeProgress;
@@ -365,6 +368,7 @@ export function createRaidScene(services) {
     listen();
     hud.show();
     audio.startAmbience();
+    arrancarTormenta();
 
     // Aviso de entrada: en qué vagón caíste y qué es.
     const v = train.wagons[train.boardedAt];
@@ -683,7 +687,73 @@ export function createRaidScene(services) {
     unsubscribers.forEach((off) => off());
     unsubscribers = [];
     audio.stopAmbience();
+    audio.quitarAmbiente('chapa');
+    audio.quitarAmbiente('agua');
+    audio.quitarAmbiente('viento');
     mostrarCursorDelSistema(true);
+  }
+
+  // ---------------------------------------------------------------- tormenta
+
+  /**
+   * LA TORMENTA QUE SE OYE — ver `CONFIG.tormenta` para el diseño de las tres
+   * capas y por qué son tres.
+   *
+   * Sólo existe si a este tren le tocó tormenta. En un tren despejado no se
+   * crea ninguna capa: no hay nada que apagar ni volumen que mover.
+   */
+  function arrancarTormenta() {
+    hayTormenta = !!train.clima && train.clima.id === 'tormenta';
+    truenoTimer = 0;
+    cubiertoAntes = null;
+    if (!hayTormenta) return;
+
+    const t = CONFIG.tormenta;
+    // La chapa: resonancia metálica alta. El `q` grande es lo que la hace
+    // sonar a chapa y no a "ruido agudo" — una chapa bajo la lluvia CANTA.
+    audio.ambiente('chapa',  { cutoff: 2900, q: 3.2, type: 'bandpass', gain: t.chapaAdentro });
+    audio.ambiente('agua',   { cutoff: 1400, q: 0.7, type: 'highpass', gain: t.aguaAdentro });
+    audio.ambiente('viento', { cutoff: 240,  q: 0.6, type: 'lowpass',  gain: t.vientoAdentro });
+
+    // El primer trueno no cae en el segundo cero: arrancar con un estruendo
+    // pisaría el cartel de "en qué vagón caíste".
+    truenoTimer = t.truenoCada * 0.6;
+  }
+
+  /**
+   * Cuánto te moja AHORA. Es el mismo `hayTechoEn` que usa el camino del techo:
+   * da falso en los enganches y en el vagón de ganado, que va al aire libre.
+   * Y arriba del tren estás afuera por definición, aunque haya chapa debajo.
+   */
+  function estasCubierto() {
+    return !player.enTecho && hayTechoEn(player.x);
+  }
+
+  function updateTormenta(dt) {
+    if (!hayTormenta) return;
+    const t = CONFIG.tormenta;
+
+    /**
+     * El volumen sólo se toca cuando CAMBIA el estado, no cada cuadro: mandar
+     * una rampa nueva sesenta veces por segundo cancela la anterior antes de
+     * que llegue a destino, así que el sonido se quedaría clavado a mitad de
+     * camino y el cruce no se oiría nunca.
+     */
+    const cubierto = estasCubierto();
+    if (cubierto !== cubiertoAntes) {
+      cubiertoAntes = cubierto;
+      audio.volumen('chapa',  cubierto ? t.chapaAdentro  : t.chapaAfuera,  t.rampa);
+      audio.volumen('agua',   cubierto ? t.aguaAdentro   : t.aguaAfuera,   t.rampa);
+      audio.volumen('viento', cubierto ? t.vientoAdentro : t.vientoAfuera, t.rampa);
+    }
+
+    // El reloj del trueno va por `dt` y no por `setInterval`: así se para solo
+    // cuando la escena se para, como todo lo demás del juego.
+    truenoTimer -= dt;
+    if (truenoTimer <= 0) {
+      truenoTimer = t.truenoCada + rng.range(0, t.truenoVariacion);
+      audio.play(rng.chance(t.chanceCerca) ? 'truenoCerca' : 'truenoLejos');
+    }
   }
 
   /**
@@ -2104,6 +2174,7 @@ export function createRaidScene(services) {
     updateEstampidas(dt);
     updateRodantes(dt);
     updateTraqueteo(dt);
+    updateTormenta(dt);
     /**
      * ¿Quedaste sobre el vacío? Entre dos vagones, o sobre el ganado que no
      * tiene techo. En el AIRE no cuenta: eso es justamente saltar el hueco.

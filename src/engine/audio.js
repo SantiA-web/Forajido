@@ -16,7 +16,6 @@ export function createAudio() {
   let ctx = null;
   let master = null;
   let noiseBuffer = null;
-  let ambience = null;
   let clackHandle = null;
   let wantAmbience = false;
 
@@ -36,7 +35,8 @@ export function createAudio() {
     const data = noiseBuffer.getChannelData(0);
     for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
 
-    // El asalto ya había pedido el sonido de fondo antes del primer clic.
+    // La escena ya había pedido su fondo antes del primer clic: se repone acá.
+    reponerCapas();
     if (wantAmbience) startAmbience();
   }
 
@@ -45,9 +45,22 @@ export function createAudio() {
 
   const now = () => ctx.currentTime;
 
-  /** Golpe de ruido filtrado: disparos, impactos, golpes. */
-  function noise({ duration = 0.1, cutoff = 2000, endCutoff = 200, gain = 0.4, type = 'lowpass', q = 1 }) {
+  /**
+   * Golpe de ruido filtrado: disparos, impactos, golpes.
+   *
+   * `delay` y `attack` existen por el TRUENO y son lo único que se le agregó a
+   * esta función desde que se escribió. Todo lo demás del juego es un golpe que
+   * empieza a todo volumen y cae — un disparo, un puñetazo—, pero un trueno
+   * lejano **crece**: si arranca a full se oye como una explosión al lado, que
+   * es justo lo contrario. Los valores por defecto dejan el comportamiento de
+   * siempre intacto.
+   */
+  function noise({
+    duration = 0.1, cutoff = 2000, endCutoff = 200, gain = 0.4,
+    type = 'lowpass', q = 1, delay = 0, attack = 0,
+  }) {
     if (!ctx) return;
+    const t0 = now() + delay;
     const src = ctx.createBufferSource();
     src.buffer = noiseBuffer;
     src.loop = true;
@@ -55,16 +68,21 @@ export function createAudio() {
     const filter = ctx.createBiquadFilter();
     filter.type = type;
     filter.Q.value = q;
-    filter.frequency.setValueAtTime(cutoff, now());
-    filter.frequency.exponentialRampToValueAtTime(Math.max(40, endCutoff), now() + duration);
+    filter.frequency.setValueAtTime(cutoff, t0);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(40, endCutoff), t0 + duration);
 
     const amp = ctx.createGain();
-    amp.gain.setValueAtTime(gain, now());
-    amp.gain.exponentialRampToValueAtTime(0.0001, now() + duration);
+    if (attack > 0) {
+      amp.gain.setValueAtTime(0.0001, t0);
+      amp.gain.exponentialRampToValueAtTime(gain, t0 + attack);
+    } else {
+      amp.gain.setValueAtTime(gain, t0);
+    }
+    amp.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
 
     src.connect(filter).connect(amp).connect(master);
-    src.start();
-    src.stop(now() + duration + 0.02);
+    src.start(t0);
+    src.stop(t0 + duration + 0.02);
   }
 
   /** Tono con caída de frecuencia: cuerpos, gritos, silbatos. */
@@ -222,6 +240,62 @@ export function createAudio() {
     },
 
     /**
+     * UN CASCO CONTRA LA TIERRA. Corto, grave y seco.
+     *
+     * No es un golpe fuerte: son cuatro por zancada y suenan todo el galope, así
+     * que cualquier cosa con cuerpo se vuelve insoportable en diez segundos. Lo
+     * que tiene que hacer es marcar el RITMO — que se oiga cuándo el caballo
+     * está lanzado y cuándo aflojó— y para eso alcanza con un `thump` apenas
+     * audible. El volumen real lo pone la cadencia, no cada golpe.
+     */
+    casco() {
+      noise({ duration: 0.05, cutoff: 380, endCutoff: 90, gain: 0.13 });
+    },
+
+    /**
+     * UN CHASQUIDO DE LA FOGATA. Igual que el casco: chiquito a propósito.
+     * Lo que hace viva a una fogata no es el volumen, es que los chasquidos
+     * caigan IRREGULARES — por eso el reloj que lo llama tiene variación.
+     */
+    chispa() {
+      noise({ duration: 0.045, cutoff: 2600, endCutoff: 700, gain: 0.075, type: 'bandpass', q: 2 });
+    },
+
+    /**
+     * EL TRUENO LEJANO — el que se oye la mayor parte del tiempo.
+     *
+     * CRECE Y SE APAGA, no golpea. Es toda la diferencia con la explosión que
+     * está más arriba en este mismo archivo: una explosión arranca a full y
+     * cae; un trueno lejano llega rodando desde el horizonte. Por eso se le
+     * agregó `attack` a `noise()` — sin eso esto sonaba a dinamita al lado.
+     *
+     * Y NO PUEDE CONFUNDIRSE CON UNA EXPLOSIÓN, porque en este juego una
+     * explosión significa que algo acaba de pasar. Se separan por tres cosas:
+     * dura el triple, no tiene nada agudo (la explosión lleva un `highpass`
+     * encima) y no sacude la cámara.
+     */
+    truenoLejos() {
+      noise({ duration: 2.4, cutoff: 260, endCutoff: 50, gain: 0.16, attack: 0.7 });
+      noise({ duration: 1.8, cutoff: 150, endCutoff: 40, gain: 0.12, attack: 0.5, delay: 0.3 });
+      tone({ from: 48, to: 26, duration: 2.0, gain: 0.1, type: 'sine', delay: 0.2 });
+    },
+
+    /**
+     * EL TRUENO CERCA — el que te hace levantar la cabeza.
+     *
+     * Éste SÍ golpea primero: el chasquido seco del rayo y, atrás, el retumbe
+     * largo. El orden importa — crack primero, rumor después — porque es el
+     * único momento en que la tormenta deja de ser un fondo y se vuelve un
+     * evento.
+     */
+    truenoCerca() {
+      noise({ duration: 0.18, cutoff: 7000, endCutoff: 1800, gain: 0.3, type: 'highpass', q: 0.8 });
+      noise({ duration: 0.5, cutoff: 1800, endCutoff: 200, gain: 0.34 });
+      noise({ duration: 2.6, cutoff: 320, endCutoff: 45, gain: 0.3, attack: 0.12, delay: 0.1 });
+      tone({ from: 70, to: 24, duration: 2.2, gain: 0.2, type: 'sine', delay: 0.08 });
+    },
+
+    /**
      * LA MANADA SALIENDO. Grave y sostenido —los cascos— con un mugido encima
      * para que no se confunda con una explosión: esto no revienta, ARRANCA.
      */
@@ -232,46 +306,110 @@ export function createAudio() {
     },
   };
 
-  /** Fondo continuo: el traqueteo del tren. Es lo que hace que el vagón viva. */
-  function startAmbience() {
-    wantAmbience = true;
-    if (!ctx || ambience) return;
+  /**
+   * --- LAS CAPAS DE FONDO ---
+   *
+   * Ruido continuo y filtrado, con NOMBRE y con volumen que se puede mover en
+   * vivo. Antes había un solo fondo, escrito a mano y fijo: el traqueteo del
+   * tren, que se prendía y se apagaba y nada más.
+   *
+   * POR QUÉ HIZO FALTA: la lluvia sobre la chapa no es un sonido, son tres —
+   * el repiqueteo en el techo, el siseo del agua y el viento— y **cuánto suena
+   * cada uno depende de dónde estés parado**. Bajo techo te golpea la chapa;
+   * en el enganche o arriba del tren te moja a vos. Eso no se puede hacer
+   * prendiendo y apagando: hay que poder subir una y bajar otra sin cortes.
+   *
+   * Cada capa es una fuente de ruido en loop → filtro → volumen → master. La
+   * receta no cambia nunca; lo que se mueve es el volumen.
+   */
+  const capas = new Map();
+  /** Lo que se pidió antes del primer clic, para reponerlo al desbloquear. */
+  const capasPendientes = new Map();
 
+  function ambiente(nombre, receta) {
+    capasPendientes.set(nombre, receta);
+    if (!ctx || capas.has(nombre)) return;
+
+    const { cutoff = 400, q = 1, type = 'lowpass', gain = 0.1 } = receta;
     const src = ctx.createBufferSource();
     src.buffer = noiseBuffer;
     src.loop = true;
 
     const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 220;
+    filter.type = type;
+    filter.Q.value = q;
+    filter.frequency.value = cutoff;
 
     const amp = ctx.createGain();
-    amp.gain.value = 0.16;
+    amp.gain.value = gain;
 
     src.connect(filter).connect(amp).connect(master);
     src.start();
-    ambience = { src, amp };
+    capas.set(nombre, { src, amp, filter });
+  }
+
+  /**
+   * Sube o baja una capa. `rampa` en segundos: sin ella el cambio es un salto
+   * y se oye el click. Con 0,25 s la lluvia "entra" al salir al enganche en vez
+   * de aparecer de golpe.
+   */
+  function volumen(nombre, valor, rampa = 0.25) {
+    const receta = capasPendientes.get(nombre);
+    if (receta) receta.gain = valor;
+    const c = capas.get(nombre);
+    if (!c || !ctx) return;
+    c.amp.gain.cancelScheduledValues(now());
+    c.amp.gain.setValueAtTime(Math.max(0.0001, c.amp.gain.value), now());
+    c.amp.gain.linearRampToValueAtTime(Math.max(0.0001, valor), now() + rampa);
+  }
+
+  function quitarAmbiente(nombre) {
+    capasPendientes.delete(nombre);
+    const c = capas.get(nombre);
+    if (!c) return;
+    try { c.src.stop(); } catch { /* ya estaba parado */ }
+    capas.delete(nombre);
+  }
+
+  function quitarTodoElAmbiente() {
+    for (const nombre of [...capas.keys()]) quitarAmbiente(nombre);
+    capasPendientes.clear();
+  }
+
+  /** Repone las capas que se pidieron antes de que el navegador nos dejara sonar. */
+  function reponerCapas() {
+    for (const [nombre, receta] of [...capasPendientes]) ambiente(nombre, receta);
+  }
+
+  /** Fondo continuo: el traqueteo del tren. Es lo que hace que el vagón viva. */
+  function startAmbience() {
+    wantAmbience = true;
+    ambiente('tren', { cutoff: 220, gain: 0.16 });
+    if (!ctx || clackHandle) return;
 
     // Clac-clac de las juntas de la vía.
     clackHandle = setInterval(() => {
       if (!ctx) return;
       noise({ duration: 0.05, cutoff: 420, endCutoff: 90, gain: 0.13 });
-      setTimeout(() => noise({ duration: 0.05, cutoff: 380, endCutoff: 80, gain: 0.1 }), 130);
+      noise({ duration: 0.05, cutoff: 380, endCutoff: 80, gain: 0.1, delay: 0.13 });
     }, 900);
   }
 
   function stopAmbience() {
     wantAmbience = false;
     if (clackHandle) { clearInterval(clackHandle); clackHandle = null; }
-    if (!ambience) return;
-    try { ambience.src.stop(); } catch { /* ya estaba parado */ }
-    ambience = null;
+    quitarAmbiente('tren');
   }
 
   return {
     unlock,
     startAmbience,
     stopAmbience,
+    /** Capas de fondo con nombre: ver la nota de `ambiente`, más arriba. */
+    ambiente,
+    volumen,
+    quitarAmbiente,
+    quitarTodoElAmbiente,
     /** Toca un efecto por nombre; si el audio no arrancó todavía, no pasa nada. */
     play(name) {
       if (!ctx || !CONFIG.audio.enabled) return;

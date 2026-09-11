@@ -9851,6 +9851,112 @@ alcanza**; si lo que medís es un ciclo, muestreá por cuadro.
 
 ---
 
+## ✅ HECHA · El sonido: la tormenta que se oye, y las cuatro pantallas que estaban mudas
+
+*(Santi: "pasemos al tema del sonido así podemos seguir avanzando luego en las
+otras fases de cosas 'sorpresa' y estados del tren. Recuerda que en la Tormenta
+se tiene que sentir como una: truenos y lluvia impactando en un techo de
+chapa")*
+
+El punto de partida, medido: **`startAmbience` se llamaba en UN solo lugar de
+todo el juego** (el asalto). El campamento, el pueblo, el mapa y el galope
+estaban mudos — cuatro de las seis pantallas, incluido el galope, que es la más
+cinética que tiene el juego. Y la tormenta existía desde la Fase 1 como **un
+solo número** (`hearMult: 1.4`): te cambiaba el sigilo y no se veía ni se oía.
+
+### Lo primero fue que el motor supiera hacer capas
+
+Había un único fondo, escrito a mano y fijo: se prendía y se apagaba. **La
+lluvia sobre chapa no es un sonido, son tres** —el repiqueteo en el techo, el
+siseo del agua y el viento— y cuánto suena cada uno depende de dónde estés
+parado. Eso no se puede hacer prendiendo y apagando: hay que poder subir una y
+bajar otra sin cortes.
+
+Ahora hay capas con **nombre y volumen ajustable en vivo** (`ambiente`,
+`volumen`, `quitarAmbiente`). El traqueteo del tren pasó a ser una capa más y
+no un caso especial.
+
+Y a `noise()` se le agregaron `delay` y `attack`, que es lo único que se le
+tocó desde que se escribió. El motivo: **un trueno lejano CRECE**, no golpea.
+Todo lo demás del juego es un impacto que empieza a todo volumen y cae; sin
+`attack`, el trueno sonaba a dinamita al lado.
+
+### La tormenta, y por qué son tres capas
+
+| Capa | Qué es | Dónde manda |
+|---|---|---|
+| `chapa` | El repiqueteo metálico del techo. Resonancia alta (`q` grande): una chapa bajo la lluvia **canta** | Sólo **bajo techo** |
+| `agua` | El siseo del agua cayendo | Siempre, y sube **afuera** |
+| `viento` | El fondo grave | Sólo **afuera** |
+
+**Y eso convirtió al sonido en información.** Al cruzar un enganche, al entrar
+al vagón de ganado (que va al aire libre) o al subirte al techo, la chapa se
+apaga y el agua y el viento suben: **se oye cuándo estás expuesto**, que es
+exactamente cuando los jinetes de afuera te pueden pegar un tiro. No hizo falta
+inventar ninguna señal — el clima ya era la señal, y el juego ya sabía si
+estabas a cubierto (`hayTechoEn`, que existía para el camino del techo).
+
+Los truenos van por `dt` desde la escena y no con `setInterval`, así que se
+paran cuando la escena se para, como todo lo demás.
+
+### Las cuatro pantallas mudas
+
+- **El campamento**: el desierto, y **la fogata sólo de noche** — de día está
+  apagada, que es el reloj del juego. Los chasquidos van con intervalo
+  irregular: uno cada 0,9 s exactos suena a metrónomo, no a fuego.
+- **El pueblo**: la calle, más baja de noche.
+- **El mapa**: lo más callado de todo. No es un lugar, es un papel que mirás en
+  tu campamento — va el mismo viento de allá, más bajo todavía.
+- **El galope**: el viento, y **los cascos con la cadencia atada a la velocidad
+  del caballo**. El galope ya decía en pantalla si el animal estaba lanzado o
+  aflojando (la barra de aguante), pero no se oía. Medido: 3,7 cascos por
+  segundo galopando, 2,3 al trote, 1,3 aflojando.
+
+### TRES BUGS PROPIOS, LOS TRES EN LOS CASCOS
+
+1. **`caballo.velMax` no existe** — el campo es `sprintSpeed`. Y tenía un
+   `|| velocidad` de red que lo tapaba: la proporción daba 1 siempre y **la
+   cadencia nunca se habría estirado**, o sea que el casco habría sonado igual
+   al galope que al paso. La trampa de `campo || default` de siempre, que este
+   proyecto ya tiene anotada tres veces.
+2. **Usaba `vel`, que es la velocidad RELATIVA AL TREN**, no la del caballo
+   sobre el suelo. Un Mustang que le sigue el paso al tren tiene `vel` cero:
+   habría sonado a caballo parado justo cuando corre a fondo. Lo correcto es
+   `velCaballo` (ver `trenVelocidad` en data/horse.js).
+3. **Y `velCaballo` PUEDE SER NEGATIVA**: frenando es
+   `sprintSpeed * troteFactor - brakeSpeed`, que con el Criollo da −14. No es
+   que el animal vaya marcha atrás — es cómo la escena expresa "quedate atrás
+   del tren". Sin un `abs`, el caballo **enmudecía justo al aflojar**.
+
+### ⚠️ LO QUE NO ESTÁ VERIFICADO, Y ES LO MÁS IMPORTANTE
+
+**Nada de esto se escuchó.** Se verificó que las capas existen, que los
+volúmenes cambian cuando tienen que cambiar, que la cadencia sigue a la
+velocidad y que no se filtra ni una capa entre escenas. Pero **si suena a lluvia
+sobre una chapa, o a un trueno, o a cascos, es completamente desconocido.**
+
+Es distinto de todo lo anterior del proyecto: un cambio visual se puede mirar
+con `foto.ps1`, pero acá no hay equivalente. Los números de `CONFIG.ambiente` y
+`CONFIG.tormenta` están elegidos por razonamiento, no por oído, y **la regla
+al corregirlos casi seguro es para abajo**: un fondo que se nota deja de ser un
+fondo.
+
+### VERIFICADO POR CONSOLA
+
+- **Las tres capas de la tormenta cambian al cruzar**, y sólo al cruzar: tres
+  llamadas de volumen por transición, no sesenta por segundo. Probado entrando y
+  saliendo entre vagón con techo, enganche, vagón de ganado y techo.
+- **Un tren despejado no crea ni una capa de lluvia ni suena un trueno** en 145 s.
+- **10 truenos en un asalto de 145 s** (6 lejos, 4 cerca), dentro de lo esperado.
+- **Cascos: 3,7 / 2,3 / 1,3 por segundo** (galope / trote / aflojando).
+- **Contando las fuentes de audio vivas**: campamento de noche 2 (desierto +
+  fuego), asalto despejado 1 (el traqueteo del tren, que **sobrevivió al
+  refactor**), asalto con tormenta 4, mapa 1. Sin filtraciones.
+- **El ciclo completo del juego** —campamento, pueblo, mapa, galope, asalto y
+  vuelta— de día y de noche, con y sin tormenta: **sin un error de consola**.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

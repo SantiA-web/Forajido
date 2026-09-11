@@ -806,13 +806,25 @@ veces.
 
 | | |
 |---|---|
+| **Viaja cerrado con llave** | **Sus dos puertas nacen trabadas.** No son de chapa: son madera y se rompen a tiros como cualquier otra — **pero eso hace ruido** |
 | **Dos cajas fuertes** | Es el único lugar del tren donde vale la pena quedarse ocho segundos quieto, dos veces. El resto del de carga reparte su botín en bolsas |
+| **Cuatro guardias** | Y quedan encerrados adentro: nadie sale a buscarte y nadie entra a ayudarlos. Romper la puerta te deja de una con los cuatro, esperándote |
 | **Estanterías gruesas** | Pasillos más angostos que los del correo: adentro se pelea peor. Es un depósito, no un furgón de reparto |
 | **Nadie a quien preguntarle** | No lleva pasajeros, como todo este tren |
 | **Nunca es el primer vagón** | Lo más caro del tren no puede quedar a un paso de la salida |
 
 Mide lo mismo que el vagón de correo liviano al que reemplaza, así que el tren
 no cambia de largo ni su reloj de 165 s.
+
+**Y el tren de carga ya no lleva vagón blindado.** El almacén heredó su papel con
+otra llave: aquél era "el premio y la trampa" y sólo lo abría la dinamita; éste
+es el premio con la puerta trabada, que se abre **a los gritos**. Que en este
+tren no haya ningún lugar que exija explosivos es coherente con lo que es: acá
+no viaja el oro del banco, viaja mercadería.
+
+> El precio de las dos cajas fuertes dejó de ser *matar a los guardias que las
+> cuidan* —que en un tren de carga son pocos— y pasó a ser el precio de siempre
+> de este juego: **tiempo y exposición**. Acá no se entra callado.
 
 **El de carga es además la primera respuesta real** al botín demasiado
 concentrado que anotan las notas de diseño (ver NOTAS-DISENO.md): en vez de una

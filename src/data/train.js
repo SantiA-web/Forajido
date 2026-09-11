@@ -305,10 +305,31 @@ export const TRAIN_TYPES = {
      * (mide lo mismo: el tren no cambia de largo). Ver `almacen` en
      * data/wagons.js para por qué es fijo y no sorteado.
      */
+    /**
+     * 🔻 Y SE FUE EL VAGÓN BLINDADO.
+     *
+     * *(Santi, jugándolo: "eliminar el vagón blindado del tren de carga y que
+     * las dos puertas del almacén no sean blindadas, pero que estén cerradas")*
+     *
+     * EL ALMACÉN HEREDA SU PAPEL, con otra llave. El blindado era "el premio y
+     * la trampa" y su única puerta era la dinamita; el almacén es el premio con
+     * la puerta trabada, que se abre a tiros — o sea **a los gritos**. Que el
+     * tren de carga no tenga ningún lugar que exija explosivos es coherente con
+     * lo que es: acá no viaja el oro del banco, viaja mercadería.
+     *
+     * EN SU LUGAR ENTRA UN TERCER CORREO LIVIANO, y no es relleno: sin él el
+     * tren se acortaba 528 px y **el reloj de 165 s está calibrado para ocho
+     * vagones**. Con el correo el largo queda en 4.256 px contra los 4.224 de
+     * antes — treinta píxeles de diferencia, o sea ninguno.
+     *
+     * LO QUE SÍ CAMBIA, Y HAY QUE MIRARLO JUGANDO: el tren se quedó sin ningún
+     * guardia duro. Los cuatro blindados eran los únicos, y ahora todos los del
+     * tren de carga aguantan lo mismo. Es la contracara de que sea el tren del
+     * sigilo y no el del tiroteo, pero es un cambio grande y no está jugado.
+     */
     composition: [
-      'almacen', 'correo_liviano', 'correo_liviano',
-      'ganado', 'ganado', 'ganado',
-      'comedor', 'blindado',
+      'almacen', 'correo_liviano', 'correo_liviano', 'correo_liviano',
+      'ganado', 'ganado', 'ganado', 'comedor',
     ],
 
     /**
@@ -322,8 +343,12 @@ export const TRAIN_TYPES = {
      * `almacen: 2` — nunca el primer vagón. Es donde vive lo más caro del tren,
      * y el primero es el que sale gratis: se entra por ahí y la salida queda a
      * un paso. Misma regla, y por el mismo motivo, que el vagón de armas.
+     *
+     * (`blindado` ya no figura: no viaja más en este tren. Se saca la regla en
+     * vez de dejarla sin efecto, para que nadie la lea después y crea que el
+     * blindado puede aparecer.)
      */
-    posicionMinima: { blindado: 3, armas: 2, almacen: 2 },
+    posicionMinima: { armas: 2, almacen: 2 },
 
     /**
      * EL VAGÓN DE ARMAS NUNCA ES EL ÚLTIMO.
@@ -338,28 +363,21 @@ export const TRAIN_TYPES = {
     posicionMaxima: { armas: 7 },
 
     /**
-     * EL BLINDADO Y EL VAGÓN DE ARMAS NUNCA VIAJAN PEGADOS, y **una de cada
-     * cuatro veces el blindado queda ADELANTE** en vez de más adentro.
+     * 🔻 SE FUE LA REGLA DE "EL BLINDADO NUNCA PEGADO AL DE ARMAS", y hay que
+     * dejar escrito por qué, porque arreglaba un problema real.
      *
-     * El hueco arregla un problema medido: pegados, la ronda del Dinamitero se
-     * le acorta a 640 px en vez de ~1050 y pasa **55% del tiempo adentro contra
-     * el 41% de una configuración sana**. Pasaba en el 43% de los trenes con
-     * vagón de armas.
+     * Existía porque la ronda del Dinamitero necesita vecinos **en los que se
+     * pueda entrar**, y el blindado no lo era: pegados, su vuelta se acortaba a
+     * 640 px en vez de ~1050 y pasaba 55% del tiempo adentro en vez del 41%.
      *
-     * EL 25% SE MANTIENE, pero acá quiere decir algo distinto y para mejor. En
-     * el estándar de seis vagones, del lado "antes" quedaba **una sola
-     * combinación posible** (armas en el 5, blindado en el 3), así que subirlo
-     * habría hecho repetitiva justo la mitad que se agregó para tener variedad.
-     * Con ocho vagones hay mucho más lugar de los dos lados, así que el mismo
-     * número ya no arrastra esa repetición. Si jugando se quiere que el blindado
-     * adelante deje de ser una rareza, ahora sí se le puede subir.
+     * Sin blindado en este tren, el único vagón que viaja cerrado es el
+     * almacén — **y a ése el Dinamitero SÍ puede entrar**, porque lleva la
+     * llave del tren y una puerta trabada no lo frena (ver `entities/door.js`).
+     * O sea que el motivo de la regla desapareció con el vagón que la motivaba.
      *
-     * Ver `cumpleRelativas` en world/train.js — ahí está por qué la moneda se
-     * tira una sola vez por tren y no adentro del bucle de intentos.
+     * Si alguna vez el almacén pasa a tener puertas de chapa, esta regla hay
+     * que devolverla apuntándole a él.
      */
-    posicionRelativa: {
-      blindado: { respectoDe: 'armas', hueco: 2, chanceAntes: 0.25 },
-    },
 
     /**
      * EL VAGÓN DE ARMAS — Fase 6a, mudado del estándar sin tocarle un número.

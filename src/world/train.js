@@ -610,10 +610,47 @@ export function buildTrain(
     for (const borde of bordes) {
       const centro = map.tileCenter(borde.col, 4);
       const pos = { x: centro.x, y: centro.y + map.size / 2 };
-      doors.push(createDoor(pos.x, pos.y, {
+      const puerta = createDoor(pos.x, pos.y, {
         kind: esBlindado ? 'blindada' : 'normal',
         insideDir: borde.insideDir,
-      }));
+      });
+
+      /**
+       * VAGONES QUE VIAJAN CERRADOS CON LLAVE (`puertasTrabadas` en la
+       * plantilla). Hoy: el almacén del tren de carga.
+       *
+       * *(Santi: "eliminar el vagón blindado del tren de carga y que las dos
+       * puertas del almacén no sean blindadas, pero que estén cerradas")*
+       *
+       * NO ES UNA PUERTA BLINDADA Y ESA ES TODA LA GRACIA. La de chapa frena
+       * las balas y sólo la abre la dinamita; ésta es madera: se rompe a tiros
+       * como cualquier otra, y **eso hace ruido**. El precio de las dos cajas
+       * fuertes del almacén dejó de ser "matar a los guardias que las cuidan"
+       * (que en un tren de carga son pocos) y pasó a ser el precio de siempre
+       * de este juego: **tiempo y exposición**. No podés entrar callado.
+       *
+       * REUSA ENTERO EL MECANISMO DE `puertaBloqueada` (ver más abajo), con
+       * `true` = trabada de origen: nadie la trabó durante el asalto, viajaba
+       * así. La diferencia es que aquélla es un sorteo del tren y ésta es una
+       * propiedad del vagón.
+       */
+      /**
+       * QUEDA CERRADO DE VERDAD: los cuatro guardias del almacén no pueden
+       * salir, y nadie de afuera puede entrar a ayudarlos.
+       *
+       * Se probó darle una llave a toda la tripulación —por miedo a que un
+       * vagón cerrado partiera el tren en dos— y **se descartó midiendo**: con
+       * el almacén abierto el refuerzo más cercano llegó a 2.353 px del
+       * jugador y trabado a 2.423, o sea 70 px de diferencia en 200 s. No lo
+       * parte. Los guardias de adelante no vienen a buscarte desde que existe
+       * la alarma, y los refuerzos de la locomotora ya tardaban eso.
+       *
+       * Y sellado es MEJOR para lo que este vagón tiene que ser: romper la
+       * puerta te deja de una con los cuatro adentro, esperándote.
+       */
+      if (t.plantilla.puertasTrabadas) trabarPuerta(puerta, true);
+
+      doors.push(puerta);
     }
   }
 

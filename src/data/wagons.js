@@ -758,9 +758,48 @@ export const WAGONS = {
      * aplicada al escribir en vez de descubierta jugando — ver `revisarRondas`
      * en world/train.js, que ahora lo chequea solo.
      */
+    /**
+     * VIAJA CERRADO CON LLAVE — sus dos puertas nacen trabadas (ver
+     * `puertasTrabadas` en world/train.js).
+     *
+     * *(Santi, jugándolo: "hay un problema que encuentro con el almacén es que
+     * al haber tan pocos guardias, casi que te regalan esas cajas fuertes")*
+     *
+     * Y NO SON DE CHAPA. La blindada frena las balas y sólo la abre la
+     * dinamita; éstas son madera y se rompen a tiros como cualquier otra —
+     * **pero eso hace ruido**. El precio de las dos cajas dejó de ser matar a
+     * los guardias que las cuidan (que en este tren son pocos) y pasó a ser el
+     * precio de siempre del juego: entrar acá **no se puede hacer callado**.
+     *
+     * Y le da a la dinamita un segundo uso en un tren que se quedó sin vagón
+     * blindado: volar la puerta es instantáneo y carísimo en ruido; los tiros
+     * son baratos pero tardan y suenan varias veces.
+     */
+    puertasTrabadas: true,
+
+    /**
+     * CUATRO GUARDIAS, Y ES UNA COMPENSACIÓN MEDIDA, no una corazonada.
+     *
+     * Sacar el vagón blindado del tren de carga le sacó **4 guardias de 12 y
+     * los cuatro duros**. Con el almacén en 2 guardias, el tren quedaba en 8:
+     * más vacío todavía que el que motivó el pedido. Subirlo a 4 lo devuelve a
+     * 11 y —esto es lo importante— los pone **justo donde estaba el problema**,
+     * cuidando lo único que de verdad vale la pena de este tren.
+     *
+     * SIGUEN SIENDO GUARDIAS COMUNES (no `guardType: 'blindado'`) por un motivo
+     * técnico que no se ve: la ronda del Dinamitero considera "cerrado" a todo
+     * vagón con guardias blindados (`abierto()` en world/train.js), así que
+     * marcarlos duros le acortaría la vuelta y rompería el "esperá a que salga"
+     * — exactamente el bug que ya se arregló una vez.
+     *
+     * Las dos rondas nuevas van por el corredor (filas 4 y 5), que es la única
+     * franja del vagón donde nunca hay pólvora.
+     */
     enemies: [
       { path: [[5, 3], [26, 3]] },
       { path: [[26, 6], [5, 6]] },
+      { path: [[6, 4], [25, 4]] },
+      { path: [[25, 5], [6, 5]] },
     ],
     passengers: [],
     loot: [

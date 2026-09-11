@@ -10528,6 +10528,83 @@ apagado habría sido un segundo vagón ilegible en vez de uno reconocible.
 
 ---
 
+## ✅ HECHA · El almacén, segunda vuelta: puertas trabadas, y se fue el vagón blindado
+
+*(Santi, jugándolo: "hay un problema que encuentro con el almacén es que al haber
+tan pocos guardias, casi que te regalan esas cajas fuertes. Yo haría lo
+siguiente: eliminar el vagón blindado del tren de carga y que las dos puertas del
+almacén no sean blindadas, pero que estén cerradas")*
+
+### Lo que se le marcó antes de construirlo
+
+Su arreglo tenía un costado que iba **en contra de su propio diagnóstico**, y se
+midió antes de tocar nada:
+
+| | Guardias | De ésos duros | Cajas | Botín | Largo |
+|---|---|---|---|---|---|
+| Con blindado | 12 | 4 | 4 | $2.846 | 4.224 px |
+| Sacándolo, sin más | **8** | **0** | 2 | $2.083 | 3.696 px |
+
+Sacar el blindado le saca **un tercio de los guardias del tren y los cuatro
+duros**, y lo acorta 528 px — con un reloj de 165 s calibrado para ocho vagones.
+O sea que por sí solo dejaba el tren todavía más vacío que el que motivó el
+pedido.
+
+Se construyó con dos compensaciones: **un tercer correo liviano** en el lugar del
+blindado (el largo vuelve a 4.256 px, treinta de diferencia) y **el almacén pasa
+de 2 a 4 guardias**, que devuelve el total a 11,6 y —esto es lo importante— los
+pone justo donde estaba el problema.
+
+### La puerta trabada cambia la MONEDA, no la cantidad
+
+Es lo que hace que la idea de Santi funcione: el precio de las dos cajas dejó de
+ser *matar a los guardias que las cuidan* y pasó a ser el precio de siempre del
+juego, **tiempo y exposición**. Es madera, no chapa: tres balazos la abren, y esos
+tres balazos se oyen. Acá no se entra callado.
+
+Y le devuelve un uso a la dinamita en un tren que se quedó sin vagón blindado:
+volar la puerta es instantáneo y carísimo en ruido; los tiros son baratos pero
+tardan y suenan varias veces.
+
+### La falsa alarma que me comí, y cómo se cayó
+
+Al medirlo me convencí de que **un vagón cerrado partía el tren en dos**: con el
+almacén en el medio y la alarma sonando 90 s, *0 de 4* guardias del otro lado lo
+cruzaron. Llegué a construir una "llave de tripulación" para arreglarlo.
+
+Las dos mitades del razonamiento estaban mal:
+
+1. **Los guardias de adelante no te vienen a buscar desde que existe la alarma.**
+   Está escrito en el README hace meses. El test medía una conducta de diseño y
+   yo la leí como un síntoma.
+2. **Y los refuerzos tampoco se frenan.** Con un control —el mismo tren con el
+   almacén abierto— el refuerzo más cercano llegó a **2.353 px** del jugador;
+   trabado, a **2.423**. Setenta píxeles en 200 segundos: ninguna diferencia. Que
+   no lleguen es una propiedad vieja del juego (nacen en la locomotora, a ~2.900
+   px), no algo que cause esta puerta.
+
+La llave se borró. **Sellado es además mejor para lo que el vagón tiene que
+ser**: romper la puerta te deja de una con los cuatro guardias adentro,
+esperándote, y nadie viene a reforzarlos.
+
+> La lección es la de siempre puesta al revés: un control barato (el mismo tren
+> con la puerta abierta) tiró abajo en una medición una conclusión que yo ya había
+> empezado a codificar. **Si no hay control, no hay medición: hay una anécdota.**
+
+### VERIFICADO POR CONSOLA
+
+- **60 trenes**: 11,6 guardias, 2 cajas fuertes, **exactamente 2 puertas trabadas
+  y 0 blindadas** por tren, 4.256 px de largo.
+- **Los cuatro encerrados se portan bien**: 120 s con la alarma sonando, el peor
+  congelado es de **0,9 s** (la pausa normal al llegar a un punto de ronda) y los
+  cuatro siguen adentro. Nada de vibrar contra la puerta — el destrabe que se
+  arregló hoy mismo haciendo su trabajo.
+- **Se entra rompiéndola**: vida 3 → 2 → 1 → rota, y ahí deja de frenar el paso.
+  Trabada sigue figurando como trabada; lo que cambia es que ya no hay puerta.
+- Ciclo completo de nueve escenas: cero errores y cero avisos.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

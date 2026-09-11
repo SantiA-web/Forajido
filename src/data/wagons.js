@@ -206,11 +206,25 @@ export const WAGONS = {
      * pólvora en el mismo lugar.
      *
      * Van en las filas 3 y 6, fuera del corredor, donde iría la carga.
+     *
+     * 🐛 Y FUERA DE LAS RONDAS, QUE ES LO QUE FALTABA. Las tres posiciones
+     * viejas —(13,3), (25,6) y (6,6)— le cruzaban el camino a los dos guardias
+     * que patrullan las filas 3 y 6, y **(6,6) era literalmente un punto de la
+     * ronda del guardia 0**: a un waypoint tapado por un bulto sólido no se
+     * puede "llegar" nunca, así que ese guardia se quedaba empujando el barril
+     * el asalto entero (ver la nota de `doPatrol`, systems/ai.js).
+     *
+     * Las nuevas caen en los huecos que las dos rondas no pisan: el guardia 0
+     * hace las columnas 6-16 y el 1 las 20-28, así que 17-19 y 1-5 quedan
+     * libres. El 2 patrulla la fila 5 (el corredor), que nunca lleva cajones.
+     *
+     * El arreglo de la IA ya evita que se cuelgue pase lo que pase; esto es
+     * para que la ronda dibujada sea la ronda que se camina.
      */
     cajonesExtra: [
-      { col: 13, row: 3 },
-      { col: 25, row: 6 },
-      { col: 6,  row: 6 },
+      { col: 18, row: 3 },
+      { col: 18, row: 6 },
+      { col: 3,  row: 6 },
     ],
   },
 

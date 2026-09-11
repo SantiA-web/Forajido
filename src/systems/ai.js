@@ -1177,12 +1177,40 @@ function doPatrol(e, dt, world) {
   }
 
   /**
-   * EL QUE HACE UNA RONDA LARGA SE DA VUELTA SI NO PUEDE PASAR.
+   * NINGÚN GUARDIA SE QUEDA TRABADO PARA SIEMPRE. Si no puede avanzar, salta
+   * al siguiente punto de su ronda.
    *
-   * Sólo lo necesita el Dinamitero del vagón de armas (`rondaLarga`, ver
-   * `rondaDinamitero` en world/train.js), y por algo que ningún otro guardia
-   * tiene: **su ronda cruza puertas**. Todas las demás empiezan y terminan
-   * adentro de un vagón, donde no hay nada que pueda cerrarse en el camino.
+   * 🐛 ESTO ESTABA GATEADO EN `if (!e.rondaLarga) return;`, O SEA QUE EXISTÍA
+   * SÓLO PARA EL DINAMITERO — y por eso cualquier otro guardia que encontrara
+   * un bulto en el camino se quedaba empujándolo hasta el final del asalto.
+   *
+   * *(Santi, jugándolo: "creo que los guardias no ven a los barriles (de
+   * pólvora) como un obstáculo, porque vi uno caminando, chocó contra el
+   * barril y se quedó chocado contra el barril y no se volvió a mover")*
+   *
+   * LA CAUSA, Y SON DOS SISTEMAS QUE NO SE HABLAN: un cajón de pólvora frena
+   * el paso (`isSolidForMovementAt`, scenes/raidScene.js) pero **no es un
+   * tile**, así que `map.isSolidTile` —lo único que miran el buscador de rutas
+   * y la ronda— no lo ve. El guardia camina hacia un punto que para él está
+   * libre, se choca, y `moveAxisAligned` nunca devuelve `arrived`: el
+   * `pathIndex` no avanza nunca más.
+   *
+   * MEDIDO SOBRE LOS DATOS, no sorteando: cruzando cada ronda contra cada
+   * posición de cajón, el vagón de correo tiene TRES choques, y uno de ellos
+   * —(col 6, fila 6)— es un cajón **encima de un waypoint**. Ahí no hay
+   * nada que pueda destrabarlo, porque llegar es imposible por definición.
+   *
+   * POR QUÉ ACÁ Y NO EN EL BUSCADOR DE RUTAS: que el cajón sea un tile sólido
+   * tendría efectos en media docena de sistemas (la cobertura se pegaría a
+   * una bomba, las balas, la visión). Esto no le enseña al guardia a esquivar
+   * barriles: le pone un piso de dignidad — **lo que sea que tenga adelante,
+   * no se queda ahí para siempre**. Es la misma red que `stuckTimer` ya le da
+   * al que va a investigar (`doInvestigate`, más abajo), que existía desde
+   * hace rato para el otro estado y nunca para éste.
+   *
+   * El Dinamitero lo necesitaba primero por un motivo propio y sigue valiendo:
+   * **su ronda cruza puertas**, y las demás empiezan y terminan adentro de un
+   * vagón, donde no hay nada que pueda cerrarse en el camino.
    *
    * Y las puertas de este tren no siempre se abren: `puertaBloqueada`
    * (data/modifiers.js) traba una, dos o tres al azar en el 15% de los trenes
@@ -1193,9 +1221,9 @@ function doPatrol(e, dt, world) {
    * rota en silencio.
    *
    * 2,5 s es mucho más de lo que tarda una puerta común en abrirse
-   * empujándola, así que cruzar normal nunca dispara esto.
+   * empujándola, así que cruzar normal nunca dispara esto — ni para el
+   * Dinamitero ni para nadie.
    */
-  if (!e.rondaLarga) return;
 
   /**
    * 🐛 SE MEDÍA CUADRO A CUADRO, Y ASÍ SE DABA VUELTA SIN ESTAR TRABADO.
@@ -1230,15 +1258,30 @@ function doPatrol(e, dt, world) {
    * un valor por defecto razonable y en realidad desactiva la comparación
    * entera. Primo hermano de la lección de `campo || default`.
    */
-  if (e.rondaUltimoX === undefined) e.rondaUltimoX = e.x;
+  /**
+   * 🔻 Y EL AVANCE SE MIDE EN LOS DOS EJES, NO SÓLO EN X.
+   *
+   * Medir sólo X alcanzaba cuando esto era del Dinamitero: su ronda es
+   * horizontal de punta a punta. Para una ronda común no: el tramo `6,6 -> 6,3`
+   * del vagón de correo es **puramente vertical**, así que con la medición
+   * vieja un guardia subiendo por ahí a paso firme habría contado como
+   * trabado (X no cambia nunca) y se habría salteado waypoints sin motivo.
+   *
+   * Va como suma de los dos (distancia de manhattan) y no como hipotenusa
+   * para no cambiar el umbral de 8 px que ya está medido: el guardia se mueve
+   * en ejes, así que sobre un tramo recto las dos cuentas dan lo mismo.
+   */
+  if (e.rondaUltimoX === undefined) { e.rondaUltimoX = e.x; e.rondaUltimoY = e.y; }
   e.rondaTrabado = (e.rondaTrabado || 0) + dt;
-  if (Math.abs(e.x - e.rondaUltimoX) > 8) {
+  if (Math.abs(e.x - e.rondaUltimoX) + Math.abs(e.y - e.rondaUltimoY) > 8) {
     e.rondaUltimoX = e.x;
+    e.rondaUltimoY = e.y;
     e.rondaTrabado = 0;
   }
   if (e.rondaTrabado > 2.5) {
     e.rondaTrabado = 0;
     e.rondaUltimoX = e.x;
+    e.rondaUltimoY = e.y;
     e.pathIndex = (e.pathIndex + 1) % e.path.length;
   }
 }

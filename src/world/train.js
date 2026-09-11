@@ -1104,6 +1104,10 @@ export function buildTrain(
       revisar(avisos, map, pos, `barril de pólvora del ${p.name} (vagón ${t.wagon})`);
     }
 
+    // Y que ninguno le tape la ronda a un guardia de este vagón. Se revisa la
+    // plantilla entera una sola vez, y sólo si de verdad le tocaron cajones.
+    if (defsCajones.length) revisarRondas(avisos, p, `${p.name} (vagón ${t.wagon})`);
+
     /**
      * LAS TRANQUERAS DE LOS CORRALES — sólo si este TIPO de tren las trae.
      *
@@ -1345,7 +1349,7 @@ export function buildTrain(
   }
 
   if (avisos.length) {
-    console.warn('TREN: hay cosas colocadas sobre tiles sólidos:\n' + avisos.join('\n'));
+    console.warn('TREN: hay cosas mal colocadas:\n' + avisos.join('\n'));
   }
 
   // --- 5. Las plataformas al aire libre: por ahí se entra y se sale ---
@@ -1477,6 +1481,48 @@ function revisar(avisos, map, pos, quien) {
     const row = Math.floor(pos.y / map.size);
     avisos.push(`  - ${quien} está sobre un tile sólido (col ${col}, fila ${row})`);
   }
+}
+
+/**
+ * AVISA SI UN CAJÓN DE PÓLVORA LE TAPA LA RONDA A UN GUARDIA.
+ *
+ * Es hermano de `revisar`: el mismo tipo de error (poner algo donde no va) y la
+ * misma respuesta (un aviso en la consola, no una excepción). Sale de un bug
+ * real — un guardia del vagón de correo se pasaba el asalto empujando un barril
+ * porque el barril estaba justo encima de un punto de su ronda (ver la nota de
+ * `doPatrol` en systems/ai.js).
+ *
+ * EL GUARDIA YA NO SE TRABA —eso se arregló allá— pero **saltearse un waypoint
+ * cada dos segundos y medio tampoco es la ronda que alguien dibujó**. Este
+ * aviso es para que, cuando se escriba un vagón nuevo, el error se vea al
+ * armar el tren en vez de descubrirse jugando meses después.
+ *
+ * CÓMO SE MIDE: el guardia camina en ejes y primero corrige X (ver
+ * `moveAxisAligned`), así que entre dos puntos el recorrido real es el tramo
+ * horizontal a la altura del punto de partida y después el vertical a la altura
+ * del de llegada. Se cruza cada cajón contra esos dos tramos.
+ */
+function revisarRondas(avisos, plantilla, nombre) {
+  const cajones = [...(plantilla.cajones || []), ...(plantilla.cajonesExtra || [])];
+  if (!cajones.length) return;
+
+  (plantilla.enemies || []).forEach((guardia, i) => {
+    const ruta = guardia.path || [];
+    for (let p = 0; p < ruta.length; p++) {
+      const a = ruta[p], b = ruta[(p + 1) % ruta.length];
+      for (const c of cajones) {
+        const encimaDelPunto = a[0] === c.col && a[1] === c.row;
+        const cruzaEnX = a[1] === c.row
+          && c.col > Math.min(a[0], b[0]) && c.col < Math.max(a[0], b[0]);
+        const cruzaEnY = b[0] === c.col
+          && c.row > Math.min(a[1], b[1]) && c.row < Math.max(a[1], b[1]);
+        if (!encimaDelPunto && !cruzaEnX && !cruzaEnY) continue;
+        avisos.push(`  - ${nombre}: un cajón de pólvora (col ${c.col}, fila ${c.row}) `
+          + (encimaDelPunto ? 'está ENCIMA de un punto' : 'cruza el tramo')
+          + ` de la ronda del guardia ${i} (${a} -> ${b})`);
+      }
+    }
+  });
 }
 
 /** La zona de escape es el rectángulo que ocupan las salidas ('E'). */

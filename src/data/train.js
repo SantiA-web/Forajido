@@ -322,10 +322,11 @@ export const TRAIN_TYPES = {
      * vagones**. Con el correo el largo queda en 4.256 px contra los 4.224 de
      * antes — treinta píxeles de diferencia, o sea ninguno.
      *
-     * LO QUE SÍ CAMBIA, Y HAY QUE MIRARLO JUGANDO: el tren se quedó sin ningún
-     * guardia duro. Los cuatro blindados eran los únicos, y ahora todos los del
-     * tren de carga aguantan lo mismo. Es la contracara de que sea el tren del
-     * sigilo y no el del tiroteo, pero es un cambio grande y no está jugado.
+     * Y LOS CUATRO GUARDIAS DUROS NO SE PERDIERON: se mudaron al almacén
+     * (`guardType: 'blindado'`, data/wagons.js). El tren de carga sigue
+     * teniendo exactamente cuatro, sólo que ahora están todos juntos cuidando
+     * la única cosa que vale la pena de este tren, en vez de repartidos en un
+     * vagón al que se entraba con dinamita.
      */
     composition: [
       'almacen', 'correo_liviano', 'correo_liviano', 'correo_liviano',

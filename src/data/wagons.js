@@ -306,6 +306,18 @@ export const WAGONS = {
     // tren. Es lo que hace que el nombre del vagón signifique algo.
     guardType: 'blindado',
 
+    /**
+     * SUS DOS PUERTAS SON DE CHAPA: frenan el paso Y las balas, y desde afuera
+     * no se empujan. La única llave es la dinamita.
+     *
+     * Va como marca de la plantilla y no deducido del tipo de guardia, porque
+     * son dos cosas distintas que sólo por casualidad coincidían en este vagón:
+     * el almacén del tren de carga lleva guardias blindados y puertas de
+     * madera. Lo leen la creación de las puertas y la ronda del Dinamitero
+     * (world/train.js) — los dos únicos lugares a los que les importa.
+     */
+    puertasBlindadas: true,
+
     // Corto y denso: la caja apretada del tren.
     layout: [
       '##############################',
@@ -666,6 +678,7 @@ export const WAGONS = {
     short: 'BLINDADO',
     hint: 'Dos cajas fuertes. Cuatro guardias duros, apretados.',
     guardType: 'blindado',
+    puertasBlindadas: true,
     layout: [
       '##################',
       '#CCCCCCCCCCCCCCCC#',
@@ -786,15 +799,30 @@ export const WAGONS = {
      * 11 y —esto es lo importante— los pone **justo donde estaba el problema**,
      * cuidando lo único que de verdad vale la pena de este tren.
      *
-     * SIGUEN SIENDO GUARDIAS COMUNES (no `guardType: 'blindado'`) por un motivo
-     * técnico que no se ve: la ronda del Dinamitero considera "cerrado" a todo
-     * vagón con guardias blindados (`abierto()` en world/train.js), así que
-     * marcarlos duros le acortaría la vuelta y rompería el "esperá a que salga"
-     * — exactamente el bug que ya se arregló una vez.
-     *
      * Las dos rondas nuevas van por el corredor (filas 4 y 5), que es la única
      * franja del vagón donde nunca hay pólvora.
      */
+
+    /**
+     * Y SON GUARDIAS BLINDADOS — *(pedido de Santi: "agrega que los guardias del
+     * vagón almacén sean de los guardias blindados")*.
+     *
+     * Con el vagón blindado fuera del tren de carga, éstos son los únicos duros
+     * que le quedan: aguantan un tiro más (3, o 4 en un tren escoltado) y se les
+     * ve la placa en el pecho. Y es coherente con lo que el vagón es — la
+     * compañía no pone al peón nuevo a cuidar la caja.
+     *
+     * EL TIPO DE GUARDIA ARRASTRA TRES COSAS MÁS, y las tres caen bien acá:
+     *
+     *  - **No abandonan el vagón nunca** (`confinado`). Ya estaban sellados por
+     *    las puertas trabadas, así que no cambia nada y de paso lo garantiza.
+     *  - **La estampida se frena en su puerta.** Correcto: está cerrada.
+     *  - **Una redada no los duplica.** La guarnición de la caja es la que es.
+     *
+     * Lo que NO arrastra es la dinamita: ésa se la da la plantilla del vagón
+     * blindado guardia por guardia (`dynamite: 1`), no el tipo.
+     */
+    guardType: 'blindado',
     enemies: [
       { path: [[5, 3], [26, 3]] },
       { path: [[26, 6], [5, 6]] },

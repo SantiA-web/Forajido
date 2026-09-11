@@ -10605,6 +10605,77 @@ esperándote, y nadie viene a reforzarlos.
 
 ---
 
+## ✅ HECHA · Los guardias del almacén son blindados (y un atajo viejo que se rompió con eso)
+
+*(Santi: "agregá que los guardias del vagón almacén sean de los guardias
+blindados")*
+
+Con el vagón blindado fuera del tren de carga, los cuatro guardias duros no se
+perdieron: **se mudaron al almacén**. El tren sigue teniendo exactamente cuatro,
+sólo que ahora están todos juntos cuidando la única cosa que vale la pena, en vez
+de repartidos en un vagón al que se entraba con dinamita.
+
+### El tipo de guardia arrastraba cuatro cosas, y tres caían bien
+
+| | |
+|---|---|
+| Aguantan un tiro más (3, o 4 escoltado) y se les ve la placa | Lo que se pedía |
+| **No abandonan el vagón nunca** (`confinado`) | Ya estaban sellados por las puertas trabadas: no cambia nada y de paso lo garantiza |
+| **La estampida se frena en su puerta** | Correcto: está cerrada |
+| **Una redada no los duplica** | La guarnición de la caja es la que es |
+
+Y NO arrastra la dinamita: ésa se la da la plantilla del vagón blindado guardia
+por guardia (`dynamite: 1`), no el tipo.
+
+### 🐛 Pero rompía la ronda del Dinamitero, por un atajo de hace meses
+
+`rondaDinamitero` preguntaba **por el tipo de guardia** para saber si podía
+entrar a un vecino:
+
+```js
+const abierto = (t) => !!t && t.plantilla.guardType !== 'blindado';
+```
+
+Era un atajo para decir "vagón cerrado", y funcionó mientras *guardias blindados*
+y *puertas de chapa* fueran la misma cosa. El almacén rompe esa coincidencia:
+lleva guardias blindados y puertas de **madera**, en las que el Dinamitero entra
+perfectamente porque tiene la llave del tren. Con el atajo, el almacén contaba
+como muro, le acortaba la vuelta y volvía a romper el "esperá a que salga" —
+exactamente el bug que ya se había arreglado una vez.
+
+Ahora se pregunta por la propiedad de verdad, **`puertasBlindadas`**, una marca
+de la plantilla que leen los dos únicos lugares a los que les importa: la
+creación de las puertas y la ronda. Ya no se pueden desincronizar.
+
+### Y al refactorizarlo apareció un bug dormido
+
+Las puertas de chapa se decidían buscando el vagón **por id**:
+
+```js
+const blindadoWagon = wagons.find((w) => w.id === 'blindado');
+```
+
+O sea que **el blindado corto del tren veloz nunca tuvo puertas de chapa**: eran
+de madera y se abrían empujando. En ese tren, al blindado se entraba caminando.
+Nadie lo vio nunca porque el veloz quedó en reserva antes de que alguien probara
+esa puerta. Con la marca en la plantilla, queda arreglado de paso.
+
+### VERIFICADO POR CONSOLA
+
+- **40 trenes de carga**: 11,7 guardias, **4 duros**, y los del almacén salen
+  `blindado` con 3 de vida. Siguen siendo 2 puertas trabadas y 0 blindadas.
+- **El tren de pasajeros no se movió**: 13 guardias, 4 duros y sus **2 puertas
+  blindadas** — o sea que el refactor no le tocó nada.
+- **La ronda del Dinamitero sigue sana**: 971 px y 38% del tiempo adentro sobre 6
+  composiciones reales (antes del cambio: 934 y 40%; el diseño pide ~1050 y 41%;
+  roto era 640-704 y 55%).
+- **Y en el caso peor a propósito** —el vagón de armas pegado al almacén, que hoy
+  el sorteo permite— la ronda da 923 px y 34%, y el Dinamitero pasa 1.519 cuadros
+  **adentro del almacén**: la llave funciona y el vagón cerrado no lo frena.
+- Ciclo completo de nueve escenas: cero errores y cero avisos.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

@@ -333,10 +333,23 @@ function rondaDinamitero(rng, tramoArmas, tramos, map) {
   const vagones = tramos.filter((t) => t.tipo === 'vagon');
   const i = vagones.indexOf(tramoArmas);
 
-  // Se pregunta por el TIPO DE GUARDIA del vagón y no por su id: así vale
-  // igual para `blindado` y para `blindado_corto`, y para cualquier vagón
-  // cerrado que se invente después.
-  const abierto = (t) => !!t && t.plantilla.guardType !== 'blindado';
+  /**
+   * ¿PUEDE ENTRAR EL DINAMITERO A ESTE VECINO?
+   *
+   * 🔻 SE PREGUNTABA POR EL TIPO DE GUARDIA (`guardType !== 'blindado'`) COMO
+   * ATAJO PARA "vagón cerrado", Y EL ATAJO SE ROMPIÓ. El día que un vagón que
+   * NO es el blindado llevara guardias blindados —el almacén, hoy— el atajo
+   * decía "cerrado" de un vagón en el que se entra perfectamente, le acortaba
+   * la vuelta y volvía a romper el "esperá a que salga". Justo el bug que ya
+   * se arregló una vez.
+   *
+   * Ahora se pregunta por la propiedad de verdad: **si sus puertas son de
+   * chapa**. Es lo único que de verdad lo frena — una puerta trabada no, porque
+   * lleva la llave del tren (ver entities/door.js). Y es la misma marca que
+   * decide qué puertas se crean blindadas, así que las dos cosas no pueden
+   * volver a desincronizarse.
+   */
+  const abierto = (t) => !!t && !t.plantilla.puertasBlindadas;
   const antes = abierto(vagones[i - 1]) ? vagones[i - 1] : null;
   const despues = abierto(vagones[i + 1]) ? vagones[i + 1] : null;
 
@@ -597,11 +610,20 @@ export function buildTrain(
    * desde ADENTRO; desde afuera, sólo dinamita (`volarPuerta` en
    * systems/explosives.js).
    */
-  const blindadoWagon = wagons.find((w) => w.id === 'blindado');
   const doors = [];
   for (const t of tramos) {
     if (t.tipo !== 'vagon') continue;
-    const esBlindado = blindadoWagon && t.wagon === blindadoWagon.index;
+    /**
+     * 🐛 SE BUSCABA EL VAGÓN POR ID (`w.id === 'blindado'`), ASÍ QUE EL
+     * BLINDADO CORTO DEL TREN VELOZ NUNCA TUVO PUERTAS DE CHAPA: eran de
+     * madera y se abrían empujando, o sea que en ese tren al blindado se
+     * entraba caminando. Nadie lo vio porque el veloz quedó en reserva antes
+     * de que alguien probara esa puerta.
+     *
+     * Ahora lo dice la plantilla (`puertasBlindadas`), que es la misma marca
+     * que usa la ronda del Dinamitero para saber dónde no puede entrar.
+     */
+    const esBlindado = !!t.plantilla.puertasBlindadas;
 
     const bordes = [
       { col: t.colStart, insideDir: 1 },              // la puerta de entrada

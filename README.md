@@ -353,6 +353,7 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 | Clic izquierdo (con la mecha encendida) | Lanzarla |
 | `R` | **Recargar.** Mientras lo hacés caminás lento, como si fueras de costado |
 | `E` (mantener) | Robar botín / **amenazar a un pasajero** / escapar |
+| **`TAB`** | **Abrir la mochila.** Y el tren no te espera: el reloj sigue corriendo |
 
 Estando a cubierto **no podés disparar hasta asomarte**, y mientras estás
 asomado sos un blanco. Ese es el intercambio. Te despegás con `Shift` otra vez
@@ -820,11 +821,42 @@ trenes de carga llevan al menos uno**. Y la caja oculta es el otro lugar — tam
 en el tren de pasajeros, que es lo único que ahí te puede dejar algo para vender.
 Estaba escondida por algo.
 
-**Y no te entran todos: te caben cinco cosas encima**, contra unos veintitrés
-botines por tren. Ahí está la decisión que el de carga no tenía: no es "¿me
-alcanza el reloj?", es **"¿cuál me llevo?"** — una caja del almacén, que puede
-traer el raro, compite contra cuatro bolsas que ya tenés en la mano. Es el mismo
-tope que los tres cartuchos de dinamita, y por el mismo motivo.
+### La mochila: dieciséis casillas, y cada cosa tiene su forma
+
+Llevás una mochila en la espalda —**se le ve el bulto, y crece con lo que
+metés**— y adentro hay una grilla de **4×4**. Se abre con `TAB`, y el reloj sigue
+corriendo mientras la mirás.
+
+| Forma | Qué |
+|---|---|
+| **1×1** | Reloj de oro, documentos lacrados, joyero, polvo de oro, **un cartucho de dinamita** |
+| **2×1** | Cubertería de plata, estuche de relojes, botiquín |
+| **3×1** | Fardo de tabaco, rollo de telas, saco de café, atado de cueros |
+| **2×2** | **Lingotes de plata**, cajón de whisky, cajón de munición, caja de herramientas |
+
+**Y no alcanza con que sobre lugar: tiene que sobrar lugar de la forma
+correcta.** Tres atados acostados ocupan nueve casillas y dejan siete libres — y
+un cajón de 2×2 **ya no entra**, porque lo que queda son columnas sueltas de una
+casilla. Un anillo, en cambio, entra en cualquier rendija.
+
+Los bultos largos **se acuestan solos** si es lo único que cabe: un atado de 3×1
+entra parado en una columna. No hay que acomodar nada a mano — agarrás y se
+guarda donde quepa, porque este juego cobra en tiempo y exposición, no en
+administración.
+
+> **La dinamita entra en la misma mochila**, y de ahí sale sola la asimetría
+> entre los dos trenes: en el de pasajeros se roba plata, que no ocupa lugar, así
+> que la mochila queda libre para explosivos; en el de carga, cada cartucho es
+> una caja que no te llevás.
+
+**Y el bulto te frena.** Media mochila es gratis; de ahí en adelante el freno
+sube derecho hasta **−35%** con la mochila llena. Reemplazó al sistema viejo, que
+te frenaba por lo que la plata VALÍA: unos documentos de $1.500 no pesan, un saco
+de café de $60 sí.
+
+Ahí está la decisión que el de carga no tenía: no es "¿me alcanza el reloj?", es
+**"¿cuál me llevo?"** — una caja del almacén, que puede traer el raro, compite
+contra el cajón que ya tenés adentro.
 
 **Un objeto sólo se conserva si escapás**, sin rescate parcial: unos billetes se
 esconden en la bota, un lingote no.
@@ -1977,6 +2009,7 @@ toca nada del juego: se puede borrar.
 ```js
 FORAJIDO.state          // el estado de la partida
 FORAJIDO.config         // todos los números, editables en vivo
+FORAJIDO.loop           // el bucle: .stop() congela el mundo, .start() lo suelta
 FORAJIDO.services.raid  // el asalto en curso: player, enemies, passengers, loot
 FORAJIDO.services.train // el tren: wagons, map, exitZone, caballoEn, wagonAt(x)
 FORAJIDO.services.ride  // el galope: x, aguante, reloj, plataformas, alcanceMaximo
@@ -1986,6 +2019,13 @@ FORAJIDO.services.mapa  // el mapa: encima (la vía señalada), rutas, conTren
 FORAJIDO.services.interior // el local en el que estás: id, x, y, cerca, puntos,
                            // y dialogo/opcion si te está hablando un vendedor
 FORAJIDO.services.tienda   // la vidriera: id, items, item, datos, tuyo, precio
+
+// Congelar el mundo para poder MIRAR algo con calma. Sin esto, entre dos
+// llamadas a la consola el juego avanza solo y la foto no muestra lo que dejaste:
+FORAJIDO.loop.stop()
+FORAJIDO.services.scenes.update(1/60); FORAJIDO.services.input.endFrame()  // un cuadro
+FORAJIDO.services.scenes.render(FORAJIDO.services.renderer)                // y dibujalo
+FORAJIDO.loop.start()
 
 // Cambiar la hora a mano (normalmente se cambia durmiendo en la carpa):
 FORAJIDO.state.esDeDia = true

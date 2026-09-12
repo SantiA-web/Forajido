@@ -73,5 +73,16 @@ const loop = createLoop(
 
 loop.start();
 
-// Consola del navegador (F12): FORAJIDO.state, FORAJIDO.config, FORAJIDO.reset()
-window.FORAJIDO = { state: gameState, config: CONFIG, services, reset: resetGame };
+/**
+ * Consola del navegador (F12): FORAJIDO.state, FORAJIDO.config, FORAJIDO.reset()
+ *
+ * Y `loop`, QUE ES EL QUE FALTABA PARA PODER MIRAR ALGO CON CALMA. El bucle
+ * corre con `requestAnimationFrame`, así que entre dos llamadas a la consola el
+ * mundo avanza solo — y eso arruinó media docena de capturas: se sacaba la foto
+ * y el asalto ya había terminado. Con `FORAJIDO.loop.stop()` el mundo queda
+ * congelado exactamente donde está, se puede pisar cuadro a cuadro a mano
+ * (`services.scenes.update(1/60)` + `services.input.endFrame()`), dibujar con
+ * `services.scenes.render(services.renderer)` y sacar la foto sin que nada se
+ * mueva en el medio. `FORAJIDO.loop.start()` lo devuelve a la vida.
+ */
+window.FORAJIDO = { state: gameState, config: CONFIG, services, reset: resetGame, loop };

@@ -826,6 +826,45 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     r.line(bx, by, bx + Math.cos(p.aim) * 9, by + Math.sin(p.aim) * 9, '#241c18');
   }
 
+  /**
+   * LA MOCHILA EN LA ESPALDA — y crece con lo que llevás adentro.
+   *
+   * *(Santi: "el personaje del jugador debería llevar una bolsa o mochila en la
+   * espalda para ir metiendo las cosas")*
+   *
+   * VA DEL LADO OPUESTO A DONDE APUNTÁS, que es la espalda: `p.aim + π`. Como
+   * el cuerpo es un rectángulo de 9×7 y la mira gira libre con el mouse, la
+   * mochila gira con él — así que desde cualquier ángulo se ve del lado
+   * correcto, sin ningún sprite nuevo.
+   *
+   * Y SE DIBUJA ANTES DEL CUERPO, o sea por debajo: un bulto atado a la espalda
+   * asoma por detrás de la silueta, no le tapa el torso.
+   *
+   * CRECE DE 1 A 4 PÍXELES según `p.mochila` (0 a 1, ver raidScene). Es poco a
+   * propósito: el cuerpo entero mide 9 px de ancho, así que cuatro píxeles de
+   * bulto ya son casi la mitad del tipo. Lo que tiene que decir de un vistazo
+   * no es cuánto llevás exactamente —para eso está el TAB— sino **si vas
+   * cargado o liviano**.
+   */
+  const llenado = p.mochila || 0;
+  if (llenado > 0) {
+    const bulto = 1 + Math.round(llenado * 3);
+    const ax = bx - Math.cos(p.aim) * (halfW + bulto - 1);
+    const ay = by - Math.sin(p.aim) * (halfH + bulto - 1);
+    /**
+     * 🐛 ERA `#5a4530` Y NO SE VEÍA. El piso del vagón es `#6d4a30` y su
+     * variante `#7a5436`: el mismo marrón. Puesto sobre el piso, el bulto
+     * desaparecía — la misma lección que las cartucheras invisibles de hace
+     * varias sesiones, y otra vez sólo se vio poniéndolos uno al lado del otro.
+     *
+     * Ahora es casi negro, así que se lee como silueta contra el piso claro, y
+     * la correa va en un tono claro para que no se funda con el sombrero (que
+     * también es oscuro y queda a dos píxeles).
+     */
+    r.box(ax, ay, bulto, bulto, '#2e2218');
+    r.box(ax, ay, Math.max(1, bulto - 1), 1, '#a8977c');
+  }
+
   const body = p.hitFlash > 0 ? '#fff' : (p.cover ? col.playerCover : col.player);
   r.box(bx, by, halfW, halfH, body);
   r.rect(bx - halfW - 1, by - 6, halfW * 2 + 2, 3, col.playerHat);

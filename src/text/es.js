@@ -6,6 +6,12 @@
 export const T = {
   hud: {
     money: (n) => `$${n}`,
+
+    /** LA MOCHILA ([TAB]) — ver `drawMochila` en scenes/raidScene.js. */
+    mochilaTitulo: 'LA MOCHILA',
+    mochilaVacia: 'Nada más adentro.',
+    mochilaDinamita: (n) => (n === 1 ? 'Un cartucho de dinamita  ·  1' : `${n} cartuchos de dinamita  ·  ${n}`),
+    mochilaAyuda: '[TAB] CERRAR     el tren no te espera',
     reloading: 'RECARGANDO',
     alarm: 'ALARMA',
 

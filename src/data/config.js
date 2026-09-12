@@ -1268,11 +1268,29 @@ export const CONFIG = {
      */
     casillas: 16,
 
-    /** Cómo se dibuja la grilla con TAB. 4x4 es lo que pidió Santi. */
+    /**
+     * LA GRILLA: 4 columnas × 4 filas. Lo que pidió Santi.
+     *
+     * Y no es sólo cómo se dibuja: **es dónde tiene que entrar cada cosa**. Un
+     * cajón de 2×2 necesita un cuadrado libre, un atado de 3×1 tres casillas en
+     * fila (o tres en una columna, acostado). Ver `engine/grilla.js`.
+     *
+     * Con 4×4, un atado largo cruza la mochila casi entera y deja una sola
+     * columna suelta al costado: es angosta a propósito, porque es lo que hace
+     * que el orden en que agarrás las cosas importe.
+     */
     columnas: 4,
+    filas: 4,
 
-    /** Cuántas casillas ocupa un cartucho de dinamita. */
-    slotsDinamita: 1,
+    /**
+     * QUÉ FORMA TIENE UN CARTUCHO DE DINAMITA. Una casilla: es lo más chico
+     * que hay, y entra en cualquier rendija que quede.
+     *
+     * Que sea 1×1 y no 2×1 es una decisión: tres cartuchos son 3 de 16, o sea
+     * que llevar explosivos completos es barato en lugar. Lo que cuesta es
+     * llevarlos **y** un cajón grande.
+     */
+    formaDinamita: [1, 1],
 
     /**
      * EL COLCHÓN — hasta acá no te frena nada.

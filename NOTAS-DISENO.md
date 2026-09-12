@@ -10792,6 +10792,98 @@ vacías"). El síntoma parecía un bug del perista y era del banco de pruebas.
 
 ---
 
+## ✅ HECHA · La mochila es un Tetris, y el bulto te frena
+
+*(Santi: "me parece mejor ahora esa idea que decías del tetris para la mochila
+entrando con TAB")*
+
+La primera versión contaba casillas: cada cosa valía de 1 a 4 y se sumaban. Se
+construyó así porque yo lo había recomendado contra la grilla con formas — y
+Santi eligió la grilla después de verlo. **Tenía razón, y la diferencia se puede
+medir en una línea**:
+
+> Con un número, tres atados de 3 y un cajón de 4 **siempre** entran en 16,
+> porque 13 ≤ 16. Con formas, los tres atados dejan **siete casillas libres** y
+> el cajón **no entra**, porque lo que queda son columnas sueltas de una casilla.
+
+Eso es lo que un número no puede expresar: **puede sobrar lugar y no entrar.**
+
+### Las formas salen de los tamaños que ya tenían
+
+| Forma | Qué es |
+|---|---|
+| `[1,1]` | Una chuchería: un anillo, unos papeles, **un cartucho de dinamita** |
+| `[2,1]` | Un estuche chato |
+| `[3,1]` | Un atado largo |
+| `[2,2]` | Un cajón |
+
+Ningún objeto cambió de *cuánto* abulta — sólo de *cómo*. Y se pueden **acostar**:
+un atado de `[3,1]` entra parado (`[1,3]`) si es lo único que cabe.
+
+### Acomoda sola, y es una decisión de diseño
+
+El jugador no arrastra nada: agarra un cajón y el cajón se guarda donde quepa
+(primer hueco arriba-izquierda, probando la forma y después acostada). Hacerlo a
+mano sería un minijuego de inventario en medio de un vagón con guardias, y **este
+juego cobra en tiempo y exposición, no en administración**. Con `TAB` se ve el
+resultado, no se edita.
+
+Y el TAB **no pausa**. Mirar la mochila cuesta segundos como todo lo demás.
+
+### La grilla vive en `engine/`
+
+`engine/grilla.js` no sabe nada de western: recibe un ancho, un alto y
+rectángulos. Es la misma regla que sostiene la arquitectura desde la fase 1
+(`engine/` no importa nada de las carpetas de arriba), y significa que la próxima
+cosa que necesite acomodar bultos no vuelve a escribir esto.
+
+### 🐛 Dos cosas que sólo aparecieron mirando
+
+1. **La mochila dibujada en la espalda era invisible.** Era `#5a4530` y el piso
+   del vagón es `#6d4a30`: el mismo marrón. Puesta sobre el piso desaparecía —
+   **la misma lección que las cartucheras invisibles de hace varias sesiones**, y
+   otra vez sólo se vio poniendo cuatro muñecos uno al lado del otro. Ahora es
+   casi negra, con la correa clara para no fundirse con el sombrero.
+2. **El TAB dibujaba casillas sueltas y eso MENTÍA.** Un cajón eran cuatro
+   cuadraditos en orden de lectura, que podían partirse al final de una fila y
+   seguir en la siguiente: decía "ocupa cuatro" cuando la regla real es "ocupa un
+   cuadrado de 2×2". Ahora cada bulto es un rectángulo y el hueco que queda se ve
+   tal como es.
+
+### Y la herramienta que faltaba: `FORAJIDO.loop`
+
+**Media docena de capturas se perdieron** porque el bucle corre con
+`requestAnimationFrame` y entre la llamada a la consola y la foto el mundo avanza
+solo: se sacaba la foto y el asalto ya había terminado en la pantalla de
+resultados. Se probó todo lo que no era lo correcto — un `requestAnimationFrame`
+propio redibujando encima, leer la matriz del canvas después de `render` (inútil:
+`render` hace `restore` al terminar), forzar la vida del jugador cada cuadro.
+
+La respuesta era exponer el bucle. **`FORAJIDO.loop.stop()` congela el mundo**, se
+pisa cuadro a cuadro a mano y la foto muestra exactamente lo que dejaste. Está en
+el README, en la sección de depurar.
+
+> Es la contracara de la lección vieja ("el bucle real corre en paralelo a tus
+> mediciones, hacé todo en una sola llamada"): ahora se puede **apagar**, así que
+> ya no hace falta.
+
+### VERIFICADO POR CONSOLA
+
+- **El caso que define el sistema**: tres atados de `[3,1]` en una grilla de 4×4
+  → 9 casillas ocupadas, **7 libres**, y `buscarLugar([2,2])` devuelve **null**
+  mientras `buscarLugar([1,1])` encuentra lugar.
+- **Cuatro cajones de `[2,2]` llenan 16 exactas** y el quinto no entra.
+- **La rotación pasa jugando, no en teoría**: en un asalto real el cuarto atado
+  entró como **`1x3`** —parado— porque ya no quedaban tres casillas en fila.
+- **La dinamita se sincroniza sola**: 2 cartuchos = 2 casillas; al encender con
+  `Q` el contador baja a 1 y la casilla se libera al cuadro siguiente. No hace
+  falta enganchar los dos lugares donde el contador cambia.
+- **Con la mochila llena, un cajón de pólvora no da dinamita y no se gasta.**
+- Ciclo de once escenas abriendo y cerrando la mochila en los asaltos: cero
+  errores y cero avisos.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

@@ -46,7 +46,7 @@ import {
 import { createBullet, drawBullet } from '../entities/bullet.js';
 import { createExplosive, drawExplosive } from '../entities/explosive.js';
 import { EXPLOSIVES } from '../data/explosives.js';
-import { slotsDe } from '../data/objetos.js';
+import { crearGrilla, buscarLugar, guardar, sacarUltima, ocupadas } from '../engine/grilla.js';
 import { drawRider } from '../entities/rider.js';
 import { updateRiders, createRiderWatch } from '../systems/riders.js';
 import { maxJinetesPara } from '../data/riders.js';
@@ -88,6 +88,19 @@ export function createRaidScene(services) {
    * objetos ahí habría movido tres fórmulas ya afinadas sin que nadie lo pida.
    */
   let objetos;
+
+  /** ¿Está abierta la mochila ([TAB])? El tiempo NO se detiene mientras la mirás. */
+  let mochilaAbierta;
+
+  /**
+   * LA MOCHILA COMO GRILLA (ver engine/grilla.js). Adentro conviven las cosas
+   * robadas y los cartuchos de dinamita, cada uno con su forma y su lugar.
+   */
+  let mochila;
+
+  /** La marca de "acá hay un cartucho", para distinguirlo de un objeto. */
+  const DINAMITA = Symbol("dinamita");
+  const FORMA_DINAMITA = CONFIG.mochila.formaDinamita;
   let rendidosMatados, noqueadosRematados, noqueadosLimpios;
   let jefe, jefeMuerto, jefePendiente, jefeTimer;
   let sheriff, auraTimer, sheriffMuerto;
@@ -171,6 +184,8 @@ export function createRaidScene(services) {
     timeLeft = duracionInicial;
     collected = 0;
     objetos = [];
+    mochilaAbierta = false;
+    mochila = crearGrilla(CONFIG.mochila.columnas, CONFIG.mochila.filas);
     kills = 0;
     civilians = 0;
     amenazados = 0;
@@ -2178,6 +2193,18 @@ export function createRaidScene(services) {
   function update(dt) {
     scroll += dt;
 
+    /**
+     * [TAB] ABRE Y CIERRA LA MOCHILA, y **el mundo sigue andando**.
+     *
+     * Va antes del `if (finished)` para que también se pueda mirar mientras
+     * corre la pantalla de resultados, y no consume nada más: no frena al
+     * jugador, no pausa el reloj y no interrumpe lo que estuvieras haciendo.
+     * Es una decisión de diseño y no una simplificación — mirar la mochila en
+     * medio de un vagón con guardias cuesta lo mismo que todo en este juego,
+     * segundos. Si pausara, sería una pantalla de gestión.
+     */
+    if (input.wasPressed('Tab')) mochilaAbierta = !mochilaAbierta;
+
     if (finished) {
       updateEffects(dt);
       camera.update(dt, rng);
@@ -2199,7 +2226,19 @@ export function createRaidScene(services) {
 
     // El lastre se calcula ANTES de mover al jugador: es lo que decide a qué
     // velocidad camina este cuadro (ver `lastreActual` y CONFIG.peso).
+    // Antes que nada: la dinamita que el jugador tiene tiene que tener su lugar
+    // reservado en la grilla (la pudo tirar o agarrar en cualquier lado).
+    sincronizarDinamita();
     player.lastre = lastreActual();
+    /**
+     * QUÉ TAN LLENA ESTÁ LA MOCHILA (0 a 1), sólo para dibujarla en la espalda.
+     *
+     * Va aparte de `lastre` y no se deduce de él: `lastre` es 0 hasta la mitad
+     * de la mochila por el colchón, así que una mochila vacía y una a medio
+     * llenar se verían iguales. Y la mochila tiene que crecer desde el primer
+     * cajón, porque es la única forma de ver lo que llevás sin abrir el TAB.
+     */
+    player.mochila = casillasUsadas() / CONFIG.mochila.casillas;
 
     updatePlayer(player, dt, world);
     updateTecho(dt);
@@ -2450,7 +2489,7 @@ export function createRaidScene(services) {
        * llenarte de cajones es elegir entrar sin explosivos.
        */
       if (player.dynamite < CONFIG.player.dynamiteMax
-          && entraEnLaMochila(CONFIG.mochila.slotsDinamita)) {
+          && entraEnLaMochila(FORMA_DINAMITA)) {
         cajon.progreso += dt;
         if (cajon.progreso >= EXPLOSIVES.cajonPolvora.abrirHold) agarrarCajon(cajon);
         escapeProgress = 0;
@@ -2502,7 +2541,7 @@ export function createRaidScene(services) {
        *
        * Sólo aplica a los objetos: la plata siempre entra, no ocupa lugar.
        */
-      const manosLlenas = !!nearest.objeto && !entraEnLaMochila(nearest.objeto.slots);
+      const manosLlenas = !!nearest.objeto && !entraEnLaMochila(nearest.objeto.forma);
       const conElArmaOcupada = input.mouse.down || player.reloadTimer > 0;
       if (!conElArmaOcupada && !manosLlenas) {
         nearest.progress += dt;
@@ -2734,12 +2773,46 @@ export function createRaidScene(services) {
    * en el de carga, cada cartucho es una caja que no te llevás.
    */
   function casillasUsadas() {
-    return slotsDe(objetos) + player.dynamite * CONFIG.mochila.slotsDinamita;
+    return ocupadas(mochila);
   }
 
-  /** ¿Entra algo de este tamaño? */
-  function entraEnLaMochila(slots) {
-    return casillasUsadas() + slots <= CONFIG.mochila.casillas;
+  /**
+   * ¿ENTRA ALGO DE ESTA FORMA? Y ojo: **no es una cuenta de casillas**.
+   *
+   * 🔻 ANTES ERA `usadas + slots <= 16`, o sea aritmética. Ahora lo decide la
+   * grilla (engine/grilla.js), y eso cambia el juego: con un número, tres
+   * atados de 3 y un cajón de 4 siempre entran porque 13 ≤ 16; con formas,
+   * los atados acostados dejan tres columnas sueltas de una casilla y **el
+   * cajón no tiene dónde ir**. Puede sobrar lugar y no entrar.
+   */
+  function entraEnLaMochila(forma) {
+    return !!buscarLugar(mochila, forma);
+  }
+
+  /**
+   * LA DINAMITA SE SINCRONIZA SOLA CON LA GRILLA.
+   *
+   * `player.dynamite` es un contador que sube en el vagón de armas y baja en
+   * `entities/player.js` al encender la mecha — dos lugares que no saben nada
+   * de la mochila. En vez de engancharse a los dos (y quedar a deber el día que
+   * aparezca un tercero), acá se compara el contador con las casillas que hay
+   * reservadas y se ajusta la diferencia. Una sola verdad, y es el contador.
+   *
+   * Si por lo que sea no hubiera lugar para un cartucho que el jugador ya tiene,
+   * no se pierde: el contador manda y la casilla queda a deber hasta que se
+   * libere espacio. Es el caso que no puede pasar (agarrar exige lugar), y
+   * conviene que si pasa no te saque una dinamita de la mano.
+   */
+  function sincronizarDinamita() {
+    let reservadas = mochila.entradas.filter((e) => e.dato === DINAMITA).length;
+    while (reservadas < player.dynamite) {
+      if (!guardar(mochila, FORMA_DINAMITA, DINAMITA)) break;
+      reservadas++;
+    }
+    while (reservadas > player.dynamite) {
+      sacarUltima(mochila, (d) => d === DINAMITA);
+      reservadas--;
+    }
   }
 
   function takeLoot(l) {
@@ -2751,8 +2824,18 @@ export function createRaidScene(services) {
      * bolsillo: pesa igual que la plata mientras lo cargás, pero no es plata
      * hasta que encuentres a quién vendérselo.
      */
-    if (l.objeto) objetos.push(l.objeto);
-    else collected += l.value;
+    if (l.objeto) {
+      /**
+       * Se guarda EN LA GRILLA, y la forma que le queda (acostada o no) se
+       * escribe de vuelta en el objeto: es lo que después dibuja el TAB, y es
+       * información del objeto que llevás, no del catálogo.
+       */
+      const lugar = guardar(mochila, l.objeto.forma, l.objeto);
+      if (lugar) l.objeto.forma = [lugar.w, lugar.h];
+      objetos.push(l.objeto);
+    } else {
+      collected += l.value;
+    }
 
     /**
      * EL JACKPOT SE ANUNCIA RECIÉN ACÁ — nunca antes. La caja se veía
@@ -3042,6 +3125,133 @@ export function createRaidScene(services) {
     drawMira(r);
 
     r.ctx.restore();
+
+    /**
+     * LA MOCHILA VA FUERA DEL `translate`: es lo único de esta pantalla que no
+     * está en el mundo. Se dibuja sobre coordenadas de pantalla, como el HUD.
+     */
+    if (mochilaAbierta) drawMochila(r);
+  }
+
+  /**
+   * LA MOCHILA ABIERTA — [TAB].
+   *
+   * *(Santi: "yo haría que al apretar TAB se despliegue el inventario de la
+   * mochila [...] que tenga 16 slots (cuadrados)")*
+   *
+   * DIECISÉIS CUADRADOS EN 4×4, y cada cosa ocupa las casillas que abulta, en
+   * orden de lectura. No hay que acomodar nada: la grilla es una FOTO de lo que
+   * llevás, no un rompecabezas. Por eso cada cosa se pinta con su nivel
+   * (común / valioso / raro) y ocupa un bloque continuo — de un vistazo ves
+   * cuánto lugar te queda y qué es lo que lo está ocupando.
+   *
+   * EL TIEMPO NO SE DETIENE. Es a propósito y es lo que la hace una decisión:
+   * mirar la mochila en medio de un vagón con guardias cuesta exactamente lo
+   * mismo que todo lo demás en este juego — segundos. Si se pausara, sería una
+   * pantalla de gestión; así es un gesto que se paga.
+   */
+  function drawMochila(r) {
+    const m = CONFIG.mochila;
+    const lado = 14, sep = 2;
+    const cols = m.columnas;
+    const filas = m.filas;
+    const anchoGrilla = cols * lado + (cols - 1) * sep;
+    const altoGrilla = filas * lado + (filas - 1) * sep;
+    const x0 = Math.round((r.width - anchoGrilla) / 2);
+    /**
+     * Corrida para arriba porque debajo de la grilla va la lista (así queda
+     * centrado el conjunto y no la grilla sola) — pero no tanto como para
+     * meterse en el HUD.
+     *
+     * 🐛 CON −16 EL TÍTULO CAÍA ENCIMA DE "SALIDA: 1 VAGÓN". El HUD es HTML
+     * superpuesto al canvas, así que no hay nada que impida pisarlo: las dos
+     * capas no se conocen. Se vio mirándolo.
+     */
+    const y0 = Math.round((r.height - altoGrilla) / 2) - 4;
+
+    // El velo: oscurece el tren sin taparlo. Seguís viendo lo que pasa, que es
+    // la mitad de por qué abrirla en el momento equivocado se paga.
+    r.ctx.globalAlpha = 0.72;
+    r.box(r.width / 2, r.height / 2, r.width / 2, r.height / 2, '#0d0b0c');
+    r.ctx.globalAlpha = 1;
+
+    /**
+     * Y UN PANEL SÓLIDO DETRÁS DE TODO. El velo solo no alcanzaba: se vio
+     * mirándolo — el piso del vagón y los carteles del mundo se leían POR
+     * DEBAJO de la lista de objetos y no se entendía nada. Un fondo opaco con
+     * borde es lo mismo que ya hace la pantalla de resultados, y por el mismo
+     * motivo: donde hay que leer, el mundo se tapa.
+     */
+    const lineas = 1 + (player.dynamite > 0 ? 1 : 0) + Math.max(1, objetos.length);
+    const panelAlto = 16 + altoGrilla + 10 + lineas * 9;
+    const panelAncho = 190;
+    const panelCy = y0 - 16 + panelAlto / 2;
+    r.box(r.width / 2, panelCy, panelAncho / 2, panelAlto / 2, '#1a1310');
+    r.rect(r.width / 2 - panelAncho / 2, panelCy - panelAlto / 2, panelAncho, 1, '#4a3524');
+    r.rect(r.width / 2 - panelAncho / 2, panelCy + panelAlto / 2, panelAncho, 1, '#4a3524');
+
+    r.text(T.hud.mochilaTitulo, r.width / 2, y0 - 14, colors.text);
+
+    // Primero los huecos: todas las casillas vacías, para que la grilla exista
+    // incluso con la mochila en cero.
+    for (let f = 0; f < filas; f++) {
+      for (let c = 0; c < cols; c++) {
+        const cx = x0 + c * (lado + sep) + lado / 2;
+        const cy = y0 + f * (lado + sep) + lado / 2;
+        r.box(cx, cy, lado / 2, lado / 2, '#2a2320');
+        r.box(cx, cy, lado / 2 - 1, lado / 2 - 1, '#1a1512');
+      }
+    }
+
+    /**
+     * Y ENCIMA, CADA COSA CON SU FORMA Y EN SU LUGAR (ver engine/grilla.js).
+     *
+     * 🔻 ANTES SE PINTABAN CASILLAS SUELTAS, en orden de lectura: un cajón eran
+     * cuatro cuadraditos seguidos que podían partirse al final de una fila y
+     * seguir en la siguiente. Eso mentía — decía "ocupa cuatro" cuando en
+     * realidad ocupa "un cuadrado de 2×2", que es la regla que de verdad
+     * decide si te entra. Ahora cada bulto se dibuja como UN rectángulo, así
+     * que el hueco que queda se ve tal como es.
+     */
+    const pintar = (e, color, borde) => {
+      const px = x0 + e.x * (lado + sep);
+      const py = y0 + e.y * (lado + sep);
+      const pw = e.w * lado + (e.w - 1) * sep;
+      const ph = e.h * lado + (e.h - 1) * sep;
+      r.box(px + pw / 2, py + ph / 2, pw / 2, ph / 2, color);
+      // Una luz arriba: sin eso, dos bultos del mismo color pegados se leen
+      // como uno solo más grande.
+      r.rect(px, py, pw, 1, borde);
+    };
+
+    for (const e of mochila.entradas) {
+      if (e.dato === DINAMITA) { pintar(e, colors.dynamite, colors.dynamiteBand); continue; }
+      const o = e.dato;
+      const color = o.nivel === 'raro' ? '#ffd84a'
+        : o.nivel === 'valioso' ? colors.strongbox : colors.bagLoot;
+      pintar(e, color, '#fff6d0');
+    }
+
+    /**
+     * Y DEBAJO, LA LISTA CON LO QUE VALE CADA COSA. La grilla dice cuánto
+     * abulta; la lista, cuánto vale. Son las dos preguntas de este tren y
+     * ninguna de las dos se puede contestar con la otra.
+     */
+    let ly = y0 + altoGrilla + 10;
+    if (player.dynamite > 0) {
+      r.text(T.hud.mochilaDinamita(player.dynamite), r.width / 2, ly, colors.dynamite);
+      ly += 9;
+    }
+    for (const o of objetos) {
+      r.text(`${o.nombre}  ·  ${o.slots}  ·  $${o.valor}`, r.width / 2, ly,
+        o.nivel === 'raro' ? '#ffd84a' : colors.textDim);
+      ly += 9;
+    }
+    if (!objetos.length) {
+      r.text(T.hud.mochilaVacia, r.width / 2, ly, colors.textDim);
+      ly += 9;
+    }
+    r.text(T.hud.mochilaAyuda, r.width / 2, r.height - 10, colors.textDim);
   }
 
   /**

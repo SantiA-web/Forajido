@@ -16,8 +16,9 @@
  *
  *   1. **Valen más que la plata equivalente.** Un objeto común rinde cerca del
  *      doble que una bolsa de monedas: es la prima por cargarlo y por el viaje.
- *   2. **No te entran todos** (`CONFIG.objetos.capacidad`). Adentro del asalto
- *      aparece una pregunta que hasta ahora no existía: *¿cuál me llevo?*
+ *   2. **No te entran todos, y no por un número sino por la FORMA** (ver
+ *      `CONFIG.mochila` y `forma`, abajo). Adentro del asalto aparece una
+ *      pregunta que hasta ahora no existía: *¿cuál me llevo?*
  *   3. **La plata de un objeto no se cobra en el tren**, así que el asalto
  *      termina y todavía tenés que ir a venderlo.
  *
@@ -75,14 +76,40 @@ export const NIVELES = {
 export const CHANCE_RARO = 0.18;
 
 /**
- * EL CATÁLOGO. `nivel` dice de dónde puede salir; el resto es nombre y sabor.
+ * EL CATÁLOGO. `nivel` dice de dónde puede salir; `forma`, cuánto y cómo
+ * abulta; el resto es nombre y sabor.
  *
  * Los nombres importan más de lo que parece: un "objeto valioso" genérico es un
  * número con otra cara, y un **lingote de plata** es algo que te podés imaginar
  * llevando bajo el brazo mientras corrés por un pasillo.
- */
-/**
- * CUÁNTO ABULTA CADA COSA — `slots`, de 1 a 4 casillas de la mochila.
+ *
+ * ---------------------------------------------------------------------------
+ * QUÉ FORMA TIENE CADA COSA — `forma: [ancho, alto]` en casillas de la mochila.
+ *
+ * *(Santi: "me parece mejor ahora esa idea que decías del tetris para la mochila
+ * entrando con TAB")*
+ *
+ * 🔻 ANTES ERA UN NÚMERO SUELTO (`slots`, de 1 a 4) y las casillas se llenaban
+ * en fila, una detrás de otra. Funcionaba y era menos: con un número, tres
+ * cosas de 3 casillas y una de 4 siempre entran en 16, porque 13 ≤ 16. Con
+ * FORMAS no alcanza con que sobre lugar — **tiene que sobrar lugar de la forma
+ * correcta**, y ahí aparece la decisión de verdad: un cajón de 2×2 necesita un
+ * hueco cuadrado, y cuatro anillos entran en cualquier rendija.
+ *
+ * EL MAPA DE FORMAS SALE DEL TAMAÑO QUE YA TENÍAN, así que ningún objeto
+ * cambió de "cuánto abulta" — sólo de "cómo abulta":
+ *
+ *   1 casilla  → `[1,1]`  una chuchería: un anillo, unos papeles
+ *   2 casillas → `[2,1]`  un estuche chato
+ *   3 casillas → `[3,1]`  un atado largo
+ *   4 casillas → `[2,2]`  un cajón
+ *
+ * SE PUEDEN ACOSTAR. Un atado de `[3,1]` entra parado (`[1,3]`) si es lo único
+ * que cabe — lo prueba `buscarLugar` (engine/grilla.js) sin que el jugador
+ * tenga que rotar nada a mano.
+ *
+ * `slots` sigue existiendo porque es lo que cuenta el HUD y lo que frena al
+ * jugador (ancho × alto), y porque es más barato de leer que la forma.
  *
  * *(Santi: "no es 5/5, porque no es lo mismo llevarse un anillo que una botella
  * de whisky")*
@@ -100,20 +127,20 @@ export const CHANCE_RARO = 0.18;
  */
 export const OBJETOS = {
   // --- lo que viaja en las bolsas del tren de carga ---
-  tabaco:      { id: 'tabaco',      nombre: 'Fardo de tabaco',     nivel: 'comun',   slots: 3 },
-  whisky:      { id: 'whisky',      nombre: 'Cajón de whisky',     nivel: 'comun',   slots: 4 },
-  telas:       { id: 'telas',       nombre: 'Rollo de telas',      nivel: 'comun',   slots: 3 },
-  herramienta: { id: 'herramienta', nombre: 'Caja de herramientas', nivel: 'comun',  slots: 4 },
-  cafe:        { id: 'cafe',        nombre: 'Saco de café',        nivel: 'comun',   slots: 3 },
-  municion:    { id: 'municion',    nombre: 'Cajón de munición',   nivel: 'comun',   slots: 4 },
-  cueros:      { id: 'cueros',      nombre: 'Atado de cueros',     nivel: 'comun',   slots: 3 },
+  tabaco:      { id: 'tabaco',      nombre: 'Fardo de tabaco',     nivel: 'comun',   slots: 3, forma: [3, 1] },
+  whisky:      { id: 'whisky',      nombre: 'Cajón de whisky',     nivel: 'comun',   slots: 4, forma: [2, 2] },
+  telas:       { id: 'telas',       nombre: 'Rollo de telas',      nivel: 'comun',   slots: 3, forma: [3, 1] },
+  herramienta: { id: 'herramienta', nombre: 'Caja de herramientas', nivel: 'comun',  slots: 4, forma: [2, 2] },
+  cafe:        { id: 'cafe',        nombre: 'Saco de café',        nivel: 'comun',   slots: 3, forma: [3, 1] },
+  municion:    { id: 'municion',    nombre: 'Cajón de munición',   nivel: 'comun',   slots: 4, forma: [2, 2] },
+  cueros:      { id: 'cueros',      nombre: 'Atado de cueros',     nivel: 'comun',   slots: 3, forma: [3, 1] },
 
   // --- lo que viaja en una caja fuerte ---
-  cuberteria:  { id: 'cuberteria',  nombre: 'Cubertería de plata', nivel: 'valioso', slots: 2 },
-  relojes:     { id: 'relojes',     nombre: 'Estuche de relojes',  nivel: 'valioso', slots: 2 },
-  joyero:      { id: 'joyero',      nombre: 'Joyero de viaje',     nivel: 'valioso', slots: 1 },
-  medicinas:   { id: 'medicinas',   nombre: 'Botiquín de morfina', nivel: 'valioso', slots: 2 },
-  oro:         { id: 'oro',         nombre: 'Polvo de oro',        nivel: 'valioso', slots: 1 },
+  cuberteria:  { id: 'cuberteria',  nombre: 'Cubertería de plata', nivel: 'valioso', slots: 2, forma: [2, 1] },
+  relojes:     { id: 'relojes',     nombre: 'Estuche de relojes',  nivel: 'valioso', slots: 2, forma: [2, 1] },
+  joyero:      { id: 'joyero',      nombre: 'Joyero de viaje',     nivel: 'valioso', slots: 1, forma: [1, 1] },
+  medicinas:   { id: 'medicinas',   nombre: 'Botiquín de morfina', nivel: 'valioso', slots: 2, forma: [2, 1] },
+  oro:         { id: 'oro',         nombre: 'Polvo de oro',        nivel: 'valioso', slots: 1, forma: [1, 1] },
 
   /**
    * LOS TRES RAROS — los que nombró Santi *("reloj, documentos, lingotes")*.
@@ -121,9 +148,9 @@ export const OBJETOS = {
    * Son tres y no uno para que encontrar uno no sea siempre la misma frase.
    * Valen lo mismo y **abultan distinto**: ver la nota de `slots`, arriba.
    */
-  relojOro:    { id: 'relojOro',    nombre: 'Reloj de oro macizo', nivel: 'raro',    slots: 1 },
-  documentos:  { id: 'documentos',  nombre: 'Documentos lacrados', nivel: 'raro',    slots: 1 },
-  lingotes:    { id: 'lingotes',    nombre: 'Lingotes de plata',   nivel: 'raro',    slots: 4 },
+  relojOro:    { id: 'relojOro',    nombre: 'Reloj de oro macizo', nivel: 'raro',    slots: 1, forma: [1, 1] },
+  documentos:  { id: 'documentos',  nombre: 'Documentos lacrados', nivel: 'raro',    slots: 1, forma: [1, 1] },
+  lingotes:    { id: 'lingotes',    nombre: 'Lingotes de plata',   nivel: 'raro',    slots: 4, forma: [2, 2] },
 };
 
 /** Los ids de un nivel. Se calcula una vez y no en cada sorteo. */
@@ -147,11 +174,21 @@ export function crearObjeto(rng, nivelId) {
     nombre: def.nombre,
     nivel: nivel.id,
     slots: def.slots,
+    // Copia, no referencia: la forma de un objeto puede quedar ACOSTADA al
+    // guardarlo (ver `buscarLugar`), y eso es de ESE objeto, no del catálogo.
+    forma: [...def.forma],
     valor: rng.int(nivel.valorMin, nivel.valorMax),
   };
 }
 
-/** Cuántas casillas ocupan juntas estas cosas. */
+/**
+ * Cuántas casillas ocupan juntas estas cosas.
+ *
+ * Ya no la usa el asalto —ahí la cuenta la lleva la grilla (engine/grilla.js),
+ * que es la que sabe si además ENTRAN— pero queda porque es la forma barata de
+ * preguntar "cuánto bulto es esto" sin armar una grilla: la usa el perista para
+ * mirar un lote y podría usarla cualquier pantalla futura.
+ */
 export function slotsDe(objetos = []) {
   return objetos.reduce((suma, o) => suma + (o.slots || 1), 0);
 }

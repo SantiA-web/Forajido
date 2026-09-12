@@ -18,7 +18,14 @@ export function createInput(canvas) {
     if (!down.has(e.code)) pressed.add(e.code);
     down.add(e.code);
     // Evita que la barra espaciadora y las flechas scrolleen la página.
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+    /**
+     * `Tab` está en la lista por un motivo distinto al de las otras: las
+     * flechas y el espacio hay que frenarlas para que no scrolleen la página.
+     * Tab **mueve el foco** — apretarlo saca el foco del canvas y a partir de
+     * ahí el juego deja de recibir teclas. Con la mochila colgada de Tab, eso
+     * era un teclado muerto al primer uso.
+     */
+    if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
       e.preventDefault();
     }
   });

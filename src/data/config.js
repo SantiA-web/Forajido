@@ -1306,11 +1306,24 @@ export const CONFIG = {
     sinCostoHasta: 0.5,
 
     /**
-     * EL TOPE DEL FRENO. 0,35 NO ES UN NÚMERO NUEVO: es exactamente el
-     * `maximo` que tenía `CONFIG.peso`, ya afinado. Lo que cambió es de dónde
-     * sale la fracción, no cuánto llega a frenar.
+     * EL TOPE DEL FRENO, con la mochila LLENA.
+     *
+     * NACIÓ EN 0,35 porque era exactamente el `maximo` que tenía `CONFIG.peso`,
+     * ya afinado — se heredó el número sin volver a medirlo contra la mochila.
+     *
+     * 🔻 BAJÓ A 0,25 DESPUÉS DE JUGARLA — *(Santi: "yo haría que el movimiento se
+     * penalice menos ahora. Pondría que pase de 35% a un 25%")*. Caminando a 78:
+     *
+     *   casillas   antes (0,35)       ahora (0,25)
+     *   8 / 16     78 px/s (nada)     78 px/s (nada)
+     *   12 / 16    64 px/s  (−17,5%)  68 px/s  (−12,5%)
+     *   14 / 16    58 px/s  (−26%)    63 px/s  (−19%)
+     *   16 / 16    51 px/s  (−35%)    58 px/s  (−25%)
+     *
+     * El colchón (`sinCostoHasta`) no se tocó: media mochila sigue siendo
+     * gratis. Lo que cambia es sólo cuánto pesa la mitad de arriba.
      */
-    frenoMaximo: 0.35,
+    frenoMaximo: 0.25,
   },
 
   loot: {

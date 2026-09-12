@@ -911,7 +911,7 @@ parte del juego.**
 > una caja que no te llevás.
 
 **Y el bulto te frena.** Media mochila es gratis; de ahí en adelante el freno
-sube derecho hasta **−35%** con la mochila llena. Reemplazó al sistema viejo, que
+sube derecho hasta **−25%** con la mochila llena (nació en −35% y se bajó jugándola). Reemplazó al sistema viejo, que
 te frenaba por lo que la plata VALÍA: unos documentos de $1.500 no pesan, un saco
 de café de $60 sí.
 

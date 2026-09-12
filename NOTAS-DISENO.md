@@ -11157,6 +11157,30 @@ uno de 1×3 y dos cartuchos):
 
 ---
 
+## 🔻 AJUSTADA · El bulto frena menos: tope de −35% a −25%
+
+*(Santi, después de jugar la mochila con el mouse: "yo haría que el movimiento se
+penalice menos ahora. Pondría que pase de 35% a un 25%")*
+
+**`CONFIG.mochila.frenoMaximo`: 0,35 → 0,25.** El 0,35 nunca se había medido
+contra la mochila: se heredó tal cual del `CONFIG.peso` viejo, que frenaba por lo
+que la plata valía. Es el primer número de la mochila que sale de jugarla.
+
+El colchón no se tocó (media mochila sigue gratis); lo que cambia es cuánto pesa
+la mitad de arriba. Caminando a 78 px/s:
+
+| Casillas | Antes (0,35) | Ahora (0,25) |
+|---|---|---|
+| 8 / 16 | 78 px/s, nada | 78 px/s, nada |
+| 12 / 16 | 64 px/s (−17,5%) | 68 px/s (−12,5%) |
+| 14 / 16 | 58 px/s (−26%) | 63 px/s (−19%) |
+| 16 / 16 | 51 px/s (−35%) | 58 px/s (−25%) |
+
+**Verificado en el juego:** tren de carga, bolsa llenada de a un bulto; con 13/16
+el HUD marca **−16%** (con el número viejo hubiera sido −22%).
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

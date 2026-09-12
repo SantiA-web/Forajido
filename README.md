@@ -797,7 +797,7 @@ dos trenes, no distingue nada.
 
 | | **De pasajeros** | **De carga** |
 |---|---|---|
-| **Suyo, y de nadie más** | El pasajero rico con su guardaespaldas, la caja fuerte oculta, los testigos, el civil encubierto, y los dos que suben por vos (**el Cazarrecompensas y el Sheriff**) | **La carga que se suelta** y **el piso que traiciona**, el ganado que se puede soltar, **el vagón de armas** con su pólvora y su Dinamitero, y el botín que te pesa tras la alarma |
+| **Suyo, y de nadie más** | El pasajero rico con su guardaespaldas, la caja fuerte oculta, los testigos, el civil encubierto, y los dos que suben por vos (**el Cazarrecompensas y el Sheriff**) | **La carga que se suelta** y **el piso que traiciona**, el ganado que se puede soltar, **el vagón de armas** con su pólvora y su Dinamitero, y **el vagón almacén** con la mercadería que después hay que vender |
 | **La pregunta** | ¿podés robarles sin que ninguno grite? | ¿podés cruzarlo sin que el tren te mate? |
 
 **Los barriles que ruedan y el piso traicionero eran del tren veloz y se mudaron
@@ -807,8 +807,9 @@ lleva carga.
 
 Y ahí apareció algo que no se buscaba: en el tren del sigilo, un barril no es un
 peligro de combate —no te saca vida— pero **el porrazo se oye**. O sea que en el
-de carga, la carga suelta es lo que te delata. Encaja con el botín que pesa en
-vez de pelearse con él.
+de carga, la carga suelta es lo que te delata. Y encaja con la mochila en vez de
+pelearse con ella: en este tren todo lo que te complica es carga — la que se
+suelta y te tumba, y la que llevás en la espalda y te frena.
 
 ### En el de carga no se roba plata: se roba mercadería
 
@@ -1028,21 +1029,17 @@ tranquera a tiempo.
 demás: al blindado no se entra sin volar la puerta con dinamita, y eso no tiene
 excepciones.
 
-**Y si suena la alarma, lo que llevás encima empieza a pesar** — sólo en este
-tren. Mientras nadie dio la voz, cargás lo que quieras sin costo. Apenas suena,
-**cada $100 encima te sacan un 2% de velocidad** (hasta un tope de −35%), y lo
-que agarres a partir de ahí te frena más. Un tren limpio te lo podés llevar
-entero; uno que se despertó te obliga a elegir qué soltar y qué no ir a buscar.
-
-> En el de pasajeros el botín **no** pesa: allá la decisión está en los caminos
-> y en a quién le creés. Mudarle la misma pregunta a los dos sería borrar
-> justamente lo que los separa.
+**Lo que llevás encima te frena, pero por lo que abulta, no por lo que vale.**
+Hubo un sistema anterior, exclusivo de este tren: con la alarma sonando, cada
+$100 encima te sacaba un 2% de velocidad. **Se retiró.** Ahora el freno lo decide
+la mochila, en los dos trenes y suene o no la alarma — ver "La mochila", más
+arriba.
 
 > Es la misma familia de castigo que sostiene todo lo demás: acá nada te quita
 > vida por equivocarte — el barril te tumba, la caja fuerte tarda, el salto
-> sucio despierta un vagón. Todos cobran en **tiempo y exposición**. Que la
-> alarma te vuelva lento en vez de sacarte algo es esa regla, aplicada por
-> primera vez a *cuánto llevás* en lugar de *cuánto tardaste*.
+> sucio despierta un vagón. Todos cobran en **tiempo y exposición**. Que cargar
+> te vuelva lento en vez de sacarte algo es esa regla, aplicada a *cuánto
+> llevás* en lugar de *cuánto tardaste*.
 
 ### Y en el de carga, el tren también es tu enemigo
 
@@ -1927,12 +1924,12 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `traqueteo.empujePx` | Cuánto te arrastra el tirón (acelerón o frenada) |
 | `traqueteo.avisoTiempo` / `efectoTiempo` | Cuánto dura el aviso sin efecto y cuánto el sacudón de verdad |
 | `TRAIN_TYPES.<id>.traqueteoCada` (`data/train.js`) | Cada cuánto se pone traicionero el piso. Sin ese campo, ese tren nunca lo hace |
-| `peso.penalizacion` / `maximo` | **Cuánto te frena la plata encima tras la alarma** (2% por cada $100, tope 35%). Sin alarma no pesa nada |
+| `mochila.sinCostoHasta` / `frenoMaximo` | **Cuánto te frena lo que llevás en la mochila.** Hasta la mitad llena no frena nada; de ahí sube derecho hasta −25% con la mochila llena |
+| `mochila.columnas` / `filas` | El tamaño de la grilla (hoy 4×4). Es lo que decide si un cajón de 2×2 todavía entra |
 | `estampida.abrirHold` / `arranque` | Lo que tardás en abrir la tranquera, y el respiro que tenés para correrte antes de que salga la manada |
 | `estampida.reses` / `velocidad` / `alcance` | Cuántas salen, qué tan rápido y cuánto corren antes de perderse adelante |
 | `estampida.aturdeGuardia` | Cuánto queda en el piso el guardia atropellado — 3 s, calculado para que te dé tiempo a llegar y rematarlo (el cuerpo a cuerpo, para comparar: 0,45 s) |
 | `estampida.matalAturdido` | Si una SEGUNDA estampida mata al que ya está caído (las reses de una misma manada no, es un solo evento) |
-| `TRAIN_TYPES.<id>.pesaElBotin` (`data/train.js`) | Si en ese tren la plata encima te frena tras la alarma. Sólo el de carga |
 | `TRAIN_TYPES.<id>.estampida` (`data/train.js`) | Si los vagones de ganado de ese tren traen tranqueras. Sin ese campo, son pasillo de paso |
 | `caballo.maxAdelanto` | Red de seguridad sin uso activo (el aguante ya es el límite real — ver abajo) |
 | `HORSES.<id>.sprintSpeed` | **Velocidad de ese caballo**: qué tan rápido se adelanta galopando y qué tan rápido alcanza el tren |

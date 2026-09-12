@@ -1228,6 +1228,30 @@ export const CONFIG = {
     maxAbsoluto: 12,
   },
 
+  /**
+   * LOS OBJETOS — cuántos te entran encima.
+   *
+   * Es el número que evita que "robar objetos" sea "robar plata con una
+   * caminata de más". Un objeto no se guarda en el bolsillo: lo llevás bajo el
+   * brazo, y por eso hay un tope.
+   *
+   * CINCO SALE DE UNA CUENTA, no de una sensación: el tren de carga trae unas
+   * 21 bolsas y 2 cajas fuertes, o sea 23 cosas. Con tope 5 te llevás **menos
+   * de una cuarta parte**, así que la pregunta dentro del asalto deja de ser
+   * "¿me alcanza el reloj?" y pasa a ser **"¿cuál me llevo?"** — y una caja
+   * fuerte del almacén, que puede traer el objeto raro, compite contra cuatro
+   * bolsas que ya tenés en la mano.
+   *
+   * ES LA MISMA IDEA QUE `player.dynamiteMax` (3 cartuchos): un tope chico y
+   * visible que convierte "agarrá todo" en una decisión. Y es la primera
+   * perilla a mover si el tren de carga se siente tacaño o demasiado generoso.
+   *
+   * NO ESTÁ JUGADO.
+   */
+  objetos: {
+    capacidad: 5,
+  },
+
   loot: {
     bagTime: 0.6,        // botín rápido
 

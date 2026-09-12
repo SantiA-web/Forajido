@@ -80,6 +80,13 @@ export function createRaidScene(services) {
   let traqueteoTimer, traqueteoFase, traqueteoFaseTimer, traqueteoVariante, traqueteoSwayX;
   let traqueteoVelMult = 1;
   let timeLeft, duracionInicial, collected, kills, civilians, amenazados, escapeProgress;
+  /**
+   * LO QUE LLEVÁS ENCIMA QUE NO ES PLATA (ver data/objetos.js). Va aparte de
+   * `collected` a propósito: `collected` es el dinero, y sobre el dinero están
+   * calculados el bono de trabajo limpio, la racha y el rescate. Meter los
+   * objetos ahí habría movido tres fórmulas ya afinadas sin que nadie lo pida.
+   */
+  let objetos;
   let rendidosMatados, noqueadosRematados, noqueadosLimpios;
   let jefe, jefeMuerto, jefePendiente, jefeTimer;
   let sheriff, auraTimer, sheriffMuerto;
@@ -162,6 +169,7 @@ export function createRaidScene(services) {
     duracionInicial = train.raidDuration - cobrado;
     timeLeft = duracionInicial;
     collected = 0;
+    objetos = [];
     kills = 0;
     civilians = 0;
     amenazados = 0;
@@ -1938,7 +1946,10 @@ export function createRaidScene(services) {
     // en serio es el único donde despertarlo te lo cargás al hombro.
     if (!train.pesaElBotin || !alarm.active) return 0;
     const c = CONFIG.peso;
-    return Math.min(c.maximo, (collected / c.porCada) * c.penalizacion);
+    // Cuenta la plata Y los objetos: un lingote pesa en la espalda exactamente
+    // igual que lo que vale, aunque todavía no sea plata. En el tren de carga,
+    // que es el único donde esto se aplica, casi todo el peso son objetos.
+    return Math.min(c.maximo, ((collected + valorObjetos()) / c.porCada) * c.penalizacion);
   }
 
   /** Reventado a tiros: se hace astillas y deja de ser un problema. */
@@ -2220,6 +2231,11 @@ export function createRaidScene(services) {
       timeLeft,
       urgent: timeLeft <= CONFIG.raid.urgentAt,
       money: collected,
+      // Cuántas cosas llevás encima y cuántas te entran. En el tren de carga es
+      // lo que de verdad mirás; en el de pasajeros nunca hay ninguna y el HUD
+      // no lo muestra.
+      objetos: objetos.length,
+      objetosMax: CONFIG.objetos.capacidad,
       lastre: player.lastre,
       alarm: alarm.active,
       inCover: !!player.cover,
@@ -2448,8 +2464,17 @@ export function createRaidScene(services) {
        * sin balas también interrumpe. Quisiste disparar, soltaste la caja —
        * que la recámara estuviera vacía es problema tuyo.
        */
+      /**
+       * Y CON LAS MANOS LLENAS TAMPOCO SE ABRE. Mismo criterio exacto que el
+       * cajón de pólvora de acá arriba: el botín se GASTA al abrirlo, así que
+       * dejar que un jugador al tope lo consuma por nada sería tirarlo a la
+       * basura sin que él lo haya elegido. El cartel sobre la cabeza avisa.
+       *
+       * Sólo aplica a los objetos: la plata siempre entra, no ocupa lugar.
+       */
+      const manosLlenas = !!nearest.objeto && objetos.length >= CONFIG.objetos.capacidad;
       const conElArmaOcupada = input.mouse.down || player.reloadTimer > 0;
-      if (!conElArmaOcupada) {
+      if (!conElArmaOcupada && !manosLlenas) {
         nearest.progress += dt;
         if (nearest.progress >= nearest.duration) takeLoot(nearest);
       }
@@ -2662,10 +2687,22 @@ export function createRaidScene(services) {
     }
   }
 
+  /** Lo que valen juntas las cosas que llevás encima. */
+  function valorObjetos() {
+    return objetos.reduce((suma, o) => suma + o.valor, 0);
+  }
+
   function takeLoot(l) {
     l.taken = true;
     l.progress = 0;
-    collected += l.value;
+
+    /**
+     * UN OBJETO NO SE COBRA ACÁ (ver data/objetos.js). Va a la espalda, no al
+     * bolsillo: pesa igual que la plata mientras lo cargás, pero no es plata
+     * hasta que encuentres a quién vendérselo.
+     */
+    if (l.objeto) objetos.push(l.objeto);
+    else collected += l.value;
 
     /**
      * EL JACKPOT SE ANUNCIA RECIÉN ACÁ — nunca antes. La caja se veía
@@ -2678,6 +2715,15 @@ export function createRaidScene(services) {
       });
       spawnParticles(l.x, l.y, '#ffd84a', 16);
       camera.shake(7, 0.5);
+    } else if (l.objeto) {
+      // Un objeto se anuncia por su NOMBRE y no por su precio: todavía no sabés
+      // cuánto te van a pagar por él, y ésa es justamente la diferencia.
+      floaters.push({
+        x: l.x, y: l.y - 8, text: l.objeto.nombre, life: 1.8,
+        color: l.objeto.nivel === 'raro' ? '#ffd84a' : colors.strongbox,
+      });
+      spawnParticles(l.x, l.y, l.objeto.nivel === 'raro' ? '#ffd84a' : colors.strongbox, 8);
+      if (l.objeto.nivel === 'raro') camera.shake(5, 0.35);
     } else {
       floaters.push({ x: l.x, y: l.y - 8, text: `+$${l.value}`, life: 1.4, color: colors.bagLoot });
       spawnParticles(l.x, l.y, colors.bagLoot, 6);
@@ -2808,6 +2854,17 @@ export function createRaidScene(services) {
       outcome,
       money: escaped ? collected + cleanBonus + rachaBonus : rescate,
       collected,
+
+      /**
+       * LOS OBJETOS SÓLO SE CONSERVAN SI ESCAPÁS, y sin rescate parcial.
+       *
+       * La plata tiene el suyo (`rescate`: te agarran cerca del caballo y algo
+       * salvás) porque unos billetes se esconden en la bota. Un lingote no: o
+       * te lo llevaste o se lo quedaron ellos. Es la misma regla de siempre
+       * —lo que se puede mostrar no se escribe— aplicada al bolsillo.
+       */
+      objetos: escaped ? objetos.slice() : [],
+      valorObjetos: escaped ? valorObjetos() : 0,
       cleanBonus,
       racha,
       rachaBonus,

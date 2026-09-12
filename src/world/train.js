@@ -36,6 +36,7 @@ import {
   PAQUETES, ESCONDITES, TILE_DE_ESCONDITE, CIVILES_QUE_SABEN,
 } from '../data/paquetes.js';
 import { guardHealth, GUARD_TYPES, DEFAULT_GUARD_TYPE } from '../data/guards.js';
+import { crearObjeto, nivelDeBotin } from '../data/objetos.js';
 
 const ALTO = 10;   // todos los tramos miden 10 filas
 
@@ -1113,6 +1114,24 @@ export function buildTrain(
       const pos = enTiles([def.col, def.row]);
       const l = createLootable(pos.x, pos.y, def.type, rng);
       l.wagon = t.wagon;
+
+      /**
+       * EN EL TREN DE CARGA EL BOTÍN NO ES PLATA, ES MERCADERÍA
+       * (`botinEnObjetos`, data/train.js).
+       *
+       * Y EL OBJETO RARO SÓLO PUEDE SALIR DE DOS LUGARES (pedido de Santi): de
+       * una caja fuerte **del almacén** o de una caja oculta (esa otra se arma
+       * más abajo). De una bolsa nunca, de una caja de cualquier otro vagón
+       * tampoco — hoy el almacén es el único del tren que lleva cajas fuertes,
+       * pero la condición se escribe igual, porque el día que otro vagón tenga
+       * una, el raro no tiene que empezar a salir de ahí sin que nadie lo haya
+       * decidido.
+       */
+      if (tipoTren.botinEnObjetos) {
+        const puedeSerRaro = p.id === 'almacen';
+        ponerObjeto(l, crearObjeto(rng, nivelDeBotin(rng, def.type, puedeSerRaro)));
+      }
+
       loot.push(l);
       revisar(avisos, map, pos, `botín del ${p.name} (vagón ${t.wagon})`);
     }
@@ -1386,6 +1405,17 @@ export function buildTrain(
         const caja = createLootable(pos.x, pos.y, 'cajaOculta', rng);
         caja.wagon = tramo.wagon;
         caja.oculto = true;
+
+        /**
+         * LA CAJA OCULTA ES EL OTRO LUGAR DEL QUE PUEDE SALIR EL OBJETO RARO,
+         * y acá vale para LOS DOS TRENES — no sólo para el de carga.
+         *
+         * Es lo que la hace especial en los dos lados: en el de pasajeros, el
+         * tren que se cobra en plata, la caja escondida es lo único que te
+         * puede dejar una cosa para vender. Estaba escondida por algo.
+         */
+        ponerObjeto(caja, crearObjeto(rng, nivelDeBotin(rng, 'strongbox', true)));
+
         loot.push(caja);
 
         /**
@@ -1531,6 +1561,27 @@ function centroDe(map, tramo) {
   // la derecha, para no aparecer literalmente encima del caballo.
   if (tramo.tipo === 'salida') return map.tileCenter(tramo.colStart + tramo.cols - 2, 4);
   return centro;
+}
+
+/**
+ * LE PONE UN OBJETO A UN BOTÍN — y le presta su valor y su nombre.
+ *
+ * El objeto manda sobre los dos: lo que dice el cartelito al abrirlo es el
+ * nombre de la cosa ("Lingotes de plata"), y lo que pesa en la espalda es su
+ * valor. Lo que NO cambia es el resto del botín: sigue siendo la misma bolsa o
+ * la misma caja fuerte, con su mismo tiempo de apertura y su mismo ruido.
+ *
+ * Un solo lugar donde se hace, para que no se pueda poner un objeto y olvidarse
+ * de alguna de las dos cosas.
+ */
+function ponerObjeto(l, objeto) {
+  l.objeto = objeto;
+  l.value = objeto.valor;
+  l.name = objeto.nombre;
+  // Un objeto nunca es el jackpot de la caja fuerte: ése se cobra en plata y es
+  // del tren de pasajeros. Si el sorteo lo había marcado, se le saca.
+  l.jackpot = false;
+  return l;
 }
 
 /** Avisa (no rompe) si algo quedó colocado encima de una pared o un asiento. */

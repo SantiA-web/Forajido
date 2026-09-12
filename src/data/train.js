@@ -414,6 +414,23 @@ export const TRAIN_TYPES = {
     modificadores: true,
 
     /**
+     * ACÁ NO SE ROBA PLATA: SE ROBA MERCADERÍA.
+     *
+     * *(Santi: "Pasajeros: robás dinero, en el de carga objetos que después
+     * vendés")*
+     *
+     * Todo el botín de este tren —las bolsas y las dos cajas fuertes del
+     * almacén— sale como OBJETOS (ver data/objetos.js). No suman un peso a tu
+     * bolsillo al levantarlos: te los llevás encima y valen algo recién cuando
+     * encontrás a quién vendérselos.
+     *
+     * ES LO QUE TERMINA DE SEPARAR A LOS DOS TRENES. Del de pasajeros salís con
+     * el bolsillo lleno y el asalto se cierra ahí; de éste salís cargado de
+     * cosas y el asalto te deja una tarea.
+     */
+    botinEnObjetos: true,
+
+    /**
      * LA CARGA SE SUELTA — mudado del tren veloz.
      *
      * ⚠️ EL NÚMERO NO ES EL DEL VELOZ (3,8) Y NO PODÍA SERLO. Los rodantes

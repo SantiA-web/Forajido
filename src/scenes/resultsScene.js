@@ -58,6 +58,14 @@ function buildPanel(s) {
 
   const rows = [
     row(T.results.loot, `$${escaped ? s.collected : 0}`, escaped),
+    /**
+     * La mercadería va JUSTO DEBAJO del botín en plata y sin un precio al
+     * lado: son las dos caras de "qué sacaste del tren", y la de la derecha
+     * todavía no es plata. Sólo aparece si de verdad trajiste algo.
+     */
+    (s.objetos || []).length
+      ? row(T.results.objetos(s.objetos.length), T.results.objetosSinVender, true)
+      : '',
     s.cleanBonus > 0 ? row(T.results.clean, `+$${s.cleanBonus}`, true) : '',
     s.rachaBonus > 0 ? row(T.results.racha(s.racha), `+$${s.rachaBonus}`, true) : '',
     s.rachaPerdida > 0 ? row(T.results.rachaPerdida(s.rachaPerdida), '', false, true) : '',

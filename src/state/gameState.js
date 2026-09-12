@@ -84,6 +84,16 @@ export function createNewGame() {
       weapon: ['colt'],
       melee: ['culata'],
       horse: ['criollo'],
+
+      /**
+       * LA MERCADERÍA SIN VENDER (ver data/objetos.js). A diferencia de las
+       * otras tres listas, ésta no guarda ids de un catálogo sino los objetos
+       * enteros: dos lingotes del mismo tipo pueden valer distinto, porque el
+       * valor se sortea al armar el tren y viaja adentro de la cosa.
+       *
+       * Arranca vacía: no empezás la partida con nada para vender.
+       */
+      objetos: [],
     },
 
     // Historia: banderas y contadores para las consecuencias diferidas
@@ -130,6 +140,22 @@ export function applyRaidResult(summary) {
    * entero (con los bonos) si escapaste.
    */
   gameState.money += summary.money;
+
+  /**
+   * LA MERCADERÍA VA AL INVENTARIO, NO AL BOLSILLO (ver data/objetos.js).
+   *
+   * Es lo que hace que el tren de carga termine con una tarea pendiente en vez
+   * de con una cifra: salís del asalto cargado de cosas y la plata aparece
+   * recién cuando encontrás a quién vendérselas.
+   *
+   * Van a `owned` y no a un lugar nuevo porque `owned` ES el inventario desde
+   * que existe la tienda — ahí ya viven las armas, los aceros y los caballos
+   * que tenés sin llevar puestos. Un objeto es exactamente eso: algo que
+   * tenés.
+   */
+  if (summary.objetos && summary.objetos.length) {
+    gameState.owned.objetos.push(...summary.objetos);
+  }
 
   if (summary.outcome === 'escaped') {
     gameState.stats.escapes += 1;

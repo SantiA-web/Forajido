@@ -456,6 +456,12 @@ export const T = {
     subDead: 'Caíste herido. Te esposaron ahí mismo.',
 
     loot: 'Botín',
+    /**
+     * LA MERCADERÍA NO DICE UN PRECIO, DICE CUÁNTAS COSAS SON. Todavía no vale
+     * plata: vale lo que te pague el que te la compre.
+     */
+    objetos: (n) => (n === 1 ? 'Te llevaste 1 cosa' : `Te llevaste ${n} cosas`),
+    objetosSinVender: 'Sin vender',
     clean: 'Trabajo limpio',
     racha: (n) => `Racha limpia (${n})`,
     rachaPerdida: (n) => `Se cortó la racha (llevabas ${n})`,

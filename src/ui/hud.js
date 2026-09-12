@@ -70,9 +70,19 @@ export function createHud() {
       // Dinero del asalto y cobertura. Con la alarma sonando, la plata encima
       // pesa: el porcentaje dice cuánta velocidad te está costando cargarla.
       const lastrePct = Math.round((data.lastre || 0) * 100);
+      /**
+       * LA MERCADERÍA, AL LADO DE LA PLATA. Se muestra como "3/5" y no como un
+       * precio, por lo mismo que el cartelito al levantarla: todavía no sabés
+       * cuánto vale. Lo que sí tenés que saber de un vistazo es **cuánto lugar
+       * te queda**, que es la decisión del tren de carga.
+       *
+       * Y no aparece si no llevás ninguna: en el tren de pasajeros no hay
+       * objetos, y un contador en cero es ruido.
+       */
+      const carga = data.objetos > 0 ? `  ${data.objetos}/${data.objetosMax}` : '';
       moneyEl.textContent = lastrePct > 0
-        ? `${T.hud.money(data.money)}  ${T.hud.lastre(lastrePct)}`
-        : T.hud.money(data.money);
+        ? `${T.hud.money(data.money)}${carga}  ${T.hud.lastre(lastrePct)}`
+        : `${T.hud.money(data.money)}${carga}`;
       moneyEl.classList.toggle('pesado', lastrePct > 0);
       coverEl.textContent = data.inCover ? T.hud.cover : data.sneaking ? T.hud.sneak : '';
 

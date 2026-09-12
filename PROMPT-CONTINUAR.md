@@ -4,94 +4,143 @@ completos `README.md`, `NOTAS-DISENO.md` y `src/data/config.js` — ahí está e
 contexto del proyecto, el detalle de cada sistema, y cómo trabajar conmigo.
 No me resumas lo que dicen: son la memoria real del proyecto entre sesiones,
 así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
-`NOTAS-DISENO.md` es grande (9.700 líneas): usá Grep para ir a la sección que
+`NOTAS-DISENO.md` es grande (10.900 líneas): usá Grep para ir a la sección que
 necesites en vez de leerlo entero cada vez.
 
-## LA SESIÓN PASADA: EL SONIDO
+## LA SESIÓN PASADA: SE REESCRIBIÓ QUÉ ES CADA TREN
 
-El juego **no tenía sonido en cuatro de sus seis pantallas** y la tormenta no se
-oía. Eso se cerró. Todo está subido (ocho commits) y la documentación al día.
+Fue la sesión más grande en mucho tiempo: **ocho commits**, todo subido y la
+documentación al día. Cambió la estructura del juego, no un número.
 
-### Lo que hay ahora
+### 1. Se acabó el "rápido / lento / punto medio"
 
-- **Capas de fondo con nombre y volumen ajustable en vivo** (`audio.ambiente`,
-  `audio.volumen`). Antes había un único fondo fijo. Es la base de todo lo demás.
-- **La tormenta se oye, en TRES capas**: `chapa` (el repiqueteo del techo, sólo
-  bajo techo), `agua` y `viento` (suben a la intemperie). Al cruzar un enganche,
-  entrar al vagón de ganado o subir al techo, **se oye que quedaste expuesto** —
-  que es justo cuando los jinetes te pueden pegar un tiro. Más truenos cada
-  9-22 s, uno de cada cuatro cerca.
-- **Y la tormenta ahora te TAPA en vez de delatarte.** `hearMult` pasó de 1,4 a
-  **0,55**: iba para el lado contrario desde la Fase 1 y nadie lo había
-  cuestionado. Como el clima se ve en el mapa antes de elegir la vía, la tormenta
-  pasó de lotería a decisión — esperarla para entrar callado.
-- **Campamento** (desierto + fogata, que suena sólo de noche porque de día está
-  apagada), **pueblo**, **mapa** (lo más callado: es un papel, no un lugar) y
-  **galope** (viento + zancadas).
-- **El viento respira**: dos osciladores lentos de períodos que no encajan
-  modulan volumen **y** filtro. Sin eso, ruido filtrado a volumen constante suena
-  a disco rayado, no a aire.
-- **Las zancadas del caballo** son "tucu-TÚN" —tres pisadas y silencio—, no un
-  pulso parejo: un cuadrúpedo no pisa a intervalos iguales.
-- **Música: una guitarra criolla y una armónica.** La criolla puntea un arpegio
-  que NO PARA (Am-F-G-Am, vuelta cada ~14 s): es la base. La armónica pasa por
-  arriba con frases sorteadas de una pentatónica menor y nunca repite. **Sólo en
-  el campamento y el pueblo** — en el asalto y el galope el sonido es información
-  y una melodía taparía lo que hay que oír.
+Había tres tipos de tren y se distinguían por su **reloj**, que es un eje de
+dificultad disfrazado de variedad. Ahora son **dos y se distinguen por lo que
+traen adentro**:
 
-### Las tres lecciones que costaron
+| | **Pasajeros** (50%) | **Carga** (50%) |
+|---|---|---|
+| Qué te ataca | **La gente te delata** | **El tren te ataca a vos** |
+| Suyo | paquete, caja oculta, testigos, encubierto, Cazarrecompensas, Sheriff | rodantes, traqueteo, estampida, vagón de armas, **el almacén** |
+| Qué se roba | **plata** | **mercadería que hay que vender** |
 
-1. **Sonido regular = sonido de máquina.** El viento constante sonaba a estática;
-   los cascos parejos, a máquina de coser. Lo que hace que algo se lea como un
-   fenómeno natural no es el timbre: es que **varíe**.
-2. **Me pasé de mano evitando el bucle.** La primera música eran frases sueltas
-   separadas por silencios largos, y Santi: *"no parece música, sino sonidos
-   aislados"*. Tenía razón: **sin nada que una una nota con la siguiente quedan
-   ruiditos**. Lo que no puede repetirse es la MELODÍA, no el acompañamiento.
-3. **"Un fondo que se nota deja de ser un fondo" no vale para todo.** Con ese
-   criterio los cascos quedaron inaudibles, y los cascos **no son un fondo, son
-   el personaje**: son lo único que te dice cómo corre el animal que llevás
-   abajo. Subieron ×2,6.
+La regla es **una mecánica, una sola casa**: si aparece en los dos, no distingue
+nada. Lo que sí le pasa a los dos es la capa de variedad (clima, redada, puerta
+trabada, comportamientos) — antes era exclusiva del estándar, o sea que la mitad
+de los asaltos no la veía nunca.
 
-## LO QUE FALTA JUGAR
+**El tren veloz quedó en reserva** (`peso: 0`), con sus seis vagones cortos
+intactos. Lo único que se pierde de verdad es su reloj de 90 s.
 
-Esto es lo más importante que le puedo decir al que siga.
+### 2. El vagón almacén, y el tren de carga sin blindado
 
-**Ya jugué y ajusté**: el sonido de la tormenta, el ambiente de las cuatro
-escenas, los cascos y las dos primeras versiones de la música.
+El almacén **viaja siempre** en el de carga, **cerrado con llave** (dos puertas
+de madera trabadas: se abren a tiros, o sea a los gritos), con **dos cajas
+fuertes** y **cuatro guardias blindados** encerrados adentro. El vagón blindado
+se fue de ese tren: el almacén heredó su papel con otra llave.
 
-**NO se jugó todavía:**
+### 3. En el de carga se roba mercadería, no plata
 
-- **La música nueva** (el arpegio criollo continuo). Las anteriores las escuché;
-  ésta no. Si molesta, la perilla es `armonicaCada` —que la melodía entre menos
-  seguido— antes que cualquier volumen: lo que cansa de un fondo casi siempre es
-  la melodía repetida, no el acompañamiento.
-- **Los cascos al nuevo volumen** (×2,6).
-- **La tormenta dada vuelta.** Ahora es la noche del ladrón: a dos baldosas y
-  media un guardia ya no te oye caminar. Se eligió el valor más fuerte de tres a
-  propósito. ¿Un vagón con un solo guardia se volvió trivial? ¿Se elige el tren
-  por el clima? Si eso no pasa, el clima sigue siendo decorado.
-- **Dónde cae el vagón de armas.** Ahora nunca es el primero ni el último, y
-  nunca queda pegado al blindado (siempre un vagón de por medio). Una de cada
-  cuatro veces el blindado aparece ANTES, y ése es siempre el mismo tren (armas
-  en el 5, blindado en el 3): ¿se vuelve reconocible de más? Perilla:
-  `chanceAntes`.
+Quince objetos en tres niveles (común / valioso / **raro**: reloj de oro,
+documentos lacrados, lingotes). El raro sólo sale de una caja del almacén o de
+una **caja fuerte oculta**. No se cobra en el tren: hay que venderlo.
+
+### 4. El perista, y `honor` por primera vez cuesta plata
+
+Última puerta de la calle, pegado a la oficina del sheriff, **abierto siempre**.
+Compra el lote entero de un gesto y dice el precio desglosado:
+
+- **Mercadería limpia** (la alarma nunca sonó): paga **el doble**. Es el bono de
+  trabajo limpio —que se calcula sobre el dinero y por eso no llegaba acá—
+  entrando por otra puerta, con el mismo número.
+- **Tu nombre**: 0 entre −15 y 15, **±3%** pasando 15, **±8%** pasando 40,
+  **±15%** pasando 60, **±20%** pasando 100.
+
+### 5. La mochila: un Tetris de 4×4 con cursor
+
+`TAB` abre una grilla de **dieciséis casillas**. Cada cosa tiene **forma**
+(`[1,1]` una chuchería, `[2,1]` un estuche, `[3,1]` un atado, `[2,2]` un cajón) y
+los bultos largos **se acuestan solos** si es lo único que cabe.
+
+**No alcanza con que sobre lugar: tiene que sobrar lugar de la forma correcta.**
+Tres atados dejan siete casillas libres y un cajón de 2×2 ya no entra.
+
+- **La dinamita ocupa lugar en la misma mochila.** De ahí sale sola la asimetría:
+  en el de pasajeros se roba plata (que no ocupa nada) y la mochila queda libre
+  para explosivos; en el de carga cada cartucho es una caja que no te llevás.
+- **Se puede soltar**: cursor con `W A S D`, `[E]` suelta, y lo soltado **cae al
+  piso y se puede volver a levantar**. Sin eso la mochila era un callejón.
+- **Mientras revolvés no te movés, no apuntás y no disparás, y el mundo sigue
+  andando.** No es una pantalla de gestión: es un tipo parado en un pasillo con
+  la bolsa abierta.
+- **El bulto te frena** (media mochila gratis, después hasta −35%). Reemplazó a
+  `CONFIG.peso`, que te frenaba por lo que la plata VALÍA.
+- Se ve la mochila **dibujada en la espalda**, y crece con lo que metés.
+
+### 6. Y el botín se ve como lo que es
+
+Once siluetas (cajón con listones, fardo con sogas, rollo, saco, estuche,
+botiquín con su cruz, lingotes apilados, papeles lacrados…), con sombra y
+**apoyadas contra la estiba**. Nada que ver con el cuadrado amarillo del tren de
+pasajeros.
+
+## ⚠️ NADA DE TODO ESTO ESTÁ JUGADO
+
+Es lo más importante que le puedo decir al que siga. **Jugué la reestructuración
+de los trenes y el almacén** (de ahí salieron dos pedidos de esta misma sesión).
+**No jugué nada de lo económico ni de la mochila.**
+
+Lo que hay que mirar, en orden:
+
+1. **La mochila de 16 casillas con formas.** ¿Es apretada o generosa? ¿"¿Cuál me
+   llevo?" se siente una decisión o una molestia? Es la primera vez que el tamaño
+   de la grilla se puede sentir.
+2. **Revolver la bolsa sin poder moverte.** ¿Se siente tenso o injusto? Si
+   molesta, **pausar es una línea**.
+3. **El tren de carga tiene cinco sistemas a la vez** (rodantes, traqueteo,
+   estampida, pólvora, el almacén) y pasó del 20% al 50% de los asaltos. ¿Tiene
+   carácter o pasan demasiadas cosas? La perilla para bajarle el ruido es subir
+   `rodantesCada` (14) y después `traqueteoCada` (24).
+4. **El precio del perista.** ¿Vender se siente un premio o un trámite?
+5. **El tren de carga se quedó sin ningún guardia duro fuera del almacén.**
+
+### Números sin calibrar de esta sesión
+
+`CONFIG.mochila` (16 casillas, colchón 0,5, freno 0,35), `CHANCE_RARO` (0,18),
+`rodantesCada` (14), `traqueteoCada` (24), los valores de los tres niveles de
+objeto, los escalones de honor del perista, y el 50/50 entre los dos trenes.
 
 Y de sesiones anteriores, sin calibrar: la frecuencia de los paquetes, el 25% de
 la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
 `CONFIG.raid.rachaBonus*` y `rescate*`, `LOOT_TYPES.strongbox.jackpot*`.
 
-## ⚠️ EL SONIDO CASI NO SE PUEDE VERIFICAR DESDE LA CONSOLA
+## LO QUE FALTA CONSTRUIR
 
-Es la advertencia más importante para el que siga. Se puede comprobar que las
-capas existen, que los volúmenes cambian cuando corresponde, que la cadencia
-sigue a la velocidad y que no se filtra nada entre escenas. Pero **si suena a
-lluvia sobre una chapa, a un trueno o a una criolla, no hay forma de saberlo
-desde acá**. No hay un `foto.ps1` para el oído: un cambio visual se puede mirar,
-éste no.
+- **Los documentos que revelan la caja fuerte oculta en el tren de carga.** Es lo
+  único que quedó pendiente del pedido de la sesión pasada: en el de pasajeros te
+  la delatan los civiles, y en el de carga no hay a quién amenazar, así que la
+  pista tiene que ser **documentos que encuentres por el tren**.
+- **Un desbalance que quedó anotado a propósito:** con el perista, el honor bajo
+  pasó a ser **puro castigo** (menos guardias se rinden Y te pagan menos), sin
+  que ser temido dé nada a cambio. El lugar natural para equilibrarlo es **al
+  COMPRAR**: al armero no le regateás igual si te tienen miedo.
+- **Etapa 2 de la pólvora**: que el sacudón "acelera" tumbe un **barril de
+  pólvora** al pasillo. Hoy suelta utilería. El traqueteo y el vagón de armas ya
+  viven en el mismo tren, que era la condición que faltaba.
+- **El galope no tiene paisaje**: le faltan siluetas de meseta en la capa lejana
+  del parallax.
+- **Fase 6b** (vagón de guardias dormidos), **Fase 7** (curva, enganche roto,
+  incendio, noche extrema) y **Fase 8** (el ladrón rival, lo más grande).
 
-Todos los números de `CONFIG.ambiente` y `CONFIG.tormenta` salieron de razonar,
-no de escuchar. **El sonido se corrige con mi oído, no con mediciones.**
+## Pendientes sueltos
+
+- El **`$NaN` en el HUD del campamento**, visto hace varias sesiones y todavía
+  sin mirar.
+- La **cantina** (contratar compañeros) sigue sin existir.
+- El precio del hacha (900) sigue sin confirmar: el bosque no existe.
+- `alertaEnPuerta` (systems/ai.js) sigue sin que nadie la llame: candidata a
+  limpieza.
+- En el código los barriles de pólvora se llaman `cajon` / `cajonPolvora`.
 
 ## Cómo trabajar conmigo
 
@@ -100,95 +149,95 @@ no de escuchar. **El sonido se corrige con mi oído, no con mediciones.**
   qué orden) y esperá mi confirmación. Si hay un número o una decisión de diseño
   sin cerrar, preguntame — con 2-3 opciones concretas, el EFECTO medido o
   calculado de cada una, y una recomendada con su razón. No lo dejes abierto.
-  Esto funciona muy bien: cada vez que hubo un número por decidir se me mostró en
-  una tabla con el resultado de cada opción y elegí con eso delante. Y muchas
-  veces NO elijo ninguna de las tres, o elijo una y le agrego una condición
-  propia encima: las opciones sirven para que yo vea el rango.
-- **Decime cuando algo que pido está mal.** Lo de la tormenta iba al revés desde
-  hacía meses y nadie lo había cuestionado; cuando lo dije, la respuesta correcta
-  fue medir y mostrarme la consecuencia, no obedecer y listo. Lo mismo cuando mi
-  regla tenía un caso que se contradecía: marcámelo antes de construir.
+  Muchas veces NO elijo ninguna de las tres, o elijo una y le agrego una
+  condición propia encima: las opciones sirven para que yo vea el rango.
+- **Decime cuando algo que pido está mal, y medímelo.** Esta sesión pasó dos
+  veces y las dos veces sirvió: sacar el vagón blindado del tren de carga iba a
+  dejarlo MÁS vacío (le sacaba 4 de 12 guardias), y se construyó con dos
+  compensaciones. Obedecer y listo hubiera sido peor.
+- **Y aceptá cuando yo encuentro algo mal.** Yo vi que la mochila no dejaba
+  soltar nada: eso era un agujero de diseño, no un detalle.
 - Cuando la implementación termina distinta de lo que pedí, decímelo directo. Y
   si en el medio tenés que apartarte de lo acordado, decímelo AL ENTREGAR, no lo
   dejes escondido en el código.
-- **Mostrame las cosas visuales en vez de describírmelas.** El cielo del pueblo
-  se decidió viendo dos maquetas pintadas encima del juego sin tocar un archivo.
-  Valió más que cualquier explicación.
+- **Mostrame las cosas visuales en vez de describírmelas.**
 
-### Lecciones de arnés de prueba (esto ahorró horas)
+### Lecciones de arnés de prueba (esto ahorró y costó horas)
 
-- **La mitad de los "no funciona" son del arnés, no del código.** Verificá que el
-  escenario sea válido: que el punto donde ponés al jugador NO sea sólido
-  (`map.isSolidAt`) y que HAYA línea de visión de verdad.
-- **Y que el mundo siga VIVO.** Un Dinamitero "trabado 80 segundos" resultó ser
-  el mundo entero congelado: el jugador había muerto. Si medís corridas largas,
-  forzá `player.health` y `player.alive` cada cuadro.
-- **El bucle real del juego corre en paralelo a tus mediciones.** Entre dos
-  llamadas a la consola el mundo avanza solo. Si necesitás un estado exacto,
-  hacé todo en una sola llamada.
-- **No le creas a una corrida chica.** Con 6 tiradas un sorteo uniforme parecía
-  sesgado; con 200, perfecto. Miles de tiradas si es una probabilidad, corridas
-  completas de 30-60 s si es un comportamiento.
-- **`Math.round(y / tileSize)` sobre un `tileCenter` miente** (devuelve
-  `row*16+8`, así que redondear da siempre la fila siguiente). Es `Math.floor`.
-- **Y para el audio hay una trampa propia:** `tone()` programa la frecuencia con
-  `setValueAtTime` para un instante futuro, así que al arrancar el oscilador
-  `frequency.value` todavía lee **440**. Contar osciladores para saber "qué notas
-  suenan" NO funciona — cada disparo cuenta como un La. Lo que resolvió esa
-  pregunta fue mirar la ESTRUCTURA (qué escena llama a `updateMusica`), no el
-  sonido. **La verificación correcta no siempre es la más parecida a lo que
-  querés saber.**
-- **No inventes objetos internos del juego**: un `player.cover` armado a mano
-  reventó el sistema de cobertura.
-- **No muevas al jugador siguiendo a lo que estás midiendo**: crea un lazo de
-  realimentación.
-- **No reasignes los arrays del mundo** (`w.passengers = [...]`): usá `splice`.
+- **`FORAJIDO.loop.stop()` CONGELA EL MUNDO, y es la herramienta más útil que
+  hay.** Se expuso esta sesión después de perder media docena de capturas: el
+  bucle corre con `requestAnimationFrame`, así que entre la llamada a la consola
+  y la foto el asalto terminaba solo. Con el bucle frenado se pisa cuadro a
+  cuadro a mano (`scenes.update(1/60)` + `input.endFrame()`), se dibuja con
+  `scenes.render(renderer)` y la foto muestra exactamente lo que dejaste.
+- **Si manejás el paso a mano, manejá TODO el cuadro a mano.** Llamar
+  `scenes.update()` sin `input.endFrame()` deja las teclas latentes: una venta se
+  ejecutó dos veces y parecía un bug del perista.
+- **Si tu banco de pruebas consume tiempo de juego, vigilá el reloj del juego.**
+  Un bucle que llenaba la mochila se comió los 165 s del asalto, así que `TAB` y
+  `E` le llegaban a la pantalla de resultados — y el servicio `raid` que yo
+  seguía leyendo era el del asalto viejo, con números plausibles.
+- **Sin control no hay medición, hay una anécdota.** Me convencí de que un vagón
+  cerrado partía el tren en dos y llegué a codificar el arreglo; el mismo tren
+  con la puerta ABIERTA mostró 70 px de diferencia en 200 s.
+- **No confundas una conducta de diseño con un síntoma.** Dos veces marqué como
+  "trabado" al centinela del blindado, que está quieto a propósito, y una vez al
+  Dinamitero, que ya tenía destrabe. Y los guardias de ADELANTE no te vienen a
+  buscar: está en el README hace meses.
+- **A veces el instrumento correcto no es simular, es mirar los datos.** El bug
+  de los guardias trabados no salió en cinco corridas de 90-150 s; apareció
+  cruzando estáticamente cada ronda contra cada posición de barril.
+- **El parámetro de escena es `tipoTren`, no `tipoTrenId`.**
 - **Un guardia lejos del jugador no se actualiza** (`CONFIG.raid.
-  cullPatrolDistance`, 700 px). El Dinamitero, el Sheriff y el jefe están exentos.
-- **`0` es falsy — cuidado con `campo || default`.** Ya pasó cuatro veces; la
-  última fue un `caballo.velMax` que no existe, tapado por un `|| velocidad` que
-  hacía que la cadencia nunca cambiara.
+  cullPatrolDistance`, 700 px). Subilo para medir.
+- **Verificá que el escenario sea válido** (que el punto no sea sólido, que haya
+  línea de visión) y **que el mundo siga vivo** (forzá `player.health` y
+  `player.alive` cada cuadro).
+- **No le creas a una corrida chica**: miles de tiradas si es una probabilidad.
+- **`Math.round(y / tileSize)` sobre un `tileCenter` miente.** Es `Math.floor`.
+- **`0` es falsy — cuidado con `campo || default`.** Ya pasó cinco veces.
+- **No inventes objetos internos del juego** ni **reasignes los arrays del
+  mundo** (`w.passengers = [...]`): usá `splice`.
 
 ### Mirar y oír
 
-- **El panel del navegador compone frames**: `computer{action:"screenshot"}`
-  funciona. Para ver algo chico, `zoom` no está soportado — lo que funciona es
-  **redibujar un recorte ampliado sobre el propio canvas** con `getImageData` +
-  `drawImage`, dentro de un `requestAnimationFrame` propio (si no, el bucle del
-  juego te lo pisa).
-- **`FORAJIDO.config` (minúscula) es el CONFIG vivo**: mutarle un color y volver
-  a renderizar cambia la pantalla al instante. Es la forma de probar paletas sin
-  tocar archivos.
+- **Para cualquier cambio visual, mirar no es opcional.** Esta sesión encontró
+  que la mochila dibujada en la espalda era **invisible** (`#5a4530` contra un
+  piso `#6d4a30`: el mismo marrón), que el TAB **mentía** dibujando casillas
+  sueltas en vez de bultos, y que dos textos se salían de la pantalla.
+- `computer{action:"screenshot"}` funciona; `zoom` **no** está soportado. Para
+  ver algo chico, redibujá un recorte ampliado sobre el propio canvas (con el
+  bucle frenado ya no hace falta un `requestAnimationFrame` propio).
+- **`FORAJIDO.config` es el CONFIG vivo**: mutarlo y volver a renderizar cambia
+  la pantalla al instante. Es la forma de probar paletas sin tocar archivos.
 - También está `foto.ps1` (raíz) para recortes ampliados por `fetch`.
-- **El audio no suena hasta que el usuario toca algo** (regla del navegador).
-  Para probar por consola: `window.dispatchEvent(new PointerEvent('pointerdown'))`
-  y esperar ~150 ms antes de medir.
-- **Para cualquier cambio visual, mirar no es opcional.** Encontró cosas que
-  ninguna medición daba: cartucheras invisibles sobre un piso del mismo tono, y
-  matas del campamento saliendo en diagonales perfectas porque las dos fórmulas
-  de posición eran lineales en el índice.
+- **El audio no suena hasta que el usuario toca algo**: `window.dispatchEvent(new
+  PointerEvent('pointerdown'))` y esperar ~150 ms.
+- **El sonido casi no se puede verificar desde la consola.** Se puede comprobar
+  que las capas existen y que los volúmenes cambian, pero si suena a lluvia sobre
+  una chapa no hay forma de saberlo desde acá. **El sonido se corrige con mi
+  oído.**
 
 ### Servidor y cómo lo abro
 
 - **El juego está publicado y siempre al día**: `https://santia-web.github.io/Forajido/`.
-  No necesita servidor y es lo que uso para jugar.
-- Para probar cambios **antes** de subirlos, yo abro `jugar.bat` (raíz).
+  Es lo que uso para jugar, y sirve además como **control del código viejo**
+  cuando querés medir un antes/después.
+- Para probar cambios antes de subirlos, yo abro `jugar.bat` (raíz).
 - Para vos: `powershell -NoProfile -ExecutionPolicy Bypass -File servidor.ps1 -NoBrowser -Port 8082`
-  (el `-ExecutionPolicy Bypass` hace falta). **Ojo: tu servidor se muere al
-  terminar la sesión**, y si el puerto queda ocupado por uno zombi, usá otro.
-  **Si hay un `servidor.ps1` sin `-Port` corriendo, ése es MÍO (el 8080) y no se
-  toca.**
+  (el `-ExecutionPolicy Bypass` hace falta). **Tu servidor se muere al terminar
+  la sesión**; si el puerto queda ocupado, usá otro. **Si hay un `servidor.ps1`
+  sin `-Port` corriendo, ése es MÍO (el 8080) y no se toca.**
 
 ### Documentación y git
 
-- Actualizá `README.md` y `NOTAS-DISENO.md` cuando cerremos algo: son la memoria
-  del proyecto. Y reescribí este archivo (`PROMPT-CONTINUAR.md`) al final de la
-  sesión, **enfocado en la sesión que termina** — no lo vayas acumulando: el
-  detalle histórico ya vive en los otros dos y en el git log.
-- Repo: `https://github.com/SantiA-web/Forajido`. El flujo es `git add <archivos>`,
+- Actualizá `README.md` y `NOTAS-DISENO.md` cuando cerremos algo, y reescribí
+  este archivo (`PROMPT-CONTINUAR.md`) al final de la sesión, **enfocado en la
+  sesión que termina** — no lo vayas acumulando: el detalle histórico ya vive en
+  los otros dos y en el git log.
+- Repo: `https://github.com/SantiA-web/Forajido`. Flujo: `git add <archivos>`,
   `git commit`, `git push`. Nada de `--force` salvo que yo lo pida. **Se sube al
-  cerrar cada cosa**: una vez se acumularon doce archivos y hubo que separarlos
-  después.
+  cerrar cada cosa.**
 - Los commits van en **español sin tildes**, título de una línea, y el cuerpo
   cuenta qué se pidió, qué se rompió y qué se midió.
 
@@ -196,62 +245,26 @@ no de escuchar. **El sonido se corrige con mi oído, no con mediciones.**
 
 **Fase 2** (el asalto) y **Fase 3** (campamento → pueblo → mapa → tienda) están
 construidas y jugables, con reputación completa (`fame`/`bounty`/`honor`) y
-refuerzos que escalan.
+refuerzos que escalan. El ciclo cierra de punta a punta: campamento → mapa →
+galope → asalto → resultados → campamento, y ahora también **→ perista**.
 
-El plan en curso es **"variedad de lo que pasa en los trenes"**: *"conozco estos
-vagones, pero nunca sé exactamente qué me voy a encontrar."* Todo esto SÓLO le
-pasa al tren estándar (`tipoTren.modificadores`).
+El plan en curso sigue siendo **"variedad de lo que pasa en los trenes"**, pero
+la sesión pasada le cambió el eje: ya no es sólo *qué te encontrás adentro* sino
+**qué clase de tren es**.
 
-### Prendido y jugable hoy
+### En reserva (construidos, medidos, apagados)
 
-- **Clima**: tormenta (20%), que ahora **te tapa** (`hearMult` 0,55) y se oye.
-- **Estado del tren**: alerta ya activada (10%), redada (15%, sólo con recompensa
-  ≥250), puerta bloqueada (15%).
-- **Comportamiento por vagón**: conversando / vigilando puerta / vigilando caja.
-- **Paquetes**: pasajero rico con guardaespaldas (20% por vagón con pasajeros) y
-  caja fuerte oculta (25% por tren, cinco escondites).
-- **El vagón de armas** (25% de los trenes estándar) y, cuando aparece, **pólvora
-  repartida por casi todos los vagones** — nunca en el de pasajeros. Son ~8-9
-  barriles por tren y sólo uno de cada tres trae un cartucho para llevarse, así
-  que salen ~3 dinamitas: justo lo que te entra encima.
+El **tren veloz** (`peso: 0`), la dificultad **Alta vigilancia** (`peso: 0`), y en
+`src/data/modifiers.js` el **Pistolero** (ojo: se apagó ANTES de que se arreglaran
+sus dos bugs, así que nunca se lo vio funcionando bien) y el **civil encubierto**.
+Son llaves, no amputaciones.
 
-### En reserva (construidos, medidos, apagados con chance 0)
+### Dónde está cada cosa nueva
 
-En `src/data/modifiers.js`: **Pistolero** (ojo: se apagó ANTES de que se
-arreglaran sus dos bugs, así que nunca se lo vio funcionando bien) y **civil
-encubierto**. La variante suelta del Dinamitero sigue en 0 a propósito.
-
-## Lo que falta construir
-
-- **Etapa 2 de la pólvora**, planificada y no construida: que el `traqueteo` (el
-  tren traicionero, hoy sólo del tren veloz) se prenda en los trenes con pólvora
-  y que el sacudón **tumbe un barril al pasillo**. El sistema existe entero y la
-  variante "acelera" ya sacude la carga: es conectarlo, no construirlo.
-- **El galope no tiene paisaje.** No puede tener cielo (la cámara nunca sube más
-  allá del techo del tren) y el degradado en el suelo ya se probó y se descartó —
-  se lee como rayas pintadas. Lo que le falta son **siluetas de meseta en la capa
-  lejana del parallax**.
-- **Música en el asalto y el galope**, si alguna vez se quiere. Se dejó vacío a
-  propósito; si se agrega, tendría que apagarse sola con la alarma.
-- **Fase 6b**: el vagón de guardias dormidos — depende de la noche de verdad.
-- **Fase 5b**: el objeto especial que se vende en el pueblo — necesita un
-  INVENTARIO, que hoy no existe.
-- **Fase 7**: curva, enganche roto, incendio, y noche con oscuridad extrema.
-- **Fase 8**: el ladrón rival. No bloquea nada, pero es lo más grande.
-
-## Pendientes sueltos
-
-- **La partida empieza de noche** (`esDeDia: false` en `gameState`), así que lo
-  primero que ve alguien es la versión más oscura de todo — y el cielo del pueblo
-  no se ve hasta que dormís. Fue deliberado (que quieras dormir y aprendas el
-  sistema solo); ahora tiene un costo nuevo.
-- El **`$NaN` en el HUD del campamento**, visto de pasada hace varias sesiones y
-  todavía sin mirar.
-- El precio del hacha (900) sigue sin confirmar: la región del bosque no existe.
-- La **cantina** (contratar compañeros) sigue sin existir. Ahora que hay un menú
-  compartido (`src/engine/menu.js`) es más barato de construir.
-- `alertaEnPuerta` (systems/ai.js) sigue sin que nadie la llame: candidata a
-  limpieza.
-- En el código los barriles de pólvora se llaman `cajon` / `cajonPolvora`: el
-  nombre `barril` ya estaba tomado por los rodantes del tren veloz. Renombrar
-  tocaría seis archivos y no cambia nada del juego.
+```
+src/data/objetos.js     el catálogo de mercadería: niveles, formas, valores
+src/data/perista.js     las reglas de precio (limpio + escalones de honor)
+src/engine/grilla.js    la grilla que acomoda bultos (no sabe nada de western)
+src/data/wagons.js      el vagón `almacen`, y las siluetas del botín físico
+src/data/train.js       los dos tipos de tren, y el veloz en reserva
+```

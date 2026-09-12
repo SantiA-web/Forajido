@@ -821,6 +821,16 @@ trenes de carga llevan al menos uno**. Y la caja oculta es el otro lugar — tam
 en el tren de pasajeros, que es lo único que ahí te puede dejar algo para vender.
 Estaba escondida por algo.
 
+**Y se ve lo que es.** La mercadería no es un cuadrado amarillo en el piso como
+la plata del tren de pasajeros: son **cajones con listones, fardos atados con
+soga, rollos de tela, sacos, estuches, un botiquín con su cruz, lingotes
+apilados, papeles con sello de lacre**. Todo con su sombra, y **apoyado contra la
+estiba** en vez de tirado en el medio del pasillo.
+
+El color lo da el nivel (madera lo común, gris de chapa lo valioso, dorado el
+raro) y la forma la da la silueta, así que de un vistazo sabés las dos cosas sin
+que ninguna tape a la otra.
+
 ### La mochila: dieciséis casillas, y cada cosa tiene su forma
 
 Llevás una mochila en la espalda —**se le ve el bulto, y crece con lo que

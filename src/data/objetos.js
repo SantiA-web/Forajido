@@ -127,20 +127,20 @@ export const CHANCE_RARO = 0.18;
  */
 export const OBJETOS = {
   // --- lo que viaja en las bolsas del tren de carga ---
-  tabaco:      { id: 'tabaco',      nombre: 'Fardo de tabaco',     nivel: 'comun',   slots: 3, forma: [3, 1] },
-  whisky:      { id: 'whisky',      nombre: 'Cajón de whisky',     nivel: 'comun',   slots: 4, forma: [2, 2] },
-  telas:       { id: 'telas',       nombre: 'Rollo de telas',      nivel: 'comun',   slots: 3, forma: [3, 1] },
-  herramienta: { id: 'herramienta', nombre: 'Caja de herramientas', nivel: 'comun',  slots: 4, forma: [2, 2] },
-  cafe:        { id: 'cafe',        nombre: 'Saco de café',        nivel: 'comun',   slots: 3, forma: [3, 1] },
-  municion:    { id: 'municion',    nombre: 'Cajón de munición',   nivel: 'comun',   slots: 4, forma: [2, 2] },
-  cueros:      { id: 'cueros',      nombre: 'Atado de cueros',     nivel: 'comun',   slots: 3, forma: [3, 1] },
+  tabaco:      { id: 'tabaco',      nombre: 'Fardo de tabaco',     nivel: 'comun',   slots: 3, forma: [3, 1], dibujo: 'fardo' },
+  whisky:      { id: 'whisky',      nombre: 'Cajón de whisky',     nivel: 'comun',   slots: 4, forma: [2, 2], dibujo: 'botellas' },
+  telas:       { id: 'telas',       nombre: 'Rollo de telas',      nivel: 'comun',   slots: 3, forma: [3, 1], dibujo: 'rollo' },
+  herramienta: { id: 'herramienta', nombre: 'Caja de herramientas', nivel: 'comun',  slots: 4, forma: [2, 2], dibujo: 'cajon' },
+  cafe:        { id: 'cafe',        nombre: 'Saco de café',        nivel: 'comun',   slots: 3, forma: [3, 1], dibujo: 'saco' },
+  municion:    { id: 'municion',    nombre: 'Cajón de munición',   nivel: 'comun',   slots: 4, forma: [2, 2], dibujo: 'cajon' },
+  cueros:      { id: 'cueros',      nombre: 'Atado de cueros',     nivel: 'comun',   slots: 3, forma: [3, 1], dibujo: 'fardo' },
 
   // --- lo que viaja en una caja fuerte ---
-  cuberteria:  { id: 'cuberteria',  nombre: 'Cubertería de plata', nivel: 'valioso', slots: 2, forma: [2, 1] },
-  relojes:     { id: 'relojes',     nombre: 'Estuche de relojes',  nivel: 'valioso', slots: 2, forma: [2, 1] },
-  joyero:      { id: 'joyero',      nombre: 'Joyero de viaje',     nivel: 'valioso', slots: 1, forma: [1, 1] },
-  medicinas:   { id: 'medicinas',   nombre: 'Botiquín de morfina', nivel: 'valioso', slots: 2, forma: [2, 1] },
-  oro:         { id: 'oro',         nombre: 'Polvo de oro',        nivel: 'valioso', slots: 1, forma: [1, 1] },
+  cuberteria:  { id: 'cuberteria',  nombre: 'Cubertería de plata', nivel: 'valioso', slots: 2, forma: [2, 1], dibujo: 'estuche' },
+  relojes:     { id: 'relojes',     nombre: 'Estuche de relojes',  nivel: 'valioso', slots: 2, forma: [2, 1], dibujo: 'estuche' },
+  joyero:      { id: 'joyero',      nombre: 'Joyero de viaje',     nivel: 'valioso', slots: 1, forma: [1, 1], dibujo: 'joyero' },
+  medicinas:   { id: 'medicinas',   nombre: 'Botiquín de morfina', nivel: 'valioso', slots: 2, forma: [2, 1], dibujo: 'botiquin' },
+  oro:         { id: 'oro',         nombre: 'Polvo de oro',        nivel: 'valioso', slots: 1, forma: [1, 1], dibujo: 'bolsita' },
 
   /**
    * LOS TRES RAROS — los que nombró Santi *("reloj, documentos, lingotes")*.
@@ -148,9 +148,9 @@ export const OBJETOS = {
    * Son tres y no uno para que encontrar uno no sea siempre la misma frase.
    * Valen lo mismo y **abultan distinto**: ver la nota de `slots`, arriba.
    */
-  relojOro:    { id: 'relojOro',    nombre: 'Reloj de oro macizo', nivel: 'raro',    slots: 1, forma: [1, 1] },
-  documentos:  { id: 'documentos',  nombre: 'Documentos lacrados', nivel: 'raro',    slots: 1, forma: [1, 1] },
-  lingotes:    { id: 'lingotes',    nombre: 'Lingotes de plata',   nivel: 'raro',    slots: 4, forma: [2, 2] },
+  relojOro:    { id: 'relojOro',    nombre: 'Reloj de oro macizo', nivel: 'raro',    slots: 1, forma: [1, 1], dibujo: 'joyero' },
+  documentos:  { id: 'documentos',  nombre: 'Documentos lacrados', nivel: 'raro',    slots: 1, forma: [1, 1], dibujo: 'papeles' },
+  lingotes:    { id: 'lingotes',    nombre: 'Lingotes de plata',   nivel: 'raro',    slots: 4, forma: [2, 2], dibujo: 'lingotes' },
 };
 
 /** Los ids de un nivel. Se calcula una vez y no en cada sorteo. */
@@ -177,6 +177,8 @@ export function crearObjeto(rng, nivelId) {
     // Copia, no referencia: la forma de un objeto puede quedar ACOSTADA al
     // guardarlo (ver `buscarLugar`), y eso es de ESE objeto, no del catálogo.
     forma: [...def.forma],
+    /** Con qué silueta se dibuja tirado en el vagón (ver entities/lootable.js). */
+    dibujo: def.dibujo,
     valor: rng.int(nivel.valorMin, nivel.valorMax),
   };
 }

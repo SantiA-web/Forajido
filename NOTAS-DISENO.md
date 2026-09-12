@@ -10884,6 +10884,64 @@ el README, en la sección de depurar.
 
 ---
 
+## ✅ HECHA · La mercadería se ve como lo que es, y apoyada en la estiba
+
+*(Santi: "lo que recoges no puede parecer lo mismo que en el de pasajeros (un
+cuadrado amarillo en el piso). Tiene que ser más físico y real. Tienen que haber
+cajas y cosas apoyadas sobre muebles para llevártelas")*
+
+Tenía razón y el problema era más grande que la estética: **el botín del tren de
+carga se dibujaba con el mismo sprite que la plata del de pasajeros**, así que lo
+único que de verdad distingue a los dos trenes —qué se roba— era invisible hasta
+que levantabas la cosa.
+
+### Once siluetas, y el corte es por CLASE de cosa
+
+`dibujarObjeto` (entities/lootable.js) sale antes que todo lo demás y con
+`return`: un objeto no comparte una línea de dibujo con la bolsa ni con la caja
+fuerte. Cajón con listones, cajón de botellas con los cuellos asomando, fardo con
+dos sogas, rollo de tela con la espiral en la punta, saco panzón atado arriba,
+estuche chato con broche, botiquín con su cruz roja, lingotes apilados
+escalonados, papeles con sello de lacre, bolsita de polvo de oro, joyero.
+
+**No son quince, una por objeto, y es a propósito:** lo que el dibujo tiene que
+decir es *qué clase de cosa es* —cuánto va a costar cargarla—, no cuál
+exactamente. El nombre lo dice el cartel al levantarla. Un cajón de munición y
+uno de whisky se parecen porque son las dos igual de incómodas, que es la única
+diferencia que importa adentro del vagón.
+
+**El color lo da el nivel** (madera / gris de chapa / dorado), igual que en el
+TAB. Así el nivel se lee del color y la forma de la silueta, sin que uno tape al
+otro.
+
+**Y todas llevan sombra**, que es la mitad de por qué esto se siente físico: sin
+ella, cualquier cosa parece flotar.
+
+### Apoyadas en la estiba: cinco píxeles, y no un tile
+
+El botín de estos vagones vive en las filas 3 y 6, que son las que quedan pegadas
+a las pilas de carga. Se lo corre **cinco píxeles hacia el mueble**, así que se
+monta sobre el borde de la estiba y se lee como algo estibado.
+
+**Cinco y no un tile entero por un motivo que no se ve:** moverlo ADENTRO del
+mueble lo volvería inalcanzable — el jugador no puede pisar carga y `loot.radius`
+son 15 px. Así queda al filo: visualmente encima, físicamente al alcance del que
+camina por la fila de al lado.
+
+### VERIFICADO POR CONSOLA
+
+- **Las posiciones siguen siendo válidas**: seis muestras, todas en las filas 3 y
+  6 (y 51 / y 109), ninguna sobre un tile sólido, y el validador del tren no
+  dice nada.
+- **Y siguen siendo alcanzables**, que era el riesgo real: tres pruebas con el
+  jugador parado en la fila caminable de al lado, con `[E]` sostenido — las tres
+  se levantaron.
+- **El tren de pasajeros no cambió**: sus 15 botines siguen sin un solo objeto,
+  o sea que siguen siendo plata y siguen dibujándose como siempre.
+- Ciclo de once escenas, de día y de noche: cero errores y cero avisos.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

@@ -1578,6 +1578,28 @@ function ponerObjeto(l, objeto) {
   l.objeto = objeto;
   l.value = objeto.valor;
   l.name = objeto.nombre;
+
+  /**
+   * Y SE APOYA CONTRA LA CARGA, no queda tirada en el medio del piso.
+   *
+   * *(Santi: "tienen que haber cajas y cosas apoyadas sobre muebles para
+   * llevártelas")*
+   *
+   * El botín de estos vagones vive en las filas 3 y 6, que son las dos que
+   * quedan pegadas a las pilas de carga (filas 1-2 arriba, 7-8 abajo). Con
+   * cinco píxeles hacia el mueble, la cosa **se monta sobre el borde de la
+   * estiba**: se lee como algo estibado y no como algo que alguien dejó en el
+   * pasillo.
+   *
+   * SON CINCO PÍXELES Y NO UN TILE ENTERO por un motivo que no se ve: mover el
+   * botín ADENTRO del mueble lo volvería inalcanzable (el jugador no puede
+   * pisar carga, y `loot.radius` son 15 px). Así queda al filo — visualmente
+   * encima, físicamente al alcance del que camina por la fila de al lado.
+   *
+   * `techo.centroY` (80) es la línea que parte el vagón en dos, así que sirve
+   * para saber de qué lado está sin preguntarle la fila a nadie.
+   */
+  l.y += l.y < CONFIG.techo.centroY ? -5 : 5;
   // Un objeto nunca es el jackpot de la caja fuerte: ése se cobra en plata y es
   // del tren de pasajeros. Si el sorteo lo había marcado, se le saca.
   l.jackpot = false;

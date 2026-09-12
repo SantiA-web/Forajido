@@ -81,32 +81,49 @@ export const CHANCE_RARO = 0.18;
  * número con otra cara, y un **lingote de plata** es algo que te podés imaginar
  * llevando bajo el brazo mientras corrés por un pasillo.
  */
+/**
+ * CUÁNTO ABULTA CADA COSA — `slots`, de 1 a 4 casillas de la mochila.
+ *
+ * *(Santi: "no es 5/5, porque no es lo mismo llevarse un anillo que una botella
+ * de whisky")*
+ *
+ * Y ACÁ HAY ALGO QUE APARECIÓ SOLO Y ES LO MEJOR DE TODO EL SISTEMA: **el nivel
+ * raro quedó repartido entre 1 y 4 casillas**. Un reloj de oro y unos lingotes
+ * valen lo mismo, pero el reloj entra en cualquier hueco y los lingotes te
+ * comen un cuarto de la mochila. Así que encontrar el objeto raro dejó de ser
+ * una sola cosa: importa CUÁL te tocó, no sólo que te tocó.
+ *
+ * El tamaño no está atado al valor a propósito. Si lo estuviera, la mochila
+ * sería una segunda forma de decir el precio; separados, hay cosas que valen
+ * poco y molestan mucho (un saco de café) y cosas que valen una fortuna y no
+ * se notan (los documentos).
+ */
 export const OBJETOS = {
   // --- lo que viaja en las bolsas del tren de carga ---
-  tabaco:      { id: 'tabaco',      nombre: 'Fardo de tabaco',     nivel: 'comun' },
-  whisky:      { id: 'whisky',      nombre: 'Cajón de whisky',     nivel: 'comun' },
-  telas:       { id: 'telas',       nombre: 'Rollo de telas',      nivel: 'comun' },
-  herramienta: { id: 'herramienta', nombre: 'Caja de herramientas', nivel: 'comun' },
-  cafe:        { id: 'cafe',        nombre: 'Saco de café',        nivel: 'comun' },
-  municion:    { id: 'municion',    nombre: 'Cajón de munición',   nivel: 'comun' },
-  cueros:      { id: 'cueros',      nombre: 'Atado de cueros',     nivel: 'comun' },
+  tabaco:      { id: 'tabaco',      nombre: 'Fardo de tabaco',     nivel: 'comun',   slots: 3 },
+  whisky:      { id: 'whisky',      nombre: 'Cajón de whisky',     nivel: 'comun',   slots: 4 },
+  telas:       { id: 'telas',       nombre: 'Rollo de telas',      nivel: 'comun',   slots: 3 },
+  herramienta: { id: 'herramienta', nombre: 'Caja de herramientas', nivel: 'comun',  slots: 4 },
+  cafe:        { id: 'cafe',        nombre: 'Saco de café',        nivel: 'comun',   slots: 3 },
+  municion:    { id: 'municion',    nombre: 'Cajón de munición',   nivel: 'comun',   slots: 4 },
+  cueros:      { id: 'cueros',      nombre: 'Atado de cueros',     nivel: 'comun',   slots: 3 },
 
   // --- lo que viaja en una caja fuerte ---
-  cuberteria:  { id: 'cuberteria',  nombre: 'Cubertería de plata', nivel: 'valioso' },
-  relojes:     { id: 'relojes',     nombre: 'Estuche de relojes',  nivel: 'valioso' },
-  joyero:      { id: 'joyero',      nombre: 'Joyero de viaje',     nivel: 'valioso' },
-  medicinas:   { id: 'medicinas',   nombre: 'Botiquín de morfina', nivel: 'valioso' },
-  oro:         { id: 'oro',         nombre: 'Polvo de oro',        nivel: 'valioso' },
+  cuberteria:  { id: 'cuberteria',  nombre: 'Cubertería de plata', nivel: 'valioso', slots: 2 },
+  relojes:     { id: 'relojes',     nombre: 'Estuche de relojes',  nivel: 'valioso', slots: 2 },
+  joyero:      { id: 'joyero',      nombre: 'Joyero de viaje',     nivel: 'valioso', slots: 1 },
+  medicinas:   { id: 'medicinas',   nombre: 'Botiquín de morfina', nivel: 'valioso', slots: 2 },
+  oro:         { id: 'oro',         nombre: 'Polvo de oro',        nivel: 'valioso', slots: 1 },
 
   /**
    * LOS TRES RAROS — los que nombró Santi *("reloj, documentos, lingotes")*.
    *
    * Son tres y no uno para que encontrar uno no sea siempre la misma frase.
-   * Valen lo mismo: lo que cambia es qué te imaginás llevando.
+   * Valen lo mismo y **abultan distinto**: ver la nota de `slots`, arriba.
    */
-  relojOro:    { id: 'relojOro',    nombre: 'Reloj de oro macizo', nivel: 'raro' },
-  documentos:  { id: 'documentos',  nombre: 'Documentos lacrados', nivel: 'raro' },
-  lingotes:    { id: 'lingotes',    nombre: 'Lingotes de plata',   nivel: 'raro' },
+  relojOro:    { id: 'relojOro',    nombre: 'Reloj de oro macizo', nivel: 'raro',    slots: 1 },
+  documentos:  { id: 'documentos',  nombre: 'Documentos lacrados', nivel: 'raro',    slots: 1 },
+  lingotes:    { id: 'lingotes',    nombre: 'Lingotes de plata',   nivel: 'raro',    slots: 4 },
 };
 
 /** Los ids de un nivel. Se calcula una vez y no en cada sorteo. */
@@ -129,8 +146,14 @@ export function crearObjeto(rng, nivelId) {
     id: def.id,
     nombre: def.nombre,
     nivel: nivel.id,
+    slots: def.slots,
     valor: rng.int(nivel.valorMin, nivel.valorMax),
   };
+}
+
+/** Cuántas casillas ocupan juntas estas cosas. */
+export function slotsDe(objetos = []) {
+  return objetos.reduce((suma, o) => suma + (o.slots || 1), 0);
 }
 
 /**

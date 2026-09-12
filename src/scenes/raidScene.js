@@ -46,6 +46,7 @@ import {
 import { createBullet, drawBullet } from '../entities/bullet.js';
 import { createExplosive, drawExplosive } from '../entities/explosive.js';
 import { EXPLOSIVES } from '../data/explosives.js';
+import { slotsDe } from '../data/objetos.js';
 import { drawRider } from '../entities/rider.js';
 import { updateRiders, createRiderWatch } from '../systems/riders.js';
 import { maxJinetesPara } from '../data/riders.js';
@@ -211,6 +212,12 @@ export function createRaidScene(services) {
        * barriles, porque la lista se reemplaza entera en cada `enter`.
        */
       get cajones() { return cajones; },
+      /**
+       * LA MOCHILA, para el HUD, para la grilla del TAB y para poder medirla
+       * desde la consola. `casillas` incluye la dinamita (ver `casillasUsadas`).
+       */
+      get objetos() { return objetos; },
+      get casillas() { return casillasUsadas(); },
       /**
        * `F` EMPUJA UN CAJÓN SI TENÉS UNO AL LADO; SI NO, GOLPEA.
        *
@@ -1944,12 +1951,25 @@ export function createRaidScene(services) {
     // Sólo pesa en los trenes que lo traen (hoy el de carga, ver data/train.js).
     // Es la contracara de su identidad: el tren donde el sigilo se puede jugar
     // en serio es el único donde despertarlo te lo cargás al hombro.
-    if (!train.pesaElBotin || !alarm.active) return 0;
-    const c = CONFIG.peso;
-    // Cuenta la plata Y los objetos: un lingote pesa en la espalda exactamente
-    // igual que lo que vale, aunque todavía no sea plata. En el tren de carga,
-    // que es el único donde esto se aplica, casi todo el peso son objetos.
-    return Math.min(c.maximo, ((collected + valorObjetos()) / c.porCada) * c.penalizacion);
+    /**
+     * 🔻 AHORA TE FRENA EL BULTO, NO LA PLATA — y en los dos trenes.
+     *
+     * Antes leía `CONFIG.peso`: cada $100 encima te sacaban un 2%, sólo en el
+     * tren de carga y sólo después de la alarma. Ese sistema se retiró entero
+     * (ver `CONFIG.mochila` para los tres motivos). Lo que queda es más físico:
+     * no te frena lo que VALE, te frena lo que ABULTA. Unos documentos lacrados
+     * de $1.500 no pesan; un saco de café de $60, sí.
+     *
+     * Y MEDIA MOCHILA ES GRATIS (`sinCostoHasta`). Sin ese colchón, cualquier
+     * cosa que agarraras te castigaba un poco y "agarrá lo que puedas" se
+     * convertía en "no agarres nada", que es el error contrario. Con él,
+     * llenarla es una decisión.
+     */
+    const m = CONFIG.mochila;
+    const fraccion = casillasUsadas() / m.casillas;
+    if (fraccion <= m.sinCostoHasta) return 0;
+    const excedente = (fraccion - m.sinCostoHasta) / (1 - m.sinCostoHasta);
+    return Math.min(m.frenoMaximo, excedente * m.frenoMaximo);
   }
 
   /** Reventado a tiros: se hace astillas y deja de ser un problema. */
@@ -2231,11 +2251,11 @@ export function createRaidScene(services) {
       timeLeft,
       urgent: timeLeft <= CONFIG.raid.urgentAt,
       money: collected,
-      // Cuántas cosas llevás encima y cuántas te entran. En el tren de carga es
-      // lo que de verdad mirás; en el de pasajeros nunca hay ninguna y el HUD
-      // no lo muestra.
-      objetos: objetos.length,
-      objetosMax: CONFIG.objetos.capacidad,
+      // Cuántas casillas de la mochila llevás ocupadas y cuántas hay. La
+      // dinamita cuenta, así que esto nunca está en cero — el HUD lo muestra
+      // siempre.
+      casillas: casillasUsadas(),
+      casillasMax: CONFIG.mochila.casillas,
       lastre: player.lastre,
       alarm: alarm.active,
       inCover: !!player.cover,
@@ -2420,7 +2440,17 @@ export function createRaidScene(services) {
        * sin que él lo haya elegido. El cartel arriba de la cabeza ya avisa que
        * estás lleno (ver `drawPrompts`).
        */
-      if (player.dynamite < CONFIG.player.dynamiteMax) {
+      /**
+       * Y AHORA TAMBIÉN HACE FALTA LUGAR EN LA MOCHILA. `dynamiteMax` (3) sigue
+       * siendo el tope de cartuchos —eso está calibrado contra la puerta del
+       * blindado y las cajas fuertes— pero un cartucho ocupa una casilla, así
+       * que con la mochila llena de mercadería no hay dónde ponerlo.
+       *
+       * Es la misma decisión, vista desde el otro lado: en el tren de carga,
+       * llenarte de cajones es elegir entrar sin explosivos.
+       */
+      if (player.dynamite < CONFIG.player.dynamiteMax
+          && entraEnLaMochila(CONFIG.mochila.slotsDinamita)) {
         cajon.progreso += dt;
         if (cajon.progreso >= EXPLOSIVES.cajonPolvora.abrirHold) agarrarCajon(cajon);
         escapeProgress = 0;
@@ -2472,7 +2502,7 @@ export function createRaidScene(services) {
        *
        * Sólo aplica a los objetos: la plata siempre entra, no ocupa lugar.
        */
-      const manosLlenas = !!nearest.objeto && objetos.length >= CONFIG.objetos.capacidad;
+      const manosLlenas = !!nearest.objeto && !entraEnLaMochila(nearest.objeto.slots);
       const conElArmaOcupada = input.mouse.down || player.reloadTimer > 0;
       if (!conElArmaOcupada && !manosLlenas) {
         nearest.progress += dt;
@@ -2690,6 +2720,26 @@ export function createRaidScene(services) {
   /** Lo que valen juntas las cosas que llevás encima. */
   function valorObjetos() {
     return objetos.reduce((suma, o) => suma + o.valor, 0);
+  }
+
+  /**
+   * CUÁNTAS CASILLAS DE LA MOCHILA HAY OCUPADAS — las cosas Y la dinamita.
+   *
+   * *(Santi: "es más, haría que la dinamita también ocupe lugar en esta
+   * mochila")*
+   *
+   * Que los dos entren en la misma cuenta es lo que hace que los dos trenes te
+   * pidan equiparte distinto sin ninguna regla nueva: en el de pasajeros se roba
+   * plata, que no ocupa lugar, así que la mochila queda libre para explosivos;
+   * en el de carga, cada cartucho es una caja que no te llevás.
+   */
+  function casillasUsadas() {
+    return slotsDe(objetos) + player.dynamite * CONFIG.mochila.slotsDinamita;
+  }
+
+  /** ¿Entra algo de este tamaño? */
+  function entraEnLaMochila(slots) {
+    return casillasUsadas() + slots <= CONFIG.mochila.casillas;
   }
 
   function takeLoot(l) {

@@ -498,7 +498,19 @@ export const TRAIN_TYPES = {
      * quién le creés, y mudarle la misma pregunta a los dos sería borrar
      * justamente lo que los separa.
      */
-    pesaElBotin: true,
+    /**
+     * 🔻 RETIRADO: LO QUE TE FRENA AHORA ES LA MOCHILA, NO LA PLATA.
+     *
+     * Este campo hacía que, con la alarma sonando, cada $100 encima te sacaran
+     * un 2% de velocidad — y era exclusivo de este tren. Lo reemplazó
+     * `CONFIG.mochila`, que te frena por lo que ABULTA y vale en los dos
+     * trenes (ver el porqué completo allá).
+     *
+     * Se deja en `false` y no se borra el campo: el mecanismo de `world/train.js`
+     * sigue leyéndolo, así que si algún día se quiere volver a tener un tren
+     * donde además pese el VALOR de lo que llevás, es cambiar este booleano.
+     */
+    pesaElBotin: false,
     color: '#7a8f6b',
   },
 };

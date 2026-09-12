@@ -1229,27 +1229,70 @@ export const CONFIG = {
   },
 
   /**
-   * LOS OBJETOS — cuántos te entran encima.
+   * LA MOCHILA — el lugar que llevás en la espalda, y lo único que decide
+   * cuánto te podés llevar.
    *
-   * Es el número que evita que "robar objetos" sea "robar plata con una
-   * caminata de más". Un objeto no se guarda en el bolsillo: lo llevás bajo el
-   * brazo, y por eso hay un tope.
+   * *(Santi: "yo haría que al apretar TAB se despliegue el inventario de la
+   * mochila [...] que tenga 16 slots (cuadrados). Y bueno, cada objeto que robes
+   * ocupe más o menos espacio. Mientras más ocupada tengas la mochila, más
+   * lento va el personaje. Es más, haría que la dinamita también ocupe lugar en
+   * esta mochila")*
    *
-   * CINCO SALE DE UNA CUENTA, no de una sensación: el tren de carga trae unas
-   * 21 bolsas y 2 cajas fuertes, o sea 23 cosas. Con tope 5 te llevás **menos
-   * de una cuarta parte**, así que la pregunta dentro del asalto deja de ser
-   * "¿me alcanza el reloj?" y pasa a ser **"¿cuál me llevo?"** — y una caja
-   * fuerte del almacén, que puede traer el objeto raro, compite contra cuatro
-   * bolsas que ya tenés en la mano.
+   * REEMPLAZÓ A `CONFIG.peso`, QUE YA NO EXISTE. Aquél hacía que **la plata**
+   * encima te frenara (2% por cada $100, sólo en el tren de carga y sólo
+   * después de la alarma). Dos sistemas para la misma cosa era confuso, y el de
+   * la mochila es mejor por tres motivos:
    *
-   * ES LA MISMA IDEA QUE `player.dynamiteMax` (3 cartuchos): un tope chico y
-   * visible que convierte "agarrá todo" en una decisión. Y es la primera
-   * perilla a mover si el tren de carga se siente tacaño o demasiado generoso.
+   *   - **Es físico.** No te frena lo que VALE, te frena lo que ABULTA. Unos
+   *     documentos lacrados de $1.500 no pesan; un saco de café de $60, sí.
+   *   - **Vale en los dos trenes**, en vez de ser la rareza de uno.
+   *   - **Y la dinamita entra en la misma cuenta**, que es lo que hace que los
+   *     dos trenes te pidan equiparte distinto sin una sola regla nueva: en el
+   *     de pasajeros se roba plata (que no ocupa lugar) y la mochila queda
+   *     libre para explosivos; en el de carga, cada cartucho es una caja que no
+   *     te llevás.
    *
-   * NO ESTÁ JUGADO.
+   * LO QUE SE PERDIÓ, y hay que dejarlo escrito: la regla de *"mientras nadie
+   * dio la voz, cargás lo que quieras sin costo"*. La reemplaza el colchón de
+   * abajo, que hace lo mismo por otra vía — media mochila es gratis siempre.
    */
-  objetos: {
-    capacidad: 5,
+  mochila: {
+    /**
+     * DIECISÉIS CASILLAS, y cada cosa ocupa de 1 a 4 (ver `slots` en
+     * data/objetos.js). Se llenan en orden, consecutivas: no hay que acomodar
+     * nada, entra o no entra.
+     *
+     * Elegido por Santi. Contra los ~23 botines de un tren de carga, y con los
+     * tamaños que tienen, te llevás cuatro cajones grandes o una decena de
+     * cosas chicas: bastante menos de la mitad del tren.
+     */
+    casillas: 16,
+
+    /** Cómo se dibuja la grilla con TAB. 4x4 es lo que pidió Santi. */
+    columnas: 4,
+
+    /** Cuántas casillas ocupa un cartucho de dinamita. */
+    slotsDinamita: 1,
+
+    /**
+     * EL COLCHÓN — hasta acá no te frena nada.
+     *
+     * Con 0,5, media mochila es gratis: podés llevar tres cartuchos y un par de
+     * cosas sin notarlo. De ahí en adelante el freno sube derecho hasta
+     * `frenoMaximo` con la mochila llena.
+     *
+     * EXISTE PARA QUE LLENARLA SEA UNA DECISIÓN Y NO UN IMPUESTO. Sin colchón,
+     * cualquier cosa que agarres te castiga un poco, y "agarrá lo que puedas"
+     * pasa a ser "no agarres nada" — que es el error contrario.
+     */
+    sinCostoHasta: 0.5,
+
+    /**
+     * EL TOPE DEL FRENO. 0,35 NO ES UN NÚMERO NUEVO: es exactamente el
+     * `maximo` que tenía `CONFIG.peso`, ya afinado. Lo que cambió es de dónde
+     * sale la fracción, no cuánto llega a frenar.
+     */
+    frenoMaximo: 0.35,
   },
 
   loot: {
@@ -1488,41 +1531,6 @@ export const CONFIG = {
     dispersionExtra: 0.06,  // se SUMA al spread de cualquiera que dispare
     empujePx: 28,            // arrastre total durante el efecto, en píxeles
     barrilesExtra: 2,        // sólo en la variante "acelera"
-  },
-
-  /**
-   * EL PESO DE LO QUE LLEVÁS ENCIMA — y por qué sólo cuenta después de la alarma.
-   *
-   * `raid.cleanBonus` ya premiaba con el DOBLE de botín salir sin que sonara la
-   * alarma, pero era un número invisible: aparecía recién en la pantalla de
-   * resultados, así que jugando no se sentía nada. Esto lo pone en las manos.
-   *
-   * LA REGLA: mientras nadie dio la voz, cargás lo que quieras y no pesa nada.
-   * Apenas suena la alarma, cada tanda de plata que llevás encima te frena un
-   * poco — y lo que agarres a partir de ahí te frena más. Un tren limpio es un
-   * tren que te podés llevar entero; uno que se despertó te obliga a elegir
-   * qué soltar y qué no ir a buscar.
-   *
-   * POR QUÉ ESTO Y NO OTRA COSA: es la misma familia de castigo que sostiene
-   * todo el resto del juego. Acá nada te quita vida por equivocarte — el
-   * barril te tumba, la caja fuerte tarda, el salto sucio despierta un vagón.
-   * Todos cobran en TIEMPO y EXPOSICIÓN. Que la alarma te vuelva lento en vez
-   * de sacarte algo es exactamente esa regla, aplicada por primera vez a
-   * "cuánto llevás" en lugar de "cuánto tardaste".
-   *
-   * Y SUBE DE A POCO, no de golpe (decidido con Santi): así "¿agarro uno más?"
-   * es una pregunta que te hacés en CADA botín después de la alarma, y no una
-   * sola vez. Un escalón fijo se decide una vez y se olvida.
-   */
-  peso: {
-    porCada: 100,        // cada $100 encima...
-    penalizacion: 0.02,  // ...te saca un 2% de velocidad
-    /**
-     * Techo duro. Con el botín promedio del tren de carga (~$1400) llevarte
-     * casi todo da -28%, así que este tope casi no se toca — está para que
-     * un tren excepcionalmente rico no te deje literalmente clavado.
-     */
-    maximo: 0.35,
   },
 
   /**

@@ -79,7 +79,7 @@ export function createHud() {
        * Y no aparece si no llevás ninguna: en el tren de pasajeros no hay
        * objetos, y un contador en cero es ruido.
        */
-      const carga = data.objetos > 0 ? `  ${data.objetos}/${data.objetosMax}` : '';
+      const carga = data.casillas > 0 ? `  ${data.casillas}/${data.casillasMax}` : '';
       moneyEl.textContent = lastrePct > 0
         ? `${T.hud.money(data.money)}${carga}  ${T.hud.lastre(lastrePct)}`
         : `${T.hud.money(data.money)}${carga}`;

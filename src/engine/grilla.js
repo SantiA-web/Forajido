@@ -12,14 +12,23 @@
  * una casilla cada una, y el cajón necesita un cuadrado. Ese "no entra aunque
  * sobre" es todo el juego.
  *
- * ACOMODA SOLA, Y ES A PROPÓSITO. El jugador no arrastra nada: agarra un cajón
- * y el cajón se guarda donde quepa. Hacerlo a mano sería un minijuego de
- * inventario en el medio de un vagón con guardias, y este juego cobra en
- * tiempo y exposición, no en administración.
+ * ACOMODA SOLA AL AGARRAR: levantás un cajón y el cajón se guarda donde quepa,
+ * sin que tengas que parar a pensar dónde. Eso no cambió y no tiene que
+ * cambiar — el momento de levantar algo es justo el peor momento para pedirle
+ * al jugador que administre una grilla.
  *
  * PRIMERO EL HUECO MÁS ARRIBA Y MÁS A LA IZQUIERDA (`first fit`), probando la
  * forma como viene y después acostada. Es el orden que un tipo apurado usaría:
  * lo pone donde entre, no donde quede mejor.
+ *
+ * 🔻 Y DESPUÉS SÍ SE PUEDE ACOMODAR A MANO (`colocarEn`, más abajo). Acá decía
+ * que el jugador no arrastraba nada nunca, y que hacerlo sería "un minijuego de
+ * inventario en medio de un vagón con guardias". Se jugó y Santi pidió lo
+ * contrario: arrastrar con el mouse. La razón por la que no rompe el criterio
+ * viejo es CUÁNDO pasa cada cosa — agarrar sigue siendo instantáneo y
+ * automático; acomodar es opcional, pasa con la bolsa abierta, y el mundo sigue
+ * andando mientras lo hacés. O sea que reacomodar ya tiene su precio puesto, el
+ * mismo que todo lo demás de este juego: tiempo y exposición.
  */
 
 export function crearGrilla(cols, filas) {
@@ -32,10 +41,29 @@ function pisa(a, b) {
 }
 
 /** ¿Cabe un rectángulo de `w`×`h` en (x, y), sin salirse ni pisar nada? */
-function cabeEn(g, x, y, w, h) {
+export function cabeEn(g, x, y, w, h) {
   if (x < 0 || y < 0 || x + w > g.cols || y + h > g.filas) return false;
   const candidato = { x, y, w, h };
   return !g.entradas.some((e) => pisa(candidato, e));
+}
+
+/**
+ * PONER ALGO EN UNA POSICIÓN ELEGIDA — no donde la grilla quiera, donde le
+ * digan. Devuelve la entrada, o `null` si ahí no entra (y no toca nada).
+ *
+ * Es la mitad que faltaba desde que la mochila se maneja con el mouse: hasta
+ * acá `guardar` era la única forma de meter algo, y siempre elegía ella (el
+ * primer hueco de arriba a la izquierda). Eso alcanzaba mientras el jugador no
+ * tocaba nada; para arrastrar hace falta poder decir exactamente dónde.
+ *
+ * LA REGLA DE SIEMPRE NO CAMBIA: si ahí no entra, no entra. Arrastrar no
+ * habilita apretujar nada — sólo elegir, entre los lugares posibles, cuál.
+ */
+export function colocarEn(g, x, y, w, h, dato) {
+  if (!cabeEn(g, x, y, w, h)) return null;
+  const entrada = { x, y, w, h, dato };
+  g.entradas.push(entrada);
+  return entrada;
 }
 
 /**

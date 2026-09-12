@@ -46,7 +46,7 @@ import {
 import { createBullet, drawBullet } from '../entities/bullet.js';
 import { createExplosive, drawExplosive } from '../entities/explosive.js';
 import { EXPLOSIVES } from '../data/explosives.js';
-import { crearGrilla, buscarLugar, guardar, sacarUltima, sacar, ocupadas } from '../engine/grilla.js';
+import { crearGrilla, buscarLugar, guardar, sacarUltima, sacar, ocupadas, cabeEn, colocarEn } from '../engine/grilla.js';
 import { drawRider } from '../entities/rider.js';
 import { updateRiders, createRiderWatch } from '../systems/riders.js';
 import { maxJinetesPara } from '../data/riders.js';
@@ -100,6 +100,23 @@ export function createRaidScene(services) {
 
   /** Dónde está el cursor cuando la mochila está abierta, en casillas. */
   const mochilaCursor = { x: 0, y: 0 };
+
+  /**
+   * EL BULTO QUE TENÉS AGARRADO CON EL MOUSE, o `null` si no estás arrastrando.
+   *
+   * *(Santi, después de jugarla: "que el jugador pueda mover los objetos de la
+   * mochila con el mouse arrastrándolos con click izquierdo")*
+   *
+   * MIENTRAS LO LLEVÁS EN LA MANO, NO ESTÁ EN LA GRILLA: se lo saca al agarrarlo
+   * y se lo vuelve a poner al soltarlo. Es lo que hace que el hueco que deja se
+   * vea de verdad mientras buscás dónde ponerlo — y, sobre todo, que la propia
+   * pieza no se choque consigo misma al probar si entra dos casillas más allá.
+   *
+   * `origen` es de dónde salió: si soltás en un lugar donde no entra, vuelve
+   * ahí. Arrastrar nunca puede hacerte perder algo — para tirar está el clic
+   * derecho, que es un gesto aparte y a propósito.
+   */
+  let arrastre = null;
 
   /** La marca de "acá hay un cartucho", para distinguirlo de un objeto. */
   const DINAMITA = Symbol("dinamita");
@@ -189,6 +206,7 @@ export function createRaidScene(services) {
     objetos = [];
     mochilaAbierta = false;
     mochila = crearGrilla(CONFIG.mochila.columnas, CONFIG.mochila.filas);
+    arrastre = null;
     kills = 0;
     civilians = 0;
     amenazados = 0;
@@ -2212,13 +2230,16 @@ export function createRaidScene(services) {
       // probable es que la estés abriendo para sacar algo, no para mirar un
       // hueco vacío.
       if (mochilaAbierta) apuntarCursorALoPrimero();
+      // Y cerrarla con algo en la mano lo devuelve a donde estaba. Cerrar no
+      // es soltar: nada se pierde por apretar TAB en el momento equivocado.
+      else cancelarArrastre();
     }
     /**
      * Mientras está abierta, el jugador queda revolviendo la bolsa: no se
      * mueve, no apunta y no dispara (ver `updatePlayer`). El mundo sigue.
      */
     world.revolviendo = mochilaAbierta;
-    if (mochilaAbierta) moverCursorMochila();
+    if (mochilaAbierta) manejarMochila();
 
     if (finished) {
       updateEffects(dt);
@@ -2788,7 +2809,13 @@ export function createRaidScene(services) {
    * en el de carga, cada cartucho es una caja que no te llevás.
    */
   function casillasUsadas() {
-    return ocupadas(mochila);
+    /**
+     * Y LO QUE TENÉS EN LA MANO CUENTA IGUAL. Mientras arrastrás, el bulto está
+     * fuera de la grilla (ver `arrastre`), así que sin este término reacomodar
+     * la bolsa te haría momentáneamente más liviano y más rápido. Lo llevás
+     * encima igual: cambiarlo de lugar no lo hace desaparecer.
+     */
+    return ocupadas(mochila) + (arrastre ? arrastre.w * arrastre.h : 0);
   }
 
   /**
@@ -2841,7 +2868,7 @@ export function createRaidScene(services) {
    * flechas quedan libres. Es el mismo criterio que ya usa el menú del
    * campamento y el diálogo de los vendedores.
    */
-  function moverCursorMochila() {
+  function manejarMochila() {
     const m = CONFIG.mochila;
     const dx = (input.wasPressed('KeyD') || input.wasPressed('ArrowRight') ? 1 : 0)
              - (input.wasPressed('KeyA') || input.wasPressed('ArrowLeft') ? 1 : 0);
@@ -2853,6 +2880,204 @@ export function createRaidScene(services) {
       audio.play('cover');
     }
     if (input.wasPressed('KeyE')) soltarLoQueSeniala();
+
+    /**
+     * Y EL MOUSE MUEVE EL MISMO CURSOR. No son dos selecciones distintas: hay
+     * una sola, y la mueve lo último que hayas tocado. Por eso el teclado sigue
+     * funcionando igual que antes sin que haya que elegir un modo.
+     *
+     * Sin sonido, a diferencia del teclado: con el mouse el cursor cambia de
+     * casilla muchas veces por segundo y el clic-clic se volvería un cascabel.
+     */
+    const casilla = casillaDelMouse();
+    if (casilla && (casilla.x !== mochilaCursor.x || casilla.y !== mochilaCursor.y)) {
+      mochilaCursor.x = casilla.x;
+      mochilaCursor.y = casilla.y;
+    }
+
+    // La ruedita gira lo que tenés en la mano. Está libre: con la mochila
+    // abierta no se pelea, así que su otro uso (el cuchillo) no puede chocar.
+    if (arrastre && input.wheelMoved()) girarArrastre();
+
+    if (arrastre) {
+      // Se suelta al soltar el botón, no al volver a hacer clic: es el gesto
+      // que ya tiene aprendido cualquiera que haya arrastrado algo alguna vez.
+      if (!input.mouse.down) terminarArrastre(casilla);
+    } else if (input.mouse.pressed && casilla) {
+      empezarArrastre(casilla);
+    }
+
+    // El clic derecho TIRA. Por el flanco y no por el estado (ver engine/
+    // input.js): mantenerlo apretado tiraría un bulto por cuadro.
+    if (input.mouse.rightPressed) {
+      if (arrastre) tirarElArrastre();
+      else soltarLoQueSeniala();
+    }
+  }
+
+  /**
+   * LA GEOMETRÍA DE LA GRILLA EN PANTALLA, en un solo lugar.
+   *
+   * La usan el dibujo Y el mouse, y tienen que coincidir exactamente o
+   * agarrarías un bulto y se te movería otro. Sale de `CONFIG.view` y no del
+   * renderer porque hace falta durante el `update`, donde no hay `r`: son el
+   * mismo número (ver `createRenderer` en main.js).
+   */
+  const MOCHILA_LADO = 14;
+  const MOCHILA_SEP = 2;
+
+  function geometriaMochila() {
+    const m = CONFIG.mochila;
+    const lado = MOCHILA_LADO, sep = MOCHILA_SEP;
+    const anchoGrilla = m.columnas * lado + (m.columnas - 1) * sep;
+    const altoGrilla = m.filas * lado + (m.filas - 1) * sep;
+    return {
+      lado, sep, cols: m.columnas, filas: m.filas, anchoGrilla, altoGrilla,
+      x0: Math.round((CONFIG.view.width - anchoGrilla) / 2),
+      y0: Math.round((CONFIG.view.height - altoGrilla) / 2) - 4,
+    };
+  }
+
+  /** Sobre qué casilla está el mouse, o `null` si está fuera de la grilla. */
+  function casillaDelMouse() {
+    const g = geometriaMochila();
+    const paso = g.lado + g.sep;
+    const x = Math.floor((input.mouse.x - g.x0) / paso);
+    const y = Math.floor((input.mouse.y - g.y0) / paso);
+    if (x < 0 || y < 0 || x >= g.cols || y >= g.filas) return null;
+    return { x, y };
+  }
+
+  /** La entrada de la grilla que hay en esta casilla, si hay alguna. */
+  function entradaEn(cx, cy) {
+    return mochila.entradas.find((e) =>
+      cx >= e.x && cx < e.x + e.w && cy >= e.y && cy < e.y + e.h) || null;
+  }
+
+  /**
+   * AGARRAR UN BULTO. Se lo saca de la grilla y queda en la mano.
+   *
+   * `offx`/`offy` es POR QUÉ CASILLA lo agarraste, y es lo que hace que el
+   * bulto no salte bajo el cursor: si agarrás un cajón de 2×2 por su esquina de
+   * abajo a la derecha, sigue ahí mientras lo movés.
+   */
+  function empezarArrastre(casilla) {
+    const entrada = entradaEn(casilla.x, casilla.y);
+    if (!entrada) return;
+    sacar(mochila, entrada);
+    arrastre = {
+      dato: entrada.dato,
+      w: entrada.w, h: entrada.h,
+      offx: casilla.x - entrada.x,
+      offy: casilla.y - entrada.y,
+      origen: { x: entrada.x, y: entrada.y, w: entrada.w, h: entrada.h },
+    };
+    audio.play('cover');
+  }
+
+  /**
+   * DÓNDE CAERÍA lo que tenés en la mano, en casillas — la esquina de arriba a
+   * la izquierda. `null` si el mouse está fuera de la grilla.
+   */
+  function destinoDelArrastre(casilla) {
+    if (!arrastre || !casilla) return null;
+    return { x: casilla.x - arrastre.offx, y: casilla.y - arrastre.offy };
+  }
+
+  /**
+   * GIRAR LO QUE TENÉS EN LA MANO (la ruedita).
+   *
+   * Hasta ahora los bultos largos **se acostaban solos** y el jugador no
+   * decidía nada: `buscarLugar` probaba la forma y después la acostada. Con el
+   * mouse eso ya no alcanza — soltar un atado sobre una columna libre tenía que
+   * poder significar "quiero que vaya parado", y sin girar a mano no había cómo
+   * decirlo.
+   *
+   * El agarre se reajusta al girar (`offx`/`offy` no pueden quedar fuera de la
+   * nueva forma), así que el bulto gira alrededor de tu mano y no se va solo a
+   * otro lado de la pantalla.
+   */
+  function girarArrastre() {
+    if (arrastre.w === arrastre.h) return;   // un cuadrado girado es el mismo
+    const { w, h, offx, offy } = arrastre;
+    arrastre.w = h;
+    arrastre.h = w;
+    arrastre.offx = Math.min(offy, arrastre.w - 1);
+    arrastre.offy = Math.min(offx, arrastre.h - 1);
+    audio.play('cover');
+  }
+
+  /**
+   * SOLTAR EL BULTO. Tres intentos, en este orden:
+   *
+   *   1. Como lo tenés en la mano, donde lo soltaste.
+   *   2. Girado, en el mismo lugar — el reintento que eligió Santi: "si igual
+   *      no entra, probá la otra orientación antes de rechazarlo". Es lo que
+   *      hace que arrastrar perdone, sin sacarte el control de la primera.
+   *   3. Si no, vuelve exactamente de donde salió.
+   *
+   * LA TERCERA NO PUEDE FALLAR y es la que hace que esto sea seguro: el lugar
+   * de donde lo sacaste está garantizado libre, porque nadie más pudo meterse
+   * ahí mientras lo tenías en la mano.
+   */
+  function terminarArrastre(casilla) {
+    const destino = destinoDelArrastre(casilla);
+    const { dato } = arrastre;
+
+    let puesto = null;
+    if (destino) {
+      if (cabeEn(mochila, destino.x, destino.y, arrastre.w, arrastre.h)) {
+        puesto = colocarEn(mochila, destino.x, destino.y, arrastre.w, arrastre.h, dato);
+      } else if (cabeEn(mochila, destino.x, destino.y, arrastre.h, arrastre.w)) {
+        puesto = colocarEn(mochila, destino.x, destino.y, arrastre.h, arrastre.w, dato);
+      }
+    }
+
+    if (puesto) {
+      audio.play('loot');
+    } else {
+      const o = arrastre.origen;
+      puesto = colocarEn(mochila, o.x, o.y, o.w, o.h, dato);
+      // Red de seguridad: si el origen se hubiera perdido por lo que sea, el
+      // bulto no se tira a la basura — se guarda donde entre.
+      if (!puesto) puesto = guardar(mochila, [arrastre.w, arrastre.h], dato);
+      audio.play('hitWall');
+    }
+
+    // La forma que le quedó se escribe de vuelta en el objeto, igual que al
+    // levantarlo (ver `takeLoot`): es la que dibuja el TAB la próxima vez.
+    if (puesto && dato !== DINAMITA) dato.forma = [puesto.w, puesto.h];
+
+    if (puesto) {
+      mochilaCursor.x = puesto.x;
+      mochilaCursor.y = puesto.y;
+    }
+    arrastre = null;
+  }
+
+  /** Devolver lo que tenés en la mano a donde estaba, sin intentar nada más. */
+  function cancelarArrastre() {
+    if (!arrastre) return;
+    const o = arrastre.origen;
+    if (!colocarEn(mochila, o.x, o.y, o.w, o.h, arrastre.dato)) {
+      guardar(mochila, [o.w, o.h], arrastre.dato);
+    }
+    arrastre = null;
+  }
+
+  /**
+   * TIRAR AL PISO LO QUE TENÉS EN LA MANO (clic derecho mientras arrastrás).
+   *
+   * Primero vuelve a la grilla y después se suelta por el camino de siempre, en
+   * vez de duplicar la lógica de soltar: así la dinamita sigue sin poder
+   * tirarse, el objeto sigue cayendo a tus pies como botín abierto y el floater
+   * dice lo mismo. Una sola forma de sacar algo de la mochila.
+   */
+  function tirarElArrastre() {
+    const { dato } = arrastre;
+    cancelarArrastre();
+    const entrada = mochila.entradas.find((e) => e.dato === dato);
+    if (entrada) soltarEntrada(entrada);
   }
 
   /**
@@ -2883,8 +3108,11 @@ export function createRaidScene(services) {
    */
   function soltarLoQueSeniala() {
     const entrada = loQueSeniala();
-    if (!entrada) return;
+    if (entrada) soltarEntrada(entrada);
+  }
 
+  /** Soltar una entrada concreta de la grilla. La usan [E] y el clic derecho. */
+  function soltarEntrada(entrada) {
     if (entrada.dato === DINAMITA) {
       floaters.push({
         x: player.x, y: player.y - 22,
@@ -3276,23 +3504,20 @@ export function createRaidScene(services) {
    * pantalla de gestión; así es un gesto que se paga.
    */
   function drawMochila(r) {
-    const m = CONFIG.mochila;
-    const lado = 14, sep = 2;
-    const cols = m.columnas;
-    const filas = m.filas;
-    const anchoGrilla = cols * lado + (cols - 1) * sep;
-    const altoGrilla = filas * lado + (filas - 1) * sep;
-    const x0 = Math.round((r.width - anchoGrilla) / 2);
     /**
-     * Corrida para arriba porque debajo de la grilla va la lista (así queda
-     * centrado el conjunto y no la grilla sola) — pero no tanto como para
+     * La geometría sale de `geometriaMochila()` y no se calcula acá: el mouse
+     * usa exactamente la misma (ver `casillaDelMouse`). Si se separaran,
+     * agarrarías un bulto y se movería otro.
+     *
+     * `y0` va corrido para arriba porque debajo de la grilla va la lista (así
+     * queda centrado el conjunto y no la grilla sola) — pero no tanto como para
      * meterse en el HUD.
      *
      * 🐛 CON −16 EL TÍTULO CAÍA ENCIMA DE "SALIDA: 1 VAGÓN". El HUD es HTML
      * superpuesto al canvas, así que no hay nada que impida pisarlo: las dos
      * capas no se conocen. Se vio mirándolo.
      */
-    const y0 = Math.round((r.height - altoGrilla) / 2) - 4;
+    const { lado, sep, cols, filas, anchoGrilla, altoGrilla, x0, y0 } = geometriaMochila();
 
     // El velo: oscurece el tren sin taparlo. Seguís viendo lo que pasa, que es
     // la mitad de por qué abrirla en el momento equivocado se paga.
@@ -3338,24 +3563,58 @@ export function createRaidScene(services) {
      * decide si te entra. Ahora cada bulto se dibuja como UN rectángulo, así
      * que el hueco que queda se ve tal como es.
      */
-    const pintar = (e, color, borde) => {
-      const px = x0 + e.x * (lado + sep);
-      const py = y0 + e.y * (lado + sep);
-      const pw = e.w * lado + (e.w - 1) * sep;
-      const ph = e.h * lado + (e.h - 1) * sep;
-      r.box(px + pw / 2, py + ph / 2, pw / 2, ph / 2, color);
-      // Una luz arriba: sin eso, dos bultos del mismo color pegados se leen
-      // como uno solo más grande.
-      r.rect(px, py, pw, 1, borde);
+    /**
+     * 🔻 SEGUNDA VUELTA · Y AHORA LAS DIECISÉIS CASILLAS SE VEN SIEMPRE.
+     *
+     * *(Santi, jugándolo: "siempre se tienen que ver los 16 cuadritos, por más
+     * que una caja ocupe cuatro. El jugador debe saber cuánto ocupa en un
+     * segundo y sin ver texto")*
+     *
+     * La versión anterior pintaba cada bulto como UN rectángulo sólido, que se
+     * comía los separadores: un cajón de 2×2 se veía como una mancha grande y
+     * había que leer el "· 4" de la lista para saber cuánto ocupaba. O sea que
+     * arreglando una mentira (las casillas sueltas de antes, que partían un
+     * cajón en dos filas) se creó otra: la grilla desaparecía justo donde había
+     * algo.
+     *
+     * AHORA SON LAS DOS COSAS A LA VEZ, y no hay que elegir:
+     *   - cada casilla ocupada se pinta POR SEPARADO, con el separador de 2px
+     *     intacto, así que se CUENTAN de un vistazo;
+     *   - y un contorno claro rodea el bulto entero, así que se ve que esas
+     *     cuatro casillas son una sola cosa y no cuatro chucherías.
+     *
+     * Es el mismo truco que ya usaba el cursor (marcar la casilla Y el bulto),
+     * aplicado a la mercadería.
+     */
+    const pintar = (e, color, borde, alpha = 1) => {
+      if (alpha !== 1) r.ctx.globalAlpha = alpha;
+      for (let f = 0; f < e.h; f++) {
+        for (let c = 0; c < e.w; c++) {
+          const cx = x0 + (e.x + c) * (lado + sep) + lado / 2;
+          const cy = y0 + (e.y + f) * (lado + sep) + lado / 2;
+          r.box(cx, cy, lado / 2, lado / 2, color);
+        }
+      }
+      // El contorno, apoyado sobre el separador: es lo que junta las casillas
+      // en un bulto. Sin él, un cajón de 2×2 y cuatro anillos se verían igual.
+      const bx = x0 + e.x * (lado + sep) - 1;
+      const by = y0 + e.y * (lado + sep) - 1;
+      const bw = e.w * lado + (e.w - 1) * sep + 2;
+      const bh = e.h * lado + (e.h - 1) * sep + 2;
+      r.rect(bx, by, bw, 1, borde);
+      r.rect(bx, by + bh - 1, bw, 1, borde);
+      r.rect(bx, by, 1, bh, borde);
+      r.rect(bx + bw - 1, by, 1, bh, borde);
+      if (alpha !== 1) r.ctx.globalAlpha = 1;
     };
 
-    for (const e of mochila.entradas) {
-      if (e.dato === DINAMITA) { pintar(e, colors.dynamite, colors.dynamiteBand); continue; }
-      const o = e.dato;
-      const color = o.nivel === 'raro' ? '#ffd84a'
-        : o.nivel === 'valioso' ? colors.strongbox : colors.bagLoot;
-      pintar(e, color, '#fff6d0');
-    }
+    /** El color de un bulto según lo que sea: el nivel manda. */
+    const colorDe = (dato) => (dato === DINAMITA ? colors.dynamite
+      : dato.nivel === 'raro' ? '#ffd84a'
+      : dato.nivel === 'valioso' ? colors.strongbox : colors.bagLoot);
+    const bordeDe = (dato) => (dato === DINAMITA ? colors.dynamiteBand : '#fff6d0');
+
+    for (const e of mochila.entradas) pintar(e, colorDe(e.dato), bordeDe(e.dato));
 
     /**
      * EL CURSOR — un marco sobre la casilla, y el bulto entero resaltado.
@@ -3364,24 +3623,74 @@ export function createRaidScene(services) {
      * contorno del bulto dice **qué agarrarías si apretás [E]**. Sin el
      * contorno, con un cajón de 2×2 no se sabría si vas a soltar el cajón o
      * algo de al lado; sin la casilla, no se podría navegar por los huecos.
+     *
+     * 🔻 EL CONTORNO DEL SEÑALADO AHORA LATE, y no es un adorno: desde que cada
+     * bulto lleva su propio contorno claro, uno quieto del mismo color ya no
+     * distinguía nada — el señalado se veía igual que todos. Lo que se mueve se
+     * encuentra solo, que es la misma razón por la que late el cursor.
      */
     const senialada = loQueSeniala();
+    const pulso = 0.55 + 0.45 * Math.abs(Math.sin(scroll * 4));
     if (senialada) {
       const bx = x0 + senialada.x * (lado + sep) - 1;
       const by = y0 + senialada.y * (lado + sep) - 1;
       const bw = senialada.w * lado + (senialada.w - 1) * sep + 2;
       const bh = senialada.h * lado + (senialada.h - 1) * sep + 2;
-      r.rect(bx, by, bw, 1, '#fff6d0');
-      r.rect(bx, by + bh - 1, bw, 1, '#fff6d0');
-      r.rect(bx, by, 1, bh, '#fff6d0');
-      r.rect(bx + bw - 1, by, 1, bh, '#fff6d0');
+      r.ctx.globalAlpha = pulso;
+      r.rect(bx, by, bw, 1, colors.text);
+      r.rect(bx, by + bh - 1, bw, 1, colors.text);
+      r.rect(bx, by, 1, bh, colors.text);
+      r.rect(bx + bw - 1, by, 1, bh, colors.text);
+      r.ctx.globalAlpha = 1;
     }
+
+    /**
+     * LO QUE TENÉS EN LA MANO, y dónde caería.
+     *
+     * Son dos dibujos y hacen falta los dos: el bulto pegado al mouse dice
+     * *esto es lo que estás moviendo*, y la silueta encajada en la grilla dice
+     * *acá va a quedar*. Con sólo el primero, arrastrar sería adivinar; con
+     * sólo el segundo, no se vería qué estás arrastrando.
+     *
+     * VERDE ENTRA, ROJO NO. Y "entra" incluye el reintento girado, así que la
+     * silueta nunca miente: si está verde, soltar ahí funciona.
+     */
+    if (arrastre) {
+      const casilla = casillaDelMouse();
+      const destino = destinoDelArrastre(casilla);
+      const derecho = destino && cabeEn(mochila, destino.x, destino.y, arrastre.w, arrastre.h);
+      const girado = destino && cabeEn(mochila, destino.x, destino.y, arrastre.h, arrastre.w);
+      const entra = derecho || girado;
+
+      if (destino) {
+        // La silueta se muestra con la forma con la que de verdad va a entrar:
+        // si va a tener que girar para caber, se ve girada antes de soltarla.
+        const forma = derecho
+          ? { x: destino.x, y: destino.y, w: arrastre.w, h: arrastre.h }
+          : { x: destino.x, y: destino.y, w: arrastre.h, h: arrastre.w };
+        pintar(forma, entra ? '#3d6b4a' : '#5a2b24',
+          entra ? colors.doorGlow : colors.enemyAlert, 0.85);
+      }
+
+      // Y el bulto en la mano, con su color de siempre, centrado en el mouse
+      // según por dónde lo agarraste.
+      const mx = Math.round(input.mouse.x) - (arrastre.offx * (lado + sep) + lado / 2);
+      const my = Math.round(input.mouse.y) - (arrastre.offy * (lado + sep) + lado / 2);
+      r.ctx.globalAlpha = 0.85;
+      for (let f = 0; f < arrastre.h; f++) {
+        for (let c = 0; c < arrastre.w; c++) {
+          r.box(mx + c * (lado + sep) + lado / 2, my + f * (lado + sep) + lado / 2,
+            lado / 2, lado / 2, colorDe(arrastre.dato));
+        }
+      }
+      r.ctx.globalAlpha = 1;
+    }
+
     const cx = x0 + mochilaCursor.x * (lado + sep);
     const cy = y0 + mochilaCursor.y * (lado + sep);
     // El cursor late: sobre un bulto del mismo tono claro, un marco quieto se
     // pierde. Lo que se mueve se encuentra solo.
-    const late = 0.55 + 0.45 * Math.abs(Math.sin(scroll * 4));
-    r.ctx.globalAlpha = late;
+    r.ctx.globalAlpha = pulso;
     r.rect(cx - 1, cy - 1, lado + 2, 2, colors.text);
     r.rect(cx - 1, cy + lado - 1, lado + 2, 2, colors.text);
     r.rect(cx - 1, cy - 1, 2, lado + 2, colors.text);
@@ -3413,7 +3722,68 @@ export function createRaidScene(services) {
       r.text(T.hud.mochilaVacia, r.width / 2, ly, colors.textDim);
       ly += 9;
     }
-    r.text(T.hud.mochilaAyuda, r.width / 2, r.height - 10, colors.textDim);
+    r.text(T.hud.mochilaAyuda, r.width / 2, r.height - 17, colors.textDim);
+    r.text(T.hud.mochilaAyuda2, r.width / 2, r.height - 8, colors.textDim);
+
+    /**
+     * EL PRECIO AL PASAR EL CURSOR POR ENCIMA.
+     *
+     * *(Santi: "si pasa el cursor (el mouse) por un objeto de la mochila te
+     * informa cuál es el precio base")*
+     *
+     * ES EL PRECIO BASE Y NADA MÁS: lo que el objeto vale en sí, no lo que te
+     * van a pagar. El perista lo puede duplicar si la mercadería salió limpia y
+     * lo mueve hasta un ±20% según tu nombre (ver data/perista.js), y ninguna
+     * de esas dos cosas se sabe todavía parado en el pasillo de un vagón. Decir
+     * un número cerrado acá sería mentir sobre la única pregunta que este tren
+     * te deja abierta hasta el pueblo.
+     *
+     * SÓLO CON EL MOUSE ENCIMA, y no mientras arrastrás: con el bulto en la
+     * mano lo que importa es dónde entra, y una etiqueta pegada al cursor
+     * taparía justo la silueta que tenés que estar mirando.
+     *
+     * Se dibuja ÚLTIMO para que quede por encima de todo, y **se mide de
+     * verdad** (`measureText`): la fuente es Verdana, que no es de ancho fijo,
+     * así que un recuadro calculado a ojo le queda corto a un nombre largo.
+     */
+    const bajoElMouse = (() => {
+      if (arrastre) return null;
+      const casilla = casillaDelMouse();
+      return casilla ? entradaEn(casilla.x, casilla.y) : null;
+    })();
+
+    if (bajoElMouse) {
+      const dato = bajoElMouse.dato;
+      const texto = dato === DINAMITA
+        ? T.hud.mochilaCartucho
+        : T.hud.mochilaPrecioBase(dato.nombre, dato.valor);
+
+      r.ctx.font = '8px Verdana, Tahoma, "DejaVu Sans", sans-serif';
+      const ancho = Math.ceil(r.ctx.measureText(texto).width) + 8;
+      const alto = 12;
+
+      /**
+       * VA AL COSTADO DE LA GRILLA, no pegado al cursor.
+       *
+       * Pegado al cursor —que es lo primero que se probó— **tapa la grilla**, y
+       * se vio mirándolo: el mouse siempre está ADENTRO de la grilla cuando
+       * estás señalando algo, así que el cartel se comía la fila de al lado
+       * justo mientras estás decidiendo dónde entra cada cosa. Al costado sigue
+       * la altura del bulto que señalás (o sea que se lee a qué fila
+       * corresponde) y no tapa nada de lo que hay que mirar.
+       */
+      const g = geometriaMochila();
+      let tx = g.x0 + g.anchoGrilla + 5;
+      let ty = Math.round(input.mouse.y);
+      if (tx + ancho > r.width - 2) tx = g.x0 - 5 - ancho;
+      ty = Math.max(2 + alto / 2, Math.min(r.height - 24 - alto / 2, ty));
+
+      r.box(tx + ancho / 2, ty, ancho / 2, alto / 2, '#1a1310');
+      r.rect(tx, ty - alto / 2, ancho, 1, '#4a3524');
+      r.rect(tx, ty + alto / 2, ancho, 1, '#4a3524');
+      r.text(texto, tx + 4, ty,
+        dato === DINAMITA ? colors.dynamite : colorDe(dato), 'left');
+    }
   }
 
   /**

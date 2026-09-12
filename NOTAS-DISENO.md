@@ -11028,6 +11028,135 @@ el del asalto viejo, y mostraba números plausibles.
 
 ---
 
+## ✅ HECHA · La mochila se maneja con el mouse, y las dieciséis casillas se ven siempre
+
+*(Santi, después de jugarla: "quiero que el jugador pueda mover los objetos de la
+mochila con el mouse arrastrándolos con click izquierdo. Y con el click derecho
+los tira. Y si pasa el cursor por un objeto te informa cuál es el precio base.
+Además, siempre se tienen que ver los 16 cuadritos, por más que una caja ocupe
+cuatro. El jugador debe saber cuánto ocupa en un segundo y sin ver texto")*
+
+**Esto da vuelta una decisión escrita** en la cabecera de `engine/grilla.js`: *"el
+jugador no arrastra nada; hacerlo a mano sería un minijuego de inventario en el
+medio de un vagón con guardias"*. Se jugó y el pedido fue el contrario.
+
+**Por qué el criterio viejo no se rompe, aunque la regla cambie:** lo que aquel
+párrafo protegía era el momento de AGARRAR algo, y ése no se tocó — levantás un
+cajón y el cajón se guarda solo, instantáneo, sin preguntarte nada. Lo que se
+agrega es ACOMODAR, que es opcional, pasa con la bolsa abierta y **ya tiene su
+precio puesto**: el mundo sigue andando mientras lo hacés. O sea que el arrastre
+no esquiva la moneda del juego, la paga como todo lo demás.
+
+> Y ojo con eso jugándolo: ahora se puede pasar **más** tiempo con la bolsa
+> abierta. Puede que esté bien —es más costo, no menos— pero es lo que hay que
+> mirar.
+
+### Las dieciséis casillas, que es lo más importante de los cuatro pedidos
+
+Ya se había arreglado una mentira acá: antes se pintaban **casillas sueltas en
+orden de lectura**, así que un cajón de 2×2 podía partirse al final de una fila y
+seguir en la siguiente. Se cambió a **un rectángulo sólido por bulto**… y eso creó
+la mentira contraria: el rectángulo **se come los separadores**, así que la grilla
+desaparecía justo donde había algo y "cuánto ocupa esto" volvía a ser una pregunta
+para el texto de la lista (`· 4`).
+
+**Ahora son las dos cosas a la vez y no hay que elegir:**
+
+- cada casilla ocupada se pinta **por separado**, con su separador de 2 px
+  intacto → **se cuentan** de un vistazo;
+- y un **contorno claro rodea el bulto entero** → se ve que esas cuatro casillas
+  son una sola cosa y no cuatro chucherías.
+
+Mirándolo, la lectura que sale sola es: **hueco oscuro entre casillas = la misma
+cosa; línea clara = ahí termina un bulto y empieza otro.** Sin una palabra.
+
+Es el mismo truco que ya usaba el cursor desde el día uno (marcar la casilla Y el
+bulto), aplicado a la mercadería. Y obligó a un cambio chico: **el contorno del
+bulto señalado ahora late**, porque desde que todos los bultos tienen contorno,
+uno quieto del mismo color ya no distinguía nada.
+
+### El arrastre, y la ruedita
+
+- **Clic izquierdo** agarra. El bulto **sale de la grilla mientras lo llevás**, y
+  eso no es un detalle de implementación: es lo que hace que el hueco que deja se
+  vea de verdad, y lo que evita que la pieza se choque consigo misma al probar si
+  entra dos casillas más allá.
+- **Se agarra por la casilla que tocaste** (`offx`/`offy`), así que un cajón de
+  2×2 tomado por su esquina no salta bajo el cursor.
+- **La ruedita gira** lo que tenés en la mano. Hasta ahora los bultos largos *se
+  acostaban solos* y el jugador no decidía: con el mouse eso dejó de alcanzar
+  —soltar un atado sobre una columna libre tenía que poder significar "lo quiero
+  parado"— y no había cómo decirlo. La ruedita está libre: con la bolsa abierta no
+  se pelea, así que su otro uso (el cuchillo) no puede chocar.
+- **Al soltar prueba tres cosas, en orden:** como lo tenés, girado en el mismo
+  lugar, y si no, **vuelve exactamente de donde salió**. Elegido sobre una tabla
+  de tres (girar a mano / reintento automático / las dos): las dos. El reintento
+  es lo que hace que arrastrar perdone sin sacarte el control de la primera.
+- **La tercera no puede fallar**, y es lo que hace que esto sea seguro: el lugar
+  de donde lo sacaste está garantizado libre, porque nadie pudo meterse ahí
+  mientras lo tenías en la mano. **Arrastrar nunca te puede hacer perder algo.**
+- **Verde entra, rojo no**, dibujado encajado en la grilla, y con la forma con la
+  que de verdad va a entrar — si va a tener que girar para caber, se ve girada
+  antes de que sueltes.
+
+### El clic derecho tira, y el precio aparece al pasar por encima
+
+El clic derecho **reusa el camino de `[E]`** en vez de duplicarlo: vuelve el bulto
+a la grilla y llama a la misma función de soltar. Así la dinamita sigue sin poder
+tirarse, lo soltado sigue cayendo a tus pies como botín abierto y el cartelito
+dice lo mismo. **Una sola forma de sacar algo de la mochila.**
+
+Hizo falta un flanco nuevo en `engine/input.js` (`mouse.rightPressed`): el clic
+derecho era un **estado** puro —asomarse mientras lo mantenés— y como gesto no
+servía. Con el estado solo, mantenerlo apretado tiraba al piso todo lo que fuera
+quedando bajo el cursor, un bulto por cuadro.
+
+**El precio dice "base" a propósito.** El perista lo duplica si la mercadería
+salió limpia y lo mueve hasta un ±20% según tu nombre, y ninguna de esas dos cosas
+se sabe parado en el pasillo de un vagón. Un número cerrado ahí sería mentir sobre
+la única pregunta que este tren te deja abierta hasta el pueblo.
+
+> **Y el cartel se corrió al costado de la grilla después de mirarlo.** Pegado al
+> cursor —lo primero que se probó— **tapa la grilla**: el mouse está siempre
+> ADENTRO de la grilla cuando señalás algo, así que el cartel se comía la fila de
+> al lado justo mientras decidís dónde entra cada cosa. Al costado sigue la altura
+> del bulto señalado y no tapa nada.
+
+### Detalles que no se ven pero importan
+
+- **El teclado sigue igual.** No hay dos selecciones ni un modo que elegir: hay
+  **un** cursor, y lo mueve lo último que tocaste. Con el mouse no suena, a
+  diferencia del teclado — cambia de casilla muchas veces por segundo y el
+  clic-clic se volvía un cascabel.
+- **Lo que tenés en la mano sigue pesando.** Está fuera de la grilla, así que sin
+  sumarlo aparte reacomodar la bolsa te haría momentáneamente más liviano y más
+  rápido. Cambiar algo de lugar no lo hace desaparecer.
+- **Cerrar con TAB mientras arrastrás lo devuelve a donde estaba.** Cerrar no es
+  soltar.
+- **La geometría de la grilla en pantalla vive en un solo lugar**
+  (`geometriaMochila`), porque la usan el dibujo y el mouse: si se separaran,
+  agarrarías un bulto y se movería otro. Sale de `CONFIG.view` y no del renderer
+  porque hace falta durante el `update`, donde no hay `r`.
+
+### VERIFICADO MIRÁNDOLO Y POR CONSOLA
+
+Con el bucle frenado, un tren de carga y la bolsa en 14/16 (tres bultos de 3×1,
+uno de 1×3 y dos cartuchos):
+
+- **Las dieciséis casillas se ven** con la bolsa casi llena — comprobado en un
+  recorte ampliado, casilla por casilla.
+- **Soltar donde no entra no pierde nada:** agarrar el 1×3 y soltarlo en la
+  esquina de abajo a la derecha lo devuelve intacto (14 → 14 casillas, misma
+  forma).
+- **La ruedita gira de verdad:** el mismo bulto pasó de `1x3` a `3x1` y entró.
+- **El clic derecho tira:** 14 → 11 casillas, un objeto menos en la lista y uno
+  más tirado en el piso del vagón (22 → 23).
+- **El teclado no se rompió:** `[E]` sobre un rollo, 14 → 11.
+- **El cartel del precio** aparece al costado, a la altura del bulto, y se apaga
+  al sacar el mouse de la grilla.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

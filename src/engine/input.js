@@ -12,7 +12,19 @@ export function createInput(canvas) {
   const pressed = new Set();
   // down = clic izquierdo (disparar), right = clic derecho (asomarse),
   // wheel = cuánto se movió la ruedita en este paso (degollar)
-  const mouse = { x: 0, y: 0, down: false, right: false, pressed: false, wheel: 0 };
+  //
+  // `pressed` y `rightPressed` son los FLANCOS: se prendieron en ESTE paso y
+  // se limpian en `endFrame`, igual que las teclas "recién apretadas".
+  //
+  // El izquierdo ya tenía el suyo porque había un gesto que lo necesitaba
+  // (lanzar la dinamita). El derecho no, porque hasta ahora era un estado puro
+  // —asomarse mientras lo mantenés— y un estado no necesita flanco. La mochila
+  // le da su primer uso como GESTO (tirar lo que señalás), y ahí el estado solo
+  // no alcanza: un clic sostenido tiraría al piso todo lo que fuera quedando
+  // bajo el cursor, un bulto por cuadro.
+  const mouse = {
+    x: 0, y: 0, down: false, right: false, pressed: false, rightPressed: false, wheel: 0,
+  };
 
   window.addEventListener('keydown', (e) => {
     if (!down.has(e.code)) pressed.add(e.code);
@@ -52,6 +64,8 @@ export function createInput(canvas) {
     down.clear();
     mouse.down = false;
     mouse.right = false;
+    mouse.pressed = false;
+    mouse.rightPressed = false;
     mouse.wheel = 0;
   });
 
@@ -67,7 +81,7 @@ export function createInput(canvas) {
   canvas.addEventListener('mousedown', (e) => {
     updateMousePosition(e);
     if (e.button === 0) { mouse.down = true; mouse.pressed = true; }
-    if (e.button === 2) mouse.right = true;
+    if (e.button === 2) { mouse.right = true; mouse.rightPressed = true; }
   });
 
   window.addEventListener('mouseup', (e) => {
@@ -91,6 +105,7 @@ export function createInput(canvas) {
     endFrame() {
       pressed.clear();
       mouse.pressed = false;
+      mouse.rightPressed = false;
       mouse.wheel = 0;
     },
   };

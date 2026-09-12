@@ -354,6 +354,10 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 | `R` | **Recargar.** Mientras lo hacés caminás lento, como si fueras de costado |
 | `E` (mantener) | Robar botín / **amenazar a un pasajero** / escapar |
 | **`TAB`** | **Abrir la mochila.** Y el tren no te espera: el reloj sigue corriendo |
+| **Arrastrar** (mochila abierta) | **Acomodar un bulto**: lo agarrás con el clic izquierdo y lo soltás donde quieras |
+| **Ruedita** (con un bulto en la mano) | **Girarlo**: así un atado largo se puede parar en una columna |
+| **Clic derecho** (mochila abierta) | **Tirar al piso** lo que estás señalando |
+| **El mouse por encima** | Te dice qué es y **cuánto vale de base** |
 | `W A S D` (con la mochila abierta) | Mover el cursor por la grilla |
 | `E` (con la mochila abierta) | **Soltar lo que está señalado** |
 
@@ -851,16 +855,36 @@ correcta.** Tres atados acostados ocupan nueve casillas y dejan siete libres —
 un cajón de 2×2 **ya no entra**, porque lo que queda son columnas sueltas de una
 casilla. Un anillo, en cambio, entra en cualquier rendija.
 
-Los bultos largos **se acuestan solos** si es lo único que cabe: un atado de 3×1
-entra parado en una columna. No hay que acomodar nada a mano — agarrás y se
-guarda donde quepa, porque este juego cobra en tiempo y exposición, no en
-administración.
+**Y se ven las dieciséis casillas siempre**, aunque un cajón ocupe cuatro: cada
+casilla ocupada se pinta por separado, con su separador, y **un contorno claro
+rodea el bulto entero**. Así se lee todo sin una palabra — *hueco oscuro entre
+casillas, la misma cosa; línea clara, ahí termina un bulto y empieza otro*. De un
+vistazo sabés cuánto abulta cada cosa y de qué forma es el lugar que te queda.
+
+Los bultos largos **se acuestan solos** cuando los levantás, si es lo único que
+cabe: un atado de 3×1 entra parado en una columna. Agarrar nunca te hace parar a
+pensar — este juego cobra en tiempo y exposición, no en administración.
+
+### Y adentro se acomoda con el mouse
+
+**Arrastrás los bultos con el clic izquierdo**, como en cualquier mochila, y
+mientras lo llevás en la mano se ve el hueco que dejó.
+
+| | |
+|---|---|
+| **La ruedita** | **Gira** lo que tenés agarrado. Es lo que te deja decidir si un atado va acostado o parado, en vez de que lo decida el juego |
+| **Verde o rojo** | La silueta encajada en la grilla te dice si ahí entra, **antes** de soltar — y ya te muestra girado si va a tener que girar para caber |
+| **Si no entra** | Vuelve exactamente de donde salió. **Arrastrar no te puede hacer perder nada**: para tirar algo está el clic derecho |
+| **El mouse por encima** | Te dice qué es y **cuánto vale de base** |
+
+El precio dice **base** porque es el del objeto, no el que vas a cobrar: el
+perista lo duplica si la mercadería salió limpia y lo mueve hasta un ±20% según
+tu nombre, y eso no se sabe todavía parado en el pasillo de un vagón.
 
 ### Y se puede soltar: ahí está la decisión
 
-Con `TAB` aparece **un cursor** que se mueve con `W A S D` por las dieciséis
-casillas. Lo que señalás se resalta en la grilla **y** en la lista de abajo, y con
-`E` lo **soltás**.
+**Clic derecho, o `E` sobre lo que señala el cursor.** El cursor también se mueve
+con `W A S D`, y lo señalado se resalta en la grilla **y** en la lista de abajo.
 
 **Lo que sueltas no se destruye: cae a tus pies** y se puede volver a levantar
 (rápido, porque ya está abierto y tirado en el piso). Así soltar no es tirar, es

@@ -12,12 +12,25 @@ export const T = {
     mochilaVacia: 'Nada más adentro.',
     mochilaDinamita: (n) => (n === 1 ? 'Un cartucho de dinamita  ·  1' : `${n} cartuchos de dinamita  ·  ${n}`),
     /**
-     * La ayuda dice las tres cosas y termina con la advertencia, que es la más
-     * importante: revolver la bolsa no detiene el tren ni a los guardias.
+     * La ayuda son DOS renglones desde que la mochila se maneja con el mouse:
+     * arriba el mouse (que es lo nuevo y lo que más se usa), abajo el teclado
+     * —que sigue funcionando igual— y la advertencia, que es lo más importante
+     * de todo: revolver la bolsa no detiene el tren ni a los guardias.
+     *
+     * En un renglón no entraban: la línea vieja ya medía casi el ancho de la
+     * pantalla con tres atajos, y ahora hay cinco.
      */
-    mochilaAyuda: '[W A S D] ELEGIR     [E] SOLTAR     [TAB] CERRAR     el tren no te espera',
+    mochilaAyuda: '[ARRASTRAR] ACOMODAR     [RUEDA] GIRAR     [CLIC DER.] TIRAR',
+    mochilaAyuda2: '[W A S D] ELEGIR   [E] SOLTAR   [TAB] CERRAR   el tren no te espera',
     mochilaSoltado: (que) => `Soltás ${que.toLowerCase()}`,
     mochilaNoSeSuelta: 'La dinamita no se suelta: se tira',
+    /**
+     * EL PRECIO AL PASAR EL MOUSE POR ENCIMA. Dice "base" a propósito: el
+     * perista lo duplica si la mercadería salió limpia y lo mueve un ±20% según
+     * tu nombre, y nada de eso se sabe todavía adentro del tren.
+     */
+    mochilaPrecioBase: (nombre, valor) => `${nombre}  ·  base $${valor}`,
+    mochilaCartucho: 'Cartucho de dinamita  ·  no se vende',
     reloading: 'RECARGANDO',
     alarm: 'ALARMA',
 

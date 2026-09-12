@@ -4,7 +4,7 @@ completos `README.md`, `NOTAS-DISENO.md` y `src/data/config.js` — ahí está e
 contexto del proyecto, el detalle de cada sistema, y cómo trabajar conmigo.
 No me resumas lo que dicen: son la memoria real del proyecto entre sesiones,
 así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
-`NOTAS-DISENO.md` es grande (10.900 líneas): usá Grep para ir a la sección que
+`NOTAS-DISENO.md` es grande (11.000 líneas): usá Grep para ir a la sección que
 necesites en vez de leerlo entero cada vez.
 
 ## LA SESIÓN PASADA: SE REESCRIBIÓ QUÉ ES CADA TREN

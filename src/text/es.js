@@ -11,7 +11,13 @@ export const T = {
     mochilaTitulo: 'LA MOCHILA',
     mochilaVacia: 'Nada más adentro.',
     mochilaDinamita: (n) => (n === 1 ? 'Un cartucho de dinamita  ·  1' : `${n} cartuchos de dinamita  ·  ${n}`),
-    mochilaAyuda: '[TAB] CERRAR     el tren no te espera',
+    /**
+     * La ayuda dice las tres cosas y termina con la advertencia, que es la más
+     * importante: revolver la bolsa no detiene el tren ni a los guardias.
+     */
+    mochilaAyuda: '[W A S D] ELEGIR     [E] SOLTAR     [TAB] CERRAR     el tren no te espera',
+    mochilaSoltado: (que) => `Soltás ${que.toLowerCase()}`,
+    mochilaNoSeSuelta: 'La dinamita no se suelta: se tira',
     reloading: 'RECARGANDO',
     alarm: 'ALARMA',
 

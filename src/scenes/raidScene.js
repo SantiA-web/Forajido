@@ -46,11 +46,11 @@ import {
 import { createBullet, drawBullet } from '../entities/bullet.js';
 import { createExplosive, drawExplosive } from '../entities/explosive.js';
 import { EXPLOSIVES } from '../data/explosives.js';
-import { crearGrilla, buscarLugar, guardar, sacarUltima, ocupadas } from '../engine/grilla.js';
+import { crearGrilla, buscarLugar, guardar, sacarUltima, sacar, ocupadas } from '../engine/grilla.js';
 import { drawRider } from '../entities/rider.js';
 import { updateRiders, createRiderWatch } from '../systems/riders.js';
 import { maxJinetesPara } from '../data/riders.js';
-import { drawLootable, esCajaFuerte } from '../entities/lootable.js';
+import { createLootable, drawLootable, esCajaFuerte } from '../entities/lootable.js';
 import {
   updateDoor, puertaTapaVision, drawDoor, trabarPuerta, destrabarPuerta, dañarPuerta,
 } from '../entities/door.js';
@@ -97,6 +97,9 @@ export function createRaidScene(services) {
    * robadas y los cartuchos de dinamita, cada uno con su forma y su lugar.
    */
   let mochila;
+
+  /** Dónde está el cursor cuando la mochila está abierta, en casillas. */
+  const mochilaCursor = { x: 0, y: 0 };
 
   /** La marca de "acá hay un cartucho", para distinguirlo de un objeto. */
   const DINAMITA = Symbol("dinamita");
@@ -2203,7 +2206,19 @@ export function createRaidScene(services) {
      * medio de un vagón con guardias cuesta lo mismo que todo en este juego,
      * segundos. Si pausara, sería una pantalla de gestión.
      */
-    if (input.wasPressed('Tab')) mochilaAbierta = !mochilaAbierta;
+    if (input.wasPressed('Tab')) {
+      mochilaAbierta = !mochilaAbierta;
+      // Al abrirla, el cursor arranca sobre la primera cosa que haya: lo más
+      // probable es que la estés abriendo para sacar algo, no para mirar un
+      // hueco vacío.
+      if (mochilaAbierta) apuntarCursorALoPrimero();
+    }
+    /**
+     * Mientras está abierta, el jugador queda revolviendo la bolsa: no se
+     * mueve, no apunta y no dispara (ver `updatePlayer`). El mundo sigue.
+     */
+    world.revolviendo = mochilaAbierta;
+    if (mochilaAbierta) moverCursorMochila();
 
     if (finished) {
       updateEffects(dt);
@@ -2418,7 +2433,7 @@ export function createRaidScene(services) {
 
     if (player.enTecho) { updateBajarTecho(dt); return; }
 
-    const holding = input.isDown('KeyE') && player.alive;
+    const holding = input.isDown('KeyE') && player.alive && !mochilaAbierta;
     const nearest = nearestLoot();
     const victima = nearest ? null : nearestPassenger();
     const cajon = (nearest || victima) ? null : cajonCerca();
@@ -2599,7 +2614,7 @@ export function createRaidScene(services) {
    * otro lado exactamente igual que siempre.
    */
   function updateBajarTecho(dt) {
-    const holding = input.isDown('KeyE') && player.alive;
+    const holding = input.isDown('KeyE') && player.alive && !mochilaAbierta;
     const borde = bordeParaBajar();
 
     if (borde !== null && holding && player.techoSalto <= 0 && player.techoCaido <= 0) {
@@ -2803,6 +2818,116 @@ export function createRaidScene(services) {
    * libere espacio. Es el caso que no puede pasar (agarrar exige lugar), y
    * conviene que si pasa no te saque una dinamita de la mano.
    */
+  /** La entrada de la grilla que está debajo del cursor, si hay alguna. */
+  function loQueSeniala() {
+    return mochila.entradas.find((e) =>
+      mochilaCursor.x >= e.x && mochilaCursor.x < e.x + e.w &&
+      mochilaCursor.y >= e.y && mochilaCursor.y < e.y + e.h) || null;
+  }
+
+  /** Al abrir, el cursor va sobre la primera cosa que haya (no sobre un hueco). */
+  function apuntarCursorALoPrimero() {
+    const cosas = mochila.entradas.filter((e) => e.dato !== DINAMITA);
+    const primera = cosas[0] || mochila.entradas[0];
+    mochilaCursor.x = primera ? primera.x : 0;
+    mochilaCursor.y = primera ? primera.y : 0;
+  }
+
+  /**
+   * EL CURSOR SE MUEVE CON LAS MISMAS TECLAS QUE EL JUGADOR.
+   *
+   * No hay teclas nuevas que aprender, y no hay conflicto: mientras la mochila
+   * está abierta el jugador no camina (ver `updatePlayer`), así que WASD y las
+   * flechas quedan libres. Es el mismo criterio que ya usa el menú del
+   * campamento y el diálogo de los vendedores.
+   */
+  function moverCursorMochila() {
+    const m = CONFIG.mochila;
+    const dx = (input.wasPressed('KeyD') || input.wasPressed('ArrowRight') ? 1 : 0)
+             - (input.wasPressed('KeyA') || input.wasPressed('ArrowLeft') ? 1 : 0);
+    const dy = (input.wasPressed('KeyS') || input.wasPressed('ArrowDown') ? 1 : 0)
+             - (input.wasPressed('KeyW') || input.wasPressed('ArrowUp') ? 1 : 0);
+    if (dx || dy) {
+      mochilaCursor.x = Math.max(0, Math.min(m.columnas - 1, mochilaCursor.x + dx));
+      mochilaCursor.y = Math.max(0, Math.min(m.filas - 1, mochilaCursor.y + dy));
+      audio.play('cover');
+    }
+    if (input.wasPressed('KeyE')) soltarLoQueSeniala();
+  }
+
+  /**
+   * SOLTAR LO QUE ESTÁ BAJO EL CURSOR — y ahí está la decisión que faltaba.
+   *
+   * *(Santi: "yo podría elegir soltar cosas que ya no me sirven o cambiarlas por
+   * otras")*
+   *
+   * 🐛 SIN ESTO LA MOCHILA ERA UN CALLEJÓN, y era un defecto de diseño y no un
+   * detalle: se llenaba por orden de llegada y no había forma de cambiar nada.
+   * Si arrancabas juntando sacos de café, los lingotes que encontraras después
+   * **no tenían dónde entrar y no podías hacer nada**. O sea que "¿cuál me
+   * llevo?" no era una decisión: era el orden en que te cruzaste las cosas.
+   *
+   * LO QUE SUELTAS QUEDA EN EL PISO, no se destruye. Cae a tus pies como un
+   * botín cualquiera y se puede volver a levantar — así soltar no es tirar,
+   * es **cambiar**: soltás el café, agarrás los lingotes, y el café sigue ahí
+   * si cambiás de idea. Y si te vas sin él, cuenta como botín que dejaste,
+   * igual que lo que nunca abriste.
+   *
+   * Y SE ABRE RÁPIDO AL VOLVER A LEVANTARLO (`bagTime`, 0,6 s): ya está abierto
+   * y tirado en el piso. Cobrarte los ocho segundos de una caja fuerte por algo
+   * que acabás de soltar sería castigar dos veces la misma decisión.
+   *
+   * LA DINAMITA NO SE SUELTA, y es a propósito: de un cartucho te deshacés
+   * usándolo, no dejándolo en el piso de un vagón. Si hiciera falta el lugar,
+   * la respuesta es tirarlo — que además hace algo.
+   */
+  function soltarLoQueSeniala() {
+    const entrada = loQueSeniala();
+    if (!entrada) return;
+
+    if (entrada.dato === DINAMITA) {
+      floaters.push({
+        x: player.x, y: player.y - 22,
+        text: T.hud.mochilaNoSeSuelta, life: 1.8, color: colors.enemyAlert,
+      });
+      audio.play('hitWall');
+      return;
+    }
+
+    const objeto = entrada.dato;
+    sacar(mochila, entrada);
+    const i = objetos.indexOf(objeto);
+    if (i >= 0) objetos.splice(i, 1);
+
+    // Vuelve al mundo, a los pies del jugador, como un botín ya abierto.
+    const suelto = createLootable(player.x, player.y + 4, 'bag', rng);
+    suelto.objeto = objeto;
+    suelto.value = objeto.valor;
+    suelto.name = objeto.nombre;
+    suelto.jackpot = false;
+    suelto.wagon = train.wagonAt(player.x);
+    loot.push(suelto);
+
+    floaters.push({
+      x: player.x, y: player.y - 16,
+      text: T.hud.mochilaSoltado(objeto.nombre), life: 1.8, color: colors.textDim,
+    });
+    audio.play('loot');
+
+    /**
+     * 🐛 Y EL CURSOR SE VA A LO SIGUIENTE QUE HAYA.
+     *
+     * Sin esto quedaba sobre el hueco que acababa de dejar, así que apretar [E]
+     * otra vez no hacía nada — y la razón no se ve en ninguna parte: parece que
+     * el botón dejó de funcionar. Se descubrió midiendo: cuatro [E] seguidos
+     * soltaban **una** sola cosa.
+     *
+     * Y el caso común es justamente soltar varias: abrís la bolsa porque
+     * encontraste algo grande y necesitás un cuadrado libre.
+     */
+    apuntarCursorALoPrimero();
+  }
+
   function sincronizarDinamita() {
     let reservadas = mochila.entradas.filter((e) => e.dato === DINAMITA).length;
     while (reservadas < player.dynamite) {
@@ -3233,6 +3358,37 @@ export function createRaidScene(services) {
     }
 
     /**
+     * EL CURSOR — un marco sobre la casilla, y el bulto entero resaltado.
+     *
+     * Se marcan las DOS cosas a propósito: la casilla dice dónde estás y el
+     * contorno del bulto dice **qué agarrarías si apretás [E]**. Sin el
+     * contorno, con un cajón de 2×2 no se sabría si vas a soltar el cajón o
+     * algo de al lado; sin la casilla, no se podría navegar por los huecos.
+     */
+    const senialada = loQueSeniala();
+    if (senialada) {
+      const bx = x0 + senialada.x * (lado + sep) - 1;
+      const by = y0 + senialada.y * (lado + sep) - 1;
+      const bw = senialada.w * lado + (senialada.w - 1) * sep + 2;
+      const bh = senialada.h * lado + (senialada.h - 1) * sep + 2;
+      r.rect(bx, by, bw, 1, '#fff6d0');
+      r.rect(bx, by + bh - 1, bw, 1, '#fff6d0');
+      r.rect(bx, by, 1, bh, '#fff6d0');
+      r.rect(bx + bw - 1, by, 1, bh, '#fff6d0');
+    }
+    const cx = x0 + mochilaCursor.x * (lado + sep);
+    const cy = y0 + mochilaCursor.y * (lado + sep);
+    // El cursor late: sobre un bulto del mismo tono claro, un marco quieto se
+    // pierde. Lo que se mueve se encuentra solo.
+    const late = 0.55 + 0.45 * Math.abs(Math.sin(scroll * 4));
+    r.ctx.globalAlpha = late;
+    r.rect(cx - 1, cy - 1, lado + 2, 2, colors.text);
+    r.rect(cx - 1, cy + lado - 1, lado + 2, 2, colors.text);
+    r.rect(cx - 1, cy - 1, 2, lado + 2, colors.text);
+    r.rect(cx + lado - 1, cy - 1, 2, lado + 2, colors.text);
+    r.ctx.globalAlpha = 1;
+
+    /**
      * Y DEBAJO, LA LISTA CON LO QUE VALE CADA COSA. La grilla dice cuánto
      * abulta; la lista, cuánto vale. Son las dos preguntas de este tren y
      * ninguna de las dos se puede contestar con la otra.
@@ -3243,8 +3399,14 @@ export function createRaidScene(services) {
       ly += 9;
     }
     for (const o of objetos) {
+      /**
+       * Lo señalado va en claro y el resto apagado: la lista y la grilla tienen
+       * que decir lo mismo, o hay que mirar dos veces para saber qué vas a
+       * soltar.
+       */
+      const esta = senialada && senialada.dato === o;
       r.text(`${o.nombre}  ·  ${o.slots}  ·  $${o.valor}`, r.width / 2, ly,
-        o.nivel === 'raro' ? '#ffd84a' : colors.textDim);
+        esta ? colors.text : (o.nivel === 'raro' ? '#ffd84a' : colors.textDim));
       ly += 9;
     }
     if (!objetos.length) {

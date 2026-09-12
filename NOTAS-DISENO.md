@@ -10942,6 +10942,92 @@ camina por la fila de al lado.
 
 ---
 
+## 🐛 ARREGLADA · La mochila era un callejón: no se podía soltar nada
+
+*(Santi: "pero está mal hecha la mochila. Yo podría elegir soltar cosas que ya no
+me sirven o cambiarlas por otras. Debería aparecer un cursor cuando veo el
+interior de la mochila")*
+
+**Tenía razón y era un defecto de diseño mío, no un detalle.** La mochila se
+llenaba por orden de llegada y no había forma de cambiar nada: si arrancabas
+juntando sacos de café, los lingotes que encontraras después **no tenían dónde
+entrar y no podías hacer nada al respecto**.
+
+O sea que la pregunta que todo el sistema existía para crear —*¿cuál me llevo?*—
+no era una decisión: **era el orden en que te cruzaste las cosas**. Construí la
+mitad del mecanismo (el límite) y me olvidé de la otra (la elección).
+
+### Lo que se agregó
+
+- **Un cursor** que se mueve con `W A S D` / flechas por las dieciséis casillas.
+- **`[E]` suelta lo señalado.**
+- Lo señalado se resalta **en la grilla y en la lista** al mismo tiempo. Se marcan
+  las dos cosas porque con un cajón de 2×2 la casilla sola no alcanza para saber
+  qué vas a soltar, y el contorno solo no sirve para navegar por los huecos.
+- El cursor **late**. Sobre un bulto del mismo tono claro un marco quieto se
+  pierde; lo que se mueve se encuentra solo.
+
+### Lo que sueltas cae al piso, no se destruye
+
+Vuelve al mundo como un botín más, a tus pies, y se puede levantar otra vez — así
+soltar no es tirar, es **cambiar**. Y se reabre rápido (`bagTime`, 0,6 s) porque
+ya está abierto y tirado: cobrarte ocho segundos por algo que acabás de soltar
+sería castigar dos veces la misma decisión. Si te vas sin él, cuenta como botín
+que dejaste, igual que lo que nunca abriste.
+
+**La dinamita no se suelta**: de un cartucho te deshacés usándolo. Si hace falta
+el lugar, la respuesta es tirarlo — que además hace algo.
+
+### Y revolver la bolsa cuesta, porque el mundo no se detiene
+
+Mientras está abierta, el jugador **no se mueve, no apunta y no dispara** (un
+`return` en `updatePlayer`, el mismo patrón que `tumbado`). Pero los guardias
+siguen caminando, el reloj sigue bajando y los jinetes siguen tirando.
+
+No es una pantalla de gestión: es **un tipo parado en un pasillo con la bolsa
+abierta**, y eso se paga en la única moneda que este juego cobra — tiempo y
+exposición. Reacomodar la carga en medio de un tiroteo cuesta; hacerlo en un vagón
+vacío es gratis. **Elegir dónde hacerlo es parte del juego.**
+
+Y de paso resuelve el conflicto de teclas sin inventar ninguna: si el jugador no
+camina, `W A S D` quedan libres para el cursor. Mismo criterio que el menú del
+campamento y el diálogo de los vendedores.
+
+### 🐛 Un problema de usabilidad que apareció midiendo
+
+Cuatro `[E]` seguidos soltaban **una sola cosa**. La causa: después de soltar, el
+cursor quedaba sobre el hueco que acababa de dejar, así que la segunda pulsación
+no señalaba nada. **Y eso no se ve en ninguna parte** — parece que el botón dejó
+de funcionar.
+
+Ahora el cursor salta a lo siguiente que haya. El caso común es justamente soltar
+varias cosas seguidas: abrís la bolsa porque encontraste algo grande y necesitás
+un cuadrado libre.
+
+### VERIFICADO POR CONSOLA
+
+- **El ciclo completo de la decisión, que es la prueba que importa:** bolsa en
+  14/16 con cuatro atados → el cajón de 2×2 **rebota**; soltando de a uno
+  (14 → 11 → 8 → 5) → el cajón **entra**. Antes de esto era imposible.
+- **Lo soltado vuelve al mundo**: el botín en el piso pasó de 23 a 24 objetos.
+- **Con la bolsa abierta el jugador no se mueve** (`moving` en false).
+- **Recorriendo las dieciséis casillas y apretando `[E]` en todas** —sobre cosas,
+  sobre huecos y sobre la dinamita—, de día y de noche, en los dos trenes: cero
+  errores y cero avisos.
+
+### Y otra trampa de arnés, la misma de siempre con otra cara
+
+Las tres primeras mediciones del soltar dieron "no pasa nada", y el código estaba
+bien las tres veces: **el bucle que llenaba la mochila recorría los 26 botines a
+10 segundos cada uno y se comía los 165 s del asalto**, así que `Tab` y `E` le
+llegaban a la pantalla de resultados. El servicio `raid` que yo seguía leyendo era
+el del asalto viejo, y mostraba números plausibles.
+
+> Si el banco de pruebas consume tiempo de juego, hay que vigilar el reloj del
+> juego — o el arnés te contesta preguntas de otra partida.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

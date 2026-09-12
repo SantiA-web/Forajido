@@ -354,6 +354,8 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 | `R` | **Recargar.** Mientras lo hacés caminás lento, como si fueras de costado |
 | `E` (mantener) | Robar botín / **amenazar a un pasajero** / escapar |
 | **`TAB`** | **Abrir la mochila.** Y el tren no te espera: el reloj sigue corriendo |
+| `W A S D` (con la mochila abierta) | Mover el cursor por la grilla |
+| `E` (con la mochila abierta) | **Soltar lo que está señalado** |
 
 Estando a cubierto **no podés disparar hasta asomarte**, y mientras estás
 asomado sos un blanco. Ese es el intercambio. Te despegás con `Shift` otra vez
@@ -853,6 +855,31 @@ Los bultos largos **se acuestan solos** si es lo único que cabe: un atado de 3�
 entra parado en una columna. No hay que acomodar nada a mano — agarrás y se
 guarda donde quepa, porque este juego cobra en tiempo y exposición, no en
 administración.
+
+### Y se puede soltar: ahí está la decisión
+
+Con `TAB` aparece **un cursor** que se mueve con `W A S D` por las dieciséis
+casillas. Lo que señalás se resalta en la grilla **y** en la lista de abajo, y con
+`E` lo **soltás**.
+
+**Lo que sueltas no se destruye: cae a tus pies** y se puede volver a levantar
+(rápido, porque ya está abierto y tirado en el piso). Así soltar no es tirar, es
+**cambiar** — soltás el saco de café, agarrás los lingotes, y el café sigue ahí
+si cambiás de idea. Si te vas sin él, cuenta como botín que dejaste.
+
+Sin esto la mochila era un callejón: se llenaba por orden de llegada y no había
+forma de cambiar nada, así que "¿cuál me llevo?" no era una decisión sino el
+orden en que te cruzaste las cosas.
+
+> **La dinamita no se suelta**, y es a propósito: de un cartucho te deshacés
+> usándolo. Si hace falta el lugar, la respuesta es tirarlo — que además hace algo.
+
+**Y mientras revolvés la bolsa no te movés, no apuntás y no disparás.** El mundo
+sigue andando: los guardias caminan, el reloj baja y los jinetes siguen tirando
+por la ventanilla. No es una pantalla de gestión — es un tipo parado en un pasillo
+con la bolsa abierta, y eso se paga como todo acá. Reacomodar la carga en medio de
+un tiroteo cuesta; hacerlo en un vagón vacío es gratis. **Elegir dónde hacerlo es
+parte del juego.**
 
 > **La dinamita entra en la misma mochila**, y de ahí sale sola la asimetría
 > entre los dos trenes: en el de pasajeros se roba plata, que no ocupa lugar, así

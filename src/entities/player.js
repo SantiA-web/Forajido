@@ -175,6 +175,35 @@ export function updatePlayer(p, dt, world) {
   // levantarte. Va ANTES que todo lo demás justamente por eso.
   if (p.tumbado > 0) { updateTumbado(p, dt, world); return; }
 
+  /**
+   * REVOLVIENDO LA MOCHILA ([TAB]) — no te movés, no apuntás y no disparás.
+   *
+   * *(Santi: "yo podría elegir soltar cosas que ya no me sirven o cambiarlas por
+   * otras. Debería aparecer un cursor cuando veo el interior de la mochila")*
+   *
+   * Y EL MUNDO SIGUE ANDANDO. Es la decisión central de todo esto: la mochila
+   * no es una pantalla de gestión con el tiempo detenido, es **un tipo parado
+   * en un pasillo con la bolsa abierta**. Los guardias siguen caminando, el
+   * reloj sigue bajando y los jinetes siguen tirando por la ventanilla.
+   *
+   * O SEA QUE CUESTA LO MISMO QUE TODO LO DEMÁS ACÁ: tiempo y exposición. Es la
+   * misma familia que la caja fuerte (ocho segundos quieto, de espaldas) y que
+   * el barril que te tumba. Reacomodar la carga en el medio de un tiroteo se
+   * paga; hacerlo en un vagón vacío es gratis, y elegir dónde hacerlo es parte
+   * del juego.
+   *
+   * Se congela con `return`, igual que `tumbado`, y por el mismo motivo: es más
+   * seguro no dejar correr nada que acordarse de apagar cada cosa. `moving` en
+   * false es lo que apaga el aro del ruido de las pisadas — parado revolviendo
+   * no hacés ruido de caminar.
+   */
+  if (world.revolviendo) {
+    p.moving = false;
+    p.moveDirX = 0;
+    p.moveDirY = 0;
+    return;
+  }
+
   p.aim = Math.atan2(world.aimY - p.y, world.aimX - p.x);
 
   const input = world.input;

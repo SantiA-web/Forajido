@@ -54,6 +54,26 @@ export const PUEBLO = {
     { id: 'armeria', x: 320, ancho: 78, alto: 70, alcance: 38 },
     { id: 'cantina', x: 470, ancho: 96, alto: 76, alcance: 44 },
     { id: 'sheriff', x: 630, ancho: 74, alto: 58, alcance: 36 },
+
+    /**
+     * LA CASA DE EMPEÑOS — el perista, donde se vende lo que sacaste del tren
+     * de carga (ver data/perista.js).
+     *
+     * ES LA ÚLTIMA PUERTA DE LA CALLE, y las dos cosas que eso significa son a
+     * propósito:
+     *
+     *  1. **Cuesta el pueblo entero.** Llegás con el caballo en el x=60 y esto
+     *     está en el 715: vender es caminar la calle completa, y de paso pasás
+     *     por delante de todo lo demás con la bolsa al hombro.
+     *  2. **Queda pegada a la oficina del sheriff**, y ésa es la mejor cosa que
+     *     tiene. El que te compra lo robado trabaja a dos puertas de la ley, y
+     *     nadie dice nada. No hace falta escribirlo en ningún cartel: se lee
+     *     caminando.
+     *
+     * Y ES LA MÁS CHICA Y LA MÁS BAJA de las cinco. Tampoco es un capricho: los
+     * otros cuatro son negocios que quieren que entres. Éste no.
+     */
+    { id: 'perista', x: 715, ancho: 58, alto: 48, alcance: 34 },
   ],
 
   /**

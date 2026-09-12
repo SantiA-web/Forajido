@@ -2863,7 +2863,21 @@ export function createRaidScene(services) {
        * te lo llevaste o se lo quedaron ellos. Es la misma regla de siempre
        * —lo que se puede mostrar no se escribe— aplicada al bolsillo.
        */
-      objetos: escaped ? objetos.slice() : [],
+      /**
+       * Y CADA COSA SE LLEVA PUESTO SI EL TREN LLEGÓ A GRITAR.
+       *
+       * `caliente` es lo que el perista va a mirar: mercadería de un asalto que
+       * despertó al tren está marcada, y por ella paga la mitad (ver
+       * `multiplicadorLimpio` en data/perista.js). Es el bono de trabajo limpio
+       * —que se calcula sobre el DINERO y por eso no podía aplicarse acá—
+       * entrando por otra puerta.
+       *
+       * Se marca por ASALTO y no por objeto, aunque lo hayas agarrado antes del
+       * primer tiro: si la alarma sonó, el robo está denunciado y el cargamento
+       * entero quedó descrito en un papel. No hay mitad de un cargamento que
+       * sea limpia.
+       */
+      objetos: escaped ? objetos.map((o) => ({ ...o, caliente: !limpio })) : [],
       valorObjetos: escaped ? valorObjetos() : 0,
       cleanBonus,
       racha,

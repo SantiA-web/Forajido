@@ -242,4 +242,65 @@ export const INTERIORES = {
       { id: 'celdas', tipo: 'mueble', x: 287, y: 166, alcance: 30 },
     ],
   },
+
+  // -------------------------------------------------------------- perista
+  /**
+   * LA CASA DE EMPEÑOS — donde se vende lo que sacaste del tren de carga.
+   *
+   * ABRE SIEMPRE (`soloDeDia: false`), y es lo único que hay que saber del
+   * personaje: el establo y la armería cierran de noche porque son negocios
+   * honestos con horario. Éste trabaja cuando los otros están cerrados. No hace
+   * falta decirlo en ninguna frase — se nota la primera vez que llegás de noche
+   * y es la única puerta que se abre.
+   *
+   * Y ES UN CUARTO LLENO DE COSAS DE OTROS. Los muebles no son mercadería
+   * exhibida como en la armería: son bultos apilados contra las paredes, sin un
+   * solo estante. Nada acá está en venta para vos.
+   */
+  perista: {
+    nombre: 'CASA DE EMPEÑOS',
+    soloDeDia: false,
+    sala: SALA,
+    puerta: PUERTA,
+    muebles: [
+      // Cosas de otros, apiladas. Van contra las paredes, no exhibidas.
+      { tipo: 'estanteArmas', pared: true, x: 300, y: 48, w: 92, h: 24 },
+      { tipo: 'cajon', x: 58, y: 62, solido: true, hw: 9, hh: 7 },
+      { tipo: 'cajon', x: 80, y: 78, solido: true, hw: 9, hh: 7 },
+      { tipo: 'barril', x: 330, y: 108, solido: true, hw: 7, hh: 9 },
+      { tipo: 'barril', x: 348, y: 150, solido: true, hw: 7, hh: 9 },
+      { tipo: 'cajon', x: 62, y: 166, solido: true, hw: 8, hh: 6 },
+      { tipo: 'cajon', x: 84, y: 180, solido: true, hw: 8, hh: 6 },
+
+      /**
+       * EL MOSTRADOR ES CHICO Y ESTÁ CRUZADO EN EL MEDIO. No es una vidriera de
+       * 184 px como la de la armería: es una tabla para apoyar una bolsa y que
+       * el otro la mire. Acá no se exhibe nada.
+       */
+      { tipo: 'mostrador', x: 186, y: 116, w: 104, h: 16, solido: true },
+
+      // Una sola lámpara, y baja: el local más oscuro del pueblo.
+      { tipo: 'lampara', pared: true, x: 186, y: 58 },
+    ],
+    puntos: [
+      /**
+       * ÉL TAMBIÉN PREGUNTA, igual que el armero y el caballerizo — y por el
+       * mismo motivo: en este juego los que hacen negocios te hablan primero.
+       * Pero su pregunta es la inversa de las otras dos. Aquéllos te preguntan
+       * qué querés comprar; éste te pregunta qué traés.
+       *
+       * Y la respuesta es UNA SOLA, porque no hay nada que elegir: te compra el
+       * lote entero de un gesto (ver `tasarLote` en data/perista.js).
+       */
+      {
+        id: 'perista', tipo: 'persona', x: 238, y: 98, alcance: 46,
+        dialogo: [
+          { id: 'vender', vender: true },
+          { id: 'nada' },
+        ],
+      },
+      // Y al mostrador se puede ir directo, sin hablarle: es el mismo trato.
+      { id: 'mostradorEmpenos', tipo: 'mueble', x: 186, y: 134, alcance: 24, vender: true },
+    ],
+  },
 };

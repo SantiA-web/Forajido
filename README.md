@@ -62,6 +62,13 @@ Una calle de tierra, de día, más ancha que la pantalla: hay que recorrerla.
 | **Armería** | **Sólo de día** | **Las armas, y se las puede ir a ver.** El armero vende dos cosas: fuego y **acero** (cuchillo y hacha) |
 | **Cantina** | Siempre | Contratar compañeros. Barra, mesas y **mesa de póker** |
 | **Oficina del Sheriff** | Siempre | **Tu cartel de "se busca", y a cuánto estás de la horca** |
+| **Casa de empeños** | **Siempre** | **El perista: acá se vende lo que sacaste del tren de carga** |
+
+**El perista abre cuando los demás cierran**, y es lo único que hay que saber del
+personaje: el establo y la armería son negocios honestos con horario. Está en la
+**última puerta de la calle**, pegado a la oficina del sheriff — el que te compra
+lo robado trabaja a dos puertas de la ley y nadie dice nada. No hace falta
+escribirlo: se lee caminando.
 
 De noche, **las ventanas encendidas te dicen desde lejos cuáles están
 abiertos**: no hace falta caminar hasta la puerta para que te digan que no.
@@ -795,6 +802,54 @@ Y ahí apareció algo que no se buscaba: en el tren del sigilo, un barril no es 
 peligro de combate —no te saca vida— pero **el porrazo se oye**. O sea que en el
 de carga, la carga suelta es lo que te delata. Encaja con el botín que pesa en
 vez de pelearse con él.
+
+### En el de carga no se roba plata: se roba mercadería
+
+Del tren de pasajeros salís con el bolsillo lleno. Del de carga salís **cargado
+de cosas que todavía no valen nada**, y el asalto te deja una tarea: encontrar a
+quién vendérselas.
+
+| Nivel | Vale | De dónde sale |
+|---|---|---|
+| **Común** *(fardo de tabaco, cajón de whisky, rollo de telas…)* | $45-95 | Las bolsas |
+| **Valioso** *(cubertería de plata, estuche de relojes, polvo de oro…)* | $220-560 | Una caja fuerte |
+| **Raro** *(reloj de oro, documentos lacrados, lingotes de plata)* | **$900-1800** | **Sólo** una caja del almacén, o una caja fuerte oculta |
+
+Uno de cada cinco cajas del almacén trae el raro, o sea que **cuatro de cada diez
+trenes de carga llevan al menos uno**. Y la caja oculta es el otro lugar — también
+en el tren de pasajeros, que es lo único que ahí te puede dejar algo para vender.
+Estaba escondida por algo.
+
+**Y no te entran todos: te caben cinco cosas encima**, contra unos veintitrés
+botines por tren. Ahí está la decisión que el de carga no tenía: no es "¿me
+alcanza el reloj?", es **"¿cuál me llevo?"** — una caja del almacén, que puede
+traer el raro, compite contra cuatro bolsas que ya tenés en la mano. Es el mismo
+tope que los tres cartuchos de dinamita, y por el mismo motivo.
+
+**Un objeto sólo se conserva si escapás**, sin rescate parcial: unos billetes se
+esconden en la bota, un lingote no.
+
+### El perista: el precio lo deciden dos cosas que no se ven
+
+Te compra el lote entero de un gesto, y **te dice el precio desglosado** —
+porque es la única forma de que dos sistemas invisibles se puedan jugar:
+
+| | |
+|---|---|
+| **Mercadería limpia** | Si en ese asalto **no sonó la alarma**, nadie está buscando la carga y **te paga el doble**. Es el bono de trabajo limpio (que se calcula sobre el dinero, así que acá no se podía aplicar) dicho en el idioma de este tren |
+| **Tu nombre** (`honor`) | Al que tiene fama de cumplir no lo estafan; al que todos desprecian le ofrecen dos monedas. **Hasta ±20%** |
+
+Los escalones de honor: nada entre −15 y 15, **±3%** pasando 15, **±8%** pasando
+40, **±15%** pasando 60 y **±20%** pasando 100. Son escalones y no una recta a
+propósito: así hay un momento en que *cruzás* algo y el precio cambia de verdad.
+
+Un lote típico (dos cajas y tres bolsas) paga **$1.336** si la mercadería está
+marcada y **$2.672** si salió limpia — y entre el peor y el mejor nombre posible,
+de $2.271 a $3.206.
+
+> Es el primer lugar donde `honor` cuesta plata. Y queda anotado lo que deja
+> desbalanceado: el honor bajo pasó a ser **puro castigo** (ya te costaba que
+> menos guardias se rindan) sin que ser temido te dé nada a cambio.
 
 ### El vagón almacén: el depósito, y viaja siempre
 

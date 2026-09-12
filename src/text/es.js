@@ -268,6 +268,12 @@ export const T = {
       armeria: 'ARMERÍA',
       cantina: 'CANTINA',
       sheriff: 'SHERIFF',
+      /**
+       * No dice "PERISTA" ni "COMPRO ROBADO": dice lo que diría un cartel de
+       * verdad. Lo que el local es de verdad lo entendés adentro, y eso es
+       * exactamente lo informal.
+       */
+      perista: 'EMPEÑOS',
     },
 
     prompts: {
@@ -275,6 +281,13 @@ export const T = {
       armeria: '[E] ARMERÍA',
       cantina: '[E] CANTINA',
       sheriff: '[E] OFICINA DEL SHERIFF',
+      /**
+       * Corto a propósito: este local es la ÚLTIMA puerta de la calle, así que
+       * el cartel sobre la cabeza del jugador se dibuja casi contra el borde de
+       * la pantalla. Con "[E] CASA DE EMPEÑOS" se salía del cuadro — se vio
+       * mirándolo, no midiendo. Y de paso dice lo mismo que la fachada.
+       */
+      perista: '[E] EMPEÑOS',
       caballo: '[F] VOLVER AL CAMPAMENTO',
       viejo: '[E] HABLAR',
       mujer: '[E] HABLAR',
@@ -291,6 +304,11 @@ export const T = {
       establo: 'Caballos. Cerrado hasta que haya con qué comprarlos.',
       armeria: 'Rifles y escopetas colgados de la pared. El de adentro no te da bola.',
       cantina: 'Hay gente que busca trabajo. Todavía no podés contratar a nadie.',
+      /**
+       * La puerta no dice qué se hace adentro. Dice lo justo para que quieras
+       * entrar a ver, que es lo que corresponde a un lugar que no se anuncia.
+       */
+      perista: 'Una puerta angosta y sin vidriera. Adentro hay luz.',
       /**
        * LA CUENTA REGRESIVA, y este es el lugar donde se puede ver ANTES de
        * que sea tarde (en la cárcel ya la ves, pero ahí llegaste). Por eso el
@@ -329,13 +347,52 @@ export const T = {
     preguntas: {
       armero: '"¿Qué anda buscando?"',
       caballerizo: '"¿Y? ¿Qué desea?"',
+      /**
+       * SU PREGUNTA ES LA INVERSA DE LAS OTRAS DOS. Los otros dos te preguntan
+       * qué querés llevarte; éste, qué trajiste. Y no dice "vender": dice
+       * "traés", que es como se habla cuando lo que se hace no se nombra.
+       */
+      perista: '"¿Traés algo?"',
     },
 
     opciones: {
       verArmas: 'COMPRAR UN ARMA',
       verAcero: 'VER ACERO Y FILOS',
       verCaballos: 'COMPRAR UN CABALLO',
+      vender: 'MOSTRARLE LO QUE TRAIGO',
       nada: 'NADA, GRACIAS',
+    },
+
+    /**
+     * EL PRECIO SE DICE DESGLOSADO, y es la única forma de que dos sistemas
+     * invisibles se puedan jugar: que la alarma de un asalto que ya terminó
+     * siga costándote, y que `honor` tenga un precio.
+     *
+     * Las dos líneas del medio aparecen sólo si tienen algo que decir: con la
+     * mercadería toda caliente no hay bono que mostrar, y con el honor entre
+     * −15 y 15 no hay ajuste.
+     */
+    venta: (t) => {
+      const lineas = [];
+      lineas.push(t.cantidad === 1
+        ? `Mira la única cosa que trajiste. Vale $${t.base}.`
+        : `Revisa las ${t.cantidad} cosas del mostrador. Valen $${t.base}.`);
+      if (t.bonoLimpio > 0) {
+        lineas.push(t.calientes === 0
+          ? `"Nadie está buscando esto."   +$${t.bonoLimpio}`
+          : `Parte no está marcada.   +$${t.bonoLimpio}`);
+      } else if (t.calientes > 0) {
+        lineas.push('"Esto lo están buscando." No paga un peso de más.');
+      }
+      if (t.porHonor > 0) {
+        lineas.push(`"Con vos se puede hablar."   +$${t.porHonor}`);
+      } else if (t.porHonor < 0) {
+        lineas.push(`Te mira, escupe al piso y baja la oferta.   −$${-t.porHonor}`);
+      }
+      // La última línea es la de más abajo, o sea la que el ojo encuentra
+      // primero: el número que de verdad importa.
+      lineas.push(`Te paga $${t.total}.`);
+      return lineas;
     },
 
     dialogoAyuda: '[W/S] ELEGIR     [E] ACEPTAR     [ESC] CORTAR',
@@ -351,6 +408,8 @@ export const T = {
       mesas: '[E] SENTARTE',
       cartelera: '[E] LA CARTELERA',
       ayudante: '[E] HABLAR',
+      perista: '[E] HABLAR',
+      mostradorEmpenos: '[E] MOSTRAR LO QUE TRAÉS',
       celdas: '[E] LAS CELDAS',
       comensal1: '[E] HABLAR',
       comensal2: '[E] HABLAR',
@@ -368,6 +427,14 @@ export const T = {
       // resto de la conversación ya no vive acá: ver `opciones`, arriba.
       armero: '"Cuando quiera. Fiado no hago, eso sí."',
       caballerizo: '"Como guste. Ahí van a estar."',
+      perista: '"Cuando tengas algo, sabés dónde estoy. Y no le digas a nadie."',
+      /**
+       * Con las manos vacías. No te echa: te avisa qué le interesa — y de paso
+       * es donde el juego te dice, sin un tutorial, que lo del tren de carga se
+       * vende acá.
+       */
+      peristaVacio: '"Venís con las manos vacías. Yo compro cosas, no charlas."',
+      mostradorEmpenos: 'Una tabla gastada. Acá se apoyan las bolsas.',
       barman: '"Si buscás gente para un trabajo, mirá alrededor."',
       poker: 'Cuatro sillas y una baraja. Nadie reparte todavía.',
       parroquiano: '"A mí no me mires. Yo no vi nada."',

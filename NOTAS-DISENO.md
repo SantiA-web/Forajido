@@ -10676,6 +10676,122 @@ esa puerta. Con la marca en la plantilla, queda arreglado de paso.
 
 ---
 
+## ✅ HECHA · El perista, y `honor` convertido en plata
+
+*(Santi: "andá con la opción A. Pero además, estaría bueno que el honor tenga algo
+que ver acá. Mientras más Honor (buena persona) sea el jugador, más dinero le va a
+pagar el perista", con los escalones exactos)*
+
+### El problema que resolvía la opción A
+
+Al pasar el botín del tren de carga a mercadería, ese tren **perdió el bono de
+trabajo limpio**: `cleanBonus` se calcula sobre `collected`, o sea sobre el
+dinero, y ahí ya no entraba nada. Medido: un asalto de carga rendía ~$1.336
+contra los ~$4.072 de antes (plata × el doble por salir limpio). Salir callado de
+un tren de carga había dejado de valer absolutamente nada.
+
+**La mercadería caliente es ese bono entrando por otra puerta.** Si en el asalto
+sonó la alarma, el robo está denunciado y el cargamento quedó descrito en un
+papel: el perista paga la mitad. Y usa **el mismo número** (`CONFIG.raid.cleanBonus`)
+a propósito — no es un sistema nuevo con una perilla nueva. Si algún día se mueve
+el bono del botín en plata, esto se mueve con él.
+
+Se marca por ASALTO y no por objeto, aunque lo hayas agarrado antes del primer
+tiro: no hay mitad de un cargamento que sea limpia.
+
+### `honor`, por primera vez, cuesta plata
+
+Hasta hoy `honor` movía **una sola cosa** (cada cuánto un guardia se rinde). Era
+un número que existía desde la fase 1 y casi no hacía nada.
+
+| `honor` | Ajuste |
+|---|---|
+| −15 a 15 | 0 |
+| pasando ±15 | ±3% |
+| pasando ±40 | ±8% |
+| pasando ±60 | ±15% |
+| pasando ±100 | ±20% |
+
+**Por qué un perista —que es un delincuente— paga mejor al que es buena persona.**
+Suena al revés y no lo es, si `honor` se lee como lo que de verdad mide: *qué tan
+derecho sos*. Al que tiene fama de cumplir no lo estafan; al que todos desprecian
+le ofrecen dos monedas porque sabe que no tiene a quién más venderle.
+
+**Son escalones y no una recta, y eso es de Santi.** Una recta (`honor × 0,002`)
+habría sido más simple y peor: no se siente. Con escalones hay un momento en que
+**cruzás** algo y el precio cambia de verdad, y eso se puede perseguir.
+
+Los cuatro son alcanzables, que es la condición para que existan: un asalto sin
+matar a nadie da +15 y perdonar a un rendido +12, así que el primero se cruza en
+un asalto y el último en cuatro o cinco. Para abajo va más rápido: rematar a un
+rendido son −20 de una.
+
+> ⚠️ **LO QUE QUEDA DESBALANCEADO, y se le marcó antes de construir:** con esto el
+> honor bajo es **puro castigo**. Ya te costaba (menos rendiciones) y ahora además
+> te cuesta plata, sin que ser temido te dé una sola cosa a cambio. Es un número
+> de "portate bien" en vez de una decisión con dos lados. El lugar natural para
+> equilibrarlo, si alguna vez se quiere, es **al COMPRAR**: al armero no le
+> regateás igual si te tienen miedo.
+
+### El local, y las dos cosas que dice su posición
+
+Está en la **última puerta de la calle** (x=715 de 760), y las dos consecuencias
+son a propósito:
+
+1. **Cuesta el pueblo entero.** Llegás con el caballo en el x=60: vender es
+   caminar la calle completa con la bolsa al hombro.
+2. **Queda pegado a la oficina del sheriff**, y ésa es la mejor cosa que tiene. El
+   que te compra lo robado trabaja a dos puertas de la ley y nadie dice nada.
+
+**Abre siempre**, y es lo único que hay que saber del personaje: los otros
+negocios tienen horario. Se nota la primera vez que llegás de noche y es la única
+puerta que se abre.
+
+**Y compra el lote entero de un gesto.** Hoy no existe ningún motivo para
+quedarse con un objeto en vez de venderlo, así que una lista donde elegís cuáles
+vender habría sido fricción sin ninguna decisión adentro. Un perista que te mira
+la bolsa y te tira UN número es además mucho más de este mundo que una vidriera.
+
+### 🐛 Y un límite del motor que apareció MIRÁNDOLO
+
+El precio se dice desglosado (cuánto vale, cuánto suma que esté limpia, cuánto tu
+nombre): unos 180 caracteres. **`decir()` dibujaba una sola línea centrada en una
+pantalla de 384 px**, así que el mensaje se cortaba por los dos lados — y lo que
+quedaba afuera era justo *"Te paga $3.973"*, el único número que importa.
+
+Ninguna medición lo iba a mostrar: la venta funcionaba, la plata entraba bien, el
+texto era correcto. Se vio en la primera captura. `decir()` ahora acepta varias
+líneas y las apila hacia arriba desde el pie, así que la última que se lee es la
+de abajo y todos los mensajes de una línea caen donde caían.
+
+Lo mismo con el cartel de la calle: `[E] CASA DE EMPEÑOS` se salía del cuadro
+porque este local está contra el borde derecho. Quedó `[E] EMPEÑOS`.
+
+### VERIFICADO POR CONSOLA
+
+- **La curva de honor, en los bordes exactos** que pidió Santi (es `>` y no `>=`,
+  o sea que en 15 clavado todavía no hay bonificación): −120→−20%, −100→−15%,
+  −60→−8%, −15→0, 15→0, 16→+3%, 41→+8%, 61→+15%, 101→+20%.
+- **La venta, por la interacción real** (caminar hasta el mostrador y apretar E),
+  con la cuenta cerrando en los tres casos: honor 0 → $2.228; honor 65 → $2.562
+  (+15%); honor 120 → $2.674 (+20%). Y con mercadería caliente, $1.114 sin un
+  peso de más.
+- **Ciclo completo de catorce escenas, de día y de noche**, pasando por los cinco
+  locales: cero errores y cero avisos. El perista abre en las dos.
+
+### Y la trampa de arnés de esta vuelta
+
+Llamar `scenes.update(1/60)` a mano —el instrumento que venía usando para todo—
+**se saltea `input.endFrame()`**, que es lo que consume las teclas apretadas. Sin
+eso, `wasPressed('KeyE')` queda latente y el juego lee la misma tecla en cada
+cuadro: la primera medición vendió el lote **dos veces** (la segunda encontró la
+bolsa vacía y el mensaje que quedó en pantalla era el de "venís con las manos
+vacías"). El síntoma parecía un bug del perista y era del banco de pruebas.
+
+> Si el paso se maneja a mano, hay que manejar **todo** el cuadro a mano.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

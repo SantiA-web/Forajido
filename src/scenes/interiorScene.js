@@ -25,6 +25,7 @@ import { CONFIG } from '../data/config.js';
 import { INTERIORES, PARED_ALTO } from '../data/interiors.js';
 import { gameState } from '../state/gameState.js';
 import { crearMenu } from '../engine/menu.js';
+import { tasarLote } from '../data/perista.js';
 import { T } from '../text/es.js';
 
 export function createInteriorScene(services) {
@@ -58,7 +59,7 @@ export function createInteriorScene(services) {
       get x() { return x; },
       get y() { return y; },
       get cerca() { const p = puntoCerca(); return p ? p.id : null; },
-      get mensaje() { return mensaje ? mensaje.texto : null; },
+      get mensaje() { return mensaje ? mensaje.lineas.join(" ") : null; },
       get puntos() { return def.puntos; },
       get dialogo() { return menu.activo(); },
       get sala() { return def.sala; },
@@ -84,7 +85,23 @@ export function createInteriorScene(services) {
     return Math.hypot(def.puerta.x - x, def.puerta.y - y) < 22;
   }
 
-  function decir(texto, life = 3.2) { mensaje = { texto, life }; }
+  /**
+   * LO QUE DICE UN PERSONAJE O UNA COSA. Acepta una frase o VARIAS LÍNEAS.
+   *
+   * 🐛 ANTES ERA UNA SOLA LÍNEA Y EL PERISTA NO ENTRABA. Su precio se dice
+   * desglosado (cuánto vale la mercadería, cuánto suma que no esté marcada,
+   * cuánto tu nombre), y eso son unos 180 caracteres: en una pantalla de 384 px
+   * se cortaba por los dos lados — y lo que quedaba afuera era justo el número
+   * que importa, lo que te paga. Se vio MIRÁNDOLO; ninguna medición lo iba a
+   * mostrar.
+   *
+   * Las líneas se apilan hacia arriba desde el pie de la pantalla, así que la
+   * última que se lee es siempre la de abajo y todos los mensajes de una línea
+   * siguen cayendo exactamente donde caían.
+   */
+  function decir(texto, life = 3.2) {
+    mensaje = { lineas: Array.isArray(texto) ? texto : [texto], life };
+  }
 
   /**
    * HABLARLE A UN VENDEDOR NO ES LEER UNA FRASE: ES QUE TE PREGUNTE.
@@ -113,7 +130,36 @@ export function createInteriorScene(services) {
     );
   }
 
+  /**
+   * VENDERLE EL LOTE AL PERISTA.
+   *
+   * De un solo gesto, y el precio se DESGLOSA al decirlo (ver `tasarLote` en
+   * data/perista.js). Es la única forma de que dos sistemas invisibles se
+   * vuelvan jugables: que la alarma de un asalto que ya terminó siga
+   * costándote, y que `honor` —un número que hasta hoy sólo movía cada cuánto
+   * se rendía un guardia— tenga un precio.
+   */
+  function vender() {
+    const objetos = gameState.owned.objetos;
+    if (!objetos.length) {
+      decir(T.interior.dichos.peristaVacio);
+      audio.play('cover');
+      return;
+    }
+
+    const t = tasarLote(objetos, gameState.honor);
+    gameState.money += t.total;
+    // `length = 0` y no una lista nueva: es el mismo array que mira el resto
+    // del juego, igual que los arrays del mundo en el asalto.
+    objetos.length = 0;
+
+    decir(T.interior.venta(t));
+    audio.play('loot');
+  }
+
   function elegirOpcion(punto, op) {
+    if (op.vender) { vender(); return; }
+
     if (op.tienda) {
       audio.play('loot');
       // Se le pasan los pies: la tienda los devuelve para que vuelvas al
@@ -131,6 +177,9 @@ export function createInteriorScene(services) {
   function usar(p) {
     // Los vendedores preguntan; las cosas contestan.
     if (p.dialogo) { abrirDialogo(p); return; }
+
+    // Al mostrador del perista se llega sin hablarle: el mismo trato.
+    if (p.vender) { vender(); return; }
 
     // Y a la mercadería se la puede ir a mirar directamente, sin hablar con
     // nadie: es lo que más importa ver, así que es lo más fácil de alcanzar.
@@ -610,7 +659,13 @@ export function createInteriorScene(services) {
     if (p) r.text(T.interior.prompts[p.id], x, y - 16, colors.doorGlow);
     else if (enLaPuerta()) r.text(T.interior.salir, x, y - 16, colors.bagLoot);
 
-    if (mensaje) r.text(mensaje.texto, r.width / 2, r.height - 22, colors.text);
+    if (mensaje) {
+      // Apiladas hacia arriba: la ultima linea queda siempre a la misma altura.
+      const n = mensaje.lineas.length;
+      mensaje.lineas.forEach((linea, i) => {
+        r.text(linea, r.width / 2, r.height - 22 - (n - 1 - i) * 9, colors.text);
+      });
+    }
     else if (scroll < 8) r.text(T.interior.ayuda, r.width / 2, r.height - 10, colors.textDim);
   }
 

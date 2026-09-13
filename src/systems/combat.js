@@ -46,14 +46,7 @@ export function updateBullets(bullets, dt, world) {
        * hace que al blindado no se le pueda entrar a los tiros por ningún
        * lado: ni caminando, ni disparando. Sólo dinamita.
        */
-      /**
-       * EL MONTÍCULO DE CARBÓN ('M', la góndola) frena las balas de adentro
-       * pero no las del jinete (`fromRider`): te tapa de los guardias, no de
-       * los de afuera. Ver `tapaSoloDeAdentro` en world/tilemap.js.
-       */
-      const pared = world.map.blocksBulletsAt(b.x, b.y) &&
-        !(b.fromRider && world.map.tapaSoloDeAdentroAt && world.map.tapaSoloDeAdentroAt(b.x, b.y));
-      if (pared || puertaBlindadaEnMedio(b, world)) {
+      if (world.map.blocksBulletsAt(b.x, b.y) || puertaBlindadaEnMedio(b, world)) {
         b.alive = false;
         world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
         break;

@@ -11749,9 +11749,19 @@ su borde y su lomo, y un montículo de 3x2 se leía como **seis cajas apiladas**
 sus vecinas: la fila de arriba del bulto iluminada, la de abajo en sombra y las
 esquinas sueltas redondeadas — ahora es una pila que sobresale del carbón.
 
-**Sin medir, revisado leyendo el código:** que los jinetes vean por encima de un
-montículo (sí se midió su bala), la lluvia sobre la góndola y el ritmo del
-galope. **Una simplificación a mirar jugando:** arriba de la góndola por el techo
+**🔧 AJUSTE, antes de jugarla — los jinetes no te alcanzan en la góndola.**
+*(Santi: "los jinetes no me pueden disparar mientras estoy sobre el carbón.
+Recuerda que las paredes son altas y estoy encima de ellos")*. El borde de la
+góndola pasó de baranda ('H', que deja pasar vista y balas) a **pared** ('#'):
+ya no te ven ni te pegan, ni sobre el carbón ni por el techo. Con eso **se sacó
+la excepción de los montículos para los jinetes** (`tapaSoloDeAdentro`, la vista
+propia del jinete y el chequeo de `fromRider` en las balas): si los jinetes no
+tiran adentro de la góndola, no queda nada que exceptuar, y el montículo quedó
+como cobertura común. La fila "bala de jinete contra un montículo: pasa" de la
+tabla de arriba ya no vale.
+
+**Sin medir, revisado leyendo el código:** la lluvia sobre la góndola y el ritmo
+del galope (que igual no corre al lado de la góndola: no lleva a nadie que mire). **Una simplificación a mirar jugando:** arriba de la góndola por el techo
 seguís siendo "el que va por el techo", así que un guardia cruzando el mismo
 carbón no te ve, aunque estén a la misma altura.
 

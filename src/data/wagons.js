@@ -1194,7 +1194,13 @@ export const WAGONS = {
    * y desde el galope te ven como al lado del ganado (`aLaIntemperie`, que
    * reemplaza al viejo `sinTecho` para la góndola).
    *
-   * MONTÍCULOS ('M'): te tapan de los guardias, no de los jinetes.
+   * PAREDES ALTAS: LOS JINETES NO TE ALCANZAN *(Santi: "las paredes son altas
+   * y estoy encima de ellos")*. Por eso el borde es pared ('#') y no baranda
+   * ('H'): no te ven ni te pegan, ni sobre el carbón ni pasando por el techo.
+   *
+   * MONTÍCULOS ('M'): cobertura común contra los guardias. Primero se habían
+   * pensado para tapar de los guardias pero no de los jinetes; con las
+   * paredes altas los jinetes no tiran acá adentro, así que eso sobraba.
    *
    * NADIE VIVE EN EL CARBÓN: cero guardias, cero botín, y no se sueltan
    * barriles (Santi eligió eso sobre "frenan a la mitad" y "ruedan igual").
@@ -1208,7 +1214,7 @@ export const WAGONS = {
     aLaIntemperie: true,
     sinComportamiento: true,
     layout: [
-      '#HHHHHHHHHHHHHHHHHHHHHHHHHH#',
+      '############################',
       '#KKKKKKKKKKKKKKKKKKKKKKKKKK#',
       '#KKMMMKKKKKKKMMMKKKKKKKMMKK#',
       '#KKMMMKKKKKKKMMMKKKKKKKMMKK#',
@@ -1217,7 +1223,7 @@ export const WAGONS = {
       '#KKKKKKKMMMKKKKKKKMMMKKKKKK#',
       '#KKKKKKKMMMKKKKKKKMMMKKKKKK#',
       '#KKKKKKKKKKKKKKKKKKKKKKKKKK#',
-      '#HHHHHHHHHHHHHHHHHHHHHHHHHH#',
+      '############################',
     ],
     enemies: [],
     passengers: [],

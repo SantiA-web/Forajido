@@ -831,7 +831,7 @@ refrigerado, los guardias de franco y la góndola ya tienen la suya:
 | **Primera clase** | Pasajeros (especial) | **Los tres ricos** del tren, con sombrero de copa, y dos guardaespaldas VIGILANDO. ~$600 entre los tres | — |
 | **Cerrado** | Carga | El correo liviano de siempre, con su nombre de tren de carga | — |
 | **Plataforma** | Carga | Carga amarrada sin paredes: te tapa de los guardias, no de los jinetes | — |
-| **Góndola** | Carga | **Carbón hasta arriba**: se cruza por encima, a la mitad, trepando y bajando en los enganches. Montículos que tapan de los guardias, no de los jinetes | — |
+| **Góndola** | Carga | **Carbón hasta arriba**: se cruza por encima, a la mitad, trepando y bajando en los enganches. Paredes altas: los jinetes no te alcanzan. Montículos para cubrirte de los guardias | — |
 | **Refrigerado** | Carga | Hileras de reses colgadas, dos guardias. **Las reses tapan la vista y no las balas**, y se atraviesan a media velocidad | — |
 
 > **Nada de esto está jugado.** Está medido (10.000 trenes de cada uno cumplen
@@ -872,7 +872,8 @@ encima del carbón, y eso es lo mismo que caminar por el techo.
 | **Subir y bajar** | En los **enganches**: mantené **[E] 0,4 s** al borde, en silencio. Hasta que no trepaste, el carbón es una pared |
 | **Cruzarla** | **A la mitad**, para todos: vos 39 px/s, un guardia persiguiéndote 23. La cruzan también las reses de la estampida y el Sheriff: nadie queda cortado |
 | **Por el techo** | Si venís por arriba de otro vagón, seguís de largo sin caerte, y frena igual. Desde el caballo se puede saltar encima |
-| **Montículos** | Te tapan de la vista y de las balas **de los guardias**, pero **no de los jinetes**: ellos cabalgan más alto, al costado |
+| **Jinetes** | **No te alcanzan**: las paredes de la góndola son altas y vas encima del carbón. No te ven ni te pegan, ni sobre el carbón ni por el techo |
+| **Montículos** | Cobertura contra los guardias: tapan la vista y las balas |
 | **A la intemperie** | Te llueve encima, y desde el galope te ven tan rápido como al lado del ganado |
 | **Barriles** | No se sueltan en el carbón |
 

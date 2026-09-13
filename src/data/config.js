@@ -1326,6 +1326,29 @@ export const CONFIG = {
     frenoMaximo: 0.25,
   },
 
+  /**
+   * LAS CASILLAS QUE FRENAN — por cuánto se multiplica la velocidad al pisarlas.
+   *
+   * Frenan a TODOS los que caminan: jugador, guardias y pasajeros. La regla se
+   * eligió para la góndola ("la cruzan todos") y nació antes, con las reses.
+   *
+   * RESES A LA MITAD porque es el precio que el juego ya cobra por agacharse,
+   * apuntar y cubrirse (78 → 39-40), no un número nuevo:
+   *
+   *                        caminando    entre reses
+   *   jugador               78 px/s      39 px/s
+   *   guardia persiguiendo  46 px/s      23 px/s
+   *   guardia patrullando   24 px/s      12 px/s
+   *
+   * El pasillo del medio del refrigerado no tiene reses: cruzar el vagón no
+   * frena. Frena meterse de costado en las hileras.
+   *
+   * La góndola (etapa 5) suma acá su carbón.
+   */
+  casillasQueFrenan: {
+    reses: 0.5,
+  },
+
   loot: {
     bagTime: 0.6,        // botín rápido
 
@@ -2216,6 +2239,17 @@ export const CONFIG = {
     windowGlass:  '#7fb2bd',
     railing:      '#6b5236',
     railingTop:   '#8a6b47',
+
+    // La res colgada del refrigerado ('R'). Roja y con la grasa clara para que
+    // se lea como carne y no como otro cajón: ésta se atraviesa, y la bala también.
+    res: {
+      riel:     '#4a4540',
+      gancho:   '#a3a3a3',
+      carne:    '#7e2f2b',
+      carneLuz: '#a8473f',
+      carneSombra: '#5a201d',
+      grasa:    '#dccbb0',
+    },
 
     // La ley cabalgando afuera
     horse:        '#6a4a33',

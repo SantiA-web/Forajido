@@ -309,6 +309,8 @@ export function createRaidScene(services) {
       }
       return false;
     };
+    // Sin esto la res en la que estás parado te volvía a esconder (world/tilemap.js).
+    map.blocksSightAt.dejaVerDesdeAdentro = world.tileBlocksSightAt.dejaVerDesdeAdentro;
 
     /**
      * LA PUERTA BLINDADA, MIENTRAS SIGA ENTERA, ES UN MURO DE VERDAD.

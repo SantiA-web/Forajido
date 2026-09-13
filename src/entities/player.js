@@ -543,7 +543,9 @@ function updateFree(p, dt, world, dx, dy, toggle) {
     base *= factorDireccion;
   }
 
-  const speed = base * (1 - (p.lastre || 0));
+  // Entre las reses del refrigerado, a la mitad (world/tilemap.js, `frenoAt`).
+  const freno = world.map.frenoAt ? world.map.frenoAt(p.x, p.y) : 1;
+  const speed = base * (1 - (p.lastre || 0)) * freno;
 
   const moveX = dx * speed * dt + p.knockX * dt;
   const moveY = dy * speed * dt + p.knockY * dt;

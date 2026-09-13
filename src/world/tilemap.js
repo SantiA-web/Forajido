@@ -33,6 +33,19 @@ const TILE_RULES = {
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones
   'X': { solid: true,  blocksSight: true,  blocksBullets: true },   // el vacío: fuera del tren
+
+  /**
+   * LA RES COLGADA (vagón refrigerado) — lo contrario de la ventanilla.
+   *
+   * Tapa la vista y NO las balas: un laberinto donde se ve poco y se tira a
+   * ciegas. Y se atraviesa, pero frena a la mitad (`CONFIG.casillasQueFrenan`).
+   *
+   * `seVeDesdeAdentro`: la res en la que estás parado no te tapa. Para
+   * esconderte tiene que haber OTRA entre vos y el que mira. Sin esto, pisar
+   * cualquier res te hacía invisible desde todos lados: la vista se muestrea
+   * cada 5 px, y el último punto antes de llegar a vos caía adentro de tu res.
+   */
+  'R': { solid: false, blocksSight: true, blocksBullets: false, seVeDesdeAdentro: true, freno: 'reses' },
 };
 
 export function createTilemap(layout) {
@@ -70,6 +83,27 @@ export function createTilemap(layout) {
     return px >= 0 && py >= 0 && px < cols * size && py < rows * size;
   }
 
+  function blocksSightAt(px, py) {
+    return dentro(px, py) && TILE_RULES[tileAtPixel(px, py)].blocksSight;
+  }
+
+  /**
+   * ¿Este punto que tapa la vista es la casilla donde está parado alguno de
+   * los dos extremos, y es de las que se ven desde adentro? `hasLineOfSight`
+   * (engine/collision.js) lo pregunta ANTES de dar la vista por cortada.
+   *
+   * Va colgado de la función y no como parámetro para no tocar las decenas de
+   * lugares que ya pasan `map.blocksSightAt`: quien la envuelva (las puertas,
+   * en raidScene.js) tiene que copiarlo.
+   */
+  blocksSightAt.dejaVerDesdeAdentro = (px, py, ax, ay, bx, by) => {
+    const col = Math.floor(px / size);
+    const row = Math.floor(py / size);
+    if (!TILE_RULES[tileAt(col, row)].seVeDesdeAdentro) return false;
+    const enLaMisma = (x, y) => Math.floor(x / size) === col && Math.floor(y / size) === row;
+    return enLaMisma(ax, ay) || enLaMisma(bx, by);
+  };
+
   return {
     grid, rows, cols, size,
     width: cols * size,
@@ -93,10 +127,19 @@ export function createTilemap(layout) {
      * une nunca se sale del rectángulo del mapa.
      */
     isSolidAt: (px, py) => TILE_RULES[tileAtPixel(px, py)].solid,
-    blocksSightAt: (px, py) =>
-      dentro(px, py) && TILE_RULES[tileAtPixel(px, py)].blocksSight,
+    blocksSightAt,
     blocksBulletsAt: (px, py) =>
       dentro(px, py) && TILE_RULES[tileAtPixel(px, py)].blocksBullets,
+
+    /**
+     * Por cuánto se multiplica la velocidad de quien está parado acá: 1 en
+     * casi todo el tren, 0,5 entre las reses. Frena a TODOS los que caminan
+     * (jugador, guardias, pasajeros): lo que se eligió para la góndola.
+     */
+    frenoAt(px, py) {
+      const freno = TILE_RULES[tileAtPixel(px, py)].freno;
+      return freno ? CONFIG.casillasQueFrenan[freno] : 1;
+    },
 
     /** Igual que isSolidAt pero en coordenadas de tile, no de píxel. */
     isSolidTile: (col, row) => TILE_RULES[tileAt(col, row)].solid,

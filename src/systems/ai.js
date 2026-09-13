@@ -46,6 +46,11 @@ function movSolidAt(map) {
   return map.isSolidForMovementAt || map.isSolidAt;
 }
 
+/** Por cuánto se multiplica su paso donde está parado: 0,5 entre las reses. */
+function frenoEn(e, map) {
+  return map.frenoAt ? map.frenoAt(e.x, e.y) : 1;
+}
+
 export function updateEnemy(e, dt, world) {
   e.hitFlash = Math.max(0, e.hitFlash - dt);
   if (!e.alive) return;
@@ -630,10 +635,11 @@ function huirDe(e, dt, world, ex) {
   e.alertMark = Math.max(e.alertMark, 0.4);
 
   const ang = Math.atan2(e.y - ex.y, e.x - ex.x);
+  const paso = c.speed * 1.25 * frenoEn(e, world.map) * dt;
   moveAndCollide(
     e,
-    Math.cos(ang) * c.speed * 1.25 * dt,
-    Math.sin(ang) * c.speed * 1.25 * dt,
+    Math.cos(ang) * paso,
+    Math.sin(ang) * paso,
     movSolidAt(world.map)
   );
   turnTowards(e, ang, dt, 9);
@@ -988,7 +994,8 @@ export function turnTowards(e, angle, dt, rate = 7) {
 export function moveToward(e, targetX, targetY, speed, dt, map) {
   const angle = Math.atan2(targetY - e.y, targetX - e.x);
   const before = { x: e.x, y: e.y };
-  moveAndCollide(e, Math.cos(angle) * speed * dt, Math.sin(angle) * speed * dt, movSolidAt(map));
+  const paso = speed * frenoEn(e, map) * dt;
+  moveAndCollide(e, Math.cos(angle) * paso, Math.sin(angle) * paso, movSolidAt(map));
   turnTowards(e, angle, dt);
   return Math.hypot(e.x - before.x, e.y - before.y);
 }
@@ -1048,6 +1055,7 @@ export function viajarHacia(e, dt, world, targetX, targetY, speed) {
 function moveAxisAligned(e, targetX, targetY, speed, dt, map) {
   const dx = targetX - e.x;
   const dy = targetY - e.y;
+  speed *= frenoEn(e, map);
 
   if (Math.abs(dx) > 3) {
     const step = Math.sign(dx) * speed * dt;
@@ -1164,7 +1172,7 @@ function doPatrol(e, dt, world) {
   if (e.rondaLarga) {
     const dy = waypoint.y - e.y;
     if (Math.abs(dy) > 1) {
-      const paso = Math.sign(dy) * Math.min(Math.abs(dy), velocidad * dt);
+      const paso = Math.sign(dy) * Math.min(Math.abs(dy), velocidad * frenoEn(e, world.map) * dt);
       moveAndCollide(e, 0, paso, movSolidAt(world.map));
     }
   }
@@ -2022,9 +2030,10 @@ export function doCombat(e, dt, world) {
       e.aimTimer = 0;
       return;
     }
-    // No te ve, pero si lo único que se interpone es una puerta cerrada
-    // (no una pared, no un asiento), le sigue tirando a través. Corre en
-    // paralelo a todo lo demás: no hace falta estar parapetado para esto.
+    // No te ve, pero si lo único que se interpone es algo que las balas
+    // atraviesan (una puerta de madera, las reses del refrigerado; no una
+    // pared, no un asiento), le sigue tirando a través. Corre en paralelo a
+    // todo lo demás: no hace falta estar parapetado para esto.
     dispararACiegasPorPuerta(e, dt, world);
     dispararACiegasPorTecho(e, dt, world);
   }
@@ -2617,7 +2626,7 @@ function dispararACiegasPorPuerta(e, dt, world) {
   if (e.doorFireCooldown > 0) return;
   if (distance(e.x, e.y, target.x, target.y) > c.viewDistance + 80) return;
   if (allyInLine(e, world, target.x, target.y)) return;
-  if (!puertaEsLoUnicoQueTapa(e, target, world)) return;
+  if (!soloTapaLaVista(e, target, world)) return;
 
   e.doorBurstLeft = c.doorBurstSize;
   e.doorAimTimer = 0.4;
@@ -2710,24 +2719,26 @@ function fireTechoBlind(e, world, target) {
 }
 
 /**
- * ¿Lo único que corta la línea es una puerta cerrada, y no una pared o un
- * asiento? `world.tileBlocksSightAt` es la versión SIN puertas (raidScene.js
- * la guarda ahí antes de envolver `map.blocksSightAt`), así que comparar las
- * dos dice exactamente qué es lo que está tapando.
+ * ¿La vista está cortada pero las balas pasan? O sea: lo que tapa es una
+ * puerta cerrada o una res colgada, y no una pared o un asiento.
+ *
+ * NACIÓ SÓLO PARA LAS PUERTAS (`puertaEsLoUnicoQueTapa`) y comparaba la vista
+ * con y sin puertas. Con las reses del refrigerado (etapa 3 de los trenes
+ * nuevos) apareció una casilla que también tapa la vista sin frenar balas, y
+ * la pregunta de verdad siempre fue ésta. Para todo lo que existía antes da
+ * exactamente lo mismo: todas las casillas que tapan la vista frenan balas,
+ * salvo la res.
  *
  * Con una salvedad: si la que tapa es una puerta BLINDADA, no dispara. Esa es
  * chapa y frena las balas (systems/combat.js), así que tirarle sería vaciar
  * el cargador contra un muro — se leería como un bug, no como desesperación.
  * Contra una puerta común, que es madera y la bala atraviesa, sí tira.
  */
-function puertaEsLoUnicoQueTapa(e, target, world) {
+function soloTapaLaVista(e, target, world) {
   if (!world.tileBlocksSightAt) return false;
-  const libreSinPuertas = hasLineOfSight(e.x, e.y, target.x, target.y, world.tileBlocksSightAt);
-  if (!libreSinPuertas) return false;
-  if (!hasLineOfSight(e.x, e.y, target.x, target.y, world.map.blocksSightAt)) {
-    return !hayBlindadaEnMedio(e, target, world);
-  }
-  return false;
+  if (hasLineOfSight(e.x, e.y, target.x, target.y, world.map.blocksSightAt)) return false;
+  if (!hasLineOfSight(e.x, e.y, target.x, target.y, world.map.blocksBulletsAt)) return false;
+  return !hayBlindadaEnMedio(e, target, world);
 }
 
 /** ¿Hay una puerta blindada entera y cerrada cruzada en esta línea de tiro? */

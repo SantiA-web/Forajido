@@ -11549,6 +11549,68 @@ parado en el último vagón:
 
 **⚠️ NO JUGADO.**
 
+### ✅ Etapa 3 hecha — el refrigerado
+
+**Las reses son una casilla nueva, `R`: tapan la vista y no las balas, y se
+atraviesan a media velocidad.** Es lo contrario de la ventanilla.
+
+**Lo que se decidió en esta etapa**, con la tabla de opciones delante:
+
+- **Se atraviesan, pero frenan.** *Santi eligió esto sobre "son un obstáculo",
+  que era la recomendada.* Al medirlo apareció un agujero: la vista se muestrea
+  cada 5 px y el último punto antes de llegar a vos cae adentro de tu propia res,
+  así que **pisar cualquier res te hacía invisible desde todos lados** (salvo un
+  guardia a menos de 26 px con vos parado; agachado, ni eso).
+- **Por eso, la res que pisás no te tapa** (`seVeDesdeAdentro`). Para esconderte
+  tiene que haber OTRA entre vos y el que mira. Vale para los dos extremos: un
+  guardia metido en una res también ve hacia afuera. Vive en `hasLineOfSight`,
+  colgado de `blocksSightAt` (`dejaVerDesdeAdentro`), así que guardias, jinetes,
+  pasajeros y la cobertura lo respetan sin tocarlos; el envoltorio de las puertas
+  (raidScene.js) lo copia.
+- **Frena a la mitad y a todos**: jugador 78 → 39, guardia persiguiendo 46 → 23,
+  patrullando 24 → 12. El número vive en `CONFIG.casillasQueFrenan` y el mapa lo
+  contesta con `frenoAt`. **El freno de la góndola ya tiene dónde ir**: la etapa 5
+  se achica.
+- **Los guardias tiran a ciegas entre las reses.** La regla de la puerta pasó a
+  ser "la vista está cortada pero las balas pasan" (`soloTapaLaVista`, antes
+  `puertaEsLoUnicoQueTapa`). Para todo lo que existía da lo mismo: la res es la
+  única casilla que tapa la vista sin frenar balas.
+- **Sin barriles de pólvora.** Y la explosión atraviesa las reses, igual que las
+  balas, porque pregunta lo mismo.
+
+**Consecuencias que se aceptan:** el buscador de caminos no sabe de frenos, así
+que los guardias atraviesan las hileras en vez de rodearlas; y contra una res no
+te podés parapetar, porque no es sólida.
+
+**MEDIDO**, en el vagón suelto y en un asalto armado a mano:
+
+| Qué | Resultado |
+|---|---|
+| Guardia en el pasillo → vos pisando la primera res, nada entre | **Te ve** |
+| → vos en la res del fondo, con dos de por medio | **No te ve** |
+| → vos en una rendija, de frente | Te ve |
+| Una bala cruzando la fila entera (14 reses) | Pasa |
+| Guardia persiguiendo: en una res / en la rendija | **23 / 46 px/s** |
+| Camino de punta a punta del vagón | Lo encuentra, derecho a través de las reses |
+| 300 trenes de carga | 0 errores, 0 avisos, 84 reses cada uno |
+
+**El tiro a ciegas, caminando de verdad** (te ve en el pasillo y subís por una
+columna de reses hasta el fondo): te pierde en el cuadro 38, tira la ráfaga de
+contención y después **ráfagas de 5 a ciegas cada ~3,2 s** (0,4 apuntando + 0,5 de
+ráfaga + 2,2 de espera).
+
+⚠️ **Con un teletransporte a la res del fondo no tiraba nunca.** Te apunta a
+donde te vio por última vez, y si ese punto lo sigue viendo, no hay "a ciegas".
+Caminando funciona porque te sigue viendo hasta que ya estás adentro. Si te metés
+de costado desde una rendija, puede quedar a la vista el último lugar donde te
+vio, y entonces no tira: **a confirmar jugando.**
+
+**MIRADO:** 🐛 la primera res era de 8 px con una raya blanca al medio, y desde la
+cámara del juego se leía como un palito. Pasó a media res, ancha arriba y angosta
+abajo, con la grasa de un costado; cada una se mece un píxel a su ritmo.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

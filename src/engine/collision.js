@@ -63,6 +63,10 @@ export function distance(ax, ay, bx, by) {
 /**
  * Línea de visión: ¿se puede trazar una recta entre dos puntos sin que
  * algo la corte? Muestreamos cada 5px; suficiente para tiles de 16.
+ *
+ * `blocksSightAt.dejaVerDesdeAdentro` (si la función lo trae, ver
+ * world/tilemap.js) perdona lo que tapa en la casilla de cualquiera de los dos
+ * extremos: la res en la que estás parado no te esconde.
  */
 export function hasLineOfSight(x1, y1, x2, y2, blocksSightAt) {
   const dist = Math.hypot(x2 - x1, y2 - y1);
@@ -71,9 +75,14 @@ export function hasLineOfSight(x1, y1, x2, y2, blocksSightAt) {
 
   const stepX = (x2 - x1) / steps;
   const stepY = (y2 - y1) / steps;
+  const desdeAdentro = blocksSightAt.dejaVerDesdeAdentro;
 
   for (let i = 1; i < steps; i++) {
-    if (blocksSightAt(x1 + stepX * i, y1 + stepY * i)) return false;
+    const x = x1 + stepX * i;
+    const y = y1 + stepY * i;
+    if (!blocksSightAt(x, y)) continue;
+    if (desdeAdentro && desdeAdentro(x, y, x1, y1, x2, y2)) continue;
+    return false;
   }
   return true;
 }

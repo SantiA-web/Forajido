@@ -813,7 +813,8 @@ reloj.
 *(Santi: "me gustaría cambiar el sistema de los vagones de los trenes. Añadiendo
 vagones más especiales y selectivos")* — el diseño completo, con cada decisión y
 su tabla, está en NOTAS-DISENO.md. Se construye por etapas y **cada sistema nuevo
-entra solo**. Hoy están todos armados con mecánicas que ya existían:
+entra solo**. Casi todos están armados con mecánicas que ya existían; el
+refrigerado ya tiene la suya:
 
 | Vagón | Tren | Qué es | Lo que falta |
 |---|---|---|---|
@@ -824,10 +825,22 @@ entra solo**. Hoy están todos armados con mecánicas que ya existían:
 | **Cerrado** | Carga | El correo liviano de siempre, con su nombre de tren de carga | — |
 | **Plataforma** | Carga | Carga amarrada sin paredes: te tapa de los guardias, no de los jinetes | — |
 | **Góndola** | Carga | Montículos de carbón, sin nadie adentro | Que **frene a la mitad**, se cruce por encima y desde el pasillo se suba al techo |
-| **Refrigerado** | Carga | Hileras de reses colgadas, dos guardias | Que las reses **tapen la vista y no las balas** |
+| **Refrigerado** | Carga | Hileras de reses colgadas, dos guardias. **Las reses tapan la vista y no las balas**, y se atraviesan a media velocidad | — |
 
 > **Nada de esto está jugado.** Está medido (10.000 trenes de cada uno cumplen
 > todas las reglas, 300 armados sin un solo aviso) y mirado, no jugado.
+
+#### Las reses del refrigerado
+
+Son una casilla propia (`R`), lo contrario de la ventanilla:
+
+| | Cómo funciona |
+|---|---|
+| **La vista** | Te tapan, pero **la res que pisás no cuenta**: tiene que haber otra entre vos y el guardia. Pisar la primera no te esconde; meterte hasta el fondo de la hilera, sí |
+| **Las balas** | Pasan. La explosión de la dinamita también |
+| **Caminar** | Se atraviesan **a la mitad**, para todos: vos 39 px/s, un guardia persiguiéndote 23. El pasillo del medio no tiene reses, así que cruzar el vagón no frena |
+| **El guardia que te pierde** | **Te tira a ciegas** a donde te vio por última vez: ráfagas de 5 balas cada ~3,2 s, igual que contra una puerta cerrada |
+| **Cobertura** | No hay: una res no es sólida, así que no te podés pegar a ella |
 
 La regla del reparto es **una mecánica, una sola casa**: si algo aparece en los
 dos trenes, no distingue nada.

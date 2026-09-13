@@ -282,7 +282,8 @@ export function updatePassenger(pa, dt, world) {
   if (pa.state === 'fleeing') {
     const dx = Math.sign(pa.fleeToX - pa.x);
     pa.facing = dx > 0 ? 0 : Math.PI;
-    moveAndCollide(pa, dx * c.speed * dt, 0, world.map.isSolidForMovementAt || world.map.isSolidAt);
+    const freno = world.map.frenoAt ? world.map.frenoAt(pa.x, pa.y) : 1;
+    moveAndCollide(pa, dx * c.speed * freno * dt, 0, world.map.isSolidForMovementAt || world.map.isSolidAt);
     if (Math.abs(pa.x - pa.fleeToX) < 6) pa.state = 'cowering';
   }
 }

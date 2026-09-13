@@ -907,8 +907,9 @@ export const WAGONS = {
   // tabla de opciones, está en NOTAS-DISENO.md ("EN DISEÑO · Los trenes nuevos").
   //
   // ETAPA 1: PLANTILLAS CON MECÁNICAS QUE YA EXISTEN. El vigía del caboose, las
-  // reses del refrigerado, el carbón de la góndola, los guardias de franco y las
-  // puertas de los camarotes llegan cada uno en su etapa, solos — para que
+  // reses del refrigerado (ya están: etapa 3), el carbón de la góndola, los
+  // guardias de franco y las puertas de los camarotes llegan cada uno en su
+  // etapa, solos — para que
   // cuando algo se sienta mal se sepa qué fue. Hasta entonces cada vagón nuevo se
   // juega con piezas conocidas, y los anchos son los que se usaron para calcular
   // el largo del tren (y de ahí los 180 s del reloj).
@@ -1202,9 +1203,14 @@ export const WAGONS = {
   /**
    * EL VAGÓN REFRIGERADO — reses colgadas.
    *
-   * ⚠️ HOY LAS RESES SON CARGA COMÚN (etapa 3). El diseño es una casilla nueva
-   * que tapa la vista pero NO las balas: un laberinto donde se ve poco y se
-   * tira a ciegas. Mientras no exista, las hileras son 'C' y frenan todo.
+   * LAS RESES SON LA CASILLA 'R' (etapa 3, ver world/tilemap.js): tapan la
+   * vista pero NO las balas, y se atraviesan a media velocidad. Un laberinto
+   * donde se ve poco y se tira a ciegas — los guardias también: si te pierden
+   * entre las reses, le tiran a donde te vieron por última vez.
+   *
+   * Para esconderte tiene que haber una res ENTRE vos y el guardia; la que
+   * pisás no cuenta. Por eso las hileras tienen tres de fondo: metido hasta la
+   * del fondo, las otras dos te tapan del pasillo.
    *
    * HILERAS DE UNA BALDOSA CON PASILLOS DE UNA, escalonadas arriba y abajo.
    * Dos guardias, para que haya a quién tirarle a ciegas entre las reses.
@@ -1213,10 +1219,10 @@ export const WAGONS = {
    * pero estar a salvo de los jinetes es la identidad del blindado — y ésa no
    * se la roba otro vagón.
    *
-   * SIN BARRILES DE PÓLVORA TODAVÍA: en pasillos de una baldosa un barril que
-   * se prende no deja por dónde huir (la lección del vagón de armas, que midió
-   * a alguien muerto a tres píxeles de donde arrancó). Se decide en la etapa 3,
-   * con las reses de verdad.
+   * SIN BARRILES DE PÓLVORA: en pasillos de una baldosa un barril que se
+   * prende no deja por dónde huir (la lección del vagón de armas, que midió a
+   * alguien muerto a tres píxeles de donde arrancó). Y la explosión atraviesa
+   * las reses, igual que las balas. Decidido en la etapa 3.
    */
   refrigerado: {
     id: 'refrigerado',
@@ -1225,14 +1231,14 @@ export const WAGONS = {
     hint: 'Reses colgadas. Se ve poco.',
     layout: [
       '#######WW#############WW########',
-      '#.C.C.C.C.C.C.C.C.C.C.C.C.C.C..#',
-      '#.C.C.C.C.C.C.C.C.C.C.C.C.C.C..#',
-      '#.C.C.C.C.C.C.C.C.C.C.C.C.C.C..#',
+      '#.R.R.R.R.R.R.R.R.R.R.R.R.R.R..#',
+      '#.R.R.R.R.R.R.R.R.R.R.R.R.R.R..#',
+      '#.R.R.R.R.R.R.R.R.R.R.R.R.R.R..#',
       '+..............................+',
       '+..............................+',
-      '#..C.C.C.C.C.C.C.C.C.C.C.C.C.C.#',
-      '#..C.C.C.C.C.C.C.C.C.C.C.C.C.C.#',
-      '#..C.C.C.C.C.C.C.C.C.C.C.C.C.C.#',
+      '#..R.R.R.R.R.R.R.R.R.R.R.R.R.R.#',
+      '#..R.R.R.R.R.R.R.R.R.R.R.R.R.R.#',
+      '#..R.R.R.R.R.R.R.R.R.R.R.R.R.R.#',
       '####WW######################WW##',
     ],
     enemies: [

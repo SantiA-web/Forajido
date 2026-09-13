@@ -1781,6 +1781,31 @@ export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
           break;
         }
 
+        case 'R': {
+          // Res colgada del refrigerado: suelo, el riel del techo y la res
+          // meciéndose un píxel con el traqueteo. Cada una a su ritmo, para que
+          // la hilera no se mueva como un solo bloque.
+          const cr = colors.res;
+          r.rect(x, y, size, size, (row + col) % 2 === 0 ? colors.floor : colors.floorAlt);
+          r.rect(x, y + size - 1, size, 1, '#5b3d27');
+          r.rect(x + 7, y, 2, size, cr.riel);
+          const vaiven = Math.round(Math.sin(performance.now() / 650 + col * 1.3 + row * 0.9));
+          const rx = x + vaiven;
+          // Media res: ancha arriba, angosta abajo, con la grasa de un costado.
+          // La primera versión era de 8 px con una raya blanca en el medio, y
+          // desde la cámara del juego se leía como un palito, no como carne.
+          r.rect(rx + 7, y, 2, 2, cr.gancho);
+          r.rect(rx + 3, y + 2, 10, 10, cr.carne);
+          r.rect(rx + 4, y + 12, 8, 2, cr.carne);
+          r.rect(rx + 6, y + 14, 4, 1, cr.carne);
+          r.rect(rx + 3, y + 2, 10, 2, cr.carneLuz);
+          r.rect(rx + 3, y + 4, 2, 7, cr.carneLuz);
+          r.rect(rx + 11, y + 4, 2, 8, cr.grasa);
+          r.rect(rx + 6, y + 6, 4, 1, cr.carneSombra);
+          r.rect(rx + 6, y + 9, 4, 1, cr.carneSombra);
+          break;
+        }
+
         case 'W':
           // Ventanilla: marco de pared con el vidrio en el medio. Tiene que
           // gritar "esto no es pared", porque por acá te entran las balas.

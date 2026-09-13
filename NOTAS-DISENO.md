@@ -11181,6 +11181,264 @@ el HUD marca **−16%** (con el número viejo hubiera sido −22%).
 
 ---
 
+## 🛠 EN DISEÑO · Los trenes nuevos: vagones más especiales y selectivos
+
+*(Santi: "me gustaría cambiar el sistema de los vagones de los trenes. Añadiendo
+vagones más especiales y selectivos. [...] Me gustaría irlo puliendo contigo")*
+
+**Nada de esto está construido.** Es lo que se cerró conversando, ronda por ronda,
+escrito acá para que no dependa de la memoria de una sesión. Cada decisión salió
+de una tabla de opciones con su efecto medido.
+
+### Tren de pasajeros — 8 vagones y la locomotora
+
+| Lugar | Vagón | Qué es |
+|---|---|---|
+| **1, fijo** | **Caboose** (observación) | Un vigía que mira hacia atrás: subir por la cola deja de ser gratis |
+| sorteado | **Dormitorio** | Camarotes: cabinas con puerta y gente adentro, pasillo lateral angosto |
+| sorteado | Comedor | El de siempre |
+| sorteado | Pasajeros ×2 | Los de siempre |
+| sorteado | **Especial** | Sale **uno** de dos: vagón de **guardias de franco** o **primera clase** |
+| sorteado | Correo | El de siempre |
+| **desde el 4** | Express (blindado) | El de siempre. La regla de hoy ("nunca antes del 3") corrida un lugar por el caboose |
+| al final | **Locomotora** | **Se ve, no se entra.** De ahí salen los refuerzos |
+
+**Se va el ganado**, que era el único vagón sin techo de este tren.
+
+### Tren de carga — 9 vagones
+
+| Lugar | Vagón | Qué es |
+|---|---|---|
+| **1, fijo** | **Caboose** | El mismo vigía |
+| **desde el 3** | **Almacén** | Es **uno de los tres vagones cerrados**. Todo lo construido se conserva (llave, 2 cajas, 4 guardias duros, botín raro) |
+| sorteado | Cerrados comunes ×2 | Los "correos livianos" de hoy con otro nombre: mercadería en bolsas |
+| sorteado | **Plataformas ×2** | Carga amarrada que te tapa de los guardias, **sin paredes**: los jinetes te ven de los dos lados. El lugar más expuesto del tren |
+| sorteado | Ganado | **Fijo**: la estampida está siempre |
+| sorteado | **Góndola** | Ver abajo |
+| sorteado | **Refrigerado** | Reses colgadas que **tapan la vista pero no las balas** |
+| al final | Locomotora | Igual que en el de pasajeros |
+
+**El vagón de armas** sale una de cada cuatro veces y **reemplaza a una
+plataforma** (siempre queda la otra). **Se van** los tres correos livianos (pasan
+a ser los cerrados), dos de los tres ganados y **el comedor: el tren de carga
+queda sin pasajeros**.
+
+### La góndola, que es la más distinta
+
+*(Santi: "sin techo y no es un vagón al que podés entrar. El carbón funciona como
+un techo. Pasar por aquí reduce el movimiento")*
+
+- **Se cruza por encima del carbón**, y la cruzan **todos**: jugador, guardias,
+  reses y Dinamitero. La persecución sigue funcionando.
+- **Frena a la mitad: 39 px/s.** Es el precio que el juego ya cobra por
+  agacharse, apuntar y cubrirse (40), no un número nuevo. Supuesta de 448 px, se
+  cruza en 11,5 s en vez de 5,7; con la mochila llena, 15 s.
+- **Montículos de carbón que tapan de los guardias pero no de los jinetes.** La
+  regla central del juego, y lo que la separa de la plataforma.
+- **Para el que viene por el techo cuenta como techo**: es el único vagón sin
+  techo que no corta el camino de arriba.
+- **Y desde el pasillo se puede subir.** ⚠️ Es el **primer acceso al techo desde
+  adentro del asalto** (hoy sólo se sube desde el caballo). Abre una ruta nueva a
+  mitad del asalto, y la medición de "el techo tarda lo mismo que el pasillo" hay
+  que repetirla con esto.
+
+### Los vagones especiales del de pasajeros
+
+- **Dormir necesita la noche, y eso está postergado** (ver la Fase 4: "requiere
+  que sea de noche, y eso significa otras cosas"). Por eso los dos son **versiones
+  de día**: el dormitorio son camarotes y los guardias están **de franco** —
+  sentados jugando cartas, con el arma colgada, tardan en reaccionar.
+- **Primera clase se queda con el pasajero rico.** El paquete deja de sortearse en
+  los demás vagones: una mecánica, una casa. ⚠️ Era **lo único** del sistema de
+  paquetes, así que esa capa queda vacía, y con ella se pierde que *"cualquier
+  vagón común puede ser el que más plata lleva"*.
+
+### Largo y reloj
+
+**Había una regla sin escribir:** los dos relojes dan **~40 s por cada 1.000 px**
+(pasajeros 145 s / 3.616 px; carga 165 s / 4.256 px), aunque ninguno se eligió así.
+
+Cómo se arma el largo: plataforma de cola (8 casillas) + cada vagón + un enganche
+de 3 después de cada uno. Con anchos supuestos para los nuevos (caboose 20,
+dormitorio 40, especial 32, plataforma 24, góndola 28, refrigerado 32, cerrado
+32):
+
+| | Hoy | Nuevo |
+|---|---|---|
+| Pasajeros | 3.616 px, 145 s | **4.480 px (+24%)** |
+| Carga | 4.256 px, 165 s | **4.528 px (+6%)** |
+
+**Los dos trenes quedan del mismo largo, y los dos duran ~180 s.** Encaja con lo
+que se dijo al sacar el tren veloz: un tren que se distingue por su reloj es
+dificultad disfrazada. Ahora sólo los separa lo que traen adentro. La góndola le
+suma al de carga +5,7 s por pasada sin sumarle largo.
+
+### Reglas que se cuidaron
+
+- **Una mecánica, una casa**: el de armas vive sólo en el de carga; el rico, sólo
+  en primera clase.
+- **La estampida no se pierde**: el ganado es fijo.
+- **El tren de carga ya tenía cinco sistemas a la vez.** Se prefirió lo que da
+  identidad sin sistema nuevo (plataforma, refrigerado); la góndola es la
+  excepción elegida.
+
+### Qué lleva cada vagón
+
+**Criterio: se conservan los guardias por cada 1.000 px de tren** (3,6 en el de
+pasajeros, 2,6 en el de carga), porque es lo que está medido. El tren es más
+largo, pero cada tramo pelea igual que hoy. Elegido sobre "los mismos totales"
+(dejaba el de pasajeros un 19% más vacío con el reloj ya estirado) y "más duros"
+(largo, reloj y dificultad cambiando a la vez: imposible saber qué lo hizo difícil).
+
+**Pasajeros** — 4.480 px, apunta a 16 guardias:
+
+| Vagón | Guardias | Pasajeros | Bolsas | Cajas |
+|---|---|---|---|---|
+| Caboose | 1 (vigía) | – | 1 | – |
+| Dormitorio | 1 | 4, en camarotes | 3 | – |
+| Comedor | 1 | 5 | 3 | – |
+| Pasajeros ×2 | 4 | 8 | 6 | – |
+| Especial: guardias de franco | 4 | – | 1 | – |
+| Especial: primera clase | 2 (guardaespaldas) | **3 ricos** | – | – |
+| Correo | 3 | – | 2 | 1 |
+| Express | 4 | – | – | 2 |
+| **Total** | **16** con primera clase, **18** con guardias | 17-20 | 15-16 | 3 |
+
+Hoy: 13 / 13 / 12 / 3. Las bolsas crecen un 24%, igual que el largo. **Con el
+vagón de guardias el tren es más duro a propósito**: es la versión militar del
+especial.
+
+**Primera clase lleva 3 ricos, ~$600.** Queda como el segundo vagón más rico,
+detrás del express (~$750 con sus dos cajas), sin competirle. Y no es plata
+fácil: tres amenazas de 2,2 s son 6,6 s quieto con los guardaespaldas mirando,
+casi lo mismo que forcejear una caja. Con 4 ricos (~$800) le ganaba al express, y
+un vagón sin puerta de chapa pasaba a ser el objetivo obvio del tren.
+
+**Carga** — 4.528 px, apunta a 12 guardias:
+
+| Vagón | Guardias | Bolsas | Cajas |
+|---|---|---|---|
+| Caboose | 1 (vigía) | 1 | – |
+| Almacén | 4 duros | 3 | 2 |
+| Cerrados ×2 | 2 | 10 | – |
+| Plataformas ×2 | 2 | 6 | – |
+| Ganado | 1 | 1 | – |
+| Góndola | 0 — nadie vive en el carbón, sólo lo cruzan | – | – |
+| Refrigerado | 2, para que haya a quién tirarle a ciegas entre las reses | 3 | – |
+| **Total** | **12** | **24** | **2** |
+
+Hoy: 11 / 24 / 2, casi idéntico. **Pierde a sus 5 pasajeros** (se va el comedor),
+y encaja: la gente es del tren de pasajeros.
+
+### El vigía del caboose se da vuelta cada tanto
+
+*(Santi eligió la opción más rica de tres; las otras eran "te ve en el galope si
+venís por detrás" y "sólo castiga subir por la cola")*
+
+**Alterna entre mirar la vía de atrás y mirar hacia adentro, con un ritmo que se
+ve.** Esperar a que esté de espaldas es una jugada — la misma familia que esperar
+a que el Dinamitero salga de su vagón.
+
+**Reusa el sistema de exposición del galope** en vez de inventar otro. Hoy te
+descubre **el vagón que tenés al costado**, no un guardia puntual: tiene que tener
+ventanillas, llevar gente y estar a menos de 30 px (`APROXIMACION.verDistancia`).
+Pegado a un vagón con un guardia te ven en ~1,3 s; al lado del ganado, en 0,7 s. Si
+te ven, entrás con la alarma sonando. Lo único nuevo del vigía es **hacia dónde
+mira, y cuándo**.
+
+### El vigía: aleatorio, pero con aviso
+
+*(Santi: "que sea aleatorio, no una marca que el jugador pueda aprenderse de
+memoria")*
+
+- **Cuánto mira para atrás y cuánto para adentro se sortea en cada vuelta.** No
+  hay un ciclo fijo que cronometrar.
+- ⚠️ **Pero se da vuelta despacio y se le ve el gesto.** Es la condición para que
+  aleatorio no sea una lotería: en este juego ningún peligro llega sin aviso (el
+  guardia levanta el arma, el traqueteo avisa antes del sacudón, el Dinamitero
+  muestra los cartuchos). Imposible de memorizar, posible de leer. *Propuesto al
+  cerrar esta ronda; a confirmar jugándolo.*
+- **Mirando hacia adentro ve su propio vagón**, como un guardia normal. La
+  ventana sirve para acercarte sin que te vea en el galope, **no para entrar
+  gratis**: subiendo por la cola, te puede ver igual al entrar. Hay que calzar dos
+  cosas.
+- **Los rangos del sorteo no están elegidos.** Referencia para calibrar: con el
+  Criollo, desde la esquina del desierto hasta la cola son ~11 s de galope.
+
+### Subir desde la góndola
+
+**Mantener `[E]` 0,4 s, en silencio.** Es exactamente lo que cuesta bajar del
+techo hoy (`CONFIG.techo.bajarHold`): la misma maniobra al revés cuesta lo mismo.
+Sin barra de timing, porque la del caballo es la única del juego a propósito.
+
+### Los guardias de franco
+
+**Reusan el comportamiento "Conversando"**, que ya existe (ven la mitad y
+sospechan más lento), y **al despertarse tardan 1,5 s en descolgar el arma**. Es la
+ventana para entrar y resolver el vagón antes de que los cuatro estén en pie. Se
+descartó "iguales pero sentados" (el franco se veía y no se jugaba) y "sordos al
+sigilo, feroces al ruido" (sigilo casi gratis o pelea de 4 contra 1, sin punto
+medio).
+
+### El orden de los vagones
+
+**Pasajeros:** caboose fijo en el 1 y express desde el 4. **Nada más**: ninguna
+mecánica pide un orden, así que cada regla de más le quita variedad al tren sin
+dar nada a cambio. Se descartó "el especial pegado al express" (sabías dónde
+estaba el especial en cuanto veías el express) y "la gente junta" (tren previsible).
+
+**Carga:**
+
+- Caboose fijo en el 1; almacén desde el 3.
+- Vagón de armas **nunca el último** — la regla de hoy, por la ronda del Dinamitero.
+- **Góndola del 2 al 8**: siempre en el medio, para que su acceso al techo sirva
+  como ruta a mitad del asalto, que fue la razón de dejar subir desde el pasillo.
+  Se descartó "la última, como el ténder real": quedaba en la otra punta del
+  caballo y el acceso al techo casi no se usaba.
+- **Las plataformas pueden salir pegadas** (pasa 3 de cada 4 trenes, cuando el de
+  armas no reemplaza a una). Algunos trenes traen 48 casillas seguidas sin
+  paredes: con la alarma sonando, una trampa donde los jinetes te ven todo el
+  cruce. Da variedad de verdad entre trenes, y no pide código nuevo.
+
+### Dos cosas que aparecieron mirando el código, y que no se veían desde el diseño
+
+1. **`sinTecho` decide DOS cosas a la vez**: si hay techo que pisar
+   (`hayTechoEn`, el camino de arriba) y si te llueve encima (`estasCubierto`,
+   la tormenta). En el ganado y la plataforma coinciden. **La góndola es el
+   primer vagón donde no**: se camina por encima como un techo, pero estás a la
+   intemperie. Hay que partir la marca en dos.
+2. **El galope pregunta por el nombre `'ganado'`** para saber cuál es "el peor
+   vagón para que te vean" (`rideScene.js`, `verRateGanado`). Las plataformas
+   quedarían afuera sin que nadie lo note: tiene que leer "abierto", no un
+   nombre.
+
+### Plan de construcción — aprobado
+
+Cada etapa deja el juego **jugable y subido**, y **cada sistema nuevo entra
+solo**, para que cuando algo se sienta mal se sepa qué fue.
+
+| Etapa | Qué | Qué se mide |
+|---|---|---|
+| **1. Los trenes nuevos, con lo que ya existe** | Plantillas nuevas (layout, guardias, botín) con mecánicas conocidas: refrigerado con carga común, franco con guardias normales, dormitorio con huecos en vez de puertas. Composiciones, orden, reloj de 180 s. El especial sale por `sustituciones` (la herramienta del vagón de armas, sin código nuevo). Primera clase se queda con el pasajero rico y se retira el paquete. Colores, textos, escondites. El galope lee "abierto" en vez de `'ganado'` | Largo real contra el calculado, guardias por 1.000 px, 10.000 sorteos cumpliendo las reglas, cero avisos de layout |
+| **2. La locomotora** | Sólo dibujo, en el galope y en el asalto | Mirarla |
+| **3. El refrigerado** | La casilla que tapa la vista y no las balas; las reses | Vista cortada, balas que pasan, guardias que encuentran camino |
+| **4. Guardias de franco** | "Conversando" siempre + 1,5 s para descolgar el arma + dibujo sentados | La ventana de 1,5 s |
+| **5. La góndola** | Freno del carbón para todos, montículos, **partir `sinTecho` en dos**, subir al techo desde el pasillo | Cruce en 11,5 s, y **re-medir el techo contra el pasillo** |
+| **6. El vigía del caboose** | Se da vuelta al azar y con aviso; la vía de atrás en el galope, su vagón adentro | Que el aviso llegue antes de que te vea |
+| **7. Los camarotes con puerta** | Hoy las puertas sólo existen en los bordes y en vertical: lo más riesgoso, va último. **Plan B si sale caro**: cortinas con la casilla del refrigerado | Que los guardias y el camino respeten las puertas |
+
+**Por qué este orden:** todo cuelga de la etapa 1, y con ella ya se juegan los
+trenes nuevos. Después va de lo más contenido a lo más riesgoso. La góndola y el
+vigía son los dos sistemas nuevos de verdad, y van separados para sentir cada uno
+solo. Se descartó "primero un tren entero terminado" y "primero los sistemas
+nuevos en los trenes de hoy".
+
+**Decisiones chicas que se toman en su etapa**, con el vagón delante: cada cuánto
+sale cada especial (50/50 si no se dice otra cosa), qué hacen los barriles en la
+góndola y en las plataformas, y los rangos del vigía.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

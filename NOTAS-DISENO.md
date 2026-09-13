@@ -11611,6 +11611,77 @@ abajo, con la grasa de un costado; cada una se mece un píxel a su ritmo.
 
 **⚠️ NO JUGADO.**
 
+### ✅ Etapa 4 hecha — los guardias de franco
+
+**Sentados de a dos jugando a las cartas, con el "Conversando" de siempre y el
+arma colgada.** La primera vez que entran en combate tardan 1,5 s en tenerla en
+la mano (`CONFIG.enemy.francoDesenfundar`).
+
+**Lo que se decidió en esta etapa:**
+
+- **Dos parejas, dos mesas**, una por mitad del vagón, cada una con su charla y
+  su contagio. Cuando uno pasa a rojo grita y el vagón entero pasa a combate,
+  como siempre: la ventana para sacarse de encima una pareja es en silencio.
+- **Al lado de la mesa, no con la mesa en el medio.** Medido con el cono de
+  "Conversando" y vos agachado: con la mesa entre los dos cada uno veía **0
+  casillas**; al costado, **3-4** (un "Conversando" en el pasillo ve 5). Con 0 era
+  el "sordos al sigilo" que ya se había descartado.
+- **Mientras descuelgan, moneda** *(Santi: "algunos, de forma aleatoria, buscan
+  cobertura, otros se quedan quietos")*: 50% quieto (elegido sobre 70/30 para
+  cada lado). Medido en 400 despertares: 198 quietos.
+- **Redada: llegan 4 de servicio, despiertos.** Patrullan `rondaRedada`, las
+  cuatro rondas que no pisan una silla (fila 7 de la cola, fila 2 de la
+  locomotora, las dos mitades del pasillo). Primera clase sigue sin extras.
+- **Sin comportamiento sorteado** (ya vienen "Conversando") **y sin variantes**
+  (un Dinamitero no tiene arma que descolgar, y su ronda cruza vagones).
+
+**Dos puertas a combate, una sola regla.** Un guardia pasa a combate por
+`enterCombat` (te vio, la alarma) o porque le pegan (`damageEnemy`, en otro
+archivo). Las dos llaman a `empezarADesenfundar`. Mientras corre el reloj no hay
+tiro normal (`tryFire`), ni a ciegas por puerta o por techo, ni cuerpo a cuerpo.
+
+**Las parejas dejaron de depender del orden.** "Conversando" armaba la pareja con
+`idx === 0` y "el último guardia creado", que alcanzaba para una sola por vagón.
+Ahora se arma por clave (`def.franco`, o `'charla'` para el de siempre), con el
+mismo resultado para los vagones de antes.
+
+**🐛 LO QUE APARECIÓ MIDIENDO: CUBRIRSE ERA PELEAR COMO UN GUARDIA NORMAL.** Un
+guardia común alertado también tarda ~1,8 s en tirar, porque primero camina a
+cubrirse, y los 1,5 s se consumían en esa misma caminata. Primera bala desde que
+se despierta:
+
+| | A 48 px | A 80 px en el pasillo |
+|---|---|---|
+| Guardia normal | 1,75-1,80 s | 1,62-1,88 s |
+| De franco que se cubre | 1,83 s | 1,87-2,15 s |
+| De franco quieto | 3,40-3,57 s | 3,10-3,32 s |
+
+La ventana existía sólo para la mitad quieta. Tres opciones: descuelga al llegar
+a la cobertura (la recomendada), dejarlo así, o **se cubre despacio** — *elegida
+por Santi*. Mientras descuelga camina a la mitad (`francoCubreVelocidad`, que se
+suma al freno de las reses). Re-medido:
+
+| | A 48 px | A 80 px en el pasillo |
+|---|---|---|
+| Guardia normal | 1,62-1,70 s | 1,77-1,97 s |
+| **De franco que se cubre** | **2,37-2,97 s** | **2,45-2,80 s** |
+| De franco quieto | 3,72 s | 3,18 s |
+
+A 1,4 s el que se cubre caminó 26 px contra 35 de uno normal.
+
+**MEDIDO además:** en 10 s de calma los cuatro siguen sentados, a 0 px de donde
+nacieron; en redada, 8 guardias, los sentados tampoco se mueven; 300 trenes de
+pasajeros, 158 con el vagón de guardias y 4 de franco cada uno, 0 errores y 0
+avisos. Una primera medición salió sucia y se descartó: el jugador quedó adentro
+del caboose, su guardia lo vio y levantó a los de franco.
+
+**MIRADO:** en calma, las parejas frente a frente al lado de la mesa, con banquito,
+cartas en la mano y cartas sobre la mesa; medio segundo después de despertarlos,
+en rojo y **sin caño** (el arma colgada al costado), una pareja quieta y otra
+yéndose a cubrir.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

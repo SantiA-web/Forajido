@@ -28,6 +28,7 @@ import { findCoverPoint, findCoverAtras, findPeek } from './cover.js';
 import { throwTarget } from './explosives.js';
 import { EXPLOSIVES, DEFAULT_EXPLOSIVE } from '../data/explosives.js';
 import { isHidden, damagePlayer } from '../entities/player.js';
+import { empezarADesenfundar } from '../entities/enemy.js';
 import { gameState } from '../state/gameState.js';
 import {
   CONVERSANDO_SUSPICION_MULT, CONVERSANDO_VIEW_ANGLE, CONVERSANDO_VIEW_DISTANCE,
@@ -46,9 +47,17 @@ function movSolidAt(map) {
   return map.isSolidForMovementAt || map.isSolidAt;
 }
 
-/** Por cuánto se multiplica su paso donde está parado: 0,5 entre las reses. */
+/**
+ * Por cuánto se multiplica su paso: 0,5 entre las reses, y 0,5 más para el de
+ * franco que corre a cubrirse mientras descuelga el arma
+ * (`CONFIG.enemy.francoCubreVelocidad`). Los dos se suman: entre reses y
+ * descolgando, a un cuarto.
+ */
 function frenoEn(e, map) {
-  return map.frenoAt ? map.frenoAt(e.x, e.y) : 1;
+  const casilla = map.frenoAt ? map.frenoAt(e.x, e.y) : 1;
+  const descolgando = e.desenfundando > 0 && !e.francoQuieto
+    ? CONFIG.enemy.francoCubreVelocidad : 1;
+  return casilla * descolgando;
 }
 
 export function updateEnemy(e, dt, world) {
@@ -58,6 +67,18 @@ export function updateEnemy(e, dt, world) {
   e.alertMark = Math.max(0, e.alertMark - dt);
   e.cooldown = Math.max(0, e.cooldown - dt);
   e.meleeTimer = Math.max(0, e.meleeTimer - dt);
+
+  /**
+   * DE FRANCO, DESCOLGANDO EL ARMA (ver `empezarADesenfundar` en
+   * entities/enemy.js). Cada uno sortea UNA vez si pasa esos 1,5 s quieto o
+   * corriendo a cubrirse; el que se queda quieto lo resuelve `doCombat`.
+   */
+  if (e.desenfundando > 0) {
+    if (e.francoQuieto === undefined) {
+      e.francoQuieto = world.rng.chance(CONFIG.enemy.francoQuietoChance);
+    }
+    e.desenfundando = Math.max(0, e.desenfundando - dt);
+  }
 
   /**
    * ANTES DEL CHEQUEO DE `stagger`, a propósito: si le pegan mientras está
@@ -396,6 +417,7 @@ function enterCombat(e, world, shout = true) {
   e.atCover = false;
   e.peeking = false;
   e.cooldown = Math.max(e.cooldown, CONFIG.enemy.reactionTime);
+  empezarADesenfundar(e);
 
   if (shout) {
     world.audio.play('whistle');
@@ -1575,7 +1597,8 @@ function actualizarCharla(e, dt, world) {
 
   e.charlaTimer -= dt;
   if (e.charlaTimer <= 0) {
-    e.charlaTexto = world.rng.pick(T.ambiente.charla);
+    // Los de franco hablan de lo que tienen en la mano.
+    e.charlaTexto = world.rng.pick(e.deFranco ? T.ambiente.charlaCartas : T.ambiente.charla);
     e.charlaShowUntil = 1.8;
     e.charlaTimer = world.rng.range(2.5, 4.5);
   }
@@ -1977,6 +2000,18 @@ export function doCombat(e, dt, world) {
   }
 
   /**
+   * EL DE FRANCO QUE LE TOCÓ QUEDARSE QUIETO: se para, mira hacia donde está
+   * el lío y descuelga el arma. Nada más hasta que termine. El que le tocó
+   * cubrirse sigue de largo por el combate de siempre, y no tira porque
+   * `tryFire` y los tiros a ciegas lo frenan mientras `desenfundando` corra.
+   */
+  if (e.desenfundando > 0 && e.francoQuieto) {
+    const mira = e.lastSeen || player;
+    turnTowards(e, Math.atan2(mira.y - e.y, mira.x - e.x), dt, 10);
+    return;
+  }
+
+  /**
    * ¿Está por cruzar al vagón donde estás, y viene solo? Entonces espera. No
    * retorna: sólo enciende `esperandoCompanero`, y el resto de esta función ya
    * lo trata como defensivo (busca cobertura y pelea desde donde está).
@@ -2040,7 +2075,9 @@ export function doCombat(e, dt, world) {
 
   // De cerca no dispara: te caga a golpes. En el techo esto no aplica: un
   // guardia adentro del vagón no te puede alcanzar a golpes ahí arriba.
-  if (player.alive && !player.enTecho && distance(e.x, e.y, player.x, player.y) < c.meleeRange) {
+  // Y el de franco no pega mientras descuelga el arma: tiene las manos ocupadas.
+  if (player.alive && !player.enTecho && !(e.desenfundando > 0) &&
+      distance(e.x, e.y, player.x, player.y) < c.meleeRange) {
     doEnemyMelee(e, dt, world);
     return;
   }
@@ -2496,6 +2533,8 @@ function tryFire(e, dt, world, aimAt, enPanico) {
    * lugar donde todo se lee por el cuerpo.
    */
   if (e.sinArmaDeFuego) return;
+  // El de franco, mientras descuelga el arma: todavía no la tiene en la mano.
+  if (e.desenfundando > 0) return;
 
   if (e.aimTimer > 0) {
     e.aimTimer -= dt;
@@ -2604,8 +2643,8 @@ function dispararACiegasPorPuerta(e, dt, world) {
   const target = e.lastSeen;
   if (!target) return;
   // Sin arma no hay ráfaga a ciegas: la dinamita no se tira contra una puerta
-  // cerrada esperando que pase por abajo.
-  if (e.sinArmaDeFuego) return;
+  // cerrada esperando que pase por abajo. Ni la hay mientras la descuelga.
+  if (e.sinArmaDeFuego || e.desenfundando > 0) return;
 
   e.doorFireCooldown = Math.max(0, (e.doorFireCooldown || 0) - dt);
 
@@ -2671,8 +2710,9 @@ function dispararACiegasPorTecho(e, dt, world) {
   const p = world.player;
   if (!p.enTecho) return;
   // Ídem: el que no tiene arma no le tira al techo. Y encima no podría —
-  // una dinamita hacia arriba le caería en la cabeza.
-  if (e.sinArmaDeFuego) return;
+  // una dinamita hacia arriba le caería en la cabeza. Tampoco el de franco
+  // mientras descuelga el arma.
+  if (e.sinArmaDeFuego || e.desenfundando > 0) return;
 
   const target = e.lastSeen;
   if (!target) return;

@@ -814,13 +814,13 @@ reloj.
 vagones más especiales y selectivos")* — el diseño completo, con cada decisión y
 su tabla, está en NOTAS-DISENO.md. Se construye por etapas y **cada sistema nuevo
 entra solo**. Casi todos están armados con mecánicas que ya existían; el
-refrigerado ya tiene la suya:
+refrigerado y los guardias de franco ya tienen la suya:
 
 | Vagón | Tren | Qué es | Lo que falta |
 |---|---|---|---|
 | **Caboose** | Los dos | La tripulación, siempre el vagón 1. Un guardia, una bolsa | El **vigía** que mira la vía de atrás y se da vuelta al azar |
 | **Dormitorio** | Pasajeros | Diez camarotes con su litera y una abertura al pasillo. Cuatro pasajeros, cada uno en su cabina | Las **puertas** de los camarotes |
-| **Vagón de guardias** | Pasajeros (especial) | Cuatro guardias entre mesas de cartas y catres. Cuando sale, el tren sube de 16 a 18 guardias | Que estén **de franco**: distraídos y 1,5 s para armarse |
+| **Vagón de guardias** | Pasajeros (especial) | Cuatro guardias **de franco**, sentados de a dos jugando a las cartas: distraídos y lentos para armarse. Cuando sale, el tren sube de 16 a 18 guardias | — |
 | **Primera clase** | Pasajeros (especial) | **Los tres ricos** del tren, con sombrero de copa, y dos guardaespaldas VIGILANDO. ~$600 entre los tres | — |
 | **Cerrado** | Carga | El correo liviano de siempre, con su nombre de tren de carga | — |
 | **Plataforma** | Carga | Carga amarrada sin paredes: te tapa de los guardias, no de los jinetes | — |
@@ -841,6 +841,19 @@ Son una casilla propia (`R`), lo contrario de la ventanilla:
 | **Caminar** | Se atraviesan **a la mitad**, para todos: vos 39 px/s, un guardia persiguiéndote 23. El pasillo del medio no tiene reses, así que cruzar el vagón no frena |
 | **El guardia que te pierde** | **Te tira a ciegas** a donde te vio por última vez: ráfagas de 5 balas cada ~3,2 s, igual que contra una puerta cerrada |
 | **Cobertura** | No hay: una res no es sólida, así que no te podés pegar a ella |
+
+#### Los guardias de franco
+
+Dos parejas, cada una sentada al lado de su mesa de cartas (una en la mitad de la
+cola y otra en la de la locomotora):
+
+| | Cómo funciona |
+|---|---|
+| **Tranquilos** | Son "Conversando" de siempre: ven la mitad de lejos y con la mitad del ángulo, sospechan más lento, y si uno se pone amarillo el de enfrente se entera 1 s después. La charla habla de cartas |
+| **Al despertarse** | La **primera vez** que entran en combate (te vieron, sonó la alarma o les pegaste) **no tienen el arma en la mano durante 1,5 s**: no tiran, ni a ciegas, ni pegan. Se ve: están en rojo y sin caño |
+| **Mientras la descuelgan** | Cada uno tira una moneda: **se queda quieto** donde está, o **corre a cubrirse a media velocidad** |
+| **Primera bala** (medido) | Guardia normal ~1,6-2,0 s · de franco que se cubre ~2,4-3,0 s · de franco quieto ~3,2-3,7 s |
+| **Redada** | Siguen los 4 sentados, y llegan 4 de servicio despiertos que patrullan las rondas libres |
 
 La regla del reparto es **una mecánica, una sola casa**: si algo aparece en los
 dos trenes, no distingue nada.

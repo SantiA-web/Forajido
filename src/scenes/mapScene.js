@@ -174,7 +174,8 @@ export function createMapScene(services) {
         /**
          * Y cualquier vagón que lo pida en su plantilla (`sinComportamiento`).
          * Hoy: primera clase, donde "Conversando" se llevaría a los
-         * guardaespaldas lejos de los ricos, y la góndola, donde no vive nadie.
+         * guardaespaldas lejos de los ricos; la góndola, donde no vive nadie;
+         * y el vagón de guardias, que ya viene "Conversando" de franco.
          */
         if (id === 'blindado' || WAGONS[id].sinComportamiento) return 'normal';
         const patrullas = (WAGONS[id].enemies || []).length;

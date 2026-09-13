@@ -152,6 +152,19 @@ export const T = {
     ],
 
     /**
+     * LA CHARLA DE LOS GUARDIAS DE FRANCO (vagón de guardias): la misma idea,
+     * pero sobre la mesa de cartas.
+     */
+    charlaCartas: [
+      '...subo dos pesos y...',
+      '...ese as no estaba en el mazo...',
+      '...barajá vos, que yo no confío...',
+      '...otra mano y me acuesto...',
+      '...full de reyes, pagá...',
+      '...con esta paga ni para apostar...',
+    ],
+
+    /**
      * EL GUARDIA "VIGILANDO PUERTA" O "VIGILANDO CAJA" (Fase 3) — a
      * diferencia de la charla (dos puntas, de a ratos), esto es un ESTADO,
      * no una frase suelta: se muestra fijo todo el tiempo que dure, igual

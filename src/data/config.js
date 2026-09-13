@@ -690,6 +690,41 @@ export const CONFIG = {
     reactionTime: 0.3,
 
     /**
+     * LOS GUARDIAS DE FRANCO (vagón de guardias, etapa 4 de los trenes nuevos).
+     *
+     * Están sentados jugando a las cartas con el arma colgada. La PRIMERA vez
+     * que entran en combate —porque te vieron, porque sonó la alarma o porque
+     * les pegaste— tardan `francoDesenfundar` en poder tirar, en vez de los
+     * 0,3 de `reactionTime`: 1,2 s más de ventana. Con el Colt (un tiro cada
+     * 0,4 s) son tres tiros tuyos antes de que el primero conteste.
+     *
+     * Y cada uno sortea qué hace mientras tanto *(Santi: "algunos, de forma
+     * aleatoria, buscan cobertura, otros se quedan quietos")*: con
+     * `francoQuietoChance` se queda parado donde está; si no, corre a cubrirse
+     * sin poder tirar. Mitad y mitad, elegido sobre 70/30 para cada lado: de
+     * cuatro lo más común es que queden dos quietos (37,5%), y 1 de cada 16
+     * veces se quedan los cuatro.
+     */
+    francoDesenfundar: 1.5,
+    francoQuietoChance: 0.5,
+
+    /**
+     * EL QUE CORRE A CUBRIRSE, CORRE DESPACIO mientras descuelga el arma.
+     *
+     * 🐛 SIN ESTO, CUBRIRSE ERA PELEAR COMO UN GUARDIA NORMAL. Medido: un
+     * guardia común alertado también tarda ~1,8 s en tirar, porque primero
+     * camina a cubrirse, y los 1,5 s de descolgar se consumían en esa misma
+     * caminata. Primera bala: normal 1,62-1,88 s, de franco cubriéndose
+     * 1,83-2,15 s, de franco quieto 3,10-3,57 s. La ventana existía sólo
+     * para la mitad quieta.
+     *
+     * *(Santi eligió "se cubre despacio" sobre "descuelga al llegar" y
+     * "dejarlo así")*: a la mitad hasta que tiene el arma en la mano, y
+     * después a su paso de siempre.
+     */
+    francoCubreVelocidad: 0.5,
+
+    /**
      * Puntería. Nadie tiene mira láser: la dispersión crece con la distancia.
      * De cerca son peligrosos de verdad; de lejos, la mayoría de los tiros
      * pasan cerca y no pegan. Con spreadFar = 0.28 rad, a 110px las balas caen

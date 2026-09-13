@@ -1021,14 +1021,24 @@ export const WAGONS = {
    * CUATRO GUARDIAS, y es a propósito: es la versión militar del especial.
    * Cuando sale, el tren de pasajeros sube de 16 a 18 guardias.
    *
-   * ⚠️ TODAVÍA NO ESTÁN DE FRANCO (etapa 4). Hoy patrullan como cualquiera. El
-   * diseño es que estén sentados jugando a las cartas, distraídos (el
-   * "Conversando" que ya existe) y que tarden 1,5 s en descolgar el arma.
+   * DE FRANCO (etapa 4): sentados de a dos, jugando a las cartas, con el
+   * "Conversando" de siempre (ven la mitad y sospechan más lento) y 1,5 s para
+   * descolgar el arma la primera vez que entran en combate
+   * (`CONFIG.enemy.francoDesenfundar`).
    *
-   * LAS RONDAS VAN POR LAS FILAS 2 Y 7, no por el pasillo, y rectas: son las
-   * dos franjas libres enteras del vagón, y así el pasillo queda para cruzar.
-   * Es la lección del vagón de armas — cuatro cuerpos yendo y viniendo por un
-   * corredor de dos baldosas lo taponan.
+   * DOS PAREJAS, DOS MESAS: una en la mitad de la cola y otra en la de la
+   * locomotora, cada una con su charla y su contagio. AL LADO DE LA MESA, NO CON
+   * LA MESA EN EL MEDIO: medido con el cono de "Conversando", con la mesa entre
+   * los dos cada uno veía 0 casillas del vagón; al costado, 3-4 (en el pasillo,
+   * "Conversando" ve 5).
+   *
+   * REDADA: la copia de cada uno llega despierta y patrulla su `rondaRedada`,
+   * las cuatro rondas que no pisan una silla — la fila 7 de la cola, la fila 2
+   * de la locomotora y las dos mitades del pasillo.
+   *
+   * SIN COMPORTAMIENTO SORTEADO: ya vienen "Conversando" de fábrica. SIN
+   * VARIANTES: un Dinamitero no tiene arma que descolgar, y su ronda cruza
+   * vagones.
    */
   guardias: {
     id: 'guardias',
@@ -1047,11 +1057,13 @@ export const WAGONS = {
       '#..SSS..SSS..SSS..SSS..SSS..SSS#',
       '####WW####WW####WW####WW####WW##',
     ],
+    sinComportamiento: true,
+    sinVariantes: true,
     enemies: [
-      { path: [[2, 2], [14, 2]] },
-      { path: [[29, 2], [17, 2]] },
-      { path: [[2, 7], [14, 7]] },
-      { path: [[29, 7], [17, 7]] },
+      { col: 4,  row: 2, facing: 'right', franco: 'cola', mesa: [5, 3],  rondaRedada: [[2, 7], [14, 7]] },
+      { col: 7,  row: 2, facing: 'left',  franco: 'cola', mesa: [5, 3],  rondaRedada: [[17, 2], [29, 2]] },
+      { col: 24, row: 7, facing: 'right', franco: 'loco', mesa: [25, 6], rondaRedada: [[2, 4], [14, 4]] },
+      { col: 27, row: 7, facing: 'left',  franco: 'loco', mesa: [25, 6], rondaRedada: [[29, 5], [17, 5]] },
     ],
     passengers: [],
     loot: [

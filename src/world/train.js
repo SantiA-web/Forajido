@@ -781,8 +781,21 @@ export function buildTrain(
     // mapScene.js — sin ella, `vigilandoCaja` ni sale sorteado acá).
     const caja = (p.loot || []).find((l) => l.type === 'strongbox');
 
+    // Quién ya está esperando compañero de charla, por pareja: `conversando`
+    // usa una sola ('charla'); los de franco traen la suya en `def.franco`.
+    const parejas = {};
+
     defs.forEach((def, idx) => {
-      const path = (def.path || []).map(enTiles);
+      /**
+       * DE FRANCO (etapa 4, el vagón de guardias): sentado junto a su mesa,
+       * "Conversando" con el de enfrente. La copia que suma la redada NO está
+       * de franco: es un guardia de servicio que llegó despierto, y patrulla
+       * la ronda libre que le toca (`rondaRedada`) para no llevarse por
+       * delante a los que están sentados.
+       */
+      const esFranco = !!def.franco && !def.redadaExtra;
+      const ronda = (def.redadaExtra && def.rondaRedada) ? def.rondaRedada : (def.path || []);
+      const path = ronda.map(enTiles);
       const arranqueIndex = (def.redadaExtra && path.length > 1) ? Math.floor(path.length / 2) : 0;
       let pathFinal = path;
       let pathIndexFinal = arranqueIndex;
@@ -791,7 +804,13 @@ export function buildTrain(
       let esVigilando = false;
       let facingFinal = FACINGS[def.facing] ?? Math.PI;
 
-      if (comportamiento === 'vigilandoPuerta' && idx === 0) {
+      if (esFranco) {
+        // Ya viene sentado de la plantilla (`col`, `row`, `facing`): acá sólo
+        // se lo planta y se lo pone a charlar.
+        pathFinal = [];
+        pathIndexFinal = 0;
+        esConversando = true;
+      } else if (comportamiento === 'vigilandoPuerta' && idx === 0) {
         /**
          * 🐛 ANTES TODOS los guardias del vagón se plantaban en la misma
          * puerta — Santi, jugándolo mentalmente: "no pueden haber varios
@@ -948,8 +967,16 @@ export function buildTrain(
        */
       if (esConversando) {
         guard.conversando = true;
-        guard.charlaLider = idx === 0;
-        if (guard.charlaLider) guard.charlaTimer = rng.range(0.8, 2.2);
+        // El primero de cada pareja es el que habla; el segundo, su compañero.
+        // Antes era `idx === 0` y "el último guardia creado", que alcanzaba
+        // para una sola pareja por vagón. Los de franco son dos.
+        const clave = def.franco || 'charla';
+        const primero = parejas[clave];
+        guard.charlaLider = !primero;
+        if (guard.charlaLider) {
+          guard.charlaTimer = rng.range(0.8, 2.2);
+          parejas[clave] = guard;
+        }
         /**
          * Y SE CONOCEN ENTRE ELLOS (`companeroCharla`, los dos apuntándose
          * mutuamente).
@@ -965,13 +992,15 @@ export function buildTrain(
          * estaban distraídos, pero ninguno sabía con quién. Sin esta
          * referencia no había forma de avisarle al otro.
          */
-        if (idx === 1) {
-          const primero = enemies[enemies.length - 1];
-          if (primero && primero.conversando) {
-            guard.companeroCharla = primero;
-            primero.companeroCharla = guard;
-          }
+        if (primero) {
+          guard.companeroCharla = primero;
+          primero.companeroCharla = guard;
         }
+      }
+      if (esFranco) {
+        guard.deFranco = true;
+        // El centro de su mesa (dos baldosas de ancho): ahí se dibujan las cartas.
+        if (def.mesa) guard.mesa = { x: (def.mesa[0] + off + 1) * map.size, y: enTiles(def.mesa).y };
       }
       /**
        * VIGILANDO — a diferencia de `conversando`, esto no usa ningún reloj:

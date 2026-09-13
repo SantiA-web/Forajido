@@ -232,7 +232,36 @@ export function createEnemy(x, y, options = {}) {
     charlaTimer: 0,
     charlaShowUntil: 0,
     charlaTexto: '',
+
+    /**
+     * DE FRANCO (vagón de guardias, ver `empezarADesenfundar` acá abajo).
+     * `deFranco` lo pone world/train.js; `armado` se prende la primera vez
+     * que entra en combate y ya no se apaga; `desenfundando` es el reloj de
+     * esos 1,5 s, y `francoQuieto` si los pasa parado o corriendo a cubrirse.
+     */
+    deFranco: false,
+    armado: false,
+    desenfundando: 0,
+    francoQuieto: undefined,
   };
+}
+
+/**
+ * EL DE FRANCO DESCUELGA EL ARMA — sólo la primera vez que entra en combate.
+ *
+ * Hay dos puertas por las que un guardia pasa a combate (`enterCombat` en
+ * systems/ai.js, y que le peguen, en `damageEnemy` acá abajo), y las dos
+ * tienen que cobrar lo mismo: por eso vive en una función y no copiado.
+ *
+ * `francoQuieto` se sortea después, en `updateEnemy` (systems/ai.js), porque
+ * éste archivo no tiene el generador de azar a mano.
+ */
+export function empezarADesenfundar(e) {
+  if (!e.deFranco || e.armado) return;
+  e.armado = true;
+  e.desenfundando = CONFIG.enemy.francoDesenfundar;
+  e.francoQuieto = undefined;
+  e.cooldown = Math.max(e.cooldown, CONFIG.enemy.francoDesenfundar);
 }
 
 export function damageEnemy(e, amount, fromX, fromY) {
@@ -277,6 +306,7 @@ export function damageEnemy(e, amount, fromX, fromY) {
     e.suspicion = 1;
     e.alertMark = 1;
     e.cooldown = Math.max(e.cooldown, CONFIG.enemy.reactionTime);
+    empezarADesenfundar(e);
   } else {
     // Si le pegan mientras está asomado, se mete atrás de la cobertura.
     e.peeking = false;
@@ -380,22 +410,56 @@ export function drawEnemy(r, e) {
     );
   }
 
+  /**
+   * DE FRANCO: sentado en su banquito, con las cartas en la mano y el arma
+   * colgada al costado — mientras siga tranquilo y en su lugar. Apenas se
+   * levanta a mirar algo, o entra en combate, se dibuja de pie como cualquiera.
+   *
+   * Y MIENTRAS DESCUELGA EL ARMA (`desenfundando`) NO HAY CAÑO: ése es el
+   * aviso de que todavía no te puede tirar. Cuando el caño aparece, ya puede.
+   */
+  const sentado = e.deFranco && !e.armado && e.state === 'patrol' && e.puesto &&
+    Math.abs(e.x - e.puesto.x) < 3 && Math.abs(e.y - e.puesto.y) < 3;
+
+  if (sentado) {
+    r.rect(e.x - 5, e.y + 2, 10, 4, '#4a3526');
+    r.rect(e.x - 5, e.y + 2, 10, 1, '#6b4d36');
+    // Las cartas sobre la mesa las pone uno solo de la pareja, para no pintarlas dos veces.
+    if (e.charlaLider && e.mesa) {
+      r.rect(e.mesa.x - 7, e.mesa.y - 3, 3, 4, '#efe6d2');
+      r.rect(e.mesa.x - 2, e.mesa.y - 1, 3, 4, '#efe6d2');
+      r.rect(e.mesa.x + 4, e.mesa.y - 4, 4, 5, '#d9cfb8');
+      r.rect(e.mesa.x + 5, e.mesa.y - 3, 2, 3, '#b8452f');
+    }
+  }
+
   // El único aviso de que va a disparar: se para en seco y levanta el arma.
   // (Antes había una línea roja marcando la trayectoria; era demasiado fácil.)
-  const gunLength = e.aimTimer > 0 ? 11 : 8;
-  r.line(
-    e.x, e.y,
-    e.x + Math.cos(e.facing) * gunLength,
-    e.y + Math.sin(e.facing) * gunLength,
-    e.aimTimer > 0 ? '#d8cdbb' : '#2a2622'
-  );
-  if (e.aimTimer > 0) {
-    r.box(e.x + Math.cos(e.facing) * 12, e.y + Math.sin(e.facing) * 12, 1, 1, '#fff6d0');
+  if (!sentado && !(e.desenfundando > 0)) {
+    const gunLength = e.aimTimer > 0 ? 11 : 8;
+    r.line(
+      e.x, e.y,
+      e.x + Math.cos(e.facing) * gunLength,
+      e.y + Math.sin(e.facing) * gunLength,
+      e.aimTimer > 0 ? '#d8cdbb' : '#2a2622'
+    );
+    if (e.aimTimer > 0) {
+      r.box(e.x + Math.cos(e.facing) * 12, e.y + Math.sin(e.facing) * 12, 1, 1, '#fff6d0');
+    }
   }
 
   // El tamaño sale de `e.hw/e.hh` (CONFIG.enemy), no de un número aparte: el
   // sprite que se ve siempre es exactamente la caja que puede recibir la bala.
   r.box(e.x, e.y, e.hw, e.hh, bodyColor);
+
+  if (sentado || e.desenfundando > 0) {
+    // El arma colgada al costado.
+    r.rect(e.x + e.hw - 1, e.y, 2, 4, '#2a2622');
+  }
+  if (sentado) {
+    // Las cartas en la mano, hacia su compañero.
+    r.rect(e.x + Math.cos(e.facing) * 5 - 1, e.y + Math.sin(e.facing) * 5, 3, 2, '#efe6d2');
+  }
 
   /**
    * 🐛 LA CABEZA QUE FALTABA — SIN ELLA, EL GUARDIA SE LEÍA COMO UN CONO.

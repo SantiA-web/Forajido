@@ -18,6 +18,13 @@ Doble clic en **`jugar.bat`**.
 Se abre una ventana negra (el servidor) y el navegador con el juego.
 Dejá la ventana negra abierta mientras jugás; para cerrar todo, `Ctrl+C` ahí.
 
+**O en un solo archivo, sin servidor:** clic derecho en **`armar-archivo.ps1`** →
+"Ejecutar con PowerShell". Deja **`Forajido-jugar.html`** en la carpeta del
+proyecto: todo el juego adentro de un único HTML que se abre con doble clic, sin
+servidor ni internet, y que se puede copiar a otra compu o a un pendrive. No se
+actualiza solo: después de cambiar el juego, hay que volver a armarlo. No se sube
+a git (es un resultado, no código).
+
 > ¿Por qué hace falta un servidor? Porque el juego usa módulos de JavaScript
 > (`import` / `export`) y los navegadores los bloquean si abrís el `index.html`
 > directamente desde el disco. El servidor no instala nada: es un script de

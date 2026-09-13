@@ -4,3 +4,7 @@
 # Sólo en la raíz: si algún día hay arte de verdad, va a vivir en src/ y no
 # lo va a tocar esta regla.
 /*.png
+
+# El juego armado en un solo archivo por armar-archivo.ps1. Es un resultado que
+# se vuelve a generar, no código: si se subiera, quedaría viejo al primer cambio.
+/Forajido-jugar.html

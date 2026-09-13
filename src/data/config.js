@@ -2286,5 +2286,32 @@ export const CONFIG = {
       refrigerado:  ['#8a4a46', '#a65f5a'],   // reses colgadas
       default:   ['#7a5436', '#94663f'],
     },
+
+    /**
+     * LA LOCOMOTORA — etapa 2 de los trenes nuevos (ver `drawLocomotora` en
+     * world/train.js).
+     *
+     * HIERRO CASI NEGRO CON TRES ACENTOS, y cada uno tiene un trabajo: el
+     * LATÓN de los domos y la campana es lo que la hace brillar a lo lejos, el
+     * ROJO de los bordes (el mismo del sello del mapa) es lo que dice "esto es
+     * una máquina de la época" y no un vagón más oscuro, y el FARO es lo único
+     * cálido de la punta del tren. El resto es a propósito apagado: es fondo,
+     * no es donde se juega.
+     */
+    locomotora: {
+      hierro:      '#2b2a2e',
+      hierroLuz:   '#46454c',
+      hierroBorde: '#161519',
+      rojo:        '#8c2f26',
+      laton:       '#c9a24a',
+      latonLuz:    '#e8c77a',
+      techoCabina: '#5a3626',
+      techoLuz:    '#744632',
+      carbon:      '#1c1a19',
+      carbonLuz:   '#34302d',
+      agua:        '#3b474d',
+      humo:        '#8f8980',
+      faro:        '#ffd08a',
+    },
   },
 };

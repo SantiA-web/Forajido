@@ -264,7 +264,16 @@ export function updatePassenger(pa, dt, world) {
       world.bus.emit('scream', { x: pa.x, y: pa.y, radius: c.shoutRadius });
 
       // Corre hacia el extremo más cercano del vagón.
-      pa.fleeToX = pa.x < world.map.width / 2 ? 24 : world.map.width - 24;
+      //
+      // 🔻 El de adelante ya no es el borde del mapa: desde la etapa 2 de los
+      // trenes nuevos el mapa termina en la LOCOMOTORA, que es sólida, y
+      // `map.width - 24` caía adentro de ella — el que huía se quedaba
+      // empujando una pared. Ahora corre a la punta por donde entra la gente de
+      // la locomotora, que es exactamente donde caía antes (el último enganche).
+      const puntaAdelante = world.train && world.train.puntaLocomotora
+        ? world.train.puntaLocomotora.x
+        : world.map.width - 24;
+      pa.fleeToX = pa.x < world.map.width / 2 ? 24 : puntaAdelante;
       pa.state = 'fleeing';
     }
     return;

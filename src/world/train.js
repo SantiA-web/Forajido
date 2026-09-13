@@ -438,6 +438,17 @@ export function planificarTramos(composicion, caballoEn = 0) {
     agregar('enganche', esDelCaballo ? engancheAncho : TRAMOS.enganche, i + 1);
   });
 
+  /**
+   * Y AL FINAL, LA LOCOMOTORA (etapa 2 de los trenes nuevos, ver `locomotora`
+   * en data/wagons.js). Va DESPUÉS del último enganche, así que ese enganche
+   * sigue siendo "la punta de adelante" por donde entran los refuerzos.
+   *
+   * `wagon` es el último vagón: nadie puede pararse ahí, pero una bala o una
+   * res que llegue al borde tiene que caer en algún vagón para `wagonAt`.
+   * Todo lo que pregunta por vagones (`t.tipo === 'vagon'`) la saltea solo.
+   */
+  agregar('locomotora', TRAMOS.locomotora, composicion.length);
+
   return tramos;
 }
 
@@ -1805,5 +1816,134 @@ export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
           r.rect(x, y + size - 1, size, 1, '#5b3d27');
       }
     }
+  }
+
+  // Y la locomotora, encima de sus casillas 'X' (que no pintan nada). Va acá y
+  // no en cada escena para que el asalto y el galope la dibujen igual.
+  drawLocomotora(r, train, colors, camX, anchoVista);
+}
+
+/**
+ * LA LOCOMOTORA — etapa 2 de los trenes nuevos. Sólo dibujo.
+ *
+ * VISTA DESDE ARRIBA, como todo el tren, apuntando a la derecha (hacia donde
+ * va). De atrás para adelante:
+ *
+ *   barra ─ TÉNDER (agua | carbón) ─ CABINA ─ CALDERA (domos, campana) ─
+ *   CHIMENEA ─ FARO ─ MIRIÑAQUE
+ *
+ * Se lee por la SILUETA y no por el detalle, que es la regla de todo el juego:
+ * a escala del asalto un tren son rectángulos, así que lo que la distingue de
+ * un vagón es que se angosta (la caldera es la mitad de alta que un vagón), que
+ * termina en punta (el miriñaque) y que echa humo. Los tres acentos de color
+ * están explicados en `CONFIG.colors.locomotora`.
+ *
+ * EL HUMO VA PARA ATRÁS, porque el tren avanza, y no pasa de la cabina y el
+ * ténder: la locomotora es fondo y nunca tiene que taparte un vagón donde se
+ * juega. Se anima con el reloj del navegador y no con el del juego porque es
+ * decorado puro — no mueve nada ni lo lee nadie.
+ */
+function drawLocomotora(r, train, colors, camX, anchoVista) {
+  const t = train.tramos && train.tramos.find((tr) => tr.tipo === 'locomotora');
+  if (!t) return;
+  const L = colors.locomotora;
+  if (!L) return;
+
+  const size = train.map.size;
+  const x0 = t.colStart * size;
+  const ancho = t.cols * size;
+  // Fuera de cuadro no se dibuja, igual que las casillas.
+  if (x0 > camX + anchoVista + 60 || x0 + ancho < camX - 60) return;
+
+  const cy = 80;   // la línea del medio del tren (entre las filas 4 y 5)
+  const rect = (x, y, w, h, color) => r.rect(x0 + x, y, w, h, color);
+  const circulo = (x, y, radio, color, alpha = 1) => {
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(Math.round(x0 + x), Math.round(y), radio, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  };
+
+  // --- La barra que la engancha al último vagón ---
+  rect(0, cy - 3, 12, 6, L.hierroBorde);
+
+  // --- EL TÉNDER: agua atrás, carbón adelante ---
+  rect(10, 26, 140, 108, L.hierroBorde);
+  rect(12, 28, 136, 104, L.hierro);
+  rect(14, 30, 58, 100, L.agua);                 // el tanque de agua
+  circulo(42, cy, 10, L.hierroBorde);            // su tapa
+  circulo(42, cy, 6, L.hierroLuz);
+  rect(76, 30, 70, 100, L.carbon);               // el carbón
+  // 🐛 Eran dos cuentas lineales (`i*37 % 64`, `i*53 % 92`) y los terrones
+  // quedaban alineados en una raya diagonal: se vio mirándolo. Ahora es una
+  // grilla salteada — cada casilla lleva terrón o no según una cuenta que no
+  // forma línea, y las filas impares se corren medio paso.
+  for (let gy = 0; gy < 13; gy++) {
+    for (let gx = 0; gx < 9; gx++) {
+      if ((gx * 5 + gy * 3 + ((gx * gy) % 4)) % 3 !== 0) continue;
+      rect(78 + gx * 7 + (gy % 2) * 3, 33 + gy * 7, 4, 3, L.carbonLuz);
+    }
+  }
+  rect(12, 28, 136, 2, L.rojo);                  // el filete de los bordes
+  rect(12, 130, 136, 2, L.rojo);
+
+  // --- Entre el ténder y la cabina, el acople ---
+  rect(150, cy - 4, 10, 8, L.hierroBorde);
+
+  // --- LA CABINA: más ancha que la caldera, techo de madera ---
+  rect(160, 18, 78, 124, L.hierroBorde);
+  rect(162, 20, 74, 120, L.techoCabina);
+  rect(162, cy - 3, 74, 6, L.techoLuz);          // la cumbrera del techo
+  rect(162, 20, 74, 2, L.rojo);
+  rect(162, 138, 74, 2, L.rojo);
+
+  // --- Los estribos a los dos costados de la caldera, y los cilindros ---
+  rect(238, 34, 186, 7, L.hierroBorde);
+  rect(238, 119, 186, 7, L.hierroBorde);
+  rect(238, 34, 186, 1, L.rojo);
+  rect(238, 125, 186, 1, L.rojo);
+  rect(384, 24, 34, 11, L.hierroLuz);            // cilindro de arriba
+  rect(384, 125, 34, 11, L.hierroLuz);           // y el de abajo
+
+  // --- LA CALDERA: un cilindro, así que luz arriba y sombra abajo ---
+  rect(238, 44, 186, 72, L.hierro);
+  rect(238, 52, 186, 12, L.hierroLuz);
+  rect(238, 102, 186, 14, L.hierroBorde);
+  for (const bx of [262, 318, 374]) rect(bx, 44, 3, 72, L.hierroBorde);  // los anillos
+
+  // Sobre el lomo: la campana, el domo de vapor (latón) y el de arena.
+  circulo(282, cy, 6, L.laton);
+  circulo(328, cy, 13, L.laton);
+  circulo(325, cy - 4, 5, L.latonLuz);
+  circulo(356, cy, 9, L.hierroLuz);
+
+  // --- La caja de humo, la chimenea y su boca ---
+  rect(424, 46, 14, 68, L.hierroBorde);
+  circulo(404, cy, 18, L.hierroBorde);
+  circulo(404, cy, 13, L.hierro);
+  circulo(404, cy, 8, '#0a090b');
+
+  // --- EL FARO, y su resplandor hacia adelante ---
+  circulo(470, cy, 22, L.faro, 0.12);
+  rect(438, cy - 9, 14, 18, L.hierroBorde);
+  rect(441, cy - 6, 9, 12, L.faro);
+
+  // --- EL MIRIÑAQUE: listones rojos y negros que terminan en punta ---
+  for (let k = 0; k < 14; k++) {
+    const mitad = Math.max(2, 38 - k * 3);
+    rect(452 + k * 2, cy - mitad, 2, mitad * 2, k % 2 === 0 ? L.rojo : L.hierroBorde);
+  }
+
+  // --- EL HUMO, que se va para atrás y se deshace ---
+  const tiempo = (typeof performance !== 'undefined' ? performance.now() : 0) / 1000;
+  for (let i = 0; i < 6; i++) {
+    const edad = (tiempo * 0.8 + i / 6) % 1;
+    const px = 404 - edad * 250;
+    const py = cy + Math.sin(i * 1.7 + tiempo * 1.3) * 7 - edad * 6;
+    circulo(px, py, 7 + edad * 16, L.humo, 0.38 * (1 - edad));
   }
 }

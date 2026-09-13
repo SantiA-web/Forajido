@@ -1528,7 +1528,9 @@ export function createRaidScene(services) {
         if (actualizarPolvora(ro)) { rodantes.splice(i, 1); continue; }
       } else {
         const seAcabo = ro.tipo === 'res'
-          ? (ro.alcance <= 0 || chocaConElBlindado(ro))
+          // Y la manada se pierde contra la locomotora: sin esto corría por
+          // encima de su dibujo hasta que se le acababa el alcance.
+          ? (ro.alcance <= 0 || chocaConElBlindado(ro) || train.tramoAt(ro.x) === 'locomotora')
           : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200);
         if (seAcabo) { rodantes.splice(i, 1); continue; }
       }

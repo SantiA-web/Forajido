@@ -11495,6 +11495,60 @@ pantalla no llegaba a dibujar a tiempo):
 **⚠️ NO JUGADO.** Y los sistemas de cada vagón (vigía, reses, carbón, franco,
 puertas) siguen sin existir: son las etapas 3 a 7.
 
+### ✅ Etapa 2 hecha — la locomotora
+
+**Se ve, no se entra.** Entrar y frenar el tren sigue anotado para más adelante.
+
+**ES UN TRAMO DEL MAPA, NO UN DIBUJO SUELTO**, y eso salió de leer el código
+antes de dibujar: la cámara del asalto no pasa del borde del mapa (`map.bounds`),
+así que una locomotora pintada más allá del último enganche no se habría visto
+nunca. Es un tramo de 30 columnas todas 'X' (sólido y ciego) al final de
+`planificarTramos`, y el dibujo lo hace `drawLocomotora` al final de `drawTrain`
+— así sale igual en el asalto y en el galope sin tocar ninguna de las dos
+escenas.
+
+**El dibujo**, de atrás para adelante: la barra, el ténder (tanque de agua con su
+tapa, y carbón), la cabina con techo de madera, la caldera con luz arriba y
+sombra abajo, sus anillos, la campana, el domo de vapor de latón y el de arena,
+los estribos con filete rojo, la chimenea con la boca negra, el faro con su
+resplandor y el miriñaque de listones rojos y negros. **El humo va para atrás** y
+no pasa de la cabina y el ténder: la locomotora es fondo y nunca tapa un vagón
+donde se juega. La paleta vive en `CONFIG.colors.locomotora`.
+
+**NO CUENTA PARA EL RELOJ**: la regla de ~40 s cada 1.000 px mide tren que se
+juega, y estos 480 px no se juegan.
+
+**Dos cosas daban por hecho que el tren terminaba en un enganche**, y las dos se
+habrían roto en silencio:
+
+- **El pasajero que huía hacia adelante** corría a `map.width - 24`, que caía en
+  el último enganche. Con la locomotora caía **adentro de ella** y se quedaba
+  empujando una pared. Ahora corre a `puntaLocomotora`, que es exactamente donde
+  caía antes.
+- **Las reses de la estampida** se borraban al quedarse sin alcance o al chocar
+  con el blindado, así que corrían por encima del dibujo. Ahora se pierden contra
+  la locomotora.
+
+Revisado y no hacía falta tocar: los jinetes (el "último tramo" de `riders.js` es
+su propia lista de ventanillas, no el tren), el Dinamitero y las explosiones
+(sólo miran vagones), el Sheriff (ya usa la punta de la locomotora).
+
+**MEDIDO:** los dos mapas crecen **exactamente 480 px** (pasajeros 4.800 → 5.280,
+carga 4.528 → 5.008); el último tramo es la locomotora y es sólida; **la punta por
+donde entran los refuerzos no se movió** (4.776 y 4.504, el centro del último
+enganche); cero avisos y ningún error.
+
+**MIRADO**, de noche y de día sobre el desierto del galope, y desde el asalto
+parado en el último vagón:
+
+- 🐛 **El carbón del ténder salía como una raya diagonal**, no como terrones: las
+  posiciones eran dos cuentas lineales que avanzaban juntas. Pasó a una grilla
+  salteada.
+- De noche la caldera casi negra se lee igual, por la franja de luz del lomo y
+  los bordes; el tanque de agua y el latón son lo primero que se ve.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

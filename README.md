@@ -588,7 +588,8 @@ certero, el precio de no estar atento. **Cuanto más pagan por tu cabeza
 
 Colgando de la parte de atrás, detrás del caboose, está la **plataforma
 trasera**. Y adelante de todo va la locomotora, que se ve y no se entra — de ahí
-salen los refuerzos. *(Todavía no se dibuja: es la etapa 2 de los trenes nuevos.)*
+salen los refuerzos. Se dibuja entera —ténder, cabina, caldera, chimenea con su humo, faro y
+miriñaque—, pero es fondo: no se pisa, no se entra y no cuenta para el reloj.
 
 **Y uno de cada cuatro trenes de carga cambia una plataforma por el vagón de
 armas** (ver "El vagón de armas", más abajo). Es lo primero que cambia de qué

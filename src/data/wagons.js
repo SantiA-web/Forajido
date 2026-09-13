@@ -1279,6 +1279,45 @@ export const TRAMOS = {
     ],
   },
 
+  /**
+   * LA LOCOMOTORA — etapa 2 de los trenes nuevos. Se ve, no se entra.
+   *
+   * *(decidido con Santi al diseñar los trenes: "se ve, pero no se entra")* —
+   * entrar y frenar el tren quedó anotado para más adelante.
+   *
+   * ES UN TRAMO DEL MAPA Y NO UN DIBUJO SUELTO, y no por prolijidad: en el
+   * asalto la cámara no pasa del borde del mapa (`map.bounds`), así que una
+   * locomotora dibujada más allá del último enganche no se vería nunca. Como
+   * tramo, la cámara llega hasta ella sola, en el asalto y en el galope.
+   *
+   * TODO 'X': el vacío, sólido y ciego. Nadie la pisa, nadie ve a través, las
+   * balas mueren ahí. El dibujo de verdad —ténder, cabina, caldera, chimenea,
+   * miriñaque— lo hace `drawLocomotora` (world/train.js) encima de estas
+   * casillas, que por ser 'X' no pintan nada.
+   *
+   * 30 COLUMNAS (480 px) Y NO CUENTAN PARA EL RELOJ: la regla de ~40 s cada
+   * 1.000 px mide tren que se JUEGA, y acá no se juega nada.
+   *
+   * La gente de la locomotora sigue entrando por el mismo lugar de siempre, el
+   * centro del último enganche (`puntaLocomotora`): o sea que ahora se ve de
+   * dónde sale.
+   */
+  locomotora: {
+    id: 'locomotora',
+    layout: [
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+    ],
+  },
+
   /** El enganche entre dos vagones: tres columnas de aire libre. */
   enganche: {
     id: 'enganche',

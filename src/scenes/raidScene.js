@@ -23,7 +23,7 @@ import { createCamera } from '../engine/camera.js';
 import { distance, moveAndCollide } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 
-import { buildTrain, drawTrain, isInsideZone } from '../world/train.js';
+import { buildTrain, drawPisoDelTren, cosasAltasDelTren, isInsideZone } from '../world/train.js';
 import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual,
 } from '../entities/player.js';
@@ -3519,17 +3519,48 @@ export function createRaidScene(services) {
     const swayX = camera.renderX + Math.round(traqueteoSwayX);
     r.ctx.translate(-swayX, -camera.renderY);
 
-    drawTrain(r, train, colors, swayX, camera.renderY);
+    /**
+     * TRES CUARTOS, ETAPA A: TODO LO QUE ESTÁ PARADO SE DIBUJA POR DÓNDE TIENE
+     * LOS PIES.
+     *
+     * Antes era por tipo de cosa (el tren, las puertas, el botín, la gente, los
+     * barriles), y por eso nada podía tapar a nadie según quién estaba adelante.
+     * Ahora el piso va primero, y después UNA sola lista —las cosas altas del
+     * tren (`cosasAltasDelTren`) más la gente, las puertas, el botín, los
+     * cajones, los barriles y los jinetes— ordenada por `base`: lo que está más
+     * abajo en pantalla se pinta después y tapa a lo de atrás.
+     *
+     * `base` es `y + hh`: el borde de abajo de la caja con la que cada uno choca.
+     * La caja no cambió; sólo se usa para saber quién está adelante.
+     */
+    drawPisoDelTren(r, train, colors, swayX, camera.renderY);
 
-    for (const d of doors) if (visible(d)) drawDoor(r, d, colors);
+    // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
+    // la lista `enemies` es un guardia común.
+    const pintar = (e) => (e.esJefe ? drawBoss(r, e) : drawEnemy(r, e));
 
-    for (const tr of tranqueras) if (visible(tr)) dibujarTranquera(r, tr);
+    // Los caídos están tirados EN el piso: van con el piso, debajo de todo lo
+    // que está parado, así nunca le tapan nada a nadie.
+    for (const pa of passengers) if (!pa.alive && visible(pa)) drawPassenger(r, pa);
+    for (const e of enemies) if (!e.alive && visible(e)) pintar(e);
 
-    // Los cajones de pólvora van antes que el botín y que la gente: son parte
-    // del vagón, un bulto estibado — no algo tirado encima de todo.
-    for (const c of cajones) if (visible(c)) drawCajon(r, c);
-
-    for (const l of loot) if (visible(l)) drawLootable(r, l);
+    const pies = (o, alto) => o.y + (alto ?? o.hh ?? 4);
+    const cosas = cosasAltasDelTren(r, train, colors, swayX, camera.renderY);
+    for (const d of doors) if (visible(d)) cosas.push({ base: pies(d), draw: () => drawDoor(r, d, colors) });
+    for (const tr of tranqueras) if (visible(tr)) cosas.push({ base: pies(tr, 8), draw: () => dibujarTranquera(r, tr) });
+    for (const c of cajones) if (visible(c)) cosas.push({ base: pies(c), draw: () => drawCajon(r, c) });
+    for (const l of loot) if (visible(l)) cosas.push({ base: pies(l), draw: () => drawLootable(r, l) });
+    for (const pa of passengers) if (pa.alive && visible(pa)) cosas.push({ base: pies(pa), draw: () => drawPassenger(r, pa) });
+    for (const e of enemies) if (e.alive && visible(e)) cosas.push({ base: pies(e), draw: () => pintar(e) });
+    for (const ro of rodantes) if (visible(ro)) cosas.push({ base: pies(ro), draw: () => drawRodante(r, ro) });
+    // Los jinetes van afuera: los de arriba del tren quedan detrás de la pared
+    // del fondo, y los de abajo, delante de la de adelante. El orden lo resuelve solo.
+    for (const rd of riders) cosas.push({ base: pies(rd, 6), draw: () => drawRider(r, rd) });
+    if (!player.enTecho) {
+      cosas.push({ base: pies(player), draw: () => drawPlayer(r, player, train.hearStepRadius) });
+    }
+    cosas.sort((a, b) => a.base - b.base);
+    for (const c of cosas) c.draw();
 
     for (const p of particles) {
       r.ctx.globalAlpha = Math.min(1, p.life * 3);
@@ -3537,29 +3568,12 @@ export function createRaidScene(services) {
     }
     r.ctx.globalAlpha = 1;
 
-    // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
-    // la lista `enemies` es un guardia común.
-    const pintar = (e) => (e.esJefe ? drawBoss(r, e) : drawEnemy(r, e));
-
-    for (const pa of passengers) if (!pa.alive && visible(pa)) drawPassenger(r, pa);
-    for (const e of enemies) if (!e.alive && visible(e)) pintar(e);
-    for (const pa of passengers) if (pa.alive && visible(pa)) drawPassenger(r, pa);
-    for (const e of enemies) if (e.alive && visible(e)) pintar(e);
-
-    // Los barriles van DESPUÉS de los guardias: son un bulto que rueda por el
-    // pasillo y tiene que taparlos, igual que les tapa la línea de tiro.
-    for (const ro of rodantes) if (visible(ro)) drawRodante(r, ro);
-
-    // Los jinetes van afuera del tren, así que se dibujan antes que el jugador
-    // pero después del vagón: quedan "detrás" de la pared, como corresponde.
-    for (const rd of riders) drawRider(r, rd);
-
     // El techo tapa lo de abajo (guardias, botín, puertas) igual que a vos
     // te tapa a vos de ellos. Por eso se dibuja DESPUÉS de todo lo de
     // adentro y ANTES del jugador: lo cubre a todo eso, pero no a vos.
     drawTecho(r);
 
-    drawPlayer(r, player, train.hearStepRadius);
+    if (player.enTecho) drawPlayer(r, player, train.hearStepRadius);
     for (const b of bullets) drawBullet(r, b);
     for (const ex of explosives) drawExplosive(r, ex);
 

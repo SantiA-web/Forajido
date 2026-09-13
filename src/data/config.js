@@ -1388,6 +1388,29 @@ export const CONFIG = {
     carbon: 0.5,
   },
 
+  /**
+   * TRES CUARTOS — cuántos píxeles se levanta del piso cada cosa alta del tren
+   * (ver `cosasAltasDelTren` en world/train.js).
+   *
+   * *(Santi eligió tres cuartos sobre un boceto)*. Sólo dibujo: la grilla, los
+   * choques, la vista y las balas no se enteran. Lo que se levanta es lo que
+   * tapa al que está parado justo detrás, así que una pared más alta esconde
+   * más; por eso la pared es lo más alto y el carbón lo más bajo.
+   *
+   * Primeros valores sin calibrar mirando: se ajustan con captura delante.
+   */
+  tresCuartos: {
+    alturaPared: 12,
+    // La pared con adentro detrás (la de adelante, las divisiones): baja, para
+    // no tapar a la gente de la última fila.
+    alturaParedBaja: 3,
+    alturaCarga: 7,
+    alturaRes: 6,
+    alturaBaranda: 6,
+    alturaAsiento: 5,
+    alturaMonticulo: 4,
+  },
+
   loot: {
     bagTime: 0.6,        // botín rápido
 

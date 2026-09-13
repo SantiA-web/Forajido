@@ -25,6 +25,27 @@ servidor ni internet, y que se puede copiar a otra compu o a un pendrive. No se
 actualiza solo: después de cambiar el juego, hay que volver a armarlo. No se sube
 a git (es un resultado, no código).
 
+## La vista: tres cuartos (en construcción)
+
+El juego se ve desde arriba en **tres cuartos**, como Stardew Valley o los Zelda
+de SNES: se ve el frente de las cosas, y lo que está más adelante tapa a lo de
+atrás. Se está pasando por etapas, primero el tren:
+
+| Etapa | Qué | Estado |
+|---|---|---|
+| A | El orden de dibujo: paredes, asientos, carga y el resto con volumen, y todo ordenado por dónde tiene los pies | ✅ |
+| B | La gente de cuerpo entero | Falta |
+| C | Las cosas: botín, puertas, cajones, barriles, dinamita, balas | Falta |
+| D | El techo | Falta |
+| E | El galope | Falta |
+| F | Mirar los 13 vagones | Falta |
+
+**Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
+de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido
+siguen iguales. Las paredes que tienen adentro del vagón detrás (la de adelante,
+las divisiones) se dibujan bajas, para no esconderte a nadie. Las alturas se
+ajustan en `CONFIG.tresCuartos`.
+
 > ¿Por qué hace falta un servidor? Porque el juego usa módulos de JavaScript
 > (`import` / `export`) y los navegadores los bloquean si abrís el `index.html`
 > directamente desde el disco. El servidor no instala nada: es un script de

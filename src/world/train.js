@@ -1776,6 +1776,34 @@ export function isInsideZone(entity, zone) {
  * el asalto —que dibuja a escala 1— no cambia en nada.
  */
 export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
+  drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH);
+  const cosas = cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH);
+  cosas.sort((a, b) => a.base - b.base);
+  for (const c of cosas) c.draw();
+}
+
+/**
+ * TRES CUARTOS, ETAPA A — el tren se dibuja en DOS pasadas.
+ *
+ * *(Santi: "me gustaría que tenga una vista cenital", y eligió tres cuartos
+ * sobre un boceto)*. En tres cuartos lo que está más abajo en pantalla tapa a
+ * lo de atrás: un asiento le tapa las piernas al guardia parado detrás. Eso no
+ * se puede hacer si el tren se pinta entero y la gente después, así que:
+ *
+ *  1. `drawPisoDelTren` pinta lo que está en el piso y nunca tapa a nadie:
+ *     tablas, carbón, enganches, la salida, la locomotora.
+ *  2. `cosasAltasDelTren` NO pinta: devuelve la lista de lo que se levanta del
+ *     piso (paredes, ventanillas, asientos, carga, reses, montículos, barandas),
+ *     cada una con su `base` —dónde apoya—, para que la escena la mezcle con la
+ *     gente y dibuje todo ordenado por dónde tiene los pies.
+ *
+ * `drawTrain` hace las dos seguidas y ordenadas: es lo que usa el galope, que
+ * no tiene gente adentro que mezclar.
+ *
+ * NADA DE ESTO TOCA EL JUEGO: la grilla, los choques, la vista y las balas
+ * siguen igual. Sólo cambia dónde se pinta.
+ */
+export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
   const map = train.map;
   const size = map.size;
   const anchoVista = vistaW || r.width;
@@ -1798,51 +1826,24 @@ export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
           // Eso es lo que hace que los enganches se lean como "afuera".
           break;
 
+        // Pared, ventanilla y baranda: la cosa alta las cubre enteras (o, la
+        // baranda, deja ver el paisaje), así que en el piso no va nada.
         case '#':
-          r.rect(x, y, size, size, colors.wall);
-          r.rect(x, y, size, 4, colors.wallTop);
+        case 'W':
+        case 'H':
           break;
 
+        // Asiento y carga: el piso de abajo. Lo alto va en `cosasAltasDelTren`.
         case 'S':
+        case 'C':
           r.rect(x, y, size, size, colors.floor);
-          r.rect(x + 1, y + 2, size - 2, size - 4, colors.seat);
-          r.rect(x + 1, y + 2, size - 2, 3, colors.seatTop);
           break;
 
-        case 'C': {
-          // La carga se pinta según el vagón: las mesas del comedor, los
-          // cajones del correo y las rejas del corral no se parecen en nada.
-          const paleta = colors.cargo[train.tipoPorColumna[col]] || colors.cargo.default;
-          r.rect(x, y, size, size, colors.floor);
-          r.rect(x, y + 1, size, size - 2, paleta[0]);
-          r.rect(x, y + 1, size, 3, paleta[1]);
-          break;
-        }
-
-        case 'R': {
-          // Res colgada del refrigerado: suelo, el riel del techo y la res
-          // meciéndose un píxel con el traqueteo. Cada una a su ritmo, para que
-          // la hilera no se mueva como un solo bloque.
-          const cr = colors.res;
+        case 'R':
+          // El piso de abajo de la res; la res colgada va en `cosasAltasDelTren`.
           r.rect(x, y, size, size, (row + col) % 2 === 0 ? colors.floor : colors.floorAlt);
           r.rect(x, y + size - 1, size, 1, '#5b3d27');
-          r.rect(x + 7, y, 2, size, cr.riel);
-          const vaiven = Math.round(Math.sin(performance.now() / 650 + col * 1.3 + row * 0.9));
-          const rx = x + vaiven;
-          // Media res: ancha arriba, angosta abajo, con la grasa de un costado.
-          // La primera versión era de 8 px con una raya blanca en el medio, y
-          // desde la cámara del juego se leía como un palito, no como carne.
-          r.rect(rx + 7, y, 2, 2, cr.gancho);
-          r.rect(rx + 3, y + 2, 10, 10, cr.carne);
-          r.rect(rx + 4, y + 12, 8, 2, cr.carne);
-          r.rect(rx + 6, y + 14, 4, 1, cr.carne);
-          r.rect(rx + 3, y + 2, 10, 2, cr.carneLuz);
-          r.rect(rx + 3, y + 4, 2, 7, cr.carneLuz);
-          r.rect(rx + 11, y + 4, 2, 8, cr.grasa);
-          r.rect(rx + 6, y + 6, 4, 1, cr.carneSombra);
-          r.rect(rx + 6, y + 9, 4, 1, cr.carneSombra);
           break;
-        }
 
         case 'K': {
           // Carbón: casi negro, con terrones salteados por casilla (la lección
@@ -1856,59 +1857,9 @@ export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
           break;
         }
 
-        case 'M': {
-          /**
-           * Montículo: UNA sola masa aunque ocupe varias casillas.
-           *
-           * 🐛 La primera versión dibujaba cada casilla con su propio borde y su
-           * propio lomo, y un montículo de 3x2 se leía como seis cajas apiladas.
-           * Ahora cada casilla mira a sus vecinas: sólo redondea y achica donde
-           * del otro lado ya no hay montículo, y el lomo iluminado va únicamente
-           * en la fila de arriba del bulto.
-           */
-          const cc = colors.carbon;
-          const vecino = (dc, dr) => (map.grid[row + dr] || [])[col + dc] === 'M';
-          const arriba = vecino(0, -1), abajo = vecino(0, 1);
-          const izq = vecino(-1, 0), der = vecino(1, 0);
-          r.rect(x, y, size, size, cc.piso);
-          const x0 = x + (izq ? 0 : 1), x1 = x + size - (der ? 0 : 1);
-          const y0 = y + (arriba ? 0 : 2), y1 = y + size - (abajo ? 0 : 1);
-          /**
-           * 🐛 Y LA SEGUNDA VERSIÓN SE LEÍA COMO UN POZO: un rectángulo negro
-           * parejo. Un montón de carbón tiene luz arriba y sombra abajo, así que
-           * la fila de arriba del bulto va iluminada y la de abajo apagada, y las
-           * esquinas sueltas se redondean.
-           */
-          const base = !arriba ? cc.monticuloLuz : cc.monticulo;
-          r.rect(x0, y0, x1 - x0, y1 - y0, base);
-          if (!arriba) r.rect(x0, y0 + 9, x1 - x0, y1 - y0 - 9, cc.monticulo);
-          if (!abajo) r.rect(x0, y1 - 4, x1 - x0, 3, cc.sombra);
-          // Esquinas redondeadas donde no sigue el bulto.
-          if (!arriba && !izq) r.rect(x0, y0, 3, 2, cc.piso);
-          if (!arriba && !der) r.rect(x1 - 3, y0, 3, 2, cc.piso);
-          if (!abajo && !izq) r.rect(x0, y1 - 2, 2, 2, cc.piso);
-          if (!abajo && !der) r.rect(x1 - 2, y1 - 2, 2, 2, cc.piso);
-          // Terrones salteados, que no caigan en fila de casilla en casilla.
-          const s = (col * 5 + row * 3) % 5;
-          r.rect(x + 3 + s, y + 5 + (s % 3), 2, 2, !arriba ? cc.brillo : cc.monticuloLuz);
-          r.rect(x + 11 - s, y + 10 - (s % 2), 2, 1, cc.brillo);
-          break;
-        }
-
-        case 'W':
-          // Ventanilla: marco de pared con el vidrio en el medio. Tiene que
-          // gritar "esto no es pared", porque por acá te entran las balas.
-          r.rect(x, y, size, size, colors.wall);
-          r.rect(x, y + 3, size, size - 6, colors.window);
-          r.rect(x, y + 5, size, size - 10, colors.windowGlass);
-          break;
-
-        case 'H':
-          // Baranda del vagón de ganado: al aire libre, se ve el paisaje pasar.
-          r.rect(x, y + 5, size, 4, colors.railing);
-          r.rect(x, y + 5, size, 1, colors.railingTop);
-          r.rect(x + 2, y + 2, 2, 10, colors.railing);
-          r.rect(x + 11, y + 2, 2, 10, colors.railing);
+        case 'M':
+          // El carbón de abajo del montículo; el bulto va en `cosasAltasDelTren`.
+          r.rect(x, y, size, size, colors.carbon.piso);
           break;
 
         case 'E':
@@ -1935,6 +1886,203 @@ export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
   // Y la locomotora, encima de sus casillas 'X' (que no pintan nada). Va acá y
   // no en cada escena para que el asalto y el galope la dibujen igual.
   drawLocomotora(r, train, colors, camX, anchoVista);
+}
+
+/** '#6a4a33' -> el mismo color multiplicado por `f` (0,7 = 30% más oscuro). */
+function oscurecer(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = (s) => Math.round(((n >> s) & 255) * f);
+  return `rgb(${c(16)},${c(8)},${c(0)})`;
+}
+
+/**
+ * LO QUE SE LEVANTA DEL PISO, en tres cuartos (ver `drawPisoDelTren`).
+ *
+ * Devuelve `{ base, draw }` por casilla: `base` es la línea del piso donde
+ * apoya (el borde de abajo de su casilla) y `draw` la pinta. La escena mezcla
+ * esta lista con la gente y la ordena por `base`.
+ *
+ * LA REGLA DE LAS DOS CARAS, para todo lo alto:
+ *  - La TAPA se pinta levantada `altura` píxeles: es lo que tapa al que está
+ *    parado justo detrás.
+ *  - La CARA de adelante se pinta sólo si la casilla de abajo en pantalla NO es
+ *    de la misma cosa. Así una fila de asientos o una pared lateral se leen
+ *    como un solo bloque, y la cara aparece donde el bloque termina.
+ *
+ * Las alturas viven en `CONFIG.tresCuartos`.
+ */
+export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
+  const map = train.map;
+  const size = map.size;
+  const tc = CONFIG.tresCuartos;
+  const anchoVista = vistaW || r.width;
+  const altoVista = vistaH || r.height;
+
+  const colDesde = Math.max(0, Math.floor(camX / size) - 1);
+  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 1);
+  // Una fila más abajo que el piso: la tapa levantada de una casilla que queda
+  // justo debajo de la pantalla puede asomar adentro.
+  const filaDesde = Math.max(0, Math.floor(camY / size) - 1);
+  const filaHasta = Math.min(map.rows - 1, Math.ceil((camY + altoVista) / size) + 2);
+
+  const casilla = (c, f) => (map.grid[f] || [])[c];
+  const cosas = [];
+
+  for (let row = filaDesde; row <= filaHasta; row++) {
+    for (let col = colDesde; col <= colHasta; col++) {
+      const tile = map.grid[row][col];
+      const x = col * size;
+      const y = row * size;
+      // Apenas antes del borde: alguien parado exactamente sobre la línea
+      // queda adelante de la cosa, no detrás.
+      const base = y + size - 0.01;
+      const debajo = casilla(col, row + 1);
+
+      switch (tile) {
+        case '#':
+        case 'W': {
+          // Pared y ventanilla son la misma pared: la ventanilla lleva vidrio
+          // en la cara. Tiene que gritar "esto no es pared", porque por acá te
+          // entran las balas; desde arriba se deja una raya de vidrio.
+          /**
+           * 🐛 LA PARED DE ADELANTE TAPABA A LA GENTE. Levantada 12 px, la pared
+           * de abajo del vagón se comía la última fila de adentro: medio asiento
+           * y medio guardia escondidos detrás de ella. Es "correcto" en tres
+           * cuartos, y es justo lo que un juego no puede hacer: a la gente la
+           * tenés que ver. Por eso una pared que tiene ADENTRO DEL VAGÓN detrás
+           * suyo (arriba en pantalla) se dibuja baja, apenas un borde. Las del
+           * fondo y las laterales, que tapan afuera u otra pared, siguen altas.
+           */
+          const norte = casilla(col, row - 1);
+          const adentroDetras = norte !== undefined && norte !== '#' && norte !== 'W' && norte !== 'X';
+          const h = adentroDetras ? tc.alturaParedBaja : tc.alturaPared;
+          const cara = debajo !== '#' && debajo !== 'W';
+          const ventana = tile === 'W';
+          cosas.push({ base, draw: () => {
+            r.rect(x, y - h, size, size, colors.wall);
+            r.rect(x, y - h, size, 2, colors.wallTop);
+            if (ventana) r.rect(x + 1, y - h + 6, size - 2, 3, colors.windowGlass);
+            if (cara) {
+              r.rect(x, y + size - h, size, h, oscurecer(colors.wall, 0.72));
+              r.rect(x, y + size - 1, size, 1, oscurecer(colors.wall, 0.5));
+              if (ventana) {
+                r.rect(x + 1, y + size - h + 2, size - 2, h - 4, colors.window);
+                r.rect(x + 2, y + size - h + 3, size - 4, h - 6, colors.windowGlass);
+              }
+            }
+          } });
+          break;
+        }
+
+        case 'S': {
+          const h = tc.alturaAsiento;
+          const cara = debajo !== 'S';
+          cosas.push({ base, draw: () => {
+            r.rect(x + 1, y + 2 - h, size - 2, size - 4, colors.seat);
+            r.rect(x + 1, y + 2 - h, size - 2, 3, colors.seatTop);
+            if (cara) r.rect(x + 1, y + size - 2 - h, size - 2, h, oscurecer(colors.seat, 0.62));
+          } });
+          break;
+        }
+
+        case 'C': {
+          // La carga se pinta según el vagón: las mesas del comedor, los
+          // cajones del correo y las rejas del corral no se parecen en nada.
+          const paleta = colors.cargo[train.tipoPorColumna[col]] || colors.cargo.default;
+          const h = tc.alturaCarga;
+          const cara = debajo !== 'C';
+          cosas.push({ base, draw: () => {
+            r.rect(x, y + 1 - h, size, size - 2, paleta[0]);
+            r.rect(x, y + 1 - h, size, 3, paleta[1]);
+            if (cara) r.rect(x, y + size - 1 - h, size, h, oscurecer(paleta[0], 0.62));
+          } });
+          break;
+        }
+
+        case 'R': {
+          // Res colgada del refrigerado: el riel del techo y la res meciéndose
+          // un píxel con el traqueteo. Cada una a su ritmo, para que la hilera
+          // no se mueva como un solo bloque. Colgada, se levanta del piso.
+          const cr = colors.res;
+          const h = tc.alturaRes;
+          cosas.push({ base, draw: () => {
+            const vaiven = Math.round(Math.sin(performance.now() / 650 + col * 1.3 + row * 0.9));
+            const rx = x + vaiven;
+            const ry = y - h;
+            r.rect(x + 7, ry, 2, size, cr.riel);
+            // Media res: ancha arriba, angosta abajo, con la grasa de un costado.
+            // La primera versión era de 8 px con una raya blanca en el medio, y
+            // desde la cámara del juego se leía como un palito, no como carne.
+            r.rect(rx + 7, ry, 2, 2, cr.gancho);
+            r.rect(rx + 3, ry + 2, 10, 10, cr.carne);
+            r.rect(rx + 4, ry + 12, 8, 2, cr.carne);
+            r.rect(rx + 6, ry + 14, 4, 1, cr.carne);
+            r.rect(rx + 3, ry + 2, 10, 2, cr.carneLuz);
+            r.rect(rx + 3, ry + 4, 2, 7, cr.carneLuz);
+            r.rect(rx + 11, ry + 4, 2, 8, cr.grasa);
+            r.rect(rx + 6, ry + 6, 4, 1, cr.carneSombra);
+            r.rect(rx + 6, ry + 9, 4, 1, cr.carneSombra);
+          } });
+          break;
+        }
+
+        case 'M': {
+          /**
+           * Montículo: UNA sola masa aunque ocupe varias casillas.
+           *
+           * 🐛 La primera versión dibujaba cada casilla con su propio borde y su
+           * propio lomo, y un montículo de 3x2 se leía como seis cajas apiladas.
+           * Ahora cada casilla mira a sus vecinas: sólo redondea y achica donde
+           * del otro lado ya no hay montículo, y el lomo iluminado va únicamente
+           * en la fila de arriba del bulto.
+           *
+           * 🐛 Y LA SEGUNDA VERSIÓN SE LEÍA COMO UN POZO: un rectángulo negro
+           * parejo. Un montón de carbón tiene luz arriba y sombra abajo, así que
+           * la fila de arriba del bulto va iluminada y la de abajo apagada, y las
+           * esquinas sueltas se redondean.
+           */
+          const cc = colors.carbon;
+          const h = tc.alturaMonticulo;
+          const vecino = (dc, dr) => casilla(col + dc, row + dr) === 'M';
+          const arriba = vecino(0, -1), abajo = vecino(0, 1);
+          const izq = vecino(-1, 0), der = vecino(1, 0);
+          cosas.push({ base, draw: () => {
+            const yy = y - h;
+            const x0 = x + (izq ? 0 : 1), x1 = x + size - (der ? 0 : 1);
+            const y0 = yy + (arriba ? 0 : 2), y1 = yy + size - (abajo ? 0 : 1);
+            r.rect(x0, y0, x1 - x0, y1 - y0, !arriba ? cc.monticuloLuz : cc.monticulo);
+            if (!arriba) r.rect(x0, y0 + 9, x1 - x0, y1 - y0 - 9, cc.monticulo);
+            // En tres cuartos el bulto baja hasta su base: la cara oscura llena
+            // lo que la tapa levantada dejó al descubierto.
+            if (!abajo) r.rect(x0, y1 - 4, x1 - x0, h + 4, cc.sombra);
+            if (!arriba && !izq) r.rect(x0, y0, 3, 2, cc.piso);
+            if (!arriba && !der) r.rect(x1 - 3, y0, 3, 2, cc.piso);
+            // Terrones salteados, que no caigan en fila de casilla en casilla.
+            const s = (col * 5 + row * 3) % 5;
+            r.rect(x + 3 + s, yy + 5 + (s % 3), 2, 2, !arriba ? cc.brillo : cc.monticuloLuz);
+            r.rect(x + 11 - s, yy + 10 - (s % 2), 2, 1, cc.brillo);
+          } });
+          break;
+        }
+
+        case 'H': {
+          // Baranda del vagón de ganado y de las plataformas: al aire libre, se
+          // ve el paisaje pasar. Postes y travesaño, levantados.
+          const h = tc.alturaBaranda;
+          cosas.push({ base, draw: () => {
+            const yy = y - h;
+            r.rect(x + 2, yy + 2, 2, 10 + h, colors.railing);
+            r.rect(x + 11, yy + 2, 2, 10 + h, colors.railing);
+            r.rect(x, yy + 5, size, 4, colors.railing);
+            r.rect(x, yy + 5, size, 1, colors.railingTop);
+          } });
+          break;
+        }
+      }
+    }
+  }
+
+  return cosas;
 }
 
 /**

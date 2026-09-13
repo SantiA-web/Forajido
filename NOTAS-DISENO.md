@@ -11769,6 +11769,68 @@ carbón no te ve, aunque estén a la misma altura.
 
 ---
 
+## 🛠 EN CONSTRUCCIÓN · Tres cuartos
+
+*(Santi: "me gustaría que tenga una vista cenital")*. El juego ya era cenital
+—la cámara mira derecho hacia abajo—, así que se le mostraron tres variantes
+(cenital pura, tres cuartos, cenital con más cámara) y **eligió tres cuartos**:
+desde arriba pero viendo el frente de las cosas, como Stardew Valley o los Zelda
+de SNES. Se le mostró un boceto del vagón de pasajeros al lado de la vista de
+hoy antes de decidir nada.
+
+**Decisiones:**
+
+| Qué | Elegido | Por qué |
+|---|---|---|
+| Alcance | **Primero el tren** (asalto y galope); campamento, pueblo, interiores y tienda en otra vuelta | Es donde se juega casi todo, y se puede probar antes de redibujar lo demás. El pueblo ya dibuja fachadas de frente |
+| Qué recibe las balas | **La caja de hoy** (9×7, a la altura del cuerpo); el dibujo crece hacia arriba | Todo lo medido (cobertura, puntería, reses, montículos) sigue valiendo. Descartado "todo el dibujo": habría que recalibrar el combate entero |
+| Orden | **Tres cuartos antes de las etapas 6 y 7** | El gesto del vigía y las puertas de los camarotes son dibujo: hechas antes, se dibujarían dos veces |
+
+**Plan aprobado:** A (el orden de dibujo) → B (la gente) → C (las cosas) → D
+(el techo) → E (el galope) → F (mirar los 13 vagones). La altura de las balas
+(C) y cuánto sube el techo (D) se deciden con captura delante.
+
+### ✅ Etapa A hecha — el orden de dibujo
+
+**Antes se pintaba por tipo de cosa** (el tren, las puertas, el botín, la gente,
+los barriles), así que nada podía tapar a nadie según quién estaba adelante.
+
+- **El tren se dibuja en dos pasadas** (world/train.js). `drawPisoDelTren` pinta
+  lo que está en el piso. `cosasAltasDelTren` no pinta: devuelve lo que se
+  levanta (paredes, ventanillas, asientos, carga, reses, montículos, barandas),
+  cada una con su `base`. `drawTrain` hace las dos seguidas, para el galope.
+- **La escena mezcla esa lista con todo lo que está parado** —gente, puertas,
+  botín, cajones, barriles, jinetes— y lo pinta ordenado por dónde tiene los pies
+  (`y + hh`, el borde de abajo de la caja con la que choca, que no cambió). Los
+  caídos van con el piso, así nunca tapan nada.
+- **La regla de las dos caras:** la tapa se pinta levantada y la cara de adelante
+  sólo donde el bloque termina. Una fila de asientos o una pared lateral se leen
+  como un solo bloque.
+- **Las alturas** viven en `CONFIG.tresCuartos`: pared 12, carga 7, res y baranda
+  6, asiento 5, montículo 4. Sin calibrar.
+
+**🐛 LA PARED DE ADELANTE TAPABA A LA GENTE.** Levantada 12 px, la pared de abajo
+del vagón se comía la última fila de adentro: medio asiento, y un guardia parado
+ahí quedaba medio escondido. Es "correcto" en tres cuartos y es justo lo que un
+juego no puede hacer. **Una pared con adentro del vagón detrás suyo se dibuja
+baja** (`alturaParedBaja`, 3 px): la de adelante y las divisiones. Las del fondo
+y las laterales siguen altas.
+
+**MEDIDO:** dibujar un cuadro tarda **0,38 ms**, así que ordenar todo no lo hace
+lento; ningún error en la consola, en el asalto ni en el galope.
+
+**MIRADO** (con la gente todavía vista desde arriba, que es la etapa B): el
+vagón de pasajeros con la pared del fondo mostrando su cara y sus ventanillas,
+el caboose, las divisiones bajas del dormitorio con los pasajeros a la vista
+adentro de los camarotes, las reses del refrigerado colgando, la plataforma, el
+ganado con las barandas levantadas y la góndola con los montículos en volumen.
+Dos capturas salieron primero del vagón equivocado —la lista de vagones empieza
+con la plataforma de la cola— y se repitieron buscando el vagón por su nombre.
+
+**⚠️ NO JUGADO.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

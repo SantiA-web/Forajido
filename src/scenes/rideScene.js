@@ -440,11 +440,10 @@ export function createRideScene(services) {
      * dos plataformas —el lugar más expuesto del tren de carga— habrían
      * quedado con el ritmo de un vagón con paredes sin que nadie lo notara.
      *
-     * ⚠️ Cuando la góndola parta `sinTecho` en dos (etapa 5), esto tiene que
-     * leer "a la intemperie", no "hay techo que pisar": la góndola se camina por
-     * arriba pero no tiene paredes.
+     * Y lee "a la intemperie", no "hay techo que pisar" (etapa 5): la góndola
+     * se camina por arriba pero no tiene paredes, y te ven como al ganado.
      */
-    const ritmo = !vagon.tieneTecho ? A.verRateGanado : A.verRate;
+    const ritmo = vagon.aLaIntemperie ? A.verRateGanado : A.verRate;
     exposicion += ritmo * cerca * (1 + gente * 0.25) * dt;
 
     if (exposicion >= 1) {

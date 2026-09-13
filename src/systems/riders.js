@@ -302,7 +302,23 @@ function tieneTiro(rd, world) {
 
   // Y tiene que haber una línea limpia: la ventanilla ('W') y la baranda ('H')
   // no frenan la vista; la pared, el asiento y la carga sí.
-  return hasLineOfSight(rd.x, rd.y, p.x, p.y, world.map.blocksSightAt);
+  return hasLineOfSight(rd.x, rd.y, p.x, p.y, vistaDelJinete(world));
+}
+
+/**
+ * LO QUE TAPA LA VISTA DE UN JINETE: todo lo de siempre MENOS los montículos de
+ * carbón de la góndola ('M', `tapaSoloDeAdentro`), que tapan de los guardias
+ * pero no del que cabalga más alto, al costado del tren.
+ *
+ * Copia `dejaVerDesdeAdentro` (world/tilemap.js): sin eso, alguien parado
+ * entre las reses del refrigerado volvía a ser invisible para los jinetes.
+ */
+function vistaDelJinete(world) {
+  const map = world.map;
+  const tapa = (x, y) =>
+    map.blocksSightAt(x, y) && !(map.tapaSoloDeAdentroAt && map.tapaSoloDeAdentroAt(x, y));
+  tapa.dejaVerDesdeAdentro = map.blocksSightAt.dejaVerDesdeAdentro;
+  return tapa;
 }
 
 function apuntarYDisparar(rd, dt, world) {
@@ -349,7 +365,7 @@ function apuntarYDisparar(rd, dt, world) {
   const destinoY = rd.lastSeen.y;
 
   // Si desde acá esa zona ni siquiera se ve (pared de por medio), no gastan bala.
-  if (!hasLineOfSight(rd.x, rd.y, destinoX, destinoY, world.map.blocksSightAt)) return;
+  if (!hasLineOfSight(rd.x, rd.y, destinoX, destinoY, vistaDelJinete(world))) return;
 
   rd.aimTimer = t.suppressAimTime;
   rd.aimDir = Math.atan2(destinoY - rd.y, destinoX - rd.x);

@@ -46,6 +46,20 @@ const TILE_RULES = {
    * cada 5 px, y el último punto antes de llegar a vos caía adentro de tu res.
    */
   'R': { solid: false, blocksSight: true, blocksBullets: false, seVeDesdeAdentro: true, freno: 'reses' },
+
+  /**
+   * LA GÓNDOLA (etapa 5) — el carbón llena el vagón hasta arriba, así que su
+   * "piso" ES la superficie del carbón. Lo pisan todos, a la mitad.
+   *
+   * 'K' carbón: se camina, frena (`CONFIG.casillasQueFrenan.carbon`).
+   * 'M' montículo: no se pisa, y tapa la vista y las balas DE LOS DE ADENTRO.
+   *    `tapaSoloDeAdentro`: los jinetes cabalgan más alto y tiran desde el
+   *    costado, así que para ellos no existe (systems/riders.js y combat.js).
+   *    La regla central del juego: la cobertura que te salva de los guardias
+   *    es la que te deja expuesto a los de afuera.
+   */
+  'K': { solid: false, blocksSight: false, blocksBullets: false, freno: 'carbon' },
+  'M': { solid: true,  blocksSight: true,  blocksBullets: true, tapaSoloDeAdentro: true },
 };
 
 export function createTilemap(layout) {
@@ -140,6 +154,10 @@ export function createTilemap(layout) {
       const freno = TILE_RULES[tileAtPixel(px, py)].freno;
       return freno ? CONFIG.casillasQueFrenan[freno] : 1;
     },
+
+    /** ¿Lo que hay acá tapa sólo a los de adentro? (el montículo de carbón, 'M') */
+    tapaSoloDeAdentroAt: (px, py) =>
+      dentro(px, py) && !!TILE_RULES[tileAtPixel(px, py)].tapaSoloDeAdentro,
 
     /** Igual que isSolidAt pero en coordenadas de tile, no de píxel. */
     isSolidTile: (col, row) => TILE_RULES[tileAt(col, row)].solid,

@@ -821,7 +821,7 @@ reloj.
 vagones más especiales y selectivos")* — el diseño completo, con cada decisión y
 su tabla, está en NOTAS-DISENO.md. Se construye por etapas y **cada sistema nuevo
 entra solo**. Casi todos están armados con mecánicas que ya existían; el
-refrigerado y los guardias de franco ya tienen la suya:
+refrigerado, los guardias de franco y la góndola ya tienen la suya:
 
 | Vagón | Tren | Qué es | Lo que falta |
 |---|---|---|---|
@@ -831,7 +831,7 @@ refrigerado y los guardias de franco ya tienen la suya:
 | **Primera clase** | Pasajeros (especial) | **Los tres ricos** del tren, con sombrero de copa, y dos guardaespaldas VIGILANDO. ~$600 entre los tres | — |
 | **Cerrado** | Carga | El correo liviano de siempre, con su nombre de tren de carga | — |
 | **Plataforma** | Carga | Carga amarrada sin paredes: te tapa de los guardias, no de los jinetes | — |
-| **Góndola** | Carga | Montículos de carbón, sin nadie adentro | Que **frene a la mitad**, se cruce por encima y desde el pasillo se suba al techo |
+| **Góndola** | Carga | **Carbón hasta arriba**: se cruza por encima, a la mitad, trepando y bajando en los enganches. Montículos que tapan de los guardias, no de los jinetes | — |
 | **Refrigerado** | Carga | Hileras de reses colgadas, dos guardias. **Las reses tapan la vista y no las balas**, y se atraviesan a media velocidad | — |
 
 > **Nada de esto está jugado.** Está medido (10.000 trenes de cada uno cumplen
@@ -861,6 +861,20 @@ cola y otra en la de la locomotora):
 | **Mientras la descuelgan** | Cada uno tira una moneda: **se queda quieto** donde está, o **corre a cubrirse a media velocidad** |
 | **Primera bala** (medido) | Guardia normal ~1,6-2,0 s · de franco que se cubre ~2,4-3,0 s · de franco quieto ~3,2-3,7 s |
 | **Redada** | Siguen los 4 sentados, y llegan 4 de servicio despiertos que patrullan las rondas libres |
+
+#### La góndola
+
+El carbón llena el vagón hasta arriba: **no hay adentro**. Cruzarla es caminar por
+encima del carbón, y eso es lo mismo que caminar por el techo.
+
+| | Cómo funciona |
+|---|---|
+| **Subir y bajar** | En los **enganches**: mantené **[E] 0,4 s** al borde, en silencio. Hasta que no trepaste, el carbón es una pared |
+| **Cruzarla** | **A la mitad**, para todos: vos 39 px/s, un guardia persiguiéndote 23. La cruzan también las reses de la estampida y el Sheriff: nadie queda cortado |
+| **Por el techo** | Si venís por arriba de otro vagón, seguís de largo sin caerte, y frena igual. Desde el caballo se puede saltar encima |
+| **Montículos** | Te tapan de la vista y de las balas **de los guardias**, pero **no de los jinetes**: ellos cabalgan más alto, al costado |
+| **A la intemperie** | Te llueve encima, y desde el galope te ven tan rápido como al lado del ganado |
+| **Barriles** | No se sueltan en el carbón |
 
 La regla del reparto es **una mecánica, una sola casa**: si algo aparece en los
 dos trenes, no distingue nada.

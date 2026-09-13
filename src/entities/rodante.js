@@ -95,7 +95,8 @@ export function dañarRodante(ro, cantidad) {
 
 export function updateRodante(ro, dt) {
   ro.hitFlash = Math.max(0, ro.hitFlash - dt);
-  const paso = ro.velocidad * dt;
+  // `freno`: lo pone la escena cada cuadro según la casilla (el carbón, 0,5).
+  const paso = ro.velocidad * (ro.freno ?? 1) * dt;
   ro.x += ro.dir * paso;
   ro.alcance -= paso;
   ro.giro += (ro.velocidad / 9) * dt;

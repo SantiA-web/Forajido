@@ -71,6 +71,8 @@ export function createRaidScene(services) {
   let bullets, explosives, riders, particles, floaters;
   let riderWatch;
   let techObstacles, techoBajarProgress, techoSpawnTimer;
+  // Cuánto llevás sosteniendo [E] para trepar o bajar del carbón (etapa 5).
+  let carbonProgress = 0;
   let rodantes, rodanteTimer, rodanteRafaga, rodanteRafagaTimer;
   let tranqueras, estampidas, estampidaSiguienteId;
   // Los cajones de pólvora del vagón de armas (Fase 6a, entities/cajon.js).
@@ -392,6 +394,18 @@ export function createRaidScene(services) {
     };
     map.isSolidForMovementAt = (x, y) =>
       map.isSolidAt(x, y) || bloqueaPuertaCerrada(x, y) || bloqueaCajon(x, y);
+
+    /**
+     * EL CARBÓN ES UNA PARED PARA VOS HASTA QUE TREPÁS (etapa 5).
+     *
+     * Sólo para el jugador: guardias, reses y el Sheriff cruzan la góndola
+     * caminando. Vos tenés que mantener [E] en el enganche (`updateTreparCarbon`),
+     * y una vez arriba el que choca es el borde del carbón hasta que bajás. Va
+     * aparte de `isSolidForMovementAt` por lo mismo que las puertas: nadie más
+     * tiene que enterarse.
+     */
+    world.solidoParaJugador = (x, y) =>
+      map.isSolidForMovementAt(x, y) || esCarbonEn(x) !== !!player.enCarbon;
 
     alarm = createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm });
     /**
@@ -780,7 +794,9 @@ export function createRaidScene(services) {
    * Y arriba del tren estás afuera por definición, aunque haya chapa debajo.
    */
   function estasCubierto() {
-    return !player.enTecho && hayTechoEn(player.x);
+    if (player.enTecho || !hayTechoEn(player.x)) return false;
+    // La góndola tiene "techo" que pisar (el carbón) pero te llueve igual.
+    return !train.wagons[train.wagonAt(player.x)].aLaIntemperie;
   }
 
   function updateTormenta(dt) {
@@ -1369,6 +1385,13 @@ export function createRaidScene(services) {
     return !!w && !w.esCola && w.tieneTecho;
   }
 
+  /** ¿Este x cae sobre la góndola (el vagón de carbón)? */
+  function esCarbonEn(x) {
+    if (train.tramoAt(x) !== 'vagon') return false;
+    const w = train.wagons[train.wagonAt(x)];
+    return !!w && w.carbon;
+  }
+
   /**
    * LO QUE TE VIENE DE FRENTE ARRIBA DEL TREN.
    *
@@ -1508,6 +1531,8 @@ export function createRaidScene(services) {
 
       if (!ro.alive) { romperRodante(ro); rodantes.splice(i, 1); continue; }
 
+      // Las reses también cruzan la góndola a la mitad (`frenoAt`, el carbón).
+      ro.freno = map.frenoAt(ro.x, ro.y);
       updateRodante(ro, dt);
 
       /**
@@ -1725,6 +1750,8 @@ export function createRaidScene(services) {
 
     const vagon = train.wagons[train.wagonAt(player.x)];
     if (!vagon) return;
+    // En el carbón no se sueltan barriles (Santi, etapa 5).
+    if (vagon.carbon) return;
 
     // Nace en el borde de adelante del vagón, o a `adelanto` del jugador si el
     // vagón es largo — lo que quede más cerca.
@@ -2166,6 +2193,7 @@ export function createRaidScene(services) {
    */
   function caerAlEnganche() {
     player.enTecho = false;
+    player.enCarbon = false;
     player.techoSalto = 0;
     player.techoAgachado = false;
     player.y = CONFIG.techo.centroY;
@@ -2457,6 +2485,7 @@ export function createRaidScene(services) {
     world.robando = false;
 
     if (player.enTecho) { updateBajarTecho(dt); return; }
+    if (updateTreparCarbon(dt)) return;
 
     const holding = input.isDown('KeyE') && player.alive && !mochilaAbierta;
     const nearest = nearestLoot();
@@ -2646,6 +2675,7 @@ export function createRaidScene(services) {
       techoBajarProgress += dt;
       if (techoBajarProgress >= CONFIG.techo.bajarHold) {
         player.enTecho = false;
+        player.enCarbon = false;
         player.x = borde;
         player.y = CONFIG.techo.centroY;
         techObstacles.length = 0;
@@ -2655,6 +2685,77 @@ export function createRaidScene(services) {
     } else {
       techoBajarProgress = 0;
     }
+  }
+
+  /**
+   * TREPAR AL CARBÓN Y BAJAR DE ÉL — etapa 5, la góndola.
+   *
+   * *(Santi: "para subir o bajar es por los enganches")*. La misma maniobra
+   * que bajar del techo y en los dos sentidos: mantener [E] `techo.bajarHold`
+   * (0,4 s), en silencio, al borde. No reusa `updateBajarTecho` porque esa
+   * corre arriba del tren (`enTecho`) y ésta a ras del piso.
+   *
+   * Cede el [E] a todo lo demás: si estás en la salida (escaparte gana) o
+   * tenés al lado algo para agarrar, [E] hace eso. Devuelve true mientras la
+   * estás haciendo, para que el resto de la interacción no corra ese cuadro.
+   */
+  function updateTreparCarbon(dt) {
+    const destino = bordeDelCarbon();
+    const holding = input.isDown('KeyE') && player.alive && !mochilaAbierta;
+    const ocupado = isInsideZone(player, train.exitZone) ||
+      nearestLoot() || nearestPassenger() || cajonCerca() || tranqueraCerca();
+
+    if (!destino || ocupado || !holding || player.tumbado > 0) {
+      carbonProgress = 0;
+      return false;
+    }
+
+    carbonProgress += dt;
+    if (carbonProgress >= CONFIG.techo.bajarHold) {
+      // Pegado a una pared, la cobertura te devolvería a ella el cuadro siguiente.
+      player.cover = null;
+      player.peek = 0;
+      player.enCarbon = destino.sube;
+      player.x = destino.x;
+      player.y = CONFIG.techo.centroY;
+      carbonProgress = 0;
+      audio.play('cover');
+    }
+    return true;
+  }
+
+  /**
+   * ¿Estás al borde del carbón, de un lado o del otro? Devuelve a dónde irías
+   * (`x`) y si es para subir, o null.
+   *
+   * Se mide con el mismo alcance que bajar del techo (`techo.bajarAlcance`)
+   * y contra el BORDE del vagón, por el mismo motivo: el borde se ve.
+   */
+  function bordeDelCarbon() {
+    if (player.enTecho) return null;
+    const alcance = CONFIG.techo.bajarAlcance;
+
+    if (player.enCarbon) {
+      const idx = train.wagonAt(player.x);
+      const w = train.wagons[idx];
+      if (!w || !w.carbon) return null;
+      if (player.x - w.x < alcance && train.plataformas[idx]) {
+        return { x: train.plataformas[idx].x, sube: false };
+      }
+      if ((w.x + w.width) - player.x < alcance && train.plataformas[idx + 1]) {
+        return { x: train.plataformas[idx + 1].x, sube: false };
+      }
+      return null;
+    }
+
+    if (train.tramoAt(player.x) === 'vagon') return null;
+    for (const w of train.wagons) {
+      if (!w.carbon) continue;
+      if (player.x < w.x && w.x - player.x < alcance) return { x: w.x + 12, sube: true };
+      const fin = w.x + w.width;
+      if (player.x > fin && player.x - fin < alcance) return { x: fin - 12, sube: true };
+    }
+    return null;
   }
 
   /**
@@ -3853,6 +3954,17 @@ export function createRaidScene(services) {
       if (w.esCola || !w.tieneTecho) continue;
       if (w.x > camera.renderX + renderer.width + 20 || w.x + w.width < camera.renderX - 20) continue;
 
+      /**
+       * LA GÓNDOLA NO SE TAPA: su "techo" es el mismo carbón que se ve desde
+       * abajo, y lo que hay encima (guardias cruzando, reses) está a tu altura.
+       * Sólo se marca la franja pisable.
+       */
+      if (w.carbon) {
+        r.rect(w.x, ct.centroY - ct.ancho - 1, w.width, 1, colors.carbon.brillo);
+        r.rect(w.x, ct.centroY + ct.ancho, w.width, 1, colors.carbon.brillo);
+        continue;
+      }
+
       r.rect(w.x, 0, w.width, map.height, colors.techo);
       r.rect(w.x, 0, w.width, 4, colors.techoBorde);
       r.rect(w.x, map.height - 4, w.width, 4, colors.techoBorde);
@@ -4008,6 +4120,18 @@ export function createRaidScene(services) {
         r.text(T.prompts.techoAyuda, player.x, player.y + 22, colors.textDim);
       }
       return;
+    }
+
+    // Trepar al carbón o bajar de él, con la misma barra que bajar del techo.
+    const carbon = bordeDelCarbon();
+    if (carbon && !isInsideZone(player, train.exitZone)) {
+      r.text(carbon.sube ? T.prompts.treparCarbon : T.prompts.bajar, player.x, player.y - 16, colors.doorGlow);
+      if (carbonProgress > 0) {
+        const w = 22;
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12,
+          w * (carbonProgress / CONFIG.techo.bajarHold), 3, colors.doorGlow);
+      }
     }
 
     const nearest = nearestLoot();

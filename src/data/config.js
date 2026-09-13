@@ -1378,10 +1378,14 @@ export const CONFIG = {
    * El pasillo del medio del refrigerado no tiene reses: cruzar el vagón no
    * frena. Frena meterse de costado en las hileras.
    *
-   * La góndola (etapa 5) suma acá su carbón.
+   * EL CARBÓN DE LA GÓNDOLA (etapa 5), también a la mitad: la góndola de 448
+   * px se cruza en 11,5 s en vez de 5,7. Frena a todos los que la pisan, a las
+   * reses de la estampida y también al que pasa por el techo, porque por
+   * encima del carbón es el mismo camino.
    */
   casillasQueFrenan: {
     reses: 0.5,
+    carbon: 0.5,
   },
 
   loot: {
@@ -2274,6 +2278,17 @@ export const CONFIG = {
     windowGlass:  '#7fb2bd',
     railing:      '#6b5236',
     railingTop:   '#8a6b47',
+
+    // El carbón de la góndola ('K' y 'M'). Casi negro, con terrones y algún
+    // brillo: tiene que leerse distinto del piso de madera y de la chapa del techo.
+    carbon: {
+      piso:         '#2a2522',
+      pisoLuz:      '#3d3632',
+      brillo:       '#6a625b',
+      monticulo:    '#171413',
+      monticuloLuz: '#4a423d',
+      sombra:       '#0e0c0b',
+    },
 
     // La res colgada del refrigerado ('R'). Roja y con la grasa clara para que
     // se lea como carne y no como otro cajón: ésta se atraviesa, y la bala también.

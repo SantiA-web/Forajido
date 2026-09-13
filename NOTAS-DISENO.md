@@ -11682,6 +11682,81 @@ yéndose a cubrir.
 
 **⚠️ NO JUGADO.**
 
+### ✅ Etapa 5 hecha — la góndola
+
+**EL DISEÑO CAMBIÓ AL CONSTRUIRLO, y para bien.** Estaba anotado como un vagón
+abierto con un pasillo adentro, desde el que además se subía al techo. Santi lo
+corrigió con la tabla delante: *"la góndola es el techo. Pasar por arriba del
+carbón es como pasar por el techo. Además, no puedes pasar por 'debajo' del
+carbón"* y *"para subir o bajar es por los enganches"*. O sea: **no hay adentro**.
+
+**La pregunta que eso abrió, y se decidió:** si sólo se cruza por encima,
+¿quién más puede? Hoy guardias, refuerzos, el Sheriff y la estampida sólo
+caminan a ras del piso. Con "sólo vos, como un techo más", el tren de carga
+quedaba **partido en dos** para todos ellos, y subir a la góndola te sacaba de
+encima a cualquiera que te siguiera. Se eligió **"todos cruzan por el
+carbón"**: el piso de la góndola ES la superficie del carbón, y lo pisan todos.
+
+**Cómo quedó:**
+
+- **Dos casillas nuevas.** `K` carbón: se pisa y frena a la mitad
+  (`CONFIG.casillasQueFrenan.carbon`, que se enchufó donde ya estaban las
+  reses). `M` montículo: sólido, tapa la vista y las balas **de los de adentro**
+  (`tapaSoloDeAdentro`).
+- **Vos trepás en los enganches**: [E] 0,4 s al borde, en silencio
+  (`updateTreparCarbon`). Hasta entonces el carbón es pared **sólo para vos**
+  (`world.solidoParaJugador`), y arriba el que choca es el borde hasta que bajás.
+  Cede el [E] a la salida y a cualquier cosa que se pueda agarrar.
+- **`sinTecho` se partió en dos**, como estaba previsto: `tieneTecho` (se camina
+  por arriba) y `aLaIntemperie` (llueve, y el galope te ve al ritmo del ganado).
+  La góndola es la primera con techo pisable y a la intemperie.
+- **Por el techo sigue de largo y frena igual**, porque es el mismo carbón. No se
+  tapa al dibujarlo: lo que está encima del carbón está a tu altura.
+- **Desde el caballo se puede saltar encima** *(Santi, sobre "el galope queda
+  igual")*: sale sola, porque ahora `tieneTecho` es verdadero.
+- **Los jinetes no ven los montículos**: su vista (`vistaDelJinete`) y sus balas
+  (`fromRider`, que ya existía) los ignoran.
+- **Las reses de la estampida frenan en el carbón**, y **no se sueltan barriles**
+  (Santi, sobre "frenan a la mitad" y "ruedan igual").
+
+**MEDIDO**, en un tren de carga armado a mano (caboose, góndola, cerrado):
+
+| Qué | Resultado |
+|---|---|
+| Caminar contra el carbón sin trepar | Frena en x=491, con el borde en 496 |
+| Trepar / bajar | 0,42 s cada uno; bajando caés en el enganche |
+| 300 px a pie: carbón / cerrado | **14,65 / 7,35 s**, el doble |
+| Por el techo: sobre la góndola / sobre el cerrado | **39 / 78 px/s**, sin caerse |
+| Guardia persiguiendo sobre el carbón | **23 px/s**, y encuentra camino a través |
+| Montículo, para un guardia | Corta la vista y la bala |
+| Bala de jinete contra un montículo | **Pasa** |
+| 300 trenes de carga | 0 errores, 0 avisos, los 300 con góndola |
+
+**Techo contra pasillo, re-medido sobre la góndola**: de punta a punta por abajo
+(trepar + cruzar + bajar) **22,48 s** contra **12,05 s** el mismo largo en el
+cerrado; por arriba **11,28 s** contra **5,65 s**. **Las dos rutas pagan el
+doble**, así que la góndola no rompe el "el techo tarda lo mismo". ⚠️ Es una
+medición por tramo, no la del jugador de prueba del vagón 1 al 4 con guardias
+(allá abajo el jugador de prueba camina más lento por no apuntar hacia donde
+va): **ésa no se repitió**.
+
+Una primera medición del techo dio 31 px/s en vez de 39: eran los carteles, que
+te voltean y te dejan un rato en el piso. Sin carteles, 39.
+
+**MIRADO — el montículo necesitó tres dibujos:** 🐛 primero cada casilla tenía
+su borde y su lomo, y un montículo de 3x2 se leía como **seis cajas apiladas**;
+🐛 unido en una sola masa pareja, se leía como **un pozo negro**. Quedó mirando a
+sus vecinas: la fila de arriba del bulto iluminada, la de abajo en sombra y las
+esquinas sueltas redondeadas — ahora es una pila que sobresale del carbón.
+
+**Sin medir, revisado leyendo el código:** que los jinetes vean por encima de un
+montículo (sí se midió su bala), la lluvia sobre la góndola y el ritmo del
+galope. **Una simplificación a mirar jugando:** arriba de la góndola por el techo
+seguís siendo "el que va por el techo", así que un guardia cruzando el mismo
+carbón no te ve, aunque estén a la misma altura.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

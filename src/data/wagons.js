@@ -1179,31 +1179,44 @@ export const WAGONS = {
    * *(Santi: "sin techo y no es un vagón al que podés 'entrar'. El carbón
    * funciona como un techo. Pasar por aquí reduce el movimiento")*
    *
-   * ⚠️ HOY ES SÓLO SU FORMA (etapa 5). Lo que la hace la góndola todavía no
-   * existe: el carbón que frena a todos a la mitad, cruzarla por encima, subir
-   * al techo desde el pasillo, y partir `sinTecho` en dos (acá se camina por
-   * arriba como un techo, pero llueve encima). Mientras tanto es un vagón
-   * abierto con montículos, y corta el camino de arriba como el ganado.
+   * EL CARBÓN LLENA EL VAGÓN HASTA ARRIBA (etapa 5): no hay "adentro". Su
+   * piso ('K') ES la superficie del carbón, y lo pisan todos a la mitad —
+   * guardias, reses, el Sheriff—, así nadie queda cortado del otro lado.
    *
-   * NADIE VIVE EN EL CARBÓN: cero guardias y cero botín. Sólo se cruza.
+   * VOS TREPÁS Y BAJÁS EN LOS ENGANCHES *(Santi: "para subir o bajar es por
+   * los enganches")*: mantener [E] 0,4 s al borde, en silencio
+   * (`updateTreparCarbon`, scenes/raidScene.js). Hasta que no trepaste, el
+   * carbón es una pared para vos (`world.solidoParaJugador`).
+   *
+   * CUENTA COMO TECHO *(Santi: "pasar por arriba del carbón es como pasar por
+   * el techo")*: el que viene por arriba sigue de largo (y frena igual), y
+   * desde el caballo se puede saltar encima. PERO ESTÁ A LA INTEMPERIE: llueve,
+   * y desde el galope te ven como al lado del ganado (`aLaIntemperie`, que
+   * reemplaza al viejo `sinTecho` para la góndola).
+   *
+   * MONTÍCULOS ('M'): te tapan de los guardias, no de los jinetes.
+   *
+   * NADIE VIVE EN EL CARBÓN: cero guardias, cero botín, y no se sueltan
+   * barriles (Santi eligió eso sobre "frenan a la mitad" y "ruedan igual").
    */
   gondola: {
     id: 'gondola',
     name: 'Góndola',
     short: 'GÓNDOLA',
     hint: 'Carbón. Se cruza por encima, y cuesta.',
-    sinTecho: true,
+    carbon: true,
+    aLaIntemperie: true,
     sinComportamiento: true,
     layout: [
       '#HHHHHHHHHHHHHHHHHHHHHHHHHH#',
-      '#..........................#',
-      '#..CCC.......CCC.......CC..#',
-      '#..CCC.......CCC.......CC..#',
-      '+..........................+',
-      '+..........................+',
-      '#.......CCC.......CCC......#',
-      '#.......CCC.......CCC......#',
-      '#..........................#',
+      '#KKKKKKKKKKKKKKKKKKKKKKKKKK#',
+      '#KKMMMKKKKKKKMMMKKKKKKKMMKK#',
+      '#KKMMMKKKKKKKMMMKKKKKKKMMKK#',
+      '+KKKKKKKKKKKKKKKKKKKKKKKKKK+',
+      '+KKKKKKKKKKKKKKKKKKKKKKKKKK+',
+      '#KKKKKKKMMMKKKKKKKMMMKKKKKK#',
+      '#KKKKKKKMMMKKKKKKKMMMKKKKKK#',
+      '#KKKKKKKKKKKKKKKKKKKKKKKKKK#',
       '#HHHHHHHHHHHHHHHHHHHHHHHHHH#',
     ],
     enemies: [],

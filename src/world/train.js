@@ -597,6 +597,15 @@ export function buildTrain(
        * wagons.js), no de una lista escrita a mano acá.
        */
       tieneTecho: !t.plantilla.sinTecho,
+      /**
+       * `sinTecho` DECIDÍA DOS COSAS A LA VEZ: si hay techo que pisar y si te
+       * llueve encima / te ven desde el galope. En el ganado y la plataforma
+       * coinciden; la góndola es el primer vagón donde no — se camina por
+       * arriba, pero está a la intemperie. Por eso son dos marcas.
+       */
+      aLaIntemperie: !!(t.plantilla.sinTecho || t.plantilla.aLaIntemperie),
+      // El vagón de carbón: se trepa en los enganches (scenes/raidScene.js).
+      carbon: !!t.plantilla.carbon,
       colStart: t.colStart,
       x: t.colStart * map.size,
       width: t.cols * map.size,
@@ -1832,6 +1841,57 @@ export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
           r.rect(rx + 11, y + 4, 2, 8, cr.grasa);
           r.rect(rx + 6, y + 6, 4, 1, cr.carneSombra);
           r.rect(rx + 6, y + 9, 4, 1, cr.carneSombra);
+          break;
+        }
+
+        case 'K': {
+          // Carbón: casi negro, con terrones salteados por casilla (la lección
+          // del ténder: dos cuentas que avanzan juntas dibujan una raya).
+          const cc = colors.carbon;
+          const s = (col * 7 + row * 13) % 4;
+          r.rect(x, y, size, size, cc.piso);
+          r.rect(x + 2 + s, y + 3, 3, 2, cc.pisoLuz);
+          r.rect(x + 9 - s, y + 10, 3, 2, cc.pisoLuz);
+          r.rect(x + 7, y + 6 + (s % 2), 2, 1, cc.brillo);
+          break;
+        }
+
+        case 'M': {
+          /**
+           * Montículo: UNA sola masa aunque ocupe varias casillas.
+           *
+           * 🐛 La primera versión dibujaba cada casilla con su propio borde y su
+           * propio lomo, y un montículo de 3x2 se leía como seis cajas apiladas.
+           * Ahora cada casilla mira a sus vecinas: sólo redondea y achica donde
+           * del otro lado ya no hay montículo, y el lomo iluminado va únicamente
+           * en la fila de arriba del bulto.
+           */
+          const cc = colors.carbon;
+          const vecino = (dc, dr) => (map.grid[row + dr] || [])[col + dc] === 'M';
+          const arriba = vecino(0, -1), abajo = vecino(0, 1);
+          const izq = vecino(-1, 0), der = vecino(1, 0);
+          r.rect(x, y, size, size, cc.piso);
+          const x0 = x + (izq ? 0 : 1), x1 = x + size - (der ? 0 : 1);
+          const y0 = y + (arriba ? 0 : 2), y1 = y + size - (abajo ? 0 : 1);
+          /**
+           * 🐛 Y LA SEGUNDA VERSIÓN SE LEÍA COMO UN POZO: un rectángulo negro
+           * parejo. Un montón de carbón tiene luz arriba y sombra abajo, así que
+           * la fila de arriba del bulto va iluminada y la de abajo apagada, y las
+           * esquinas sueltas se redondean.
+           */
+          const base = !arriba ? cc.monticuloLuz : cc.monticulo;
+          r.rect(x0, y0, x1 - x0, y1 - y0, base);
+          if (!arriba) r.rect(x0, y0 + 9, x1 - x0, y1 - y0 - 9, cc.monticulo);
+          if (!abajo) r.rect(x0, y1 - 4, x1 - x0, 3, cc.sombra);
+          // Esquinas redondeadas donde no sigue el bulto.
+          if (!arriba && !izq) r.rect(x0, y0, 3, 2, cc.piso);
+          if (!arriba && !der) r.rect(x1 - 3, y0, 3, 2, cc.piso);
+          if (!abajo && !izq) r.rect(x0, y1 - 2, 2, 2, cc.piso);
+          if (!abajo && !der) r.rect(x1 - 2, y1 - 2, 2, 2, cc.piso);
+          // Terrones salteados, que no caigan en fila de casilla en casilla.
+          const s = (col * 5 + row * 3) % 5;
+          r.rect(x + 3 + s, y + 5 + (s % 3), 2, 2, !arriba ? cc.brillo : cc.monticuloLuz);
+          r.rect(x + 11 - s, y + 10 - (s % 2), 2, 1, cc.brillo);
           break;
         }
 

@@ -383,6 +383,12 @@ function updateOnRoof(p, dt, world) {
   let speed = p.techoAgachado ? cp.sneakSpeed : cp.speed;
   if (p.techoSalto > 0) speed *= ct.saltoBoost;
 
+  // Por arriba de la góndola se camina sobre el mismo carbón: frena igual.
+  const tren = world.train;
+  if (tren && tren.tramoAt(p.x) === 'vagon' && (tren.wagons[tren.wagonAt(p.x)] || {}).carbon) {
+    speed *= CONFIG.casillasQueFrenan.carbon;
+  }
+
   // Agachado no hacés ruido de pisadas, igual que abajo (systems/ai.js lo lee
   // de `sneaking`). Es lo que te deja cruzar un vagón sin que te oigan.
   p.sneaking = p.techoAgachado;
@@ -440,7 +446,8 @@ function updateTumbado(p, dt, world) {
   p.tumbado -= dt;
   p.moving = false;
 
-  const solid = world.map.isSolidForMovementAt || world.map.isSolidAt;
+  // `solidoParaJugador`: el carbón es pared hasta que trepás (scenes/raidScene.js).
+  const solid = world.solidoParaJugador || world.map.isSolidForMovementAt || world.map.isSolidAt;
   moveAndCollide(p, p.knockX * dt, p.knockY * dt, solid);
   p.knockX *= 0.82;
   p.knockY *= 0.82;
@@ -556,7 +563,7 @@ function updateFree(p, dt, world, dx, dy, toggle) {
   // sin meterla en isSolidAt puro — eso es lo que usa el sistema de
   // cobertura, y una puerta angosta flotando en el aire no debería contar
   // como pared para pegarse (systems/cover.js).
-  moveAndCollide(p, moveX, moveY, world.map.isSolidForMovementAt || world.map.isSolidAt);
+  moveAndCollide(p, moveX, moveY, world.solidoParaJugador || world.map.isSolidForMovementAt || world.map.isSolidAt);
 
   if (toggle) tryEnterCover(p, world);
 }
@@ -644,7 +651,7 @@ function updateInCover(p, dt, world, dx, dy, toggle) {
     anchor,
     cover.sx * slide * c.coverSpeed * dt,
     cover.sy * slide * c.coverSpeed * dt,
-    world.map.isSolidForMovementAt || world.map.isSolidAt
+    world.solidoParaJugador || world.map.isSolidForMovementAt || world.map.isSolidAt
   );
   p.coverX = anchor.x;
   p.coverY = anchor.y;
@@ -672,7 +679,7 @@ function updateInCover(p, dt, world, dx, dy, toggle) {
   const previous = { x: p.x, y: p.y };
   p.x = desiredX;
   p.y = desiredY;
-  if (overlapsSolid(p, world.map.isSolidForMovementAt || world.map.isSolidAt)) {
+  if (overlapsSolid(p, world.solidoParaJugador || world.map.isSolidForMovementAt || world.map.isSolidAt)) {
     p.x = previous.x;
     p.y = previous.y;
   }

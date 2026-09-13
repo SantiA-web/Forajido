@@ -81,6 +81,7 @@ export const T = {
     noDynamite: 'SIN DINAMITA',
     techo: 'EN EL TECHO',
     bajar: '[E] BAJAR',
+    treparCarbon: '[E] TREPAR AL CARBÓN',
     caisteDelTecho: '¡EL CARTEL! TE VIERON CAER',
     caisteAlEnganche: 'NO LLEGASTE AL OTRO TECHO',
     techoAyuda: '[SHIFT] AGACHARSE   [ESPACIO] SALTAR',

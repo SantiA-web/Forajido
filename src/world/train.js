@@ -745,7 +745,11 @@ export function buildTrain(
      */
     const defsBase = p.enemies || [];
     const defs = (redada && tipoDelVagon !== 'blindado')
-      ? defsBase.flatMap((def) => [def, { ...def, redadaExtra: true }])
+      // Menos los que vigilan algo (`vigila`, los guardaespaldas de primera
+      // clase): la copia nacería en el MISMO punto que el original, porque un
+      // centinela no tiene recorrido del que tomar la mitad, y se empujarían
+      // el asalto entero (el bug de "se empujaban" de los que conversan).
+      ? defsBase.flatMap((def) => (def.vigila ? [def] : [def, { ...def, redadaExtra: true }]))
       : defsBase;
 
     /**
@@ -965,7 +969,9 @@ export function buildTrain(
        * Es la señal que le faltaba a este comportamiento — antes no había
        * forma de distinguirlo de un guardia cualquiera parado en su ronda.
        */
-      if (esVigilando) guard.vigilaLider = true;
+      // `def.vigila`: la plantilla lo planta vigilando (los guardaespaldas de
+      // primera clase). El mismo cartel que ya usaba el paquete del rico.
+      if (esVigilando || def.vigila) guard.vigilaLider = true;
       guard.wagon = t.wagon;      // de qué vagón es: importa para la alarma
       guard.homePath = guard.path;
 
@@ -998,6 +1004,18 @@ export function buildTrain(
       const pos = enTiles([def.col, def.row]);
       const pa = createPassenger(pos.x, pos.y, FACINGS[def.facing] ?? Math.PI);
       pa.wagon = t.wagon;
+      /**
+       * UN RICO DE PRIMERA CLASE (`rico: true` en la plantilla). Lleva los
+       * números del paquete de siempre (`PAQUETES.pasajeroRico`), que quedó
+       * apagado cuando los ricos se mudaron a su vagón: una sola fuente para
+       * cuánto afloja y cuánto tarda. `botin` es además lo que le dibuja el
+       * sombrero de copa (entities/passenger.js).
+       */
+      if (def.rico) {
+        const rico = PAQUETES.pasajeroRico;
+        pa.botin = { min: rico.botinMin, max: rico.botinMax };
+        pa.robTime = rico.robTime;
+      }
       passengers.push(pa);
       pasajerosDelVagon.push(pa);
       revisar(avisos, map, pos, `pasajero del ${p.name} (vagón ${t.wagon})`);

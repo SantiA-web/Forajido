@@ -579,15 +579,22 @@ certero, el precio de no estar atento. **Cuanto más pagan por tu cabeza
    los tres lugares donde podés dejar el caballo
 ```
 
-Seis vagones, mezclados en cada asalto: dos de pasajeros, uno de comedor, uno
-de correo, uno de ganado y uno blindado. Colgando de la parte de atrás está la
-**plataforma trasera**.
+**Hay dos trenes y no se arman igual** (ver "Los dos tipos de tren", más abajo):
 
-**Y uno de cada cuatro trenes cambia el de ganado por el de armas** (ver "El
-vagón de armas", más abajo). Es lo primero que cambia de qué está HECHO el
-tren y no sólo quién va arriba — y lo único de todo eso que **se ve desde el
-galope**, antes de subir. Es uno de cada cuatro y no la mitad porque no cambia
-un vagón: cuando aparece, **hay pólvora repartida por todo el tren**.
+| | Vagones | Siempre | Sorteado |
+|---|---|---|---|
+| **De pasajeros** | 8 | El **caboose** es el 1 | Dormitorio, comedor, dos de pasajeros, el **especial** (vagón de guardias o primera clase, mitad y mitad), correo y **express** (el blindado, nunca antes del 4) |
+| **De carga** | 9 | El **caboose** es el 1 | **Almacén** (nunca antes del 3), dos cerrados, dos **plataformas**, ganado, **góndola** (nunca en las puntas) y **refrigerado** |
+
+Colgando de la parte de atrás, detrás del caboose, está la **plataforma
+trasera**. Y adelante de todo va la locomotora, que se ve y no se entra — de ahí
+salen los refuerzos. *(Todavía no se dibuja: es la etapa 2 de los trenes nuevos.)*
+
+**Y uno de cada cuatro trenes de carga cambia una plataforma por el vagón de
+armas** (ver "El vagón de armas", más abajo). Es lo primero que cambia de qué
+está HECHO el tren y no sólo quién va arriba — y lo único de todo eso que **se ve
+desde el galope**, antes de subir. Es uno de cada cuatro y no la mitad porque no
+cambia un vagón: cuando aparece, **hay pólvora repartida por todo el tren**.
 
 **El caballo es uno solo y se queda donde lo dejaste.** Antes de subir elegís
 hasta dónde adelantarlo: la cola, el enganche entre el vagón 1 y el 2, o el del
@@ -597,34 +604,36 @@ esperándote: ir para allá es meterse en un callejón sin salida.
 
 **No miden todos lo mismo**, y es a propósito: si todos midieran igual, el tren
 no tendría ritmo — cruzar el de ganado (una bolsa, un guardia) costaría lo
-mismo que cruzar el blindado. Anchos: pasajeros 40 baldosas, comedor 34,
-correo 32, blindado 30, ganado 24 y **armas 24** — el de armas mide lo mismo
-que el de ganado porque, como él, es un vagón de paso.
+mismo que cruzar el blindado. Anchos: pasajeros y dormitorio 40 baldosas,
+comedor 34, correo, cerrado, almacén, guardias, primera clase y refrigerado 32,
+blindado 30, góndola 28, ganado, plataforma y **armas 24**, y el caboose 20 — el
+de armas mide lo mismo que el de ganado porque, como él, es un vagón de paso.
 
 ### El vagón de armas: cuando aparece, cambia el tren entero
 
-**Uno de cada cuatro trenes de CARGA cambia un vagón de ganado por uno de
-armas.** Nunca es el primero, y desde afuera se ve cuál te tocó.
+**Uno de cada cuatro trenes de CARGA cambia una de sus dos plataformas por un
+vagón de armas.** Nunca es el primero ni el último, y desde afuera se ve cuál te
+tocó.
 
 > Antes vivía en el tren estándar y se mudó con la reestructuración de los
 > tipos. Como el de carga pasó a ser la mitad del sorteo (antes el estándar era
 > la otra mitad), **el vagón de armas sigue apareciendo en el 12,5% de los
-> asaltos, exactamente igual que antes** — medido con 120.000 trenes. Y como en
-> el de carga sobran dos vagones de ganado, la estampida sigue teniendo con qué
-> jugarse.
+> asaltos, exactamente igual que antes** — medido con 120.000 trenes. Con los
+> trenes nuevos reemplaza a una plataforma y no al ganado: el ganado es uno solo
+> y viaja siempre, así que la estampida no se pierde nunca (medido: lo traen el
+> 24,9% de 10.000 trenes de carga).
 
 Y cuando aparece **no cambia sólo su propio pasillo**: hay barriles de pólvora
-repartidos por casi todos los vagones — el comedor, el correo, el blindado. El
-único que nunca lleva es el de pasajeros. Un tren con vagón de armas es un tren
-distinto de punta a punta, y por eso es uno de cada cuatro y no la mitad.
+repartidos por casi todos los vagones — el caboose, el almacén, los cerrados, las
+plataformas. La góndola y el refrigerado no llevan (en el refrigerado, entre
+pasillos de una baldosa, un barril prendido no dejaría por dónde huir). Un tren
+con vagón de armas es un tren distinto de punta a punta, y por eso es uno de cada
+cuatro y no la mitad.
 
-**Y nunca viaja pegado al blindado**, ni es el primer vagón ni el último:
-siempre tiene un vagón de por medio con la caja fuerte, y siempre tiene vecinos
-a los dos lados. Tres de cada cuatro veces el blindado queda **más adentro** que
-él —así que la pólvora te queda de camino a la caja fuerte, que es lindo porque
-la puerta del blindado se abre justamente con dinamita— y una de cada cuatro
-**el blindado aparece antes**. (El motivo de fondo es otro: pegados, la ronda
-del Dinamitero se rompe. Ver más abajo.)
+**Y nunca es el primer vagón ni el último**: siempre tiene vecinos a los dos
+lados, porque la ronda del Dinamitero los necesita (ver más abajo). *(Antes
+tampoco podía ir pegado al blindado; esa regla se fue con el blindado del tren
+de carga.)*
 
 Un barril de pólvora es tres cosas a la vez:
 
@@ -787,17 +796,44 @@ eje de dificultad disfrazado de variedad — un tren que se distingue por su rel
 es el mismo tren con otro cronómetro. Ahora son dos y **se distinguen por lo que
 traen adentro**:
 
-| | Sale | Vagones | El asalto dura | Qué te ataca |
-|---|---|---|---|---|
-| **De pasajeros** | 50% | 6, normales | 145s | **La gente te delata** |
-| **De carga** | 50% | 8, mayoría mercancía (uno es el **almacén**) | 165s | **El tren te ataca a vos** |
+| | Sale | Vagones | Largo | El asalto dura | Qué te ataca |
+|---|---|---|---|---|---|
+| **De pasajeros** | 50% | 8 (caboose, dormitorio, comedor, 2 de pasajeros, el especial, correo, express) | 4.800 px | 180 s | **La gente te delata** |
+| **De carga** | 50% | 9 (caboose, almacén, 2 cerrados, 2 plataformas, ganado, góndola, refrigerado) | 4.528 px | 180 s | **El tren te ataca a vos** |
+
+**Los dos duran lo mismo, a propósito.** Había una regla sin escribir: los relojes
+de antes (145 s y 165 s) daban ~40 s por cada 1.000 px de tren. El de pasajeros
+nuevo mide un 6% más que el de carga y por esa regla le tocarían ~192 s; se dejó
+en 180 igual, un poco más apretado, para que ningún tren se distinga por el
+reloj.
+
+### Los vagones nuevos
+
+*(Santi: "me gustaría cambiar el sistema de los vagones de los trenes. Añadiendo
+vagones más especiales y selectivos")* — el diseño completo, con cada decisión y
+su tabla, está en NOTAS-DISENO.md. Se construye por etapas y **cada sistema nuevo
+entra solo**. Hoy están todos armados con mecánicas que ya existían:
+
+| Vagón | Tren | Qué es | Lo que falta |
+|---|---|---|---|
+| **Caboose** | Los dos | La tripulación, siempre el vagón 1. Un guardia, una bolsa | El **vigía** que mira la vía de atrás y se da vuelta al azar |
+| **Dormitorio** | Pasajeros | Diez camarotes con su litera y una abertura al pasillo. Cuatro pasajeros, cada uno en su cabina | Las **puertas** de los camarotes |
+| **Vagón de guardias** | Pasajeros (especial) | Cuatro guardias entre mesas de cartas y catres. Cuando sale, el tren sube de 16 a 18 guardias | Que estén **de franco**: distraídos y 1,5 s para armarse |
+| **Primera clase** | Pasajeros (especial) | **Los tres ricos** del tren, con sombrero de copa, y dos guardaespaldas VIGILANDO. ~$600 entre los tres | — |
+| **Cerrado** | Carga | El correo liviano de siempre, con su nombre de tren de carga | — |
+| **Plataforma** | Carga | Carga amarrada sin paredes: te tapa de los guardias, no de los jinetes | — |
+| **Góndola** | Carga | Montículos de carbón, sin nadie adentro | Que **frene a la mitad**, se cruce por encima y desde el pasillo se suba al techo |
+| **Refrigerado** | Carga | Hileras de reses colgadas, dos guardias | Que las reses **tapen la vista y no las balas** |
+
+> **Nada de esto está jugado.** Está medido (10.000 trenes de cada uno cumplen
+> todas las reglas, 300 armados sin un solo aviso) y mirado, no jugado.
 
 La regla del reparto es **una mecánica, una sola casa**: si algo aparece en los
 dos trenes, no distingue nada.
 
 | | **De pasajeros** | **De carga** |
 |---|---|---|
-| **Suyo, y de nadie más** | El pasajero rico con su guardaespaldas, la caja fuerte oculta, los testigos, el civil encubierto, y los dos que suben por vos (**el Cazarrecompensas y el Sheriff**) | **La carga que se suelta** y **el piso que traiciona**, el ganado que se puede soltar, **el vagón de armas** con su pólvora y su Dinamitero, y **el vagón almacén** con la mercadería que después hay que vender |
+| **Suyo, y de nadie más** | **Primera clase** con sus ricos y guardaespaldas, el vagón de guardias, la caja fuerte oculta, los testigos, el civil encubierto, y los dos que suben por vos (**el Cazarrecompensas y el Sheriff**) | **La carga que se suelta** y **el piso que traiciona**, el ganado que se puede soltar, **el vagón de armas** con su pólvora y su Dinamitero, y **el vagón almacén** con la mercadería que después hay que vender |
 | **La pregunta** | ¿podés robarles sin que ninguno grite? | ¿podés cruzarlo sin que el tren te mate? |
 
 **Los barriles que ruedan y el piso traicionero eran del tren veloz y se mudaron
@@ -960,10 +996,10 @@ veces.
 | **Cuatro guardias, y son BLINDADOS** | Aguantan un tiro más y se les ve la placa. Son los únicos duros del tren de carga — y quedan **encerrados adentro**: nadie sale a buscarte y nadie entra a ayudarlos. Romper la puerta te deja de una con los cuatro, esperándote |
 | **Estanterías gruesas** | Pasillos más angostos que los del correo: adentro se pelea peor. Es un depósito, no un furgón de reparto |
 | **Nadie a quien preguntarle** | No lleva pasajeros, como todo este tren |
-| **Nunca es el primer vagón** | Lo más caro del tren no puede quedar a un paso de la salida |
+| **Nunca en los dos primeros vagones** | Lo más caro del tren no puede quedar a un paso de la salida. Con el caboose siempre primero, eso es "desde el 3" |
 
-Mide lo mismo que el vagón de correo liviano al que reemplaza, así que el tren
-no cambia de largo ni su reloj de 165 s.
+Es **uno de los tres vagones cerrados** del tren de carga; los otros dos son
+cerrados comunes.
 
 **Y el tren de carga ya no lleva vagón blindado.** El almacén heredó su papel —y
 sus cuatro guardias duros— con otra llave: aquél era "el premio y la trampa" y
@@ -1004,8 +1040,8 @@ DOBLE de botín, pero antes era un número que te enterabas en la pantalla de
 resultados. Ahora el HUD dice **LIMPIO** todo el asalto: la racha está a la
 vista, y perderla se siente.
 
-**El ganado se puede soltar.** Los vagones de ganado —tres en este tren— traen
-tranqueras que se abren con [E]. La manada sale corriendo hacia la locomotora y
+**El ganado se puede soltar.** El vagón de ganado —uno solo, y viaja siempre—
+trae dos tranqueras que se abren con [E]. La manada sale corriendo hacia la locomotora y
 **voltea a cualquier guardia que esté en el pasillo** (1,3 s en el piso, sin
 matarlo). Es la primera cosa del juego que VOS le hacés al tren en vez de al
 revés, y es lo que hace jugable el sigilo: hasta ahora "ir limpio" sólo se
@@ -1108,7 +1144,7 @@ las puertas de los costados te tapen un instante (ver abajo).
 
 ### Conocés los vagones, pero nunca sabés qué te vas a encontrar
 
-El tren de pasajeros es el mismo de siempre: seis vagones, los que ya conocés.
+Los vagones de cada tren los conocés (ver "El tren", más arriba).
 Lo que cambia es **quién viaja y cómo está el tren ese día**, y se sortea de
 nuevo en cada servicio.
 
@@ -1119,11 +1155,11 @@ que pasa en los trenes" le tocaba a la mitad del juego. El clima y una redada no
 son la identidad de nadie — son el día que le tocó a ese servicio, y eso le
 puede tocar a cualquiera.
 
-Lo que **sí** es exclusivo del tren de pasajeros son las tres cosas que
-dependen de tener a quién amenazar: **el paquete, el civil encubierto y la caja
-fuerte oculta**. La única forma de enterarte dónde está la caja escondida es que
-te lo suelte un pasajero, y el de carga lleva un solo vagón con gente: esconder
-una caja ahí sería esconderla de verdad.
+Lo que **sí** es exclusivo del tren de pasajeros son las cosas que dependen de
+tener a quién amenazar: **el civil encubierto y la caja fuerte oculta**. La única
+forma de enterarte dónde está la caja escondida es que te lo suelte un pasajero,
+y el de carga ya no lleva a nadie: esconder una caja ahí sería esconderla de
+verdad.
 
 **Cómo está el tren** — pueden salir varias a la vez, o ninguna:
 
@@ -1162,7 +1198,7 @@ de linda:
 | Dónde estás | Qué oís |
 |---|---|
 | **Bajo techo**, adentro de un vagón | El agua **golpeando la chapa** encima tuyo. Es el sonido más fuerte de la tormenta |
-| **En un enganche**, en el **vagón de ganado** o **arriba del techo** | La chapa se apaga y suben **el agua y el viento**: ahora te está lloviendo a vos |
+| **En un enganche**, en un **vagón abierto** (el ganado, las plataformas, la góndola) o **arriba del techo** | La chapa se apaga y suben **el agua y el viento**: ahora te está lloviendo a vos |
 
 Y eso es exactamente cuándo los jinetes de afuera te pueden pegar un tiro. **Se
 oye que saliste** sin que ningún cartel lo diga — el clima ya era la señal.
@@ -1183,21 +1219,18 @@ nada — todavía.
 Los dos que vigilan dicen **VIGILANDO** arriba de la cabeza todo el tiempo:
 es un estado, no una frase suelta.
 
-**Y qué se lleva ese vagón.** Uno de cada dos trenes trae un **paquete**: un
-objetivo valioso con su custodia, metido en un vagón cualquiera. Hasta ahora
-el valor de un vagón estaba escrito en su tipo —el correo tenía la caja, el
-blindado el premio gordo—, así que sabiendo qué vagón era sabías qué te
-esperaba. Un paquete rompe eso: el vagón de pasajeros de siempre puede ser,
-esta vez, el que más plata lleva arriba.
+**Los ricos viajan en primera clase.** Cada uno lleva encima cuatro veces lo que
+lleva cualquiera, pero **tarda más en soltarlo** — más tiempo quieto, y con
+alguien mirando. Se los reconoce por el **sombrero de copa**: es la silueta más
+alta del tren, asoma por encima de los respaldos. Y los cuidan dos
+**guardaespaldas** plantados en el pasillo, que no patrullan y dicen
+**VIGILANDO** arriba de la cabeza.
 
-**Un pasajero rico**, en algún vagón con gente: lleva encima cuatro veces lo
-que lleva cualquiera, pero **tarda más en soltarlo** — más tiempo quieto, y
-con alguien mirando. Se lo reconoce por el **sombrero de copa**: es la
-silueta más alta del tren, asoma por encima de los respaldos.
-
-**La pista de que hay algo es el guardaespaldas**: un guardia plantado al
-lado que no patrulla y dice **VIGILANDO** arriba de la cabeza, igual que los
-que cuidan una puerta. Te avisa que ahí hay algo, y no te dice qué.
+> **Antes eran un "paquete"**: un rico con su guardaespaldas podía caer en
+> cualquier vagón con gente, y ésa era la gracia — el vagón de pasajeros de
+> siempre podía ser, esa vez, el que más plata llevaba. Con los trenes nuevos
+> los ricos se mudaron a su vagón (una mecánica, una casa) y el paquete quedó
+> apagado. Se perdió esa sorpresa, y fue una decisión.
 
 ### Y una caja fuerte escondida, en cualquier vagón
 
@@ -1215,12 +1248,10 @@ VAGÓN 3: DEBAJO DE UNA MESA
 
 Y eso es todo lo que te llevás: **la caja no se marca en pantalla**. Tenés
 que ir hasta ese vagón y buscarla — aparece recién cuando la tenés al lado,
-como cualquier cosa al alcance de la mano. Los escondites son cinco y
-dependen del vagón: debajo de una ventana o debajo de un asiento en los de
-pasajeros, debajo de una mesa en el comedor y el correo, junto al corral en
-el de ganado, y **entre las estanterías** en el de armas — que es el mejor lugar
-del tren para esconder algo, y el único donde ir a buscarla puede costarte el
-vagón entero.
+como cualquier cosa al alcance de la mano. Los escondites dependen del vagón:
+debajo de una ventana o de un asiento en los de pasajeros y en primera clase,
+debajo de una mesa en el comedor, el correo, el caboose y el vagón de guardias,
+y debajo de una ventana en los camarotes del dormitorio.
 
 Vale más que una caja normal ($400-900 contra $150-600) y tarda más en
 abrirse (8 segundos contra 6,5): estaba escondida por algo.
@@ -1391,9 +1422,10 @@ frescos. **Por eso el galope vale lo que cuesta.**
 
 ### Adentro
 
-Tenés **145 segundos**, menos lo que hayas tardado galopando.
+Tenés **180 segundos**, en los dos trenes, menos lo que hayas tardado galopando.
 
-Eran 170, y bajaron por un motivo concreto: con 170 se podía hacer el tren
+Eran 170 y bajaron a 145 por un motivo concreto (con los trenes nuevos, un tercio
+más largos, volvieron a subir a 180): con 170 se podía hacer el tren
 entero. Mientras barrer todo entre en el reloj, "¿cuánto me llevo?" no es una
 pregunta, porque la respuesta es siempre "todo".
 

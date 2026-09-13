@@ -434,7 +434,17 @@ export function createRideScene(services) {
     if (gente === 0) return;
 
     const cerca = 1 - Math.min(1, dist / A.verDistancia);
-    const ritmo = vagon.id === 'ganado' ? A.verRateGanado : A.verRate;
+    /**
+     * 🔻 EL RITMO DEL VAGÓN ABIERTO SE DECIDE POR LO QUE ES, NO POR SU NOMBRE.
+     * Antes preguntaba `vagon.id === 'ganado'`, y con los trenes nuevos las
+     * dos plataformas —el lugar más expuesto del tren de carga— habrían
+     * quedado con el ritmo de un vagón con paredes sin que nadie lo notara.
+     *
+     * ⚠️ Cuando la góndola parta `sinTecho` en dos (etapa 5), esto tiene que
+     * leer "a la intemperie", no "hay techo que pisar": la góndola se camina por
+     * arriba pero no tiene paredes.
+     */
+    const ritmo = !vagon.tieneTecho ? A.verRateGanado : A.verRate;
     exposicion += ritmo * cerca * (1 + gente * 0.25) * dt;
 
     if (exposicion >= 1) {

@@ -60,7 +60,19 @@ export const PAQUETES = {
    */
   pasajeroRico: {
     id: 'pasajeroRico',
-    peso: 50,
+    /**
+     * 🔻 PESO 0: YA NO SE SORTEA SUELTO. Los ricos se mudaron a su vagón,
+     * primera clase (data/wagons.js), que usa estos mismos números.
+     *
+     * *(decidido con Santi al diseñar los trenes nuevos: "el vagón se lo
+     * queda")* — una mecánica, una casa. Lo que se pierde, y quedó escrito en
+     * NOTAS-DISENO.md: era el ÚNICO paquete, así que la capa entera queda vacía,
+     * y con ella "cualquier vagón común puede ser el que más plata lleva".
+     *
+     * Es una llave, no una amputación — la misma decisión que el tren veloz y
+     * Alta vigilancia. Subir el peso lo devuelve al sorteo.
+     */
+    peso: 0,
     /** Necesita gente a bordo: sin pasajeros no hay a quién hacer rico. */
     necesitaPasajeros: true,
     /** Cuánto afloja. Un pasajero común da 25-70 (CONFIG.passenger.robMin/Max). */
@@ -150,6 +162,23 @@ export const ESCONDITES = {
    * puesto todo lo demás.
    */
   armas: ['cajones'],
+
+  /**
+   * LOS VAGONES NUEVOS DEL TREN DE PASAJEROS (etapa 1). Sólo ahí hay caja
+   * oculta —necesita pasajeros que la delaten—, así que los del de carga no
+   * figuran. Todos reusan escondites que ya existen:
+   *
+   *  - El caboose: el escritorio de la tripulación, o una ventana.
+   *  - El dormitorio: SÓLO la ventana. Las literas no sirven de escondite con
+   *    este layout — ninguna tiene suelo pegado arriba o abajo (del otro lado
+   *    hay pared), y el escondite exige eso para que la caja se pueda alcanzar.
+   *  - Guardias: debajo de una mesa de cartas. Esconderla entre la escolta.
+   *  - Primera clase: debajo de una ventana o de un sillón.
+   */
+  caboose: ['mesa', 'ventana'],
+  dormitorio: ['ventana'],
+  guardias: ['mesa'],
+  primeraClase: ['ventana', 'asiento'],
 };
 
 /** El carácter del layout al que se pega la caja en cada escondite. */

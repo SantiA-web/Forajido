@@ -2268,6 +2268,22 @@ export const CONFIG = {
       blindado:  ['#4a5058', '#626a74'],   // chapa de acero
       cola:      ['#6b4f36', '#87664a'],   // equipaje amontonado
       pasajeros: ['#8a5a34', '#a06b3f'],
+      /**
+       * LOS VAGONES NUEVOS (etapa 1, ver NOTAS-DISENO.md). Colores de arranque:
+       * se miran en pantalla y se corrigen. El de la góndola es el único casi
+       * negro del tren, y es a propósito: es carbón.
+       */
+      // 🐛 Era ['#6e4a32', '#8a5e40']: el mismo marrón que el piso (#6d4a30), así
+      // que la estufa y el escritorio no se veían. Se vio mirándolo — el mismo
+      // error que dejó invisible la mochila dibujada en la espalda.
+      caboose:      ['#4e4844', '#6a635c'],   // la estufa de hierro de la tripulación
+      dormitorio:   ['#7a5a48', '#94705c'],   // literas de los camarotes
+      guardias:     ['#5c5a46', '#767356'],   // mesas de cartas y catres
+      primeraClase: ['#7a3a3e', '#94494e'],   // sillones de terciopelo
+      cerrado:      ['#9c7a45', '#b89257'],   // la estiba del correo liviano
+      plataforma:   ['#5f5344', '#7a6b58'],   // maquinaria y cajones amarrados
+      gondola:      ['#2e2a28', '#46413c'],   // montículos de carbón
+      refrigerado:  ['#8a4a46', '#a65f5a'],   // reses colgadas
       default:   ['#7a5436', '#94663f'],
     },
   },

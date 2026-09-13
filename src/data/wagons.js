@@ -900,6 +900,353 @@ export const WAGONS = {
     ],
   },
 
+  // ======================================================== LOS TRENES NUEVOS
+  //
+  // *(Santi: "me gustaría cambiar el sistema de los vagones de los trenes.
+  // Añadiendo vagones más especiales y selectivos")* — cada decisión, con su
+  // tabla de opciones, está en NOTAS-DISENO.md ("EN DISEÑO · Los trenes nuevos").
+  //
+  // ETAPA 1: PLANTILLAS CON MECÁNICAS QUE YA EXISTEN. El vigía del caboose, las
+  // reses del refrigerado, el carbón de la góndola, los guardias de franco y las
+  // puertas de los camarotes llegan cada uno en su etapa, solos — para que
+  // cuando algo se sienta mal se sepa qué fue. Hasta entonces cada vagón nuevo se
+  // juega con piezas conocidas, y los anchos son los que se usaron para calcular
+  // el largo del tren (y de ahí los 180 s del reloj).
+
+  // ---------------------------------------------------------------- caboose
+  /**
+   * EL VAGÓN DE OBSERVACIÓN — la cola de los DOS trenes, siempre el vagón 1.
+   *
+   * CORTO, 20 columnas: es el vagón de la tripulación, no de la carga. Una
+   * estufa y un escritorio contra la pared de un lado, dos literas del otro.
+   * Una bolsa: lo que el guardafrenos tiene encima.
+   *
+   * ⚠️ TODAVÍA NO TIENE VIGÍA (etapa 6). Su guardia patrulla como cualquiera.
+   * El que mira para atrás, se da vuelta al azar con aviso y te puede ver
+   * galopando llega solo, cuando lo demás ya esté jugado.
+   */
+  caboose: {
+    id: 'caboose',
+    name: 'Vagón de observación',
+    short: 'CABOOSE',
+    hint: 'La tripulación. Desde acá se mira la vía.',
+    layout: [
+      '####WW####WW####WW##',
+      '#CC..............SS#',
+      '#CC..............SS#',
+      '#.....CC....CC.....#',
+      '+..................+',
+      '+..................+',
+      '#.....CC....CC.....#',
+      '#SS..............CC#',
+      '#SS..............CC#',
+      '###WW####WW####WW###',
+    ],
+    enemies: [
+      { path: [[3, 4], [16, 4], [16, 5], [3, 5]] },
+    ],
+    passengers: [],
+    loot: [
+      { col: 9, row: 2, type: 'bag' },
+    ],
+    /** Sólo en el de carga hay vagón de armas; fuera de la ronda (filas 4-5). */
+    cajonesExtra: [
+      { col: 3,  row: 3 },
+      { col: 16, row: 6 },
+    ],
+  },
+
+  // ------------------------------------------------------------- dormitorio
+  /**
+   * EL VAGÓN DORMITORIO — camarotes.
+   *
+   * DE DÍA, porque dormir necesita la noche y la noche está postergada (ver la
+   * Fase 4 en NOTAS-DISENO.md). Acá nadie duerme: es gente encerrada en su
+   * cabina que no quiere que la molesten.
+   *
+   * CINCO CAMAROTES ARRIBA Y CINCO ABAJO, cada uno con su litera ('S') y una
+   * abertura de dos baldosas al pasillo. Y en cada punta, un rincón abierto.
+   * Adentro de un camarote no te ve nadie del pasillo; asomado a la abertura
+   * te ve todo el vagón. Las ventanillas caen sobre las cabinas, así que la
+   * ley de afuera sí te ve ahí adentro — la regla de siempre.
+   *
+   * ⚠️ LAS ABERTURAS NO TIENEN PUERTA TODAVÍA (etapa 7): hoy las puertas sólo
+   * existen en los bordes de un vagón, y ponerlas en otro lugar es lo más
+   * riesgoso del plan. Si sale caro, el plan B son cortinas.
+   *
+   * CUATRO PASAJEROS, uno por camarote ocupado, mirando hacia su abertura: son
+   * testigos de lo que pasa en el pasillo, no de lo que pasa en la cabina de al
+   * lado.
+   */
+  dormitorio: {
+    id: 'dormitorio',
+    name: 'Vagón dormitorio',
+    short: 'DORMITORIO',
+    hint: 'Camarotes. Gente que no quiere ser molestada.',
+    layout: [
+      '###WW#####WW#####WW#####WW#####WW#######',
+      '#SS....#SS....#SS....#SS....#SS....#...#',
+      '#SS....#SS....#SS....#SS....#SS....#...#',
+      '###..###..###..###..###..###..###..#...#',
+      '+......................................+',
+      '+......................................+',
+      '#...###..###..###..###..###..###..###..#',
+      '#...#....SS#....SS#....SS#....SS#....SS#',
+      '#...#....SS#....SS#....SS#....SS#....SS#',
+      '#######WW#####WW#####WW#####WW#####WW###',
+    ],
+    enemies: [
+      { path: [[4, 4], [35, 4], [35, 5], [4, 5]] },
+    ],
+    passengers: [
+      { col: 4,  row: 1, facing: 'down' },
+      { col: 18, row: 2, facing: 'down' },
+      { col: 13, row: 8, facing: 'up' },
+      { col: 27, row: 7, facing: 'up' },
+    ],
+    loot: [
+      { col: 10, row: 2, type: 'bag' },
+      { col: 32, row: 2, type: 'bag' },
+      { col: 20, row: 7, type: 'bag' },
+    ],
+  },
+
+  // --------------------------------------------------------------- guardias
+  /**
+   * EL VAGÓN DE GUARDIAS — uno de los dos especiales del tren de pasajeros
+   * (el otro es primera clase; sale uno u otro, ver `sustituciones` en
+   * data/train.js).
+   *
+   * CUATRO GUARDIAS, y es a propósito: es la versión militar del especial.
+   * Cuando sale, el tren de pasajeros sube de 16 a 18 guardias.
+   *
+   * ⚠️ TODAVÍA NO ESTÁN DE FRANCO (etapa 4). Hoy patrullan como cualquiera. El
+   * diseño es que estén sentados jugando a las cartas, distraídos (el
+   * "Conversando" que ya existe) y que tarden 1,5 s en descolgar el arma.
+   *
+   * LAS RONDAS VAN POR LAS FILAS 2 Y 7, no por el pasillo, y rectas: son las
+   * dos franjas libres enteras del vagón, y así el pasillo queda para cruzar.
+   * Es la lección del vagón de armas — cuatro cuerpos yendo y viniendo por un
+   * corredor de dos baldosas lo taponan.
+   */
+  guardias: {
+    id: 'guardias',
+    name: 'Vagón de guardias',
+    short: 'GUARDIAS',
+    hint: 'La escolta del tren. Mesas de cartas y catres.',
+    layout: [
+      '#####WW###WW###WW###WW###WW#####',
+      '#SSS..SSS..SSS..SSS..SSS..SSS..#',
+      '#..............................#',
+      '#....CC......CC......CC........#',
+      '+..............................+',
+      '+..............................+',
+      '#........CC......CC......CC....#',
+      '#..............................#',
+      '#..SSS..SSS..SSS..SSS..SSS..SSS#',
+      '####WW####WW####WW####WW####WW##',
+    ],
+    enemies: [
+      { path: [[2, 2], [14, 2]] },
+      { path: [[29, 2], [17, 2]] },
+      { path: [[2, 7], [14, 7]] },
+      { path: [[29, 7], [17, 7]] },
+    ],
+    passengers: [],
+    loot: [
+      { col: 3, row: 6, type: 'bag' },
+    ],
+  },
+
+  // ----------------------------------------------------------- primera clase
+  /**
+   * PRIMERA CLASE — el otro especial del tren de pasajeros.
+   *
+   * SE QUEDÓ CON EL PASAJERO RICO. Antes era un paquete que podía caer en
+   * cualquier vagón con gente (`PAQUETES.pasajeroRico`, data/paquetes.js); ahora
+   * los ricos viven acá y el paquete está apagado: una mecánica, una casa.
+   *
+   * TRES RICOS (`rico: true`), que llevan los números del paquete de siempre
+   * ($150-250, 2,2 s para aflojar) y el sombrero de copa. ~$600 entre los tres:
+   * el segundo vagón más rico del tren, detrás del express (~$750), sin
+   * competirle. Sin bolsas: ellos son el botín.
+   *
+   * DOS GUARDAESPALDAS (`vigila: true`), plantados en el pasillo con el cartel
+   * de VIGILANDO — la misma pista que ya usaba el paquete.
+   *
+   * Y DOS LLAVES CERRADAS, por lo que harían los sorteos con los guardaespaldas:
+   *  - `sinComportamiento`: "Conversando" reubica a los dos primeros guardias
+   *    del vagón, y se llevaría a los guardaespaldas lejos de los ricos.
+   *  - `sinVariantes`: un Pistolero no se queda quieto al lado de nadie.
+   */
+  primeraClase: {
+    id: 'primeraClase',
+    name: 'Primera clase',
+    short: '1ª CLASE',
+    hint: 'Sillones de terciopelo. Gente que viaja con custodia.',
+    sinComportamiento: true,
+    sinVariantes: true,
+    layout: [
+      '#WW##WW##WW##WW##WW##WW##WW##WW#',
+      '#..............................#',
+      '#.SS....SS....SS....SS....SS...#',
+      '#..............................#',
+      '+..............................+',
+      '+..............................+',
+      '#..............................#',
+      '#...SS....SS....SS....SS....SS.#',
+      '#..............................#',
+      '#WW##WW##WW##WW##WW##WW##WW##WW#',
+    ],
+    enemies: [
+      { path: [], col: 12, row: 4, facing: 'left',  vigila: true },
+      { path: [], col: 21, row: 5, facing: 'right', vigila: true },
+    ],
+    passengers: [
+      { col: 10, row: 2, facing: 'down', rico: true },
+      { col: 24, row: 2, facing: 'down', rico: true },
+      { col: 18, row: 7, facing: 'up',   rico: true },
+    ],
+    loot: [],
+  },
+
+  // -------------------------------------------------------------- plataforma
+  /**
+   * LA PLATAFORMA — el lugar más expuesto del tren de carga.
+   *
+   * SIN TECHO Y SIN PAREDES: barandas ('H') a los dos costados, como el
+   * ganado, así que los jinetes te ven de punta a punta y el camino de arriba
+   * se corta acá.
+   *
+   * LA CARGA AMARRADA TE TAPA DE LOS GUARDIAS, NO DE LOS JINETES. Son bultos
+   * de 2×2 en las filas 2-3 y 6-7: parapetado detrás de uno te cubrís del que
+   * viene por el pasillo, pero la línea desde la baranda de tu costado sigue
+   * libre. La regla central del juego, puesta en geometría.
+   *
+   * Hay dos por tren, y pueden salir pegadas (elegido por Santi): algunos
+   * trenes traen 48 casillas seguidas sin paredes.
+   */
+  plataforma: {
+    id: 'plataforma',
+    name: 'Plataforma',
+    short: 'PLATAFORMA',
+    hint: 'Carga amarrada a cielo abierto. Te ven de todos lados.',
+    sinTecho: true,
+    layout: [
+      '#HHHHHHHHHHHHHHHHHHHHHH#',
+      '#......................#',
+      '#...CC......CC......CC.#',
+      '#...CC......CC......CC.#',
+      '+......................+',
+      '+......................+',
+      '#.CC......CC......CC...#',
+      '#.CC......CC......CC...#',
+      '#......................#',
+      '#HHHHHHHHHHHHHHHHHHHHHH#',
+    ],
+    enemies: [
+      { path: [[2, 4], [21, 4], [21, 5], [2, 5]] },
+    ],
+    passengers: [],
+    loot: [
+      { col: 8,  row: 2, type: 'bag' },
+      { col: 15, row: 7, type: 'bag' },
+      { col: 21, row: 6, type: 'bag' },
+    ],
+    cajonesExtra: [
+      { col: 9,  row: 7 },
+      { col: 16, row: 2 },
+    ],
+  },
+
+  // ----------------------------------------------------------------- góndola
+  /**
+   * LA GÓNDOLA — carbón.
+   *
+   * *(Santi: "sin techo y no es un vagón al que podés 'entrar'. El carbón
+   * funciona como un techo. Pasar por aquí reduce el movimiento")*
+   *
+   * ⚠️ HOY ES SÓLO SU FORMA (etapa 5). Lo que la hace la góndola todavía no
+   * existe: el carbón que frena a todos a la mitad, cruzarla por encima, subir
+   * al techo desde el pasillo, y partir `sinTecho` en dos (acá se camina por
+   * arriba como un techo, pero llueve encima). Mientras tanto es un vagón
+   * abierto con montículos, y corta el camino de arriba como el ganado.
+   *
+   * NADIE VIVE EN EL CARBÓN: cero guardias y cero botín. Sólo se cruza.
+   */
+  gondola: {
+    id: 'gondola',
+    name: 'Góndola',
+    short: 'GÓNDOLA',
+    hint: 'Carbón. Se cruza por encima, y cuesta.',
+    sinTecho: true,
+    sinComportamiento: true,
+    layout: [
+      '#HHHHHHHHHHHHHHHHHHHHHHHHHH#',
+      '#..........................#',
+      '#..CCC.......CCC.......CC..#',
+      '#..CCC.......CCC.......CC..#',
+      '+..........................+',
+      '+..........................+',
+      '#.......CCC.......CCC......#',
+      '#.......CCC.......CCC......#',
+      '#..........................#',
+      '#HHHHHHHHHHHHHHHHHHHHHHHHHH#',
+    ],
+    enemies: [],
+    passengers: [],
+    loot: [],
+  },
+
+  // ------------------------------------------------------------- refrigerado
+  /**
+   * EL VAGÓN REFRIGERADO — reses colgadas.
+   *
+   * ⚠️ HOY LAS RESES SON CARGA COMÚN (etapa 3). El diseño es una casilla nueva
+   * que tapa la vista pero NO las balas: un laberinto donde se ve poco y se
+   * tira a ciegas. Mientras no exista, las hileras son 'C' y frenan todo.
+   *
+   * HILERAS DE UNA BALDOSA CON PASILLOS DE UNA, escalonadas arriba y abajo.
+   * Dos guardias, para que haya a quién tirarle a ciegas entre las reses.
+   *
+   * POCAS VENTILACIONES, NO NINGUNA. Un vagón refrigerado de verdad va aislado,
+   * pero estar a salvo de los jinetes es la identidad del blindado — y ésa no
+   * se la roba otro vagón.
+   *
+   * SIN BARRILES DE PÓLVORA TODAVÍA: en pasillos de una baldosa un barril que
+   * se prende no deja por dónde huir (la lección del vagón de armas, que midió
+   * a alguien muerto a tres píxeles de donde arrancó). Se decide en la etapa 3,
+   * con las reses de verdad.
+   */
+  refrigerado: {
+    id: 'refrigerado',
+    name: 'Vagón refrigerado',
+    short: 'REFRIGERADO',
+    hint: 'Reses colgadas. Se ve poco.',
+    layout: [
+      '#######WW#############WW########',
+      '#.C.C.C.C.C.C.C.C.C.C.C.C.C.C..#',
+      '#.C.C.C.C.C.C.C.C.C.C.C.C.C.C..#',
+      '#.C.C.C.C.C.C.C.C.C.C.C.C.C.C..#',
+      '+..............................+',
+      '+..............................+',
+      '#..C.C.C.C.C.C.C.C.C.C.C.C.C.C.#',
+      '#..C.C.C.C.C.C.C.C.C.C.C.C.C.C.#',
+      '#..C.C.C.C.C.C.C.C.C.C.C.C.C.C.#',
+      '####WW######################WW##',
+    ],
+    enemies: [
+      { path: [[3, 4], [14, 4]] },
+      { path: [[28, 5], [17, 5]] },
+    ],
+    passengers: [],
+    loot: [
+      { col: 3,  row: 2, type: 'bag' },
+      { col: 16, row: 7, type: 'bag' },
+      { col: 27, row: 2, type: 'bag' },
+    ],
+  },
+
 };
 
 /**
@@ -953,6 +1300,26 @@ export const TRAMOS = {
 /** El centinela del blindado necesita un lugar donde plantarse. */
 WAGONS.blindado.enemies[3].col = 26;
 WAGONS.blindado.enemies[3].row = 5;
+
+/**
+ * EL VAGÓN CERRADO COMÚN DEL TREN DE CARGA (etapa 1 de los trenes nuevos).
+ *
+ * ES EL CORREO LIVIANO CON OTRO NOMBRE, a propósito: sus bolsas, su guardia,
+ * sus rondas y sus barriles ya están medidos, y lo que cambió es cómo se llama
+ * en un tren de carga — un "boxcar", no un furgón de correo. Se arma copiando
+ * la plantilla en vez de duplicar el layout, así que si alguna vez se retoca el
+ * correo liviano, éste se mueve con él.
+ *
+ * El almacén es "uno de los tres cerrados" en el diseño, pero no sale de acá:
+ * tiene su propia plantilla desde que existe.
+ */
+WAGONS.cerrado = {
+  ...WAGONS.correo_liviano,
+  id: 'cerrado',
+  name: 'Vagón cerrado',
+  short: 'CERRADO',
+  hint: 'Mercadería estibada. Poca guardia.',
+};
 
 /**
  * Tipos de botín. El valor se sortea entre min y max.

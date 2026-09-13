@@ -11265,7 +11265,7 @@ dormitorio 40, especial 32, plataforma 24, góndola 28, refrigerado 32, cerrado
 
 | | Hoy | Nuevo |
 |---|---|---|
-| Pasajeros | 3.616 px, 145 s | **4.480 px (+24%)** |
+| Pasajeros | 3.616 px, 145 s | **4.800 px (+33%)** — ver la corrección abajo |
 | Carga | 4.256 px, 165 s | **4.528 px (+6%)** |
 
 **Los dos trenes quedan del mismo largo, y los dos duran ~180 s.** Encaja con lo
@@ -11290,7 +11290,7 @@ largo, pero cada tramo pelea igual que hoy. Elegido sobre "los mismos totales"
 (dejaba el de pasajeros un 19% más vacío con el reloj ya estirado) y "más duros"
 (largo, reloj y dificultad cambiando a la vez: imposible saber qué lo hizo difícil).
 
-**Pasajeros** — 4.480 px, apunta a 16 guardias:
+**Pasajeros** — 4.800 px medidos (se diseñó con 4.480, ver la corrección de arriba), apunta a 16 guardias:
 
 | Vagón | Guardias | Pasajeros | Bolsas | Cajas |
 |---|---|---|---|---|
@@ -11436,6 +11436,64 @@ nuevos en los trenes de hoy".
 **Decisiones chicas que se toman en su etapa**, con el vagón delante: cada cuánto
 sale cada especial (50/50 si no se dice otra cosa), qué hacen los barriles en la
 góndola y en las plataformas, y los rangos del vigía.
+
+### ✅ Etapa 1 hecha — los trenes nuevos, con lo que ya existe
+
+**Qué se construyó:**
+
+- **Siete plantillas nuevas** en `data/wagons.js` (caboose, dormitorio, guardias,
+  primera clase, plataforma, góndola, refrigerado) y **el cerrado**, que es una
+  copia del correo liviano con otro nombre (si se retoca aquél, éste se mueve).
+- **Las dos formaciones** en `data/train.js`, con sus reglas de orden y 180 s. El
+  especial y el vagón de armas salen por `sustituciones`, sin código nuevo.
+- **Primera clase sin sistema nuevo:** los ricos son pasajeros de la plantilla con
+  `rico: true` (toman los números de `PAQUETES.pasajeroRico`, que quedó en peso
+  0) y los guardaespaldas son centinelas con `vigila: true`.
+- **Dos trampas esquivadas antes de que existieran**, vistas leyendo el código:
+  "Conversando" reubica a los dos primeros guardias de un vagón y se habría
+  llevado a los guardaespaldas (nueva marca `sinComportamiento`, que antes era un
+  `if` con el nombre del blindado), y la redada duplica cada guardia en su punto
+  de partida — a un centinela lo habría duplicado encima de sí mismo (ahora los
+  que `vigila` no se duplican).
+- **El galope lee "abierto"** (`!tieneTecho`) en vez de `'ganado'`.
+- Colores de carga para los vagones nuevos, y escondites de la caja oculta para
+  los del tren de pasajeros. **El dormitorio sólo acepta "ventana"**: con este
+  layout ninguna litera tiene suelo pegado arriba o abajo, que es lo que exige el
+  escondite para que la caja se pueda alcanzar.
+
+**MEDIDO, con el código real del juego:**
+
+| | Pasajeros | Carga |
+|---|---|---|
+| Sorteos que rompen alguna regla de orden | **0 de 10.000** | **0 de 10.000** |
+| Formaciones distintas | 3.403 | 7.066 |
+| Cada cuánto sale el especial / el de armas | primera clase **50,6%** | armas **24,9%** |
+| Trenes armados con avisos de "mal colocado" | **0 de 300** | **0 de 300** |
+| Largo | **4.800 px** (ver la corrección arriba) | **4.528 px** |
+| Guardias | 16-18, **3,54 cada 1.000 px** | 12-14, **2,75** (incluye al Dinamitero cuando sale) |
+| Pasajeros | 17-20 (con 3 ricos cuando sale primera clase) | 0 |
+| Bolsas / cajas | 15-16 / 3 | 22-24 / 2 |
+
+Y con una redada sobre primera clase: **2 guardaespaldas, los dos vigilando, cada
+uno en su lugar.** Las ocho plantillas pasaron además un chequeo propio: filas,
+bordes, nada sobre algo sólido, todo alcanzable caminando desde el pasillo,
+ningún barril sobre una ronda, y lugar en cada escondite.
+
+**MIRADO**, con el mundo congelado y exportando el dibujo a PNG (la captura de
+pantalla no llegaba a dibujar a tiempo):
+
+- 🐛 **El caboose era invisible por dentro**: el color de su carga (`#6e4a32`) era
+  el mismo marrón que el piso (`#6d4a30`). El mismo error que dejó invisible la
+  mochila dibujada en la espalda. Pasó a hierro de estufa (`#4e4844`) y se volvió
+  a mirar.
+- Los camarotes del dormitorio, las mesas del vagón de guardias, las barandas de
+  las plataformas, los montículos de la góndola y las hileras del refrigerado se
+  leen como vagones distintos.
+- **Adentro de primera clase**: los tres ricos con sombrero de copa junto a los
+  sillones, y los dos guardaespaldas con VIGILANDO. "1ª CLASE" entra en el cartel.
+
+**⚠️ NO JUGADO.** Y los sistemas de cada vagón (vigía, reses, carbón, franco,
+puertas) siguen sin existir: son las etapas 3 a 7.
 
 ---
 

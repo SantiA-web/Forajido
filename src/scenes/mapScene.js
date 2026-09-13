@@ -171,7 +171,12 @@ export function createMapScene(services) {
        * sabe sacarlos de la bolsa si no cumplen (ver data/modifiers.js).
        */
       tren.comportamientos = tren.composicion.map((id) => {
-        if (id === 'blindado') return 'normal';
+        /**
+         * Y cualquier vagón que lo pida en su plantilla (`sinComportamiento`).
+         * Hoy: primera clase, donde "Conversando" se llevaría a los
+         * guardaespaldas lejos de los ricos, y la góndola, donde no vive nadie.
+         */
+        if (id === 'blindado' || WAGONS[id].sinComportamiento) return 'normal';
         const patrullas = (WAGONS[id].enemies || []).length;
         const tieneCaja = (WAGONS[id].loot || []).some((l) => l.type === 'strongbox');
         return sortearComportamiento(rng, patrullas >= 2, tieneCaja);

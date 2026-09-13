@@ -156,15 +156,49 @@ export const TRAIN_TYPES = {
    *   3. Es su vagón de paso: un guardia y una bolsa. Sacarlo dejaba seis
    *      vagones todos caros de cruzar, sin ritmo.
    */
+  /**
+   * 🔻 LOS TRENES NUEVOS — etapa 1. La nota de arriba describe la formación
+   * VIEJA de seis vagones; queda porque explica por qué el ganado estaba acá.
+   *
+   * *(Santi: "me gustaría cambiar el sistema de los vagones de los trenes.
+   * Añadiendo vagones más especiales y selectivos")* — ver NOTAS-DISENO.md,
+   * "EN DISEÑO · Los trenes nuevos", para cada decisión con su tabla.
+   *
+   * OCHO VAGONES: caboose, dormitorio, comedor, dos de pasajeros, el especial,
+   * correo y express (el blindado). Y SE FUE EL GANADO, que era su único vagón
+   * sin techo.
+   *
+   * - `posicionFija: { caboose: 0 }` — la cola, siempre. Se inserta en el
+   *   índice 0 después de barajar el resto.
+   * - `posicionMinima: { blindado: 4 }` — la regla de siempre ("nunca antes del
+   *   3") corrida un lugar por el caboose. Desde el mejor lugar del caballo se
+   *   cruzan entre 1 y 5 vagones para llegar.
+   * - Ninguna regla de orden más: ninguna mecánica pide un orden, y cada regla
+   *   de más le quita variedad al tren.
+   * - EL ESPECIAL SALE POR `sustituciones`, la herramienta que ya usa el vagón
+   *   de armas: la baraja trae el vagón de guardias y, la mitad de las veces,
+   *   primera clase ocupa su lugar. Sin una línea de código nueva. El 50/50 es
+   *   el valor por defecto, sin decidir todavía.
+   * - `raidDuration: 180` — había una regla sin escribir: los dos relojes de
+   *   antes daban ~40 s por cada 1.000 px de tren (145 s / 3.616 px y 165 s /
+   *   4.256 px). Este tren mide ~4.480 px y el de carga ~4.528, así que los dos
+   *   duran lo mismo y ya no se distinguen por el reloj.
+   */
   pasajeros: {
     id: 'pasajeros',
     name: 'Tren de pasajeros',
     short: 'PASAJEROS',
     hint: 'Gente, equipaje y plata encima. Cualquiera puede ser un testigo.',
     pista: 'Mucha gente a bordo',
-    composition: ['pasajeros', 'pasajeros', 'comedor', 'correo', 'ganado', 'blindado'],
-    posicionMinima: { blindado: 3 },
+    composition: [
+      'caboose', 'dormitorio', 'comedor', 'pasajeros', 'pasajeros',
+      'guardias', 'correo', 'blindado',
+    ],
+    posicionFija: { caboose: 0 },
+    posicionMinima: { blindado: 4 },
+    sustituciones: [{ de: 'guardias', por: 'primeraClase', chance: 0.5 }],
     peso: 50,
+    raidDuration: 180,
     modificadores: true,
 
     /**
@@ -328,10 +362,27 @@ export const TRAIN_TYPES = {
      * la única cosa que vale la pena de este tren, en vez de repartidos en un
      * vagón al que se entraba con dinamita.
      */
+    /**
+     * 🔻 LOS TRENES NUEVOS — etapa 1 (ver NOTAS-DISENO.md, "EN DISEÑO · Los
+     * trenes nuevos"). Las notas de arriba y de abajo describen la formación
+     * VIEJA de ocho vagones y quedan porque explican de dónde salió cada regla.
+     *
+     * NUEVE VAGONES: caboose, almacén, dos cerrados, dos plataformas, ganado,
+     * góndola y refrigerado.
+     *
+     * - EL ALMACÉN ES UNO DE LOS TRES CERRADOS, y se conserva entero. Los otros
+     *   dos son los correos livianos de antes con otro nombre (`cerrado`).
+     * - EL GANADO VIAJA SIEMPRE, y uno solo: la estampida no se pierde nunca.
+     *   Antes eran tres y el de armas se llevaba uno; con uno solo, reemplazarlo
+     *   dejaba una de cada cuatro veces un tren de carga sin estampida.
+     * - SE FUE EL COMEDOR: el tren de carga queda sin pasajeros. Encaja — la
+     *   gente es del tren de pasajeros.
+     */
     composition: [
-      'almacen', 'correo_liviano', 'correo_liviano', 'correo_liviano',
-      'ganado', 'ganado', 'ganado', 'comedor',
+      'caboose', 'almacen', 'cerrado', 'cerrado',
+      'plataforma', 'plataforma', 'ganado', 'gondola', 'refrigerado',
     ],
+    posicionFija: { caboose: 0 },
 
     /**
      * EL VAGÓN DE ARMAS SE MUDÓ ACÁ, con las mismas tres reglas de posición que
@@ -349,7 +400,10 @@ export const TRAIN_TYPES = {
      * vez de dejarla sin efecto, para que nadie la lea después y crea que el
      * blindado puede aparecer.)
      */
-    posicionMinima: { armas: 2, almacen: 2 },
+    // Trenes nuevos: el almacén desde el 3 (el caboose es el 1, y lo más caro
+    // no queda al lado de la salida gratis) y la góndola nunca en las puntas,
+    // para que su acceso al techo sirva a mitad del asalto.
+    posicionMinima: { armas: 2, almacen: 3, gondola: 2 },
 
     /**
      * EL VAGÓN DE ARMAS NUNCA ES EL ÚLTIMO.
@@ -361,7 +415,8 @@ export const TRAIN_TYPES = {
      * adentro** contra el 33% de diseño — exactamente el mismo defecto que tener
      * el blindado pegado.
      */
-    posicionMaxima: { armas: 7 },
+    // Nueve vagones: "nunca el último" pasa a ser 8. La góndola, tampoco.
+    posicionMaxima: { armas: 8, gondola: 8 },
 
     /**
      * 🔻 SE FUE LA REGLA DE "EL BLINDADO NUNCA PEGADO AL DE ARMAS", y hay que
@@ -399,10 +454,13 @@ export const TRAIN_TYPES = {
      * vagones de ganado sobran dos, así que la estampida —la identidad de este
      * tren— sigue teniendo con qué jugarse.
      */
-    sustituciones: [{ de: 'ganado', por: 'armas', chance: 0.25 }],
+    // Trenes nuevos: reemplaza a una PLATAFORMA, no al ganado (que es uno solo
+    // y fijo). Siempre queda la otra plataforma. El 25% se conserva.
+    sustituciones: [{ de: 'plataforma', por: 'armas', chance: 0.25 }],
 
     peso: 50,
-    raidDuration: 165,
+    // Trenes nuevos: 180 s, igual que el de pasajeros (~40 s cada 1.000 px).
+    raidDuration: 180,
 
     /**
      * LA CAPA DE VARIEDAD TAMBIÉN ES SUYA. Clima, estado del tren,

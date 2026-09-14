@@ -365,10 +365,26 @@ export function createAudio() {
       // tres pisadas se mueven JUNTAS: lo que hay que poder cambiar es cuánto
       // se oye el caballo, no el equilibrio interno de la zancada, que es lo
       // que le da la forma de "tucu-TÚN".
+      //
+      // 🔺 CADA PISADA SON TRES CAPAS *(Santi: "que tenga el sonido de los
+      // cascos al golpear la arena", y "casi que no se escuchan")*:
+      //   - el GOLPE sordo de siempre, abajo;
+      //   - un TOC de medios, corto: sin él las pisadas vivían por debajo de
+      //     400 Hz, que en parlantes chicos directamente no suena;
+      //   - la ARENA: un soplido agudo que empieza un instante después del golpe
+      //     y dura el doble — la arena que salta, no el casco.
+      // La tercera sigue siendo la acentuada (más fuerte y más grave).
       const v = CONFIG.ambiente.zancadaVolumen;
-      noise({ duration: 0.045, cutoff: 400, endCutoff: 100, gain: 0.085 * v });
-      noise({ duration: 0.045, cutoff: 360, endCutoff: 95,  gain: 0.075 * v, delay: 0.085 });
-      noise({ duration: 0.065, cutoff: 300, endCutoff: 70,  gain: 0.125 * v, delay: 0.175 });
+      const pisada = (delay, fuerza, grave) => {
+        noise({ duration: 0.06, cutoff: 900 * grave, endCutoff: 110, gain: 0.1 * fuerza * v, delay });
+        noise({ duration: 0.035, cutoff: 650 * grave, endCutoff: 280, gain: 0.05 * fuerza * v,
+          type: 'bandpass', q: 1.3, delay });
+        noise({ duration: 0.11, cutoff: 4200, endCutoff: 1600, gain: 0.035 * fuerza * v,
+          type: 'highpass', q: 0.7, attack: 0.006, delay: delay + 0.01 });
+      };
+      pisada(0, 0.85, 1);
+      pisada(0.085, 0.75, 0.95);
+      pisada(0.175, 1.25, 0.8);
     },
 
     /**

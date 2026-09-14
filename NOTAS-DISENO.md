@@ -12158,6 +12158,41 @@ Avisado antes de hacerlo: entre dos poses seguidas la diferencia es de 1 o 2 px.
 
 **⚠️ NO JUGADO.**
 
+**El caballo a la carrera: patas, cascos y polvo.**
+
+*(Santi: "que el caballo tenga más pose de corredor y sus patas se muevan más
+reales ('tucutún-tucutún-tucutún') y tenga el sonido de los cascos al golpear
+la arena. Además, añádele una nube de polvo como la de la imagen")*
+
+- **El sonido ya existía**, y se le dijo: el "tucu-TÚN" de tres pisadas. Lo que
+  pasaba es que casi no se oía (*"súbele el volumen porque casi que no se
+  escuchan las pisadas"*): eran ruido por debajo de 400 Hz, que en parlantes de
+  notebook no suena. Ahora cada pisada son tres capas —el golpe sordo, un "toc"
+  de medios y el soplido de la arena— y `zancadaVolumen` subió de 2,6 a 3,6.
+  Eligió "los golpes de hoy + arena" sobre rehacerlos.
+- **Las patas y el sonido no estaban sincronizados**: las patas iban con un seno
+  parejo y el sonido con su propio reloj. Ahora el dibujo lee el reloj del
+  sonido (`faseDeZancada`) y cada pata apoya en el instante de su golpe
+  (`GOLPES`: trasera de allá a los 0 ms, trasera de acá y delantera de allá a
+  los 85, delantera de acá —la fuerte— a los 175). Cada pata tiene muslo y caña
+  que se doblan; apoya estirada adelante, barre hacia atrás y vuelve por el aire
+  doblada. El lomo baja con las pisadas y sube en el momento en el aire.
+- **Pose de corredor**: cuerpo más largo y bajo (22 de largo de perfil), cuello
+  estirado con la cabeza baja, cola y crin volando y ondeando con la zancada, y
+  el jinete echado hacia adelante según el esfuerzo.
+- **El polvo** *(pedido "lo más realista posible")*: cada pisada levanta cinco
+  bocanadas que SE QUEDAN SOBRE EL SUELO donde nacieron —el caballo las deja
+  atrás—, crecen, suben, se frenan con el aire y se deshacen en 1,2 a 2,2 s. Van
+  en tres círculos (sombra, cuerpo y luz). Usa `Math.random` y no el `rng` del
+  juego: medido, la corrida del Criollo dio lo mismo con y sin polvo (38,6 s,
+  6,3 de reloj).
+- 🐛 La primera versión del polvo se vio como bolitas separadas en fila: tres
+  chicas por pisada, todas hacia atrás, y ~50 px de suelo entre zancadas. Se
+  pasó a cinco, más grandes y más largas, disparadas para los dos lados.
+
+**⚠️ NO JUGADO — y el sonido hay que oírlo:** el volumen se eligió sin
+escucharlo.
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

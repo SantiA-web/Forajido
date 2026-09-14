@@ -43,7 +43,7 @@ atrás. Se está pasando por etapas, primero el tren:
 | B | La gente de cuerpo entero | Falta |
 | C | Las cosas: botín, puertas, cajones, barriles, dinamita, balas | Falta |
 | D | El techo | Falta |
-| E | El galope en tres cuartos: del tren se ve la pared y la tapa del techo (y lo que llevan los vagones abiertos), del caballo el lomo y la montura, del jinete el ala del sombrero, y el desierto llena la pantalla. Al girar con W o S el caballo cambia de pose (nueve): se lo ve alejarse hacia las vías o venir de frente hacia abajo. Mientras estás lejos asoma el cielo arriba de todo. Se juega igual | ✅ |
+| E | El galope en tres cuartos: del tren se ve la pared y la tapa del techo (y lo que llevan los vagones abiertos), del caballo el lomo y la montura, del jinete el ala del sombrero, y el desierto llena la pantalla. Al girar con W o S el caballo cambia de pose (nueve): se lo ve alejarse hacia las vías o venir de frente hacia abajo. Corre con pose de carrera (cuello estirado, cola y crin al viento, el jinete echado hacia adelante), las patas pisan justo cuando suena cada golpe del "tucu-TÚN", y cada pisada levanta una nube de polvo que queda atrás. Mientras estás lejos asoma el cielo arriba de todo. Se juega igual | ✅ |
 | F | Mirar los 13 vagones | Falta |
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
@@ -2273,7 +2273,7 @@ nunca es un fondo permanente.
 | **El campamento** | El desierto, y **la fogata sólo de noche** — porque de día está apagada, que es el reloj del juego |
 | **El pueblo** | La calle. De noche, más callada |
 | **El mapa** | Casi nada: es un papel que mirás en tu campamento, no un lugar |
-| **El galope** | El viento, y **las zancadas** — un "tucu-TÚN" de tres pisadas y después silencio, no un pulso parejo: un cuadrúpedo no pisa a intervalos iguales. El ritmo sigue a lo que corre el caballo |
+| **El galope** | El viento, y **las zancadas** — un "tucu-TÚN" de tres pisadas y después silencio, no un pulso parejo: un cuadrúpedo no pisa a intervalos iguales. El ritmo sigue a lo que corre el caballo, y cada pisada lleva un "toc" y el soplido de la arena |
 | **El asalto** | El traqueteo y el clac-clac de las juntas de la vía |
 
 ## Lo que todavía NO existe (a propósito)

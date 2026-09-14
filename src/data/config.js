@@ -2118,7 +2118,15 @@ export const CONFIG = {
      * se oye el caballo, no el equilibrio interno de la zancada — el acento de
      * la tercera es lo que le da la forma de "tucu-TÚN" y no se toca.
      */
-    zancadaVolumen: 2.6,
+    /*
+     * 🔺 Y DE 2,6 A 3,6 CON EL SONIDO DE LA ARENA *(Santi: "súbele el volumen
+     * porque casi que no se escuchan las pisadas")*. Subir el número solo no
+     * alcanzaba: las pisadas eran ruido por debajo de 400 Hz, y en parlantes de
+     * notebook eso casi no suena. Ahora cada golpe lleva además un "toc" de
+     * medios y el soplido de la arena (ver `zancada` en engine/audio.js), y
+     * esta perilla multiplica las tres capas.
+     */
+    zancadaVolumen: 3.6,
 
     /**
      * CUÁNTO RESPIRA EL VIENTO — ver `soplar` en engine/audio.js.
@@ -2536,6 +2544,17 @@ export const CONFIG = {
      * EL CIELO Y LO LEJANO DEL GALOPE. De día se usa el cielo del pueblo
      * (`puebloCielo`): es el mismo desierto, a la misma hora.
      */
+    /**
+     * EL POLVO QUE LEVANTA EL CABALLO (ver `dibujarPolvo` en
+     * scenes/rideScene.js): la arena clara del desierto con su sombra y su luz.
+     * Más claro que el suelo a propósito: el polvo en el aire agarra el sol.
+     */
+    polvo: {
+      base:   '#cdb893',
+      luz:    '#e6d8b8',
+      sombra: '#a8906a',
+    },
+
     cielo: {
       nocheArriba:       '#0b0f1e',
       nocheHorizonte:    '#2a2a3a',

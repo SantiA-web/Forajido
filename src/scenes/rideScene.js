@@ -64,6 +64,12 @@ export function createRideScene(services) {
   let composicion, dificultad, tipoTren, clima, estado, comportamientos, variantes,
     encubiertos, paquetes, cajaOculta, train, plataformas, largoTren;
   let hayTormenta, truenoTimer, cascoTimer, velCaballoActual;
+  /**
+   * `zancadaIntervalo`: cuánto dura la zancada que está sonando; con `cascoTimer`
+   * dice en qué punto de la zancada va el caballo, y de ahí salen las patas
+   * (`faseDeZancada`). `polvo`: las bocanadas que levantan los cascos.
+   */
+  let zancadaIntervalo, polvo;
   let x, y, vel, aguante, reloj, gastado, scroll, alcanzada;
   let trastabilla, choque, saltando, terminado;
   let exposicion, visto, obstaculos, aviso;
@@ -188,6 +194,9 @@ export function createRideScene(services) {
       /** La barra del salto al techo, para poder depurarla desde la consola. */
       get barra() { return barra; },
       get zonasBarra() { return zonasDeLaBarra(); },
+      /** En qué punto de la zancada va el caballo, y las bocanadas de polvo vivas. */
+      get zancada() { return faseDeZancada(); },
+      get polvo() { return polvo; },
       /**
        * Para MIRAR el galope desde la consola: pone el caballo en (x, y) sin
        * tener que galopar hasta ahí. Sólo para sacar fotos de un lugar exacto
@@ -637,6 +646,8 @@ export function createRideScene(services) {
       respira: { profundidad: a.vientoProfundidad, cada: a.vientoCada } });
     cascoTimer = 0;
     velCaballoActual = 0;
+    zancadaIntervalo = 0;
+    polvo = [];
 
     hayTormenta = clima === 'tormenta' || (clima && clima.id === 'tormenta');
     truenoTimer = 0;
@@ -694,7 +705,7 @@ export function createRideScene(services) {
      * `velCaballo` en 0 clavado.
      */
     const velocidad = Math.abs(velCaballoActual || 0);
-    if (velocidad < 2) { cascoTimer = 0; return; }
+    if (velocidad < 2) { cascoTimer = 0; zancadaIntervalo = 0; return; }
     cascoTimer -= dt;
     if (cascoTimer > 0) return;
     /**
@@ -707,7 +718,10 @@ export function createRideScene(services) {
      */
     const proporcion = Math.max(0.25, velocidad / caballo.sprintSpeed);
     cascoTimer = CONFIG.ambiente.zancadaCada / proporcion;
+    // El dibujo lee este mismo reloj: las patas pisan cuando suena cada golpe.
+    zancadaIntervalo = cascoTimer;
     audio.play('zancada');
+    sembrarPolvo(velocidad);
   }
 
   /**
@@ -725,6 +739,7 @@ export function createRideScene(services) {
   function update(dt) {
     scroll += dt;
     invuln = Math.max(0, invuln - dt);
+    actualizarPolvo(dt);
     updateTormenta(dt);
     updateCascos(dt);
 
@@ -1435,16 +1450,31 @@ export function createRideScene(services) {
 
   function dibujarCaballo(r) {
     /**
-     * El ritmo del trote sale de la velocidad ABSOLUTA del animal, no de `vel`
-     * (que ahora es la diferencia contra el tren y puede ser 0 mientras el
-     * caballo corre a 90 px/s). Si se leyera de `vel`, el Mustang al trote —que
-     * empata con el tren— se dibujaría como si estuviera parado.
+     * El esfuerzo sale de la velocidad ABSOLUTA del animal, no de `vel` (que es
+     * la diferencia contra el tren y puede ser 0 mientras el caballo corre a
+     * 90 px/s). Si se leyera de `vel`, el Mustang al trote —que empata con el
+     * tren— se dibujaría como si estuviera parado.
      */
     const velAbsoluta = Math.abs(vel + A.trenVelocidad);
     const esfuerzo = Math.min(1, velAbsoluta / caballo.sprintSpeed);
-    // La fase del galope: las patas y el sube y baja salen del mismo reloj.
-    const paso = scroll * (14 + esfuerzo * 10);
-    const trote = Math.sin(paso * 2) * (0.4 + esfuerzo);
+
+    /**
+     * LA ZANCADA QUE SE VE ES LA MISMA QUE SE OYE *(Santi: "que sus patas se
+     * muevan más reales ('tucutún-tucutún-tucutún')")*.
+     *
+     * Antes las patas iban con su propio seno parejo y el sonido con su propio
+     * reloj: el ojo contaba una cosa y el oído otra. Ahora el dibujo lee el
+     * reloj del sonido (`faseDeZancada`, lo que falta para la próxima zancada en
+     * `updateCascos`), así que cada pata apoya en el instante en que suena su
+     * golpe. El lomo baja con las pisadas y sube en el momento en el aire.
+     */
+    const zancada = faseDeZancada();
+    const trote = zancada
+      ? Math.round(Math.cos((zancada.t / zancada.T - 0.15) * Math.PI * 2) * (0.4 + esfuerzo * 0.8))
+      : 0;
+
+    // El polvo va detrás del caballo: se dibuja antes que él.
+    dibujarPolvo(r);
 
     /**
      * EL SALTO: el caballo sigue abajo sin jinete, y el jinete sube en arco
@@ -1453,7 +1483,7 @@ export function createRideScene(services) {
      */
     if (terminado) {
       const t = 1 - saltando / 0.4;
-      dibujarAnimal(r, x, y, paso, 0, esfuerzo);
+      dibujarAnimal(r, x, y, zancada, 0, esfuerzo);
       const desde = y - 6;
       const hasta = train.map.height
         - (techoDestino ? alturaDeAterrizaje(vagonAlLado()) : ALTO_DEL_ENGANCHE);
@@ -1470,7 +1500,7 @@ export function createRideScene(services) {
     r.ctx.globalAlpha = 0.25;
     r.ctx.fillStyle = '#000';
     r.ctx.beginPath();
-    r.ctx.ellipse(Math.round(x), Math.round(y + 7), 11, 2.5, rumbo * 0.5, 0, Math.PI * 2);
+    r.ctx.ellipse(Math.round(x), Math.round(y + 7), 12, 2.5, rumbo * 0.5, 0, Math.PI * 2);
     r.ctx.fill();
     r.ctx.restore();
 
@@ -1487,11 +1517,11 @@ export function createRideScene(services) {
      * en pantalla casi no avanza a la derecha, así que parecía deslizarse.
      *
      * AHORA CAMBIA DE POSE (`poseDelCaballo`, nueve: primero cinco elegidas por
-     * Santi sobre tres, después subidas): hacia las vías se lo ve alejarse, con más lomo y la cabeza lejos;
-     * hacia abajo viene hacia la cámara, de frente. La rotación queda, más
-     * suave, para que el paso de una pose a otra no sea un salto. `rumbo` viene
-     * con la inercia de las riendas ya aplicada (ver `actualizarRumbo`), así
-     * que el giro que se ve ES el retraso del animal, no el de tu tecla.
+     * Santi sobre tres, después subidas): hacia las vías se lo ve alejarse, con
+     * más lomo y la cabeza lejos; hacia abajo viene hacia la cámara, de frente.
+     * La rotación queda, más suave, para que el paso de una pose a otra no sea
+     * un salto. `rumbo` viene con la inercia de las riendas ya aplicada (ver
+     * `actualizarRumbo`), así que el giro que se ve ES el retraso del animal.
      */
     const pose = poseDelCaballo();
     // Se inclina sobre los cascos, y POCO (un 30% del rumbo): el giro lo cuenta
@@ -1501,29 +1531,11 @@ export function createRideScene(services) {
     r.ctx.rotate(rumbo * 0.3);
     r.ctx.translate(-x, -(y + 6));
 
-    dibujarAnimal(r, x, y, paso, trote, esfuerzo, pose);
-    dibujarJinete(r, x - 1, y - 6 + trote, pose);
+    dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose);
+    // A la carrera el jinete se echa hacia adelante: más cuanto más le pide.
+    dibujarJinete(r, x - 1, y - 5 + trote, pose, Math.round(esfuerzo * 2));
 
     r.ctx.restore();
-
-    // También por velocidad absoluta: el polvo lo levanta el casco contra el
-    // suelo, no la diferencia con el tren. Con `vel` a secas, el Mustang al
-    // trote (que empata con el tren, vel = 0) galopaba sin levantar nada.
-    // Y la estela sale para atrás DEL RUMBO, no para atrás de la pantalla:
-    // yendo hacia las vías el polvo queda abajo a la izquierda, y al revés.
-    const galopando = velAbsoluta > 40;
-    if (galopando) {
-      const ux = Math.cos(rumbo);
-      const uy = Math.sin(rumbo);
-      for (let i = 0; i < 10; i++) {
-        const d = (scroll * 260 + i * 9) % 76;
-        const t = 1 - d / 76;
-        r.ctx.globalAlpha = t * 0.55;
-        r.rect(x - (12 + d) * ux, y + 3 - (12 + d) * uy - (i % 3) * 3 + Math.sin(d * 0.3) * 2, 3,
-          1 + Math.round(t * 2), '#6b5236');
-        r.ctx.globalAlpha = 1;
-      }
-    }
 
     if (exposicion > 0 && !visto) {
       r.circle(x, y - 4, 12 + exposicion * 8, colors.enemySus, 0.15 + exposicion * 0.3);
@@ -1531,6 +1543,16 @@ export function createRideScene(services) {
       r.rect(x - 10, y - 26, 20 * exposicion, 2, colors.enemySus);
     }
     if (visto) r.circle(x, y - 4, 18, colors.enemyAlert, 0.25);
+  }
+
+  /**
+   * EN QUÉ PUNTO DE LA ZANCADA VA EL CABALLO: `t` segundos desde que empezó la
+   * zancada que está sonando, sobre `T` que dura. `null` si está parado (no
+   * suena ningún casco, y las patas van derechas).
+   */
+  function faseDeZancada() {
+    if (!zancadaIntervalo || Math.abs(velCaballoActual || 0) < 2) return null;
+    return { t: Math.max(0, zancadaIntervalo - cascoTimer), T: zancadaIntervalo };
   }
 
   /**
@@ -1549,54 +1571,97 @@ export function createRideScene(services) {
   }
 
   /**
-   * EL CABALLO EN TRES CUARTOS. Los cascos quedan en `y + 7`, donde va la
-   * sombra; el lomo en `y - 6`.
+   * CUÁNDO PISA CADA PATA dentro de la zancada, en segundos: son los mismos
+   * tres golpes de `zancada` en engine/audio.js (0 / 85 / 175 ms). Es el galope
+   * de tres tiempos, el "tucu-TÚN": primero la trasera de allá, después juntas
+   * la trasera de acá y la delantera de allá, y al final —el golpe fuerte— la
+   * delantera de acá, que es la que guía. Después, las cuatro en el aire.
+   */
+  const GOLPES = { traseraAlla: 0, traseraAca: 0.085, delanteraAlla: 0.085, delanteraAca: 0.175 };
+
+  /**
+   * EL CABALLO EN TRES CUARTOS, A LA CARRERA. Los cascos quedan en `y + 7`,
+   * donde va la sombra; el lomo en `y - 5`.
    *
-   * *(Santi: "se debería ver parte del lomo del caballo")*: la franja del lomo
-   * con luz, la manta y la montura encima, y la crin por arriba del cuello.
+   * *(Santi: "que el caballo tenga más pose de corredor")*: el cuerpo es más
+   * largo y más bajo que parado, el cuello va estirado hacia adelante con la
+   * cabeza baja, y la cola y la crin vuelan para atrás, ondeando con la
+   * zancada.
    *
    * LAS NUEVE POSES (`pose`, de -4 a 4, ver `poseDelCaballo`) salen de cuatro
-   * medidas, calculadas con `p = pose / 2` y redondeadas a píxeles enteros, así
-   * que las de los extremos son las mismas de cuando había cinco:
-   *  - el LARGO del cuerpo se acorta al girar (de 20 a 14): el animal ya no se
-   *    ve de costado sino en diagonal;
+   * medidas, calculadas con `p = pose / 2` y redondeadas a píxeles enteros:
+   *  - el LARGO del cuerpo se acorta al girar (de 22 a 15);
    *  - el cuerpo va en DOS MITADES a distinta altura: hacia las vías la de
-   *    adelante queda más arriba que el anca, hacia abajo al revés. Eso es la
-   *    diagonal dibujada, no una rotación;
+   *    adelante queda más arriba que el anca, hacia abajo al revés;
    *  - el LOMO se ve más alejándose (se lo mira más de arriba) y menos viniendo;
-   *  - la CABEZA: alejándose, chica y alta, con las orejas de atrás; viniendo,
-   *    grande, baja y de frente, con el hocico y las dos orejas.
+   *  - la CABEZA: alejándose, chica y alta; viniendo, grande, baja y de frente.
    *
-   * Las patas de allá van más oscuras y se dibujan antes que el cuerpo; las de
-   * acá, después: dos planos, y el ojo completa el animal entre los dos.
+   * LAS PATAS tienen muslo y caña (4 + 4 px) y se doblan. Cada una sigue su
+   * ciclo: apoya estirada hacia adelante, barre hacia atrás mientras el cuerpo
+   * pasa por encima, y vuelve por el aire doblada. Las de allá van más oscuras
+   * y se dibujan antes que el cuerpo; las de acá, después.
    */
-  function dibujarAnimal(r, x, y, paso, trote, esfuerzo, pose = 0) {
-    const lomo = y - 6 + trote;
+  function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0) {
+    const lomo = y - 5 + trote;
     const luz = escalarColor(colors.horse, 1.3);
     const p = pose / 2;                      // de -2 a 2, la escala de las medidas
     const giro = Math.abs(p);
-    const largo = Math.round(20 - giro * 3);
+    const largo = Math.round(22 - giro * 3.5);
     const atras = Math.round(x - largo / 2);
     const medio = Math.round(x);
     const frente = Math.round(x + largo / 2);
     const fy = Math.round(p * 1.5);         // la mitad de adelante
     const ry = -fy;                          // el anca, al revés
     const lomoAlto = Math.round(3 - p);      // cuánto lomo se ve: 5 … 1
+    const T = zancada ? zancada.T : 1;
+    const vuelta = zancada ? zancada.t / T : 0;
+    const flamea = Math.round(Math.sin(vuelta * Math.PI * 2) * esfuerzo);
 
-    const pata = (px, oy, fase, color) => {
-      const adelante = Math.round(Math.sin(paso + fase) * (0.5 + esfuerzo * 2.5) * (1 - giro * 0.2));
-      const recoge = Math.round(Math.max(0, -Math.cos(paso + fase)) * 2 * esfuerzo);
-      r.rect(px + adelante, lomo + oy + 6, 2, 7 - recoge, color);
+    /**
+     * UNA PATA. `golpe` es cuándo apoya (ver `GOLPES`). La pisada dura ~0,24 s
+     * (como mucho media zancada): mientras apoya, el ángulo va de +0,55 rad
+     * (estirada adelante) a −0,6 (atrás); en el aire vuelve, con la rodilla
+     * doblada — la delantera dobla hacia atrás y la trasera hacia adelante,
+     * como las de verdad. Al girar la zancada se ve más corta, por la diagonal.
+     */
+    const pata = (cadera, oy, golpe, delantera, color) => {
+      let ang = 0;
+      let dobla = 0;
+      if (zancada) {
+        const u = ((((zancada.t - golpe) % T) + T) % T) / T;
+        const apoyo = Math.min(0.45, 0.24 / T);
+        if (u < apoyo) {
+          ang = 0.55 - 1.15 * (u / apoyo);
+        } else {
+          const v = (u - apoyo) / (1 - apoyo);
+          ang = -0.6 + 1.15 * v * v * (3 - 2 * v);
+          dobla = Math.sin(v * Math.PI);
+        }
+        ang *= (0.45 + esfuerzo * 0.55) * (1 - giro * 0.25);
+      }
+      const y0 = lomo + oy + 5;
+      const rx = cadera + Math.sin(ang) * 4;
+      const rodilla = y0 + Math.cos(ang) * 4;
+      const a2 = ang + (delantera ? -1.3 : 0.9) * dobla;
+      const cx = rx + Math.sin(a2) * 4;
+      const cy = rodilla + Math.cos(a2) * 4;
+      r.line(cadera, y0, rx, rodilla, color);
+      r.line(cadera + 1, y0, rx + 1, rodilla, color);
+      r.line(rx, rodilla, cx, cy, color);
+      r.line(rx + 1, rodilla, cx + 1, cy, color);
     };
-    pata(atras + 3, ry, 0, colors.horseDark);
-    pata(frente - 4, fy, Math.PI * 0.5, colors.horseDark);
+    pata(atras + 3, ry, GOLPES.traseraAlla, false, colors.horseDark);
+    pata(frente - 4, fy, GOLPES.delanteraAlla, true, colors.horseDark);
 
-    // La cola. Alejándose, el anca da a la cámara y la cola cuelga a la vista.
+    // La cola, volando para atrás. Alejándose, el anca da a la cámara y cuelga.
+    const colaLargo = 3 + Math.round(esfuerzo * 4);
     if (pose < 0) {
-      r.rect(atras - 2, lomo + ry + 1, 3, 6 + Math.round(esfuerzo * 2), colors.horseMane);
+      r.rect(atras - 3, lomo + ry + 1, 2, 2, colors.horseMane);
+      r.rect(atras - 2, lomo + ry + 1 + flamea, 3, 4 + Math.round(esfuerzo * 2), colors.horseMane);
     } else {
-      r.rect(atras - 3, lomo + ry, 3, 2, colors.horseMane);
-      r.rect(atras - 5, lomo + ry + 1, 3, 4 + Math.round(esfuerzo * 2), colors.horseMane);
+      r.rect(atras - 2, lomo + ry, 3, 2, colors.horseMane);
+      r.rect(atras - 1 - colaLargo, lomo + ry + 1 + flamea, colaLargo, 2, colors.horseMane);
+      r.rect(atras - 3 - colaLargo, lomo + ry + 2 + flamea, 3, 1, colors.horseMane);
     }
 
     // El cuerpo en dos mitades, cada una a su altura, y el lomo encima.
@@ -1636,59 +1701,172 @@ export function createRideScene(services) {
       r.rect(frente + 4, hy - 9 + bajaCabeza, 1, 2, colors.horse);
       r.rect(frente - 5, hy - 6 + baja, 2, 6, colors.horseMane);
     } else {
-      r.rect(frente - 4, hy - 7, 5, 9, colors.horse);                     // el cuello
-      r.rect(frente - 3, hy - 8, 3, 2, luz);
-      r.rect(frente - 1, hy - 10, 7, 5, colors.horse);                    // la cabeza
-      r.rect(frente, hy - 11, 5, 1, luz);
-      r.rect(frente + 5, hy - 8, 2, 3, colors.horseDark);                 // el hocico
-      r.rect(frente - 1, hy - 12, 2, 2, colors.horse);                    // la oreja
-      r.rect(frente - 5, hy - 9, 3, 7, colors.horseMane);                 // la crin
+      // De perfil A LA CARRERA: el cuello estirado hacia adelante y la cabeza
+      // baja, casi en línea con el lomo. Parado la llevaba arriba, erguida.
+      r.rect(frente - 4, hy - 6, 6, 8, colors.horse);                     // el cuello
+      r.rect(frente - 3, hy - 7, 4, 1, luz);
+      r.rect(frente + 1, hy - 8, 7, 5, colors.horse);                     // la cabeza
+      r.rect(frente + 2, hy - 9, 5, 1, luz);
+      r.rect(frente + 7, hy - 6, 2, 3, colors.horseDark);                 // el hocico
+      r.rect(frente + 1, hy - 10, 2, 2, colors.horse);                    // la oreja, echada atrás
+      r.rect(frente - 5, hy - 8, 3, 6, colors.horseMane);                 // la crin
+    }
+    // La crin vuela a la carrera: dos mechones sueltos hacia atrás.
+    if (esfuerzo > 0.3) {
+      r.rect(frente - 7, hy - 8 + flamea, 2, 1, colors.horseMane);
+      r.rect(frente - 8, hy - 6 - flamea, 2, 1, colors.horseMane);
     }
 
     // La manta y la montura, sobre el lomo.
     r.rect(medio - 5, lomo - lomoAlto, 9, lomoAlto + 3, '#7a2f26');
     r.rect(medio - 4, lomo - lomoAlto, 7, Math.max(2, lomoAlto), '#3a2418');
 
-    pata(atras + 1, ry, Math.PI, colors.horse);
-    pata(frente - 6, fy, Math.PI * 1.5, colors.horse);
+    pata(atras + 1, ry, GOLPES.traseraAca, false, colors.horse);
+    pata(frente - 6, fy, GOLPES.delanteraAca, true, colors.horse);
   }
 
   /**
    * EL JINETE, sentado con el asiento en `asiento`. En tres cuartos se le ven
    * los hombros de arriba y, sobre todo, EL ALA DEL SOMBRERO: una elipse ancha
-   * con la copa en el medio *(Santi: "y el ala del sombrero")*. Es lo que más
-   * se lee del jinete de lejos.
+   * con la copa en el medio *(Santi: "y el ala del sombrero")*.
+   *
+   * `inclina`: cuántos px se echa hacia adelante de la cintura para arriba. A
+   * la carrera un jinete no va sentado derecho: acompaña al caballo.
    */
-  function dibujarJinete(r, x, asiento, pose = 0) {
+  function dibujarJinete(r, x, asiento, pose = 0, inclina = 0) {
     const chaleco = escalarColor(colors.playerHat, 1.6);
+    const i = inclina;
     r.rect(x - 1, asiento, 3, 5, colors.horseMane);                          // la bota
     if (pose < 0) {
       // Alejándose: se le ve la espalda del chaleco, y el brazo queda del otro lado.
-      r.rect(x - 3, asiento - 8, 6, 8, chaleco);
-      r.rect(x - 3, asiento - 9, 6, 2, colors.player);                       // el cuello de la camisa
+      r.rect(x - 3, asiento - 4, 6, 4, chaleco);
+      r.rect(x - 3 + i, asiento - 8, 6, 4, chaleco);
+      r.rect(x - 3 + i, asiento - 9, 6, 2, colors.player);                   // el cuello de la camisa
     } else {
-      r.rect(x - 3, asiento - 8, 6, 8, colors.player);                       // la camisa
+      r.rect(x - 3, asiento - 4, 6, 4, colors.player);                       // la camisa
+      r.rect(x - 3 + i, asiento - 8, 6, 4, colors.player);
       if (pose > 0) {
         // Viniendo: el chaleco abierto a los costados, con la camisa al medio.
-        r.rect(x - 3, asiento - 8, 2, 8, chaleco);
-        r.rect(x + 2, asiento - 8, 1, 8, chaleco);
+        r.rect(x - 3, asiento - 4, 2, 4, chaleco);
+        r.rect(x + 2, asiento - 4, 1, 4, chaleco);
+        r.rect(x - 3 + i, asiento - 8, 2, 4, chaleco);
+        r.rect(x + 2 + i, asiento - 8, 1, 4, chaleco);
       } else {
         r.rect(x - 3, asiento - 4, 6, 4, chaleco);
       }
-      r.rect(x - 3, asiento - 9, 6, 2, escalarColor(colors.player, 1.1));    // los hombros
-      if (pose > 0) r.rect(x - 1, asiento - 9, 3, 2, '#b98a62');             // la cara, bajo el ala
+      r.rect(x - 3 + i, asiento - 9, 6, 2, escalarColor(colors.player, 1.1)); // los hombros
+      if (pose > 0) r.rect(x - 1 + i, asiento - 9, 3, 2, '#b98a62');         // la cara, bajo el ala
       // El brazo adelante y las riendas: sin ellos el cuerpo era un bloque liso.
-      r.rect(x + 2, asiento - 6, 4, 2, escalarColor(colors.player, 0.82));
-      r.rect(x + 6, asiento - 5 + Math.round(pose / 2), 4, 1, colors.horseMane);
+      r.rect(x + 2 + i, asiento - 6, 4, 2, escalarColor(colors.player, 0.82));
+      r.rect(x + 6 + i, asiento - 5 + Math.round(pose / 2), 4, 1, colors.horseMane);
     }
     // El ala: alejándose se la ve más de arriba (más abierta); viniendo, menos.
     r.ctx.fillStyle = colors.playerHat;
     r.ctx.beginPath();
-    r.ctx.ellipse(Math.round(x), Math.round(asiento - 11), 6, 2.5 - pose * 0.2, 0, 0, Math.PI * 2);
+    r.ctx.ellipse(Math.round(x + i), Math.round(asiento - 11), 6, 2.5 - pose * 0.2, 0, 0, Math.PI * 2);
     r.ctx.fill();
-    r.rect(x - 4, asiento - 12, 8, 1, escalarColor(colors.playerHat, 1.5));  // la luz del ala
-    r.rect(x - 2, asiento - 15, 5, 4, colors.playerHat);                     // la copa
-    r.rect(x - 2, asiento - 15, 5, 1, escalarColor(colors.playerHat, 1.7));
+    r.rect(x - 4 + i, asiento - 12, 8, 1, escalarColor(colors.playerHat, 1.5)); // la luz del ala
+    r.rect(x - 2 + i, asiento - 15, 5, 4, colors.playerHat);                    // la copa
+    r.rect(x - 2 + i, asiento - 15, 5, 1, escalarColor(colors.playerHat, 1.7));
+  }
+
+  /**
+   * LA NUBE DE POLVO *(Santi: "añádele una nube de polvo como la de la imagen",
+   * y "lo más realista posible")*.
+   *
+   * No es una estela pegada al caballo: cada casco que pisa levanta sus
+   * bocanadas (`sembrarPolvo`, llamado con cada zancada que suena), y esas
+   * bocanadas SE QUEDAN DONDE NACIERON, sobre el suelo. El caballo sigue y las
+   * deja atrás; ellas crecen, suben un poco, derivan con el viento de la
+   * carrera y se deshacen. Eso es lo que hace que se lea como polvo de verdad y
+   * no como un humo que el caballo arrastra.
+   *
+   * ES SÓLO DIBUJO y usa `Math.random`, no el `rng` del juego: si usara el
+   * mismo generador que siembra obstáculos y tiros, cada bocanada correría los
+   * sorteos del galope.
+   */
+  function sembrarPolvo(velocidad) {
+    if (velocidad < 40 || terminado) return;
+    const fuerza = Math.min(1, velocidad / caballo.sprintSpeed);
+    // Dónde cae cada casco, respecto del centro del caballo.
+    const pisadas = [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6], [GOLPES.delanteraAca, 6]];
+    /**
+     * 🐛 LA PRIMERA VERSIÓN SE VEÍA COMO BOLITAS EN FILA, no como una nube: tres
+     * bocanadas chicas por pisada, todas yendo para atrás, y entre zancada y
+     * zancada el caballo avanza ~50 px de suelo, así que quedaban huecos. Ahora
+     * son cinco por pisada, más grandes y más largas, y salen disparadas para
+     * los dos lados (hacia atrás y hacia adelante, frenándose): se abren, se
+     * pisan entre ellas y cierran los huecos.
+     */
+    for (const [cuando, dx] of pisadas) {
+      for (let n = 0; n < 5; n++) {
+        polvo.push({
+          espera: cuando,
+          edad: 0,
+          vida: 1.2 + Math.random() * 1.0,
+          gx: null, gy: null,
+          dx: dx + Math.random() * 10 - 5,
+          dy: 4 + Math.random() * 4,
+          vx: -30 + Math.random() * 70,
+          vy: -2 - Math.random() * 7,
+          r0: 1.5 + Math.random(),
+          r1: (8 + Math.random() * 9) * (0.55 + fuerza * 0.6),
+        });
+      }
+    }
+    // Un tope, por las dudas: con cinco por pisada rondan las 60 vivas.
+    if (polvo.length > 160) polvo.splice(0, polvo.length - 160);
+  }
+
+  function actualizarPolvo(dt) {
+    for (const b of polvo) {
+      if (b.gx === null) {
+        b.espera -= dt;
+        if (b.espera > 0) continue;
+        // Nace ahora, bajo el casco, en coordenadas del SUELO: se queda ahí.
+        b.gx = x + suelo + b.dx * Math.cos(rumbo);
+        b.gy = y + b.dy + b.dx * Math.sin(rumbo);
+      }
+      b.edad += dt;
+      b.gx += b.vx * dt;
+      b.gy += b.vy * dt;
+      // El aire las frena: salen con el golpe del casco y se quedan flotando.
+      b.vx *= Math.max(0, 1 - 2.2 * dt);
+      b.vy *= Math.max(0, 1 - 1.2 * dt);
+    }
+    for (let i = polvo.length - 1; i >= 0; i--) {
+      if (polvo[i].gx !== null && polvo[i].edad >= polvo[i].vida) polvo.splice(i, 1);
+    }
+  }
+
+  /**
+   * Cada bocanada son tres círculos: la sombra abajo a la derecha, el cuerpo y
+   * la luz arriba a la izquierda. Crece rápido al principio y después se
+   * frena, y se apaga despacio: así se abre como una nube y no como un globo.
+   */
+  function dibujarPolvo(r) {
+    const P = colors.polvo;
+    const tono = (hex) => (gameState.esDeDia ? hex : escalarColor(hex, 0.35));
+    const disco = (cx, cy, radio, color, alpha) => {
+      r.ctx.globalAlpha = alpha;
+      r.ctx.fillStyle = color;
+      r.ctx.beginPath();
+      r.ctx.arc(Math.round(cx), Math.round(cy), Math.max(1, radio), 0, Math.PI * 2);
+      r.ctx.fill();
+    };
+    r.ctx.save();
+    for (const b of polvo) {
+      if (b.gx === null) continue;
+      const t = Math.min(1, b.edad / b.vida);
+      const radio = b.r0 + (b.r1 - b.r0) * (1 - (1 - t) * (1 - t));
+      // Más transparentes que una sola: ahora se pisan varias en el mismo lugar.
+      const alpha = 0.42 * Math.pow(1 - t, 1.5);
+      const sx = b.gx - suelo;
+      disco(sx + radio * 0.25, b.gy + radio * 0.3, radio * 0.85, tono(P.sombra), alpha * 0.55);
+      disco(sx, b.gy, radio, tono(P.base), alpha);
+      disco(sx - radio * 0.3, b.gy - radio * 0.3, radio * 0.55, tono(P.luz), alpha * 0.7);
+    }
+    r.ctx.restore();
   }
 
   /**

@@ -42,9 +42,15 @@ atrás. Se está pasando por etapas, primero el tren:
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido
-siguen iguales. Las paredes que tienen adentro del vagón detrás (la de adelante,
-las divisiones) se dibujan bajas, para no esconderte a nadie. Las alturas se
-ajustan en `CONFIG.tresCuartos`.
+siguen iguales. Las alturas se ajustan en `CONFIG.tresCuartos`.
+
+- **La pared del fondo** mide 20 px, con su cara y sus ventanillas, y tira
+  sombra sobre el piso.
+- **La pared de adelante**, vista desde adentro, es sólo un borde, para no
+  esconderte a nadie; **desde afuera** muestra su cara alta, colgando por debajo
+  del vagón. Lo mismo las divisiones que tienen adentro detrás.
+- **Los jinetes de arriba del tren** quedan detrás de la pared del fondo: se los
+  ve **en silueta** a través de ella, con el gesto de apuntar incluido.
 
 > ¿Por qué hace falta un servidor? Porque el juego usa módulos de JavaScript
 > (`import` / `export`) y los navegadores los bloquean si abrís el `index.html`

@@ -11827,6 +11827,55 @@ ganado con las barandas levantadas y la góndola con los montículos en volumen.
 Dos capturas salieron primero del vagón equivocado —la lista de vagones empieza
 con la plataforma de la cola— y se repitieron buscando el vagón por su nombre.
 
+### 🔁 Etapa A, segunda versión — más limpia y con las paredes de afuera altas
+
+*(Santi, antes de seguir con la B: "en la etapa A se está perdiendo mucho el
+potencial [...] está media confusa y como que cargada. Además, mientras mirás de
+afuera al tren, se debería ver más altas las paredes de afuera")*.
+
+**Qué la cargaba**, visto en las capturas:
+
+- **La pared del fondo son dos filas**, y cada una dibujaba su tapa, su raya de
+  vidrio y su cara: **tres franjas de ventanillas** una encima de la otra.
+- **Asientos y piso con demasiadas rayas**: cada asiento con tapa, raya clara y
+  cara, sobre un piso a cuadros.
+- **La pared de adelante era un borde bajo** también desde afuera.
+
+Se le mostró un boceto con la propuesta, en 20 y en 28 px, al lado de la etapa A
+("me gusta mucho más que el otro"), y se decidió con lo que había medido:
+
+| Qué | Elegido | Descartado |
+|---|---|---|
+| Altura | **20 px**: 8 px de aire arriba y abajo (pantalla 216, tren 160) | 28 (llenaba la pantalla y la sacudida de un disparo la cortaba); "fondo 12, afuera 20" |
+| Jinetes de arriba | **Silueta a través de la pared** | "Siempre adelante" (rompe la perspectiva en el borde del tren) |
+
+**Por qué hacía falta decidir lo de los jinetes:** el carril de arriba va a 14 px
+del vagón con jinetes de 23 de alto. Una pared de 20 los tapa salvo el sombrero,
+una de 28 entera — y ya la de 12 les tapaba la mitad. A un tipo que te dispara lo
+tenés que ver.
+
+**Cómo quedó:**
+
+- **Las dos paredes largas son UN bloque por columna** (`bandaDe` en
+  `cosasAltasDelTren`). La del fondo: tapa levantada 20 y **una** cara con **una**
+  ventanilla. La de adelante, vista desde adentro, un borde de 3 px.
+- **La cara de AFUERA de la pared de adelante** cuelga por debajo del vagón
+  (`alturaCaraAfuera`, 18), con sus ventanillas y la sombra en la tierra. Va en
+  el piso: nada queda detrás de ella, y los jinetes de abajo pasan delante.
+- **La sombra de la pared del fondo** sobre las tablas.
+- **Piso de un solo tono** (sin tablero), **asientos y carga sin la raya clara**.
+- **`siluetaDeJinete`** (raidScene.js): el jinete de arriba se vuelve a dibujar
+  entero en un color plano, recortado a la franja que tapa la pared. Se ve dónde
+  está y el gesto de apuntar. `drawRider` no se enteró: se le pasa un renderer
+  que pinta todo del mismo color.
+
+**MEDIDO:** 0,39 ms por cuadro (antes 0,38), ningún error en el asalto ni en el
+galope. **MIRADO:** pasajeros con un jinete arriba apuntando (en silueta) y otro
+abajo (delante de la cara de afuera), el dormitorio, el refrigerado con la
+plataforma, y la góndola. Las divisiones del dormitorio y las puntas de cada
+vagón quedaron como bloques oscuros más pesados que el resto: a mirar con la
+gente de cuerpo entero (etapa B).
+
 **⚠️ NO JUGADO.**
 
 ---

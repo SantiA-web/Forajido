@@ -3562,6 +3562,10 @@ export function createRaidScene(services) {
     cosas.sort((a, b) => a.base - b.base);
     for (const c of cosas) c.draw();
 
+    // Los jinetes de arriba del tren quedan detrás de la pared del fondo: se
+    // los sigue viendo en silueta, encima de ella.
+    for (const rd of riders) siluetaDeJinete(r, rd);
+
     for (const p of particles) {
       r.ctx.globalAlpha = Math.min(1, p.life * 3);
       r.box(p.x, p.y, 1, 1, p.color);
@@ -3960,6 +3964,46 @@ export function createRaidScene(services) {
    * y botín: arriba no ves lo de abajo, igual que ellos no te ven a vos) y
    * termina justo en el borde del vagón, dejando el enganche al descubierto.
    */
+  /**
+   * EL JINETE DE ARRIBA DEL TREN, EN SILUETA A TRAVÉS DE LA PARED DEL FONDO.
+   *
+   * *(Santi eligió esto sobre "siempre adelante de la pared")*. En tres cuartos
+   * la pared del fondo se levanta `alturaPared` (20 px) y el carril de arriba va
+   * a 14 px del vagón con jinetes de 23 de alto: sin esto, un tipo que te está
+   * disparando quedaba escondido detrás. A un jinete lo tenés que ver.
+   *
+   * Se lo vuelve a dibujar ENTERO en un color plano y apagado, pero recortado a
+   * la franja que tapa la pared: arriba de la pared sigue viéndose el jinete de
+   * verdad, y lo tapado se lee como una sombra que se mueve. Se ve también el
+   * gesto de apuntar, que es lo que importa.
+   *
+   * Sólo sobre la pared de un vagón: sobre un enganche no hay pared que lo tape.
+   */
+  function siluetaDeJinete(r, rd) {
+    if (!rd.alive || rd.side >= 0) return;
+    const debajo = map.tileAtPixel(rd.x, 1);
+    if (debajo !== '#' && debajo !== 'W') return;
+
+    const alto = CONFIG.tresCuartos.alturaPared;
+    const color = colors.siluetaJinete;
+    const alpha = 0.45;
+    // Un renderer que pinta todo del mismo color: drawRider no se entera.
+    const plano = {
+      ctx: r.ctx,
+      rect: (x, y, w, h) => r.rect(x, y, w, h, color),
+      box: (x, y, hw, hh) => r.box(x, y, hw, hh, color),
+      line: (x1, y1, x2, y2) => r.line(x1, y1, x2, y2, color, alpha),
+    };
+
+    r.ctx.save();
+    r.ctx.beginPath();
+    r.ctx.rect(rd.x - 24, -alto, 48, alto + 2);
+    r.ctx.clip();
+    r.ctx.globalAlpha = alpha;
+    drawRider(plano, rd);
+    r.ctx.restore();
+  }
+
   function drawTecho(r) {
     if (!player.enTecho) return;
     const ct = CONFIG.techo;

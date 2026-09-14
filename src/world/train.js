@@ -1841,8 +1841,8 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
 
         case 'R':
           // El piso de abajo de la res; la res colgada va en `cosasAltasDelTren`.
-          r.rect(x, y, size, size, (row + col) % 2 === 0 ? colors.floor : colors.floorAlt);
-          r.rect(x, y + size - 1, size, 1, '#5b3d27');
+          r.rect(x, y, size, size, colors.floor);
+          r.rect(x, y + size - 1, size, 1, oscurecer(colors.floor, 0.86));
           break;
 
         case 'K': {
@@ -1877,9 +1877,65 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
           break;
 
         default:
-          r.rect(x, y, size, size, (row + col) % 2 === 0 ? colors.floor : colors.floorAlt);
-          r.rect(x, y + size - 1, size, 1, '#5b3d27');
+          /**
+           * 🔻 SIN TABLERO DE AJEDREZ. *(Santi, mirando la primera versión de
+           * tres cuartos: "está media confusa y como que cargada")*. Con las
+           * cosas levantadas, el piso a cuadros competía con los asientos y las
+           * paredes. Un solo tono y la junta de las tablas, apenas marcada.
+           */
+          r.rect(x, y, size, size, colors.floor);
+          r.rect(x, y + size - 1, size, 1, oscurecer(colors.floor, 0.86));
       }
+    }
+  }
+
+  /**
+   * TRES CUARTOS, LO QUE VA EN EL PISO Y NUNCA TAPA A NADIE:
+   *
+   *  - La SOMBRA de la pared del fondo sobre las tablas: es lo que dice "esta
+   *    pared es alta" sin agrandarla más.
+   *  - La CARA DE AFUERA de la pared de adelante, colgando por debajo del vagón
+   *    sobre el piso de afuera *(Santi: "mientras mirás de afuera al tren, se
+   *    debería ver más altas las paredes de afuera")*. Vista desde adentro esa
+   *    pared es sólo un borde (ver `cosasAltasDelTren`); desde afuera es alta.
+   *    Va acá y no en la lista ordenada porque nada queda detrás de ella: los
+   *    jinetes de abajo cabalgan delante y se pintan después.
+   */
+  const tc = CONFIG.tresCuartos;
+  for (let col = colDesde; col <= colHasta; col++) {
+    const x = col * size;
+    const casilla = (f) => (map.grid[f] || [])[col];
+
+    if (esPared(casilla(0))) {
+      let r1 = 0;
+      while (r1 + 1 < map.rows && esPared(casilla(r1 + 1))) r1++;
+      const pisoDeAdentro = casilla(r1 + 1);
+      if (pisoDeAdentro !== undefined && pisoDeAdentro !== 'X') {
+        r.ctx.globalAlpha = 0.22;
+        r.rect(x, (r1 + 1) * size, size, 7, '#000');
+        r.ctx.globalAlpha = 0.18;
+        r.rect(x, (r1 + 1) * size, size, 3, '#000');
+        r.ctx.globalAlpha = 1;
+      }
+    }
+
+    const ultima = map.rows - 1;
+    if (esPared(casilla(ultima))) {
+      let r2 = ultima;
+      while (r2 - 1 >= 0 && esPared(casilla(r2 - 1))) r2--;
+      let ventana = false;
+      for (let f = r2; f <= ultima; f++) if (casilla(f) === 'W') ventana = true;
+      const y0 = map.rows * size;
+      const alto = tc.alturaCaraAfuera;
+      r.rect(x, y0, size, alto, colors.wall);
+      r.rect(x, y0 + alto - 2, size, 2, oscurecer(colors.wall, 0.55));
+      if (ventana) {
+        r.rect(x + 2, y0 + 4, size - 4, alto - 11, colors.window);
+        r.rect(x + 3, y0 + 5, size - 6, alto - 13, colors.windowGlass);
+      }
+      r.ctx.globalAlpha = 0.35;
+      r.rect(x, y0 + alto, size, 3, '#000');
+      r.ctx.globalAlpha = 1;
     }
   }
 
@@ -1888,12 +1944,17 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
   drawLocomotora(r, train, colors, camX, anchoVista);
 }
 
-/** '#6a4a33' -> el mismo color multiplicado por `f` (0,7 = 30% más oscuro). */
+/**
+ * '#6a4a33' -> el mismo color multiplicado por `f`: 0,7 es 30% más oscuro y
+ * 1,3 es 30% más claro (tope en 255).
+ */
 function oscurecer(hex, f) {
   const n = parseInt(hex.slice(1), 16);
-  const c = (s) => Math.round(((n >> s) & 255) * f);
+  const c = (s) => Math.min(255, Math.round(((n >> s) & 255) * f));
   return `rgb(${c(16)},${c(8)},${c(0)})`;
 }
+
+const esPared = (ch) => ch === '#' || ch === 'W';
 
 /**
  * LO QUE SE LEVANTA DEL PISO, en tres cuartos (ver `drawPisoDelTren`).
@@ -1928,6 +1989,23 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
   const casilla = (c, f) => (map.grid[f] || [])[c];
   const cosas = [];
 
+  /**
+   * LAS DOS PAREDES LARGAS DE CADA COLUMNA: la del fondo (filas de pared desde
+   * la 0 hacia abajo, hasta `r1`) y la de adelante (desde la última hacia
+   * arriba, hasta `r2`). Lo que queda entre las dos es el adentro.
+   */
+  const bandas = new Map();
+  const bandaDe = (col) => {
+    if (bandas.has(col)) return bandas.get(col);
+    let r1 = -1;
+    while (r1 + 1 < map.rows && esPared(casilla(col, r1 + 1))) r1++;
+    let r2 = map.rows;
+    while (r2 - 1 > r1 && esPared(casilla(col, r2 - 1))) r2--;
+    const b = { r1, r2 };
+    bandas.set(col, b);
+    return b;
+  };
+
   for (let row = filaDesde; row <= filaHasta; row++) {
     for (let col = colDesde; col <= colHasta; col++) {
       const tile = map.grid[row][col];
@@ -1941,34 +2019,73 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
       switch (tile) {
         case '#':
         case 'W': {
-          // Pared y ventanilla son la misma pared: la ventanilla lleva vidrio
-          // en la cara. Tiene que gritar "esto no es pared", porque por acá te
-          // entran las balas; desde arriba se deja una raya de vidrio.
           /**
-           * 🐛 LA PARED DE ADELANTE TAPABA A LA GENTE. Levantada 12 px, la pared
-           * de abajo del vagón se comía la última fila de adentro: medio asiento
-           * y medio guardia escondidos detrás de ella. Es "correcto" en tres
-           * cuartos, y es justo lo que un juego no puede hacer: a la gente la
-           * tenés que ver. Por eso una pared que tiene ADENTRO DEL VAGÓN detrás
-           * suyo (arriba en pantalla) se dibuja baja, apenas un borde. Las del
-           * fondo y las laterales, que tapan afuera u otra pared, siguen altas.
+           * PARED Y VENTANILLA SON LA MISMA PARED: la ventanilla lleva vidrio en
+           * la cara. Tiene que gritar "esto no es pared", porque por acá te
+           * entran las balas.
+           *
+           * 🔻 SEGUNDA VERSIÓN, MÁS LIMPIA *(Santi: "está media confusa y como
+           * que cargada")*. La primera dibujaba cada casilla por su lado: la
+           * pared del fondo son dos filas, y cada fila ponía su tapa, su raya de
+           * vidrio y su cara — tres franjas de ventanillas una arriba de otra.
+           * Ahora las dos paredes largas se dibujan como UN bloque por columna:
+           *
+           *  - La del FONDO: la tapa levantada `alturaPared` y UNA cara con UNA
+           *    ventanilla. Lo que tapa es afuera (y los jinetes de arriba, que
+           *    se ven en silueta: `siluetaDeJinete`, raidScene.js).
+           *  - La de ADELANTE: vista desde adentro es sólo un borde bajo.
+           *    🐛 La primera versión la levantaba y se comía la última fila de
+           *    adentro, con medio guardia escondido: a la gente la tenés que ver.
+           *    Su cara alta es la de AFUERA y va en el piso (`drawPisoDelTren`).
+           *  - Las del medio (las puntas del vagón, las divisiones): cada casilla
+           *    por su lado, y baja si tiene adentro del vagón detrás suyo, por el
+           *    mismo motivo.
            */
-          const norte = casilla(col, row - 1);
-          const adentroDetras = norte !== undefined && norte !== '#' && norte !== 'W' && norte !== 'X';
-          const h = adentroDetras ? tc.alturaParedBaja : tc.alturaPared;
-          const cara = debajo !== '#' && debajo !== 'W';
-          const ventana = tile === 'W';
-          cosas.push({ base, draw: () => {
-            r.rect(x, y - h, size, size, colors.wall);
-            r.rect(x, y - h, size, 2, colors.wallTop);
-            if (ventana) r.rect(x + 1, y - h + 6, size - 2, 3, colors.windowGlass);
-            if (cara) {
-              r.rect(x, y + size - h, size, h, oscurecer(colors.wall, 0.72));
-              r.rect(x, y + size - 1, size, 1, oscurecer(colors.wall, 0.5));
+          const { r1, r2 } = bandaDe(col);
+          const alto = tc.alturaPared;
+          const tapa = oscurecer(colors.wall, 1.28);
+          const brillo = oscurecer(colors.wall, 1.5);
+          const cara = colors.wall;
+          const caraOscura = oscurecer(colors.wall, 0.55);
+
+          if (row <= r1) {
+            if (row !== r1) break;   // el bloque entero lo dibuja su última fila
+            const pie = (r1 + 1) * size;
+            let ventana = false;
+            for (let f = 0; f <= r1; f++) if (casilla(col, f) === 'W') ventana = true;
+            cosas.push({ base: pie - 0.01, draw: () => {
+              r.rect(x, -alto, size, pie, tapa);
+              r.rect(x, -alto, size, 1, brillo);
+              r.rect(x, pie - alto, size, alto, cara);
+              r.rect(x, pie - 1, size, 1, caraOscura);
               if (ventana) {
-                r.rect(x + 1, y + size - h + 2, size - 2, h - 4, colors.window);
-                r.rect(x + 2, y + size - h + 3, size - 4, h - 6, colors.windowGlass);
+                r.rect(x + 2, pie - alto + 4, size - 4, alto - 10, colors.window);
+                r.rect(x + 3, pie - alto + 5, size - 6, alto - 12, colors.windowGlass);
+                r.rect(x + 3, pie - alto + 5, size - 6, 2, oscurecer(colors.windowGlass, 1.25));
               }
+            } });
+            break;
+          }
+
+          if (row >= r2) {
+            if (row !== map.rows - 1) break;
+            const bajo = tc.alturaParedBaja;
+            cosas.push({ base: map.rows * size - 0.01, draw: () => {
+              r.rect(x, r2 * size - bajo, size, (map.rows - r2) * size + bajo, tapa);
+              r.rect(x, r2 * size - bajo, size, 1, brillo);
+            } });
+            break;
+          }
+
+          const norte = casilla(col, row - 1);
+          const adentroDetras = norte !== undefined && !esPared(norte) && norte !== 'X';
+          const h = adentroDetras ? tc.alturaParedBaja : Math.round(alto * 0.7);
+          const conCara = !esPared(debajo);
+          cosas.push({ base, draw: () => {
+            r.rect(x, y - h, size, size, tapa);
+            if (conCara) {
+              r.rect(x, y + size - h, size, h, cara);
+              r.rect(x, y + size - 1, size, 1, caraOscura);
             }
           } });
           break;
@@ -1977,10 +2094,11 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
         case 'S': {
           const h = tc.alturaAsiento;
           const cara = debajo !== 'S';
+          // Sin la raya clara de arriba: con la cara abajo ya se lee el
+          // volumen, y la raya sumaba una línea más por asiento al ruido.
           cosas.push({ base, draw: () => {
             r.rect(x + 1, y + 2 - h, size - 2, size - 4, colors.seat);
-            r.rect(x + 1, y + 2 - h, size - 2, 3, colors.seatTop);
-            if (cara) r.rect(x + 1, y + size - 2 - h, size - 2, h, oscurecer(colors.seat, 0.62));
+            if (cara) r.rect(x + 1, y + size - 2 - h, size - 2, h, oscurecer(colors.seat, 0.6));
           } });
           break;
         }
@@ -1993,8 +2111,8 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
           const cara = debajo !== 'C';
           cosas.push({ base, draw: () => {
             r.rect(x, y + 1 - h, size, size - 2, paleta[0]);
-            r.rect(x, y + 1 - h, size, 3, paleta[1]);
-            if (cara) r.rect(x, y + size - 1 - h, size, h, oscurecer(paleta[0], 0.62));
+            r.rect(x, y + 1 - h, size, 1, paleta[1]);
+            if (cara) r.rect(x, y + size - 1 - h, size, h, oscurecer(paleta[0], 0.6));
           } });
           break;
         }

@@ -1400,7 +1400,22 @@ export const CONFIG = {
    * Primeros valores sin calibrar mirando: se ajustan con captura delante.
    */
   tresCuartos: {
-    alturaPared: 12,
+    /**
+     * 🔺 DE 12 A 20, DESPUÉS DE MIRARLA. *(Santi: "se está perdiendo mucho el
+     * potencial [...] está media confusa y como que cargada. Además, mientras
+     * mirás de afuera al tren, se debería ver más altas las paredes de
+     * afuera")*. Elegido sobre 28 (llenaba la pantalla hasta el borde y la
+     * sacudida de un disparo la cortaba) y sobre "fondo 12, afuera 20". Con 20
+     * quedan 8 px de aire arriba y abajo: la pantalla mide 216 y el tren 160.
+     *
+     * A esta altura la pared del fondo tapa a los jinetes que cabalgan arriba
+     * del tren (a 14 px, miden 23): se los ve en SILUETA a través de ella
+     * (`siluetaDeJinete`, scenes/raidScene.js).
+     */
+    alturaPared: 20,
+    // La cara de AFUERA de la pared de adelante: cuelga por debajo del vagón,
+    // sobre el piso de afuera, así el tren se ve alto sin tapar a nadie de adentro.
+    alturaCaraAfuera: 18,
     // La pared con adentro detrás (la de adelante, las divisiones): baja, para
     // no tapar a la gente de la última fila.
     alturaParedBaja: 3,
@@ -2301,6 +2316,10 @@ export const CONFIG = {
     windowGlass:  '#7fb2bd',
     railing:      '#6b5236',
     railingTop:   '#8a6b47',
+
+    // El jinete que queda detrás de la pared del fondo, en tres cuartos: una
+    // sombra apagada encima de la pared (`siluetaDeJinete`, raidScene.js).
+    siluetaJinete: '#0f0b09',
 
     // El carbón de la góndola ('K' y 'M'). Casi negro, con terrones y algún
     // brillo: tiene que leerse distinto del piso de madera y de la chapa del techo.

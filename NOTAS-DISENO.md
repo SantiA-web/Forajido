@@ -11887,9 +11887,9 @@ del galope delante, y se hacen de la más chica a la más grande:
 |---|---|---|---|
 | 1 | *"el vagón de góndola: da la sensación que no estoy en el techo. Una vez estoy sobre el carbón, ya no debería haber paredes que me detengan a la hora de caerme"* | **Caerse por las puntas**, a los enganches; los costados siguen siendo el borde del tren (descartado "también por los costados": caerse al desierto no existe y sería un sistema nuevo). Paredes bajas desde adentro | ✅ |
 | 2 | *"una vez el jugador esté sobre el tren, se haga menos zoom"* | **Más resolución para todo el juego**: primero 480×270, y al medir quedó **420×236** (ver abajo). Descartado "zoom 0,8 sólo en el asalto": píxeles desparejos y carteles más chicos | ✅ |
-| 3 | *"en la cabalgata la perspectiva esté en un punto que se pueda ver el cielo y las montañas a lo lejos"* | **Cámara baja**, como el boceto: cielo, montañas, el tren de costado y el desierto adelante. Se juega igual | Falta |
-| 4 | *"en la cabalgata el tren se debería ver como se ve un tren desde afuera"* | Sale con la cámara baja: techo, pared alta, ventanillas y ruedas | Falta |
-| 5 | *"A la hora del salto al techo o al enganche puedo mover al caballo y hasta ponerme por encima de la pared del tren"* | Lo explica la etapa A: la cara de afuera cuelga 18 px bajo el vagón y el caballo galopa desde 8 px. Con la cámara baja el caballo va en su carril, delante del tren | Falta (va con el 3) |
+| 3 | *"en la cabalgata la perspectiva esté en un punto que se pueda ver el cielo y las montañas a lo lejos"* | **Cámara baja**, como el boceto: cielo, montañas, el tren de costado y el desierto adelante. Se juega igual | ✅ |
+| 4 | *"en la cabalgata el tren se debería ver como se ve un tren desde afuera"* | Sale con la cámara baja: techo, pared alta, ventanillas y ruedas | ✅ |
+| 5 | *"A la hora del salto al techo o al enganche puedo mover al caballo y hasta ponerme por encima de la pared del tren"* | Lo explica la etapa A: la cara de afuera cuelga 18 px bajo el vagón y el caballo galopa desde 8 px. Con la cámara baja el caballo va en su carril, delante del tren | ✅ (con el 3) |
 
 **La góndola (1):**
 
@@ -12010,6 +12010,64 @@ bordes ni errores. **Lo que NO se pudo medir:** que se acomode solo al cambiar
 la ventana EN VIVO — la pestaña de prueba está oculta y ahí el navegador no
 dibuja ningún cuadro (0 en 600 ms), así que el chequeo por cuadro no corre. Se
 forzó a mano y da lo de la tabla.
+
+**⚠️ NO JUGADO.**
+
+**El galope con cámara baja (3, 4 y 5):**
+
+Cielo, montañas, el tren de costado y el desierto adelante. **SE JUEGA IGUAL**:
+el tren sigue apoyado en `train.map.height`, que de costado pasa a ser la vía,
+y `y` sigue siendo la distancia al tren — ahora se lee como profundidad (más
+abajo es más cerca de la cámara). El `diff` de `scenes/rideScene.js` no toca
+ninguna línea de `update` ni de las reglas del salto: todo lo cambiado es
+dibujo.
+
+- **El tren de costado** vive aparte, en `world/trenDeCostado.js`: lee
+  `train.tramos` y pinta ruedas con un rayo que gira, bastidor, caja y techo.
+  Nueve dibujos: coche de gente (barnizado por tipo, con linterna), furgón,
+  blindado (remaches, sin ventanillas), cabús (con garita), ganado (tablas y
+  vacas asomando, sin techo), plataforma (carga amarrada), góndola (costados
+  bajos y el carbón hasta arriba), refrigerado (casi blanco) y la locomotora
+  (ténder, cabina, caldera, biela, faro, miriñaque y humo). Colores en
+  `CONFIG.colors.costado`. `drawTrain`, que sólo usaba el galope, se borró.
+- **La altura de la caja la eligió Santi sobre una imagen** con 32, 48 y 64:
+
+  | Caja | Techo sobre la vía | Cielo pegado al tren | Jinete / vagón |
+  |---|---|---|---|
+  | 32 | 49 | ~130 px, montañas a la vista | 55% — pero el vagón es una tira |
+  | **48** | **65** | **~114 px, las montañas asoman** | **42%** |
+  | 64 | 81 | ~98 px, montañas tapadas | 33% |
+
+  El largo no se puede tocar (es la planta del juego, ~640 px). La locomotora
+  se dibujó para 49 y se estira al alto de hoy, o quedaba más baja que los
+  vagones.
+- **El paisaje:** el cielo, el sol o la luna y dos cordilleras (mesetas atrás,
+  lomas adelante) van en coordenadas de PANTALLA —están lejísimos, el zoom no
+  los achica— y se apoyan en un horizonte a 30 px sobre la vía, detrás de la
+  caja. El llano del fondo se ve por los enganches. La vía corre por toda la
+  pantalla con durmientes que pasan (a 1,5 px por cuadro no hay efecto rueda de
+  carreta). Con tormenta el cielo va gris y sin sol.
+- **El caballo de perfil** con cuatro patas animadas y el jinete sentado; sigue
+  rotando con el rumbo, ahora sobre los cascos. Los obstáculos más cerca de la
+  cámara lo tapan. **Saltar:** el caballo queda abajo y el jinete sube en arco
+  al piso del enganche o al techo, a la altura dibujada.
+- **Los que te disparan:** el fogonazo va en la altura de las ventanillas y la
+  bala se dibuja saliendo de ahí y bajando hasta el pecho del jinete. La bala
+  de verdad (la que pega) no cambió.
+- 🐛 **Estrellas en fila:** `(i * 137) % ancho` y `(i * 71) % alto` dibujaban
+  rayitas diagonales en el cielo de noche — el mismo error de las matas del
+  campamento. Ahora usan el mismo revoltijo.
+- 🐛 **Flechas del salto encima del jinete:** iban a `base + 15`, que desde
+  arriba estaba libre y de costado cae sobre el cuerpo. Ahora van debajo de los
+  cascos.
+- Para las fotos se agregó `FORAJIDO.services.ride.ponerEn(x, y)`: pone el
+  caballo en un lugar exacto sin galopar hasta ahí. No lo usa el juego.
+
+**MEDIDO:** once tomas (las nueve familias, locomotora, noche, tormenta, un
+disparo, la bala en vuelo y los dos saltos) en 1920×1080 y una en 1366×768, sin
+errores. Una corrida automática con el Criollo pegado al tren llega limpio al
+**3er enganche** a los 35,4 s, con 9,5 s de reloj y 31 de aguante: es el alcance
+de siempre del Criollo.
 
 **⚠️ NO JUGADO.**
 

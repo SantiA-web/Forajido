@@ -1751,36 +1751,18 @@ export function isInsideZone(entity, zone) {
 // ----------------------------------------------------------------- dibujo
 
 /**
- * Dibuja el tren, pero SOLO las columnas que se ven.
+ * El tren se dibuja SOLO en las columnas que se ven: son ~2700 casillas y en
+ * pantalla entran unas 30. Recortar al rango visible es la diferencia entre
+ * que corra bien y que se arrastre.
  *
- * El tren son ~2700 tiles y en pantalla entran unas 24 columnas. Recortar al
- * rango visible es la diferencia entre que corra bien y que se arrastre.
+ * `vistaW`/`vistaH` son CUÁNTO MUNDO ENTRA EN LA PANTALLA, que con zoom no es
+ * lo mismo que el tamaño de la pantalla. Son opcionales: el asalto dibuja a
+ * escala 1 y cae en `r.width`/`r.height`.
  *
- * `vistaW`/`vistaH` — CUÁNTO MUNDO ENTRA EN LA PANTALLA, que no siempre es lo
- * mismo que el tamaño de la pantalla.
- *
- * 🐛 ANTES SE RECORTABA CON `r.width`/`r.height` A SECAS, y eso daba por
- * sentado en silencio que el dibujo va siempre a escala 1. Valía para el
- * asalto, y por eso nunca molestó — hasta que el galope estrenó zoom dinámico
- * (ver `zoomLejos` en data/horse.js): con la escena a 0,4 la pantalla muestra
- * 960 px de mundo, pero esta función seguía dibujando sólo los primeros 384 a
- * partir de `camX`. Como en el galope `camX` está bien detrás de la cola, esos
- * 384 px caían enteros en el vacío anterior al tren y **el tren no se dibujaba
- * nunca**.
- *
- * El síntoma era desconcertante: todas las mediciones daban al tren en la
- * posición correcta (la cola calculada en x=310 de pantalla) y aun así no se
- * veía. Sólo apareció mirando la escena ampliada con foto.ps1.
- *
- * Los parámetros son OPCIONALES y caen en el comportamiento de siempre, así que
- * el asalto —que dibuja a escala 1— no cambia en nada.
+ * (Hasta el galope con cámara baja existía también `drawTrain`, que hacía las
+ * dos pasadas de abajo seguidas: la usaba sólo el galope, que ahora dibuja el
+ * tren de costado — world/trenDeCostado.js.)
  */
-export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
-  drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH);
-  const cosas = cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH);
-  cosas.sort((a, b) => a.base - b.base);
-  for (const c of cosas) c.draw();
-}
 
 /**
  * TRES CUARTOS, ETAPA A — el tren se dibuja en DOS pasadas.
@@ -1796,9 +1778,6 @@ export function drawTrain(r, train, colors, camX, camY, vistaW, vistaH) {
  *     piso (paredes, ventanillas, asientos, carga, reses, montículos, barandas),
  *     cada una con su `base` —dónde apoya—, para que la escena la mezcle con la
  *     gente y dibuje todo ordenado por dónde tiene los pies.
- *
- * `drawTrain` hace las dos seguidas y ordenadas: es lo que usa el galope, que
- * no tiene gente adentro que mezclar.
  *
  * NADA DE ESTO TOCA EL JUEGO: la grilla, los choques, la vista y las balas
  * siguen igual. Sólo cambia dónde se pinta.

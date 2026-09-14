@@ -2479,5 +2479,77 @@ export const CONFIG = {
       humo:        '#8f8980',
       faro:        '#ffd08a',
     },
+
+    /**
+     * EL TREN VISTO DE COSTADO — el del galope (ver world/trenDeCostado.js).
+     *
+     * *(Santi: "en la cabalgata el tren se debería ver como se ve un tren desde
+     * afuera")*. Cada familia de vagón tiene su color de caja, y es lo que hace
+     * que desde el caballo se sepa cuál es cuál sin leer nada: los coches de
+     * gente van barnizados (rojizo, ciruela, verde Pullman), los furgones en
+     * madera cruda, el blindado en chapa, el cabús en el rojo de siempre y el
+     * refrigerado casi blanco, como se pintaban para que no calentara el sol.
+     * Las paletas de adentro (`cargo`) no alcanzaban: son la carga, no la caja.
+     */
+    costado: {
+      ruedas:    '#1c1a1c',
+      ruedaLuz:  '#4a4850',
+      bastidor:  '#221d1c',
+      techo:     '#3a3431',
+      techoLuz:  '#524a44',
+      marco:     '#241a14',
+      vidrioDia: '#7fb2bd',
+      /** De noche las ventanillas se prenden: es lo que se ve de un tren a lo lejos. */
+      vidrioNoche: '#ffd08a',
+      coche: {
+        pasajeros:    '#7a3f28',
+        primeraClase: '#4a2638',
+        dormitorio:   '#34503f',
+        comedor:      '#6b4526',
+      },
+      furgon: {
+        correo:   '#6a4a2c',
+        cerrado:  '#6a4a2c',
+        almacen:  '#7a6448',
+        armas:    '#4f5a3c',
+        guardias: '#5c4632',
+        default:  '#5e3a26',
+      },
+      filete:      '#c9a24a',   // el dorado de primera clase
+      blindado:    '#4a5058',
+      remache:     '#2e3238',
+      caboose:     '#8c2f26',
+      ganado:      '#6b5a44',
+      vaca:        '#5a3a26',
+      vacaClara:   '#d8cfc0',
+      plataforma:  '#4a3a2c',
+      gondola:     '#2e2c2e',
+      refrigerado: '#c8bfae',
+    },
+
+    /**
+     * EL CIELO Y LO LEJANO DEL GALOPE. De día se usa el cielo del pueblo
+     * (`puebloCielo`): es el mismo desierto, a la misma hora.
+     */
+    cielo: {
+      nocheArriba:       '#0b0f1e',
+      nocheHorizonte:    '#2a2a3a',
+      tormentaArriba:    '#3e4348',
+      tormentaHorizonte: '#7a7b74',
+      sol:        '#fff1c4',
+      luna:       '#e8e4d0',
+      estrella:   '#f2ecd8',
+      /** Las mesetas del fondo, azuladas por la distancia: lo lejano se enfría. */
+      montanaLejos:    '#8f8497',
+      montanaTormenta: '#5e5f63',
+      /** Los cerros de adelante, del color de la tierra pero más apagados. */
+      montanaCerca: '#8a6a52',
+      llanoLejano:  '#a88c62',
+      bruma:        '#c9b28a',
+      balasto:      '#3a2f26',
+      durmiente:    '#2a211b',
+      riel:         '#8c8074',
+      rielSombra:   '#5a5048',
+    },
   },
 };

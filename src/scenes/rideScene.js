@@ -4,16 +4,19 @@
  * El asalto no empieza con un menú ni adentro del vagón: empieza detrás del
  * tren, galopando para alcanzarlo, con la locomotora allá adelante.
  *
- * 🔺 CON CÁMARA BAJA, YA NO DESDE ARRIBA *(Santi: "que se pueda ver el cielo y
- * las montañas a lo lejos" y "el tren se debería ver como se ve un tren desde
- * afuera")*. Antes se veía igual que el asalto, con el tren de arriba y sus
- * asientos a la vista antes de haber entrado. Ahora hay cielo, montañas, el
- * tren de costado (world/trenDeCostado.js) y el desierto adelante.
+ * 🔺 EN TRES CUARTOS, CON EL TREN VISTO DESDE AFUERA *(Santi: "el tren se
+ * debería ver como se ve un tren desde afuera" y "tiene que ser 3/4, es decir
+ * que se debería ver parte del techo del tren, parte del lomo del caballo y el
+ * ala del sombrero")*. Antes se veía igual que el asalto, con el tren de arriba
+ * y sus asientos a la vista antes de haber entrado; después hubo una versión de
+ * costado, a la altura del caballo, que no era lo pedido. Ahora la cámara está
+ * alta: del tren se ve la pared y la tapa del techo (world/trenTresCuartos.js),
+ * del caballo el lomo y la montura, y el desierto llena la pantalla. De lejos
+ * asoma el cielo arriba de todo.
  *
  * SE JUEGA EXACTAMENTE IGUAL: el tren sigue apoyado en `train.map.height`, que
- * de costado es la vía, y el campo sigue abajo. `y` sigue siendo la distancia
- * al tren; sólo que ahora se lee como profundidad —más abajo en pantalla es
- * más cerca de la cámara— en vez de como un plano visto desde el cielo.
+ * ahora es la vía, y el campo sigue abajo. `y` sigue siendo la distancia al
+ * tren.
  *
  * LAS TRES COSAS QUE COMPITEN POR TU ATENCIÓN, y que son todo el juego de esta
  * escena:
@@ -40,8 +43,9 @@ import { gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { sortearComposicion, buildTrain, plataformasDe } from '../world/train.js';
 import {
-  dibujarTrenDeCostado, escalarColor, ALTO_DEL_TECHO, ALTO_DEL_ENGANCHE, ALTURA_VENTANILLA,
-} from '../world/trenDeCostado.js';
+  dibujarTrenTresCuartos, escalarColor, alturaDeAterrizaje,
+  ALTO_DEL_TECHO, ALTO_DEL_ENGANCHE, ALTURA_VENTANILLA,
+} from '../world/trenTresCuartos.js';
 import { distance } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 
@@ -51,10 +55,10 @@ export function createRideScene(services) {
   const size = CONFIG.tileSize;
 
   /**
-   * A qué altura sobre la vía queda el horizonte: detrás del tren, a media
-   * caja, así los vagones tapan el pie de las montañas. Ver `dibujarAfuera`.
+   * Cuántos px de cielo se ven arriba de la pantalla con el zoom del todo
+   * abierto (lejos del tren). Pegado al tren, cero. Ver `cieloDeLejos`.
    */
-  const HORIZONTE = 30;
+  const CIELO_LEJOS = 44;
 
   let caballo;
   let composicion, dificultad, tipoTren, clima, estado, comportamientos, variantes,
@@ -964,9 +968,8 @@ export function createRideScene(services) {
      * Y AHORA TAMBIÉN SIGUE EN VERTICAL, porque el campo (150 px) ya no entra
      * entero en pantalla cuando el zoom está cerca.
      *
-     * El tope de arriba es 0. Con la cámara baja, de 0 a la vía hay cielo,
-     * montañas y el tren de costado, así que ese tope deja siempre a la vista
-     * el tren entero y un buen pedazo de cielo.
+     * El tope de arriba es 0: arriba del tren queda siempre un poco de desierto
+     * a la vista (el techo en tres cuartos llega hasta ~84 px sobre la vía).
      */
     const campoAbajo = train.map.height + A.carrilLejos;
 
@@ -986,8 +989,10 @@ export function createRideScene(services) {
      * donde esté.
      */
     const DESPLAZO_HUD = 20;
+    // Y DE LEJOS BAJA TAMBIÉN LO QUE OCUPA EL CIELO (`cieloDeLejos`): la franja
+    // de cielo se abre arriba sin taparle el tren a nadie.
     const camY = Math.max(0, Math.min(campoAbajo - vistaH, y - vistaH * 0.62))
-      - DESPLAZO_HUD / z;
+      - (DESPLAZO_HUD + cieloDeLejos(z)) / z;
 
     dibujarAfuera(r, camX, z, camY, vistaW, vistaH);
 
@@ -997,16 +1002,16 @@ export function createRideScene(services) {
 
     // `vistaW`: con el zoom alejado entra MUCHO más mundo del que mide la
     // pantalla, y sin decírselo el tren queda fuera del recorte y no se dibuja.
-    dibujarTrenDeCostado(r, train, train.map.height, camX, vistaW, { noche: !gameState.esDeDia });
+    dibujarTrenTresCuartos(r, train, train.map.height, camX, vistaW, { noche: !gameState.esDeDia });
     dibujarFogonazos(r, camX);
     dibujarMarcaDeSalto(r);
     dibujarMarcaTecho(r);
 
     /**
-     * CON LA CÁMARA BAJA, LO QUE ESTÁ MÁS ABAJO EN PANTALLA TAPA AL CABALLO: un
+     * EN TRES CUARTOS, LO QUE ESTÁ MÁS ABAJO EN PANTALLA TAPA AL CABALLO: un
      * cactus entre vos y la cámara se pinta encima tuyo, y uno entre vos y el
-     * tren, detrás. Desde arriba daba igual el orden; de costado es lo que dice
-     * quién está adelante.
+     * tren, detrás. Es la misma regla del asalto: se dibuja por dónde tiene los
+     * pies cada uno.
      */
     const delante = [];
     for (const ob of obstaculos) {
@@ -1038,60 +1043,67 @@ export function createRideScene(services) {
   }
 
   /**
-   * 🔺 LA CÁMARA BAJA — EL PAISAJE. *(Santi: "me gustaría que en la cabalgata
-   * la perspectiva esté en un punto que se pueda ver el cielo y las montañas a
-   * los lejos")*.
+   * EL PAISAJE, EN TRES CUARTOS.
    *
-   * Tres planos, y cada uno se mueve a su manera:
+   * 🔁 PRIMERO FUE UNA CÁMARA BAJA, a la altura del caballo, con el horizonte a
+   * media pared del tren. Estaba mal *(Santi: "tiene que ser 3/4")*: con la
+   * cámara alta de tres cuartos el suelo llena la pantalla, arriba del tren
+   * sigue el desierto, y el horizonte queda afuera de cuadro — como la imagen
+   * de referencia que pasó.
    *
-   *  1. **El cielo, el sol o la luna y las montañas van en coordenadas de
-   *     PANTALLA**, no dentro del zoom. Están lejísimos: alejarse del tren no
-   *     los achica, y si entraran en el `scale` la cordillera se encogería a la
-   *     mitad cada vez que el zoom se abre. Sólo se apoyan en el horizonte, que
-   *     sí sube y baja con la cámara.
-   *  2. **El horizonte queda detrás del tren, a media pared** (`HORIZONTE`): la
-   *     caja de los vagones tapa el pie de las montañas, y por los enganches se
-   *     ve el llano del fondo. Es lo que pone al tren DELANTE del paisaje.
-   *  3. **El suelo y la vía van dentro del zoom**, con el resto del mundo.
+   * EL CIELO SÓLO DE LEJOS *(elegido por Santi)*. Mientras galopás lejos del
+   * tren y el zoom está abierto, arriba de todo asoma una franja de cielo con
+   * montañas (`cieloDeLejos`), y se va yendo a medida que te acercás. Es lo que
+   * queda de *"que se pueda ver el cielo y las montañas a lo lejos"* sin romper
+   * la vista de tres cuartos donde se juega.
+   *
+   * Tres capas:
+   *  1. **El suelo, sus adornos y la vía**, dentro del zoom. Los adornos se
+   *     mueven con el SUELO, igual que los obstáculos.
+   *  2. **El cielo y las montañas**, en coordenadas de PANTALLA: están
+   *     lejísimos, el zoom no los achica. Tapan lo que haya del suelo arriba de
+   *     la franja.
+   *  3. **El borde de adelante del campo y las rayas de velocidad**.
    *
    * Es todo dibujo: dónde está la vía, cuánto campo hay y a qué distancia se
-   * salta no cambió un píxel. El tren sigue apoyado en `train.map.height`, que
-   * era el borde de abajo del tren visto desde arriba y ahora es la vía.
+   * salta no cambió un píxel.
    */
   function dibujarAfuera(r, camX, z, camY, vistaW, vistaH) {
     const base = train.map.height;
     const dia = gameState.esDeDia;
     const C = colors.cielo;
+    const tinte = (hex) => (dia ? hex : escalarColor(hex, 0.32));
     r.clear(dia ? colors.desiertoDia : colors.desiertoNoche);
 
-    // --- 1. El cielo y las montañas, en pantalla ---
-    const hy = Math.round((base - HORIZONTE - camY) * z);
-    const [arriba, abajo] = hayTormenta ? [C.tormentaArriba, C.tormentaHorizonte]
-      : dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
-        : [C.nocheArriba, C.nocheHorizonte];
-    if (hy > 0) r.cielo(0, 0, r.width, hy, arriba, abajo, 10);
-    if (!hayTormenta && hy > 24) dibujarAstro(r, hy, dia);
-
-    /**
-     * Dos cordilleras que se corren con lo que avanzaste SOBRE EL SUELO
-     * (`camX + suelo`), no contra el tren. La de atrás casi no se mueve y la de
-     * adelante un poco más: esa diferencia es la que el ojo lee como distancia
-     * (ver engine/parallax.js). La de atrás va en escalones —mesetas—; la de
-     * adelante, redondeada —lomas—, para que no se lean como la misma copiada.
-     */
-    const avance = camX + suelo;
-    const tinte = (hex) => (dia ? hex : escalarColor(hex, 0.32));
-    cordillera(r, hy, avance * 0.015, 40, tinte(hayTormenta ? C.montanaTormenta : C.montanaLejos), 1.3, true);
-    cordillera(r, hy, avance * 0.05, 16, tinte(C.montanaCerca), 4.1, false);
-
-    // --- 2. El llano del fondo y la vía, dentro del zoom ---
+    // --- 1. El suelo y la vía ---
     r.ctx.save();
     r.ctx.scale(z, z);
     r.ctx.translate(-camX, -camY);
-    r.rect(camX, base - HORIZONTE, vistaW, HORIZONTE, tinte(C.llanoLejano));
-    r.rect(camX, base - HORIZONTE, vistaW, 1, tinte(C.bruma));
+    dibujarAdornos(r, camX, camY, vistaW, vistaH, base, tinte);
     dibujarVia(r, camX, vistaW, base, tinte);
     r.ctx.restore();
+
+    // --- 2. El cielo de lejos, en pantalla ---
+    const hy = cieloDeLejos(z);
+    if (hy > 0) {
+      const [arriba, abajo] = hayTormenta ? [C.tormentaArriba, C.tormentaHorizonte]
+        : dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
+          : [C.nocheArriba, C.nocheHorizonte];
+      r.cielo(0, 0, r.width, hy, arriba, abajo, 6);
+      if (!hayTormenta && hy > 20) dibujarAstro(r, hy, dia);
+      /**
+       * Dos cordilleras que se corren con lo que avanzaste SOBRE EL SUELO
+       * (`camX + suelo`), no contra el tren. La de atrás casi no se mueve y la
+       * de adelante un poco más: esa diferencia es la que el ojo lee como
+       * distancia (ver engine/parallax.js). Crecen con la franja, así que se
+       * hunden en el horizonte a medida que te acercás.
+       */
+      const avance = camX + suelo;
+      const escala = hy / CIELO_LEJOS;
+      cordillera(r, hy, avance * 0.015, 26 * escala, tinte(hayTormenta ? C.montanaTormenta : C.montanaLejos), 1.3, true);
+      cordillera(r, hy, avance * 0.05, 11 * escala, tinte(C.montanaCerca), 4.1, false);
+      r.rect(0, hy, r.width, 1, tinte(C.bruma));
+    }
 
     // --- 3. El campo por donde galopás ---
     r.ctx.save();
@@ -1102,18 +1114,12 @@ export function createRideScene(services) {
 
     /**
      * EL BORDE DE ADELANTE DEL CAMPO: matas bajas que pasan rápido, justo afuera
-     * de donde se galopa. Con la cámara baja son lo más cercano a la cámara, y
-     * marcan el tope sin dibujar ninguna pared.
-     *
-     * (La otra hilera de esta capa iba arriba de todo, en `y: 4`: desde arriba
-     * era el borde lejano del desierto. Con la cámara baja ahí está el cielo, y
-     * lo lejano son las montañas.)
+     * de donde se galopa. Marcan el tope sin dibujar ninguna pared.
      */
     drawParallax(r, P.capas.map((c, i) => ({
       ...c, v: c.v * P.velocidad, y: campoAbajo + 2 + i * 5,
     })), scroll, vistaW);
 
-    // Las rayas de velocidad barren el campo, como antes.
     drawSpeedLines(r, scroll, vistaW, {
       ...P.rayas, velocidad: P.rayas.velocidad * P.velocidad,
       desde: base + A.carrilCerca, hasta: campoAbajo - 4,
@@ -1122,11 +1128,22 @@ export function createRideScene(services) {
     r.ctx.restore();
   }
 
+  /**
+   * CUÁNTOS PX DE CIELO SE VEN ARRIBA DE LA PANTALLA con este zoom: `CIELO_LEJOS`
+   * con el zoom del todo abierto, y cero a partir de 0,75 (a mitad de camino
+   * del acercamiento). La cámara baja lo mismo (ver `render`), así que el
+   * cielo no le tapa nada al tren: le hace lugar.
+   */
+  function cieloDeLejos(z) {
+    const t = Math.max(0, Math.min(1, (0.75 - z) / (0.75 - A.zoomLejos)));
+    return Math.round(CIELO_LEJOS * t);
+  }
+
   /** El sol de día; de noche la luna en cuarto y las estrellas. Van en pantalla. */
   function dibujarAstro(r, hy, dia) {
     const C = colors.cielo;
     const cx = Math.round(r.width * 0.78);
-    const cy = Math.round(hy * 0.34);
+    const cy = Math.round(hy * 0.4);
     const disco = (x, y, radio, color, alpha = 1) => {
       r.ctx.save();
       r.ctx.globalAlpha = alpha;
@@ -1137,26 +1154,24 @@ export function createRideScene(services) {
       r.ctx.restore();
     };
     if (dia) {
-      disco(cx, cy, 17, C.sol, 0.16);
-      disco(cx, cy, 8, C.sol);
+      disco(cx, cy, 13, C.sol, 0.16);
+      disco(cx, cy, 6, C.sol);
       return;
     }
     /**
      * Las estrellas quedan clavadas a la pantalla: están a distancia infinita.
      *
      * 🐛 Primero eran `(i * 137) % ancho` y `(i * 71) % alto`, y salieron en
-     * DIAGONALES: rayitas de 15 px cruzando el cielo, que parecían estrellas
-     * fugaces congeladas. Es el mismo error que ya tuvieron las matas del
-     * campamento —dos cuentas que avanzan juntas con `i` marchan en fila— y se
-     * arregla igual, con un revoltijo de verdad.
+     * DIAGONALES: rayitas que parecían estrellas fugaces congeladas. Es el mismo
+     * error que ya tuvieron las matas del campamento, y se arregla igual.
      */
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < 40; i++) {
       r.ctx.globalAlpha = 0.3 + (i % 3) * 0.25;
-      r.rect(revolver(i) % r.width, revolver(i + 977) % Math.max(1, hy - 10), 1, 1, C.estrella);
+      r.rect(revolver(i) % r.width, revolver(i + 977) % Math.max(1, hy - 8), 1, 1, C.estrella);
     }
     r.ctx.globalAlpha = 1;
-    disco(cx, cy, 6, C.luna);
-    disco(cx + 3, cy - 2, 5, C.nocheArriba);
+    disco(cx, cy, 5, C.luna);
+    disco(cx + 2, cy - 2, 4, C.nocheArriba);
   }
 
   /**
@@ -1178,26 +1193,90 @@ export function createRideScene(services) {
   }
 
   /**
-   * LA VÍA, DE COSTADO: el balasto, el riel y los durmientes pasando.
+   * LO QUE ADORNA EL SUELO: pasto, piedritas y manchas en el campo, y del otro
+   * lado del tren también matas y cactus. No chocan con nada.
    *
-   * Corre por toda la pantalla y no sólo detrás de la cola: de costado se ve
-   * por los enganches y entre las ruedas. Detrás de la cola sigue haciendo lo
-   * que hacía desde arriba —decirte por dónde se fue el tren antes de verlo—.
+   * Se siembran en una grilla de celdas sobre el SUELO (`x + suelo`), una cosa
+   * como mucho por celda y en un lugar revuelto dentro de ella: así el desierto
+   * no es un color liso y tampoco marcha en filas. No se guarda ninguna lista —
+   * la celda decide sola qué tiene, siempre lo mismo.
    *
-   * LOS DURMIENTES SE MUEVEN, y acá sí se puede. Desde arriba había que usar
-   * rayas porque unos durmientes a 18 px por cuadro se veían caminar al revés
-   * (el efecto rueda de carreta). De costado van con el SUELO, a 90 px/s: 1,5
-   * px por cuadro, lejísimos de ese efecto.
+   * ADELANTE SON CHIQUITOS A PROPÓSITO: el campo ya tiene sus obstáculos de
+   * verdad, y un adorno del tamaño de una piedra que frena sería una trampa.
+   * Del otro lado del tren no se puede ir, así que ahí sí puede haber matas.
+   */
+  function dibujarAdornos(r, camX, camY, vistaW, vistaH, base, tinte) {
+    const C = colors.cielo;
+    const celda = 30;
+    const fondoDelTren = base - ALTO_DEL_TECHO - 20;
+    const cx0 = Math.floor((camX + suelo) / celda) - 1;
+    const cx1 = Math.ceil((camX + suelo + vistaW) / celda) + 1;
+    const cy0 = Math.floor(camY / celda) - 1;
+    const cy1 = Math.ceil((camY + vistaH) / celda) + 1;
+
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const h = revolver(cx * 7919 + cy * 104729);
+        const tipo = h % 9;
+        if (tipo > 4) continue;
+        const wx = cx * celda + ((h >>> 8) % celda) - suelo;
+        const wy = cy * celda + ((h >>> 16) % celda);
+        // Donde está el tren y la vía no va nada: los taparía o se les montaría.
+        if (wy > fondoDelTren && wy < base + 12) continue;
+        const detras = wy <= fondoDelTren;
+
+        if (tipo <= 1) {
+          r.rect(wx, wy - 3, 1, 3, tinte(C.pasto));
+          r.rect(wx + 2, wy - 4, 1, 4, tinte(C.pasto));
+          r.rect(wx + 4, wy - 2, 1, 2, tinte(C.pasto));
+        } else if (tipo === 2) {
+          r.rect(wx, wy - 1, 4, 2, tinte(C.piedrita));
+          r.rect(wx, wy - 2, 3, 1, tinte(C.piedritaLuz));
+        } else if (!detras) {
+          if (tipo === 3) r.rect(wx, wy, 12, 2, tinte(C.tierraOscura));
+        } else if (tipo === 3) {
+          r.ctx.globalAlpha = 0.22;
+          r.rect(wx - 7, wy, 16, 2, '#000');
+          r.ctx.globalAlpha = 1;
+          r.rect(wx - 7, wy - 4, 14, 5, tinte(C.mata));
+          r.rect(wx - 5, wy - 7, 10, 4, tinte(C.mataLuz));
+        } else {
+          r.rect(wx - 1, wy - 12, 3, 12, tinte(C.cactus));
+          r.rect(wx - 4, wy - 8, 3, 2, tinte(C.cactus));
+          r.rect(wx - 4, wy - 11, 2, 3, tinte(C.cactus));
+          r.rect(wx + 2, wy - 6, 3, 2, tinte(C.cactus));
+          r.rect(wx + 3, wy - 9, 2, 3, tinte(C.cactus));
+        }
+      }
+    }
+  }
+
+  /**
+   * LA VÍA, EN TRES CUARTOS: la franja de balasto que asoma adelante del tren,
+   * los durmientes vistos desde arriba y los dos rieles — el de este lado, bajo
+   * las ruedas, y el de allá, que el tren tapa y sólo se ve por los enganches.
+   *
+   * Los durmientes se mueven con el SUELO, a 90 px/s: 1,5 px por cuadro, lejos
+   * del efecto rueda de carreta que obligó a usar rayas en la vista vieja.
    */
   function dibujarVia(r, camX, vistaW, base, tinte) {
     const C = colors.cielo;
-    r.rect(camX, base - 3, vistaW, 7, tinte(C.balasto));
+    /**
+     * La franja termina en `base + 3` y no más abajo: el caballo galopa desde
+     * `base + 8` con los cascos en `y + 7`, así que pegado al tren pisa tierra.
+     * Con el balasto hasta `base + 8` se veía galopando encima de la vía.
+     */
+    r.rect(camX, base - 9, vistaW, 12, tinte(C.balasto));
+    r.rect(camX, base + 3, vistaW, 1, tinte(escalarColor(C.balasto, 0.75)));
     const paso = 9;
     for (let n = Math.floor((camX + suelo) / paso); n * paso - suelo < camX + vistaW; n++) {
-      r.rect(n * paso - suelo, base - 1, 5, 3, tinte(C.durmiente));
+      const dx = n * paso - suelo;
+      r.rect(dx, base - 8, 4, 10, tinte(C.durmiente));
+      r.rect(dx + 6, base - 4 + (n % 3) * 2, 1, 1, tinte(C.grava));
     }
-    r.rect(camX, base - 3, vistaW, 1, tinte(C.riel));
-    r.rect(camX, base - 2, vistaW, 1, tinte(C.rielSombra));
+    r.rect(camX, base - 6, vistaW, 1, tinte(C.riel));
+    r.rect(camX, base - 1, vistaW, 1, tinte(C.riel));
+    r.rect(camX, base, vistaW, 1, tinte(C.rielSombra));
   }
 
   /** El fogonazo en la ventanilla: es el aviso de que ese vagón va a tirar. */
@@ -1209,7 +1288,7 @@ export function createRideScene(services) {
       const px = Math.max(vagon.x + 8, Math.min(vagon.x + vagon.width - 8, x));
       const base = train.map.height;
       const parpadeo = Math.floor(scroll * 22) % 2 === 0;
-      // A la altura de las ventanillas del costado (world/trenDeCostado.js).
+      // A la altura de las ventanillas del vagón (world/trenTresCuartos.js).
       if (parpadeo) {
         const vy = base - ALTURA_VENTANILLA;
         r.rect(px - 4, vy - 7, 9, 14, '#ffd08a');
@@ -1244,24 +1323,36 @@ export function createRideScene(services) {
     r.rect(ox - radio, ob.y + 2, radio * 2, 3, '#000');
     r.ctx.globalAlpha = 1;
 
+    /**
+     * EN TRES CUARTOS CADA UNO MUESTRA SU PARTE DE ARRIBA: la roca tiene su cara
+     * de frente en sombra y la tapa con luz, el arbusto es una mata de copas
+     * iluminadas arriba, y el cactus lleva la luz en el costado y en las puntas.
+     * Las siluetas mantienen el ancho de siempre, que es lo que va con su radio.
+     */
     if (ob.tipo === 'roca') {
       // La más grande y la única realmente sólida: 20 px de ancho.
-      r.rect(ox - 10, ob.y - 6, 20, 11, '#5a5048');
-      r.rect(ox - 10, ob.y - 6, 20, 4, '#6e6359');
-      r.rect(ox - 7, ob.y - 8, 9, 3, '#5a5048');
+      r.rect(ox - 10, ob.y - 4, 20, 8, '#4e453e');
+      r.rect(ox - 9, ob.y - 10, 18, 6, '#6e6359');
+      r.rect(ox - 7, ob.y - 12, 11, 2, '#6e6359');
+      r.rect(ox - 6, ob.y - 11, 6, 1, '#8a7e70');
     } else if (ob.tipo === 'arbusto') {
-      r.rect(ox - 9, ob.y - 4, 18, 8, '#3d4a2a');
-      r.rect(ox - 6, ob.y - 8, 12, 5, '#4d5c34');
-      r.rect(ox - 3, ob.y - 10, 6, 3, '#4d5c34');
+      r.rect(ox - 9, ob.y - 3, 18, 6, '#33401f');
+      r.rect(ox - 8, ob.y - 7, 8, 5, '#4d5c34');
+      r.rect(ox - 1, ob.y - 9, 9, 6, '#4d5c34');
+      r.rect(ox - 5, ob.y - 8, 3, 1, '#66773f');
+      r.rect(ox + 2, ob.y - 9, 4, 1, '#66773f');
     } else if (ob.tipo === 'cactus') {
       // La silueta más ALTA del desierto (la que más se distingue de lejos),
       // pero de tronco angosto — por eso su radio no es el mayor.
-      r.rect(ox - 3, ob.y - 15, 6, 20, '#3f6b3a');
-      r.rect(ox - 3, ob.y - 15, 3, 20, '#4f8247');
+      r.rect(ox - 3, ob.y - 16, 6, 21, '#3f6b3a');
+      r.rect(ox - 3, ob.y - 16, 2, 21, '#4f8247');
+      r.rect(ox - 2, ob.y - 18, 4, 2, '#5d9452');
       r.rect(ox - 7, ob.y - 9, 4, 3, '#3f6b3a');
       r.rect(ox - 8, ob.y - 13, 3, 5, '#3f6b3a');
+      r.rect(ox - 8, ob.y - 14, 3, 1, '#5d9452');
       r.rect(ox + 3, ob.y - 5, 4, 3, '#3f6b3a');
       r.rect(ox + 6, ob.y - 10, 3, 6, '#3f6b3a');
+      r.rect(ox + 6, ob.y - 11, 3, 1, '#5d9452');
     } else {
       /**
        * Montículo de arena: bajo y chato, el más perdonador de los cuatro.
@@ -1355,15 +1446,16 @@ export function createRideScene(services) {
     const trote = Math.sin(paso * 2) * (0.4 + esfuerzo);
 
     /**
-     * EL SALTO, DE COSTADO: el caballo sigue abajo sin jinete, y el jinete sube
-     * en arco hasta donde cae — el piso del enganche o el techo del vagón, a la
-     * altura que tienen dibujados.
+     * EL SALTO: el caballo sigue abajo sin jinete, y el jinete sube en arco
+     * hasta donde cae — la chapa del enganche o la tapa del techo del vagón, a
+     * la altura que tienen dibujadas (la góndola es más baja).
      */
     if (terminado) {
       const t = 1 - saltando / 0.4;
       dibujarAnimal(r, x, y, paso, 0, esfuerzo);
       const desde = y - 6;
-      const hasta = train.map.height - (techoDestino ? ALTO_DEL_TECHO : ALTO_DEL_ENGANCHE);
+      const hasta = train.map.height
+        - (techoDestino ? alturaDeAterrizaje(vagonAlLado()) : ALTO_DEL_ENGANCHE);
       dibujarJinete(r, x, desde + t * (hasta - desde) - Math.sin(t * Math.PI) * 14);
       return;
     }
@@ -1423,15 +1515,20 @@ export function createRideScene(services) {
   }
 
   /**
-   * EL CABALLO DE PERFIL, mirando hacia adelante (a la derecha, como el tren).
-   * Los cascos quedan en `y + 7`, donde va la sombra; el lomo en `y - 6`.
+   * EL CABALLO EN TRES CUARTOS, mirando hacia adelante (a la derecha, como el
+   * tren). Los cascos quedan en `y + 7`, donde va la sombra; el lomo en `y - 6`.
+   *
+   * *(Santi: "se debería ver parte del lomo del caballo")*. De perfil puro el
+   * caballo era una silueta; con la cámara alta se le ve la franja del lomo con
+   * luz, la manta y la montura encima, y la crin corriendo por arriba del
+   * cuello.
    *
    * Las patas de allá van más oscuras y se dibujan antes que el cuerpo; las de
-   * acá, después. Es lo mismo que hace creíble al caballo de la tienda: dos
-   * planos, y el ojo completa el animal entre los dos.
+   * acá, después: dos planos, y el ojo completa el animal entre los dos.
    */
   function dibujarAnimal(r, x, y, paso, trote, esfuerzo) {
     const lomo = y - 6 + trote;
+    const luz = escalarColor(colors.horse, 1.3);
     const pata = (px, fase, color) => {
       const adelante = Math.round(Math.sin(paso + fase) * (0.5 + esfuerzo * 2.5));
       const recoge = Math.round(Math.max(0, -Math.cos(paso + fase)) * 2 * esfuerzo);
@@ -1440,26 +1537,47 @@ export function createRideScene(services) {
     pata(x - 7, 0, colors.horseDark);
     pata(x + 6, Math.PI * 0.5, colors.horseDark);
 
-    r.rect(x - 13, lomo + 1, 3, 2, colors.horseMane);                        // la cola
-    r.rect(x - 14, lomo + 2, 2, 4 + Math.round(esfuerzo * 2), colors.horseMane);
-    r.rect(x - 10, lomo, 19, 7, colors.horse);                               // el cuerpo
-    r.rect(x - 10, lomo + 5, 19, 2, colors.horseDark);
-    r.rect(x + 6, lomo - 5, 4, 7, colors.horse);                             // el cuello
-    r.rect(x + 8, lomo - 7, 7, 4, colors.horse);                             // la cabeza
-    r.rect(x + 14, lomo - 6, 2, 3, colors.horseDark);                        // el hocico
-    r.rect(x + 8, lomo - 9, 2, 2, colors.horse);                             // la oreja
-    r.rect(x + 5, lomo - 6, 2, 6, colors.horseMane);                         // la crin
+    r.rect(x - 13, lomo, 3, 2, colors.horseMane);                            // la cola
+    r.rect(x - 15, lomo + 1, 3, 4 + Math.round(esfuerzo * 2), colors.horseMane);
+    r.rect(x - 10, lomo, 20, 7, colors.horse);                               // el costado
+    r.rect(x - 10, lomo + 5, 20, 2, colors.horseDark);
+    r.rect(x - 9, lomo - 3, 18, 3, luz);                                     // el lomo, de arriba
+    r.rect(x + 6, lomo - 7, 5, 9, colors.horse);                             // el cuello
+    r.rect(x + 7, lomo - 8, 3, 2, luz);
+    r.rect(x + 9, lomo - 10, 7, 5, colors.horse);                            // la cabeza
+    r.rect(x + 10, lomo - 11, 5, 1, luz);
+    r.rect(x + 15, lomo - 8, 2, 3, colors.horseDark);                        // el hocico
+    r.rect(x + 9, lomo - 12, 2, 2, colors.horse);                            // la oreja
+    r.rect(x + 5, lomo - 9, 3, 7, colors.horseMane);                         // la crin
+
+    r.rect(x - 5, lomo - 3, 9, 6, '#7a2f26');                                // la manta
+    r.rect(x - 4, lomo - 3, 7, 3, '#3a2418');                                // la montura
 
     pata(x - 9, Math.PI, colors.horse);
     pata(x + 4, Math.PI * 1.5, colors.horse);
   }
 
-  /** El jinete, sentado con el asiento en `asiento`: bota, cuerpo y sombrero. */
+  /**
+   * EL JINETE, sentado con el asiento en `asiento`. En tres cuartos se le ven
+   * los hombros de arriba y, sobre todo, EL ALA DEL SOMBRERO: una elipse ancha
+   * con la copa en el medio *(Santi: "y el ala del sombrero")*. Es lo que más
+   * se lee del jinete de lejos.
+   */
   function dibujarJinete(r, x, asiento) {
-    r.rect(x - 1, asiento, 3, 5, colors.horseMane);
-    r.rect(x - 3, asiento - 9, 5, 9, colors.player);
-    r.rect(x - 5, asiento - 11, 10, 2, colors.playerHat);
-    r.rect(x - 3, asiento - 14, 6, 3, colors.playerHat);
+    r.rect(x - 1, asiento, 3, 5, colors.horseMane);                          // la bota
+    r.rect(x - 3, asiento - 8, 6, 8, colors.player);                         // la camisa
+    r.rect(x - 3, asiento - 4, 6, 4, escalarColor(colors.playerHat, 1.6));   // el chaleco
+    r.rect(x - 3, asiento - 9, 6, 2, escalarColor(colors.player, 1.1));      // los hombros
+    // El brazo adelante y las riendas: sin ellos el cuerpo era un bloque liso.
+    r.rect(x + 2, asiento - 6, 4, 2, escalarColor(colors.player, 0.82));
+    r.rect(x + 6, asiento - 5, 4, 1, colors.horseMane);
+    r.ctx.fillStyle = colors.playerHat;
+    r.ctx.beginPath();
+    r.ctx.ellipse(Math.round(x), Math.round(asiento - 11), 6, 2.5, 0, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.rect(x - 4, asiento - 12, 8, 1, escalarColor(colors.playerHat, 1.5));  // la luz del ala
+    r.rect(x - 2, asiento - 15, 5, 4, colors.playerHat);                     // la copa
+    r.rect(x - 2, asiento - 15, 5, 1, escalarColor(colors.playerHat, 1.7));
   }
 
   /**

@@ -43,7 +43,7 @@ atrás. Se está pasando por etapas, primero el tren:
 | B | La gente de cuerpo entero | Falta |
 | C | Las cosas: botín, puertas, cajones, barriles, dinamita, balas | Falta |
 | D | El techo | Falta |
-| E | El galope: con **cámara baja** en vez de tres cuartos — cielo, montañas, el tren visto de costado (ruedas, caja, ventanillas, techo) y el desierto adelante. Se juega igual | ✅ |
+| E | El galope en tres cuartos: del tren se ve la pared y la tapa del techo (y lo que llevan los vagones abiertos), del caballo el lomo y la montura, del jinete el ala del sombrero, y el desierto llena la pantalla. Mientras estás lejos asoma el cielo arriba de todo. Se juega igual | ✅ |
 | F | Mirar los 13 vagones | Falta |
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
@@ -179,10 +179,11 @@ pasa a ser abrir la mitad del pueblo y cerrar la otra.
 fogata del campamento (encendida de noche, apagada de día) — lo que se puede
 mostrar no se escribe, igual que el aro del ruido o la marca del salto.
 
-> **El galope sí se ve distinto según la hora:** de día hay sol y el desierto es
-> de arena, el mismo ocre que rodea al campamento; de noche hay luna, estrellas,
-> tierra oscura y el tren pasa con las ventanillas prendidas. Con tormenta el
-> cielo va gris. Pero es sólo el paisaje — se roba igual. El asalto no cambia nunca, y tiene sentido: adentro
+> **El galope sí se ve distinto según la hora:** de día el desierto es de arena,
+> el mismo ocre que rodea al campamento, y de lejos se ve el sol; de noche la
+> tierra es oscura, de lejos asoman la luna y las estrellas, y el tren pasa con
+> las ventanillas prendidas. Con tormenta el cielo va gris. Pero es sólo el
+> paisaje — se roba igual. El asalto no cambia nunca, y tiene sentido: adentro
 > de un vagón la hora no se ve. Los trenes nocturnos de verdad, con la escolta
 > dormida y todo lo demás, son una vuelta aparte.
 

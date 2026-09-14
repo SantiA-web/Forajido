@@ -2481,7 +2481,7 @@ export const CONFIG = {
     },
 
     /**
-     * EL TREN VISTO DE COSTADO — el del galope (ver world/trenDeCostado.js).
+     * EL TREN DEL GALOPE, en tres cuartos (ver world/trenTresCuartos.js).
      *
      * *(Santi: "en la cabalgata el tren se debería ver como se ve un tren desde
      * afuera")*. Cada familia de vagón tiene su color de caja, y es lo que hace
@@ -2497,6 +2497,11 @@ export const CONFIG = {
       bastidor:  '#221d1c',
       techo:     '#3a3431',
       techoLuz:  '#524a44',
+      /** La tapa del techo, lo que la cámara alta ve de arriba: más clara que el alero. */
+      tapa:      '#5a524b',
+      tapaLuz:   '#6e655c',
+      /** Las tablas de la pasarela de los furgones. */
+      pasarela:  '#6b5236',
       marco:     '#241a14',
       vidrioDia: '#7fb2bd',
       /** De noche las ventanillas se prenden: es lo que se ve de un tren a lo lejos. */
@@ -2544,10 +2549,23 @@ export const CONFIG = {
       montanaTormenta: '#5e5f63',
       /** Los cerros de adelante, del color de la tierra pero más apagados. */
       montanaCerca: '#8a6a52',
-      llanoLejano:  '#a88c62',
       bruma:        '#c9b28a',
-      balasto:      '#3a2f26',
+      balasto:      '#4a3d31',
+      grava:        '#5f5040',
       durmiente:    '#2a211b',
+      /**
+       * LO QUE ADORNA EL SUELO y no choca: pasto, piedritas y manchas de tierra
+       * en el campo, y matas y cactus más grandes sólo del otro lado del tren.
+       * Adelante tienen que ser chiquitos y apagados: el campo ya tiene sus
+       * obstáculos de verdad, y un adorno que se parezca a uno es una trampa.
+       */
+      pasto:        '#6f6536',
+      piedrita:     '#6e6150',
+      piedritaLuz:  '#8a7c68',
+      tierraOscura: '#7a6140',
+      mata:         '#3d4a2a',
+      mataLuz:      '#4d5c34',
+      cactus:       '#3f6b3a',
       riel:         '#8c8074',
       rielSombra:   '#5a5048',
     },

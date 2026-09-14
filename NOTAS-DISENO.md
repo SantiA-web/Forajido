@@ -12071,6 +12071,50 @@ de siempre del Criollo.
 
 **⚠️ NO JUGADO.**
 
+**🔁 CORRECCIÓN: EL GALOPE VA EN TRES CUARTOS, NO DE COSTADO.**
+
+*(Santi: "El galope lo hiciste como si fuera plano o una vista de costado.
+Recuerda que tiene que ser 3/4, es decir que se debería ver parte del techo del
+tren, parte del lomo del caballo y el ala del sombrero")*, con una imagen de
+referencia: cámara alta, desierto en toda la pantalla, el tren con su techo a la
+vista y un jinete en diagonal.
+
+**La equivocación fue mía:** Santi había elegido tres cuartos para todo el juego
+y el galope se dibujó con la cámara a la altura del caballo. El boceto aprobado
+decía "cámara baja", pero eso no cambiaba lo decidido antes.
+
+- **El tren** (ahora `world/trenTresCuartos.js`; el de costado se borró): la
+  regla de las dos caras del asalto. La pared con su alto y encima la TAPA del
+  techo (14 px), con la linterna de los coches, la pasarela de los furgones y la
+  escotilla del blindado. Los abiertos se ven desde arriba: el lomo de las vacas
+  sobre las tablas, el carbón llenando la góndola, el piso y las cajas de la
+  plataforma. La locomotora muestra el carbón del ténder, el techo de la cabina,
+  el lomo de la caldera y la boca de la chimenea. Se cae a la mitad de la tapa
+  (`alturaDeAterrizaje`; la góndola, más baja).
+- **La vía** es una franja de balasto con durmientes vistos desde arriba y los
+  dos rieles, y termina en `base + 3`: con la franja hasta `base + 8` el caballo
+  pegado al tren se veía galopando encima de la vía.
+- **El suelo** tiene adornos que no chocan, sembrados por celda sobre el suelo:
+  pasto, piedritas y manchas en el campo (chiquitos, para no confundirse con
+  obstáculos) y matas y cactus del otro lado del tren.
+- **El cielo, sólo de lejos** *(elegido por Santi sobre "sin cielo, como la
+  imagen" y "cielo siempre arriba")*: con el zoom abierto asoman 44 px de cielo
+  con montañas arriba de todo, y se van a partir del zoom 0,75. La cámara baja
+  lo mismo, así que no le tapa el tren a nadie. Choca con la imagen de
+  referencia (que no tiene cielo) a propósito: es lo que queda de *"que se pueda
+  ver el cielo y las montañas a lo lejos"*.
+- **El caballo** con el lomo con luz, la manta roja y la montura; **el jinete**
+  con los hombros, el chaleco, el brazo con las riendas y el ala del sombrero
+  como una elipse con la copa en el medio. Los obstáculos muestran su parte de
+  arriba (la tapa de la roca, las copas del arbusto, las puntas del cactus).
+
+**MEDIDO:** dieciséis tomas en 1920×1080 sin errores, y recortes ×6 del caballo
+cerca y lejos. La corrida del Criollo volvió a llegar limpio al 3er enganche, a
+los 38,6 s con 6,3 de reloj (la anterior fue 35,4 con 9,5: los obstáculos y los
+tiros se sortean en cada corrida; la lógica no se tocó).
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

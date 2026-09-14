@@ -43,7 +43,7 @@ atrás. Se está pasando por etapas, primero el tren:
 | B | La gente de cuerpo entero | Falta |
 | C | Las cosas: botín, puertas, cajones, barriles, dinamita, balas | Falta |
 | D | El techo | Falta |
-| E | El galope en tres cuartos: del tren se ve la pared y la tapa del techo (y lo que llevan los vagones abiertos), del caballo el lomo y la montura, del jinete el ala del sombrero, y el desierto llena la pantalla. Al girar con W o S el caballo cambia de pose (cinco): se lo ve alejarse hacia las vías o venir de frente hacia abajo. Mientras estás lejos asoma el cielo arriba de todo. Se juega igual | ✅ |
+| E | El galope en tres cuartos: del tren se ve la pared y la tapa del techo (y lo que llevan los vagones abiertos), del caballo el lomo y la montura, del jinete el ala del sombrero, y el desierto llena la pantalla. Al girar con W o S el caballo cambia de pose (nueve): se lo ve alejarse hacia las vías o venir de frente hacia abajo. Mientras estás lejos asoma el cielo arriba de todo. Se juega igual | ✅ |
 | F | Mirar los 13 vagones | Falta |
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja

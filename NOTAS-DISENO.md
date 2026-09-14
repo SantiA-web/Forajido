@@ -12148,6 +12148,16 @@ pantalla el caballo casi no avanza a la derecha y parecía deslizarse.
 
 **⚠️ NO JUGADO.**
 
+**🔺 De cinco a nueve poses** *(Santi: "podrías cambiarlo a 8 pasos?")*. Se le
+preguntó qué quería decir y eligió **más poses en el mismo giro**, sobre "un
+giro más cerrado" y "8 direcciones completas". Ocho justas no dejan pose de
+perfil al medio: son **cuatro por lado más el perfil**, una cada ~10° del giro
+de ±0,73 rad. Las medidas se calculan con la mitad de la pose y se redondean, así
+que las de los extremos son las mismas de antes y las nuevas son intermedias.
+Avisado antes de hacerlo: entre dos poses seguidas la diferencia es de 1 o 2 px.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

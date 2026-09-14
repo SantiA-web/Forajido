@@ -19,6 +19,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { dibujarFigura, dibujarTendido, direccionDe, faseDeAndar } from './figura.js';
 
 export function createBoss(x, y, tipo, options = {}) {
   return {
@@ -152,34 +153,30 @@ export function createBoss(x, y, tipo, options = {}) {
 export function drawBoss(r, bo) {
   const col = CONFIG.colors;
   const t = bo.tipo;
+  /**
+   * TRES CUARTOS, ETAPA B: el jefe es la misma persona de cuerpo entero que
+   * todos (entities/figura.js), AGRANDADA un 30% alrededor de los pies y con
+   * su poncho encima. Los pies van en el borde de abajo de su caja (`bo.hh`),
+   * que no cambió.
+   */
+  const pies = bo.y + bo.hh;
+  const ESCALA = 1.3;
 
   if (!bo.alive) {
     // Un cuerpo más grande que el de un guardia, y con el sombrero al lado:
     // tiene que poder leerse desde el otro lado del vagón que ESE lo mataste.
-    r.box(bo.x, bo.y, 8, 5, col.blood);
-    r.box(bo.x, bo.y, 7, 4, col.enemyDead);
-    r.rect(bo.x + 6, bo.y + 1, 7, 2, '#2a2118');
+    dibujarTendido(r, bo.x, bo.y, { cuerpo: col.enemyDead, sombrero: '#241c14', sangre: true, grande: true });
     return;
   }
 
+  const fase = faseDeAndar(bo);
+
   r.ctx.globalAlpha = 0.3;
-  r.box(bo.x, bo.y + 7, 6, 2, '#000');
+  r.box(bo.x, pies, 7, 2, '#000');
   r.ctx.globalAlpha = 1;
 
   const cargando = bo.fase === 'carga';
   const avisando = bo.fase === 'aviso';
-
-  // La estela de la carga: lo mismo que le da lectura a un barril rodando
-  // (ver entities/rodante.js). Si viene a los pedos, tiene que VERSE que viene
-  // a los pedos aunque estés mirando otra cosa.
-  if (cargando) {
-    for (let i = 1; i <= 3; i++) {
-      r.ctx.globalAlpha = 0.26 - i * 0.06;
-      r.box(bo.x - bo.cargaDir.x * i * 7, bo.y - bo.cargaDir.y * i * 7, 5, 5, t.color);
-    }
-    r.ctx.globalAlpha = 1;
-  }
-
   const acechando = bo.fase === 'acecho';
 
   const bodyColor = bo.hitFlash > 0 ? '#fff'
@@ -195,15 +192,21 @@ export function drawBoss(r, bo) {
     : acechando ? '#7d4433'
     : t.color;
 
+  // La estela de la carga: lo mismo que le da lectura a un barril rodando
+  // (ver entities/rodante.js). Si viene a los pedos, tiene que VERSE que viene
+  // a los pedos aunque estés mirando otra cosa.
+  if (cargando) {
+    for (let i = 1; i <= 3; i++) {
+      r.ctx.globalAlpha = 0.26 - i * 0.06;
+      r.rect(bo.x - bo.cargaDir.x * i * 7 - 5, pies - bo.cargaDir.y * i * 7 - 16, 10, 16, t.color);
+    }
+    r.ctx.globalAlpha = 1;
+  }
+
   /**
-   * EL AVISO DE LA EMBESTIDA — el gesto más grande del juego, a propósito.
-   *
-   * La respuesta correcta (salirte de la línea, ya) tiene medio segundo largo
-   * para tomarse, así que el aviso no puede ser sutil: una línea gruesa que
-   * marca POR DÓNDE va a pasar, parpadeando, más las patas plantadas. Es el
-   * mismo criterio que la mecha de la dinamita en manos de un guardia
-   * (entities/enemy.js): cuando la respuesta correcta es contraintuitiva o
-   * urgente, el aviso se agranda.
+   * EL AVISO DE LA EMBESTIDA — el gesto más grande del juego, a propósito: una
+   * línea gruesa en el piso que marca POR DÓNDE va a pasar, parpadeando. La
+   * respuesta correcta (salirte de la línea, ya) tiene medio segundo largo.
    */
   if (avisando) {
     const parpadeo = Math.floor(bo.faseTimer * 18) % 2 === 0;
@@ -214,101 +217,78 @@ export function drawBoss(r, bo) {
       parpadeo ? '#ff8a4a' : '#8a3a22',
       parpadeo ? 0.85 : 0.4
     );
-    // Las patas clavadas en el piso: se plantó, no está caminando.
-    r.rect(bo.x - 7, bo.y + 5, 3, 2, '#2a2118');
-    r.rect(bo.x + 4, bo.y + 5, 3, 2, '#2a2118');
-    if (parpadeo) r.text('!!', bo.x, bo.y - 20, '#ff8a4a');
+    if (parpadeo) r.text('!!', bo.x, pies - 30, '#ff8a4a');
   }
 
-  // El aviso de que va a disparar: el mismo lenguaje que un guardia (se para
-  // en seco y levanta el arma), pero el caño es más largo con el rifle. Eso
-  // dice de un vistazo CUÁL de las dos armas te está apuntando, que es la
-  // información con la que decidís si conviene acercarse o cortarle la vista.
-  if (!cargando) {
-    const conRifle = bo.armaActual === 'rifle';
-    // Acechando lleva el arma BAJA: se ve corta, pegada al cuerpo. Todavía no
-    // te está apuntando, y eso tiene que notarse.
-    const gunLength = acechando ? 6
-      : bo.aimTimer > 0 ? (conRifle ? 17 : 12)
-      : (conRifle ? 13 : 9);
-    r.line(
-      bo.x, bo.y,
-      bo.x + Math.cos(bo.facing) * gunLength,
-      bo.y + Math.sin(bo.facing) * gunLength,
-      bo.aimTimer > 0 ? '#e8dcc4' : '#2a2622'
-    );
-    if (bo.aimTimer > 0) {
-      r.box(
-        bo.x + Math.cos(bo.facing) * (gunLength + 2),
-        bo.y + Math.sin(bo.facing) * (gunLength + 2),
-        1, 1, '#fff6d0'
-      );
-    }
-  }
+  /**
+   * EL ARMA: el mismo lenguaje que un guardia (se para en seco y levanta el
+   * arma), pero el caño es más largo con el rifle. Acechando la lleva BAJA: se
+   * ve corta. Mientras carga no apunta.
+   */
+  const conRifle = bo.armaActual === 'rifle';
+  const gunLength = acechando ? 5
+    : bo.aimTimer > 0 ? (conRifle ? 13 : 9)
+    : (conRifle ? 10 : 7);
+
+  const oscuro = sombra(bodyColor);
+  const dir = direccionDe(cargando ? Math.atan2(bo.cargaDir.y, bo.cargaDir.x) : bo.facing);
+
+  r.ctx.save();
+  r.ctx.translate(bo.x, pies);
+  r.ctx.scale(ESCALA, ESCALA);
+  r.ctx.translate(-bo.x, -pies);
 
   /**
    * --- EL CUERPO ---
    *
    * LA PRIMERA VERSIÓN ERA UN CUADRADO ROJO GRANDE con un sombrero encima, y
-   * mirándola al lado de un guardia se leía exactamente así: un bloque, no una
-   * persona. Es la misma lección que ya había costado aprender con la res de
-   * la estampida (ver NOTAS-DISENO.md): *a este tamaño, lo único que separa
-   * una figura de una caja es que NO SEA UN RECTÁNGULO.*
-   *
-   * Lo que lo arregla no es más detalle, es la SILUETA: se ensancha hacia
-   * abajo (el poncho) y termina en dos puntas separadas, no en un borde
-   * plano. Eso es lo que la vuelve reconocible de un vistazo aunque esté a
-   * medio vagón y aunque el color esté cambiado por la furia o el aturdido.
+   * se leía como un bloque. *A este tamaño, lo único que separa una figura de
+   * una caja es que NO SEA UN RECTÁNGULO.* Lo que lo arregla es la SILUETA: el
+   * poncho, que se ensancha hacia abajo y termina en dos puntas separadas.
    */
-  const oscuro = sombra(bodyColor);
-
-  // Los faldones del poncho, lo más ancho de la figura, colgando abiertos.
-  r.rect(bo.x - 8, bo.y + 1, 16, 5, oscuro);
-  // Y las dos puntas separadas: el borde de abajo NUNCA es una línea recta.
-  r.rect(bo.x - 8, bo.y + 6, 5, 3, oscuro);
-  r.rect(bo.x + 3, bo.y + 6, 5, 3, oscuro);
-
-  // El torso, más angosto que el poncho: de ahí sale la forma de hombros.
-  r.rect(bo.x - 5, bo.y - 5, 10, 7, bodyColor);
-
-  // El sombrero más ancho del juego (el guardia blindado usa 14; éste, 18).
-  r.rect(bo.x - 9, bo.y - 9, 18, 3, '#241c14');
-  r.rect(bo.x - 3, bo.y - 12, 6, 3, '#241c14');
+  const fig = dibujarFigura(r, {
+    x: bo.x, pies,
+    dir,
+    fase: avisando ? null : fase,
+    cuerpo: bodyColor, piel: col.enemyPiel,
+    // El sombrero más ancho del juego.
+    sombrero: { tipo: 'ancho', color: '#241c14' },
+    arma: cargando ? null : {
+      angulo: bo.facing,
+      largo: gunLength,
+      color: bo.aimTimer > 0 ? '#e8dcc4' : '#2a2622',
+      punta: bo.aimTimer > 0 ? '#fff6d0' : null,
+    },
+  });
+  // El poncho: más ancho que el torso y con dos puntas.
+  r.rect(bo.x - 5, fig.torsoY + 1, 11, 4, oscuro);
+  r.rect(bo.x - 5, fig.torsoY + 5, 4, 2, oscuro);
+  r.rect(bo.x + 2, fig.torsoY + 5, 4, 2, oscuro);
 
   // El rifle cruzado a la espalda cuando está con el revólver: es lo que dice
   // "este tipo tiene otra arma" antes de que la saque.
   if (bo.armaActual === 'revolver' && !cargando) {
-    r.line(bo.x - 7, bo.y + 4, bo.x + 5, bo.y - 4, '#4a3a28');
+    r.line(bo.x - 5, fig.torsoY + 6, bo.x + 4, fig.torsoY - 2, '#4a3a28');
   }
+  r.ctx.restore();
+
+  // Lo que va encima, fuera de la escala para que no se agrande.
+  const arriba = pies - Math.round((pies - fig.arriba) * ESCALA);
 
   // --- Cuánto le queda ---
   // Siempre visible, desde el primer cuadro y no recién al herirlo como a un
-  // guardia: contra un jefe, saber cuánto falta ES la pelea. Sin esto no se
-  // puede decidir si conviene seguir peleando o salir corriendo.
+  // guardia: contra un jefe, saber cuánto falta ES la pelea.
   /**
-   * ANCHO FIJO, y el segmento se calcula a partir de él — no al revés.
-   *
-   * La primera versión hacía cada muesca de 5 px, lo cual funcionaba con 4 de
-   * vida (23 px) pero con 8 se iba a 47 px: casi tres veces el ancho del tipo,
-   * una barra flotando sobre medio vagón. Fijando el total en 26 px, la barra
-   * mide siempre lo mismo tenga la vida que tenga, y lo único que cambia es
-   * qué tan finas son las muescas.
-   */
-  /**
-   * El paso va en PÍXELES ENTEROS, no en una fracción del ancho total.
-   *
-   * Con `26 / 8 = 3,25` las muescas caían en medios píxeles y el renderer las
-   * redondeaba a su manera: se veían agrupadas de a 2-4-2 en vez de parejas.
-   * A esta escala eso se lee como un error de dibujo, no como una barra. Con
-   * el paso entero el ancho total varía un poco según la vida, y eso no
-   * importa; que las muescas sean todas iguales, sí.
+   * ANCHO FIJO, y el segmento se calcula a partir de él — no al revés: con 8 de
+   * vida y muescas de 5 px la barra flotaba sobre medio vagón. Y el paso va en
+   * PÍXELES ENTEROS: con 3,25 las muescas se agrupaban de a 2-4-2.
    */
   const paso = bo.maxHealth > 5 ? 3 : 6;
   const anchoSeg = paso - 1;
   const totalBarra = bo.maxHealth * paso - 1;
   for (let i = 0; i < bo.maxHealth; i++) {
     r.rect(
-      Math.round(bo.x - totalBarra / 2) + i * paso, bo.y - 17, anchoSeg, 3,
+      Math.round(bo.x - totalBarra / 2) + i * paso, arriba - 6, anchoSeg, 3,
       i < bo.health ? (bo.enFuria ? '#ff6a3a' : '#e0c44a') : '#3a2a1c'
     );
   }
@@ -318,7 +298,7 @@ export function drawBoss(r, bo) {
     const giro = bo.faseTimer * 9;
     for (let i = 0; i < 3; i++) {
       const a = giro + (i * Math.PI * 2) / 3;
-      r.box(bo.x + Math.cos(a) * 8, bo.y - 22 + Math.sin(a) * 3, 1, 1, '#ffe066');
+      r.box(bo.x + Math.cos(a) * 8, arriba - 10 + Math.sin(a) * 3, 1, 1, '#ffe066');
     }
   }
 }

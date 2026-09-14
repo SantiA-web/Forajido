@@ -11,6 +11,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { dibujarFigura, dibujarTendido, direccionDe } from './figura.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { MELEE, DEFAULT_MELEE } from '../data/melee.js';
 import { EXPLOSIVES, DEFAULT_EXPLOSIVE } from '../data/explosives.js';
@@ -802,8 +803,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const col = CONFIG.colors;
 
   if (!p.alive) {
-    r.box(p.x, p.y, 6, 4, col.blood);
-    r.box(p.x, p.y, 5, 3, '#3a2a24');
+    dibujarTendido(r, p.x, p.y, { cuerpo: col.player, sombrero: col.playerHat, sangre: true });
     return;
   }
 
@@ -821,8 +821,9 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     r.box(p.x, p.y + 5, 7, 2, '#000');
     r.ctx.globalAlpha = 1;
 
-    r.box(p.x, p.y + 1, 7, 3, p.hitFlash > 0 ? '#fff' : col.player);
-    r.rect(p.x - 7 + p.tumboDir * 9, p.y - 2, 6, 3, col.playerHat);
+    dibujarTendido(r, p.x, p.y + 1, {
+      cuerpo: p.hitFlash > 0 ? '#fff' : col.player, sombrero: col.playerHat,
+    });
 
     const falta = p.tumbado / CONFIG.rodante.levantarse;
     r.rect(p.x - 7, p.y - 10, 14, 2, '#241c18');
@@ -849,20 +850,25 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const bx = p.x - Math.cos(p.aim) * retro;
   const by = p.y - Math.sin(p.aim) * retro;
 
+  /**
+   * TRES CUARTOS, ETAPA B: DE CUERPO ENTERO (ver entities/figura.js). Los pies
+   * van en el borde de abajo de la caja con la que chocás (`p.hh`), que no
+   * cambió, y el cuerpo crece hacia arriba: la bala sigue pegando donde
+   * pegaba.
+   *
+   * 🔁 PEGADO A LA COBERTURA YA NO SE APLASTA: SE AGACHA. Desde arriba el
+   * cuerpo se achataba contra la pared; de pie, lo que se lee es agacharse
+   * detrás de algo. Asomado (`peek`) se para y apunta. Y también va agachado
+   * en sigilo, que es la otra forma de no hacer ruido que ya tenías.
+   */
+  const pies = by + p.hh;
+  const agachado = p.sneaking || (p.cover && p.peek <= 0.15);
+  const manoY = pies - 9 + (agachado ? 4 : 0);
+  const dir = direccionDe(p.aim);
+
   r.ctx.globalAlpha = 0.25;
-  r.box(p.x, p.y + 6, 5, 2, '#000');
+  r.box(p.x, p.y + p.hh, 5, 2, '#000');
   r.ctx.globalAlpha = 1;
-
-  // Pegado a la pared el cuerpo se aplasta contra ella. El tamaño base sale
-  // de `p.hw/p.hh` (CONFIG.player), no de un número aparte: el sprite que se
-  // ve siempre tiene que ser exactamente la caja que puede recibir la bala.
-  const flat = p.cover ? 1 - 0.35 * (1 - p.peek) : 1;
-  const halfW = p.cover && p.cover.nx !== 0 ? p.hw * flat : p.hw;
-  const halfH = p.cover && p.cover.ny !== 0 ? p.hh * flat : p.hh;
-
-  if (!p.cover || p.peek > 0.15) {
-    r.line(bx, by, bx + Math.cos(p.aim) * 9, by + Math.sin(p.aim) * 9, '#241c18');
-  }
 
   /**
    * LA MOCHILA EN LA ESPALDA — y crece con lo que llevás adentro.
@@ -870,42 +876,41 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
    * *(Santi: "el personaje del jugador debería llevar una bolsa o mochila en la
    * espalda para ir metiendo las cosas")*
    *
-   * VA DEL LADO OPUESTO A DONDE APUNTÁS, que es la espalda: `p.aim + π`. Como
-   * el cuerpo es un rectángulo de 9×7 y la mira gira libre con el mouse, la
-   * mochila gira con él — así que desde cualquier ángulo se ve del lado
-   * correcto, sin ningún sprite nuevo.
+   * VA EN LA ESPALDA DE LA FIGURA, según hacia dónde mira: de espaldas a la
+   * cámara se ve entera encima del cuerpo; de costado asoma detrás; de frente,
+   * apenas por encima de los hombros.
    *
-   * Y SE DIBUJA ANTES DEL CUERPO, o sea por debajo: un bulto atado a la espalda
-   * asoma por detrás de la silueta, no le tapa el torso.
+   * CRECE DE 1 A 4 PÍXELES según `p.mochila` (0 a 1, ver raidScene). Lo que
+   * tiene que decir de un vistazo no es cuánto llevás exactamente —para eso
+   * está el TAB— sino **si vas cargado o liviano**.
    *
-   * CRECE DE 1 A 4 PÍXELES según `p.mochila` (0 a 1, ver raidScene). Es poco a
-   * propósito: el cuerpo entero mide 9 px de ancho, así que cuatro píxeles de
-   * bulto ya son casi la mitad del tipo. Lo que tiene que decir de un vistazo
-   * no es cuánto llevás exactamente —para eso está el TAB— sino **si vas
-   * cargado o liviano**.
+   * 🐛 ERA `#5a4530` Y NO SE VEÍA: el piso del vagón es del mismo marrón. Ahora
+   * es casi negro, con la correa en un tono claro para que no se funda con el
+   * sombrero.
    */
   const llenado = p.mochila || 0;
-  if (llenado > 0) {
-    const bulto = 1 + Math.round(llenado * 3);
-    const ax = bx - Math.cos(p.aim) * (halfW + bulto - 1);
-    const ay = by - Math.sin(p.aim) * (halfH + bulto - 1);
-    /**
-     * 🐛 ERA `#5a4530` Y NO SE VEÍA. El piso del vagón es `#6d4a30` y su
-     * variante `#7a5436`: el mismo marrón. Puesto sobre el piso, el bulto
-     * desaparecía — la misma lección que las cartucheras invisibles de hace
-     * varias sesiones, y otra vez sólo se vio poniéndolos uno al lado del otro.
-     *
-     * Ahora es casi negro, así que se lee como silueta contra el piso claro, y
-     * la correa va en un tono claro para que no se funda con el sombrero (que
-     * también es oscuro y queda a dos píxeles).
-     */
-    r.box(ax, ay, bulto, bulto, '#2e2218');
-    r.box(ax, ay, Math.max(1, bulto - 1), 1, '#a8977c');
-  }
+  const bulto = llenado > 0 ? 1 + Math.round(llenado * 3) : 0;
+  const mochila = () => {
+    if (!bulto) return;
+    let mx = bx;
+    if (dir === 'der') mx = bx - 3 - bulto;
+    else if (dir === 'izq') mx = bx + 3 + bulto;
+    const my = dir === 'frente' ? manoY - 2 - bulto : manoY;
+    r.box(mx, my, bulto, bulto, '#2e2218');
+    r.box(mx, my - bulto + 1, Math.max(1, bulto - 1), 1, '#a8977c');
+  };
+  if (dir !== 'espalda') mochila();
 
   const body = p.hitFlash > 0 ? '#fff' : (p.cover ? col.playerCover : col.player);
-  r.box(bx, by, halfW, halfH, body);
-  r.rect(bx - halfW - 1, by - 6, halfW * 2 + 2, 3, col.playerHat);
+  dibujarFigura(r, {
+    x: bx, pies, dir,
+    fase: p.moving ? p.stepPhase * 3.4 : null,
+    cuerpo: body, piel: col.enemyPiel,
+    sombrero: { tipo: 'ala', color: col.playerHat },
+    postura: agachado ? 'agachado' : 'pie',
+    arma: !p.cover || p.peek > 0.15 ? { angulo: p.aim, largo: 7, color: '#241c18' } : null,
+  });
+  if (dir === 'espalda') mochila();
 
   // Marca de que estás a cubierto: una línea sobre la pared que te tapa.
   if (p.cover) {
@@ -918,7 +923,8 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   }
 
   if (p.muzzle > 0) {
-    r.box(bx + Math.cos(p.aim) * 10, by + Math.sin(p.aim) * 10, 2, 2, '#fff3b0');
+    // A la altura de la mano, donde termina el caño (ver `dibujarFigura`).
+    r.box(bx + Math.cos(p.aim) * 10, manoY + Math.sin(p.aim) * 10, 2, 2, '#fff3b0');
   }
 
   /**
@@ -933,7 +939,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     const tipo = EXPLOSIVES[p.explosiveId];
     const restante = p.fuse / tipo.fuse;
     const hx = p.x + Math.cos(p.aim) * 7;
-    const hy = p.y + Math.sin(p.aim) * 7 - 3;
+    const hy = manoY + Math.sin(p.aim) * 7 - 2;
 
     r.box(hx, hy, 2, 3, col.dynamite);
     const ritmo = 6 + (1 - restante) * 26;
@@ -968,8 +974,9 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     r.box(p.x, p.y + 5, 6, 2, '#000');
     r.ctx.globalAlpha = 1;
     // Tirado de costado: ancho y bajito, al revés que de pie.
-    r.box(p.x, p.y + 2, 7, 3, p.hitFlash > 0 ? '#fff' : col.player);
-    r.rect(p.x - 9, p.y, 4, 3, col.playerHat);   // el sombrero, rodando
+    dibujarTendido(r, p.x, p.y + 2, {
+      cuerpo: p.hitFlash > 0 ? '#fff' : col.player, sombrero: col.playerHat,
+    });
     if (Math.floor(p.techoCaido * 10) % 2 === 0) {
       r.text('!', p.x, p.y - 12, col.enemyAlert);
     }
@@ -997,13 +1004,15 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   const by = p.y - alto;
   const body = p.hitFlash > 0 ? '#fff' : col.player;
 
-  if (p.techoAgachado) {
-    r.box(p.x, by + 2, 5, 3, body);
-    r.rect(p.x - 6, by, 13, 3, col.playerHat);
-  } else {
-    r.box(p.x, by, 5, 5, body);
-    r.rect(p.x - 6, by - 6, 13, 3, col.playerHat);
-  }
+  // De cuerpo entero, igual que abajo: agachado se dobla, saltando sube entero.
+  dibujarFigura(r, {
+    x: p.x, pies: by + p.hh, dir: direccionDe(p.aim),
+    fase: p.moving && !enElAire ? p.stepPhase * 3.4 : null,
+    cuerpo: body, piel: col.enemyPiel,
+    sombrero: { tipo: 'ala', color: col.playerHat },
+    postura: p.techoAgachado ? 'agachado' : 'pie',
+    arma: { angulo: p.aim, largo: 7, color: '#241c18' },
+  });
 }
 
 function drawKnifeArc(r, p) {

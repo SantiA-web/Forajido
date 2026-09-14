@@ -5,6 +5,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { dibujarFigura, dibujarTendido, direccionDe, faseDeAndar } from './figura.js';
 import { GUARD_TYPES, DEFAULT_GUARD_TYPE, guardHealth } from '../data/guards.js';
 import { T } from '../text/es.js';
 
@@ -325,10 +326,18 @@ export function damageEnemy(e, amount, fromX, fromY) {
 
 export function drawEnemy(r, e) {
   const col = CONFIG.colors;
+  /**
+   * TRES CUARTOS, ETAPA B: DE CUERPO ENTERO (ver entities/figura.js). Los pies
+   * en el borde de abajo de la caja con la que choca (`e.hh`), que no cambió:
+   * la bala sigue pegando donde pegaba. Todo lo que va encima de la cabeza
+   * (barras, "!", "vigilando") subió con él.
+   */
+  const pies = e.y + e.hh;
+  const esCivil = e.look === 'civil';
+  const sombreroColor = esCivil ? '#6a4a58' : '#4a4038';
 
   if (!e.alive) {
-    r.box(e.x, e.y, 6, 4, col.blood);
-    r.box(e.x, e.y, 5, 3, col.enemyDead);
+    dibujarTendido(r, e.x, e.y, { cuerpo: col.enemyDead, sombrero: sombreroColor, sangre: true });
     return;
   }
 
@@ -344,42 +353,42 @@ export function drawEnemy(r, e) {
    * por al lado, que ese sigue siendo un problema que se va a levantar.
    */
   if (e.inconsciente > 0) {
-    const respira = Math.sin(e.inconsciente * 3) * 0.5;
-    r.box(e.x, e.y, 5, 3 + respira, col.enemy);
+    dibujarTendido(r, e.x, e.y, {
+      cuerpo: col.enemy, sombrero: sombreroColor, respira: Math.sin(e.inconsciente * 3) * 0.5,
+    });
     return;
   }
+
+  const fase = faseDeAndar(e);
 
   /**
    * RENDIDO: de rodillas, con las manos arriba. Ni el gris de patrulla ni el
    * rojo de combate — un color propio (`enemyRendido`) para que se lea de
-   * lejos como "esto ya no es una pelea", sin depender de que te acerques a
-   * leer el cuerpo.
+   * lejos como "esto ya no es una pelea".
    *
    * LA TRAICIÓN SE LEE EN EL CUERPO, NO EN UN ÍCONO (ver CONFIG.enemy.
-   * traicionDuracion): mientras `traicionLevantando` corre, `t` interpola de
-   * 0 a 1 y el guardia crece de la pose arrodillada a la de pie de siempre, y
-   * pasado el punto medio el color salta a `enemyAlert` — el mismo aviso que
-   * ya usa el resto del juego, ahora aplicado a "esto ya no es un rendido".
-   * Es TODO el aviso a propósito: no hay brazo que se levanta aparte, el
-   * cuerpo entero parándose tiene que alcanzar para leerse y reaccionar.
+   * traicionDuracion): mientras `traicionLevantando` corre, `t` va de 0 a 1 y el
+   * guardia se para de a poco (`alzado`), baja las manos a mitad de camino y el
+   * color salta a `enemyAlert` — el mismo aviso que ya usa el resto del juego.
    */
   if (e.rendido) {
     const t = e.traicionLevantando
       ? Math.min(1, e.traicionProgreso / CONFIG.enemy.traicionDuracion)
       : 0;
-    const halfH = e.hh * 0.7 + (e.hh - e.hh * 0.7) * t;
-    const yOff = (1 - t);
-    const color = t > 0.5 ? col.enemyAlert : col.enemyRendido;
-    r.box(e.x, e.y + yOff, e.hw, halfH, color);
-    r.line(e.x - e.hw * 0.7, e.y, e.x - e.hw * 0.9, e.y - 7, color, 0.9);
-    r.line(e.x + e.hw * 0.7, e.y, e.x + e.hw * 0.9, e.y - 7, color, 0.9);
+    dibujarFigura(r, {
+      x: e.x, pies, dir: 'frente', fase: null,
+      cuerpo: t > 0.5 ? col.enemyAlert : col.enemyRendido,
+      piel: col.enemyPiel,
+      sombrero: { tipo: esCivil ? 'chico' : 'ala', color: sombreroColor },
+      postura: 'rodillas', alzado: t, brazosArriba: t < 0.5,
+    });
     return;
   }
 
   if (e.state !== 'combat') drawVisionCone(r, e);
 
   r.ctx.globalAlpha = 0.25;
-  r.box(e.x, e.y + 6, 5, 2, '#000');
+  r.box(e.x, pies, 5, 2, '#000');
   r.ctx.globalAlpha = 1;
 
   const bodyColor = e.hitFlash > 0
@@ -389,17 +398,8 @@ export function drawEnemy(r, e) {
     : e.suspicion > 0.05 ? col.enemySus
     : col.enemy;
 
-  // Mecha encendida en la mano: el aviso de que te va a tirar una dinamita.
-  // Tiene que verse de lejos y sin ambigüedad, porque la respuesta correcta
-  // (salir de la cobertura ya mismo) es contraria a todo lo demás que aprendiste.
-  if (e.throwWindup > 0) {
-    const parpadeo = Math.floor(e.throwWindup * 22) % 2 === 0;
-    r.box(e.x, e.y - 10, 2, 2, col.dynamite);
-    if (parpadeo) r.box(e.x, e.y - 14, 2, 2, '#fff4c0');
-    r.text('!', e.x + 7, e.y - 14, '#ff7a4a');
-  }
-
   // Levanta el brazo antes de pegarte: ese es el aviso del cuerpo a cuerpo.
+  // Va en el piso, como el cono: marca hasta dónde llega el golpe.
   if (e.meleeWindup > 0) {
     const c = CONFIG.enemy;
     r.line(
@@ -422,8 +422,8 @@ export function drawEnemy(r, e) {
     Math.abs(e.x - e.puesto.x) < 3 && Math.abs(e.y - e.puesto.y) < 3;
 
   if (sentado) {
-    r.rect(e.x - 5, e.y + 2, 10, 4, '#4a3526');
-    r.rect(e.x - 5, e.y + 2, 10, 1, '#6b4d36');
+    r.rect(e.x - 4, pies - 4, 8, 4, '#4a3526');
+    r.rect(e.x - 4, pies - 4, 8, 1, '#6b4d36');
     // Las cartas sobre la mesa las pone uno solo de la pareja, para no pintarlas dos veces.
     if (e.charlaLider && e.mesa) {
       r.rect(e.mesa.x - 7, e.mesa.y - 3, 3, 4, '#efe6d2');
@@ -433,71 +433,62 @@ export function drawEnemy(r, e) {
     }
   }
 
+  /**
+   * 🐛 LA CABEZA QUE FALTABA — SIN ELLA, EL GUARDIA SE LEÍA COMO UN CONO.
+   * *(Santi, jugando: "el jugador parece que mata conos en vez de guardias de
+   * ley")*. Desde arriba el ala tocaba directo el cuerpo. De cuerpo entero la
+   * cabeza está siempre, entre el ala y el torso (ver entities/figura.js).
+   *
+   * EL CIVIL ENCUBIERTO NO LLEVA SOMBRERO DE GUARDIA: lleva el mismo
+   * sombrerito de los pasajeros (mismo tamaño y mismo color). El que se te
+   * levantó del asiento sigue pareciendo lo que parecía; lo que cambió es que
+   * ahora el cuerpo se pinta con los colores de ESTADO del tren.
+   *
+   * La placa y la estrella llevan el ala más ancha, como antes.
+   */
+  const ancho = e.look === 'placa' || e.look === 'estrella';
+
   // El único aviso de que va a disparar: se para en seco y levanta el arma.
   // (Antes había una línea roja marcando la trayectoria; era demasiado fácil.)
-  if (!sentado && !(e.desenfundando > 0)) {
-    const gunLength = e.aimTimer > 0 ? 11 : 8;
-    r.line(
-      e.x, e.y,
-      e.x + Math.cos(e.facing) * gunLength,
-      e.y + Math.sin(e.facing) * gunLength,
-      e.aimTimer > 0 ? '#d8cdbb' : '#2a2622'
-    );
-    if (e.aimTimer > 0) {
-      r.box(e.x + Math.cos(e.facing) * 12, e.y + Math.sin(e.facing) * 12, 1, 1, '#fff6d0');
-    }
-  }
-
-  // El tamaño sale de `e.hw/e.hh` (CONFIG.enemy), no de un número aparte: el
-  // sprite que se ve siempre es exactamente la caja que puede recibir la bala.
-  r.box(e.x, e.y, e.hw, e.hh, bodyColor);
+  const conArma = !sentado && !(e.desenfundando > 0);
+  const fig = dibujarFigura(r, {
+    x: e.x, pies,
+    dir: direccionDe(e.facing),
+    fase: sentado ? null : fase,
+    cuerpo: bodyColor, piel: col.enemyPiel,
+    sombrero: { tipo: esCivil ? 'chico' : ancho ? 'ancho' : 'ala', color: ancho ? '#3a332c' : sombreroColor },
+    postura: sentado ? 'sentado' : 'pie',
+    arma: conArma ? {
+      angulo: e.facing,
+      largo: e.aimTimer > 0 ? 10 : 7,
+      color: e.aimTimer > 0 ? '#d8cdbb' : '#2a2622',
+      punta: e.aimTimer > 0 ? '#fff6d0' : null,
+      // EL PISTOLERO: el SEGUNDO caño, que aparece junto al primero. Es el
+      // momento en que importa saber qué tenés enfrente.
+      doble: e.look === 'dosRevolveres',
+    } : null,
+  });
+  const tx = fig.x;
+  const ty = fig.torsoY;
+  const deEspaldas = direccionDe(e.facing) === 'espalda';
 
   if (sentado || e.desenfundando > 0) {
     // El arma colgada al costado.
-    r.rect(e.x + e.hw - 1, e.y, 2, 4, '#2a2622');
+    r.rect(tx + 3, ty + 2, 2, 4, '#2a2622');
   }
   if (sentado) {
     // Las cartas en la mano, hacia su compañero.
-    r.rect(e.x + Math.cos(e.facing) * 5 - 1, e.y + Math.sin(e.facing) * 5, 3, 2, '#efe6d2');
+    r.rect(tx + Math.round(Math.cos(e.facing) * 4) - 1, ty + 2, 3, 2, '#efe6d2');
   }
 
-  /**
-   * 🐛 LA CABEZA QUE FALTABA — SIN ELLA, EL GUARDIA SE LEÍA COMO UN CONO.
-   *
-   * *(Santi, jugando: "el jugador parece que mata conos en vez de guardias
-   * de ley")*
-   *
-   * El ala del sombrero (`hatH`, angosta) tocaba directo el cuerpo: cero
-   * píxeles de transición. Sin una cabeza que separe "sombrero" de "torso",
-   * y con el cuerpo pintado del color de ESTADO (nunca de piel), la silueta
-   * entera eran dos bloques apilados — ala ancha arriba, base angosta abajo,
-   * el mismo perfil que un cono o un hongo. Medí el recorte de la hitbox de
-   * la vuelta anterior (10x8 → 9x7, 1px de diferencia) y no alcanzaba para
-   * explicarlo: el problema era viejo, sólo que ahora se mira con más
-   * atención.
-   *
-   * `hatW` YA NO ES UN NÚMERO FIJO (era 12 siempre): escala con `e.hw`, la
-   * misma regla que ya usa el sombrero del jugador. Así el ala nunca vuelve
-   * a desproporcionarse si el tamaño del cuerpo cambia de nuevo — que es
-   * justo lo que pasó acá.
-   */
-  /**
-   * EL CIVIL ENCUBIERTO NO LLEVA SOMBRERO DE GUARDIA: lleva el mismo
-   * sombrerito de los pasajeros (`drawPassenger`, mismo tamaño y mismo
-   * color). Es toda su silueta, y es a propósito — el que se te levantó del
-   * asiento sigue pareciendo lo que parecía. Lo que cambió no es su ropa: es
-   * que ahora el cuerpo se pinta con los colores de ESTADO del tren, o sea
-   * que está en rojo y te viene a buscar.
-   */
-  const esCivil = e.look === 'civil';
-  const hatW = esCivil ? 8 : e.hw * 2 + 2;
-  const hatH = esCivil ? 2 : 1.5;
-  r.rect(e.x - hatW / 2, e.y - 6, hatW, hatH, esCivil ? '#6a4a58' : '#4a4038');
-
-  const headTop = e.y - 6 + hatH;
-  const headBottom = e.y - e.hh;
-  if (headBottom > headTop) {
-    r.rect(e.x - e.hw * 0.6, headTop, e.hw * 1.2, headBottom - headTop, col.enemyPiel);
+  // Mecha encendida en la mano, en alto: el aviso de que te va a tirar una
+  // dinamita. Tiene que verse de lejos y sin ambigüedad, porque la respuesta
+  // correcta (salir de la cobertura ya mismo) es contraria a todo lo demás.
+  if (e.throwWindup > 0) {
+    const parpadeo = Math.floor(e.throwWindup * 22) % 2 === 0;
+    r.box(tx + 4, fig.arriba - 2, 1, 2, col.dynamite);
+    if (parpadeo) r.box(tx + 4, fig.arriba - 5, 1, 1, '#fff4c0');
+    r.text('!', tx + 9, fig.arriba - 5, '#ff7a4a');
   }
 
   /**
@@ -505,157 +496,94 @@ export function drawEnemy(r, e) {
    * El color ya está ocupado diciendo el ESTADO (gris/amarillo/rojo), que es la
    * información más importante del juego momento a momento. Si el tipo pisara
    * ese color, ganaríamos saber quién es y perderíamos saber si te vio.
+   *
+   * Las marcas del pecho (la placa, la estrella, las culatas) no se ven si te da
+   * la espalda. La bandolera cruza también por atrás.
    */
-  if (e.look === 'placa') {
-    r.rect(e.x - e.hw, e.y - 2, e.hw * 2, 5, '#59616b');
-    r.rect(e.x - e.hw, e.y - 2, e.hw * 2, 1, '#7d8794');
-    r.rect(e.x - (e.hw * 2 + 4) / 2, e.y - 7, e.hw * 2 + 4, 2, '#3a332c');   // sombrero más ancho
+  if (e.look === 'placa' && !deEspaldas) {
+    r.rect(tx - 3, ty + 1, 7, 3, '#59616b');
+    r.rect(tx - 3, ty + 1, 7, 1, '#7d8794');
   }
 
   /**
-   * EL PISTOLERO: dos revólveres. La seña tiene que funcionar en los dos
-   * momentos en que lo mirás, y por eso son DOS marcas y no una:
+   * EL PISTOLERO: dos revólveres. Quieto, de lejos: las dos culatas al cinto,
+   * una de cada lado. Disparando: el segundo caño (ver `doble`, arriba).
    *
-   *   - Quieto, de lejos: las dos culatas al cinto, una de cada lado del
-   *     torso. Es lo único que lo distingue antes de que pase nada.
-   *   - Disparando: el SEGUNDO caño, al lado del que ya dibuja cualquier
-   *     guardia. Es el momento en que importa saber qué tenés enfrente, y ahí
-   *     la silueta cambia sola sin que haya que agregarle un ícono.
-   *
-   * 🐛 LAS CULATAS ERAN CARTUCHERAS A LOS COSTADOS, Y NO SE VEÍAN. Marrón
-   * (`#6b4a2e`) al lado del cuerpo, o sea SOBRE EL PISO del vagón, que es
-   * marrón: mirando la captura ampliada no se distinguían de una tabla del
-   * suelo. Ahora van ENCIMA del torso y en claro — el mismo lugar y la misma
-   * idea que la placa del blindado o la bandolera del dinamitero, que sí se
-   * leen. Este bug no se podía encontrar midiendo: sólo mirándolo.
-   *
-   * Sigue la regla de este archivo: nada de esto toca el color del cuerpo,
-   * que sigue diciendo el ESTADO (gris/amarillo/rojo).
+   * 🐛 LAS CULATAS ERAN CARTUCHERAS A LOS COSTADOS, Y NO SE VEÍAN: marrón sobre
+   * el piso marrón. Van encima del cuerpo y en claro.
    */
   if (e.look === 'dosRevolveres') {
-    r.rect(e.x - e.hw, e.y, 2, 3, '#d8cdbb');
-    r.rect(e.x + e.hw - 2, e.y, 2, 3, '#d8cdbb');
-
-    const nx = -Math.sin(e.facing);
-    const ny = Math.cos(e.facing);
-    const largo = e.aimTimer > 0 ? 11 : 8;
-    r.line(
-      e.x + nx * 3, e.y + ny * 3,
-      e.x + nx * 3 + Math.cos(e.facing) * largo,
-      e.y + ny * 3 + Math.sin(e.facing) * largo,
-      e.aimTimer > 0 ? '#d8cdbb' : '#2a2622'
-    );
+    r.rect(tx - 3, ty + 4, 2, 2, '#d8cdbb');
+    r.rect(tx + 2, ty + 4, 2, 2, '#d8cdbb');
   }
 
   /**
-   * EL DINAMITERO: la bandolera cruzada, con los cartuchos a la vista.
+   * EL DINAMITERO: la bandolera cruzada, con los cartuchos que LE QUEDAN a la
+   * vista, del color de la dinamita. Los huecos se dibujan en un marrón muerto:
+   * **la bandolera vacía tiene que leerse como vacía, no como ausente** — es la
+   * única señal de la ventana en la que está desarmado.
    *
-   * Van del color de la dinamita (`col.dynamite`, el mismo de la mecha
-   * encendida y del cartucho en el piso) a propósito: lo que hay que leer no
-   * es "éste es de otro tipo" sino "éste lleva ESO encima", y ese color ya
-   * significa exactamente eso en todo el juego.
+   * La banda clara de cada cartucho no es adorno: en combate el cuerpo es rojo
+   * y los cartuchos también, y un píxel claro los despega.
    */
   if (e.look === 'bandolera') {
-    r.rect(e.x - e.hw, e.y - 1, e.hw * 2, 2, '#6b4a2e');
-
-    /**
-     * LOS CARTUCHOS QUE LE QUEDAN, no tres fijos de adorno.
-     *
-     * Es la única señal de la ventana de cinco segundos en la que este tipo
-     * está desarmado (`CONFIG.enemy.dinamiteroRecarga`). Sin esto la ventana
-     * existiría igual y no se podría aprovechar — que es lo mismo que no
-     * existir. La regla de siempre: lo que se puede mostrar no se escribe.
-     *
-     * Los huecos se dibujan (en un marrón muerto) en vez de simplemente no
-     * dibujarse: **la bandolera vacía tiene que leerse como vacía, no como
-     * ausente**. Si el cartucho desapareciera sin dejar rastro, un Dinamitero
-     * recargando se vería igual que un guardia cualquiera.
-     *
-     * Y son de 2x4 y no de 1x2 como antes: a esta escala un píxel suelto no
-     * se ve — la misma lección que las mechas del cajón de pólvora, que
-     * tampoco existían en pantalla hasta que se engordaron.
-     */
+    r.rect(tx - 3, ty + 1, 7, 2, '#6b4a2e');
     const total = Math.max(1, e.dynamiteMax || 1);
     const paso = 3;
-    const ancho = total * paso - 1;
+    const largo = total * paso - 1;
     for (let i = 0; i < total; i++) {
-      const x = e.x - ancho / 2 + i * paso;
+      const x = Math.round(tx - largo / 2 + i * paso);
       const cargado = i < e.dynamite;
-      r.rect(x, e.y - 2, 2, 4, cargado ? col.dynamite : '#33291f');
-      /**
-       * La banda clara del cartucho, arriba. No es adorno: EN COMBATE EL
-       * CUERPO ES ROJO (`enemyAlert`) y los cartuchos también, así que
-       * justo cuando más importa saber si le quedan, el rojo sobre rojo es
-       * lo más difícil de leer. Un píxel claro los despega, y de paso es
-       * exactamente la misma marca que tienen el cartucho tirado en el piso
-       * y los del cajón de pólvora.
-       */
-      if (cargado) r.rect(x, e.y - 2, 2, 1, col.dynamiteBand);
+      r.rect(x, ty, 2, 3, cargado ? col.dynamite : '#33291f');
+      if (cargado) r.rect(x, ty, 2, 1, col.dynamiteBand);
     }
   }
 
   /**
    * EL SHERIFF: la estrella. Es lo único dorado que lleva una persona en todo
-   * el tren, así que se lo distingue de un vistazo sin tocar el color del
-   * cuerpo (que sigue diciendo el estado, como manda la regla de arriba).
-   *
-   * La cruz de cinco píxeles no es pereza: a esta escala una estrella
-   * "de verdad" (con puntas en diagonal) se lee como una mancha. Lo que la
-   * hace reconocible es que sea SIMÉTRICA y del color que no usa nadie más.
+   * el tren. Una cruz simétrica: a esta escala una estrella "de verdad" se lee
+   * como una mancha.
    */
-  if (e.look === 'estrella') {
-    r.rect(e.x - (e.hw * 2 + 6) / 2, e.y - 7, e.hw * 2 + 6, 2, '#3a332c');   // ala del sombrero, ancha
-    r.rect(e.x - 1, e.y - 3, 3, 5, '#e8c34a');    // la estrella: palo vertical
-    r.rect(e.x - 3, e.y - 1, 7, 2, '#e8c34a');    // y el travesaño
-    r.rect(e.x - 1, e.y - 4, 1, 1, '#fff2b8');    // un brillo arriba
+  if (e.look === 'estrella' && !deEspaldas) {
+    r.rect(tx, ty + 1, 1, 3, '#e8c34a');
+    r.rect(tx - 1, ty + 2, 3, 1, '#e8c34a');
+    r.rect(tx, ty + 1, 1, 1, '#fff2b8');
   }
 
   /**
-   * Cuánto le queda, solo cuando ya está herido.
-   *
-   * Hace falta ahora que la vida va de 2 a 4 según el tipo y la dificultad del
-   * tren: sin esto no hay forma de saber si a este tipo le queda un tiro o
-   * tres. Aparece recién al primer impacto para no llenar la pantalla de
-   * barritas cuando todavía no pasó nada.
+   * Cuánto le queda, solo cuando ya está herido: la vida va de 2 a 4 según el
+   * tipo y la dificultad, y sin esto no se sabe si le queda un tiro o tres.
    */
+  const arriba = fig.arriba;
   if (e.health < e.maxHealth) {
-    const ancho = 3;
-    const total = e.maxHealth * (ancho + 1) - 1;
+    const anchoMuesca = 3;
+    const total = e.maxHealth * (anchoMuesca + 1) - 1;
     for (let i = 0; i < e.maxHealth; i++) {
       r.rect(
-        e.x - total / 2 + i * (ancho + 1), e.y - 17, ancho, 2,
+        e.x - total / 2 + i * (anchoMuesca + 1), arriba - 5, anchoMuesca, 2,
         i < e.health ? '#e0c44a' : '#4a3a2a'
       );
     }
   }
 
   if (e.state === 'combat') {
-    if (e.alertMark > 0) r.text('!', e.x, e.y - 14, '#ffd84a');
+    if (e.alertMark > 0) r.text('!', e.x, arriba - 9, '#ffd84a');
   } else if (e.suspicion > 0.04) {
     // Barrita de sospecha: te muestra cuánto te queda para romper el contacto.
     const w = 12;
-    r.rect(e.x - w / 2, e.y - 13, w, 2, '#1a1512');
-    r.rect(e.x - w / 2, e.y - 13, w * Math.min(1, e.suspicion), 2,
+    r.rect(e.x - w / 2, arriba - 3, w, 2, '#1a1512');
+    r.rect(e.x - w / 2, arriba - 3, w * Math.min(1, e.suspicion), 2,
       e.suspicion > 0.66 ? '#e07a4a' : '#e0c44a');
   } else if (e.vigilaLider) {
     /**
-     * "VIGILANDO" (puerta o caja fuerte) — un ESTADO, no una frase suelta:
-     * se muestra fijo todo el tiempo que dure (mientras siga en `patrol`,
-     * que es justo la condición con la que se llega a esta rama), igual
-     * que "AGACHADO"/"A CUBIERTO" en el HUD. Mismo color que el gris de
-     * patrulla (`col.enemy`): es información de estado, no una alerta.
-     *
-     * *(Santi: "quiero que encima de los guardias que vigilan una puerta o
-     * una caja fuerte, diga 'vigilando'")*
+     * "VIGILANDO" (puerta o caja fuerte) — un ESTADO, no una frase suelta: se
+     * muestra fijo mientras dure. *(Santi: "quiero que encima de los guardias
+     * que vigilan una puerta o una caja fuerte, diga 'vigilando'")*
      */
-    r.text(T.ambiente.vigilando, e.x, e.y - 16, col.enemy);
+    r.text(T.ambiente.vigilando, e.x, arriba - 7, col.enemy);
   } else if (e.charlaLider && e.charlaShowUntil > 0) {
-    /**
-     * LA CHARLA — a diferencia de "vigilando" (un estado fijo), esto SÍ es
-     * una frase suelta que aparece y se corta, como charla de verdad (ver
-     * `actualizarCharla`, systems/ai.js).
-     */
-    r.text(e.charlaTexto, e.x, e.y - 16, col.enemy);
+    // LA CHARLA: una frase suelta que aparece y se corta (ver `actualizarCharla`).
+    r.text(e.charlaTexto, e.x, arriba - 7, col.enemy);
   }
 }
 

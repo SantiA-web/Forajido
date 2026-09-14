@@ -10,6 +10,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { dibujarFigura, dibujarTendido, direccionDe, faseDeAndar } from './figura.js';
 import { moveAndCollide, distance, hasLineOfSight, angleDifference } from '../engine/collision.js';
 import { isHidden } from './player.js';
 import {
@@ -316,15 +317,21 @@ function seesBody(pa, world, c) {
 
 export function drawPassenger(r, pa) {
   const col = CONFIG.colors;
+  /**
+   * TRES CUARTOS, ETAPA B: DE CUERPO ENTERO (ver entities/figura.js), con los
+   * pies en el borde de abajo de su caja (`pa.hh`), que no cambió.
+   */
+  const pies = pa.y + pa.hh;
 
   if (!pa.alive) {
-    r.box(pa.x, pa.y, 5, 3, col.blood);
-    r.box(pa.x, pa.y, 4, 2, '#3a2a30');
+    dibujarTendido(r, pa.x, pa.y, { cuerpo: col.civilian, sombrero: '#6a4a58', sangre: true });
     return;
   }
 
+  const fase = faseDeAndar(pa);
+
   r.ctx.globalAlpha = 0.25;
-  r.box(pa.x, pa.y + 5, 4, 2, '#000');
+  r.box(pa.x, pies, 4, 2, '#000');
   r.ctx.globalAlpha = 1;
 
   // Tiembla mientras entra en pánico, y más fuerte si lo acabás de asaltar.
@@ -336,9 +343,8 @@ export function drawPassenger(r, pa) {
    * El aviso está construido igual que el del rendido que te traiciona, y a
    * propósito: es el mismo momento del juego —alguien que parecía inofensivo
    * dejando de serlo— así que tiene que leerse igual. Pasado el punto medio,
-   * el cuerpo salta a `enemyAlert`: el color que en todo el tren significa
-   * "esto ya es una pelea". Antes de eso sólo se ve el brazo saliendo del
-   * saco, que es la mitad temprana del aviso — la que premia estar atento.
+   * el cuerpo salta a `enemyAlert`. Antes de eso sólo se ve el arma saliendo
+   * del saco, que es la mitad temprana del aviso — la que premia estar atento.
    */
   const revelaT = pa.revelando
     ? Math.min(1, pa.revelaProgreso / ENCUBIERTO_DURACION)
@@ -349,69 +355,51 @@ export function drawPassenger(r, pa) {
     : revelaT > 0.5 ? col.enemyAlert
     : pa.state === 'idle' ? col.civilian : col.civilianRun;
 
-  if (pa.revelando) {
-    // El arma que sale de adentro del saco: crece hacia vos mientras dura.
-    const largo = 3 + 9 * revelaT;
-    r.line(
-      pa.x, pa.y,
-      pa.x + Math.cos(pa.facing) * largo,
-      pa.y + Math.sin(pa.facing) * largo,
-      revelaT > 0.5 ? '#d8cdbb' : '#7a5a68'
-    );
-  }
-
-  // Hacia dónde mira: hay que poder leerlo para rodearlo por atrás.
+  // Hacia dónde mira, en el piso: hay que poder leerlo para rodearlo por atrás.
+  // El cuerpo ya mira hacia un lado, pero cuatro direcciones son gruesas para
+  // saber si te ve o no; la raya dice el ángulo exacto.
   if (pa.state === 'idle') {
     r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
   }
 
-  // El tamaño sale de `pa.hw/pa.hh` (CONFIG.passenger): el sprite que se ve
-  // siempre es exactamente la caja que puede recibir la bala.
-  r.box(pa.x + shake, pa.y, pa.hw, pa.hh, color);
-
   /**
    * EL PASAJERO RICO: SOMBRERO DE COPA (Fase 5, ver data/paquetes.js).
    *
-   * *(Santi, preguntando cómo lucía: hasta acá era IDÉNTICO a cualquier
-   * pasajero — mismo cuerpo, mismo color, mismo sombrerito. Lo único que lo
-   * delataba era el guardaespaldas al lado, así que si lo matabas antes de
-   * entrar ya no había forma de saber a quién robarle. Eligió que "se note de
-   * lejos")*
-   *
-   * LA SEÑA ES LA SILUETA, NO EL COLOR, como manda la regla de este juego: el
-   * color del cuerpo dice el ESTADO (tranquilo / asustado / corriendo) y no
-   * se toca. Lo que cambia es el perfil — una copa alta sobre el ala de
-   * siempre —, que a esta escala es lo único que se lee de una punta del
-   * vagón a la otra.
-   *
-   * Y es la silueta más alta de todo el tren a propósito: asoma por encima de
-   * los respaldos, así que se lo puede pescar desde el pasillo sin tener que
-   * meterse en cada hueco a mirar quién viaja ahí.
+   * *(Santi eligió que "se note de lejos")*. LA SEÑA ES LA SILUETA, NO EL COLOR:
+   * el color del cuerpo dice el ESTADO y no se toca. Es la silueta más alta de
+   * todo el tren a propósito: asoma por encima de los respaldos, así que se lo
+   * puede pescar desde el pasillo.
    */
-  if (pa.botin) {
-    r.rect(pa.x + shake - 5, pa.y - 6, 10, 2, '#2a2028');   // el ala, más ancha
-    r.rect(pa.x + shake - 3, pa.y - 11, 6, 5, '#2a2028');   // la copa
-    r.rect(pa.x + shake - 3, pa.y - 8, 6, 1, '#6a4a58');    // la cinta
-  } else {
-    r.rect(pa.x + shake - 4, pa.y - 5, 8, 2, '#6a4a58');
-  }
+  const fig = dibujarFigura(r, {
+    x: pa.x, pies,
+    dir: direccionDe(pa.facing),
+    fase,
+    cuerpo: color, piel: col.enemyPiel,
+    sombrero: pa.botin
+      ? { tipo: 'copa', color: '#2a2028', cinta: '#6a4a58' }
+      : { tipo: 'chico', color: '#6a4a58' },
+    // El que ya asaltaste lleva las manos arriba.
+    brazosArriba: pa.state === 'amenazado',
+    sacudida: shake,
+    // El arma que sale de adentro del saco: crece hacia vos mientras dura.
+    arma: pa.revelando ? {
+      angulo: pa.facing,
+      largo: 3 + 8 * revelaT,
+      color: revelaT > 0.5 ? '#d8cdbb' : '#7a5a68',
+    } : null,
+  });
 
   /**
-   * El que ya asaltaste lleva las manos arriba Y un reloj encima de la cabeza.
-   * Ese reloj es la información más importante que da este sistema: es cuánto
-   * te queda antes de que se ponga a gritar. Sin verlo, amenazar sería una
-   * trampa en vez de una decisión.
+   * Y un reloj encima de la cabeza: cuánto te queda antes de que se ponga a
+   * gritar. Sin verlo, amenazar sería una trampa en vez de una decisión.
    */
   if (pa.state === 'amenazado') {
     const c = CONFIG.passenger;
     const queda = Math.max(0, pa.panicTimer / c.robPanicDelay);
-    r.rect(pa.x - 5, pa.y - 11, 10, 2, '#241c18');
-    r.rect(pa.x - 5, pa.y - 11, 10 * queda, 2, queda > 0.4 ? col.bagLoot : col.enemyAlert);
-    // Los brazos en alto
-    r.rect(pa.x + shake - 5, pa.y - 3, 2, 3, color);
-    r.rect(pa.x + shake + 3, pa.y - 3, 2, 3, color);
+    r.rect(pa.x - 5, fig.arriba - 8, 10, 2, '#241c18');
+    r.rect(pa.x - 5, fig.arriba - 8, 10 * queda, 2, queda > 0.4 ? col.bagLoot : col.enemyAlert);
   }
 
-  if (pa.state === 'panic') r.text('!', pa.x, pa.y - 12, '#ff8a5c');
-  else if (pa.state === 'fleeing') r.text('!', pa.x, pa.y - 12, '#ffd0b0');
+  if (pa.state === 'panic') r.text('!', pa.x, fig.arriba - 6, '#ff8a5c');
+  else if (pa.state === 'fleeing') r.text('!', pa.x, fig.arriba - 6, '#ffd0b0');
 }

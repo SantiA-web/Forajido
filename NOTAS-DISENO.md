@@ -12193,6 +12193,56 @@ la arena. Además, añádele una nube de polvo como la de la imagen")*
 **⚠️ NO JUGADO — y el sonido hay que oírlo:** el volumen se eligió sin
 escucharlo.
 
+### ✅ Etapa B hecha — la gente de cuerpo entero
+
+*(Santi: "seguí con la etapa B")*. Eligió **16 px de alto** (sobre 13 y 20: con
+20 la persona es tan alta como la pared del fondo y el de la fila de atrás queda
+tapado) y **4 direcciones** (sobre 8: el doble de dibujos para una diferencia que
+a 16 px casi no se nota, y el arma ya apunta exacta).
+
+- **Una sola figura para todos** (`entities/figura.js`): piernas que caminan,
+  torso con cinto y brazos, cabeza (de frente con ojos, de espaldas con pelo, de
+  costado con nariz) y cinco sombreros (ala, ancho, chico, copa, ninguno).
+  Posturas de pie, agachado, sentado y de rodillas, brazos arriba y el arma
+  apuntando al ángulo exacto. `dibujarTendido` para muertos y desmayados.
+- **La caja que recibe las balas no cambió** (decisión de la etapa A): los pies
+  van en su borde de abajo y el cuerpo crece hacia arriba. Todo lo que iba
+  encima de la cabeza (barras de vida y sospecha, "!", "vigilando", las charlas,
+  el reloj del pasajero asaltado) subió con ella. El cono de visión, el aro del
+  ruido y la línea del golpe cuerpo a cuerpo siguen en el piso.
+- **Los guardias y pasajeros no guardan en qué punto del paso van**, así que
+  `faseDeAndar` lo deduce de cuánto se movieron entre cuadros (un paso cada 5
+  px), en campos `_andar…` que no lee el juego.
+- **El jugador** 🔁 ya no se aplasta contra la cobertura: se agacha detrás (y
+  también en sigilo), y al asomarse se para y apunta. La mochila va en la espalda
+  de la figura según hacia dónde mira. El fogonazo y la dinamita en la mano, a la
+  altura del pecho.
+- **Los guardias**: el color sigue siendo el estado y el tipo va en la silueta
+  (placa, culatas y segundo caño, bandolera con los cartuchos que quedan,
+  estrella, sombrerito de civil). Sentados de franco en su banquito, rendidos de
+  rodillas con las manos arriba (y se paran de a poco al traicionar), desmayados
+  sin sangre, muertos con sangre.
+- **Los pasajeros**: el rico con galera, el asaltado con las manos arriba, el
+  pánico temblando, el encubierto sacando el arma. La raya de hacia dónde mira
+  quedó en el piso: cuatro direcciones son gruesas para saber si te ve.
+- **El jefe**: la misma figura agrandada un 30% alrededor de los pies, con el
+  poncho de dos puntas y el ala más ancha.
+- **Los jinetes usan el caballo del galope**: se mudó a `entities/caballo.js`
+  (junto con el jinete y `GOLPES`), así hay un solo caballo en todo el juego. 🔁
+  Ahora corren hacia la derecha, como el tren; el dibujo viejo los tenía mirando
+  a la izquierda sin motivo. La silueta detrás de la pared sigue andando porque
+  todo se dibuja con `rect` y `line` (el ala del sombrero dejó de ser una
+  `ellipse`).
+
+**Lo que falta y es de otra etapa:** las balas todavía salen del piso aunque el
+caño esté a la altura del pecho — eso es la etapa C, la altura de las balas.
+
+**MEDIDO:** ningún error en la consola entrando al asalto y al galope. Láminas de
+tres vagones enteros, los seis estados y los seis tipos de guardia, el jugador
+en tres poses, los tres pasajeros, los dos jinetes y los de franco.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

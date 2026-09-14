@@ -40,11 +40,13 @@ atrás. Se está pasando por etapas, primero el tren:
 | Etapa | Qué | Estado |
 |---|---|---|
 | A | El orden de dibujo: paredes, asientos, carga y el resto con volumen, y todo ordenado por dónde tiene los pies | ✅ |
-| B | La gente de cuerpo entero | Falta |
+| B | La gente de cuerpo entero: 16 px de alto, mirando hacia uno de cuatro lados, con piernas que caminan, cabeza y sombrero. El jugador se agacha detrás de la cobertura, los guardias se sientan de franco y se rinden de rodillas, y los jinetes usan el caballo del galope. La caja que recibe las balas no cambió | ✅ |
 | C | Las cosas: botín, puertas, cajones, barriles, dinamita, balas | Falta |
 | D | El techo | Falta |
 | E | El galope en tres cuartos: del tren se ve la pared y la tapa del techo (y lo que llevan los vagones abiertos), del caballo el lomo y la montura, del jinete el ala del sombrero, y el desierto llena la pantalla. Al girar con W o S el caballo cambia de pose (nueve): se lo ve alejarse hacia las vías o venir de frente hacia abajo. Corre con pose de carrera (cuello estirado, cola y crin al viento, el jinete echado hacia adelante), las patas pisan justo cuando suena cada golpe del "tucu-TÚN", y cada pisada levanta una nube de polvo que queda atrás. Mientras estás lejos asoma el cielo arriba de todo. Se juega igual | ✅ |
 | F | Mirar los 13 vagones | Falta |
+| G | El campamento y el pueblo | Falta |
+| H | Los interiores del pueblo (la tienda ya se ve de cerca y de perfil) | Falta |
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido

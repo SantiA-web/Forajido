@@ -404,8 +404,22 @@ export function createRaidScene(services) {
      * aparte de `isSolidForMovementAt` por lo mismo que las puertas: nadie más
      * tiene que enterarse.
      */
-    world.solidoParaJugador = (x, y) =>
-      map.isSolidForMovementAt(x, y) || esCarbonEn(x) !== !!player.enCarbon;
+    /**
+     * 🔁 Y SOBRE EL CARBÓN, AFUERA NO HAY NADA QUE TE FRENE: TE CAÉS.
+     * *(Santi: "da la sensación que no estoy en el techo. Una vez estoy sobre
+     * el carbón, ya no debería haber paredes que me detengan a la hora de
+     * caerme")*. Antes el borde de la góndola era una pared hasta que bajabas
+     * con [E]. Ahora, parado en el carbón, las paredes de las PUNTAS no frenan
+     * (el carbón está a su altura) y lo que hay del otro lado tampoco: cruzás
+     * el borde y caés al enganche (`caerDelCarbon`). Los COSTADOS siguen siendo
+     * el borde del tren — caerse al desierto no existe *(elegido por Santi)*.
+     */
+    world.solidoParaJugador = (x, y) => {
+      if (!player.enCarbon) return map.isSolidForMovementAt(x, y) || esCarbonEn(x);
+      if (!esCarbonEn(x)) return false;
+      if (esPuntaDelCarbon(x) && map.tileAtPixel(x, y) === '#') return false;
+      return map.isSolidForMovementAt(x, y);
+    };
 
     alarm = createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm });
     /**
@@ -1392,6 +1406,32 @@ export function createRaidScene(services) {
     return !!w && w.carbon;
   }
 
+  /** ¿Este x es la primera o la última columna de la góndola (sus puntas)? */
+  function esPuntaDelCarbon(x) {
+    const w = train.wagons[train.wagonAt(x)];
+    if (!w || !w.carbon) return false;
+    const col = Math.floor(x / map.size);
+    const primera = Math.floor(w.x / map.size);
+    const ultima = Math.floor((w.x + w.width) / map.size) - 1;
+    return col === primera || col === ultima;
+  }
+
+  /**
+   * TE CAÍSTE DEL CARBÓN por una punta: al enganche más cercano, con el mismo
+   * golpe, el mismo cartel y el mismo ruido que errar un salto en el techo
+   * (`caerAlEnganche`). Bajar con [E] sigue siendo la forma silenciosa.
+   */
+  function caerDelCarbon() {
+    let cerca = null;
+    for (const p of train.plataformas) {
+      if (p && (!cerca || Math.abs(p.x - player.x) < Math.abs(cerca.x - player.x))) cerca = p;
+    }
+    if (cerca) player.x = cerca.x;
+    player.cover = null;
+    player.peek = 0;
+    caerAlEnganche();
+  }
+
   /**
    * LO QUE TE VIENE DE FRENTE ARRIBA DEL TREN.
    *
@@ -2323,6 +2363,8 @@ export function createRaidScene(services) {
     if (player.enTecho && player.techoSalto <= 0 && !hayTechoEn(player.x)) {
       caerAlEnganche();
     }
+    // Lo mismo desde el carbón: saliste caminando por una punta de la góndola.
+    if (player.enCarbon && !esCarbonEn(player.x)) caerDelCarbon();
     updateJefe(dt);
     updateEnemies(dt);
     separateEnemies(enemies, map);

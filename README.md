@@ -897,6 +897,7 @@ encima del carbón, y eso es lo mismo que caminar por el techo.
 | | Cómo funciona |
 |---|---|
 | **Subir y bajar** | En los **enganches**: mantené **[E] 0,4 s** al borde, en silencio. Hasta que no trepaste, el carbón es una pared |
+| **Caerse** | Parado en el carbón, las puntas no tienen pared: si salís caminando por una punta, **te caés al enganche** con ruido, como al errar un salto en el techo. Por los costados no se cae |
 | **Cruzarla** | **A la mitad**, para todos: vos 39 px/s, un guardia persiguiéndote 23. La cruzan también las reses de la estampida y el Sheriff: nadie queda cortado |
 | **Por el techo** | Si venís por arriba de otro vagón, seguís de largo sin caerte, y frena igual. Desde el caballo se puede saltar encima |
 | **Jinetes** | **No te alcanzan**: las paredes de la góndola son altas y vas encima del carbón. No te ven ni te pegan, ni sobre el carbón ni por el techo |

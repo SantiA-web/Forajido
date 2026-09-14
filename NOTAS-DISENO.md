@@ -11878,6 +11878,41 @@ gente de cuerpo entero (etapa B).
 
 **⚠️ NO JUGADO.**
 
+### 🔧 Una tanda de ajustes antes de la etapa B
+
+*(Santi, mirando la etapa A: cinco cosas)*. Se decidieron juntas, con un boceto
+del galope delante, y se hacen de la más chica a la más grande:
+
+| # | Pedido | Decidido | Estado |
+|---|---|---|---|
+| 1 | *"el vagón de góndola: da la sensación que no estoy en el techo. Una vez estoy sobre el carbón, ya no debería haber paredes que me detengan a la hora de caerme"* | **Caerse por las puntas**, a los enganches; los costados siguen siendo el borde del tren (descartado "también por los costados": caerse al desierto no existe y sería un sistema nuevo). Paredes bajas desde adentro | ✅ |
+| 2 | *"una vez el jugador esté sobre el tren, se haga menos zoom"* | **Más resolución para todo el juego**, de 384×216 a 480×270 (descartado "zoom 0,8 sólo en el asalto": píxeles desparejos y carteles más chicos) | Falta |
+| 3 | *"en la cabalgata la perspectiva esté en un punto que se pueda ver el cielo y las montañas a lo lejos"* | **Cámara baja**, como el boceto: cielo, montañas, el tren de costado y el desierto adelante. Se juega igual | Falta |
+| 4 | *"en la cabalgata el tren se debería ver como se ve un tren desde afuera"* | Sale con la cámara baja: techo, pared alta, ventanillas y ruedas | Falta |
+| 5 | *"A la hora del salto al techo o al enganche puedo mover al caballo y hasta ponerme por encima de la pared del tren"* | Lo explica la etapa A: la cara de afuera cuelga 18 px bajo el vagón y el caballo galopa desde 8 px. Con la cámara baja el caballo va en su carril, delante del tren | Falta (va con el 3) |
+
+**La góndola (1):**
+
+- **Sobre el carbón, afuera de la góndola no hay nada que te frene**
+  (`world.solidoParaJugador`): las paredes de las PUNTAS no frenan —el carbón
+  está a su altura— y del otro lado tampoco hay pared. Cruzás el borde y
+  `caerDelCarbon` te pone en el enganche más cercano y llama a `caerAlEnganche`:
+  el mismo golpe, cartel y ruido que errar un salto en el techo. **[E] sigue
+  siendo la forma silenciosa** de bajar.
+- **Desde adentro sus paredes se dibujan bajas**, como el borde de una tolva
+  llena, y no tira sombra de pared sobre el carbón. Desde afuera la cara sigue
+  alta, que es por lo que los jinetes no te alcanzan.
+
+**MEDIDO:** caminando hacia la punta derecha por una fila de pared, **caés en 1,1
+s** justo en el enganche (x=968, en el pasillo); por la izquierda, desde el
+pasillo, también (x=472). Los costados frenan (abajo, en y=140, sin caerte), el
+montículo frena, y desde el enganche sin trepar el carbón sigue siendo pared
+(x=491 contra el borde en 496); [E] sigue trepando. Sin errores.
+⚠️ En la prueba de ir hacia arriba el jugador no se movió de y=30: no se cayó ni
+salió del carbón, pero **no está explicado** por qué no avanzó.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

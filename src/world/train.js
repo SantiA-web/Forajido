@@ -1906,7 +1906,9 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
     const x = col * size;
     const casilla = (f) => (map.grid[f] || [])[col];
 
-    if (esPared(casilla(0))) {
+    // La góndola no: sus paredes, desde adentro, son sólo el borde del carbón.
+    const tipoDeColumna = WAGONS[train.tipoPorColumna[col]];
+    if (esPared(casilla(0)) && !(tipoDeColumna && tipoDeColumna.carbon)) {
       let r1 = 0;
       while (r1 + 1 < map.rows && esPared(casilla(r1 + 1))) r1++;
       const pisoDeAdentro = casilla(r1 + 1);
@@ -2042,7 +2044,17 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
            *    mismo motivo.
            */
           const { r1, r2 } = bandaDe(col);
-          const alto = tc.alturaPared;
+          /**
+           * 🔁 LA GÓNDOLA, BAJA DESDE ADENTRO *(Santi: "da la sensación que no
+           * estoy en el techo")*. Con paredes de 20 alrededor, el carbón se leía
+           * como el fondo de una caja. Pero el carbón llena el vagón hasta
+           * arriba: desde adentro sus paredes son sólo el borde de la tolva.
+           * Desde afuera siguen altas (la cara de afuera, `drawPisoDelTren`),
+           * que es por lo que los jinetes no te alcanzan.
+           */
+          const tipo = WAGONS[train.tipoPorColumna[col]];
+          const deCarbon = !!(tipo && tipo.carbon);
+          const alto = deCarbon ? tc.alturaParedBaja : tc.alturaPared;
           const tapa = oscurecer(colors.wall, 1.28);
           const brillo = oscurecer(colors.wall, 1.5);
           const cara = colors.wall;
@@ -2079,7 +2091,7 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
 
           const norte = casilla(col, row - 1);
           const adentroDetras = norte !== undefined && !esPared(norte) && norte !== 'X';
-          const h = adentroDetras ? tc.alturaParedBaja : Math.round(alto * 0.7);
+          const h = (adentroDetras || deCarbon) ? tc.alturaParedBaja : Math.round(alto * 0.7);
           const conCara = !esPared(debajo);
           cosas.push({ base, draw: () => {
             r.rect(x, y - h, size, size, tapa);

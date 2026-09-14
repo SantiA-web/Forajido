@@ -42,7 +42,7 @@ const ALTO_LOMA = 16;
 export function createTownScene(services) {
   const { renderer, input, scenes, hud, audio, rng } = services;
   const colors = CONFIG.colors;
-  const camera = createCamera(renderer.width, renderer.height);
+  const camera = createCamera(renderer);
   const bounds = { width: PUEBLO.ancho, height: PUEBLO.alto };
 
   let x, y, mensaje, scroll, gente;
@@ -218,11 +218,17 @@ export function createTownScene(services) {
      * en el desplazamiento, caminar por el pueblo movería el horizonte y el
      * pueblo se sentiría del tamaño de una habitación.
      */
-    r.cielo(0, 0, r.width, PUEBLO.calleY - 78 - ALTO_LOMA,
+    /**
+     * `bajar`: la calle está armada para el alto de `CONFIG.view`. En una
+     * pantalla más alta el pueblo baja a la mitad de lo que sobra, y el cielo
+     * se estira para llenar arriba (la tierra ya llega hasta abajo de sobra).
+     */
+    const bajar = Math.max(0, Math.floor((r.height - PUEBLO.alto) / 2));
+    r.cielo(0, 0, r.width, PUEBLO.calleY - 78 - ALTO_LOMA + bajar,
       colors.puebloCielo, colors.puebloCieloHorizonte);
 
     r.ctx.save();
-    r.ctx.translate(-camera.renderX, 0);
+    r.ctx.translate(-camera.renderX, bajar);
 
     dibujarTierra(r);
     for (const e of PUEBLO.edificios) dibujarEdificio(r, e, dia);
@@ -240,7 +246,7 @@ export function createTownScene(services) {
       r.ctx.restore();
       r.tinte(CONFIG.hora.velo, CONFIG.hora.veloAlpha);
       r.ctx.save();
-      r.ctx.translate(-camera.renderX, 0);
+      r.ctx.translate(-camera.renderX, bajar);
       for (const e of PUEBLO.edificios) dibujarLuces(r, e);
     }
 
@@ -285,7 +291,9 @@ export function createTownScene(services) {
      */
     r.rect(0, calle - 78 - ALTO_LOMA, PUEBLO.ancho, ALTO_LOMA, colors.puebloLoma);
     // La calle de tierra, con dos tonos para que se lea el polvo.
-    r.rect(0, calle - 78, PUEBLO.ancho, PUEBLO.alto, colors.puebloTierra);
+    // Hasta el borde de abajo de la pantalla, mida lo que mida: con el alto de
+    // `PUEBLO.alto` solo, en una ventana alta quedaba una franja sin pintar.
+    r.rect(0, calle - 78, PUEBLO.ancho, Math.max(PUEBLO.alto, r.height), colors.puebloTierra);
     for (let i = 0; i < PUEBLO.ancho; i += 24) {
       r.rect(i, calle - 20 + (i % 48 === 0 ? 6 : 22), 16, 3, colors.puebloTierra2);
     }

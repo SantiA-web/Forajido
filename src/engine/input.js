@@ -3,7 +3,7 @@
  *
  * - isDown(code)     -> ¿la tecla está apretada ahora?
  * - wasPressed(code) -> ¿se apretó en este paso? (se consume una sola vez)
- * - mouse.x / mouse.y -> en píxeles del canvas INTERNO (0..CONFIG.view.width, 0..height),
+ * - mouse.x / mouse.y -> en píxeles del canvas INTERNO (0..renderer.width, 0..height),
  *   sin importar el tamaño real en pantalla.
  */
 

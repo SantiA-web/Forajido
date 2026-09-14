@@ -11963,6 +11963,56 @@ mapa reconoce el circuito de la mina sobre sus coordenadas nuevas.
 
 **⚠️ NO JUGADO.**
 
+**La pantalla se adapta al monitor (sin bordes):**
+
+*(Santi: "que haya un borde negro alrededor de la pantalla es temporal?" … "yo
+quiero que quede como un juego normal de steam o cualquier plataforma")*
+
+**⚠️ PRIMERO SE LE DIJO ALGO FALSO:** que con F11 el borde desaparecía porque
+420×236 ×4 daba 1920×1080. Da 1680×944. La cuenta estaba mal y el borde seguía
+aun en pantalla completa (120 px a cada costado, 68 arriba y abajo). La
+resolución vieja, 384×216, sí entraba justa (×5).
+
+Ninguna resolución fija llena todos los monitores (480×270 en una notebook de
+1366×768 quedaba en 960×540). Se eligió lo que hacen los juegos de pixel art de
+PC, sobre "fija en 480×270" y "estirar sin múltiplos enteros": **el tamaño del
+píxel se elige primero, y el tamaño interno es lo que entra en la ventana**.
+
+| Ventana | Múltiplo | Se ve |
+|---|---|---|
+| 1920×1080 | ×4 | 480×270 |
+| 1366×768 | ×3 | 456×256 |
+| 1600×900 | ×3 | 534×300 |
+| 1000×900 (angosta) | ×2 | 500×450 |
+
+- El múltiplo es el que deja el alto más cerca de 270 (`CONFIG.vistaIdeal`), sin
+  bajar de 420×236 (`CONFIG.view`, que ahora es el mínimo). Medido en píxeles
+  físicos (`devicePixelRatio`) para que Windows al 125% no lo desafine.
+- Más ancho que 21:9 (`vistaAnchoMaximo` 2.4) deja franjas a los costados: ver
+  dos vagones de guardias de más cambia el juego, no sólo el dibujo.
+- **Las escenas fijas** (campamento, mapa, interiores, tienda) siguen armadas
+  para 420×236 y se dibujan CENTRADAS (`renderer.centro`); su fondo llena lo
+  que sobra (las matas del campamento cubren la pantalla entera, el papel del
+  mapa y su marco toman todo). Los textos de arriba y abajo van a los bordes
+  de verdad. El pueblo baja la calle a la mitad de lo que sobra y estira el
+  cielo. El asalto y el galope ya seguían al tamaño de pantalla.
+- **[ALT+ENTER]** pone la pantalla completa desde el juego, y traba [ESC]
+  (`keyboard.lock`, Chrome/Edge) para que cerrar una tienda no te saque: para
+  salir se mantiene apretado. El navegador no deja entrar solo sin una tecla.
+- 🐛 El aviso `resize` no llegó al cambiar el tamaño desde las herramientas del
+  navegador (ni un ResizeObserver). Ahora el bucle mide en cada cuadro y sólo
+  rehace el canvas si cambió.
+- 🐛 En la ventana angosta la tierra del pueblo no llegaba abajo (medía el alto
+  viejo): quedaban 21 px con restos del cuadro anterior. Ahora llega al borde.
+
+**MEDIDO:** láminas de las siete escenas en 1920×1080, 1366×768 y 1000×900, sin
+bordes ni errores. **Lo que NO se pudo medir:** que se acomode solo al cambiar
+la ventana EN VIVO — la pestaña de prueba está oculta y ahí el navegador no
+dibuja ningún cuadro (0 en 600 ms), así que el chequeo por cuadro no corre. Se
+forzó a mano y da lo de la tabla.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

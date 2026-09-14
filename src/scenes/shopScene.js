@@ -185,6 +185,12 @@ export function createShopScene(services) {
   function render(r) {
     r.clear('#120d0b');
 
+    // Armada para `CONFIG.view` y centrada en la pantalla de hoy. Los textos
+    // de arriba y de abajo van afuera, pegados a los bordes de verdad.
+    const c = r.centro;
+    r.ctx.save();
+    r.ctx.translate(c.x, c.y);
+
     dibujarEscenario(r);
     /**
      * QUÉ DIBUJO USA CADA TIENDA. El escenario (dónde estás parado) y la
@@ -198,6 +204,7 @@ export function createShopScene(services) {
 
     dibujarFicha(r);
     dibujarSelector(r);
+    r.ctx.restore();
 
     // De noche baja la luz, pero acá adentro hay lámparas: el mismo velo
     // suave de los interiores, para que entrar siga sintiéndose como entrar.
@@ -692,7 +699,8 @@ export function createShopScene(services) {
 
   /** Abajo: en cuál de todos estás parado, y cuántos hay. */
   function dibujarSelector(r) {
-    const y = r.height - 24;
+    // `CONFIG.view` y no `r.height`: esto va adentro del escenario centrado.
+    const y = CONFIG.view.height - 24;
     const total = items.length;
     const ancho = total * 46;
     const x0 = ESCENA.x + ESCENA.w / 2 - ancho / 2;

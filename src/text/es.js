@@ -246,7 +246,7 @@ export const T = {
 
   camp: {
     title: 'EL CAMPAMENTO',
-    keys: '[W A S D] MOVERSE     [E] USAR',
+    keys: '[W A S D] MOVERSE     [E] USAR     [ALT+ENTER] PANTALLA COMPLETA',
     lejos: 'MEJOR NO ALEJARSE DE LA FOGATA',
 
     // Lo que dice el cartel sobre tu cabeza cuando estás al lado de cada cosa.

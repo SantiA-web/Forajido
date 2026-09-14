@@ -8,6 +8,7 @@
 
 import { CONFIG } from './data/config.js';
 import { createRenderer } from './engine/renderer.js';
+import { activarPantallaCompleta } from './engine/pantallaCompleta.js';
 import { createInput } from './engine/input.js';
 import { createBus } from './engine/bus.js';
 import { createRng } from './engine/rng.js';
@@ -28,7 +29,10 @@ import { gameState, resetGame } from './state/gameState.js';
 
 const canvas = document.getElementById('game');
 
-const renderer = createRenderer(canvas, CONFIG.view.width, CONFIG.view.height);
+const renderer = createRenderer(canvas, {
+  ideal: CONFIG.vistaIdeal, minimo: CONFIG.view, anchoMaximo: CONFIG.vistaAnchoMaximo,
+});
+activarPantallaCompleta();
 const input = createInput(canvas);
 const bus = createBus();
 const rng = createRng();
@@ -68,7 +72,12 @@ const loop = createLoop(
     scenes.update(dt);
     input.endFrame();
   },
-  () => scenes.render(renderer)
+  () => {
+    // Si la ventana cambió de tamaño, el canvas se acomoda ANTES de dibujar
+    // (ver `fitToScreen` en engine/renderer.js). Si no cambió, no hace nada.
+    renderer.fitToScreen();
+    scenes.render(renderer);
+  }
 );
 
 loop.start();

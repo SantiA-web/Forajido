@@ -362,6 +362,16 @@ export function createCampScene(services) {
   function render(r) {
     const dia = gameState.esDeDia;
     r.clear(dia ? colors.campDesiertoDia : colors.campNoche);
+    /**
+     * EL CLARO VA CENTRADO EN LA PANTALLA DE HOY (ver `centro` en
+     * engine/renderer.js): el campamento está armado para `CONFIG.view`, y lo
+     * que sobra alrededor es desierto —las matas lo cubren entero—, así que en
+     * un monitor más grande se ve más noche o más campo, nunca un borde.
+     */
+    const o = r.centro;
+    if (dia) dibujarMatas(r, o);
+    r.ctx.save();
+    r.ctx.translate(o.x, o.y);
     dibujarSuelo(r, dia);
     if (dia) dibujarSombras(r);
     dibujarCartel(r);
@@ -370,6 +380,7 @@ export function createCampScene(services) {
     dibujarPosteYCaballo(r);
     dibujarFogata(r, dia);
     dibujarJugador(r);
+    r.ctx.restore();
     dibujarInterfaz(r);
     // Encima de todo, pero sin tapar el campamento: seguís parado al lado de
     // tu fogata mientras elegís.
@@ -419,45 +430,6 @@ export function createCampScene(services) {
       }
     }
 
-    /**
-     * Y AFUERA DEL CLARO, DESIERTO — no un vacío.
-     *
-     * De día el fondo era un relleno liso, así que el campamento se leía como
-     * un disco marrón apoyado sobre un campo marrón, sin nada que dijera que
-     * eso de alrededor es un lugar. Con matorrales y piedras el claro pasa a
-     * estar EN algo.
-     *
-     * Los verdes son los mismos del costado de la vía en el galope: es el
-     * mismo desierto, así que tiene que tener la misma vegetación. Y son los
-     * únicos que no son marrones en toda la escena, que es justamente lo que
-     * hace que los ocres se lean como ocres.
-     *
-     * Sólo de día: de noche el sentido del fondo negro es que la luz se
-     * termina, y sembrarlo de matas contaría lo contrario.
-     */
-    if (dia) {
-      r.ctx.globalAlpha = 0.75;
-      for (let i = 0; i < 130; i++) {
-        /**
-         * 🐛 Primero era `(i * 97 + 23) % ancho` y `(i * 53 + 31) % alto`, y
-         * las matas salieron en DIAGONALES perfectas: las dos cuentas son
-         * lineales en `i`, así que los puntos marchan en fila como un ejército.
-         * Se vio a la primera foto. Hace falta un revoltijo de verdad, no dos
-         * progresiones.
-         */
-        const px = revolver(i) % r.width;
-        const py = revolver(i + 977) % r.height;
-        // El claro y su borde quedan libres: ahí ya hay tierra pisada.
-        if (Math.hypot(px - c.x, py - c.y) < CAMPAMENTO.radio + 16) continue;
-        if (i % 3 === 0) {
-          r.rect(px, py, 3, 2, i % 2 ? '#4d5c34' : '#3d4a2a');   // mata
-        } else {
-          r.rect(px, py, 2, 1, colors.campBordeDia);              // piedra
-        }
-      }
-      r.ctx.globalAlpha = 1;
-    }
-
     // Unas piedritas para que el claro no sea un disco liso.
     r.ctx.globalAlpha = dia ? 0.35 : 0.5;
     for (let i = 0; i < 14; i++) {
@@ -465,6 +437,51 @@ export function createCampScene(services) {
       const d = 18 + ((i * 37) % Math.floor(CAMPAMENTO.radio - 20));
       r.rect(c.x + Math.cos(a) * d, c.y + Math.sin(a) * d, 2, 1,
         dia ? colors.campBordeDia : colors.campSueloLejos);
+    }
+    r.ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Y AFUERA DEL CLARO, DESIERTO — no un vacío.
+   *
+   * De día el fondo era un relleno liso, así que el campamento se leía como
+   * un disco marrón apoyado sobre un campo marrón, sin nada que dijera que
+   * eso de alrededor es un lugar. Con matorrales y piedras el claro pasa a
+   * estar EN algo.
+   *
+   * Los verdes son los mismos del costado de la vía en el galope: es el
+   * mismo desierto, así que tiene que tener la misma vegetación. Y son los
+   * únicos que no son marrones en toda la escena, que es justamente lo que
+   * hace que los ocres se lean como ocres.
+   *
+   * Sólo de día: de noche el sentido del fondo negro es que la luz se
+   * termina, y sembrarlo de matas contaría lo contrario.
+   *
+   * VA EN COORDENADAS DE PANTALLA, antes del corrimiento del claro: tiene que
+   * cubrir la pantalla entera, sea del tamaño que sea. La cantidad crece con
+   * la superficie (130 en la de 420×236) para que la densidad no cambie.
+   */
+  function dibujarMatas(r, o) {
+    const c = CAMPAMENTO.centro;
+    const cantidad = Math.round(130 * (r.width * r.height) / (CONFIG.view.width * CONFIG.view.height));
+    r.ctx.globalAlpha = 0.75;
+    for (let i = 0; i < cantidad; i++) {
+      /**
+       * 🐛 Primero era `(i * 97 + 23) % ancho` y `(i * 53 + 31) % alto`, y
+       * las matas salieron en DIAGONALES perfectas: las dos cuentas son
+       * lineales en `i`, así que los puntos marchan en fila como un ejército.
+       * Se vio a la primera foto. Hace falta un revoltijo de verdad, no dos
+       * progresiones.
+       */
+      const px = revolver(i) % r.width;
+      const py = revolver(i + 977) % r.height;
+      // El claro y su borde quedan libres: ahí ya hay tierra pisada.
+      if (Math.hypot(px - o.x - c.x, py - o.y - c.y) < CAMPAMENTO.radio + 16) continue;
+      if (i % 3 === 0) {
+        r.rect(px, py, 3, 2, i % 2 ? '#4d5c34' : '#3d4a2a');   // mata
+      } else {
+        r.rect(px, py, 2, 1, colors.campBordeDia);              // piedra
+      }
     }
     r.ctx.globalAlpha = 1;
   }
@@ -629,11 +646,13 @@ export function createCampScene(services) {
         : o.id === 'carpa'
           ? (gameState.esDeDia ? T.camp.prompts.carpaDia : T.camp.prompts.carpaNoche)
           : T.camp.prompts[o.id];
-      r.text(texto, x, y - 16, colors.doorGlow);
+      // Sobre tu cabeza, así que corrido igual que el claro (ver `render`).
+      const c = r.centro;
+      r.text(texto, x + c.x, y + c.y - 16, colors.doorGlow);
       // El caballo es el único con dos verbos, así que lleva dos renglones.
       // El de salir del campamento va en otro color: no es una acción más de
       // las de acá, es la que te lleva a otro lado.
-      if (o.id === 'poste') r.text(T.camp.prompts.posteF, x, y - 26, colors.bagLoot);
+      if (o.id === 'poste') r.text(T.camp.prompts.posteF, x + c.x, y + c.y - 26, colors.bagLoot);
     }
 
     if (mensaje) r.text(mensaje.texto, r.width / 2, r.height - 30, colors.text);

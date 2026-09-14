@@ -21,9 +21,31 @@ export const CONFIG = {
    * su tamaño en píxeles y sólo cambia dónde están. El asalto y el galope ya
    * usaban el tamaño de pantalla y se acomodan solos.
    */
+  /**
+   * 🔺 Y DESPUÉS LA PANTALLA DEJÓ DE TENER UN TAMAÑO FIJO *(Santi: "yo quiero
+   * que quede como un juego normal de steam")*: ver engine/renderer.js.
+   *
+   * `view` sigue existiendo, pero ahora es el **mínimo** y el tamaño para el
+   * que están ARMADAS las escenas fijas (campamento, mapa, interiores, tienda):
+   * se dibujan centradas y su fondo llena lo que sobra. La pantalla de verdad
+   * es `renderer.width`/`renderer.height`, y se lee en vivo.
+   */
   view: { width: 420, height: 236 },
   /** Para lo que se armó para la pantalla vieja: cuánto se estira en cada eje. */
   vistaVieja: { width: 384, height: 216 },
+
+  /**
+   * EL ALTO QUE SE BUSCA. Se elige el múltiplo entero que más se le acerca, y
+   * el ancho sale de la ventana. 270 porque es el que entra JUSTO en 1920×1080
+   * (×4) y en 3840×2160 (×8), los dos monitores más comunes.
+   */
+  vistaIdeal: { width: 480, height: 270 },
+  /**
+   * Cuántas veces el alto puede medir el ancho (2.4 = 21:9). En un monitor más
+   * ancho que eso quedan franjas a los costados: mostrar medio desierto de más
+   * cambia el juego (ves a los guardias de dos vagones), no sólo el dibujo.
+   */
+  vistaAnchoMaximo: 2.4,
 
   tileSize: 16,
 

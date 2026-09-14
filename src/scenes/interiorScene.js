@@ -292,6 +292,15 @@ export function createInteriorScene(services) {
   // ------------------------------------------------------------------ dibujo
 
   function render(r) {
+    r.clear('#120d0b');
+    /**
+     * EL CUARTO VA CENTRADO: está armado para `CONFIG.view` (ver
+     * data/interiors.js), y en una pantalla más grande lo que sobra alrededor
+     * es la oscuridad de siempre, no un cuarto estirado.
+     */
+    const c = r.centro;
+    r.ctx.save();
+    r.ctx.translate(c.x, c.y);
     dibujarSala(r);
     for (const m of def.muebles) dibujarMueble(r, m);
     // `sentado` sólo cambia el dibujo (una postura distinta): la detección es
@@ -301,6 +310,7 @@ export function createInteriorScene(services) {
       if (p.sentado) dibujarSentado(r, p); else dibujarPersona(r, p);
     }
     dibujarJugador(r);
+    r.ctx.restore();
 
     // La noche, suave: acá adentro hay lámparas.
     if (!gameState.esDeDia) {
@@ -321,7 +331,6 @@ export function createInteriorScene(services) {
   function dibujarSala(r) {
     const s = def.sala;
     const paredY = s.y - PARED_ALTO;
-    r.clear('#120d0b');
 
     // --- La pared del fondo, en tablas verticales ---
     r.rect(s.x - 8, paredY, s.w + 16, PARED_ALTO, colors.intPared);
@@ -655,9 +664,11 @@ export function createInteriorScene(services) {
       return;
     }
 
+    // Sobre tu cabeza: corrido igual que el cuarto (ver `render`).
     const p = puntoCerca();
-    if (p) r.text(T.interior.prompts[p.id], x, y - 16, colors.doorGlow);
-    else if (enLaPuerta()) r.text(T.interior.salir, x, y - 16, colors.bagLoot);
+    const c = r.centro;
+    if (p) r.text(T.interior.prompts[p.id], x + c.x, y + c.y - 16, colors.doorGlow);
+    else if (enLaPuerta()) r.text(T.interior.salir, x + c.x, y + c.y - 16, colors.bagLoot);
 
     if (mensaje) {
       // Apiladas hacia arriba: la ultima linea queda siempre a la misma altura.

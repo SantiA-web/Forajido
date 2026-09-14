@@ -27,9 +27,11 @@ a git (es un resultado, no código).
 
 ## La vista: tres cuartos (en construcción)
 
-El juego se dibuja a **420×236 píxeles** y se agranda en múltiplos enteros para
-que se vea nítido: en un monitor de 1920×1080 queda a ×4 (1680×944) en una
-pestaña, y llena la pantalla con F11.
+El juego **llena la pantalla en cualquier monitor**, sin bordes y sin perder
+nitidez: se agranda siempre en múltiplos enteros, y lo que cambia de un monitor
+a otro es cuánto mundo se ve (480×270 en 1920×1080, 456×256 en 1366×768,
+512×288 en 2560×1440). **[ALT+ENTER]** pone la pantalla completa desde el juego;
+F11 también sirve.
 
 Se ve desde arriba en **tres cuartos**, como Stardew Valley o los Zelda
 de SNES: se ve el frente de las cosas, y lo que está más adelante tapa a lo de

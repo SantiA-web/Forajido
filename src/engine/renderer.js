@@ -1,9 +1,30 @@
 /**
  * Renderer: el canvas y sus utilidades de dibujo.
  *
- * El canvas tiene una resolución interna chica (384x216) y se estira por CSS
- * en múltiplos ENTEROS. Así cada píxel del juego es un cuadrado perfecto en
- * pantalla: eso es lo que hace que el pixel art se vea nítido.
+ * El canvas tiene una resolución interna chica y se estira por CSS en múltiplos
+ * ENTEROS. Así cada píxel del juego es un cuadrado perfecto en pantalla: eso es
+ * lo que hace que el pixel art se vea nítido.
+ *
+ * 🔺 EL TAMAÑO INTERNO YA NO ES FIJO: SALE DE LA PANTALLA. *(Santi: "yo quiero
+ * que quede como un juego normal de steam")*.
+ *
+ * Con un tamaño fijo, el múltiplo entero casi nunca llena la ventana y sobra un
+ * borde negro (420×236 ×4 = 1680×944 en un monitor de 1920×1080). Ahora se hace
+ * al revés, como los juegos de pixel art de Steam: primero se elige el tamaño
+ * del píxel —el múltiplo que deja unos `CONFIG.vistaIdeal.height` de alto— y
+ * después el ancho y el alto internos son LO QUE ENTRE en la ventana con ese
+ * píxel. Siempre llena, siempre nítido; lo que cambia de un monitor a otro es
+ * cuánto mundo se ve:
+ *
+ *   1920×1080  ×4 → 480×270     1366×768  ×3 → 456×256
+ *   2560×1440  ×5 → 512×288     3840×2160 ×8 → 480×270
+ *
+ * Se mide en píxeles FÍSICOS (`devicePixelRatio`): con Windows al 125% el
+ * navegador dice que la ventana mide 1536 de ancho, pero la pantalla tiene
+ * 1920, y el múltiplo entero tiene que serlo de los píxeles de verdad.
+ *
+ * `width` y `height` se leen en vivo (son getters): cambian si cambia la
+ * ventana, y quien los necesite tiene que leerlos cada vez, no guardarlos.
  */
 
 /**
@@ -52,31 +73,85 @@ function hexARgb(hex) {
 
 const mezcla = (a, b, t) => Math.round(a + (b - a) * t);
 
-export function createRenderer(canvas, width, height) {
-  const ctx = canvas.getContext('2d');
+/**
+ * El tamaño interno para una ventana de `pw`×`ph` píxeles físicos.
+ *
+ * @param ideal   el alto que se busca (el múltiplo que más se le acerca)
+ * @param minimo  lo mínimo que tiene que entrar: las escenas fijas (campamento,
+ *                mapa, interiores, tienda) están armadas para este tamaño, así
+ *                que se baja el múltiplo antes que cortarlas.
+ * @param anchoMaximo  cuántas veces el alto puede medir el ancho. En un monitor
+ *                ultra ancho, más allá de esto se deja una franja a los
+ *                costados en vez de mostrar medio desierto de más.
+ */
+export function medirVista(pw, ph, ideal, minimo, anchoMaximo) {
+  let escala = Math.max(1, Math.round(ph / ideal.height));
+  while (escala > 1 && (pw / escala < minimo.width || ph / escala < minimo.height)) escala--;
+  // `ceil`: sobra menos de un píxel del juego, que queda fuera de la ventana
+  // (el body no scrollea). Con `floor` faltaría, y eso es una rayita de borde.
+  const height = Math.ceil(ph / escala);
+  const width = Math.min(Math.ceil(pw / escala), Math.round(height * anchoMaximo));
+  return { width, height, escala };
+}
 
-  canvas.width = width;
-  canvas.height = height;
-  ctx.imageSmoothingEnabled = false;
+export function createRenderer(canvas, vista) {
+  const ctx = canvas.getContext('2d');
+  let width = 0;
+  let height = 0;
+  let medido = '';
 
   function fitToScreen() {
-    const scale = Math.max(
-      1,
-      Math.floor(Math.min(window.innerWidth / width, window.innerHeight / height))
+    const dpr = window.devicePixelRatio || 1;
+    // Se llama en cada cuadro (ver main.js): si la ventana no cambió, no hace nada.
+    const clave = `${window.innerWidth}x${window.innerHeight}@${dpr}`;
+    if (clave === medido) return;
+    medido = clave;
+    const m = medirVista(
+      Math.round(window.innerWidth * dpr), Math.round(window.innerHeight * dpr),
+      vista.ideal, vista.minimo, vista.anchoMaximo
     );
-    canvas.style.width = width * scale + 'px';
-    canvas.style.height = height * scale + 'px';
+    if (m.width !== width || m.height !== height) {
+      width = m.width;
+      height = m.height;
+      // Cambiar el tamaño del canvas le borra TODO el estado al contexto,
+      // incluido el suavizado: hay que volver a apagarlo cada vez.
+      canvas.width = width;
+      canvas.height = height;
+      ctx.imageSmoothingEnabled = false;
+    }
+    canvas.style.width = (width * m.escala) / dpr + 'px';
+    canvas.style.height = (height * m.escala) / dpr + 'px';
   }
 
+  /**
+   * `resize` no alcanza, y se midió: al cambiar el tamaño desde las
+   * herramientas del navegador no se disparó —ni él ni un ResizeObserver— y el
+   * juego quedó en 456×256 dentro de una ventana de 1600×900. Por eso main.js
+   * además lo llama en cada cuadro; con la comparación de arriba, cuesta leer
+   * dos números. El evento queda para que reaccione aunque el bucle esté parado.
+   */
   window.addEventListener('resize', fitToScreen);
   fitToScreen();
 
   return {
     ctx,
     canvas,
-    width,
-    height,
+    get width() { return width; },
+    get height() { return height; },
     fitToScreen,
+
+    /**
+     * DÓNDE VA UNA ESCENA ARMADA PARA `CONFIG.view`, centrada en la pantalla de
+     * hoy. El campamento, el mapa, los interiores y la tienda están pensados
+     * para ese tamaño; se dibujan corridos por esto y su fondo llena lo que
+     * sobra alrededor. Siempre enteros, o los píxeles quedarían a medias.
+     */
+    get centro() {
+      return {
+        x: Math.floor((width - vista.minimo.width) / 2),
+        y: Math.floor((height - vista.minimo.height) / 2),
+      };
+    },
 
     clear(color) {
       ctx.fillStyle = color;

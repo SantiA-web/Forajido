@@ -5,7 +5,12 @@
  * hacen que disparar se sienta bien. Cuesta 15 líneas.
  */
 
-export function createCamera(viewWidth, viewHeight) {
+/**
+ * @param vista  algo con `width` y `height` (el renderer). Se leen en cada
+ *   `follow`, no una vez al crearla: el tamaño de la pantalla cambia si cambia
+ *   la ventana (ver engine/renderer.js).
+ */
+export function createCamera(vista) {
   return {
     x: 0,
     y: 0,
@@ -16,6 +21,8 @@ export function createCamera(viewWidth, viewHeight) {
 
     /** Sigue a un punto con suavizado, sin salirse de los límites del mapa. */
     follow(targetX, targetY, bounds, dt, smoothing = 8) {
+      const viewWidth = vista.width;
+      const viewHeight = vista.height;
       let desiredX = targetX - viewWidth / 2;
       let desiredY = targetY - viewHeight / 2;
 

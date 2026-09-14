@@ -65,7 +65,7 @@ import { applyRaidResult, gameState } from '../state/gameState.js';
 export function createRaidScene(services) {
   const { renderer, input, bus, rng, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
-  const camera = createCamera(renderer.width, renderer.height);
+  const camera = createCamera(renderer);
 
   let train, player, enemies, passengers, loot, map, doors;
   let bullets, explosives, riders, particles, floaters;
@@ -3066,9 +3066,9 @@ export function createRaidScene(services) {
    * LA GEOMETRÍA DE LA GRILLA EN PANTALLA, en un solo lugar.
    *
    * La usan el dibujo Y el mouse, y tienen que coincidir exactamente o
-   * agarrarías un bulto y se te movería otro. Sale de `CONFIG.view` y no del
-   * renderer porque hace falta durante el `update`, donde no hay `r`: son el
-   * mismo número (ver `createRenderer` en main.js).
+   * agarrarías un bulto y se te movería otro. Sale de `renderer` (el de
+   * `services`) y no de `r` porque hace falta durante el `update`, donde no hay
+   * `r`. Es el tamaño de HOY: cambia con la ventana (ver engine/renderer.js).
    */
   const MOCHILA_LADO = 14;
   const MOCHILA_SEP = 2;
@@ -3080,8 +3080,8 @@ export function createRaidScene(services) {
     const altoGrilla = m.filas * lado + (m.filas - 1) * sep;
     return {
       lado, sep, cols: m.columnas, filas: m.filas, anchoGrilla, altoGrilla,
-      x0: Math.round((CONFIG.view.width - anchoGrilla) / 2),
-      y0: Math.round((CONFIG.view.height - altoGrilla) / 2) - 4,
+      x0: Math.round((renderer.width - anchoGrilla) / 2),
+      y0: Math.round((renderer.height - altoGrilla) / 2) - 4,
     };
   }
 

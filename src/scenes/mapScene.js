@@ -255,11 +255,13 @@ export function createMapScene(services) {
 
       // Las manchas del papel se sortean UNA vez y quedan fijas: si cambiaran
       // cada cuadro parecerían ruido de televisión, no un papel sucio.
+      // Guardadas como FRACCIÓN del papel y no en píxeles: el papel mide lo que
+      // mida la pantalla (ver `dibujarPapel`), y cambia si cambia la ventana.
       manchas = [];
       for (let i = 0; i < 26; i++) {
         manchas.push({
-          x: 20 + ((i * 97) % (CONFIG.view.width - 40)),
-          y: 16 + ((i * 61) % (CONFIG.view.height - 32)),
+          fx: ((i * 97) % 380) / 380,
+          fy: ((i * 61) % 200) / 200,
           r: 3 + ((i * 7) % 9),
           a: 0.05 + ((i % 4) * 0.02),
         });
@@ -448,7 +450,10 @@ export function createMapScene(services) {
     for (const r of rutas) avanzarRuta(r, dt);
 
     const anterior = encima;
-    encima = rutaBajoElCursor(input.mouse.x, input.mouse.y);
+    // La red va centrada en la pantalla (ver `render`): el cursor se lleva a
+    // las mismas coordenadas antes de buscar la vía.
+    const c = services.renderer.centro;
+    encima = rutaBajoElCursor(input.mouse.x - c.x, input.mouse.y - c.y);
     if (encima && encima !== anterior) audio.play('cover');
 
     // Clic en una vía con tren: salís a alcanzarlo.
@@ -489,7 +494,16 @@ export function createMapScene(services) {
   // ------------------------------------------------------------------ dibujo
 
   function render(r) {
+    /**
+     * EL PAPEL LLENA LA PANTALLA; LA RED VA CENTRADA. Las vías y los pueblos
+     * están trazados para `CONFIG.view` (ver data/region.js) y así se quedan:
+     * en una pantalla más grande el papel tiene más margen, no un mapa
+     * deformado. La rosa y el cartucho siguen pegados a sus esquinas.
+     */
     dibujarPapel(r);
+    const c = r.centro;
+    r.ctx.save();
+    r.ctx.translate(c.x, c.y);
     dibujarTerreno(r);
     // Las vías van ANTES que los lugares y la vía señalada va última, para que
     // en un cruce se vea claro cuál de las dos estás mirando.
@@ -499,6 +513,7 @@ export function createMapScene(services) {
     if (encima) dibujarParadas(r, encima);
     dibujarCampamento(r);
     for (const ruta of rutas) if (ruta.tren) dibujarTren(r, ruta);
+    r.ctx.restore();
     dibujarRosaDeLosVientos(r);
     dibujarCartucho(r);
   }
@@ -520,7 +535,7 @@ export function createMapScene(services) {
       r.ctx.globalAlpha = m.a;
       r.ctx.fillStyle = colors.mapaMancha;
       r.ctx.beginPath();
-      r.ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+      r.ctx.arc(20 + m.fx * (r.width - 40), 16 + m.fy * (r.height - 32), m.r, 0, Math.PI * 2);
       r.ctx.fill();
       r.ctx.restore();
     }
@@ -533,8 +548,9 @@ export function createMapScene(services) {
     r.rect(r.width - 5, 0, 5, r.height, colors.mapaMancha);
     r.ctx.globalAlpha = 1;
 
-    // El marco doble, como cualquier mapa impreso de la época.
-    const m = REGION.marco;
+    // El marco doble, como cualquier mapa impreso de la época. Toma el papel
+    // entero con el mismo margen de siempre, mida lo que mida la pantalla.
+    const m = { x: REGION.marco.x, y: REGION.marco.y, w: r.width - 2 * REGION.marco.x, h: r.height - 2 * REGION.marco.y };
     marco(r, m.x, m.y, m.w, m.h, colors.mapaBorde);
     marco(r, m.x + 3, m.y + 3, m.w - 6, m.h - 6, colors.mapaTintaSuave);
 

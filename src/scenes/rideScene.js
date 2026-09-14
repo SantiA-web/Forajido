@@ -193,9 +193,10 @@ export function createRideScene(services) {
        * tener que galopar hasta ahí. Sólo para sacar fotos de un lugar exacto
        * (al lado de un vagón, de la locomotora); no lo usa el juego.
        */
-      ponerEn(nx, ny) {
+      ponerEn(nx, ny, nuevoRumbo) {
         x = nx;
         if (ny !== undefined) y = ny;
+        if (nuevoRumbo !== undefined) rumbo = nuevoRumbo;
         alcanzada = x >= plataformas[1];
       },
     };
@@ -1463,44 +1464,62 @@ export function createRideScene(services) {
     // Parpadea mientras sos invulnerable, igual que en el asalto.
     if (invuln > 0 && Math.floor(invuln * 20) % 2 === 0) return;
 
-    // La sombra NO rota: está en el suelo, y el suelo no se inclina.
+    // La sombra se estira en la dirección en que corre: está en el suelo, así
+    // que no se inclina con el animal, pero sí sigue su rumbo.
+    r.ctx.save();
     r.ctx.globalAlpha = 0.25;
-    r.box(x, y + 7, 10, 2, '#000');
-    r.ctx.globalAlpha = 1;
+    r.ctx.fillStyle = '#000';
+    r.ctx.beginPath();
+    r.ctx.ellipse(Math.round(x), Math.round(y + 7), 11, 2.5, rumbo * 0.5, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.ctx.restore();
 
     /**
      * EL CABALLO APUNTA A DONDE VA — pedido de Santi, y es lo que hace que la
      * diagonal se lea como una diagonal y no como "el mismo caballo pero más
      * abajo".
      *
-     * Se rota todo el conjunto (animal + jinete + sombrero) alrededor del punto
-     * del caballo, así que la cabeza, la crin y el sombrero quedan orientados
-     * solos: no hay que dibujar una silueta por ángulo. `rumbo` viene con la
-     * inercia de las riendas ya aplicada (ver `actualizarRumbo`), así que el
-     * giro que se ve en pantalla ES el retraso del animal, no el de tu tecla.
+     * 🔁 PRIMERO SE ROTABA EL DIBUJO DE PERFIL, y no alcanzaba *(Santi: "al
+     * mover al caballo con las teclas W o S, el caballo no parece que se dirige
+     * hacia las vías o hacia abajo [...] es como que no gira la dirección en la
+     * que corre, sino como que se mueve arriba o abajo")*. Un perfil inclinado
+     * se lee como un caballo subiendo una loma; y como la cámara sigue al tren,
+     * en pantalla casi no avanza a la derecha, así que parecía deslizarse.
+     *
+     * AHORA CAMBIA DE POSE (`poseDelCaballo`, cinco, elegidas por Santi sobre
+     * tres): hacia las vías se lo ve alejarse, con más lomo y la cabeza lejos;
+     * hacia abajo viene hacia la cámara, de frente. La rotación queda, más
+     * suave, para que el paso de una pose a otra no sea un salto. `rumbo` viene
+     * con la inercia de las riendas ya aplicada (ver `actualizarRumbo`), así
+     * que el giro que se ve ES el retraso del animal, no el de tu tecla.
      */
-    // De costado se rota sobre los cascos, no sobre el lomo: el animal se
-    // inclina para subir o bajar sin despegarse del suelo.
+    const pose = poseDelCaballo();
+    // Se inclina sobre los cascos, y POCO (un 30% del rumbo): el giro lo cuenta
+    // la pose; la inclinación sólo suaviza el cambio entre una y otra.
     r.ctx.save();
     r.ctx.translate(x, y + 6);
-    r.ctx.rotate(rumbo);
+    r.ctx.rotate(rumbo * 0.3);
     r.ctx.translate(-x, -(y + 6));
 
-    dibujarAnimal(r, x, y, paso, trote, esfuerzo);
-    dibujarJinete(r, x - 1, y - 6 + trote);
+    dibujarAnimal(r, x, y, paso, trote, esfuerzo, pose);
+    dibujarJinete(r, x - 1, y - 6 + trote, pose);
 
     r.ctx.restore();
 
     // También por velocidad absoluta: el polvo lo levanta el casco contra el
     // suelo, no la diferencia con el tren. Con `vel` a secas, el Mustang al
     // trote (que empata con el tren, vel = 0) galopaba sin levantar nada.
+    // Y la estela sale para atrás DEL RUMBO, no para atrás de la pantalla:
+    // yendo hacia las vías el polvo queda abajo a la izquierda, y al revés.
     const galopando = velAbsoluta > 40;
     if (galopando) {
+      const ux = Math.cos(rumbo);
+      const uy = Math.sin(rumbo);
       for (let i = 0; i < 10; i++) {
         const d = (scroll * 260 + i * 9) % 76;
         const t = 1 - d / 76;
         r.ctx.globalAlpha = t * 0.55;
-        r.rect(x - 12 - d, y + 3 - (i % 3) * 3 + Math.sin(d * 0.3) * 2, 3,
+        r.rect(x - (12 + d) * ux, y + 3 - (12 + d) * uy - (i % 3) * 3 + Math.sin(d * 0.3) * 2, 3,
           1 + Math.round(t * 2), '#6b5236');
         r.ctx.globalAlpha = 1;
       }
@@ -1515,46 +1534,116 @@ export function createRideScene(services) {
   }
 
   /**
-   * EL CABALLO EN TRES CUARTOS, mirando hacia adelante (a la derecha, como el
-   * tren). Los cascos quedan en `y + 7`, donde va la sombra; el lomo en `y - 6`.
+   * QUÉ POSE LE TOCA AL CABALLO según su rumbo: de -2 (de lleno hacia las vías)
+   * a 2 (de lleno hacia abajo), y 0 de perfil. El rumbo máximo es ±0,73 rad
+   * (`actualizarRumbo`), así que los cortes en 0,15 y 0,45 reparten el giro en
+   * tres tramos parecidos. Como el rumbo PERSIGUE a la tecla, las poses pasan
+   * de a una: nunca salta de perfil a la de lleno.
+   */
+  function poseDelCaballo() {
+    const a = Math.abs(rumbo);
+    if (a < 0.15) return 0;
+    return Math.sign(rumbo) * (a < 0.45 ? 1 : 2);
+  }
+
+  /**
+   * EL CABALLO EN TRES CUARTOS. Los cascos quedan en `y + 7`, donde va la
+   * sombra; el lomo en `y - 6`.
    *
-   * *(Santi: "se debería ver parte del lomo del caballo")*. De perfil puro el
-   * caballo era una silueta; con la cámara alta se le ve la franja del lomo con
-   * luz, la manta y la montura encima, y la crin corriendo por arriba del
-   * cuello.
+   * *(Santi: "se debería ver parte del lomo del caballo")*: la franja del lomo
+   * con luz, la manta y la montura encima, y la crin por arriba del cuello.
+   *
+   * LAS CINCO POSES (`pose`, ver `poseDelCaballo`) salen de cuatro medidas:
+   *  - el LARGO del cuerpo se acorta al girar (20, 17, 14): el animal ya no se
+   *    ve de costado sino en diagonal;
+   *  - el cuerpo va en DOS MITADES a distinta altura: hacia las vías la de
+   *    adelante queda más arriba que el anca, hacia abajo al revés. Eso es la
+   *    diagonal dibujada, no una rotación;
+   *  - el LOMO se ve más alejándose (se lo mira más de arriba) y menos viniendo;
+   *  - la CABEZA: alejándose, chica y alta, con las orejas de atrás; viniendo,
+   *    grande, baja y de frente, con el hocico y las dos orejas.
    *
    * Las patas de allá van más oscuras y se dibujan antes que el cuerpo; las de
    * acá, después: dos planos, y el ojo completa el animal entre los dos.
    */
-  function dibujarAnimal(r, x, y, paso, trote, esfuerzo) {
+  function dibujarAnimal(r, x, y, paso, trote, esfuerzo, pose = 0) {
     const lomo = y - 6 + trote;
     const luz = escalarColor(colors.horse, 1.3);
-    const pata = (px, fase, color) => {
-      const adelante = Math.round(Math.sin(paso + fase) * (0.5 + esfuerzo * 2.5));
+    const giro = Math.abs(pose);
+    const largo = 20 - giro * 3;
+    const atras = Math.round(x - largo / 2);
+    const medio = Math.round(x);
+    const frente = Math.round(x + largo / 2);
+    const fy = Math.round(pose * 1.5);      // la mitad de adelante
+    const ry = -fy;                          // el anca, al revés
+    const lomoAlto = 3 - pose;               // cuánto lomo se ve: 5 … 1
+
+    const pata = (px, oy, fase, color) => {
+      const adelante = Math.round(Math.sin(paso + fase) * (0.5 + esfuerzo * 2.5) * (1 - giro * 0.2));
       const recoge = Math.round(Math.max(0, -Math.cos(paso + fase)) * 2 * esfuerzo);
-      r.rect(px + adelante, lomo + 6, 2, 7 - recoge, color);
+      r.rect(px + adelante, lomo + oy + 6, 2, 7 - recoge, color);
     };
-    pata(x - 7, 0, colors.horseDark);
-    pata(x + 6, Math.PI * 0.5, colors.horseDark);
+    pata(atras + 3, ry, 0, colors.horseDark);
+    pata(frente - 4, fy, Math.PI * 0.5, colors.horseDark);
 
-    r.rect(x - 13, lomo, 3, 2, colors.horseMane);                            // la cola
-    r.rect(x - 15, lomo + 1, 3, 4 + Math.round(esfuerzo * 2), colors.horseMane);
-    r.rect(x - 10, lomo, 20, 7, colors.horse);                               // el costado
-    r.rect(x - 10, lomo + 5, 20, 2, colors.horseDark);
-    r.rect(x - 9, lomo - 3, 18, 3, luz);                                     // el lomo, de arriba
-    r.rect(x + 6, lomo - 7, 5, 9, colors.horse);                             // el cuello
-    r.rect(x + 7, lomo - 8, 3, 2, luz);
-    r.rect(x + 9, lomo - 10, 7, 5, colors.horse);                            // la cabeza
-    r.rect(x + 10, lomo - 11, 5, 1, luz);
-    r.rect(x + 15, lomo - 8, 2, 3, colors.horseDark);                        // el hocico
-    r.rect(x + 9, lomo - 12, 2, 2, colors.horse);                            // la oreja
-    r.rect(x + 5, lomo - 9, 3, 7, colors.horseMane);                         // la crin
+    // La cola. Alejándose, el anca da a la cámara y la cola cuelga a la vista.
+    if (pose < 0) {
+      r.rect(atras - 2, lomo + ry + 1, 3, 6 + Math.round(esfuerzo * 2), colors.horseMane);
+    } else {
+      r.rect(atras - 3, lomo + ry, 3, 2, colors.horseMane);
+      r.rect(atras - 5, lomo + ry + 1, 3, 4 + Math.round(esfuerzo * 2), colors.horseMane);
+    }
 
-    r.rect(x - 5, lomo - 3, 9, 6, '#7a2f26');                                // la manta
-    r.rect(x - 4, lomo - 3, 7, 3, '#3a2418');                                // la montura
+    // El cuerpo en dos mitades, cada una a su altura, y el lomo encima.
+    r.rect(atras, lomo + ry, medio - atras, 7, colors.horse);
+    r.rect(medio, lomo + fy, frente - medio, 7, colors.horse);
+    r.rect(atras, lomo + ry + 5, medio - atras, 2, colors.horseDark);
+    r.rect(medio, lomo + fy + 5, frente - medio, 2, colors.horseDark);
+    if (lomoAlto > 0) {
+      r.rect(atras + 1, lomo + ry - lomoAlto, medio - atras, lomoAlto, luz);
+      r.rect(medio, lomo + fy - lomoAlto, frente - medio - 1, lomoAlto, luz);
+    }
 
-    pata(x - 9, Math.PI, colors.horse);
-    pata(x + 4, Math.PI * 1.5, colors.horse);
+    // El cuello y la cabeza.
+    const hy = lomo + fy;
+    if (pose < 0) {
+      /**
+       * 🐛 El cuello medía 9 − pose (hasta 11 px) y subía derecho: mirado de
+       * cerca el caballo era una llama. Un cuello que se aleja se ACORTA, no se
+       * estira; la distancia la cuenta la cabeza, que queda chica y un poco más
+       * alta.
+       */
+      const cabeza = hy - 9 + Math.round((pose + 1) / 2);
+      r.rect(frente - 4, hy - 6, 4, 7, colors.horse);
+      r.rect(frente - 3, cabeza, 5, 4, colors.horse);
+      r.rect(frente - 2, cabeza - 1, 3, 1, luz);
+      r.rect(frente - 3, cabeza - 2, 1, 2, colors.horse);                 // las orejas, de atrás
+      r.rect(frente, cabeza - 2, 1, 2, colors.horse);
+      r.rect(frente - 5, hy - 7, 2, 6, colors.horseMane);
+    } else if (pose > 0) {
+      r.rect(frente - 4, hy - 6 + pose, 5, 8, colors.horse);
+      r.rect(frente - 1, hy - 7 + pose * 2, 6, 7, colors.horse);
+      r.rect(frente, hy - 8 + pose * 2, 4, 1, luz);
+      r.rect(frente, hy - 1 + pose * 2, 4, 2, colors.horseDark);         // el hocico, de frente
+      r.rect(frente - 1, hy - 9 + pose * 2, 1, 2, colors.horse);         // las dos orejas
+      r.rect(frente + 4, hy - 9 + pose * 2, 1, 2, colors.horse);
+      r.rect(frente - 5, hy - 6 + pose, 2, 6, colors.horseMane);
+    } else {
+      r.rect(frente - 4, hy - 7, 5, 9, colors.horse);                     // el cuello
+      r.rect(frente - 3, hy - 8, 3, 2, luz);
+      r.rect(frente - 1, hy - 10, 7, 5, colors.horse);                    // la cabeza
+      r.rect(frente, hy - 11, 5, 1, luz);
+      r.rect(frente + 5, hy - 8, 2, 3, colors.horseDark);                 // el hocico
+      r.rect(frente - 1, hy - 12, 2, 2, colors.horse);                    // la oreja
+      r.rect(frente - 5, hy - 9, 3, 7, colors.horseMane);                 // la crin
+    }
+
+    // La manta y la montura, sobre el lomo.
+    r.rect(medio - 5, lomo - lomoAlto, 9, lomoAlto + 3, '#7a2f26');
+    r.rect(medio - 4, lomo - lomoAlto, 7, Math.max(2, lomoAlto), '#3a2418');
+
+    pata(atras + 1, ry, Math.PI, colors.horse);
+    pata(frente - 6, fy, Math.PI * 1.5, colors.horse);
   }
 
   /**
@@ -1563,17 +1652,32 @@ export function createRideScene(services) {
    * con la copa en el medio *(Santi: "y el ala del sombrero")*. Es lo que más
    * se lee del jinete de lejos.
    */
-  function dibujarJinete(r, x, asiento) {
+  function dibujarJinete(r, x, asiento, pose = 0) {
+    const chaleco = escalarColor(colors.playerHat, 1.6);
     r.rect(x - 1, asiento, 3, 5, colors.horseMane);                          // la bota
-    r.rect(x - 3, asiento - 8, 6, 8, colors.player);                         // la camisa
-    r.rect(x - 3, asiento - 4, 6, 4, escalarColor(colors.playerHat, 1.6));   // el chaleco
-    r.rect(x - 3, asiento - 9, 6, 2, escalarColor(colors.player, 1.1));      // los hombros
-    // El brazo adelante y las riendas: sin ellos el cuerpo era un bloque liso.
-    r.rect(x + 2, asiento - 6, 4, 2, escalarColor(colors.player, 0.82));
-    r.rect(x + 6, asiento - 5, 4, 1, colors.horseMane);
+    if (pose < 0) {
+      // Alejándose: se le ve la espalda del chaleco, y el brazo queda del otro lado.
+      r.rect(x - 3, asiento - 8, 6, 8, chaleco);
+      r.rect(x - 3, asiento - 9, 6, 2, colors.player);                       // el cuello de la camisa
+    } else {
+      r.rect(x - 3, asiento - 8, 6, 8, colors.player);                       // la camisa
+      if (pose > 0) {
+        // Viniendo: el chaleco abierto a los costados, con la camisa al medio.
+        r.rect(x - 3, asiento - 8, 2, 8, chaleco);
+        r.rect(x + 2, asiento - 8, 1, 8, chaleco);
+      } else {
+        r.rect(x - 3, asiento - 4, 6, 4, chaleco);
+      }
+      r.rect(x - 3, asiento - 9, 6, 2, escalarColor(colors.player, 1.1));    // los hombros
+      if (pose > 0) r.rect(x - 1, asiento - 9, 3, 2, '#b98a62');             // la cara, bajo el ala
+      // El brazo adelante y las riendas: sin ellos el cuerpo era un bloque liso.
+      r.rect(x + 2, asiento - 6, 4, 2, escalarColor(colors.player, 0.82));
+      r.rect(x + 6, asiento - 5 + pose, 4, 1, colors.horseMane);
+    }
+    // El ala: alejándose se la ve más de arriba (más abierta); viniendo, menos.
     r.ctx.fillStyle = colors.playerHat;
     r.ctx.beginPath();
-    r.ctx.ellipse(Math.round(x), Math.round(asiento - 11), 6, 2.5, 0, 0, Math.PI * 2);
+    r.ctx.ellipse(Math.round(x), Math.round(asiento - 11), 6, 2.5 - pose * 0.4, 0, 0, Math.PI * 2);
     r.ctx.fill();
     r.rect(x - 4, asiento - 12, 8, 1, escalarColor(colors.playerHat, 1.5));  // la luz del ala
     r.rect(x - 2, asiento - 15, 5, 4, colors.playerHat);                     // la copa

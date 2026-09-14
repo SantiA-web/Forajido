@@ -12115,6 +12115,39 @@ tiros se sortean en cada corrida; la lógica no se tocó).
 
 **⚠️ NO JUGADO.**
 
+**El caballo gira de verdad: cinco poses.**
+
+*(Santi: "al mover al caballo con las teclas W o S, el caballo no parece que se
+dirige hacia las vías o hacia abajo [...] es como que no gira la dirección en la
+que corre, sino como que se mueve arriba o abajo")*
+
+La causa eran dos cosas juntas: había UN dibujo de perfil que se inclinaba hasta
+42° (se leía como subir una loma), y la cámara sigue al tren, así que en
+pantalla el caballo casi no avanza a la derecha y parecía deslizarse.
+
+| Opción | Qué | |
+|---|---|---|
+| 3 poses (recomendada) | perfil y una diagonal para cada lado | |
+| **5 poses** | **suma una intermedia de cada lado** | **elegida** |
+| sin poses | sólo polvo y sombra en diagonal | |
+
+- `poseDelCaballo()` elige la pose por el rumbo: 0 hasta 0,15 rad, ±1 hasta
+  0,45 y ±2 más allá (el máximo es ±0,73). Como el rumbo persigue a la tecla
+  con la inercia de las riendas, las poses pasan de a una. Medido apretando W
+  desde parado: 0 → −0,19 → −0,33 → −0,46 → −0,57 en 40 cuadros.
+- El dibujo sale de cuatro medidas: el largo del cuerpo (20, 17, 14), el cuerpo
+  en dos mitades a distinta altura (la diagonal), cuánto lomo se ve (5 … 1) y la
+  cabeza (alejándose chica y alta con las orejas de atrás; viniendo grande, baja
+  y de frente). El jinete, de espaldas con el chaleco, de perfil, o de frente
+  con la cara bajo el ala; el ala se abre más cuanto más se aleja.
+- La inclinación quedó al 30% del rumbo, sólo para suavizar el cambio de pose.
+  La sombra se estira y el polvo sale para atrás del rumbo, no de la pantalla.
+- 🐛 En las poses hacia las vías el cuello subía derecho hasta 11 px y el
+  caballo se veía como una llama. Un cuello que se aleja se acorta: ahora mide 7.
+- `ponerEn(x, y, rumbo)` acepta el rumbo, para fotografiar cada pose.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

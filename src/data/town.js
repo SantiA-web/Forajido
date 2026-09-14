@@ -27,13 +27,19 @@
  *   sheriff   → tu recompensa, que YA se mueve de verdad (gameState.bounty)
  */
 
-export const PUEBLO = {
-  /** Más ancho que la pantalla (384): hay que caminarlo. */
-  ancho: 760,
-  alto: 216,
+import { CONFIG } from './config.js';
 
-  /** La línea por la que se camina. Las fachadas quedan arriba. */
-  calleY: 150,
+export const PUEBLO = {
+  /** Más ancho que la pantalla: hay que caminarlo. */
+  ancho: 760,
+  alto: CONFIG.view.height,
+
+  /**
+   * La línea por la que se camina. Las fachadas quedan arriba. Era 150 en la
+   * pantalla vieja (216 de alto); se estira en proporción a la de hoy, y lo que
+   * gana arriba es cielo.
+   */
+  calleY: Math.round(150 * CONFIG.view.height / CONFIG.vistaVieja.height),
   /** Cuánto te podés separar de esa línea hacia arriba y hacia abajo. */
   calleAncho: 26,
 

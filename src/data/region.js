@@ -45,10 +45,17 @@
  * mapa algo que ninguna otra vía puede: que a veces no hay nada que robar y
  * hay que esperar.
  *
- * Todo está en coordenadas de la vista (384x216): el mapa se ve entero, sin
- * cámara. Un mapa que hay que arrastrar para ver es un mapa que no se puede
- * leer de un vistazo, y de un vistazo es exactamente como hay que leerlo.
+ * Todo está en coordenadas de la vista: el mapa se ve entero, sin cámara. Un
+ * mapa que hay que arrastrar para ver es un mapa que no se puede leer de un
+ * vistazo, y de un vistazo es exactamente como hay que leerlo.
+ *
+ * LOS NÚMEROS DE ABAJO SON DE LA PANTALLA VIEJA (384×216), y se estiran en
+ * proporción al final de este archivo (`estirarRegion`) a la de hoy. Se
+ * dejaron escritos así a propósito: los trazados se afinaron MIRANDO el dibujo
+ * en esa pantalla, y reescribirlos a mano en otra escala perdería ese ajuste.
  */
+
+import { CONFIG } from './config.js';
 
 export const REGION = {
   nombre: 'REGIÓN DESIERTO',
@@ -302,3 +309,26 @@ export const REGION = {
     },
   ],
 };
+
+/**
+ * DE LA PANTALLA VIEJA A LA DE HOY, en proporción (ver `CONFIG.view`).
+ *
+ * Se mueven las POSICIONES (pueblos, vías, terreno, tu campamento); los tamaños
+ * de los símbolos no, para que sigan nítidos. El marco conserva sus 6 px de
+ * margen y toma el papel entero.
+ */
+(function estirarRegion() {
+  const kx = CONFIG.view.width / CONFIG.vistaVieja.width;
+  const ky = CONFIG.view.height / CONFIG.vistaVieja.height;
+  const punto = ([x, y]) => [Math.round(x * kx), Math.round(y * ky)];
+  const lugar = (o) => { o.x = Math.round(o.x * kx); o.y = Math.round(o.y * ky); };
+
+  REGION.marco = { x: 6, y: 6, w: CONFIG.view.width - 12, h: CONFIG.view.height - 12 };
+  REGION.lugares.forEach(lugar);
+  lugar(REGION.campamento);
+  for (const t of REGION.terreno) {
+    if (t.puntos) t.puntos = t.puntos.map(punto);
+    else lugar(t);
+  }
+  for (const r of REGION.rutas) r.puntos = r.puntos.map(punto);
+})();

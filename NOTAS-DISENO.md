@@ -11886,7 +11886,7 @@ del galope delante, y se hacen de la más chica a la más grande:
 | # | Pedido | Decidido | Estado |
 |---|---|---|---|
 | 1 | *"el vagón de góndola: da la sensación que no estoy en el techo. Una vez estoy sobre el carbón, ya no debería haber paredes que me detengan a la hora de caerme"* | **Caerse por las puntas**, a los enganches; los costados siguen siendo el borde del tren (descartado "también por los costados": caerse al desierto no existe y sería un sistema nuevo). Paredes bajas desde adentro | ✅ |
-| 2 | *"una vez el jugador esté sobre el tren, se haga menos zoom"* | **Más resolución para todo el juego**, de 384×216 a 480×270 (descartado "zoom 0,8 sólo en el asalto": píxeles desparejos y carteles más chicos) | Falta |
+| 2 | *"una vez el jugador esté sobre el tren, se haga menos zoom"* | **Más resolución para todo el juego**: primero 480×270, y al medir quedó **420×236** (ver abajo). Descartado "zoom 0,8 sólo en el asalto": píxeles desparejos y carteles más chicos | ✅ |
 | 3 | *"en la cabalgata la perspectiva esté en un punto que se pueda ver el cielo y las montañas a lo lejos"* | **Cámara baja**, como el boceto: cielo, montañas, el tren de costado y el desierto adelante. Se juega igual | Falta |
 | 4 | *"en la cabalgata el tren se debería ver como se ve un tren desde afuera"* | Sale con la cámara baja: techo, pared alta, ventanillas y ruedas | Falta |
 | 5 | *"A la hora del salto al techo o al enganche puedo mover al caballo y hasta ponerme por encima de la pared del tren"* | Lo explica la etapa A: la cara de afuera cuelga 18 px bajo el vagón y el caballo galopa desde 8 px. Con la cámara baja el caballo va en su carril, delante del tren | Falta (va con el 3) |
@@ -11910,6 +11910,56 @@ montículo frena, y desde el enganche sin trepar el carbón sigue siendo pared
 (x=491 contra el borde en 496); [E] sigue trepando. Sin errores.
 ⚠️ En la prueba de ir hacia arriba el jugador no se movió de y=30: no se cayó ni
 salió del carbón, pero **no está explicado** por qué no avanzó.
+
+**⚠️ NO JUGADO.**
+
+**La resolución (2):**
+
+**⚠️ AL MEDIR APARECIÓ LO QUE NO SE HABÍA DICHO AL ELEGIR 480×270.** El canvas se
+agranda en múltiplos enteros para que los píxeles queden nítidos, así que la
+resolución decide el tamaño de la ventana. Medido en el monitor de Santi
+(1920×1080, en una pestaña del navegador):
+
+| Pantalla | 384×216 | 480×270 | **420×236** |
+|---|---|---|---|
+| La suya, en una pestaña | 1536×864 (×4) | 1440×810 (×3), 6% más chica | **1680×944 (×4)** |
+| La suya, con F11 | 1920×1080 | 1920×1080 | 1920×1080 |
+| Notebook de 1366 o 1536 | 1152×648 | 960×540, 17% más chica | — |
+
+Se le mostró y **eligió 420×236**: un 9% más de mundo para cada lado sin que la
+ventana se achique en su monitor. Y eligió **rehacer las escenas para llenar la
+pantalla** en vez de centrarlas con un marco, y dentro de eso **estirarlas en
+proporción** en vez de agregar cosas nuevas en el lugar que sobra.
+
+**Cómo se estiró, sin reescribir coordenada por coordenada:** los datos siguen
+en números de la pantalla vieja (`CONFIG.vistaVieja`), que es la escala en la
+que se afinaron MIRÁNDOLOS, y se multiplican al cargar. Se mueven las
+posiciones; los tamaños de las cosas quedan en píxeles, para que sigan nítidas.
+
+- **Mapa** (`estirarRegion`, data/region.js): pueblos, vías, terreno y tu
+  campamento; el marco toma el papel entero. En mapScene.js el veteado, las
+  manchas, los bordes gastados, la rosa de los vientos y el cartucho dejaron de
+  usar 384/216 escritos a mano.
+- **Campamento** (data/camp.js): el centro, el radio (92 → 100) y los objetos.
+- **Interiores** (`estirarInteriores`, data/interiors.js): la sala, la pared, la
+  puerta, las posiciones y los largos de los muebles y los puntos; las cajas de
+  choque de los muebles largos acompañan su largo nuevo.
+- **Tienda** (shopScene.js): el escenario y la ficha, y lo de adentro del
+  escenario pasa a medirse desde su borde de abajo, así el piso, el corral y el
+  paño bajan con él.
+- **Pueblo** (data/town.js): el alto y la calle (150 → 164); lo que gana arriba
+  es cielo.
+- **Asalto y galope**: se acomodaron solos. El tren queda con 38 px de paisaje
+  arriba y abajo en vez de 28.
+
+**MIRADO**, las once pantallas en una sola imagen: campamento, pueblo, los cinco
+interiores, las dos tiendas, el mapa, el asalto y el galope. 🐛 **La casa de
+empeños tenía el estante y un barril afuera del cuarto**: el estante terminaba en
+x=392 con la pantalla de 384 y la pared en 340, así que ya estaba mal y el borde
+de la pantalla lo cortaba sin que se notara. Se metieron adentro.
+
+**MEDIDO:** canvas de 420×236, ningún error en ninguna escena, y el mouse del
+mapa reconoce el circuito de la mina sobre sus coordenadas nuevas.
 
 **⚠️ NO JUGADO.**
 

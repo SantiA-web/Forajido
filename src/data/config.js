@@ -5,7 +5,25 @@
 
 export const CONFIG = {
   // Resolución interna. El canvas se escala a la pantalla en múltiplos enteros.
-  view: { width: 384, height: 216 },
+  /**
+   * 🔺 DE 384×216 A 420×236. *(Santi: "quiero que una vez el jugador esté sobre
+   * el tren, se haga menos zoom. Que se vea un poco más del paisaje")*.
+   *
+   * El canvas se agranda en múltiplos ENTEROS (engine/renderer.js) para que
+   * los píxeles queden nítidos, así que la resolución decide el tamaño de la
+   * ventana. Medido en su monitor (1920×1080, en una pestaña): 384×216 va a ×4
+   * = 1536×864; 480×270 bajaba a ×3 = 1440×810 (y a 960 de ancho en notebooks
+   * de 1366); **420×236 sigue en ×4 = 1680×944** y se ve un 9% más para cada
+   * lado. Elegido sobre 480×270 y sobre quedarse.
+   *
+   * Las escenas armadas para 384×216 (mapa, campamento, interiores, tienda,
+   * pueblo) se ESTIRAN EN PROPORCIÓN al cargar sus datos: las cosas conservan
+   * su tamaño en píxeles y sólo cambia dónde están. El asalto y el galope ya
+   * usaban el tamaño de pantalla y se acomodan solos.
+   */
+  view: { width: 420, height: 236 },
+  /** Para lo que se armó para la pantalla vieja: cuánto se estira en cada eje. */
+  vistaVieja: { width: 384, height: 216 },
 
   tileSize: 16,
 

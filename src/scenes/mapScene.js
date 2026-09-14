@@ -258,8 +258,8 @@ export function createMapScene(services) {
       manchas = [];
       for (let i = 0; i < 26; i++) {
         manchas.push({
-          x: 20 + ((i * 97) % 344),
-          y: 16 + ((i * 61) % 184),
+          x: 20 + ((i * 97) % (CONFIG.view.width - 40)),
+          y: 16 + ((i * 61) % (CONFIG.view.height - 32)),
           r: 3 + ((i * 7) % 9),
           a: 0.05 + ((i % 4) * 0.02),
         });
@@ -509,8 +509,8 @@ export function createMapScene(services) {
 
     // Veteado horizontal, muy suave: el grano del papel.
     r.ctx.globalAlpha = 0.35;
-    for (let y = 8; y < 210; y += 3) {
-      if ((y / 3) % 2 === 0) r.rect(6, y, 372, 1, colors.mapaPapel2);
+    for (let y = 8; y < r.height - 6; y += 3) {
+      if ((y / 3) % 2 === 0) r.rect(6, y, r.width - 12, 1, colors.mapaPapel2);
     }
     r.ctx.globalAlpha = 1;
 
@@ -527,10 +527,10 @@ export function createMapScene(services) {
 
     // Los bordes gastados: el papel se oscurece hacia afuera.
     r.ctx.globalAlpha = 0.5;
-    r.rect(0, 0, 384, 5, colors.mapaMancha);
-    r.rect(0, 211, 384, 5, colors.mapaMancha);
-    r.rect(0, 0, 5, 216, colors.mapaMancha);
-    r.rect(379, 0, 5, 216, colors.mapaMancha);
+    r.rect(0, 0, r.width, 5, colors.mapaMancha);
+    r.rect(0, r.height - 5, r.width, 5, colors.mapaMancha);
+    r.rect(0, 0, 5, r.height, colors.mapaMancha);
+    r.rect(r.width - 5, 0, 5, r.height, colors.mapaMancha);
     r.ctx.globalAlpha = 1;
 
     // El marco doble, como cualquier mapa impreso de la época.
@@ -778,7 +778,7 @@ export function createMapScene(services) {
 
   /** La rosa de los vientos. Ningún mapa de la época se imprimía sin una. */
   function dibujarRosaDeLosVientos(r) {
-    const x = 30, y = 186;
+    const x = 30, y = r.height - 30;
     r.circle(x, y, 9, colors.mapaTintaSuave, 0.8);
     r.line(x, y - 8, x, y + 8, colors.mapaTintaSuave);
     r.line(x - 8, y, x + 8, y, colors.mapaTintaSuave);
@@ -803,7 +803,8 @@ export function createMapScene(services) {
     // Abajo a la derecha, que es donde se imprimía. Corrido del centro para
     // dejarle a la RED todo el ancho del papel: con siete líneas cruzándose,
     // el espacio del mapa vale más que la simetría del recuadro.
-    const x = 196, y = 150, w = 180, h = 56;
+    // Pegado a la esquina de abajo a la derecha, con el mismo margen de siempre.
+    const w = 180, h = 56, x = r.width - w - 8, y = r.height - h - 10;
     r.rect(x, y, w, h, colors.mapaPapel);
     marco(r, x, y, w, h, colors.mapaBorde);
     marco(r, x + 2, y + 2, w - 4, h - 4, colors.mapaTintaSuave);

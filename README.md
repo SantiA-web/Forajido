@@ -27,7 +27,11 @@ a git (es un resultado, no código).
 
 ## La vista: tres cuartos (en construcción)
 
-El juego se ve desde arriba en **tres cuartos**, como Stardew Valley o los Zelda
+El juego se dibuja a **420×236 píxeles** y se agranda en múltiplos enteros para
+que se vea nítido: en un monitor de 1920×1080 queda a ×4 (1680×944) en una
+pestaña, y llena la pantalla con F11.
+
+Se ve desde arriba en **tres cuartos**, como Stardew Valley o los Zelda
 de SNES: se ve el frente de las cosas, y lo que está más adelante tapa a lo de
 atrás. Se está pasando por etapas, primero el tren:
 

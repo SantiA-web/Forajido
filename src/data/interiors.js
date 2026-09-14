@@ -46,13 +46,25 @@
  * través de la barra es lo que hace que el cuarto sea un cuarto.
  */
 
+import { CONFIG } from './config.js';
+
+/**
+ * TODOS LOS NÚMEROS DE ESTE ARCHIVO SON DE LA PANTALLA VIEJA (384×216), y se
+ * estiran en proporción a la de hoy: la sala, la pared y la puerta acá mismo,
+ * y los muebles y los puntos al final (`estirarInteriores`). Los cuartos se
+ * acomodaron MIRÁNDOLOS en esa pantalla; reescribirlos a mano en otra escala
+ * perdería ese ajuste.
+ */
+const KX = CONFIG.view.width / CONFIG.vistaVieja.width;
+const KY = CONFIG.view.height / CONFIG.vistaVieja.height;
+
 /** El piso caminable, igual en los cuatro. */
-const SALA = { x: 44, y: 78, w: 296, h: 108 };
+const SALA = { x: Math.round(44 * KX), y: Math.round(78 * KY), w: Math.round(296 * KX), h: Math.round(108 * KY) };
 
 /** Y la franja de pared que va justo encima. Acá se cuelgan las cosas. */
-export const PARED_ALTO = 38;
+export const PARED_ALTO = Math.round(38 * KY);
 
-const PUERTA = { x: 192, y: 180 };
+const PUERTA = { x: Math.round(192 * KX), y: Math.round(180 * KY) };
 
 export const INTERIORES = {
   // --------------------------------------------------------------- armería
@@ -264,11 +276,18 @@ export const INTERIORES = {
     puerta: PUERTA,
     muebles: [
       // Cosas de otros, apiladas. Van contra las paredes, no exhibidas.
-      { tipo: 'estanteArmas', pared: true, x: 300, y: 48, w: 92, h: 24 },
+      /**
+       * 🐛 EL ESTANTE Y UN BARRIL ESTABAN AFUERA DEL CUARTO. El estante iba en
+       * x=300 con 92 de largo: terminaba en 392, más allá de la pared (340) y
+       * del borde de la pantalla vieja (384), que lo cortaba sin que se notara.
+       * El barril de x=348 caía sobre la pared derecha. Con la pantalla más
+       * ancha los dos quedaron a la vista del otro lado de la pared.
+       */
+      { tipo: 'estanteArmas', pared: true, x: 240, y: 48, w: 92, h: 24 },
       { tipo: 'cajon', x: 58, y: 62, solido: true, hw: 9, hh: 7 },
       { tipo: 'cajon', x: 80, y: 78, solido: true, hw: 9, hh: 7 },
-      { tipo: 'barril', x: 330, y: 108, solido: true, hw: 7, hh: 9 },
-      { tipo: 'barril', x: 348, y: 150, solido: true, hw: 7, hh: 9 },
+      { tipo: 'barril', x: 324, y: 108, solido: true, hw: 7, hh: 9 },
+      { tipo: 'barril', x: 324, y: 150, solido: true, hw: 7, hh: 9 },
       { tipo: 'cajon', x: 62, y: 166, solido: true, hw: 8, hh: 6 },
       { tipo: 'cajon', x: 84, y: 180, solido: true, hw: 8, hh: 6 },
 
@@ -304,3 +323,26 @@ export const INTERIORES = {
     ],
   },
 };
+
+/**
+ * LOS MUEBLES Y LOS PUNTOS, A LA PANTALLA DE HOY (ver arriba).
+ *
+ * Se estiran las posiciones y los largos (`w`/`h`: un mostrador más largo en
+ * una sala más ancha). Lo que tiene tamaño de objeto —una silla, un barril, el
+ * radio de la mesa de póker— queda igual, salvo las cajas de choque de los
+ * muebles largos, que tienen que seguir cubriendo su dibujo entero.
+ */
+(function estirarInteriores() {
+  for (const cuarto of Object.values(INTERIORES)) {
+    for (const cosa of [...cuarto.muebles, ...cuarto.puntos]) {
+      cosa.x = Math.round(cosa.x * KX);
+      cosa.y = Math.round(cosa.y * KY);
+      if (cosa.w !== undefined) cosa.w = Math.round(cosa.w * KX);
+      if (cosa.h !== undefined) cosa.h = Math.round(cosa.h * KY);
+      if (cosa.w !== undefined && cosa.hw !== undefined) {
+        cosa.hw = Math.round(cosa.w / 2);
+        cosa.hh = Math.round(cosa.h / 2);
+      }
+    }
+  }
+})();

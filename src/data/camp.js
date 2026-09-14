@@ -28,9 +28,18 @@
  * lograr que lo mires.
  */
 
+import { CONFIG } from './config.js';
+
+/**
+ * Los números de este archivo son de la pantalla vieja (384×216) y se estiran
+ * en proporción a la de hoy al final (ver `CONFIG.view`).
+ */
+const KX = CONFIG.view.width / CONFIG.vistaVieja.width;
+const KY = CONFIG.view.height / CONFIG.vistaVieja.height;
+
 export const CAMPAMENTO = {
-  /** El centro del claro. Todo se dibuja alrededor de esto. */
-  centro: { x: 192, y: 112 },
+  /** El centro del claro. Todo se dibuja alrededor de esto: el medio de la pantalla. */
+  centro: { x: Math.round(192 * KX), y: Math.round(112 * KY) },
 
   /**
    * HASTA DÓNDE TE PODÉS ALEJAR.
@@ -43,7 +52,7 @@ export const CAMPAMENTO = {
    * Y el radio es chico a propósito: el campamento tiene que entrar entero en
    * pantalla. Es un lugar para orientarse de un vistazo, no para explorar.
    */
-  radio: 92,
+  radio: Math.round(92 * Math.min(KX, KY)),
 
   /**
    * Los cinco objetos. `alcance` es a qué distancia se puede interactuar; son
@@ -78,3 +87,9 @@ export const CAMPAMENTO = {
     },
   ],
 };
+
+// Las distancias al centro, a la pantalla de hoy.
+for (const o of CAMPAMENTO.objetos) {
+  o.x = Math.round(o.x * KX);
+  o.y = Math.round(o.y * KY);
+}

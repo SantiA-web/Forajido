@@ -36,12 +36,19 @@ import { TIENDAS } from '../data/tienda.js';
 import { gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 
-/** El escenario ocupa la izquierda y la ficha la derecha. */
-const ESCENA = { x: 8, y: 26, w: 198, h: 150 };
-const FICHA = { x: 216, y: 34, w: 158 };
+/**
+ * El escenario ocupa la izquierda y la ficha la derecha. Los números son de la
+ * pantalla vieja (384×216) estirados a la de hoy (ver `CONFIG.view`); lo de
+ * adentro del escenario se mide desde su BORDE DE ABAJO (`h`), así el piso, el
+ * corral y el paño bajan con él en vez de quedar flotando.
+ */
+const KX = CONFIG.view.width / CONFIG.vistaVieja.width;
+const KY = CONFIG.view.height / CONFIG.vistaVieja.height;
+const ESCENA = { x: 8, y: Math.round(26 * KY), w: Math.round(198 * KX), h: Math.round(150 * KY) };
+const FICHA = { x: Math.round(216 * KX), y: Math.round(34 * KY), w: Math.round(158 * KX) };
 
 /** Dónde está parado el animal, y dónde le tiran el pasto. */
-const CORRAL = { cx: ESCENA.x + ESCENA.w / 2 - 8, suelo: ESCENA.y + 132 };
+const CORRAL = { cx: ESCENA.x + ESCENA.w / 2 - 8, suelo: ESCENA.y + ESCENA.h - 18 };
 
 export function createShopScene(services) {
   const { input, scenes, hud, audio } = services;
@@ -224,10 +231,10 @@ export function createShopScene(services) {
         r.rect(bx, e.y + 2, 3, 104, colors.intMadera);
         r.rect(bx, e.y + 2, 1, 104, '#94663f');
       }
-      r.rect(e.x, e.y + 106, e.w, 44, '#7a6440');
+      r.rect(e.x, e.y + 106, e.w, e.h - 106, '#7a6440');
       for (let i = 0; i < 26; i++) {
         const px = e.x + 6 + ((i * 37) % (e.w - 14));
-        const py = e.y + 112 + ((i * 23) % 34);
+        const py = e.y + 112 + ((i * 23) % (e.h - 116));
         r.rect(px, py, 4, 1, '#c2a75e');
       }
       r.rect(e.x, e.y + 104, e.w, 3, '#4a3524');
@@ -257,7 +264,7 @@ export function createShopScene(services) {
         r.rect(px, e.y + 2, 1, 92, '#3a2a1c');
       }
       r.rect(e.x, e.y + 94, e.w, 8, colors.intParedTop);
-      r.rect(e.x, e.y + 102, e.w, 48, colors.intMadera);
+      r.rect(e.x, e.y + 102, e.w, e.h - 102, colors.intMadera);
       r.rect(e.x, e.y + 102, e.w, 3, '#94663f');
       // El paño: marca dónde mirar, igual que la alfombra en los interiores.
       r.rect(e.x + 20, e.y + 112, e.w - 40, 32, colors.intPañoBorde);
@@ -530,7 +537,7 @@ export function createShopScene(services) {
    */
   function dibujarFilo(r, datos, look) {
     const cx = ESCENA.x + ESCENA.w / 2 - 24;
-    const cy = ESCENA.y + 118;
+    const cy = ESCENA.y + ESCENA.h - 32;
 
     if (datos.id === 'culata') {
       // No es un objeto: es tu propio revólver dado vuelta, agarrado del caño.
@@ -572,7 +579,7 @@ export function createShopScene(services) {
 
   function dibujarArma(r, datos, look) {
     const cx = ESCENA.x + ESCENA.w / 2 - 24;
-    const cy = ESCENA.y + 118;
+    const cy = ESCENA.y + ESCENA.h - 32;
 
     // La culata, hacia atrás y abajo.
     r.rect(cx - 36, cy + 2, 17, 11, look.madera);

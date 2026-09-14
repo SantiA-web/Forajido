@@ -863,7 +863,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
    */
   const pies = by + p.hh;
   const agachado = p.sneaking || (p.cover && p.peek <= 0.15);
-  const manoY = pies - 9 + (agachado ? 4 : 0);
+  const manoY = pies - 13 + (agachado ? 6 : 0);
   const dir = direccionDe(p.aim);
 
   r.ctx.globalAlpha = 0.25;
@@ -894,8 +894,9 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     if (!bulto) return;
     let mx = bx;
     if (dir === 'der') mx = bx - 3 - bulto;
-    else if (dir === 'izq') mx = bx + 3 + bulto;
-    const my = dir === 'frente' ? manoY - 2 - bulto : manoY;
+    else if (dir === 'izq') mx = bx + 4 + bulto;
+    // De frente asoma por encima de los hombros (el torso empieza 4 arriba de la mano).
+    const my = dir === 'frente' ? manoY - 4 - bulto : manoY;
     r.box(mx, my, bulto, bulto, '#2e2218');
     r.box(mx, my - bulto + 1, Math.max(1, bulto - 1), 1, '#a8977c');
   };

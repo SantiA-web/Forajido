@@ -474,11 +474,11 @@ export function drawEnemy(r, e) {
 
   if (sentado || e.desenfundando > 0) {
     // El arma colgada al costado.
-    r.rect(tx + 3, ty + 2, 2, 4, '#2a2622');
+    r.rect(tx + 4, ty + 4, 2, 5, '#2a2622');
   }
   if (sentado) {
     // Las cartas en la mano, hacia su compañero.
-    r.rect(tx + Math.round(Math.cos(e.facing) * 4) - 1, ty + 2, 3, 2, '#efe6d2');
+    r.rect(tx + Math.round(Math.cos(e.facing) * 5) - 1, ty + 4, 3, 2, '#efe6d2');
   }
 
   // Mecha encendida en la mano, en alto: el aviso de que te va a tirar una
@@ -486,9 +486,9 @@ export function drawEnemy(r, e) {
   // correcta (salir de la cobertura ya mismo) es contraria a todo lo demás.
   if (e.throwWindup > 0) {
     const parpadeo = Math.floor(e.throwWindup * 22) % 2 === 0;
-    r.box(tx + 4, fig.arriba - 2, 1, 2, col.dynamite);
-    if (parpadeo) r.box(tx + 4, fig.arriba - 5, 1, 1, '#fff4c0');
-    r.text('!', tx + 9, fig.arriba - 5, '#ff7a4a');
+    r.box(tx + 6, fig.arriba - 2, 1, 2, col.dynamite);
+    if (parpadeo) r.box(tx + 6, fig.arriba - 5, 1, 1, '#fff4c0');
+    r.text('!', tx + 11, fig.arriba - 5, '#ff7a4a');
   }
 
   /**
@@ -501,8 +501,8 @@ export function drawEnemy(r, e) {
    * la espalda. La bandolera cruza también por atrás.
    */
   if (e.look === 'placa' && !deEspaldas) {
-    r.rect(tx - 3, ty + 1, 7, 3, '#59616b');
-    r.rect(tx - 3, ty + 1, 7, 1, '#7d8794');
+    r.rect(tx - 4, ty + 1, 9, 5, '#59616b');
+    r.rect(tx - 4, ty + 1, 9, 1, '#7d8794');
   }
 
   /**
@@ -513,8 +513,8 @@ export function drawEnemy(r, e) {
    * el piso marrón. Van encima del cuerpo y en claro.
    */
   if (e.look === 'dosRevolveres') {
-    r.rect(tx - 3, ty + 4, 2, 2, '#d8cdbb');
-    r.rect(tx + 2, ty + 4, 2, 2, '#d8cdbb');
+    r.rect(tx - 4, ty + 6, 2, 3, '#d8cdbb');
+    r.rect(tx + 3, ty + 6, 2, 3, '#d8cdbb');
   }
 
   /**
@@ -527,15 +527,15 @@ export function drawEnemy(r, e) {
    * y los cartuchos también, y un píxel claro los despega.
    */
   if (e.look === 'bandolera') {
-    r.rect(tx - 3, ty + 1, 7, 2, '#6b4a2e');
+    r.rect(tx - 4, ty + 2, 9, 2, '#6b4a2e');
     const total = Math.max(1, e.dynamiteMax || 1);
     const paso = 3;
     const largo = total * paso - 1;
     for (let i = 0; i < total; i++) {
       const x = Math.round(tx - largo / 2 + i * paso);
       const cargado = i < e.dynamite;
-      r.rect(x, ty, 2, 3, cargado ? col.dynamite : '#33291f');
-      if (cargado) r.rect(x, ty, 2, 1, col.dynamiteBand);
+      r.rect(x, ty + 1, 2, 4, cargado ? col.dynamite : '#33291f');
+      if (cargado) r.rect(x, ty + 1, 2, 1, col.dynamiteBand);
     }
   }
 
@@ -545,9 +545,11 @@ export function drawEnemy(r, e) {
    * como una mancha.
    */
   if (e.look === 'estrella' && !deEspaldas) {
-    r.rect(tx, ty + 1, 1, 3, '#e8c34a');
-    r.rect(tx - 1, ty + 2, 3, 1, '#e8c34a');
-    r.rect(tx, ty + 1, 1, 1, '#fff2b8');
+    // Del lado del corazón.
+    const sx = tx - 2;
+    r.rect(sx, ty + 1, 1, 3, '#e8c34a');
+    r.rect(sx - 1, ty + 2, 3, 1, '#e8c34a');
+    r.rect(sx, ty + 1, 1, 1, '#fff2b8');
   }
 
   /**

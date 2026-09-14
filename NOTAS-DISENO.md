@@ -12243,6 +12243,47 @@ en tres poses, los tres pasajeros, los dos jinetes y los de franco.
 
 **⚠️ NO JUGADO.**
 
+### 📏 La gente pasa de 16 a 16×24
+
+*(Santi: "estaba pensando que al tener 16x16 cuando pongamos la ropa y los
+detalles de los personajes prácticamente no se van a notar", y después de
+comparar 16, 24 y 32 lado a lado y preguntar cuánto mide un personaje de
+Stardew Valley: "hacelo 16x24")*.
+
+- **Stardew Valley, para comparar:** cuadro de 16×32 (dos casilleros de 16) a
+  480×270 escalado ×4 en 1080p — la misma pantalla que Forajido. 24 es la mitad
+  de camino: se ve la ropa sin tener que agrandar los pasillos del vagón.
+- **16×24 es el CUADRO, no el cuerpo.** Eligió **delgado, como Stardew** (sobre
+  "lleno, 16 de ancho", que dejaba a una persona tan ancha como un asiento, e
+  "intermedio"): torso de 9, con brazos 11; ala de 13, sombrero ancho 15, chico
+  9, galera 11 y 27 de alto.
+- **Filas nuevas:** piernas 8 (botas 2), torso 9 (camisa, cinto, cadera), cara
+  4 (con la sombra del ala), sombrero 3 con el ala vista desde arriba. Agachado
+  y sentado bajan 6; de rodillas, 7.
+- **El jefe** crece **1,15** → 28 px (sobre 1,3 → 31, casi dos casilleros que
+  tapaban a su escolta, y 1,0). El poncho y el rifle a la espalda, a la escala.
+- **Lo que se movió con la figura:** la mano (y con ella el fogonazo, la
+  dinamita y la mochila) a `pies − 13`; la placa, las culatas, la bandolera y la
+  estrella (ahora del lado del corazón); los cuerpos tirados ×1,5; la estela de
+  la embestida; y **los 11 carteles sobre el jugador** ("Saquear", "Espiar"…)
+  suben 8 px, porque a −16 caían sobre la cara.
+- **Lo que NO cambió:** la caja que recibe las balas (la de los pies), la
+  lógica, los jinetes y el caballo. Los números flotantes (`+$`, avisos) nacen
+  donde nacían y suben solos.
+
+**🔁 CONTRADICE UNA RAZÓN DE LA ETAPA B:** se había descartado 20 porque "el de
+la fila de atrás queda tapado". Con 24 pasa: un guardia parado justo detrás de
+un asiento **muestra sólo la cabeza y el sombrero**. Mirado en captura, se lee
+bien (es lo que se espera en tres cuartos), pero hay que confirmarlo jugando:
+si molesta para apuntar, es tema de la etapa C (a qué altura van las balas).
+
+**MEDIDO:** sin errores en la consola; lámina con los seis tipos de guardia, las
+cuatro direcciones, sospecha, combate, rendido, traición, mecha, desmayado,
+muerto, los pasajeros, el jugador con y sin mochila, agachado y disparando, y el
+jefe de frente y de costado; captura del vagón real a 480×270.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

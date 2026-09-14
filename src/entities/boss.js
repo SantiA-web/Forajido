@@ -160,7 +160,9 @@ export function drawBoss(r, bo) {
    * que no cambió.
    */
   const pies = bo.y + bo.hh;
-  const ESCALA = 1.3;
+  // 1,15 sobre una persona de 24: 28 px *(Santi eligió 1,15 al pasar a 16×24;
+  // con 1,3 llegaba a 31, casi dos casilleros, y tapaba a su escolta)*.
+  const ESCALA = 1.15;
 
   if (!bo.alive) {
     // Un cuerpo más grande que el de un guardia, y con el sombrero al lado:
@@ -198,7 +200,7 @@ export function drawBoss(r, bo) {
   if (cargando) {
     for (let i = 1; i <= 3; i++) {
       r.ctx.globalAlpha = 0.26 - i * 0.06;
-      r.rect(bo.x - bo.cargaDir.x * i * 7 - 5, pies - bo.cargaDir.y * i * 7 - 16, 10, 16, t.color);
+      r.rect(bo.x - bo.cargaDir.x * i * 7 - 6, pies - bo.cargaDir.y * i * 7 - 26, 12, 26, t.color);
     }
     r.ctx.globalAlpha = 1;
   }
@@ -217,7 +219,7 @@ export function drawBoss(r, bo) {
       parpadeo ? '#ff8a4a' : '#8a3a22',
       parpadeo ? 0.85 : 0.4
     );
-    if (parpadeo) r.text('!!', bo.x, pies - 30, '#ff8a4a');
+    if (parpadeo) r.text('!!', bo.x, pies - 34, '#ff8a4a');
   }
 
   /**
@@ -261,14 +263,14 @@ export function drawBoss(r, bo) {
     },
   });
   // El poncho: más ancho que el torso y con dos puntas.
-  r.rect(bo.x - 5, fig.torsoY + 1, 11, 4, oscuro);
-  r.rect(bo.x - 5, fig.torsoY + 5, 4, 2, oscuro);
-  r.rect(bo.x + 2, fig.torsoY + 5, 4, 2, oscuro);
+  r.rect(bo.x - 6, fig.torsoY + 1, 13, 6, oscuro);
+  r.rect(bo.x - 6, fig.torsoY + 7, 5, 3, oscuro);
+  r.rect(bo.x + 2, fig.torsoY + 7, 5, 3, oscuro);
 
   // El rifle cruzado a la espalda cuando está con el revólver: es lo que dice
   // "este tipo tiene otra arma" antes de que la saque.
   if (bo.armaActual === 'revolver' && !cargando) {
-    r.line(bo.x - 5, fig.torsoY + 6, bo.x + 4, fig.torsoY - 2, '#4a3a28');
+    r.line(bo.x - 7, fig.torsoY + 9, bo.x + 6, fig.torsoY - 2, '#4a3a28');
   }
   r.ctx.restore();
 

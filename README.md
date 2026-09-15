@@ -40,13 +40,20 @@ atrás. Se está pasando por etapas, primero el tren:
 | Etapa | Qué | Estado |
 |---|---|---|
 | A | El orden de dibujo: paredes, asientos, carga y el resto con volumen, y todo ordenado por dónde tiene los pies | ✅ |
-| B | La gente en **sombras cabezonas**: siluetas negras y sombrerudas (14 a 19 px) donde el color sale de los detalles —el pañuelo, la insignia, la estrella, la capa—, en 8 direcciones y caminando. El estado de los guardias va en los ojos y encima de la cabeza: un "?" con la barrita o un "!" fijo mientras pelean. El jugador se agacha detrás de la cobertura, los guardias se sientan de franco y se rinden con pañuelo blanco, y en el galope vas en silueta sobre el caballo de siempre. La caja que recibe las balas no cambió | ✅ |
+| B | La gente en **sombras cabezonas** (lo que se ve hoy; ya está diseñado su reemplazo, ver abajo): siluetas negras y sombrerudas (14 a 19 px) donde el color sale de los detalles —el pañuelo, la insignia, la estrella, la capa—, en 8 direcciones y caminando. El estado de los guardias va en los ojos y encima de la cabeza: un "?" con la barrita o un "!" fijo mientras pelean. El jugador se agacha detrás de la cobertura, los guardias se sientan de franco y se rinden con pañuelo blanco, y en el galope vas en silueta sobre el caballo de siempre. La caja que recibe las balas no cambió | ✅ |
 | C | Las cosas: botín, puertas, cajones, barriles, dinamita, balas | Falta |
 | D | El techo | Falta |
 | E | El galope en tres cuartos: del tren se ve la pared y la tapa del techo (y lo que llevan los vagones abiertos), del caballo el lomo y la montura, del jinete el ala del sombrero, y el desierto llena la pantalla. Al girar con W o S el caballo cambia de pose (nueve): se lo ve alejarse hacia las vías o venir de frente hacia abajo. Corre con pose de carrera (cuello estirado, cola y crin al viento, el jinete echado hacia adelante), las patas pisan justo cuando suena cada golpe del "tucu-TÚN", y cada pisada levanta una nube de polvo que queda atrás. Mientras estás lejos asoma el cielo arriba de todo. Se juega igual | ✅ |
 | F | Mirar los 13 vagones | Falta |
 | G | El campamento y el pueblo | Falta |
 | H | Los interiores del pueblo (la tienda ya se ve de cerca y de perfil) | Falta |
+
+**En diseño · la gente a 80 px.** Las sombras cabezonas se van a reemplazar por
+**gente curtida**: más resolución, caras con expresión, piernas largas, trote
+con empuje y el revólver en las 8 direcciones. Todo se decidió jugando una
+prueba aparte, en `prototipos/gente-80px/` (doble clic en `Prueba-72.html`).
+Falta el plan para llevarlo al juego. El detalle y los números están en
+NOTAS-DISENO.md ("La gente curtida a 80 px").
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido

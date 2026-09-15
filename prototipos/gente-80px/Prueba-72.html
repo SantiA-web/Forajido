@@ -1,0 +1,1280 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Forajido - prueba 72 px</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { position: absolute; inset: 0; margin: auto; width: 100vw; height: 56.25vw;
+           max-height: 100vh; max-width: 177.78vh; image-rendering: pixelated; cursor: crosshair; }
+  #ayuda { position: fixed; left: 12px; top: 10px; color: #e8dcc0; font: 14px sans-serif;
+           background: rgba(0,0,0,.6); padding: 6px 10px; border-radius: 4px; }
+</style>
+<canvas id="c"></canvas>
+<div id="ayuda">Mouse: apuntar &middot; Clic: disparar &middot; WASD o flechas: trotar &middot; Shift: agachado, lento y sin ruido &middot; Z: ampliar &times;2 &middot; R: empezar de nuevo &middot; F: pantalla completa<br><span id="opciones"></span></div>
+<script>// Lámina 72 px, parte 1: colores, el lienzo, las cabezas y los sombreros.
+function tono(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = (s) => Math.max(0, Math.min(255, Math.round(((n >> s) & 255) * f)));
+  return '#' + ((1 << 24) | (c(16) << 16) | (c(8) << 8) | c(0)).toString(16).slice(1);
+}
+
+const NEGRO = '#1a120c', OJO_B = '#d8ccb4';
+const PIEL = '#b27a52', PIEL_S = '#8a5a3c', PIEL_O = '#6e4630', PIEL_L = '#c89068';
+const PELO = '#2a1c14', BARBA = '#4e3222', BIGOTE = '#3a2418';
+const HAT = '#4a3626', HAT_L = '#6a4e36', HAT_S = '#34261a', BANDA = '#5a3a24', LATON = '#a88a4a';
+const CHAL = '#3e2c1e', CHAL_L = '#56402c', CHAL_S = '#2c2016';
+const CAM = '#9a8a6a', CAM_L = '#b0a080', CAM_S = '#7a6c52';
+const PAN_R = '#7a2c22', PAN_RL = '#94402e', PAN_RS = '#58201a';
+const PANT = '#4e4236', BOTA = '#2a1e16', BOTA_L = '#4a3a2a', ESPUELA = '#8a8278';
+const CINTO = '#3a2618', FUNDA = '#5a3a22', CULATA = '#6a4a2a', CULATA_L = '#8a6a42';
+const COAT = '#3e4652', COAT_L = '#56606e', COAT_S = '#2c323c', CAP = '#2e343c', VISOR = '#1a1a1e';
+const TRAJE = '#5c6058', TRAJE_L = '#747a70', TRAJE_S = '#454a42', BLANCA = '#c8bca4', CORBATA = '#5a2a2a';
+
+/** Lo que cambia de un tipo de persona a otro. */
+const ROPA = {
+  jugador: { sombrero: 'vaquero', chal: [CHAL, CHAL_L, CHAL_S], manga: [CAM, CAM_L, CAM_S], pant: PANT, cuello: 'panuelo', funda: true, espuela: true, barba: BARBA, barbaP: 34, bigote: 'grande' },
+  guardia: { sombrero: 'kepi', chal: [COAT, COAT_L, COAT_S], manga: [COAT, COAT_L, COAT_S], pant: '#34383e', cuello: 'saco', saco: true, botones: LATON, funda: true, barba: null, bigote: 'chico' },
+  pasajero: { sombrero: 'bombin', chal: [TRAJE, TRAJE_L, TRAJE_S], manga: [TRAJE, TRAJE_L, TRAJE_S], pant: '#3e3630', cuello: 'corbata', saco: true, botones: '#2a2018', barba: null, bigote: 'chico' },
+};
+
+/** `s` = escala: las mismas formas dibujadas más grandes, nítidas (no estiradas). */
+function Lienzo(W, H, ox = 1, oy = 1, s = 1, warp = null) {
+  const mapa = new Map();
+  const hash = (x, y) => (((x * 73856093) ^ (y * 19349663)) >>> 0) % 100;
+  const poner = (x, y, c) => { const px = x + ox, py = y + oy; mapa.set(px + ',' + py, [px, py, c]); };
+  const color = (x, y) => (mapa.get((x + ox) + ',' + (y + oy)) || [])[2];
+  const caja = (x, y, w, h, fn) => {
+    const x0 = Math.round(x * s), y0 = Math.round(y * s);
+    const x1 = Math.max(x0 + 1, Math.round((x + w) * s)), y1 = Math.max(y0 + 1, Math.round((y + h) * s));
+    for (let py = y0; py < y1; py++) for (let px = x0; px < x1; px++) fn(px, py);
+  };
+  // `warp` deforma el cuerpo (proporciones, inclinación). Las formas grandes se
+  // doblan punto por punto; las rayitas finas sólo se corren, para no perder pixeles.
+  let actual = warp;
+  const W2 = (x, y) => (actual ? actual(x, y) : [x, y]);
+  const densa = (pts) => {
+    if (!actual) return pts;
+    const out = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 2));
+      for (let k = 0; k < n; k++) out.push(W2(a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n));
+    }
+    return out;
+  };
+  return {
+    rect(x, y, w, h, c) {
+      const put = (px, py) => poner(px, py, c);
+      if (!actual) return caja(x, y, w, h, put);
+      if (h <= 2) {
+        const [xl, yc] = W2(x, y + h / 2), [xr] = W2(x + w, y + h / 2);
+        return caja(xl, yc - h / 2, Math.max(0.5, xr - xl), h, put);
+      }
+      if (w <= 2) {
+        const [xc, yt] = W2(x + w / 2, y), [, yb] = W2(x + w / 2, y + h);
+        return caja(xc - w / 2, yt, w, yb - yt, put);
+      }
+      this.poly([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], c);
+    },
+    elipse(cx, cy, rx, ry, c) {
+      if (actual) {
+        if (rx > 2.5 || ry > 2.5) {
+          const n = Math.max(16, Math.ceil((rx + ry) * 3));
+          return this.poly(Array.from({ length: n }, (_, i) => [
+            cx + (rx + 0.5) * Math.cos(2 * Math.PI * i / n), cy + (ry + 0.5) * Math.sin(2 * Math.PI * i / n),
+          ]), c);
+        }
+        [cx, cy] = W2(cx, cy);
+      }
+      cx *= s; cy *= s; rx *= s; ry *= s;
+      for (let y = Math.ceil(cy - ry); y <= Math.floor(cy + ry); y++) {
+        const dx = rx * Math.sqrt(Math.max(0, 1 - ((y - cy) / ry) ** 2));
+        for (let x = Math.round(cx - dx); x <= Math.round(cx + dx); x++) poner(x, y, c);
+      }
+    },
+    poly(pts, c) {
+      pts = densa(pts).map(([x, y]) => [x * s, y * s]);
+      const ys = pts.map((p) => p[1]);
+      for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
+        const yc = y + 0.5, xs = [];
+        for (let i = 0; i < pts.length; i++) {
+          const a = pts[i], b = pts[(i + 1) % pts.length];
+          if ((a[1] <= yc && b[1] > yc) || (b[1] <= yc && a[1] > yc)) xs.push(a[0] + (yc - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+        }
+        xs.sort((p, q) => p - q);
+        for (let k = 0; k + 1 < xs.length; k += 2) {
+          for (let x = Math.ceil(xs[k] - 0.5); x <= Math.floor(xs[k + 1] - 0.5); x++) poner(x, y, c);
+        }
+      }
+    },
+    sobre(x, y, w, h, de, c, prob = 100) {
+      if (actual) {
+        const q = [[x, y], [x + w, y], [x, y + h], [x + w, y + h], [x, y + h / 2], [x + w, y + h / 2]].map(([a, b]) => W2(a, b));
+        const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]);
+        x = Math.min(...xs); y = Math.min(...ys); w = Math.max(...xs) - x; h = Math.max(...ys) - y;
+      }
+      caja(x, y, w, h, (px, py) => {
+        const cc = color(px, py);
+        if (cc && de.includes(cc) && hash(px, py) < prob) poner(px, py, c);
+      });
+    },
+    /**
+     * Lo que se dibuja adentro NO se deforma: sólo se corre con la inclinación.
+     * Es para las cabezas y los sombreros, que tienen su propio dibujo a la medida nueva.
+     */
+    rigido(fn) {
+      const antes = actual;
+      if (antes) { const dx = antes(24, 20)[0] - 24; actual = (x, y) => [x + dx, y]; }
+      fn();
+      actual = antes;
+    },
+    canvas(despues) {
+      // Borde de 2 puntos: el de adentro negro, el de afuera a media sombra.
+      const anillo = (lleno) => {
+        const out = new Set();
+        for (const k of lleno) {
+          const [x, y] = k.split(',').map(Number);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const kk = (x + dx) + ',' + (y + dy);
+            if (!lleno.has(kk)) out.add(kk);
+          }
+        }
+        return out;
+      };
+      const cuerpo = new Set(mapa.keys());
+      const borde = anillo(cuerpo);
+      const borde2 = anillo(new Set([...cuerpo, ...borde]));
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = 'rgba(12,8,6,0.5)';
+      for (const k of borde2) { const [x, y] = k.split(',').map(Number); ctx.fillRect(x, y, 1, 1); }
+      ctx.fillStyle = NEGRO;
+      for (const k of borde) { const [x, y] = k.split(',').map(Number); ctx.fillRect(x, y, 1, 1); }
+      for (const [, [x, y, c]] of mapa) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
+      if (despues) despues(ctx);
+      return cv;
+    },
+  };
+}
+
+/** El mismo lienzo corrido: sirve para que el cuerpo suba o baje al caminar. */
+function mover(L, dx, dy) {
+  return {
+    rect: (x, y, w, h, c) => L.rect(x + dx, y + dy, w, h, c),
+    elipse: (cx, cy, rx, ry, c) => L.elipse(cx + dx, cy + dy, rx, ry, c),
+    poly: (pts, c) => L.poly(pts.map(([x, y]) => [x + dx, y + dy]), c),
+    sobre: (x, y, w, h, de, c, p) => L.sobre(x + dx, y + dy, w, h, de, c, p),
+  };
+}
+const corrido = (pts, d) => pts.map(([x, y]) => [x + d, y]);
+
+/**
+ * LAS PROPORCIONES. No se redibuja nada: el cuerpo se deforma por franjas.
+ * A = como estaba; B = moderada (ala +15%, hombros +9%, cintura −10%, piernas +3);
+ * C = fuerte. Las piernas crecen hacia abajo, así la cabeza no se sale del dibujo.
+ */
+/** Qué pisada usa el trote: 'nueva' (2 cuadros apoyado, 2 en el aire) o 'vieja' (3 y 1), para comparar. */
+let PISADA = 'nueva';
+
+/**
+ * EL LARGO DE LAS PIERNAS, en filas de pixeles. Hoy: cabeza 19, torso 24, piernas 19
+ * (las piernas miden el 44% de cabeza + torso; en una persona, cerca del 100%).
+ * Para no cambiar el alto total, al alargar las piernas se achican cabeza y torso.
+ */
+const LARGOS = {
+  hoy: { cabeza: 1, torso: 1, piernas: 19 },
+  1: { cabeza: 15 / 19, torso: 20 / 24, piernas: 27 },
+  2: { cabeza: 13 / 19, torso: 18 / 24, piernas: 31 },
+};
+
+const PROPORCIONES = {
+  A: { sombrero: 1, hombros: 1, cintura: 1, piernas: 0 },
+  Bs: { sombrero: 1.15, hombros: 1.05, cintura: 1, piernas: 2 },
+  B: { sombrero: 1.15, hombros: 1.09, cintura: 0.9, piernas: 3 },
+  C: { sombrero: 1.3, hombros: 1.18, cintura: 0.85, piernas: 6 },
+};
+/** `inclina` = cuánto se va para adelante el torso por cada pixel de alto (al trotar). */
+function deformar(prop = 'A', inclina = 0, largo = 'hoy') {
+  const P = PROPORCIONES[prop], Lg = LARGOS[largo];
+  if (prop === 'A' && !inclina && largo === 'hoy') return null;
+  const nudos = [[9, P.sombrero], [16, 1], [30, 1], [35, P.hombros], [53, P.cintura], [58, 1]];
+  const factor = (y) => {
+    if (y <= nudos[0][0]) return nudos[0][1];
+    for (let i = 1; i < nudos.length; i++) if (y <= nudos[i][0]) {
+      const [y0, f0] = nudos[i - 1], [y1, f1] = nudos[i];
+      return f0 + (f1 - f0) * (y - y0) / (y1 - y0);
+    }
+    return 1;
+  };
+  // El torso se ensancha o se afina; los brazos NO: siguen a la misma distancia del cuerpo
+  // (antes se achicaban con la cintura y quedaban los codos metidos para adentro).
+  const ancho = (dx, f, orilla) => {
+    const a = Math.abs(dx);
+    return Math.sign(dx) * (a <= orilla ? a * f : orilla * f + (a - orilla));
+  };
+  // La inclinación dobla sólo el torso: de los hombros para arriba, cabeza y sombrero
+  // se corren juntos, como una pieza (antes la copa se corría más que la cabeza y "se caía").
+  // La cabeza achicada también se afina un poco, para que la cara no quede aplastada.
+  // El sombrero (arriba de la fila 12) no se toca.
+  const cab = (y) => (y < 12 ? 1 : y < 16 ? 1 + (Lg.cabeza - 1) * (y - 12) / 4
+    : y <= 30 ? Lg.cabeza : y < 33 ? Lg.cabeza + (1 - Lg.cabeza) * (y - 30) / 3 : 1);
+  // De abajo para arriba: los pies no se mueven, las piernas crecen, el torso y la cabeza bajan.
+  const piernas = Lg.piernas + P.piernas, pie = 74 + P.piernas, cadera = pie - piernas;
+  const cuello = cadera - 25 * Lg.torso, tope = cuello - 18 * Lg.cabeza;
+  const alto = (y) => (y >= 55 ? pie - (74 - y) * piernas / 19
+    : y >= 30 ? cadera - (55 - y) * Lg.torso
+      : y >= 12 ? cuello - (30 - y) * Lg.cabeza
+        : tope - (12 - y));
+  return (x, y) => [
+    24 + ancho(x - 24, factor(y) * cab(y), y < 16 ? Infinity : 11) + inclina * (56 - Math.min(56, Math.max(y, 30))),
+    alto(y),
+  ];
+}
+
+// ------------------------------------------------------------ sombreros
+/** g = 0 de frente, 1 girado tres cuartos. `atras` = visto de espaldas. */
+function sombrero(L, cual, g = 0, atras = false) {
+  const c2 = g * 2;
+  if (cual === 'kepi') {
+    L.poly(corrido([[15, 4], [33, 4], [34, 12], [14, 12]], c2), CAP);
+    L.rect(15 + c2, 4, 19, 2, tono(CAP, 1.3));
+    L.rect(14 + c2, 10, 21, 2, tono(CAP, 0.75));
+    if (atras) { L.rect(14 + c2, 12, 21, 1, tono(CAP, 0.6)); return; }
+    L.poly(corrido([[13, 12], [35, 12], [37, 15], [11, 15]], c2 + g), VISOR);
+    L.rect(14 + c2, 12, 20, 1, '#3a3a42');
+    L.rect(22 + c2 + g, 6, 5, 3, LATON); L.rect(23 + c2 + g, 7, 3, 1, '#d8b860');
+    return;
+  }
+  if (cual === 'bombin') {
+    L.elipse(24 + g, 13, 14, 2, '#2e2620');
+    L.elipse(24 + g, 12, 14, 2, '#3a302a');
+    L.elipse(24 + c2, 7, 9, 6, '#3a302a');
+    L.rect(15 + c2, 9, 19, 2, '#221a16');
+    L.rect((atras ? 26 : 19) + c2, 3, 3, 2, '#56483e');
+    return;
+  }
+  L.elipse(24 + g, 13, 21, 3, HAT_S);
+  L.elipse(24 + g, 11, 21, 3, HAT);
+  L.elipse(22 + g, 10, 16, 1, HAT_L);
+  L.poly(corrido([[17, 0], [31, 0], [33, 11], [15, 11]], c2), HAT);
+  L.poly(corrido([[21, 0], [27, 0], [26, 4], [22, 4]], c2 + g), HAT_S);
+  L.rect((atras ? 29 : 18) + c2, 2, 2, 7, HAT_L);
+  L.sobre(15, 0, 21, 11, [HAT], '#3e2e20', 10);
+  L.rect(15 + c2, 8, 19, 3, BANDA);
+  if (!atras) L.rect(29 + c2, 8, 3, 3, LATON);
+}
+
+function sombreroLado(L, cual) {
+  if (cual === 'kepi') {
+    L.poly([[17, 3], [30, 4], [31, 12], [16, 12]], CAP);
+    L.rect(17, 3, 13, 2, tono(CAP, 1.3)); L.rect(16, 10, 15, 2, tono(CAP, 0.75));
+    L.poly([[29, 11], [37, 12], [36, 14], [29, 13]], VISOR);
+    L.rect(26, 6, 3, 3, LATON);
+    return;
+  }
+  if (cual === 'bombin') {
+    L.poly([[10, 12], [36, 12], [37, 14], [9, 14]], '#2e2620');
+    L.elipse(23, 7, 9, 6, '#3a302a');
+    L.rect(14, 9, 18, 2, '#221a16'); L.rect(24, 3, 3, 2, '#56483e');
+    return;
+  }
+  // El ala se ve un poco desde arriba: un óvalo, no una tabla.
+  L.elipse(24, 12, 21, 3.5, HAT_S);
+  L.elipse(24, 11, 21, 3, HAT);
+  L.elipse(22, 10, 15, 1.2, HAT_L);
+  L.rect(37, 14, 7, 1, tono(HAT_S, 0.8));
+  // La copa: luz adelante, sombra atrás.
+  L.poly([[17, 0], [30, 0], [31, 10], [16, 10]], HAT);
+  L.rect(16, 1, 2, 9, HAT_S); L.rect(27, 1, 2, 7, HAT_L);
+  L.poly([[20, 0], [26, 0], [25, 3], [21, 3]], HAT_S);
+  L.rect(16, 7, 15, 3, BANDA);
+}
+
+// -------------------------------------------------------------- cabezas
+function cejasYOjos(L, x, w, estado, izq) {
+  if (estado === 'alerta') {
+    // El ceño: las cejas bajan hacia el medio y el ojo se achica a una línea.
+    if (izq) { L.rect(x, 15, 1, 1, PELO); L.rect(x + 1, 16, 2, 1, PELO); L.rect(x + 3, 17, 1, 1, PELO); }
+    else { L.rect(x + w - 1, 15, 1, 1, PELO); L.rect(x + w - 3, 16, 2, 1, PELO); L.rect(x, 17, 1, 1, PELO); }
+    L.rect(x, 18, w, 1, OJO_B); L.rect(x + 1, 18, 2, 1, NEGRO);
+    L.rect(x, 19, w, 1, PIEL_O);
+  } else if (estado === 'sospecha') {
+    // Una ceja arriba y la otra abajo; los ojos miran de reojo.
+    L.rect(x, izq ? 15 : 17, w, 1, PELO);
+    L.rect(x, 18, w, 1, OJO_B); L.rect(x + w - 2, 18, 2, 1, NEGRO);
+    L.rect(x, 19, w, 1, PIEL_S);
+  } else {
+    L.rect(x, 16, w, 1, PELO);
+    L.rect(x, 17, w, 2, OJO_B); L.rect(x + 1 + (w > 3 ? 0 : 0), 17, 2, 2, NEGRO);
+    L.rect(x, 19, w, 1, PIEL_S);
+  }
+}
+
+function cabezaFrente(L, o, g = 0) {
+  const R = ROPA[o.tipo], d = g * 3;
+  L.elipse(16 + g, 20, 1.5, 2.5, PIEL_S);
+  if (!g) L.elipse(32, 20, 1.5, 2.5, PIEL_S);
+  L.elipse(24 + g, 21, 7, 9, PIEL);
+  L.sobre(16, 12, 18, 4, [PIEL], PIEL_O);
+  L.sobre(16, 16, 18, 1, [PIEL], PIEL_S);
+  L.sobre(28 + g * 2, 18, 6, 10, [PIEL], PIEL_S);
+  L.rect(17 + g, 15, 2, 7, PELO); if (!g) L.rect(30, 15, 2, 7, PELO);
+  if (R.barba) L.sobre(17, 22, 16, 9, [PIEL, PIEL_S], R.barba, R.barbaP);
+  cejasYOjos(L, 19 + d, 4, o.estado, true);
+  cejasYOjos(L, 26 + d, g ? 3 : 4, o.estado, false);
+  L.rect(23 + d, 18, 1, 5, PIEL_L); L.rect(24 + d, 19, 2, 4, PIEL_S);
+  L.rect(22 + d, 23, 2, 1, PIEL_O); L.rect(25 + d, 23, 2, 1, PIEL_O);
+  const big = R.bigote === 'grande'
+    ? [[19, 24], [30, 24], [31, 28], [28, 26], [24, 25], [20, 26], [17, 28]]
+    : [[20, 24], [28, 24], [29, 26], [24, 25], [19, 26]];
+  L.poly(corrido(big, d), BIGOTE);
+  if (o.estado === 'alerta') { L.rect(21 + d, 27, 7, 2, '#3a1a12'); L.rect(22 + d, 27, 5, 1, '#cfc4ae'); }
+  else if (o.estado === 'sospecha') { L.rect(22 + d, 27, 5, 1, '#4a2418'); L.rect(27 + d, 26, 1, 1, '#4a2418'); }
+  else L.rect(21 + d, 27, 7, 1, '#4a2418');
+  L.sobre(17, 29, 16, 2, [PIEL, PIEL_S, R.barba].filter(Boolean), PIEL_O);
+}
+
+function cabezaEspalda(L, o, g = 0) {
+  const R = ROPA[o.tipo];
+  L.rect(21, 27, 7, 6, PIEL_S);
+  if (!g) L.elipse(16, 20, 1.5, 2.5, PIEL_S);
+  L.elipse(32, 20, 1.5, 2.5, PIEL_S);
+  if (g) {
+    // Girado: asoma la mejilla, con la barba, del lado de adelante.
+    L.poly([[27, 15], [32, 18], [32, 27], [28, 29]], PIEL);
+    L.sobre(27, 15, 6, 3, [PIEL], PIEL_O);
+    if (R.barba) L.sobre(27, 22, 6, 8, [PIEL], R.barba, R.barbaP + 20);
+    L.rect(31, 23, 2, 2, BIGOTE);
+  }
+  L.elipse(24 - g * 2, 20, 7, 8, PELO);
+  // Mechones que bajan, en vez de puntitos sueltos.
+  for (const [mx, largo] of [[19, 7], [22, 9], [25, 9], [28, 6]]) L.rect(mx - g * 2, 17, 1, largo, '#3a2a1e');
+  L.rect(18 - g * 2, 27, 13, 1, '#3a2a1e');
+  L.rect(20 - g, 27, 9, 2, PIEL_S);
+}
+
+function cabezaLado(L, o) {
+  const R = ROPA[o.tipo];
+  L.elipse(23, 21, 7, 9, PIEL);
+  // La nariz: un bulto chico, no un pico.
+  L.poly([[29, 18], [31, 20], [31, 23], [29, 23]], PIEL);
+  L.rect(30, 22, 1, 1, PIEL_S);
+  // Pómulo con luz y mandíbula en sombra: le da redondez a la cara.
+  L.rect(25, 20, 3, 1, PIEL_L);
+  L.sobre(19, 23, 4, 6, [PIEL], PIEL_S);
+  L.sobre(16, 12, 17, 4, [PIEL], PIEL_O); L.sobre(16, 16, 17, 1, [PIEL], PIEL_S);
+  // Nuca y patilla
+  L.poly([[16, 13], [21, 13], [21, 16], [19, 26], [16, 25]], PELO);
+  L.elipse(21, 20, 1.5, 2.5, PIEL_S); L.rect(21, 19, 1, 2, PIEL_O);
+  L.rect(23, 15, 1, 6, PELO);
+  if (R.barba) {
+    L.sobre(17, 22, 15, 9, [PIEL, PIEL_S], R.barba, R.barbaP);
+    L.poly([[22, 26], [29, 26], [29, 29], [23, 30]], tono(R.barba, 1.05));
+  }
+  const alerta = o.estado === 'alerta', duda = o.estado === 'sospecha';
+  if (alerta) { L.rect(25, 15, 2, 1, PELO); L.rect(27, 16, 3, 1, PELO); L.rect(27, 18, 2, 1, OJO_B); L.rect(28, 18, 1, 1, NEGRO); }
+  else {
+    L.rect(26, duda ? 15 : 16, 4, 1, PELO);
+    L.rect(27, 17, 2, 2, OJO_B); L.rect(28, 17, 1, 2, NEGRO);
+  }
+  L.rect(26, 19, 3, 1, PIEL_S);
+  L.poly(R.bigote === 'grande' ? [[25, 24], [31, 24], [31, 26], [27, 26], [25, 28]] : [[26, 24], [31, 24], [30, 25], [26, 25]], BIGOTE);
+  if (alerta) { L.rect(28, 26, 3, 1, '#cfc4ae'); } else L.rect(28, 27, 2, 1, '#4a2418');
+  L.sobre(17, 29, 14, 2, [PIEL, PIEL_S, R.barba].filter(Boolean), PIEL_O);
+}
+
+// Lámina 72 px, parte 2: de frente, tres cuartos y de espaldas (caminar, trotar, agacharse).
+
+/**
+ * Qué hace el cuerpo en cada cuadro, visto de frente o de espaldas.
+ * aI/aD: cuánto sube cada pie. tI/tD: si ese pie va 'adelante' (rodilla arriba) o 'atras' (patada).
+ * mI/mD: cuánto baja (+) o sube (−) cada mano. y: rebote del cuerpo (+ abajo).
+ * I y D son izquierda y derecha DE LA IMAGEN.
+ */
+const CAMINATA_FRENTE = [
+  { aI: 0, aD: 0, mI: 0, mD: 0, y: 0 },
+  { aI: 3, aD: 0, mI: 2, mD: -2, y: -1 },
+  { aI: 0, aD: 3, mI: -2, mD: 2, y: -1 },
+  { aI: 1, aD: 0, mI: 1, mD: -1, y: 0 },
+  { aI: 0, aD: 1, mI: -1, mD: 1, y: 0 },
+];
+/** El trote: contacto, bajada, paso y vuelo (los dos pies en el aire); después, lo mismo con la otra pierna. */
+const TROTE_FRENTE_VIEJO = [
+  { aI: 0, aD: 1, mI: 1, mD: -6, y: 1 },
+  { aI: 0, aD: 5, tD: 'atras', mI: 0, mD: -4, y: 2 },
+  { aI: 0, aD: 6, tD: 'adelante', mI: -4, mD: 0, y: 0 },
+  { aI: 3, aD: 4, tD: 'adelante', mI: -6, mD: 1, y: -2 },
+];
+/** Los 8 cuadros: los 4 de una pierna y los mismos con la otra. */
+const espejarTrote = (t4) => t4.concat(t4.map((f) => ({ aI: f.aD, aD: f.aI, tI: f.tD, tD: f.tI, mI: f.mD, mD: f.mI, y: f.y })));
+const TROTE_FRENTE_V = espejarTrote(TROTE_FRENTE_VIEJO);
+/**
+ * EL INTENTO DE PISADA CORTA (descartado: parecía saltar a dos pies). Pisaba 2 cuadros de 4;
+ * los otros 2 son en el aire. Menos tiempo en el piso = menos tiempo patinando.
+ */
+const TROTE_FRENTE_SALTO = espejarTrote([
+  { aI: 0, aD: 4, tD: 'atras', mI: 1, mD: -6, y: 1 },
+  { aI: 0, aD: 6, tD: 'adelante', mI: -2, mD: -3, y: 2 },
+  { aI: 3, tI: 'atras', aD: 5, tD: 'adelante', mI: -5, mD: 0, y: -1 },
+  { aI: 5, tI: 'atras', aD: 3, tD: 'adelante', mI: -6, mD: 1, y: -2 },
+]);
+
+/**
+ * LA PISADA NUEVA: contacto, apoyo, EMPUJE y vuelo corto. La pierna de atrás no se
+ * encoge: se queda estirada empujando (apenas el talón arriba) hasta despegar.
+ */
+const TROTE_FRENTE = espejarTrote([
+  { aI: 0, aD: 3, tD: 'atras', mI: 1, mD: -6, y: 1 },
+  { aI: 0, aD: 6, tD: 'adelante', mI: -2, mD: -3, y: 2 },
+  { aI: 1, tI: 'atras', aD: 5, tD: 'adelante', mI: -5, mD: 0, y: 0 },
+  { aI: 3, tI: 'atras', aD: 2, tD: 'adelante', mI: -6, mD: 1, y: -1 },
+]);
+
+function cuadroFrente(o) {
+  if (o.trote != null) return (PISADA === 'vieja' ? TROTE_FRENTE_V : TROTE_FRENTE)[o.trote];
+  const f = CAMINATA_FRENTE[o.paso || 0];
+  // Agachado: el cuerpo baja 5 y las rodillas se abren.
+  return o.agachado ? { ...f, y: f.y + 5, abre: 1 } : f;
+}
+
+function piernasFrente(L, R, g, f, atras) {
+  const PT = R.pant, c1 = atras ? tono(PT, 0.8) : PT, c2 = atras ? PT : tono(PT, 0.8);
+  const top = 55 + Math.min(0, f.y), ab = f.abre || 0;
+  const xi = 15 + g - ab, xd = 25 + ab;
+  const pierna = (x, a, t, col, der) => {
+    // Una patada para atrás, vista de frente, se esconde detrás del muslo: más oscura.
+    const c = t === 'atras' && !atras ? tono(col, 0.8) : col;
+    const fondo = 70 - a;
+    L.poly(der ? [[x, top], [x + 8, top], [x + 6, fondo], [x, fondo]] : [[x, top], [x + 9, top], [x + 8, fondo], [x + 2, fondo]], c);
+    if (a >= 3 && t !== 'atras') L.rect(x + (der ? 2 : 3), 60, 4, 3, tono(c, 1.22));
+    else if (a) L.rect(x + (der ? 2 : 3), 61, 4, 2, tono(c, 1.15));
+    return c;
+  };
+  const k1 = pierna(xi, f.aI, f.tI, c1, false);
+  const k2 = pierna(xd, f.aD, f.tD, c2, true);
+  if (ab) { L.rect(xi, 62, 2, 3, tono(k1, 1.2)); L.rect(xd + 6, 62, 2, 3, tono(k2, 1.2)); }
+  L.rect(24, top, 1, 6, tono(PT, 0.7));
+  L.rect(xi + 3, 60, 3, 1, tono(PT, 0.75)); L.rect(xd + 2, 64, 3, 1, tono(PT, 0.7));
+  L.sobre(12, top, 25, 18, [c1, c2, k1, k2], tono(PT, 0.86), 12);
+  const bota = (x, a, der) => {
+    L.poly(der ? [[x, 69 - a], [x + 6, 69 - a], [x + 8, 74 - a], [x - 1, 74 - a]] : [[x + 1, 69 - a], [x + 8, 69 - a], [x + 9, 74 - a], [x - 1, 74 - a]], BOTA);
+    L.rect(x + 1, 70 - a, 4, 1, BOTA_L);
+    if (atras) L.rect(x + 1, 72 - a, 5, 2, '#20160f');
+    if (atras && a) L.rect(x, 74 - a, 8, 1, '#5a4a3a');
+  };
+  bota(xi, f.aI, false); bota(xd, f.aD, true);
+  if (R.espuela) { L.rect(xi - 3, 73 - f.aI, 2, 1, ESPUELA); L.rect(xd + 8, 73 - f.aD, 2, 1, ESPUELA); }
+}
+
+function torsoFrente(L, R, o, g, f) {
+  const d = g * 2, [C0, CL, CS] = R.chal, [M0, ML, MS] = R.manga;
+  // Los brazos: el de la izquierda entero; el otro, girado, casi tapado.
+  L.poly([[9 + g, 33], [14 + g, 32], [14 + g, 53 + f.mI], [9 + g, 54 + f.mI]], M0);
+  L.rect(10 + g, 34, 3, 1, ML); L.rect(11 + g, 38, 1, 8 + Math.min(0, f.mI), MS);
+  if (!o.arma) {
+    if (g) L.poly([[33, 33], [36, 34], [36, 53 + f.mD], [33, 52]], MS);
+    else L.poly([[34, 32], [39, 33], [39, 54 + f.mD], [34, 53 + f.mD]], MS);
+  }
+  if (R.saco) {
+    L.poly([[12 + g, 32], [36 - g, 32], [35 - g, 57], [13 + g, 57]], C0);
+    L.sobre(12, 32, 25, 26, [C0], CS, 10);
+    L.rect(14 + g, 34, 2, 20, CL);
+    L.poly([[20 + d, 32], [24 + d, 40], [28 + d, 32]], R.cuello === 'corbata' ? BLANCA : CS);
+    L.rect(24 + d, 40, 1, 17, CS);
+    if (R.cuello === 'corbata') {
+      L.rect(23 + d, 33, 2, 6, CORBATA);
+      for (const by of [45, 51]) L.rect(26 + d, by, 2, 2, R.botones);
+    } else {
+      for (const by of [42, 47, 52]) { L.rect(21 + d, by, 2, 2, R.botones); L.rect(26 + d, by, 2, 2, R.botones); }
+      L.rect(13 + g, 54, 23 - 2 * g, 2, '#2a2018');
+    }
+  } else {
+    L.poly([[13 + g, 32], [35 - g, 32], [34 - g, 55], [14 + g, 55]], C0);
+    L.sobre(13, 32, 23, 24, [C0], CS, 14);
+    L.rect(15 + g, 34, 2, 19, CL);
+    L.poly([[20 + d, 33], [28 + d, 33], [27 + d, 55], [21 + d, 55]], CAM);
+    L.rect(21 + d, 35, 1, 19, CAM_L); L.rect(26 + d, 35, 1, 19, CAM_S);
+    for (const by of [38, 44, 50]) L.rect(24 + d, by, 1, 1, OJO_B);
+    L.rect(28 + d, 35, 1, 20, CS);
+    L.rect(14 + g, 53, 20 - g, 3, CINTO); L.rect(22 + d, 53, 5, 3, LATON); L.rect(23 + d, 54, 3, 1, CINTO);
+  }
+  if (R.funda) {
+    L.poly([[31 - g, 55], [36 - g, 55], [35 - g, 64], [32 - g, 64]], FUNDA);
+    L.poly([[32 - g, 49], [36 - g, 49], [37 - g, 55], [33 - g, 55]], CULATA); L.rect(33 - g, 50, 2, 1, CULATA_L);
+  }
+  // Una mano que sube viene hacia adelante: se ve un poco más grande.
+  const mano = (x, m, c) => L.elipse(x, 56 + m, m <= -4 ? 2.5 : 2, m <= -4 ? 3 : 3, c);
+  mano(11 + g + (f.mI <= -4 ? 1 : 0), f.mI, PIEL);
+  if (!o.arma) mano((g ? 35 : 37) - (f.mD <= -4 ? 1 : 0), f.mD, PIEL_S);
+  L.rect(21 + d, 29, 7, 4, PIEL_S);
+  if (R.cuello === 'panuelo') {
+    L.poly(corrido([[16, 31], [32, 31], [31, 34], [25, 42], [23, 42], [17, 34]], d), PAN_R);
+    L.rect(24 + d, 34, 1, 7, PAN_RS); L.rect(20 + d, 32, 1, 4, PAN_RS); L.rect(28 + d, 32, 1, 4, PAN_RS);
+    L.rect(18 + d, 31, 6, 1, PAN_RL);
+  } else if (R.cuello === 'corbata') L.rect(19 + d, 30, 11, 2, BLANCA);
+  else L.rect(18 + d, 30, 13, 3, CS);
+  // Apuntando: de frente el caño viene hacia la cámara; girado, en diagonal.
+  if (o.arma) {
+    if (g) apuntar(L, R, [33, 34], [40, 44], [0.7, 0.7], 6);
+    else apuntar(L, R, [34, 34], [30, 44], [0, 1], 3);
+  }
+}
+
+function frente(L, o = {}) {
+  o = { tipo: 'jugador', ...o };
+  const R = ROPA[o.tipo], g = o.g || 0, f = cuadroFrente(o);
+  piernasFrente(L, R, g, f, false);
+  const U = mover(L, 0, f.y);
+  torsoFrente(U, R, o, g, f);
+  L.rigido(() => { cabezaFrente(U, o, g); sombrero(U, R.sombrero, g, false); });
+}
+
+function espalda(L, o = {}) {
+  o = { tipo: 'jugador', ...o };
+  const R = ROPA[o.tipo], g = o.g || 0, f = cuadroFrente(o);
+  const [C0, CL, CS] = R.chal, [M0, , MS] = R.manga;
+  piernasFrente(L, R, g, f, true);
+  const U = mover(L, 0, f.y);
+  if (g) U.poly([[12, 34], [15, 33], [15, 52], [12, 53 + f.mI]], MS);
+  else U.poly([[9, 33], [14, 32], [14, 53], [9, 54 + f.mI]], MS);
+  if (!o.arma) U.poly([[34 - g, 32], [39 - g, 33], [39 - g, 54 + f.mD], [34 - g, 53]], M0);
+  const largo = R.saco ? 57 : 55;
+  U.poly([[13 + g, 32], [35 - g, 32], [34 - g, largo], [14 + g, largo]], C0);
+  U.sobre(13, 32, 23, 26, [C0], CS, 14);
+  U.rect(24 + g, 33, 1, largo - 34, CS); U.rect(31 - g, 34, 2, 19, CL);
+  if (!R.saco) U.rect(14 + g, 53, 20 - g, 3, CINTO);
+  else U.rect(14 + g, 45, 20 - 2 * g, 2, CS);
+  if (R.funda) {
+    U.poly([[12 + g, 55], [17 + g, 55], [16 + g, 64], [13 + g, 64]], FUNDA);
+    U.poly([[12 + g, 49], [16 + g, 49], [16 + g, 55], [11 + g, 55]], CULATA);
+  }
+  U.elipse(g ? 13 : 11, 56 + f.mI, 2, 3, PIEL_S); if (!o.arma) U.elipse(37 - g, 56 + f.mD, 2, 3, PIEL);
+  L.rigido(() => cabezaEspalda(U, o, g));
+  if (R.cuello === 'panuelo') {
+    U.poly([[17, 30], [31, 30], [30, 33], [18, 33]], PAN_R);
+    U.rect(22, 32, 4, 3, PAN_RS);
+    // Las puntas del nudo, que se mueven con el rebote.
+    const v = Math.round((f.mI - f.mD) / 3);
+    U.poly([[23, 34], [26, 34], [27 - v, 42 - Math.max(0, -f.y)], [24, 38], [21 - v, 42 - Math.max(0, -f.y)]], PAN_R);
+  } else if (R.cuello === 'corbata') U.rect(19, 29, 11, 3, BLANCA);
+  else U.rect(18, 29, 13, 4, CS);
+  // Apuntando de espaldas: el brazo se va para arriba, al costado de la cabeza.
+  if (o.arma) {
+    if (g) apuntar(U, R, [33, 33], [39, 27], [0.6, -0.8], 6);
+    else apuntar(U, R, [34, 33], [35, 25], [0, -1], 5);
+  }
+  L.rigido(() => sombrero(U, R.sombrero, g, true));
+}
+
+// Lámina 72 px, parte 3: de costado (caminar, trotar, agacharse).
+
+/** Un tramo grueso de a hasta b, con el ancho medido de costado a la línea (sirve en cualquier ángulo). */
+function tramo(L, a, b, w, col) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], n = Math.hypot(dx, dy) || 1, px = -dy / n * w, py = dx / n * w;
+  L.poly([[a[0] + px, a[1] + py], [b[0] + px, b[1] + py], [b[0] - px, b[1] - py], [a[0] - px, a[1] - py]], col);
+}
+
+/** Una pierna en dos tramos (muslo y canilla), con la rodilla redonda. */
+function pierna(L, cad, rod, tob, c) {
+  tramo(L, cad, rod, 3.5, c);
+  L.elipse(rod[0], rod[1], 3, 3, c);
+  tramo(L, rod, tob, 2.7, c);
+}
+
+/** La bota mira hacia adelante (a la derecha). `talon` = el pie que empuja, con el talón arriba. */
+function botaLado(L, [x, y], c, talon, espuela) {
+  if (talon) {
+    L.poly([[x - 3, y - 3], [x + 3, y - 3], [x + 6, y + 3], [x + 6, y + 4], [x - 1, y + 3], [x - 4, y]], c);
+    if (espuela) L.rect(x - 6, y, 2, 1, ESPUELA);
+  } else {
+    L.poly([[x - 3, y - 3], [x + 3, y - 3], [x + 3, y], [x + 7, y + 1], [x + 7, y + 3], [x - 4, y + 3], [x - 4, y]], c);
+    if (espuela) L.rect(x - 6, y + 2, 2, 1, ESPUELA);
+  }
+  L.rect(x - 3, y - 2, 3, 1, BOTA_L);
+}
+
+/** Un brazo: hombro, codo y muñeca. Con `borde`, lleva una línea oscura detrás. */
+function brazoLado(L, hombro, codo, muneca, c, borde, mano) {
+  if (borde) {
+    tramo(L, [hombro[0] - 1, hombro[1]], [codo[0] - 1, codo[1]], 3, borde);
+    tramo(L, [codo[0] - 1, codo[1]], [muneca[0] - 1, muneca[1]], 2.5, borde);
+  }
+  tramo(L, hombro, codo, 3, c);
+  L.elipse(codo[0], codo[1], 2.5, 2.5, c);
+  tramo(L, codo, muneca, 2.5, c);
+  const k = 2.5 / (Math.hypot(muneca[0] - codo[0], muneca[1] - codo[1]) || 1);
+  L.elipse(muneca[0] + (muneca[0] - codo[0]) * k, muneca[1] + (muneca[1] - codo[1]) * k, 2, 2.5, mano);
+}
+
+/**
+ * El brazo que apunta con el revólver, igual para todas las vistas: del hombro a la
+ * mano, y el caño hacia `dir`. Con el caño corto (hacia la cámara) se ve la boca.
+ */
+function apuntar(L, R, hombro, mano, dir, largo) {
+  const [M0, ML, MS] = R.manga;
+  tramo(L, [hombro[0], hombro[1] + 1], [mano[0], mano[1] + 1], 3, MS);
+  tramo(L, hombro, mano, 2.6, M0);
+  L.rect(Math.round((hombro[0] + mano[0]) / 2), Math.round((hombro[1] + mano[1]) / 2) - 1, 2, 1, ML);
+  L.rect(mano[0] - 1, mano[1] + 1, 2, 3, CULATA);
+  L.elipse(mano[0], mano[1], 2, 2, PIEL);
+  const tambor = [mano[0] + dir[0] * 2, mano[1] + dir[1] * 2];
+  if (largo <= 3) {
+    L.elipse(tambor[0], tambor[1], 2, 2, '#4a443e');
+    L.rect(tambor[0], tambor[1], 1, 1, NEGRO);
+    return;
+  }
+  const fin = [mano[0] + dir[0] * largo, mano[1] + dir[1] * largo];
+  L.elipse(tambor[0], tambor[1], 2, 2, '#3a342e');
+  tramo(L, tambor, fin, 1.2, '#4a443e');
+  L.rect(fin[0], fin[1], 1, 1, '#8a8278');
+}
+
+// ------------------------------------------------------------ los cuadros
+// Cada pierna: [cadera, rodilla, tobillo, talón arriba]. bC/bL: [codo, muñeca] del brazo cercano/lejano.
+// y = cuánto baja el cuerpo; f = cómo flamean las puntas del pañuelo.
+function caminataLado(paso) {
+  const POSES = [
+    { cerca: [[24, 56], [24, 63], [24, 71], 0], lejos: [[22, 56], [22, 63], [21, 71], 0] },
+    { cerca: [[25, 57], [28, 64], [31, 71], 0], lejos: [[22, 57], [19, 64], [15, 70], 1] },
+    { cerca: [[24, 57], [20, 64], [16, 70], 1], lejos: [[23, 57], [26, 64], [29, 71], 0] },
+  ];
+  const medio = (a, b) => [0, 1, 2].map((i) => [(a[i][0] + b[i][0]) / 2, (a[i][1] + b[i][1]) / 2]).concat([0]);
+  const mitad = (a, b) => ({ cerca: medio(a.cerca, b.cerca), lejos: medio(a.lejos, b.lejos) });
+  POSES.push(mitad(POSES[0], POSES[1]), mitad(POSES[0], POSES[2]));
+  const s = [0, -4, 4, -2, 2][paso];
+  return {
+    ...POSES[paso], y: paso === 1 || paso === 2 ? 1 : 0, f: [0, -1, 1, 0, 0][paso],
+    bC: [[24 + s * 0.5, 44], [24 + s, 52]], bL: [[21 - s * 0.5, 44], [21 - s, 52]],
+  };
+}
+
+/** El trote: contacto, bajada, paso, vuelo (los dos pies en el aire). Brazos doblados que bombean. */
+const TROTE_LADO_VIEJO = [
+  { cerca: [[25, 57], [29, 63], [32, 70], 0], lejos: [[22, 57], [18, 63], [13, 68], 1], y: 1, f: 0,
+    bC: [[18, 42], [21, 49]], bL: [[26, 41], [30, 35]] },
+  { cerca: [[24, 58], [27, 64], [24, 71], 0], lejos: [[22, 58], [18, 63], [12, 61], 1], y: 2, f: 1,
+    bC: [[19, 43], [23, 50]], bL: [[24, 43], [29, 40]] },
+  { cerca: [[24, 56], [24, 63], [22, 71], 1], lejos: [[23, 56], [30, 59], [26, 66], 0], y: 0, f: -1,
+    bC: [[26, 43], [31, 40]], bL: [[17, 43], [20, 50]] },
+  { cerca: [[23, 54], [19, 60], [14, 65], 1], lejos: [[25, 54], [31, 58], [32, 65], 0], y: -2, f: -2,
+    bC: [[28, 41], [32, 35]], bL: [[16, 42], [19, 49]] },
+];
+{
+  // La segunda mitad es la primera con las piernas y los brazos cambiados de lado.
+  const corre = (p, dx) => [[p[0][0] + dx, p[0][1]], [p[1][0] + dx, p[1][1]], [p[2][0] + dx, p[2][1]], p[3]];
+  const correB = (b, dx) => b.map(([x, y]) => [x + dx, y]);
+  var completarTrote = (t4) => t4.concat(t4.map((t) => ({
+    cerca: corre(t.lejos, 2), lejos: corre(t.cerca, -2), bC: correB(t.bL, 3), bL: correB(t.bC, -3), y: t.y, f: -t.f,
+  })));
+}
+const TROTE_LADO_V = completarTrote(TROTE_LADO_VIEJO);
+
+/**
+ * EL INTENTO DE PISADA CORTA (descartado: encogía la pierna de atrás y parecía saltar a dos pies).
+ * Antes el pie apoyado pisaba 3 cuadros de 4 y se corría 10 pixeles para atrás:
+ * mientras avanzabas 15 unidades, él recorría 2,8 y el resto se veía patinar.
+ * Ahora pisa 2 cuadros (contacto adelante, apoyo atrás empujando) y se corre 14
+ * pixeles: mientras avanzás 10, recorre 3,9. Los otros 2 cuadros van en el aire.
+ */
+const TROTE_LADO_SALTO = completarTrote([
+  { cerca: [[25, 57], [29, 63], [31, 71], 0], lejos: [[22, 57], [18, 62], [13, 64], 1], y: 1, f: 0,
+    bC: [[18, 42], [21, 49]], bL: [[26, 41], [30, 35]] },
+  { cerca: [[24, 58], [23, 64], [17, 71], 1], lejos: [[23, 58], [29, 60], [27, 67], 0], y: 2, f: 1,
+    bC: [[26, 43], [31, 40]], bL: [[17, 43], [20, 50]] },
+  { cerca: [[23, 54], [19, 60], [13, 65], 1], lejos: [[25, 54], [31, 58], [33, 64], 0], y: -1, f: -1,
+    bC: [[28, 41], [32, 35]], bL: [[16, 42], [19, 49]] },
+  { cerca: [[23, 53], [20, 60], [15, 62], 1], lejos: [[25, 53], [31, 59], [33, 67], 0], y: -2, f: -2,
+    bC: [[27, 42], [31, 37]], bL: [[17, 42], [20, 49]] },
+]);
+
+/** Agachado: la caminata con las caderas 5 más abajo y las rodillas adelante. */
+function agachadoLado(paso) {
+  const c = caminataLado(paso);
+  const baja = (p) => [[p[0][0], p[0][1] + 5], [p[1][0] + 3, p[1][1] + 3], p[2], p[3]];
+  return { ...c, cerca: baja(c.cerca), lejos: baja(c.lejos), y: c.y + 5, dx: 1 };
+}
+
+/**
+ * LA PISADA NUEVA: contacto adelante, apoyo con la rodilla cargada, EMPUJE con la
+ * pierna de atrás estirada (punta en el piso) y un vuelo corto. El pie apoyado se
+ * corre 18 pixeles para atrás en 3 cuadros, y con las piernas largas eso crece.
+ */
+const TROTE_LADO = completarTrote([
+  { cerca: [[25, 57], [28, 63], [32, 71], 0], lejos: [[22, 57], [19, 62], [16, 66], 1], y: 1, f: 0,
+    bC: [[18, 42], [21, 49]], bL: [[26, 41], [30, 35]] },
+  { cerca: [[24, 58], [25, 64], [24, 71], 0], lejos: [[23, 58], [24, 62], [18, 64], 1], y: 2, f: 1,
+    bC: [[21, 44], [25, 50]], bL: [[22, 43], [27, 45]] },
+  { cerca: [[24, 56], [20, 63], [14, 70], 1], lejos: [[24, 56], [30, 59], [28, 66], 0], y: 0, f: -1,
+    bC: [[26, 42], [31, 38]], bL: [[17, 42], [19, 49]] },
+  { cerca: [[23, 54], [19, 61], [13, 66], 1], lejos: [[25, 54], [31, 60], [33, 67], 0], y: -1, f: -2,
+    bC: [[28, 41], [32, 35]], bL: [[16, 42], [19, 49]] },
+]);
+
+// ---------------------------------------------------------------- dibujo
+function lado(L, o = {}) {
+  o = { tipo: 'jugador', ...o };
+  const R = ROPA[o.tipo];
+  const [C0, CL, CS] = R.chal, [M0, ML, MS] = R.manga, PT = R.pant;
+  const P0 = o.trote != null ? (PISADA === 'vieja' ? TROTE_LADO_V : TROTE_LADO)[o.trote] : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
+  // Piernas más largas = zancada más larga: rodilla y tobillo se abren desde la cadera
+  // (lo vertical ya lo estira la deformación).
+  const kl = (o.piernas || 19) / 19;
+  const abre = (p) => [p[0], [p[0][0] + (p[1][0] - p[0][0]) * kl, p[1][1]], [p[0][0] + (p[2][0] - p[0][0]) * kl, p[2][1]], p[3]];
+  const P = { ...P0, cerca: abre(P0.cerca), lejos: abre(P0.lejos) };
+  const U = mover(L, P.dx || 0, P.y);
+
+  // Lo de atrás, en sombra: la pierna y el brazo lejanos.
+  pierna(L, P.lejos[0], P.lejos[1], P.lejos[2], tono(PT, 0.7));
+  botaLado(L, P.lejos[2], '#22180f', P.lejos[3], false);
+  brazoLado(U, [21, 34], P.bL[0], P.bL[1], MS, null, PIEL_O);
+
+  // El torso: pecho adelante, espalda un poco curva.
+  const largo = R.saco ? 58 : 55;
+  U.poly([[17, 32], [28, 32], [31, 36], [31, largo - 5], [30, largo], [16, largo], [15, 44], [16, 36]], C0);
+  U.sobre(15, 32, 17, 27, [C0], CS, 14);
+  U.rect(16, 34, 2, largo - 36, CS);
+  U.sobre(15, largo - 6, 17, 6, [C0], CS, 45);
+  if (R.saco) {
+    U.rect(29, 34, 1, largo - 35, CS); U.rect(26, 34, 1, largo - 40, CL);
+    if (R.cuello === 'corbata') { U.rect(29, 33, 2, 9, BLANCA); U.rect(30, 34, 1, 6, CORBATA); }
+    for (const by of [40, 46, 52]) U.rect(30, by, 1, 2, R.botones);
+    if (R.cuello !== 'corbata') U.rect(15, 52, 17, 2, '#2a2018');
+  } else {
+    U.poly([[27, 33], [30, 35], [31, 50], [30, 53], [27, 53]], CAM);
+    U.rect(27, 34, 1, 19, CAM_S); U.rect(29, 36, 1, 12, CAM_L); U.rect(26, 33, 1, 19, CL);
+    U.rect(29, 38, 1, 1, OJO_B); U.rect(30, 45, 1, 1, OJO_B);
+    U.rect(16, 53, 15, 3, CINTO); U.rect(29, 53, 2, 3, LATON);
+  }
+  U.poly([[25, 32], [29, 32], [31, 35], [28, 37], [25, 35]], MS);
+
+  // La pierna cercana
+  pierna(L, P.cerca[0], P.cerca[1], P.cerca[2], PT);
+  L.sobre(8, 52, 32, 23, [PT], tono(PT, 0.86), 12);
+  L.rect(P.cerca[1][0], P.cerca[1][1] - 2, 2, 2, tono(PT, 1.15));
+  botaLado(L, P.cerca[2], BOTA, P.cerca[3], R.espuela);
+  if (R.funda) {
+    U.poly([[21, 55], [26, 55], [25, 64], [22, 64]], FUNDA);
+    U.poly([[22, 49], [26, 48], [27, 55], [23, 55]], CULATA); U.rect(23, 50, 2, 1, CULATA_L);
+  }
+
+  // El cuello y lo que lleva
+  U.rect(21, 29, 6, 4, PIEL_S);
+  if (R.cuello === 'panuelo') {
+    U.poly([[18, 31], [30, 31], [31, 34], [19, 34]], PAN_R);
+    U.rect(19, 31, 8, 1, PAN_RL);
+    U.poly([[25, 33], [32, 33], [29, 40]], PAN_R); U.rect(28, 35, 1, 3, PAN_RS);
+    const f = P.f;
+    U.rect(17, 31, 3, 3, PAN_RS);
+    U.poly([[18, 31], [11, 28 + f], [13, 31 + f], [18, 33]], PAN_R);
+    U.poly([[18, 33], [10, 36 - f], [13, 34 - f], [18, 34]], PAN_RS);
+  } else if (R.cuello === 'corbata') U.rect(20, 30, 10, 2, BLANCA);
+  else U.rect(19, 30, 11, 3, CS);
+
+  // El brazo cercano (o apuntando, si te vio).
+  if (o.arma) {
+    apuntar(U, R, [24, 34], [37, 38], [1, 0], 9);
+  } else {
+    U.elipse(23.5, 35, 3.5, 3, MS); U.elipse(24, 35, 3, 2.5, M0); U.rect(22, 33, 3, 1, ML);
+    brazoLado(U, [24, 34], P.bC[0], P.bC[1], M0, MS, PIEL);
+  }
+
+  L.rigido(() => { cabezaLado(U, o); sombreroLado(U, R.sombrero); });
+}
+
+// Lámina 72 px, parte 4: LAS CABEZAS A LA MEDIDA NUEVA (piernas opción 1).
+//
+// Con las piernas largas la cabeza pasó de 19 a 15 filas. Achicarla deformando
+// borraba filas: el ala tapaba los ojos y bigote, boca y mentón quedaban pegados.
+// Estas cabezas están dibujadas de nuevo a 15 filas (de la 12 a la 27) y reemplazan
+// a las de l72-base.js. Cejas y ojos quedan igual que antes (filas 16 a 19);
+// lo que se acomodó es de la nariz para abajo.
+
+function cabezaFrente(L, o, g = 0) {
+  const R = ROPA[o.tipo], d = g * 3;
+  L.elipse(16 + g, 19, 1.5, 2.5, PIEL_S);
+  if (!g) L.elipse(32, 19, 1.5, 2.5, PIEL_S);
+  L.elipse(24 + g, 19.5, 7, 7.5, PIEL);
+  L.sobre(16, 12, 18, 4, [PIEL], PIEL_O);
+  L.sobre(16, 16, 18, 1, [PIEL], PIEL_S);
+  L.sobre(28 + g * 2, 17, 6, 9, [PIEL], PIEL_S);
+  L.rect(17 + g, 15, 2, 6, PELO); if (!g) L.rect(30, 15, 2, 6, PELO);
+  if (R.barba) L.sobre(17, 20, 16, 8, [PIEL, PIEL_S], R.barba, R.barbaP);
+  cejasYOjos(L, 19 + d, 4, o.estado, true);
+  cejasYOjos(L, 26 + d, g ? 3 : 4, o.estado, false);
+  // Nariz corta (3 filas), bigote, boca y mentón, sin pisarse.
+  L.rect(23 + d, 18, 1, 3, PIEL_L); L.rect(24 + d, 19, 2, 2, PIEL_S);
+  L.rect(22 + d, 21, 2, 1, PIEL_O); L.rect(25 + d, 21, 2, 1, PIEL_O);
+  const big = R.bigote === 'grande'
+    ? [[19, 22], [30, 22], [31, 25], [28, 24], [24, 23], [20, 24], [17, 25]]
+    : [[20, 22], [28, 22], [29, 24], [24, 23], [19, 24]];
+  L.poly(corrido(big, d), BIGOTE);
+  if (o.estado === 'alerta') { L.rect(21 + d, 24, 7, 2, '#3a1a12'); L.rect(22 + d, 24, 5, 1, '#cfc4ae'); }
+  else if (o.estado === 'sospecha') { L.rect(22 + d, 24, 5, 1, '#4a2418'); L.rect(27 + d, 23, 1, 1, '#4a2418'); }
+  else L.rect(21 + d, 24, 7, 1, '#4a2418');
+  L.sobre(17, 26, 16, 2, [PIEL, PIEL_S, R.barba].filter(Boolean), PIEL_O);
+}
+
+function cabezaEspalda(L, o, g = 0) {
+  const R = ROPA[o.tipo];
+  L.rect(21, 25, 7, 4, PIEL_S);
+  if (!g) L.elipse(16, 19, 1.5, 2.5, PIEL_S);
+  L.elipse(32, 19, 1.5, 2.5, PIEL_S);
+  if (g) {
+    // Girado: asoma la mejilla, con la barba, del lado de adelante.
+    L.poly([[27, 15], [32, 17], [32, 24], [28, 26]], PIEL);
+    L.sobre(27, 15, 6, 3, [PIEL], PIEL_O);
+    if (R.barba) L.sobre(27, 20, 6, 7, [PIEL], R.barba, R.barbaP + 20);
+    L.rect(31, 21, 2, 2, BIGOTE);
+  }
+  L.elipse(24 - g * 2, 19.5, 7, 7, PELO);
+  for (const [mx, largo] of [[19, 6], [22, 7], [25, 7], [28, 5]]) L.rect(mx - g * 2, 17, 1, largo, '#3a2a1e');
+  L.rect(18 - g * 2, 25, 13, 1, '#3a2a1e');
+  L.rect(20 - g, 25, 9, 2, PIEL_S);
+}
+
+function cabezaLado(L, o) {
+  const R = ROPA[o.tipo];
+  L.elipse(23, 19.5, 7, 7.5, PIEL);
+  L.poly([[29, 17], [31, 19], [31, 21], [29, 21]], PIEL);
+  L.rect(30, 20, 1, 1, PIEL_S);
+  L.sobre(16, 12, 17, 4, [PIEL], PIEL_O); L.sobre(16, 16, 17, 1, [PIEL], PIEL_S);
+  L.sobre(19, 21, 4, 5, [PIEL], PIEL_S);
+  L.poly([[16, 13], [21, 13], [21, 15], [19, 23], [16, 22]], PELO);
+  L.elipse(21, 19, 1.5, 2, PIEL_S); L.rect(21, 18, 1, 2, PIEL_O);
+  L.rect(23, 15, 1, 5, PELO);
+  if (R.barba) {
+    L.sobre(17, 20, 15, 8, [PIEL, PIEL_S], R.barba, R.barbaP);
+    L.poly([[22, 23], [29, 23], [29, 26], [23, 27]], tono(R.barba, 1.05));
+  }
+  const alerta = o.estado === 'alerta', duda = o.estado === 'sospecha';
+  if (alerta) { L.rect(25, 15, 2, 1, PELO); L.rect(27, 16, 3, 1, PELO); L.rect(27, 18, 2, 1, OJO_B); L.rect(28, 18, 1, 1, NEGRO); }
+  else {
+    L.rect(26, duda ? 15 : 16, 4, 1, PELO);
+    L.rect(27, 17, 2, 2, OJO_B); L.rect(28, 17, 1, 2, NEGRO);
+  }
+  L.rect(26, 19, 3, 1, PIEL_S);
+  L.rect(25, 20, 2, 1, PIEL_L);
+  L.poly(R.bigote === 'grande' ? [[25, 21], [31, 21], [31, 23], [27, 23], [25, 25]] : [[26, 21], [31, 21], [30, 22], [26, 22]], BIGOTE);
+  if (alerta) L.rect(28, 23, 3, 1, '#cfc4ae'); else L.rect(28, 24, 2, 1, '#4a2418');
+  L.sobre(17, 26, 14, 2, [PIEL, PIEL_S, R.barba].filter(Boolean), PIEL_O);
+}
+
+const FONDO = 'data:image/png;base64,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';
+// PRUEBA JUGABLE A 72 PX. Va aparte del juego y se tira cuando se decida.
+// Todo se mueve en unidades del juego (las de hoy) y se dibuja ×4: es
+// justamente el plan, la lógica no cambia y sólo cambia cómo se pinta.
+const ESC = 4, OX = 8, OY = 6, PI = Math.PI;
+
+// Lo ya elegido y lo que se cambia jugando (arranca con lo recomendado).
+const TAMANO = 80, VELOCIDAD = 78, RITMO_CAMINATA = 14;
+const RITMOS_TROTE = [12, 16, 20], PROPS = ['A', 'Bs', 'B'];
+let ritmo = 2, prop = 'A', largo = '1';
+const LARGOS_ORDEN = ['hoy', '1', '2'];
+/** Cuánto mide el dibujo (en puntos de pantalla). Las piernas largas lo hacen más alto. */
+function medidas() {
+  const s = TAMANO / 72, lp = PROPORCIONES[prop].piernas;
+  return { s, W: Math.ceil(72 * s) + 2 * OX, H: Math.ceil((80 + lp) * s) + OY, CX: Math.round(24 * s) + OX, PIE: Math.round((74 + lp) * s) + OY };
+}
+const cv = document.getElementById('c');
+cv.width = 1920; cv.height = 1080;
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const fondo = new Image();
+fondo.src = FONDO;
+
+// ------------------------------------------------ el vagón y los números
+const CONF = {
+  velocidad: 78, despacio: 40, patrulla: 24,
+  vista: 118, apertura: 0.95, sospCerca: 2.2, sospLejos: 0.45, sospMoviendo: 1.5, sospDespacio: 0.45,
+  memoria: 4.0, olvido: 0.15, oidoRadio: 58, oidoRitmo: 0.55,
+};
+const PISO = { x0: 2, x1: 460, y0: 80, y1: 195 };
+const ASIENTOS = [
+  ...[0, 95, 191, 287, 383].map((x) => ({ x, y: 84, w: 31, h: 18 })),
+  ...[31, 127, 223, 319, 415].map((x) => ({ x, y: 164, w: 31, h: 18 })),
+];
+const HW = 4.5, HH = 3.5;
+
+function libre(x, y, yo) {
+  if (x - HW < PISO.x0 || x + HW > PISO.x1 || y - HH < PISO.y0 || y + HH > PISO.y1) return false;
+  if (ASIENTOS.some((a) => x + HW > a.x && x - HW < a.x + a.w && y + HH > a.y && y - HH < a.y + a.h)) return false;
+  return ![jugador, ...guardias, ...pasajeros].some((o) => o !== yo && !o.muerto && Math.abs(o.x - x) < 8 && Math.abs(o.y - y) < 6);
+}
+
+// ------------------------------------------------------------- dibujos
+const cache = new Map();
+function vistaDe(angulo) {
+  const sector = ((Math.round(angulo / (PI / 4)) % 8) + 8) % 8;
+  return [[lado, 0, false], [frente, 1, false], [frente, 0, false], [frente, 1, true],
+    [lado, 0, true], [espalda, 1, true], [espalda, 0, false], [espalda, 1, false]][sector];
+}
+function sprite(o) {
+  const [fn, g, espejo] = vistaDe(o.dir);
+  const modo = o.modo || 'quieto';
+  const estado = o.estado === 'calma' ? undefined : o.estado;
+  // Vos siempre con el revólver en la mano (apuntás con el mouse); el guardia, cuando te vio.
+  const arma = o.tipo === 'jugador' ? !!o.apunta && !o.muerto : o.estado === 'alerta';
+  const cuadro = modo === 'quieto' ? 0 : cuadroDe(o);
+  const k = [o.tipo, fn.name, g, modo, cuadro, estado, arma, prop, PISADA, largo].join('|');
+  if (!cache.has(k)) {
+    const m = medidas();
+    // Al trotar el torso se va para adelante; de frente o de espaldas no se nota.
+    const lateral = fn === lado ? 1 : g ? 0.5 : 0;
+    const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12 : 0) * lateral;
+    const L = Lienzo(m.W, m.H, OX, OY, m.s, deformar(prop, inclina, largo));
+    const datos = { tipo: o.tipo, g, estado, arma, piernas: LARGOS[largo].piernas };
+    if (modo === 'trotar') datos.trote = cuadro;
+    else { datos.paso = cuadro; datos.agachado = modo === 'agachado'; }
+    fn(L, datos);
+    cache.set(k, L.canvas());
+  }
+  return { cv: cache.get(k), espejo };
+}
+
+const GLIFOS = {
+  '?': ['.###.', '#...#', '....#', '...#.', '..#..', '..#..', '.....', '..#..'],
+  '!': ['##', '##', '##', '##', '##', '..', '##'],
+};
+/** Los avisos, del mismo tamaño que hoy: cada cuadradito del signo mide 4×4. */
+function signo(x, abajo, cual, llenado) {
+  const gl = GLIFOS[cual], k = 4, w = gl[0].length * k, h = gl.length * k;
+  const x0 = Math.round(x - w / 2), y0 = Math.round(abajo - h - (llenado != null ? 12 : 0));
+  for (const [col, pad] of [[NEGRO, 2], [cual === '?' ? '#f8d830' : '#ff3a2a', 0]]) {
+    ctx.fillStyle = col;
+    gl.forEach((f, j) => [...f].forEach((ch, i) => {
+      if (ch === '#') ctx.fillRect(x0 + i * k - pad, y0 + j * k - pad, k + 2 * pad, k + 2 * pad);
+    }));
+  }
+  if (llenado != null) {
+    ctx.fillStyle = NEGRO; ctx.fillRect(Math.round(x) - 18, abajo - 8, 36, 8);
+    ctx.fillStyle = llenado > 0.66 ? '#f09030' : '#f8d830';
+    ctx.fillRect(Math.round(x) - 16, abajo - 6, Math.round(32 * llenado), 4);
+  }
+}
+
+// ------------------------------------------------------------- la gente
+let jugador, guardias, pasajeros, zoom = 1;
+function nuevaPartida() {
+  const guardia = (x, y, dir, ruta, i) => ({ tipo: 'guardia', x, y, dir, ruta, i, espera: 0, sosp: 0, sinVer: 99, estado: 'calma', fase: 0, quieto: 99 });
+  jugador = { tipo: 'jugador', x: 240, y: 127.5, dir: -PI / 2, fase: 0, quieto: 99, estado: 'calma' };
+  guardias = [
+    guardia(166, 127.5, PI, [[60, 127.5], [200, 127.5]], 0),
+    guardia(330, 143.5, 0, [[300, 143.5], [440, 143.5], [440, 120], [300, 120]], 1),
+  ];
+  pasajeros = [
+    { tipo: 'pasajero', x: 134, y: 95.2, dir: PI / 2, base: PI / 2, estado: 'calma' },
+    { tipo: 'pasajero', x: 358, y: 95.2, dir: PI / 2, base: PI / 2, estado: 'calma' },
+    { tipo: 'pasajero', x: 262, y: 175.2, dir: -PI / 2, base: -PI / 2, estado: 'calma' },
+  ];
+}
+
+const dif = (a, b) => ((b - a + 3 * PI) % (2 * PI)) - PI;
+const girar = (a, b, max) => { const d = dif(a, b); return a + Math.max(-max, Math.min(max, d)); };
+/** Un paso cada tantas unidades recorridas: trotando, las del 1-2-3; caminando, 14. */
+function andar(o, dist, dt) {
+  const r = o.modo === 'trotar' ? RITMOS_TROTE[ritmo] : RITMO_CAMINATA;
+  if (dist > 0.05) { o.fase += dist / r; o.quieto = 0; } else o.quieto += dt;
+}
+/**
+ * Dos pasos son 8 cuadros. Trotando son 8 dibujos seguidos; caminando, 5
+ * dibujos en este orden: paso 1, a mitad, juntos, a mitad del otro lado, paso 2...
+ */
+const CICLO_CAMINATA = [1, 3, 0, 4, 2, 4, 0, 3];
+function cuadroDe(o) {
+  if (o.quieto > 0.07) return 0;
+  const i = Math.floor((((o.fase % 2) + 2) % 2) * 4) % 8;
+  return o.modo === 'trotar' ? i : CICLO_CAMINATA[i];
+}
+function desplazar(o, dx, dy) {
+  const x0 = o.x, y0 = o.y;
+  if (libre(o.x + dx, o.y, o)) o.x += dx;
+  if (libre(o.x, o.y + dy, o)) o.y += dy;
+  return Math.hypot(o.x - x0, o.y - y0);
+}
+
+// ------------------------------------------------------------ el teclado
+const teclas = new Set();
+addEventListener('keydown', (e) => {
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+  teclas.add(e.code);
+  if (e.code === 'KeyR') nuevaPartida();
+  if (e.code === 'KeyZ') zoom = zoom === 1 ? 2 : 1;
+  if (e.code === 'KeyF') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) ritmo = +e.code.slice(5) - 1;
+  if (e.code === 'KeyT') PISADA = PISADA === 'nueva' ? 'vieja' : 'nueva';
+  mostrarOpciones();
+});
+addEventListener('keyup', (e) => teclas.delete(e.code));
+addEventListener('blur', () => teclas.clear());
+
+// ----------------------------------------------------------- actualizar
+function actualizar(dt) {
+  const t = (...c) => c.some((k) => teclas.has(k));
+  let dx = (t('KeyD', 'ArrowRight') ? 1 : 0) - (t('KeyA', 'ArrowLeft') ? 1 : 0);
+  let dy = (t('KeyS', 'ArrowDown') ? 1 : 0) - (t('KeyW', 'ArrowUp') ? 1 : 0);
+  const despacio = t('ShiftLeft', 'ShiftRight');
+  const moviendo = dx !== 0 || dy !== 0;
+  jugador.modo = despacio ? 'agachado' : moviendo ? 'trotar' : 'quieto';
+  if (moviendo) {
+    const n = Math.hypot(dx, dy), v = (despacio ? CONF.despacio : VELOCIDAD) * dt / n;
+    if (!jugador.apunta) jugador.dir = Math.atan2(dy, dx);
+    andar(jugador, desplazar(jugador, dx * v, dy * v), dt);
+  } else andar(jugador, 0, dt);
+
+  for (const gd of guardias) {
+    if (gd.muerto) { gd.modo = 'quieto'; continue; }
+    const ex = jugador.x - gd.x, ey = jugador.y - gd.y, d = Math.hypot(ex, ey), ang = Math.atan2(ey, ex);
+    const ve = d < CONF.vista && Math.abs(dif(gd.dir, ang)) < CONF.apertura;
+    let sube = 0;
+    if (ve) sube += (CONF.sospCerca + (CONF.sospLejos - CONF.sospCerca) * (d / CONF.vista)) * (moviendo ? CONF.sospMoviendo : 1) * (despacio ? CONF.sospDespacio : 1);
+    if (moviendo && !despacio && d < CONF.oidoRadio) sube += CONF.oidoRitmo * (1 - d / CONF.oidoRadio);
+    let caminado = 0;
+    if (gd.estado === 'alerta') {
+      gd.sinVer = ve ? 0 : gd.sinVer + dt;
+      if (d < CONF.vista * 1.5) gd.dir = girar(gd.dir, ang, 6 * dt);
+      // Te persigue trotando mientras te tenga fresco; de cerca se para y te apunta.
+      // Si te ve, se para a tirar desde 90; si no, se acerca hasta encontrarte.
+      if (d > (ve ? 90 : 34) && gd.sinVer < 2) caminado = desplazar(gd, Math.cos(ang) * 46 * dt, Math.sin(ang) * 46 * dt);
+      if (gd.sinVer > 6) { gd.estado = 'sospecha'; gd.sosp = 0.95; gd.sinVer = 0; }
+    } else if (sube > 0) {
+      gd.sosp = Math.min(1, gd.sosp + sube * dt); gd.sinVer = 0;
+      gd.mira = ang;
+      gd.dir = girar(gd.dir, ang, 2.5 * dt);
+      gd.estado = gd.sosp >= 1 ? 'alerta' : 'sospecha';
+    } else {
+      gd.sinVer += dt;
+      // Aunque dejes de hacer ruido, se sigue dando vuelta hacia donde te oyó.
+      if (gd.mira != null) gd.dir = girar(gd.dir, gd.mira, 2.5 * dt);
+      if (gd.sinVer > CONF.memoria) gd.sosp = Math.max(0, gd.sosp - CONF.olvido * dt);
+      gd.estado = gd.sosp > 0 ? 'sospecha' : 'calma';
+      if (gd.estado === 'calma') gd.mira = null;
+    }
+    if (gd.estado === 'calma') {
+      const [tx, ty] = gd.ruta[gd.i];
+      const a = Math.atan2(ty - gd.y, tx - gd.x);
+      if (gd.espera > 0) gd.espera -= dt;
+      else if (Math.hypot(tx - gd.x, ty - gd.y) < 1.5) { gd.i = (gd.i + 1) % gd.ruta.length; gd.espera = 1.2; }
+      else {
+        gd.dir = girar(gd.dir, a, 5 * dt);
+        if (Math.abs(dif(gd.dir, a)) < 0.3) caminado = desplazar(gd, Math.cos(a) * CONF.patrulla * dt, Math.sin(a) * CONF.patrulla * dt);
+      }
+    }
+    gd.modo = caminado > 0.05 ? (gd.estado === 'alerta' ? 'trotar' : 'caminar') : 'quieto';
+    andar(gd, caminado, dt);
+  }
+  for (const p of pasajeros) {
+    const d = Math.hypot(jugador.x - p.x, jugador.y - p.y);
+    p.dir = d < 50 ? Math.atan2(jugador.y - p.y, jugador.x - p.x) : p.base;
+  }
+}
+
+// -------------------------------------------------------------- dibujar
+const CONO = { calma: 'rgba(255,245,220,0.08)', sospecha: 'rgba(248,216,48,0.13)', alerta: 'rgba(255,58,42,0.16)' };
+function dibujar() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 1920, 1080);
+  if (zoom === 2) ctx.setTransform(2, 0, 0, 2, Math.round(960 - jugador.x * ESC * 2), Math.round(540 - jugador.y * ESC * 2));
+  ctx.drawImage(fondo, 0, 0, 1920, 1080);
+  for (const gd of guardias) {
+    if (gd.muerto) continue;
+    const ox = gd.x * ESC, oy = (gd.y - 2) * ESC;
+    ctx.fillStyle = CONO[gd.estado];
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.arc(ox, oy, CONF.vista * ESC, gd.dir - CONF.apertura, gd.dir + CONF.apertura); ctx.closePath(); ctx.fill();
+  }
+  const cosas = ASIENTOS.map((a) => ({
+    base: a.y + a.h,
+    draw: () => ctx.drawImage(fondo, a.x, a.y, a.w, a.h, a.x * ESC, a.y * ESC, a.w * ESC, a.h * ESC),
+  }));
+  for (const o of [jugador, ...guardias, ...pasajeros]) {
+    const hh = o.tipo === 'pasajero' ? 2.8 : HH;
+    cosas.push({ base: o.y + hh, draw: () => persona(o, o.y + hh) });
+  }
+  cosas.sort((a, b) => a.base - b.base);
+  for (const c of cosas) c.draw();
+  // Los avisos van arriba de todo, para que nada los tape.
+  for (const gd of guardias) {
+    if (gd.muerto) continue;
+    const x = gd.x * ESC, abajo =Math.round((gd.y + HH) * ESC) - medidas().PIE + OY - 6;
+    if (gd.estado === 'sospecha') signo(x, abajo, '?', gd.sosp);
+    if (gd.estado === 'alerta') signo(x, abajo, '!');
+  }
+  if (typeof dibujarTiroteo === 'function') dibujarTiroteo();
+}
+function persona(o, pies) {
+  const x = Math.round(o.x * ESC), y = Math.round(pies * ESC);
+  const m = medidas();
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(x, y, 16 * m.s, 5 * m.s, 0, 0, 2 * PI); ctx.fill();
+  const { cv: img, espejo } = sprite(o);
+  ctx.save(); ctx.translate(x, y);
+  // Los caídos quedan tirados en el piso (girados), provisorio hasta tener su dibujo.
+  if (o.muerto) { ctx.rotate(-PI / 2); ctx.globalAlpha = 0.85; }
+  if (espejo) ctx.scale(-1, 1);
+  ctx.drawImage(img, -m.CX, -m.PIE);
+  ctx.restore();
+}
+
+// --------------------------------------------------------------- bucle
+function mostrarOpciones() {
+  const el = document.getElementById('opciones');
+  if (!el) return;
+  const r = RITMOS_TROTE[ritmo];
+  el.textContent = `Trote (1-2-3): un paso cada ${r} = ${(VELOCIDAD / r).toFixed(1)} pasos/s · Pisada (T): ${PISADA}`;
+}
+nuevaPartida();
+mostrarOpciones();
+let antes = null;
+function cuadro(t) {
+  const dt = antes == null ? 0 : Math.min(0.05, (t - antes) / 1000);
+  antes = t;
+  actualizar(dt);
+  if (fondo.complete) dibujar();
+  requestAnimationFrame(cuadro);
+}
+requestAnimationFrame(cuadro);
+
+// EL TIROTEO MÍNIMO. Apuntás con el mouse y disparás con clic; los guardias
+// alertados te tiran. Va encima de prueba.js sin tocar su lógica de sigilo.
+const TIRO = {
+  velocidad: 210,        // como bulletSpeed del juego
+  cadencia: 0.35,        // segundos entre tiros tuyos (manteniendo el clic)
+  alto: 9,               // la bala viaja a la altura de la mano, 9 unidades sobre el piso
+  vidaGuardia: 2, vidasJugador: 3, oido: 230,
+  guardiaCadencia: 1.1, guardiaAlcance: 130, guardiaDesvio: 0.12, invulnerable: 0.6,
+};
+let balas = [], fogonazos = [], ultimoMouse = null, quiereDisparar = false, enfriar = 0, golpe = 0;
+
+// ------------------------------------------------------------- el mouse
+function aMundo(ev) {
+  const r = cv.getBoundingClientRect();
+  if (!r.width || !r.height) return null;
+  const sx = (ev.clientX - r.left) * 1920 / r.width, sy = (ev.clientY - r.top) * 1080 / r.height;
+  const k = zoom === 2 ? 2 : 1;
+  const tx = zoom === 2 ? Math.round(960 - jugador.x * ESC * 2) : 0, ty = zoom === 2 ? Math.round(540 - jugador.y * ESC * 2) : 0;
+  return { x: (sx - tx) / k / ESC, y: (sy - ty) / k / ESC };
+}
+cv.addEventListener('mousemove', (e) => { ultimoMouse = { clientX: e.clientX, clientY: e.clientY }; jugador.apunta = true; });
+cv.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  ultimoMouse = { clientX: e.clientX, clientY: e.clientY }; jugador.apunta = true; quiereDisparar = true;
+});
+addEventListener('mouseup', () => { quiereDisparar = false; });
+cv.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// ------------------------------------------------------------ la partida
+const partidaBase = nuevaPartida;
+nuevaPartida = function () {
+  partidaBase();
+  balas = []; fogonazos = []; enfriar = 0; golpe = 0;
+  jugador.vidas = TIRO.vidasJugador; jugador.apunta = ultimoMouse != null;
+  for (const gd of guardias) { gd.vida = TIRO.vidaGuardia; gd.recarga = 0.8; }
+};
+nuevaPartida();
+
+const piesDe = (o) => o.y + (o.tipo === 'pasajero' ? 2.8 : HH);
+
+function disparar(o, ang, desvio) {
+  const a = ang + (Math.random() * 2 - 1) * desvio;
+  const x = o.x + Math.cos(a) * 7, y = piesDe(o) + Math.sin(a) * 7;
+  balas.push({ x, y, dx: Math.cos(a), dy: Math.sin(a), de: o, vida: 1.5 });
+  fogonazos.push({ x, y, t: 0.06 });
+}
+
+/** Un tiro se oye lejos: todo guardia vivo a menos de 230 se pone en alerta mirando hacia ahí. */
+function ruido(o) {
+  for (const gd of guardias) {
+    if (gd.muerto || Math.hypot(gd.x - o.x, gd.y - o.y) > TIRO.oido) continue;
+    gd.estado = 'alerta'; gd.sosp = 1; gd.sinVer = 0; gd.mira = Math.atan2(o.y - gd.y, o.x - gd.x);
+  }
+}
+
+function herir(o, b) {
+  if (o === jugador) {
+    if (golpe > 0) return;
+    jugador.vidas--; golpe = TIRO.invulnerable;
+    fogonazos.push({ x: b.x, y: b.y, t: 0.12, sangre: true });
+    if (jugador.vidas <= 0) { jugador.muerto = true; quiereDisparar = false; }
+    return;
+  }
+  fogonazos.push({ x: b.x, y: b.y, t: 0.12, sangre: o.tipo === 'guardia' });
+  if (o.tipo !== 'guardia') return;
+  o.vida--; o.estado = 'alerta'; o.sosp = 1; o.sinVer = 0; o.mira = Math.atan2(b.de.y - o.y, b.de.x - o.x);
+  if (o.vida <= 0) { o.muerto = true; o.estado = 'calma'; o.modo = 'quieto'; }
+}
+
+function moverBalas(dt) {
+  const quedan = [];
+  for (const b of balas) {
+    let viva = true;
+    // En pasitos, para que una bala rápida no atraviese a nadie entre cuadro y cuadro.
+    for (let i = 0; i < 4 && viva; i++) {
+      b.x += b.dx * TIRO.velocidad * dt / 4; b.y += b.dy * TIRO.velocidad * dt / 4;
+      if (b.x < PISO.x0 || b.x > PISO.x1 || b.y < PISO.y0 || b.y > PISO.y1) { viva = false; break; }
+      if (ASIENTOS.some((a) => b.x > a.x && b.x < a.x + a.w && b.y > a.y && b.y < a.y + a.h)) {
+        viva = false; fogonazos.push({ x: b.x, y: b.y, t: 0.08, astilla: true }); break;
+      }
+      for (const o of [jugador, ...guardias, ...pasajeros]) {
+        if (o === b.de || o.muerto) continue;
+        if (b.de.tipo === 'guardia' && o.tipo === 'guardia') continue;
+        if (Math.abs(b.x - o.x) < 5 && Math.abs(b.y - piesDe(o)) < 4) { viva = false; herir(o, b); break; }
+      }
+    }
+    if (viva && (b.vida -= dt) > 0) quedan.push(b);
+  }
+  balas = quedan;
+}
+
+// ----------------------------------------------------------- actualizar
+const actualizarBase = actualizar;
+actualizar = function (dt) {
+  if (jugador.muerto) teclas.clear();
+  actualizarBase(dt);
+  golpe = Math.max(0, golpe - dt); enfriar -= dt;
+  const m = ultimoMouse && !jugador.muerto ? aMundo(ultimoMouse) : null;
+  if (m && Number.isFinite(m.x) && Number.isFinite(m.y)) {
+    // Se apunta desde la mano (a la altura del pecho), no desde los pies.
+    jugador.dir = Math.atan2(m.y - (piesDe(jugador) - TIRO.alto), m.x - jugador.x);
+    if (quiereDisparar && enfriar <= 0) { disparar(jugador, jugador.dir, 0.03); enfriar = TIRO.cadencia; ruido(jugador); }
+  }
+  for (const gd of guardias) {
+    if (gd.muerto || gd.estado !== 'alerta' || jugador.muerto) continue;
+    gd.recarga -= dt;
+    const d = Math.hypot(jugador.x - gd.x, jugador.y - gd.y), ang = Math.atan2(jugador.y - gd.y, jugador.x - gd.x);
+    if (gd.recarga <= 0 && d < TIRO.guardiaAlcance && Math.abs(dif(gd.dir, ang)) < 0.4) {
+      disparar(gd, gd.dir, TIRO.guardiaDesvio); gd.recarga = TIRO.guardiaCadencia;
+    }
+  }
+  moverBalas(dt);
+  fogonazos = fogonazos.filter((f) => (f.t -= dt) > 0);
+};
+
+// -------------------------------------------------------------- dibujar
+function dibujarTiroteo() {
+  for (const b of balas) {
+    const x = b.x * ESC, y = b.y * ESC, yh = (b.y - TIRO.alto) * ESC;
+    // La sombrita en el piso dice por dónde va la bala de verdad.
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(Math.round(x) - 3, Math.round(y) - 1, 6, 3);
+    ctx.strokeStyle = '#ffe8a0'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x - b.dx * 22, yh - b.dy * 22); ctx.lineTo(x, yh); ctx.stroke();
+  }
+  for (const f of fogonazos) {
+    const r = f.sangre ? 6 : f.astilla ? 5 : 10;
+    ctx.fillStyle = f.sangre ? '#b0302a' : f.astilla ? '#c89a60' : '#ffd860';
+    ctx.fillRect(Math.round(f.x * ESC - r / 2), Math.round((f.y - TIRO.alto) * ESC - r / 2), r, r);
+  }
+  // Lo que no se mueve con la cámara: las vidas y el golpe.
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  for (let i = 0; i < TIRO.vidasJugador; i++) {
+    const x = 1900 - 44 * (i + 1);
+    ctx.fillStyle = NEGRO; ctx.fillRect(x - 3, 17, 38, 38);
+    ctx.fillStyle = i < jugador.vidas ? '#c8342a' : '#3a2a22'; ctx.fillRect(x, 20, 32, 32);
+  }
+  if (golpe > 0) { ctx.fillStyle = `rgba(200,40,30,${(golpe * 0.4).toFixed(2)})`; ctx.fillRect(0, 0, 1920, 1080); }
+  if (jugador.muerto) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 470, 1920, 140);
+    ctx.fillStyle = '#e8dcc0'; ctx.font = 'bold 48px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Te bajaron — R para empezar de nuevo', 960, 558);
+  }
+  ctx.restore();
+}
+</script>

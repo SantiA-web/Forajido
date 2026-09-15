@@ -12286,6 +12286,9 @@ jefe de frente y de costado; captura del vagón real a 480×270.
 
 ### 🎩 Las sombras cabezonas: toda la gente en negro
 
+> 🔁 **Reemplazada en diseño** por "La gente curtida a 80 px" (más abajo). Sigue
+> siendo lo que el juego dibuja hoy, hasta que se pase a la resolución nueva.
+
 *(Santi, sobre la gente de 16×24: "creo que se ve muy feo. La verdad es que me
 gustaría que diseñemos un tipo de arte, no una persona así parada que es muy
 normal. Los juegos de este tipo se caracterizan por reconocerlos fácilmente")*.
@@ -12388,6 +12391,102 @@ direcciones con y sin mochila, agachado, disparando y tirado; los dos jefes en
 sus estados; los jinetes. Captura del vagón real y del galope de día y de noche.
 
 **⚠️ NO JUGADO.**
+
+### 🤠 La gente curtida a 80 px — DISEÑADA en una prueba aparte, falta llevarla al juego
+
+*(Santi, después de jugar las sombras cabezonas: "le quita la crudeza del Salvaje
+Oeste… parecían personajes como del Beholder: tiernos en cierto punto, sin
+expresión y colores muy vividos")*.
+
+**ESTADO:** todo se decidió en una prueba jugable **fuera del juego**:
+`prototipos/gente-80px/` (doble clic en `Prueba-72.html`; el LEEME dice qué es
+cada archivo). **El juego todavía dibuja las sombras cabezonas.** Pasar a esto
+necesita subir la resolución, y ese plan se arma y se aprueba aparte.
+
+**LAS DECISIONES, en el orden en que se tomaron:**
+
+1. **Estilo "gente curtida"**: caras quemadas por el sol, barba, ropa gastada y
+   ojos con expresión (tranquilo, "oyó algo" de reojo con una ceja arriba, "te
+   vio" con el ceño y los dientes apretados).
+2. **Más resolución, viendo lo mismo del vagón.** Se probaron 36, 40 y 72 px
+   (Santi, del de 72: "se veía espectacular"). En pantalla ocupan casi lo mismo:
+   lo que cambia es cuánto detalle entra. A 72 px, cada cuadradito del dibujo es
+   un punto de un monitor 1080p.
+3. **Contraste**, porque a tamaño real se leían peor que las sombras: borde
+   oscuro de 2 puntos, el pasajero de traje gris (el marrón se perdía contra el
+   piso) y **los avisos "?" y "!" del tamaño de hoy**. Achicarlos junto con el
+   personaje fue un error: quedaban de 16 puntos.
+4. **80 px**, entre 72, 80 y 88 ("apenas un poco más grandes"). Dibujados con
+   las mismas formas a más tamaño, nunca estirados.
+5. **Trote en vez de caminata** *(Santi: "nadie asalta un tren caminando")*. A
+   78 u/s, caminar con un paso cada 5 eran 15,6 pasos por segundo y parecía
+   cámara rápida. **Un paso cada 20**, entre 12, 16 y 20 ("más pausado, más
+   realista"). Los guardias caminan patrullando (24) y trotan persiguiendo (46).
+6. **Shift = agachado**: lento (40), sin ruido y con la caminata.
+7. **Proporciones A**, sobre "B suave" y B *(Santi: "B caracterizaría más al
+   juego, pero siento que el A es más normal")*.
+8. **El cuerpo mira al mouse** y las piernas trotan igual aunque vayas para
+   atrás; el revólver, en las 8 direcciones.
+9. **Piernas largas.** Santi, con su muñeco de madera para poses: *"las piernas
+   miden lo que mide el torso + lo que mide la cabeza. En el juego, las piernas
+   apenas llegan a medir lo que mide el torso"*. Medido: 19 filas de piernas
+   contra 43 de cabeza + torso (44%). Elegida la opción 1: **cabeza 15, torso 20,
+   piernas 27** (77%), con el mismo alto total. La opción 2 (100%) dejaba la cara
+   sin detalle; la 3 hacía al personaje 32% más alto.
+10. **Pisada con empuje**: contacto adelante, apoyo con la rodilla cargada,
+    empuje con la pierna de atrás estirada y un vuelo corto. Con las piernas
+    largas, *"ya no se nota"* que patine.
+
+**🔁 LO QUE SE DESCARTÓ EN EL CAMINO, y por qué:**
+
+- **Proporciones B** (ala +15%, hombros +9%, cintura −10%): Santi eligió lo
+  normal. Al probarla aparecieron dos errores míos de la deformación, que se
+  corrigieron antes de elegir: al inclinarse, la copa del sombrero se corría
+  más que la cabeza ("como que se le va a salir"), y la cintura achicaba
+  también los brazos ("tiene metidos los codos para adentro").
+- **La pisada corta** (2 cuadros apoyado y la pierna de atrás encogida): en
+  números patinaba la mitad, pero *"parece que está saltando a dos pies"*. El
+  problema de fondo eran las piernas cortas, no la pisada.
+- **Achicar la cabeza deformándola**: el ala tapaba los ojos y bigote, boca y
+  mentón quedaban pegados. Se redibujó a 15 filas (`l72-cabezas.js`). El torso
+  achicado se miró ampliado ×4, no perdió nada visible y quedó así.
+- **88 px y velocidad 64**: no hicieron falta.
+
+**LOS NÚMEROS QUE QUEDAN:**
+
+| Qué | Valor |
+|---|---|
+| Alto del dibujo | 80 px (83 puntos en 1080p, con sombrero) |
+| Cabeza / torso / piernas | 15 / 20 / 27 filas |
+| Borde | 2 puntos: negro por dentro, media sombra por fuera |
+| Trote | 78 u/s, un paso cada 20 (3,9 pasos/s), 8 cuadros con un momento en el aire |
+| Agachado | 40 u/s, sin ruido, caminata de 5 dibujos |
+| Guardias | patrullan caminando a 24, persiguen trotando a 46 |
+| Avisos | "?" con barrita y "!", con cuadraditos de 4×4 puntos |
+| Balas | salen de la mano, 9 unidades sobre el piso, con una sombrita que marca por dónde van |
+
+**LO QUE FALTA:**
+
+- **El plan para pasar el juego a esta resolución**: resolución interna, cámara,
+  lógica sin cambios, orden de redibujo, textos del HUD, y 1440p y 1366×768.
+- **La nube de polvo al pisar** *(Santi: "luego vemos si le agregamos el polvo")*.
+- **El resto de la gente**: blindado, pistolero, dinamitero, sheriff, rico,
+  jefes, jinetes; las posturas (sentado, rendido, tendido); los caídos de verdad
+  (en la prueba se acuesta el dibujo parado).
+- **El guardia apuntando hacia abajo se lee poco**: la manga es del mismo azul
+  que el saco.
+- **El vagón a la misma densidad**: en la prueba es el de hoy agrandado ×4, y se
+  nota la mezcla de cuadraditos gordos con gente fina.
+
+**VERIFICADO en la prueba:** sin errores en la consola. El sigilo usa los
+números del juego (vista 118, apertura 0,95, sospecha, oído 58). Secuencia
+completa: te oye, se da vuelta, te ve, te persigue trotando, se para y te
+dispara; el otro guardia oye los tiros y viene. Dos tiros bajan a un guardia.
+Las pisadas se compararon con una marca clavada al piso, cuadro por cuadro.
+
+**✅ JUGADO POR SANTI:** el trote y el tiroteo *("se sienten bien")*, hacia dónde
+apunta cada uno *("se entiende")*, las piernas y la pisada *("mucho mejor, es el
+ideal")*.
 
 ---
 

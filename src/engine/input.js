@@ -7,7 +7,7 @@
  *   sin importar el tamaño real en pantalla.
  */
 
-export function createInput(canvas) {
+export function createInput(canvas, densidad = () => 1) {
   const down = new Set();
   const pressed = new Set();
   // down = clic izquierdo (disparar), right = clic derecho (asomarse),
@@ -72,8 +72,8 @@ export function createInput(canvas) {
   function updateMousePosition(e) {
     const rect = canvas.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
-    mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width) / densidad();
+    mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height) / densidad();
   }
 
   window.addEventListener('mousemove', updateMousePosition);

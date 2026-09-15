@@ -10,14 +10,16 @@
  *
  * Con un tamaño fijo, el múltiplo entero casi nunca llena la ventana y sobra un
  * borde negro (420×236 ×4 = 1680×944 en un monitor de 1920×1080). Ahora se hace
- * al revés, como los juegos de pixel art de Steam: primero se elige el tamaño
- * del píxel —el múltiplo que deja unos `CONFIG.vistaIdeal.height` de alto— y
- * después el ancho y el alto internos son LO QUE ENTRE en la ventana con ese
- * píxel. Siempre llena, siempre nítido; lo que cambia de un monitor a otro es
- * cuánto mundo se ve:
+ * al revés, como los juegos de pixel art de Steam: la ventana se llena entera,
+ * y lo que cambia de un monitor a otro es cuánto mundo se ve.
  *
- *   1920×1080  ×4 → 480×270     1366×768  ×3 → 456×256
- *   2560×1440  ×5 → 512×288     3840×2160 ×8 → 480×270
+ * 🔺 Y EL DIBUJO PASÓ A TENER DENSIDAD (ver `DENSIDAD`, más abajo): una unidad
+ * del mundo se pinta con 4×4 puntos de pantalla, así el arte puede tener
+ * detalle sin que cambie una sola medida de la lógica. Lo que se ve, por
+ * monitor, en unidades del mundo:
+ *
+ *   1920×1080 → 480×270     1366×768  → 342×192 (se ve menos vagón)
+ *   2560×1440 → 640×360     3840×2160 → 480×270
  *
  * Se mide en píxeles FÍSICOS (`devicePixelRatio`): con Windows al 125% el
  * navegador dice que la ventana mide 1536 de ancho, pero la pantalla tiene
@@ -74,24 +76,42 @@ function hexARgb(hex) {
 const mezcla = (a, b, t) => Math.round(a + (b - a) * t);
 
 /**
+ * LA DENSIDAD: cuántos puntos de pantalla mide UNA unidad del mundo.
+ *
+ * El juego se dibuja a través de una lupa fija de ×4. Un guardia que está en la
+ * posición 118 sigue estando en la 118: lo único que cambia es que esa unidad
+ * se pinta con 4×4 puntos. Así el arte nuevo puede tener detalle de verdad —se
+ * dibuja de a cuartos de unidad— sin tocar una sola medida de la lógica: las
+ * cajas, las velocidades y las distancias siguen siendo las mismas.
+ *
+ * El zoom total es `escala * DENSIDAD`. En 1920×1080 son escala 1 y densidad 4:
+ * los mismos 4 puntos por unidad de antes, o sea la MISMA porción de vagón.
+ */
+export const DENSIDAD = 4;
+
+/**
  * El tamaño interno para una ventana de `pw`×`ph` píxeles físicos.
  *
- * @param ideal   el alto que se busca (el múltiplo que más se le acerca)
- * @param minimo  lo mínimo que tiene que entrar: las escenas fijas (campamento,
- *                mapa, interiores, tienda) están armadas para este tamaño, así
- *                que se baja el múltiplo antes que cortarlas.
+ * @param ideal   el alto que se busca, en unidades del mundo
  * @param anchoMaximo  cuántas veces el alto puede medir el ancho. En un monitor
  *                ultra ancho, más allá de esto se deja una franja a los
  *                costados en vez de mostrar medio desierto de más.
+ *
+ * Las escenas armadas para `CONFIG.view` (campamento, pueblo, interiores,
+ * mapa, tienda) ya no bajan el múltiplo de todos: piden su propia lupa con
+ * `escenaFija()`, que baja la densidad hasta que entren.
  */
-export function medirVista(pw, ph, ideal, minimo, anchoMaximo) {
-  let escala = Math.max(1, Math.round(ph / ideal.height));
-  while (escala > 1 && (pw / escala < minimo.width || ph / escala < minimo.height)) escala--;
+export function medirVista(pw, ph, ideal, anchoMaximo) {
+  // La escala sigue siendo entera, o el punto se deformaría. Con densidad 4,
+  // 1920×1080 y 2560×1440 dan escala 1, y 3840×2160 da 2.
+  const escala = Math.max(1, Math.floor(ph / (ideal.height * DENSIDAD)));
   // `ceil`: sobra menos de un píxel del juego, que queda fuera de la ventana
   // (el body no scrollea). Con `floor` faltaría, y eso es una rayita de borde.
-  const height = Math.ceil(ph / escala);
-  const width = Math.min(Math.ceil(pw / escala), Math.round(height * anchoMaximo));
-  return { width, height, escala };
+  const altoPx = Math.ceil(ph / escala);
+  const anchoPx = Math.min(Math.ceil(pw / escala), Math.round(altoPx * anchoMaximo));
+  // `width` y `height` se devuelven en UNIDADES del mundo, no en puntos: es lo
+  // que leen las escenas, y en 1920×1080 siguen dando 480×270.
+  return { width: Math.ceil(anchoPx / DENSIDAD), height: Math.ceil(altoPx / DENSIDAD), escala };
 }
 
 export function createRenderer(canvas, vista) {
@@ -99,6 +119,24 @@ export function createRenderer(canvas, vista) {
   let width = 0;
   let height = 0;
   let medido = '';
+  /**
+   * La densidad EN USO. Es ×4 para el mundo, pero las escenas armadas para
+   * `CONFIG.view` (campamento, pueblo, interiores, mapa, tienda) no entran con
+   * la lupa entera en un monitor chico: ésas dibujan con la que entre.
+   */
+  let dens = DENSIDAD;
+
+  /** Poner la lupa: de acá en adelante se dibuja en unidades del mundo. */
+  const usar = (d) => { dens = d; ctx.setTransform(d, 0, 0, d, 0, 0); };
+  /** Al punto de pantalla. Con coordenadas enteras da exactamente lo mismo que antes. */
+  const q = (v) => Math.round(v * dens) / dens;
+  const anchoU = () => canvas.width / dens;
+  const altoU = () => canvas.height / dens;
+  const densidadFija = () => Math.max(1, Math.min(
+    DENSIDAD,
+    Math.floor(canvas.width / vista.minimo.width),
+    Math.floor(canvas.height / vista.minimo.height)
+  ));
 
   function fitToScreen() {
     const dpr = window.devicePixelRatio || 1;
@@ -108,19 +146,24 @@ export function createRenderer(canvas, vista) {
     medido = clave;
     const m = medirVista(
       Math.round(window.innerWidth * dpr), Math.round(window.innerHeight * dpr),
-      vista.ideal, vista.minimo, vista.anchoMaximo
+      vista.ideal, vista.anchoMaximo
     );
+    // Ventana de 0 (una pestaña oculta, por ejemplo): no se toca nada, o el
+    // canvas quedaría vacío y habría que recargar para recuperarlo.
+    if (!m.width || !m.height) return;
     if (m.width !== width || m.height !== height) {
       width = m.width;
       height = m.height;
       // Cambiar el tamaño del canvas le borra TODO el estado al contexto,
       // incluido el suavizado: hay que volver a apagarlo cada vez.
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = width * DENSIDAD;
+      canvas.height = height * DENSIDAD;
       ctx.imageSmoothingEnabled = false;
+      // Cambiar el tamaño también borra la lupa: hay que volver a ponerla.
+      usar(dens);
     }
-    canvas.style.width = (width * m.escala) / dpr + 'px';
-    canvas.style.height = (height * m.escala) / dpr + 'px';
+    canvas.style.width = (canvas.width * m.escala) / dpr + 'px';
+    canvas.style.height = (canvas.height * m.escala) / dpr + 'px';
   }
 
   /**
@@ -136,9 +179,19 @@ export function createRenderer(canvas, vista) {
   return {
     ctx,
     canvas,
-    get width() { return width; },
-    get height() { return height; },
+    get width() { return Math.floor(anchoU()); },
+    get height() { return Math.floor(altoU()); },
+    /** Cuántos puntos de pantalla mide una unidad ahora mismo. */
+    get densidad() { return dens; },
     fitToScreen,
+
+    /** Cada cuadro arranca con la lupa del mundo puesta (lo llama main.js). */
+    nuevoCuadro() { usar(DENSIDAD); },
+    /**
+     * Para las escenas armadas para `CONFIG.view`. En 1920×1080 es la misma
+     * lupa del mundo; en un monitor chico baja hasta que la escena entre.
+     */
+    escenaFija() { usar(densidadFija()); },
 
     /**
      * DÓNDE VA UNA ESCENA ARMADA PARA `CONFIG.view`, centrada en la pantalla de
@@ -148,14 +201,14 @@ export function createRenderer(canvas, vista) {
      */
     get centro() {
       return {
-        x: Math.floor((width - vista.minimo.width) / 2),
-        y: Math.floor((height - vista.minimo.height) / 2),
+        x: Math.floor((anchoU() - vista.minimo.width) / 2),
+        y: Math.floor((altoU() - vista.minimo.height) / 2),
       };
     },
 
     clear(color) {
       ctx.fillStyle = color;
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, anchoU(), altoU());
     },
 
     /**
@@ -179,26 +232,26 @@ export function createRenderer(canvas, vista) {
         ctx.fillStyle = `rgb(${mezcla(a[0], b[0], t)},${mezcla(a[1], b[1], t)},${mezcla(a[2], b[2], t)})`;
         // El último se estira hasta el final: con alturas que no dividen justo,
         // redondear cada banda por separado deja una costura de fondo a la vista.
-        const y0 = Math.round(y + i * alto);
-        const y1 = i === bandas - 1 ? Math.round(y + h) : Math.round(y + (i + 1) * alto);
-        ctx.fillRect(Math.round(x), y0, Math.round(w), y1 - y0);
+        const y0 = q(y + i * alto);
+        const y1 = i === bandas - 1 ? q(y + h) : q(y + (i + 1) * alto);
+        ctx.fillRect(q(x), y0, q(w), y1 - y0);
       }
     },
 
     /** Rectángulo lleno, con coordenadas redondeadas para no ver bordes borrosos. */
     rect(x, y, w, h, color) {
       ctx.fillStyle = color;
-      ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+      ctx.fillRect(q(x), q(y), q(w), q(h));
     },
 
     /** Rectángulo centrado en (x, y). Cómodo para entidades. */
     box(x, y, halfW, halfH, color) {
       ctx.fillStyle = color;
       ctx.fillRect(
-        Math.round(x - halfW),
-        Math.round(y - halfH),
-        Math.round(halfW * 2),
-        Math.round(halfH * 2)
+        q(x - halfW),
+        q(y - halfH),
+        q(halfW * 2),
+        q(halfH * 2)
       );
     },
 
@@ -209,7 +262,7 @@ export function createRenderer(canvas, vista) {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.max(1, radius), 0, Math.PI * 2);
+      ctx.arc(q(x) + 0.5, q(y) + 0.5, Math.max(1, radius), 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     },
@@ -227,7 +280,7 @@ export function createRenderer(canvas, vista) {
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.fillStyle = color;
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, anchoU(), altoU());
       ctx.restore();
     },
 
@@ -237,8 +290,8 @@ export function createRenderer(canvas, vista) {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(Math.round(x1) + 0.5, Math.round(y1) + 0.5);
-      ctx.lineTo(Math.round(x2) + 0.5, Math.round(y2) + 0.5);
+      ctx.moveTo(q(x1) + 0.5, q(y1) + 0.5);
+      ctx.lineTo(q(x2) + 0.5, q(y2) + 0.5);
       ctx.stroke();
       ctx.restore();
     },
@@ -259,8 +312,8 @@ export function createRenderer(canvas, vista) {
       ctx.textAlign = align;
       ctx.textBaseline = 'middle';
 
-      const px = Math.round(x);
-      const py = Math.round(y);
+      const px = q(x);
+      const py = q(y);
 
       if (halo) {
         ctx.fillStyle = halo;

@@ -28,10 +28,14 @@ a git (es un resultado, no código).
 ## La vista: tres cuartos (en construcción)
 
 El juego **llena la pantalla en cualquier monitor**, sin bordes y sin perder
-nitidez: se agranda siempre en múltiplos enteros, y lo que cambia de un monitor
-a otro es cuánto mundo se ve (480×270 en 1920×1080, 456×256 en 1366×768,
-512×288 en 2560×1440). **[ALT+ENTER]** pone la pantalla completa desde el juego;
-F11 también sirve.
+nitidez. Se dibuja a través de una **lupa fija de ×4**: una unidad del mundo se
+pinta con 4×4 puntos de pantalla, así el arte puede tener detalle sin que cambie
+ninguna medida de la lógica. Lo que cambia de un monitor a otro es cuánto mundo
+se ve: 480×270 unidades en 1920×1080, 640×360 en 2560×1440 y 342×192 en
+1366×768, donde se ve menos. El campamento, el pueblo, los interiores, el mapa y
+la tienda están armados para una pantalla fija, así que en un monitor chico
+bajan su propia lupa hasta entrar. **[ALT+ENTER]** pone la pantalla completa
+desde el juego; F11 también sirve.
 
 Se ve desde arriba en **tres cuartos**, como Stardew Valley o los Zelda
 de SNES: se ve el frente de las cosas, y lo que está más adelante tapa a lo de
@@ -52,8 +56,9 @@ atrás. Se está pasando por etapas, primero el tren:
 **gente curtida**: más resolución, caras con expresión, piernas largas, trote
 con empuje y el revólver en las 8 direcciones. Todo se decidió jugando una
 prueba aparte, en `prototipos/gente-80px/` (doble clic en `Prueba-72.html`).
-Falta el plan para llevarlo al juego. El detalle y los números están en
-NOTAS-DISENO.md ("La gente curtida a 80 px").
+**La etapa 1 ya está hecha:** el motor dibuja con la lupa de ×4 y el juego se ve
+igual que antes, con el texto más nítido. Falta redibujar a la gente y al resto.
+El detalle y los números están en NOTAS-DISENO.md ("La gente curtida a 80 px").
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido

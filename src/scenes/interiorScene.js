@@ -292,6 +292,8 @@ export function createInteriorScene(services) {
   // ------------------------------------------------------------------ dibujo
 
   function render(r) {
+    // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
+    r.escenaFija();
     r.clear('#120d0b');
     /**
      * EL CUARTO VA CENTRADO: está armado para `CONFIG.view` (ver

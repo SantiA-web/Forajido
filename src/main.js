@@ -33,7 +33,7 @@ const renderer = createRenderer(canvas, {
   ideal: CONFIG.vistaIdeal, minimo: CONFIG.view, anchoMaximo: CONFIG.vistaAnchoMaximo,
 });
 activarPantallaCompleta();
-const input = createInput(canvas);
+const input = createInput(canvas, () => renderer.densidad);
 const bus = createBus();
 const rng = createRng();
 const scenes = createSceneManager();
@@ -76,6 +76,8 @@ const loop = createLoop(
     // Si la ventana cambió de tamaño, el canvas se acomoda ANTES de dibujar
     // (ver `fitToScreen` en engine/renderer.js). Si no cambió, no hace nada.
     renderer.fitToScreen();
+    // La lupa del mundo, cada cuadro (ver DENSIDAD en engine/renderer.js).
+    renderer.nuevoCuadro();
     scenes.render(renderer);
   }
 );

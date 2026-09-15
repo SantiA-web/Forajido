@@ -183,6 +183,8 @@ export function createShopScene(services) {
   // ------------------------------------------------------------------ dibujo
 
   function render(r) {
+    // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
+    r.escenaFija();
     r.clear('#120d0b');
 
     // Armada para `CONFIG.view` y centrada en la pantalla de hoy. Los textos

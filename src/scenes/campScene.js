@@ -360,6 +360,8 @@ export function createCampScene(services) {
   // ------------------------------------------------------------------ dibujo
 
   function render(r) {
+    // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
+    r.escenaFija();
     const dia = gameState.esDeDia;
     r.clear(dia ? colors.campDesiertoDia : colors.campNoche);
     /**

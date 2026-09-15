@@ -12488,6 +12488,54 @@ Las pisadas se compararon con una marca clavada al piso, cuadro por cuadro.
 apunta cada uno *("se entiende")*, las piernas y la pisada *("mucho mejor, es el
 ideal")*.
 
+### 🔎 ETAPA 1 de la resolución nueva: la lupa — HECHA, y a propósito no cambia nada a la vista
+
+**LA IDEA:** en vez de dibujar en una pantallita de 480×270 y agrandarla, el
+canvas pasa a medir puntos de verdad (1920×1080) y todo se dibuja a través de
+una **lupa fija de ×4** (`DENSIDAD`, en `engine/renderer.js`). Un guardia que
+está en la posición 118 sigue estando en la 118: `r.width`/`r.height` siguen
+dando 480×270 y **ninguna medida de la lógica se tocó**. Las ~800 llamadas de
+dibujo del juego siguen funcionando sin cambiarles una coma: cada punto suyo
+ahora se pinta como un bloque de 4×4, o sea igual que antes. Lo que se gana es
+que el arte nuevo puede dibujarse de a cuartos de unidad.
+
+**LO QUE CAMBIÓ, y es poco:**
+
+- `medirVista` ya no baja el múltiplo para que entren las escenas fijas: elige
+  escala entera sobre la densidad (1 en 1920×1080 y en 2560×1440, 2 en 4K).
+- Las escenas armadas para `CONFIG.view` (campamento, pueblo, interiores, mapa,
+  tienda) piden su **propia lupa** con `r.escenaFija()`, que baja la densidad
+  hasta que entren. En 1920×1080 es la misma del mundo, así que no se nota.
+- El redondeo de cada primitiva pasó a ser al punto de pantalla y no a la
+  unidad; con coordenadas enteras da exactamente el mismo dibujo.
+- El mouse se divide por la densidad (`createInput(canvas, () => renderer.densidad)`),
+  o apuntar habría quedado corrido ×4.
+- **El texto mejoró solo:** son los mismos 8 de siempre, pero ahora se dibujan
+  con 32 puntos de alto, así que dejaron de ser bloques.
+- Una guarda nueva: si la ventana mide 0 (una pestaña oculta), no se toca el
+  canvas. Sin eso quedaba en 300×150 y había que recargar.
+
+**CUÁNTO MUNDO SE VE** (era la decisión abierta; Santi eligió la opción A, que
+en un monitor chico se vea menos vagón antes que perder nitidez):
+
+| Monitor | Antes | Ahora |
+|---|---|---|
+| 1920×1080 | 480×270 | **480×270, igual** |
+| 2560×1440 | 512×288 | 640×360 |
+| 3840×2160 | 480×270 | 480×270 |
+| 1366×768 | 456×256 | 342×192 (y las escenas fijas bajan a lupa ×3) |
+
+**MEDIDO:** sin errores en la consola. Canvas 1920×1080 con 480×270 unidades y
+densidad 4; **0,99 ms por cuadro** con el asalto lleno (unos 1000 por segundo,
+con el bucle parado y dibujando a mano), así que el temor de que 16 veces más
+puntos costara caro no se cumplió. El mouse en el centro de la pantalla da
+240×135, o sea que apuntar quedó exacto. Capturas del asalto, el campamento, el
+galope, el mapa, el pueblo y un interior: idénticos a antes, con el texto más
+nítido. En 1366×768: el asalto en 342×192 con densidad 4 y el campamento en
+456×256 con densidad 3, entrando entero.
+
+**⚠️ NO JUGADO** por Santi todavía.
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

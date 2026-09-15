@@ -494,6 +494,8 @@ export function createMapScene(services) {
   // ------------------------------------------------------------------ dibujo
 
   function render(r) {
+    // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
+    r.escenaFija();
     /**
      * EL PAPEL LLENA LA PANTALLA; LA RED VA CENTRADA. Las vías y los pueblos
      * están trazados para `CONFIG.view` (ver data/region.js) y así se quedan:

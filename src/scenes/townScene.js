@@ -211,6 +211,8 @@ export function createTownScene(services) {
   // ------------------------------------------------------------------ dibujo
 
   function render(r) {
+    // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
+    r.escenaFija();
     const dia = gameState.esDeDia;
     /**
      * EL CIELO VA ANTES DEL `translate`, y no es un detalle: está

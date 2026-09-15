@@ -46,18 +46,18 @@ export function createRider(x, y, side, typeId = 'ley') {
 }
 
 export function drawRider(r, rd) {
-  const col = CONFIG.colors;
-
   if (!rd.alive) {
-    dibujarTendido(r, rd.x, rd.y + 4, { cuerpo: col.rider, sombrero: col.riderHat });
+    dibujarTendido(r, rd.x, rd.y + 4, { cinta: '#4a78b8' });
     return;
   }
 
   /**
-   * TRES CUARTOS, ETAPA B: EL MISMO CABALLO DEL GALOPE (entities/caballo.js),
-   * con el jinete de la ley encima. Antes era un caballo hecho de cajas visto
-   * desde arriba, mirando para la izquierda; ahora corre hacia la derecha, que
-   * es hacia donde va el tren al que le sigue el paso.
+   * EL MISMO CABALLO DEL GALOPE (entities/caballo.js), con el jinete de la ley
+   * encima EN SOMBRA: negro, con la cinta azul en el sombrero y la insignia.
+   * *(Santi eligió para el galope "un caballo normal, como el de ahora, pero el
+   * jugador sí es negro"; los jinetes de la ley siguen la misma regla.)*
+   * Corre hacia la derecha, que es hacia donde va el tren al que le sigue el
+   * paso.
    *
    * El galope sale de `rd.gallop` (segundos, lo avanza systems/riders.js): una
    * zancada de 0,56 s, a fondo. Los cascos en `rd.y + 7`.
@@ -71,8 +71,10 @@ export function drawRider(r, rd) {
   const trote = Math.round(Math.cos((zancada.t / T - 0.15) * Math.PI * 2) * 1.2);
   dibujarAnimal(r, rd.x, rd.y, zancada, trote, 1, 0);
   dibujarJinete(r, rd.x - 1, rd.y - 5 + trote, 0, 2, {
-    camisa: rd.hitFlash > 0 ? '#fff' : col.rider,
-    sombrero: col.riderHat,
+    detalles: 'ley',
+    destello: rd.hitFlash > 0,
+    // Los ojos se ponen rojos mientras apunta, igual que un guardia en combate.
+    estado: rd.aimTimer > 0 ? 'alerta' : 'calma',
   });
 
   /**

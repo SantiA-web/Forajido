@@ -4206,11 +4206,11 @@ export function createRaidScene(services) {
 
     if (player.enTecho) {
       if (bordeParaBajar() !== null) {
-        r.text(T.prompts.bajar, player.x, player.y - 24, colors.doorGlow);
+        r.text(T.prompts.bajar, player.x, player.y - 16, colors.doorGlow);
         if (techoBajarProgress > 0) {
           const w = 22;
-          r.rect(player.x - w / 2, player.y - 20, w, 3, '#1a1512');
-          r.rect(player.x - w / 2, player.y - 20,
+          r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+          r.rect(player.x - w / 2, player.y - 12,
             w * (techoBajarProgress / CONFIG.techo.bajarHold), 3, colors.doorGlow);
         }
       }
@@ -4225,18 +4225,18 @@ export function createRaidScene(services) {
     // Trepar al carbón o bajar de él, con la misma barra que bajar del techo.
     const carbon = bordeDelCarbon();
     if (carbon && !isInsideZone(player, train.exitZone)) {
-      r.text(carbon.sube ? T.prompts.treparCarbon : T.prompts.bajar, player.x, player.y - 24, colors.doorGlow);
+      r.text(carbon.sube ? T.prompts.treparCarbon : T.prompts.bajar, player.x, player.y - 16, colors.doorGlow);
       if (carbonProgress > 0) {
         const w = 22;
-        r.rect(player.x - w / 2, player.y - 20, w, 3, '#1a1512');
-        r.rect(player.x - w / 2, player.y - 20,
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12,
           w * (carbonProgress / CONFIG.techo.bajarHold), 3, colors.doorGlow);
       }
     }
 
     const nearest = nearestLoot();
     if (nearest) {
-      r.text(T.prompts.loot(nearest.name), player.x, player.y - 24, colors.text);
+      r.text(T.prompts.loot(nearest.name), player.x, player.y - 16, colors.text);
       return;
     }
 
@@ -4256,31 +4256,31 @@ export function createRaidScene(services) {
     if (cajon) {
       const lleno = player.dynamite >= CONFIG.player.dynamiteMax;
       if (cajon.cargado && !cajon.tieneCartucho) {
-        r.text(T.prompts.cajonSinCartucho, player.x, player.y - 24, colors.textDim);
+        r.text(T.prompts.cajonSinCartucho, player.x, player.y - 16, colors.textDim);
         r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim);
       } else if (cajon.tieneCartucho) {
         r.text(lleno ? T.prompts.cartuchoLleno : T.prompts.cartucho,
-          player.x, player.y - 24, lleno ? colors.textDim : colors.dynamiteBand);
+          player.x, player.y - 16, lleno ? colors.textDim : colors.dynamiteBand);
         if (cajon.progreso > 0) {
           const w = 22;
-          r.rect(player.x - w / 2, player.y - 20, w, 3, '#1a1512');
-          r.rect(player.x - w / 2, player.y - 20,
+          r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+          r.rect(player.x - w / 2, player.y - 12,
             w * (cajon.progreso / EXPLOSIVES.cajonPolvora.abrirHold), 3, colors.dynamite);
         }
         r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim);
       } else {
-        r.text(T.prompts.empujarCajon, player.x, player.y - 24, colors.text);
+        r.text(T.prompts.empujarCajon, player.x, player.y - 16, colors.text);
       }
       return;
     }
 
     const tranquera = tranqueraCerca();
     if (tranquera) {
-      r.text(T.prompts.tranquera, player.x, player.y - 24, colors.enemySus);
+      r.text(T.prompts.tranquera, player.x, player.y - 16, colors.enemySus);
       if (tranquera.progreso > 0) {
         const w = 22;
-        r.rect(player.x - w / 2, player.y - 20, w, 3, '#1a1512');
-        r.rect(player.x - w / 2, player.y - 20,
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12,
           w * (tranquera.progreso / CONFIG.estampida.abrirHold), 3, colors.enemySus);
       }
       return;
@@ -4288,23 +4288,23 @@ export function createRaidScene(services) {
 
     const victima = nearestPassenger();
     if (victima) {
-      r.text(T.prompts.threaten, player.x, player.y - 24, colors.civilianRun);
+      r.text(T.prompts.threaten, player.x, player.y - 16, colors.civilianRun);
       if (victima.robProgress > 0) {
         const w = 22;
-        r.rect(player.x - w / 2, player.y - 20, w, 3, '#1a1512');
-        r.rect(player.x - w / 2, player.y - 20,
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12,
           w * (victima.robProgress / robTimeDe(victima)), 3, colors.bagLoot);
       }
       return;
     }
 
     if (isInsideZone(player, train.exitZone)) {
-      r.text(T.prompts.escape, player.x, player.y - 24, colors.doorGlow);
+      r.text(T.prompts.escape, player.x, player.y - 16, colors.doorGlow);
       if (escapeProgress > 0) {
         const w = 22;
-        r.rect(player.x - w / 2, player.y - 20, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
         r.rect(
-          player.x - w / 2, player.y - 20,
+          player.x - w / 2, player.y - 12,
           w * (escapeProgress / CONFIG.raid.escapeHold), 3, colors.doorGlow
         );
       }
@@ -4312,7 +4312,7 @@ export function createRaidScene(services) {
     }
 
     if (player.cover && player.peek < 0.2) {
-      r.text(T.prompts.peek, player.x, player.y - 24, '#9fd8b8');
+      r.text(T.prompts.peek, player.x, player.y - 16, '#9fd8b8');
     }
 
     if (player.ammo === 0 && player.reloadTimer <= 0) {

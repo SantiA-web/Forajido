@@ -1,48 +1,43 @@
 /**
- * LA PERSONA DE CUERPO ENTERO — tres cuartos, etapa B.
+ * LA PERSONA — SOMBRAS CABEZONAS.
  *
- * *(Santi eligió 4 direcciones; el alto empezó en 16 y pasó a 24, ver abajo)*. Hasta acá cada persona del
- * tren era la caja con la que choca vista desde arriba —un rectángulo del color
- * de su estado— con un sombrero encima. En tres cuartos se ve de pie: piernas,
- * torso, cabeza y sombrero, mirando hacia uno de cuatro lados.
+ * *(Santi eligió el estilo en seis láminas; ver data/siluetas.js)*. Toda la
+ * gente del juego es una silueta negra, sombreruda y cabezona, y el color
+ * sale de sus detalles. Este archivo convierte las tablas de data/siluetas.js
+ * en píxeles; los dibujos en sí viven allá.
  *
  * LA CAJA QUE RECIBE LAS BALAS NO CAMBIÓ (decisión de la etapa A): sigue siendo
- * `hw`/`hh`, a la altura del cuerpo. El dibujo se apoya con los pies en el
- * borde de abajo de esa caja (`pies = y + hh`) y crece hacia arriba. Así todo
- * lo medido —cobertura, puntería, reses, montículos— sigue valiendo.
+ * `hw`/`hh`. El dibujo se apoya con los pies en el borde de abajo de esa caja
+ * (`pies = y + hh`) y crece hacia arriba. Así todo lo medido —cobertura,
+ * puntería, reses, montículos— sigue valiendo.
  *
- * UNA SOLA FIGURA PARA TODOS. El jugador, los guardias, los pasajeros y el jefe
- * son la misma persona con otra ropa: lo que cambia es el color del cuerpo (que
- * sigue diciendo el ESTADO), el sombrero, y las marcas de cada tipo que dibuja
- * cada uno encima (la placa, la estrella, la bandolera). Es la regla que ya
- * tenían los guardias: el tipo se lee en la silueta, el estado en el color.
+ * 📏 DE 14 A 19 PÍXELES DE ALTO según el sombrero (la gorra es la más baja, la
+ * galera la más alta), sobre 12 de ancho. La etapa B había llegado a 16×24 y
+ * se veía como el muñequito de cualquier juego *(Santi: "creo que se ve muy
+ * feo")*.
+ *
+ * 8 DIRECCIONES *(Santi: "quiero que hayan 8 direcciones en vez de 4")*, con
+ * 5 dibujos: las tres de la izquierda son las de la derecha en espejo.
+ *
+ * LOS AVISOS DE ESTADO. Con la gente en negro, el color del cuerpo ya no puede
+ * decir si un guardia te vio. Lo dicen los ojos (blancos, amarillos, rojos) y,
+ * encima de la cabeza, `dibujarAviso`: un "?" amarillo con la barrita de
+ * cuánto le falta para verte, o un "!" rojo fijo mientras pelea *(Santi: "y si
+ * solo ponemos el signo de pregunta amarillo o el signo rojo de exclamación
+ * por ahora"; eligió "? + barrita" y "! fijo")*.
  *
  * TODO SE DIBUJA CON `r.rect` Y `r.line`, nunca tocando el contexto directo:
  * así un renderer "de un solo color" (la silueta del jinete detrás de la pared,
  * `siluetaDeJinete` en raidScene) puede pintar cualquier figura sin enterarse.
- *
- * 📏 16×24, NO 16×16 *(Santi: "hacelo 16x24")*. Con 16 de alto la ropa y los
- * detalles no se iban a notar. 16×24 es el CUADRO donde se dibuja, como el
- * 16×32 de Stardew Valley: el cuerpo no lo llena de ancho *(eligió "delgado,
- * como Stardew")* — torso de 9, con brazos 11, y sólo el sombrero ancho llega
- * a 15. Así una persona no ocupa un asiento entero (16) y se ve el de al lado.
- *
- * Las filas, de abajo hacia arriba, con `pies` justo debajo de las botas:
- *
- *   pies-24 … pies-22   la copa del sombrero (la galera del rico sube a -27)
- *   pies-22             el ala vista desde arriba (tres cuartos)
- *   pies-21             el ala de frente (tapa la frente)
- *   pies-20 … pies-18   la cara: sombra del ala, los ojos, la quijada
- *   pies-17 … pies-9    el torso: camisa, el cinto en -10 y la cadera en -9
- *   pies-8  … pies-1    las piernas, con las botas en las dos de abajo
  */
 
 import { CONFIG } from '../data/config.js';
+import {
+  NEGRO, OJOS_ESTADO, SOMBREROS, CUERPOS, POSTURAS, TIPOS, sombreroDe,
+} from '../data/siluetas.js';
 
-export const ALTO_PERSONA = 24;
-
-const BOTA = '#2a2320';
-const PELO = '#3a2a20';
+/** El alto de una persona con gorra, la más común. */
+export const ALTO_PERSONA = 15;
 
 /** El mismo color, multiplicado por `f` (0,7 es 30% más oscuro). */
 export function tono(hex, f) {
@@ -52,18 +47,34 @@ export function tono(hex, f) {
   return '#' + ((1 << 24) | (c(16) << 16) | (c(8) << 8) | c(0)).toString(16).slice(1);
 }
 
+const OCHO = ['der', 'abajoDer', 'abajo', 'abajoIzq', 'izq', 'arribaIzq', 'arriba', 'arribaDer'];
+
+/** Cada dirección, a qué dibujo corresponde y si va en espejo. */
+const VISTA = {
+  der: ['lado', false],
+  abajoDer: ['diagF', false],
+  abajo: ['frente', false],
+  abajoIzq: ['diagF', true],
+  izq: ['lado', true],
+  arribaIzq: ['diagE', true],
+  arriba: ['espalda', false],
+  arribaDer: ['diagE', false],
+};
+
 /**
- * DE UN ÁNGULO A UNA DE LAS CUATRO DIRECCIONES. El ángulo va como en todo el
+ * DE UN ÁNGULO A UNA DE LAS OCHO DIRECCIONES. El ángulo va como en todo el
  * juego: 0 a la derecha y creciendo hacia abajo de la pantalla, así que
- * "abajo" es mirar a la cámara (de frente) y "arriba" es darle la espalda.
+ * "abajo" es mirar a la cámara y "arriba" es darle la espalda.
  */
 export function direccionDe(angulo) {
   const a = Math.atan2(Math.sin(angulo), Math.cos(angulo));
-  const q = Math.PI / 4;
-  if (a > -q && a <= q) return 'der';
-  if (a > q && a <= 3 * q) return 'frente';
-  if (a <= -q && a > -3 * q) return 'espalda';
-  return 'izq';
+  return OCHO[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
+}
+
+/** Si en esa dirección se le ve la cara (y por lo tanto el pecho). */
+export function deFrente(angulo) {
+  const v = VISTA[direccionDe(angulo)][0];
+  return v !== 'espalda' && v !== 'diagE';
 }
 
 /**
@@ -91,214 +102,254 @@ export function faseDeAndar(ent) {
   return ent._andarQuieto > 4 ? null : ent._andarFase || 0;
 }
 
+/** De la fase del paso al cuadro de las piernas: 0 parado, 1 y 2 los pasos. */
+function pasoDe(fase) {
+  if (fase == null) return 0;
+  const s = Math.sin(fase * Math.PI);
+  return s > 0.35 ? 1 : s < -0.35 ? 2 : 0;
+}
+
+function detallesDe(T, vista) {
+  if (T[vista]) return T[vista];
+  const correr = (d) => (d.corre ? { ...d, dx: d.dx + 1 } : d);
+  if (vista === 'diagF') return T.frente.map(correr);
+  if (vista === 'diagE') return T.espalda.map(correr);
+  return [];
+}
+
+const CARTUCHO = '#e03a2a';
+const CARTUCHO_BANDA = '#f0d0a8';
+const CARTUCHO_VACIO = '#33291f';
+const CORREA = '#8a6a4a';
+
+/**
+ * LA BANDOLERA DEL DINAMITERO, con los cartuchos que le QUEDAN. Los huecos van
+ * en un marrón muerto: **la bandolera vacía tiene que leerse como vacía, no
+ * como ausente** — es la única señal de la ventana en la que está desarmado.
+ * Caben cuatro; si lleva más, se ve cuántos de cuatro.
+ */
+function bandolera(poner, izq, cuerpoY, vista, { cargados, total }) {
+  const n = Math.min(4, total);
+  const hay = Math.min(n, cargados);
+  for (let i = 0; i < 4; i++) {
+    const y = cuerpoY + 3 + i;
+    if (vista === 'espalda' || vista === 'diagE') {
+      poner(izq + 2 + 2 * i, y, CORREA);
+      poner(izq + 3 + 2 * i, y, CORREA);
+      continue;
+    }
+    if (vista === 'lado') {
+      poner(izq + 5, y, CORREA);
+      if (i < n) {
+        poner(izq + 6, y, i < hay ? CARTUCHO : CARTUCHO_VACIO);
+        poner(izq + 7, y, i < hay ? CARTUCHO_BANDA : CARTUCHO_VACIO);
+      }
+      continue;
+    }
+    const corre = vista === 'diagF' ? 1 : 0;
+    poner(izq + 10 - 2 * i + corre, y, CORREA);
+    if (i < n) {
+      poner(izq + 8 - 2 * i + corre, y, i < hay ? CARTUCHO : CARTUCHO_VACIO);
+      poner(izq + 9 - 2 * i + corre, y, i < hay ? CARTUCHO_BANDA : CARTUCHO_VACIO);
+    }
+  }
+}
+
 /**
  * DIBUJA UNA PERSONA.
  *
- * @param f.x, f.pies     el centro y la fila de las botas
- * @param f.dir           'frente' | 'espalda' | 'der' | 'izq' (ver `direccionDe`)
+ * @param f.tipo          una clave de TIPOS (data/siluetas.js)
+ * @param f.x, f.pies     el centro y la fila de abajo de las botas
+ * @param f.angulo        hacia dónde mira (radianes)
  * @param f.fase          en qué punto del paso va, o `null` si está parado
- * @param f.cuerpo        el color del torso: el ESTADO, en guardias y pasajeros
- * @param f.piel          la cara
- * @param f.pantalon      las piernas (por defecto, un marrón oscuro)
- * @param f.sombrero      { tipo: 'ala' | 'ancho' | 'chico' | 'copa' | 'ninguno', color, cinta }
- * @param f.postura       'pie' | 'agachado' | 'sentado' | 'rodillas'
- * @param f.alzado        de rodillas: 0 arrodillado … 1 ya de pie (la traición)
- * @param f.brazosArriba  las manos en alto (rendido, asaltado)
+ * @param f.postura       'pie' | 'agachado' | 'sentado' | 'rendido'
+ * @param f.estado        'calma' | 'sospecha' | 'alerta' | 'aturdido': el color de los ojos
+ * @param f.ojos          pisa el color de los ojos (los jefes)
+ * @param f.manosArriba   las manos en alto (asaltado); `rendido` ya las lleva
+ * @param f.panuelo       rendido: el pañuelo blanco en la mano
  * @param f.arma          { angulo, largo, color, punta, doble } o `null`
+ * @param f.cartuchos     el dinamitero: { cargados, total }
+ * @param f.orilla        pinta la orilla de la silueta de un color (el jefe furioso)
+ * @param f.destello      toda la figura en blanco (le acaban de pegar)
  * @param f.sacudida      px de temblor horizontal (pánico)
+ * @param f.extra         (poner, { izq, top, cuerpoY, vista }) para agregar píxeles
+ *                        propios (la mochila), en coordenadas mirando a la derecha
  *
- * @returns dónde quedó cada parte, para que cada tipo le dibuje sus marcas
- *   encima: `{ x, torsoY, torsoH, cabezaY, arriba }`.
+ * @returns `{ x, top, arriba, manoY, pechoY, vista, espejo }`: `arriba` es desde
+ *   dónde se apilan las cosas encima de la cabeza.
  */
-export function dibujarFigura(r, f) {
-  const x = Math.round(f.x + (f.sacudida || 0));
-  const pies = Math.round(f.pies);
-  const dir = f.dir || 'frente';
-  const costado = dir === 'der' || dir === 'izq';
-  const lado = dir === 'izq' ? -1 : 1;
+export function dibujarPersona(r, f) {
+  const T = TIPOS[f.tipo] || TIPOS.guardia;
+  const [vista, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const postura = f.postura || 'pie';
-  const pantalon = f.pantalon || '#4a3a2e';
-  const oscuro = tono(f.cuerpo, 0.72);
-  const sombra = tono(f.cuerpo, 0.86);
-  const pielSombra = tono(f.piel, 0.8);
+  const hat = SOMBREROS[sombreroDe(T.sombrero, vista)];
+  const cuerpo = postura === 'pie'
+    ? CUERPOS[vista].top.concat(CUERPOS[vista].piernas[pasoDe(f.fase)])
+    : POSTURAS[postura];
+  const filas = hat.concat(cuerpo);
 
-  /**
-   * CUÁNTO BAJA TODO LO DE ARRIBA según la postura: agachado y sentado, 6 px
-   * (las piernas se doblan); de rodillas, entre 7 y 0 según `alzado`, que es lo
-   * que deja ver a un rendido pararse de a poco antes de traicionarte.
-   */
-  const baja = postura === 'agachado' || postura === 'sentado' ? 6
-    : postura === 'rodillas' ? Math.round(7 * (1 - (f.alzado || 0)))
-      : 0;
-  const torsoY = pies - 17 + baja;
-  const cabezaY = pies - 21 + baja;
+  const x = Math.round(f.x + (f.sacudida || 0));
+  const top = Math.round(f.pies) - filas.length;
+  const izq = x - 6;
+  const cuerpoY = top + hat.length;
+  // Lo que vuela se mueve con el paso; parado, quieto en el cuadro del medio.
+  const cuadro = f.fase == null ? 1 : Math.floor(f.fase * 1.5);
 
-  // --- El arma, si le da la espalda a la cámara va DETRÁS del cuerpo ---
+  const mapa = new Map();
+  const poner = (px, py, c) => mapa.set(px + ',' + py, [px, py, c]);
+
+  let dets = detallesDe(T, vista);
+  if (postura !== 'pie') dets = dets.filter((d) => d.capa === 'hat' || d.dy <= 4);
+  const pintar = (d) => {
+    const lista = d.frames ? d.frames[cuadro % d.frames.length] : d.rows;
+    const oy = (d.capa === 'hat' ? top : cuerpoY) + d.dy;
+    lista.forEach((fila, i) => {
+      for (let j = 0; j < fila.length; j++) {
+        if (fila[j] !== '.') poner(izq + d.dx + j, oy + i, T.pal[fila[j]]);
+      }
+    });
+  };
+
+  dets.filter((d) => d.detras).forEach(pintar);
+
+  const conOjos = vista !== 'espalda' && vista !== 'diagE';
+  const ojos = f.ojos || (T.ojosEstado ? (OJOS_ESTADO[f.estado] || OJOS_ESTADO.calma) : T.ojos);
+  for (let fy = 0; fy < filas.length; fy++) {
+    const fila = filas[fy];
+    for (let fx = 0; fx < 12; fx++) {
+      const ch = fila[fx];
+      if (ch === '.') continue;
+      poner(izq + fx, top + fy, ch === 'e' && conOjos ? ojos : NEGRO);
+    }
+  }
+
+  dets.filter((d) => !d.detras).forEach(pintar);
+  if (T.bandolera && f.cartuchos && postura !== 'sentado') bandolera(poner, izq, cuerpoY, vista, f.cartuchos);
+  if (f.extra) f.extra(poner, { izq, top, cuerpoY, vista });
+
+  if (postura === 'rendido' || f.manosArriba) {
+    for (let y = top; y <= cuerpoY + 4; y++) {
+      poner(izq - 1, y, NEGRO);
+      poner(izq + 12, y, NEGRO);
+    }
+    if (f.panuelo) {
+      for (const [ax, ay] of [[13, -2], [14, -2], [15, -2], [13, -1], [14, -1], [15, -1], [15, 0]]) {
+        poner(izq + ax, top + ay, '#f4f0e8');
+      }
+    }
+  }
+
+  if (f.orilla) {
+    const orilla = [];
+    for (const [k, [px, py, c]] of mapa) {
+      if (c !== NEGRO) continue;
+      if (!mapa.has((px + 1) + ',' + py) || !mapa.has((px - 1) + ',' + py)
+        || !mapa.has(px + ',' + (py + 1)) || !mapa.has(px + ',' + (py - 1))) orilla.push(k);
+    }
+    for (const k of orilla) mapa.get(k)[2] = f.orilla;
+  }
+
+  // --- El arma: sale de la mano. Si apunta para arriba, va detrás del cuerpo.
+  const manoY = cuerpoY + (postura === 'pie' ? 6 : 5);
   const arma = f.arma;
   const dibujarArma = () => {
-    if (!arma) return;
-    // Sale de la mano: a la altura del pecho, al costado del torso.
-    const ax = x + (costado ? lado * 3 : (dir === 'frente' ? 5 : -5));
-    const ay = torsoY + 4;
     const cos = Math.cos(arma.angulo);
     const sin = Math.sin(arma.angulo);
+    const ax = x + cos * 3;
+    const ay = manoY;
     r.line(ax, ay, ax + cos * arma.largo, ay + sin * arma.largo, arma.color);
     if (arma.doble) {
-      // El segundo revólver, corrido a un costado del primero.
       const nx = -sin * 3;
       const ny = cos * 3;
       r.line(ax + nx, ay + ny, ax + nx + cos * arma.largo, ay + ny + sin * arma.largo, arma.color);
     }
     if (arma.punta) r.rect(ax + cos * (arma.largo + 1), ay + sin * (arma.largo + 1), 1, 1, arma.punta);
   };
-  if (dir === 'espalda') dibujarArma();
+  const armaAtras = arma && Math.sin(arma.angulo) < -0.3;
+  if (armaAtras) dibujarArma();
 
-  // --- Las piernas ---
-  const paso = f.fase == null ? 0 : Math.sin(f.fase * Math.PI);
-  const zancada = paso > 0.35 ? 1 : paso < -0.35 ? -1 : 0;
-  if (postura === 'sentado') {
-    // Sentado: los muslos hacia adelante y las botas colgando.
-    if (costado) {
-      r.rect(lado > 0 ? x : x - 6, pies - 4, 7, 2, pantalon);
-      const canilla = lado > 0 ? x + 5 : x - 6;
-      r.rect(canilla, pies - 3, 2, 2, pantalon);
-      r.rect(canilla + (lado > 0 ? 0 : -1), pies - 1, 3, 1, BOTA);
-    } else {
-      r.rect(x - 3, pies - 3, 3, 2, pantalon);
-      r.rect(x + 1, pies - 3, 3, 2, pantalon);
-      r.rect(x - 3, pies - 1, 3, 1, BOTA);
-      r.rect(x + 1, pies - 1, 3, 1, BOTA);
-    }
-  } else if (postura === 'agachado' || (postura === 'rodillas' && baja > 1)) {
-    // Doblado: las piernas se ven cortas y abiertas, las rodillas adelante.
-    const alto = Math.max(2, 8 - baja);
-    r.rect(x - 4, pies - alto, 3, alto, pantalon);
-    r.rect(x + 2, pies - alto, 3, alto, pantalon);
-    r.rect(x - 5, pies - 1, 4, 1, BOTA);
-    r.rect(x + 2, pies - 1, 4, 1, BOTA);
-  } else if (costado) {
-    // De costado, una pierna adelante y otra atrás según el paso. Cada pierna
-    // tiene 3 de ancho; la de atrás, más oscura; la bota apunta hacia adelante.
-    const pierna = (corrida, color) => {
-      const izquierda = x + corrida - 1;
-      r.rect(izquierda, pies - 8, 3, 6, color);
-      r.rect(izquierda + (lado > 0 ? 0 : -1), pies - 2, 4, 2, BOTA);
-    };
-    pierna(-lado * (zancada === 0 ? 1 : 2), tono(pantalon, 0.8));
-    pierna(lado * (zancada === 0 ? 0 : 2), pantalon);
-  } else {
-    // De frente o de espaldas, la pierna que avanza se levanta un píxel.
-    const izq = zancada > 0 ? 1 : 0;
-    const der = zancada < 0 ? 1 : 0;
-    r.rect(x - 3, pies - 8, 3, 6 - izq, pantalon);
-    r.rect(x + 1, pies - 8, 3, 6 - der, pantalon);
-    r.rect(x - 3, pies - 2 - izq, 3, 2, BOTA);
-    r.rect(x + 1, pies - 2 - der, 3, 2, BOTA);
+  const eje = 2 * izq + 11;
+  for (const [px, py, c] of mapa.values()) {
+    r.rect(espejo ? eje - px : px, py, 1, 1, f.destello ? '#ffffff' : c);
   }
 
-  // --- El torso: camisa, cinto y cadera, con los brazos ---
-  if (costado) {
-    r.rect(x - 3, torsoY, 7, 7, f.cuerpo);
-    r.rect(lado > 0 ? x - 3 : x + 3, torsoY, 1, 7, sombra);   // la espalda, en sombra
-    r.rect(x - 3, torsoY + 7, 7, 1, oscuro);
-    r.rect(x - 3, torsoY + 8, 7, 1, pantalon);
-    if (!f.brazosArriba) {
-      // El brazo va y viene al revés que la pierna de adelante.
-      const bx = x - 1 - lado * zancada;
-      r.rect(bx, torsoY + 1, 2, 6, oscuro);
-      r.rect(bx, torsoY + 7, 2, 1, f.piel);
-    }
-  } else {
-    r.rect(x - 4, torsoY, 9, 7, f.cuerpo);
-    r.rect(x + 3, torsoY, 1, 7, sombra);
-    r.rect(x - 4, torsoY + 7, 9, 1, oscuro);
-    r.rect(x - 4, torsoY + 8, 9, 1, pantalon);
-    if (!f.brazosArriba) {
-      r.rect(x - 5, torsoY + 1, 1, 6, oscuro);
-      r.rect(x + 5, torsoY + 1, 1, 6, oscuro);
-      r.rect(x - 5, torsoY + 7, 1, 1, f.piel);
-      r.rect(x + 5, torsoY + 7, 1, 1, f.piel);
-    }
+  if (arma && !armaAtras) dibujarArma();
+
+  return {
+    x, top,
+    arriba: postura === 'rendido' || f.manosArriba ? top - 3 : top,
+    manoY,
+    pechoY: cuerpoY + 4,
+    vista, espejo,
+  };
+}
+
+const SIGNO_ALERTA = ['xx', 'xx', 'xx', '..', 'xx'];
+const SIGNO_SOSPECHA = ['xxx', '..x', '.xx', '...', '.x.'];
+
+/**
+ * EL AVISO ENCIMA DE LA CABEZA, desde `arriba` hacia arriba.
+ *
+ *  - 'alerta':   un "!" rojo, fijo mientras pelea.
+ *  - 'sospecha': un "?" amarillo y, debajo, la barrita de cuánto le falta para
+ *    verte (se pone naranja pasado el 66%). La barrita no es adorno: te dice
+ *    si llegás a esconderte.
+ *
+ * Devuelve la fila de más arriba que ocupó, para seguir apilando.
+ */
+export function dibujarAviso(r, x, arriba, estado, llenado = 0) {
+  const cx = Math.round(x);
+  const signo = (forma, color, y0) => {
+    const ox = cx - Math.floor(forma[0].length / 2);
+    forma.forEach((fila, i) => {
+      for (let j = 0; j < fila.length; j++) if (fila[j] !== '.') r.rect(ox + j, y0 + i, 1, 1, color);
+    });
+  };
+  if (estado === 'alerta') {
+    signo(SIGNO_ALERTA, '#ff3a2a', arriba - 7);
+    return arriba - 8;
   }
-
-  // --- La cabeza ---
-  if (dir === 'espalda') {
-    r.rect(x - 3, cabezaY, 7, 3, PELO);
-    r.rect(x - 2, cabezaY + 3, 5, 1, f.piel);                  // la nuca
-  } else if (costado) {
-    r.rect(x - 2, cabezaY, 5, 4, f.piel);
-    r.rect(x - 2, cabezaY + 1, 5, 1, pielSombra);              // la sombra del ala
-    r.rect(lado > 0 ? x - 2 : x + 1, cabezaY, 2, 3, PELO);     // el pelo de atrás
-    r.rect(x + lado, cabezaY + 2, 1, 1, BOTA);                 // el ojo
-    r.rect(x + lado * 3, cabezaY + 2, 1, 1, f.piel);           // la nariz
-  } else {
-    r.rect(x - 3, cabezaY, 7, 4, f.piel);
-    r.rect(x - 3, cabezaY + 1, 7, 1, pielSombra);
-    r.rect(x - 3, cabezaY + 1, 1, 2, PELO);                    // las patillas
-    r.rect(x + 3, cabezaY + 1, 1, 2, PELO);
-    r.rect(x - 1, cabezaY + 2, 1, 1, BOTA);                    // los ojos
-    r.rect(x + 1, cabezaY + 2, 1, 1, BOTA);
+  if (estado === 'sospecha') {
+    r.rect(cx - 6, arriba - 4, 12, 2, '#1a1512');
+    r.rect(cx - 6, arriba - 4, Math.round(12 * Math.min(1, llenado)), 2, llenado > 0.66 ? '#e07a4a' : '#e0c44a');
+    signo(SIGNO_SOSPECHA, '#f8d830', arriba - 10);
+    return arriba - 11;
   }
-
-  // --- El sombrero ---
-  const s = f.sombrero || { tipo: 'ala', color: CONFIG.colors.playerHat };
-  let arriba = cabezaY - 1;
-  if (s.tipo !== 'ninguno') {
-    const ala = { ala: 13, ancho: 15, chico: 9, copa: 11 }[s.tipo] || 13;
-    const copaAncho = s.tipo === 'chico' ? 5 : 7;
-    const copaAlto = s.tipo === 'copa' ? 6 : s.tipo === 'chico' ? 2 : 3;
-    const luz = tono(s.color, 1.5);
-    const izqAla = x - Math.floor(ala / 2);
-    const izqCopa = x - Math.floor(copaAncho / 2);
-    // Tres cuartos: se ve el ala de frente y, encima, un poco del ala por arriba.
-    r.rect(izqAla, cabezaY, ala, 1, s.color);
-    r.rect(izqAla + 1, cabezaY - 1, ala - 2, 1, tono(s.color, 1.2));
-    r.rect(izqCopa, cabezaY - copaAlto, copaAncho, copaAlto, s.color);
-    r.rect(izqCopa, cabezaY - copaAlto, copaAncho, 1, luz);
-    if (s.cinta) r.rect(izqCopa, cabezaY - 1, copaAncho, 1, s.cinta);
-    arriba = cabezaY - copaAlto;
-  } else if (dir !== 'espalda') {
-    r.rect(x - 3, cabezaY, 7, 1, PELO);
-  }
-
-  // Las manos en alto van por delante del ala del sombrero.
-  if (f.brazosArriba) {
-    for (const bx of [x - 6, x + 6]) {
-      r.rect(bx, cabezaY - 4, 1, torsoY - cabezaY + 6, f.cuerpo);
-      r.rect(bx, cabezaY - 5, 1, 2, f.piel);
-    }
-    r.rect(x - 5, torsoY + 1, 1, 1, f.cuerpo);
-    r.rect(x + 5, torsoY + 1, 1, 1, f.cuerpo);
-    arriba = Math.min(arriba, cabezaY - 5);
-  }
-
-  if (dir !== 'espalda') dibujarArma();
-
-  return { x, torsoY, torsoH: 9, cabezaY, arriba };
+  return arriba;
 }
 
 /**
- * UNA PERSONA TIRADA EN EL PISO: muerta o desmayada. Acostada de costado, con
- * la cabeza a un lado y el sombrero volado. `sangre` agrega el charco (los
- * desmayados no tienen, y es la única seña de que siguen vivos).
- *
- * A la misma escala que la persona de pie: mide lo que mediría acostada.
+ * UNA PERSONA TIRADA EN EL PISO: muerta o desmayada. Acostada, con un brazo y
+ * las piernas abiertas y el sombrero volado al lado (con su cinta, así se sabe
+ * quién era). `sangre` agrega el charco; el desmayado no tiene, respira y
+ * lleva la "z".
  *
  * Va con el piso (ver el orden de dibujo del asalto): nunca tapa a nadie.
  */
 export function dibujarTendido(r, x, y, opciones = {}) {
-  const { cuerpo, piel = CONFIG.colors.enemyPiel, sombrero = '#2a2320', sangre = false, respira = 0, grande = false } = opciones;
+  const { sangre = false, respira = 0, grande = false, cinta = null, dormido = false } = opciones;
+  const color = opciones.color || NEGRO;
   const cx = Math.round(x);
   const cy = Math.round(y);
   const k = grande ? 1 : 0;
+  const late = Math.round(respira);
   if (sangre) {
-    r.rect(cx - 10 - k, cy + 1, 21 + k * 2, 5, CONFIG.colors.blood);
-    r.rect(cx - 7 - k, cy + 5, 14 + k * 2, 3, tono(CONFIG.colors.blood, 0.8));
+    r.rect(cx - 9 - k, cy + 1, 19 + k * 2, 4, CONFIG.colors.blood);
+    r.rect(cx - 6 - k, cy + 4, 12 + k * 2, 2, tono(CONFIG.colors.blood, 0.8));
   }
-  r.rect(cx + 5 + k, cy, 7, 4, '#4a3a2e');                              // las piernas
-  r.rect(cx + 11 + k, cy, 3, 4, BOTA);
-  r.rect(cx - 5 - k, cy - 1 + Math.round(respira), 11 + k * 2, 5, cuerpo); // el torso
-  r.rect(cx - 5 - k, cy + 3 + Math.round(respira), 11 + k * 2, 1, tono(cuerpo, 0.72));
-  r.rect(cx - 9 - k, cy, 4, 4, piel);                                    // la cabeza
-  r.rect(cx - 15 - k, cy + 3, 6, 2, sombrero);                           // el sombrero, volado
+  r.rect(cx - 12 - k, cy - 3, 3, 1, color);                       // el sombrero: la copa
+  r.rect(cx - 13 - k, cy - 2, 5, 1, color);                       // y el ala
+  if (cinta) r.rect(cx - 12 - k, cy - 3, 3, 1, cinta);
+  r.rect(cx - 7 - k, cy - 2, 4, 4, color);                        // la cabeza
+  r.rect(cx - 3 - k, cy - 2 + late, 8 + k * 2, 5, color);         // el torso
+  r.rect(cx - 1, cy - 4 + late, 2, 2, color);                     // un brazo, tirado para arriba
+  r.rect(cx + 1, cy + 3, 3, 1, color);                            // el otro
+  r.rect(cx + 5 + k, cy - 2, 6, 2, color);                        // las piernas, abiertas
+  r.rect(cx + 5 + k, cy + 1, 5, 2, color);
+  if (dormido) {
+    const z = ['xxx', '..x', '.x.', 'xxx'];
+    z.forEach((fila, i) => {
+      for (let j = 0; j < 3; j++) if (fila[j] !== '.') r.rect(cx - 6 + j, cy - 10 + i, 1, 1, '#c8d8f0');
+    });
+  }
 }

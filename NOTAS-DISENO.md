@@ -12284,6 +12284,111 @@ jefe de frente y de costado; captura del vagón real a 480×270.
 
 **⚠️ NO JUGADO.**
 
+### 🎩 Las sombras cabezonas: toda la gente en negro
+
+*(Santi, sobre la gente de 16×24: "creo que se ve muy feo. La verdad es que me
+gustaría que diseñemos un tipo de arte, no una persona así parada que es muy
+normal. Los juegos de este tipo se caracterizan por reconocerlos fácilmente")*.
+**La gente de 16×24 queda reemplazada entera.**
+
+**CÓMO SE ELIGIÓ, con láminas fuera del juego:**
+
+1. Tres estilos sobre la misma escena del vagón: sombrerudos cabezones, grabado
+   de cartel "Se busca" y siluetas a contraluz.
+2. Cabezones + grabado (en tinta sobre el vagón normal y todo en sepia), y la
+   idea de Santi: *"personajes totalmente negros (como si fueran sombras) y
+   sombrerudos cabezones, pero que tengan detalles como una capa volando, un
+   pañuelo, una insignia, etc. Y que esos detalles le den el color"*.
+   **Eligió ésta.**
+3. El aviso de estado, con los ojos solos midiendo **0 px de espaldas**:
+   contorno de color (48 px), cinta de la gorra (6 px), marca encima (8 px).
+   Después contorno más chico: por dentro (42 px), punteado (24), sólo arriba
+   (26). Santi: *"y si solo ponemos el signo de pregunta amarillo o el signo
+   rojo de exclamación por ahora"* → **"?" + barrita** (la barrita dice cuánto
+   falta para verte, que es información para jugar) y **"!" fijo mientras
+   pelea** (con el cuerpo negro, un "!" de un segundo dejaba al guardia sin
+   nada que dijera que te está peleando).
+4. Costado, caminata, posturas y los tipos que faltaban; y **8 direcciones**
+   *(Santi: "quiero que hayan 8 direcciones en vez de 4")*: 5 dibujos, las
+   tres de la izquierda en espejo.
+5. El galope: *"el jugador va montado en un caballo normal, como el de ahora,
+   pero el jugador sí es negro"*.
+
+**DÓNDE VIVE:** los dibujos, como tablas de letras, en `data/siluetas.js`
+(sombreros, cuerpos de las 5 vistas con 3 cuadros de paso, posturas y los
+detalles de cada tipo). `entities/figura.js` los convierte en píxeles:
+`dibujarPersona`, `dibujarAviso` y `dibujarTendido`. Si un personaje no gusta,
+se retoca la tabla y nada más.
+
+**QUIÉN ES QUIÉN** (el tipo en la silueta y sus detalles):
+
+| Tipo | Sombrero | Detalles |
+|---|---|---|
+| Vos | vaquero | pañuelo rojo al viento, cinta roja, mochila de cuero |
+| Guardia | gorra | cinta azul, insignia plateada, hombreras |
+| Blindado | gorra | la placa de metal en el pecho |
+| Pistolero | ala plana | guardapolvo al viento, dos culatas de marfil |
+| Dinamitero | boina con pompón | bandolera con los cartuchos que le quedan |
+| Encubierto | bombín | **igual que un pasajero** hasta que saca el arma |
+| Sheriff | alto | cinta y estrella doradas, bigote blanco |
+| Pasajero | bombín con flor | bufanda verde |
+| Rico | galera | cinta morada, monóculo, moñito, cadena de oro |
+| Cazarrecompensas (jefe) | ancho con copa dentada | capa roja que vuela |
+| Sheriff (jefe) | alto | guardapolvo, estrella grande, bigote |
+| Jinete de la ley | gorra | cinta azul, insignia (caballo de siempre) |
+
+**EL ESTADO**, que antes era el color de todo el cuerpo:
+
+- **Guardias:** los ojos (blancos, amarillos, rojos, grises si está aturdido)
+  y encima de la cabeza, apilado: las muescas de vida si está herido, y arriba
+  el "?" con la barrita o el "!". "Vigilando" y las charlas siguen igual.
+- **Rendido:** de rodillas con un pañuelo blanco. 🔁 La traición: al 25%
+  suelta el pañuelo (con las manos arriba todavía) y al 50% se para con los
+  ojos rojos y el "!".
+- **Pasajeros:** el asaltado con las manos arriba y su reloj; el pánico con su
+  "!"; el encubierto, al pasar la mitad de sacar el arma, ojos rojos y "!".
+- **Jefes:** la ORILLA de la silueta (gris aturdido, dorada invulnerable, roja
+  furioso) y los ojos (casi apagados acechando, rojos furioso).
+- **Desmayado** con "z" y sin sangre; **muerto** con sangre. Los dos, con
+  brazos y piernas abiertos y el sombrero volado con la cinta de su tipo.
+
+**🔁 CAMBIOS RESPECTO DE LO QUE SE HABÍA DECIDIDO, y por qué:**
+
+- **Los jefes ya no se agrandan (1,15 → 1).** Medido en captura: con siluetas
+  de un píxel la escala no entera mezcla cada borde con el piso y el jefe se
+  veía marrón y transparente en vez de negro. Los distingue lo suyo: la capa o
+  el guardapolvo, los ojos ámbar y la barra de vida que llevan siempre.
+- **Los jinetes de la ley van en el caballo de siempre**, no en el negro de la
+  lámina: siguen la regla que Santi eligió para el galope.
+- **El color "a cubierto" del jugador se fue** con el cuerpo negro. Lo sigue
+  diciendo la raya verde sobre la pared y la postura agachada.
+- **La mochila pasó a cuero marrón** y el arma del jugador a gris: en negro
+  sobre negro no se veían.
+- **El pañuelo de costado es más corto:** en la lámina era una raya roja que
+  cruzaba toda la figura.
+- **Los carteles sobre el jugador** ("Saquear", "Espiar"…) volvieron a 16 px
+  arriba: la gente volvió a ser bajita.
+
+**LO QUE FALTA:**
+
+- **De noche la silueta se pierde.** Medido en el galope nocturno: se ven el
+  caballo, el pañuelo y la cinta, pero no el cuerpo. Es el borde de luz de
+  luna de la lámina, que queda para cuando el asalto tenga noche (hoy sólo el
+  galope se oscurece).
+- **Las balas siguen saliendo del piso** aunque el arma salga de la mano: etapa C.
+- **La capa se afina viéndola en movimiento.**
+- `alertMark` (el "!" de un segundo) ya no se dibuja; el campo queda en la IA.
+
+**MEDIDO:** sin errores en la consola, cargando todos los módulos. Lámina dentro
+del juego con los seis tipos de guardia, el guardia en las 8 direcciones,
+sospecha, casi te ve, combate, aturdido, herido, rendido, soltando el pañuelo,
+parado a traicionar, de franco, con la mecha, desmayado y muerto; los pasajeros
+(común, rico, asaltado, pánico, encubierto sacando el arma); vos en las 8
+direcciones con y sin mochila, agachado, disparando y tirado; los dos jefes en
+sus estados; los jinetes. Captura del vagón real y del galope de día y de noche.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

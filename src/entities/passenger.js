@@ -10,7 +10,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarFigura, dibujarTendido, direccionDe, faseDeAndar } from './figura.js';
+import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar } from './figura.js';
 import { moveAndCollide, distance, hasLineOfSight, angleDifference } from '../engine/collision.js';
 import { isHidden } from './player.js';
 import {
@@ -318,13 +318,19 @@ function seesBody(pa, world, c) {
 export function drawPassenger(r, pa) {
   const col = CONFIG.colors;
   /**
-   * TRES CUARTOS, ETAPA B: DE CUERPO ENTERO (ver entities/figura.js), con los
+   * EN SOMBRA CABEZONA (ver entities/figura.js y data/siluetas.js), con los
    * pies en el borde de abajo de su caja (`pa.hh`), que no cambió.
+   *
+   * EL PASAJERO: bombín con flor y bufanda verde. EL RICO (Fase 5, ver
+   * data/paquetes.js): galera con cinta morada, monóculo y cadena de oro. *(Santi
+   * eligió que "se note de lejos")*: es la silueta más alta de todo el tren a
+   * propósito, asoma por encima de los respaldos.
    */
   const pies = pa.y + pa.hh;
+  const tipo = pa.botin ? 'rico' : 'pasajero';
 
   if (!pa.alive) {
-    dibujarTendido(r, pa.x, pa.y, { cuerpo: col.civilian, sombrero: '#6a4a58', sangre: true });
+    dibujarTendido(r, pa.x, pa.y, { sangre: true, cinta: pa.botin ? '#a050c0' : '#3fa870' });
     return;
   }
 
@@ -343,49 +349,33 @@ export function drawPassenger(r, pa) {
    * El aviso está construido igual que el del rendido que te traiciona, y a
    * propósito: es el mismo momento del juego —alguien que parecía inofensivo
    * dejando de serlo— así que tiene que leerse igual. Pasado el punto medio,
-   * el cuerpo salta a `enemyAlert`. Antes de eso sólo se ve el arma saliendo
-   * del saco, que es la mitad temprana del aviso — la que premia estar atento.
+   * se le ponen los ojos rojos y le salta el "!". Antes de eso sólo se ve el
+   * arma saliendo del saco, que es la mitad temprana del aviso — la que premia
+   * estar atento.
    */
   const revelaT = pa.revelando
     ? Math.min(1, pa.revelaProgreso / ENCUBIERTO_DURACION)
     : 0;
 
-  const color = pa.hitFlash > 0
-    ? '#fff'
-    : revelaT > 0.5 ? col.enemyAlert
-    : pa.state === 'idle' ? col.civilian : col.civilianRun;
-
   // Hacia dónde mira, en el piso: hay que poder leerlo para rodearlo por atrás.
-  // El cuerpo ya mira hacia un lado, pero cuatro direcciones son gruesas para
-  // saber si te ve o no; la raya dice el ángulo exacto.
+  // El cuerpo ya mira hacia un lado, pero ocho direcciones siguen siendo
+  // gruesas para saber si te ve o no; la raya dice el ángulo exacto.
   if (pa.state === 'idle') {
     r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
   }
 
-  /**
-   * EL PASAJERO RICO: SOMBRERO DE COPA (Fase 5, ver data/paquetes.js).
-   *
-   * *(Santi eligió que "se note de lejos")*. LA SEÑA ES LA SILUETA, NO EL COLOR:
-   * el color del cuerpo dice el ESTADO y no se toca. Es la silueta más alta de
-   * todo el tren a propósito: asoma por encima de los respaldos, así que se lo
-   * puede pescar desde el pasillo.
-   */
-  const fig = dibujarFigura(r, {
-    x: pa.x, pies,
-    dir: direccionDe(pa.facing),
-    fase,
-    cuerpo: color, piel: col.enemyPiel,
-    sombrero: pa.botin
-      ? { tipo: 'copa', color: '#2a2028', cinta: '#6a4a58' }
-      : { tipo: 'chico', color: '#6a4a58' },
+  const fig = dibujarPersona(r, {
+    tipo, x: pa.x, pies, angulo: pa.facing, fase,
     // El que ya asaltaste lleva las manos arriba.
-    brazosArriba: pa.state === 'amenazado',
+    manosArriba: pa.state === 'amenazado',
     sacudida: shake,
+    destello: pa.hitFlash > 0,
+    ojos: revelaT > 0.5 ? '#ff3a2a' : undefined,
     // El arma que sale de adentro del saco: crece hacia vos mientras dura.
     arma: pa.revelando ? {
       angulo: pa.facing,
       largo: 3 + 8 * revelaT,
-      color: revelaT > 0.5 ? '#d8cdbb' : '#7a5a68',
+      color: revelaT > 0.5 ? '#d8cdbb' : '#8a7a84',
     } : null,
   });
 
@@ -396,10 +386,11 @@ export function drawPassenger(r, pa) {
   if (pa.state === 'amenazado') {
     const c = CONFIG.passenger;
     const queda = Math.max(0, pa.panicTimer / c.robPanicDelay);
-    r.rect(pa.x - 5, fig.arriba - 8, 10, 2, '#241c18');
-    r.rect(pa.x - 5, fig.arriba - 8, 10 * queda, 2, queda > 0.4 ? col.bagLoot : col.enemyAlert);
+    r.rect(pa.x - 5, fig.arriba - 4, 10, 2, '#241c18');
+    r.rect(pa.x - 5, fig.arriba - 4, 10 * queda, 2, queda > 0.4 ? col.bagLoot : col.enemyAlert);
   }
 
-  if (pa.state === 'panic') r.text('!', pa.x, fig.arriba - 6, '#ff8a5c');
-  else if (pa.state === 'fleeing') r.text('!', pa.x, fig.arriba - 6, '#ffd0b0');
+  if (revelaT > 0.5) dibujarAviso(r, pa.x, fig.arriba, 'alerta');
+  else if (pa.state === 'panic') r.text('!', pa.x, fig.arriba - 5, '#ff8a5c');
+  else if (pa.state === 'fleeing') r.text('!', pa.x, fig.arriba - 5, '#ffd0b0');
 }

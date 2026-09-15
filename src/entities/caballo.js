@@ -14,6 +14,7 @@
 
 import { CONFIG } from '../data/config.js';
 import { tono } from './figura.js';
+import { NEGRO, OJOS_ESTADO } from '../data/siluetas.js';
 
 /**
  * CUÁNDO PISA CADA PATA dentro de la zancada, en segundos: son los mismos
@@ -184,47 +185,63 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0) {
  * `inclina`: cuántos px se echa hacia adelante de la cintura para arriba. A
  * la carrera un jinete no va sentado derecho: acompaña al caballo.
  *
- * `ropa`: `{ camisa, sombrero }`. Por defecto la del jugador; los jinetes de la
- * ley pasan la suya.
+ * `ropa`: `{ detalles, destello, estado }` (ver adentro). Por defecto, vos;
+ * los jinetes de la ley pasan `detalles: 'ley'`.
  *
  * El ala va en FILAS DE RECTÁNGULOS (una elipse pixelada) y no con `ellipse`
  * del contexto, por la silueta de un solo color (ver el comentario de arriba).
  */
 export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}) {
   const colors = CONFIG.colors;
-  const camisa = ropa.camisa || colors.player;
-  const sombrero = ropa.sombrero || colors.playerHat;
-  const chaleco = tono(sombrero, 1.6);
+  /**
+   * 🔁 EN SOMBRA *(Santi: "en el galope, el jugador va montado en un caballo
+   * normal, como el de ahora, pero el jugador sí es negro durante el galope")*.
+   * Cabezón y negro, como toda la gente del juego (data/siluetas.js); el
+   * caballo sigue siendo el de siempre.
+   *
+   * `ropa.detalles`: 'jugador' (pañuelo rojo al viento y cinta roja) o 'ley'
+   * (cinta azul e insignia, los jinetes del asalto). `ropa.destello` lo pinta
+   * todo de blanco (le pegaron) y `ropa.estado` es el color de los ojos del de
+   * la ley.
+   */
+  const quien = ropa.detalles || 'jugador';
+  const tinte = (c) => (ropa.destello ? '#ffffff' : c);
+  const negro = tinte(NEGRO);
   const i = inclina;
-  r.rect(x - 1, asiento, 3, 5, colors.horseMane);                          // la bota
-  if (pose < 0) {
-    // Alejándose: se le ve la espalda del chaleco, y el brazo queda del otro lado.
-    r.rect(x - 3, asiento - 4, 6, 4, chaleco);
-    r.rect(x - 3 + i, asiento - 8, 6, 4, chaleco);
-    r.rect(x - 3 + i, asiento - 9, 6, 2, camisa);                          // el cuello de la camisa
-  } else {
-    r.rect(x - 3, asiento - 4, 6, 4, camisa);                              // la camisa
-    r.rect(x - 3 + i, asiento - 8, 6, 4, camisa);
-    if (pose > 0) {
-      // Viniendo: el chaleco abierto a los costados, con la camisa al medio.
-      r.rect(x - 3, asiento - 4, 2, 4, chaleco);
-      r.rect(x + 2, asiento - 4, 1, 4, chaleco);
-      r.rect(x - 3 + i, asiento - 8, 2, 4, chaleco);
-      r.rect(x + 2 + i, asiento - 8, 1, 4, chaleco);
-    } else {
-      r.rect(x - 3, asiento - 4, 6, 4, chaleco);
-    }
-    r.rect(x - 3 + i, asiento - 9, 6, 2, tono(camisa, 1.1));               // los hombros
-    if (pose > 0) r.rect(x - 1 + i, asiento - 9, 3, 2, '#b98a62');         // la cara, bajo el ala
+
+  r.rect(x - 1, asiento, 3, 5, negro);                                      // la bota
+  r.rect(x - 3, asiento - 4, 6, 4, negro);                                  // la cadera
+  r.rect(x - 3 + i, asiento - 9, 6, 5, negro);                              // el torso
+  if (pose >= 0) {
     // El brazo adelante y las riendas: sin ellos el cuerpo era un bloque liso.
-    r.rect(x + 2 + i, asiento - 6, 4, 2, tono(camisa, 0.82));
-    r.rect(x + 6 + i, asiento - 5 + Math.round(pose / 2), 4, 1, colors.horseMane);
+    r.rect(x + 2 + i, asiento - 6, 4, 2, negro);
+    r.rect(x + 6 + i, asiento - 5 + Math.round(pose / 2), 4, 1, tinte(colors.horseMane));
   }
+  r.rect(x - 3 + i, asiento - 12, 7, 3, negro);                             // la cabeza, grande
+
   // El ala: alejándose se la ve más de arriba (más abierta); viniendo, menos.
-  const filas = Math.round(2.5 - pose * 0.2) >= 3 ? [8, 12, 12, 8] : [10, 12, 10];
-  const altoAla = asiento - 11 - Math.floor(filas.length / 2);
-  filas.forEach((ancho, k) => r.rect(x + i - ancho / 2, altoAla + k, ancho, 1, sombrero));
-  r.rect(x - 4 + i, altoAla, 8, 1, tono(sombrero, 1.5));                   // la luz del ala
-  r.rect(x - 2 + i, asiento - 15, 5, 4, sombrero);                          // la copa
-  r.rect(x - 2 + i, asiento - 15, 5, 1, tono(sombrero, 1.7));
+  const filas = Math.round(2.5 - pose * 0.2) >= 3 ? [10, 14, 14, 10] : [12, 14, 12];
+  const altoAla = asiento - 13 - Math.floor(filas.length / 2);
+  filas.forEach((ancho, k) => r.rect(x + i - ancho / 2, altoAla + k, ancho, 1, negro));
+  r.rect(x - 3 + i, altoAla - 4, 6, 4, negro);                              // la copa
+
+  // Los ojos, bajo el ala: de frente los dos, de costado uno, de espaldas ninguno.
+  const ojos = tinte(quien === 'ley' ? OJOS_ESTADO[ropa.estado || 'calma'] : '#f0e0c0');
+  if (pose > 0) {
+    r.rect(x - 2 + i, asiento - 11, 1, 1, ojos);
+    r.rect(x + 1 + i, asiento - 11, 1, 1, ojos);
+  } else if (pose === 0) {
+    r.rect(x + 2 + i, asiento - 11, 1, 1, ojos);
+  }
+
+  if (quien === 'jugador') {
+    const rojo = tinte('#c8342a');
+    r.rect(x - 3 + i, asiento - 9, 6, 1, rojo);                             // el pañuelo
+    r.rect(x - 6 + i, asiento - 9, 3, 1, rojo);                             // las puntas, al viento
+    r.rect(x - 8 + i, asiento - 8, 2, 1, rojo);
+    r.rect(x - 3 + i, altoAla - 1, 6, 1, rojo);                             // la cinta del sombrero
+  } else {
+    r.rect(x - 3 + i, altoAla - 1, 6, 1, tinte('#4a78b8'));                 // la cinta azul de la ley
+    if (pose >= 0) r.rect(x + 1 + i, asiento - 7, 1, 2, tinte('#ffffff'));  // la insignia
+  }
 }

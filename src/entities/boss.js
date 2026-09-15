@@ -19,7 +19,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarFigura, dibujarTendido, direccionDe, faseDeAndar } from './figura.js';
+import { dibujarPersona, dibujarTendido, faseDeAndar } from './figura.js';
+import { SILUETA_DE_JEFE } from '../data/siluetas.js';
 
 export function createBoss(x, y, tipo, options = {}) {
   return {
@@ -151,23 +152,28 @@ export function createBoss(x, y, tipo, options = {}) {
  * cazando.
  */
 export function drawBoss(r, bo) {
-  const col = CONFIG.colors;
   const t = bo.tipo;
   /**
-   * TRES CUARTOS, ETAPA B: el jefe es la misma persona de cuerpo entero que
-   * todos (entities/figura.js), AGRANDADA un 30% alrededor de los pies y con
-   * su poncho encima. Los pies van en el borde de abajo de su caja (`bo.hh`),
-   * que no cambió.
+   * EN SOMBRA CABEZONA (ver entities/figura.js y data/siluetas.js), del mismo
+   * alto que cualquiera: el Cazarrecompensas con la capa roja y el
+   * Sheriff con el guardapolvo y la estrella grande. Los pies van en el borde de
+   * abajo de su caja (`bo.hh`), que no cambió.
    */
   const pies = bo.y + bo.hh;
-  // 1,15 sobre una persona de 24: 28 px *(Santi eligió 1,15 al pasar a 16×24;
-  // con 1,3 llegaba a 31, casi dos casilleros, y tapaba a su escolta)*.
-  const ESCALA = 1.15;
+  /**
+   * 🔁 SIN AGRANDAR. Era 1,15 alrededor de los pies, y con siluetas de un
+   * píxel no funciona: la escala no entera mezcla cada borde con el piso y el
+   * jefe se veía marrón y transparente en vez de negro. Lo que lo distingue es
+   * lo suyo: la capa o el guardapolvo, los ojos ámbar y la barra de vida que
+   * lleva siempre.
+   */
+  const tipo = SILUETA_DE_JEFE[bo.id] || 'cazarrecompensas';
+  const cinta = tipo === 'sheriffJefe' ? '#e8c34a' : '#c8302a';
 
   if (!bo.alive) {
     // Un cuerpo más grande que el de un guardia, y con el sombrero al lado:
     // tiene que poder leerse desde el otro lado del vagón que ESE lo mataste.
-    dibujarTendido(r, bo.x, bo.y, { cuerpo: col.enemyDead, sombrero: '#241c14', sangre: true, grande: true });
+    dibujarTendido(r, bo.x, bo.y, { sangre: true, grande: true, cinta });
     return;
   }
 
@@ -181,18 +187,22 @@ export function drawBoss(r, bo) {
   const avisando = bo.fase === 'aviso';
   const acechando = bo.fase === 'acecho';
 
-  const bodyColor = bo.hitFlash > 0 ? '#fff'
-    : bo.fase === 'aturdido' ? '#c9c2b4'
+  /**
+   * SU ESTADO, QUE ANTES ERA EL COLOR DE TODO EL CUERPO, va ahora en la ORILLA
+   * de la silueta y en los ojos:
+   *
+   *  - aturdido: orilla gris (y las estrellitas de siempre)
+   *  - invulnerable: orilla dorada
+   *  - furioso: orilla y ojos rojos
+   *  - ACECHANDO VA APAGADO: los ojos casi no brillan. No es un efecto de
+   *    distancia: es la diferencia entre "está ahí" y "viene por vos". Cuando
+   *    se despierta, los ojos se prenden — ese cambio ES el aviso.
+   */
+  const orilla = bo.fase === 'aturdido' ? '#c9c2b4'
     : bo.invulnerable > 0 ? '#ffd8a0'
     : bo.enFuria ? '#e0653f'
-    /**
-     * ACECHANDO VA MÁS APAGADO. No es un efecto de distancia: es la
-     * diferencia entre "está ahí" y "viene por vos", y tiene que poder leerse
-     * desde el otro lado del vagón sin contar sus pasos. Cuando se despierta,
-     * el color salta al suyo pleno — ese cambio ES el aviso.
-     */
-    : acechando ? '#7d4433'
-    : t.color;
+    : null;
+  const ojos = acechando ? '#5a4030' : bo.enFuria ? '#ff5a2a' : '#ffb030';
 
   // La estela de la carga: lo mismo que le da lectura a un barril rodando
   // (ver entities/rodante.js). Si viene a los pedos, tiene que VERSE que viene
@@ -200,7 +210,7 @@ export function drawBoss(r, bo) {
   if (cargando) {
     for (let i = 1; i <= 3; i++) {
       r.ctx.globalAlpha = 0.26 - i * 0.06;
-      r.rect(bo.x - bo.cargaDir.x * i * 7 - 6, pies - bo.cargaDir.y * i * 7 - 26, 12, 26, t.color);
+      r.rect(bo.x - bo.cargaDir.x * i * 7 - 6, pies - bo.cargaDir.y * i * 7 - 20, 12, 20, t.color);
     }
     r.ctx.globalAlpha = 1;
   }
@@ -219,7 +229,7 @@ export function drawBoss(r, bo) {
       parpadeo ? '#ff8a4a' : '#8a3a22',
       parpadeo ? 0.85 : 0.4
     );
-    if (parpadeo) r.text('!!', bo.x, pies - 34, '#ff8a4a');
+    if (parpadeo) r.text('!!', bo.x, pies - 30, '#ff8a4a');
   }
 
   /**
@@ -231,51 +241,28 @@ export function drawBoss(r, bo) {
   const gunLength = acechando ? 5
     : bo.aimTimer > 0 ? (conRifle ? 13 : 9)
     : (conRifle ? 10 : 7);
+  const angulo = cargando ? Math.atan2(bo.cargaDir.y, bo.cargaDir.x) : bo.facing;
 
-  const oscuro = sombra(bodyColor);
-  const dir = direccionDe(cargando ? Math.atan2(bo.cargaDir.y, bo.cargaDir.x) : bo.facing);
-
-  r.ctx.save();
-  r.ctx.translate(bo.x, pies);
-  r.ctx.scale(ESCALA, ESCALA);
-  r.ctx.translate(-bo.x, -pies);
-
-  /**
-   * --- EL CUERPO ---
-   *
-   * LA PRIMERA VERSIÓN ERA UN CUADRADO ROJO GRANDE con un sombrero encima, y
-   * se leía como un bloque. *A este tamaño, lo único que separa una figura de
-   * una caja es que NO SEA UN RECTÁNGULO.* Lo que lo arregla es la SILUETA: el
-   * poncho, que se ensancha hacia abajo y termina en dos puntas separadas.
-   */
-  const fig = dibujarFigura(r, {
-    x: bo.x, pies,
-    dir,
+  const fig = dibujarPersona(r, {
+    tipo, x: bo.x, pies, angulo,
     fase: avisando ? null : fase,
-    cuerpo: bodyColor, piel: col.enemyPiel,
-    // El sombrero más ancho del juego.
-    sombrero: { tipo: 'ancho', color: '#241c14' },
+    ojos, orilla,
+    destello: bo.hitFlash > 0,
     arma: cargando ? null : {
       angulo: bo.facing,
       largo: gunLength,
-      color: bo.aimTimer > 0 ? '#e8dcc4' : '#2a2622',
+      color: bo.aimTimer > 0 ? '#e8dcc4' : '#8a8074',
       punta: bo.aimTimer > 0 ? '#fff6d0' : null,
     },
   });
-  // El poncho: más ancho que el torso y con dos puntas.
-  r.rect(bo.x - 6, fig.torsoY + 1, 13, 6, oscuro);
-  r.rect(bo.x - 6, fig.torsoY + 7, 5, 3, oscuro);
-  r.rect(bo.x + 2, fig.torsoY + 7, 5, 3, oscuro);
 
   // El rifle cruzado a la espalda cuando está con el revólver: es lo que dice
   // "este tipo tiene otra arma" antes de que la saque.
   if (bo.armaActual === 'revolver' && !cargando) {
-    r.line(bo.x - 7, fig.torsoY + 9, bo.x + 6, fig.torsoY - 2, '#4a3a28');
+    r.line(bo.x - 6, fig.pechoY + 4, bo.x + 5, fig.pechoY - 5, '#8a6a4a');
   }
-  r.ctx.restore();
 
-  // Lo que va encima, fuera de la escala para que no se agrande.
-  const arriba = pies - Math.round((pies - fig.arriba) * ESCALA);
+  const arriba = fig.arriba;
 
   // --- Cuánto le queda ---
   // Siempre visible, desde el primer cuadro y no recién al herirlo como a un
@@ -303,15 +290,4 @@ export function drawBoss(r, bo) {
       r.box(bo.x + Math.cos(a) * 8, arriba - 10 + Math.sin(a) * 3, 1, 1, '#ffe066');
     }
   }
-}
-
-/** Un tono más oscuro del mismo color, para el poncho. */
-function sombra(hex) {
-  if (!hex.startsWith('#') || hex.length !== 7) return hex;
-  const n = parseInt(hex.slice(1), 16);
-  const oscurecer = (c) => Math.max(0, Math.round(c * 0.62));
-  const r = oscurecer((n >> 16) & 255);
-  const g = oscurecer((n >> 8) & 255);
-  const b = oscurecer(n & 255);
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }

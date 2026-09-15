@@ -11,7 +11,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarFigura, dibujarTendido, direccionDe } from './figura.js';
+import { dibujarPersona, dibujarTendido } from './figura.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { MELEE, DEFAULT_MELEE } from '../data/melee.js';
 import { EXPLOSIVES, DEFAULT_EXPLOSIVE } from '../data/explosives.js';
@@ -803,14 +803,14 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const col = CONFIG.colors;
 
   if (!p.alive) {
-    dibujarTendido(r, p.x, p.y, { cuerpo: col.player, sombrero: col.playerHat, sangre: true });
+    dibujarTendido(r, p.x, p.y, { sangre: true, cinta: CINTA_JUGADOR });
     return;
   }
 
   if (p.enTecho) { drawPlayerOnRoof(r, p, col, hearStepRadius); return; }
 
   /**
-   * TIRADO EN EL PISO. Se dibuja aplastado y con el sombrero volado al lado:
+   * TIRADO EN EL PISO. Se dibuja acostado y con el sombrero volado al lado:
    * de un vistazo tiene que quedar clarísimo que no estás peleando, porque
    * durante ese segundo y medio no podés hacer nada y hay que entender por
    * qué. La rayita que se vacía arriba es cuánto falta para levantarte —
@@ -822,7 +822,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     r.ctx.globalAlpha = 1;
 
     dibujarTendido(r, p.x, p.y + 1, {
-      cuerpo: p.hitFlash > 0 ? '#fff' : col.player, sombrero: col.playerHat,
+      color: p.hitFlash > 0 ? '#fff' : undefined, cinta: CINTA_JUGADOR,
     });
 
     const falta = p.tumbado / CONFIG.rodante.levantarse;
@@ -851,67 +851,36 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const by = p.y - Math.sin(p.aim) * retro;
 
   /**
-   * TRES CUARTOS, ETAPA B: DE CUERPO ENTERO (ver entities/figura.js). Los pies
-   * van en el borde de abajo de la caja con la que chocás (`p.hh`), que no
-   * cambió, y el cuerpo crece hacia arriba: la bala sigue pegando donde
+   * VOS, EN SOMBRA CABEZONA (ver entities/figura.js y data/siluetas.js):
+   * sombrero de vaquero y pañuelo rojo. Los pies van en el borde de abajo de la
+   * caja con la que chocás (`p.hh`), que no cambió: la bala sigue pegando donde
    * pegaba.
    *
-   * 🔁 PEGADO A LA COBERTURA YA NO SE APLASTA: SE AGACHA. Desde arriba el
-   * cuerpo se achataba contra la pared; de pie, lo que se lee es agacharse
-   * detrás de algo. Asomado (`peek`) se para y apunta. Y también va agachado
-   * en sigilo, que es la otra forma de no hacer ruido que ya tenías.
+   * 🔁 PEGADO A LA COBERTURA NO SE APLASTA: SE AGACHA. Asomado (`peek`) se para
+   * y apunta. Y también va agachado en sigilo, que es la otra forma de no hacer
+   * ruido que ya tenías.
+   *
+   * 🔁 EL COLOR "A CUBIERTO" DEL CUERPO SE FUE con el cuerpo negro: lo sigue
+   * diciendo la raya verde sobre la pared que te tapa, y la postura agachada.
    */
   const pies = by + p.hh;
   const agachado = p.sneaking || (p.cover && p.peek <= 0.15);
-  const manoY = pies - 13 + (agachado ? 6 : 0);
-  const dir = direccionDe(p.aim);
 
   r.ctx.globalAlpha = 0.25;
   r.box(p.x, p.y + p.hh, 5, 2, '#000');
   r.ctx.globalAlpha = 1;
 
-  /**
-   * LA MOCHILA EN LA ESPALDA — y crece con lo que llevás adentro.
-   *
-   * *(Santi: "el personaje del jugador debería llevar una bolsa o mochila en la
-   * espalda para ir metiendo las cosas")*
-   *
-   * VA EN LA ESPALDA DE LA FIGURA, según hacia dónde mira: de espaldas a la
-   * cámara se ve entera encima del cuerpo; de costado asoma detrás; de frente,
-   * apenas por encima de los hombros.
-   *
-   * CRECE DE 1 A 4 PÍXELES según `p.mochila` (0 a 1, ver raidScene). Lo que
-   * tiene que decir de un vistazo no es cuánto llevás exactamente —para eso
-   * está el TAB— sino **si vas cargado o liviano**.
-   *
-   * 🐛 ERA `#5a4530` Y NO SE VEÍA: el piso del vagón es del mismo marrón. Ahora
-   * es casi negro, con la correa en un tono claro para que no se funda con el
-   * sombrero.
-   */
   const llenado = p.mochila || 0;
   const bulto = llenado > 0 ? 1 + Math.round(llenado * 3) : 0;
-  const mochila = () => {
-    if (!bulto) return;
-    let mx = bx;
-    if (dir === 'der') mx = bx - 3 - bulto;
-    else if (dir === 'izq') mx = bx + 4 + bulto;
-    // De frente asoma por encima de los hombros (el torso empieza 4 arriba de la mano).
-    const my = dir === 'frente' ? manoY - 4 - bulto : manoY;
-    r.box(mx, my, bulto, bulto, '#2e2218');
-    r.box(mx, my - bulto + 1, Math.max(1, bulto - 1), 1, '#a8977c');
-  };
-  if (dir !== 'espalda') mochila();
-
-  const body = p.hitFlash > 0 ? '#fff' : (p.cover ? col.playerCover : col.player);
-  dibujarFigura(r, {
-    x: bx, pies, dir,
+  const fig = dibujarPersona(r, {
+    tipo: 'jugador', x: bx, pies, angulo: p.aim,
     fase: p.moving ? p.stepPhase * 3.4 : null,
-    cuerpo: body, piel: col.enemyPiel,
-    sombrero: { tipo: 'ala', color: col.playerHat },
     postura: agachado ? 'agachado' : 'pie',
-    arma: !p.cover || p.peek > 0.15 ? { angulo: p.aim, largo: 7, color: '#241c18' } : null,
+    destello: p.hitFlash > 0,
+    arma: !p.cover || p.peek > 0.15 ? { angulo: p.aim, largo: 7, color: ARMA_JUGADOR } : null,
+    extra: bulto ? (poner, donde) => mochila(poner, donde, bulto) : null,
   });
-  if (dir === 'espalda') mochila();
+  const manoY = fig.manoY;
 
   // Marca de que estás a cubierto: una línea sobre la pared que te tapa.
   if (p.cover) {
@@ -924,7 +893,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   }
 
   if (p.muzzle > 0) {
-    // A la altura de la mano, donde termina el caño (ver `dibujarFigura`).
+    // A la altura de la mano, donde termina el caño (ver `dibujarPersona`).
     r.box(bx + Math.cos(p.aim) * 10, manoY + Math.sin(p.aim) * 10, 2, 2, '#fff3b0');
   }
 
@@ -955,6 +924,47 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   drawKnifeArc(r, p);
 }
 
+const CINTA_JUGADOR = '#c8342a';
+/** Gris y no negro: sobre la silueta negra un caño oscuro no se vería. */
+const ARMA_JUGADOR = '#8a8074';
+const CUERO = '#7a4e2a';
+const CUERO_LUZ = '#b07a44';
+
+/**
+ * LA MOCHILA — y crece con lo que llevás adentro.
+ *
+ * *(Santi: "el personaje del jugador debería llevar una bolsa o mochila en la
+ * espalda para ir metiendo las cosas")*
+ *
+ * 🔁 DE CUERO MARRÓN: era casi negra, y sobre la silueta negra desaparecía.
+ * Crece con `bulto` (1 a 4): lo que tiene que decir de un vistazo no es cuánto
+ * llevás exactamente —para eso está el TAB— sino **si vas cargado o liviano**.
+ *
+ * Se dibuja en coordenadas mirando a la derecha (figura.js la espeja):
+ * de espaldas se ve entera sobre el cuerpo; de costado, detrás; de frente, las
+ * correas y el bulto asomando por un costado.
+ */
+function mochila(poner, { izq, cuerpoY, vista }, bulto) {
+  const ancho = 3 + bulto;
+  const alto = 2 + Math.ceil(bulto / 2);
+  const bloque = (x0, y0, w) => {
+    for (let dy = 0; dy < alto; dy++) {
+      for (let dx = 0; dx < w; dx++) poner(x0 + dx, y0 + dy, dy === 0 ? CUERO_LUZ : CUERO);
+    }
+  };
+  if (vista === 'lado') {
+    bloque(izq + 4 - ancho, cuerpoY + 3, ancho);
+  } else if (vista === 'espalda' || vista === 'diagE') {
+    bloque(izq + 6 - Math.floor(ancho / 2) - (vista === 'diagE' ? 1 : 0), cuerpoY + 3, ancho);
+  } else {
+    for (const cx of [3, 8]) {
+      poner(izq + cx, cuerpoY + 4, CUERO);
+      poner(izq + cx, cuerpoY + 5, CUERO);
+    }
+    bloque(izq - bulto, cuerpoY + 4, bulto);
+  }
+}
+
 /**
  * EL JUGADOR EN EL TECHO.
  *
@@ -964,8 +974,8 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
  *  - **Saltando:** el cuerpo se despega y la sombra se queda abajo y se
  *    achica. Ver la sombra separada es lo que dice "estás en el aire" sin
  *    ningún cartel que lo explique.
- *  - **Agachado:** el cuerpo se aplasta y el sombrero baja.
- *  - **Caído:** tirado de costado, parpadeando mientras te levantás.
+ *  - **Agachado:** el cuerpo se dobla y el sombrero baja.
+ *  - **Caído:** tirado, parpadeando mientras te levantás.
  */
 function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   const ct = CONFIG.techo;
@@ -974,9 +984,8 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     r.ctx.globalAlpha = 0.3;
     r.box(p.x, p.y + 5, 6, 2, '#000');
     r.ctx.globalAlpha = 1;
-    // Tirado de costado: ancho y bajito, al revés que de pie.
     dibujarTendido(r, p.x, p.y + 2, {
-      cuerpo: p.hitFlash > 0 ? '#fff' : col.player, sombrero: col.playerHat,
+      color: p.hitFlash > 0 ? '#fff' : undefined, cinta: CINTA_JUGADOR,
     });
     if (Math.floor(p.techoCaido * 10) % 2 === 0) {
       r.text('!', p.x, p.y - 12, col.enemyAlert);
@@ -1003,16 +1012,14 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   }
 
   const by = p.y - alto;
-  const body = p.hitFlash > 0 ? '#fff' : col.player;
 
-  // De cuerpo entero, igual que abajo: agachado se dobla, saltando sube entero.
-  dibujarFigura(r, {
-    x: p.x, pies: by + p.hh, dir: direccionDe(p.aim),
+  // Igual que abajo: agachado se dobla, saltando sube entero.
+  dibujarPersona(r, {
+    tipo: 'jugador', x: p.x, pies: by + p.hh, angulo: p.aim,
     fase: p.moving && !enElAire ? p.stepPhase * 3.4 : null,
-    cuerpo: body, piel: col.enemyPiel,
-    sombrero: { tipo: 'ala', color: col.playerHat },
     postura: p.techoAgachado ? 'agachado' : 'pie',
-    arma: { angulo: p.aim, largo: 7, color: '#241c18' },
+    destello: p.hitFlash > 0,
+    arma: { angulo: p.aim, largo: 7, color: ARMA_JUGADOR },
   });
 }
 

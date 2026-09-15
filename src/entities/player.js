@@ -11,7 +11,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido } from './figura.js';
+import { dibujarPersona, dibujarTendido, faseDeAndar } from "./figura.js";
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { MELEE, DEFAULT_MELEE } from '../data/melee.js';
 import { EXPLOSIVES, DEFAULT_EXPLOSIVE } from '../data/explosives.js';
@@ -874,11 +874,11 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const bulto = llenado > 0 ? 1 + Math.round(llenado * 3) : 0;
   const fig = dibujarPersona(r, {
     tipo: 'jugador', x: bx, pies, angulo: p.aim,
-    fase: p.moving ? p.stepPhase * 3.4 : null,
+    fase: faseDeAndar(p),
     postura: agachado ? 'agachado' : 'pie',
     destello: p.hitFlash > 0,
     arma: !p.cover || p.peek > 0.15 ? { angulo: p.aim, largo: 7, color: ARMA_JUGADOR } : null,
-    extra: bulto ? (poner, donde) => mochila(poner, donde, bulto) : null,
+    mochila: bulto,
   });
   const manoY = fig.manoY;
 
@@ -927,44 +927,6 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
 const CINTA_JUGADOR = '#c8342a';
 /** Gris y no negro: sobre la silueta negra un caño oscuro no se vería. */
 const ARMA_JUGADOR = '#8a8074';
-const CUERO = '#7a4e2a';
-const CUERO_LUZ = '#b07a44';
-
-/**
- * LA MOCHILA — y crece con lo que llevás adentro.
- *
- * *(Santi: "el personaje del jugador debería llevar una bolsa o mochila en la
- * espalda para ir metiendo las cosas")*
- *
- * 🔁 DE CUERO MARRÓN: era casi negra, y sobre la silueta negra desaparecía.
- * Crece con `bulto` (1 a 4): lo que tiene que decir de un vistazo no es cuánto
- * llevás exactamente —para eso está el TAB— sino **si vas cargado o liviano**.
- *
- * Se dibuja en coordenadas mirando a la derecha (figura.js la espeja):
- * de espaldas se ve entera sobre el cuerpo; de costado, detrás; de frente, las
- * correas y el bulto asomando por un costado.
- */
-function mochila(poner, { izq, cuerpoY, vista }, bulto) {
-  const ancho = 3 + bulto;
-  const alto = 2 + Math.ceil(bulto / 2);
-  const bloque = (x0, y0, w) => {
-    for (let dy = 0; dy < alto; dy++) {
-      for (let dx = 0; dx < w; dx++) poner(x0 + dx, y0 + dy, dy === 0 ? CUERO_LUZ : CUERO);
-    }
-  };
-  if (vista === 'lado') {
-    bloque(izq + 4 - ancho, cuerpoY + 3, ancho);
-  } else if (vista === 'espalda' || vista === 'diagE') {
-    bloque(izq + 6 - Math.floor(ancho / 2) - (vista === 'diagE' ? 1 : 0), cuerpoY + 3, ancho);
-  } else {
-    for (const cx of [3, 8]) {
-      poner(izq + cx, cuerpoY + 4, CUERO);
-      poner(izq + cx, cuerpoY + 5, CUERO);
-    }
-    bloque(izq - bulto, cuerpoY + 4, bulto);
-  }
-}
-
 /**
  * EL JUGADOR EN EL TECHO.
  *
@@ -1016,7 +978,7 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   // Igual que abajo: agachado se dobla, saltando sube entero.
   dibujarPersona(r, {
     tipo: 'jugador', x: p.x, pies: by + p.hh, angulo: p.aim,
-    fase: p.moving && !enElAire ? p.stepPhase * 3.4 : null,
+    fase: enElAire ? null : faseDeAndar(p),
     postura: p.techoAgachado ? 'agachado' : 'pie',
     destello: p.hitFlash > 0,
     arma: { angulo: p.aim, largo: 7, color: ARMA_JUGADOR },

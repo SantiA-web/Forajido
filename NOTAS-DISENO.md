@@ -12536,6 +12536,29 @@ nítido. En 1366×768: el asalto en 342×192 con densidad 4 y el campamento en
 
 **⚠️ NO JUGADO** por Santi todavía.
 
+### 🤠 ETAPA 2a: la gente nueva YA ESTÁ EN EL JUEGO (falta lo demás de la etapa 2)
+
+Los dibujos de la prueba pasaron al juego, en `entities/gente/` (`dibujo.js`
+con los colores, la ropa de cada tipo, el lienzo y los sombreros; `cabezas.js`;
+`frente.js` con frente, tres cuartos y espaldas; `costado.js`).
+`entities/figura.js` es el puente: arma cada figura UNA vez, la guarda y
+después sólo la estampa. Sin eso, dibujar punto por punto a veinte personas en
+cada cuadro sería carísimo.
+
+**Lo que ya anda:** vos, los guardias (común, blindado, pistolero, dinamitero,
+sheriff), los pasajeros, el rico y el encubierto, en las 8 direcciones, con
+trote, caminata (los guardias patrullando caminan y persiguiendo trotan),
+agachado, apuntar, las manos arriba del asaltado, la mochila que crece con el
+botín, el destello del balazo y los avisos "?" y "!" de siempre.
+
+**Lo que falta (2b, 2c, 2d):** las posturas sentado y rendido —hoy caen en la
+pose de agachado—, los caídos (siguen con el dibujo viejo, chiquito al lado de
+la gente nueva), las muescas de vida, los cartuchos del dinamitero, los jefes
+con su orilla y los jinetes, y después borrar `data/siluetas.js`.
+
+**MEDIDO:** sin errores. **0,97 ms por cuadro** con el vagón lleno, igual que
+antes de la gente nueva, porque las figuras se arman una sola vez.
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

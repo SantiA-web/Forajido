@@ -447,6 +447,8 @@ export function drawEnemy(r, e) {
   const conArma = !sentado && !(e.desenfundando > 0);
   const fig = dibujarPersona(r, {
     tipo, x: e.x, pies, angulo: e.facing,
+    // Patrullando caminan; cuando te vieron, trotan.
+    modo: e.state === "patrol" ? "caminar" : "trotar",
     fase: sentado ? null : fase,
     postura: sentado ? 'sentado' : 'pie',
     estado,

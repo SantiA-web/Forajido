@@ -1,43 +1,36 @@
 /**
- * LA PERSONA — SOMBRAS CABEZONAS.
+ * LA PERSONA — GENTE CURTIDA A 80 PX.
  *
- * *(Santi eligió el estilo en seis láminas; ver data/siluetas.js)*. Toda la
- * gente del juego es una silueta negra, sombreruda y cabezona, y el color
- * sale de sus detalles. Este archivo convierte las tablas de data/siluetas.js
- * en píxeles; los dibujos en sí viven allá.
+ * *(Santi, después de jugar las sombras cabezonas: "le quita la crudeza del
+ * Salvaje Oeste… parecían personajes como del Beholder")*. Toda la gente del
+ * juego se dibuja con el arte decidido en `prototipos/gente-80px/`: caras
+ * quemadas por el sol, ropa gastada, piernas largas y trote con empuje. Los
+ * dibujos en sí viven en `entities/gente/`; este archivo es el puente con el
+ * juego.
  *
- * LA CAJA QUE RECIBE LAS BALAS NO CAMBIÓ (decisión de la etapa A): sigue siendo
- * `hw`/`hh`. El dibujo se apoya con los pies en el borde de abajo de esa caja
- * (`pies = y + hh`) y crece hacia arriba. Así todo lo medido —cobertura,
- * puntería, reses, montículos— sigue valiendo.
+ * LA CAJA QUE RECIBE LAS BALAS NO CAMBIÓ: sigue siendo `hw`/`hh`. El dibujo se
+ * apoya con los pies en el borde de abajo de esa caja (`pies = y + hh`) y crece
+ * hacia arriba, así que la cobertura, la puntería y todo lo medido siguen
+ * valiendo igual que con las siluetas.
  *
- * 📏 DE 14 A 19 PÍXELES DE ALTO según el sombrero (la gorra es la más baja, la
- * galera la más alta), sobre 12 de ancho. La etapa B había llegado a 16×24 y
- * se veía como el muñequito de cualquier juego *(Santi: "creo que se ve muy
- * feo")*.
+ * 🧠 CADA FIGURA SE ARMA UNA SOLA VEZ. Dibujar estas personas punto por punto
+ * en cada cuadro sería carísimo: se arma un canvas por combinación (tipo,
+ * vista, modo, cuadro, estado…), se guarda, y después sólo se estampa. Lo que
+ * cambia seguido —el destello de un balazo, la orilla de un jefe— se resuelve
+ * con variantes teñidas del mismo dibujo.
  *
- * 8 DIRECCIONES *(Santi: "quiero que hayan 8 direcciones en vez de 4")*, con
- * 5 dibujos: las tres de la izquierda son las de la derecha en espejo.
- *
- * LOS AVISOS DE ESTADO. Con la gente en negro, el color del cuerpo ya no puede
- * decir si un guardia te vio. Lo dicen los ojos (blancos, amarillos, rojos) y,
- * encima de la cabeza, `dibujarAviso`: un "?" amarillo con la barrita de
- * cuánto le falta para verte, o un "!" rojo fijo mientras pelea *(Santi: "y si
- * solo ponemos el signo de pregunta amarillo o el signo rojo de exclamación
- * por ahora"; eligió "? + barrita" y "! fijo")*.
- *
- * TODO SE DIBUJA CON `r.rect` Y `r.line`, nunca tocando el contexto directo:
- * así un renderer "de un solo color" (la silueta del jinete detrás de la pared,
- * `siluetaDeJinete` en raidScene) puede pintar cualquier figura sin enterarse.
+ * 📏 20 UNIDADES DE ALTO con sombrero (80 puntos de pantalla), sobre una caja
+ * que sigue midiendo lo mismo. Un punto de dibujo es un cuarto de unidad,
+ * porque el juego mira el mundo con la lupa de ×4 (ver `DENSIDAD`).
  */
 
 import { CONFIG } from '../data/config.js';
-import {
-  NEGRO, OJOS_ESTADO, SOMBREROS, CUERPOS, POSTURAS, TIPOS, sombreroDe,
-} from '../data/siluetas.js';
+import { ROPA, Lienzo, deformar, NEGRO } from './gente/dibujo.js';
+import { frente, espalda } from './gente/frente.js';
+import { lado } from './gente/costado.js';
 
-/** El alto de una persona con gorra, la más común. */
-export const ALTO_PERSONA = 15;
+/** El alto de una persona con sombrero, en unidades del mundo. */
+export const ALTO_PERSONA = 20;
 
 /** El mismo color, multiplicado por `f` (0,7 es 30% más oscuro). */
 export function tono(hex, f) {
@@ -49,16 +42,16 @@ export function tono(hex, f) {
 
 const OCHO = ['der', 'abajoDer', 'abajo', 'abajoIzq', 'izq', 'arribaIzq', 'arriba', 'arribaDer'];
 
-/** Cada dirección, a qué dibujo corresponde y si va en espejo. */
+/** Cada dirección: qué dibujo le toca, si va girado tres cuartos y si va en espejo. */
 const VISTA = {
-  der: ['lado', false],
-  abajoDer: ['diagF', false],
-  abajo: ['frente', false],
-  abajoIzq: ['diagF', true],
-  izq: ['lado', true],
-  arribaIzq: ['diagE', true],
-  arriba: ['espalda', false],
-  arribaDer: ['diagE', false],
+  der: ['lado', lado, 0, false],
+  abajoDer: ['diagF', frente, 1, false],
+  abajo: ['frente', frente, 0, false],
+  abajoIzq: ['diagF', frente, 1, true],
+  izq: ['lado', lado, 0, true],
+  arribaIzq: ['diagE', espalda, 1, true],
+  arriba: ['espalda', espalda, 0, false],
+  arribaDer: ['diagE', espalda, 1, false],
 };
 
 /**
@@ -78,13 +71,11 @@ export function deFrente(angulo) {
 }
 
 /**
- * EN QUÉ PUNTO DEL PASO VA. Los guardias y los pasajeros no llevan una fase de
- * caminata (el jugador sí: `stepPhase`), así que se deduce de cuánto se movió
- * desde el cuadro anterior: un paso cada 5 px recorridos. Guarda su memoria en
- * la propia entidad con nombres que empiezan en `_andar`, y es SÓLO DIBUJO:
- * nada del juego lee esos campos.
+ * EN QUÉ PUNTO DEL PASO VA. Se deduce de cuánto se movió desde el cuadro
+ * anterior y se guarda en la propia entidad, en campos que empiezan con
+ * `_andar`. Es SÓLO DIBUJO: nada del juego lee esos campos.
  *
- * Devuelve `null` si hace unos cuadros que no se mueve (parado, piernas juntas).
+ * Devuelve `null` si hace unos cuadros que no se mueve (parado).
  */
 export function faseDeAndar(ent) {
   const px = ent._andarX ?? ent.x;
@@ -94,193 +85,140 @@ export function faseDeAndar(ent) {
   ent._andarY = ent.y;
   // Más de 12 px de un cuadro al otro no es caminar: es un salto o un empujón.
   if (d > 0.05 && d < 12) {
-    ent._andarFase = (ent._andarFase || 0) + d / 5;
+    ent._andarRecorrido = (ent._andarRecorrido || 0) + d;
     ent._andarQuieto = 0;
   } else {
     ent._andarQuieto = (ent._andarQuieto || 0) + 1;
   }
-  return ent._andarQuieto > 4 ? null : ent._andarFase || 0;
+  return ent._andarQuieto > 4 ? null : ent._andarRecorrido || 0;
 }
-
-/** De la fase del paso al cuadro de las piernas: 0 parado, 1 y 2 los pasos. */
-function pasoDe(fase) {
-  if (fase == null) return 0;
-  const s = Math.sin(fase * Math.PI);
-  return s > 0.35 ? 1 : s < -0.35 ? 2 : 0;
-}
-
-function detallesDe(T, vista) {
-  if (T[vista]) return T[vista];
-  const correr = (d) => (d.corre ? { ...d, dx: d.dx + 1 } : d);
-  if (vista === 'diagF') return T.frente.map(correr);
-  if (vista === 'diagE') return T.espalda.map(correr);
-  return [];
-}
-
-const CARTUCHO = '#e03a2a';
-const CARTUCHO_BANDA = '#f0d0a8';
-const CARTUCHO_VACIO = '#33291f';
-const CORREA = '#8a6a4a';
 
 /**
- * LA BANDOLERA DEL DINAMITERO, con los cartuchos que le QUEDAN. Los huecos van
- * en un marrón muerto: **la bandolera vacía tiene que leerse como vacía, no
- * como ausente** — es la única señal de la ventana en la que está desarmado.
- * Caben cuatro; si lleva más, se ve cuántos de cuatro.
+ * EL RITMO, elegido jugando: un paso cada 20 unidades trotando y cada 14
+ * caminando. A la velocidad del juego (78) eso son 3,9 pasos por segundo; con
+ * el ritmo viejo (uno cada 5) eran 15,6 y parecía cámara rápida.
  */
-function bandolera(poner, izq, cuerpoY, vista, { cargados, total }) {
-  const n = Math.min(4, total);
-  const hay = Math.min(n, cargados);
-  for (let i = 0; i < 4; i++) {
-    const y = cuerpoY + 3 + i;
-    if (vista === 'espalda' || vista === 'diagE') {
-      poner(izq + 2 + 2 * i, y, CORREA);
-      poner(izq + 3 + 2 * i, y, CORREA);
-      continue;
-    }
-    if (vista === 'lado') {
-      poner(izq + 5, y, CORREA);
-      if (i < n) {
-        poner(izq + 6, y, i < hay ? CARTUCHO : CARTUCHO_VACIO);
-        poner(izq + 7, y, i < hay ? CARTUCHO_BANDA : CARTUCHO_VACIO);
-      }
-      continue;
-    }
-    const corre = vista === 'diagF' ? 1 : 0;
-    poner(izq + 10 - 2 * i + corre, y, CORREA);
-    if (i < n) {
-      poner(izq + 8 - 2 * i + corre, y, i < hay ? CARTUCHO : CARTUCHO_VACIO);
-      poner(izq + 9 - 2 * i + corre, y, i < hay ? CARTUCHO_BANDA : CARTUCHO_VACIO);
-    }
+const RITMO = { trotar: 20, caminar: 14, agachado: 14 };
+/**
+ * Caminando, dos pasos son 8 cuadros con 5 dibujos: paso, a mitad, juntos, a
+ * mitad del otro lado, el otro paso. Trotando son 8 dibujos seguidos.
+ */
+const CICLO_CAMINATA = [1, 3, 0, 4, 2, 4, 0, 3];
+
+function cuadroDe(recorrido, modo) {
+  if (recorrido == null) return 0;
+  const i = Math.floor((((recorrido / RITMO[modo]) % 2) + 2) % 2 * 4) % 8;
+  return modo === 'trotar' ? i : CICLO_CAMINATA[i];
+}
+
+// ------------------------------------------------- los dibujos, en memoria
+const S = 80 / 72;                       // el alto elegido: 80 puntos
+const OX = 8, OY = 6;                    // margen para el ala del sombrero y el arma
+const ANCHO = Math.ceil(72 * S) + 2 * OX;
+const ALTO = Math.ceil(80 * S) + OY;
+const CX = Math.round(24 * S) + OX;      // dónde cae el centro del cuerpo
+const PIE = Math.round(74 * S) + OY;     // y dónde caen los pies
+const PUNTO = 0.25;                      // un punto de dibujo, en unidades
+
+const guardados = new Map();
+/** Redondeo al punto de pantalla: si no, el dibujo queda borroso. */
+const q = (v) => Math.round(v * 4) / 4;
+
+function armar(clave, hacer) {
+  let cv = guardados.get(clave);
+  if (!cv) {
+    // Un tope por las dudas: son unos 40 KB cada uno y las combinaciones que
+    // se usan de verdad son pocas, pero una fuga acá se paga en memoria.
+    if (guardados.size > 700) guardados.clear();
+    cv = hacer();
+    guardados.set(clave, cv);
   }
+  return cv;
+}
+
+/** El mismo dibujo pintado de un color: el destello del balazo y la orilla del jefe. */
+function tenido(img, color, alpha) {
+  const cv = document.createElement('canvas');
+  cv.width = img.width; cv.height = img.height;
+  const c = cv.getContext('2d');
+  c.drawImage(img, 0, 0);
+  c.globalCompositeOperation = 'source-atop';
+  c.globalAlpha = alpha;
+  c.fillStyle = color;
+  c.fillRect(0, 0, cv.width, cv.height);
+  return cv;
 }
 
 /**
- * DIBUJA UNA PERSONA.
- *
- * @param f.tipo          una clave de TIPOS (data/siluetas.js)
- * @param f.x, f.pies     el centro y la fila de abajo de las botas
- * @param f.angulo        hacia dónde mira (radianes)
- * @param f.fase          en qué punto del paso va, o `null` si está parado
- * @param f.postura       'pie' | 'agachado' | 'sentado' | 'rendido'
- * @param f.estado        'calma' | 'sospecha' | 'alerta' | 'aturdido': el color de los ojos
- * @param f.ojos          pisa el color de los ojos (los jefes)
- * @param f.manosArriba   las manos en alto (asaltado); `rendido` ya las lleva
- * @param f.panuelo       rendido: el pañuelo blanco en la mano
- * @param f.arma          { angulo, largo, color, punta, doble } o `null`
- * @param f.cartuchos     el dinamitero: { cargados, total }
- * @param f.orilla        pinta la orilla de la silueta de un color (el jefe furioso)
- * @param f.destello      toda la figura en blanco (le acaban de pegar)
- * @param f.sacudida      px de temblor horizontal (pánico)
- * @param f.extra         (poner, { izq, top, cuerpoY, vista }) para agregar píxeles
- *                        propios (la mochila), en coordenadas mirando a la derecha
- *
- * @returns `{ x, top, arriba, manoY, pechoY, vista, espejo }`: `arriba` es desde
- *   dónde se apilan las cosas encima de la cabeza.
+ * LA PERSONA. `f` es lo que ya le pasaba el juego a las siluetas:
+ * tipo, x, pies, angulo, fase, postura, estado, arma, manosArriba, destello,
+ * orilla, sacudida y mochila. Devuelve dónde quedaron la cabeza, la mano y el
+ * pecho, para colgarles cosas encima.
  */
 export function dibujarPersona(r, f) {
-  const T = TIPOS[f.tipo] || TIPOS.guardia;
-  const [vista, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
+  const tipo = ROPA[f.tipo] ? f.tipo : 'guardia';
+  const [nombre, fn, g, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const postura = f.postura || 'pie';
-  const hat = SOMBREROS[sombreroDe(T.sombrero, vista)];
-  const cuerpo = postura === 'pie'
-    ? CUERPOS[vista].top.concat(CUERPOS[vista].piernas[pasoDe(f.fase)])
-    : POSTURAS[postura];
-  const filas = hat.concat(cuerpo);
+  const x = q(f.x + (f.sacudida || 0));
+  const pies = q(f.pies);
+  const arriba = pies - ALTO_PERSONA;
 
-  const x = Math.round(f.x + (f.sacudida || 0));
-  const top = Math.round(f.pies) - filas.length;
-  const izq = x - 6;
-  const cuerpoY = top + hat.length;
-  // Lo que vuela se mueve con el paso; parado, quieto en el cuadro del medio.
-  const cuadro = f.fase == null ? 1 : Math.floor(f.fase * 1.5);
+  // El renderer de un solo color (la silueta del jinete detrás de la pared) no
+  // tiene canvas: ahí se dibuja un bulto con la forma justa y listo.
+  if (!r.ctx) {
+    r.rect(x - 3, arriba + 3, 6, ALTO_PERSONA - 3, NEGRO);
+    r.rect(x - 5, arriba, 10, 3, NEGRO);
+    return { x, top: arriba, arriba, manoY: pies - 9, pechoY: pies - 11, vista: nombre, espejo };
+  }
 
-  const mapa = new Map();
-  const poner = (px, py, c) => mapa.set(px + ',' + py, [px, py, c]);
+  const modo = postura !== 'pie' ? 'agachado'
+    : f.fase != null ? (f.modo === 'caminar' ? 'caminar' : 'trotar')
+      : 'quieto';
+  const cuadro = modo === 'quieto' ? 0 : cuadroDe(f.fase, modo);
+  // Los ojos rojos del encubierto entran por acá: es la misma cara de alerta.
+  const estado = f.estado && f.estado !== 'calma' ? f.estado : (f.ojos ? 'alerta' : undefined);
+  const arma = !!f.arma;
+  const manos = !!f.manosArriba;
+  const mochila = Math.min(4, Math.round(f.mochila || 0));
 
-  let dets = detallesDe(T, vista);
-  if (postura !== 'pie') dets = dets.filter((d) => d.capa === 'hat' || d.dy <= 4);
-  const pintar = (d) => {
-    const lista = d.frames ? d.frames[cuadro % d.frames.length] : d.rows;
-    const oy = (d.capa === 'hat' ? top : cuerpoY) + d.dy;
-    lista.forEach((fila, i) => {
-      for (let j = 0; j < fila.length; j++) {
-        if (fila[j] !== '.') poner(izq + d.dx + j, oy + i, T.pal[fila[j]]);
-      }
-    });
+  const clave = [tipo, nombre, g, modo, cuadro, estado, arma ? 'a' : '', manos ? 'm' : '', mochila].join('|');
+  const img = armar(clave, () => {
+    // Al trotar el torso se va para adelante; de frente casi no se nota.
+    const lateral = fn === lado ? 1 : g ? 0.5 : 0;
+    const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12 : 0) * lateral;
+    const L = Lienzo(ANCHO, ALTO, OX, OY, S, deformar(inclina));
+    const datos = { tipo, g, estado, arma, manosArriba: manos, mochila };
+    if (modo === 'trotar') datos.trote = cuadro;
+    else { datos.paso = cuadro; datos.agachado = modo === 'agachado'; }
+    fn(L, datos);
+    return L.canvas();
+  });
+
+  const ctx = r.ctx;
+  const estampar = (imagen, dx = 0, dy = 0) => {
+    ctx.save();
+    ctx.translate(x + dx, pies + dy);
+    if (espejo) ctx.scale(-1, 1);
+    ctx.drawImage(imagen, -CX * PUNTO, -PIE * PUNTO, ANCHO * PUNTO, ALTO * PUNTO);
+    ctx.restore();
   };
 
-  dets.filter((d) => d.detras).forEach(pintar);
-
-  const conOjos = vista !== 'espalda' && vista !== 'diagE';
-  const ojos = f.ojos || (T.ojosEstado ? (OJOS_ESTADO[f.estado] || OJOS_ESTADO.calma) : T.ojos);
-  for (let fy = 0; fy < filas.length; fy++) {
-    const fila = filas[fy];
-    for (let fx = 0; fx < 12; fx++) {
-      const ch = fila[fx];
-      if (ch === '.') continue;
-      poner(izq + fx, top + fy, ch === 'e' && conOjos ? ojos : NEGRO);
-    }
-  }
-
-  dets.filter((d) => !d.detras).forEach(pintar);
-  if (T.bandolera && f.cartuchos && postura !== 'sentado') bandolera(poner, izq, cuerpoY, vista, f.cartuchos);
-  if (f.extra) f.extra(poner, { izq, top, cuerpoY, vista });
-
-  if (postura === 'rendido' || f.manosArriba) {
-    for (let y = top; y <= cuerpoY + 4; y++) {
-      poner(izq - 1, y, NEGRO);
-      poner(izq + 12, y, NEGRO);
-    }
-    if (f.panuelo) {
-      for (const [ax, ay] of [[13, -2], [14, -2], [15, -2], [13, -1], [14, -1], [15, -1], [15, 0]]) {
-        poner(izq + ax, top + ay, '#f4f0e8');
-      }
-    }
-  }
-
+  // La orilla de los jefes: la misma figura pintada, corrida un punto para
+  // cada lado. Es lo que dice si está aturdido, invulnerable o furioso.
   if (f.orilla) {
-    const orilla = [];
-    for (const [k, [px, py, c]] of mapa) {
-      if (c !== NEGRO) continue;
-      if (!mapa.has((px + 1) + ',' + py) || !mapa.has((px - 1) + ',' + py)
-        || !mapa.has(px + ',' + (py + 1)) || !mapa.has(px + ',' + (py - 1))) orilla.push(k);
-    }
-    for (const k of orilla) mapa.get(k)[2] = f.orilla;
+    const anillo = armar(clave + '|o' + f.orilla, () => tenido(img, f.orilla, 1));
+    for (const [dx, dy] of [[-PUNTO, 0], [PUNTO, 0], [0, -PUNTO], [0, PUNTO]]) estampar(anillo, dx, dy);
   }
-
-  // --- El arma: sale de la mano. Si apunta para arriba, va detrás del cuerpo.
-  const manoY = cuerpoY + (postura === 'pie' ? 6 : 5);
-  const arma = f.arma;
-  const dibujarArma = () => {
-    const cos = Math.cos(arma.angulo);
-    const sin = Math.sin(arma.angulo);
-    const ax = x + cos * 3;
-    const ay = manoY;
-    r.line(ax, ay, ax + cos * arma.largo, ay + sin * arma.largo, arma.color);
-    if (arma.doble) {
-      const nx = -sin * 3;
-      const ny = cos * 3;
-      r.line(ax + nx, ay + ny, ax + nx + cos * arma.largo, ay + ny + sin * arma.largo, arma.color);
-    }
-    if (arma.punta) r.rect(ax + cos * (arma.largo + 1), ay + sin * (arma.largo + 1), 1, 1, arma.punta);
-  };
-  const armaAtras = arma && Math.sin(arma.angulo) < -0.3;
-  if (armaAtras) dibujarArma();
-
-  const eje = 2 * izq + 11;
-  for (const [px, py, c] of mapa.values()) {
-    r.rect(espejo ? eje - px : px, py, 1, 1, f.destello ? '#ffffff' : c);
-  }
-
-  if (arma && !armaAtras) dibujarArma();
+  estampar(f.destello ? armar(clave + '|flash', () => tenido(img, '#ffe8c0', 0.75)) : img);
 
   return {
-    x, top,
-    arriba: postura === 'rendido' || f.manosArriba ? top - 3 : top,
-    manoY,
-    pechoY: cuerpoY + 4,
-    vista, espejo,
+    x,
+    top: arriba,
+    arriba: manos || postura === 'rendido' ? arriba - 3 : arriba,
+    manoY: pies - 9,
+    pechoY: pies - 11,
+    vista: nombre,
+    espejo,
   };
 }
 
@@ -294,6 +232,9 @@ const SIGNO_SOSPECHA = ['xxx', '..x', '.xx', '...', '.x.'];
  *  - 'sospecha': un "?" amarillo y, debajo, la barrita de cuánto le falta para
  *    verte (se pone naranja pasado el 66%). La barrita no es adorno: te dice
  *    si llegás a esconderte.
+ *
+ * Sigue midiendo lo mismo que antes a propósito: los avisos son información
+ * para jugar, no dibujo, así que no se achicaron ni se agrandaron con la gente.
  *
  * Devuelve la fila de más arriba que ocupó, para seguir apilando.
  */
@@ -323,6 +264,9 @@ export function dibujarAviso(r, x, arriba, estado, llenado = 0) {
  * las piernas abiertas y el sombrero volado al lado (con su cinta, así se sabe
  * quién era). `sangre` agrega el charco; el desmayado no tiene, respira y
  * lleva la "z".
+ *
+ * ⚠️ TODAVÍA ES EL DIBUJO VIEJO, chiquito al lado de la gente nueva: los
+ * caídos se rehacen en la etapa 2b.
  *
  * Va con el piso (ver el orden de dibujo del asalto): nunca tapa a nadie.
  */

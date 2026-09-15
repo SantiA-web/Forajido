@@ -365,7 +365,7 @@ export function drawPassenger(r, pa) {
   }
 
   const fig = dibujarPersona(r, {
-    tipo, x: pa.x, pies, angulo: pa.facing, fase,
+    tipo, x: pa.x, pies, angulo: pa.facing, fase, modo: "caminar",
     // El que ya asaltaste lleva las manos arriba.
     manosArriba: pa.state === 'amenazado',
     sacudida: shake,

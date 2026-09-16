@@ -12820,6 +12820,54 @@ pueblo.
 
 **⚠️ NO JUGADO.**
 
+### 🏜️ Afuera del tren era un vacío oscuro
+
+*(Santi, jugándolo: "una vez el jugador llega al interior del tren, la parte de
+afuera no parece desierto, parece un vacío oscuro")*.
+
+**LA CAUSA:** el asalto limpiaba la pantalla con un marrón casi negro y metía
+las cinco capas del parallax en una franja de **veinte unidades** pegada al
+borde. El tren ocupa de la 55 a la 215 de una pantalla de 270, así que entre esa
+franja y el vagón quedaban más de treinta unidades de color plano. Un color
+plano no es desierto: es un agujero.
+
+**AHORA LA FRANJA ENTERA ES EL DESIERTO**, del mismo color que el del galope
+—así el afuera es el mismo lugar en las dos escenas y no dos sitios distintos— y
+ordenado por distancia a la vía:
+
+    balasto ─ rastrojo ─ matorrales ─ cerros, allá en el fondo
+
+Las cinco capas de siempre siguen siendo las mismas: lo que cambió es que se
+reparten en TODA la franja en vez de amontonarse contra el borde. Y se sumaron
+dos cosas: **el balasto** pegado al vagón —la piedra de la vía es lo que dice
+"esto es un tren" sin dibujar un solo riel— y **manchones de tierra**, porque un
+relleno de un solo tono se lee como vacío por más que tenga el color del
+desierto: lo que lo convierte en suelo es que tenga partes.
+
+🔻 **DOS VECES HUBO QUE CORREGIR LA NOCHE.** El primer intento usó
+`desiertoNoche` tal cual y pintó la grava MÁS OSCURA de noche, como si fuera una
+sombra: la franja quedó **más negra que antes del arreglo**, justo lo contrario
+de lo pedido. De noche el suelo está oscuro y lo que hay ENCIMA agarra la luna —
+la piedra, el rastrojo, los manchones—, y eso es lo que lo vuelve suelo. Además
+el suelo del asalto va un paso más claro que el del galope: allá el desierto
+llena la pantalla con sus cactus y sus piedras y un suelo casi negro se lee
+igual; acá es una franja angosta.
+
+**MEDIDO:** sin errores, mirado de día y de noche.
+
+**⚠️ NO JUGADO.**
+
+### 🧗 ETAPA 7: el techo — la última
+
+*(Santi: "me gustaría incluir una nueva etapa dedicada especialmente para el
+techo. Esa será la última")*.
+
+Queda anotada y **no empezada**. El orden de la mudanza a la resolución nueva
+queda así: **1** la lupa ✅, **2** la gente ✅, **3** el vagón ✅, **4** los
+objetos y las balas, **5** el galope y el afuera (con el jinete, que es lo último
+que queda del dibujo viejo), **6** las pantallas fijas, y **7 el techo**, que se
+lleva una etapa entera para él solo.
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

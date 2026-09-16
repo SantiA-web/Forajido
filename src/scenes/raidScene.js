@@ -22,6 +22,7 @@ import { T } from '../text/es.js';
 import { createCamera } from '../engine/camera.js';
 import { distance, moveAndCollide } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
+import { escalarColor } from '../world/trenTresCuartos.js';
 
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, isInsideZone } from '../world/train.js';
 import {
@@ -4128,39 +4129,109 @@ export function createRaidScene(services) {
    * Esa diferencia es lo que da sensación de velocidad; una sola capa, por
    * rápida que vaya, se lee como un fondo que parpadea.
    */
+  /**
+   * EL DESIERTO A LOS COSTADOS DEL TREN.
+   *
+   * 🔁 ANTES ERA UN VACÍO OSCURO *(Santi, jugándolo: "una vez el jugador llega
+   * al interior del tren, la parte de afuera no parece desierto, parece un
+   * vacío oscuro")*. La pantalla se limpiaba con un marrón casi negro y las
+   * cinco capas del parallax se amontonaban contra el borde, en una franja de
+   * veinte unidades: entre esa franja y el tren quedaban treinta y pico de
+   * unidades de color plano, y eso es lo que se leía como vacío.
+   *
+   * Ahora la franja entera ES el desierto, del MISMO color que el del galope
+   * (`desiertoDia` / `desiertoNoche`) — así el afuera es el mismo lugar en las
+   * dos escenas y no dos sitios distintos — y se ordena por distancia:
+   *
+   *   balasto ─ rastrojo ─ matorrales ─ cerros, allá en el fondo
+   *
+   * EL TIRÓN SE VE ACÁ, y es el aviso más claro que tiene todo el sistema: el
+   * fondo acelera o frena DE VERDAD (`traqueteoVelMult`). No hace falta
+   * explicarlo con texto — ya sabés leer un fondo que vuela más rápido o se
+   * frena en seco.
+   */
   function drawOutside(r) {
-    r.clear('#241b16');
-    const P = CONFIG.parallax;
-
+    const dia = gameState.esDeDia;
     /**
-     * EL TIRÓN SE VE ACÁ, y es el aviso más claro que tiene todo el sistema:
-     * el fondo acelera o frena DE VERDAD (`traqueteoVelMult`). No hace falta
-     * explicarlo con texto — ya sabés leer un fondo que vuela más rápido o se
-     * frena en seco, es el mismo lenguaje que ya usa toda la escena.
+     * DE NOCHE, UN PASO MÁS CLARO QUE EL DEL GALOPE. `desiertoNoche` está
+     * pensado para una pantalla LLENA de desierto, con sus cactus y sus
+     * piedras: ahí un suelo casi negro se lee igual. Acá el afuera es una
+     * franja angosta a los costados del tren, y con ese mismo color volvía a
+     * leerse como el agujero que había que sacar. Es la misma tierra, apenas
+     * menos apagada.
      */
-    const vel = P.velocidad * traqueteoVelMult;
+    r.clear(dia ? colors.desiertoDia : escalarColor(colors.desiertoDia, 0.34));
 
-    // Arriba del tren y abajo, en espejo. El desfase entre los dos lados es a
-    // propósito: si pasan sincronizados se lee como una grilla marchando.
-    drawParallax(r, P.capas.map((c, i) => ({
-      ...c, v: c.v * vel, y: i * 4,
-    })), scroll, r.width);
+    const vel = CONFIG.parallax.velocidad * traqueteoVelMult;
+    const alturaMapa = train.map.rows * train.map.size;
+    // La cara de afuera de la pared de adelante cuelga por debajo del vagón
+    // (ver `drawPisoDelTren`): el desierto empieza donde termina ella.
+    const arriba = -camera.renderY;
+    const abajo = alturaMapa - camera.renderY + CONFIG.tresCuartos.alturaCaraAfuera;
 
-    drawParallax(r, P.capas.map((c, i) => ({
-      ...c, v: c.v * vel, y: r.height - 3 - i * 4,
-    })), scroll * 1.08, r.width);
-
-    // Rayas de velocidad en las dos franjas de afuera, nunca sobre el tren.
-    drawSpeedLines(r, scroll, r.width, {
-      ...P.rayas, velocidad: P.rayas.velocidad * vel,
-      desde: 1, hasta: 22,
-    });
-    drawSpeedLines(r, scroll * 1.2, r.width, {
-      ...P.rayas, velocidad: P.rayas.velocidad * vel,
-      desde: r.height - 22, hasta: r.height - 1,
-    });
+    franjaDeDesierto(r, 0, arriba, false, vel, dia);
+    franjaDeDesierto(r, abajo, r.height, true, vel, dia);
   }
 
+  /**
+   * UNA FRANJA DE DESIERTO, la de arriba del tren o la de abajo.
+   *
+   * `trenArriba` dice de qué lado quedó el tren, porque lo que ordena todo es
+   * la DISTANCIA a la vía: el balasto pegado a ella y los cerros en el borde
+   * lejano. Las dos franjas se dibujan con la misma cuenta, en espejo.
+   *
+   * Las dos van con un desfase de scroll distinto a propósito: si pasaran
+   * sincronizadas se leerían como una grilla marchando y no como campo.
+   */
+  function franjaDeDesierto(r, y0, y1, trenArriba, vel, dia) {
+    const alto = Math.round(y1 - y0);
+    if (alto < 3) return;
+    const P = CONFIG.parallax;
+    const desfile = trenArriba ? scroll * 1.08 : scroll;
+
+    /** `f` = 0 pegado a la vía, 1 en el borde lejano. */
+    const en = (f) => Math.round(trenArriba ? y0 + f * alto : y1 - f * alto);
+
+    /**
+     * 1. EL BALASTO. La piedra de la vía es lo que dice "esto es un tren" sin
+     * dibujar un solo riel, y es lo único que va pegado al vagón.
+     */
+    const bal = Math.max(2, Math.round(alto * 0.15));
+    const yBal = trenArriba ? y0 : y1 - bal;
+    /**
+     * 🔻 DE NOCHE LA GRAVA NO SE APAGA, SE PRENDE. El primer intento la pintaba
+     * más oscura de noche, como si fuera una sombra, y la franja quedaba MÁS
+     * negra que antes de todo este arreglo: exactamente el vacío que había que
+     * sacar. De noche el suelo está oscuro y lo que hay ENCIMA agarra la luna —
+     * la piedra, el rastrojo, los manchones—, y eso es lo que lo vuelve suelo.
+     */
+    r.rect(0, yBal, r.width, bal, escalarColor(colors.cielo.balasto, dia ? 1 : 0.9));
+    r.rect(0, trenArriba ? y0 : y1 - 1, r.width, 1, escalarColor(colors.cielo.balasto, dia ? 0.72 : 0.62));
+
+    /**
+     * 2. LA TIERRA, con sus manchones. Un relleno de un solo tono se lee como
+     * vacío por más que tenga el color del desierto: lo que lo convierte en
+     * suelo es que tenga partes.
+     */
+    const manchon = escalarColor(colors.desiertoDia, dia ? 0.9 : 0.46);
+    drawParallax(r, [{ v: 90, sep: 61, alto: Math.max(2, Math.round(alto * 0.22)), ancho: 34, color: manchon }]
+      .map((c) => ({ ...c, v: c.v * vel, y: en(0.45) })), desfile, r.width);
+
+    /**
+     * 3. LAS CINCO CAPAS DE SIEMPRE, repartidas en TODA la franja en vez de
+     * amontonadas contra el borde: la que menos se mueve arriba de todo (los
+     * cerros) y la que vuela pegada a la vía (el rastrojo).
+     */
+    drawParallax(r, P.capas.map((c, i) => ({
+      ...c, v: c.v * vel, y: en(0.88 - i * 0.17),
+    })), desfile, r.width);
+
+    // 4. Las rayas de velocidad, nunca sobre el tren.
+    drawSpeedLines(r, desfile * 1.15, r.width, {
+      ...P.rayas, velocidad: P.rayas.velocidad * vel,
+      desde: Math.min(y0 + 1, y1 - 1), hasta: Math.max(y1 - 1, y0 + 1),
+    });
+  }
   /**
    * LA TRANQUERA DEL CORRAL.
    *

@@ -447,9 +447,11 @@ export function drawEnemy(r, e) {
   const conArma = !sentado && !(e.desenfundando > 0);
   const fig = dibujarPersona(r, {
     tipo, x: e.x, pies, angulo: e.facing,
-    // Patrullando caminan; cuando te vieron, trotan.
-    modo: e.state === "patrol" ? "caminar" : "trotar",
-    fase: sentado ? null : fase,
+    // Patrullando caminan; cuando te vieron, trotan. A cubierto, asomarse y
+    // esconderse son pasos cortos: caminata, nunca trote.
+    modo: e.state === 'patrol' || e.atCover ? 'caminar' : 'trotar',
+    // Parado a apuntar no mueve las piernas: es EL aviso de que va a disparar.
+    fase: sentado || e.aimTimer > 0 ? null : fase,
     postura: sentado ? 'sentado' : 'pie',
     estado,
     destello: e.hitFlash > 0,

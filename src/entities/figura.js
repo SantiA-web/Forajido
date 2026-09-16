@@ -83,8 +83,28 @@ export function faseDeAndar(ent) {
   const d = Math.hypot(ent.x - px, ent.y - py);
   ent._andarX = ent.x;
   ent._andarY = ent.y;
+
+  /**
+   * 🐛 NO ALCANZA CON MIRAR SI SE MOVIÓ: hay que mirar SI AVANZÓ.
+   *
+   * *(Santi: "hay guardias que llegan contra un obstáculo para ponerse a
+   * cubierto y estando en el mismo lugar que disparan siguen trotando")*. Un
+   * guardia a cubierto se asoma y se esconde de verdad —unas 5 unidades para
+   * cada lado, ver `peekPosition` en systems/ai.js—, así que se mueve todo el
+   * tiempo sin ir a ninguna parte. Sumando distancia recorrida, las piernas no
+   * paraban nunca. Ahora cada 10 cuadros se mide cuánto se corrió DE PUNTA A
+   * PUNTA: menos de 3 unidades (18 por segundo, bastante menos que patrullar)
+   * es estar parado, aunque se esté moviendo.
+   */
+  const ref = ent._andarRef || (ent._andarRef = { x: ent.x, y: ent.y, n: 0, neto: 99 });
+  ref.n++;
+  if (ref.n >= 10) {
+    ref.neto = Math.hypot(ent.x - ref.x, ent.y - ref.y);
+    ref.x = ent.x; ref.y = ent.y; ref.n = 0;
+  }
+
   // Más de 12 px de un cuadro al otro no es caminar: es un salto o un empujón.
-  if (d > 0.05 && d < 12) {
+  if (d > 0.05 && d < 12 && ref.neto > 3) {
     ent._andarRecorrido = (ent._andarRecorrido || 0) + d;
     ent._andarQuieto = 0;
   } else {

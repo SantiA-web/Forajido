@@ -47,6 +47,7 @@ import {
   ALTO_DEL_TECHO, ALTO_DEL_ENGANCHE, ALTURA_VENTANILLA,
 } from '../world/trenTresCuartos.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
+import { sembrarDesierto } from '../world/desierto.js';
 import { distance } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 
@@ -1222,50 +1223,26 @@ export function createRideScene(services) {
    * verdad, y un adorno del tamaño de una piedra que frena sería una trampa.
    * Del otro lado del tren no se puede ir, así que ahí sí puede haber matas.
    */
+  /**
+   * 🔁 LO QUE ADORNA EL SUELO, con el dibujo nuevo (etapa 5). Eran tres o cuatro
+   * rectángulos de unidades enteras por cosa; ahora cada una es una pieza
+   * guardada (`world/desierto.js`) y —lo más importante— es LA MISMA SIEMBRA que
+   * usa el asalto a los costados del tren, así el afuera es el mismo lugar en
+   * las dos escenas y no dos que se parecen.
+   */
   function dibujarAdornos(r, camX, camY, vistaW, vistaH, base, tinte) {
-    const C = colors.cielo;
-    const celda = 30;
     const fondoDelTren = base - ALTO_DEL_TECHO - 20;
-    const cx0 = Math.floor((camX + suelo) / celda) - 1;
-    const cx1 = Math.ceil((camX + suelo + vistaW) / celda) + 1;
-    const cy0 = Math.floor(camY / celda) - 1;
-    const cy1 = Math.ceil((camY + vistaH) / celda) + 1;
-
-    for (let cy = cy0; cy <= cy1; cy++) {
-      for (let cx = cx0; cx <= cx1; cx++) {
-        const h = revolver(cx * 7919 + cy * 104729);
-        const tipo = h % 9;
-        if (tipo > 4) continue;
-        const wx = cx * celda + ((h >>> 8) % celda) - suelo;
-        const wy = cy * celda + ((h >>> 16) % celda);
-        // Donde está el tren y la vía no va nada: los taparía o se les montaría.
-        if (wy > fondoDelTren && wy < base + 12) continue;
-        const detras = wy <= fondoDelTren;
-
-        if (tipo <= 1) {
-          r.rect(wx, wy - 3, 1, 3, tinte(C.pasto));
-          r.rect(wx + 2, wy - 4, 1, 4, tinte(C.pasto));
-          r.rect(wx + 4, wy - 2, 1, 2, tinte(C.pasto));
-        } else if (tipo === 2) {
-          r.rect(wx, wy - 1, 4, 2, tinte(C.piedrita));
-          r.rect(wx, wy - 2, 3, 1, tinte(C.piedritaLuz));
-        } else if (!detras) {
-          if (tipo === 3) r.rect(wx, wy, 12, 2, tinte(C.tierraOscura));
-        } else if (tipo === 3) {
-          r.ctx.globalAlpha = 0.22;
-          r.rect(wx - 7, wy, 16, 2, '#000');
-          r.ctx.globalAlpha = 1;
-          r.rect(wx - 7, wy - 4, 14, 5, tinte(C.mata));
-          r.rect(wx - 5, wy - 7, 10, 4, tinte(C.mataLuz));
-        } else {
-          r.rect(wx - 1, wy - 12, 3, 12, tinte(C.cactus));
-          r.rect(wx - 4, wy - 8, 3, 2, tinte(C.cactus));
-          r.rect(wx - 4, wy - 11, 2, 3, tinte(C.cactus));
-          r.rect(wx + 2, wy - 6, 3, 2, tinte(C.cactus));
-          r.rect(wx + 3, wy - 9, 2, 3, tinte(C.cactus));
-        }
-      }
-    }
+    sembrarDesierto(r, {
+      x0: camX, y0: camY, x1: camX + vistaW, y1: camY + vistaH,
+      desplaza: suelo,
+      noche: !gameState.esDeDia,
+      colores: colors.cielo,
+      // Donde está el tren y la vía no va nada: los taparía o se les montaría.
+      saltar: (wx, wy) => wy > fondoDelTren && wy < base + 12,
+      // Y las matas y los cactus, SÓLO del otro lado del tren: en el campo por
+      // donde galopás se confundirían con los obstáculos de verdad.
+      grandes: (wx, wy) => wy <= fondoDelTren,
+    });
   }
 
   /**
@@ -1534,7 +1511,8 @@ export function createRideScene(services) {
 
     dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose);
     // A la carrera el jinete se echa hacia adelante: más cuanto más le pide.
-    dibujarJinete(r, x - 1, y - 5 + trote, pose, Math.round(esfuerzo * 2));
+    // El lomo subió de 5 a 10 unidades sobre `y` con el caballo nuevo.
+    dibujarJinete(r, x - 1, y - 10 + trote, pose, esfuerzo * 2);
 
     r.ctx.restore();
 

@@ -60,12 +60,13 @@ aparte, en `prototipos/gente-80px/` (doble clic en `Prueba-72.html`).
 —vos, los guardias, los pasajeros, los jefes, los caídos— usa el dibujo nuevo, y
 el vagón también: tablas con veta y clavos, paredes de tablones, ventanillas con
 reflejo, asientos con respaldo y cajones con fleje. El archivo viejo
-`data/siluetas.js` ya no existe, y con la **4** también las balas, el fogonazo,
-el botín, la dinamita, los barriles y la mercadería. Quedan la **5** (el galope
-y el afuera, con su jinete, que es lo último que queda del dibujo viejo), la
-**6** (las pantallas fijas) y la **7, la última: el techo**, que se lleva una
-etapa entera para él solo. El detalle y los números están en NOTAS-DISENO.md
-("La gente curtida a 80 px", "ETAPA 3: el vagón" y "ETAPA 4").
+`data/siluetas.js` ya no existe; con la **4** se redibujaron las balas, el
+fogonazo, el botín, la dinamita, los barriles y la mercadería, y con la **5** el
+caballo con su jinete —que ahora es una persona del juego y no media— y el
+desierto, uno solo para el galope y para los costados del tren. Quedan la **6**
+(las pantallas fijas) y la **7, la última: el techo**, que se lleva una etapa
+entera para él solo. El detalle y los números están en NOTAS-DISENO.md ("La
+gente curtida a 80 px" y las etapas 3, 4 y 5).
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido

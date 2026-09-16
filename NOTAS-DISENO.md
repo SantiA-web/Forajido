@@ -12919,6 +12919,76 @@ errores, ni ahí ni en el galope, el campamento y el pueblo.
 
 **⚠️ NO JUGADO.**
 
+### 🐎 ETAPA 5: el galope y el afuera
+
+Las dos cosas que venían quedando pendientes desde la etapa 2: **el jinete**, lo
+último que quedaba del dibujo viejo, y **el desierto**, que no había quedado
+bien. Iban juntas y por eso esperaron a esta etapa.
+
+**EL CABALLO Y EL JINETE SON UNA SOLA IMAGEN**, y por eso no se podía arreglar
+uno sin el otro. *(Probado en la etapa 2c: la persona nueva montada en el
+caballo viejo se veía peor que la sombra cabezona)*. El número que lo explica
+todo: **el jinete medía 9 unidades y una persona del juego mide 20** — estaba
+dibujado a menos de la mitad porque en ese caballo no entraba otra cosa.
+
+Se eligió la **proporción real** sobre dos alternativas. Un caballo mide 2,4 m
+de largo y 1,6 m a la cruz, y una persona 1,8: con la escala del juego eso es
+exactamente **26 × 17 contra 20**.
+
+| | Caballo | Jinete | Conjunto |
+|---|---|---|---|
+| Antes | 22 × 12 | 9, media persona | 21 |
+| **Ahora** | **26 × 17** | **20, una persona entera** | **29** |
+
+El jinete ya no tiene dibujo propio: **es la misma gente que camina por el
+vagón**, sentada (`dibujarPersona` con `postura: 'sentado'`). Con eso se fueron
+del juego las dos últimas constantes de `data/siluetas.js`, que habían quedado
+copiadas en `entities/caballo.js` en la etapa 2d esperando este momento.
+
+Y el caballo se redibujó entero: el músculo del anca y del costillar, la línea
+del ijar, las patas con el muslo grueso y la caña fina, los cascos, el ojo, la
+montura con sus borrenes y el estribo colgando — que es lo que hace que el
+jinete se lea sentado EN algo y no apoyado encima.
+
+🔻 **DOS COSAS HUBO QUE REHACERLAS MIRÁNDOLAS.** La montura se levantaba seis
+unidades sobre el lomo y al lado del jinete se leía como una **valija atada al
+costado**: una montura de verdad es casi plana. Y la crin era un rectángulo
+oscuro de 3,5 × 7,5 que se leía como una **caja**; ahora son mechones de
+distinto largo, que es lo único que hace falta para que se lea como pelo.
+
+**EL DESIERTO ES UNO SOLO.** El galope ya tenía su pasto, sus piedras, sus matas
+y sus cactus; el asalto no tenía nada, y el primer arreglo (el color y las
+rayitas del parallax) no alcanzó *(Santi: "se sigue viendo demasiado feo")* —
+esas rayitas son de la resolución vieja. Ahora las dos escenas llaman a
+`sembrarDesierto` (`world/desierto.js`) **con el mismo sorteo**, así que el
+afuera del tren ES el mismo lugar por el que venías galopando, y no dos sitios
+que se parecen. Cada cosa del suelo es una pieza guardada, con su orilla y su
+detalle: el cactus con sus costillas y sus espinas, la mata como un montón de
+tres matorrales y no un rectángulo, la piedra con su luz arriba.
+
+⚠️ **Y SE RESTAURÓ UNA REGLA DE JUEGO QUE ROMPÍ SIN QUERER.** Al unificar las
+dos siembras, las matas y los cactus decorativos aparecieron también en el campo
+por donde galopás — donde hay obstáculos DE VERDAD que te frenan. Un adorno que
+se parece a un obstáculo es una trampa, y eso ya estaba escrito en el diseño:
+adelante del tren sólo va lo chico y apagado (pasto, piedritas, manchas de
+tierra). Ahora `sembrarDesierto` lo recibe como una condición explícita.
+
+**MEDIDO — el galope salió 37% MÁS BARATO.** Llamadas de dibujo de un cuadro
+entero, misma escena y misma posición:
+
+| | Galope | Asalto |
+|---|---|---|
+| Antes | **2659** | 713 |
+| Ahora | **1667** | 740 |
+
+El galope baja casi mil llamadas porque cada cosa del suelo pasó de tres o cinco
+rectángulos a UNA estampa. Y el asalto sube apenas 27 llamadas **habiendo ganado
+el desierto entero**, por lo mismo. 89 piezas guardadas, 1,47 MB. Sin errores en
+seis recorridos (de día y de noche) del galope y del asalto vagón por vagón, ni
+en el campamento y el pueblo.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

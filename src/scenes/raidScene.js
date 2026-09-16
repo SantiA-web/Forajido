@@ -23,6 +23,7 @@ import { createCamera } from '../engine/camera.js';
 import { distance, moveAndCollide } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor } from '../world/trenTresCuartos.js';
+import { sembrarDesierto } from '../world/desierto.js';
 
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, isInsideZone } from '../world/train.js';
 import {
@@ -4225,6 +4226,29 @@ export function createRaidScene(services) {
     drawParallax(r, P.capas.map((c, i) => ({
       ...c, v: c.v * vel, y: en(0.88 - i * 0.17),
     })), desfile, r.width);
+
+    /**
+     * 4. Y LAS COSAS DEL SUELO: el mismo pasto, las mismas piedras, las mismas
+     * matas y los mismos cactus por los que venías galopando
+     * (`world/desierto.js`). 🔻 Con el color y las rayitas del parallax no
+     * alcanzaba *(Santi: "se sigue viendo demasiado feo")*: esas rayitas son de
+     * la resolución vieja. Lo que hace que una franja de tierra se lea como
+     * desierto es que TENGA COSAS, y dibujadas con el detalle de todo lo demás.
+     *
+     * Van más chicas que en el galope (`escala`) porque esta franja se mira
+     * desde más lejos y es angosta: a tamaño natural, un cactus tapaba media
+     * franja.
+     */
+    sembrarDesierto(r, {
+      x0: 0, y0, x1: r.width, y1,
+      desplaza: scroll * 900 * vel,
+      noche: !dia,
+      colores: colors.cielo,
+      escala: 0.7,
+      semilla: trenArriba ? 31 : 0,
+      // Pegado a la vía no crece nada: ahí está el balasto.
+      saltar: (wx, wy) => (trenArriba ? wy - y0 < bal + 2 : y1 - wy < bal + 2),
+    });
 
     // 4. Las rayas de velocidad, nunca sobre el tren.
     drawSpeedLines(r, desfile * 1.15, r.width, {

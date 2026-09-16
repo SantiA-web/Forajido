@@ -70,7 +70,7 @@ export function drawRider(r, rd) {
   const zancada = { t: ((rd.gallop % T) + T) % T, T };
   const trote = Math.round(Math.cos((zancada.t / T - 0.15) * Math.PI * 2) * 1.2);
   dibujarAnimal(r, rd.x, rd.y, zancada, trote, 1, 0);
-  dibujarJinete(r, rd.x - 1, rd.y - 5 + trote, 0, 2, {
+  dibujarJinete(r, rd.x - 1, rd.y - 10 + trote, 0, 2, {
     detalles: 'ley',
     destello: rd.hitFlash > 0,
     // Los ojos se ponen rojos mientras apunta, igual que un guardia en combate.

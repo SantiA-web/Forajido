@@ -12559,6 +12559,27 @@ con su orilla y los jinetes, y después borrar `data/siluetas.js`.
 **MEDIDO:** sin errores. **0,97 ms por cuadro** con el vagón lleno, igual que
 antes de la gente nueva, porque las figuras se arman una sola vez.
 
+### 👑 ETAPA 2c: los jefes, sí; los jinetes, todavía no
+
+**LOS JEFES** ya se dibujan con el arte nuevo: el Cazarrecompensas con su capa
+roja al viento y el Sheriff con su guardapolvo y su estrella grande. Van a
+**escala 1,15**, que es lo que los separa de un guardia con otra ropa: su caja
+también es más grande, así que agrandarlos no es mentir. La ORILLA de color
+(gris aturdido, dorada invulnerable, roja furioso) se dibuja tiñendo la misma
+figura y corriéndola un punto para cada lado.
+
+🔁 **Los ojos ya no fuerzan la cara de alerta.** El jefe manda siempre un color
+de ojos (ámbar, apagado mientras acecha) y con eso quedaba siempre con el ceño
+fruncido. Ahora la cara la decide `estado`, y el pasajero encubierto pasa
+`estado: 'alerta'` cuando saca el arma.
+
+⚠️ **EL JINETE QUEDA PARA LA ETAPA 5, y es una desviación del plan.** Se probó
+dibujarlo con la gente nueva montada en el caballo de siempre y **se ve peor que
+antes**: el caballo es el dibujo viejo, más chico, así que a escala normal lo
+monta un gigante y a escala 0,5 el cuerpo queda hundido en el lomo, sin leerse
+(probado con las dos escalas y mirado ampliado ×6). El jinete y el caballo son
+UNA sola imagen: hay que redibujarlos juntos, cuando le toque al galope.
+
 ### 🐛 ARREGLADA · Los guardias temblaban a cubierto, y el dibujo sólo lo puso a la vista
 
 *(Santi: "por qué cuando los guardias están cubiertos es como que titilan o

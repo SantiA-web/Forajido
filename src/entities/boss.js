@@ -245,6 +245,8 @@ export function drawBoss(r, bo) {
 
   const fig = dibujarPersona(r, {
     tipo, x: bo.x, pies, angulo,
+    // El jefe es más grande, y su caja también: no es un guardia con otra ropa.
+    escala: 1.15,
     fase: avisando ? null : fase,
     ojos, orilla,
     destello: bo.hitFlash > 0,

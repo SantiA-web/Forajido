@@ -371,6 +371,8 @@ export function drawPassenger(r, pa) {
     sacudida: shake,
     destello: pa.hitFlash > 0,
     ojos: revelaT > 0.5 ? '#ff3a2a' : undefined,
+    // Al sacar el arma se le pone cara de alerta: es el aviso que te queda.
+    estado: revelaT > 0.5 ? 'alerta' : undefined,
     // El arma que sale de adentro del saco: crece hacia vos mientras dura.
     arma: pa.revelando ? {
       angulo: pa.facing,

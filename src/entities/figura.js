@@ -135,11 +135,23 @@ function cuadroDe(recorrido, modo) {
 // ------------------------------------------------- los dibujos, en memoria
 const S = 80 / 72;                       // el alto elegido: 80 puntos
 const OX = 8, OY = 6;                    // margen para el ala del sombrero y el arma
-const ANCHO = Math.ceil(72 * S) + 2 * OX;
-const ALTO = Math.ceil(80 * S) + OY;
-const CX = Math.round(24 * S) + OX;      // dónde cae el centro del cuerpo
-const PIE = Math.round(74 * S) + OY;     // y dónde caen los pies
 const PUNTO = 0.25;                      // un punto de dibujo, en unidades
+
+/**
+ * Las medidas del dibujo. Casi siempre es escala 1, pero hay dos excepciones:
+ * los jefes son más grandes (su caja también lo es) y el jinete va más chico,
+ * porque el caballo todavía es el dibujo viejo y si no lo monta un gigante.
+ */
+function medidas(esc = 1) {
+  const s = S * esc;
+  return {
+    s,
+    ancho: Math.ceil(72 * s) + 2 * OX,
+    alto: Math.ceil(80 * s) + OY,
+    cx: Math.round(24 * s) + OX,
+    pie: Math.round(74 * s) + OY,
+  };
+}
 
 const guardados = new Map();
 /** Redondeo al punto de pantalla: si no, el dibujo queda borroso. */
@@ -182,7 +194,7 @@ export function dibujarPersona(r, f) {
   const postura = f.postura || 'pie';
   const x = q(f.x + (f.sacudida || 0));
   const pies = q(f.pies);
-  const arriba = pies - ALTO_PERSONA;
+  const arriba = pies - ALTO_PERSONA * (f.escala || 1);
 
   // El renderer de un solo color (la silueta del jinete detrás de la pared) no
   // tiene canvas: ahí se dibuja un bulto con la forma justa y listo.
@@ -224,8 +236,7 @@ export function dibujarPersona(r, f) {
       anclaPies = q(pies - dy / 4);
     }
   }
-  // Los ojos rojos del encubierto entran por acá: es la misma cara de alerta.
-  const estado = f.estado && f.estado !== 'calma' ? f.estado : (f.ojos ? 'alerta' : undefined);
+  const estado = f.estado && f.estado !== 'calma' ? f.estado : undefined;
   const arma = !!f.arma;
   const manos = !!f.manosArriba;
   const mochila = Math.min(4, Math.round(f.mochila || 0));
@@ -234,13 +245,15 @@ export function dibujarPersona(r, f) {
   // derecha del mundo es asomarse para la izquierda del dibujo.
   const asomadoDibujo = asomado ? { dx: espejo ? -asomado.dx : asomado.dx, dy: asomado.dy } : null;
 
+  const esc = f.escala || 1;
+  const M = medidas(esc);
   const clave = [tipo, nombre, g, modo, cuadro, estado, arma ? 'a' : '', manos ? 'm' : '', mochila,
-    f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : ''].join('|');
+    f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : '', esc].join('|');
   const img = armar(clave, () => {
     // Al trotar el torso se va para adelante; de frente casi no se nota.
     const lateral = fn === lado ? 1 : g ? 0.5 : 0;
     const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12 : 0) * lateral;
-    const L = Lienzo(ANCHO, ALTO, OX, OY, S, deformar(inclina));
+    const L = Lienzo(M.ancho, M.alto, OX, OY, M.s, deformar(inclina));
     const datos = {
       tipo, g, estado, arma, manosArriba: manos, mochila,
       asomado: asomadoDibujo, panuelo: !!f.panuelo,
@@ -257,7 +270,7 @@ export function dibujarPersona(r, f) {
     ctx.save();
     ctx.translate(anclaX + dx, anclaPies + dy);
     if (espejo) ctx.scale(-1, 1);
-    ctx.drawImage(imagen, -CX * PUNTO, -PIE * PUNTO, ANCHO * PUNTO, ALTO * PUNTO);
+    ctx.drawImage(imagen, -M.cx * PUNTO, -M.pie * PUNTO, M.ancho * PUNTO, M.alto * PUNTO);
     ctx.restore();
   };
 

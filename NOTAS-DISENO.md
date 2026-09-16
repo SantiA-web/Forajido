@@ -12559,6 +12559,33 @@ con su orilla y los jinetes, y después borrar `data/siluetas.js`.
 **MEDIDO:** sin errores. **0,97 ms por cuadro** con el vagón lleno, igual que
 antes de la gente nueva, porque las figuras se arman una sola vez.
 
+### 🐛 ARREGLADA · Los guardias temblaban a cubierto, y el dibujo sólo lo puso a la vista
+
+*(Santi: "por qué cuando los guardias están cubiertos es como que titilan o
+tiemblan?")*
+
+**LA CAUSA NO ERA EL DIBUJO: era el movimiento.** `moveToward` (systems/ai.js)
+daba SIEMPRE el paso entero, aunque al destino le faltara menos: el guardia se
+pasaba de largo, al cuadro siguiente volvía, se pasaba otra vez, y quedaba
+vibrando alrededor del punto para siempre.
+
+**Medido en un guardia a cubierto,** mirando su distancia al punto del reparo
+cuadro a cuadro: saltaba **4,2 puntos por cuadro** y cambiaba de sentido **35
+veces en 90 cuadros**. Con el tope puesto (el paso nunca es más largo que lo que
+falta): llega, y se queda **clavado 73 de 89 cuadros, con 1 solo cambio de
+sentido**. La ronda de los que patrullan sigue igual (los de cerca caminaron 100
+y 120 unidades en 5 segundos; los que no se mueven están a más de 780 y el juego
+ni los simula).
+
+**Por qué apareció recién ahora:** el temblor siempre estuvo, pero con siluetas
+de 15 px y piernas que se movían todo el tiempo no se leía. Con gente de 80 px y
+los pies quietos, se ve.
+
+**Y además, antes de encontrar esto**, el dibujo ya había mejorado dos cosas que
+siguen valiendo: asomarse es **doblarse y no caminar** (los pies se quedan en el
+reparo, ver `ancla` en figura.js), y el paso se cuenta por **cuánto avanza de
+verdad**, no por cuánto se mueve.
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

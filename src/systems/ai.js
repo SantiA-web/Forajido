@@ -1016,7 +1016,19 @@ export function turnTowards(e, angle, dt, rate = 7) {
 export function moveToward(e, targetX, targetY, speed, dt, map) {
   const angle = Math.atan2(targetY - e.y, targetX - e.x);
   const before = { x: e.x, y: e.y };
-  const paso = speed * frenoEn(e, map) * dt;
+  /**
+   * 🐛 EL PASO NUNCA PUEDE SER MÁS LARGO QUE LO QUE FALTA.
+   *
+   * *(Santi: "por qué cuando los guardias están cubiertos es como que titilan
+   * o tiemblan?")*. Sin este tope, el que llegaba a un punto se pasaba de
+   * largo, al cuadro siguiente volvía, se pasaba otra vez… y quedaba vibrando
+   * para siempre alrededor del destino. Medido en un guardia a cubierto:
+   * saltaba 4,2 puntos por cuadro y cambiaba de sentido 35 veces en 90
+   * cuadros, o sea media docena de veces por segundo. Con las siluetas
+   * chiquitas casi no se veía; con la gente nueva, tiembla.
+   */
+  const falta = Math.hypot(targetX - e.x, targetY - e.y);
+  const paso = Math.min(speed * frenoEn(e, map) * dt, falta);
   moveAndCollide(e, Math.cos(angle) * paso, Math.sin(angle) * paso, movSolidAt(map));
   turnTowards(e, angle, dt);
   return Math.hypot(e.x - before.x, e.y - before.y);

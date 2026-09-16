@@ -93,6 +93,26 @@ export const ROPA = {
 ROPA.encubierto = ROPA.pasajero;
 ROPA.jineteLey = ROPA.guardia;
 
+/**
+ * DEL NOMBRE DEL JUEGO AL NOMBRE DEL DIBUJO. El juego llama a los guardias
+ * por su `look` (data/guards.js) y a los jefes por su `id` (data/bosses.js);
+ * acá se traducen a la ropa de arriba. Es la tabla que antes vivía en
+ * data/siluetas.js, que ya no existe.
+ */
+export const ROPA_DE_LOOK = {
+  normal: 'guardia',
+  placa: 'blindado',
+  dosRevolveres: 'pistolero',
+  bandolera: 'dinamitero',
+  civil: 'encubierto',
+  estrella: 'sheriff',
+};
+
+export const ROPA_DE_JEFE = {
+  cazarrecompensas: 'cazarrecompensas',
+  sheriff: 'sheriffJefe',
+};
+
 // ------------------------------------------------------- los detalles extra
 function placaDePecho(L, vista) {
   if (vista === 'espalda') return;

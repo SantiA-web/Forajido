@@ -30,6 +30,9 @@ import { frente, espalda } from './gente/frente.js';
 import { lado } from './gente/costado.js';
 import { tendido, TENDIDO } from './gente/tendido.js';
 
+/** Las tablas que traducen el nombre del juego al nombre del dibujo. */
+export { ROPA_DE_LOOK, ROPA_DE_JEFE } from './gente/dibujo.js';
+
 /** El alto de una persona con sombrero, en unidades del mundo. */
 export const ALTO_PERSONA = 20;
 

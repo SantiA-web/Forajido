@@ -12286,8 +12286,10 @@ jefe de frente y de costado; captura del vagón real a 480×270.
 
 ### 🎩 Las sombras cabezonas: toda la gente en negro
 
-> 🔁 **Reemplazada en diseño** por "La gente curtida a 80 px" (más abajo). Sigue
-> siendo lo que el juego dibuja hoy, hasta que se pase a la resolución nueva.
+> 🔁 **Reemplazada del todo** por "La gente curtida a 80 px" (más abajo). El
+> juego ya dibuja la gente nueva y `data/siluetas.js` se borró en la etapa 2d.
+> Esto queda como historia: lo único que todavía se dibuja así es el jinete del
+> galope, hasta la etapa 5.
 
 *(Santi, sobre la gente de 16×24: "creo que se ve muy feo. La verdad es que me
 gustaría que diseñemos un tipo de arte, no una persona así parada que es muy
@@ -12317,11 +12319,10 @@ normal. Los juegos de este tipo se caracterizan por reconocerlos fácilmente")*.
 5. El galope: *"el jugador va montado en un caballo normal, como el de ahora,
    pero el jugador sí es negro"*.
 
-**DÓNDE VIVE:** los dibujos, como tablas de letras, en `data/siluetas.js`
-(sombreros, cuerpos de las 5 vistas con 3 cuadros de paso, posturas y los
-detalles de cada tipo). `entities/figura.js` los convierte en píxeles:
-`dibujarPersona`, `dibujarAviso` y `dibujarTendido`. Si un personaje no gusta,
-se retoca la tabla y nada más.
+**DÓNDE VIVÍA** (hasta la etapa 2d, que lo borró): los dibujos, como tablas de
+letras, en `data/siluetas.js` (sombreros, cuerpos de las 5 vistas con 3 cuadros
+de paso, posturas y los detalles de cada tipo). `entities/figura.js` los
+convertía en píxeles: `dibujarPersona`, `dibujarAviso` y `dibujarTendido`.
 
 **QUIÉN ES QUIÉN** (el tipo en la silueta y sus detalles):
 
@@ -12551,10 +12552,10 @@ trote, caminata (los guardias patrullando caminan y persiguiendo trotan),
 agachado, apuntar, las manos arriba del asaltado, la mochila que crece con el
 botín, el destello del balazo y los avisos "?" y "!" de siempre.
 
-**Lo que falta (2b, 2c, 2d):** las posturas sentado y rendido —hoy caen en la
-pose de agachado—, los caídos (siguen con el dibujo viejo, chiquito al lado de
-la gente nueva), las muescas de vida, los cartuchos del dinamitero, los jefes
-con su orilla y los jinetes, y después borrar `data/siluetas.js`.
+**Lo que faltaba (2b, 2c, 2d):** las posturas sentado y rendido, los caídos, los
+jefes con su orilla y borrar `data/siluetas.js` — todo cerrado más abajo. Siguen
+pendientes las muescas de vida y los cartuchos del dinamitero, y el jinete
+espera a la etapa 5.
 
 **MEDIDO:** sin errores. **0,97 ms por cuadro** con el vagón lleno, igual que
 antes de la gente nueva, porque las figuras se arman una sola vez.
@@ -12606,6 +12607,32 @@ los pies quietos, se ve.
 siguen valiendo: asomarse es **doblarse y no caminar** (los pies se quedan en el
 reparo, ver `ancla` en figura.js), y el paso se cuenta por **cuánto avanza de
 verdad**, no por cuánto se mueve.
+
+### 🧹 ETAPA 2d: se borró el dibujo viejo
+
+`data/siluetas.js` ya no existe. Era el archivo de las sombras cabezonas —los
+sombreros, los cuerpos de las cinco vistas con sus tres cuadros de paso, las
+posturas y los detalles de cada tipo, todo como tablas de letras—, y lo
+reemplazó entero `entities/gente/`.
+
+**Lo único que había que conservar** eran las dos tablas que traducen el nombre
+que usa el juego al nombre del dibujo: el `look` de cada guardia (`placa`,
+`bandolera`, `civil`…) y el `id` de cada jefe. Ahora viven al lado de la ropa,
+en `entities/gente/dibujo.js`, como `ROPA_DE_LOOK` y `ROPA_DE_JEFE`, y salen
+por `entities/figura.js`, que sigue siendo la única puerta al dibujo de la
+gente.
+
+⚠️ **Queda un resto, a propósito:** el jinete del galope
+(`entities/caballo.js`) todavía es la sombra cabezona, así que se copiaron ahí
+las dos únicas constantes que usaba (el negro y el color de los ojos). Son
+cuatro líneas con un cartel que dice cuándo se van: en la etapa 5, cuando se
+redibuje el caballo junto con su jinete.
+
+**MEDIDO:** sin errores en la consola, y todo lo que se dibujaba se sigue
+dibujando: el Cazarrecompensas y el jugador en el asalto (mirados ampliados
+×5), los guardias, los pasajeros y el galope con su jinete.
+
+**⚠️ NO JUGADO.**
 
 ---
 

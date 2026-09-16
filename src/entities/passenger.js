@@ -318,12 +318,12 @@ function seesBody(pa, world, c) {
 export function drawPassenger(r, pa) {
   const col = CONFIG.colors;
   /**
-   * EN SOMBRA CABEZONA (ver entities/figura.js y data/siluetas.js), con los
+   * CON EL ARTE NUEVO (ver entities/figura.js y entities/gente/), con los
    * pies en el borde de abajo de su caja (`pa.hh`), que no cambió.
    *
    * EL PASAJERO: bombín con flor y bufanda verde. EL RICO (Fase 5, ver
    * data/paquetes.js): galera con cinta morada, monóculo y cadena de oro. *(Santi
-   * eligió que "se note de lejos")*: es la silueta más alta de todo el tren a
+   * eligió que "se note de lejos")*: es la figura más alta de todo el tren a
    * propósito, asoma por encima de los respaldos.
    */
   const pies = pa.y + pa.hh;

@@ -14,7 +14,21 @@
 
 import { CONFIG } from '../data/config.js';
 import { tono } from './figura.js';
-import { NEGRO, OJOS_ESTADO } from '../data/siluetas.js';
+
+/**
+ * LO ÚLTIMO QUE QUEDA DEL DIBUJO VIEJO. El jinete de acá todavía es la sombra
+ * cabezona de antes, porque es UNA SOLA IMAGEN con el caballo: la persona
+ * nueva montada en este caballo chico se ve peor (ver NOTAS-DISENO.md, etapa
+ * 2c). Cuando se redibuje el galope entero —etapa 5— estas dos constantes se
+ * borran y el jinete pasa a `entities/figura.js` como todos los demás.
+ */
+const NEGRO = '#0e0a09';
+const OJOS_ESTADO = {
+  calma: '#d8dde4',
+  sospecha: '#f8d830',
+  alerta: '#ff3a2a',
+  aturdido: '#8a8478',
+};
 
 /**
  * CUÁNDO PISA CADA PATA dentro de la zancada, en segundos: son los mismos
@@ -196,7 +210,7 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}) {
   /**
    * 🔁 EN SOMBRA *(Santi: "en el galope, el jugador va montado en un caballo
    * normal, como el de ahora, pero el jugador sí es negro durante el galope")*.
-   * Cabezón y negro, como toda la gente del juego (data/siluetas.js); el
+   * Cabezón y negro, como era toda la gente del juego hasta la etapa 2; el
    * caballo sigue siendo el de siempre.
    *
    * `ropa.detalles`: 'jugador' (pañuelo rojo al viento y cinta roja) o 'ley'

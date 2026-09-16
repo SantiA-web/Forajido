@@ -851,7 +851,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const by = p.y - Math.sin(p.aim) * retro;
 
   /**
-   * VOS, EN SOMBRA CABEZONA (ver entities/figura.js y data/siluetas.js):
+   * VOS, CON EL ARTE NUEVO (ver entities/figura.js y entities/gente/):
    * sombrero de vaquero y pañuelo rojo. Los pies van en el borde de abajo de la
    * caja con la que chocás (`p.hh`), que no cambió: la bala sigue pegando donde
    * pegaba.

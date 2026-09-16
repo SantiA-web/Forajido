@@ -5,8 +5,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar } from './figura.js';
-import { SILUETA_DE_LOOK } from '../data/siluetas.js';
+import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_LOOK } from './figura.js';
 import { GUARD_TYPES, DEFAULT_GUARD_TYPE, guardHealth } from '../data/guards.js';
 import { T } from '../text/es.js';
 
@@ -334,17 +333,17 @@ const CINTA_DE = {
 export function drawEnemy(r, e) {
   const col = CONFIG.colors;
   /**
-   * EN SOMBRA CABEZONA (ver entities/figura.js y data/siluetas.js). Los pies
+   * CON EL ARTE NUEVO (ver entities/figura.js y entities/gente/). Los pies
    * en el borde de abajo de la caja con la que choca (`e.hh`), que no cambió:
    * la bala sigue pegando donde pegaba.
    *
-   * EL TIPO SE LEE EN LA SILUETA Y SUS DETALLES (la gorra, la placa, las
+   * EL TIPO SE LEE EN LA ROPA Y SUS DETALLES (la gorra, la placa, las
    * culatas, la bandolera, la estrella). EL ESTADO, que antes era el color de
    * todo el cuerpo, ahora está en los ojos (blancos, amarillos, rojos) y en el
    * aviso encima de la cabeza: "?" con la barrita o "!" fijo.
    */
   const pies = e.y + e.hh;
-  const tipo = SILUETA_DE_LOOK[e.look] || 'guardia';
+  const tipo = ROPA_DE_LOOK[e.look] || 'guardia';
   const cinta = CINTA_DE[tipo];
 
   if (!e.alive) {

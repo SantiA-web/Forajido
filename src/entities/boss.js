@@ -19,8 +19,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, faseDeAndar } from './figura.js';
-import { SILUETA_DE_JEFE } from '../data/siluetas.js';
+import { dibujarPersona, dibujarTendido, faseDeAndar, ROPA_DE_JEFE } from './figura.js';
 
 export function createBoss(x, y, tipo, options = {}) {
   return {
@@ -154,20 +153,21 @@ export function createBoss(x, y, tipo, options = {}) {
 export function drawBoss(r, bo) {
   const t = bo.tipo;
   /**
-   * EN SOMBRA CABEZONA (ver entities/figura.js y data/siluetas.js), del mismo
-   * alto que cualquiera: el Cazarrecompensas con la capa roja y el
-   * Sheriff con el guardapolvo y la estrella grande. Los pies van en el borde de
-   * abajo de su caja (`bo.hh`), que no cambió.
+   * CON EL ARTE NUEVO (ver entities/figura.js y entities/gente/): el
+   * Cazarrecompensas con la capa roja y el Sheriff con el guardapolvo y la
+   * estrella grande. Los pies van en el borde de abajo de su caja (`bo.hh`),
+   * que no cambió.
    */
   const pies = bo.y + bo.hh;
   /**
-   * 🔁 SIN AGRANDAR. Era 1,15 alrededor de los pies, y con siluetas de un
-   * píxel no funciona: la escala no entera mezcla cada borde con el piso y el
-   * jefe se veía marrón y transparente en vez de negro. Lo que lo distingue es
-   * lo suyo: la capa o el guardapolvo, los ojos ámbar y la barra de vida que
-   * lleva siempre.
+   * 🔁 UN 15% MÁS GRANDE que un guardia (`escala` más abajo). Con las siluetas
+   * de un píxel esto no se podía: la escala no entera mezclaba cada borde con
+   * el piso y el jefe se veía marrón y transparente. Ahora cada figura se arma
+   * UNA vez en su propio lienzo, así que agrandarla sale gratis y sale limpia.
+   * Y no es trampa: su caja de verdad también es más grande que la de un
+   * guardia.
    */
-  const tipo = SILUETA_DE_JEFE[bo.id] || 'cazarrecompensas';
+  const tipo = ROPA_DE_JEFE[bo.id] || 'cazarrecompensas';
   const cinta = tipo === 'sheriffJefe' ? '#e8c34a' : '#c8302a';
 
   if (!bo.alive) {

@@ -56,12 +56,14 @@ atrás. Se está pasando por etapas, primero el tren:
 curtida**, con más resolución, caras con expresión, piernas largas, trote con
 empuje y el revólver en las 8 direcciones. Se decidió jugando una prueba
 aparte, en `prototipos/gente-80px/` (doble clic en `Prueba-72.html`).
-**Hechas las etapas 1 y 2:** el motor dibuja con la lupa de ×4 y toda la gente
-—vos, los guardias, los pasajeros, los jefes, los caídos— usa el dibujo nuevo;
-el archivo viejo `data/siluetas.js` ya no existe. Falta redibujar el vagón, los
-objetos, el galope (con su jinete, que es lo último que queda del dibujo viejo)
-y las pantallas fijas. El detalle y los números están en NOTAS-DISENO.md ("La
-gente curtida a 80 px").
+**Hechas las etapas 1, 2 y 3:** el motor dibuja con la lupa de ×4; toda la gente
+—vos, los guardias, los pasajeros, los jefes, los caídos— usa el dibujo nuevo, y
+el vagón también: tablas con veta y clavos, paredes de tablones, ventanillas con
+reflejo, asientos con respaldo y cajones con fleje. El archivo viejo
+`data/siluetas.js` ya no existe. Falta redibujar los objetos, el galope (con su
+jinete, que es lo último que queda del dibujo viejo) y las pantallas fijas. El
+detalle y los números están en NOTAS-DISENO.md ("La gente curtida a 80 px" y
+"ETAPA 3: el vagón").
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido

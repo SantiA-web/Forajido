@@ -18,6 +18,10 @@
 
 import { CONFIG } from '../data/config.js';
 import { createTilemap } from './tilemap.js';
+import {
+  PUNTO, estampar, varianteDe, piezaPiso, piezaCantoPared, piezaCaraPared,
+  piezaVentana, piezaAsiento, piezaCajon, piezaPasarela, piezaSalida, piezaBaranda,
+} from './piezas.js';
 import { createPlayer } from '../entities/player.js';
 import { createEnemy } from '../entities/enemy.js';
 import { createPassenger } from '../entities/passenger.js';
@@ -1793,6 +1797,29 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
   const filaDesde = Math.max(0, Math.floor(camY / size) - 1);
   const filaHasta = Math.min(map.rows - 1, Math.ceil((camY + altoVista) / size) + 1);
 
+  /**
+   * EL PASILLO: las dos filas del medio del vagón, las que quedan entre los
+   * asientos. Es por donde pasa TODO EL MUNDO, y por eso es el único lugar del
+   * piso donde el desgaste dice algo en vez de ser ruido.
+   *
+   * Se saca de las paredes de cada columna y no de un número fijo, así vale
+   * igual para un vagón alto que para uno bajo. Se calcula una vez por columna.
+   */
+  const medioDeColumna = new Map();
+  const esPasillo = (col, row) => {
+    let b = medioDeColumna.get(col);
+    if (!b) {
+      let r1 = -1;
+      while (r1 + 1 < map.rows && esPared((map.grid[r1 + 1] || [])[col])) r1++;
+      let r2 = map.rows;
+      while (r2 - 1 > r1 && esPared((map.grid[r2 - 1] || [])[col])) r2--;
+      const medio = (r1 + r2) / 2;
+      b = { desde: Math.floor(medio) - 1, hasta: Math.ceil(medio) };
+      medioDeColumna.set(col, b);
+    }
+    return row >= b.desde && row <= b.hasta;
+  };
+
   for (let row = filaDesde; row <= filaHasta; row++) {
     for (let col = colDesde; col <= colHasta; col++) {
       const tile = map.grid[row][col];
@@ -1812,16 +1839,13 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
         case 'H':
           break;
 
-        // Asiento y carga: el piso de abajo. Lo alto va en `cosasAltasDelTren`.
+        // Asiento, carga y res: el piso de abajo. Lo alto va en
+        // `cosasAltasDelTren`. Debajo de un asiento no hay pasillo: el
+        // desgaste del paso va sólo donde se camina.
         case 'S':
         case 'C':
-          r.rect(x, y, size, size, colors.floor);
-          break;
-
         case 'R':
-          // El piso de abajo de la res; la res colgada va en `cosasAltasDelTren`.
-          r.rect(x, y, size, size, colors.floor);
-          r.rect(x, y + size - 1, size, 1, oscurecer(colors.floor, 0.86));
+          estampar(r, piezaPiso(colors.floor, varianteDe(col, row), false), x, y);
           break;
 
         case 'K': {
@@ -1842,17 +1866,12 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
           break;
 
         case 'E':
-          r.rect(x, y, size, size, colors.door);
-          r.rect(x + 2, y + 2, size - 4, size - 4, colors.doorGlow);
+          estampar(r, piezaSalida(colors.door, colors.doorGlow), x, y);
           break;
 
         case '+':
-          // La pasarela del enganche: chapa desnuda, con el vacío a los lados.
-          r.rect(x, y, size, size, colors.coupling);
-          r.rect(x, y, size, 2, colors.couplingEdge);
-          r.rect(x, y + size - 2, size, 2, colors.couplingEdge);
-          r.rect(x + 3, y + 5, 2, 6, colors.couplingEdge);
-          r.rect(x + 11, y + 5, 2, 6, colors.couplingEdge);
+          // La pasarela del enganche: chapa estriada, con el vacío a los lados.
+          estampar(r, piezaPasarela(colors.coupling, colors.couplingEdge), x, y);
           break;
 
         default:
@@ -1860,10 +1879,15 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
            * 🔻 SIN TABLERO DE AJEDREZ. *(Santi, mirando la primera versión de
            * tres cuartos: "está media confusa y como que cargada")*. Con las
            * cosas levantadas, el piso a cuadros competía con los asientos y las
-           * paredes. Un solo tono y la junta de las tablas, apenas marcada.
+           * paredes.
+           *
+           * 🔁 ETAPA 3: TABLAS DE VERDAD. Eran dos rectángulos —un tono plano y
+           * la junta— en un lienzo de 64 puntos de dibujo, y al lado de una
+           * persona de 80 puntos el piso quedaba liso. Ahora la tabla mide 4
+           * unidades, con su veta y sus clavos, y el desgaste del paso va sólo
+           * en el PASILLO: es el único lugar del piso donde significa algo.
            */
-          r.rect(x, y, size, size, colors.floor);
-          r.rect(x, y + size - 1, size, 1, oscurecer(colors.floor, 0.86));
+          estampar(r, piezaPiso(colors.floor, varianteDe(col, row), esPasillo(col, row)), x, y);
       }
     }
   }
@@ -1908,11 +1932,13 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
       for (let f = r2; f <= ultima; f++) if (casilla(f) === 'W') ventana = true;
       const y0 = map.rows * size;
       const alto = tc.alturaCaraAfuera;
-      r.rect(x, y0, size, alto, colors.wall);
-      r.rect(x, y0 + alto - 2, size, 2, oscurecer(colors.wall, 0.55));
+      // La misma cara de tablas que por dentro: es la MISMA pared, mirada del
+      // otro lado. Si ésta quedaba lisa, el vagón se veía a medio terminar
+      // justo desde donde lo mirás al llegar a caballo.
+      estampar(r, piezaCaraPared(colors.wall, alto / PUNTO, varianteDe(col, 99, 7)), x, y0);
       if (ventana) {
-        r.rect(x + 2, y0 + 4, size - 4, alto - 11, colors.window);
-        r.rect(x + 3, y0 + 5, size - 6, alto - 13, colors.windowGlass);
+        estampar(r, piezaVentana(colors.window, colors.windowGlass,
+          (size - 4) / PUNTO, (alto - 10) / PUNTO), x + 2 - 2 * PUNTO, y0 + 4 - 2 * PUNTO);
       }
       r.ctx.globalAlpha = 0.35;
       r.rect(x, y0 + alto, size, 3, '#000');
@@ -2034,10 +2060,9 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
           const tipo = WAGONS[train.tipoPorColumna[col]];
           const deCarbon = !!(tipo && tipo.carbon);
           const alto = deCarbon ? tc.alturaParedBaja : tc.alturaPared;
+          // El relleno plano del techo del vagón; el canto y la cara con sus
+          // tablas los pone `piezas.js`.
           const tapa = oscurecer(colors.wall, 1.28);
-          const brillo = oscurecer(colors.wall, 1.5);
-          const cara = colors.wall;
-          const caraOscura = oscurecer(colors.wall, 0.55);
 
           if (row <= r1) {
             if (row !== r1) break;   // el bloque entero lo dibuja su última fila
@@ -2045,14 +2070,18 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
             let ventana = false;
             for (let f = 0; f <= r1; f++) if (casilla(col, f) === 'W') ventana = true;
             cosas.push({ base: pie - 0.01, draw: () => {
-              r.rect(x, -alto, size, pie, tapa);
-              r.rect(x, -alto, size, 1, brillo);
-              r.rect(x, pie - alto, size, alto, cara);
-              r.rect(x, pie - 1, size, 1, caraOscura);
+              /**
+               * 🔁 ETAPA 3. El techo del vagón es una mancha grande de un solo
+               * color: sigue siendo un rectángulo, porque estampar una pieza de
+               * ese tamaño no agrega nada. Lo que se MIRA —el canto de arriba y
+               * la cara con sus tablas— va estampado.
+               */
+              r.rect(x, -alto, size, pie - alto + 2, tapa);
+              estampar(r, piezaCantoPared(colors.wall), x, -alto);
+              estampar(r, piezaCaraPared(colors.wall, alto / PUNTO, varianteDe(col, 0, 7)), x, pie - alto);
               if (ventana) {
-                r.rect(x + 2, pie - alto + 4, size - 4, alto - 10, colors.window);
-                r.rect(x + 3, pie - alto + 5, size - 6, alto - 12, colors.windowGlass);
-                r.rect(x + 3, pie - alto + 5, size - 6, 2, oscurecer(colors.windowGlass, 1.25));
+                estampar(r, piezaVentana(colors.window, colors.windowGlass,
+                  (size - 4) / PUNTO, (alto - 9) / PUNTO), x + 2 - 2 * PUNTO, pie - alto + 3 - 2 * PUNTO);
               }
             } });
             break;
@@ -2063,7 +2092,7 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
             const bajo = tc.alturaParedBaja;
             cosas.push({ base: map.rows * size - 0.01, draw: () => {
               r.rect(x, r2 * size - bajo, size, (map.rows - r2) * size + bajo, tapa);
-              r.rect(x, r2 * size - bajo, size, 1, brillo);
+              estampar(r, piezaCantoPared(colors.wall), x, r2 * size - bajo);
             } });
             break;
           }
@@ -2074,9 +2103,9 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
           const conCara = !esPared(debajo);
           cosas.push({ base, draw: () => {
             r.rect(x, y - h, size, size, tapa);
+            estampar(r, piezaCantoPared(colors.wall), x, y - h);
             if (conCara) {
-              r.rect(x, y + size - h, size, h, cara);
-              r.rect(x, y + size - 1, size, 1, caraOscura);
+              estampar(r, piezaCaraPared(colors.wall, h / PUNTO, varianteDe(col, row, 7)), x, y + size - h);
             }
           } });
           break;
@@ -2085,11 +2114,16 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
         case 'S': {
           const h = tc.alturaAsiento;
           const cara = debajo !== 'S';
-          // Sin la raya clara de arriba: con la cara abajo ya se lee el
-          // volumen, y la raya sumaba una línea más por asiento al ruido.
+          /**
+           * 🔁 ETAPA 3: ES UN ASIENTO Y NO UN BULTO. Eran dos rectángulos, y
+           * cualquier cosa cuadrada apoyada en el piso se leía como un cajón.
+           * Lo que lo separa de un cajón es el RESPALDO, atrás, con sus
+           * listones; adelante el almohadón hundido con sus botones, y abajo
+           * las patas, sin las cuales el asiento flotaba sobre las tablas.
+           */
           cosas.push({ base, draw: () => {
-            r.rect(x + 1, y + 2 - h, size - 2, size - 4, colors.seat);
-            if (cara) r.rect(x + 1, y + size - 2 - h, size - 2, h, oscurecer(colors.seat, 0.6));
+            estampar(r, piezaAsiento(colors.seat, h / PUNTO, cara, varianteDe(col, row, 3)),
+              x, y + 2 - h - 2 * PUNTO);
           } });
           break;
         }
@@ -2100,10 +2134,16 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
           const paleta = colors.cargo[train.tipoPorColumna[col]] || colors.cargo.default;
           const h = tc.alturaCarga;
           const cara = debajo !== 'C';
+          /**
+           * 🔁 ETAPA 3: tablas y el fleje de hierro que cruza el cajón. LA
+           * MARCA ESTARCIDA va sólo en el correo, y no en todos los cajones:
+           * es el desgaste con sentido de la carga —dice de qué vagón es lo
+           * que estás por robar— y en todos por igual sería una textura.
+           */
+          const conMarca = train.tipoPorColumna[col] === 'correo';
           cosas.push({ base, draw: () => {
-            r.rect(x, y + 1 - h, size, size - 2, paleta[0]);
-            r.rect(x, y + 1 - h, size, 1, paleta[1]);
-            if (cara) r.rect(x, y + size - 1 - h, size, h, oscurecer(paleta[0], 0.6));
+            estampar(r, piezaCajon(paleta[0], paleta[1], h / PUNTO, cara,
+              varianteDe(col, row, 5), conMarca), x, y + 1 - h - 2 * PUNTO);
           } });
           break;
         }
@@ -2179,11 +2219,7 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
           // ve el paisaje pasar. Postes y travesaño, levantados.
           const h = tc.alturaBaranda;
           cosas.push({ base, draw: () => {
-            const yy = y - h;
-            r.rect(x + 2, yy + 2, 2, 10 + h, colors.railing);
-            r.rect(x + 11, yy + 2, 2, 10 + h, colors.railing);
-            r.rect(x, yy + 5, size, 4, colors.railing);
-            r.rect(x, yy + 5, size, 1, colors.railingTop);
+            estampar(r, piezaBaranda(colors.railing, colors.railingTop, h / PUNTO), x, y - h);
           } });
           break;
         }

@@ -12680,6 +12680,69 @@ consola.
 
 **⚠️ NO JUGADO.**
 
+### 🚃 ETAPA 3: el vagón, al detalle de la gente
+
+*(Santi eligió la opción C sobre la lámina de `prototipos/vagon/`: el detalle
+sobrio en todo el vagón y el desgaste SÓLO donde quiere decir algo)*.
+
+**EL PROBLEMA, EN UN NÚMERO.** Una casilla del tren mide 16 unidades, o sea un
+lienzo de **64 puntos de dibujo** con la lupa de ×4. El piso de esa casilla eran
+**dos rectángulos**: un color plano y una raya. Al lado de una persona de 80
+puntos dibujada punto por punto, el vagón quedó liso.
+
+**LO QUE SE REDIBUJÓ** (todo en `world/piezas.js`, y `world/train.js` sólo lo
+estampa):
+
+| Pieza | Antes | Ahora |
+|---|---|---|
+| Piso | un tono y una raya cada 16 unidades | tablas de 4 unidades con veta, junta y clavos |
+| Pared | una franja de color | tablas VERTICALES —al revés que el piso, para que no se confundan— con zócalo y sombra al pie |
+| Canto de la pared | una raya clara | chapa con costura y remaches |
+| Ventanilla | dos rectángulos azules | marco con orilla de 2 puntos, reflejo cruzado, travesaño y polvo abajo |
+| Asiento | dos rectángulos | respaldo con listones, almohadón con botones, brazos y patas |
+| Cajón | dos rectángulos | tablas, fleje de hierro con remaches y la marca del correo |
+| Pasarela | chapa lisa | chapa estriada con el hierro del enganche |
+| Salida y baranda | rectángulos | estribo con escalones; postes y travesaño |
+
+**EL DESGASTE ES INFORMACIÓN, NO RUIDO.** Es lo que separa la opción elegida de
+"ensuciar todo": el vagón ocupa la pantalla entera y no tiene que competir con
+la gente. Va sólo en cuatro lugares, y cada uno dice algo:
+
+- **el piso del PASILLO** (la madera lustrada por el paso) — y el pasillo se
+  saca de las paredes de cada columna, no de un número fijo, así vale igual
+  para un vagón alto que para uno bajo;
+- **la marca del cajón del correo**, que dice de qué vagón es lo que vas a robar;
+- **el polvo abajo de la ventanilla**, que es dónde está pasando el juego;
+- **el cuero pelado de algunos asientos**, no de todos: uno usado entre varios
+  sanos dice "acá viaja gente"; todos iguales serían una textura.
+
+🔻 **DOS COSAS QUE HUBO QUE REHACER MIRÁNDOLAS.** La primera versión del asiento
+llevaba el respaldo apenas más oscuro que el almohadón y **una fila de asientos
+se leía como una fila de cajones**: lo que lo arregló fue el CONTRASTE entre las
+dos partes (madera oscura arriba, cuero claro abajo, y una línea negra entre
+las dos). Y la marca del cajón eran tres palitos que en pantalla se leían como
+una **"H" puesta por accidente**; ahora es un sobre.
+
+**MEDIDO — Y SALIÓ MÁS BARATO QUE ANTES.** Contando las llamadas de dibujo de
+un cuadro entero, en el mismo vagón y desde la misma posición:
+
+| | Llamadas de dibujo por cuadro |
+|---|---|
+| Vagón viejo | **1193** |
+| Vagón nuevo, con las piezas ya armadas | **955** |
+
+Diez veces más detalle y **un 20% MENOS de llamadas**, porque cada casilla pasó
+de varios rectángulos a **una sola estampa**. El precio se paga una vez: el
+primer cuadro que muestra un vagón nuevo dibuja 7.606 rectángulos armando sus
+piezas, y después no dibuja ninguno más. Recorrido un tren entero, lo guardado
+son **60 piezas, 970 KB**.
+
+El reloj del navegador no da medidas estables en esta ventana (la misma escena
+midió entre 0,5 y 2,3 ms de un intento a otro), así que el número de arriba es
+el que vale: son llamadas contadas, no tiempo estimado.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

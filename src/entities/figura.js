@@ -243,6 +243,19 @@ export function dibujarPersona(r, f) {
   const arma = !!f.arma;
   const manos = !!f.manosArriba;
   const mochila = Math.min(4, Math.round(f.mochila || 0));
+  /**
+   * LOS CARTUCHOS QUE LE QUEDAN en la correa (hoy, el Dinamitero). El juego
+   * manda `{ cargados, total }` y acá se pasa a los CUATRO lugares que tiene
+   * dibujada la bandolera: lleva dos dinamitas, así que cada una son dos
+   * cartuchos y la correa se vacía entera cuando las tiró las dos.
+   *
+   * Sólo se calcula para quien lleva bandolera: si no, sería una variante más
+   * de figura guardada por cada guardia y por cada dinamita, para nada.
+   */
+  const cart = ROPA[tipo] && ROPA[tipo].bandolera ? f.cartuchos : null;
+  const cartuchos = cart && cart.total > 0
+    ? Math.max(0, Math.min(4, Math.round((cart.cargados / cart.total) * 4)))
+    : null;
 
   // El dibujo se arma mirando a la derecha: si va en espejo, asomarse para la
   // derecha del mundo es asomarse para la izquierda del dibujo.
@@ -251,14 +264,15 @@ export function dibujarPersona(r, f) {
   const esc = f.escala || 1;
   const M = medidas(esc);
   const clave = [tipo, nombre, g, modo, cuadro, estado, arma ? 'a' : '', manos ? 'm' : '', mochila,
-    f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : '', esc].join('|');
+    f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : '', esc,
+    cartuchos == null ? '' : 'c' + cartuchos].join('|');
   const img = armar(clave, () => {
     // Al trotar el torso se va para adelante; de frente casi no se nota.
     const lateral = fn === lado ? 1 : g ? 0.5 : 0;
     const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12 : 0) * lateral;
     const L = Lienzo(M.ancho, M.alto, OX, OY, M.s, deformar(inclina));
     const datos = {
-      tipo, g, estado, arma, manosArriba: manos, mochila,
+      tipo, g, estado, arma, manosArriba: manos, mochila, cartuchos,
       asomado: asomadoDibujo, panuelo: !!f.panuelo,
     };
     if (modo === 'trotar') datos.trote = cuadro;
@@ -332,6 +346,43 @@ export function dibujarAviso(r, x, arriba, estado, llenado = 0) {
     return arriba - 11;
   }
   return arriba;
+}
+
+/**
+ * CUÁNTO LE QUEDA, en muescas encima de la cabeza. Devuelve dónde termina,
+ * para poder apilarle el aviso arriba.
+ *
+ * ANCHO FIJO, y la muesca sale de repartirlo — no al revés: con la muesca de
+ * ancho fijo, un jefe de ocho de vida tenía una barra que flotaba sobre medio
+ * vagón. El paso va en PUNTOS ENTEROS de dibujo, porque si no las muescas se
+ * agrupan de a 2-4-2.
+ *
+ * 🔁 Y LLEVA LA MISMA ORILLA OSCURA DE 2 PUNTOS QUE LA GENTE. Con el dibujo
+ * viejo, de 15 unidades y un solo color, dos muescas peladas de 3×2 alcanzaban;
+ * al lado de una persona de 80 px quedaban dos manchitas amarillas del mismo
+ * tamaño que el "?" de sospecha, encimadas con él. La orilla las despega del
+ * fondo y las hace otra cosa distinta del aviso.
+ */
+export function dibujarVida(r, x, arriba, vida, maxVida, opciones = {}) {
+  if (!(maxVida > 0)) return arriba;
+  // Todo esto se piensa en PUNTOS DE DIBUJO (un cuarto de unidad), como el
+  // resto del arte, y recién al dibujar se pasa a unidades.
+  const P = 0.25;
+  const ancho = (opciones.ancho || 12) / P;
+  const alto = opciones.alto || 10;
+  const hueco = 3;
+  const paso = Math.max(hueco + 1, Math.round(ancho / maxVida));
+  const seg = paso - hueco;
+  const total = maxVida * paso - hueco;
+
+  const y = arriba - (alto + 2) * P;
+  const x0 = Math.round(x * 4) / 4 - (total * P) / 2;
+  r.rect(x0 - 2 * P, y - 2 * P, (total + 4) * P, (alto + 4) * P, NEGRO);
+  for (let i = 0; i < maxVida; i++) {
+    r.rect(x0 + i * paso * P, y, seg * P, alto * P,
+      i < vida ? (opciones.color || '#e0c44a') : '#4a3a22');
+  }
+  return y - 2 * P;
 }
 
 /**

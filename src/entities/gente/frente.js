@@ -188,7 +188,7 @@ function torsoFrente(L, R, o, g, f) {
     L.rect(28 + d, 35, 1, 20, CS);
     L.rect(14 + g, 53, 20 - g, 3, CINTO); L.rect(22 + d, 53, 5, 3, LATON); L.rect(23 + d, 54, 3, 1, CINTO);
   }
-  if (R.extras) R.extras(L, g ? 'diagF' : 'frente');
+  if (R.extras) R.extras(L, g ? 'diagF' : 'frente', o);
   if (o.mochila) correasDeMochila(L, g);
   if (R.funda) {
     L.poly([[31 - g, 55], [36 - g, 55], [35 - g, 64], [32 - g, 64]], FUNDA);
@@ -264,7 +264,7 @@ export function espalda(L, o = {}) {
   U.rect(24 + g, 33, 1, largo - 34, CS); U.rect(31 - g, 34, 2, 19, CL);
   if (!R.saco) U.rect(14 + g, 53, 20 - g, 3, CINTO);
   else U.rect(14 + g, 45, 20 - 2 * g, 2, CS);
-  if (R.extras) R.extras(U, 'espalda');
+  if (R.extras) R.extras(U, 'espalda', o);
   if (o.mochila) mochilaDetras(U, o.mochila);
   if (R.funda) {
     U.poly([[12 + g, 55], [17 + g, 55], [16 + g, 64], [13 + g, 64]], FUNDA);

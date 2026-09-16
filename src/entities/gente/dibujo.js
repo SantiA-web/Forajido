@@ -37,8 +37,10 @@ export const ACERO = '#8a8e94', ORO = '#c8a84a', ROJO_CAPA = '#8e2420';
  * sombrero y dos o tres detalles alcanzan para reconocerlo de lejos, que es la
  * regla que pidió Santi desde el principio.
  *
- * `extras` se dibuja encima del torso y recibe la vista, así un detalle puede
- * cambiar de lugar según de dónde se lo mire.
+ * `extras` se dibuja encima del torso y recibe la vista —así un detalle puede
+ * cambiar de lugar según de dónde se lo mire— y los datos de la figura, para
+ * los detalles que dependen de cómo está la persona (los cartuchos que le
+ * quedan, por ejemplo).
  */
 export const ROPA = {
   jugador: {
@@ -66,7 +68,7 @@ export const ROPA = {
   dinamitero: {
     sombrero: 'boina', chal: ['#4a3a2a', '#5e4c38', '#362a1e'], manga: ['#6a5a44', '#7e6e56', '#4e4232'],
     pant: '#443a2e', cuello: 'saco', funda: true, barba: '#3e2a1c', barbaP: 40, bigote: 'grande',
-    extras: bandolera,
+    bandolera: true, extras: bandolera,
   },
   sheriff: {
     sombrero: 'alto', chal: ['#2e2a28', '#464240', '#1e1c1a'], manga: ['#2e2a28', '#464240', '#1e1c1a'],
@@ -121,10 +123,21 @@ function placaDePecho(L, vista) {
   L.rect(x, 36, vista === 'lado' ? 6 : 9, 1, '#b8bcc2');
   L.rect(x + 1, 40, 3, 1, '#5e6268');
 }
-function bandolera(L, vista) {
+/**
+ * LA BANDOLERA MUESTRA LOS HUECOS, no sólo lo que queda: son siempre cuatro
+ * lugares y los gastados se ven vacíos. Así la recarga del Dinamitero (ver
+ * `dinamiteroRecarga` en data/config.js) es algo que se puede MIRAR: se le
+ * vacía la correa y se le vuelve a llenar.
+ */
+function bandolera(L, vista, o = {}) {
   const y = vista === 'espalda' ? 36 : 35;
+  const quedan = o.cartuchos == null ? 4 : Math.max(0, Math.min(4, o.cartuchos));
   L.poly([[16, y], [22, y], [32, y + 14], [27, y + 15]], '#6a4a2a');
-  for (let i = 0; i < 4; i++) L.rect(19 + i * 3, y + 3 + i * 3, 2, 3, '#b8603a');
+  for (let i = 0; i < 4; i++) {
+    // Se gastan de arriba para abajo: el de más arriba es el que agarra.
+    const lleno = i >= 4 - quedan;
+    L.rect(19 + i * 3, y + 3 + i * 3, 2, 3, lleno ? '#b8603a' : '#4a3018');
+  }
 }
 function estrella(L, vista) {
   if (vista === 'espalda') return;

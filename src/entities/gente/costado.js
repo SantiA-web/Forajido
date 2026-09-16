@@ -177,7 +177,7 @@ export function lado(L, o = {}) {
   }
   // El hombro de atrás asoma arriba del pecho: sin esto el cuerpo es una tabla.
   U.poly([[25, 32], [29, 32], [31, 35], [28, 37], [25, 35]], MS);
-  if (R.extras) R.extras(U, 'lado');
+  if (R.extras) R.extras(U, 'lado', o);
 
   // La pierna cercana
   if (!postura) {

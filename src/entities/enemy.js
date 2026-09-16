@@ -5,7 +5,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_LOOK } from './figura.js';
+import { dibujarPersona, dibujarTendido, dibujarAviso, dibujarVida, faseDeAndar, ROPA_DE_LOOK } from './figura.js';
 import { GUARD_TYPES, DEFAULT_GUARD_TYPE, guardHealth } from '../data/guards.js';
 import { T } from '../text/es.js';
 
@@ -494,17 +494,7 @@ export function drawEnemy(r, e) {
    * de todo el aviso de estado o lo que dice.
    */
   let arriba = fig.arriba;
-  if (e.health < e.maxHealth) {
-    const anchoMuesca = 3;
-    const total = e.maxHealth * (anchoMuesca + 1) - 1;
-    for (let i = 0; i < e.maxHealth; i++) {
-      r.rect(
-        e.x - total / 2 + i * (anchoMuesca + 1), arriba - 3, anchoMuesca, 2,
-        i < e.health ? '#e0c44a' : '#4a3a2a'
-      );
-    }
-    arriba -= 3;
-  }
+  if (e.health < e.maxHealth) arriba = dibujarVida(r, e.x, arriba, e.health, e.maxHealth);
 
   if (e.state === 'combat') {
     // 🔁 FIJO MIENTRAS PELEA: antes duraba un segundo (`alertMark`), y con el

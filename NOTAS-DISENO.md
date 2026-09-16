@@ -12553,9 +12553,8 @@ agachado, apuntar, las manos arriba del asaltado, la mochila que crece con el
 botín, el destello del balazo y los avisos "?" y "!" de siempre.
 
 **Lo que faltaba (2b, 2c, 2d):** las posturas sentado y rendido, los caídos, los
-jefes con su orilla y borrar `data/siluetas.js` — todo cerrado más abajo. Siguen
-pendientes las muescas de vida y los cartuchos del dinamitero, y el jinete
-espera a la etapa 5.
+jefes con su orilla, las muescas de vida, los cartuchos del dinamitero y borrar
+`data/siluetas.js` — todo cerrado más abajo. El jinete espera a la etapa 5.
 
 **MEDIDO:** sin errores. **0,97 ms por cuadro** con el vagón lleno, igual que
 antes de la gente nueva, porque las figuras se arman una sola vez.
@@ -12631,6 +12630,53 @@ redibuje el caballo junto con su jinete.
 **MEDIDO:** sin errores en la consola, y todo lo que se dibujaba se sigue
 dibujando: el Cazarrecompensas y el jugador en el asalto (mirados ampliados
 ×5), los guardias, los pasajeros y el galope con su jinete.
+
+**⚠️ NO JUGADO.**
+
+### 🔧 Cierre de la etapa 2: las muescas de vida y los cartuchos
+
+Dos cosas que habían quedado colgadas del arte nuevo.
+
+**LAS MUESCAS DE VIDA se habían quedado chicas.** Estaban dibujadas para una
+persona de 15 unidades y un solo color: dos rectangulitos pelados de 3×2, sin
+orilla. Al lado de alguien de 80 px eran dos manchitas amarillas **del mismo
+tamaño que el "?"**, y encimadas con él: no se sabía cuál era cuál.
+
+Ahora las dibuja `dibujarVida` (entities/figura.js), una sola función para el
+guardia y para el jefe:
+
+| | Antes | Ahora |
+|---|---|---|
+| Ancho de la fila | crecía con la vida (7 u con 2, 15 u con 4) | **fijo, 12 u** (15 el jefe) |
+| Alto | 2 u | **2,5 u** (3 el jefe) |
+| Orilla | ninguna | **2 puntos oscuros, la misma que la gente** |
+| Muesca vacía | `#4a3a2a` | `#4a3a22`, adentro de la orilla |
+
+El ancho fijo es lo que ya había aprendido la barra del jefe *(con 8 de vida y
+muescas de ancho fijo, la barra flotaba sobre medio vagón)*: **se reparte un
+ancho y de ahí sale la muesca, nunca al revés.** Y el paso se calcula en PUNTOS
+DE DIBUJO enteros, porque con pasos fraccionarios las muescas se agrupaban de a
+2-4-2. La barra del jefe pasó a usar la misma función: quedaron los dos iguales,
+que es lo que corresponde —es la misma información.
+
+**LOS CARTUCHOS DEL DINAMITERO ahora bajan de verdad.** Estaban clavados en
+cuatro: la bandolera se dibujaba llena aunque acabara de tirar las dos dinamitas.
+Eso rompía algo que estaba escrito en el diseño desde antes —*"la ventana se VE,
+porque los cartuchos se dibujan según lo que le queda"* (`dinamiteroRecarga`,
+data/config.js)—: mientras recarga está literalmente desarmado, y si la correa
+no cambia esa ventana no se puede aprovechar.
+
+Lleva **2 dinamitas** y la correa tiene **4 lugares** dibujados, así que cada
+dinamita son dos cartuchos: llena 4, con una sola 2, vacía 0. Se gastan de
+arriba hacia abajo (el de más arriba es el que agarra) y los gastados quedan
+como **huecos oscuros**, no desaparecen: se ve la correa vaciarse y volver a
+llenarse. El dato va por el dibujo (`extras` ahora recibe los datos de la
+figura) y **sólo se calcula para quien lleva bandolera**, para no guardar una
+figura distinta por cada guardia y por cada dinamita.
+
+**MEDIDO:** **0,57 ms por cuadro** con el vagón lleno, los 16 guardias heridos
+(todos dibujando muescas) y un tercio de ellos con bandolera. Sin errores en la
+consola.
 
 **⚠️ NO JUGADO.**
 

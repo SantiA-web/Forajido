@@ -22,6 +22,8 @@
 
 import { CONFIG } from '../data/config.js';
 import { EXPLOSIVES } from '../data/explosives.js';
+import { dibujarVida } from './figura.js';
+import { pieza, tono, NEGRO } from '../world/piezas.js';
 
 export function createCajon(x, y, tieneCartucho = true) {
   const t = EXPLOSIVES.cajonPolvora;
@@ -151,44 +153,80 @@ export function updateCajon(c, dt) {
  * franja y sin cartuchos es igual de peligroso y no te da nada (ver
  * `chanceCartucho` en data/explosives.js).
  */
-export function dibujarCuerpoCajon(r, x, y, hw, hh, cargado, golpeado, tieneCartucho = cargado) {
-  const col = CONFIG.colors;
-  const madera = golpeado ? '#fff' : '#a8814e';
-  const tapa   = golpeado ? '#fff' : '#c49b63';
-  const borde  = golpeado ? '#fff' : '#241b14';
+/** Un punto de dibujo: un cuarto de unidad, con la lupa de ×4. */
+export const PUNTO = 0.25;
 
-  // LOS CARTUCHOS, asomando por detrás de la tapa. Van ANTES del cuerpo para
-  // que la tapa los tape por abajo y se lea que salen de adentro del cajón.
-  if (tieneCartucho && !golpeado) {
-    for (const dx of [-4, 0, 4]) {
-      r.rect(x + dx - 1, y - hh - 4, 3, 5, col.dynamite);
-      r.rect(x + dx - 1, y - hh - 3, 3, 1, col.dynamiteBand);
+/**
+ * 🔁 EL CAJÓN, A LA RESOLUCIÓN NUEVA (etapa 4).
+ *
+ * Eran cinco rectángulos de unidades enteras. Ahora es una PIEZA que se arma
+ * una sola vez (`world/piezas.js`) con las tablas de la tapa, los flejes de
+ * hierro de los cantos y la orilla oscura de dos puntos que tiene todo lo
+ * demás. El tamaño va en la clave porque el cajón que RUEDA se achata y se
+ * ensancha con el tumbo, y cada medida es un dibujo distinto.
+ *
+ * LO QUE DICE SIGUE SIENDO LO MISMO, que es lo único que no se podía tocar:
+ * la franja roja cruzada = cargado (si te lo empujan encima, te mata); el
+ * hueco oscuro = vacío, "de acá ya saqué lo que había"; y los cartuchos
+ * asomando por detrás de la tapa, dibujados ANTES del cuerpo para que se lea
+ * que salen de adentro.
+ */
+function piezaCajon(W, H, cargado, golpeado, cartucho, dyn, band) {
+  const clave = `cajonc|${W}|${H}|${cargado ? 1 : 0}|${golpeado ? 1 : 0}|${cartucho ? 1 : 0}|${dyn}`;
+  const ARRIBA = 20;                       // lugar para los cartuchos que asoman
+  return pieza(clave, W + 4, H + 4 + ARRIBA, (p) => {
+    const y0 = ARRIBA;
+    const madera = golpeado ? '#fff' : '#a8814e';
+    const tapa   = golpeado ? '#fff' : '#c49b63';
+
+    if (cartucho && !golpeado) {
+      for (const dx of [-16, 0, 16]) {
+        const cx = Math.round(W / 2) + dx;
+        p(cx - 2, y0 - 14, 6, 18, NEGRO);
+        p(cx, y0 - 12, 3, 16, dyn);
+        p(cx, y0 - 9, 3, 3, band);
+      }
     }
-  }
 
-  // El contorno, y encima el cuerpo: el borde oscuro es lo que lo separa del
-  // piso marrón, que es del mismo tono que cualquier madera del tren.
-  r.rect(x - hw - 1, y - hh - 1, hw * 2 + 2, hh * 2 + 2, borde);
-  r.rect(x - hw, y - hh, hw * 2, hh * 2, madera);
-  r.rect(x - hw, y - hh, hw * 2, 2, tapa);
+    p(0, y0, W + 4, H + 4, NEGRO);
+    p(2, y0 + 2, W, H, madera);
+    // Las tablas de la tapa, a lo largo.
+    for (let i = 0; i * 13 < H; i++) {
+      const ty = y0 + 3 + i * 13;
+      const alto = Math.min(12, y0 + 2 + H - ty);
+      if (alto <= 1) break;
+      p(3, ty, W - 2, alto, golpeado ? '#fff' : tono(madera, 0.96 + (i % 3) * 0.06));
+      p(3, ty, W - 2, 1, golpeado ? '#fff' : tapa);
+    }
+    // Los flejes de hierro de los cantos: es lo que lo hace un cajón de carga
+    // y no una caja de madera cualquiera.
+    p(2, y0 + 2, 4, H, golpeado ? '#fff' : tono(madera, 0.62));
+    p(W - 2, y0 + 2, 4, H, golpeado ? '#fff' : tono(madera, 0.62));
 
-  if (cargado && !golpeado) {
-    // LA FRANJA ROJA, cruzada de lado a lado: se lee aunque el cajón quede
-    // medio tapado por un guardia que le pasa por delante.
-    r.rect(x - hw, y - 1, hw * 2, 4, col.dynamite);
-    r.rect(x - hw, y - 1, hw * 2, 1, col.dynamiteBand);
-  } else if (!golpeado) {
-    /**
-     * VACÍO: la tapa abierta y el hueco oscuro adentro, en el mismo lugar
-     * donde el cargado tiene la franja. No alcanza con SACAR el rojo — un
-     * cajón liso se leería como "todavía no lo abrí". El agujero dice
-     * "de acá ya saqué lo que había".
-     */
-    r.rect(x - hw + 2, y - 1, hw * 2 - 4, 4, '#2f2419');
-    r.rect(x - hw + 2, y - 1, hw * 2 - 4, 1, '#6b5842');
-  }
+    if (cargado && !golpeado) {
+      const fy = y0 + Math.round(H / 2) - 6;
+      p(2, fy, W, 12, dyn);
+      p(2, fy, W, 3, band);
+      p(2, fy + 11, W, 1, tono(dyn, 0.6));
+    } else if (!golpeado) {
+      const fy = y0 + Math.round(H / 2) - 6;
+      p(8, fy, W - 12, 12, '#2f2419');
+      p(8, fy, W - 12, 2, '#6b5842');
+      p(10, fy + 3, W - 16, 6, '#211a12');
+    }
+  });
 }
 
+export function dibujarCuerpoCajon(r, x, y, hw, hh, cargado, golpeado, tieneCartucho = cargado) {
+  const col = CONFIG.colors;
+  const W = Math.max(8, Math.round((hw * 2) / PUNTO));
+  const H = Math.max(8, Math.round((hh * 2) / PUNTO));
+  const img = piezaCajon(W, H, cargado, golpeado, tieneCartucho && !golpeado,
+    col.dynamite, col.dynamiteBand);
+  // La pieza tiene lugar arriba para los cartuchos: se ancla por el cuerpo.
+  r.ctx.drawImage(img, x - (img.width * PUNTO) / 2, y - hh - 21 * PUNTO,
+    img.width * PUNTO, img.height * PUNTO);
+}
 export function drawCajon(r, c) {
   const w = c.hw, h = c.hh;
   const golpeado = c.hitFlash > 0;
@@ -210,12 +248,5 @@ export function drawCajon(r, c) {
    * regresiva de una explosión: el que le pegó dos tiros sin querer tiene que
    * poder ver que le queda uno.
    */
-  if (c.vida < c.vidaMax) {
-    const ancho = 3;
-    const total = c.vidaMax * (ancho + 1) - 1;
-    for (let i = 0; i < c.vidaMax; i++) {
-      r.rect(c.x - total / 2 + i * (ancho + 1), c.y - h - 6, ancho, 2,
-        i < c.vida ? '#e0c44a' : '#4a3a2a');
-    }
-  }
+  if (c.vida < c.vidaMax) dibujarVida(r, c.x, c.y - h - 3, c.vida, c.vidaMax, { ancho: 13 });
 }

@@ -284,11 +284,16 @@ export function createRenderer(canvas, vista) {
       ctx.restore();
     },
 
-    line(x1, y1, x2, y2, color, alpha = 1) {
+    /**
+     * `grosor` va en UNIDADES del mundo, así que 0,25 es un punto de dibujo —
+     * la raya más fina que existe con la lupa de ×4. Por omisión sigue siendo
+     * de una unidad, que es lo que dibujaba antes de que hubiera puntos.
+     */
+    line(x1, y1, x2, y2, color, alpha = 1, grosor = 1) {
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = grosor;
       ctx.beginPath();
       ctx.moveTo(q(x1) + 0.5, q(y1) + 0.5);
       ctx.lineTo(q(x2) + 0.5, q(y2) + 0.5);

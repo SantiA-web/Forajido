@@ -19,6 +19,8 @@
 
 import { CONFIG } from '../data/config.js';
 import { dibujarCuerpoCajon } from './cajon.js';
+import { dibujarVida } from './figura.js';
+import { pieza, tono, NEGRO } from '../world/piezas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -141,12 +143,7 @@ export function drawRodante(r, ro) {
   // guardias: si el juego ya tiene una forma de decir "cuánto aguanta esto",
   // inventar otra sólo obliga a aprender dos.
   if (ro.balea && ro.vida < ro.vidaMax) {
-    const ancho = 3;
-    const total = ro.vidaMax * (ancho + 1) - 1;
-    for (let i = 0; i < ro.vidaMax; i++) {
-      r.rect(ro.x - total / 2 + i * (ancho + 1), ro.y - ro.hh - 6, ancho, 2,
-        i < ro.vida ? '#e0c44a' : '#4a3a2a');
-    }
+    dibujarVida(r, ro.x, ro.y - ro.hh - 3, ro.vida, ro.vidaMax, { ancho: 13 });
   }
 }
 
@@ -159,28 +156,59 @@ export function drawRodante(r, ro) {
  * y se desplazan mientras gira. Ese desplazamiento es todo lo que hace que se
  * lea "esto está rodando" y no "esto se desliza".
  */
+/** Un punto de dibujo: un cuarto de unidad, con la lupa de ×4. */
+const PUNTO = 0.25;
+/** En cuántos cuadros se parte una vuelta del barril. */
+const CUADROS = 8;
+
+/**
+ * 🔁 EL BARRIL, A LA RESOLUCIÓN NUEVA (etapa 4).
+ *
+ * Era el mismo dibujo pero en unidades enteras: las duelas eran rayas de
+ * CUATRO puntos de ancho y los aros de ocho. Ahora las duelas son de un punto,
+ * los aros llevan su remache y la madera tiene veta, y la vuelta se parte en
+ * ocho cuadros que se guardan una sola vez cada uno (el mismo taller que el
+ * vagón y la gente, `world/piezas.js`).
+ *
+ * Lo que lo hace leer como algo que RUEDA sigue siendo lo mismo: las duelas
+ * corren y los aros se quedan quietos. Sin los aros quietos, un barril rodando
+ * y un barril deslizándose se dibujan igual.
+ */
+function piezaBarril(madera, luz, aro, cuadro, golpeado) {
+  const W = 40, H = 32;
+  return pieza(`barril|${madera}|${aro}|${cuadro}|${golpeado ? 1 : 0}`, W, H, (p) => {
+    const cuerpo = golpeado ? '#fff' : madera;
+    const duela = golpeado ? '#fff' : tono(madera, 0.62);
+    const alto = golpeado ? '#fff' : luz;
+    // El cuerpo, con las puntas comidas: un rectángulo pelado se lee como una
+    // tabla, y con las esquinas mordidas se lee como algo redondo.
+    p(0, 6, W, H - 12, NEGRO);
+    p(4, 2, W - 8, H - 4, NEGRO);
+    p(2, 8, W - 4, H - 16, cuerpo);
+    p(6, 4, W - 12, H - 8, cuerpo);
+    p(6, 4, W - 12, 3, alto);
+    p(6, H - 7, W - 12, 3, tono(madera, 0.5));
+    // Las duelas: cruzadas al pasillo, corriéndose con el giro.
+    for (let i = 0; i < 6; i++) {
+      const d = ((cuadro / CUADROS) + i / 6) % 1;
+      const px = Math.round(3 + d * (W - 7));
+      p(px, 6, 1, H - 12, duela);
+    }
+    // Los dos aros de metal, quietos, con su remache.
+    for (const ay of [7, H - 11]) {
+      p(1, ay, W - 2, 4, golpeado ? '#fff' : aro);
+      p(1, ay, W - 2, 1, golpeado ? '#fff' : tono(aro, 1.25));
+      p(11, ay + 1, 2, 2, golpeado ? '#fff' : tono(aro, 0.6));
+      p(W - 13, ay + 1, 2, 2, golpeado ? '#fff' : tono(aro, 0.6));
+    }
+  });
+}
+
 function dibujarBarril(r, ro, col) {
-  const w = ro.hw, h = ro.hh;
-  const madera = ro.hitFlash > 0 ? '#fff' : col.seat;
-  const oscuro = ro.hitFlash > 0 ? '#fff' : '#5b3d27';
-
-  // El cuerpo, con las puntas comidas: un rectángulo pelado se lee como una
-  // tabla, y con las esquinas mordidas se lee como algo redondo.
-  r.rect(ro.x - w, ro.y - h + 2, w * 2, h * 2 - 4, madera);
-  r.rect(ro.x - w + 2, ro.y - h, w * 2 - 4, h * 2, madera);
-  r.rect(ro.x - w + 2, ro.y - h, w * 2 - 4, 2, col.seatTop);
-
-  // Las duelas: líneas cruzadas al pasillo que se corren con el giro.
-  for (let i = 0; i < 4; i++) {
-    const d = ((ro.giro + i * 0.9) % 3.6) / 3.6;
-    const px = Math.round(ro.x - w + 1 + d * (w * 2 - 2));
-    r.rect(px, ro.y - h + 2, 1, h * 2 - 4, oscuro);
-  }
-
-  // Los dos aros de metal, quietos: son la referencia contra la que se ve
-  // moverse a las duelas.
-  r.rect(ro.x - w + 1, ro.y - h + 3, w * 2 - 2, 2, col.strongbox);
-  r.rect(ro.x - w + 1, ro.y + h - 5, w * 2 - 2, 2, col.strongbox);
+  const cuadro = Math.floor(((ro.giro % 3.6) / 3.6) * CUADROS + CUADROS) % CUADROS;
+  const img = piezaBarril(col.seat, col.seatTop, col.strongbox, cuadro, ro.hitFlash > 0);
+  r.ctx.drawImage(img, ro.x - (img.width * PUNTO) / 2, ro.y - (img.height * PUNTO) / 2,
+    img.width * PUNTO, img.height * PUNTO);
 }
 
 /**
@@ -258,26 +286,26 @@ function dibujarRes(r, ro, col) {
  * vos: si el que se te viene encima te tumba o te mata.
  */
 function dibujarPolvora(r, ro) {
-  const tumbo = Math.abs(Math.sin(ro.giro * 1.6));
+  // EL TUMBO VA EN PASOS y no continuo: cada medida distinta es una pieza
+  // guardada distinta, y con el seno crudo serían cientos.
+  const tumbo = Math.round(Math.abs(Math.sin(ro.giro * 1.6)) * 4) / 4;
   const w = ro.hw - 1 + tumbo * 1.5;
   const h = ro.hh - 3 - tumbo * 1.5;
   dibujarCuerpoCajon(r, ro.x, ro.y, w, h, ro.cargado, ro.hitFlash > 0, ro.tieneCartucho);
 }
 
-/** El cajón: cuadrado, angular, y va dando tumbos de canto en vez de rodar. */
+/**
+ * EL CAJÓN QUE RUEDA: va dando tumbos de canto en vez de rodar.
+ *
+ * 🔁 Se dibuja con EL MISMO CUERPO que el que está quieto en el vagón
+ * (`dibujarCuerpoCajon`), igual que ya hacía el de pólvora. Antes tenía su
+ * propio dibujo, parecido pero no igual, y al pasar todo a la resolución nueva
+ * quedó a la vista lo que eso costaba: el que rodaba se veía liso al lado del
+ * barril y del que se empuja. Es la misma cosa en otra situación.
+ */
 function dibujarCajon(r, ro, col) {
-  const tumbo = Math.sin(ro.giro * 1.6);
-  const w = ro.hw - 1 + Math.abs(tumbo) * 1.5;
-  const h = ro.hh - 2 - Math.abs(tumbo) * 1.5;
-  const madera = ro.hitFlash > 0 ? '#fff' : col.cargo.correo[0];
-  const claro = ro.hitFlash > 0 ? '#fff' : col.cargo.correo[1];
-
-  r.rect(ro.x - w, ro.y - h, w * 2, h * 2, madera);
-  r.rect(ro.x - w, ro.y - h, w * 2, 2, claro);
-
-  // Los refuerzos en cruz de las tapas de un cajón de carga.
-  r.rect(ro.x - w, ro.y - 1, w * 2, 2, claro);
-  r.rect(ro.x - 1, ro.y - h, 2, h * 2, claro);
-  r.rect(ro.x - w, ro.y - h, 1, h * 2, '#5b3d27');
-  r.rect(ro.x + w - 1, ro.y - h, 1, h * 2, '#5b3d27');
+  const tumbo = Math.round(Math.abs(Math.sin(ro.giro * 1.6)) * 4) / 4;
+  const w = ro.hw - 1 + tumbo * 1.5;
+  const h = ro.hh - 2 - tumbo * 1.5;
+  dibujarCuerpoCajon(r, ro.x, ro.y, w, h, false, ro.hitFlash > 0, false);
 }

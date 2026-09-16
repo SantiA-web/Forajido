@@ -31,12 +31,12 @@ export const PUNTO = 0.25;
 const T = 64;
 const U = 4;
 /** La misma orilla oscura que lleva la gente. */
-const NEGRO = '#1a120c';
+export const NEGRO = '#1a120c';
 /** Cuántas variantes hay de cada pieza. Pocas, para guardar pocos dibujos. */
 const VARIANTES = 4;
 
 /** El mismo color multiplicado por `f` (0,7 es 30% más oscuro). */
-function tono(hex, f) {
+export function tono(hex, f) {
   if (typeof hex !== 'string' || hex.length !== 7) return hex;
   const n = parseInt(hex.slice(1), 16);
   const c = (s) => Math.max(0, Math.min(255, Math.round(((n >> s) & 255) * f)));
@@ -67,6 +67,23 @@ function armar(clave, hacer) {
   let img = guardadas.get(clave);
   if (!img) { img = hacer(); guardadas.set(clave, img); }
   return img;
+}
+
+/**
+ * UNA PIEZA CUALQUIERA, para lo que no es una casilla del tren: los barriles,
+ * el botín, la dinamita. Se arma una sola vez con la misma caja que todo lo
+ * demás, así hay UN taller de piezas y no dos.
+ *
+ * `clave` tiene que llevar TODO lo que cambia el dibujo (el color, el cuadro
+ * de la animación, si está golpeado): si dos cosas distintas comparten clave,
+ * la segunda se dibuja como la primera.
+ */
+export function pieza(clave, ancho, alto, dibujar) {
+  return armar(clave, () => {
+    const { c, p } = lienzo(ancho, alto);
+    dibujar(p, c.width, c.height);
+    return c;
+  });
 }
 
 /** Cuantas piezas hay guardadas y cuanto ocupan. Existe para poder medirlo. */

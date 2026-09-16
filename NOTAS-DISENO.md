@@ -12853,9 +12853,17 @@ el suelo del asalto va un paso más claro que el del galope: allá el desierto
 llena la pantalla con sus cactus y sus piedras y un suelo casi negro se lee
 igual; acá es una franja angosta.
 
-**MEDIDO:** sin errores, mirado de día y de noche.
+**MEDIDO:** sin errores, mirado de día y de noche, en 1920×1080 y en
+1366×768, y también desde el techo.
 
-**⚠️ NO JUGADO.**
+⚠️ **SIGUE SIN GUSTARLE, Y QUEDA ABIERTO** *(Santi, después de jugarlo: "la
+verdad es que se sigue viendo demasiado feo, pero lo dejaremos para después")*.
+Lo de arriba arregló la CAUSA —ya no es un color plano— pero no alcanzó. Hay
+que volver, y probablemente con lo mismo que funcionó para la gente y para el
+vagón: dibujar el desierto A LA RESOLUCIÓN NUEVA (piedras, matas y cactus
+vistos desde arriba, cada uno una pieza guardada) en vez de seguir con las
+rayitas del parallax, que son de la resolución vieja. Va con la ETAPA 5, que
+es la del galope y el afuera.
 
 ### 🧗 ETAPA 7: el techo — la última
 
@@ -12867,6 +12875,49 @@ queda así: **1** la lupa ✅, **2** la gente ✅, **3** el vagón ✅, **4** lo
 objetos y las balas, **5** el galope y el afuera (con el jinete, que es lo último
 que queda del dibujo viejo), **6** las pantallas fijas, y **7 el techo**, que se
 lleva una etapa entera para él solo.
+
+### 🎯 ETAPA 4: los objetos y las balas
+
+Lo último que quedaba dibujado en unidades enteras adentro del vagón. El patrón
+es el mismo de siempre: cada cosa se arma UNA vez como pieza y después se
+estampa, con el mismo taller que el vagón y la gente (`world/piezas.js`, que
+ahora exporta `pieza()` para lo que no es una casilla del tren).
+
+| | Antes | Ahora |
+|---|---|---|
+| Bala | cuadrado de 1 unidad + estela de 1 unidad de ancho | grano de 2 puntos con núcleo, estela de **un punto** |
+| Fogonazo | cuadrado de 4×4 unidades | tres lenguas de fuego saliendo del caño |
+| Bolsa | 2 rectángulos | arpillera panzona, atada, con los pliegues |
+| Caja fuerte | 3 rectángulos | chapa remachada y cerradura; reventada, el oro adentro y la tapa arrancada |
+| Dinamita | 2 rectángulos | cartucho con papel encerado, dos bandas y mecha |
+| Barril | 8 rectángulos | duelas, dos aros con remaches, **8 cuadros** de la rodada |
+| Cajón | 5 rectángulos | tablas y flejes de hierro |
+| Mercadería (11 cosas) | 3 o 4 rectángulos cada una | pieza propia con orilla y su detalle (los cuellos de las botellas, la cruz del botiquín, el sello de los papeles) |
+
+**LAS MUESCAS DE DAÑO de los cajones y los barriles pasaron a `dibujarVida`**,
+la misma de los guardias y los jefes. Eran la tercera y la cuarta copia del
+mismo bucle: ahora hay una.
+
+**EL CAJÓN QUE RUEDA USA EL MISMO CUERPO QUE EL QUE SE EMPUJA.** Tenía un dibujo
+propio, parecido pero no igual, y la resolución nueva lo dejó a la vista: se
+veía liso al lado del barril. Es la misma cosa en otra situación.
+
+🔻 **TRES COSAS SE VIERON RECIÉN AL MIRARLAS.** La primera bolsa era un cuadrado
+con un nudo arriba y se leía como un **cajón dorado** —justo lo que no puede
+ser, porque en el tren de carga hay cajones de verdad—: lo que la hace bolsa es
+la SILUETA, angosta arriba y panzona abajo. La tapa arrancada de la caja fuerte
+se dibujaba FUERA de su lienzo y el navegador la recortaba entera, así que la
+reventada se veía sin tapa. Y el fogonazo, que antes era un cuadrado grande y
+tapaba todo, ahora sale de un punto: hubo que medir dónde está la boca del arma
+de verdad (3 unidades más cerca y 2,5 más arriba de donde estaba el cuadrado).
+
+**MEDIDO:** **909 llamadas de dibujo por cuadro** en el vagón de pasajeros — el
+vagón viejo, sin nada de esto, hacía **1193**. **93 piezas guardadas, 1,5 MB**
+después de recorrer cinco trenes enteros con barriles, cajones, pólvora y reses
+rodando, los cajones golpeados y heridos, y todo el botín a la vista. Sin
+errores, ni ahí ni en el galope, el campamento y el pueblo.
+
+**⚠️ NO JUGADO.**
 
 ---
 

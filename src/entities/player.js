@@ -12,6 +12,8 @@
 
 import { CONFIG } from '../data/config.js';
 import { dibujarPersona, dibujarTendido, faseDeAndar } from "./figura.js";
+import { dibujarFogonazo } from './bullet.js';
+import { piezaDinamita } from './explosive.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { MELEE, DEFAULT_MELEE } from '../data/melee.js';
 import { EXPLOSIVES, DEFAULT_EXPLOSIVE } from '../data/explosives.js';
@@ -896,8 +898,16 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   }
 
   if (p.muzzle > 0) {
-    // A la altura de la mano, donde termina el caño (ver `dibujarPersona`).
-    r.box(bx + Math.cos(p.aim) * 10, manoY + Math.sin(p.aim) * 10, 2, 2, '#fff3b0');
+    /**
+     * EN LA PUNTA DEL CAÑO, no más allá. Con el cuadrado viejo daba igual dónde
+     * caía el centro porque era grande y lo tapaba todo; el fogonazo nuevo SALE
+     * de un punto hacia adelante, así que si ese punto no es la boca del arma
+     * queda un hueco entre el caño y el fuego (medido: tres unidades).
+     */
+    // El caño va 2,5 unidades más arriba que `manoY` (medido): sin esa cuenta
+    // el fuego sale de abajo del arma, no de la boca.
+    dibujarFogonazo(r, bx + Math.cos(p.aim) * 6.5, manoY - 2.5 + Math.sin(p.aim) * 6.5,
+      p.aim, p.muzzle / CONFIG.feel.muzzleTime);
   }
 
   /**
@@ -914,7 +924,11 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     const hx = p.x + Math.cos(p.aim) * 7;
     const hy = manoY + Math.sin(p.aim) * 7 - 2;
 
-    r.box(hx, hy, 2, 3, col.dynamite);
+    // El mismo cartucho que el tirado en el piso: es la misma cosa en otra
+    // situación, y si se vieran distinto habría que aprender dos.
+    const cart = piezaDinamita(col.dynamite, col.dynamiteBand);
+    r.ctx.drawImage(cart, hx - (cart.width * 0.25) / 2, hy - (cart.height * 0.25) / 2,
+      cart.width * 0.25, cart.height * 0.25);
     const ritmo = 6 + (1 - restante) * 26;
     if (Math.floor(p.stepPhase * ritmo) % 2 === 0) {
       r.box(hx, hy - 4, 1 + Math.round((1 - restante) * 2), 1, '#fff4c0');

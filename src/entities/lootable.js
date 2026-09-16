@@ -8,6 +8,7 @@
 
 import { CONFIG } from '../data/config.js';
 import { LOOT_TYPES } from '../data/wagons.js';
+import { pieza, tono, NEGRO } from '../world/piezas.js';
 
 export function createLootable(x, y, typeId, rng) {
   const type = LOOT_TYPES[typeId];
@@ -94,6 +95,115 @@ export function esCajaFuerte(l) {
   return l.typeId === 'strongbox' || l.typeId === 'cajaOculta';
 }
 
+/** Un punto de dibujo: un cuarto de unidad, con la lupa de ×4. */
+const PUNTO = 0.25;
+
+/**
+ * 🔁 LA BOLSA Y LA CAJA FUERTE, A LA RESOLUCIÓN NUEVA (etapa 4).
+ *
+ * Eran dos o tres rectángulos de unidades enteras: con la lupa, la bolsa de
+ * monedas eran dos ladrillos amarillos de veinte por dieciséis puntos. Ahora
+ * cada una es una PIEZA que se arma una sola vez (el mismo taller que el vagón
+ * y la gente, `world/piezas.js`) y después sólo se estampa.
+ *
+ * LO QUE TIENE QUE DECIR CADA UNA no cambió, y es lo único que importa: la
+ * bolsa es blanda, de arpillera y atada arriba; la caja fuerte es de chapa,
+ * dura y remachada; y la reventada tiene la tapa colgando de un costado,
+ * porque en un vagón donde ya volaste algo tenés que saber de un vistazo cuál
+ * te va a costar ocho segundos y cuál es levantar y seguir.
+ */
+/**
+ * 🔻 UNA BOLSA NO ES UN RECTÁNGULO. La primera versión era un cuadrado con un
+ * nudo arriba y se leía como un CAJÓN DORADO, que es justo lo que no puede
+ * ser: en el tren de carga hay cajones de verdad y confundirlos sería confundir
+ * lo que te llevás con lo que hay que romper. Lo que la hace bolsa es la
+ * SILUETA: angosta arriba, panzona abajo, con las esquinas comidas y los
+ * pliegues de la arpillera bajando desde la atadura.
+ */
+function piezaBolsa(color) {
+  const W = 40, H = 36;
+  return pieza(`bolsa|${color}`, W, H, (p) => {
+    const tela = tono(color, 0.74), luz = tono(color, 1.02), sombra = tono(color, 0.48);
+    // La silueta, por filas: de angosta arriba a panzona abajo y de vuelta.
+    const filas = [[13, 14], [11, 18], [9, 22], [7, 26], [6, 28], [6, 28], [7, 26], [9, 22]];
+    const alturas = [3, 3, 3, 4, 5, 4, 3, 2];
+    let y = 8;
+    for (let i = 0; i < filas.length; i++) {
+      const [x0, an] = filas[i], alto = alturas[i];
+      p(x0 - 2, y, an + 4, alto, NEGRO);
+      p(x0, y, an, alto, tela);
+      y += alto;
+    }
+    // La luz cae de arriba a la izquierda; abajo, la sombra del bulto apoyado.
+    p(10, 12, 9, 10, luz);
+    p(8, 24, 24, 4, sombra);
+    // Los pliegues, que bajan desde la atadura: sin ellos vuelve a ser un bulto.
+    for (const [px, py, ph] of [[15, 11, 12], [21, 12, 14], [26, 14, 9]]) {
+      p(px, py, 1, ph, sombra);
+    }
+    // La boca atada y lo que asoma: eso dice que adentro hay plata.
+    p(14, 1, 12, 8, NEGRO);
+    p(16, 2, 8, 6, tono(color, 0.6));
+    p(15, 4, 10, 2, '#6a5334');
+    p(19, 0, 3, 3, '#6a5334');
+    p(18, 5, 3, 2, luz);
+    p(22, 6, 2, 2, luz);
+  });
+}
+
+function piezaCajaFuerte(base, adentro, reventada) {
+  const W = 58, H = 50;
+  return pieza(`caja|${base}|${adentro}|${reventada ? 1 : 0}`, W, H, (p) => {
+    const chapa = '#3c4149', borde = '#2b2f36', luz = '#5a616b';
+    p(0, 2, W, H - 2, NEGRO);
+    p(2, 4, W - 4, H - 8, reventada ? borde : chapa);
+    p(2, 4, W - 4, 3, luz);                        // la tapa, vista de arriba
+    p(2, H - 7, W - 4, 3, borde);
+    // Los cantos remachados de una caja de chapa.
+    for (const x of [4, W - 8]) {
+      p(x, 7, 4, H - 15, tono(chapa, 1.12));
+      for (let i = 0; i < 4; i++) p(x + 1, 10 + i * 9, 2, 2, luz);
+    }
+    if (reventada) {
+      /**
+       * REVENTADA: el hueco negro y LO DE ADENTRO A LA VISTA, en el color del
+       * botín y no en el de la chapa —si el interior fuera gris como el resto,
+       * una caja abierta y una cerrada se diferenciarían sólo por la tapa—.
+       * Y la tapa arrancada cuelga de un costado, doblada: en un vagón donde ya
+       * volaste algo tenés que saber de un vistazo cuál te va a costar ocho
+       * segundos y cuál es levantar y seguir.
+       */
+      p(11, 10, W - 22, H - 22, NEGRO);
+      p(13, 12, W - 26, H - 26, tono(adentro, 0.55));
+      p(15, 15, W - 30, 7, adentro);
+      p(18, 26, 6, 4, tono(adentro, 1.15));
+      p(27, 29, 7, 4, tono(adentro, 1.15));
+      p(34, 24, 4, 3, tono(adentro, 1.15));
+      /**
+       * LA TAPA ARRANCADA, caída de costado sobre el borde de la caja.
+       *
+       * 🔻 El primer intento la colgaba FUERA del lienzo y el navegador la
+       * recortaba entera: la caja reventada se veía sin tapa, que es justo el
+       * detalle que la distingue. Una pieza no puede dibujar fuera de su propio
+       * lienzo — si tiene que asomar, el lienzo tiene que ser más grande.
+       */
+      p(1, 0, 26, 12, NEGRO);
+      p(3, 2, 22, 8, chapa);
+      p(3, 2, 22, 3, luz);
+      p(6, 6, 16, 2, tono(chapa, 0.66));
+      p(23, 3, 4, 8, tono(chapa, 0.8));
+    } else {
+      p(11, 10, W - 22, H - 22, base);
+      p(13, 12, W - 26, 5, tono(base, 1.18));
+      // La cerradura: es lo que la hace una caja fuerte y no un cajón de metal.
+      p(24, 22, 10, 10, borde);
+      p(26, 24, 6, 6, luz);
+      p(28, 26, 2, 2, borde);
+      p(23, 26, 12, 2, luz);
+    }
+  });
+}
+
 export function drawLootable(r, l) {
   const col = CONFIG.colors;
   // Escondida: no hay nada que ver. Ni una silueta, ni una sombra — si algo
@@ -121,29 +231,11 @@ export function drawLootable(r, l) {
   if (l.objeto) { dibujarObjeto(r, l, col); return; }
 
   const isBox = esCajaFuerte(l);
-  const base = isBox ? col.strongbox : col.bagLoot;
-
-  if (isBox && l.reventada) {
-    /**
-     * REVENTADA: la chapa abierta y lo de adentro a la vista.
-     *
-     * Se dibuja distinta a una cerrada por un motivo concreto: en un vagón
-     * donde ya volaste algo, tenés que poder saber de un vistazo cuál caja
-     * todavía te va a costar ocho segundos y cuál es levantar y seguir. La
-     * puerta doblada hacia un lado es toda la diferencia.
-     */
-    r.box(l.x, l.y, 7, 6, '#2b2f36');
-    r.box(l.x + 1, l.y, 5, 4, base);
-    r.rect(l.x - 7, l.y - 5, 3, 8, '#3c4149');   // la tapa arrancada, colgando
-    r.box(l.x + 1, l.y, 2, 1, col.bagLoot);      // lo que hay adentro
-  } else if (isBox) {
-    r.box(l.x, l.y, 7, 6, '#3c4149');
-    r.box(l.x, l.y, 6, 5, base);
-    r.box(l.x, l.y, 2, 2, '#3c4149');
-  } else {
-    r.box(l.x, l.y, 5, 4, '#7a5f1e');
-    r.box(l.x, l.y - 1, 4, 3, base);
-  }
+  const img = isBox
+    ? piezaCajaFuerte(col.strongbox, col.bagLoot, !!l.reventada)
+    : piezaBolsa(col.bagLoot);
+  r.ctx.drawImage(img, l.x - (img.width * PUNTO) / 2, l.y - (img.height * PUNTO) / 2,
+    img.width * PUNTO, img.height * PUNTO);
 
   // Barra de progreso mientras lo estás abriendo.
   if (l.progress > 0) {
@@ -170,6 +262,120 @@ export function drawLootable(r, l) {
  * flotando, y es la mitad de por qué esto se siente "físico" y el cuadrado
  * amarillo no.
  */
+/**
+ * 🔁 LA MERCADERÍA DEL TREN DE CARGA, A LA RESOLUCIÓN NUEVA (etapa 4).
+ *
+ * *(Santi: "lo que recoges no puede parecer lo mismo que en el de pasajeros (un
+ * cuadrado amarillo en el piso). Tiene que ser más físico y real")*. Eso ya
+ * estaba resuelto; lo que faltaba era el TAMAÑO DEL PUNTO: cada cosa se dibujaba
+ * con tres o cuatro rectángulos de unidades enteras, o sea de cuatro por cuatro
+ * puntos cada uno. Un fardo de catorce por diez puntos no entra en eso.
+ *
+ * Cada una es ahora una pieza guardada, con la orilla oscura de dos puntos que
+ * lleva todo lo demás del juego y UN detalle que la identifica: los cuellos de
+ * las botellas, las sogas del fardo, la cruz del botiquín, el sello de los
+ * papeles. El NIVEL (común, valioso, raro) sigue siendo el color, que es lo que
+ * dice de un vistazo cuánto vale sin tener que leer nada.
+ */
+function piezaObjeto(dibujo, base, claro, oscuro) {
+  const W = 48, H = 40, cx = 24, cy = 22;
+  return pieza(`obj|${dibujo}|${base}|${claro}`, W, H, (p) => {
+    /** Un bloque centrado, con su orilla: es como se dibuja casi todo acá. */
+    const caja = (dx, dy, w, h, color, luz) => {
+      p(cx + dx - w / 2 - 2, cy + dy - h / 2 - 2, w + 4, h + 4, NEGRO);
+      p(cx + dx - w / 2, cy + dy - h / 2, w, h, color);
+      if (luz) p(cx + dx - w / 2, cy + dy - h / 2, w, 3, luz);
+    };
+
+    switch (dibujo) {
+      case 'cajon':                        // tapa y dos listones cruzados
+        caja(0, 0, 38, 28, base, claro);
+        p(cx - 19, cy - 2, 38, 2, oscuro);
+        p(cx - 2, cy - 14, 4, 28, oscuro);
+        break;
+
+      case 'botellas':                     // la reja de arriba y los cuellos
+        for (const dx of [-13, -5, 3, 11]) {
+          p(cx + dx - 2, cy - 24, 6, 12, NEGRO);
+          p(cx + dx - 1, cy - 22, 4, 10, '#5a6a4a');
+          p(cx + dx - 1, cy - 22, 4, 2, '#7e8e66');
+        }
+        caja(0, 2, 38, 26, base, claro);
+        for (const dx of [-13, -5, 3, 11]) p(cx + dx - 1, cy - 10, 4, 4, oscuro);
+        break;
+
+      case 'fardo':                        // alto, con dos sogas cruzándolo
+        caja(0, 0, 32, 32, base, claro);
+        p(cx - 16, cy - 9, 32, 3, oscuro);
+        p(cx - 16, cy + 5, 32, 3, oscuro);
+        p(cx - 16, cy - 8, 32, 1, tono(base, 1.2));
+        break;
+
+      case 'rollo':                        // un cilindro, con la espiral en la punta
+        caja(0, 0, 42, 20, base, claro);
+        p(cx - 21, cy - 10, 8, 20, oscuro);
+        p(cx - 19, cy - 6, 4, 12, claro);
+        p(cx - 18, cy - 3, 2, 6, oscuro);
+        p(cx + 13, cy - 10, 8, 20, tono(base, 0.78));
+        break;
+
+      case 'saco':                         // panzón, con la boca atada arriba
+        caja(0, 4, 28, 24, base, claro);
+        p(cx - 7, cy - 16, 14, 10, NEGRO);
+        p(cx - 5, cy - 14, 10, 8, tono(base, 0.8));
+        p(cx - 6, cy - 11, 12, 3, oscuro);
+        p(cx - 9, cy + 2, 4, 12, tono(base, 0.76));
+        break;
+
+      case 'estuche':                      // tapa, bisagra y broche
+        caja(0, 0, 40, 18, oscuro, null);
+        p(cx - 18, cy - 7, 36, 7, base);
+        p(cx - 18, cy - 7, 36, 2, claro);
+        p(cx - 18, cy - 1, 36, 2, tono(oscuro, 1.6));
+        p(cx - 3, cy - 4, 6, 10, claro);
+        break;
+
+      case 'botiquin':                     // la cruz, que es lo único que hay que reconocer
+        caja(0, 0, 32, 24, '#b9b0a0', '#d6cdbc');
+        p(cx - 3, cy - 9, 6, 18, '#a83c32');
+        p(cx - 11, cy - 3, 22, 6, '#a83c32');
+        p(cx - 11, cy - 3, 22, 1, '#c85a4a');
+        break;
+
+      case 'lingotes':                     // tres barras apiladas, escalonadas
+        caja(2, 8, 34, 10, base, claro);
+        caja(-3, 0, 32, 10, tono(base, 1.1), claro);
+        caja(2, -8, 28, 10, base, claro);
+        p(cx - 12, cy - 10, 10, 2, '#fff2c0');
+        break;
+
+      case 'papeles':                      // el atado y el sello rojo
+        caja(0, 0, 28, 22, '#cdb68d', '#e2d0ac');
+        p(cx - 14, cy - 3, 28, 3, '#a8977c');
+        p(cx - 14, cy + 4, 28, 2, '#a8977c');
+        p(cx + 4, cy + 2, 7, 7, NEGRO);
+        p(cx + 5, cy + 3, 5, 5, '#8c2f26');
+        break;
+
+      case 'bolsita':                      // chica, atada, con brillo
+        caja(0, 4, 20, 16, '#a89070', '#c0a888');
+        p(cx - 5, cy - 10, 10, 8, NEGRO);
+        p(cx - 3, cy - 8, 6, 6, '#6b5236');
+        p(cx + 1, cy + 2, 3, 3, claro);
+        p(cx + 2, cy + 3, 1, 1, '#fff6d8');
+        break;
+
+      case 'joyero':                       // cofrecito con tapa clara
+      default:
+        caja(0, 2, 24, 16, oscuro, null);
+        p(cx - 11, cy - 9, 22, 7, base);
+        p(cx - 11, cy - 9, 22, 2, claro);
+        p(cx - 2, cy - 4, 5, 8, claro);
+        break;
+    }
+  });
+}
+
 function dibujarObjeto(r, l, col) {
   const o = l.objeto;
   const base = o.nivel === 'raro' ? '#d8b24a'
@@ -183,93 +389,7 @@ function dibujarObjeto(r, l, col) {
   r.box(l.x, l.y + 5, 7, 2, '#000');
   r.ctx.globalAlpha = 1;
 
-  switch (o.dibujo) {
-    /** Cajón de madera: tapa, y dos listones cruzados. */
-    case 'cajon':
-      r.box(l.x, l.y, 7, 5, oscuro);
-      r.box(l.x, l.y, 6, 4, base);
-      r.rect(l.x - 6, l.y - 1, 12, 1, claro);
-      r.rect(l.x - 1, l.y - 4, 2, 8, oscuro);
-      break;
-
-    /** Cajón de botellas: la reja de arriba y los cuellos asomando. */
-    case 'botellas':
-      r.box(l.x, l.y, 7, 5, oscuro);
-      r.box(l.x, l.y, 6, 4, base);
-      for (const dx of [-4, -1, 2, 5]) r.rect(l.x + dx - 1, l.y - 5, 2, 3, '#5a6a4a');
-      break;
-
-    /** Fardo atado: alto, con dos sogas cruzándolo. */
-    case 'fardo':
-      r.box(l.x, l.y, 6, 5, base);
-      r.rect(l.x - 6, l.y - 3, 12, 1, oscuro);
-      r.rect(l.x - 6, l.y + 1, 12, 1, oscuro);
-      r.box(l.x, l.y - 5, 5, 1, claro);
-      break;
-
-    /** Rollo de tela: un cilindro, con la espiral marcada en la punta. */
-    case 'rollo':
-      r.box(l.x, l.y, 8, 3, base);
-      r.rect(l.x - 8, l.y - 3, 3, 6, claro);
-      r.rect(l.x + 5, l.y - 3, 3, 6, oscuro);
-      break;
-
-    /** Saco: panzón, con la boca atada arriba. */
-    case 'saco':
-      r.box(l.x, l.y + 1, 6, 4, base);
-      r.box(l.x, l.y - 3, 3, 2, base);
-      r.rect(l.x - 2, l.y - 4, 4, 1, oscuro);
-      break;
-
-    /** Estuche chato: tapa, bisagra y broche. */
-    case 'estuche':
-      r.box(l.x, l.y, 7, 3, oscuro);
-      r.box(l.x, l.y - 1, 6, 2, base);
-      r.rect(l.x - 1, l.y - 1, 2, 3, claro);
-      break;
-
-    /** Botiquín: la cruz, que es lo único que hay que reconocer. */
-    case 'botiquin':
-      r.box(l.x, l.y, 6, 4, '#b9b0a0');
-      r.rect(l.x - 1, l.y - 3, 2, 6, '#a83c32');
-      r.rect(l.x - 4, l.y - 1, 8, 2, '#a83c32');
-      break;
-
-    /** Lingotes: tres barras apiladas, escalonadas. Es el raro más grande. */
-    case 'lingotes':
-      r.box(l.x, l.y + 2, 7, 2, base);
-      r.box(l.x - 1, l.y, 6, 2, claro);
-      r.box(l.x, l.y - 2, 5, 2, base);
-      r.rect(l.x - 6, l.y + 1, 12, 1, oscuro);
-      break;
-
-    /** Papeles lacrados: el atado y el sello rojo. */
-    case 'papeles':
-      r.box(l.x, l.y, 5, 4, '#cdb68d');
-      r.rect(l.x - 5, l.y - 1, 10, 1, '#a8977c');
-      r.box(l.x + 2, l.y + 1, 1, 1, '#8c2f26');
-      break;
-
-    /** Bolsita de polvo de oro: chica, atada, con brillo. */
-    case 'bolsita':
-      r.box(l.x, l.y + 1, 4, 3, '#a89070');
-      r.rect(l.x - 1, l.y - 3, 2, 2, '#6b5236');
-      r.box(l.x + 1, l.y, 1, 1, claro);
-      break;
-
-    /** Joyero / reloj: cofrecito con tapa clara. Lo más chico del vagón. */
-    case 'joyero':
-    default:
-      r.box(l.x, l.y, 4, 3, oscuro);
-      r.box(l.x, l.y - 1, 3, 2, base);
-      r.box(l.x, l.y, 1, 1, claro);
-      break;
-  }
-
-  // El progreso, igual que cualquier otro botín: el mismo lenguaje para todo.
-  if (l.progress > 0) {
-    const w = 16;
-    r.rect(l.x - w / 2, l.y - 12, w, 3, '#1a1512');
-    r.rect(l.x - w / 2, l.y - 12, w * (l.progress / l.duration), 3, col.bagLoot);
-  }
+  const img = piezaObjeto(o.dibujo, base, claro, oscuro);
+  r.ctx.drawImage(img, l.x - (img.width * PUNTO) / 2, l.y - (img.height * PUNTO) / 2,
+    img.width * PUNTO, img.height * PUNTO);
 }

@@ -12762,13 +12762,22 @@ almohadón. Todo lo que sobró se volvió hueco:
 | | Fondo del banco | Huecos | Tamaño | Piso libre en las bandas |
 |---|---|---|---|---|
 | Antes | 3 baldosas | 14 | 2×2 | 28 baldosas |
-| Ahora | **1 baldosa** | **14** | 4×2 y 5×2 | **60 baldosas** |
+| Primer intento | 1 baldosa | 14 | 4×2 y 5×2 | 60 baldosas |
+| **Ahora** | **1 baldosa** | **24** | **2×2** (dos de 3×2) | **50 baldosas** |
 
-Son los MISMOS CATORCE HUECOS —el número con el que este vagón estaba
-equilibrado— pero el doble de anchos, y el piso libre se duplicó largo. Se
-eligió sobre dos alternativas que daban 18 y 24 huecos: las dos regalaban
-escondites que nadie había medido. El fondo del hueco sigue siendo de dos
-baldosas, que es lo que de verdad te tapa del que viene por el pasillo.
+🔻 **EL PRIMER INTENTO DEJÓ LOS HUECOS ENORMES.** Se eligió el reparto que
+mantenía los catorce huecos de siempre, y para eso cada hueco quedó de cuatro
+o cinco baldosas: sesenta y cuatro unidades, seis personas de ancho. *(Santi,
+jugándolo: "el espacio entre los asientos es enorme")*. Un espacio para las
+piernas mide más o menos lo que mide el asiento, así que ahora el hueco es de
+DOS baldosas y los pares entran cada tres.
+
+⚠️ **Y ESO SUBIÓ LOS HUECOS DE 14 A 24, que es un cambio de equilibrio.** Es
+el precio de que el vagón se vea como un vagón: con bancos finos y huecos
+finos, entran más. No es todo a favor del jugador —los guardias también se
+cubren ahí (`atCover`, systems/ai.js)— pero hay que jugarlo antes de darlo por
+bueno. El fondo del hueco sigue siendo de dos baldosas, que es lo que de
+verdad te tapa del que viene por el pasillo.
 
 🔻 **LO QUE COSTÓ QUE SE LEYERA: EL RESPALDO TIENE QUE LEVANTARSE.** La primera
 versión dibujaba el respaldo y el almohadón a la misma altura y un par se leía
@@ -12792,11 +12801,22 @@ se distinguía una abierta de una cerrada. Ahora:
   quedaba casi negra contra el enganche, que ya es oscuro.
 - Las muescas de daño pasaron a ser las mismas que la vida de un guardia.
 
-**MEDIDO:** 868 llamadas de dibujo por cuadro en el vagón de pasajeros (el
-vagón viejo hacía 1193), 71 piezas guardadas y 1,3 MB. Catorce huecos contados
-en el mapa de verdad, y ni un pasajero, guardia o bulto quedó adentro de una
-casilla sólida. Sin errores recorriendo el tren entero, el galope, el
-campamento y el pueblo.
+**NO TODAS LAS CASILLAS 'S' SON ASIENTOS**, y reacomodarlas todas lo dejó a la
+vista: de los cinco vagones que las usan, sólo el de **pasajeros** y el de
+**primera clase** tienen asientos. Los otros tres ya decían en su propio diseño
+qué eran —*"dos literas"* (observación), *"camarotes"* (dormitorio), *"mesas de
+cartas y catres"* (guardias)— y se dibujaban como asientos igual. Ahora
+`mueble: 'cama'` en data/wagons.js los manda a `piezaCama`: armazón de madera,
+colchón, manta doblada y la almohada en la cabecera, sin respaldo, porque una
+cama es BAJA y LARGA. Y los sillones de primera clase pasaron de dos baldosas
+de fondo a una, como los asientos.
+
+**MEDIDO:** 888 llamadas de dibujo por cuadro en el vagón de pasajeros (el
+vagón viejo hacía 1193), 78 piezas guardadas y 1,4 MB. Veinticuatro huecos
+contados en el mapa de verdad. Doce trenes sorteados enteros, recorridos vagón
+por vagón: ni un pasajero, guardia o bulto quedó adentro de una casilla sólida
+y ningún error en la consola, ni ahí ni en el galope, el campamento y el
+pueblo.
 
 **⚠️ NO JUGADO.**
 

@@ -72,12 +72,12 @@ export const WAGONS = {
     layout: [
       '####WW###WW###WW###WW###WW###WW###WW####',
       '####WW###WW###WW###WW###WW###WW###WW####',
-      '#S....S....S.....S....S.....S....S....S#',
-      '#S....S....S.....S....S.....S....S....S#',
+      '#S..S..S..S..S..S..S...S..S..S..S..S..S#',
+      '#S..S..S..S..S..S..S...S..S..S..S..S..S#',
       '+......................................+',
       '+......................................+',
-      '#S....S....S.....S....S.....S....S....S#',
-      '#S....S....S.....S....S.....S....S....S#',
+      '#S..S..S..S..S..S..S...S..S..S..S..S..S#',
+      '#S..S..S..S..S..S..S...S..S..S..S..S..S#',
       '####WW###WW###WW###WW###WW###WW###WW####',
       '####WW###WW###WW###WW###WW###WW###WW####',
     ],
@@ -88,9 +88,9 @@ export const WAGONS = {
       { path: [[24, 5], [34, 5], [34, 4], [24, 4]] },
     ],
     passengers: [
-      { col: 4, row: 2, facing: 'right' },
-      { col: 19, row: 3, facing: 'left' },
-      { col: 29, row: 6, facing: 'right' },
+      { col: 5, row: 2, facing: 'right' },
+      { col: 20, row: 3, facing: 'left' },
+      { col: 30, row: 6, facing: 'right' },
       { col: 34, row: 7, facing: 'left' },
     ],
     loot: [
@@ -574,12 +574,12 @@ export const WAGONS = {
     layout: [
       '####WW###WW###WW####',
       '####WW###WW###WW####',
-      '#S.....S....S.....S#',
-      '#S.....S....S.....S#',
+      '#S..S...S..S...S..S#',
+      '#S..S...S..S...S..S#',
       '+..................+',
       '+..................+',
-      '#S.....S....S.....S#',
-      '#S.....S....S.....S#',
+      '#S..S...S..S...S..S#',
+      '#S..S...S..S...S..S#',
       '####WW###WW###WW####',
       '####WW###WW###WW####',
     ],
@@ -587,11 +587,11 @@ export const WAGONS = {
       { path: [[4, 4], [15, 4], [15, 5], [4, 5]] },
     ],
     passengers: [
-      { col: 4, row: 2, facing: 'right' },
+      { col: 5, row: 2, facing: 'right' },
       { col: 14, row: 7, facing: 'left' },
     ],
     loot: [
-      { col: 4, row: 3, type: 'bag' },
+      { col: 6, row: 3, type: 'bag' },
       { col: 14, row: 6, type: 'bag' },
     ],
   },
@@ -938,6 +938,10 @@ export const WAGONS = {
    */
   caboose: {
     id: 'caboose',
+    // Sus casillas 'S' no son asientos: acá la gente duerme (ver `mueble` y
+    // `piezaCama` en world/piezas.js).
+    mueble: 'cama',
+
     name: 'Vagón de observación',
     short: 'CABOOSE',
     hint: 'La tripulación. Desde acá se mira la vía.',
@@ -991,6 +995,10 @@ export const WAGONS = {
    */
   dormitorio: {
     id: 'dormitorio',
+    // Sus casillas 'S' no son asientos: acá la gente duerme (ver `mueble` y
+    // `piezaCama` en world/piezas.js).
+    mueble: 'cama',
+
     name: 'Vagón dormitorio',
     short: 'DORMITORIO',
     hint: 'Camarotes. Gente que no quiere ser molestada.',
@@ -1052,6 +1060,10 @@ export const WAGONS = {
    */
   guardias: {
     id: 'guardias',
+    // Sus casillas 'S' no son asientos: acá la gente duerme (ver `mueble` y
+    // `piezaCama` en world/piezas.js).
+    mueble: 'cama',
+
     name: 'Vagón de guardias',
     short: 'GUARDIAS',
     hint: 'La escolta del tren. Mesas de cartas y catres.',
@@ -1112,12 +1124,12 @@ export const WAGONS = {
     layout: [
       '#WW##WW##WW##WW##WW##WW##WW##WW#',
       '#..............................#',
-      '#.SS....SS....SS....SS....SS...#',
+      '#.S.....S.....S.....S.....S....#',
       '#..............................#',
       '+..............................+',
       '+..............................+',
       '#..............................#',
-      '#...SS....SS....SS....SS....SS.#',
+      '#...S.....S.....S.....S.....S..#',
       '#..............................#',
       '#WW##WW##WW##WW##WW##WW##WW##WW#',
     ],

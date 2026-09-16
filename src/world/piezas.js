@@ -295,6 +295,65 @@ export function piezaAsiento(color, altoPuntos, lados = {}, variante) {
     return c;
   });
 }
+/**
+ * LA CAMA: la litera del vagón de observación, el camarote del dormitorio y el
+ * catre del vagón de guardias.
+ *
+ * NO ES UN ASIENTO Y NO TIENE QUE PARECERLO. *(Santi: "reacomodá todos los
+ * asientos")* — pero de los cinco vagones con casillas 'S', sólo el de
+ * pasajeros y el de primera clase tienen asientos de verdad; los otros tres
+ * tienen gente durmiendo, y el diseño de cada uno ya lo decía ("dos literas",
+ * "camarotes", "mesas de cartas y catres"). Una cama es BAJA y LARGA, con la
+ * almohada en la cabecera: si le dibujáramos respaldo sería un asiento raro.
+ *
+ * La almohada va en la punta que no tiene otra cama a la izquierda: así una
+ * cama de dos o tres baldosas tiene una sola cabecera y no tres.
+ */
+export function piezaCama(madera, altoPuntos, lados = {}, variante) {
+  const h = Math.round(altoPuntos);
+  const izq = !!lados.izq, der = !!lados.der;
+  const clave = `cama|${madera}|${h}|${izq ? 1 : 0}${der ? 1 : 0}|${variante}`;
+  return armar(clave, () => {
+    const { c, p } = lienzo(T, T + h);
+    const s = sorteo(variante, 0, 404);
+    const LINO = '#b9ae96', LINO_L = '#d2c8b2', LINO_S = '#8e836e';
+    const MANTA = '#6a5a48', MANTA_L = '#86745c';
+    const y0 = 5, y1 = T - 5, alto = y1 - y0;      // metida para adentro
+    const x0 = izq ? 0 : 3, x1 = der ? T : T - 3;
+
+    p(x0, y0 - h - 2, x1 - x0, alto + h + 4, NEGRO);
+
+    // EL ARMAZÓN de madera, y encima el colchón.
+    p(x0, y0 - h, x1 - x0, alto, tono(madera, 0.62));
+    p(x0 + 2, y0 - h + 2, x1 - x0 - 4, alto - 4, LINO);
+    p(x0 + 2, y0 - h + 2, x1 - x0 - 4, 2, LINO_L);
+    p(x0 + 2, y1 - h - 4, x1 - x0 - 4, 2, LINO_S);
+
+    // LA MANTA, doblada sobre la mitad de los pies.
+    const mx = izq ? x0 + 2 : x0 + 22;
+    p(mx, y0 - h + 2, x1 - mx - 2, alto - 4, MANTA);
+    p(mx, y0 - h + 2, x1 - mx - 2, 2, MANTA_L);
+    p(mx, y0 - h + 4, 2, alto - 8, MANTA_L);
+    for (let i = 0; i < 3; i++) p(mx + 6 + i * 9, y0 - h + 8, 1, alto - 14, tono(MANTA, 0.84));
+
+    // LA ALMOHADA, en la cabecera.
+    if (!izq) {
+      p(x0 + 4, y0 - h + 5, 15, alto - 12, LINO_L);
+      p(x0 + 4, y0 - h + 5, 15, 2, '#e4dcc8');
+      p(x0 + 4, y1 - h - 9, 15, 2, LINO_S);
+    }
+
+    // La cara de adelante y las patas.
+    p(x0, y1 - h, x1 - x0, h, tono(madera, 0.5));
+    p(x0, y1 - h, x1 - x0, 2, tono(madera, 0.66));
+    p(x0 + 2, y1 - 4, 4, 4, tono(madera, 0.36));
+    p(x1 - 6, y1 - 4, 4, 4, tono(madera, 0.36));
+
+    if (s % 3 === 0) p(x0 + 8, y0 - h + 6, 8, 3, LINO_S);   // una arruga
+    return c;
+  });
+}
+
 // ----------------------------------------------------------------- la carga
 
 /**

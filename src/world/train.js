@@ -20,7 +20,7 @@ import { CONFIG } from '../data/config.js';
 import { createTilemap } from './tilemap.js';
 import {
   PUNTO, estampar, varianteDe, piezaPiso, piezaCantoPared, piezaCaraPared,
-  piezaVentana, piezaAsiento, piezaCajon, piezaPasarela, piezaSalida, piezaBaranda,
+  piezaVentana, piezaAsiento, piezaCama, piezaCajon, piezaPasarela, piezaSalida, piezaBaranda,
 } from './piezas.js';
 import { createPlayer } from '../entities/player.js';
 import { createEnemy } from '../entities/enemy.js';
@@ -2128,11 +2128,21 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
            * listones; adelante el almohadón hundido con sus botones, y abajo
            * las patas, sin las cuales el asiento flotaba sobre las tablas.
            */
+          /**
+           * ASIENTO O CAMA, SEGÚN EL VAGÓN. La casilla 'S' es la misma para el
+           * motor —choca, tapa la vista y se usa de cobertura igual— pero no es
+           * lo mismo un asiento del vagón de pasajeros que una litera del de
+           * observación, un camarote del dormitorio o un catre del de guardias.
+           * Lo dice `mueble` en data/wagons.js, y una cama no lleva respaldo.
+           */
+          const mueble = (WAGONS[train.tipoPorColumna[col]] || {}).mueble;
+          const esCama = mueble === 'cama';
+          const sube = esCama ? h : Math.round((h / PUNTO) * 1.7) * PUNTO;
           cosas.push({ base, draw: () => {
-            // El respaldo se levanta más que el almohadón, así que la pieza
-            // crece para arriba: se ancla por el borde de abajo de la casilla.
-            estampar(r, piezaAsiento(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3)),
-              x, y - Math.round((h / PUNTO) * 1.7) * PUNTO);
+            const pieza = esCama
+              ? piezaCama(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3))
+              : piezaAsiento(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3));
+            estampar(r, pieza, x, y - sube);
           } });
           break;
         }

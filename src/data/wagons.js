@@ -42,10 +42,20 @@ export const WAGONS = {
   // Cuatro baldosas de pasillo eran un galpón, no un vagón. Las filas de arriba
   // y abajo son pared doble, así que el interior es de verdad más chico.
   //
-  // Entre bloque y bloque de asientos hay un HUECO DE DOS BALDOSAS DE ANCHO Y
-  // DOS DE FONDO, catorce en total. Son la única forma de salirse del pasillo y
-  // son callejones sin salida: sirven para cubrirse y para romper la línea de
-  // visión de alguien que viene por el pasillo, pero no para avanzar.
+  // LOS ASIENTOS VAN EN PARES MIRANDO A LA LOCOMOTORA *(Santi, después de
+  // jugarlo)*, que va a la derecha: un par son los dos asientos de las dos filas
+  // de la banda, y el banco mide UNA baldosa de fondo, que es lo que mide un
+  // asiento de verdad (respaldo y almohadón). Antes medía tres y eso no era un
+  // banco, era un tabique.
+  //
+  // EL HUECO PARA CUBRIRSE ES EL ESPACIO PARA LAS PIERNAS: lo que queda entre el
+  // respaldo de un par y el almohadón del par de atrás. Son CATORCE, los mismos
+  // de siempre —el número con el que este vagón está equilibrado— pero ahora
+  // miden cuatro o cinco baldosas de ancho en vez de dos, y el piso libre de las
+  // bandas pasó de 28 baldosas a 60: el vagón es mucho más abierto sin regalar
+  // un solo escondite nuevo. Siguen siendo callejones sin salida: sirven para
+  // cubrirse y para romper la línea de visión del que viene por el pasillo, pero
+  // no para avanzar.
   //
   // El fondo de dos baldosas es lo que los hace servir de verdad: metido hasta
   // el fondo, el que camina por el pasillo solo te ve cuando pasa justo por
@@ -62,12 +72,12 @@ export const WAGONS = {
     layout: [
       '####WW###WW###WW###WW###WW###WW###WW####',
       '####WW###WW###WW###WW###WW###WW###WW####',
-      '#SSS..SSS..SSS..SSS..SSS..SSS..SSS..SSS#',
-      '#SSS..SSS..SSS..SSS..SSS..SSS..SSS..SSS#',
+      '#S....S....S.....S....S.....S....S....S#',
+      '#S....S....S.....S....S.....S....S....S#',
       '+......................................+',
       '+......................................+',
-      '#SSS..SSS..SSS..SSS..SSS..SSS..SSS..SSS#',
-      '#SSS..SSS..SSS..SSS..SSS..SSS..SSS..SSS#',
+      '#S....S....S.....S....S.....S....S....S#',
+      '#S....S....S.....S....S.....S....S....S#',
       '####WW###WW###WW###WW###WW###WW###WW####',
       '####WW###WW###WW###WW###WW###WW###WW####',
     ],
@@ -564,12 +574,12 @@ export const WAGONS = {
     layout: [
       '####WW###WW###WW####',
       '####WW###WW###WW####',
-      '#SSS..SSS..SSS..SSS#',
-      '#SSS..SSS..SSS..SSS#',
+      '#S.....S....S.....S#',
+      '#S.....S....S.....S#',
       '+..................+',
       '+..................+',
-      '#SSS..SSS..SSS..SSS#',
-      '#SSS..SSS..SSS..SSS#',
+      '#S.....S....S.....S#',
+      '#S.....S....S.....S#',
       '####WW###WW###WW####',
       '####WW###WW###WW####',
     ],

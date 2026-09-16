@@ -12743,6 +12743,63 @@ el que vale: son llamadas contadas, no tiempo estimado.
 
 **⚠️ NO JUGADO.**
 
+### 🪑 Después de jugarlo: los asientos en pares y las puertas
+
+*(Santi, jugando la etapa 3: "se debería mejorar el cómo se ve las puertas entre
+los enganches, también mejorar los asientos del vagón de pasajeros. Los asientos
+deberían estar en pares mirando hacia la locomotora")*.
+
+**LOS ASIENTOS AHORA MIRAN A LA LOCOMOTORA**, que va a la derecha: el respaldo
+queda a la izquierda y la gente mira para allá. Un PAR son los dos asientos de
+las dos filas de la banda, uno al lado del otro, y **el hueco para cubrirse es
+el espacio para las piernas**: lo que queda entre el respaldo de un par y el
+almohadón del par de atrás.
+
+**EL BANCO PASÓ DE TRES BALDOSAS DE FONDO A UNA.** Tres baldosas no son un
+banco, son un tabique: un asiento de verdad mide lo que mide un respaldo más un
+almohadón. Todo lo que sobró se volvió hueco:
+
+| | Fondo del banco | Huecos | Tamaño | Piso libre en las bandas |
+|---|---|---|---|---|
+| Antes | 3 baldosas | 14 | 2×2 | 28 baldosas |
+| Ahora | **1 baldosa** | **14** | 4×2 y 5×2 | **60 baldosas** |
+
+Son los MISMOS CATORCE HUECOS —el número con el que este vagón estaba
+equilibrado— pero el doble de anchos, y el piso libre se duplicó largo. Se
+eligió sobre dos alternativas que daban 18 y 24 huecos: las dos regalaban
+escondites que nadie había medido. El fondo del hueco sigue siendo de dos
+baldosas, que es lo que de verdad te tapa del que viene por el pasillo.
+
+🔻 **LO QUE COSTÓ QUE SE LEYERA: EL RESPALDO TIENE QUE LEVANTARSE.** La primera
+versión dibujaba el respaldo y el almohadón a la misma altura y un par se leía
+como **un ropero de dos puertas**. Un asiento es una tabla ALTA con un almohadón
+BAJO adelante, y en tres cuartos eso son dos alturas distintas —como las paredes
+y los cajones—: el respaldo se levanta 8,5 unidades y el almohadón 5. Recién ahí
+se lee.
+
+**LAS PUERTAS DE LOS ENGANCHES eran un rectángulo de un color con una raya al
+medio**, y abierta era ese mismo rectángulo a medio borrar: en pleno tiroteo no
+se distinguía una abierta de una cerrada. Ahora:
+
+- **Son dos hojas**, porque el hueco mide tres personas de ancho: madera con sus
+  tablas y su cruz de San Andrés, o chapa con remaches y volante si es la
+  blindada del vagón blindado.
+- **Abierta, las hojas se pliegan contra las paredes**: el paso se ve libre
+  porque lo está. Eso es lo que arregla el problema de fondo.
+- **La tranca** es un tablón clavado en diagonal, en el rojo de "esto ya no es
+  gratis", y no va cuando la puerta está abierta.
+- **La madera va más clara que la pared:** con el color de la pared la puerta
+  quedaba casi negra contra el enganche, que ya es oscuro.
+- Las muescas de daño pasaron a ser las mismas que la vida de un guardia.
+
+**MEDIDO:** 868 llamadas de dibujo por cuadro en el vagón de pasajeros (el
+vagón viejo hacía 1193), 71 piezas guardadas y 1,3 MB. Catorce huecos contados
+en el mapa de verdad, y ni un pasajero, guardia o bulto quedó adentro de una
+casilla sólida. Sin errores recorriendo el tren entero, el galope, el
+campamento y el pueblo.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

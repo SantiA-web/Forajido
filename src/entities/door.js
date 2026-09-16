@@ -24,6 +24,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { estampar, piezaPuerta, piezaTranca } from '../world/piezas.js';
+import { dibujarVida } from './figura.js';
 
 export function createDoor(x, y, { kind = 'normal', insideDir = 1 } = {}) {
   return {
@@ -172,34 +174,29 @@ export function destrabarPuerta(d) {
 export function drawDoor(r, d, colors) {
   if (d.broken) return; // rota: no queda nada que dibujar, es pasarela pelada
 
-  const alpha = d.open ? 0.35 : 1;
-  r.ctx.globalAlpha = alpha;
-
+  /**
+   * 🔁 DOS HOJAS DE VERDAD (etapa 3). Era un rectángulo de un color con una
+   * raya al medio, y abierta era ese mismo rectángulo a medio borrar: en pleno
+   * tiroteo no se distinguía de una cerrada. Ahora la madera tiene sus tablas y
+   * su cruz, la blindada sus remaches y su volante, y ABIERTA las hojas se
+   * pliegan contra las paredes — el paso se ve libre porque lo está.
+   */
   const color = d.kind === 'blindada' ? '#626a74' : colors.wall;
-  r.rect(d.x - d.hw, d.y - d.hh, d.hw * 2, d.hh * 2, color);
-
-  // Una marca al medio para que se note que es una puerta y no una pared.
-  if (!d.open) {
-    r.rect(d.x - 1, d.y - d.hh + 4, 2, d.hh * 2 - 8, '#2a2320');
-  }
+  estampar(r, piezaPuerta(d.kind, color, d.open), d.x - d.hw, d.y - d.hh);
 
   /**
-   * TRABADA: una tranca cruzada, en rojo — el mismo color que usa el juego
-   * para "esto ya no es gratis" (`enemyAlert`). Tiene que leerse de lejos y
-   * sin ambigüedad: es la diferencia entre "la empujo y listo" y "la tengo
-   * que romper a tiros", y confundir una con otra sale caro.
+   * TRABADA: un tablón clavado en diagonal, en el rojo que usa el juego para
+   * "esto ya no es gratis" (`enemyAlert`). Tiene que leerse de lejos y sin
+   * ambigüedad: es la diferencia entre "la empujo y listo" y "la tengo que
+   * romper a tiros", y confundir una con otra sale caro. Abierta no va: si se
+   * abrió, la traba ya no está mandando.
    */
-  if (d.trabada) {
-    r.rect(d.x - d.hw + 1, d.y - 3, d.hw * 2 - 2, 3, colors ? colors.enemyAlert : '#c86a52');
+  if (d.trabada && !d.open) {
+    estampar(r, piezaTranca(colors ? colors.enemyAlert : '#c86a52'), d.x - d.hw, d.y - d.hh);
   }
 
-  r.ctx.globalAlpha = 1;
-
-  // Rayitas de daño, igual de espíritu que la vida de un guardia.
+  // Las muescas de daño, las mismas que la vida de un guardia (figura.js).
   if (d.kind !== 'blindada' && d.health < CONFIG.doors.health) {
-    const y = d.y - d.hh - 6;
-    for (let i = 0; i < CONFIG.doors.health; i++) {
-      r.rect(d.x - 6 + i * 5, y, 3, 2, i < d.health ? '#d8c058' : '#3d3835');
-    }
+    dibujarVida(r, d.x, d.y - d.hh - 2, d.health, CONFIG.doors.health, { ancho: 14 });
   }
 }

@@ -2113,7 +2113,14 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
 
         case 'S': {
           const h = tc.alturaAsiento;
-          const cara = debajo !== 'S';
+          // Qué vecinos tiene: el respaldo lo dibuja la casilla que no tiene
+          // otro asiento a su izquierda, y la cara de adelante la que no tiene
+          // otro abajo. Así un par se lee como dos asientos y no como un bloque.
+          const lados = {
+            izq: casilla(col - 1, row) === 'S',
+            der: casilla(col + 1, row) === 'S',
+            abajo: debajo === 'S',
+          };
           /**
            * 🔁 ETAPA 3: ES UN ASIENTO Y NO UN BULTO. Eran dos rectángulos, y
            * cualquier cosa cuadrada apoyada en el piso se leía como un cajón.
@@ -2122,8 +2129,10 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
            * las patas, sin las cuales el asiento flotaba sobre las tablas.
            */
           cosas.push({ base, draw: () => {
-            estampar(r, piezaAsiento(colors.seat, h / PUNTO, cara, varianteDe(col, row, 3)),
-              x, y + 2 - h - 2 * PUNTO);
+            // El respaldo se levanta más que el almohadón, así que la pieza
+            // crece para arriba: se ancla por el borde de abajo de la casilla.
+            estampar(r, piezaAsiento(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3)),
+              x, y - Math.round((h / PUNTO) * 1.7) * PUNTO);
           } });
           break;
         }

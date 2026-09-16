@@ -221,67 +221,80 @@ export function piezaVentana(marco, vidrio, anchoPuntos, altoPuntos) {
 // ------------------------------------------------------------- los asientos
 
 /**
- * EL ASIENTO. Lo que lo separa de un cajón es el RESPALDO: una tabla parada
- * atrás con sus listones, y adelante el almohadón hundido con sus botones. Sin
- * el respaldo, cualquier bulto cuadrado en el piso es un cajón.
+ * EL ASIENTO, MIRANDO A LA LOCOMOTORA.
  *
- * `conCara` es la cara de adelante, la que le da el volumen: sólo la lleva el
- * asiento que no tiene otro asiento pegado abajo.
+ * *(Santi, después de jugarlo: "los asientos deberían estar en pares mirando
+ * hacia la locomotora... los huecos para cubrirse es la parte que está entre el
+ * respaldo de uno de la pareja de asientos y dónde se sienta la gente en otra
+ * pareja de asientos")*. La locomotora va a la DERECHA, así que el respaldo
+ * queda a la IZQUIERDA y la gente mira para allá.
+ *
+ * 🔻 LO QUE HACE QUE SE LEA ES QUE EL RESPALDO SE LEVANTA. La primera versión
+ * dibujaba el respaldo y el almohadón a la misma altura, y un par se leía como
+ * un ROPERO de dos puertas. Un asiento es una tabla ALTA con un almohadón BAJO
+ * adelante: en tres cuartos eso son dos alturas distintas, como las paredes y
+ * los cajones. El respaldo se levanta 11 unidades —lo que mide el respaldo de
+ * un asiento de verdad, y por eso mismo tapa la vista— y el almohadón 5.
+ *
+ * UN PAR SON DOS ASIENTOS, uno al lado del otro: las dos filas de la banda.
+ * Cada uno se dibuja metido para adentro de su casilla, así entre los dos queda
+ * una junta y no un bloque corrido.
+ *
+ * `lados` dice qué vecinos tiene. EL RESPALDO LO DIBUJA LA CASILLA QUE NO TIENE
+ * OTRO ASIENTO A SU IZQUIERDA: en el vagón de pasajeros el banco mide una sola
+ * baldosa, pero donde el bloque es más profundo (el de observación, el
+ * dormitorio) las de la derecha son almohadón y nada más.
  */
-export function piezaAsiento(color, altoPuntos, conCara, variante) {
-  const h = Math.round(altoPuntos);
-  return armar(`asiento|${color}|${h}|${conCara ? 1 : 0}|${variante}`, () => {
-    const aw = T - 4, ah = T - 4 * U;
-    const RESP = 13;                       // lo que mide el respaldo, en puntos
-    const alto = ah + 4 + (conCara ? h : 0);
-    const { c, p } = lienzo(aw + 4, alto);
-    const ax = 2, ay = 2;
+export function piezaAsiento(color, altoPuntos, lados = {}, variante) {
+  const h = Math.round(altoPuntos);              // lo que se levanta el almohadón
+  const R = Math.round(h * 1.7);                 // lo que se levanta el respaldo
+  const izq = !!lados.izq, der = !!lados.der;
+  const clave = `asiento|${color}|${h}|${izq ? 1 : 0}${der ? 1 : 0}|${variante}`;
+  return armar(clave, () => {
+    const { c, p } = lienzo(T, T + R);
     const s = sorteo(variante, 0, 303);
+    const fy0 = R;                               // el borde de arriba de la casilla
+    const y0 = fy0 + 6, y1 = fy0 + T - 6;        // el asiento, metido para adentro
+    const alto = y1 - y0;
+    const RESP = 16;                             // el fondo del respaldo
+    const rx = izq ? 0 : 2;
 
-    p(0, 0, aw + 4, alto, NEGRO);
-
-    /**
-     * EL RESPALDO, atrás de todo: una tabla parada con sus listones.
-     *
-     * 🔻 LA PRIMERA VERSIÓN NO ALCANZABA. El respaldo iba apenas más oscuro que
-     * el almohadón y, de lejos, una fila de asientos se leía como una fila de
-     * cajones. Lo que hace que se lea es el CONTRASTE entre las dos partes:
-     * madera oscura arriba, cuero claro abajo, y entre las dos una línea negra.
-     */
-    p(ax, ay, aw, RESP, tono(color, 0.62));
-    p(ax, ay, aw, 3, tono(color, 0.95));
-    for (let i = 1; i < 5; i++) p(ax + i * Math.round(aw / 5), ay + 3, 1, RESP - 3, tono(color, 0.44));
-    p(ax, ay + RESP - 2, aw, 2, NEGRO);
-
-    // EL ALMOHADÓN: cuero gastado, hundido en el medio.
-    const cy = ay + RESP, chh = ah - RESP;
-    p(ax, cy, aw, chh, tono(color, 0.9));
-    p(ax + 3, cy + 2, aw - 6, chh - 6, tono(color, 1.24));
-    p(ax + 6, cy + 5, aw - 12, chh - 12, tono(color, 1.1));
-    p(ax, cy + chh - 4, aw, 4, tono(color, 0.66));
-    for (let i = 0; i < 3; i++) {
-      p(ax + 9 + i * 15, cy + 5, 3, 2, tono(color, 0.5));
-      p(ax + 9 + i * 15, cy + chh - 10, 3, 2, tono(color, 0.5));
+    // EL RESPALDO: una tabla alta, con su tapa arriba y su cara de este lado.
+    if (!izq) {
+      const tx = rx, tw = RESP;
+      p(tx, y0 - R - 2, tw + 2, alto + 4, NEGRO);
+      p(tx, y0 - R, tw, alto, tono(color, 0.88));            // la tapa, vista de arriba
+      p(tx, y0 - R, tw, 3, tono(color, 1.18));
+      p(tx + tw - 3, y0 - R, 3, alto, tono(color, 0.6));
+      p(tx, y1 - R, tw, R, tono(color, 0.54));               // la cara que mira acá
+      p(tx, y1 - R, tw, 2, tono(color, 0.72));
+      for (const gy of [8, 18, 28]) p(tx + 2, y1 - R + gy, tw - 4, 1, tono(color, 0.36));
     }
-    p(ax, cy, 4, chh, tono(color, 0.78));              // los brazos
-    p(ax + aw - 4, cy, 4, chh, tono(color, 0.6));
 
-    // EL CUERO PELADO, y no en todos: un asiento usado entre varios sanos dice
-    // "acá viaja gente"; todos pelados igual sería una textura y nada más.
-    if (s % 3 === 0) p(ax + 8 + (s % 4) * 8, cy + 6, 9, 4, tono(color, 0.88));
-
-    if (conCara) {
-      const fy = ay + ah;
-      p(ax, fy, aw, h, tono(color, 0.58));
-      p(ax, fy, aw, 2, tono(color, 0.76));
-      // Las patas: sin ellas el asiento flota sobre las tablas.
-      p(ax + 3, fy + 5, 5, h - 5, tono(color, 0.4));
-      p(ax + aw - 8, fy + 5, 5, h - 5, tono(color, 0.4));
+    // EL ALMOHADÓN: cuero gastado, más bajo que el respaldo.
+    const ax = izq ? 0 : rx + RESP, aw = T - ax - (der ? 0 : 2);
+    p(ax, y0 - h - 2, aw + 2, alto + h + 4, NEGRO);
+    p(ax, y0 - h, aw, alto, tono(color, 0.94));
+    p(ax + 2, y0 - h + 3, aw - 6, alto - 6, tono(color, 1.22));
+    p(ax + 5, y0 - h + 6, aw - 12, alto - 12, tono(color, 1.1));
+    p(ax + aw - 4, y0 - h, 4, alto, tono(color, 0.74));      // el filo de adelante
+    for (let i = 0; i < 2; i++) {
+      p(ax + 9 + i * 13, y0 - h + 8, 2, 3, tono(color, 0.52));
+      p(ax + 9 + i * 13, y1 - h - 11, 2, 3, tono(color, 0.52));
     }
+    p(ax, y1 - h, aw, h, tono(color, 0.58));                 // la cara del almohadón
+    p(ax, y1 - h, aw, 2, tono(color, 0.76));
+    // Las patas, abajo de todo: sin ellas el asiento flota sobre las tablas.
+    p(ax + 2, y1 - 4, 4, 4, tono(color, 0.38));
+    p(ax + aw - 6, y1 - 4, 4, 4, tono(color, 0.38));
+
+    // EL CUERO PELADO, y no en todos: uno usado entre varios sanos dice "acá
+    // viaja gente"; todos pelados igual sería una textura y nada más.
+    if (s % 3 === 0) p(ax + 6 + (s % 3) * 6, y0 - h + 12, 9, 5, tono(color, 0.88));
+
     return c;
   });
 }
-
 // ----------------------------------------------------------------- la carga
 
 /**
@@ -399,6 +412,117 @@ export function piezaBaranda(color, luz, altoPuntos) {
     p(0, 5 * U, T, 4 * U, color);                   // el travesaño
     p(0, 5 * U, T, 1, luz);
     p(0, 9 * U - 1, T, 1, tono(color, 0.6));
+    return c;
+  });
+}
+
+// ------------------------------------------------------------- las puertas
+
+/**
+ * LA PUERTA DE UN ENGANCHE, parada cruzada sobre la pasarela.
+ *
+ * *(Santi, después de jugarlo: "se debería mejorar el cómo se ve las puertas
+ * entre los enganches")*. Eran un rectángulo de un color con una raya al medio.
+ *
+ * SON DOS HOJAS, porque el hueco mide tres personas de ancho: madera con sus
+ * tablas y su cruz de San Andrés, o chapa con remaches si es la blindada del
+ * vagón blindado. Y ABIERTA NO SE DESTIÑE: las hojas se pliegan contra las
+ * paredes y el paso queda libre de verdad. Antes la puerta abierta era la misma
+ * puerta a medio borrar, y en pleno tiroteo no se distinguía de una cerrada.
+ */
+export function piezaPuerta(kind, color, abierta) {
+  const anchoU = 16, altoU = 32;                 // lo que ocupa la puerta
+  const W = anchoU * U, H = altoU * U;           // en puntos: 64 x 128
+  return armar(`puerta|${kind}|${color}|${abierta ? 1 : 0}`, () => {
+    const { c, p } = lienzo(W, H);
+    const chapa = kind === 'blindada';
+    // 🔻 LA MADERA VA MÁS CLARA QUE LA PARED. Con el color de la pared la
+    // puerta quedaba casi negra contra el enganche, que ya es oscuro: no se
+    // veía que había una puerta hasta que chocabas con ella.
+    const base = chapa ? color : tono(color, 1.7);
+    const marco = tono(base, chapa ? 1.1 : 0.72);
+
+    /** Una hoja, de `y0` a `y1`. */
+    const hoja = (y0, y1) => {
+      const alto = y1 - y0;
+      p(0, y0, W, alto, NEGRO);                            // la orilla
+      p(2, y0 + 2, W - 4, alto - 4, marco);                // el marco
+      const ix = 7, iy = y0 + 7, iw = W - 14, ih = alto - 14;
+      if (ih <= 0) return;
+      if (chapa) {
+        // CHAPA: una plancha con sus remaches. Nada de tablas: el vagón
+        // blindado no se abre a los tiros y tiene que verse que es de hierro.
+        p(ix, iy, iw, ih, tono(base, 0.92));
+        p(ix, iy, iw, 2, tono(base, 1.3));
+        p(ix, iy + ih - 2, iw, 2, tono(base, 0.7));
+        for (let j = 0; j < Math.floor(ih / 10); j++) {
+          p(ix + 2, iy + 4 + j * 10, 2, 2, tono(base, 1.45));
+          p(ix + iw - 4, iy + 4 + j * 10, 2, 2, tono(base, 1.45));
+        }
+      } else {
+        // MADERA: tablas a lo largo de la hoja y la cruz que las amarra.
+        p(ix, iy, iw, ih, base);
+        for (let j = 0; j * 14 < ih; j++) {
+          const ty = iy + j * 14;
+          const alt = Math.min(14, iy + ih - ty);
+          p(ix, ty, iw, alt, tono(base, 0.95 + (j % 3) * 0.06));
+          p(ix, ty, iw, 1, tono(base, 1.22));
+          p(ix, ty + alt - 1, iw, 1, tono(base, 0.66));
+        }
+        // La cruz de San Andrés, escalonada: es lo que dice "esto es una hoja
+        // de puerta" y no un pedazo de pared.
+        const pasos = Math.max(1, ih - 6);
+        for (let k = 0; k < pasos; k++) {
+          const dx = Math.round((k / pasos) * (iw - 8));
+          p(ix + dx, iy + 3 + k, 5, 1, tono(base, 0.6));
+          p(ix + iw - 5 - dx, iy + 3 + k, 5, 1, tono(base, 0.6));
+        }
+      }
+    };
+
+    if (abierta) {
+      // Plegadas contra las paredes: queda libre todo el medio.
+      hoja(0, 22);
+      hoja(H - 22, H);
+      return c;
+    }
+
+    hoja(0, Math.round(H / 2));
+    hoja(Math.round(H / 2), H);
+    // Los picaportes, donde se juntan las dos hojas.
+    const mitad = Math.round(H / 2);
+    p(W - 22, mitad - 9, 5, 6, tono(base, chapa ? 1.6 : 1.5));
+    p(W - 22, mitad + 3, 5, 6, tono(base, chapa ? 1.6 : 1.5));
+    if (chapa) {
+      // El volante de la blindada: la cerradura que sólo abre la dinamita.
+      const cx = Math.round(W / 2) - 1, cy = mitad - 1;
+      p(cx - 9, cy - 1, 19, 3, tono(base, 1.5));
+      p(cx - 1, cy - 9, 3, 19, tono(base, 1.5));
+      p(cx - 4, cy - 4, 9, 9, tono(base, 1.2));
+      p(cx - 2, cy - 2, 5, 5, tono(base, 0.7));
+    }
+    return c;
+  });
+}
+
+/**
+ * LA TRANCA de una puerta trabada: un tablón clavado en diagonal, en el rojo
+ * que el juego usa para "esto ya no es gratis". Tiene que leerse de lejos: es
+ * la diferencia entre "la empujo y listo" y "la tengo que romper a tiros".
+ */
+export function piezaTranca(rojo) {
+  const W = 16 * U, H = 32 * U;
+  return armar(`tranca|${rojo}`, () => {
+    const { c, p } = lienzo(W, H);
+    const pasos = H - 40;
+    for (let k = 0; k < pasos; k++) {
+      const x = 6 + Math.round((k / pasos) * (W - 20));
+      p(x, 20 + k, 14, 1, NEGRO);
+      p(x + 1, 20 + k, 12, 1, rojo);
+    }
+    // Los clavos de las dos puntas.
+    p(6, 22, 6, 5, tono(rojo, 0.55));
+    p(W - 14, H - 27, 6, 5, tono(rojo, 0.55));
     return c;
   });
 }

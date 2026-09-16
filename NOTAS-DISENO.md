@@ -12989,6 +12989,39 @@ en el campamento y el pueblo.
 
 **⚠️ NO JUGADO.**
 
+### 🐛 ARREGLADO · El juego se tildaba al apretar W en el galope
+
+*(Santi, jugando la etapa 5: "cuando subo con el caballo (tecla W) se buguea el
+juego y se tilda")*.
+
+**NO SE TILDABA: SE MORÍA EL CUADRO.** Una excepción adentro del `render` corta
+el dibujo entero, y desde afuera eso se ve como una pantalla congelada. Era esta
+línea, en la vista DE ESPALDAS de la gente (`entities/gente/frente.js`):
+
+    if (quieto) { ... ; f = CAMINATA[0]; }
+
+`f` es una **constante**. Asignarle algo tira "Assignment to constant variable".
+
+**POR QUÉ NUNCA HABÍA SALTADO.** Esa línea sólo corre cuando alguien se dibuja
+de espaldas Y en una postura quieta (sentado o rendido), y hasta ahora eso no
+pasaba nunca: los pasajeros sentados miran a la cámara y los caídos usan otro
+dibujo (`dibujarTendido`). **El primero en pedirlo fue el jinete de la etapa 5**,
+que ahora es una persona de verdad y se da vuelta cuando el caballo gira hacia
+las vías — o sea, exactamente al apretar W. El error estaba escrito desde la
+etapa 2b y esperó tres etapas a que alguien pasara por ahí.
+
+La vista de FRENTE ya lo hacía bien (`const cuadro = quieto ? CAMINATA[0] : f`),
+así que la de espaldas ahora hace lo mismo.
+
+🔻 **Y de paso, la manta de la montura.** Con el caballo de frente o de espaldas
+el animal se ve escorzado, pero la manta seguía midiendo 12 unidades de ancho y
+asomaba a los dos costados del jinete **como un par de alas rojas**. Ahora se
+angosta con el giro.
+
+**MEDIDO:** 1.200 cuadros seguidos con cada tecla (W, S, A, D y espacio), de día
+y de noche, sin un solo error; y el asalto entero, el campamento y el pueblo
+igual. Antes, con W, reventaba en el cuadro 58.
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

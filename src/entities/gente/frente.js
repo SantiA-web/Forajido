@@ -250,13 +250,26 @@ export function espalda(L, o = {}) {
   const [C0, CL, CS] = R.chal, [M0, , MS] = R.manga;
   const a = o.asomado || { dx: 0, dy: 0 };
   const quieto = piernasDePostura(mover(L, Math.round(a.dx / 3), 0), R, o, g, f, true);
-  if (quieto) { o = { ...o, manosArriba: quieto.rendido || o.manosArriba }; f = CAMINATA[0]; }
-  const U = mover(L, a.dx, (quieto ? quieto.baja : f.y) + a.dy);
-  if (R.capa) capa(U, R.capa, f, true);
+  /**
+   * 🐛 ARREGLADO: ESTA LÍNEA REVENTABA EL JUEGO. Decía `f = CAMINATA[0]`, y `f`
+   * es una constante — asignarle algo tira "Assignment to constant variable" y
+   * se corta el cuadro entero. Nunca había saltado porque hasta ahora NADIE se
+   * dibujaba de espaldas y sentado: los pasajeros sentados miran a la cámara y
+   * los caídos usan otro dibujo. El primero fue el JINETE de la etapa 5, que se
+   * da vuelta cuando el caballo gira para el lado de las vías — o sea que el
+   * juego se tildaba al apretar W.
+   *
+   * La vista de frente ya lo hacía bien (`const cuadro = quieto ? ... : f`), así
+   * que ésta hace lo mismo: quieto, las piernas no llevan cuadro de caminata.
+   */
+  if (quieto) o = { ...o, manosArriba: quieto.rendido || o.manosArriba };
+  const cuadro = quieto ? CAMINATA[0] : f;
+  const U = mover(L, a.dx, (quieto ? quieto.baja : cuadro.y) + a.dy);
+  if (R.capa) capa(U, R.capa, cuadro, true);
   if (!o.manosArriba) {
-    if (g) U.poly([[12, 34], [15, 33], [15, 52], [12, 53 + f.mI]], MS);
-    else U.poly([[9, 33], [14, 32], [14, 53], [9, 54 + f.mI]], MS);
-    if (!o.arma) U.poly([[34 - g, 32], [39 - g, 33], [39 - g, 54 + f.mD], [34 - g, 53]], M0);
+    if (g) U.poly([[12, 34], [15, 33], [15, 52], [12, 53 + cuadro.mI]], MS);
+    else U.poly([[9, 33], [14, 32], [14, 53], [9, 54 + cuadro.mI]], MS);
+    if (!o.arma) U.poly([[34 - g, 32], [39 - g, 33], [39 - g, 54 + cuadro.mD], [34 - g, 53]], M0);
   }
   const largo = R.saco ? 57 : 55;
   U.poly([[13 + g, 32], [35 - g, 32], [34 - g, largo], [14 + g, largo]], C0);
@@ -272,8 +285,8 @@ export function espalda(L, o = {}) {
   }
   if (o.manosArriba) brazosArriba(U, R, g);
   else {
-    U.elipse(g ? 13 : 11, 56 + f.mI, 2, 3, PIEL_S);
-    if (!o.arma) U.elipse(37 - g, 56 + f.mD, 2, 3, PIEL);
+    U.elipse(g ? 13 : 11, 56 + cuadro.mI, 2, 3, PIEL_S);
+    if (!o.arma) U.elipse(37 - g, 56 + cuadro.mD, 2, 3, PIEL);
   }
   L.rigido(() => cabezaEspalda(U, o, g));
   if (R.cuello === 'panuelo') {
@@ -282,8 +295,8 @@ export function espalda(L, o = {}) {
     U.poly([[17, 30], [31, 30], [30, 33], [18, 33]], pr);
     U.rect(22, 32, 4, 3, ps);
     // Las puntas del nudo, que se mueven con el rebote.
-    const v = Math.round((f.mI - f.mD) / 3);
-    U.poly([[23, 34], [26, 34], [27 - v, 42 - Math.max(0, -f.y)], [24, 38], [21 - v, 42 - Math.max(0, -f.y)]], pr);
+    const v = Math.round((cuadro.mI - cuadro.mD) / 3);
+    U.poly([[23, 34], [26, 34], [27 - v, 42 - Math.max(0, -cuadro.y)], [24, 38], [21 - v, 42 - Math.max(0, -cuadro.y)]], pr);
   } else if (R.cuello === 'corbata') U.rect(19, 29, 11, 3, BLANCA);
   else U.rect(18, 29, 13, 4, CS);
   // Apuntando de espaldas: el brazo se va para arriba, al costado de la cabeza.

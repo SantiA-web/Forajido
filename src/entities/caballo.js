@@ -227,11 +227,18 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0) {
    * atada al costado. Una montura de verdad es casi plana: lo que sobresale son
    * los dos borrenes, y miden un dedo.
    */
-  r.rect(medio - 6.5, my + 1, 12, lomoAlto + 3, '#7a2f26');            // la manta
-  r.rect(medio - 6.5, my + 1, 12, 1, '#a04a3a');
-  r.rect(medio - 5, my, 9, 3, '#3a2418');                              // el asiento
-  r.rect(medio - 5.25, my - 1.5, 1.75, 2, '#22150d');                  // los borrenes
-  r.rect(medio + 2.5, my - 1, 1.5, 1.75, '#22150d');
+  /**
+   * 🔻 Y SE ANGOSTA AL GIRAR. De frente o de espaldas el caballo se ve
+   * escorzado, pero la manta seguía midiendo 12 unidades de ancho: asomaba a los
+   * dos costados del jinete como un par de alas rojas. Lo que se ve de una
+   * montura cuando el animal te da la cola es su ancho, no su largo.
+   */
+  const anchoM = 12 - giro * 3.5;
+  r.rect(medio - anchoM / 2, my + 1, anchoM, lomoAlto + 3, '#7a2f26');  // la manta
+  r.rect(medio - anchoM / 2, my + 1, anchoM, 1, '#a04a3a');
+  r.rect(medio - anchoM / 2 + 1.5, my, anchoM - 3, 3, '#3a2418');       // el asiento
+  r.rect(medio - anchoM / 2 + 1.25, my - 1.5, 1.75, 2, '#22150d');      // los borrenes
+  r.rect(medio + anchoM / 2 - 3, my - 1, 1.5, 1.75, '#22150d');
   r.rect(medio - 1, barriga - 3, 1, 4.5, '#2a1c12');                   // la correa del estribo
   r.rect(medio - 2, barriga + 1, 3, 1.5, '#6a5334');
 

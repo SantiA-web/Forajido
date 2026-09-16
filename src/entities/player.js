@@ -803,7 +803,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const col = CONFIG.colors;
 
   if (!p.alive) {
-    dibujarTendido(r, p.x, p.y, { sangre: true, cinta: CINTA_JUGADOR });
+    dibujarTendido(r, p.x, p.y, { tipo: "jugador", sangre: true, cinta: CINTA_JUGADOR });
     return;
   }
 
@@ -822,7 +822,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     r.ctx.globalAlpha = 1;
 
     dibujarTendido(r, p.x, p.y + 1, {
-      color: p.hitFlash > 0 ? '#fff' : undefined, cinta: CINTA_JUGADOR,
+      tipo: "jugador", color: p.hitFlash > 0 ? "#fff" : undefined, cinta: CINTA_JUGADOR,
     });
 
     const falta = p.tumbado / CONFIG.rodante.levantarse;
@@ -874,7 +874,10 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const bulto = llenado > 0 ? 1 + Math.round(llenado * 3) : 0;
   const fig = dibujarPersona(r, {
     tipo: 'jugador', x: bx, pies, angulo: p.aim,
-    fase: faseDeAndar(p),
+    // A cubierto no caminás: los pies se quedan pegados a la pared y lo que
+    // sale a asomarse es el cuerpo (ver `ancla` en figura.js).
+    fase: p.cover ? null : faseDeAndar(p),
+    ancla: p.cover ? { x: p.coverX, pies: p.coverY + p.hh } : null,
     postura: agachado ? 'agachado' : 'pie',
     destello: p.hitFlash > 0,
     arma: !p.cover || p.peek > 0.15 ? { angulo: p.aim, largo: 7, color: ARMA_JUGADOR } : null,
@@ -947,7 +950,7 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     r.box(p.x, p.y + 5, 6, 2, '#000');
     r.ctx.globalAlpha = 1;
     dibujarTendido(r, p.x, p.y + 2, {
-      color: p.hitFlash > 0 ? '#fff' : undefined, cinta: CINTA_JUGADOR,
+      tipo: "jugador", color: p.hitFlash > 0 ? "#fff" : undefined, cinta: CINTA_JUGADOR,
     });
     if (Math.floor(p.techoCaido * 10) % 2 === 0) {
       r.text('!', p.x, p.y - 12, col.enemyAlert);

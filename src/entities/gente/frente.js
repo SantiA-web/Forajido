@@ -110,6 +110,49 @@ function correasDeMochila(L, g) {
   L.rect(28 + g, 33, 2, 17, '#6a4a2a');
 }
 
+/**
+ * SENTADO, de franco: las piernas se van hacia la cámara, cortas y anchas, y
+ * los pies quedan donde estarían parados. El torso baja 6.
+ */
+function piernasSentado(L, R) {
+  const PT = R.pant;
+  L.poly([[16, 60], [24, 60], [24, 67], [15, 67]], PT);
+  L.poly([[25, 60], [33, 60], [34, 67], [25, 67]], tono(PT, 0.85));
+  L.rect(15, 66, 19, 2, tono(PT, 0.7));
+  L.rect(16, 67, 7, 4, tono(PT, 0.78));
+  L.rect(26, 67, 7, 4, tono(PT, 0.72));
+  L.poly([[15, 70], [23, 70], [24, 74], [14, 74]], BOTA);
+  L.poly([[25, 70], [33, 70], [34, 74], [24, 74]], BOTA);
+  L.rect(16, 71, 5, 1, BOTA_L); L.rect(27, 71, 5, 1, BOTA_L);
+}
+
+/**
+ * RENDIDO: de rodillas. Los muslos bajan cortos hasta las rodillas apoyadas y
+ * los pies quedan doblados hacia atrás, asomando a los costados: sin eso se
+ * leía como alguien parado y bajito.
+ */
+function piernasRendido(L, R) {
+  const PT = R.pant;
+  L.poly([[17, 65], [24, 65], [25, 73], [16, 73]], PT);
+  L.poly([[25, 65], [32, 65], [33, 73], [24, 73]], tono(PT, 0.85));
+  L.rect(16, 72, 17, 3, tono(PT, 0.68));            // las rodillas, apoyadas
+  // Los pies doblados atrás asoman A LOS COSTADOS del saco: si no, un guardia
+  // de saco largo se leía como alguien parado y bajito.
+  L.poly([[7, 72], [17, 72], [17, 75], [6, 75]], BOTA);
+  L.poly([[32, 72], [42, 72], [43, 75], [32, 75]], BOTA);
+  L.rect(9, 73, 5, 1, BOTA_L); L.rect(35, 73, 5, 1, BOTA_L);
+}
+
+/**
+ * El pañuelo blanco del que se rinde, colgando de la mano levantada. Va al
+ * costado y por debajo del ala del sombrero, que si no lo tapa entero.
+ */
+export function panueloBlanco(L, g) {
+  L.poly([[4 + g, 18], [12 + g, 17], [13 + g, 24], [3 + g, 23]], '#e4ddcc');
+  L.rect(4 + g, 17, 8, 1, '#f4f0e4');
+  L.rect(6 + g, 23, 5, 2, '#c8c0ae');
+}
+
 function torsoFrente(L, R, o, g, f) {
   const d = g * 2, [C0, CL, CS] = R.chal, [M0, ML, MS] = R.manga;
   if (R.capa) capa(L, R.capa, f, false);
@@ -178,18 +221,37 @@ function torsoFrente(L, R, o, g, f) {
 export function frente(L, o = {}) {
   o = { tipo: 'jugador', ...o };
   const R = ROPA[o.tipo], g = o.g || 0, f = cuadroFrente(o);
-  piernasFrente(L, R, g, f, false);
-  const U = mover(L, 0, f.y);
-  torsoFrente(U, R, o, g, f);
+  const a = o.asomado || { dx: 0, dy: 0 };
+  // Sentado y rendido cambian las piernas y bajan el cuerpo; el resto es igual.
+  // Asomado, las piernas acompañan un poco: el cuerpo se inclina, no se parte.
+  const quieto = piernasDePostura(mover(L, Math.round(a.dx / 3), 0), R, o, g, f, false);
+  // Asomado: los pies quedan clavados en el reparo y sale el cuerpo.
+  const U = mover(L, a.dx, (quieto ? quieto.baja : f.y) + a.dy);
+  const cuadro = quieto ? CAMINATA[0] : f;
+  torsoFrente(U, R, { ...o, manosArriba: (quieto && quieto.rendido) || o.manosArriba }, g, cuadro);
+  if (o.panuelo) panueloBlanco(U, g);
   L.rigido(() => { cabezaFrente(U, o, g); sombrero(U, R.sombrero, g, false); });
+}
+
+/**
+ * Las piernas según la postura. Devuelve `null` si está de pie (y entonces
+ * mandan los cuadros de la caminata), o cuánto baja el cuerpo si no.
+ */
+function piernasDePostura(L, R, o, g, f, atras) {
+  if (o.postura === 'rendido') { piernasRendido(L, R); return { baja: 14, rendido: true }; }
+  if (o.postura === 'sentado') { piernasSentado(L, R); return { baja: 6, rendido: false }; }
+  piernasFrente(L, R, g, f, atras);
+  return null;
 }
 
 export function espalda(L, o = {}) {
   o = { tipo: 'jugador', ...o };
   const R = ROPA[o.tipo], g = o.g || 0, f = cuadroFrente(o);
   const [C0, CL, CS] = R.chal, [M0, , MS] = R.manga;
-  piernasFrente(L, R, g, f, true);
-  const U = mover(L, 0, f.y);
+  const a = o.asomado || { dx: 0, dy: 0 };
+  const quieto = piernasDePostura(mover(L, Math.round(a.dx / 3), 0), R, o, g, f, true);
+  if (quieto) { o = { ...o, manosArriba: quieto.rendido || o.manosArriba }; f = CAMINATA[0]; }
+  const U = mover(L, a.dx, (quieto ? quieto.baja : f.y) + a.dy);
   if (R.capa) capa(U, R.capa, f, true);
   if (!o.manosArriba) {
     if (g) U.poly([[12, 34], [15, 33], [15, 52], [12, 53 + f.mI]], MS);
@@ -229,5 +291,6 @@ export function espalda(L, o = {}) {
     if (g) apuntar(U, R, [33, 33], [39, 27], [0.6, -0.8], 6);
     else apuntar(U, R, [34, 33], [35, 25], [0, -1], 5);
   }
+  if (o.panuelo) panueloBlanco(U, g);
   L.rigido(() => sombrero(U, R.sombrero, g, true));
 }

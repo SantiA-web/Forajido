@@ -93,18 +93,55 @@ function agachadoLado(paso) {
   return { ...c, cerca: baja(c.cerca), lejos: baja(c.lejos), y: c.y + 5, dx: 1 };
 }
 
+/** SENTADO de costado: el muslo sale hacia adelante y la canilla baja. */
+function piernasSentadoLado(L, R) {
+  const PT = R.pant;
+  tramo(L, [21, 60], [29, 60], 3.2, tono(PT, 0.7));
+  tramo(L, [29, 61], [29, 69], 2.6, tono(PT, 0.65));
+  botaLado(L, [29, 70], '#22180f', false, false);
+  tramo(L, [21, 62], [32, 62], 4, PT);
+  L.elipse(32, 62, 3.5, 3.5, PT);
+  tramo(L, [32, 63], [32, 70], 3, tono(PT, 0.88));
+  botaLado(L, [32, 71], BOTA, false, R.espuela);
+}
+
+/** RENDIDO de costado: de rodillas, con la pierna doblada hacia atrás. */
+function piernasRendidoLado(L, R) {
+  const PT = R.pant;
+  tramo(L, [22, 65], [24, 73], 3.4, tono(PT, 0.7));
+  tramo(L, [24, 73], [15, 74], 2.8, tono(PT, 0.65));
+  tramo(L, [23, 66], [26, 74], 3.6, PT);
+  L.elipse(26, 74, 3, 2.5, PT);
+  tramo(L, [26, 74], [16, 74], 2.8, tono(PT, 0.88));
+  botaLado(L, [14, 73], BOTA, true, R.espuela);
+}
+
 export function lado(L, o = {}) {
   o = { tipo: 'jugador', ...o };
   const R = ROPA[o.tipo];
   const [C0, CL, CS] = R.chal, [M0, ML, MS] = R.manga, PT = R.pant;
-  const P0 = o.trote != null ? TROTE[o.trote % TROTE.length]
-    : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
-  const U = mover(L, P0.dx || 0, P0.y);
+  // Sentado y rendido cambian las piernas y bajan el cuerpo; el resto es igual.
+  const postura = o.postura === 'sentado' || o.postura === 'rendido' ? o.postura : null;
+  if (postura === 'rendido') o = { ...o, manosArriba: true };
+  const P0 = postura ? caminataLado(0)
+    : o.trote != null ? TROTE[o.trote % TROTE.length]
+      : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
+  // Asomado: los pies quedan clavados en el reparo y sale el cuerpo.
+  const a = o.asomado || { dx: 0, dy: 0 };
+  const baja = postura === 'rendido' ? 14 : postura === 'sentado' ? 6 : P0.y;
+  const U = mover(L, (P0.dx || 0) + a.dx, baja + a.dy);
   const P = P0;
 
+  // Asomado, las piernas acompañan un poco: el cuerpo se inclina, no se parte.
+  const LP = a.dx ? mover(L, Math.round(a.dx / 3), 0) : L;
+
   // Lo de atrás, en sombra: la pierna y el brazo lejanos.
-  pierna(L, P.lejos[0], P.lejos[1], P.lejos[2], tono(PT, 0.7));
-  botaLado(L, P.lejos[2], '#22180f', P.lejos[3], false);
+  if (postura === 'rendido') piernasRendidoLado(LP, R);
+  else if (postura === 'sentado') piernasSentadoLado(LP, R);
+  else {
+    pierna(LP, P.lejos[0], P.lejos[1], P.lejos[2], tono(PT, 0.7));
+    botaLado(LP, P.lejos[2], '#22180f', P.lejos[3], false);
+  }
   if (o.manosArriba) { tramo(U, [21, 33], [19, 19], 2.6, MS); U.elipse(19, 17, 2.5, 2.5, PIEL_O); }
   else brazoLado(U, [21, 34], P.bL[0], P.bL[1], MS, null, PIEL_O);
   // La mochila va detrás del cuerpo: asoma por la espalda.
@@ -143,10 +180,12 @@ export function lado(L, o = {}) {
   if (R.extras) R.extras(U, 'lado');
 
   // La pierna cercana
-  pierna(L, P.cerca[0], P.cerca[1], P.cerca[2], PT);
-  L.sobre(8, 52, 32, 23, [PT], tono(PT, 0.86), 12);
-  L.rect(P.cerca[1][0], P.cerca[1][1] - 2, 2, 2, tono(PT, 1.15));
-  botaLado(L, P.cerca[2], BOTA, P.cerca[3], R.espuela);
+  if (!postura) {
+    pierna(LP, P.cerca[0], P.cerca[1], P.cerca[2], PT);
+    LP.sobre(8, 52, 32, 23, [PT], tono(PT, 0.86), 12);
+    LP.rect(P.cerca[1][0], P.cerca[1][1] - 2, 2, 2, tono(PT, 1.15));
+    botaLado(LP, P.cerca[2], BOTA, P.cerca[3], R.espuela);
+  }
   if (R.funda) {
     U.poly([[21, 55], [26, 55], [25, 64], [22, 64]], FUNDA);
     U.poly([[22, 49], [26, 48], [27, 55], [23, 55]], CULATA); U.rect(23, 50, 2, 1, CULATA_L);
@@ -180,6 +219,9 @@ export function lado(L, o = {}) {
     U.elipse(23.5, 35, 3.5, 3, MS); U.elipse(24, 35, 3, 2.5, M0); U.rect(22, 33, 3, 1, ML);
     brazoLado(U, [24, 34], P.bC[0], P.bC[1], M0, MS, PIEL);
   }
+
+  // El pañuelo blanco del que se rinde, en la mano levantada.
+  if (o.panuelo) { U.rect(19, 14, 6, 5, '#e4ddcc'); U.rect(19, 14, 6, 1, '#f4f0e4'); }
 
   L.rigido(() => { cabezaLado(U, o); sombreroLado(U, R.sombrero); });
 }

@@ -47,7 +47,7 @@ export function createRider(x, y, side, typeId = 'ley') {
 
 export function drawRider(r, rd) {
   if (!rd.alive) {
-    dibujarTendido(r, rd.x, rd.y + 4, { cinta: '#4a78b8' });
+    dibujarTendido(r, rd.x, rd.y + 4, { tipo: "jineteLey", cinta: "#4a78b8" });
     return;
   }
 

@@ -173,7 +173,7 @@ export function drawBoss(r, bo) {
   if (!bo.alive) {
     // Un cuerpo más grande que el de un guardia, y con el sombrero al lado:
     // tiene que poder leerse desde el otro lado del vagón que ESE lo mataste.
-    dibujarTendido(r, bo.x, bo.y, { sangre: true, grande: true, cinta });
+    dibujarTendido(r, bo.x, bo.y, { tipo, sangre: true, grande: true, cinta });
     return;
   }
 

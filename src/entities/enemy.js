@@ -348,7 +348,7 @@ export function drawEnemy(r, e) {
   const cinta = CINTA_DE[tipo];
 
   if (!e.alive) {
-    dibujarTendido(r, e.x, e.y, { sangre: true, cinta });
+    dibujarTendido(r, e.x, e.y, { tipo, sangre: true, cinta });
     return;
   }
 
@@ -364,7 +364,7 @@ export function drawEnemy(r, e) {
    */
   if (e.inconsciente > 0) {
     dibujarTendido(r, e.x, e.y, {
-      cinta, dormido: true, respira: Math.sin(e.inconsciente * 3) * 0.5,
+      tipo, cinta, dormido: true, respira: Math.sin(e.inconsciente * 3) * 0.5,
     });
     return;
   }
@@ -451,7 +451,9 @@ export function drawEnemy(r, e) {
     // esconderse son pasos cortos: caminata, nunca trote.
     modo: e.state === 'patrol' || e.atCover ? 'caminar' : 'trotar',
     // Parado a apuntar no mueve las piernas: es EL aviso de que va a disparar.
-    fase: sentado || e.aimTimer > 0 ? null : fase,
+    // A cubierto tampoco: los pies quedan en el reparo y asoma el cuerpo.
+    fase: sentado || e.aimTimer > 0 || e.atCover ? null : fase,
+    ancla: e.atCover && e.coverPoint ? { x: e.coverPoint.x, pies: e.coverPoint.y + e.hh } : null,
     postura: sentado ? 'sentado' : 'pie',
     estado,
     destello: e.hitFlash > 0,

@@ -28,6 +28,7 @@ import { CONFIG } from '../data/config.js';
 import { ROPA, Lienzo, deformar, NEGRO } from './gente/dibujo.js';
 import { frente, espalda } from './gente/frente.js';
 import { lado } from './gente/costado.js';
+import { tendido, TENDIDO } from './gente/tendido.js';
 
 /** El alto de una persona con sombrero, en unidades del mundo. */
 export const ALTO_PERSONA = 20;
@@ -191,25 +192,62 @@ export function dibujarPersona(r, f) {
     return { x, top: arriba, arriba, manoY: pies - 9, pechoY: pies - 11, vista: nombre, espejo };
   }
 
-  const modo = postura !== 'pie' ? 'agachado'
-    : f.fase != null ? (f.modo === 'caminar' ? 'caminar' : 'trotar')
-      : 'quieto';
-  const cuadro = modo === 'quieto' ? 0 : cuadroDe(f.fase, modo);
+  const modo = postura === 'sentado' || postura === 'rendido' ? postura
+    : postura !== 'pie' ? 'agachado'
+      : f.fase != null ? (f.modo === 'caminar' ? 'caminar' : 'trotar')
+        : 'quieto';
+  const sinPaso = modo === 'quieto' || modo === 'sentado' || modo === 'rendido';
+  const cuadro = sinPaso ? 0 : cuadroDe(f.fase, modo);
+  // Sentado y de rodillas el cuerpo queda más abajo: la cabeza también.
+  const baja = modo === 'rendido' ? 3.5 : modo === 'sentado' ? 1.5 : 0;
+
+  /**
+   * ASOMARSE DESDE UN REPARO ES DOBLARSE, NO CAMINAR.
+   *
+   * *(Santi: "hay guardias que… estando en el mismo lugar que disparan siguen
+   * trotando")*. Cubrirse mueve el cuerpo de verdad (`peekPosition`, en
+   * systems/ai.js): con los pies siguiendo esa ida y vuelta, o trotaban en el
+   * lugar o se deslizaban. Ahora quien se cubre pasa el punto del reparo como
+   * `ancla`: LOS PIES SE QUEDAN AHÍ y el torso sale hasta donde está de verdad.
+   */
+  let anclaX = x, anclaPies = pies, asomado = null;
+  if (f.ancla) {
+    const cortar = (v, tope) => Math.max(-tope, Math.min(tope, v));
+    // Hasta 6 puntos: más que eso, el torso se despega de las piernas y parece
+    // cortado. Lo que falta lo caminan los pies.
+    // En pasos de 2 puntos, para no llenar la memoria de dibujos casi iguales.
+    const dx = Math.round(cortar((f.x - f.ancla.x) * 4, 6) / 2) * 2;
+    const dy = Math.round(cortar((f.pies - f.ancla.pies) * 4, 4) / 2) * 2;
+    if (dx || dy) {
+      asomado = { dx, dy };
+      anclaX = q(x - dx / 4);
+      anclaPies = q(pies - dy / 4);
+    }
+  }
   // Los ojos rojos del encubierto entran por acá: es la misma cara de alerta.
   const estado = f.estado && f.estado !== 'calma' ? f.estado : (f.ojos ? 'alerta' : undefined);
   const arma = !!f.arma;
   const manos = !!f.manosArriba;
   const mochila = Math.min(4, Math.round(f.mochila || 0));
 
-  const clave = [tipo, nombre, g, modo, cuadro, estado, arma ? 'a' : '', manos ? 'm' : '', mochila].join('|');
+  // El dibujo se arma mirando a la derecha: si va en espejo, asomarse para la
+  // derecha del mundo es asomarse para la izquierda del dibujo.
+  const asomadoDibujo = asomado ? { dx: espejo ? -asomado.dx : asomado.dx, dy: asomado.dy } : null;
+
+  const clave = [tipo, nombre, g, modo, cuadro, estado, arma ? 'a' : '', manos ? 'm' : '', mochila,
+    f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : ''].join('|');
   const img = armar(clave, () => {
     // Al trotar el torso se va para adelante; de frente casi no se nota.
     const lateral = fn === lado ? 1 : g ? 0.5 : 0;
     const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12 : 0) * lateral;
     const L = Lienzo(ANCHO, ALTO, OX, OY, S, deformar(inclina));
-    const datos = { tipo, g, estado, arma, manosArriba: manos, mochila };
+    const datos = {
+      tipo, g, estado, arma, manosArriba: manos, mochila,
+      asomado: asomadoDibujo, panuelo: !!f.panuelo,
+    };
     if (modo === 'trotar') datos.trote = cuadro;
     else { datos.paso = cuadro; datos.agachado = modo === 'agachado'; }
+    if (modo === 'sentado' || modo === 'rendido') datos.postura = modo;
     fn(L, datos);
     return L.canvas();
   });
@@ -217,7 +255,7 @@ export function dibujarPersona(r, f) {
   const ctx = r.ctx;
   const estampar = (imagen, dx = 0, dy = 0) => {
     ctx.save();
-    ctx.translate(x + dx, pies + dy);
+    ctx.translate(anclaX + dx, anclaPies + dy);
     if (espejo) ctx.scale(-1, 1);
     ctx.drawImage(imagen, -CX * PUNTO, -PIE * PUNTO, ANCHO * PUNTO, ALTO * PUNTO);
     ctx.restore();
@@ -231,12 +269,13 @@ export function dibujarPersona(r, f) {
   }
   estampar(f.destello ? armar(clave + '|flash', () => tenido(img, '#ffe8c0', 0.75)) : img);
 
+  const cabeza = arriba + baja;
   return {
     x,
-    top: arriba,
-    arriba: manos || postura === 'rendido' ? arriba - 3 : arriba,
-    manoY: pies - 9,
-    pechoY: pies - 11,
+    top: cabeza,
+    arriba: manos || postura === 'rendido' ? cabeza - 3 : cabeza,
+    manoY: pies - 9 + baja,
+    pechoY: pies - 11 + baja,
     vista: nombre,
     espejo,
   };
@@ -285,35 +324,42 @@ export function dibujarAviso(r, x, arriba, estado, llenado = 0) {
  * quién era). `sangre` agrega el charco; el desmayado no tiene, respira y
  * lleva la "z".
  *
- * ⚠️ TODAVÍA ES EL DIBUJO VIEJO, chiquito al lado de la gente nueva: los
- * caídos se rehacen en la etapa 2b.
- *
- * Va con el piso (ver el orden de dibujo del asalto): nunca tapa a nadie.
+ * El desmayado respira (el pecho sube y baja) y lleva su "z"; el muerto, el
+ * charco. Va con el piso (ver el orden de dibujo del asalto): nunca tapa a nadie.
  */
 export function dibujarTendido(r, x, y, opciones = {}) {
-  const { sangre = false, respira = 0, grande = false, cinta = null, dormido = false } = opciones;
-  const color = opciones.color || NEGRO;
-  const cx = Math.round(x);
-  const cy = Math.round(y);
-  const k = grande ? 1 : 0;
-  const late = Math.round(respira);
+  const { sangre = false, respira = 0, grande = false, dormido = false } = opciones;
+  const tipo = ROPA[opciones.tipo] ? opciones.tipo : 'guardia';
+  const late = Math.round(respira) ? 1 : 0;
+  const k = grande ? 1.25 : 1;          // los jefes son más grandes
+  const cx = q(x), cy = q(y);
+
+  // El charco va primero, abajo de todo.
   if (sangre) {
-    r.rect(cx - 9 - k, cy + 1, 19 + k * 2, 4, CONFIG.colors.blood);
-    r.rect(cx - 6 - k, cy + 4, 12 + k * 2, 2, tono(CONFIG.colors.blood, 0.8));
+    r.rect(cx - 12 * k, cy - 1, 24 * k, 6, CONFIG.colors.blood);
+    r.rect(cx - 8 * k, cy + 5, 16 * k, 2, tono(CONFIG.colors.blood, 0.8));
   }
-  r.rect(cx - 12 - k, cy - 3, 3, 1, color);                       // el sombrero: la copa
-  r.rect(cx - 13 - k, cy - 2, 5, 1, color);                       // y el ala
-  if (cinta) r.rect(cx - 12 - k, cy - 3, 3, 1, cinta);
-  r.rect(cx - 7 - k, cy - 2, 4, 4, color);                        // la cabeza
-  r.rect(cx - 3 - k, cy - 2 + late, 8 + k * 2, 5, color);         // el torso
-  r.rect(cx - 1, cy - 4 + late, 2, 2, color);                     // un brazo, tirado para arriba
-  r.rect(cx + 1, cy + 3, 3, 1, color);                            // el otro
-  r.rect(cx + 5 + k, cy - 2, 6, 2, color);                        // las piernas, abiertas
-  r.rect(cx + 5 + k, cy + 1, 5, 2, color);
+
+  if (!r.ctx) {
+    r.rect(cx - 10, cy - 3, 20, 7, opciones.color || NEGRO);
+    return;
+  }
+
+  const img = armar(['tendido', tipo, late].join('|'), () => {
+    const L = Lienzo(TENDIDO.ancho, TENDIDO.alto, 0, 0, 1, null);
+    tendido(L, { tipo, late });
+    return L.canvas();
+  });
+  r.ctx.drawImage(
+    img,
+    cx - TENDIDO.cx * PUNTO * k, cy - TENDIDO.cy * PUNTO * k,
+    TENDIDO.ancho * PUNTO * k, TENDIDO.alto * PUNTO * k
+  );
+
   if (dormido) {
     const z = ['xxx', '..x', '.x.', 'xxx'];
     z.forEach((fila, i) => {
-      for (let j = 0; j < 3; j++) if (fila[j] !== '.') r.rect(cx - 6 + j, cy - 10 + i, 1, 1, '#c8d8f0');
+      for (let j = 0; j < 3; j++) if (fila[j] !== '.') r.rect(cx - 8 + j, cy - 12 + i, 1, 1, '#c8d8f0');
     });
   }
 }

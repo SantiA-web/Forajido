@@ -330,7 +330,7 @@ export function drawPassenger(r, pa) {
   const tipo = pa.botin ? 'rico' : 'pasajero';
 
   if (!pa.alive) {
-    dibujarTendido(r, pa.x, pa.y, { sangre: true, cinta: pa.botin ? '#a050c0' : '#3fa870' });
+    dibujarTendido(r, pa.x, pa.y, { tipo, sangre: true, cinta: pa.botin ? '#a050c0' : '#3fa870' });
     return;
   }
 

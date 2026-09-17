@@ -1,0 +1,119 @@
+{
+  "group_id": "c7957103-f187-44dd-b6c5-656fa6e39ed0",
+  "states": [
+    {
+      "character": {
+        "id": "4494ddc9-73df-49b7-afb4-bae8a4bea820",
+        "name": "Idle",
+        "prompt": "Pelaje color marr\u00f3n. El caballo tiene que ser realista y dar la sensaci\u00f3n de la crudeza del Salvaje Oeste. Nada de cosas adorables, piernas cortitas y cuerpo gordito y petiso. ",
+        "size": {
+          "width": 92,
+          "height": 92
+        },
+        "template_id": "horse",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-09-17T03:47:27.839723+00:00"
+      },
+      "folder": "Idle",
+      "frames": {
+        "rotations": {
+          "south": "Idle/rotations/south.png",
+          "south-east": "Idle/rotations/south-east.png",
+          "east": "Idle/rotations/east.png",
+          "north-east": "Idle/rotations/north-east.png",
+          "north": "Idle/rotations/north.png",
+          "north-west": "Idle/rotations/north-west.png",
+          "west": "Idle/rotations/west.png",
+          "south-west": "Idle/rotations/south-west.png"
+        },
+        "animations": {
+          "Run": {
+            "north": [
+              "Idle/animations/Run/north/frame_000.png",
+              "Idle/animations/Run/north/frame_001.png",
+              "Idle/animations/Run/north/frame_002.png",
+              "Idle/animations/Run/north/frame_003.png",
+              "Idle/animations/Run/north/frame_004.png",
+              "Idle/animations/Run/north/frame_005.png",
+              "Idle/animations/Run/north/frame_006.png",
+              "Idle/animations/Run/north/frame_007.png"
+            ],
+            "south": [
+              "Idle/animations/Run/south/frame_000.png",
+              "Idle/animations/Run/south/frame_001.png",
+              "Idle/animations/Run/south/frame_002.png",
+              "Idle/animations/Run/south/frame_003.png",
+              "Idle/animations/Run/south/frame_004.png",
+              "Idle/animations/Run/south/frame_005.png",
+              "Idle/animations/Run/south/frame_006.png",
+              "Idle/animations/Run/south/frame_007.png"
+            ],
+            "east": [
+              "Idle/animations/Run/east/frame_000.png",
+              "Idle/animations/Run/east/frame_001.png",
+              "Idle/animations/Run/east/frame_002.png",
+              "Idle/animations/Run/east/frame_003.png",
+              "Idle/animations/Run/east/frame_004.png",
+              "Idle/animations/Run/east/frame_005.png",
+              "Idle/animations/Run/east/frame_006.png",
+              "Idle/animations/Run/east/frame_007.png"
+            ],
+            "south-west": [
+              "Idle/animations/Run/south-west/frame_000.png",
+              "Idle/animations/Run/south-west/frame_001.png",
+              "Idle/animations/Run/south-west/frame_002.png",
+              "Idle/animations/Run/south-west/frame_003.png",
+              "Idle/animations/Run/south-west/frame_004.png",
+              "Idle/animations/Run/south-west/frame_005.png",
+              "Idle/animations/Run/south-west/frame_006.png",
+              "Idle/animations/Run/south-west/frame_007.png"
+            ],
+            "west": [
+              "Idle/animations/Run/west/frame_000.png",
+              "Idle/animations/Run/west/frame_001.png",
+              "Idle/animations/Run/west/frame_002.png",
+              "Idle/animations/Run/west/frame_003.png",
+              "Idle/animations/Run/west/frame_004.png",
+              "Idle/animations/Run/west/frame_005.png",
+              "Idle/animations/Run/west/frame_006.png",
+              "Idle/animations/Run/west/frame_007.png"
+            ],
+            "north-west": [
+              "Idle/animations/Run/north-west/frame_000.png",
+              "Idle/animations/Run/north-west/frame_001.png",
+              "Idle/animations/Run/north-west/frame_002.png",
+              "Idle/animations/Run/north-west/frame_003.png",
+              "Idle/animations/Run/north-west/frame_004.png",
+              "Idle/animations/Run/north-west/frame_005.png",
+              "Idle/animations/Run/north-west/frame_006.png",
+              "Idle/animations/Run/north-west/frame_007.png"
+            ],
+            "north-east": [
+              "Idle/animations/Run/north-east/frame_000.png",
+              "Idle/animations/Run/north-east/frame_001.png",
+              "Idle/animations/Run/north-east/frame_002.png",
+              "Idle/animations/Run/north-east/frame_003.png",
+              "Idle/animations/Run/north-east/frame_004.png",
+              "Idle/animations/Run/north-east/frame_005.png",
+              "Idle/animations/Run/north-east/frame_006.png",
+              "Idle/animations/Run/north-east/frame_007.png"
+            ],
+            "south-east": [
+              "Idle/animations/Run/south-east/frame_000.png",
+              "Idle/animations/Run/south-east/frame_001.png",
+              "Idle/animations/Run/south-east/frame_002.png",
+              "Idle/animations/Run/south-east/frame_003.png",
+              "Idle/animations/Run/south-east/frame_004.png",
+              "Idle/animations/Run/south-east/frame_005.png",
+              "Idle/animations/Run/south-east/frame_006.png",
+              "Idle/animations/Run/south-east/frame_007.png"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-09-17T04:53:30.414446"
+}

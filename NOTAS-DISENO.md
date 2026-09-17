@@ -13143,6 +13143,99 @@ sueltos pero no una estampa.
 
 ---
 
+### 🐎 ETAPA 5c: el caballo dejó de dibujarse y pasó a ser un sprite
+
+*(Santi, después de cinco intentos: "está horrible. Parece más a un zorro
+bugeado que a un caballo y encima estuviste 40min para hacerlo" … "el caballo
+prácticamente no tiene forma" … "se ve no tan bien. ¿Y si navegas por internet
+y me otorgas links que me lleven a texturas o siluetas de caballos pixel art?")*.
+
+Terminó generando el suyo con una página de pixel art. **Es de él y es mejor
+que las cinco versiones que salieron de acá.** El caballo dibujado con código se
+borró entero.
+
+#### Las cinco versiones y por qué fallaron todas
+
+| | Qué se probó | Por qué falló |
+|---|---|---|
+| 1 | Silueta por curvas, con datos de anatomía | Cuerpo 50% demasiado largo: un zorro |
+| 2 | Proporciones corregidas (cuerpo casi cuadrado) | Sin contraste: una mancha marrón |
+| 3 | Menos detalle y más contraste (mirando Westerado) | Mejor, pero la forma seguía siendo de fórmula |
+| 4 | Contorno **medido** sobre la referencia, 44 columnas | Se defendía de lejos, se caía de cerca |
+| 5 | Contorno **copiado**, 108 columnas como datos | Lo mejor, y aun así "se ve no tan bien" |
+
+**LA LECCIÓN, y costó una noche: un caballo NO SE CALCULA.** Una fórmula da una
+silueta correcta en promedio que nunca está *dibujada*. Ni siquiera copiarle el
+contorno columna por columna a una referencia alcanzó.
+
+⚠️ **Y NO ERA LA RESOLUCIÓN**, que fue la sospecha de Santi *("¿será por la
+calidad que hemos elegido (72px) que no puede hacer bien el caballo?")*. Se
+comprobó metiendo su referencia, achicada, en la caja EXACTA que ocupa nuestro
+caballo (140 × 108 puntos): sigue siendo un caballo hermoso. La caja daba de
+sobra; el problema era el dibujante.
+
+#### Cómo entró el sprite
+
+La hoja va **adentro de un `.js`** (`assets/caballoHoja.js`, 98 KB en base64), y
+no como un `.png` suelto: `armar-archivo.ps1` sólo empaqueta los `.js`, así que
+una imagen aparte andaría con servidor pero rompería el `Forajido-jugar.html`.
+
+**8 columnas × 6 filas de 77 × 69 puntos.** Filas 0-4: los ocho cuadros del
+galope, una por dirección (norte, noreste, este, sudeste, sur). Fila 5: el
+caballo parado. Todas las celdas salen de **la misma ventana** del dibujo
+original — recortar cada cuadro por su cuenta habría hecho saltar al caballo
+entre cuadro y cuadro.
+
+**VA AL DOBLE, y está medido, no elegido a ojo:** el caballo de la hoja tiene el
+lomo a 33 puntos del suelo; al doble son 66 y el nuestro estaba a 68. Al natural
+quedaba un petiso con un jinete gigante encima. El precio es que sus píxeles son
+de 2 × 2 contra los de 1 × 1 de la gente — se miró al lado de un guardia antes
+de decidirlo y no se pelean.
+
+Las **cinco direcciones de la hoja son casi exactamente nuestras poses**: `este`
+es el perfil, `noreste` y `norte` son la tecla W, `sudeste` y `sur` la tecla S.
+
+⚠️ **EL GIRO PERDIÓ CUATRO DIBUJOS.** Tenía nueve pasos *(Santi había pedido
+subir de cinco a nueve)*; ahora cinco son dibujos de verdad y las cuatro del
+medio son la vecina achatada un poco de ancho. Alcanza para que no salte de a
+dos, pero no son poses propias.
+
+#### Lo que sigue siendo nuestro
+
+El **jinete** (es la gente del juego, sentada, con su ropa y su estado), las
+**riendas**, el **polvo de los cascos**, y el enganche de los cuadros al reloj
+del sonido: el cuadro del galope sale del MISMO número que hace sonar los
+cascos (`faseDeZancada`), así que el dibujo y el "tucu-TÚN" no se pueden
+desincronizar.
+
+Y la **silueta detrás de la pared del tren** sigue andando: la hoja se tiñe
+entera de un color y se guarda teñida.
+
+#### Medido
+
+| | Antes (dibujado) | Ahora (sprite) |
+|---|---|---|
+| Llamadas de dibujo, caballo + jinete | 51 | **18** |
+| Líneas en `entities/caballo.js` | 640 | **286** |
+| Memoria | 18 láminas, 361 KB | una hoja, 98 KB |
+
+Sin errores en 700 cuadros por tecla en el galope, 800 por tecla en el asalto, y
+el campamento y el pueblo.
+
+🔻 **QUEDA PENDIENTE Y ES VISIBLE:** el campamento, la tienda y el pueblo dibujan
+su propio caballito con **cuatro rectángulos** (`campScene`, `interiorScene`,
+`townScene`). Al lado del sprite van a cantar. La hoja ya trae el caballo parado
+de las cinco direcciones, así que es cambiar cuatro rectángulos por una estampa
+— va con la etapa 6, las pantallas fijas.
+
+🔻 **Y SE ABRE ALGO GRATIS:** el Criollo y el Mustang son hoy el mismo caballo
+pintado igual. Como la hoja la generó Santi, alcanza con generar el mismo
+caballo con otro pelaje y cambiar una hoja por montura.
+
+**⚠️ NO JUGADO.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

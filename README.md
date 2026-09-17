@@ -70,10 +70,20 @@ paleta, la crin, el ojo), **el giro dejó de ser sólo el cuello** —ahora el
 cuerpo se acorta y se ladea, el anca o el pecho asoman de punta y las patas
 convergen— y el jinete **reacciona**: se dobla de la cintura en vez de
 deslizarse, gira de a poco pasando por el tres cuartos, amortigua el rebote del
-lomo y lleva las riendas. Quedan la **6** (las pantallas fijas) y la **7, la
-última: el techo**, que se lleva una etapa entera para él solo. El detalle y los
-números están en NOTAS-DISENO.md ("La gente curtida a 80 px" y las etapas 3, 4,
-5 y 5b).
+lomo y lleva las riendas.
+
+**Y en la 5c el caballo dejó de dibujarse con código.** Después de cinco
+versiones dibujadas —cada una con su defecto: demasiado larga, sin contraste,
+sin forma— Santi generó la suya con una página de pixel art, y esa entró tal
+cual: una hoja de ocho cuadros de galope por cinco direcciones, metida adentro
+de un `.js` para que viaje con el archivo de un solo clic. El jinete, las
+riendas, el polvo y el enganche de los cuadros al sonido de los cascos siguen
+siendo nuestros. La lección quedó escrita en NOTAS-DISENO.md y es corta: **un
+caballo no se calcula**.
+
+Quedan la **6** (las pantallas fijas) y la **7, la última: el techo**, que se
+lleva una etapa entera para él solo. El detalle y los números están en
+NOTAS-DISENO.md ("La gente curtida a 80 px" y las etapas 3, 4, 5, 5b y 5c).
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido

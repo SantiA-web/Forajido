@@ -7,7 +7,11 @@
  * o no. Es la misma prueba aparte que usamos para la gente y para el vagón.
  */
 
-import { dibujarAnimal, dibujarJinete, GOLPES } from '../../src/entities/caballo.js';
+import { dibujarAnimal, dibujarJinete, GOLPES, cargada } from '../../src/entities/caballo.js';
+
+// La hoja del caballo tarda un cuadro en decodificarse y esta lamina dibuja una
+// sola vez: sin esperarla salia el jinete flotando sin caballo debajo.
+await cargada;
 import { piezasGuardadas } from '../../src/world/piezas.js';
 
 const DENSIDAD = 4;

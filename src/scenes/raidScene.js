@@ -4031,8 +4031,16 @@ export function createRaidScene(services) {
     const alto = CONFIG.tresCuartos.alturaPared;
     const color = colors.siluetaJinete;
     const alpha = 0.45;
-    // Un renderer que pinta todo del mismo color: drawRider no se entera.
+    /**
+     * Un renderer que pinta todo del mismo color: drawRider no se entera.
+     *
+     * 🔁 `plano` lleva además EL COLOR, porque el caballo dejó de ser
+     * rectángulos sueltos y pasó a ser una lámina: los rectángulos los podía
+     * repintar este renderer falso de a uno, pero una lámina ya viene con sus
+     * colores adentro y hay que teñirla entera (`piezaTenida`, en piezas.js).
+     */
     const plano = {
+      plano: color,
       ctx: r.ctx,
       rect: (x, y, w, h) => r.rect(x, y, w, h, color),
       box: (x, y, hw, hh) => r.box(x, y, hw, hh, color),

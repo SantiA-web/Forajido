@@ -69,13 +69,16 @@ export function drawRider(r, rd) {
   const T = 0.56;
   const zancada = { t: ((rd.gallop % T) + T) % T, T };
   const trote = Math.round(Math.cos((zancada.t / T - 0.15) * Math.PI * 2) * 1.2);
-  dibujarAnimal(r, rd.x, rd.y, zancada, trote, 1, 0);
-  dibujarJinete(r, rd.x - 1, rd.y - 10 + trote, 0, 2, {
+  const montura = dibujarAnimal(r, rd.x, rd.y, zancada, trote, 1, 0);
+  // El jinete amortigua el rebote del lomo, igual que el jugador en el galope.
+  const rebote = Math.cos((zancada.t / T - 0.25) * Math.PI * 2) * 1.2 * 0.5;
+  dibujarJinete(r, montura.asiento.x, rd.y - 10 + rebote, 0, 2, {
     detalles: 'ley',
     destello: rd.hitFlash > 0,
     // Los ojos se ponen rojos mientras apunta, igual que un guardia en combate.
     estado: rd.aimTimer > 0 ? 'alerta' : 'calma',
-  });
+  }, montura.riendas);
+  montura.adelante();
 
   /**
    * El aviso. Es lo mismo que hacen los guardias: se paran en seco y levantan

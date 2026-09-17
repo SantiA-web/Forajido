@@ -602,3 +602,26 @@ export function piezaTranca(rojo) {
     return c;
   });
 }
+
+/**
+ * LA MISMA PIEZA, TEÑIDA DE UN SOLO COLOR.
+ *
+ * La silueta del jinete detrás de la pared del tren (`siluetaDeJinete`, en
+ * raidScene) pinta todo plano con un renderer falso: mientras el caballo eran
+ * rectángulos sueltos, ese renderer los pintaba a todos del mismo color y
+ * listo. Con la lámina hay que teñir LA LÁMINA, que es lo que hace esto:
+ * copia el dibujo y lo rellena entero respetando su recorte (`source-atop`).
+ */
+export function piezaTenida(img, clave, color) {
+  return armar(`plano|${clave}|${color}`, () => {
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = color;
+    g.fillRect(0, 0, c.width, c.height);
+    return c;
+  });
+}

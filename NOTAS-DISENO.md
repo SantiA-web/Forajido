@@ -13022,6 +13022,125 @@ angosta con el giro.
 y de noche, sin un solo error; y el asalto entero, el campamento y el pueblo
 igual. Antes, con W, reventaba en el cuadro 58.
 
+### 🐎 ETAPA 5b: el caballo de verdad, el giro entero y el jinete
+
+*(Santi, después de jugar la 5 y mandando una lámina de caballos en pixel art:
+"quisiera que el caballo sea más realista como la imagen, coméntame qué tan
+alcanzable es. Además, cuando dobla con W o S, es como que solo mueve el cuello
+el caballo cuando en realidad debería mover todo el cuerpo. Además, se debería
+mejorar como reacciona el personaje ante la inclinación y movimientos del
+caballo, porque hoy en día es muy malo")*.
+
+Tres pedidos distintos, y los tres tenían razón. Eligió **A · el caballo bien
+dibujado** sobre dos alternativas (el pelo volando también en lámina; un pelaje
+por montura).
+
+#### Por qué se veía tosco: era lo último sin migrar
+
+El caballo estaba hecho de **~50 rectángulos y rayas dibujados en vivo, en
+unidades del mundo** — exactamente el problema que tenían el vagón, la gente y
+el desierto antes de arreglarlos. **Nunca se había dibujado a la resolución
+nueva.** El animal mide 104 × 68 PUNTOS: ahí entran la silueta curva, el
+músculo, el ojo y el hocico. Con dos rectángulos, no.
+
+Las medidas salen de un caballo de verdad. El barril mide 104 puntos y un
+caballo 2,40 m, así que **un punto son 2,3 cm** y todo lo demás sale de ahí: el
+pecho hondo de 72 cm son 32 puntos, la cabeza de 60 cm son 26, el cuello de
+75 cm son 32.
+
+🔻 **EL PRIMER INTENTO LOS PUSO A OJO** y el cuello le salió de 46 puntos: con
+la cabeza pegada atrás sin ángulo, cuello y cabeza eran **un solo cono largo** y
+el caballo tenía cara de oso hormiguero. El quiebre de la garganta —que la
+cabeza salga EN ÁNGULO del cuello— es lo que hace que se lean como dos cosas.
+
+Otras tres que hubo que rehacer mirándolas: la **crin** salió como un peine de
+dientes parejos (de cerca, una cremallera), la **cola** como un tablón
+horizontal, y el **anca girada** como una pelota pegada al costado.
+
+#### El giro: tenía razón, casi sólo se movía el cuello
+
+Lo único que cambiaba de forma era la cabeza. El cuerpo se acortaba un 30% y las
+patas se quedaban clavadas, así que el ojo no registraba el giro. Ahora giran
+las cinco cosas que giran de verdad:
+
+| | Antes | Ahora |
+|---|---|---|
+| Largo del cuerpo | 26 → 18 | 26 → 18 |
+| Anca o pecho de punta | no había | aparece, con la raya del medio |
+| Patas | siempre igual | convergen, y se separan de costado |
+| Barril | horizontal siempre | se ladea: lo cercano baja, lo lejano sube |
+| Zancada en pantalla | −25% | −55% |
+
+⚠️ **PROBÉ UN ESCORZO MÁS FUERTE (26 → 14) Y HUBO QUE VOLVER ATRÁS.** Con el
+cuerpo tan corto, en las poses extremas el caballo **desaparecía detrás del
+jinete** y quedaba un hombre sentado sobre un bulto marrón. El escorzo real a
+42° ni siquiera llega a 26 → 19; el giro se lee por las OTRAS cuatro señales,
+no por acortar más.
+
+🐛 **Y UN SIGNO AL REVÉS.** En esta vista, lo que está más cerca de la cámara va
+más abajo. La cabeza subía cuando el caballo venía y bajaba cuando se alejaba —
+justo al revés.
+
+🔻 **LAS DOS LÁMINAS.** El caballo se guarda en dos piezas por pose, cuerpo y
+cabeza, porque **no siempre van en el mismo orden**: cuando el animal viene
+hacia la cámara su cabeza está MÁS CERCA que el jinete y tiene que taparlo a él.
+Con una sola lámina, apretando S quedaba un hombre sin caballo debajo.
+
+#### El jinete: eran cuatro cosas, no una
+
+1. **La inclinación era un corrimiento de costado.** Se deslizaba en X y nada
+   más. Ahora el torso **rota sobre la montura**: se dobla de la cintura.
+2. **El giro le saltaba de golpe**, de perfil a de frente en un cuadro. Y
+   resulta que la gente **ya tenía las vistas de tres cuartos** (`diagF` y
+   `diagE`, en `figura.js`) y el jinete era el único que no las usaba: ahora el
+   ángulo sale del rumbo y la vista se elige sola.
+3. **Iba soldado al lomo**, subiendo y bajando exactamente lo mismo que el
+   animal — por eso se leía como una calcomanía. Ahora **amortigua**: sube la
+   mitad y un décimo de vuelta más tarde. Sale de la misma zancada, con un
+   corrimiento de fase, así que no hay que guardar nada de un cuadro al otro.
+4. **No tenía las riendas.** Ahora hay una, con panza, de la mano al bocado.
+
+🔻 **UNA RIENDA, NO DOS.** Dos rayas a un punto de distancia, al lado de la
+mandíbula y del cachete —que son otras dos diagonales— daban **cuatro líneas
+paralelas** que se leían como un enredo de alambres.
+
+🐛 **Y NO SE DIBUJA CON `r.line`.** Una raya fina en diagonal el canvas la
+SUAVIZA, y una rienda de un punto suavizada no queda fina: queda un borrón
+claro y despintado que parecía un palo de luz al lado de la cabeza. Acá no hay
+nada suavizado. Se dibuja en tramos de rectángulos, uno por fila.
+
+🔻 **Y LA ROTACIÓN DEL LIENZO BAJÓ DEL 30% AL 14% DEL RUMBO.** Ahora el cuerpo
+ya se ladea solo dentro de la pose, y las dos inclinaciones se sumaban: el
+caballo salía escorado como si estuviera por caerse.
+
+#### Medido
+
+⚠️ **ME EQUIVOQUÉ EN LA ESTIMACIÓN Y SALIÓ DISTINTO.** Al proponer la etapa dije
+que el caballo iba a bajar de ~50 llamadas de dibujo a ~17. **No bajó: quedó
+igual.** Llamadas para dibujar caballo + jinete de una vez:
+
+| | De perfil | Girado del todo |
+|---|---|---|
+| Antes | 51 | 46 |
+| Ahora | 51 | 55 |
+
+La lámina sí se ahorró los ~15 rectángulos del cuerpo, pero lo que quedó vivo
+—las patas, la cola nueva de diez tramos y la rienda— se los comió. **El caballo
+se ve mucho mejor al mismo precio, no más barato.** Lo que sí subió es la
+memoria: **18 láminas, 386 KB** (dos por pose).
+
+Las patas siguen dibujándose en vivo a propósito: cada casco apoya en el
+instante en que SUENA su golpe (`GOLPES`), y congelarlas en cuadros rompería el
+"tucu-TÚN".
+
+**Sin errores** en 700 cuadros por tecla (W, S, A, D y espacio) en el galope, 900
+por tecla en el asalto, y el campamento y el pueblo. La silueta del jinete
+detrás de la pared del tren sigue andando: ahora la lámina se **tiñe** entera
+(`piezaTenida`), porque un renderer que pinta plano podía repintar rectángulos
+sueltos pero no una estampa.
+
+**⚠️ NO JUGADO.**
+
 ---
 
 ## Pendientes del concepto original (sin fase asignada todavía)

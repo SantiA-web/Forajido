@@ -63,10 +63,17 @@ reflejo, asientos con respaldo y cajones con fleje. El archivo viejo
 `data/siluetas.js` ya no existe; con la **4** se redibujaron las balas, el
 fogonazo, el botín, la dinamita, los barriles y la mercadería, y con la **5** el
 caballo con su jinete —que ahora es una persona del juego y no media— y el
-desierto, uno solo para el galope y para los costados del tren. Quedan la **6**
-(las pantallas fijas) y la **7, la última: el techo**, que se lleva una etapa
-entera para él solo. El detalle y los números están en NOTAS-DISENO.md ("La
-gente curtida a 80 px" y las etapas 3, 4 y 5).
+desierto, uno solo para el galope y para los costados del tren. La **5b**
+terminó el caballo: dejó de ser dos rectángulos con patas y pasó a dibujarse
+punto por punto con medidas de caballo de verdad (el anca redonda, el ijar, la
+paleta, la crin, el ojo), **el giro dejó de ser sólo el cuello** —ahora el
+cuerpo se acorta y se ladea, el anca o el pecho asoman de punta y las patas
+convergen— y el jinete **reacciona**: se dobla de la cintura en vez de
+deslizarse, gira de a poco pasando por el tres cuartos, amortigua el rebote del
+lomo y lleva las riendas. Quedan la **6** (las pantallas fijas) y la **7, la
+última: el techo**, que se lleva una etapa entera para él solo. El detalle y los
+números están en NOTAS-DISENO.md ("La gente curtida a 80 px" y las etapas 3, 4,
+5 y 5b).
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido

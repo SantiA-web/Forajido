@@ -1451,6 +1451,21 @@ export function createRideScene(services) {
       ? Math.round(Math.cos((zancada.t / zancada.T - 0.15) * Math.PI * 2) * (0.4 + esfuerzo * 0.8))
       : 0;
 
+    /**
+     * EL JINETE AMORTIGUA *(Santi: "se debería mejorar como reacciona el
+     * personaje ante la inclinación y movimientos del caballo")*. Antes iba
+     * soldado al lomo: subía y bajaba EXACTAMENTE lo mismo que el animal, y
+     * por eso se leía como una calcomanía pegada.
+     *
+     * Sale de la MISMA zancada que el trote, pero con la mitad de amplitud y
+     * un décimo de vuelta más tarde: las piernas y la cintura se comen parte
+     * del rebote y lo devuelven con retraso. No hace falta guardar nada de un
+     * cuadro al otro — el retraso es un corrimiento de fase.
+     */
+    const rebote = zancada
+      ? Math.cos((zancada.t / zancada.T - 0.25) * Math.PI * 2) * (0.4 + esfuerzo * 0.8) * 0.5
+      : 0;
+
     // El polvo va detrás del caballo: se dibuja antes que él.
     dibujarPolvo(r);
 
@@ -1465,7 +1480,7 @@ export function createRideScene(services) {
       const desde = y - 6;
       const hasta = train.map.height
         - (techoDestino ? alturaDeAterrizaje(vagonAlLado()) : ALTO_DEL_ENGANCHE);
-      dibujarJinete(r, x, desde + t * (hasta - desde) - Math.sin(t * Math.PI) * 14);
+      dibujarJinete(r, x, desde + t * (hasta - desde) - Math.sin(t * Math.PI) * 14, 0, 1.2);
       return;
     }
 
@@ -1502,17 +1517,33 @@ export function createRideScene(services) {
      * `actualizarRumbo`), así que el giro que se ve ES el retraso del animal.
      */
     const pose = poseDelCaballo();
-    // Se inclina sobre los cascos, y POCO (un 30% del rumbo): el giro lo cuenta
-    // la pose; la inclinación sólo suaviza el cambio entre una y otra.
+    /**
+     * Se inclina sobre los cascos, y POCO: el giro lo cuenta la pose; la
+     * inclinación sólo suaviza el cambio entre una y otra.
+     *
+     * 🔻 BAJÓ DEL 30% AL 14% (etapa 5b). Ahora el cuerpo del caballo YA SE
+     * LADEA solo dentro de la pose (`ladea`, en caballo.js), y las dos
+     * inclinaciones se sumaban: el animal salía escorado como si estuviera por
+     * caerse para un costado.
+     */
     r.ctx.save();
     r.ctx.translate(x, y + 6);
-    r.ctx.rotate(rumbo * 0.3);
+    r.ctx.rotate(rumbo * 0.14);
     r.ctx.translate(-x, -(y + 6));
 
-    dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose);
+    /**
+     * EL CABALLO DICE DÓNDE SENTARSE Y DE DÓNDE AGARRARSE. La montura no está
+     * en el medio del animal —va atrás de la cruz, como las de verdad— y el
+     * bocado se corre con la pose, así que las dos cosas las calcula el dibujo
+     * del caballo y el jinete las recibe. Antes eran dos números sueltos acá,
+     * y cada vez que se tocaba el caballo había que acordarse de tocarlos.
+     */
+    const montura = dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose);
     // A la carrera el jinete se echa hacia adelante: más cuanto más le pide.
-    // El lomo subió de 5 a 10 unidades sobre `y` con el caballo nuevo.
-    dibujarJinete(r, x - 1, y - 10 + trote, pose, esfuerzo * 2);
+    // Se sienta con SU rebote, no con el del lomo (ver `rebote`, más arriba).
+    dibujarJinete(r, montura.asiento.x, y - 10 + rebote, pose, esfuerzo * 2, {}, montura.riendas);
+    // Y la cabeza del caballo, si viene hacia la cámara: va delante del jinete.
+    montura.adelante();
 
     r.ctx.restore();
 

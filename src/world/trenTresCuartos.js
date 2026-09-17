@@ -127,26 +127,107 @@ function circulo(r, x, y, radio, color) {
 }
 
 /**
- * UNA RUEDA, CON UN RAYO QUE GIRA. El rayo es lo que dice que el tren anda:
- * el tren está quieto en pantalla (la cámara lo sigue), así que sin algo que
- * gire se vería estacionado. Gira a la velocidad real del tren sobre la vía.
+ * UNA RUEDA, EN DOS PARTES: el disco, que no se mueve y va guardado en la
+ * lámina del vagón, y EL RAYO, que gira y hay que dibujarlo en vivo.
+ *
+ * El rayo es lo que dice que el tren anda: el tren está quieto en pantalla (la
+ * cámara lo sigue), así que sin algo que gire se vería estacionado. Gira a la
+ * velocidad real del tren sobre la vía.
  */
-function rueda(k, cx, radio) {
-  const { r, base, t, c, P } = k;
+function discoDeRueda(k, cx, radio) {
+  const { r, base, c, P } = k;
   const cy = base - radio;
   circulo(r, cx, cy, radio, c(P.ruedas));
   circulo(r, cx, cy, Math.max(1, radio - 2), c(P.ruedaLuz));
   circulo(r, cx, cy, Math.max(1, radio - 3), c(P.ruedas));
+}
+
+function rayoDeRueda(k, cx, radio) {
+  const { r, base, t, c, P } = k;
+  const cy = base - radio;
   const a = (t * APROXIMACION.trenVelocidad) / radio;
   r.line(cx, cy, cx + Math.cos(a) * (radio - 1), cy + Math.sin(a) * (radio - 1), c(P.ruedaLuz));
 }
 
-/** Un bogie: el carrito de dos ejes que va debajo de cada punta del vagón. */
-function bogie(k, cx) {
-  pieza(k, cx - 11, 4, 22, 3, k.c(k.P.bastidor));
-  rueda(k, cx - 6, 5);
-  rueda(k, cx + 6, 5);
+/** Las dos juntas: la usan la cola y la locomotora, que se dibujan en vivo. */
+function rueda(k, cx, radio) {
+  discoDeRueda(k, cx, radio);
+  rayoDeRueda(k, cx, radio);
 }
+
+/**
+ * EL BASTIDOR Y LOS DOS BOGIES, y ahora también LO QUE HAY DEBAJO DEL VAGÓN.
+ *
+ * 🔻 Antes entre los dos bogies no había nada: el vagón flotaba sobre dos
+ * carritos y se le veía el desierto por debajo. Un vagón de verdad lleva ahí
+ * la viga del bastidor, el cilindro del freno y las varillas de tracción, y
+ * todo eso en sombra. Es barato y es lo que le da peso.
+ */
+function bastidorYBogies(k, x0, ancho) {
+  const { c, P } = k;
+  const hueco = escalarColor(P.bastidor, 0.55);
+  // La panza: la sombra de abajo del vagón, de bogie a bogie.
+  pieza(k, x0 + 14, 3, ancho - 28, M.bastidor - 3, hueco);
+  // La viga del bastidor y su filo iluminado.
+  pieza(k, x0 + 6, M.bastidor - 6, ancho - 12, 3, c(P.bastidor));
+  pieza(k, x0 + 6, M.bastidor - 4, ancho - 12, 1, c(escalarColor(P.bastidor, 1.7)));
+  // El cilindro del freno, en el medio, y las dos varillas que salen de él.
+  const cx = x0 + ancho / 2;
+  pieza(k, cx - 5, 5, 10, 4, c(escalarColor(P.bastidor, 1.5)));
+  pieza(k, cx - 5, 8, 10, 1, c(escalarColor(P.bastidor, 2.1)));
+  pieza(k, x0 + 22, 6, ancho - 44, 1, c(escalarColor(P.bastidor, 1.3)));
+  for (const cb of [x0 + 20, x0 + ancho - 20]) {
+    pieza(k, cb - 11, 4, 22, 3, c(P.bastidor));
+    pieza(k, cb - 11, 6, 22, 1, c(escalarColor(P.bastidor, 1.6)));
+    discoDeRueda(k, cb - 6, 5);
+    discoDeRueda(k, cb + 6, 5);
+  }
+}
+
+/**
+ * LAS VACAS DEL VAGÓN DE GANADO: lo único del tren que sigue dibujándose en
+ * vivo además del rayo de las ruedas y de la locomotora, porque CABECEAN. Van
+ * ENTRE las dos láminas del vagón —el fondo abajo, las tablas de este lado
+ * encima—, y son esas tablas las que les tapan las patas.
+ */
+function vacas(k, x0, ancho) {
+  const { c, P } = k;
+  const y0 = M.bastidor;
+  const alto = M.caja;
+  for (let bx = x0 + 8, i = 0; bx + 20 < x0 + ancho - 6; bx += 24, i++) {
+    const cabeceo = Math.round(Math.sin(k.t * 1.4 + i * 1.9));
+    const pelo = i % 3 === 1 ? P.vacaClara : P.vaca;
+    const fondo = (i % 2) * 4;   // unas más hacia el otro costado que otras
+    pieza(k, bx, y0 + alto - 8 + fondo, 20, 14, c(pelo));
+    pieza(k, bx + 2, y0 + alto + 4 + fondo, 16, 2, c(escalarColor(pelo, 1.25)));
+    pieza(k, bx + (i % 2 ? -4 : 19), y0 + alto - 2 + fondo + cabeceo, 6, 7, c(pelo));
+  }
+}
+
+function rayosDeBogie(k, cx) {
+
+  rayoDeRueda(k, cx - 6, 5);
+  rayoDeRueda(k, cx + 6, 5);
+}
+
+/**
+ * 🔻 LA SOMBRA EN EL PISO *(y es lo que más hacía falta)*. El caballo tira su
+ * sombra en el suelo y el tren no tiraba ninguna: quedaba como una calcomanía
+ * pegada sobre la vía. Son dos bandas, la de abajo del vagón franca y la de
+ * adelante más floja y más angosta, porque la luz viene de arriba y de este
+ * lado.
+ *
+ * Va ANTES del vagón, así que las ruedas y el bastidor la tapan solos.
+ */
+function sombraEnElPiso(k, x, ancho) {
+  const { r } = k;
+  r.ctx.globalAlpha = 0.32;
+  pieza(k, x, -8, ancho, 9, '#000');
+  r.ctx.globalAlpha = 0.14;
+  pieza(k, x + 5, -13, ancho - 10, 5, '#000');
+  r.ctx.globalAlpha = 1;
+}
+
 
 /**
  * EL TECHO EN TRES CUARTOS: la sombra que tira sobre la pared, el alero que se
@@ -160,11 +241,28 @@ function bogie(k, cx) {
 function techo(k, x0, ancho, detalle) {
   const { r, c, P } = k;
   const y = ARRIBA_DE_LA_CAJA;
-  r.ctx.globalAlpha = 0.28;
-  pieza(k, x0 + 2, y - 3, ancho - 4, 3, '#000');
+  /**
+   * 🔻 LA SOMBRA DEL ALERO, en dos bandas y no en una. El alero sobresale de la
+   * pared, así que abajo de él la pared queda a oscuras y se aclara al bajar.
+   * Con una sola banda plana quedaba una raya negra pegada al techo.
+   */
+  r.ctx.globalAlpha = 0.34;
+  pieza(k, x0 + 2, y - 2, ancho - 4, 2, '#000');
+  r.ctx.globalAlpha = 0.16;
+  pieza(k, x0 + 2, y - 5, ancho - 4, 3, '#000');
   r.ctx.globalAlpha = 1;
   pieza(k, x0, y, ancho, M.alero, c(P.techo));
+  pieza(k, x0, y + M.alero - 0.5, ancho, 0.5, c(P.techoLuz));   // el canto del alero
   pieza(k, x0 + 1, y + M.alero, ancho - 2, M.tapa, c(P.tapa));
+  /**
+   * LAS TABLAS DEL TECHO, vistas desde arriba: van a lo LARGO del vagón, así
+   * que las juntas son rayas horizontales repartidas en la tapa. Es lo que
+   * convierte la tapa de una banda gris en un techo.
+   */
+  for (let ty = y + M.alero + 3; ty < y + M.alero + M.tapa - 1; ty += 4) {
+    pieza(k, x0 + 1, ty, ancho - 2, 0.5, c(escalarColor(P.tapa, 0.82)));
+    pieza(k, x0 + 1, ty + 0.5, ancho - 2, 0.5, c(escalarColor(P.tapa, 1.1)));
+  }
   pieza(k, x0 + 1, y + M.alero + M.tapa - 1, ancho - 2, 1, c(P.tapaLuz));
 
   const yt = y + M.alero;
@@ -183,14 +281,246 @@ function techo(k, x0, ancho, detalle) {
   }
 }
 
-/** Una ventanilla: marco oscuro y vidrio. De día refleja el cielo; de noche está prendida. */
-function ventanilla(k, x, y, w, h) {
-  pieza(k, x - 1, y - 1, w + 2, h + 2, k.c(k.P.marco));
-  pieza(k, x, y, w, h, k.vidrio);
-  if (!k.noche) pieza(k, x, y + h - 3, w, 2, escalarColor(k.vidrio, 1.18));
+/**
+ * 🔻 LA PARED DE UN VAGÓN, CON SUS TABLAS Y SUS FILOS.
+ *
+ * Antes la pared de un coche era UN RECTÁNGULO DE UN SOLO COLOR con una raya:
+ * lo más plano de la pantalla, al lado de un desierto con textura y de un
+ * caballo dibujado punto por punto. Los furgones sí tenían tablas; los coches
+ * de gente, no.
+ *
+ * Acá van las cuatro cosas que hacen que una pared se lea como madera:
+ *
+ *   las JUNTAS entre tabla y tabla, cada una con su sombra y su filo de luz
+ *   el FILO DE ARRIBA, que agarra el sol y despega la caja del techo
+ *   el LISTÓN DE LA CINTURA, la moldura horizontal a media altura
+ *   el ZÓCALO de abajo, en sombra, donde la caja se junta con el bastidor
+ *
+ * `paso` es el ancho de una tabla en unidades: 4 son 16 px de pantalla, y una
+ * persona mide 20 unidades, así que una tabla es un quinto de una persona. Eso
+ * es una tabla de tren de verdad, de unos 35 cm.
+ *
+ * NADA DE ESTO SE PAGA EN VIVO: la pared va adentro de la lámina del vagón, o
+ * sea que estas cien llamadas se hacen UNA VEZ por tipo de vagón (ver
+ * `laminaDeVagon`).
+ */
+function pared(k, x0, y0, ancho, alto, caja, o = {}) {
+  const { c } = k;
+  const paso = o.paso || 0;
+  pieza(k, x0, y0, ancho, alto, c(caja));
+
+  if (paso) {
+    const junta = c(escalarColor(caja, 0.74));
+    const filo = c(escalarColor(caja, 1.16));
+    for (let tx = x0 + paso, i = 0; tx < x0 + ancho - 1; tx += paso, i++) {
+      /**
+       * CADA TABLA CON SU TONO, apenas. Con todas exactamente iguales la pared
+       * se lee como un papel rayado y no como madera; con la variación es
+       * madera aunque nadie sepa decir por qué. Sale de un número FIJO por
+       * tabla y no de azar: si fuera azar, la pared titilaría entera en cada
+       * cuadro (es la misma regla que las piezas del vagón por dentro).
+       */
+      const v = (i * 73) % 5;
+      pieza(k, tx, y0 + 2, paso - 0.5, alto - 4, c(escalarColor(caja, 0.96 + v * 0.02)));
+      pieza(k, tx - 0.5, y0 + 1, 0.5, alto - 2, junta);
+      pieza(k, tx, y0 + 1, 0.5, alto - 2, filo);
+    }
+  }
+
+  // El filo de arriba con luz, y el zócalo de abajo en sombra.
+  pieza(k, x0, y0 + alto - 1, ancho, 1, c(escalarColor(caja, 1.22)));
+  pieza(k, x0, y0, ancho, 2, c(escalarColor(caja, 0.66)));
+  pieza(k, x0, y0 + 2, ancho, 0.5, c(escalarColor(caja, 0.86)));
+
+  // El listón de la cintura: la moldura horizontal, con su sombra debajo.
+  if (o.liston != null) {
+    pieza(k, x0, y0 + o.liston, ancho, 2, c(escalarColor(caja, 1.1)));
+    pieza(k, x0, y0 + o.liston, ancho, 0.5, c(escalarColor(caja, 1.3)));
+    pieza(k, x0, y0 + o.liston - 1, ancho, 1, c(escalarColor(caja, 0.7)));
+  }
 }
 
+/**
+ * UNA PUERTA DE VAGÓN. Era un rectángulo más oscuro y nada más. Una puerta se
+ * reconoce por el MARCO —el hueco tiene un canto en sombra y otro con luz— y
+ * por la manija. Sin eso se leía como una mancha en la pared.
+ */
+function puerta(k, x, y, w, h, caja) {
+  const { c } = k;
+  pieza(k, x - 1, y - 1, w + 2, h + 2, c(escalarColor(caja, 0.52)));   // el hueco
+  pieza(k, x, y, w, h, c(escalarColor(caja, 0.8)));                    // la hoja
+  pieza(k, x, y + h - 0.5, w, 0.5, c(escalarColor(caja, 1.15)));       // su filo de arriba
+  pieza(k, x + 1.5, y + h * 0.55, w - 3, h * 0.38, c(escalarColor(caja, 0.68)));  // el panel
+  pieza(k, x + 1.5, y + h * 0.1, w - 3, h * 0.3, c(escalarColor(caja, 0.68)));
+  pieza(k, x + w - 2.5, y + h * 0.5, 1.5, 1.5, c(escalarColor(caja, 1.5)));       // la manija
+}
+
+/**
+ * 🔻 UNA VENTANILLA DE VERDAD.
+ *
+ * Antes era un rectángulo celeste con un marco negro y nada más: no se leía
+ * como vidrio, se leía como un agujero pintado. Un vidrio se reconoce por tres
+ * cosas, y ninguna estaba:
+ *
+ *   la REPISA de abajo, que sobresale y agarra luz
+ *   el REFLEJO, una diagonal clara — es lo que dice "esto es vidrio y no un
+ *     hueco", y va en diagonal porque refleja el cielo, que está arriba
+ *   el ADENTRO OSCURO en la parte baja, donde el vidrio deja ver el vagón
+ *
+ * De noche no lleva reflejo ni adentro oscuro: la ventanilla está PRENDIDA, y
+ * lo que se ve es la luz saliendo. Eso ya andaba y se respeta.
+ */
+function ventanilla(k, x, y, w, h) {
+  const { c, P } = k;
+  pieza(k, x - 1, y - 1, w + 2, h + 2, c(P.marco));
+  pieza(k, x, y, w, h, k.vidrio);
+
+  if (k.noche) {
+    // Prendida: el vidrio más claro en el medio, como una lámpara detrás.
+    pieza(k, x + 1, y + 1, w - 2, h - 2, escalarColor(k.vidrio, 1.12));
+    pieza(k, x - 1, y - 1.5, w + 2, 0.5, escalarColor(k.vidrio, 0.6));
+    return;
+  }
+
+  // El adentro del vagón, que se ve por abajo. Se oscurece de a poco y no de
+  // golpe: con un escalón franco el vidrio parecía un vaso con agua.
+  pieza(k, x, y, w, h * 0.3, escalarColor(k.vidrio, 0.74));
+  pieza(k, x, y + h * 0.3, w, h * 0.12, escalarColor(k.vidrio, 0.87));
+  /**
+   * EL REFLEJO DEL CIELO: dos rayas finas en diagonal, no un brochazo. Con una
+   * sola raya gruesa el vidrio parecía rajado; dos finas y separadas se leen
+   * como reflejo desde el primer vistazo, que es como se dibuja el vidrio en
+   * todo el pixel art.
+   */
+  const pasos = Math.max(3, Math.round(h * 2));
+  for (let i = 0; i < pasos; i++) {
+    const u = i / pasos;
+    const ry = y + 1 + u * (h - 2);
+    const rx = x + w * 0.2 + u * w * 0.45;
+    pieza(k, rx, ry, 0.5, 0.5, escalarColor(k.vidrio, 1.28));
+    if (rx + w * 0.22 + 0.5 < x + w) pieza(k, rx + w * 0.22, ry, 0.5, 0.5, escalarColor(k.vidrio, 1.16));
+  }
+  // La repisa, que sobresale abajo y agarra el sol.
+  pieza(k, x - 1.5, y - 2, w + 3, 1.5, c(escalarColor(P.marco, 1.8)));
+  pieza(k, x - 1.5, y - 1, w + 3, 0.5, c(escalarColor(P.marco, 2.6)));
+}
+
+
 // ----------------------------------------------------------------- vagones
+
+/**
+ * 🧠 EL VAGÓN SE DIBUJA UNA VEZ Y DESPUÉS SE ESTAMPA.
+ *
+ * *(Santi: "creo que deberíamos mejorar como se ve el tren desde afuera con el
+ * galope")*. Tenía razón, y medido resultó que además era **lo más caro de la
+ * pantalla**: un coche de pasajeros costaba 69 llamadas de dibujo, un furgón
+ * 90 y un blindado 102 — POR CUADRO. Con dos a cuatro vagones a la vista, el
+ * tren se comía más de la mitad de las 469 llamadas del cuadro entero. Estaba
+ * pagando caro por verse plano.
+ *
+ * Y mientras se redibujara entero sesenta veces por segundo, cada detalle que
+ * se le agregara se pagaba sesenta veces por segundo. Así que va como la gente
+ * y como el caballo: se arma UNA VEZ por tipo de vagón, se guarda, y después
+ * es una estampa. De ahí en adelante el detalle es gratis.
+ *
+ * 🔺 Y DE PASO EL DIBUJO SE HIZO EL DOBLE DE FINO. El tren se dibujaba en
+ * UNIDADES DEL MUNDO, o sea en bloques de 4 px de pantalla: una junta entre
+ * dos tablas medía cuatro píxeles. Por eso no podía tener detalle ni
+ * queriendo. La lámina va a MEDIA UNIDAD por punto — 2 px de pantalla, el
+ * MISMO pixel que el sprite del caballo, así que el tren y el animal tienen el
+ * mismo grano.
+ *
+ * LO QUE NO ENTRA EN LA LÁMINA es lo que se mueve: el rayo de la rueda que
+ * gira, las vacas del vagón de ganado (que cabecean), y la locomotora entera
+ * —humo, biela, faro— que es un tramo solo y es casi toda animación.
+ */
+const PASO = 0.5;
+
+/**
+ * Cuánto alto necesita la lámina de cada familia, sobre la vía. No es uno solo
+ * para todos porque la lámina más alta —el cabús, con su garita— ocuparía un
+ * 18% más de memoria en todos los demás para nada.
+ */
+const ALTO_LAMINA = {
+  coche: 80, caboose: 96, plataforma: 36, gondola: 52, refrigerado: 80, blindado: 80, furgon: 80,
+};
+
+/** Las familias que NO se pueden guardar porque se mueven. */
+const ANIMADAS = new Set(['ganado']);
+
+const laminas = new Map();
+
+/**
+ * Un renderer que pinta en la lámina con las MISMAS coordenadas del mundo que
+ * usa el dibujo en vivo. El truco es la transformación: la lámina tiene dos
+ * puntos por unidad, así que todo lo que ya estaba escrito cae en su lugar sin
+ * tocar una sola medida — sólo que con el doble de resolución.
+ */
+function rendererDeLamina(g) {
+  const q = (v) => Math.round(v / PASO) * PASO;
+  return {
+    ctx: g,
+    rect(x, y, w, h, color) {
+      if (w <= 0 || h <= 0) return;
+      g.fillStyle = color;
+      g.fillRect(q(x), q(y), Math.max(PASO, q(w)), Math.max(PASO, q(h)));
+    },
+    box(x, y, hw, hh, color) { this.rect(x - hw, y - hh, hw * 2, hh * 2, color); },
+    line(x1, y1, x2, y2, color) {
+      g.strokeStyle = color;
+      g.lineWidth = PASO;
+      g.beginPath();
+      g.moveTo(x1, y1);
+      g.lineTo(x2, y2);
+      g.stroke();
+    },
+    circle() {}, text() {}, poly() {},
+  };
+}
+
+/**
+ * La lámina de este vagón: la arma la primera vez que se pide y la guarda.
+ * La clave lleva TODO lo que cambia el dibujo —qué vagón es, cuánto mide y si
+ * es de noche—, porque dos vagones que comparten clave se dibujan igual.
+ */
+function laminaDeVagon(k, p, ancho, capa = '') {
+  const familia = familiaDe(p);
+  const alto = ALTO_LAMINA[familia] || ALTO_LAMINA.coche;
+  const clave = `${p.id}|${Math.round(ancho)}|${k.noche ? 'n' : 'd'}|${capa}`;
+  let img = laminas.get(clave);
+  if (!img) {
+    // Un tope por las dudas. Cada lámina pesa medio mega, así que acá no se
+    // puede ser generoso: en una corrida se usan seis o siete tipos de vagón.
+    if (laminas.size > 12) laminas.clear();
+    img = document.createElement('canvas');
+    img.width = Math.round(ancho / PASO);
+    img.height = Math.round(alto / PASO);
+    const g = img.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.setTransform(1 / PASO, 0, 0, 1 / PASO, 0, 0);
+    // Dentro de la lámina el vagón empieza en 0 y la vía está en el borde de abajo.
+    cuerpoDeVagon({ ...k, r: rendererDeLamina(g), base: alto }, p, 0, ancho, capa);
+    laminas.set(clave, img);
+  }
+  return { img, alto };
+}
+
+/**
+ * SE TIRAN AL EMPEZAR UNA CORRIDA. Cada tren sortea su composición, así que
+ * las láminas de la corrida anterior son de vagones que capaz no vuelven a
+ * salir. Guardar medio mega por cada uno "por las dudas" es justo la fuga que
+ * hay que evitar.
+ */
+export function olvidarLaminas() {
+  laminas.clear();
+}
+
+/** Cuántas láminas de tren hay guardadas y cuánto ocupan. Para poder medirlo. */
+export function laminasGuardadas() {
+  let bytes = 0;
+  for (const img of laminas.values()) bytes += img.width * img.height * 4;
+  return { cuantas: laminas.size, kb: Math.round(bytes / 1024) };
+}
 
 /** Qué dibujo le toca a cada plantilla. Lo que no está acá es un furgón. */
 function familiaDe(p) {
@@ -200,11 +530,44 @@ function familiaDe(p) {
   return 'furgon';
 }
 
+/**
+ * UN VAGÓN: la sombra en el piso, la estampa de su lámina, y encima lo que se
+ * mueve. Las familias que se animan (el ganado) no se guardan: se dibujan
+ * enteras en vivo.
+ */
 function dibujarVagon(k, p, x0, ancho) {
+  sombraEnElPiso(k, x0 + 1, ancho - 2);
+  const estampa = (capa) => {
+    const { img, alto } = laminaDeVagon(k, p, ancho, capa);
+    k.r.ctx.drawImage(img, x0, k.base - alto, ancho, alto);
+  };
+  /**
+   * EL DE GANADO VA EN TRES TIEMPOS, porque las vacas se mueven Y ESTÁN EN EL
+   * MEDIO: primero el fondo del vagón, después las vacas en vivo, y encima las
+   * tablas de este lado, que son las que les tapan las patas. Con una sola
+   * lámina habría que elegir entre taparlas siempre o nunca.
+   */
+  if (ANIMADAS.has(familiaDe(p))) {
+    estampa('fondo');
+    vacas(k, x0, ancho);
+    estampa('tablas');
+  } else {
+    estampa('');
+  }
+  rayosDeBogie(k, x0 + 20);
+  rayosDeBogie(k, x0 + ancho - 20);
+}
+
+/**
+ * EL CUERPO DEL VAGÓN: todo lo que no se mueve. Se dibuja una vez en la lámina
+ * (ver `laminaDeVagon`) con las mismas coordenadas del mundo de siempre.
+ */
+function cuerpoDeVagon(k, p, x0, ancho, capa = '') {
   const { c, P } = k;
-  bogie(k, x0 + 20);
-  bogie(k, x0 + ancho - 20);
-  pieza(k, x0 + 2, M.bastidor - 3, ancho - 4, 3, c(P.bastidor));
+  if (capa !== 'tablas') {
+    bastidorYBogies(k, x0, ancho);
+    pieza(k, x0 + 2, M.bastidor - 3, ancho - 4, 3, c(P.bastidor));
+  }
 
   const y0 = M.bastidor;
   const alto = M.caja;
@@ -219,12 +582,14 @@ function dibujarVagon(k, p, x0, ancho) {
        * primero como "acá viaja gente, y esa gente te puede ver".
        */
       const caja = P.coche[p.id] || P.coche.pasajeros;
-      pieza(k, x0 + 2, y0, ancho - 4, alto, c(caja));
-      pieza(k, x0 + 2, y0 + 4, ancho - 4, 1, c(escalarColor(caja, 0.7)));
-      pieza(k, x0 + 5, y0 + 2, 10, alto - 8, c(escalarColor(caja, 0.62)));
-      pieza(k, x0 + ancho - 15, y0 + 2, 10, alto - 8, c(escalarColor(caja, 0.62)));
+      pared(k, x0 + 2, y0, ancho - 4, alto, caja, { paso: 4, liston: 16 });
+      puerta(k, x0 + 5, y0 + 2, 10, alto - 8, caja);
+      puerta(k, x0 + ancho - 15, y0 + 2, 10, alto - 8, caja);
       for (let wx = x0 + 22; wx + 9 <= x0 + ancho - 20; wx += 14) ventanilla(k, wx, vy, 9, VENTANILLA.alto);
-      if (p.id === 'primeraClase') pieza(k, x0 + 2, y0 + 15, ancho - 4, 1, c(P.filete));
+      if (p.id === 'primeraClase') {
+        pieza(k, x0 + 2, y0 + 16, ancho - 4, 1, c(P.filete));
+        pieza(k, x0 + 2, y0 + 17, ancho - 4, 0.5, c(escalarColor(P.filete, 1.35)));
+      }
       techo(k, x0, ancho, 'linterna');
       break;
     }
@@ -232,7 +597,7 @@ function dibujarVagon(k, p, x0, ancho) {
     case 'blindado': {
       // Chapa y remaches, sin una sola ventanilla: desde afuera no te ve nadie,
       // y el dibujo lo dice antes que la regla (ver `tieneVentanillas`).
-      pieza(k, x0 + 2, y0, ancho - 4, alto, c(P.blindado));
+      pared(k, x0 + 2, y0, ancho - 4, alto, P.blindado, { liston: 26 });
       for (let rx = x0 + 6; rx < x0 + ancho - 4; rx += 6) {
         pieza(k, rx, y0 + alto - 5, 1, 1, c(P.remache));
         pieza(k, rx, y0 + 4, 1, 1, c(P.remache));
@@ -248,10 +613,10 @@ function dibujarVagon(k, p, x0, ancho) {
     case 'caboose': {
       // El cabús: rojo, dos ventanillas y la garita arriba, apoyada a media
       // tapa, desde donde la tripulación mira el tren entero.
-      pieza(k, x0 + 2, y0, ancho - 4, alto, c(P.caboose));
+      pared(k, x0 + 2, y0, ancho - 4, alto, P.caboose, { paso: 4, liston: 16 });
       ventanilla(k, x0 + 14, vy, 10, VENTANILLA.alto);
       ventanilla(k, x0 + ancho - 24, vy, 10, VENTANILLA.alto);
-      pieza(k, x0 + ancho / 2 - 7, y0 + 2, 14, alto - 8, c(escalarColor(P.caboose, 0.62)));
+      puerta(k, x0 + ancho / 2 - 7, y0 + 2, 14, alto - 8, P.caboose);
       techo(k, x0, ancho, null);
       const gx = x0 + ancho / 2 - 16;
       const gy = ARRIBA_DE_LA_CAJA + M.alero + 4;
@@ -269,14 +634,9 @@ function dibujarVagon(k, p, x0, ancho) {
        * cada una asoma por encima de las tablas de este lado, y más atrás está
        * la baranda del otro costado. No hay tapa de techo — hay aire.
        */
-      pieza(k, x0 + 2, y0, ancho - 4, alto + M.tapa, c(escalarColor(P.ganado, 0.35)));
-      for (let bx = x0 + 8, i = 0; bx + 20 < x0 + ancho - 6; bx += 24, i++) {
-        const cabeceo = Math.round(Math.sin(k.t * 1.4 + i * 1.9));
-        const pelo = i % 3 === 1 ? P.vacaClara : P.vaca;
-        const fondo = (i % 2) * 4;   // unas más hacia el otro costado que otras
-        pieza(k, bx, y0 + alto - 8 + fondo, 20, 14, c(pelo));
-        pieza(k, bx + 2, y0 + alto + 4 + fondo, 16, 2, c(escalarColor(pelo, 1.25)));
-        pieza(k, bx + (i % 2 ? -4 : 19), y0 + alto - 2 + fondo + cabeceo, 6, 7, c(pelo));
+      if (capa === 'fondo') {
+        pieza(k, x0 + 2, y0, ancho - 4, alto + M.tapa, c(escalarColor(P.ganado, 0.35)));
+        break;
       }
       // La baranda del otro costado, al fondo de la tapa.
       pieza(k, x0 + 2, y0 + alto + M.tapa - 3, ancho - 4, 3, c(P.ganado));
@@ -334,10 +694,9 @@ function dibujarVagon(k, p, x0, ancho) {
 
     case 'refrigerado': {
       // Casi blanco, con una puerta pesada y las bocas del hielo en el techo.
-      pieza(k, x0 + 2, y0, ancho - 4, alto, c(P.refrigerado));
-      for (let px = x0 + 7; px < x0 + ancho - 4; px += 6) pieza(k, px, y0 + 1, 1, alto - 2, c(escalarColor(P.refrigerado, 0.86)));
+      pared(k, x0 + 2, y0, ancho - 4, alto, P.refrigerado, { paso: 6 });
       const cx = x0 + ancho / 2;
-      pieza(k, cx - 13, y0 + 2, 26, alto - 8, c(escalarColor(P.refrigerado, 0.72)));
+      puerta(k, cx - 13, y0 + 2, 26, alto - 8, P.refrigerado);
       pieza(k, cx + 7, y0 + 20, 4, 3, c(P.remache));
       techo(k, x0, ancho, null);
       const yt = ARRIBA_DE_LA_CAJA + M.alero;
@@ -355,11 +714,11 @@ function dibujarVagon(k, p, x0, ancho) {
        * lleva ventanillas, un par chiquitas y altas — hay gente adentro.
        */
       const caja = P.furgon[p.id] || P.furgon.default;
-      pieza(k, x0 + 2, y0, ancho - 4, alto, c(caja));
-      for (let px = x0 + 6; px < x0 + ancho - 4; px += 5) pieza(k, px, y0 + 1, 1, alto - 2, c(escalarColor(caja, 0.8)));
+      pared(k, x0 + 2, y0, ancho - 4, alto, caja, { paso: 5 });
       const cx = x0 + ancho / 2;
-      pieza(k, cx - 15, y0 + alto - 3, 30, 2, c(P.bastidor));
-      pieza(k, cx - 13, y0 + 2, 26, alto - 7, c(escalarColor(caja, 0.7)));
+      pieza(k, cx - 15, y0 + alto - 3, 30, 2, c(P.bastidor));       // el riel de la corrediza
+      pieza(k, cx - 15, y0 + alto - 1.5, 30, 0.5, c(escalarColor(P.bastidor, 2)));
+      puerta(k, cx - 13, y0 + 2, 26, alto - 7, caja);
       k.r.line(cx - 13, k.base - y0 - alto + 5, cx + 12, k.base - y0 - 3, c(escalarColor(caja, 0.9)));
       if (p.layout.some((fila) => fila.includes('W'))) {
         ventanilla(k, x0 + 14, y0 + 32, 8, 7);

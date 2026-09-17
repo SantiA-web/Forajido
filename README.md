@@ -91,6 +91,15 @@ costado del animal, que es lo único que se le ve de atrás. El **Mustang** ya n
 es el mismo caballo: se le cambia el tono a la hoja y se le deja la luz, así que
 un pelaje nuevo son cuatro números.
 
+Y con el caballo y el jinete ya bien, **el tren visto desde afuera pasó a ser lo
+peor de la pantalla** —y, medido, también lo más caro: un vagón costaba entre 40
+y 102 llamadas de dibujo POR CUADRO, más de la mitad del cuadro entero. Ahora se
+arma una vez por tipo de vagón y se estampa (7 llamadas), el dibujo va al doble
+de fino —el mismo pixel que el caballo— y con eso entraron gratis las tablas de
+la pared, las ventanillas con reflejo, las puertas, lo que hay debajo del vagón
+y **la sombra en el piso**, que era lo que más hacía falta: el caballo tiraba la
+suya y el tren no tiraba ninguna.
+
 Quedan la **6** (las pantallas fijas) y la **7, la última: el techo**, que se
 lleva una etapa entera para él solo. El detalle y los números están en
 NOTAS-DISENO.md ("La gente curtida a 80 px" y las etapas 3, 4, 5, 5b y 5c).

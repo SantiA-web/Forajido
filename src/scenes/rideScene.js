@@ -43,7 +43,7 @@ import { gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { sortearComposicion, buildTrain, plataformasDe } from '../world/train.js';
 import {
-  dibujarTrenTresCuartos, escalarColor, alturaDeAterrizaje,
+  dibujarTrenTresCuartos, escalarColor, alturaDeAterrizaje, olvidarLaminas,
   ALTO_DEL_TECHO, ALTO_DEL_ENGANCHE, ALTURA_VENTANILLA,
 } from '../world/trenTresCuartos.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
@@ -116,6 +116,9 @@ export function createRideScene(services) {
    */
   function enter(params = {}) {
     hud.hide();
+    // Las láminas de los vagones son de la corrida anterior: medio mega cada
+    // una, y el tren nuevo sortea otra composición (ver `olvidarLaminas`).
+    olvidarLaminas();
     caballo = caballoActual(gameState);
     tipoTren = TRAIN_TYPES[params.tipoTren] || TRAIN_TYPES[TIPO_TREN_POR_DEFECTO];
     composicion = params.composicion || sortearComposicion(rng, tipoTren);

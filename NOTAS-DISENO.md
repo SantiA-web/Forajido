@@ -13452,6 +13452,92 @@ que es exactamente para eso.
 
 ---
 
+### 🚂 EL TREN DESDE AFUERA: se guarda dibujado, y recién ahí tiene detalle
+
+*(Santi: "creo que deberíamos mejorar como se ve el tren desde afuera con el
+galope")*. Tenía razón, y al medirlo apareció algo peor de lo que se veía:
+**era además lo más caro de la pantalla**.
+
+| por cuadro | antes | ahora |
+|---|---|---|
+| Un coche de gente | 69 llamadas | **7** |
+| Un furgón | 90 | **7** |
+| Un blindado | 102 | **7** |
+| Un cabús | 40 | **7** |
+| El de ganado *(se anima)* | 90 | **53** |
+
+Con dos a cuatro vagones a la vista, el tren se comía más de la mitad de las
+469 llamadas del cuadro entero. **Estaba pagando caro por verse plano**, y
+mientras se redibujara entero sesenta veces por segundo, cada detalle que se le
+agregara se iba a pagar sesenta veces por segundo.
+
+Así que va como la gente y como el caballo: **se arma una vez por tipo de vagón
+y después es una estampa**. Las 7 llamadas que quedan son las dos bandas de la
+sombra, la estampa, y los cuatro rayos de las ruedas, que giran.
+
+#### 🔺 Y EL DIBUJO SE HIZO EL DOBLE DE FINO
+
+Acá estaba la razón de fondo de que se viera plano, y no era falta de ganas: el
+tren se dibujaba en **UNIDADES DEL MUNDO**, o sea en bloques de 4 px de
+pantalla. Una junta entre dos tablas medía cuatro píxeles. **No podía tener
+detalle ni queriendo.**
+
+La lámina va a **media unidad por punto** — 2 px de pantalla, el **mismo pixel
+que el sprite del caballo**, así que el tren y el animal tienen el mismo grano.
+
+#### Lo que se le agregó, ya gratis
+
+- **LA SOMBRA EN EL PISO**, que es lo que más hacía falta: el caballo tiraba la
+  suya y el tren no tiraba ninguna, así que se leía como una calcomanía pegada
+  sobre la vía. Son dos bandas, la de abajo franca y la de adelante más floja.
+- **TABLAS** en la pared de los coches de gente y del cabús, que eran un
+  rectángulo de un solo color (los furgones sí las tenían). Cada tabla con su
+  tono, sacado de un número FIJO y no de azar: con azar la pared titilaría
+  entera en cada cuadro.
+- **EL LISTÓN DE LA CINTURA, EL FILO DE ARRIBA Y EL ZÓCALO**: las tres líneas
+  que dicen que una caja de madera es una caja y no un plano.
+- **VENTANILLAS DE VERDAD**: repisa, el adentro oscuro por abajo y el reflejo
+  del cielo en dos rayas finas. Con una sola raya gruesa el vidrio parecía
+  rajado.
+- **PUERTAS**: hueco, hoja, dos paneles y manija. Eran un rectángulo más oscuro.
+- **LO QUE HAY DEBAJO DEL VAGÓN**: entre los dos bogies no había NADA y se veía
+  el desierto por debajo. Ahora está la viga del bastidor, el cilindro del freno
+  y las varillas, todo en sombra. Es lo que le da peso.
+- **TABLAS EN EL TECHO** y la sombra del alero en dos bandas en vez de una raya
+  negra plana.
+
+#### Lo que NO se guarda
+
+Lo que se mueve: el **rayo de la rueda** que gira, las **vacas** del vagón de
+ganado (que cabecean) y la **locomotora** entera, que es humo, biela y faro.
+
+El de ganado va en **tres tiempos**, porque las vacas se mueven Y ESTÁN EN EL
+MEDIO: el fondo, las vacas en vivo, y encima las tablas de este lado, que son
+las que les tapan las patas.
+
+#### Medido, la memoria
+
+Cada lámina pesa **entre 480 y 640 KB** — bastante más de los 70 KB que se
+estimaron antes de hacerla, porque un vagón mide 384 unidades de largo, o sea
+más que el ancho de la pantalla. Pero se arman **sólo las que se ven**: en una
+corrida real, galopando de punta a punta, el pico medido son **3 láminas,
+1,9 MB** — que es justo lo que se había prometido.
+
+Y se tiran al empezar cada corrida (`olvidarLaminas`): el tren nuevo sortea otra
+composición, y guardar medio mega por vagón "por las dudas" es exactamente la
+fuga que había que evitar.
+
+Sin errores en 5.380 cuadros: galope de día y de noche con los dos caballos,
+asalto, campamento, pueblo, establo y mapa.
+
+🔻 **QUEDA:** la **locomotora** sigue dibujándose entera en vivo (unas 120
+llamadas). Es un solo tramo y está casi toda animada, así que separarle lo
+quieto es un trabajo aparte.
+
+**⚠️ NO JUGADO.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

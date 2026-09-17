@@ -207,14 +207,14 @@ export function dibujarPersona(r, f) {
     return { x, top: arriba, arriba, manoY: pies - 9, pechoY: pies - 11, vista: nombre, espejo };
   }
 
-  const modo = postura === 'sentado' || postura === 'rendido' ? postura
+  const modo = postura === 'sentado' || postura === 'rendido' || postura === 'montado' ? postura
     : postura !== 'pie' ? 'agachado'
       : f.fase != null ? (f.modo === 'caminar' ? 'caminar' : 'trotar')
         : 'quieto';
-  const sinPaso = modo === 'quieto' || modo === 'sentado' || modo === 'rendido';
+  const sinPaso = modo === 'quieto' || modo === 'sentado' || modo === 'rendido' || modo === 'montado';
   const cuadro = sinPaso ? 0 : cuadroDe(f.fase, modo);
   // Sentado y de rodillas el cuerpo queda más abajo: la cabeza también.
-  const baja = modo === 'rendido' ? 3.5 : modo === 'sentado' ? 1.5 : 0;
+  const baja = modo === 'rendido' ? 3.5 : modo === 'sentado' || modo === 'montado' ? 1.5 : 0;
 
   /**
    * ASOMARSE DESDE UN REPARO ES DOBLARSE, NO CAMINAR.
@@ -277,7 +277,7 @@ export function dibujarPersona(r, f) {
     };
     if (modo === 'trotar') datos.trote = cuadro;
     else { datos.paso = cuadro; datos.agachado = modo === 'agachado'; }
-    if (modo === 'sentado' || modo === 'rendido') datos.postura = modo;
+    if (modo === 'sentado' || modo === 'rendido' || modo === 'montado') datos.postura = modo;
     fn(L, datos);
     return L.canvas();
   });

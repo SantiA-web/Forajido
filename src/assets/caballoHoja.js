@@ -50,11 +50,11 @@ export const FILA_QUIETO = 5;
  * Están MEDIDAS sobre el caballo parado de cada dirección, no estimadas.
  */
 export const MEDIDAS = {
-  norte:   { suelo: 65, centro: 45, sillaX: 45, sillaY: 32, bocadoX: 45, bocadoY: 14 },
+  norte:   { suelo: 65, centro: 45, sillaX: 45, sillaY: 26, bocadoX: 45, bocadoY: 14 },
   noreste: { suelo: 63, centro: 43, sillaX: 43, sillaY: 27, bocadoX: 61, bocadoY: 16 },
   este:    { suelo: 58, centro: 43, sillaX: 35, sillaY: 25, bocadoX: 70, bocadoY: 26 },
   sudeste: { suelo: 58, centro: 42, sillaX: 42, sillaY: 25, bocadoX: 63, bocadoY: 30 },
-  sur:     { suelo: 57, centro: 45, sillaX: 45, sillaY: 28, bocadoX: 45, bocadoY: 40 },
+  sur:     { suelo: 57, centro: 45, sillaX: 45, sillaY: 19, bocadoX: 45, bocadoY: 40 },
 };
 
 /**

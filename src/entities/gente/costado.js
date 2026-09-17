@@ -105,6 +105,29 @@ function piernasSentadoLado(L, R) {
   botaLado(L, [32, 71], BOTA, false, R.espuela);
 }
 
+/**
+ * MONTADO de costado. 🔻 *(Santi: "el jinete está horrible. Es como que
+ * agarraste el que está en el tren y lo pegaste encima del caballo")*. Tenía
+ * razón, era literal: iba con `postura: 'sentado'`, la misma que usa un
+ * pasajero en el banco del vagón.
+ *
+ * Y un pasajero no se parece en nada a un jinete. Sentado en un banco las
+ * rodillas van JUNTAS Y ADELANTE y los pies apoyan en el piso. A caballo se va
+ * A HORCAJADAS: el muslo cae por el costado del animal, la canilla queda casi
+ * vertical y —lo que más lo delata— EL TALÓN VA ABAJO y la punta arriba,
+ * porque el pie empuja contra el estribo.
+ *
+ * La pierna de allá casi no se dibuja: la tapa el caballo. Sólo asoma el muslo.
+ */
+function piernasMontadoLado(L, R) {
+  const PT = R.pant;
+  tramo(L, [21, 58], [26, 64], 3.2, tono(PT, 0.55));
+  tramo(L, [22, 58], [32, 65], 4.4, PT);
+  L.elipse(32, 65, 3.4, 3.4, tono(PT, 1.15));
+  tramo(L, [32, 66], [30, 73], 3.2, tono(PT, 0.68));
+  botaLado(L, [30, 74], BOTA, false, R.espuela);
+}
+
 /** RENDIDO de costado: de rodillas, con la pierna doblada hacia atrás. */
 function piernasRendidoLado(L, R) {
   const PT = R.pant;
@@ -121,14 +144,15 @@ export function lado(L, o = {}) {
   const R = ROPA[o.tipo];
   const [C0, CL, CS] = R.chal, [M0, ML, MS] = R.manga, PT = R.pant;
   // Sentado y rendido cambian las piernas y bajan el cuerpo; el resto es igual.
-  const postura = o.postura === 'sentado' || o.postura === 'rendido' ? o.postura : null;
+  const postura = o.postura === 'sentado' || o.postura === 'rendido' || o.postura === 'montado'
+    ? o.postura : null;
   if (postura === 'rendido') o = { ...o, manosArriba: true };
   const P0 = postura ? caminataLado(0)
     : o.trote != null ? TROTE[o.trote % TROTE.length]
       : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
   // Asomado: los pies quedan clavados en el reparo y sale el cuerpo.
   const a = o.asomado || { dx: 0, dy: 0 };
-  const baja = postura === 'rendido' ? 14 : postura === 'sentado' ? 6 : P0.y;
+  const baja = postura === 'rendido' ? 14 : postura ? 6 : P0.y;
   const U = mover(L, (P0.dx || 0) + a.dx, baja + a.dy);
   const P = P0;
 
@@ -137,6 +161,7 @@ export function lado(L, o = {}) {
 
   // Lo de atrás, en sombra: la pierna y el brazo lejanos.
   if (postura === 'rendido') piernasRendidoLado(LP, R);
+  else if (postura === 'montado') piernasMontadoLado(LP, R);
   else if (postura === 'sentado') piernasSentadoLado(LP, R);
   else {
     pierna(LP, P.lejos[0], P.lejos[1], P.lejos[2], tono(PT, 0.7));

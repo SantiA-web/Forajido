@@ -156,8 +156,12 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0) {
       if (!viene || !lista || !r.ctx) return;
       r.ctx.save();
       r.ctx.beginPath();
-      // Sólo la franja de la cabeza: desde el bocado hacia arriba y adelante.
-      r.ctx.rect(ox, oy, ancho, (m.bocadoY + 8) * PASO);
+      // Una caja alrededor del BOCADO: la cabeza está donde está el bocado, y
+      // eso vale tanto de perfil como viniendo de frente.
+      r.ctx.rect(
+        ox + (m.bocadoX - 24) * PASO * achata, oy + (m.bocadoY - 26) * PASO,
+        48 * PASO * achata, 42 * PASO,
+      );
       r.ctx.clip();
       r.ctx.drawImage(
         r.plano ? hojaTenida(r.plano) : hoja,
@@ -257,16 +261,43 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, r
     r.ctx.translate(-sx, -sy);
   }
 
+  /**
+   * LA MONTURA, y va acá y no en el caballo: el sprite que generó Santi es un
+   * caballo PELADO. Sin silla ni estribos el jinete flotaba encima del lomo, y
+   * ésa era la mitad de por qué se leía "pegado".
+   *
+   * Va DEBAJO de la persona y encima del animal: primero la carona, después el
+   * asiento. Se angosta con el giro, igual que el caballo.
+   */
+  const anchoM = (6.5 - Math.abs(pose) * 0.55) * (r.ctx ? 1 : 0);
+  if (anchoM > 0) {
+    r.rect(sx - anchoM / 2, asiento + 0.75, anchoM, 2, '#6b2b24');
+    r.rect(sx - anchoM / 2, asiento + 0.75, anchoM, 0.5, '#8e4234');
+    r.rect(sx - anchoM / 2 + 1, asiento - 0.75, anchoM - 2, 2, '#3a2418');
+    r.rect(sx - anchoM / 2 + 0.75, asiento - 1.75, 1.25, 1.25, '#22150d');
+  }
+
   const persona = dibujarPersona(r, {
     tipo: quien === 'ley' ? 'jineteLey' : 'jugador',
     x: sx,
     pies: sy,
     angulo,
-    postura: 'sentado',
+    postura: 'montado',
     estado: ropa.estado,
     destello: ropa.destello,
     panuelo: quien === 'jugador',
   });
+
+  /**
+   * EL ESTRIBO, después de la persona: la ación baja del asiento y el fierro
+   * queda DEBAJO de la bota, no al lado. Es un detalle chico pero es el que
+   * explica por qué el pie está donde está.
+   */
+  if (anchoM > 0 && Math.abs(pose) < 3) {
+    const ex = sx + 1.25;
+    r.rect(ex - 0.25, asiento + 1.5, 0.5, 4.5, '#2a1c12');
+    r.rect(ex - 1.25, sy - 0.5, 2.5, 1, '#6a5334');
+  }
 
   if (r.ctx && (dobla || gira)) r.ctx.restore();
 

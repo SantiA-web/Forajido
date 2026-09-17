@@ -127,6 +127,28 @@ function piernasSentado(L, R) {
 }
 
 /**
+ * MONTADO, de frente o de espaldas: LAS DOS PIERNAS SE ABREN. Es la diferencia
+ * que más se ve entre un jinete y alguien sentado — sentado las rodillas van
+ * juntas, a caballo el animal está en el medio y las piernas lo abrazan.
+ *
+ * Los muslos salen hacia afuera y abajo, las canillas bajan casi derechas por
+ * fuera del caballo, y las botas quedan separadas con el talón abajo.
+ */
+function piernasMontado(L, R, g) {
+  const PT = R.pant;
+  const d = g ? 2 : 0;                       // en tres cuartos el cuerpo se corre
+  const OSC = tono(PT, 0.72), MED = tono(PT, 0.85);
+  L.poly([[18 - d, 57], [24, 57], [23, 67], [16 - d, 65]], MED);     // muslo izquierdo
+  L.poly([[25, 57], [31 + d, 57], [33 + d, 65], [26, 67]], PT);      // muslo derecho
+  L.poly([[15 - d, 64], [22, 66], [22, 72], [15 - d, 72]], OSC);     // canillas
+  L.poly([[27, 66], [34 + d, 64], [34 + d, 72], [27, 72]], tono(PT, 0.78));
+  L.poly([[14 - d, 71], [23, 71], [23, 77], [14 - d, 77]], BOTA);    // botas
+  L.poly([[26, 71], [35 + d, 71], [35 + d, 77], [26, 77]], BOTA);
+  L.rect(15 - d, 72, 6, 1, BOTA_L);
+  L.rect(28, 72, 6, 1, BOTA_L);
+}
+
+/**
  * RENDIDO: de rodillas. Los muslos bajan cortos hasta las rodillas apoyadas y
  * los pies quedan doblados hacia atrás, asomando a los costados: sin eso se
  * leía como alguien parado y bajito.
@@ -239,6 +261,7 @@ export function frente(L, o = {}) {
  */
 function piernasDePostura(L, R, o, g, f, atras) {
   if (o.postura === 'rendido') { piernasRendido(L, R); return { baja: 14, rendido: true }; }
+  if (o.postura === 'montado') { piernasMontado(L, R, g); return { baja: 6, rendido: false }; }
   if (o.postura === 'sentado') { piernasSentado(L, R); return { baja: 6, rendido: false }; }
   piernasFrente(L, R, g, f, atras);
   return null;

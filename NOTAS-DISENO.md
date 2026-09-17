@@ -13232,6 +13232,40 @@ de las cinco direcciones, así que es cambiar cuatro rectángulos por una estamp
 pintado igual. Como la hoja la generó Santi, alcanza con generar el mismo
 caballo con otro pelaje y cambiar una hoja por montura.
 
+#### 🔻 El jinete iba sentado en un banco
+
+*(Santi, con el caballo ya puesto: "el caballo está excelente. Pero el jinete
+está horrible. Es como que agarraste el que está en el tren y lo pegaste encima
+del caballo")*. **Era literal**: iba con `postura: 'sentado'`, la misma que usa
+un pasajero en el banco del vagón.
+
+Y un pasajero no se parece en nada a un jinete. Sentado en un banco las rodillas
+van **juntas y adelante** y los pies apoyan en el piso. A caballo se va **a
+horcajadas**: el muslo cae por el costado del animal, la canilla queda casi
+vertical y —lo que más lo delata— **el talón va abajo**, porque el pie empuja
+contra el estribo.
+
+Se agregó una postura nueva a la gente, `montado`, con sus tres vistas:
+
+- **de costado**, el muslo hacia adelante y abajo, la rodilla marcada (más
+  clara, o los dos tramos se leen como un poste) y la canilla casi derecha. La
+  pierna de allá casi no se dibuja: la tapa el caballo.
+- **de frente y de espaldas**, las dos piernas se abren. Es la diferencia que
+  más se ve: sentado las rodillas van juntas, a caballo el animal está en el
+  medio.
+
+🔻 **Y LA MONTURA LA PONE EL JINETE**, no el caballo: el sprite que generó Santi
+es un animal **pelado**, sin silla ni estribos, y sin ellos el jinete flotaba
+sobre el lomo. Eso era la otra mitad del "pegado".
+
+🐛 **Y UN RECORTE QUE AGARRABA MEDIA LÁMINA.** La cabeza del caballo se vuelve a
+estampar por encima del jinete cuando el animal viene hacia la cámara, y el
+recorte estaba escrito como "de arriba hasta el bocado". Eso sirve de perfil
+—donde la cabeza está arriba a la derecha— pero es JUSTO AL REVÉS de frente,
+donde la cabeza queda abajo: ahí se comía el lomo entero y **partía al jinete
+por la mitad**. Ahora es una caja alrededor del bocado, que cae bien esté donde
+esté.
+
 **⚠️ NO JUGADO.**
 
 ---

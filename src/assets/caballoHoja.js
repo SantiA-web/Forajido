@@ -49,12 +49,56 @@ export const FILA_QUIETO = 5;
  *
  * Están MEDIDAS sobre el caballo parado de cada dirección, no estimadas.
  */
+/**
+ *   `flanco` — CUÁNTO MIDE EL ANIMAL DEL MEDIO AL COSTADO a la altura de la
+ *              bota del jinete. Sale de contar los puntos pintados de la
+ *              celda, fila por fila, en el cuadro más ancho del galope.
+ *
+ *              Es el número que abre las piernas del jinete: la bota va a
+ *              parar justo afuera de ahí, y así se ve UNA PIERNA DE CADA LADO
+ *              *(Santi: "cuando el caballo mira hacia arriba (W), debería
+ *              verse al personaje con una pierna de cada lado del cuerpo del
+ *              caballo")*. Antes las piernas iban a un ancho fijo que quedaba
+ *              entero adentro del animal, o sea invisible.
+ *
+ *   `cabeza` — LA CAJA DE LA CABEZA, en puntos alrededor del bocado: cuánto
+ *              mide para cada lado, cuánto sube y cuánto baja. Sirve para
+ *              volver a estampar SÓLO la cabeza por encima del jinete cuando
+ *              el caballo viene hacia la cámara.
+ *
+ *              🐛 Estaba puesta a ojo y era enorme —48 puntos de ancho en una
+ *              celda de 77—, así que al volver a estampar se comía también las
+ *              botas del jinete. Ahora son las medidas de la cabeza y nada más.
+ */
 export const MEDIDAS = {
-  norte:   { suelo: 65, centro: 45, sillaX: 45, sillaY: 26, bocadoX: 45, bocadoY: 14 },
-  noreste: { suelo: 63, centro: 43, sillaX: 43, sillaY: 27, bocadoX: 61, bocadoY: 16 },
-  este:    { suelo: 58, centro: 43, sillaX: 35, sillaY: 25, bocadoX: 70, bocadoY: 26 },
-  sudeste: { suelo: 58, centro: 42, sillaX: 42, sillaY: 25, bocadoX: 63, bocadoY: 30 },
-  sur:     { suelo: 57, centro: 45, sillaX: 45, sillaY: 19, bocadoX: 45, bocadoY: 40 },
+  norte:   { suelo: 65, centro: 45, sillaX: 45, sillaY: 26, bocadoX: 45, bocadoY: 14, flanco: 11, cabeza: [10, 14, 10] },
+  noreste: { suelo: 63, centro: 43, sillaX: 43, sillaY: 27, bocadoX: 61, bocadoY: 16, flanco: 12, cabeza: [12, 14, 10] },
+  este:    { suelo: 58, centro: 43, sillaX: 35, sillaY: 25, bocadoX: 70, bocadoY: 26, flanco: 22, cabeza: [14, 20, 8] },
+  sudeste: { suelo: 58, centro: 42, sillaX: 42, sillaY: 25, bocadoX: 63, bocadoY: 30, flanco: 13, cabeza: [13, 16, 8] },
+  sur:     { suelo: 57, centro: 45, sillaX: 45, sillaY: 19, bocadoX: 45, bocadoY: 40, flanco: 10, cabeza: [13, 26, 6] },
+};
+
+/**
+ * LOS PELAJES: EL MISMO DIBUJO CON OTRO PELO.
+ *
+ * 🔻 *(Santi: "yo le pondría al Mustang un color marrón rojizo")*. El Criollo y
+ * el Mustang eran el MISMO caballo pintado igual, porque la hoja es una sola.
+ *
+ * No se repinta a mano ni hace falta generar otra hoja: se le da una vuelta a
+ * los píxeles cambiando el TONO y dejando la SOMBRA como está. Por eso el
+ * caballo cambiado sigue teniendo el lomo iluminado y la panza oscura — no es
+ * una mancha de color encima, es el mismo dibujo con otro pelo.
+ *
+ * `tinte` es el color (0 rojo, 0,1 amarillo), `color` cuánto se satura, y `luz`
+ * y `aclara` qué tan claro queda. El negro casi no tiene color, así que la
+ * crin, la cola y los cascos se saltean solos y quedan como estaban.
+ *
+ * ⚠️ Esto cambia el COLOR, no la FORMA: un overo o un tobiano —con manchas—
+ * hay que generarlo aparte.
+ */
+export const PELAJES = {
+  criollo: null,                                          // el de la hoja, tal cual
+  mustang: { tinte: 0.045, color: 1.35, luz: 1.1, aclara: 0.04 },
 };
 
 /**

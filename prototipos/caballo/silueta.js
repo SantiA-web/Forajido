@@ -84,7 +84,7 @@ const trozos = FILAS.map((fila) => {
     const x = i * 46 + 23;
     const y = 24;
     const m = dibujarAnimal(r, x, y, zancada, trote, 1, pose);
-    if (fila.jinete) dibujarJinete(r, m.asiento.x, y - 10 + rebote, pose, 2, {}, m.riendas);
+    if (fila.jinete) dibujarJinete(r, m.asiento.x, m.asiento.y + rebote, pose, 2, {}, m);
     m.adelante();
   });
   return { c, fila };

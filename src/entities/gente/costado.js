@@ -156,6 +156,20 @@ export function lado(L, o = {}) {
   const U = mover(L, (P0.dx || 0) + a.dx, baja + a.dy);
   const P = P0;
 
+  /**
+   * LOS BRAZOS DEL JINETE VAN A LAS RIENDAS *(Santi: "debería… sujetar un par
+   * de riendas básicas")*. Iban con la pose de CAMINAR: colgando al costado,
+   * balanceándose. Y una rienda que sale de una mano que cuelga no ata nada —
+   * era una cuerda flotando al lado del jinete.
+   *
+   * Ahora los dos codos bajan pegados al cuerpo y las dos manos quedan juntas
+   * adelante, arriba de la cruz, que es donde van las de cualquiera que lleve
+   * un caballo. De ahí salen las riendas (ver `mano` en figura.js).
+   */
+  const B = postura === 'montado'
+    ? { bC: [[27, 42], [33, 46]], bL: [[25, 42], [31, 47]] }
+    : P;
+
   // Asomado, las piernas acompañan un poco: el cuerpo se inclina, no se parte.
   const LP = a.dx ? mover(L, Math.round(a.dx / 3), 0) : L;
 
@@ -168,7 +182,7 @@ export function lado(L, o = {}) {
     botaLado(LP, P.lejos[2], '#22180f', P.lejos[3], false);
   }
   if (o.manosArriba) { tramo(U, [21, 33], [19, 19], 2.6, MS); U.elipse(19, 17, 2.5, 2.5, PIEL_O); }
-  else brazoLado(U, [21, 34], P.bL[0], P.bL[1], MS, null, PIEL_O);
+  else brazoLado(U, [21, 34], B.bL[0], B.bL[1], MS, null, PIEL_O);
   // La mochila va detrás del cuerpo: asoma por la espalda.
   if (o.mochila) {
     const h = 10 + o.mochila * 2;
@@ -242,7 +256,7 @@ export function lado(L, o = {}) {
   } else {
     // El hombro de adelante, redondo y con luz arriba.
     U.elipse(23.5, 35, 3.5, 3, MS); U.elipse(24, 35, 3, 2.5, M0); U.rect(22, 33, 3, 1, ML);
-    brazoLado(U, [24, 34], P.bC[0], P.bC[1], M0, MS, PIEL);
+    brazoLado(U, [24, 34], B.bC[0], B.bC[1], M0, MS, PIEL);
   }
 
   // El pañuelo blanco del que se rinde, en la mano levantada.

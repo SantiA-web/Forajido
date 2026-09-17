@@ -30,7 +30,7 @@
 import { dibujarPersona } from './figura.js';
 import { PUNTO } from '../world/piezas.js';
 import {
-  HOJA, CELDA_ANCHO, CELDA_ALTO, DIRECCIONES, FILA_QUIETO, MEDIDAS, POR_POSE,
+  HOJA, CELDA_ANCHO, CELDA_ALTO, DIRECCIONES, FILA_QUIETO, MEDIDAS, POR_POSE, PELAJES,
 } from '../assets/caballoHoja.js';
 
 const ALTO_SENTADO = 7;     // del asiento a donde apoya la figura sentada
@@ -95,6 +95,73 @@ function hojaTenida(color) {
 }
 
 /**
+ * LA MISMA HOJA CON OTRO PELAJE *(Santi: "yo le pondría al Mustang un color
+ * marrón rojizo")*. Se pasa cada píxel a tono-color-luz, se le cambian el
+ * TONO y la fuerza del color y se deja la LUZ como está: así el caballo
+ * cambiado conserva el lomo iluminado, la panza en sombra y todo el dibujo de
+ * Santi. Teñirlo de un color plano, como se hace para la sombra de atrás de la
+ * pared, lo dejaría chato.
+ *
+ * Los píxeles casi sin color y oscuros —la crin, la cola, los cascos, el
+ * contorno— se saltean: el negro es negro en cualquier caballo.
+ *
+ * Se arma UNA VEZ por pelaje y se guarda: son 0,2 s y 1 MB cada uno.
+ */
+const pelajes = new Map();
+function hojaPelaje(nombre) {
+  const receta = PELAJES[nombre];
+  if (!receta || !lista) return hoja;
+  let c = pelajes.get(nombre);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = hoja.width;
+    c.height = hoja.height;
+    const g = c.getContext('2d');
+    g.drawImage(hoja, 0, 0);
+    const datos = g.getImageData(0, 0, c.width, c.height);
+    const p = datos.data;
+    for (let i = 0; i < p.length; i += 4) {
+      if (p[i + 3] < 8) continue;
+      const [h0, s0, l0] = aHSL(p[i], p[i + 1], p[i + 2]);
+      if (s0 < 0.08 && l0 < 0.35) continue;             // el negro no se toca
+      const [r2, g2, b2] = aRGB(
+        receta.tinte,
+        Math.max(0, Math.min(1, s0 * receta.color)),
+        Math.max(0, Math.min(1, l0 * receta.luz + receta.aclara)),
+      );
+      p[i] = r2; p[i + 1] = g2; p[i + 2] = b2;
+    }
+    g.putImageData(datos, 0, 0);
+    pelajes.set(nombre, c);
+  }
+  return c;
+}
+
+/** De rojo-verde-azul a tono-color-luz y al revés. Los dos van de 0 a 1. */
+function aHSL(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  if (!d) return [0, 0, l];
+  const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  const h = (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) / 6;
+  return [h, s, l];
+}
+function aRGB(h, s, l) {
+  if (!s) return [l * 255, l * 255, l * 255];
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  const f = (x) => {
+    if (x < 0) x += 1;
+    if (x > 1) x -= 1;
+    if (x < 1 / 6) return p + (q - p) * 6 * x;
+    if (x < 1 / 2) return q;
+    if (x < 2 / 3) return p + (q - p) * (2 / 3 - x) * 6;
+    return p;
+  };
+  return [f(h + 1 / 3) * 255, f(h) * 255, f(h - 1 / 3) * 255];
+}
+
+/**
  * EL CABALLO A LA CARRERA. Los cascos quedan en `y + 7`, donde va la sombra.
  *
  * @param zancada  `{ t, T }`: segundos desde que empezó la zancada y cuánto dura.
@@ -107,7 +174,7 @@ function hojaTenida(color) {
  * Devuelve dónde quedaron la montura y el bocado, para que el jinete se siente
  * en una y agarre las riendas del otro.
  */
-export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0) {
+export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaje = null) {
   const [nombre, achata] = POR_POSE[String(Math.max(-4, Math.min(4, Math.round(pose))))] || POR_POSE['0'];
   const m = MEDIDAS[nombre];
   const fila = DIRECCIONES.indexOf(nombre);
@@ -129,10 +196,12 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0) {
   const asiento = { x: ox + m.sillaX * PASO * achata, y: oy + m.sillaY * PASO };
   const riendas = { x: ox + m.bocadoX * PASO * achata, y: oy + m.bocadoY * PASO };
 
+  const cual = () => (r.plano ? hojaTenida(r.plano) : pelaje ? hojaPelaje(pelaje) : hoja);
+
   const estampa = () => {
     if (!lista || !r.ctx) return;
     r.ctx.drawImage(
-      r.plano ? hojaTenida(r.plano) : hoja,
+      cual(),
       col * CELDA_ANCHO, filaReal * CELDA_ALTO, CELDA_ANCHO, CELDA_ALTO,
       ox, oy, ancho, alto,
     );
@@ -145,26 +214,46 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0) {
    * cuerpo, y por eso viniendo se estampa DOS VECES: el cuerpo abajo y la
    * cabeza arriba, recortada.
    */
-  const viene = pose >= 2;
+  /**
+   * 🔻 …PERO NO CUANDO EL CABALLO VIENE DE LLENO. Mirando a la cámara de
+   * frente, la cabeza le queda al jinete JUSTO DEBAJO (el bocado cae en la
+   * misma columna que la montura): ahí no le tapa nada, y volver a estamparla
+   * sólo le pega la crin encima del pecho como una tira negra.
+   *
+   * Por eso la condición no es "viene" sino "viene Y la cabeza está corrida a
+   * un costado". De tres cuartos sí, de frente no.
+   */
+  const viene = pose >= 2 && Math.abs(m.bocadoX - m.sillaX) > 8;
   estampa();
 
   return {
     asiento,
     riendas,
+    /**
+     * CUÁNTO ABRE LAS PIERNAS EL JINETE: el ancho del animal a la altura de la
+     * bota, en puntos del dibujo de la gente. Va medido en la hoja (`flanco`),
+     * y acá sólo se pasa de puntos del caballo a puntos de la gente: el sprite
+     * va al doble, así que uno vale dos.
+     */
+    flanco: m.flanco * 2 * achata,
     /** Se llama DESPUÉS del jinete: le vuelve a poner la cabeza por encima. */
     adelante: () => {
       if (!viene || !lista || !r.ctx) return;
       r.ctx.save();
       r.ctx.beginPath();
-      // Una caja alrededor del BOCADO: la cabeza está donde está el bocado, y
-      // eso vale tanto de perfil como viniendo de frente.
+      // Una caja alrededor del BOCADO —la cabeza está donde está el bocado—,
+      // y MEDIDA en la hoja (ver `cabeza` en assets/caballoHoja.js).
+      //
+      // 🐛 Estaba a ojo y era enorme: 48 puntos de ancho en una celda de 77.
+      // Al volver a estampar se comía también las botas del jinete, que es
+      // justo lo que se quiere ver cuando el caballo viene de frente.
       r.ctx.rect(
-        ox + (m.bocadoX - 24) * PASO * achata, oy + (m.bocadoY - 26) * PASO,
-        48 * PASO * achata, 42 * PASO,
+        ox + (m.bocadoX - m.cabeza[0]) * PASO * achata, oy + (m.bocadoY - m.cabeza[1]) * PASO,
+        m.cabeza[0] * 2 * PASO * achata, (m.cabeza[1] + m.cabeza[2]) * PASO,
       );
       r.ctx.clip();
       r.ctx.drawImage(
-        r.plano ? hojaTenida(r.plano) : hoja,
+        cual(),
         col * CELDA_ANCHO, filaReal * CELDA_ALTO, CELDA_ANCHO, CELDA_ALTO,
         ox, oy, ancho, alto,
       );
@@ -189,16 +278,29 @@ function cuerda(r, x1, y1, x2, y2, color, panza = 0) {
    * de cuarenta y cinco rectángulos a ocho. Punto por punto era la parte más
    * cara de dibujar el caballo entero.
    */
-  let filaY = null, desde = 0, hasta = 0;
+  /**
+   * 🔻 Y SE AGRUPA POR EL LADO LARGO. Antes juntaba siempre por FILAS, que
+   * está bien para una cuerda tendida pero es pésimo para una parada: viniendo
+   * de frente la rienda cae casi a plomo, cada fila tenía un solo punto y una
+   * rienda costaba CINCUENTA rectángulos. Ahora, si baja más de lo que avanza,
+   * se juntan las columnas: las dos riendas de frente pasan de 50 a 4.
+   */
+  const parada = Math.abs(y2 - y1) > Math.abs(x2 - x1);
+  let fila = null, desde = 0, hasta = 0;
   const soltar = () => {
-    if (filaY !== null) r.rect(Math.min(desde, hasta), filaY, Math.abs(hasta - desde) + alto, alto, color);
+    if (fila === null) return;
+    const a = Math.min(desde, hasta), largo = Math.abs(hasta - desde) + alto;
+    if (parada) r.rect(fila, a, alto, largo, color);
+    else r.rect(a, fila, largo, alto, color);
   };
   for (let i = 0; i <= pasos; i++) {
     const u = i / pasos;
     const px = x1 + (x2 - x1) * u;
-    const py = Math.round((y1 + (y2 - y1) * u + Math.sin(u * Math.PI) * panza) * 4) / 4;
-    if (py !== filaY) { soltar(); filaY = py; desde = px; }
-    hasta = px;
+    const py = y1 + (y2 - y1) * u + Math.sin(u * Math.PI) * panza;
+    const corta = Math.round((parada ? px : py) * 4) / 4;
+    const larga = parada ? py : px;
+    if (corta !== fila) { soltar(); fila = corta; desde = larga; }
+    hasta = larga;
   }
   soltar();
 }
@@ -236,7 +338,7 @@ function cuerda(r, x1, y1, x2, y2, color, panza = 0) {
  * `inclina`: cuánto se echa hacia adelante, de 0 (parado) a 2 (a fondo).
  * `riendas`: dónde está el bocado, si hay caballo (lo devuelve `dibujarAnimal`).
  */
-export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, riendas = null) {
+export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, montura = null) {
   const quien = ropa.detalles || 'jugador';
   /**
    * EL RUMBO MANDA LA VISTA, y en pasos: de perfil (pose 0-1) a tres cuartos
@@ -246,18 +348,28 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, r
   const angulo = (pose / 4) * (Math.PI / 2);
 
   /**
-   * SE DOBLA DE LA CINTURA. La rotación es sobre el asiento, no sobre los
-   * pies: un jinete que se echa adelante deja la cadera donde está.
+   * 🔻 SE ECHA ADELANTE — Y YA NO GIRANDO EL DIBUJO ENTERO *(Santi: "el jinete
+   * (y el jugador) está como tirado hacia atrás, debería estar más
+   * incorporado")*. Acá había un `-inclina`: el menos lo tiraba PARA ATRÁS, y
+   * cuanto más a fondo galopaba, más atrás — 12,6° a fondo.
+   *
+   * Y girar el dibujo completo tampoco servía, aunque el signo fuera el bueno:
+   * las piernas giraban con el torso y las botas se escapaban del estribo. Un
+   * jinete se dobla de la CINTURA y deja las piernas donde están.
+   *
+   * Por eso ahora se le pasa `echado` a la persona y la inclinación la hace el
+   * dibujo por dentro (`deformar`, en gente/dibujo.js): el mismo mecanismo con
+   * el que la gente se tira adelante al trotar.
    */
-  const dobla = -inclina * 0.11;
+  const echado = Math.max(0, Math.min(3, Math.round(inclina * 1.5)));
   const gira = -pose * 0.012;                // y se vuelca un poco hacia adentro
   const sx = x;
   const sy = asiento + ALTO_SENTADO;
 
-  if (r.ctx && (dobla || gira)) {
+  if (r.ctx && gira) {
     r.ctx.save();
     r.ctx.translate(sx, sy);
-    r.ctx.rotate(dobla + gira);
+    r.ctx.rotate(gira);
     r.ctx.translate(-sx, -sy);
   }
 
@@ -283,6 +395,9 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, r
     pies: sy,
     angulo,
     postura: 'montado',
+    echado,
+    // Cuánto tiene que abrir las piernas para pasar por fuera del animal.
+    abre: montura ? montura.flanco : 0,
     estado: ropa.estado,
     destello: ropa.destello,
     panuelo: quien === 'jugador',
@@ -299,17 +414,27 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, r
     r.rect(ex - 1.25, sy - 0.5, 2.5, 1, '#6a5334');
   }
 
-  if (r.ctx && (dobla || gira)) r.ctx.restore();
+  if (r.ctx && gira) r.ctx.restore();
 
   /**
-   * LAS RIENDAS. Dos tiras finas de la mano al bocado. Van DESPUÉS de soltar
-   * la rotación porque el jinete se dobla pero la rienda no: es una cuerda
-   * tirante entre dos puntos, y tiene que seguir llegando a la boca del animal
+   * LAS RIENDAS, Y SON DOS *(Santi: "debería… sujetar un par de riendas
+   * básicas")*. Antes era UNA SOLA y salía de un punto inventado al lado del
+   * pecho, no de la mano: una cuerda flotando, que no ataba nada.
+   *
+   * Ahora salen de DONDE QUEDARON LAS MANOS (`persona.mano`, que lo calcula el
+   * dibujo de la persona pasando el punto por la misma deformación con que se
+   * dibujó). Así, cuando el jinete se echa adelante, las riendas se aflojan
+   * solas: la mano se acerca al bocado y la panza de la cuerda crece.
+   *
+   * Van DESPUÉS de soltar el giro, porque el jinete se vuelca pero la rienda
+   * no: es una cuerda entre dos puntos y tiene que llegar a la boca del animal
    * esté el jinete como esté.
    */
-  if (riendas && persona) {
-    const mx = sx + 3 + inclina * 0.8;
-    const my = (persona.manoY ?? sy - 9) + dobla * 6;
+  if (montura && montura.riendas && persona) {
+    const riendas = montura.riendas;
+    const mano = persona.mano || { x: sx + 3, y: persona.manoY ?? sy - 9 };
+    const mx = mano.x;
+    const my = mano.y;
     /**
      * 🐛 SE DIBUJAN EN PASITOS DE UN PUNTO, no con `r.line`. Una raya fina en
      * diagonal el canvas la SUAVIZA, y una rienda de un punto suavizada no
@@ -317,7 +442,13 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, r
      * del caballo parecía un palo de luz. Acá no hay nada suavizado — todo el
      * juego son rectángulos de puntos enteros — así que la cuerda también.
      */
+    /**
+     * LAS DOS: la de este lado del cuello y la de allá, un poco más abajo y
+     * más oscura. Separadas por menos de esto se leen como una sola raya
+     * gorda; por más, como dos riendas de dos caballos distintos.
+     */
     cuerda(r, mx, my, riendas.x, riendas.y, '#2a1c12', 1.6);
+    cuerda(r, mx - 0.5, my + 0.75, riendas.x - 0.5, riendas.y + 1, '#1d130c', 1.2);
   }
 
   return persona;

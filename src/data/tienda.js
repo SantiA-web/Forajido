@@ -203,10 +203,20 @@ export const TIENDAS = {
      *
      * `manchas` es el pelo del mustang: si está, el cuerpo se pinta con
      * parches de ESE color, sombreados igual que el resto.
+     *
+     * 🔻 EL MUSTANG CAMBIÓ DE PELO *(Santi: "yo le pondría al Mustang un color
+     * marrón rojizo")*. Era tordillo claro y manchado, y el del galope ahora
+     * es alazán: el mismo animal se veía de dos colores distintos según la
+     * pantalla. Este `#8e4c33` NO es elegido a ojo — es el color del Criollo
+     * pasado por la MISMA receta que tiñe la hoja del sprite (`PELAJES`, en
+     * assets/caballoHoja.js), así que los dos salen del mismo lugar.
+     *
+     * Y se le sacaron las manchas: la hoja del sprite no las tiene, y el
+     * recoloreado cambia el color pero no la forma.
      */
     look: {
       criollo: { pelo: '#6a4a33', crin: '#33241a', manchas: null },
-      mustang: { pelo: '#cdb9a0', crin: '#4a3a2c', manchas: '#5c4531', fase: 4.5 },
+      mustang: { pelo: '#8e4c33', crin: '#33241a', manchas: null, fase: 4.5 },
     },
   },
 };

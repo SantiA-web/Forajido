@@ -156,6 +156,25 @@ function medidas(esc = 1) {
   };
 }
 
+/**
+ * CUÁNTO SE ECHA ADELANTE EL JINETE, por paso de esfuerzo.
+ *
+ * 🔻 *(Santi: "el jinete está como tirado hacia atrás, debería estar más
+ * incorporado")*. Tenía razón y era un signo cambiado: el jinete giraba con
+ * `-inclina`, o sea que CUANTO MÁS FUERTE GALOPABA MÁS SE ECHABA PARA ATRÁS
+ * —12,6° a fondo—, justo al revés de lo que hace un jinete.
+ *
+ * Y ahora no se gira el dibujo entero con el canvas sino que se usa el MISMO
+ * `deformar` que ya tenía el trote: así el torso se va adelante y LAS PIERNAS
+ * SE QUEDAN donde están, que es lo que pasa de verdad. Girando todo, las botas
+ * se escapaban del estribo.
+ *
+ * Son cuatro pasos y no un número continuo porque cada figura se guarda
+ * dibujada (ver `armar`): con el ángulo libre habría una figura nueva por
+ * cuadro. Cuatro pasos alcanzan para que se note, y son cuatro dibujos.
+ */
+const ECHADO = [0.12, 0.2, 0.28, 0.36];
+
 const guardados = new Map();
 /** Redondeo al punto de pantalla: si no, el dibujo queda borroso. */
 const q = (v) => Math.round(v * 4) / 4;
@@ -252,6 +271,15 @@ export function dibujarPersona(r, f) {
    * Sólo se calcula para quien lleva bandolera: si no, sería una variante más
    * de figura guardada por cada guardia y por cada dinamita, para nada.
    */
+  /**
+   * DEL JINETE: cuánto se echa adelante (`echado`) y cuánto abre las piernas
+   * (`abre`: los puntos que hay del medio al costado del caballo, medidos sobre
+   * la hoja). Los dos llegan redondeados a pasos, para no llenar la memoria de
+   * figuras casi iguales.
+   */
+  const echado = modo === 'montado' ? Math.max(0, Math.min(3, Math.round(f.echado || 0))) : 0;
+  const abre = modo === 'montado' ? Math.round(Math.max(0, Math.min(30, f.abre || 0)) / 2) * 2 : 0;
+
   const cart = ROPA[tipo] && ROPA[tipo].bandolera ? f.cartuchos : null;
   const cartuchos = cart && cart.total > 0
     ? Math.max(0, Math.min(4, Math.round((cart.cargados / cart.total) * 4)))
@@ -265,15 +293,18 @@ export function dibujarPersona(r, f) {
   const M = medidas(esc);
   const clave = [tipo, nombre, g, modo, cuadro, estado, arma ? 'a' : '', manos ? 'm' : '', mochila,
     f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : '', esc,
-    cartuchos == null ? '' : 'c' + cartuchos].join('|');
+    cartuchos == null ? '' : 'c' + cartuchos,
+    modo === 'montado' ? 'e' + echado + 'a' + abre : ''].join('|');
+  // Al trotar y a caballo el torso se va para adelante; de frente casi no se
+  // nota, y de espaldas tampoco: por eso `lateral` lo apaga.
+  const lateral = fn === lado ? 1 : g ? 0.5 : 0;
+  const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12
+    : modo === 'montado' ? ECHADO[echado] : 0) * lateral;
   const img = armar(clave, () => {
-    // Al trotar el torso se va para adelante; de frente casi no se nota.
-    const lateral = fn === lado ? 1 : g ? 0.5 : 0;
-    const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12 : 0) * lateral;
     const L = Lienzo(M.ancho, M.alto, OX, OY, M.s, deformar(inclina));
     const datos = {
       tipo, g, estado, arma, manosArriba: manos, mochila, cartuchos,
-      asomado: asomadoDibujo, panuelo: !!f.panuelo,
+      asomado: asomadoDibujo, panuelo: !!f.panuelo, abre,
     };
     if (modo === 'trotar') datos.trote = cuadro;
     else { datos.paso = cuadro; datos.agachado = modo === 'agachado'; }
@@ -300,8 +331,28 @@ export function dibujarPersona(r, f) {
   estampar(f.destello ? armar(clave + '|flash', () => tenido(img, '#ffe8c0', 0.75)) : img);
 
   const cabeza = arriba + baja;
+
+  /**
+   * DÓNDE QUEDARON LAS MANOS DEL JINETE, en unidades del mundo. De acá salen
+   * las riendas, y tienen que salir de ACÁ y no de un punto inventado: el
+   * torso se echa adelante (`inclina`) y las manos se van con él, así que
+   * cualquier número fijo se despegaría en cuanto el caballo apura.
+   *
+   * Se pasa el punto del dibujo por el MISMO `deformar` con que se dibujó, y
+   * de ahí al mundo con la cuenta de `estampar`.
+   */
+  let mano = null;
+  if (modo === 'montado') {
+    const [hx, hy] = deformar(inclina)(...(fn === lado ? [35, 47] : [30, 48]));
+    mano = {
+      x: anclaX + (espejo ? -1 : 1) * (hx - 24) * PUNTO,
+      y: anclaPies + (hy - 74) * PUNTO,
+    };
+  }
+
   return {
     x,
+    mano,
     top: cabeza,
     arriba: manos || postura === 'rendido' ? cabeza - 3 : cabeza,
     manoY: pies - 9 + baja,

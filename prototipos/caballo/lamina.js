@@ -92,7 +92,7 @@ FILAS.forEach((fila, fi) => {
     const montura = dibujarAnimal(r, x, y, zancada, trote, fila.esfuerzo, pose);
     if (!fila.jinete) montura.adelante();
     if (fila.jinete) {
-      dibujarJinete(r, montura.asiento.x, y - 10 + rebote, pose, fila.esfuerzo * 2, {}, montura.riendas);
+      dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, pose, fila.esfuerzo * 2, {}, montura);
       montura.adelante();
     }
     if (fi === 0) {

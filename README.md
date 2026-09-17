@@ -81,6 +81,16 @@ riendas, el polvo y el enganche de los cuadros al sonido de los cascos siguen
 siendo nuestros. La lección quedó escrita en NOTAS-DISENO.md y es corta: **un
 caballo no se calcula**.
 
+Y el **jinete** se rehizo dos veces encima de eso, porque con el caballo bueno
+se veían todos sus defectos: primero dejó de ir sentado como un pasajero del
+vagón y pasó a ir **a horcajadas**, con la montura y el estribo dibujados por
+él (el sprite es un animal pelado); después dejó de ir **tirado para atrás**
+—había un signo cambiado que lo echaba más atrás cuanto más fuerte galopaba—,
+llevó las **dos manos a las riendas**, y las piernas se abrieron hasta pasar el
+costado del animal, que es lo único que se le ve de atrás. El **Mustang** ya no
+es el mismo caballo: se le cambia el tono a la hoja y se le deja la luz, así que
+un pelaje nuevo son cuatro números.
+
 Quedan la **6** (las pantallas fijas) y la **7, la última: el techo**, que se
 lleva una etapa entera para él solo. El detalle y los números están en
 NOTAS-DISENO.md ("La gente curtida a 80 px" y las etapas 3, 4, 5, 5b y 5c).

@@ -134,10 +134,68 @@ function piernasSentado(L, R) {
  * Los muslos salen hacia afuera y abajo, las canillas bajan casi derechas por
  * fuera del caballo, y las botas quedan separadas con el talón abajo.
  */
-function piernasMontado(L, R, g) {
+function piernasMontado(L, R, g, abre) {
   const PT = R.pant;
-  const d = g ? 2 : 0;                       // en tres cuartos el cuerpo se corre
   const OSC = tono(PT, 0.72), MED = tono(PT, 0.85);
+
+  /**
+   * 🔻 DE FRENTE Y DE ESPALDAS, LAS PIERNAS SE ABREN HASTA PASAR EL CABALLO
+   * *(Santi: "cuando el caballo mira hacia arriba (W), debería verse al
+   * personaje con una pierna de cada lado del cuerpo del caballo")*.
+   *
+   * Y no se veía ninguna. Está medido: las botas iban de 14 a 35, y el cuerpo
+   * del caballo visto de atrás va de 3 a 46. Las dos piernas estaban ENTERAS
+   * ADENTRO del animal — invisibles. Lo que se veía colgando en el medio era
+   * la cola del caballo, no el jinete.
+   *
+   * Por eso `abre` no se elige: se MIDE sobre la hoja (ver `flanco` en
+   * assets/caballoHoja.js) y llega hasta acá. Es lo que hay del medio al
+   * costado del animal a la altura de la bota, y la pierna va a parar justo
+   * ahí afuera. Si algún día se cambia el caballo, las piernas lo siguen solas.
+   *
+   * La pierna abraza el barril: pegada arriba, abierta abajo. Por eso el muslo
+   * sale casi horizontal y la canilla baja casi derecha.
+   */
+  if (!g) {
+    /**
+     * `A` es el borde del caballo. La pierna llega HASTA PASARLO: la rodilla
+     * justo adentro, la canilla en el filo y la bota entera afuera. Lo que se
+     * ve del jinete de atrás son las dos botas asomando a los costados del
+     * anca — poco, pero es lo que se ve de verdad, y antes no se veía nada.
+     *
+     * El tope de 28 no es capricho: el lienzo de la gente mide 72 de ancho con
+     * el cuerpo en el 24, así que más afuera de eso la bota se sale del dibujo
+     * y queda cortada.
+     */
+    const A = Math.min(27, Math.max(12, abre || 14));
+    const pierna = (s, muslo, canilla, rodilla) => {
+      /**
+       * LO QUE SE VE ES DE LA RODILLA PARA ABAJO, y por eso la canilla va casi
+       * DERECHA y ANGOSTA en vez de seguir abriéndose: afuera del animal tiene
+       * que quedar una columna de pierna, no un ladrillo. Con la canilla ancha
+       * las dos piernas se leían como dos alforjas colgando.
+       */
+      const rod = A - 3;                               // la rodilla, sobre el costado
+      const pie = A + 1;                               // la canilla y la bota, ya afuera
+      const par = (x1, y1, x2, y2, c) => L.poly(
+        s > 0 ? [[24 + x1[0], y1], [24 + x1[1], y1], [24 + x2[1], y2], [24 + x2[0], y2]]
+          : [[24 - x1[1], y1], [24 - x1[0], y1], [24 - x2[0], y2], [24 - x2[1], y2]], c,
+      );
+      par([0, 7], 57, [rod - 4, rod + 4], 65, muslo);                 // el muslo
+      par([rod - 4, rod + 4], 63, [rod - 1, rod + 5], 67, rodilla);   // la rodilla
+      par([rod - 1, rod + 5], 66, [pie - 2, pie + 4], 73, canilla);   // la canilla
+      par([pie - 3, pie + 5], 72, [pie - 3, pie + 5], 76, BOTA);      // la bota
+      par([pie - 1, pie + 5], 76, [pie, pie + 5], 78, tono(BOTA, 0.65));  // el taco
+      L.rect(s > 0 ? 24 + pie - 2 : 24 - pie - 4, 73, 6, 1, BOTA_L);
+    };
+    pierna(-1, MED, OSC, tono(R.pant, 0.95));
+    pierna(1, PT, tono(PT, 0.9), tono(PT, 1.15));
+    return;
+  }
+
+  // De tres cuartos el caballo tapa casi toda la pierna de allá: sólo se abre
+  // la de acá, y la otra asoma el muslo.
+  const d = 2;
   L.poly([[18 - d, 57], [24, 57], [23, 67], [16 - d, 65]], MED);     // muslo izquierdo
   L.poly([[25, 57], [31 + d, 57], [33 + d, 65], [26, 67]], PT);      // muslo derecho
   L.poly([[15 - d, 64], [22, 66], [22, 72], [15 - d, 72]], OSC);     // canillas
@@ -177,15 +235,22 @@ export function panueloBlanco(L, g) {
 
 function torsoFrente(L, R, o, g, f) {
   const d = g * 2, [C0, CL, CS] = R.chal, [M0, ML, MS] = R.manga;
+  /**
+   * EL JINETE LLEVA LOS BRAZOS A LAS RIENDAS: los de arriba se cortan a la
+   * altura del codo y los antebrazos se cierran hacia adelante, con las dos
+   * manos juntas arriba de la cruz. Es lo mismo que se hizo de costado.
+   */
+  const jinete = o.postura === 'montado';
+  const mI = jinete ? -10 : f.mI, mD = jinete ? -10 : f.mD;
   if (R.capa) capa(L, R.capa, f, false);
   // Los brazos: el de la izquierda entero; el otro, girado, casi tapado.
   if (!o.manosArriba) {
-    L.poly([[9 + g, 33], [14 + g, 32], [14 + g, 53 + f.mI], [9 + g, 54 + f.mI]], M0);
-    L.rect(10 + g, 34, 3, 1, ML); L.rect(11 + g, 38, 1, 8 + Math.min(0, f.mI), MS);
+    L.poly([[9 + g, 33], [14 + g, 32], [14 + g, 53 + mI], [9 + g, 54 + mI]], M0);
+    L.rect(10 + g, 34, 3, 1, ML); L.rect(11 + g, 38, 1, 8 + Math.min(0, mI), MS);
   }
   if (!o.arma && !o.manosArriba) {
-    if (g) L.poly([[33, 33], [36, 34], [36, 53 + f.mD], [33, 52]], MS);
-    else L.poly([[34, 32], [39, 33], [39, 54 + f.mD], [34, 53 + f.mD]], MS);
+    if (g) L.poly([[33, 33], [36, 34], [36, 53 + mD], [33, 52]], MS);
+    else L.poly([[34, 32], [39, 33], [39, 54 + mD], [34, 53 + mD]], MS);
   }
   if (R.saco) {
     L.poly([[12 + g, 32], [36 - g, 32], [35 - g, 57], [13 + g, 57]], C0);
@@ -219,9 +284,15 @@ function torsoFrente(L, R, o, g, f) {
   // Una mano que sube viene hacia adelante: se ve un poco más grande.
   const mano = (x, m, c) => L.elipse(x, 56 + m, m <= -4 ? 2.5 : 2, 3, c);
   if (o.manosArriba) brazosArriba(L, R, g);
-  else {
-    mano(11 + g + (f.mI <= -4 ? 1 : 0), f.mI, PIEL);
-    if (!o.arma) mano((g ? 35 : 37) - (f.mD <= -4 ? 1 : 0), f.mD, PIEL_S);
+  else if (jinete && !o.arma) {
+    // Los antebrazos, cerrándose hacia adelante, y las dos manos a las riendas.
+    L.poly([[11 + g, 43], [15 + g, 43], [21, 48], [18, 51]], M0);
+    L.poly([[33, 43], [37 - g, 43], [30, 51], [27, 48]], MS);
+    mano(20, -7, PIEL);
+    mano(28, -7, PIEL_S);
+  } else {
+    mano(11 + g + (mI <= -4 ? 1 : 0), mI, PIEL);
+    if (!o.arma) mano((g ? 35 : 37) - (mD <= -4 ? 1 : 0), mD, PIEL_S);
   }
   L.rect(21 + d, 29, 7, 4, PIEL_S);
   if (R.cuello === 'panuelo') {
@@ -261,7 +332,7 @@ export function frente(L, o = {}) {
  */
 function piernasDePostura(L, R, o, g, f, atras) {
   if (o.postura === 'rendido') { piernasRendido(L, R); return { baja: 14, rendido: true }; }
-  if (o.postura === 'montado') { piernasMontado(L, R, g); return { baja: 6, rendido: false }; }
+  if (o.postura === 'montado') { piernasMontado(L, R, g, o.abre); return { baja: 6, rendido: false }; }
   if (o.postura === 'sentado') { piernasSentado(L, R); return { baja: 6, rendido: false }; }
   piernasFrente(L, R, g, f, atras);
   return null;
@@ -289,10 +360,18 @@ export function espalda(L, o = {}) {
   const cuadro = quieto ? CAMINATA[0] : f;
   const U = mover(L, a.dx, (quieto ? quieto.baja : cuadro.y) + a.dy);
   if (R.capa) capa(U, R.capa, cuadro, true);
+  /**
+   * DE ESPALDAS, EL JINETE NO TIENE MANOS A LA VISTA: los antebrazos se le van
+   * hacia adelante, a las riendas, y el propio cuerpo los tapa. Así que los
+   * brazos se cortan en el codo y las manos no se dibujan. Dibujarlas al
+   * costado, colgando, era lo que lo hacía parecer un pasajero.
+   */
+  const jinete = o.postura === 'montado';
+  const mI = jinete ? -10 : cuadro.mI, mD = jinete ? -10 : cuadro.mD;
   if (!o.manosArriba) {
-    if (g) U.poly([[12, 34], [15, 33], [15, 52], [12, 53 + cuadro.mI]], MS);
-    else U.poly([[9, 33], [14, 32], [14, 53], [9, 54 + cuadro.mI]], MS);
-    if (!o.arma) U.poly([[34 - g, 32], [39 - g, 33], [39 - g, 54 + cuadro.mD], [34 - g, 53]], M0);
+    if (g) U.poly([[12, 34], [15, 33], [15, 52 + mI], [12, 53 + mI]], MS);
+    else U.poly([[9, 33], [14, 32], [14, 53 + mI], [9, 54 + mI]], MS);
+    if (!o.arma) U.poly([[34 - g, 32], [39 - g, 33], [39 - g, 54 + mD], [34 - g, 53 + mD]], M0);
   }
   const largo = R.saco ? 57 : 55;
   U.poly([[13 + g, 32], [35 - g, 32], [34 - g, largo], [14 + g, largo]], C0);
@@ -307,7 +386,7 @@ export function espalda(L, o = {}) {
     U.poly([[12 + g, 49], [16 + g, 49], [16 + g, 55], [11 + g, 55]], CULATA);
   }
   if (o.manosArriba) brazosArriba(U, R, g);
-  else {
+  else if (!jinete) {
     U.elipse(g ? 13 : 11, 56 + cuadro.mI, 2, 3, PIEL_S);
     if (!o.arma) U.elipse(37 - g, 56 + cuadro.mD, 2, 3, PIEL);
   }

@@ -72,12 +72,12 @@ export function drawRider(r, rd) {
   const montura = dibujarAnimal(r, rd.x, rd.y, zancada, trote, 1, 0);
   // El jinete amortigua el rebote del lomo, igual que el jugador en el galope.
   const rebote = Math.cos((zancada.t / T - 0.25) * Math.PI * 2) * 1.2 * 0.5;
-  dibujarJinete(r, montura.asiento.x, rd.y - 10 + rebote, 0, 2, {
+  dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, 0, 2, {
     detalles: 'ley',
     destello: rd.hitFlash > 0,
     // Los ojos se ponen rojos mientras apunta, igual que un guardia en combate.
     estado: rd.aimTimer > 0 ? 'alerta' : 'calma',
-  }, montura.riendas);
+  }, montura);
   montura.adelante();
 
   /**

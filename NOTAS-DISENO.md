@@ -13229,8 +13229,8 @@ de las cinco direcciones, así que es cambiar cuatro rectángulos por una estamp
 — va con la etapa 6, las pantallas fijas.
 
 🔻 **Y SE ABRE ALGO GRATIS:** el Criollo y el Mustang son hoy el mismo caballo
-pintado igual. Como la hoja la generó Santi, alcanza con generar el mismo
-caballo con otro pelaje y cambiar una hoja por montura.
+pintado igual. *(Resuelto más abajo, y salió todavía más barato de lo que decía
+acá: no hizo falta otra hoja.)*
 
 #### 🔻 El jinete iba sentado en un banco
 
@@ -13265,6 +13265,96 @@ recorte estaba escrito como "de arriba hasta el bocado". Eso sirve de perfil
 donde la cabeza queda abajo: ahí se comía el lomo entero y **partía al jinete
 por la mitad**. Ahora es una caja alrededor del bocado, que cae bien esté donde
 esté.
+
+#### 🔻 …y además iba tirado para atrás, sin manos y con las piernas adentro del caballo
+
+*(Santi: "el jinete (y el jugador) está como tirado hacia atrás, debería estar
+más incorporado y sujetar un par de riendas básicas. Además, cuando el caballo
+mira hacia arriba (W), debería verse al personaje con una pierna de cada lado
+del cuerpo del caballo")*. Los tres eran de verdad y los tres estaban medidos.
+
+**1 · El signo cambiado.** El torso giraba con `-inclina`, y ese menos lo tiraba
+PARA ATRÁS: cuanto más fuerte galopaba, más se echaba atrás — **12,6° a fondo**,
+justo al revés de lo que hace un jinete.
+
+Y girar el dibujo entero no servía ni con el signo bueno, porque las piernas
+giraban con el torso y las botas se escapaban del estribo. Ahora la inclinación
+la hace `deformar` —el mismo mecanismo con el que la gente se tira adelante al
+trotar—, que dobla el cuerpo **de la cintura** y deja las piernas donde están.
+Son cuatro pasos de inclinación y no un número libre, porque cada figura se
+guarda dibujada: con el ángulo continuo habría una figura nueva por cuadro.
+
+**2 · Las piernas estaban enteras adentro del caballo.** Medido: las botas iban
+de 14 a 35 (en puntos del dibujo de la gente) y el cuerpo del caballo visto de
+atrás va de 3 a 46. **Invisibles.** Lo que se veía colgando en el medio —y que
+parecían las piernas— era la **cola**.
+
+Por eso el ancho de las piernas ya no se elige: sale de `flanco`, contado sobre
+la hoja fila por fila, y es lo que hay del medio al costado del animal a la
+altura de la bota. La bota va a parar justo afuera de ahí. Si algún día se
+cambia el caballo, las piernas lo siguen solas.
+
+Y lo que asoma es **de la rodilla para abajo**, en columna angosta: con la
+canilla ancha las dos piernas se leían como dos alforjas colgando.
+
+**3 · La rienda era una sola y no la agarraba nadie.** Salía de un punto
+inventado al lado del pecho —la mano iba en la pose de CAMINAR, colgando— así
+que era una cuerda flotando que no ataba nada. Ahora los dos codos bajan pegados
+al cuerpo, las manos quedan juntas arriba de la cruz, y de **ahí** salen las
+riendas: el dibujo devuelve dónde quedó la mano después de deformarlo, así que
+cuando el jinete se echa adelante las riendas se aflojan solas.
+
+Y son **dos**, una a cada lado del cuello.
+
+🔻 **Y EL ASIENTO YA NO ES UN NÚMERO FIJO.** Todos los que dibujaban al jinete
+le pasaban `y - 10`. De perfil casi acierta (el lomo está a 16,5), pero de
+frente y de espaldas el lomo está a 19,5: iba **hundido 2,5 unidades** en el
+animal, que es parte de por qué las piernas no se veían.
+
+🐛 **Y LA CABEZA SE LE PEGABA AL PECHO.** El recorte con que se vuelve a
+estampar la cabeza por encima del jinete estaba puesto a ojo: **48 puntos de
+ancho en una celda de 77**, o sea que se llevaba puestas también las botas.
+Ahora está medido (`cabeza`, en la hoja) — y, además, **de frente no se estampa
+nada**: mirando a la cámara de lleno la cabeza del caballo le queda al jinete
+justo debajo, no le tapa nada, y volver a estamparla sólo le pegaba la crin
+encima del pecho como una tira negra. La regla quedó: se vuelve a estampar
+cuando el caballo viene **y** la cabeza está corrida a un costado.
+
+##### Medido
+
+| | Antes | Ahora |
+|---|---|---|
+| Inclinación a fondo | 12,6° **hacia atrás** | 20° hacia adelante |
+| Riendas | 1 | 2 |
+| Pierna visible de atrás (W) | 0 puntos | 12 puntos |
+| Llamadas de dibujo, de perfil | 18 | **35** |
+| Llamadas de dibujo, de frente | 93 | **20** |
+
+Las llamadas **suben de perfil**: la rienda de más cuesta ocho rectángulos y las
+dos son más largas que la vieja. Y **bajan de frente**, mucho, por un arreglo de
+paso: la cuerda se juntaba siempre por FILAS, que está bien para una cuerda
+tendida y es pésimo para una parada — de frente la rienda cae casi a plomo, cada
+fila tenía un solo punto y una rienda costaba **cincuenta** rectángulos. Ahora
+se junta por el lado largo.
+
+#### 🐴 Y EL MUSTANG DEJÓ DE SER EL MISMO CABALLO
+
+*(Santi: "yo le pondría al Mustang un color marrón rojizo")*. El Criollo y el
+Mustang eran la misma hoja, así que eran el mismo animal pintado igual.
+
+No hizo falta generar otra hoja ni repintar nada: se le da una vuelta a los
+píxeles **cambiando el tono y dejando la luz como está**, así que el caballo
+cambiado conserva el lomo iluminado, la panza en sombra y todo el dibujo. Teñirlo
+de un color plano —como se hace para la sombra de atrás de la pared del tren— lo
+dejaría chato. La crin, la cola y los cascos se saltean solos: el negro casi no
+tiene color, y el negro es negro en cualquier caballo.
+
+Cuesta **menos de 40 ms** y **1 MB** por pelaje, una sola vez, y las recetas
+están en `PELAJES` (assets/caballoHoja.js): agregar un caballo es agregar cuatro
+números.
+
+⚠️ **Esto cambia el COLOR, no la FORMA.** Un overo o un tobiano —con manchas—
+hay que generarlo aparte.
 
 **⚠️ NO JUGADO.**
 

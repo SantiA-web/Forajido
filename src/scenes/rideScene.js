@@ -1476,7 +1476,7 @@ export function createRideScene(services) {
      */
     if (terminado) {
       const t = 1 - saltando / 0.4;
-      dibujarAnimal(r, x, y, zancada, 0, esfuerzo);
+      dibujarAnimal(r, x, y, zancada, 0, esfuerzo, 0, caballo.id);
       const desde = y - 6;
       const hasta = train.map.height
         - (techoDestino ? alturaDeAterrizaje(vagonAlLado()) : ALTO_DEL_ENGANCHE);
@@ -1538,10 +1538,12 @@ export function createRideScene(services) {
      * del caballo y el jinete las recibe. Antes eran dos números sueltos acá,
      * y cada vez que se tocaba el caballo había que acordarse de tocarlos.
      */
-    const montura = dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose);
+    const montura = dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose, caballo.id);
     // A la carrera el jinete se echa hacia adelante: más cuanto más le pide.
     // Se sienta con SU rebote, no con el del lomo (ver `rebote`, más arriba).
-    dibujarJinete(r, montura.asiento.x, y - 10 + rebote, pose, esfuerzo * 2, {}, montura.riendas);
+    // Y se sienta DONDE DICE EL CABALLO: la altura del lomo cambia con la
+    // dirección, y con un número fijo quedaba hundido 2,5 al ir de frente.
+    dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, pose, esfuerzo * 2, {}, montura);
     // Y la cabeza del caballo, si viene hacia la cámara: va delante del jinete.
     montura.adelante();
 

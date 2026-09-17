@@ -11492,7 +11492,7 @@ pantalla no llegaba a dibujar a tiempo):
 - **Adentro de primera clase**: los tres ricos con sombrero de copa junto a los
   sillones, y los dos guardaespaldas con VIGILANDO. "1ª CLASE" entra en el cartel.
 
-**⚠️ NO JUGADO.** Y los sistemas de cada vagón (vigía, reses, carbón, franco,
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*). Y los sistemas de cada vagón (vigía, reses, carbón, franco,
 puertas) siguen sin existir: son las etapas 3 a 7.
 
 ### ✅ Etapa 2 hecha — la locomotora
@@ -11547,7 +11547,7 @@ parado en el último vagón:
 - De noche la caldera casi negra se lee igual, por la franja de luz del lomo y
   los bordes; el tanque de agua y el latón son lo primero que se ve.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### ✅ Etapa 3 hecha — el refrigerado
 
@@ -11609,7 +11609,7 @@ vio, y entonces no tira: **a confirmar jugando.**
 cámara del juego se leía como un palito. Pasó a media res, ancha arriba y angosta
 abajo, con la grasa de un costado; cada una se mece un píxel a su ritmo.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### ✅ Etapa 4 hecha — los guardias de franco
 
@@ -11680,7 +11680,7 @@ cartas en la mano y cartas sobre la mesa; medio segundo después de despertarlos
 en rojo y **sin caño** (el arma colgada al costado), una pareja quieta y otra
 yéndose a cubrir.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### ✅ Etapa 5 hecha — la góndola
 
@@ -11765,7 +11765,7 @@ del galope (que igual no corre al lado de la góndola: no lleva a nadie que mire
 seguís siendo "el que va por el techo", así que un guardia cruzando el mismo
 carbón no te ve, aunque estén a la misma altura.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ---
 
@@ -11876,7 +11876,7 @@ plataforma, y la góndola. Las divisiones del dormitorio y las puntas de cada
 vagón quedaron como bloques oscuros más pesados que el resto: a mirar con la
 gente de cuerpo entero (etapa B).
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🔧 Una tanda de ajustes antes de la etapa B
 
@@ -11911,7 +11911,7 @@ montículo frena, y desde el enganche sin trepar el carbón sigue siendo pared
 ⚠️ En la prueba de ir hacia arriba el jugador no se movió de y=30: no se cayó ni
 salió del carbón, pero **no está explicado** por qué no avanzó.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 **La resolución (2):**
 
@@ -11961,7 +11961,7 @@ de la pantalla lo cortaba sin que se notara. Se metieron adentro.
 **MEDIDO:** canvas de 420×236, ningún error en ninguna escena, y el mouse del
 mapa reconoce el circuito de la mina sobre sus coordenadas nuevas.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 **La pantalla se adapta al monitor (sin bordes):**
 
@@ -12011,7 +12011,7 @@ la ventana EN VIVO — la pestaña de prueba está oculta y ahí el navegador no
 dibuja ningún cuadro (0 en 600 ms), así que el chequeo por cuadro no corre. Se
 forzó a mano y da lo de la tabla.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 **El galope con cámara baja (3, 4 y 5):**
 
@@ -12069,7 +12069,7 @@ errores. Una corrida automática con el Criollo pegado al tren llega limpio al
 **3er enganche** a los 35,4 s, con 9,5 s de reloj y 31 de aguante: es el alcance
 de siempre del Criollo.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 **🔁 CORRECCIÓN: EL GALOPE VA EN TRES CUARTOS, NO DE COSTADO.**
 
@@ -12113,7 +12113,7 @@ cerca y lejos. La corrida del Criollo volvió a llegar limpio al 3er enganche, a
 los 38,6 s con 6,3 de reloj (la anterior fue 35,4 con 9,5: los obstáculos y los
 tiros se sortean en cada corrida; la lógica no se tocó).
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 **El caballo gira de verdad: cinco poses.**
 
@@ -12146,7 +12146,7 @@ pantalla el caballo casi no avanza a la derecha y parecía deslizarse.
   caballo se veía como una llama. Un cuello que se aleja se acorta: ahora mide 7.
 - `ponerEn(x, y, rumbo)` acepta el rumbo, para fotografiar cada pose.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 **🔺 De cinco a nueve poses** *(Santi: "podrías cambiarlo a 8 pasos?")*. Se le
 preguntó qué quería decir y eligió **más poses en el mismo giro**, sobre "un
@@ -12156,7 +12156,7 @@ de ±0,73 rad. Las medidas se calculan con la mitad de la pose y se redondean, a
 que las de los extremos son las mismas de antes y las nuevas son intermedias.
 Avisado antes de hacerlo: entre dos poses seguidas la diferencia es de 1 o 2 px.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 **El caballo a la carrera: patas, cascos y polvo.**
 
@@ -12190,8 +12190,9 @@ la arena. Además, añádele una nube de polvo como la de la imagen")*
   chicas por pisada, todas hacia atrás, y ~50 px de suelo entre zancadas. Se
   pasó a cinco, más grandes y más largas, disparadas para los dos lados.
 
-**⚠️ NO JUGADO — y el sonido hay que oírlo:** el volumen se eligió sin
-escucharlo.
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios
+entre asientos"*). El volumen se había elegido sin escucharlo y no salió ninguna
+queja, así que queda como está.
 
 ### ✅ Etapa B hecha — la gente de cuerpo entero
 
@@ -12241,7 +12242,7 @@ caño esté a la altura del pecho — eso es la etapa C, la altura de las balas.
 tres vagones enteros, los seis estados y los seis tipos de guardia, el jugador
 en tres poses, los tres pasajeros, los dos jinetes y los de franco.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 📏 La gente pasa de 16 a 16×24
 
@@ -12282,7 +12283,7 @@ cuatro direcciones, sospecha, combate, rendido, traición, mecha, desmayado,
 muerto, los pasajeros, el jugador con y sin mochila, agachado y disparando, y el
 jefe de frente y de costado; captura del vagón real a 480×270.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🎩 Las sombras cabezonas: toda la gente en negro
 
@@ -12391,7 +12392,7 @@ parado a traicionar, de franco, con la mecha, desmayado y muerto; los pasajeros
 direcciones con y sin mochila, agachado, disparando y tirado; los dos jefes en
 sus estados; los jinetes. Captura del vagón real y del galope de día y de noche.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🤠 La gente curtida a 80 px — DISEÑADA en una prueba aparte, falta llevarla al juego
 
@@ -12535,7 +12536,7 @@ galope, el mapa, el pueblo y un interior: idénticos a antes, con el texto más
 nítido. En 1366×768: el asalto en 342×192 con densidad 4 y el campamento en
 456×256 con densidad 3, entrando entero.
 
-**⚠️ NO JUGADO** por Santi todavía.
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🤠 ETAPA 2a: la gente nueva YA ESTÁ EN EL JUEGO (falta lo demás de la etapa 2)
 
@@ -12631,7 +12632,7 @@ redibuje el caballo junto con su jinete.
 dibujando: el Cazarrecompensas y el jugador en el asalto (mirados ampliados
 ×5), los guardias, los pasajeros y el galope con su jinete.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🔧 Cierre de la etapa 2: las muescas de vida y los cartuchos
 
@@ -12678,7 +12679,7 @@ figura distinta por cada guardia y por cada dinamita.
 (todos dibujando muescas) y un tercio de ellos con bandolera. Sin errores en la
 consola.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🚃 ETAPA 3: el vagón, al detalle de la gente
 
@@ -12741,7 +12742,7 @@ El reloj del navegador no da medidas estables en esta ventana (la misma escena
 midió entre 0,5 y 2,3 ms de un intento a otro), así que el número de arriba es
 el que vale: son llamadas contadas, no tiempo estimado.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🪑 Después de jugarlo: los asientos en pares y las puertas
 
@@ -12818,7 +12819,7 @@ por vagón: ni un pasajero, guardia o bulto quedó adentro de una casilla sólid
 y ningún error en la consola, ni ahí ni en el galope, el campamento y el
 pueblo.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🏜️ Afuera del tren era un vacío oscuro
 
@@ -12917,7 +12918,7 @@ después de recorrer cinco trenes enteros con barriles, cajones, pólvora y rese
 rodando, los cajones golpeados y heridos, y todo el botín a la vista. Sin
 errores, ni ahí ni en el galope, el campamento y el pueblo.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🐎 ETAPA 5: el galope y el afuera
 
@@ -12987,7 +12988,7 @@ el desierto entero**, por lo mismo. 89 piezas guardadas, 1,47 MB. Sin errores en
 seis recorridos (de día y de noche) del galope y del asalto vagón por vagón, ni
 en el campamento y el pueblo.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ### 🐛 ARREGLADO · El juego se tildaba al apretar W en el galope
 
@@ -13139,7 +13140,7 @@ detrás de la pared del tren sigue andando: ahora la lámina se **tiñe** entera
 (`piezaTenida`), porque un renderer que pinta plano podía repintar rectángulos
 sueltos pero no una estampa.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ---
 
@@ -13448,7 +13449,7 @@ dirección hay que medirla**: dónde cae la montura, dónde el bocado, cuánto m
 el flanco. Esas medidas viven todas juntas en `MEDIDAS` (assets/caballoHoja.js),
 que es exactamente para eso.
 
-**⚠️ NO JUGADO.**
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
 
 ---
 
@@ -13533,6 +13534,102 @@ asalto, campamento, pueblo, establo y mapa.
 🔻 **QUEDA:** la **locomotora** sigue dibujándose entera en vivo (unas 120
 llamadas). Es un solo tramo y está casi toda animada, así que separarle lo
 quieto es un trabajo aparte.
+
+**✅ JUGADO** (Santi, 17-09-2026: *"ya probé TODO lo nuevo, hasta los espacios entre asientos"*).
+
+---
+
+## 🏕️ ETAPA 6: LAS PANTALLAS FIJAS
+
+Antes de tocar nada se miraron las seis, y apareció un hallazgo que ordena toda
+la etapa: **había DOS personas en el juego.**
+
+En el campamento, el pueblo y los interiores, cada persona —**incluido el
+jugador**— eran **tres rectángulos**: una sombra, una caja de 10×10 para el
+cuerpo y una barra de 13×3 por sombrero. 13 unidades de alto. En el tren y en el
+galope, esa misma persona mide **20 unidades y 80 puntos dibujados**, con ropa,
+ocho direcciones, caminata y estado.
+
+**La persona buena ya existía**; estas pantallas nunca se habían conectado a
+ella. Lo mismo con el caballo (cuatro rectángulos) y con las superficies (el
+campamento era un círculo liso, la calle del pueblo un color plano). O sea que
+la mayor parte de la etapa 6 es **enchufar cosas que ya están escritas**.
+
+*(El mapa de rutas se miró y se dejó como estaba: papel con textura, rosa de los
+vientos y leyenda. Es la única de las seis que no necesitaba nada.)*
+
+### 🔺 El campamento, de vista cenital a tres cuartos
+
+*(Santi: "dale con B y ten en cuenta que tiene que ser 3/4. O sea, que en el
+campamento tiene que haber cielo por ejemplo")*.
+
+Era **la única pantalla del juego que no miraba en diagonal**: un disco de
+tierra visto desde arriba, sin horizonte y sin cielo. Por eso no se parecía a
+ninguna otra.
+
+La regla es la misma de siempre (`CONFIG.tresCuartos`, el vagón, el tren del
+galope): **lo horizontal se achata y lo vertical no**. El claro, que es una
+circunferencia en el suelo, se dibuja como una **elipse**; la carpa, el cajón y
+la gente se levantan desde ahí con su alto entero.
+
+🧠 **Y SE ACHATA SÓLO AL DIBUJAR** (`PROF`, `alPiso`). El mundo del campamento
+sigue siendo redondo: las distancias, los alcances y el límite del claro no se
+tocaron ni un número. Si se achatara el mundo, dos cosas a la misma distancia
+dejarían de estarlo según para dónde caminaras — un bicho carísimo de encontrar
+después.
+
+Lo que entró con el cielo: el **degradado**, las **estrellas** y la **luna** de
+noche, y **dos filas de cerros** en el horizonte — la de atrás más alta y más
+clara, que es como se come el contraste la distancia.
+
+Y lo que cambió adentro del claro:
+
+- **Vos**, que pasaste de tres rectángulos a la persona del tren, con las ocho
+  direcciones y la caminata. Mira hacia donde camina (antes no hacía falta
+  saberlo: eras una caja).
+- **Tu caballo**, que era cuatro rectángulos y ahora es **el mismo sprite del
+  galope, parado** — y respeta el pelaje del caballo que tengas.
+- **La carpa** tiene largo: un fondo que asoma atrás y arriba, y el faldón que
+  los une. El primer intento corría el fondo 11 unidades y quedaban **dos
+  carpas**, como una sierra; con 8 se lee una sola.
+- **El cajón** es una caja de verdad: cara de adelante con tablas y fleje, y la
+  tapa como una franja encima. Es la regla de las dos caras del vagón.
+- **La llama va en punta** y con chispas: un rectángulo naranja parado se lee
+  como una caja.
+- **Las sombras son elipses** apoyadas en el piso, no rectángulos.
+- **Se dibuja por profundidad**: si te parás delante de la carpa, la tapás vos.
+  Antes el orden estaba escrito a mano y el jugador iba siempre último.
+
+🔻 **Y APARECIÓ ALGO QUE LA VISTA DE ARRIBA ESCONDÍA:** en tres cuartos la
+profundidad se **comprime**, así que dos cosas separadas 20 unidades quedan a 14
+en pantalla. Con una persona de 20 de alto, arrancar parado 20 unidades delante
+de la fogata **la tapaba entera**. El arranque se corrió al costado del fuego.
+
+🐛 **Y UN BICHO QUE NO REVENTABA NADA Y SE VEÍA TODO.** `revolver` devuelve un
+entero **sin signo**, y las posiciones se sacaban de él con `>>`, que **sí mira
+el signo**: la mitad de los números salía negativa. Resultado: matas sembradas
+**en el cielo** y cerros de ancho negativo, o sea invisibles. Con `>>>` se
+arregló de una.
+
+🐛 **Y OTRO DEL MISMO TIPO:** los verdes de las matas se pedían como
+`colors.matorral`, que **no existe** —los del desierto se llaman `mata` y viven
+en otra rama de la paleta—. Pedirle a la paleta un color que no está devuelve
+`undefined`, y el canvas lo **ignora en silencio** dejando el color anterior: las
+matas salían del color de la última piedra dibujada. No rompía nada; sólo no se
+veía.
+
+De noche, además, **todo el campamento se apaga** menos el fuego: la carpa, el
+cajón, el cartel y el palenque van al 50%, y el caballo al 42% tiñendo su hoja
+(`noche`, en entities/caballo.js). Antes el caballo era lo único iluminado de la
+escena y cantaba como un sticker pegado.
+
+Sin errores en 3.580 cuadros: campamento de día y de noche con los dos caballos,
+caminando en las cuatro direcciones, más galope, asalto, pueblo y establo.
+
+🔻 **FALTA LA MITAD DE LA ETAPA:** el **pueblo** y los **interiores** siguen con
+la gente en tres rectángulos y las superficies planas, y los frentes del pueblo
+siguen siendo tablas planas sin techo ni galería. Van en el mismo orden: primero
+la gente y el caballo, después las superficies.
 
 **⚠️ NO JUGADO.**
 

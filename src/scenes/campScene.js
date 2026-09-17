@@ -33,6 +33,8 @@ import { WEAPONS } from '../data/weapons.js';
 import { MELEE } from '../data/melee.js';
 import { gameState } from '../state/gameState.js';
 import { crearMenu } from '../engine/menu.js';
+import { dibujarPersona, faseDeAndar, tono } from '../entities/figura.js';
+import { dibujarAnimal } from '../entities/caballo.js';
 import { T } from '../text/es.js';
 
 /**
@@ -63,6 +65,18 @@ export function createCampScene(services) {
 
   let x, y, sentado, mensaje, scroll, avisoLejos, chispaTimer;
   const menu = crearMenu(audio);
+  /**
+   * HACIA DÓNDE MIRA, en radianes como en todo el juego. Antes no hacía falta
+   * —eras una caja— y ahora sí: la persona tiene ocho direcciones y hay que
+   * decirle cuál. Arranca mirando a la cámara, que es como se ve la cara.
+   */
+  let mirando = Math.PI / 2;
+  /**
+   * El cuerpo del jugador para `faseDeAndar`: esa función deduce en qué punto
+   * del paso va a partir de cuánto se movió, y guarda lo suyo en el objeto que
+   * se le pasa. Por eso tiene que ser SIEMPRE EL MISMO objeto.
+   */
+  const yo = {};
 
   function enter(params = {}) {
     hud.hide();
@@ -73,8 +87,14 @@ export function createCampScene(services) {
     // siente a teletransporte aunque nadie sepa explicar por qué.
     const volvesA = { pueblo: 'poste', mapa: 'cartel' }[params.desde];
     const donde = volvesA && CAMPAMENTO.objetos.find((o) => o.id === volvesA);
-    x = donde ? c.x + donde.x - 20 : c.x;
-    y = donde ? c.y + donde.y + 16 : c.y + 34;
+    /**
+     * 🔻 Y ARRANCÁS AL COSTADO DEL FUEGO, no delante. En la vista de arriba
+     * daba igual —eras una caja de 13 de alto—, pero en tres cuartos la
+     * profundidad se COMPRIME (`PROF`) y una persona de 20 parada 20 unidades
+     * delante de la fogata se la tapa entera. Al costado no.
+     */
+    x = donde ? c.x + donde.x - 20 : c.x - 40;
+    y = donde ? c.y + donde.y + 16 : c.y + 40;
     sentado = false;
     mensaje = null;
     avisoLejos = 0;
@@ -318,6 +338,9 @@ export function createCampScene(services) {
       }
       x += dx * CONFIG.player.speed * dt;
       y += dy * CONFIG.player.speed * dt;
+      // Y mira hacia donde camina: sin esto la persona quedaría siempre de
+      // frente y caminando de costado.
+      mirando = Math.atan2(dy, dx);
       limitarAlClaro();
     }
 
@@ -359,29 +382,82 @@ export function createCampScene(services) {
 
   // ------------------------------------------------------------------ dibujo
 
+  /**
+   * 🔺 EL CAMPAMENTO PASÓ A TRES CUARTOS *(Santi: "ten en cuenta que tiene que
+   * ser 3/4. O sea, que en el campamento tiene que haber cielo por ejemplo")*.
+   *
+   * Era una vista CENITAL: un disco de tierra mirado desde arriba, sin
+   * horizonte y sin cielo. Era la única pantalla del juego que no miraba en
+   * diagonal, y por eso no se parecía a ninguna otra.
+   *
+   * LA REGLA ES LA MISMA DE TODO EL JUEGO (`CONFIG.tresCuartos`, el vagón, el
+   * tren del galope): **lo horizontal se achata y lo vertical no**. El claro,
+   * que es una circunferencia en el suelo, se dibuja como una ELIPSE; la carpa,
+   * el cajón y la gente se levantan desde ahí con su alto entero.
+   *
+   * 🧠 Y SE ACHATA SÓLO AL DIBUJAR. El mundo del campamento sigue siendo
+   * redondo: las distancias, los alcances y el límite del claro
+   * (`limitarAlClaro`) no se tocaron ni un número. Si se achatara el mundo, dos
+   * cosas a la misma distancia dejarían de estar a la misma distancia según
+   * para dónde caminaras, que es un bicho carísimo de encontrar después.
+   */
+  const PROF = 0.7;
+
+  /**
+   * CUÁNTO BAJA EL CLARO EN PANTALLA para que arriba entre el cielo. Al
+   * achatarse, el claro deja libre la mitad de arriba; esto lo corre para abajo
+   * y ahí aparece el horizonte.
+   */
+  const BAJA = 30;
+
+  /**
+   * EL COLOR COMO SE VE A ESTA HORA. De noche el campamento entero se apaga:
+   * la unica luz es la fogata, y una carpa iluminada a pleno a tres metros de
+   * un fuego chico canta como un sticker. El caballo hace lo mismo por su
+   * lado (ver `noche` en entities/caballo.js), porque es un sprite y se apaga
+   * tiñendole la hoja.
+   */
+  function luz(hex) {
+    return gameState.esDeDia ? hex : tono(hex, 0.5);
+  }
+
+  /** Del mundo del campamento a la pantalla. Es TODO el truco de los 3/4. */
+  function alPiso(wy) {
+    return CAMPAMENTO.centro.y + BAJA + (wy - CAMPAMENTO.centro.y) * PROF;
+  }
+
+  /** A qué altura de pantalla queda el horizonte. */
+  function horizonte() {
+    return alPiso(CAMPAMENTO.centro.y - CAMPAMENTO.radio) - 34;
+  }
+
   function render(r) {
     // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
     r.escenaFija();
     const dia = gameState.esDeDia;
     r.clear(dia ? colors.campDesiertoDia : colors.campNoche);
-    /**
-     * EL CLARO VA CENTRADO EN LA PANTALLA DE HOY (ver `centro` en
-     * engine/renderer.js): el campamento está armado para `CONFIG.view`, y lo
-     * que sobra alrededor es desierto —las matas lo cubren entero—, así que en
-     * un monitor más grande se ve más noche o más campo, nunca un borde.
-     */
     const o = r.centro;
-    if (dia) dibujarMatas(r, o);
     r.ctx.save();
     r.ctx.translate(o.x, o.y);
+
+    dibujarCielo(r, dia);
+    dibujarLejos(r, dia);
+    if (dia) dibujarMatas(r);
     dibujarSuelo(r, dia);
     if (dia) dibujarSombras(r);
-    dibujarCartel(r);
-    dibujarCarpa(r);
-    dibujarCajon(r);
-    dibujarPosteYCaballo(r);
-    dibujarFogata(r, dia);
-    dibujarJugador(r);
+
+    /**
+     * Y SE DIBUJA POR PROFUNDIDAD, como el resto del juego: lo que está más
+     * atrás va primero, así que si te parás delante de la carpa la tapás vos.
+     * Antes el orden estaba escrito a mano y el jugador iba siempre último,
+     * o sea que caminabas por encima de todo.
+     */
+    const cosas = objetosEnMundo()
+      .map((z) => ({ y: z.y, pinta: () => dibujarObjeto(r, z, dia) }))
+      .concat([{ y, pinta: () => dibujarJugador(r) }]);
+    cosas.sort((a, b) => a.y - b.y);
+    for (const cosa of cosas) cosa.pinta();
+
     r.ctx.restore();
     dibujarInterfaz(r);
     // Encima de todo, pero sin tapar el campamento: seguís parado al lado de
@@ -389,246 +465,438 @@ export function createCampScene(services) {
     menu.render(r, colors, T.interior.dialogoAyuda);
   }
 
+  function dibujarObjeto(r, z, dia) {
+    if (z.id === 'fogata') dibujarFogata(r, z, dia);
+    else if (z.id === 'carpa') dibujarCarpa(r, z);
+    else if (z.id === 'cajon') dibujarCajon(r, z);
+    else if (z.id === 'poste') dibujarPosteYCaballo(r, z);
+    else if (z.id === 'cartel') dibujarCartel(r, z);
+  }
+
   /**
-   * EL SUELO, Y SON DOS DIBUJOS DISTINTOS, no el mismo más oscuro.
+   * EL CIELO, que es lo que el campamento no tenía.
    *
-   * De noche el suelo no es un suelo: es un charco de luz de la fogata que se
-   * apaga hacia afuera. Eso hace dos trabajos de una — vende que es de noche,
-   * y muestra el límite de hasta dónde se puede caminar sin dibujar ninguna
-   * línea que lo marque.
+   * De día es el mismo cielo del pueblo: **el único color frío del juego**, y
+   * está ahí justamente para que todos los ocres se lean como cálidos (el
+   * porqué largo está en `puebloCielo`, en data/config.js). De noche es el
+   * mismo del galope, con las estrellas quietas — sembradas con un número fijo
+   * por estrella, no con azar, o titilarían todas en cada cuadro.
+   */
+  function dibujarCielo(r, dia) {
+    const hy = horizonte();
+    const C = colors.cielo;
+    const ancho = CONFIG.view.width + 400;
+    /**
+     * El degradado va de 0 al horizonte y NO desde muy arriba: si arranca
+     * fuera de la pantalla, lo unico que se ve es el final del degradado y el
+     * cielo queda de un solo color, el del horizonte. Lo de arriba de 0 se
+     * rellena aparte con el color del tope.
+     */
+    if (dia) {
+      r.rect(-200, -200, ancho, 200, colors.puebloCielo);
+      r.cielo(-200, 0, ancho, hy, colors.puebloCielo, colors.puebloCieloHorizonte, 7);
+      return;
+    }
+    r.rect(-200, -200, ancho, 200, C.nocheArriba);
+    r.cielo(-200, 0, ancho, hy, C.nocheArriba, C.nocheHorizonte, 7);
+    for (let i = 0; i < 70; i++) {
+      const s = revolver(i * 17 + 3);
+      const ex = (s % ancho) - 200;
+      const ey = ((s >>> 9) % Math.max(1, Math.round(hy - 6))) - 30;
+      if (ey < -28) continue;
+      r.rect(ex, ey, 1, 1, (s >>> 3) % 5 === 0 ? '#fff6e0' : '#b9c2d8');
+    }
+    // La luna, a un costado: da la hora sin escribirla, igual que la fogata.
+    const lx = CONFIG.view.width - 66, ly = Math.max(16, hy - 46);
+    r.ctx.save();
+    r.ctx.fillStyle = '#e8e2cc';
+    r.ctx.globalAlpha = 0.16;
+    r.ctx.beginPath(); r.ctx.arc(lx, ly, 15, 0, Math.PI * 2); r.ctx.fill();   // el halo
+    r.ctx.globalAlpha = 1;
+    r.ctx.beginPath(); r.ctx.arc(lx, ly, 9, 0, Math.PI * 2); r.ctx.fill();
+    r.ctx.fillStyle = '#cfc7ae';
+    for (const m of [[-3, -2, 2], [3, 2, 1.5], [0, 4, 1.5]]) {
+      r.ctx.beginPath(); r.ctx.arc(lx + m[0], ly + m[1], m[2], 0, Math.PI * 2); r.ctx.fill();
+    }
+    r.ctx.restore();
+  }
+
+  /**
+   * LO QUE HAY ENTRE EL HORIZONTE Y EL CLARO: la loma de enfrente y el suelo
+   * que llega hasta ella. Sin esto el cielo se apoyaría directamente sobre el
+   * claro y el campamento parecería estar al borde de un precipicio.
+   */
+  function dibujarLejos(r, dia) {
+    const hy = horizonte();
+    const ancho = CONFIG.view.width + 400;
+    const alto = CONFIG.view.height + 200;
+    r.rect(-200, hy, ancho, alto - hy, dia ? colors.campDesiertoDia : colors.campNoche);
+
+    // Las lomas: dos filas de cerros bajos, la de atrás más clara por el aire.
+    /**
+     * DOS FILAS DE CERROS: la de atrás más alta y más clara —el aire se come
+     * el contraste con la distancia— y la de adelante más baja y más oscura.
+     * Con una sola fila el horizonte es una guarda repetida; con dos hay fondo.
+     */
+    for (const capa of [[1, 0.45, -4], [0, 1, 4]]) {
+      const base = dia
+        ? (capa[0] ? colors.campBordeDia : tono(colors.campDesiertoDia, 0.76))
+        : (capa[0] ? colors.campSueloLejos : '#15120f');
+      r.ctx.save();
+      r.ctx.globalAlpha = capa[1];
+      /**
+       * 🐛 REPARTIDOS A LO ANCHO, no sorteados. Sorteando la posición salían
+       * tres cerros amontonados en un lado y el resto de la pantalla pelada:
+       * once tiros al azar sobre 800 unidades no cubren nada. Ahora cada uno
+       * tiene su franja y adentro de ella se corre un poco.
+       */
+      const cuantos = 11;
+      for (let i = 0; i < cuantos; i++) {
+        const s = revolver(i * 31 + capa[0] * 97);
+        const cx = -200 + (i + 0.5) * (ancho / cuantos) + ((s % 60) - 30);
+        const w = 70 + (s >>> 7) % 130;
+        const h = (capa[0] ? 14 : 8) + (s >>> 13) % (capa[0] ? 16 : 9);
+        for (let k = 0; k < h; k++) {
+          const ww = w * (1 - k / h) ** 0.55;
+          r.rect(cx - ww / 2, hy + capa[2] - k, ww, 1, base);
+        }
+      }
+      r.ctx.restore();
+    }
+    // La línea del horizonte, que es lo que separa el aire de la tierra.
+    r.rect(-200, hy + 4, ancho, 1, dia ? colors.campBordeDia : '#15120f');
+  }
+
+  /**
+   * EL SUELO DEL CLARO, AHORA UNA ELIPSE. Es el mismo círculo del mundo visto
+   * en diagonal: `PROF` es cuánto se achata, y es el mismo achatamiento que
+   * usan la tapa del techo del tren y el piso del vagón.
    *
-   * De día esa luz no existe, así que el límite necesita otra explicación
-   * visual: un claro de tierra pisada, con su borde, y el desierto alrededor.
-   * Es el mismo círculo y la misma regla, contada por lo que se ve a esa hora.
-   * Por eso el campamento es el único lugar con dos paletas propias en vez de
-   * resolverse con el velo de la noche.
+   * Y siguen siendo DOS DIBUJOS DISTINTOS, no el mismo más oscuro. De noche el
+   * suelo no es un suelo: es un charco de luz de la fogata que se apaga hacia
+   * afuera, y eso hace dos trabajos de una — vende que es de noche y muestra
+   * hasta dónde se puede caminar sin dibujar ninguna línea. De día esa luz no
+   * existe, así que el límite lo cuenta un claro de tierra pisada con su borde.
    */
   function dibujarSuelo(r, dia) {
     const c = CAMPAMENTO.centro;
-
-    if (dia) {
+    const cy = alPiso(c.y);
+    const elipse = (radio, color, alpha = 1) => {
       r.ctx.save();
-      r.ctx.fillStyle = colors.campBordeDia;
+      r.ctx.globalAlpha = alpha;
+      r.ctx.fillStyle = color;
       r.ctx.beginPath();
-      r.ctx.arc(c.x, c.y, CAMPAMENTO.radio + 8, 0, Math.PI * 2);
-      r.ctx.fill();
-      r.ctx.fillStyle = colors.campSueloDia;
-      r.ctx.beginPath();
-      r.ctx.arc(c.x, c.y, CAMPAMENTO.radio + 3, 0, Math.PI * 2);
+      r.ctx.ellipse(c.x, cy, radio, radio * PROF, 0, 0, Math.PI * 2);
       r.ctx.fill();
       r.ctx.restore();
+    };
+
+    if (dia) {
+      elipse(CAMPAMENTO.radio + 8, colors.campBordeDia);
+      elipse(CAMPAMENTO.radio + 3, colors.campSueloDia);
     } else {
       const pasos = 7;
       for (let i = pasos; i >= 1; i--) {
         const t = i / pasos;
-        const radio = CAMPAMENTO.radio * t + 6;
-        r.ctx.save();
-        r.ctx.globalAlpha = 0.16 + (1 - t) * 0.5;
-        r.ctx.fillStyle = i > pasos - 2 ? colors.campSueloLejos : colors.campSuelo;
-        r.ctx.beginPath();
-        r.ctx.arc(c.x, c.y, radio, 0, Math.PI * 2);
-        r.ctx.fill();
-        r.ctx.restore();
+        elipse(CAMPAMENTO.radio * t + 6,
+          i > pasos - 2 ? colors.campSueloLejos : colors.campSuelo,
+          0.16 + (1 - t) * 0.5);
       }
     }
 
-    // Unas piedritas para que el claro no sea un disco liso.
+    // Unas piedritas para que el claro no sea un disco liso. Van sembradas en
+    // el mundo y achatadas al dibujarlas, como todo lo demás.
     r.ctx.globalAlpha = dia ? 0.35 : 0.5;
-    for (let i = 0; i < 14; i++) {
-      const a = (i * 2.399);
+    for (let i = 0; i < 20; i++) {
+      const a = i * 2.399;
       const d = 18 + ((i * 37) % Math.floor(CAMPAMENTO.radio - 20));
-      r.rect(c.x + Math.cos(a) * d, c.y + Math.sin(a) * d, 2, 1,
+      r.rect(c.x + Math.cos(a) * d, alPiso(c.y + Math.sin(a) * d), 2, 1,
         dia ? colors.campBordeDia : colors.campSueloLejos);
     }
     r.ctx.globalAlpha = 1;
   }
 
   /**
-   * Y AFUERA DEL CLARO, DESIERTO — no un vacío.
-   *
-   * De día el fondo era un relleno liso, así que el campamento se leía como
-   * un disco marrón apoyado sobre un campo marrón, sin nada que dijera que
-   * eso de alrededor es un lugar. Con matorrales y piedras el claro pasa a
-   * estar EN algo.
-   *
-   * Los verdes son los mismos del costado de la vía en el galope: es el
-   * mismo desierto, así que tiene que tener la misma vegetación. Y son los
-   * únicos que no son marrones en toda la escena, que es justamente lo que
-   * hace que los ocres se lean como ocres.
-   *
-   * Sólo de día: de noche el sentido del fondo negro es que la luz se
-   * termina, y sembrarlo de matas contaría lo contrario.
-   *
-   * VA EN COORDENADAS DE PANTALLA, antes del corrimiento del claro: tiene que
-   * cubrir la pantalla entera, sea del tamaño que sea. La cantidad crece con
-   * la superficie (130 en la de 420×236) para que la densidad no cambie.
+   * Y AFUERA DEL CLARO, DESIERTO — no un vacío. Los verdes son los mismos del
+   * costado de la vía en el galope: es el mismo desierto, así que tiene que
+   * tener la misma vegetación. Sólo de día: de noche el sentido del fondo
+   * negro es que la luz se termina, y sembrarlo de matas contaría lo contrario.
    */
-  function dibujarMatas(r, o) {
+  function dibujarMatas(r) {
     const c = CAMPAMENTO.centro;
-    const cantidad = Math.round(130 * (r.width * r.height) / (CONFIG.view.width * CONFIG.view.height));
+    const hy = horizonte() + 8;
+    const cantidad = Math.round(260 * (r.width * r.height) / (CONFIG.view.width * CONFIG.view.height));
     r.ctx.globalAlpha = 0.75;
     for (let i = 0; i < cantidad; i++) {
+      const s = revolver(i);
+      const mx = (s % (CONFIG.view.width + 200)) - 100;
+      const my = hy + ((s >>> 8) % Math.max(1, Math.round(CONFIG.view.height + 60 - hy)));
+      // Dentro del claro no: ahí la tierra está pisada.
+      const dx = (mx - c.x) / CAMPAMENTO.radio;
+      const dy = (my - alPiso(c.y)) / (CAMPAMENTO.radio * PROF);
+      if (dx * dx + dy * dy < 1.05) continue;
       /**
-       * 🐛 Primero era `(i * 97 + 23) % ancho` y `(i * 53 + 31) % alto`, y
-       * las matas salieron en DIAGONALES perfectas: las dos cuentas son
-       * lineales en `i`, así que los puntos marchan en fila como un ejército.
-       * Se vio a la primera foto. Hace falta un revoltijo de verdad, no dos
-       * progresiones.
+       * LAS DE MÁS ATRÁS SE VEN MÁS CHICAS. Es lo único que hace falta para
+       * que el suelo se lea como un plano que se va: sin esto, una mata al pie
+       * del horizonte y otra al pie de la pantalla miden lo mismo y el campo
+       * se aplana de golpe.
        */
-      const px = revolver(i) % r.width;
-      const py = revolver(i + 977) % r.height;
-      // El claro y su borde quedan libres: ahí ya hay tierra pisada.
-      if (Math.hypot(px - o.x - c.x, py - o.y - c.y) < CAMPAMENTO.radio + 16) continue;
-      if (i % 3 === 0) {
-        r.rect(px, py, 3, 2, i % 2 ? '#4d5c34' : '#3d4a2a');   // mata
+      const lejos = Math.max(0.35, Math.min(1, (my - hy) / (CONFIG.view.height - hy)));
+      /**
+       * 🐛 LOS VERDES VAN ESCRITOS Y NO SACADOS DE LA PALETA: `colors.matorral`
+       * no existe —los del desierto se llaman `mata` y viven adentro de otra
+       * rama—, y pedirle a la paleta un color que no está devuelve `undefined`,
+       * que el canvas ignora en silencio dejando el color anterior. Resultado:
+       * todas las matas salían del color de la última piedra dibujada. No
+       * reventaba nada, simplemente no se veía.
+       */
+      const tipo = (s >>> 17) % 5;
+      const k = 0.5 + lejos * 0.9;
+      const ww = (v) => Math.max(1, Math.round(v * k));
+      if (tipo === 0 || tipo === 1) {
+        // Una mata: la base en sombra y la copa con luz.
+        r.rect(mx, my - ww(1), ww(4), ww(2), '#3d4a2a');
+        r.rect(mx + ww(1), my - ww(3), ww(3), ww(2), '#4d5c34');
+      } else if (tipo === 2) {
+        // Un cactus chico: el tronco y un brazo.
+        r.rect(mx, my - ww(5), ww(2), ww(5), '#3f6b3a');
+        r.rect(mx - ww(2), my - ww(4), ww(2), ww(2), '#3f6b3a');
+        r.rect(mx, my - ww(5), ww(1), ww(4), '#4d7c44');
       } else {
-        r.rect(px, py, 2, 1, colors.campBordeDia);              // piedra
+        r.rect(mx, my - ww(1), ww(3), ww(1), colors.campBordeDia);
       }
     }
     r.ctx.globalAlpha = 1;
   }
 
   /**
-   * LAS SOMBRAS, Y SÓLO DE DÍA.
-   *
-   * De noche la fogata ya cuenta de dónde viene la luz: el suelo es un charco
-   * que se apaga hacia afuera, y eso hace todo el trabajo. De día no había
-   * NINGUNA pista de que hubiera un sol — todo estaba parejo, y una escena
-   * cenital sin sombras se lee como recortes apoyados sobre un papel.
-   *
-   * No es una convención nueva: el jugador ya tenía la suya (`dibujarJugador`,
-   * un box negro al 30%), y era el único objeto del campamento que la tenía.
-   * Esto es esa misma sombra repartida al resto.
+   * LAS SOMBRAS, y ahora son ELIPSES apoyadas en el piso. En una vista de
+   * arriba una sombra podía ser un rectángulo; en tres cuartos una sombra es
+   * una mancha achatada, como la del caballo en el galope.
    *
    * VAN TODAS JUNTAS Y ACÁ, y no adentro de cada `dibujarX`, para que ninguna
-   * caiga ENCIMA de un objeto dibujado antes: primero el suelo, después todas
-   * las sombras, después todas las cosas.
+   * caiga ENCIMA de un objeto dibujado antes.
+   *
+   * Un desplazamiento chico y para un solo lado: lo que hace leer el mediodía
+   * no es el tamaño de la sombra sino que TODAS caigan para el mismo lado.
    */
   function dibujarSombras(r) {
     const o = (id) => objetosEnMundo().find((z) => z.id === id);
+    const mancha = (wx, wy, rx, ry, alpha = 0.3) => {
+      r.ctx.save();
+      r.ctx.globalAlpha = alpha;
+      r.ctx.fillStyle = '#000';
+      r.ctx.beginPath();
+      r.ctx.ellipse(wx + SOL.dx, alPiso(wy) + SOL.dy, rx, ry, 0, 0, Math.PI * 2);
+      r.ctx.fill();
+      r.ctx.restore();
+    };
     const carpa = o('carpa'), cajon = o('cajon');
     const poste = o('poste'), cartel = o('cartel'), fogata = o('fogata');
-
-    r.ctx.save();
-    r.ctx.globalAlpha = 0.3;
-    // La carpa: la sombra más grande, y la que da la escala del claro.
-    r.box(carpa.x + SOL.dx, carpa.y + 2 + SOL.dy, 19, 3, '#000');
-    r.box(cajon.x + SOL.dx, cajon.y + 6 + SOL.dy, 9, 3, '#000');
-    r.box(cartel.x + SOL.dx, cartel.y + 9 + SOL.dy, 8, 2, '#000');
-    // Los dos postes por separado: una sola sombra de 28 px de ancho sería un
-    // bloque, y lo que hay ahí arriba son dos palos con aire en el medio.
-    r.box(poste.x - 12 + SOL.dx, poste.y + 10 + SOL.dy, 3, 2, '#000');
-    r.box(poste.x + 13 + SOL.dx, poste.y + 10 + SOL.dy, 3, 2, '#000');
-    // El caballo, apoyado sobre sus patas y no sobre el poste.
-    r.box(poste.x + SOL.dx, poste.y + 11 + SOL.dy, 11, 3, '#000');
-    r.box(fogata.x + SOL.dx, fogata.y + 4 + SOL.dy, 11, 2, '#000');
-    r.ctx.restore();
+    mancha(carpa.x, carpa.y + 2, 21, 6);
+    mancha(cajon.x, cajon.y + 2, 10, 4);
+    mancha(cartel.x, cartel.y + 2, 8, 3);
+    mancha(poste.x - 12, poste.y + 2, 3, 2);
+    mancha(poste.x + 13, poste.y + 2, 3, 2);
+    mancha(poste.x, poste.y + 6, 13, 4);
+    mancha(fogata.x, fogata.y, 12, 4);
   }
 
   /**
-   * LA FOGATA ES EL RELOJ DEL JUEGO.
+   * LA FOGATA ES EL RELOJ DEL JUEGO. Encendida de noche, apagada de día. No
+   * hay ningún cartel que diga la hora en ningún lado, y es deliberado: lo que
+   * se puede mostrar no se escribe.
    *
-   * Encendida de noche, apagada de día. No hay ningún cartel que diga la hora
-   * en ningún lado, y es deliberado: lo que se puede mostrar no se escribe —
-   * la misma regla del aro del ruido y de la marca del salto. Entre la luz y
-   * el fuego, saber si el pueblo está abierto no necesita una palabra.
+   * En tres cuartos el círculo de piedras se ve como una ELIPSE y las llamas
+   * suben derechas: es la misma regla de siempre, lo del piso se achata y lo
+   * que se para no.
    */
-  function dibujarFogata(r, dia) {
-    const o = objetosEnMundo().find((z) => z.id === 'fogata');
+  function dibujarFogata(r, o, dia) {
+    const py = alPiso(o.y);
+
+    // El círculo de piedras, que es lo que dice que el fuego está contenido.
+    for (let i = 0; i < 11; i++) {
+      const a = (i / 11) * Math.PI * 2;
+      const px = o.x + Math.cos(a) * 13;
+      const pz = py + Math.sin(a) * 13 * PROF;
+      const alto = 2 + (i % 3);
+      r.rect(px - 2, pz - alto, 4, alto + 1, colors.campBordeDia);
+      r.rect(px - 2, pz - alto, 4, 1, colors.campCeniza);   // éstas no se apagan: están al lado del fuego
+    }
 
     // Los troncos, cruzados. Están a cualquier hora.
-    r.rect(o.x - 11, o.y + 1, 22, 4, colors.campTronco);
-    r.rect(o.x - 4, o.y - 6, 8, 14, colors.campTronco);
+    r.rect(o.x - 10, py - 4, 20, 4, colors.campTronco);
+    r.rect(o.x - 9, py - 4, 18, 1, '#6a4a30');
+    r.rect(o.x - 3, py - 10, 6, 11, colors.campTronco);
 
     if (dia) {
-      // Apagada: ceniza fría y nada más.
-      r.rect(o.x - 5, o.y - 2, 10, 4, colors.campCeniza);
+      r.rect(o.x - 5, py - 3, 10, 3, colors.campCeniza);   // ceniza fría
       return;
     }
 
     // Las brasas y las llamas, latiendo. El parpadeo es lo único que se mueve
     // en toda la escena, así que es lo que la mantiene viva.
     const latido = Math.sin(scroll * 7) * 0.5 + Math.sin(scroll * 13) * 0.5;
-    const alto = 8 + latido * 3;
-    r.rect(o.x - 5, o.y - 2, 10, 4, colors.campBrasa);
-    r.rect(o.x - 3, o.y - alto, 6, alto, colors.campFuego);
-    r.rect(o.x - 1, o.y - alto - 3, 2, 4, '#ffd08a');
+    const alto = 13 + latido * 4;
+    r.rect(o.x - 5, py - 3, 10, 3, colors.campBrasa);
+    /**
+     * LA LLAMA VA EN PUNTA, no en bloque. Filas que se angostan hacia arriba,
+     * con el corazon mas claro adentro: un rectangulo naranja parado se lee
+     * como una caja, y lo que hace leer fuego es la punta.
+     */
+    for (let i = 0; i < alto; i++) {
+      const u = i / alto;
+      const w = 5 * (1 - u) ** 0.65 + 0.5;
+      const meneo = Math.sin(scroll * 9 + u * 4) * u * 1.6;
+      r.rect(o.x - w + meneo, py - 2 - i, w * 2, 1, colors.campFuego);
+      if (u < 0.55) r.rect(o.x - w * 0.5 + meneo, py - 2 - i, w, 1, '#ffd08a');
+      if (u < 0.28) r.rect(o.x - w * 0.28 + meneo, py - 2 - i, w * 0.56, 1, '#fff0c8');
+    }
+    // Y unas chispas que suben y se apagan.
+    for (let i = 0; i < 4; i++) {
+      const v = (scroll * 0.7 + i * 0.25) % 1;
+      r.rect(o.x + Math.sin(v * 7 + i) * 5, py - 6 - v * 26, 1, 1,
+        v > 0.7 ? colors.campBrasa : '#ffd08a');
+    }
 
-    // El resplandor sobre el suelo.
+    // El resplandor sobre el suelo: achatado, porque está EN el suelo.
     r.ctx.save();
     r.ctx.globalAlpha = 0.10 + latido * 0.03;
     r.ctx.fillStyle = colors.campFuego;
     r.ctx.beginPath();
-    r.ctx.arc(o.x, o.y, 34 + latido * 4, 0, Math.PI * 2);
+    r.ctx.ellipse(o.x, py, 40 + latido * 5, (40 + latido * 5) * PROF, 0, 0, Math.PI * 2);
     r.ctx.fill();
     r.ctx.restore();
   }
 
-  function dibujarCarpa(r) {
-    const o = objetosEnMundo().find((z) => z.id === 'carpa');
-    // Un triángulo hecho de filas: la lona vista desde arriba y de costado.
-    for (let i = 0; i < 12; i++) {
-      const ancho = 2 + i * 1.6;
-      r.rect(o.x - ancho, o.y - 12 + i, ancho * 2, 1,
-        i < 6 ? colors.campCarpa : colors.campCarpaSombra);
+  /**
+   * LA CARPA, en tres cuartos. Antes era un triángulo de filas visto desde
+   * arriba. Ahora tiene DOS AGUAS —una a la luz y otra en sombra— y, sobre
+   * todo, un FONDO que asoma arriba y atrás: eso es lo que dice que la carpa
+   * tiene largo y no es una figura plana clavada en el piso.
+   */
+  function dibujarCarpa(r, o) {
+    const py = alPiso(o.y);
+    const ALTO = 27, MEDIO = 19;
+    /**
+     * EL LARGO DE LA CARPA VA HACIA ATRÁS Y ARRIBA, y achatado por `PROF`: es
+     * la misma regla que todo lo demás. El fondo asoma POCO —8 unidades—
+     * porque una carpa vista casi de frente muestra sobre todo su boca; si el
+     * fondo se corre mucho quedan DOS CARPAS, que fue el primer intento y
+     * parecía una sierra.
+     */
+    const LARGO = 8;
+    const fondo = luz(tono(colors.campCarpaSombra, 0.62));
+    for (let i = 0; i <= ALTO; i++) {
+      const w = 2 + (i / ALTO) * MEDIO;
+      const yy = py - ALTO + i - LARGO * PROF;
+      r.rect(o.x - LARGO - w, yy, w * 2, 1, fondo);
     }
-    r.rect(o.x - 20, o.y, 40, 2, colors.campCarpaSombra);
+    // El faldón largo: une el fondo con la boca, y es la cara que se ve entera.
+    for (let i = 0; i <= ALTO; i++) {
+      const w = 2 + (i / ALTO) * MEDIO;
+      const yy = py - ALTO + i;
+      r.rect(o.x - LARGO - w, yy - LARGO * PROF, LARGO + 1, LARGO * PROF + 1,
+        i > 3 ? luz(tono(colors.campCarpa, 0.84)) : luz(colors.campCarpa));
+      r.rect(o.x - w, yy, w, 1, luz(colors.campCarpa));
+      r.rect(o.x, yy, w, 1, luz(colors.campCarpaSombra));
+    }
+    // El caballete, que une las dos puntas y es lo que se lee primero.
+    r.rect(o.x - LARGO, py - ALTO - LARGO * PROF, LARGO + 1, 1.5, luz('#c8a878'));
     // La abertura, oscura: es lo que la hace leer como carpa y no como piedra.
-    r.rect(o.x - 3, o.y - 5, 6, 5, '#150f0e');
-  }
-
-  function dibujarCajon(r) {
-    const o = objetosEnMundo().find((z) => z.id === 'cajon');
-    r.rect(o.x - 8, o.y - 6, 16, 12, colors.campCajon);
-    r.rect(o.x - 8, o.y - 6, 16, 3, '#94663f');
-    r.rect(o.x - 8, o.y - 1, 16, 1, '#4a3524');
-    r.rect(o.x - 1, o.y - 6, 2, 12, '#4a3524');
-  }
-
-  function dibujarPosteYCaballo(r) {
-    const o = objetosEnMundo().find((z) => z.id === 'poste');
-
-    // El poste y el travesaño donde va atada la rienda.
-    r.rect(o.x - 14, o.y - 10, 3, 20, colors.campTronco);
-    r.rect(o.x + 11, o.y - 10, 3, 20, colors.campTronco);
-    r.rect(o.x - 14, o.y - 8, 28, 2, '#5f4530');
-
-    // El caballo, con el mismo lenguaje de formas que el del galope.
-    const respira = Math.sin(scroll * 1.6) * 0.6;
-    r.rect(o.x - 10, o.y + 2 + respira, 21, 9, colors.horse);
-    r.rect(o.x - 10, o.y + 2 + respira, 21, 3, colors.horseDark);
-    r.rect(o.x + 9, o.y + 4 + respira, 6, 6, colors.horse);
-    r.rect(o.x - 12, o.y + 4 + respira, 4, 5, colors.horseMane);
-  }
-
-  function dibujarCartel(r) {
-    const o = objetosEnMundo().find((z) => z.id === 'cartel');
-    r.rect(o.x - 1, o.y - 2, 3, 12, colors.campTronco);
-    r.rect(o.x - 15, o.y - 12, 30, 11, colors.campCartel);
-    r.rect(o.x - 15, o.y - 12, 30, 2, '#a6835a');
-    // Dos rayitas que insinúan un mapa escrito, sin escribir nada.
-    r.rect(o.x - 11, o.y - 8, 14, 1, '#4a3524');
-    r.rect(o.x - 11, o.y - 5, 20, 1, '#4a3524');
-  }
-
-  function dibujarJugador(r) {
-    // De día su sombra cae para el mismo lado que las demás; de noche queda
-    // centrada, porque ahí la luz es la fogata y no el sol — y según de qué
-    // lado del fuego estés parado te tocaría para otro lado. Centrada no
-    // afirma nada, y es lo que ya venía haciendo.
-    const sol = gameState.esDeDia ? SOL : { dx: 0, dy: 0 };
-    r.ctx.globalAlpha = 0.3;
-    r.box(x + sol.dx, y + 6 + sol.dy, 5, 2, '#000');
-    r.ctx.globalAlpha = 1;
-
-    if (sentado) {
-      // Sentado: más bajo y más ancho, y el sombrero le queda encima.
-      r.box(x, y + 2, 5, 3, colors.player);
-      r.rect(x - 6, y - 2, 13, 3, colors.playerHat);
-      return;
+    for (let i = 0; i < 13; i++) {
+      const w = 1 + (i / 12) * 5;
+      r.rect(o.x - w, py - 13 + i, w * 2, 1, '#150f0e');
     }
-    r.box(x, y, 5, 5, colors.player);
-    r.rect(x - 6, y - 6, 13, 3, colors.playerHat);
+    // Las estacas y la faldilla apoyada en la tierra.
+    r.rect(o.x - MEDIO - 2, py, MEDIO * 2 + 4, 2, luz(colors.campCarpaSombra));
+    for (const ex of [-MEDIO - 1, MEDIO - 2]) r.rect(o.x + ex, py - 1, 2, 4, luz(colors.campTronco));
+  }
+
+  /**
+   * EL CAJÓN, en tres cuartos: la cara de ADELANTE con su alto y la TAPA como
+   * una franja encima. Es literalmente la regla de las dos caras del vagón y
+   * del tren del galope, aplicada a una caja de 18 de ancho.
+   */
+  function dibujarCajon(r, o) {
+    const py = alPiso(o.y);
+    const W = 20, H = 14, D = 9;
+    const tapaAlto = Math.round(D * PROF);
+    // La tapa.
+    r.rect(o.x - W / 2 + 2, py - H - tapaAlto, W - 3, tapaAlto, luz('#94663f'));
+    r.rect(o.x - W / 2 + 2, py - H - tapaAlto, W - 3, 1, luz('#b08055'));
+    // La cara de adelante, con sus tablas y su fleje.
+    r.rect(o.x - W / 2, py - H, W, H, luz(colors.campCajon));
+    r.rect(o.x - W / 2, py - H, W, 1, luz('#94663f'));
+    for (let tx = -W / 2 + 5; tx < W / 2 - 1; tx += 5) r.rect(o.x + tx, py - H + 1, 1, H - 2, luz('#4a3524'));
+    r.rect(o.x - W / 2, py - 5, W, 2, luz('#4a3524'));
+    r.rect(o.x - W / 2, py - 1, W, 1, luz('#2e2016'));
+  }
+
+  /**
+   * EL POSTE Y TU CABALLO. 🔺 El caballo **era cuatro rectángulos**
+   * (`colors.horse`, `horseDark`, `horseMane`) de cuando el del galope también
+   * lo era. Ahora es EL MISMO SPRITE del galope, parado: la hoja ya trae el
+   * caballo quieto en cinco direcciones, así que era cambiar cuatro
+   * rectángulos por una estampa. Y respeta el pelaje del caballo que tengas.
+   */
+  function dibujarPosteYCaballo(r, o) {
+    const py = alPiso(o.y);
+    // El poste y el travesaño donde va atada la rienda.
+    r.rect(o.x - 15, py - 22, 3, 22, luz(colors.campTronco));
+    r.rect(o.x + 12, py - 22, 3, 22, luz(colors.campTronco));
+    r.rect(o.x - 15, py - 19, 30, 3, luz('#5f4530'));
+    r.rect(o.x - 15, py - 19, 30, 1, luz('#7a5a3c'));
+
+    // El caballo, atado del otro lado del palenque y de perfil.
+    const respira = Math.sin(scroll * 1.6) * 0.4;
+    dibujarAnimal(r, o.x + 2, py - 7 + respira, null, 0, 0, 0,
+      caballoActual(gameState).id, !gameState.esDeDia);
+  }
+
+  function dibujarCartel(r, o) {
+    const py = alPiso(o.y);
+    r.rect(o.x - 1, py - 14, 3, 14, luz(colors.campTronco));
+    r.rect(o.x - 15, py - 26, 30, 12, luz(colors.campCartel));
+    r.rect(o.x - 15, py - 27, 30, 2, luz('#a6835a'));       // el canto de arriba
+    r.rect(o.x - 15, py - 15, 30, 1, luz('#6a4a28'));
+    // Dos rayitas que insinúan un mapa escrito, sin escribir nada.
+    r.rect(o.x - 11, py - 23, 14, 1, luz('#4a3524'));
+    r.rect(o.x - 11, py - 20, 20, 1, luz('#4a3524'));
+  }
+
+  /**
+   * 🔺 VOS. Eras **tres rectángulos** —una sombra, una caja y una barra por
+   * sombrero—, de 13 unidades de alto. Ahora sos LA MISMA PERSONA del tren y
+   * del galope: 20 unidades, 80 puntos dibujados, con tu ropa, tu pañuelo y
+   * las ocho direcciones. No hubo que dibujar nada: el sistema ya estaba, y
+   * esta pantalla era de las que nunca se habían conectado.
+   */
+  function dibujarJugador(r) {
+    const py = alPiso(y);
+    // De día su sombra cae para el mismo lado que las demás; de noche queda
+    // centrada, porque ahí la luz es la fogata y no el sol.
+    const sol = gameState.esDeDia ? SOL : { dx: 0, dy: 0 };
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.3;
+    r.ctx.fillStyle = '#000';
+    r.ctx.beginPath();
+    r.ctx.ellipse(x + sol.dx, py + sol.dy, 6, 2.5, 0, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.ctx.restore();
+
+    yo.x = x;
+    yo.y = y;
+    dibujarPersona(r, {
+      tipo: 'jugador',
+      x,
+      pies: py,
+      angulo: mirando,
+      postura: sentado ? 'sentado' : 'pie',
+      fase: sentado ? null : faseDeAndar(yo),
+      modo: 'caminar',
+      panuelo: true,
+    });
   }
 
   function dibujarInterfaz(r) {

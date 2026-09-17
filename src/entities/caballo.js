@@ -109,10 +109,11 @@ function hojaTenida(color) {
  * Se arma UNA VEZ por pelaje y se guarda: son 0,2 s y 1 MB cada uno.
  */
 const pelajes = new Map();
-function hojaPelaje(nombre) {
+function hojaPelaje(nombre, noche) {
   const receta = PELAJES[nombre];
-  if (!receta || !lista) return hoja;
-  let c = pelajes.get(nombre);
+  if ((!receta && !noche) || !lista) return hoja;
+  const clave = `${nombre || 'base'}|${noche ? 'n' : 'd'}`;
+  let c = pelajes.get(clave);
   if (!c) {
     c = document.createElement('canvas');
     c.width = hoja.width;
@@ -124,16 +125,25 @@ function hojaPelaje(nombre) {
     for (let i = 0; i < p.length; i += 4) {
       if (p[i + 3] < 8) continue;
       const [h0, s0, l0] = aHSL(p[i], p[i + 1], p[i + 2]);
-      if (s0 < 0.08 && l0 < 0.35) continue;             // el negro no se toca
-      const [r2, g2, b2] = aRGB(
-        receta.tinte,
-        Math.max(0, Math.min(1, s0 * receta.color)),
-        Math.max(0, Math.min(1, l0 * receta.luz + receta.aclara)),
-      );
+      let h = h0, sa = s0, lu = l0;
+      // El pelaje: cambia el tono y deja la sombra. El negro no se toca.
+      if (receta && !(s0 < 0.08 && l0 < 0.35)) {
+        h = receta.tinte;
+        sa = s0 * receta.color;
+        lu = l0 * receta.luz + receta.aclara;
+      }
+      /**
+       * 🔻 Y DE NOCHE, EL ANIMAL ENTERO SE APAGA. Acá sí se toca el negro: de
+       * noche no hay nada que quede como estaba. Sin esto el caballo era lo
+       * único iluminado del campamento, con el resto a media luz — y cantaba
+       * como un sticker pegado.
+       */
+      if (noche) { lu *= 0.42; sa *= 0.8; }
+      const [r2, g2, b2] = aRGB(h, Math.max(0, Math.min(1, sa)), Math.max(0, Math.min(1, lu)));
       p[i] = r2; p[i + 1] = g2; p[i + 2] = b2;
     }
     g.putImageData(datos, 0, 0);
-    pelajes.set(nombre, c);
+    pelajes.set(clave, c);
   }
   return c;
 }
@@ -175,7 +185,7 @@ function aRGB(h, s, l) {
  * Devuelve dónde quedaron la montura y el bocado, para que el jinete se siente
  * en una y agarre las riendas del otro.
  */
-export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaje = null) {
+export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaje = null, noche = false) {
   const [nombre, achata] = POR_POSE[String(Math.max(-4, Math.min(4, Math.round(pose))))] || POR_POSE['0'];
   const m = MEDIDAS[nombre];
   const fila = DIRECCIONES.indexOf(nombre);
@@ -197,7 +207,7 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaj
   const asiento = { x: ox + m.sillaX * PASO * achata, y: oy + m.sillaY * PASO };
   const riendas = { x: ox + m.bocadoX * PASO * achata, y: oy + m.bocadoY * PASO };
 
-  const cual = () => (r.plano ? hojaTenida(r.plano) : pelaje ? hojaPelaje(pelaje) : hoja);
+  const cual = () => (r.plano ? hojaTenida(r.plano) : pelaje || noche ? hojaPelaje(pelaje, noche) : hoja);
 
   const estampa = () => {
     if (!lista || !r.ctx) return;

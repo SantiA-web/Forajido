@@ -134,7 +134,7 @@ function piernasSentado(L, R) {
  * Los muslos salen hacia afuera y abajo, las canillas bajan casi derechas por
  * fuera del caballo, y las botas quedan separadas con el talón abajo.
  */
-function piernasMontado(L, R, g, abre) {
+function piernasMontado(L, R, g, abre, atras) {
   const PT = R.pant;
   const OSC = tono(PT, 0.72), MED = tono(PT, 0.85);
 
@@ -193,17 +193,40 @@ function piernasMontado(L, R, g, abre) {
     return;
   }
 
-  // De tres cuartos el caballo tapa casi toda la pierna de allá: sólo se abre
-  // la de acá, y la otra asoma el muslo.
-  const d = 2;
-  L.poly([[18 - d, 57], [24, 57], [23, 67], [16 - d, 65]], MED);     // muslo izquierdo
-  L.poly([[25, 57], [31 + d, 57], [33 + d, 65], [26, 67]], PT);      // muslo derecho
-  L.poly([[15 - d, 64], [22, 66], [22, 72], [15 - d, 72]], OSC);     // canillas
-  L.poly([[27, 66], [34 + d, 64], [34 + d, 72], [27, 72]], tono(PT, 0.78));
-  L.poly([[14 - d, 71], [23, 71], [23, 77], [14 - d, 77]], BOTA);    // botas
-  L.poly([[26, 71], [35 + d, 71], [35 + d, 77], [26, 77]], BOTA);
-  L.rect(15 - d, 72, 6, 1, BOTA_L);
-  L.rect(28, 72, 6, 1, BOTA_L);
+  /**
+   * 🔻 DE TRES CUARTOS, UNA PIERNA MANDA Y LA OTRA SE ACORTA *(Santi: "el
+   * problema está en la dirección sudeste y noreste, que es cuando se ve más
+   * raro")*. Antes las dos iban iguales, al mismo ancho y al mismo largo, y
+   * quedaban dos bloques oscuros colgando en el medio del barril: se leían
+   * como dos alforjas, no como piernas.
+   *
+   * Girado 45° las dos piernas NO se ven igual: la de acá se abre entera y la
+   * de allá está del otro lado de un cuerpo girado, así que se ve más angosta
+   * y más corta. Eso es escorzo, y es lo que dice para dónde está mirando.
+   *
+   * `cerca` es el signo del lado de acá: de frente el cuerpo gira hacia la
+   * derecha, así que lo que nos queda cerca es su IZQUIERDA; de espaldas es al
+   * revés.
+   */
+  const A = Math.min(26, Math.max(10, abre || 14));
+  const cerca = atras ? 1 : -1;
+  const pata = (s, ancho, largo, muslo, canilla, rodilla) => {
+    const rod = Math.round(A * 0.62 * ancho);
+    const pie = Math.round((A * 0.78 + 2) * ancho);
+    const par = (x1, y1, x2, y2, c) => L.poly(
+      s > 0 ? [[24 + x1[0], y1], [24 + x1[1], y1], [24 + x2[1], y2], [24 + x2[0], y2]]
+        : [[24 - x1[1], y1], [24 - x1[0], y1], [24 - x2[0], y2], [24 - x2[1], y2]], c,
+    );
+    par([0, 7], 57, [rod - 4, rod + 3], 64, muslo);
+    par([rod - 4, rod + 3], 62, [rod - 1, rod + 4], 66, rodilla);
+    par([rod - 1, rod + 4], 65, [pie - 2, pie + 3], 66 + largo, canilla);
+    par([pie - 3, pie + 4], 65 + largo, [pie - 3, pie + 4], 70 + largo, BOTA);
+    par([pie - 1, pie + 4], 70 + largo, [pie, pie + 4], 72 + largo, tono(BOTA, 0.65));
+    L.rect(s > 0 ? 24 + pie - 2 : 24 - pie - 3, 66 + largo, 6, 1, BOTA_L);
+  };
+  // Primero la de allá, que va detrás: más angosta, más corta y más oscura.
+  pata(-cerca, 0.55, 5, OSC, tono(PT, 0.62), tono(PT, 0.72));
+  pata(cerca, 1, 7, PT, tono(PT, 0.9), tono(PT, 1.15));
 }
 
 /**
@@ -332,7 +355,7 @@ export function frente(L, o = {}) {
  */
 function piernasDePostura(L, R, o, g, f, atras) {
   if (o.postura === 'rendido') { piernasRendido(L, R); return { baja: 14, rendido: true }; }
-  if (o.postura === 'montado') { piernasMontado(L, R, g, o.abre); return { baja: 6, rendido: false }; }
+  if (o.postura === 'montado') { piernasMontado(L, R, g, o.abre, atras); return { baja: 6, rendido: false }; }
   if (o.postura === 'sentado') { piernasSentado(L, R); return { baja: 6, rendido: false }; }
   piernasFrente(L, R, g, f, atras);
   return null;

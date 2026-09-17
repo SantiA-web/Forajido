@@ -13356,6 +13356,98 @@ números.
 ⚠️ **Esto cambia el COLOR, no la FORMA.** Un overo o un tobiano —con manchas—
 hay que generarlo aparte.
 
+#### 🐛 El caballo y el jinete no cambiaban de dirección juntos
+
+*(Santi: "es como un tema de sensibilidad en las teclas W y S, hay veces que el
+caballo no cambia de dirección pero el personaje sí, entonces se ve raro […] el
+problema está en la dirección sudeste y noreste, que es cuando se ve más raro.
+Ve si puedes solucionarlo y sino pensé que podríamos hacer que el personaje y el
+caballo fueran el mismo dibujo")*.
+
+El diagnóstico era exacto. Eran **dos cosas**, las dos de la misma raíz: la
+dirección se calculaba **dos veces, con dos cuentas distintas**.
+
+##### 1 · Dos cuentas para la misma cosa
+
+El caballo elegía su dibujo con `POR_POSE` (cinco direcciones repartidas entre
+nueve poses). El jinete elegía el suyo redondeando el ángulo a una de **ocho**
+direcciones, por su cuenta. Resultado:
+
+| pose | dibujo del caballo | vista del jinete |
+|---|---|---|
+| −4 | norte | espalda |
+| −3 | noreste *(achatado)* | diagE |
+| −2 | noreste | diagE |
+| −1 … +1 | este | lado |
+| +2 | sudeste | diagF |
+| **+3** | **sudeste** *(el mismo dibujo)* | **DE FRENTE** ⟵ |
+| +4 | sur | frente |
+
+En la pose +3 **el caballo no se movía y el jinete se daba vuelta entero.**
+
+Y encima el redondeo es **asimétrico**: `Math.round(1.5)` da 2 pero
+`Math.round(-1.5)` da **−1**. Por eso S saltaba una vista antes que W — la
+"sensibilidad" distinta entre las dos teclas, tal cual se sentía.
+
+Ahora **la dirección la manda el caballo** y el jinete la recibe (`MIRADA`, en
+assets/caballoHoja.js). Una sola cuenta: cambian en el mismo cuadro, o no
+cambian. Y quedó simétrico — sosteniendo W se pasa por este → noreste → norte,
+y sosteniendo S por este → sudeste → sur.
+
+##### 2 · Y la pose parpadeaba
+
+Con el redondeo pelado, un rumbo que queda **justo en el borde** entre dos poses
+va y vuelve. Y no es un caso raro: pasa cada vez que das **toques cortos** para
+corregir la línea, que es como se juega de verdad.
+
+Medido con toques de 7 cuadros en W, contando los cambios de dirección y cuántos
+de ellos son marcha atrás (o sea, parpadeo):
+
+| zona muerta | dando toques | giro limpio |
+|---|---|---|
+| **0** (lo que había) | **24 cambios, 23 marcha atrás** | 3, 1 |
+| 0,10 | 7 cambios, 6 marcha atrás | 3, 1 |
+| 0,15 | 5 cambios, 4 marcha atrás | 3, 1 |
+| **0,25** ⟵ | **1 cambio, 0 marcha atrás** | 3, 1 |
+| 0,40 | 1 cambio, 0 marcha atrás | 3, 1 |
+
+Se eligió **0,25**: mata el parpadeo del todo y el giro limpio no pierde ni un
+paso (los cinco márgenes dan los mismos 3 cambios). 0,40 no mejora nada y sólo
+agregaría demora. Con eso, dando toques en W quedan **0 marcha atrás**, en S
+**0**, y alternando W y S **0**.
+
+##### 3 · Y las piernas de tres cuartos eran dos alforjas
+
+Lo que hacía que noreste y sudeste se vieran **peor que norte y sur** no era
+sólo el desfasaje: era que de tres cuartos las dos piernas iban **iguales**, al
+mismo ancho y al mismo largo, y quedaban dos bloques oscuros colgando en el
+medio del barril.
+
+Girado 45° las dos piernas **no se ven igual**. La de acá se abre entera; la de
+allá está del otro lado de un cuerpo girado, así que se ve más angosta, más
+corta y más oscura. Eso es escorzo, y es lo que dice para dónde mira. El lado de
+acá sale de la geometría del caballo: de frente el cuerpo gira a la derecha y lo
+que nos queda cerca es su izquierda; de espaldas, al revés.
+
+##### ¿Y por qué NO se hizo un solo dibujo?
+
+Fue la otra propuesta de Santi, y la respuesta es **no**, por tres razones
+concretas:
+
+1. **El jinete no es un dibujo, es la gente del juego.** Lleva la ropa (jugador
+   o jinete de la ley), el estado (los ojos en alerta), el destello del balazo,
+   el pañuelo, y la silueta plana de detrás de la pared del tren. Un dibujo
+   pegado al caballo sería **una hoja por cada combinación de esas**.
+2. **Tiene que reaccionar al animal.** Amortigua el rebote con retraso y se echa
+   adelante según el esfuerzo. En un dibujo único eso queda congelado.
+3. **La separación no era el problema.** El problema eran dos cuentas para la
+   misma cosa. Con una sola, no pueden discrepar.
+
+Lo que sí es cierto —y es el precio de tenerlos separados— es que **cada
+dirección hay que medirla**: dónde cae la montura, dónde el bocado, cuánto mide
+el flanco. Esas medidas viven todas juntas en `MEDIDAS` (assets/caballoHoja.js),
+que es exactamente para eso.
+
 **⚠️ NO JUGADO.**
 
 ---

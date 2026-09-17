@@ -79,6 +79,35 @@ export const MEDIDAS = {
 };
 
 /**
+ * 🔻 A QUÉ ÁNGULO MIRA CADA DIRECCIÓN, en radianes como todo el juego (0 a la
+ * derecha, creciendo hacia abajo de la pantalla).
+ *
+ * *(Santi: "es como un tema de sensibilidad en las teclas W y S, hay veces que
+ * el caballo no cambia de dirección pero el personaje sí, entonces se ve
+ * raro")*. Estaba clavado: el caballo elegía su dibujo con `POR_POSE` (cinco
+ * direcciones para nueve poses) y el jinete elegía el suyo redondeando el
+ * ángulo a una de OCHO. Dos cuentas distintas para la misma cosa, así que no
+ * cambiaban juntos:
+ *
+ *     pose +2 → caballo sudeste, jinete tres cuartos   (de acuerdo)
+ *     pose +3 → caballo sudeste, jinete DE FRENTE      (el caballo no se movió)
+ *
+ * Y encima el redondeo es asimétrico: `Math.round(1.5)` da 2 pero
+ * `Math.round(-1.5)` da −1. O sea que S saltaba una vista antes que W, que es
+ * justo la "sensibilidad" distinta entre las dos teclas.
+ *
+ * Ahora la dirección la manda EL CABALLO y el jinete la recibe: una sola
+ * cuenta, y no pueden discrepar nunca más.
+ */
+export const MIRADA = {
+  norte: -Math.PI / 2,
+  noreste: -Math.PI / 4,
+  este: 0,
+  sudeste: Math.PI / 4,
+  sur: Math.PI / 2,
+};
+
+/**
  * LOS PELAJES: EL MISMO DIBUJO CON OTRO PELO.
  *
  * 🔻 *(Santi: "yo le pondría al Mustang un color marrón rojizo")*. El Criollo y

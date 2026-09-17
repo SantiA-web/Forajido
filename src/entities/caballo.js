@@ -31,6 +31,7 @@ import { dibujarPersona } from './figura.js';
 import { PUNTO } from '../world/piezas.js';
 import {
   HOJA, CELDA_ANCHO, CELDA_ALTO, DIRECCIONES, FILA_QUIETO, MEDIDAS, POR_POSE, PELAJES,
+  MIRADA,
 } from '../assets/caballoHoja.js';
 
 const ALTO_SENTADO = 7;     // del asiento a donde apoya la figura sentada
@@ -230,6 +231,12 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaj
     asiento,
     riendas,
     /**
+     * A DÓNDE MIRA EL ANIMAL, para que el jinete mire al mismo lado. Sale del
+     * dibujo que le tocó, no de la pose: entre la pose 2 y la 3 el caballo usa
+     * el MISMO dibujo, así que el jinete tampoco tiene que cambiar de vista.
+     */
+    mira: MIRADA[nombre],
+    /**
      * CUÁNTO ABRE LAS PIERNAS EL JINETE: el ancho del animal a la altura de la
      * bota, en puntos del dibujo de la gente. Va medido en la hoja (`flanco`),
      * y acá sólo se pasa de puntos del caballo a puntos de la gente: el sprite
@@ -341,11 +348,17 @@ function cuerda(r, x1, y1, x2, y2, color, panza = 0) {
 export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, montura = null) {
   const quien = ropa.detalles || 'jugador';
   /**
-   * EL RUMBO MANDA LA VISTA, y en pasos: de perfil (pose 0-1) a tres cuartos
-   * (2) a de frente o de espaldas (3-4). `direccionDe` redondea a la más
-   * cercana de ocho, así que esto sale solo.
+   * 🔻 LA VISTA LA MANDA EL CABALLO *(Santi: "hay veces que el caballo no cambia
+   * de dirección pero el personaje sí, entonces se ve raro")*. Antes el ángulo
+   * salía de la pose y el jinete lo redondeaba a una de ocho direcciones por su
+   * cuenta: dos cuentas para la misma cosa, y no cambiaban juntas. Ahora el
+   * animal dice a dónde mira (`mira`, ver MIRADA en assets/caballoHoja.js) y el
+   * jinete mira ahí. Cambian en el mismo cuadro o no cambian.
+   *
+   * La pose sigue valiendo para lo que SÍ es gradual: cuánto se vuelca hacia
+   * adentro del giro y de dónde agarra las riendas.
    */
-  const angulo = (pose / 4) * (Math.PI / 2);
+  const angulo = montura && montura.mira != null ? montura.mira : (pose / 4) * (Math.PI / 2);
 
   /**
    * 🔻 SE ECHA ADELANTE — Y YA NO GIRANDO EL DIBUJO ENTERO *(Santi: "el jinete

@@ -62,6 +62,26 @@ export function createRideScene(services) {
    */
   const CIELO_LEJOS = 44;
 
+  /**
+   * LA ZONA MUERTA DE LA POSE, en fracción de un tramo de giro. Ver
+   * `poseDelCaballo`: es lo que hay que pasarse de la mitad para que el caballo
+   * cambie de pose, y lo que hay que volver para que vuelva.
+   *
+   * Medido con toques de 7 cuadros en W, contando los cambios de dirección que
+   * son MARCHA ATRÁS (o sea, parpadeo):
+   *
+   *   sin zona muerta  →  24 cambios, 23 marcha atrás
+   *   0,10             →   7 cambios,  6 marcha atrás
+   *   0,15             →   5 cambios,  4 marcha atrás
+   *   0,25             →   1 cambio,   0 marcha atrás   ← ésta
+   *   0,40             →   1 cambio,   0 marcha atrás   (no mejora, y demora)
+   *
+   * Y el giro limpio —apretar W y sostener— da los mismos 3 cambios con
+   * cualquiera de los cinco: la zona muerta saca el parpadeo sin comerse ni
+   * un paso del giro.
+   */
+  const MARGEN_POSE = 0.25;
+
   let caballo;
   let composicion, dificultad, tipoTren, clima, estado, comportamientos, variantes,
     encubiertos, paquetes, cajaOculta, train, plataformas, largoTren;
@@ -1577,9 +1597,32 @@ export function createRideScene(services) {
    * (`actualizarRumbo`) y se corta en cuatro tramos iguales de ~10° cada uno.
    * Como el rumbo PERSIGUE a la tecla, las poses pasan de a una.
    */
+  /**
+   * 🐛 Y CADA POSE SE QUEDA HASTA QUE EL RUMBO SE PASA BIEN DE LA RAYA *(Santi:
+   * "es como un tema de sensibilidad en las teclas W y S, hay veces que el
+   * caballo no cambia de dirección pero el personaje sí")*.
+   *
+   * Con el redondeo pelado, un rumbo que queda justo en el borde entre dos
+   * poses PARPADEA. Y no es raro que quede ahí: pasa cada vez que das toques
+   * cortos para corregir la línea, que es como se juega de verdad. Medido con
+   * toques de 7 cuadros: **24 cambios de dirección, 23 de ellos marcha atrás** —
+   * el caballo iba y volvía entre perfil y tres cuartos cada pocos cuadros.
+   *
+   * La solución es una zona muerta: para pasar a la pose siguiente hay que
+   * pasarse `MARGEN` de la mitad, y para volver hay que quedarse `MARGEN` corto.
+   * Mientras el rumbo no salga de esa zona, la pose es la de antes.
+   */
+  let poseAnterior = 0;
   function poseDelCaballo() {
     const tramo = 0.73 / 4;
-    return Math.sign(rumbo) * Math.min(4, Math.round(Math.abs(rumbo) / tramo));
+    const crudo = Math.abs(rumbo) / tramo;
+    const signo = Math.sign(rumbo);
+    // Cruzar el perfil es cambiar de lado: ahí no hay nada que sostener.
+    let paso = signo && signo === Math.sign(poseAnterior) ? Math.abs(poseAnterior) : Math.round(crudo);
+    while (paso < 4 && crudo > paso + 0.5 + MARGEN_POSE) paso++;
+    while (paso > 0 && crudo < paso - 0.5 - MARGEN_POSE) paso--;
+    poseAnterior = signo * Math.min(4, paso);
+    return poseAnterior;
   }
 
   /**

@@ -30,6 +30,9 @@ import { INTERIORES } from '../data/interiors.js';
 import { gameState } from '../state/gameState.js';
 import { createCamera } from '../engine/camera.js';
 import { T } from '../text/es.js';
+import { dibujarPersona, faseDeAndar, tono } from '../entities/figura.js';
+import { dibujarAnimal } from '../entities/caballo.js';
+import { caballoActual } from '../data/horse.js';
 
 /**
  * Alto de la loma del fondo. Lo comparten el cielo (que llega hasta donde ella
@@ -46,6 +49,17 @@ export function createTownScene(services) {
   const bounds = { width: PUEBLO.ancho, height: PUEBLO.alto };
 
   let x, y, mensaje, scroll, gente;
+  /**
+   * HACIA DÓNDE MIRA. Antes no hacía falta —eras una caja— y ahora sí: la
+   * persona tiene ocho direcciones. Arranca mirando a la cámara.
+   */
+  let mirando = Math.PI / 2;
+  /**
+   * El cuerpo del jugador para `faseDeAndar`, que deduce en qué punto del paso
+   * va según cuánto se movió y guarda lo suyo adentro del objeto: por eso tiene
+   * que ser SIEMPRE EL MISMO.
+   */
+  const yo = {};
 
   function enter(params = {}) {
     hud.hide();
@@ -172,6 +186,7 @@ export function createTownScene(services) {
       x = Math.max(14, Math.min(PUEBLO.ancho - 14, x));
       y = Math.max(PUEBLO.calleY - PUEBLO.calleAncho,
                    Math.min(PUEBLO.calleY + PUEBLO.calleAncho, y));
+      mirando = Math.atan2(dy, dx);
     }
 
     const o = objetoCerca();
@@ -309,29 +324,91 @@ export function createTownScene(services) {
     const top = base - e.alto;
     const izq = e.x - e.ancho / 2;
 
-    // Cuerpo, techo y el frente alto de tabla que tienen todas estas casas.
-    r.rect(izq, top, e.ancho, e.alto, colors.puebloMadera);
-    r.rect(izq, top, e.ancho, 4, colors.puebloTecho);
-    r.rect(izq - 3, top - 10, e.ancho + 6, 12, colors.puebloMaderaOsc);
-    r.rect(izq - 3, top - 10, e.ancho + 6, 3, colors.puebloTecho);
-
-    // Las tablas verticales.
-    for (let i = izq + 6; i < izq + e.ancho - 4; i += 9) {
-      r.rect(i, top + 6, 1, e.alto - 8, colors.puebloMaderaOsc);
+    /**
+     * 🔺 EL TECHO, VISTO DESDE ARRIBA. Es la regla de las dos caras de todo el
+     * juego: lo vertical se pinta con su alto (el frente alto de tabla) y lo
+     * horizontal como una FRANJA ENCIMA. Antes el frente terminaba en una raya
+     * y arriba había cielo: la casa no tenía techo, tenía un borde.
+     */
+    const TAPA = 9;
+    r.rect(izq - 5, top - 10 - TAPA, e.ancho + 10, TAPA, colors.puebloTecho);
+    r.rect(izq - 5, top - 10 - TAPA, e.ancho + 10, 2, tono(colors.puebloTecho, 1.3));
+    for (let ty = top - 10 - TAPA + 3; ty < top - 11; ty += 3) {
+      r.rect(izq - 5, ty, e.ancho + 10, 1, tono(colors.puebloTecho, 0.82));
     }
+
+    // Cuerpo y el frente alto de tabla que tienen todas estas casas.
+    r.rect(izq, top, e.ancho, e.alto, colors.puebloMadera);
+    r.rect(izq - 3, top - 10, e.ancho + 6, 12, colors.puebloMaderaOsc);
+    r.rect(izq - 3, top - 10, e.ancho + 6, 1.5, tono(colors.puebloMaderaOsc, 1.35));
+
+    /**
+     * LAS TABLAS, cada una con su tono. Antes eran juntas todas iguales sobre
+     * un color plano, y a esta escala eso se lee como papel rayado. La
+     * variación sale de un número FIJO por tabla —no de azar, o la pared
+     * titilaría entera en cada cuadro—, igual que en el vagón y en el tren.
+     */
+    for (let i = izq + 6, k = 0; i < izq + e.ancho - 4; i += 9, k++) {
+      const v = (k * 73) % 5;
+      r.rect(i, top + 5, 8, e.alto - 6, tono(colors.puebloMadera, 0.95 + v * 0.025));
+      r.rect(i - 1, top + 5, 1, e.alto - 6, colors.puebloMaderaOsc);
+      r.rect(i, top + 5, 0.5, e.alto - 6, tono(colors.puebloMadera, 1.14));
+    }
+    // La sombra del alero sobre la pared: el frente sobresale y tapa el sol.
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.3;
+    r.rect(izq, top, e.ancho, 5, '#000');
+    r.ctx.globalAlpha = 0.14;
+    r.rect(izq, top + 5, e.ancho, 4, '#000');
+    r.ctx.restore();
 
     // El letrero, que es lo que hace que un cajón marrón sea una armería.
     r.text(T.pueblo.letreros[e.id], e.x, top - 4, colors.puebloLetrero);
 
-    // La puerta y dos ventanas.
-    r.rect(e.x - 8, base - 26, 16, 26, colors.puebloPuerta);
-    r.rect(e.x - 6, base - 24, 12, 22, '#241a13');
-    r.rect(izq + 8, top + 16, 12, 10, colors.puebloPuerta);
-    r.rect(izq + e.ancho - 20, top + 16, 12, 10, colors.puebloPuerta);
+    // La puerta: marco, hueco oscuro, las dos hojas de vaivén y la manija.
+    r.rect(e.x - 9, base - 27, 18, 27, colors.puebloPuerta);
+    r.rect(e.x - 7, base - 25, 14, 25, '#241a13');
+    r.rect(e.x - 7, base - 20, 14, 13, tono(colors.puebloPuerta, 0.82));
+    r.rect(e.x - 0.5, base - 20, 1, 13, '#241a13');
+    r.rect(e.x - 9, base - 28, 18, 1.5, tono(colors.puebloPuerta, 1.3));
 
-    // La vereda de madera delante de la puerta.
-    r.rect(izq - 4, base, e.ancho + 8, 5, colors.puebloVereda);
+    // Las dos ventanas, con vidrio de verdad.
+    for (const vx of [izq + 8, izq + e.ancho - 20]) ventana(r, vx, top + 16, 12, 10);
+
+    /**
+     * LA VEREDA DE MADERA, ahora con su CARA DE ARRIBA: es una tarima, no una
+     * línea. Se ven las tablas cruzadas y su canto de adelante en sombra.
+     */
+    r.rect(izq - 4, base, e.ancho + 8, 6, colors.puebloVereda);
     r.rect(izq - 4, base, e.ancho + 8, 1, '#8a6b47');
+    for (let tx = izq - 4; tx < izq + e.ancho + 4; tx += 7) {
+      r.rect(tx, base + 1, 1, 5, tono(colors.puebloVereda, 0.8));
+    }
+    r.rect(izq - 4, base + 6, e.ancho + 8, 2, tono(colors.puebloVereda, 0.52));
+    // Y la sombra que tira sobre la calle.
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.26;
+    r.rect(izq - 4, base + 8, e.ancho + 8, 5, '#000');
+    r.ctx.globalAlpha = 0.12;
+    r.rect(izq, base + 13, e.ancho, 4, '#000');
+    r.ctx.restore();
+  }
+
+  /**
+   * UNA VENTANA: marco, vidrio, el adentro oscuro por abajo y el reflejo del
+   * cielo en diagonal. Antes era un rectángulo del color de la puerta, o sea
+   * un agujero pintado. Es la misma ventana que se le hizo al tren.
+   */
+  function ventana(r, vx, vy, w, h) {
+    r.rect(vx - 1, vy - 1, w + 2, h + 2, colors.puebloMaderaOsc);
+    r.rect(vx, vy, w, h, colors.puebloVidrio || '#7fb2bd');
+    r.rect(vx, vy + h * 0.55, w, h * 0.45, tono(colors.puebloVidrio || '#7fb2bd', 0.72));
+    for (let i = 0; i < h * 2; i++) {
+      const u = i / (h * 2);
+      r.rect(vx + w * 0.18 + u * w * 0.5, vy + 1 + u * (h - 2), 0.5, 0.5,
+        tono(colors.puebloVidrio || '#7fb2bd', 1.3));
+    }
+    r.rect(vx - 1.5, vy + h + 1, w + 3, 1.5, tono(colors.puebloMaderaOsc, 1.7));
   }
 
   function dibujarCaballo(r) {
@@ -342,34 +419,77 @@ export function createTownScene(services) {
     r.rect(c.x + 15, cy - 14, 3, 18, colors.puebloMaderaOsc);
     r.rect(c.x - 18, cy - 12, 36, 2, colors.puebloMadera);
 
-    const respira = Math.sin(scroll * 1.6) * 0.6;
-    r.rect(c.x - 10, cy + 2 + respira, 21, 9, colors.horse);
-    r.rect(c.x - 10, cy + 2 + respira, 21, 3, colors.horseDark);
-    r.rect(c.x + 9, cy + 4 + respira, 6, 6, colors.horse);
-    r.rect(c.x - 12, cy + 4 + respira, 4, 5, colors.horseMane);
+    /**
+     * 🔺 Y EL CABALLO ERA CUATRO RECTÁNGULOS, de cuando el del galope también
+     * lo era. Ahora es EL MISMO SPRITE, parado y con tu pelaje: la hoja ya
+     * traía el caballo quieto en cinco direcciones.
+     */
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.28;
+    r.ctx.fillStyle = '#000';
+    r.ctx.beginPath();
+    r.ctx.ellipse(c.x + 2, cy + 11, 13, 3.5, 0, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.ctx.restore();
+    const respira = Math.sin(scroll * 1.6) * 0.4;
+    dibujarAnimal(r, c.x + 2, cy + 4 + respira, null, 0, 0, 0,
+      caballoActual(gameState).id, !gameState.esDeDia);
   }
 
+  /**
+   * 🔺 LOS VECINOS ERAN TRES RECTÁNGULOS. Ahora son la misma gente del tren,
+   * con su ropa y su caminata. El chico va a escala 0,72: la persona del juego
+   * sabe achicarse entera (`escala`), así que un chico no es otro dibujo.
+   */
   function dibujarVecino(r, g) {
     const cy = PUEBLO.calleY + 6;
-    // Un balanceo mínimo al caminar: sin esto se deslizan como fichas.
-    const paso = Math.sin(scroll * 6 + g.fase) * 0.8;
-    const color = g.id === 'mujer' ? colors.puebloVecino2 : colors.puebloVecino;
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.24;
+    r.ctx.fillStyle = '#000';
+    r.ctx.beginPath();
+    r.ctx.ellipse(g.x, cy, 6, 2.2, 0, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.ctx.restore();
 
-    r.ctx.globalAlpha = 0.22;
-    r.box(g.x, cy + 6, 4, 2, '#000');
-    r.ctx.globalAlpha = 1;
-
-    const alto = g.id === 'chico' ? 4 : 5;
-    r.box(g.x, cy + paso, 4, alto, color);
-    r.rect(g.x - 5, cy - alto - 1 + paso, 11, 2, colors.playerHat);
+    /**
+     * La ropa sale de la que YA TIENE el juego: el vecino va de pasajero
+     * (bombín, traje, corbata, sin funda) y la mujer de `rico` (galera y
+     * cadena de oro). No hacía falta inventar ropa nueva para el pueblo, y
+     * meterle una con funda habría dicho que la calle está armada.
+     */
+    g.y = cy;
+    dibujarPersona(r, {
+      tipo: g.id === 'mujer' ? 'rico' : 'pasajero',
+      x: g.x,
+      pies: cy,
+      angulo: g.dir > 0 ? 0 : Math.PI,
+      escala: g.id === 'chico' ? 0.72 : 1,
+      // La fase se guarda en el propio vecino: si se le pasara un objeto nuevo
+      // en cada cuadro, no habría con qué comparar y nunca caminaría.
+      fase: faseDeAndar(g),
+      modo: 'caminar',
+    });
   }
 
   function dibujarJugador(r) {
-    r.ctx.globalAlpha = 0.25;
-    r.box(x, y + 6, 5, 2, '#000');
-    r.ctx.globalAlpha = 1;
-    r.box(x, y, 5, 5, colors.player);
-    r.rect(x - 6, y - 6, 13, 3, colors.playerHat);
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.3;
+    r.ctx.fillStyle = '#000';
+    r.ctx.beginPath();
+    r.ctx.ellipse(x, y + 4, 6, 2.5, 0, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.ctx.restore();
+    yo.x = x;
+    yo.y = y;
+    dibujarPersona(r, {
+      tipo: 'jugador',
+      x,
+      pies: y + 4,
+      angulo: mirando,
+      fase: faseDeAndar(yo),
+      modo: 'caminar',
+      panuelo: true,
+    });
 
     const o = objetoCerca();
     if (o) {

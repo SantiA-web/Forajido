@@ -13635,6 +13635,48 @@ la gente y el caballo, después las superficies.
 
 ---
 
+### 🏘️ El pueblo: la gente de verdad y las casas con techo
+
+Acá no hubo que cambiar la vista —el pueblo ya se miraba de frente desde la
+calle— pero sí faltaba la mitad de la regla de los tres cuartos: **lo horizontal
+como una franja encima**.
+
+- **El techo, visto desde arriba.** El frente alto de tabla terminaba en una
+  raya y arriba había cielo: la casa no tenía techo, tenía un borde. Ahora lleva
+  su tapa con las tablas cruzadas, como el techo de los vagones.
+- **Las tablas de la pared, cada una con su tono.** Eran juntas todas iguales
+  sobre un color plano, que a esta escala se lee como papel rayado. La variación
+  sale de un número fijo por tabla, no de azar.
+- **La sombra del alero** sobre la pared, en dos bandas.
+- **Ventanas de verdad**: marco, vidrio, el adentro oscuro por abajo y el
+  reflejo del cielo en diagonal. Eran un rectángulo del color de la puerta.
+- **La puerta** tiene marco, hueco y las dos hojas de vaivén.
+- **La vereda es una tarima**: se le ven las tablas cruzadas, el canto de
+  adelante en sombra y la sombra que tira sobre la calle.
+- **La gente son personas**: el vecino va de `pasajero` (bombín, traje,
+  corbata, sin funda) y la mujer de `rico` (galera y cadena). No hizo falta
+  inventar ropa: ponerles una con funda habría dicho que la calle está armada.
+  El chico usa `escala: 0.72`, porque la persona del juego sabe achicarse
+  entera y un chico no es otro dibujo.
+- **El caballo del palenque** es el sprite del galope, con tu pelaje y apagado
+  de noche.
+
+Y la escala quedó bien sola: la puerta mide 27 unidades y la persona 20, así que
+por primera vez **entrás por la puerta**. Con la caja de 13 de antes, las casas
+se leían como de seis pisos.
+
+Sin errores en 3.740 cuadros: campamento y pueblo de día y de noche, caminando
+en las cuatro direcciones y usando las dos teclas, más galope, asalto, cantina,
+establo y mapa.
+
+🔻 **FALTAN LOS INTERIORES** (la cantina, el establo por dentro, la armería): la
+gente sigue siendo tres rectángulos, el piso es plano y los muebles también. Es
+lo mismo que se acaba de hacer dos veces, así que va derecho.
+
+**⚠️ NO JUGADO.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

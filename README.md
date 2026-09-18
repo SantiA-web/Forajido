@@ -1714,6 +1714,36 @@ Cosas que conviene saber:
 Y no se mueven mientras apuntan: es lo que hace que el ángulo que avisan sea
 el que de verdad sale.
 
+### La huida: los jinetes que quedaban te siguen
+
+Si escapás **con la alarma sonando**, con plata encima y con jinetes de la ley
+todavía vivos, no vas directo a los resultados: **te siguen durante 15
+segundos**. Son los mismos que quedaban en el asalto (uno, dos, cinco...), así
+que lo que hiciste adentro se paga afuera.
+
+- Galopás hacia la derecha: `W/A/S/D` te mueven, **el mouse apunta y el clic
+  dispara**, igual que en el asalto. `R` recarga. El revólver sale con las
+  balas que le quedaban.
+- A caballo se tira peor: tu dispersión se multiplica por 3.
+- Antes de tirar, cada jinete **avisa**: se frena, levanta el arma hacia vos y
+  le aparece un **!**. El tiro sale hacia donde estabas en ese momento, así
+  que moverte en ese medio segundo es esquivarlo.
+- **Cada tiro que te pegan te hace soltar una bolsa** con el 10% de lo que
+  sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
+  con menos plata.
+- Se termina a los 15 segundos, o antes si no queda ninguno. Cada jinete que
+  tirás acá cuenta como uno tirado en el asalto.
+
+Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
+
+**Tres formas de no pasar por esto:** escapar sin que suene la alarma,
+escapar antes de que lleguen los jinetes (tardan 25 segundos desde la
+alarma), o bajarlos a todos antes de saltar.
+
+> ⚠️ **Gráficos simples a propósito.** Lo nuevo del asalto se dibuja simple
+> para ir rápido y se viste después: las bolsas, el **!** y el panel de la
+> huida están en la lista "Por vestir" de NOTAS-DISENO.md.
+
 ### El Cazarrecompensas: cuando tu recompensa sube demasiado, alguien sube al tren por vos
 
 **Con $900 o más de recompensa, en los trenes DE PASAJEROS ya no viajás solo.**

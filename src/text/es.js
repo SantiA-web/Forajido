@@ -225,6 +225,18 @@ export const T = {
     },
   },
 
+  /** La huida: los jinetes que quedaban te siguen al escapar (scenes/huidaScene.js). */
+  huida: {
+    teSiguen: (n) => (n === 1 ? '¡UN JINETE TE SIGUE!' : `¡${n} JINETES TE SIGUEN!`),
+    losPerdiste: 'LOS PERDISTE',
+    todosCaidos: 'NO QUEDÓ NINGUNO',
+    derribado: '¡ABAJO!',
+    sinPlata: 'NO TE QUEDA NADA QUE SOLTAR',
+    bolsas: (n) => (n === 1 ? 'soltaste 1 bolsa' : `soltaste ${n} bolsas`),
+    recargando: 'RECARGANDO',
+    teclas: '[WASD] MOVERTE   [CLIC] DISPARAR   [R] RECARGAR',
+  },
+
   ride: {
     title: 'ALCANZANDO EL TREN',
     reloj: (s) => `${s}s`,
@@ -572,6 +584,9 @@ export const T = {
     racha: (n) => `Racha limpia (${n})`,
     rachaPerdida: (n) => `Se cortó la racha (llevabas ${n})`,
     rescate: 'Casi lo lográs',
+    /** La huida: lo que soltaste con los jinetes detrás (ver scenes/huidaScene.js). */
+    huida: (n) => (n === 0 ? 'La huida: no te tocaron' : n === 1 ? 'La huida: soltaste 1 bolsa' : `La huida: soltaste ${n} bolsas`),
+    huidaJinetes: (n) => (n === 1 ? 'Jinete derribado en la huida' : 'Jinetes derribados en la huida'),
     lost: 'Botín que dejaste',
     kills: 'Guardias muertos',
     civilians: 'Civiles muertos',

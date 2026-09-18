@@ -13759,6 +13759,116 @@ Cambiarlo es una decisión de Santi.
 
 ---
 
+## 🎯 EL PLAN AHORA: HACER BIEN EL ASALTO, CON GRÁFICOS SIMPLES
+
+*(Santi: "me gustaría centrarme en hacer bien el asalto y luego todo lo demás.
+Pero para ir haciéndolo de forma rápida creo que sería mejor dejar a los
+gráficos de lado")*
+
+Se habló de hacer un juego "beta" aparte, con gráficos simples, para probar
+mecánicas y mostrarlo en páginas de juegos indie. Quedó así, y por qué:
+
+- **Un solo juego.** Dos juegos separados obligan a programar cada mecánica dos
+  veces, y con el tiempo se separan.
+- **Lo que ya se ve bien se queda.** No cuesta nada dejarlo.
+- **Lo NUEVO del asalto se dibuja simple** (cajitas, un signo, una palabra) y
+  entra en la lista **"Por vestir"**, más abajo. Cuando el asalto esté bien, se
+  visten todas juntas, y ahí se decide si Santi genera algún sprite.
+- **Para mostrar afuera, la versión linda.** En las páginas de juegos indie
+  se decide por cómo se ve; una demo corta del juego real, con su etiqueta de
+  demo, junta más que una beta de cajitas.
+
+**El orden acordado:** 1) la persecución al escapar (hecha, abajo), 2) el
+trueno que haga algo, 3) la noche (con guardias durmiendo), 4) los eventos en
+vivo, 5) los compañeros.
+
+**Las fases que quedaban del plan viejo**, para no perderlas:
+
+| Fase | Qué | Estado |
+|---|---|---|
+| 3b + 6b | Guardias durmiendo y el vagón de guardias dormidos | Sin hacer. **Santi: "la noche desbloquea la posibilidad de guardias durmiendo"** |
+| 4 | Pistolero y civil encubierto | Hechos y **apagados** (`chance: 0`) a pedido de Santi |
+| 7 | Eventos en vivo: la curva, el enganche roto, el incendio, la oscuridad extrema y **el túnel** | Sin hacer. **El túnel lo agregó Santi: "oscuridad total, literal se pone la pantalla en negro".** Los túneles ya están en el mapa (`tuneles` en data/region.js, en dos vías) |
+| 8 | El ladrón rival | Sin hacer. Lo más grande |
+| — | Los documentos que delatan la caja oculta en el tren de carga | Sin hacer |
+
+### 🧺 Por vestir
+
+Lo que se dibujó simple a propósito y hay que vestir cuando el asalto esté
+bien:
+
+| Qué | Dónde | Cómo está |
+|---|---|---|
+| Las bolsas que se caen en la huida | `huidaScene.js`, `dibujarBolsa` | Un bulto marrón con un **$** |
+| El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
+| El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
+| El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
+
+---
+
+### 🏇 HECHA: la huida — los jinetes que quedaban te siguen
+
+*(Santi: "una vez escapas del tren, si todavía quedan agentes de ley a caballo
+te persigan y se convierta en una persecución corta, no tiene porque llevarse
+mucha atención". Eligió: cada tiro te hace soltar una bolsa y nunca te
+agarran; 15 segundos; apuntar con el mouse.)*
+
+**Cuándo:** escapaste **con la alarma sonando**, con plata encima, y quedaban
+jinetes vivos. Si no, directo a los resultados como antes. Sin plata no hay
+huida: lo único que se pierde son bolsas, y serían 15 segundos sin nada en
+juego.
+
+**Cómo** (`scenes/huidaScene.js`, números en `data/huida.js`): una escena
+aparte, sin tren ni obstáculos. Galopás hacia la derecha y te siguen los
+mismos jinetes que quedaban, cada uno en su carril (arriba y abajo, en
+abanico). El arma es la tuya, con las balas que le quedaban; a caballo la
+dispersión se multiplica por 3. Cada jinete avisa medio segundo antes de
+tirar —se frena, levanta el arma hacia vos, "!"— y tira hacia donde estabas
+cuando empezó a apuntar.
+
+**La cuenta final la hace la huida.** El asalto arma el resumen como siempre,
+pero en vez de aplicarlo se lo pasa a la huida, que descuenta las bolsas, suma
+los jinetes derribados a `kills` (igual que en el asalto) y recién ahí llama a
+`applyRaidResult`.
+
+**Los números, medidos.** Un robot corrió 20 huidas por caso, de tres formas:
+quieto; esquivando (se mueve cuando un jinete apunta); y esquivando y
+tirándole al más cercano (con un quinto de segundo de retraso y ±10 de error,
+así que tira mejor que una persona).
+
+Primero la puntería de ellos. Con 0,10 de dispersión, quedarse quieto con UN
+jinete era perder 5,7 bolsas: un tiro casi seguro cada vez. Subió a **0,18**:
+quieto sigue saliendo caro, esquivando casi no te tocan.
+
+Después el tamaño de la bolsa: **cuánto de la plata se pierde**, en promedio.
+
+| Bolsa | Quieto (1 / 2 / 3 / 5 jinetes) | Esquivando | Esquivando y tirando |
+|---|---|---|---|
+| **10%** ← recomendada | 46 / 64 / 76 / 86 % | 0 / 7 / 20 / 54 % | 0 / 0 / 1 / 18 % |
+| 15% | 63 / 91 / 99 / 98 % | 0 / 11 / 40 / 84 % | 0 / 0 / 5 / 26 % |
+| 20% | 86 / 98 / 99 / 100 % | 0 / 9 / 56 / 96 % | 0 / 1 / 4 / 44 % |
+
+Quedó en **10%**: pesa (con cinco jinetes y sin pelear perdés la mitad) pero
+no arruina un asalto bien hecho, que es lo que pidió Santi. **⚠️ Esperando que
+Santi elija**; cambiarlo es `HUIDA.bolsaFraccion`.
+
+🔻 **ALGO QUE HAY QUE MIRAR JUGANDO:** el robot que tira baja a un jinete solo
+en 2 segundos. Una persona apunta peor, pero si pelear resulta demasiado
+fácil, los números para tocar son `dispersionACaballo` (tu puntería) o la vida
+de los jinetes.
+
+🐛 **Un error de paso:** el cartel decía "¡5 JINETES TE SIGUEN!" con tres. El
+parche que escribió el texto era de perl, y perl reemplazó `${n}` por su propio
+contador. Arreglado; queda anotado porque la trampa es fácil de repetir.
+
+Sin errores en 6.331 cuadros: de día y de noche, con 1, 2 y 4 jinetes, y el
+camino entero desde el asalto (escapar con la alarma y jinetes vivos te lleva
+a la huida, y la huida a los resultados).
+
+**⚠️ NO JUGADO.**
+
+---
+
 ### 🧗 ETAPA 7 HECHA: el techo es el mismo que se ve desde el caballo
 
 *(Santi eligió la opción B: los techos, su sombra y los obstáculos; el humo y la

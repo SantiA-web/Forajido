@@ -66,6 +66,13 @@ function buildPanel(s) {
     (s.objetos || []).length
       ? row(T.results.objetos(s.objetos.length), T.results.objetosSinVender, true)
       : '',
+    /**
+     * LA HUIDA va justo debajo del botín: es lo que se le cayó por el camino.
+     * Si no te tocaron, lo dice igual — salir de una persecución sin soltar
+     * nada también es algo que pasó.
+     */
+    s.huida ? row(T.results.huida(s.huida.bolsas), s.huida.perdido > 0 ? `−$${s.huida.perdido}` : '', s.huida.bolsas === 0, s.huida.bolsas > 0) : '',
+    s.huida && s.huida.derribados > 0 ? row(T.results.huidaJinetes(s.huida.derribados), String(s.huida.derribados)) : '',
     s.cleanBonus > 0 ? row(T.results.clean, `+$${s.cleanBonus}`, true) : '',
     s.rachaBonus > 0 ? row(T.results.racha(s.racha), `+$${s.rachaBonus}`, true) : '',
     s.rachaPerdida > 0 ? row(T.results.rachaPerdida(s.rachaPerdida), '', false, true) : '',

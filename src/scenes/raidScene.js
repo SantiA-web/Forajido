@@ -3547,6 +3547,24 @@ export function createRaidScene(services) {
       composition: train.wagons.slice(1).map((w) => w.short),
     };
 
+    /**
+     * 🏇 LA HUIDA *(Santi: "si todavía quedan agentes de ley a caballo te
+     * persigan y se convierta en una persecución corta")*. Si escapaste con la
+     * alarma sonando y quedaban jinetes vivos, te siguen: la cuenta final
+     * (`applyRaidResult`) la hace la huida, después de descontar las bolsas
+     * que se te caigan. Ver scenes/huidaScene.js.
+     *
+     * Sin plata encima no hay persecución: lo único que se pierde en la huida
+     * son bolsas, y sin nada que soltar serían 15 segundos sin nada en juego.
+     */
+    const jinetesVivos = riders.filter((rd) => rd.alive).length;
+    if (escaped && alarm.active && jinetesVivos > 0 && summary.money > 0) {
+      scenes.goTo('huida', {
+        summary, jinetes: jinetesVivos, arma: player.weapon, balas: player.ammo,
+      });
+      return;
+    }
+
     applyRaidResult(summary);
     scenes.goTo('results', summary);
   }

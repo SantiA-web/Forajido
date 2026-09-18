@@ -197,9 +197,9 @@ function aRGB(h, s, l) {
  * en una y agarre las riendas del otro.
  */
 /**
- * `escala`: cuÃ¡nto mÃ¡s grande que en el galope. Lo pidiÃ³ Santi para el
- * campamento y el pueblo ("deberÃ­as agrandar la silueta del caballo"): parado
- * al lado de un palenque y de una persona quieta, al tamaÃ±o del galope se leÃ­a
+ * `escala`: cuánto más grande que en el galope. Lo pidió Santi para el
+ * campamento y el pueblo ("deberías agrandar la silueta del caballo"): parado
+ * al lado de un palenque y de una persona quieta, al tamaño del galope se leía
  * como un potrillo.
  */
 export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaje = null, noche = false, escala = 1) {

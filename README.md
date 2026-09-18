@@ -100,9 +100,19 @@ la pared, las ventanillas con reflejo, las puertas, lo que hay debajo del vagón
 y **la sombra en el piso**, que era lo que más hacía falta: el caballo tiraba la
 suya y el tren no tiraba ninguna.
 
-Quedan la **6** (las pantallas fijas) y la **7, la última: el techo**, que se
-lleva una etapa entera para él solo. El detalle y los números están en
-NOTAS-DISENO.md ("La gente curtida a 80 px" y las etapas 3, 4, 5, 5b y 5c).
+En la **6** las pantallas fijas dejaron de tener gente de tres rectángulos: el
+campamento pasó a tres cuartos (con cielo, horizonte y sus cosas sólidas), el
+pueblo y los interiores tienen la misma gente del tren, los muebles tienen
+volumen y el caballo es el sprite en todos lados. Y en la **7, la última**, el
+techo que pisás es el mismo que ves desde el caballo: la linterna de los coches,
+la pasarela de los furgones, las chapas del blindado y la garita del cabús.
+
+**La mudanza a la resolución nueva está terminada.** Queda una sola cosa
+anotada: el caballo de la pantalla de compra del establo sigue dibujado con
+código, porque tiene un ciclo de comer que el sprite no tiene (se puede cambiar
+cuando haya una animación de "comer" generada con la misma página). El detalle
+y los números están en NOTAS-DISENO.md ("La gente curtida a 80 px" y las
+etapas 3 a 7).
 
 **Es sólo dibujo.** Lo que recibe las balas y choca sigue siendo la misma caja
 de siempre, a la altura del cuerpo: la cobertura, la puntería y todo lo medido

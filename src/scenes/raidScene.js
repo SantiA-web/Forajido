@@ -17,6 +17,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { dibujarTechoDesdeArriba, dibujarObstaculoTecho as obstaculoTecho } from '../world/techoDesdeArriba.js';
 import { T } from '../text/es.js';
 
 import { createCamera } from '../engine/camera.js';
@@ -4075,51 +4076,18 @@ export function createRaidScene(services) {
         continue;
       }
 
-      r.rect(w.x, 0, w.width, map.height, colors.techo);
-      r.rect(w.x, 0, w.width, 4, colors.techoBorde);
-      r.rect(w.x, map.height - 4, w.width, 4, colors.techoBorde);
-
-      // Los bordes de la franja pisable: son la baranda visual del "no te
-      // vayas para el costado". El equilibrio es geometría, no un medidor.
-      r.rect(w.x, ct.centroY - ct.ancho - 1, w.width, 1, colors.techoBorde);
-      r.rect(w.x, ct.centroY + ct.ancho, w.width, 1, colors.techoBorde);
-
-      // Las tablas, para que se lea el movimiento del tren bajo tus pies.
-      for (let tx = w.x + 8; tx < w.x + w.width - 4; tx += 16) {
-        r.rect(tx, ct.centroY - ct.ancho + 1, 1, ct.ancho * 2 - 2, colors.techoBorde);
-      }
+      /**
+       * 🔺 ETAPA 7: EL TECHO ES EL MISMO QUE SE VE DESDE EL CABALLO. Era un
+       * rectángulo marrón con dos rayas; ahora la linterna de los coches, la
+       * pasarela de los furgones, las chapas del blindado, la garita del cabús
+       * (ver world/techoDesdeArriba.js). La franja pisable queda marcada por
+       * lo que se pisa de verdad —la tapa de la linterna, los tablones de la
+       * pasarela, la chapa estriada—, no por dos rayas.
+       */
+      dibujarTechoDesdeArriba(r, w, map.height);
     }
 
-    for (const ob of techObstacles) dibujarObstaculoTecho(r, ob);
-  }
-
-  /**
-   * Los carteles que vienen. Tienen que gritar CUÁL de las dos cosas hay que
-   * hacer, porque toda la mecánica es decidir rápido:
-   *
-   *  - `agachar` viene ALTO: se dibuja arriba, cruzando el techo entero, con
-   *    una flecha para abajo. Te tenés que achicar.
-   *  - `saltar` viene BAJO: un bulto pegado al piso del techo, con una flecha
-   *    para arriba. Le tenés que pasar por encima.
-   */
-  function dibujarObstaculoTecho(r, ob) {
-    const ct = CONFIG.techo;
-    const y = ct.centroY;
-    const w = ct.obstaculoAncho;
-
-    if (ob.tipo === 'agachar') {
-      // Un gantry: dos patas y un travesaño por encima de tu cabeza.
-      r.rect(ob.x - w, y - ct.ancho - 4, w * 2, 4, colors.techoObstaculo);
-      r.rect(ob.x - w, y - ct.ancho - 4, w * 2, 1, colors.textDim);
-      r.rect(ob.x - w + 1, y - ct.ancho, 2, ct.ancho * 2, colors.techoObstaculo);
-      r.rect(ob.x + w - 3, y - ct.ancho, 2, ct.ancho * 2, colors.techoObstaculo);
-      if (!ob.resuelto) r.text('▼', ob.x, y - ct.ancho - 8, colors.enemySus);
-    } else {
-      // Un bulto bajo cruzando la franja: hay que saltarlo.
-      r.rect(ob.x - w, y - 4, w * 2, 8, colors.techoObstaculo);
-      r.rect(ob.x - w, y - 4, w * 2, 2, colors.textDim);
-      if (!ob.resuelto) r.text('▲', ob.x, y - 12, colors.bagLoot);
-    }
+    for (const ob of techObstacles) obstaculoTecho(r, ob, colors);
   }
 
   /** ¿Esto cae dentro de la pantalla? Con un tren de 4500px, casi nada lo hace. */

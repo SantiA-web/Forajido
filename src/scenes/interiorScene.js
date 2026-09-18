@@ -464,7 +464,7 @@ export function createInteriorScene(services) {
      * sale borroneada.
      */
     const fondo = (m.tipo === 'mesa' ? 20 : m.tipo === 'poker' ? m.r * 2 : m.tipo === 'fardo' ? 10 : m.h) / 2 * (m.tipo === 'escritorio' ? 2 : 1);
-    // (El escritorio va con la tapa entera: tiene los papeles encima y nadie atrÃ¡s.)
+    // (El escritorio va con la tapa entera: tiene los papeles encima y nadie atrás.)
     const tope = pie - alto;                // donde termina la cara y empieza la tapa
 
     if (m.tipo === 'mesa') {

@@ -978,9 +978,16 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   const alto = enElAire ? Math.sin(t * Math.PI) * 9 : 0;
 
   // La sombra se queda en el techo y se achica: es el aviso de altura.
-  r.ctx.globalAlpha = 0.25 + (enElAire ? -0.1 * (alto / 9) : 0);
-  r.box(p.x, p.y + 6, 5 - (alto / 9) * 1.5, 2, '#000');
-  r.ctx.globalAlpha = 1;
+  // (Una elipse y no una caja: es la misma sombra que tenés en el campamento
+  // y en el pueblo, y sobre las tablas del techo la caja se leía como un
+  // agujero.)
+  r.ctx.save();
+  r.ctx.globalAlpha = 0.3 + (enElAire ? -0.12 * (alto / 9) : 0);
+  r.ctx.fillStyle = '#000';
+  r.ctx.beginPath();
+  r.ctx.ellipse(p.x, p.y + p.hh, 6 - (alto / 9) * 2, 2.4 - (alto / 9) * 0.8, 0, 0, Math.PI * 2);
+  r.ctx.fill();
+  r.ctx.restore();
 
   if (p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0) return;
 

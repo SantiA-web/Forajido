@@ -523,7 +523,7 @@ export function laminasGuardadas() {
 }
 
 /** Qué dibujo le toca a cada plantilla. Lo que no está acá es un furgón. */
-function familiaDe(p) {
+export function familiaDe(p) {
   if (p.carbon) return 'gondola';
   if (['pasajeros', 'primeraClase', 'dormitorio', 'comedor'].includes(p.id)) return 'coche';
   if (['ganado', 'plataforma', 'blindado', 'caboose', 'refrigerado'].includes(p.id)) return p.id;

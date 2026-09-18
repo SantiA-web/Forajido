@@ -13759,6 +13759,85 @@ Cambiarlo es una decisión de Santi.
 
 ---
 
+### 🧗 ETAPA 7 HECHA: el techo es el mismo que se ve desde el caballo
+
+*(Santi eligió la opción B: los techos, su sombra y los obstáculos; el humo y la
+velocidad quedaron para después de jugarlo.)*
+
+**Cómo estaba:** un rectángulo marrón de un solo color del tamaño del vagón
+entero, con dos rayas marcando la franja por donde se camina y líneas de tablas
+de una unidad de ancho. Lo último del juego que seguía en bloques de 4 px. Y no
+coincidía con lo que se ve desde el galope: al subirte desaparecían la linterna
+de los coches y la pasarela de los furgones.
+
+**Cómo quedó** (`world/techoDesdeArriba.js`):
+
+| Vagón | Techo |
+|---|---|
+| Coches de gente | Tela alquitranada en paños de tonos distintos, con manchas, y en el medio **la linterna** con su tapa clara y sus ventanitas en la cara de acá. Se camina por encima de la linterna |
+| Furgones y cabús | Chapa con costillas y **la pasarela de los guardafrenos**: tablones cruzados, cada uno con su tono y sus clavos. El cabús lleva además su **garita** roja al costado de la franja |
+| Blindado | Chapas remachadas, la franja de **chapa estriada** y la **escotilla** |
+| Refrigerado | Como los furgones, con las **bocas del hielo** en las puntas |
+
+Todos con sus dos aleros (el de allá en sombra, el de acá con su canto de luz),
+las puntas con su tabla y los pasamanos de hierro.
+
+**La franja pisable ya no se marca con rayas**: la marca lo que se pisa de
+verdad —la tapa de la linterna, los tablones de la pasarela, la chapa
+estriada—. Y el ancho, dónde caés y cuándo te caés siguen saliendo de
+`CONFIG.techo` sin un número tocado.
+
+**Los obstáculos son cosas**: el de agacharse, un pórtico de madera con la
+viga pasando por encima y **su sombra cruzando la franja** —que es el aviso más
+claro de que algo te pasa por arriba—; el de saltar, un cajón amarrado. El ▲ y
+el ▼ se quedaron: son lo que te dice a tiempo qué hacer.
+
+**Tu sombra en el techo es una elipse**, como en el campamento y el pueblo; la
+caja de antes, sobre las tablas, se leía como un agujero.
+
+**Cómo se arma.** Un techo entero guardado costaría hasta 1,6 MB (un coche mide
+640 de largo), así que va en **tramos de 32 que se repiten** —cuatro variantes
+por tipo, para que no se vea el patrón—, más las puntas y lo que hay una vez. Al
+mismo grano que el tren de afuera y el caballo: media unidad por punto.
+
+| | Antes | Ahora |
+|---|---|---|
+| Llamadas de dibujo, un coche de 640 | 45 | **24** |
+| Llamadas de dibujo, un furgón de 512 | 37 | **20** |
+| Llamadas de dibujo, el cabús | 25 | **15** |
+| Memoria | — | 22 láminas, **1,4 MB**, las mismas para todos los trenes |
+
+🔻 **ALGO QUE APARECIÓ MIDIENDO, Y QUEDA ANOTADO:** el cuadro entero arriba del
+techo cuesta unas **750 llamadas**, y no es por el techo (que son ~50): es que
+el asalto sigue dibujando todo lo de adentro —la gente, los asientos, el botín—
+y después lo tapa con el techo. Saltearse lo que queda tapado bajaría eso a la
+mitad, pero toca el orden de dibujo del asalto entero y no es parte de esta
+etapa.
+
+🐛 **Y UN ARREGLO DE PASO:** siete comentarios de los últimos cambios tenían los
+acentos rotos ("cuÃ¡nto" en vez de "cuánto"), por parches escritos sin
+`use utf8`. Dos ya estaban subidos. Arreglados todos.
+
+Sin errores en 3.000 cuadros: seis trenes distintos, corriendo por el techo,
+saltando huecos y agachándose, más galope y campamento.
+
+**⚠️ NO JUGADO.**
+
+---
+
+### ✅ ETAPA 6 CERRADA
+
+*(Santi: "preferiría pasar a una siguiente etapa")*. Se cierra con el
+campamento, el pueblo y los interiores hechos. **Queda pendiente el caballo de
+la pantalla de compra del establo** (`shopScene`), que sigue dibujado con
+código: tiene un ciclo de comer —baja la cabeza, mastica, sacude la cola— que
+el sprite parado no tiene. Se probó recortarle el cuello al sprite y girarlo:
+cabecea, pero no llega al pasto y se ve la costura del corte. Lo que falta es
+que Santi genere una animación de "comer" o "parado" con la misma página del
+galope (el prompt está en `prototipos/caballo/sprites/marron/metadata.json`).
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

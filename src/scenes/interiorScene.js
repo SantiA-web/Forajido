@@ -27,6 +27,46 @@ import { gameState } from '../state/gameState.js';
 import { crearMenu } from '../engine/menu.js';
 import { tasarLote } from '../data/perista.js';
 import { T } from '../text/es.js';
+import { dibujarPersona as dibujarGente, faseDeAndar, tono } from '../entities/figura.js';
+import { dibujarAnimal, ESCALA_PARADO } from '../entities/caballo.js';
+
+/**
+ * CON QUÉ ROPA VA CADA UNO. Sale de la ropa que YA TIENE el juego
+ * (entities/gente/dibujo.js): no hizo falta inventar ninguna. El barman y los
+ * que comen van de traje; los que juegan a las cartas y el caballerizo, de
+ * vaquero con su funda; el perista, de rico; el ayudante, de sheriff.
+ */
+const ROPA_DE = {
+  armero: 'pistolero', barman: 'pasajero', parroquiano: 'pistolero',
+  comensal1: 'rico', comensal2: 'pasajero', jugador1: 'rico', jugador2: 'pistolero',
+  caballerizo: 'pistolero', ayudante: 'sheriff', perista: 'rico',
+};
+
+/**
+ * 🔺 CUÁNTO ALTO TIENE CADA MUEBLE que se ve desde arriba. Es la regla de las
+ * dos caras de todo el juego: la tapa se dibuja arriba y la CARA DE ADELANTE
+ * baja hasta el piso. Antes la barra, el mostrador y las mesas eran sólo la
+ * tapa apoyada en el suelo, como una alfombra: al lado de una persona de 20
+ * se leían como planos pintados en el piso.
+ *
+ * Lo que ya se dibujaba parado (el barril, la estufa, el cajón) no lleva:
+ * ya tiene su frente.
+ */
+const ALTURA = { barra: 12, mostrador: 12, escritorio: 10, mesa: 9, poker: 9, abrevadero: 6, fardo: 6 };
+
+/**
+ * DÓNDE TOCA EL PISO cada mueble, por abajo: es lo que decide quién tapa a
+ * quién. Cada tipo está descripto a su manera en los datos (desde la esquina,
+ * desde el centro, un círculo), así que acá se traduce.
+ */
+function pieDe(m) {
+  if (m.tipo === 'mesa') return m.y + 10;
+  if (m.tipo === 'poker') return m.y + m.r;
+  if (m.tipo === 'abrevadero' || m.tipo === 'alfombra') return m.y + m.h / 2;
+  if (m.w !== undefined) return m.y + m.h;
+  const medio = { silla: 4, barril: 9, cajon: 6, fardo: 5, estufa: 10 };
+  return m.y + (medio[m.tipo] ?? 0);
+}
 
 export function createInteriorScene(services) {
   const { input, scenes, hud, audio } = services;
@@ -34,6 +74,10 @@ export function createInteriorScene(services) {
 
   let def, id, x, y, mensaje, scroll;
   const menu = crearMenu(audio);
+
+  /** Hacia dónde mirás, y el cuerpo que guarda la fase del paso (ver el campamento). */
+  let mirando = -Math.PI / 2;
+  const yo = {};
 
   function enter(params = {}) {
     hud.hide();
@@ -229,6 +273,7 @@ export function createInteriorScene(services) {
       // `moveAndCollide` del asalto, en chiquito.
       mover(dx * CONFIG.player.speed * dt, 0);
       mover(0, dy * CONFIG.player.speed * dt);
+      mirando = Math.atan2(dy, dx);
     }
 
     const p = puntoCerca();
@@ -304,14 +349,27 @@ export function createInteriorScene(services) {
     r.ctx.save();
     r.ctx.translate(c.x, c.y);
     dibujarSala(r);
-    for (const m of def.muebles) dibujarMueble(r, m);
+    /**
+     * 🔺 POR PROFUNDIDAD. Antes el orden era fijo —muebles, gente, vos— y con
+     * personas de 3 rectángulos no se notaba. Con gente de 20 de alto sí: si
+     * te parabas detrás de la barra, te dibujabas ENCIMA de ella. Ahora lo
+     * colgado en la pared y la alfombra van primero, y el resto se ordena por
+     * dónde toca el piso cada uno — la misma regla del asalto.
+     */
+    const cosas = [];
+    for (const m of def.muebles) {
+      if (m.pared || m.tipo === 'alfombra') dibujarMueble(r, m);
+      else cosas.push({ y: pieDe(m), pinta: () => dibujarMueble(r, m) });
+    }
     // `sentado` sólo cambia el dibujo (una postura distinta): la detección es
     // la misma para cualquier `persona`, así que se pueden hablar igual.
     for (const p of def.puntos) {
       if (p.tipo !== 'persona') continue;
-      if (p.sentado) dibujarSentado(r, p); else dibujarPersona(r, p);
+      cosas.push({ y: piesDe(p), pinta: () => dibujarAlguien(r, p) });
     }
-    dibujarJugador(r);
+    cosas.push({ y: y + 5, pinta: () => dibujarJugador(r) });
+    cosas.sort((a, b) => a.y - b.y);
+    for (const c2 of cosas) c2.pinta();
     r.ctx.restore();
 
     // La noche, suave: acá adentro hay lámparas.
@@ -345,13 +403,24 @@ export function createInteriorScene(services) {
     r.rect(s.x - 8, s.y - 4, s.w + 16, 4, colors.intParedTop);
     r.rect(s.x - 8, s.y - 1, s.w + 16, 1, '#2f2116');
 
-    // --- El piso, en tablones alternados ---
-    for (let fy = s.y; fy < s.y + s.h; fy += 8) {
-      const claro = ((fy - s.y) / 8) % 2 === 0;
-      r.rect(s.x, fy, s.w, 8, claro ? colors.intPiso : colors.intPisoAlt);
-    }
-    for (let fx = s.x + 20; fx < s.x + s.w; fx += 40) {
-      r.rect(fx, s.y, 1, s.h, colors.intMaderaOsc);
+    /**
+     * 🔺 EL PISO, EN TABLONES DE VERDAD. Eran bandas de dos colores
+     * alternados con una junta cada 40 que cruzaba el piso entero: un
+     * cuadriculado. Ahora cada tablón tiene su tono, su filo de luz arriba, y
+     * las juntas de punta van SALTEADAS de un tablón al otro, que es como se
+     * clava un piso — con todas alineadas no hay piso que aguante.
+     */
+    for (let fy = s.y, fila = 0; fy < s.y + s.h; fy += 8, fila++) {
+      const base = fila % 2 === 0 ? colors.intPiso : colors.intPisoAlt;
+      const corrido = (fila * 23) % 40;
+      for (let fx = s.x - corrido, k = 0; fx < s.x + s.w; fx += 40, k++) {
+        const v = ((fila * 7 + k * 13) % 5) - 2;
+        const x0 = Math.max(s.x, fx), x1 = Math.min(s.x + s.w, fx + 40);
+        r.rect(x0, fy, x1 - x0, 8, tono(base, 1 + v * 0.035));
+        if (fx > s.x) r.rect(fx, fy, 1, 8, colors.intMaderaOsc);
+      }
+      r.rect(s.x, fy, s.w, 1, tono(base, 1.12));
+      r.rect(s.x, fy + 7, s.w, 1, tono(base, 0.72));
     }
 
     // --- Las paredes laterales y la de abajo ---
@@ -366,7 +435,92 @@ export function createInteriorScene(services) {
     r.rect(p.x - 12, p.y - 4, 24, 2, colors.intMadera);
   }
 
+  /**
+   * EL MUEBLE CON SU CARA DE ADELANTE: primero la cara, que baja hasta el
+   * piso, y después el dibujo de siempre corrido hacia arriba, que pasa a ser
+   * la tapa. Así no hubo que redibujar ningún mueble — el de antes ES la tapa.
+   */
   function dibujarMueble(r, m) {
+    const alto = ALTURA[m.tipo];
+    if (!alto) { dibujarTapa(r, m); return; }
+    const pie = pieDe(m);
+    let x1, ancho;
+    if (m.tipo === 'mesa') { x1 = m.x - 14; ancho = 28; }
+    else if (m.tipo === 'poker') { x1 = m.x - m.r; ancho = m.r * 2; }
+    else if (m.tipo === 'abrevadero') { x1 = m.x - m.w / 2; ancho = m.w; }
+    else if (m.tipo === 'fardo') { x1 = m.x - 8; ancho = 16; }
+    else { x1 = m.x; ancho = m.w; }
+
+    /**
+     * 🔻 Y LA TAPA SE ACHATA A LA MITAD, como todo lo horizontal en tres
+     * cuartos. Con la tapa a su profundidad entera, el mostrador de la armería
+     * medía de alto casi lo mismo que el armero: se le veían los pies por
+     * encima, como si flotara detrás, y al barman la barra le tapaba todo
+     * menos la cara. La tapa achatada es la que deja al que atiende visible
+     * de la cintura para arriba (ver `piesDe`).
+     *
+     * Se achata DIBUJANDO la tapa más angosta y no escalando el canvas: un
+     * canvas escalado a la mitad corre los bordes a medio pixel y la madera
+     * sale borroneada.
+     */
+    const fondo = (m.tipo === 'mesa' ? 20 : m.tipo === 'poker' ? m.r * 2 : m.tipo === 'fardo' ? 10 : m.h) / 2 * (m.tipo === 'escritorio' ? 2 : 1);
+    // (El escritorio va con la tapa entera: tiene los papeles encima y nadie atrÃ¡s.)
+    const tope = pie - alto;                // donde termina la cara y empieza la tapa
+
+    if (m.tipo === 'mesa') {
+      // Una mesa no es un bloque: es una tapa sobre cuatro patas.
+      for (const px of [x1 + 2, x1 + ancho - 4]) r.rect(px, tope, 2, alto, colors.intMaderaOsc);
+      r.rect(x1, tope, ancho, 2, tono(colors.intMadera, 0.7));
+      r.rect(x1, tope - fondo, ancho, fondo, colors.intMadera);
+      r.rect(x1, tope - fondo, ancho, 1.5, '#94663f');
+      return;
+    }
+    if (m.tipo === 'poker') {
+      // La redonda es un cilindro: la pata, el canto verde oscuro y la tapa.
+      r.rect(m.x - 3, tope, 6, alto, colors.intMaderaOsc);
+      const elipse = (cy, rx, ry, color) => {
+        r.ctx.save();
+        r.ctx.fillStyle = color;
+        r.ctx.beginPath(); r.ctx.ellipse(m.x, cy, rx, ry, 0, 0, Math.PI * 2); r.ctx.fill();
+        r.ctx.restore();
+      };
+      // La redonda NO se achata: el piso de adentro no lo está, y sus sillas están
+      // repartidas alrededor del círculo entero. Achatada quedaban flotando lejos.
+      const cy = tope - m.r;
+      elipse(cy + 2.5, m.r, m.r, tono(colors.intPañoBorde, 0.6));
+      elipse(cy, m.r, m.r, colors.intPañoBorde);
+      elipse(cy, m.r - 3, m.r - 3, colors.intPaño);
+      // Las cartas repartidas y unas fichas.
+      r.rect(m.x - 12, cy - 3, 5, 7, colors.intPapel);
+      r.rect(m.x - 5, cy - 4, 5, 7, colors.intPapel);
+      r.rect(m.x + 6, cy + 2, 6, 2, colors.mapaSello);
+      r.rect(m.x + 6, cy - 1, 6, 2, colors.text);
+      return;
+    }
+    if (m.tipo === 'fardo') {
+      // Un fardo de paja: la cara con sus dos hilos atados, y la tapa clara.
+      r.rect(x1, tope, ancho, alto, '#a88f4a');
+      for (const hx of [x1 + 4, x1 + ancho - 5]) r.rect(hx, tope, 1, alto, '#6e5a28');
+      for (let py = tope + 2; py < pie; py += 2) r.rect(x1, py, ancho, 0.5, '#957c3c');
+      r.rect(x1, tope - fondo, ancho, fondo, '#c2a75e');
+      r.rect(x1, tope - fondo, ancho, 1, '#d8bf74');
+      for (const hx of [x1 + 4, x1 + ancho - 5]) r.rect(hx, tope - fondo, 1, fondo, '#6e5a28');
+      return;
+    }
+
+    r.rect(x1, tope, ancho, alto, tono(colors.intMadera, 0.72));
+    for (let tx = x1 + 6; tx < x1 + ancho - 2; tx += 8) r.rect(tx, tope + 1, 1, alto - 2, tono(colors.intMadera, 0.55));
+    r.rect(x1, tope, ancho, 1, tono(colors.intMadera, 1.15));
+    r.rect(x1, pie - 1, ancho, 1, tono(colors.intMadera, 0.45));
+    // La tapa: el mismo dibujo de siempre, pero con la mitad de fondo y
+    // apoyada justo encima de la cara.
+    const medio = m.tipo === 'abrevadero'
+      ? { ...m, y: tope - fondo / 2, h: fondo }
+      : { ...m, y: tope - fondo, h: fondo };
+    dibujarTapa(r, medio);
+  }
+
+  function dibujarTapa(r, m) {
     switch (m.tipo) {
       case 'mostrador':
       case 'barra':
@@ -417,19 +571,25 @@ export function createInteriorScene(services) {
       case 'pesebre': {
         r.rect(m.x, m.y, m.w, m.h, colors.intMaderaOsc);
         r.rect(m.x + 3, m.y + 3, m.w - 6, m.h - 6, '#6b5236');
-        // Los barrotes del box.
+        /**
+         * 🔺 EL CABALLO DEL BOX era cuatro rectángulos. Ahora es el sprite,
+         * parado y al mismo tamaño que en el campamento y el pueblo — y va
+         * ANTES de los barrotes, que le tapan las patas: está adentro del box,
+         * no pegado encima. Son los dos que se venden: el primer box tiene el
+         * Criollo y el segundo el Mustang, con su pelaje.
+         */
+        if (m.caballo) {
+          const cual = def.muebles.filter((z) => z.tipo === 'pesebre' && z.caballo).indexOf(m);
+          const respira = Math.sin(scroll * 1.6 + m.x) * 0.4;
+          dibujarAnimal(r, m.x + m.w / 2, m.y + m.h - 12 + respira, null, 0, 0, 0,
+            cual === 1 ? 'mustang' : 'criollo', false, ESCALA_PARADO);
+        }
+        // Los barrotes del box, delante del animal.
         for (let i = m.x + 8; i < m.x + m.w - 6; i += 12) {
           r.rect(i, m.y + m.h - 16, 2, 16, colors.intMadera);
+          r.rect(i, m.y + m.h - 16, 1, 16, tono(colors.intMadera, 1.2));
         }
-        if (m.caballo) {
-          const cx = m.x + m.w / 2;
-          const cy = m.y + m.h / 2 - 4;
-          const respira = Math.sin(scroll * 1.6 + m.x) * 0.5;
-          r.rect(cx - 11, cy + respira, 22, 10, colors.horse);
-          r.rect(cx - 11, cy + respira, 22, 3, colors.horseDark);
-          r.rect(cx + 9, cy - 2 + respira, 6, 6, colors.horse);
-          r.rect(cx - 13, cy - 1 + respira, 4, 5, colors.horseMane);
-        }
+        r.rect(m.x + 3, m.y + m.h - 17, m.w - 6, 2, colors.intMadera);
         break;
       }
 
@@ -634,27 +794,63 @@ export function createInteriorScene(services) {
     }
   }
 
-  function dibujarPersona(r, p) {
-    const paso = Math.sin(scroll * 3 + p.x) * 0.5;
-    r.ctx.globalAlpha = 0.22;
-    r.box(p.x, p.y + 6, 4, 2, '#000');
-    r.ctx.globalAlpha = 1;
-    r.box(p.x, p.y + paso, 4, 5, colors.puebloVecino);
-    r.rect(p.x - 5, p.y - 6 + paso, 11, 2, colors.playerHat);
+  /** Una sombra achatada en el piso, como la de todo el resto del juego. */
+  function sombra(r, sx, sy, rx) {
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.25;
+    r.ctx.fillStyle = '#000';
+    r.ctx.beginPath();
+    r.ctx.ellipse(sx, sy, rx, rx * 0.4, 0, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.ctx.restore();
   }
 
-  /** Los que están sentados en la cantina. No hacen nada, y hacen el lugar. */
-  function dibujarSentado(r, s) {
-    r.box(s.x, s.y - 4, 4, 4, colors.puebloVecino2);
-    r.rect(s.x - 5, s.y - 10, 11, 2, colors.playerHat);
+  /**
+   * 🔺 LA GENTE DE ADENTRO ERAN TRES RECTÁNGULOS, igual que la del pueblo y el
+   * campamento. Ahora son personas del juego, cada una con su ropa (`ROPA_DE`).
+   * Y TE MIRAN cuando te acercás: el barman parado detrás de la barra mirando
+   * a la cámara mientras le hablás de costado se veía como un muñeco.
+   */
+  /**
+   * DÓNDE TIENE LOS PIES CADA UNO. El que atiende detrás de un mostrador va
+   * PEGADO a él, no a la distancia que lo ponen los datos: los datos dicen
+   * dónde se lo puede ir a hablar, y ahí quedaba un paso atrás, flotando con
+   * los pies a la vista por encima de la tapa. Pegado, el mostrador le tapa
+   * las piernas y se lo ve de la cintura para arriba, que es como se ve a
+   * cualquiera que atiende.
+   */
+  function piesDe(p) {
+    if (p.sentado) return p.y + 3;
+    const detras = def.muebles.find((m) => (m.tipo === 'barra' || m.tipo === 'mostrador')
+      && p.x >= m.x && p.x <= m.x + m.w && m.y - p.y > 0 && m.y - p.y < 24);
+    return detras ? detras.y + 4 : p.y + 5;
+  }
+
+  function dibujarAlguien(r, p) {
+    const pies = piesDe(p);
+    const cerca = Math.hypot(x - p.x, y - p.y) < 70;
+    sombra(r, p.x, pies, 6);
+    dibujarGente(r, {
+      tipo: ROPA_DE[p.id] || 'pasajero',
+      x: p.x,
+      pies,
+      angulo: cerca && !p.sentado ? Math.atan2(y - p.y, x - p.x) : Math.PI / 2,
+      postura: p.sentado ? 'sentado' : 'pie',
+    });
   }
 
   function dibujarJugador(r) {
-    r.ctx.globalAlpha = 0.25;
-    r.box(x, y + 6, 5, 2, '#000');
-    r.ctx.globalAlpha = 1;
-    r.box(x, y, 5, 5, colors.player);
-    r.rect(x - 6, y - 6, 13, 3, colors.playerHat);
+    sombra(r, x, y + 5, 6);
+    yo.x = x;
+    yo.y = y;
+    dibujarGente(r, {
+      tipo: 'jugador',
+      x,
+      pies: y + 5,
+      angulo: mirando,
+      fase: faseDeAndar(yo),
+      panuelo: true,
+    });
   }
 
   function dibujarInterfaz(r) {

@@ -13717,6 +13717,48 @@ caballos, caminando en las cuatro direcciones.
 
 ---
 
+### 🍺 Los interiores: la gente, los muebles con cara y el piso
+
+La cantina, el establo, la armería, la oficina del sheriff y la casa de empeños.
+La vista ya era de tres cuartos a medias —una franja de pared al fondo y el piso
+abajo—, pero los muebles eran sólo su tapa apoyada en el suelo.
+
+- **La gente son personas**, cada una con ropa que ya tenía el juego
+  (`ROPA_DE`): el barman y los que comen de traje, los que juegan a las cartas
+  y el caballerizo de vaquero, el perista de rico, el ayudante de sheriff. Y
+  **te miran cuando te acercás**.
+- 🔺 **Los muebles tienen cara de adelante** (`ALTURA`): la barra, los
+  mostradores, las mesas —sobre cuatro patas—, la de póker —un cilindro—, el
+  abrevadero y los fardos de paja. Antes eran planos pintados en el piso.
+- 🔻 **Y los mostradores, con la tapa achatada.** Al levantarlos con la tapa a
+  su fondo entero, el mostrador de la armería medía casi lo mismo que el
+  armero: se le veían los pies por encima, como si flotara detrás, y al barman
+  la barra le tapaba todo menos la cara. Con la tapa a la mitad —la regla de lo
+  horizontal en tres cuartos— y el que atiende PEGADO al mostrador (`piesDe`),
+  se lo ve de la cintura para arriba.
+- **La mesa de póker NO se achata**, y fue un error corregido en el camino: el
+  piso de adentro no está achatado y sus sillas están repartidas alrededor del
+  círculo entero. Achatada, quedaban flotando lejos de la mesa.
+- **Se dibuja por profundidad**: detrás de la barra, la barra te tapa.
+- **Los caballos del establo** son el sprite, dentro de su box y detrás de los
+  barrotes: el primero es el Criollo y el segundo el Mustang, con su pelaje.
+- **El piso son tablones de verdad**, cada uno con su tono y las juntas
+  salteadas. Antes eran bandas de dos colores con juntas alineadas: un
+  cuadriculado.
+
+Sin errores en 4.550 cuadros: los cinco interiores de día y de noche, caminando
+en las cuatro direcciones y usando la tecla de acción.
+
+🔻 **QUEDA LA PANTALLA DE COMPRA DEL ESTABLO** (`shopScene`), cuyo caballo
+todavía está dibujado con código. No se tocó a propósito: ese caballo tiene un
+ciclo entero de comer —baja la cabeza, mastica, la sube, sacude la cola— que el
+sprite parado no tiene, y va tan grande que el sprite se vería en bloques.
+Cambiarlo es una decisión de Santi.
+
+**⚠️ NO JUGADO.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

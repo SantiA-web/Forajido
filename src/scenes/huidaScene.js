@@ -9,8 +9,10 @@
  *    diferencia decide si se acercan o se quedan. Cuando uno queda a
  *    `perdida` detrás, lo perdiste. Se termina cuando no queda ninguno
  *    siguiéndote, porque los perdiste o porque los tiraste.
- *  - W/S esquivan, el mouse apunta y el clic dispara, igual que en el asalto.
- *    [R] recarga.
+ *  - W/S esquivan y [A] frena (para que se te pongan al costado). El mouse
+ *    apunta, el clic dispara, el clic derecho cierra la mira y [R] recarga,
+ *    igual que en el asalto. Tirar para atrás se puede, pero cuesta puntería
+ *    y el caballo se tuerce solo.
  *  - CADA TIRO QUE TE PEGAN TE HACE SOLTAR UNA BOLSA. Nunca te agarran: lo peor
  *    que puede pasar es llegar con menos plata.
  *  - Los obstáculos del galope cuestan distancia: chocar te frena y se te
@@ -79,6 +81,7 @@ export function createHuidaScene(services) {
       fogonazo: 0,
       choque: 0,
       frena: false,
+      apuntado: 0,
       // El caballo que se tuerce solo mientras mirás para atrás.
       desvio: 0,
       desvioDir: 0,
@@ -211,6 +214,10 @@ export function createHuidaScene(services) {
     const dy = (input.isDown('KeyS') || input.isDown('ArrowDown') ? 1 : 0)
              - (input.isDown('KeyW') || input.isDown('ArrowUp') ? 1 : 0);
     yo.frena = input.isDown('KeyA') || input.isDown('ArrowLeft');
+    // El clic derecho cierra la mira en `tiempoCierre`, igual que en el asalto.
+    const paso = dt / CONFIG.mira.tiempoCierre;
+    yo.apuntado = input.mouse.right ? Math.min(1, yo.apuntado + paso) : Math.max(0, yo.apuntado - paso);
+    const manejo = 1 - (1 - J.manejoApuntando) * yo.apuntado;
     desviarse(dt);
     if (yo.choque > 0) {
       // Chocaste: el caballo casi se para y no lo podés manejar. Mismo precio
@@ -218,7 +225,7 @@ export function createHuidaScene(services) {
       yo.choque -= dt;
     } else {
       const tuerce = yo.desvio > 0 ? yo.desvioDir * J.atras.desvioVelocidad : 0;
-      yo.y = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + (dy * J.velocidadY + tuerce) * dt));
+      yo.y = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + (dy * J.velocidadY * manejo + tuerce) * dt));
       const ob = chocaCon(yo.x, yo.y);
       if (ob) {
         ob.golpeado = true;
@@ -289,10 +296,16 @@ export function createHuidaScene(services) {
     return pasado <= 0 ? 0 : Math.min(1, pasado / (180 - tope));
   }
 
-  /** Tu dispersión ahora: la del arma a caballo, y más si mirás para atrás. */
+  /**
+   * Tu dispersión ahora: la del arma (la apuntada si tenés el clic derecho),
+   * por lo que se pierde a caballo, y más si mirás para atrás.
+   */
   function dispersionAhora() {
     const t = cuantoAtras();
-    return arma.spread * H.jugador.dispersionACaballo * (1 + t * (H.jugador.atras.dispersionMax - 1));
+    const suelta = arma.spread;
+    const apuntada = arma.spreadApuntado ?? suelta;
+    const base = suelta + (apuntada - suelta) * yo.apuntado;
+    return base * H.jugador.dispersionACaballo * (1 + t * (H.jugador.atras.dispersionMax - 1));
   }
 
   /**
@@ -383,6 +396,28 @@ export function createHuidaScene(services) {
         j.aimTimer = J.apuntar;
         j.aimDir = Math.atan2((yo.y - 8) - (j.y - 14), yo.x - (j.x + 6));
         j.cooldown = J.cadencia + rng.range(0, J.cadenciaAzar);
+      }
+    }
+    if (!yendose) separarJinetes();
+  }
+
+  /**
+   * NO SE MONTAN UNO ENCIMA DEL OTRO. Cada uno tiene su carril, pero pegado a
+   * un borde del campo los carriles se aplastan contra el borde y quedaban tres
+   * caballos en el mismo lugar. Si dos se pisan, el de atrás le cede el paso:
+   * se queda `SEPARA_X` detrás del de adelante.
+   */
+  function separarJinetes() {
+    const SEPARA_X = 36;
+    const SEPARA_Y = 24;
+    const activos = siguiendo().sort((a, b) => b.x - a.x);
+    for (let i = 1; i < activos.length; i++) {
+      const atras = activos[i];
+      for (let k = 0; k < i; k++) {
+        const adelante = activos[k];
+        if (Math.abs(adelante.y - atras.y) < SEPARA_Y && adelante.x - atras.x < SEPARA_X) {
+          atras.x = adelante.x - SEPARA_X;
+        }
       }
     }
   }
@@ -733,7 +768,10 @@ export function createHuidaScene(services) {
       : `${arma.short} ${'●'.repeat(yo.balas)}${'○'.repeat(Math.max(0, arma.magazine - yo.balas))}`;
     r.text(municion, r.width - 6, 9, yo.recargando > 0 ? colors.enemyAlert : colors.textDim, 'right');
 
-    if (tiempo < 4 && !fin) r.text(T.huida.teclas, centro, r.height - 7, colors.textDim);
+    if (tiempo < 5 && !fin) {
+      r.text(T.huida.teclas[0], centro, r.height - 17, colors.textDim);
+      r.text(T.huida.teclas[1], centro, r.height - 7, colors.textDim);
+    }
   }
 
   return { enter, exit, update, render };

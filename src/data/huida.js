@@ -64,6 +64,17 @@ export const HUIDA = {
     dispersionACaballo: 3,
 
     /**
+     * APUNTAR CON CLIC DERECHO, como en el asalto *(Santi: "o que exista la
+     * posibilidad de apuntar con click derecho")*: la dispersión pasa a la
+     * `spreadApuntado` del arma (la mitad) en `CONFIG.mira.tiempoCierre`.
+     *
+     * Y SE PAGA IGUAL QUE EN EL ASALTO, CON EL CUERPO: allá apuntando caminás
+     * más lento; acá, con la cabeza en el arma, manejás peor el caballo — W/S
+     * corren a esta fracción. Sin un costo, se apuntaría siempre.
+     */
+    manejoApuntando: 0.6,
+
+    /**
      * HASTA DÓNDE GIRA EL TORSO CÓMODO, en grados desde adelante *(Santi: "el
      * jugador no es un buho")*.
      *
@@ -95,7 +106,12 @@ export const HUIDA = {
      *    corregir con W/S, si te das cuenta.
      */
     atras: {
-      dispersionMax: 4,
+      /**
+       * 🔻 BAJÓ DE ×4 A ×1,5 *(Santi: "el circulo se agranda un montón, no me
+       * imagino como sería con el Smith")*. Con ×4 el Smith (0,085 × 3 a
+       * caballo) llegaba al tope del dibujo y el tiro real se abría a ±58°.
+       */
+      dispersionMax: 1.5,
       desvioCada: 1.2,
       desvioAzar: 0.8,
       desvioDura: 1.0,

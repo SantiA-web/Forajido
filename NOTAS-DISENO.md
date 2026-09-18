@@ -13980,6 +13980,47 @@ más plata que correr: es una decisión de verdad.
 
 Quedó en ×4: tirar para atrás sirve, pero para limpiar hay que frenar.
 
+#### Quinta vuelta: ×1,5 hacia atrás, y el clic derecho apunta
+
+*(Santi: "el circulo se agranda un montón, no me imagino como sería con el
+Smith. Haría que el circulo se multiplique por 1,5 o que existe la
+posibilidad de apuntar con click derecho")*
+
+Tenía razón con el Smith: 0,085 × 3 a caballo × 4 hacia atrás llegaba al tope
+del dibujo (40) y el tiro real se abría a ±58°. Se hicieron las dos cosas:
+
+- **Derecho hacia atrás, ×1,5** (`atras.dispersionMax`, era 4).
+- **Clic derecho apunta**, con la misma regla del asalto: la dispersión pasa a
+  la `spreadApuntado` del arma (la mitad) en `CONFIG.mira.tiempoCierre`
+  (0,35 s). **Y se paga igual que allá, con el cuerpo**: allá caminás más
+  lento; acá manejás peor, W/S al 60% (`manejoApuntando`). Sin un costo se
+  apuntaría siempre.
+- **El atajo de prueba ahora trae 5 jinetes** (pedido de Santi).
+
+Dos arreglos que salieron mirando las fotos: **los jinetes se encimaban**
+cuando ibas pegado a un borde del campo (los carriles se aplastaban contra el
+borde; ahora el de atrás cede el paso y queda 36 detrás del de adelante), y
+**el cartel de teclas no entraba** en la pantalla (ahora son dos renglones).
+
+**Medido**, Criollo contra 5 jinetes, 15 huidas por caso (hay bastante ruido
+en la plata perdida, ±5 puntos):
+
+| | Colt | Smith |
+|---|---|---|
+| Esquivando sin tirar | 15 s, pierde 12% | 17 s, 21% |
+| Corriendo y tirando para atrás | 13 s, baja 1,6, pierde 10% | 12 s, baja 2,3, pierde 11% |
+| Lo mismo, apuntando | 12 s, baja 1,9, pierde 19% | 11 s, baja 2,5, pierde 7% |
+| Frenando para pelear | 10 s, baja los 5, pierde 33% | 7 s, baja los 5, pierde 21% |
+| Lo mismo, apuntando | 10 s, baja los 5, pierde 41% | 6 s, baja los 5, pierde 13% |
+
+**En la huida el Smith es mejor que el Colt**: tira más seguido (0,28 contra
+0,40) y a caballo la puntería fina del Colt pesa menos. Tiene sentido —es un
+arma de pelea sucia de cerca— pero queda anotado por si se quiere que el
+Colt tenga su lugar acá también.
+
+Sin errores en 21.362 cuadros con teclas, clic y clic derecho al azar: los dos
+caballos, las dos armas, de día y de noche.
+
 Sin errores en 19.753 cuadros con teclas y mouse al azar: los dos caballos, de
 día y de noche, con 1, 2, 4 y 5 jinetes.
 
@@ -13988,7 +14029,7 @@ día y de noche, con 1, 2, 4 y 5 jinetes.
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*
 
 En el campamento, **[1]** te larga en la huida con el Criollo y **[2]** con el
-Mustang: tres jinetes y $1000 de mentira. No toca tu caballo ni tu plata, y
+Mustang: cinco jinetes y $1000 de mentira. No toca tu caballo ni tu plata, y
 los resultados dicen que fue una prueba (`prueba` en huidaScene.js, que
 saltea `applyRaidResult`). El cartel está arriba a la izquierda.
 

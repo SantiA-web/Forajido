@@ -320,7 +320,7 @@ export function createCampScene(services) {
     /**
      * 🧪 ATAJO DE PRUEBA *(Santi: "podrías simplificarme algo para que yo pueda
      * probar los dos caballos rápidamente en la huída?")*. [1] te larga en la
-     * huida con el Criollo y [2] con el Mustang, con tres jinetes y $1000 de
+     * huida con el Criollo y [2] con el Mustang, con cinco jinetes y $1000 de
      * mentira. No toca tu caballo ni tu plata (ver `prueba` en huidaScene.js).
      *
      * ⚠️ SACARLO antes de mostrar el juego: está anotado en NOTAS-DISENO.md.
@@ -329,7 +329,7 @@ export function createCampScene(services) {
       scenes.goTo('huida', {
         prueba: true,
         caballo: input.wasPressed('Digit2') ? 'mustang' : 'criollo',
-        jinetes: 3,
+        jinetes: 5,
         summary: { outcome: 'escaped', money: 1000, collected: 1000, kills: 0, objetos: [], leftBehind: 0, alarm: true },
       });
       return;

@@ -1738,10 +1738,12 @@ dice cuánto le falta al más cercano para quedar perdido.
 - **`A` frena**: tu caballo baja a 85 y los jinetes se te ponen al costado.
   Frenar es para pelear: al costado les tirás cómodo, pero también te tiran
   ellos de cerca.
-- A caballo se tira peor: tu dispersión se multiplica por 3.
+- A caballo se tira peor: tu dispersión se multiplica por 3. **Con el clic
+  derecho apuntás**, como en el asalto (la mira se cierra a la mitad), pero con
+  la cabeza en el arma manejás peor: W/S van al 60%.
 - **No sos un búho.** Tirar hasta 150° del lado de tu brazo (abajo en la
   pantalla) y 110° del otro es cómodo. Más atrás podés, pero **el círculo se
-  agranda** —hasta 4 veces derecho hacia atrás— y, como no ves adelante,
+  agranda** —hasta 1,5 veces derecho hacia atrás— y, como no ves adelante,
   **el caballo se tuerce solo** cada tanto, un segundo, para arriba o para
   abajo. Corregilo con `W/S` o te comés una piedra.
 - Antes de tirar, cada jinete **avisa**: se frena, levanta el arma hacia vos y

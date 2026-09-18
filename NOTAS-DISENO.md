@@ -13825,6 +13825,35 @@ saltando huecos y agachándose, más galope y campamento.
 
 ---
 
+#### 🔻 Y el techo tenía que ser de tres cuartos, no plano
+
+*(Santi: "la parte del techo también debería verse en 3/4, porque ahora se ve
+como algo plano cuando no debería serlo")*. Tenía razón, y eran tres cosas:
+
+1. **Por encima asomaba la pared de adentro**, con sus ventanillas vistas desde
+   el pasillo. El techo cubría sólo el piso del vagón, y eso lo hacía parecer una
+   lámina tirada adentro y no una tapa arriba de las paredes. Ahora sube el alto
+   de la pared del fondo (`CONFIG.tresCuartos.alturaPared`) y la tapa.
+2. **Era del mismo tono de punta a punta.** Un techo de tren es curvo: ahora la
+   mitad de allá se aleja en sombra, el lomo agarra la luz y la mitad de acá baja
+   hacia vos (`arco`). Y los tramos dejaron de tener cada uno su tono: con eso el
+   techo se partía en columnas verticales que le ganaban a la curva.
+3. **Lo de encima no tenía alto.** La linterna tiene su cara de acá con los
+   vidrios (10 de alto), la pasarela su canto, la garita del cabús es una caja
+   con su cara y su sombra, la escotilla su borde. Y el alero de acá tira sombra
+   sobre la pared de afuera.
+
+La franja pisable no se movió: cae casi justo en el lomo del techo nuevo.
+
+**Lo que no cambió, y conviene saberlo:** la cámara del asalto mira casi desde
+arriba —es la que deja ver el piso de adentro—, así que el techo sigue siendo
+sobre todo SUPERFICIE. Para que se vea como desde el caballo (la pared alta y el
+techo angosto) habría que inclinar la cámara al subir al techo.
+
+Sin errores en 3.440 cuadros, de día y de noche.
+
+---
+
 ### ✅ ETAPA 6 CERRADA
 
 *(Santi: "preferiría pasar a una siguiente etapa")*. Se cierra con el

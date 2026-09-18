@@ -13926,6 +13926,18 @@ choque le devuelve la ventaja a la ley. No es un caso real —alguien que
 juega mueve el caballo—, pero si se ve pasar, el número para mirar es el
 largo del choque.
 
+#### 🧪 El atajo para probarla
+
+*(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*
+
+En el campamento, **[1]** te larga en la huida con el Criollo y **[2]** con el
+Mustang: tres jinetes y $1000 de mentira. No toca tu caballo ni tu plata, y
+los resultados dicen que fue una prueba (`prueba` en huidaScene.js, que
+saltea `applyRaidResult`). El cartel está arriba a la izquierda.
+
+⚠️ **SACARLO antes de mostrar el juego:** son las dos marcas 🧪 de
+`campScene.js`.
+
 #### La mira: qué tan real es el círculo
 
 *(Santi: "que tal real es el circulo de la putería? hay probabilidad real de

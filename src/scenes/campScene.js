@@ -317,6 +317,24 @@ export function createCampScene(services) {
     // Con el cajón abierto no caminás: tenés las dos manos adentro.
     if (menu.update(input)) return;
 
+    /**
+     * 🧪 ATAJO DE PRUEBA *(Santi: "podrías simplificarme algo para que yo pueda
+     * probar los dos caballos rápidamente en la huída?")*. [1] te larga en la
+     * huida con el Criollo y [2] con el Mustang, con tres jinetes y $1000 de
+     * mentira. No toca tu caballo ni tu plata (ver `prueba` en huidaScene.js).
+     *
+     * ⚠️ SACARLO antes de mostrar el juego: está anotado en NOTAS-DISENO.md.
+     */
+    if (input.wasPressed('Digit1') || input.wasPressed('Digit2')) {
+      scenes.goTo('huida', {
+        prueba: true,
+        caballo: input.wasPressed('Digit2') ? 'mustang' : 'criollo',
+        jinetes: 3,
+        summary: { outcome: 'escaped', money: 1000, collected: 1000, kills: 0, objetos: [], leftBehind: 0, alarm: true },
+      });
+      return;
+    }
+
     if (mensaje) {
       mensaje.life -= dt;
       if (mensaje.life <= 0) mensaje = null;
@@ -1019,6 +1037,8 @@ export function createCampScene(services) {
 
   function dibujarInterfaz(r) {
     r.text(T.camp.title, r.width / 2, 12, colors.text);
+    // 🧪 El atajo de prueba de la huida (ver `update`). Sacarlo con él.
+    r.text(T.huida.atajo, 8, 26, colors.textDim, 'left');
     r.text(`$${gameState.money}`, r.width - 8, 12, colors.bagLoot, 'right');
     if (gameState.bounty > 0) {
       r.text(`☠ $${gameState.bounty}`, 8, 12, colors.enemyAlert, 'left');

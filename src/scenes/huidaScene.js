@@ -28,7 +28,7 @@
 import { CONFIG } from '../data/config.js';
 import { HUIDA as H } from '../data/huida.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
-import { caballoActual, APROXIMACION as A } from '../data/horse.js';
+import { caballoActual, HORSES, APROXIMACION as A } from '../data/horse.js';
 import { applyRaidResult, gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
@@ -42,7 +42,7 @@ export function createHuidaScene(services) {
   const { renderer, input, rng, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
 
-  let summary, caballo, arma;
+  let summary, caballo, arma, prueba;
   let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, proximoObstaculo;
   let suelo, tiempo, dineroInicial, perdido, soltadas, derribados;
   let fin, temblor;
@@ -59,7 +59,10 @@ export function createHuidaScene(services) {
     hud.hide();
     mostrarCursorDelSistema(false);
     summary = params.summary || { money: 0, kills: 0, outcome: 'escaped' };
-    caballo = caballoActual(gameState);
+    // `caballo` y `prueba` los manda el atajo de prueba del campamento: probar
+    // cualquier caballo sin tenerlo, y sin que el resultado cuente.
+    caballo = HORSES[params.caballo] || caballoActual(gameState);
+    prueba = !!params.prueba;
     arma = params.arma || WEAPONS[DEFAULT_WEAPON];
 
     const W = renderer.width;
@@ -481,7 +484,9 @@ export function createHuidaScene(services) {
     summary.huida = { jinetes: jinetes.length, derribados, bolsas: soltadas, perdido };
     // Un jinete derribado acá es un jinete derribado: cuenta como en el asalto.
     summary.kills = (summary.kills || 0) + derribados;
-    applyRaidResult(summary);
+    // Una prueba no suma plata, ni recompensa, ni asaltos: sólo muestra cómo te fue.
+    if (prueba) summary.prueba = caballo.name;
+    else applyRaidResult(summary);
     scenes.goTo('results', summary);
   }
 

@@ -52,7 +52,8 @@ export function createResultsScene(services) {
 function buildPanel(s) {
   const escaped = s.outcome === 'escaped';
   const title = escaped ? T.results.escaped : T.results.capturedTime;
-  const subtitle = escaped
+  const subtitle = s.prueba ? T.results.subPrueba(s.prueba)
+    : escaped
     ? T.results.subEscaped
     : s.outcome === 'capturedDead' ? T.results.subDead : T.results.subTime;
 

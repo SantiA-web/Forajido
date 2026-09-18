@@ -235,6 +235,7 @@ export const T = {
     bolsas: (n) => (n === 1 ? 'soltaste 1 bolsa' : `soltaste ${n} bolsas`),
     recargando: 'RECARGANDO',
     seQuedo: 'SE QUEDÓ ATRÁS',
+    atajo: 'PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG',
     teclas: '[W/S] ESQUIVAR   [CLIC] DISPARAR   [R] RECARGAR',
   },
 
@@ -571,6 +572,7 @@ export const T = {
     capturedDead: 'CAPTURADO',
 
     subEscaped: 'Llegaste al furgón de cola y saltaste. El caballo estaba ahí.',
+    subPrueba: (caballo) => `Prueba de la huida con el ${caballo}. No cuenta para nada.`,
     subTime: 'El tren llegó a la estación con vos adentro.',
     subDead: 'Caíste herido. Te esposaron ahí mismo.',
 

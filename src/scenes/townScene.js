@@ -31,7 +31,7 @@ import { gameState } from '../state/gameState.js';
 import { createCamera } from '../engine/camera.js';
 import { T } from '../text/es.js';
 import { dibujarPersona, faseDeAndar, tono } from '../entities/figura.js';
-import { dibujarAnimal } from '../entities/caballo.js';
+import { dibujarAnimal, ESCALA_PARADO } from '../entities/caballo.js';
 import { caballoActual } from '../data/horse.js';
 
 /**
@@ -216,8 +216,11 @@ export function createTownScene(services) {
   function moverGente(dt) {
     for (const g of gente) {
       const cerca = Math.hypot(g.x - x, (PUEBLO.calleY + 6) - y) <= g.alcance + 6;
+      g.parado = cerca;
       if (cerca) continue;
       g.x += g.dir * g.vel * dt;
+      // Lo que caminó, para que los pies acompañen (ver `dibujarVecino`).
+      g.recorrido = (g.recorrido || 0) + g.vel * dt;
       if (g.x > g.inicio + g.rango) { g.x = g.inicio + g.rango; g.dir = -1; }
       if (g.x < g.inicio - g.rango) { g.x = g.inicio - g.rango; g.dir = 1; }
     }
@@ -414,10 +417,6 @@ export function createTownScene(services) {
   function dibujarCaballo(r) {
     const c = PUEBLO.caballo;
     const cy = PUEBLO.calleY;
-    // El palenque.
-    r.rect(c.x - 18, cy - 14, 3, 18, colors.puebloMaderaOsc);
-    r.rect(c.x + 15, cy - 14, 3, 18, colors.puebloMaderaOsc);
-    r.rect(c.x - 18, cy - 12, 36, 2, colors.puebloMadera);
 
     /**
      * 🔺 Y EL CABALLO ERA CUATRO RECTÁNGULOS, de cuando el del galope también
@@ -432,8 +431,16 @@ export function createTownScene(services) {
     r.ctx.fill();
     r.ctx.restore();
     const respira = Math.sin(scroll * 1.6) * 0.4;
-    dibujarAnimal(r, c.x + 2, cy + 4 + respira, null, 0, 0, 0,
-      caballoActual(gameState).id, !gameState.esDeDia);
+    dibujarAnimal(r, c.x + 2, cy + 1 + respira, null, 0, 0, 0,
+      caballoActual(gameState).id, !gameState.esDeDia, ESCALA_PARADO);
+
+    // El palenque, DESPUÉS del caballo: si no, el animal agrandado lo tapaba
+    // entero (ver el del campamento).
+    r.rect(c.x - 20, cy - 8, 3, 18, colors.puebloMaderaOsc);
+    r.rect(c.x + 17, cy - 8, 3, 18, colors.puebloMaderaOsc);
+    r.rect(c.x - 22, cy - 6, 44, 3, colors.puebloMadera);
+    r.rect(c.x - 22, cy - 6, 44, 1, tono(colors.puebloMadera, 1.25));
+    r.rect(c.x + 15, cy - 3, 1, 5, '#2a1c12');
   }
 
   /**
@@ -464,9 +471,17 @@ export function createTownScene(services) {
       pies: cy,
       angulo: g.dir > 0 ? 0 : Math.PI,
       escala: g.id === 'chico' ? 0.72 : 1,
-      // La fase se guarda en el propio vecino: si se le pasara un objeto nuevo
-      // en cada cuadro, no habría con qué comparar y nunca caminaría.
-      fase: faseDeAndar(g),
+      /**
+       * 🐛 LOS PIES SALEN DE LO QUE CAMINÓ, no de `faseDeAndar` *(Santi: "los
+       * civiles en el pueblo deberían caminar realmente, no arrastrar sus
+       * pies")*. Esa función da por PARADO a quien avanza menos de 18
+       * unidades por segundo —es para que un guardia que se asoma y se esconde
+       * no trote en el lugar—, y tres de los cuatro vecinos caminan a 6, 9 y
+       * 14. O sea que para el dibujo estaban quietos mientras se deslizaban:
+       * los pies clavados y el cuerpo corriéndose. Ellos no se asoman a
+       * ningún lado, así que alcanza con contar lo que caminaron.
+       */
+      fase: g.parado ? null : g.recorrido || 0,
       modo: 'caminar',
     });
   }
@@ -486,8 +501,8 @@ export function createTownScene(services) {
       x,
       pies: y + 4,
       angulo: mirando,
+      // Sin `modo: 'caminar'`: el mismo paso del tren (ver el jugador en el campamento).
       fase: faseDeAndar(yo),
-      modo: 'caminar',
       panuelo: true,
     });
 

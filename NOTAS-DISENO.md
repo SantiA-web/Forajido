@@ -13677,6 +13677,46 @@ lo mismo que se acaba de hacer dos veces, así que va derecho.
 
 ---
 
+### 🔧 Después de mirarlo: cinco ajustes al campamento y al pueblo
+
+*(Santi: "quiero que ajustes las colisiones en el campamento. Y el letrero para
+ir al asalto cámbialo por un mapa viejo pegado a un cartel de madera […]
+deberías agrandar la silueta del caballo en el campamento y en el pueblo. Y los
+civiles en el pueblo deberían caminar realmente, no arrastrar sus pies. Y por
+último, el personaje del jugador camina demasiado rápido")*.
+
+- **Las cosas del campamento son sólidas.** No lo eran: con la caja de 13 de
+  antes nadie lo notaba, pero con una persona de 20 en tres cuartos se veía
+  clarito cómo atravesabas la carpa, el cajón y el fuego. Cada cosa tiene su
+  HUELLA EN EL PISO (`HUELLAS`), medida en el mundo redondo y no en el dibujo;
+  si entrás en una, te saca por el lado más corto, así se puede caminar pegado
+  al borde. Medido: subiendo hacia la carpa, el jugador se frena en −15, que es
+  justo el borde de la huella más lo que ocupan los pies. Y los alcances para
+  usar cada cosa siguen llegando desde afuera.
+- **El cartel es un mapa viejo clavado a una tabla**: papel amarillento con la
+  vía punteada, el río, dos cerros y la cruz roja, cuatro clavos y una punta
+  despegada. Sólo dibujo.
+- **El caballo parado va a 1,3** (`ESCALA_PARADO`, en entities/caballo.js, uno
+  solo para las dos pantallas): la cruz pasa de 16,5 a 21, la altura de la
+  cabeza. Y va DETRÁS del palenque: agrandado, tapaba los postes y el
+  travesaño enteros y quedaba un caballo suelto con un palo asomando.
+- 🐛 **Los vecinos se deslizaban.** `faseDeAndar` da por parado a quien avanza
+  menos de 18 unidades por segundo —es para que un guardia que se asoma y se
+  esconde no trote en el lugar—, y tres de los cuatro vecinos caminan a 6, 9 y
+  14. Para el dibujo estaban quietos mientras el cuerpo se corría. Ahora los
+  pies salen de lo que caminaron.
+- 🐛 **Tus pies iban en cámara rápida, y fue un error de acá.** Al conectar la
+  persona le puse `modo: 'caminar'`, que da un paso cada 14 unidades: a 78 por
+  segundo son **5,6 pasos por segundo**. En el tren usás el trote, un paso cada
+  20: **3,9**, que nunca molestó. Ahora es el mismo.
+
+Sin errores en 5.280 cuadros: campamento y pueblo de día y de noche, con los dos
+caballos, caminando en las cuatro direcciones.
+
+**⚠️ NO JUGADO.**
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

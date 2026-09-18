@@ -45,7 +45,7 @@ const ALTO_SENTADO = 7;     // del asiento a donde apoya la figura sentada
  * 1 × 1. Se miró al lado de un guardia antes de decidirlo y no se pelean.
  */
 const ESCALA = 2;
-const PASO = PUNTO * ESCALA;              // media unidad del mundo por punto del sprite
+const PASO_GALOPE = PUNTO * ESCALA;              // media unidad del mundo por punto del sprite
 
 /**
  * CUÁNDO PISA CADA PATA dentro de la zancada, en segundos: son los mismos
@@ -53,6 +53,17 @@ const PASO = PUNTO * ESCALA;              // media unidad del mundo por punto de
  * de tres tiempos, el "tucu-TÚN". Ya no mueven patas dibujadas, pero siguen
  * siendo de dónde salen el polvo de los cascos y el sonido, así que quedan.
  */
+/**
+ * CUÁNTO MÁS GRANDE VA EL CABALLO PARADO, en el campamento y en el pueblo
+ * *(Santi: "deberías agrandar la silueta del caballo en el campamento y en el
+ * pueblo")*. Al tamaño del galope tiene la cruz a 16,5 unidades —la altura
+ * del hombro de una persona, que es lo real—, pero parado al lado de un
+ * palenque y de una persona quieta se leía como un potrillo. Con 1,3 la cruz
+ * queda a 21: a la altura de la cabeza. Vive acá para que las dos pantallas
+ * no puedan tener dos caballos de distinto tamaño.
+ */
+export const ESCALA_PARADO = 1.3;
+
 export const GOLPES = { traseraAlla: 0, traseraAca: 0.085, delanteraAlla: 0.085, delanteraAca: 0.175 };
 
 /**
@@ -185,7 +196,14 @@ function aRGB(h, s, l) {
  * Devuelve dónde quedaron la montura y el bocado, para que el jinete se siente
  * en una y agarre las riendas del otro.
  */
-export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaje = null, noche = false) {
+/**
+ * `escala`: cuÃ¡nto mÃ¡s grande que en el galope. Lo pidiÃ³ Santi para el
+ * campamento y el pueblo ("deberÃ­as agrandar la silueta del caballo"): parado
+ * al lado de un palenque y de una persona quieta, al tamaÃ±o del galope se leÃ­a
+ * como un potrillo.
+ */
+export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaje = null, noche = false, escala = 1) {
+  const PASO = PASO_GALOPE * escala;
   const [nombre, achata] = POR_POSE[String(Math.max(-4, Math.min(4, Math.round(pose))))] || POR_POSE['0'];
   const m = MEDIDAS[nombre];
   const fila = DIRECCIONES.indexOf(nombre);

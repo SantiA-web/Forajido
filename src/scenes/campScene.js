@@ -34,7 +34,7 @@ import { MELEE } from '../data/melee.js';
 import { gameState } from '../state/gameState.js';
 import { crearMenu } from '../engine/menu.js';
 import { dibujarPersona, faseDeAndar, tono } from '../entities/figura.js';
-import { dibujarAnimal } from '../entities/caballo.js';
+import { dibujarAnimal, ESCALA_PARADO } from '../entities/caballo.js';
 import { T } from '../text/es.js';
 
 /**
@@ -341,6 +341,7 @@ export function createCampScene(services) {
       // Y mira hacia donde camina: sin esto la persona quedaría siempre de
       // frente y caminando de costado.
       mirando = Math.atan2(dy, dx);
+      chocarConLasCosas();
       limitarAlClaro();
     }
 
@@ -360,6 +361,62 @@ export function createCampScene(services) {
       decir(T.camp.posteMontar, 1.0);
       audio.play('escape');
       scenes.goTo('town');
+    }
+  }
+
+  /**
+   * 🔻 LAS COSAS DEL CAMPAMENTO SON SÓLIDAS *(Santi: "quiero que ajustes las
+   * colisiones en el campamento")*. No lo eran: en la vista de arriba el
+   * jugador era una caja de 13 que pasaba por encima de todo y nadie lo
+   * notaba, pero con una persona de 20 parada en tres cuartos se veía
+   * clarito cómo atravesabas la carpa, el cajón y el fuego.
+   *
+   * Cada cosa tiene su HUELLA EN EL PISO, medida en el mundo (que sigue
+   * siendo redondo, ver `PROF`): es lo que ocupa apoyado en la tierra, no lo
+   * que ocupa dibujado. Por eso el cartel es angosto de fondo aunque su tabla
+   * sea ancha — por abajo de la tabla no se pasa (queda a la altura del
+   * pecho), pero tampoco es una pared de fondo.
+   *
+   * Si quedás adentro de una, te saca por el lado más corto: así podés seguir
+   * caminando pegado al borde de la carpa en vez de frenarte en seco, que es
+   * la misma idea que el límite del claro.
+   *
+   * Los alcances para usar cada cosa no cambiaron y todos llegan desde afuera
+   * de la huella (el más justo es el cajón: 14 de huella contra 24 de alcance).
+   */
+  const HUELLAS = {
+    carpa: { x1: -28, x2: 20, y1: -9, y2: 2 },
+    cajon: { x1: -11, x2: 11, y1: -9, y2: 2 },
+    poste: { x1: -24, x2: 24, y1: -4, y2: 4 },    // el palenque y el caballo
+    cartel: { x1: -17, x2: 16, y1: -2, y2: 2 },
+    fogata: { radio: 13 },
+  };
+  /** Lo que ocupa el jugador alrededor de sus pies. */
+  const PIES = { x: 4, y: 3 };
+
+  function chocarConLasCosas() {
+    for (const o of objetosEnMundo()) {
+      const h = HUELLAS[o.id];
+      if (!h) continue;
+      if (h.radio) {
+        const dx = x - o.x, dy = y - o.y;
+        const d = Math.hypot(dx, dy);
+        const minimo = h.radio + PIES.x;
+        if (d < minimo) {
+          const k = d > 0.01 ? minimo / d : 1;
+          x = o.x + (d > 0.01 ? dx : 0) * k;
+          y = o.y + (d > 0.01 ? dy : minimo);
+        }
+        continue;
+      }
+      const x1 = o.x + h.x1 - PIES.x, x2 = o.x + h.x2 + PIES.x;
+      const y1 = o.y + h.y1 - PIES.y, y2 = o.y + h.y2 + PIES.y;
+      if (x <= x1 || x >= x2 || y <= y1 || y >= y2) continue;
+      const salidas = [[x - x1, -1, 0], [x2 - x, 1, 0], [y - y1, 0, -1], [y2 - y, 0, 1]];
+      salidas.sort((a, b) => a[0] - b[0]);
+      const [, sx, sy] = salidas[0];
+      if (sx < 0) x = x1; else if (sx > 0) x = x2;
+      if (sy < 0) y = y1; else if (sy > 0) y = y2;
     }
   }
 
@@ -698,7 +755,7 @@ export function createCampScene(services) {
     mancha(cartel.x, cartel.y + 2, 8, 3);
     mancha(poste.x - 12, poste.y + 2, 3, 2);
     mancha(poste.x + 13, poste.y + 2, 3, 2);
-    mancha(poste.x, poste.y + 6, 13, 4);
+    mancha(poste.x, poste.y + 4, 19, 5);
     mancha(fogata.x, fogata.y, 12, 4);
   }
 
@@ -842,27 +899,82 @@ export function createCampScene(services) {
    */
   function dibujarPosteYCaballo(r, o) {
     const py = alPiso(o.y);
-    // El poste y el travesaño donde va atada la rienda.
-    r.rect(o.x - 15, py - 22, 3, 22, luz(colors.campTronco));
-    r.rect(o.x + 12, py - 22, 3, 22, luz(colors.campTronco));
-    r.rect(o.x - 15, py - 19, 30, 3, luz('#5f4530'));
-    r.rect(o.x - 15, py - 19, 30, 1, luz('#7a5a3c'));
-
-    // El caballo, atado del otro lado del palenque y de perfil.
+    /**
+     * EL CABALLO VA DETRÁS DEL PALENQUE, y el palenque se dibuja después. Al
+     * agrandarlo, el caballo tapaba los dos postes y el travesaño enteros: se
+     * veía un caballo suelto con un palo asomando. Del otro lado de la baranda
+     * se lee lo que es — un caballo atado.
+     */
     const respira = Math.sin(scroll * 1.6) * 0.4;
-    dibujarAnimal(r, o.x + 2, py - 7 + respira, null, 0, 0, 0,
-      caballoActual(gameState).id, !gameState.esDeDia);
+    dibujarAnimal(r, o.x + 2, py - 10 + respira, null, 0, 0, 0,
+      caballoActual(gameState).id, !gameState.esDeDia, ESCALA_PARADO);
+
+    // Los dos postes y el travesaño, a la altura del pecho del animal.
+    r.rect(o.x - 17, py - 16, 3, 16, luz(colors.campTronco));
+    r.rect(o.x + 15, py - 16, 3, 16, luz(colors.campTronco));
+    r.rect(o.x - 17, py - 16, 1, 16, luz('#7a5a3c'));
+    r.rect(o.x - 19, py - 14, 38, 3, luz('#5f4530'));
+    r.rect(o.x - 19, py - 14, 38, 1, luz('#7a5a3c'));
+    // La rienda, colgando del travesaño hasta la cabeza.
+    r.rect(o.x + 13, py - 11, 1, 5, luz('#2a1c12'));
   }
 
+  /**
+   * 🔺 EL CARTEL DE LOS ASALTOS: UN MAPA VIEJO CLAVADO A UNA TABLA *(Santi: "el
+   * letrero para ir al asalto cámbialo por un mapa viejo pegado a un cartel de
+   * madera")*. Era una tabla con dos rayitas. Ahora es lo que se abre cuando lo
+   * usás: el mapa de rutas, en papel amarillento, con la vía punteada, el río,
+   * dos cerros y la cruz roja de a dónde se va — y clavado con cuatro clavos,
+   * con una punta despegada. Es sólo dibujo: sigue siendo el mismo cartel.
+   */
   function dibujarCartel(r, o) {
     const py = alPiso(o.y);
-    r.rect(o.x - 1, py - 14, 3, 14, luz(colors.campTronco));
-    r.rect(o.x - 15, py - 26, 30, 12, luz(colors.campCartel));
-    r.rect(o.x - 15, py - 27, 30, 2, luz('#a6835a'));       // el canto de arriba
-    r.rect(o.x - 15, py - 15, 30, 1, luz('#6a4a28'));
-    // Dos rayitas que insinúan un mapa escrito, sin escribir nada.
-    r.rect(o.x - 11, py - 23, 14, 1, luz('#4a3524'));
-    r.rect(o.x - 11, py - 20, 20, 1, luz('#4a3524'));
+    const madera = luz(colors.campCartel);
+    // Los dos palos, clavados en la tierra.
+    for (const px of [o.x - 15, o.x + 12]) {
+      r.rect(px, py - 31, 3, 31, luz(colors.campTronco));
+      r.rect(px, py - 31, 1, 31, luz('#7a5a3c'));
+    }
+    // La tabla: tres tablones horizontales, con su canto de luz arriba.
+    r.rect(o.x - 18, py - 33, 36, 21, madera);
+    for (const ty of [py - 26, py - 19]) r.rect(o.x - 18, ty, 36, 1, luz('#6a4a28'));
+    r.rect(o.x - 18, py - 33, 36, 1.5, luz('#b08a5e'));
+    r.rect(o.x - 18, py - 12, 36, 1, luz('#4a3524'));
+    // El techito de una tabla que la protege de la lluvia.
+    r.rect(o.x - 20, py - 35, 40, 2, luz('#5f4530'));
+    r.rect(o.x - 20, py - 35, 40, 0.5, luz('#8a6a48'));
+
+    // El mapa: papel amarillento, con el borde gastado más oscuro.
+    const papel = luz('#dccb9c');
+    const x0 = o.x - 13, y0 = py - 31, W = 25, H = 17;
+    r.rect(x0, y0, W, H, papel);
+    r.rect(x0, y0, W, 1, luz('#bfa874'));
+    r.rect(x0, y0 + H - 1, W, 1, luz('#bfa874'));
+    r.rect(x0, y0, 1, H, luz('#c9b27e'));
+    r.rect(x0 + W - 1, y0, 1, H, luz('#c9b27e'));
+    // Una mancha de agua, y la punta de abajo despegada y doblada.
+    r.rect(x0 + 16, y0 + 3, 4, 3, luz('#cdb983'));
+    r.rect(x0 + W - 4, y0 + H - 3, 4, 3, madera);
+    r.rect(x0 + W - 4, y0 + H - 3, 3, 1, luz('#efe2bc'));
+    r.rect(x0 + W - 4, y0 + H - 2, 2, 1, luz('#efe2bc'));
+    // El río, que baja de arriba.
+    for (let i = 0; i < 14; i++) r.rect(x0 + 19 + Math.round(Math.sin(i * 0.7) * 1.5), y0 + 1 + i, 1, 1, luz('#6f8a8c'));
+    // Dos cerros.
+    for (const [cx, cy] of [[x0 + 6, y0 + 6], [x0 + 11, y0 + 5]]) {
+      r.rect(cx - 1, cy, 3, 1, luz('#7a5a3c'));
+      r.rect(cx, cy - 1, 1, 1, luz('#7a5a3c'));
+    }
+    // La vía, punteada, y la cruz roja de a dónde se va.
+    for (let i = 0; i < 7; i++) r.rect(x0 + 3 + i * 2, y0 + 12 - Math.round(i * 0.8), 1, 1, luz('#4a3524'));
+    r.rect(x0 + 16, y0 + 5, 1, 1, luz('#a8322a'));
+    r.rect(x0 + 18, y0 + 5, 1, 1, luz('#a8322a'));
+    r.rect(x0 + 17, y0 + 6, 1, 1, luz('#a8322a'));
+    r.rect(x0 + 16, y0 + 7, 1, 1, luz('#a8322a'));
+    r.rect(x0 + 18, y0 + 7, 1, 1, luz('#a8322a'));
+    // Los cuatro clavos (el de abajo a la derecha ya no agarra: la punta se despegó).
+    for (const [nx, ny] of [[x0 + 1, y0 + 1], [x0 + W - 2, y0 + 1], [x0 + 1, y0 + H - 2]]) {
+      r.rect(nx, ny, 1, 1, luz('#2e2016'));
+    }
   }
 
   /**
@@ -894,7 +1006,13 @@ export function createCampScene(services) {
       angulo: mirando,
       postura: sentado ? 'sentado' : 'pie',
       fase: sentado ? null : faseDeAndar(yo),
-      modo: 'caminar',
+      /**
+       * 🐛 SIN `modo: 'caminar'` *(Santi: "el personaje del jugador camina
+       * demasiado rápido (mueve sus pies muy rápido)")*. La caminata da un paso
+       * cada 14 unidades y vos te movés a 78 por segundo: **5,6 pasos por
+       * segundo**, cámara rápida. En el tren usás el trote —un paso cada 20—,
+       * que son 3,9 pasos por segundo, y ése nunca molestó. Ahora es el mismo.
+       */
       panuelo: true,
     });
   }

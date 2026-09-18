@@ -1731,6 +1731,13 @@ que lo que hiciste adentro se paga afuera.
 - **Cada tiro que te pegan te hace soltar una bolsa** con el 10% de lo que
   sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
   con menos plata.
+- **Hay obstáculos, los mismos del galope** (rocas, arbustos, cactus y
+  montículos, que vienen de frente igual de rápido). Chocar te frena y te
+  arrastra para atrás, hacia los jinetes. **Ellos también los esquivan**:
+  miran adelante y se corren, pero si lo ven tarde o están apuntando (apuntando
+  no se mueven), se la comen y quedan atrás un momento.
+- La mira funciona igual que en el asalto: el círculo mide tu arma (tres veces
+  más grande a caballo), y de vez en cuando se te va el pulso.
 - Se termina a los 15 segundos, o antes si no queda ninguno. Cada jinete que
   tirás acá cuenta como uno tirado en el asalto.
 

@@ -23,25 +23,29 @@ export const HUIDA = {
 
   /**
    * CUÁNTO DE LA PLATA SE LLEVA CADA BOLSA, como fracción de la que sacaste del
-   * tren. Todas iguales, para que se puedan contar: con 0,15 son seis bolsas y
-   * media para quedarte sin nada.
+   * tren. Todas iguales, para que se puedan contar: con 0,10 son diez bolsas
+   * para quedarte sin nada.
    *
-   * ⚠️ PROVISORIO: se elige midiendo (ver NOTAS-DISENO.md, "La huida").
+   * Elegido por Santi sobre una tabla medida (ver NOTAS-DISENO.md, "La huida").
    */
   bolsaFraccion: 0.10,
 
   /** Después de un tiro, cuánto tardan en poder volver a sacarte una bolsa. */
   invulnerable: 0.9,
 
-  /** A qué velocidad desfila el suelo (sólo se ve: nadie choca con nada). */
-  velocidadSuelo: 190,
+  /**
+   * A qué velocidad desfila el suelo. Es la del Criollo a fondo en el galope
+   * (`sprintSpeed` 142): los obstáculos te vienen encima igual de rápido que
+   * ahí. Con 190 pasaban al doble y no se llegaban a esquivar.
+   */
+  velocidadSuelo: 140,
 
   /** Cuánto cielo se ve arriba de todo, en unidades. */
   cielo: 34,
 
   jugador: {
     /** Arriba y abajo, y adelante y atrás dentro de la pantalla (px/s). */
-    velocidadY: 95,
+    velocidadY: 105,     // la misma del galope (`velVertical`)
     velocidadX: 75,
     /** Entre qué fracciones del ancho de la pantalla podés moverte. */
     xMin: 0.34,
@@ -52,6 +56,33 @@ export const HUIDA = {
      * más o menos el alto de un jinete.
      */
     dispersionACaballo: 3,
+  },
+
+  /**
+   * LOS OBSTÁCULOS *(Santi: "que hayan obstáculos al igual que en el galope
+   * previo. Esos obstáculos los guardias también tratarán de esquivarlos")*.
+   *
+   * Son LOS MISMOS del galope: los cuatro tipos, sus radios, cada cuánto
+   * aparecen (`obstaculoCada`) y cuánto dura el choque (`obstaculoFrenado`)
+   * salen de `APROXIMACION` en data/horse.js. Acá sólo va lo que es de la huida.
+   */
+  obstaculos: {
+    /** A qué distancia del borde derecho aparece el primero: un segundo de respiro. */
+    primero: 140,
+    /**
+     * CHOCAR TE MANDA PARA ATRÁS, hacia los jinetes: el caballo casi se frena y
+     * el suelo te arrastra a esta velocidad (px/s) mientras dura el choque.
+     * No te saca plata por sí solo; te acerca a los que sí.
+     */
+    retroceso: 120,
+    /**
+     * Cuánto adelante miran los jinetes para esquivar, y con cuánto margen
+     * pasan. Lo ven venir a 75: con el suelo a 140 px/s les quedan 0,5 s para
+     * correrse, que alcanza — y si están apuntando no se mueven, así que
+     * a veces se la comen.
+     */
+    mira: 75,
+    margen: 14,
   },
 
   jinetes: {

@@ -21,13 +21,14 @@
 import { CONFIG } from '../data/config.js';
 import { HUIDA as H } from '../data/huida.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
-import { caballoActual } from '../data/horse.js';
+import { caballoActual, APROXIMACION as A } from '../data/horse.js';
 import { applyRaidResult, gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
 import { RIDERS } from '../data/riders.js';
 import { sembrarDesierto } from '../world/desierto.js';
+import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { escalarColor } from '../world/trenTresCuartos.js';
 
 export function createHuidaScene(services) {
@@ -35,7 +36,7 @@ export function createHuidaScene(services) {
   const colors = CONFIG.colors;
 
   let summary, caballo, arma;
-  let yo, jinetes, balas, bolsas, caidos, carteles;
+  let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, proximoObstaculo;
   let reloj, suelo, tiempo, dineroInicial, perdido, soltadas, derribados;
   let fin, temblor;
 
@@ -65,6 +66,7 @@ export function createHuidaScene(services) {
       balas: params.balas ?? arma.magazine,
       recargando: 0,
       fogonazo: 0,
+      choque: 0,
     };
 
     jinetes = [];
@@ -75,6 +77,10 @@ export function createHuidaScene(services) {
     bolsas = [];
     caidos = [];
     carteles = [];
+    obstaculos = [];
+    suelo = 0;
+    proximoObstaculo = W + H.obstaculos.primero;
+    sembrarObstaculos();
     reloj = H.duracion;
     suelo = 0;
     tiempo = 0;
@@ -101,6 +107,8 @@ export function createHuidaScene(services) {
       get derribados() { return derribados; },
       get dineroInicial() { return dineroInicial; },
       get fin() { return fin; },
+      get obstaculos() { return obstaculos; },
+      get suelo() { return suelo; },
     };
   }
 
@@ -131,6 +139,9 @@ export function createHuidaScene(services) {
       hitFlash: 0,
       gallop: Math.random() * 6.28,
       fase: Math.random() * 6.28,
+      choque: 0,
+      esquiva: null,
+      choques: 0,
     };
   }
 
@@ -157,6 +168,7 @@ export function createHuidaScene(services) {
     }
 
     reloj -= dt;
+    sembrarObstaculos();
     moverme(dt);
     disparar(dt);
     moverJinetes(dt, false);
@@ -174,8 +186,22 @@ export function createHuidaScene(services) {
     const dy = (input.isDown('KeyS') || input.isDown('ArrowDown') ? 1 : 0)
              - (input.isDown('KeyW') || input.isDown('ArrowUp') ? 1 : 0);
     const W = renderer.width;
-    yo.x = Math.max(W * J.xMin, Math.min(W * J.xMax, yo.x + dx * J.velocidadX * dt));
-    yo.y = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + dy * J.velocidadY * dt));
+    if (yo.choque > 0) {
+      // Chocaste: el caballo casi se para y el suelo te arrastra hacia atrás,
+      // sin que puedas manejarlo. Mismo precio que en el galope.
+      yo.choque -= dt;
+      yo.x = Math.max(W * 0.08, yo.x - H.obstaculos.retroceso * dt);
+    } else {
+      yo.x = Math.max(W * J.xMin, Math.min(W * J.xMax, yo.x + dx * J.velocidadX * dt));
+      yo.y = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + dy * J.velocidadY * dt));
+      const ob = chocaCon(yo.x, yo.y);
+      if (ob) {
+        ob.golpeado = true;
+        yo.choque = A.obstaculoFrenado;
+        audio.play('hitWall');
+        carteles.push({ x: yo.x, y: yo.y - 30, texto: T.ride.choque, color: colors.enemyAlert, vida: 1 });
+      }
+    }
 
     // El caballo gira hacia donde lo llevás, con la misma inercia del galope.
     const objetivo = dy * 0.5;
@@ -205,7 +231,7 @@ export function createHuidaScene(services) {
 
     const [ox, oy] = boca();
     const angulo = Math.atan2(input.mouse.y - oy, input.mouse.x - ox)
-      + rng.range(-1, 1) * arma.spread * H.jugador.dispersionACaballo;
+      + rng.spreadDeTiro(arma.spread * H.jugador.dispersionACaballo, CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
     balas.push({
       x: ox, y: oy,
       vx: Math.cos(angulo) * arma.bulletSpeed,
@@ -231,6 +257,14 @@ export function createHuidaScene(services) {
       if (!j.alive) continue;
       if (j.entra > 0) { j.entra -= dt; continue; }
 
+      // Si se la comió, igual que vos: se frena, queda atrás y no tira.
+      if (j.choque > 0) {
+        j.choque -= dt;
+        j.x -= H.obstaculos.retroceso * dt;
+        j.aimTimer = 0;
+        continue;
+      }
+
       // Al final se quedan atrás: los perdiste.
       if (yendose) {
         j.x -= J.velocidad * 1.6 * dt;
@@ -243,15 +277,18 @@ export function createHuidaScene(services) {
       if (j.aimTimer > 0) {
         j.aimTimer -= dt;
         if (j.aimTimer <= 0) tirar(j);
+        chocarJinete(j);
         continue;
       }
 
       const ondula = Math.sin(tiempo * 1.3 + j.fase) * 8;
       // Nunca detrás del borde: uno que no se ve no puede estar tirándote.
       const tx = Math.max(22 + (j.atras - H.jinetes.distancia) * 0.3, yo.x - j.atras);
-      const ty = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + j.dy + ondula));
+      let ty = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + j.dy + ondula));
+      ty = esquivar(j, ty);
       j.x += Math.sign(tx - j.x) * Math.min(Math.abs(tx - j.x), J.velocidad * dt);
       j.y += Math.sign(ty - j.y) * Math.min(Math.abs(ty - j.y), J.velocidad * 0.8 * dt);
+      chocarJinete(j);
 
       j.cooldown -= dt;
       const d = Math.hypot(yo.x - j.x, yo.y - j.y);
@@ -263,9 +300,86 @@ export function createHuidaScene(services) {
     }
   }
 
+  // ------------------------------------------------------------ obstáculos
+
+  /**
+   * LOS OBSTÁCULOS, SEMBRADOS ADELANTE. Viven en coordenadas del SUELO (`gx`),
+   * igual que en el galope: el suelo desfila y ellos con él. Uno cada
+   * `obstaculoCada` de suelo, a cualquier altura del campo; los que ya quedaron
+   * atrás se tiran.
+   */
+  function sembrarObstaculos() {
+    const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
+    while (proximoObstaculo < suelo + renderer.width + 40) {
+      obstaculos.push({
+        gx: proximoObstaculo + rng.range(-30, 30),
+        y: rng.range(H.cielo + 26, renderer.height - 14),
+        tipo: tipos[rng.int(0, tipos.length - 1)],
+        golpeado: false,
+      });
+      proximoObstaculo += A.obstaculoCada;
+    }
+    obstaculos = obstaculos.filter((ob) => ob.gx - suelo > -40);
+  }
+
+  function radioDe(ob) {
+    return A.obstaculoRadios[ob.tipo] ?? A.obstaculoRadio;
+  }
+
+  /** La misma cuenta del galope: a menos de radio + 6 del centro, chocaste. */
+  function chocaCon(x, y) {
+    for (const ob of obstaculos) {
+      if (ob.golpeado) continue;
+      const ox = ob.gx - suelo;
+      const radio = radioDe(ob);
+      if (Math.abs(ox - x) > radio + 14) continue;
+      if (Math.hypot(ox - x, ob.y - y) < radio + 6) return ob;
+    }
+    return null;
+  }
+
+  function chocarJinete(j) {
+    const ob = chocaCon(j.x, j.y);
+    if (!ob) return;
+    ob.golpeado = true;
+    j.choque = A.obstaculoFrenado;
+    j.choques += 1;
+    j.esquiva = null;
+    audio.play('hitWall');
+  }
+
+  /**
+   * LOS JINETES TAMBIÉN ESQUIVAN *(pedido de Santi)*. Miran `mira` px adelante:
+   * si viene algo por su carril, se corren para el lado que tengan más libre y
+   * se quedan corridos hasta pasarlo. No es infalible, y a propósito: si lo ven
+   * tarde, o si están apuntando (apuntando no se mueven), se la comen.
+   */
+  function esquivar(j, ty) {
+    const O = H.obstaculos;
+    if (j.esquiva && j.esquiva.ob.gx - suelo < j.x - 12) j.esquiva = null;
+    if (!j.esquiva) {
+      for (const ob of obstaculos) {
+        if (ob.golpeado) continue;
+        const ox = ob.gx - suelo;
+        if (ox < j.x - 4 || ox - j.x > O.mira) continue;
+        const pasa = radioDe(ob) + O.margen;
+        if (Math.abs(ob.y - ty) >= pasa && Math.abs(ob.y - j.y) >= pasa) continue;
+        const arriba = ob.y - pasa;
+        const abajo = ob.y + pasa;
+        const puedeArriba = arriba > H.cielo + 22;
+        const puedeAbajo = abajo < renderer.height - 12;
+        const porArriba = puedeArriba && (!puedeAbajo || Math.abs(j.y - arriba) < Math.abs(j.y - abajo));
+        j.esquiva = { ob, y: porArriba ? arriba : abajo };
+        break;
+      }
+    }
+    return j.esquiva ? j.esquiva.y : ty;
+  }
+
   function tirar(j) {
     const J = H.jinetes;
-    const a = j.aimDir + rng.range(-1, 1) * J.dispersion;
+    // Parejo para todos, como en el asalto: a ellos también se les va el pulso.
+    const a = j.aimDir + rng.spreadDeTiro(J.dispersion, CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
     balas.push({
       x: j.x + 6, y: j.y - 14,
       vx: Math.cos(a) * J.velocidadBala,
@@ -396,6 +510,11 @@ export function createHuidaScene(services) {
 
     // Por dónde tienen los pies: el de más abajo tapa al de más arriba.
     const cosas = [];
+    for (const ob of obstaculos) {
+      const ox = ob.gx - suelo;
+      if (ox < -20 || ox > r.width + 20) continue;
+      cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ox, radioDe(ob)) });
+    }
     for (const j of jinetes) {
       if (!j.alive || j.entra > 0) continue;
       cosas.push({ y: j.y, draw: () => dibujarLey(r, j, dia) });
@@ -483,13 +602,16 @@ export function createHuidaScene(services) {
     r.text('$', x + 0.5, y - 2, colors.bagLoot);
   }
 
-  /** El círculo dice la dispersión real a esa distancia, como en el asalto. */
+  /**
+   * LA MIRA, CON LA MISMA REGLA QUE EN EL ASALTO (ver CONFIG.mira): el círculo
+   * mide el ARMA, no el punto al que apuntás — se calcula siempre como si
+   * apuntaras a `distanciaReferencia` (80). A caballo es tres veces más grande
+   * porque la dispersión es tres veces mayor.
+   */
   function dibujarMira(r) {
     const m = CONFIG.mira;
-    const [ox, oy] = boca();
-    const d = Math.hypot(input.mouse.x - ox, input.mouse.y - oy);
-    const radio = Math.max(m.radioMin, Math.min(m.radioMax * 2,
-      Math.tan(arma.spread * H.jugador.dispersionACaballo) * d));
+    const radio = Math.max(m.radioMin, Math.min(m.radioMax,
+      Math.tan(arma.spread * H.jugador.dispersionACaballo) * m.distanciaReferencia * m.escala));
     r.circle(input.mouse.x, input.mouse.y, radio, yo.recargando > 0 ? m.colorBloqueado : m.color, m.alpha);
   }
 

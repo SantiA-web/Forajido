@@ -13848,9 +13848,77 @@ Después el tamaño de la bolsa: **cuánto de la plata se pierde**, en promedio.
 | 15% | 63 / 91 / 99 / 98 % | 0 / 11 / 40 / 84 % | 0 / 0 / 5 / 26 % |
 | 20% | 86 / 98 / 99 / 100 % | 0 / 9 / 56 / 96 % | 0 / 1 / 4 / 44 % |
 
-Quedó en **10%**: pesa (con cinco jinetes y sin pelear perdés la mitad) pero
-no arruina un asalto bien hecho, que es lo que pidió Santi. **⚠️ Esperando que
-Santi elija**; cambiarlo es `HUIDA.bolsaFraccion`.
+Quedó en **10%**, elegido por Santi: pesa (con cinco jinetes y sin pelear
+perdés la mitad) pero no arruina un asalto bien hecho.
+
+#### Segunda vuelta: obstáculos, y los jinetes también los esquivan
+
+*(Santi: "quiero que sea un 10% y que hayan obstáculos al igual que en el
+galope previo. Esos obstáculos los guardias también tratarán de esquivarlos")*
+
+**Son los del galope, no unos parecidos.** El dibujo se mudó de
+`rideScene.js` a `world/obstaculosDesierto.js` y lo usan las dos escenas; los
+tipos, los radios, cada cuánto aparecen y cuánto dura el choque salen de
+`APROXIMACION` (data/horse.js). Chocar te frena y el suelo te arrastra para
+atrás, hacia los jinetes: no te saca plata por sí solo, te acerca a los que
+sí.
+
+**Los jinetes miran 75 adelante** y, si viene algo por su carril, se corren
+para el lado más libre hasta pasarlo. No es infalible a propósito: apuntando
+no se mueven, así que un jinete que te está por tirar puede comerse una roca —
+y ahí se frena, queda atrás y no tira.
+
+🐛 **El suelo iba al doble.** La huida desfilaba a 190 y en el galope los
+obstáculos pasan a 90-140 (lo que corre el caballo). A 190 no se llegaban a
+esquivar. Bajó a **140**, el Criollo a fondo, y el movimiento vertical quedó
+igual al del galope (105).
+
+Medido de nuevo, 20 huidas por caso (robot en una pantalla de 320×225):
+
+| | 1 jinete | 2 | 3 | 5 |
+|---|---|---|---|---|
+| Quieto: plata perdida | 41% | 59% | 69% | 80% |
+| Quieto: tus choques | 4,2 | 3,7 | 3,9 | 3,7 |
+| Esquivando: plata perdida | 8% | 16% | 24% | 43% |
+| Esquivando y tirando: plata perdida | 0% | 2% | 6% | 20% |
+| Choques por jinete, en una huida | 0,1 | 0,4 | 0,4-0,5 | 0,3-0,4 |
+
+O sea: **uno de cada tres o cuatro jinetes se come algo** en una huida. Se ve
+pasar, pero no la decide.
+
+🐛 **Una trampa para la próxima vez que se mida:** la primera tabla salió con
+"esquivando" igual de mala que "quieto", y no era el juego: el navegador de
+prueba había quedado con una pantalla de 37 de alto. El campo no existía. Hay
+que mirar `renderer.height` antes de creerle a una medición.
+
+#### La mira: qué tan real es el círculo
+
+*(Santi: "que tal real es el circulo de la putería? hay probabilidad real de
+que el balazo llegue al borde de ese circulo o siempre va al medio?")*
+
+La bala se desvía **hacia un costado**, con cualquier ángulo dentro de la
+dispersión con la misma probabilidad. Un 15% de los tiros usan una
+dispersión 2,5 veces mayor (`CONFIG.mira.fallaChance`), que es "se te fue el
+pulso". Y el círculo se dibuja siempre como si apuntaras a 80
+(`distanciaReferencia`, decisión de Santi: el círculo mide el ARMA). Medido
+con 20.000 tiros de la función de verdad (`rng.spreadDeTiro`):
+
+| Distancia al blanco | Mitad de adentro | Mitad de afuera (el borde) | Afuera del círculo |
+|---|---|---|---|
+| 40 | 91% | 6% | 3% |
+| 60 | 61% | 32% | 7% |
+| **80** | **45%** | **46%** | **9%** |
+| 120 | 30% | 30% | 39% |
+
+A 80 el borde recibe tantas balas como el medio. Más cerca se juntan al medio
+(el círculo es más grande de lo que de verdad te desviás) y más lejos se
+salen. Excepción: el **Colt apuntado** tiene el círculo en el mínimo que se
+puede dibujar (2), que es más grande que su dispersión real, así que con él
+casi todo cae adentro.
+
+**La huida no seguía esta regla, y ahora sí.** El círculo se calculaba a la
+distancia real del mouse y el tiro no tenía el 15% de pulso que se va. Ahora
+es la misma regla del asalto, para vos y para los jinetes.
 
 🔻 **ALGO QUE HAY QUE MIRAR JUGANDO:** el robot que tira baja a un jinete solo
 en 2 segundos. Una persona apunta peor, pero si pelear resulta demasiado

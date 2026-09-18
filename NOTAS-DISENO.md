@@ -13891,6 +13891,41 @@ pasar, pero no la decide.
 prueba había quedado con una pantalla de 37 de alto. El campo no existía. Hay
 que mirar `renderer.height` antes de creerle a una medición.
 
+#### Tercera vuelta: no hay reloj, se gana con el caballo
+
+*(Santi: "pondría que tenga que ver la velocidad del caballo cuando es que lo
+vas a perder, no el tiempo. Haría que los guardias empiecen a una cierta
+distancia de vos. Todos galopan y mientras más rápido el caballo con respecto
+al de los guardias, más rápido te vas a librar. O podés matarlos a todos")*
+
+**Cómo quedó.** Vas siempre en el mismo lugar de la pantalla, a fondo
+(`sprintSpeed`, sin A ni D: frenar sólo te perjudicaría). El suelo desfila a
+lo que corre tu caballo, y cada jinete se corre según la diferencia entre su
+caballo y el tuyo. Arrancan a 110; a 250 (fuera de la pantalla) **lo
+perdiste**. Si chocás, vas al 15% durante medio segundo y se te vienen, hasta
+40 como mucho (van detrás, no te pasan). La barra de arriba ya no es un reloj:
+es cuánto le falta al más cercano para quedar perdido.
+
+**Los números, elegidos por Santi:** la ley a **130** (entre 120, 130 y 136), y
+cada jinete con su caballo, **±5**, para que se vayan quedando de a uno.
+`HUIDA.tope` (60 s) es sólo un seguro para que nunca quede colgada si algún
+día hay un caballo más lento que la ley.
+
+**Medido**, 15 huidas por caso, pantalla de 320×225:
+
+| | 1 jinete | 3 | 5 |
+|---|---|---|---|
+| Criollo, esquivando | 11 s, pierde 3% | 17 s, 15% | 20 s, 24% |
+| Criollo, esquivando y tirando | 2 s, 0% | 9 s, 5% | 11 s, 10% |
+| Mustang, esquivando | 3 s, 2% | 3 s, 1% | 3 s, 1% |
+| Criollo, quieto (sin tocar nada) | 50 s, 83% | 59 s, 100% | 57 s, 97% |
+
+El Mustang casi no tiene huida: es lo que se paga. **Con el Criollo quieto se
+llega al seguro de 60 s**: sin esquivar choca con todo (12-15 veces) y cada
+choque le devuelve la ventaja a la ley. No es un caso real —alguien que
+juega mueve el caballo—, pero si se ve pasar, el número para mirar es el
+largo del choque.
+
 #### La mira: qué tan real es el círculo
 
 *(Santi: "que tal real es el circulo de la putería? hay probabilidad real de

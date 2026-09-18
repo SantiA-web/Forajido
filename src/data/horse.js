@@ -148,7 +148,7 @@ export const HORSES = {
     hint: 'Volador, pero no tiene fondo. No es de aterrizar fino.',
 
     /**
-     * VELOCIDAD 2. **180 px/s ABSOLUTOS**, el doble que el tren (90): le saca
+     * VELOCIDAD 5. **180 px/s ABSOLUTOS**, el doble que el tren (90): le saca
      * 90 galopando, y **al trote (90) le sigue el paso exacto**.
      *
      * AHÍ ESTÁ LO QUE PEDÍA SANTI, y es la diferencia de verdad entre los dos

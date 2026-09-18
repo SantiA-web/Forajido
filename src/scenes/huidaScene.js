@@ -1,18 +1,25 @@
 /**
- * LA HUIDA — los 15 segundos después de saltar del tren, con la ley detrás.
+ * LA HUIDA — después de saltar del tren, con la ley detrás.
  *
  * Ver data/huida.js para el pedido de Santi y los números. En corto:
  *
  *  - Te siguen LOS MISMOS jinetes que quedaban vivos en el asalto: lo que
  *    hiciste adentro se paga acá afuera.
- *  - Galopás hacia la derecha; W/A/S/D te mueven, el mouse apunta y el clic
- *    dispara, igual que en el asalto. [R] recarga.
+ *  - TODOS GALOPAN. Tu caballo va siempre a fondo y cada jinete al suyo: la
+ *    diferencia decide si se acercan o se quedan. Cuando uno queda a
+ *    `perdida` detrás, lo perdiste. Se termina cuando no queda ninguno
+ *    siguiéndote, porque los perdiste o porque los tiraste.
+ *  - W/S esquivan, el mouse apunta y el clic dispara, igual que en el asalto.
+ *    [R] recarga.
  *  - CADA TIRO QUE TE PEGAN TE HACE SOLTAR UNA BOLSA. Nunca te agarran: lo peor
  *    que puede pasar es llegar con menos plata.
- *  - Se termina a los 15 segundos, o antes si no queda ninguno.
+ *  - Los obstáculos del galope cuestan distancia: chocar te frena y se te
+ *    acercan. Ellos también chocan.
  *
- * No hay tren ni obstáculos: el suelo desfila y nada más. El mundo es la
- * pantalla (sin cámara), así que el mouse ya está en coordenadas del mundo.
+ * Vas siempre en el mismo lugar de la pantalla, y lo demás se mueve contra
+ * vos: el suelo desfila a lo que corre tu caballo (`suelo`), y cada jinete se
+ * corre según la diferencia entre su caballo y el tuyo. Así el mouse ya está
+ * en coordenadas del mundo.
  *
  * ⚠️ GRÁFICOS SIMPLES: las bolsas, el "!" del aviso y el panel son dibujo de
  * prueba (ver "por vestir" en NOTAS-DISENO.md).
@@ -37,7 +44,7 @@ export function createHuidaScene(services) {
 
   let summary, caballo, arma;
   let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, proximoObstaculo;
-  let reloj, suelo, tiempo, dineroInicial, perdido, soltadas, derribados;
+  let suelo, tiempo, dineroInicial, perdido, soltadas, derribados;
   let fin, temblor;
 
   /**
@@ -57,7 +64,8 @@ export function createHuidaScene(services) {
 
     const W = renderer.width;
     yo = {
-      x: W * 0.56,
+      x: W * H.jugador.x,
+      vel: caballo.sprintSpeed,
       y: (H.cielo + renderer.height) / 2,
       rumbo: 0,
       pose: 0,
@@ -81,8 +89,6 @@ export function createHuidaScene(services) {
     suelo = 0;
     proximoObstaculo = W + H.obstaculos.primero;
     sembrarObstaculos();
-    reloj = H.duracion;
-    suelo = 0;
     tiempo = 0;
     dineroInicial = Math.max(0, summary.money || 0);
     perdido = 0;
@@ -101,7 +107,7 @@ export function createHuidaScene(services) {
       get yo() { return yo; },
       get jinetes() { return jinetes; },
       get balas() { return balas; },
-      get reloj() { return reloj; },
+      get tiempo() { return tiempo; },
       get perdido() { return perdido; },
       get soltadas() { return soltadas; },
       get derribados() { return derribados; },
@@ -125,14 +131,17 @@ export function createHuidaScene(services) {
   function crearJinete(i, n) {
     const lado = i % 2 === 0 ? -1 : 1;
     const escalon = Math.ceil(i / 2);
+    const J = H.jinetes;
     return {
-      x: -30 - i * 12,
+      x: yo.x - J.distanciaInicial - i * J.separacionInicial,
       y: yo.y + lado * (24 + escalon * 22),
       alive: true,
+      perdido: false,
       health: RIDERS.ley.health,
-      entra: H.jinetes.entraPrimero + i * H.jinetes.entraCada,
+      entra: 0,
+      // Cada uno con su caballo, un poco más rápido o más lento que el resto.
+      vel: J.velocidad + rng.range(-J.variacion, J.variacion),
       dy: n === 1 ? 0 : lado * (18 + escalon * 26),
-      atras: H.jinetes.distancia + i * H.jinetes.separacion,
       cooldown: H.jinetes.cadencia * 0.6 + rng.range(0, H.jinetes.cadenciaAzar),
       aimTimer: 0,
       aimDir: 0,
@@ -149,7 +158,6 @@ export function createHuidaScene(services) {
 
   function update(dt) {
     tiempo += dt;
-    suelo += H.velocidadSuelo * dt;
     temblor = Math.max(0, temblor - dt);
     actualizarCascos(dt);
 
@@ -167,32 +175,37 @@ export function createHuidaScene(services) {
       return;
     }
 
-    reloj -= dt;
     sembrarObstaculos();
     moverme(dt);
+    suelo += yo.vel * dt;
     disparar(dt);
     moverJinetes(dt, false);
     moverBalas(dt);
 
-    const vivos = jinetes.filter((j) => j.alive).length;
-    if (vivos === 0) empezarFin('limpio');
-    else if (reloj <= 0) empezarFin('perdidos');
+    if (siguiendo().length === 0 || tiempo >= H.tope) {
+      empezarFin(derribados === jinetes.length ? 'limpio' : 'perdidos');
+    }
+  }
+
+  /** Los que todavía te siguen: vivos y sin perder. */
+  function siguiendo() {
+    return jinetes.filter((j) => j.alive && !j.perdido);
+  }
+
+  /** Lo que corre un caballo ahora: a fondo, o casi parado si chocó. */
+  function velocidadDe(fondo, choque) {
+    return choque > 0 ? fondo * A.choqueFactor : fondo;
   }
 
   function moverme(dt) {
     const J = H.jugador;
-    const dx = (input.isDown('KeyD') || input.isDown('ArrowRight') ? 1 : 0)
-             - (input.isDown('KeyA') || input.isDown('ArrowLeft') ? 1 : 0);
     const dy = (input.isDown('KeyS') || input.isDown('ArrowDown') ? 1 : 0)
              - (input.isDown('KeyW') || input.isDown('ArrowUp') ? 1 : 0);
-    const W = renderer.width;
     if (yo.choque > 0) {
-      // Chocaste: el caballo casi se para y el suelo te arrastra hacia atrás,
-      // sin que puedas manejarlo. Mismo precio que en el galope.
+      // Chocaste: el caballo casi se para y no lo podés manejar. Mismo precio
+      // que en el galope, pero acá se paga en distancia: se te acercan.
       yo.choque -= dt;
-      yo.x = Math.max(W * 0.08, yo.x - H.obstaculos.retroceso * dt);
     } else {
-      yo.x = Math.max(W * J.xMin, Math.min(W * J.xMax, yo.x + dx * J.velocidadX * dt));
       yo.y = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + dy * J.velocidadY * dt));
       const ob = chocaCon(yo.x, yo.y);
       if (ob) {
@@ -202,6 +215,8 @@ export function createHuidaScene(services) {
         carteles.push({ x: yo.x, y: yo.y - 30, texto: T.ride.choque, color: colors.enemyAlert, vida: 1 });
       }
     }
+
+    yo.vel = velocidadDe(caballo.sprintSpeed, yo.choque);
 
     // El caballo gira hacia donde lo llevás, con la misma inercia del galope.
     const objetivo = dy * 0.5;
@@ -254,26 +269,38 @@ export function createHuidaScene(services) {
     for (const j of jinetes) {
       j.gallop += dt;
       j.hitFlash = Math.max(0, j.hitFlash - dt);
-      if (!j.alive) continue;
-      if (j.entra > 0) { j.entra -= dt; continue; }
+      if (!j.alive || j.perdido) continue;
+
+      // Al final se quedan atrás del todo.
+      if (yendose) {
+        j.x -= 200 * dt;
+        j.aimTimer = 0;
+        continue;
+      }
+
+      /**
+       * TODOS GALOPAN: el jinete se corre en la pantalla según la diferencia
+       * entre su caballo y el tuyo. Más lento que vos, se va quedando; si
+       * chocás, se te viene encima (hasta `distanciaMinima`: va detrás tuyo,
+       * no te pasa).
+       */
+      j.x += (velocidadDe(j.vel, j.choque) - yo.vel) * dt;
+      j.x = Math.min(j.x, yo.x - J.distanciaMinima);
+      if (yo.x - j.x > J.perdida) {
+        j.perdido = true;
+        carteles.push({ x: 40, y: j.y - 20, texto: T.huida.seQuedo, color: colors.bagLoot, vida: 1.6 });
+        continue;
+      }
 
       // Si se la comió, igual que vos: se frena, queda atrás y no tira.
       if (j.choque > 0) {
         j.choque -= dt;
-        j.x -= H.obstaculos.retroceso * dt;
         j.aimTimer = 0;
         continue;
       }
 
-      // Al final se quedan atrás: los perdiste.
-      if (yendose) {
-        j.x -= J.velocidad * 1.6 * dt;
-        j.aimTimer = 0;
-        continue;
-      }
-
-      // Mientras apunta no se mueve: el aviso es justo porque el tiro sale de
-      // donde lo viste levantar el arma.
+      // Mientras apunta no se corre para el costado: el aviso es justo porque
+      // el tiro sale de donde lo viste levantar el arma.
       if (j.aimTimer > 0) {
         j.aimTimer -= dt;
         if (j.aimTimer <= 0) tirar(j);
@@ -282,12 +309,9 @@ export function createHuidaScene(services) {
       }
 
       const ondula = Math.sin(tiempo * 1.3 + j.fase) * 8;
-      // Nunca detrás del borde: uno que no se ve no puede estar tirándote.
-      const tx = Math.max(22 + (j.atras - H.jinetes.distancia) * 0.3, yo.x - j.atras);
       let ty = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + j.dy + ondula));
       ty = esquivar(j, ty);
-      j.x += Math.sign(tx - j.x) * Math.min(Math.abs(tx - j.x), J.velocidad * dt);
-      j.y += Math.sign(ty - j.y) * Math.min(Math.abs(ty - j.y), J.velocidad * 0.8 * dt);
+      j.y += Math.sign(ty - j.y) * Math.min(Math.abs(ty - j.y), J.velocidadLateral * dt);
       chocarJinete(j);
 
       j.cooldown -= dt;
@@ -516,7 +540,7 @@ export function createHuidaScene(services) {
       cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ox, radioDe(ob)) });
     }
     for (const j of jinetes) {
-      if (!j.alive || j.entra > 0) continue;
+      if (!j.alive || j.perdido) continue;
       cosas.push({ y: j.y, draw: () => dibujarLey(r, j, dia) });
     }
     cosas.push({ y: yo.y, draw: () => dibujarme(r, dia) });
@@ -617,18 +641,23 @@ export function createHuidaScene(services) {
 
   function dibujarPanel(r) {
     const centro = r.width / 2;
-    const fueraDeReloj = Math.max(0, Math.ceil(reloj));
 
     if (fin) {
       r.text(fin.como === 'limpio' ? T.huida.todosCaidos : T.huida.losPerdiste, centro, 60, colors.bagLoot);
     } else {
-      r.text(T.huida.teSiguen(jinetes.filter((j) => j.alive).length), centro, 8, colors.enemyAlert);
-      // La barra del reloj: se vacía hacia el centro.
+      const quedan = siguiendo();
+      r.text(T.huida.teSiguen(quedan.length), centro, 8, colors.enemyAlert);
+      /**
+       * LA BARRA DE LA DISTANCIA, en vez del reloj: cuánto le falta al más
+       * cercano para quedar perdido. Se llena cuando te alejás y se vacía
+       * cuando chocás — es la cuenta que de verdad decide la huida.
+       */
+      const J = H.jinetes;
+      const cerca = Math.min(...quedan.map((j) => yo.x - j.x));
+      const t = Math.max(0, Math.min(1, (cerca - J.distanciaMinima) / (J.perdida - J.distanciaMinima)));
       const ancho = 120;
-      const lleno = ancho * Math.max(0, reloj) / H.duracion;
       r.rect(centro - ancho / 2, 14, ancho, 3, '#241c18');
-      r.rect(centro - lleno / 2, 14, lleno, 3, colors.doorGlow);
-      r.text(`${fueraDeReloj}s`, centro + ancho / 2 + 10, 17, colors.textDim);
+      r.rect(centro - ancho / 2, 14, ancho * t, 3, colors.doorGlow);
     }
 
     r.text(`$${Math.max(0, dineroInicial - perdido)}`, 6, 9, colors.bagLoot, 'left');

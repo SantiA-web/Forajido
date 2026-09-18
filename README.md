@@ -1717,11 +1717,23 @@ el que de verdad sale.
 ### La huida: los jinetes que quedaban te siguen
 
 Si escapás **con la alarma sonando**, con plata encima y con jinetes de la ley
-todavía vivos, no vas directo a los resultados: **te siguen durante 15
-segundos**. Son los mismos que quedaban en el asalto (uno, dos, cinco...), así
-que lo que hiciste adentro se paga afuera.
+todavía vivos, no vas directo a los resultados: **te siguen**. Son los mismos
+que quedaban en el asalto (uno, dos, cinco...), así que lo que hiciste adentro
+se paga afuera.
 
-- Galopás hacia la derecha: `W/A/S/D` te mueven, **el mouse apunta y el clic
+**No hay reloj: se gana con el caballo.** Todos galopan. Arrancan a 110 detrás
+tuyo; tu caballo va siempre a fondo y los de la ley a **130** (cada uno un poco
+distinto, hasta 5 más o 5 menos, así que se van quedando de a uno). Cuando uno
+queda a 250 —fuera de la pantalla— **lo perdiste**. La huida termina cuando no
+te sigue ninguno: porque los perdiste o porque los tiraste. La barra de arriba
+dice cuánto le falta al más cercano para quedar perdido.
+
+| Tu caballo | Sin chocar con nada, los perdés en |
+|---|---|
+| Criollo (142) | unos 12 segundos |
+| Mustang (180) | unos 3 segundos |
+
+- `W/S` esquivan (no hay `A` ni `D`: huís a fondo), **el mouse apunta y el clic
   dispara**, igual que en el asalto. `R` recarga. El revólver sale con las
   balas que le quedaban.
 - A caballo se tira peor: tu dispersión se multiplica por 3.
@@ -1732,14 +1744,13 @@ que lo que hiciste adentro se paga afuera.
   sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
   con menos plata.
 - **Hay obstáculos, los mismos del galope** (rocas, arbustos, cactus y
-  montículos, que vienen de frente igual de rápido). Chocar te frena y te
-  arrastra para atrás, hacia los jinetes. **Ellos también los esquivan**:
-  miran adelante y se corren, pero si lo ven tarde o están apuntando (apuntando
-  no se mueven), se la comen y quedan atrás un momento.
+  montículos). Chocar te frena medio segundo y **se te acercan**: con el
+  Criollo, un choque son unos 5 segundos más de huida. **Ellos también los
+  esquivan**: miran adelante y se corren, pero si lo ven tarde o están
+  apuntando (apuntando no se corren), se la comen y quedan atrás.
 - La mira funciona igual que en el asalto: el círculo mide tu arma (tres veces
   más grande a caballo), y de vez en cuando se te va el pulso.
-- Se termina a los 15 segundos, o antes si no queda ninguno. Cada jinete que
-  tirás acá cuenta como uno tirado en el asalto.
+- Cada jinete que tirás acá cuenta como uno tirado en el asalto.
 
 Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 

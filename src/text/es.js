@@ -234,7 +234,8 @@ export const T = {
     sinPlata: 'NO TE QUEDA NADA QUE SOLTAR',
     bolsas: (n) => (n === 1 ? 'soltaste 1 bolsa' : `soltaste ${n} bolsas`),
     recargando: 'RECARGANDO',
-    teclas: '[WASD] MOVERTE   [CLIC] DISPARAR   [R] RECARGAR',
+    seQuedo: 'SE QUEDÓ ATRÁS',
+    teclas: '[W/S] ESQUIVAR   [CLIC] DISPARAR   [R] RECARGAR',
   },
 
   ride: {

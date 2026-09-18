@@ -236,7 +236,7 @@ export const T = {
     recargando: 'RECARGANDO',
     seQuedo: 'SE QUEDÓ ATRÁS',
     atajo: 'PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG',
-    teclas: '[W/S] ESQUIVAR   [CLIC] DISPARAR   [R] RECARGAR',
+    teclas: '[W/S] ESQUIVAR   [A] FRENAR   [CLIC] DISPARAR   [R] RECARGAR',
   },
 
   ride: {

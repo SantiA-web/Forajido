@@ -1733,10 +1733,17 @@ dice cuánto le falta al más cercano para quedar perdido.
 | Criollo (142) | unos 12 segundos |
 | Mustang (180) | unos 3 segundos |
 
-- `W/S` esquivan (no hay `A` ni `D`: huís a fondo), **el mouse apunta y el clic
-  dispara**, igual que en el asalto. `R` recarga. El revólver sale con las
-  balas que le quedaban.
+- `W/S` esquivan, **el mouse apunta y el clic dispara**, igual que en el
+  asalto. `R` recarga. El revólver sale con las balas que le quedaban.
+- **`A` frena**: tu caballo baja a 85 y los jinetes se te ponen al costado.
+  Frenar es para pelear: al costado les tirás cómodo, pero también te tiran
+  ellos de cerca.
 - A caballo se tira peor: tu dispersión se multiplica por 3.
+- **No sos un búho.** Tirar hasta 150° del lado de tu brazo (abajo en la
+  pantalla) y 110° del otro es cómodo. Más atrás podés, pero **el círculo se
+  agranda** —hasta 4 veces derecho hacia atrás— y, como no ves adelante,
+  **el caballo se tuerce solo** cada tanto, un segundo, para arriba o para
+  abajo. Corregilo con `W/S` o te comés una piedra.
 - Antes de tirar, cada jinete **avisa**: se frena, levanta el arma hacia vos y
   le aparece un **!**. El tiro sale hacia donde estabas en ese momento, así
   que moverte en ese medio segundo es esquivarlo.

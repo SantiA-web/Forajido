@@ -78,6 +78,11 @@ export function createHuidaScene(services) {
       recargando: 0,
       fogonazo: 0,
       choque: 0,
+      frena: false,
+      // El caballo que se tuerce solo mientras mirás para atrás.
+      desvio: 0,
+      desvioDir: 0,
+      proximoDesvio: 0,
     };
 
     jinetes = [];
@@ -144,7 +149,8 @@ export function createHuidaScene(services) {
       entra: 0,
       // Cada uno con su caballo, un poco más rápido o más lento que el resto.
       vel: J.velocidad + rng.range(-J.variacion, J.variacion),
-      dy: n === 1 ? 0 : lado * (18 + escalon * 26),
+      // Uno solo va un poco abajo tuyo: si frenás se te pone al costado, no encima.
+      dy: n === 1 ? 34 : lado * (30 + escalon * 26),
       cooldown: H.jinetes.cadencia * 0.6 + rng.range(0, H.jinetes.cadenciaAzar),
       aimTimer: 0,
       aimDir: 0,
@@ -204,12 +210,15 @@ export function createHuidaScene(services) {
     const J = H.jugador;
     const dy = (input.isDown('KeyS') || input.isDown('ArrowDown') ? 1 : 0)
              - (input.isDown('KeyW') || input.isDown('ArrowUp') ? 1 : 0);
+    yo.frena = input.isDown('KeyA') || input.isDown('ArrowLeft');
+    desviarse(dt);
     if (yo.choque > 0) {
       // Chocaste: el caballo casi se para y no lo podés manejar. Mismo precio
       // que en el galope, pero acá se paga en distancia: se te acercan.
       yo.choque -= dt;
     } else {
-      yo.y = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + dy * J.velocidadY * dt));
+      const tuerce = yo.desvio > 0 ? yo.desvioDir * J.atras.desvioVelocidad : 0;
+      yo.y = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + (dy * J.velocidadY + tuerce) * dt));
       const ob = chocaCon(yo.x, yo.y);
       if (ob) {
         ob.golpeado = true;
@@ -219,10 +228,11 @@ export function createHuidaScene(services) {
       }
     }
 
-    yo.vel = velocidadDe(caballo.sprintSpeed, yo.choque);
+    // [A] frena a lo que frena tu caballo: para que se te pongan al costado.
+    yo.vel = velocidadDe(yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed, yo.choque);
 
     // El caballo gira hacia donde lo llevás, con la misma inercia del galope.
-    const objetivo = dy * 0.5;
+    const objetivo = (dy + (yo.desvio > 0 ? yo.desvioDir * 0.6 : 0)) * 0.5;
     yo.rumbo += (objetivo - yo.rumbo) * Math.min(1, 6 * dt);
     const tramo = 0.73 / 4;
     const crudo = yo.rumbo / tramo;
@@ -248,8 +258,8 @@ export function createHuidaScene(services) {
     if (yo.balas <= 0) { yo.recargando = arma.reloadTime; return; }
 
     const [ox, oy] = boca();
-    const angulo = Math.atan2(input.mouse.y - oy, input.mouse.x - ox)
-      + rng.spreadDeTiro(arma.spread * H.jugador.dispersionACaballo, CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
+    const angulo = haciaDondeApunto()
+      + rng.spreadDeTiro(dispersionAhora(), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
     balas.push({
       x: ox, y: oy,
       vx: Math.cos(angulo) * arma.bulletSpeed,
@@ -260,6 +270,45 @@ export function createHuidaScene(services) {
     yo.fireTimer = arma.fireRate;
     yo.fogonazo = 0.06;
     audio.play('playerShot');
+  }
+
+  /** Hacia dónde apuntás: al mouse, para cualquier lado. */
+  function haciaDondeApunto() {
+    const [ox, oy] = boca();
+    return Math.atan2(input.mouse.y - oy, input.mouse.x - ox);
+  }
+
+  /**
+   * CUÁNTO TE PASASTE DEL GIRO CÓMODO: 0 adentro (`giroDerecha` /
+   * `giroIzquierda`), 1 derecho hacia atrás, y en el medio de a poco.
+   */
+  function cuantoAtras() {
+    const g = (haciaDondeApunto() * 180) / Math.PI;
+    const tope = g >= 0 ? H.jugador.giroDerecha : H.jugador.giroIzquierda;
+    const pasado = Math.abs(g) - tope;
+    return pasado <= 0 ? 0 : Math.min(1, pasado / (180 - tope));
+  }
+
+  /** Tu dispersión ahora: la del arma a caballo, y más si mirás para atrás. */
+  function dispersionAhora() {
+    const t = cuantoAtras();
+    return arma.spread * H.jugador.dispersionACaballo * (1 + t * (H.jugador.atras.dispersionMax - 1));
+  }
+
+  /**
+   * NO VES ADELANTE: mientras apuntás pasado el giro cómodo, el caballo se
+   * tuerce solo cada tanto, un segundo, para arriba o para abajo. Mirando
+   * adelante no pasa nunca: el reloj se reinicia.
+   */
+  function desviarse(dt) {
+    const T = H.jugador.atras;
+    yo.desvio = Math.max(0, yo.desvio - dt);
+    if (cuantoAtras() <= 0 || fin) { yo.proximoDesvio = T.desvioCada + rng.range(0, T.desvioAzar); return; }
+    yo.proximoDesvio -= dt;
+    if (yo.proximoDesvio > 0) return;
+    yo.desvio = T.desvioDura;
+    yo.desvioDir = rng.chance(0.5) ? 1 : -1;
+    yo.proximoDesvio = T.desvioDura + T.desvioCada + rng.range(0, T.desvioAzar);
   }
 
   /** De dónde sale tu tiro: a la altura del pecho del jinete. */
@@ -314,6 +363,17 @@ export function createHuidaScene(services) {
       const ondula = Math.sin(tiempo * 1.3 + j.fase) * 8;
       let ty = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + j.dy + ondula));
       ty = esquivar(j, ty);
+      /**
+       * AL COSTADO TUYO DEJAN LUGAR: si frenás se te ponen a la par, y a la par
+       * no se te pueden subir encima. Si su carril queda pegado a vos (por el
+       * borde del campo o por esquivar algo), se corren al lado que haya.
+       */
+      const SEPARA = 30;
+      if (yo.x - j.x < 50 && Math.abs(ty - yo.y) < SEPARA) {
+        const abajo = yo.y + SEPARA <= renderer.height - 12;
+        const arriba = yo.y - SEPARA >= H.cielo + 22;
+        ty = (ty >= yo.y && abajo) || !arriba ? yo.y + SEPARA : yo.y - SEPARA;
+      }
       j.y += Math.sign(ty - j.y) * Math.min(Math.abs(ty - j.y), J.velocidadLateral * dt);
       chocarJinete(j);
 
@@ -619,7 +679,7 @@ export function createHuidaScene(services) {
 
     if (yo.fogonazo > 0) {
       const [ox, oy] = boca();
-      const a = Math.atan2(input.mouse.y - oy, input.mouse.x - ox);
+      const a = haciaDondeApunto();
       r.rect(ox + Math.cos(a) * 6 - 1.5, oy + Math.sin(a) * 6 - 1.5, 3, 3, colors.bulletP);
     }
   }
@@ -639,8 +699,9 @@ export function createHuidaScene(services) {
    */
   function dibujarMira(r) {
     const m = CONFIG.mira;
+    // Crece cuando apuntás para atrás: es la misma dispersión que usa el tiro.
     const radio = Math.max(m.radioMin, Math.min(m.radioMax,
-      Math.tan(arma.spread * H.jugador.dispersionACaballo) * m.distanciaReferencia * m.escala));
+      Math.tan(dispersionAhora()) * m.distanciaReferencia * m.escala));
     r.circle(input.mouse.x, input.mouse.y, radio, yo.recargando > 0 ? m.colorBloqueado : m.color, m.alpha);
   }
 

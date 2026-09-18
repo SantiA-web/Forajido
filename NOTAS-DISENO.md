@@ -13803,6 +13803,7 @@ bien:
 | El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
 | El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
 | El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
+| Tirar para atrás | `huidaScene.js`, `dibujarme` | El jinete no se da vuelta: sólo crece el círculo. Falta el torso girado |
 
 ---
 
@@ -13925,6 +13926,62 @@ llega al seguro de 60 s**: sin esquivar choca con todo (12-15 veces) y cada
 choque le devuelve la ventaja a la ley. No es un caso real —alguien que
 juega mueve el caballo—, pero si se ve pasar, el número para mirar es el
 largo del choque.
+
+#### Cuarta vuelta: no sos un búho, y la A frena para pelear
+
+*(Santi: "cuando el jinete va a caballo no puede disparar a dónde se le de la
+gana, porque su flexibilidad no se lo permite [...] El jugador no es un
+buho")*
+
+**Primero fue un tope duro** (el arma no pasaba de 150° del lado del brazo y
+110° del otro), y al medirlo **se llevó puesta la pelea**: los jinetes vienen
+detrás, casi en línea, así que estaban a tiro el 3% del tiempo y el robot que
+tira bajaba 0,1 de 3. Con 135/100, cero.
+
+**Cómo quedó** *(Santi: "sí podría un jinete disparar hacia atrás. El tema es
+que perdería puntería [...] que exista la opción de usar la tecla A [...] al
+no estar viendo al frente, el caballo puede que tome una pequeña dirección de
+un segundo")*:
+
+- **150° / 110° es el giro CÓMODO** (`giroDerecha` / `giroIzquierda`). No es
+  parejo porque sos diestro y vas hacia la derecha: el brazo queda del lado de
+  la cámara.
+- **Más atrás se puede**, pero la dispersión crece de a poco hasta
+  **×4 derecho hacia atrás** (`atras.dispersionMax`), y el círculo con ella.
+- **Mientras apuntás pasado el giro cómodo, el caballo se tuerce solo**: cada
+  1,2-2 s, un segundo, a 55 px/s para arriba o para abajo. Se corrige con W/S.
+- **[A] frena** a la `brakeSpeed` del caballo (85 los dos). Los jinetes se te
+  vienen hasta ponerse a la par (`distanciaMinima` bajó de 40 a 0), cada uno
+  en su carril y nunca encima tuyo (dejan 30 de lado). Al costado están de
+  lleno en tu giro cómodo.
+
+**Medido**, 12 huidas por caso. "Correr" es no frenar y tirarle al más
+cercano, esté donde esté; "pelear" es ir con la A apretada:
+
+| | 1 jinete | 3 | 5 |
+|---|---|---|---|
+| Criollo, esquivando sin tirar | 12 s, pierde 7% | 16 s, 14% | 18 s, 18% |
+| Criollo, corriendo y tirando para atrás | 4 s, 1% | 11 s, 5% | 12 s, 6% |
+| Criollo, frenando para pelear | 2 s, 2% (baja 1) | 6 s, 14% (baja 3) | 9 s, 25% (baja 5) |
+| Mustang, esquivando sin tirar | 3 s | 3 s | 3 s |
+| Mustang, frenando para pelear | 1 s (baja 1) | 6 s, 13% (baja 3) | 9 s, 32% (baja 5) |
+
+Pelear baja a todos y cuenta como muertes del asalto (recompensa), pero cuesta
+más plata que correr: es una decisión de verdad.
+
+**Cuánto se agranda el círculo derecho hacia atrás**, corriendo con el Criollo
+(15 huidas por caso; la plata perdida casi no cambia, es ruido):
+
+| Derecho hacia atrás | Jinetes que bajás corriendo (3 / 5) |
+|---|---|
+| ×2,5 | 1,6 / 1,3 |
+| **×4** ← quedó | 0,9 / 1,3 |
+| ×6 | 0,7 / 0,9 |
+
+Quedó en ×4: tirar para atrás sirve, pero para limpiar hay que frenar.
+
+Sin errores en 19.753 cuadros con teclas y mouse al azar: los dos caballos, de
+día y de noche, con 1, 2, 4 y 5 jinetes.
 
 #### 🧪 El atajo para probarla
 

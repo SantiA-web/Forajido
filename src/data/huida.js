@@ -49,9 +49,10 @@ export const HUIDA = {
 
   jugador: {
     /**
-     * Dónde vas en la pantalla, en fracción del ancho. Tu caballo va SIEMPRE a
-     * fondo (`sprintSpeed`): huís por tu vida, y frenar sólo te perjudicaría.
-     * Por eso no hay A ni D, sólo W/S para esquivar.
+     * Dónde vas en la pantalla, en fracción del ancho. Tu caballo va a fondo
+     * (`sprintSpeed`) salvo que aprietes [A]: ahí baja a su `brakeSpeed` (85
+     * los dos) y los jinetes se te vienen al costado. **Frenar es para
+     * pelear** *(Santi: "que exista la opción de usar la tecla A")*.
      */
     x: 0.62,
     /** Arriba y abajo (px/s): la misma del galope (`velVertical`). */
@@ -61,6 +62,45 @@ export const HUIDA = {
      * Con el Colt (0,035) queda en 0,105.
      */
     dispersionACaballo: 3,
+
+    /**
+     * HASTA DÓNDE GIRA EL TORSO CÓMODO, en grados desde adelante *(Santi: "el
+     * jugador no es un buho")*.
+     *
+     * No es parejo, porque sos diestro y galopás hacia la derecha: tu brazo
+     * derecho queda del lado de la cámara (abajo en la pantalla). Para ese lado
+     * te das vuelta sobre el hombro y llegás más atrás; para el otro tenés que
+     * cruzar el brazo por delante del cuerpo y llegás menos.
+     *
+     * 🔁 PRIMERO ERA UN TOPE DURO, Y SE LLEVABA PUESTA LA PELEA: los jinetes
+     * vienen detrás, casi en línea, así que con 150/110 estaban a tiro el 3%
+     * del tiempo. Ahora es la zona CÓMODA *(Santi: "sí podría un jinete
+     * disparar hacia atrás. El tema es que perdería puntería")*: pasado esto
+     * se puede tirar igual, pero ver `atras`.
+     */
+    giroDerecha: 150,    // hacia abajo en la pantalla, del lado del brazo
+    giroIzquierda: 110,  // hacia arriba, cruzando el brazo
+
+    /**
+     * TIRAR PASADO EL GIRO CÓMODO *(Santi: "cuando el circulo del arma pasa
+     * los grados ideales hacia atrás, se ensancha [...] al no estar viendo al
+     * frente, el caballo puede que tome una pequeña dirección de un
+     * segundo")*.
+     *
+     *  - `dispersionMax`: la dispersión se multiplica de a poco desde el tope
+     *    cómodo hasta esto, derecho hacia atrás. El círculo crece igual.
+     *  - Mientras apuntás pasado el tope no ves adelante: cada `desvioCada`
+     *    segundos (más un poco al azar) el caballo se tuerce solo, para arriba
+     *    o para abajo, a `desvioVelocidad` px/s durante `desvioDura`. Lo podés
+     *    corregir con W/S, si te das cuenta.
+     */
+    atras: {
+      dispersionMax: 4,
+      desvioCada: 1.2,
+      desvioAzar: 0.8,
+      desvioDura: 1.0,
+      desvioVelocidad: 55,
+    },
   },
 
   /**
@@ -109,8 +149,12 @@ export const HUIDA = {
      */
     perdida: 250,
 
-    /** Más cerca que esto no se te ponen, aunque vos choques: van detrás. */
-    distanciaMinima: 40,
+    /**
+     * Hasta dónde se te arriman: a la par tuya, nunca adelante. Con 0 y su
+     * carril arriba o abajo tuyo, si frenás quedan al costado — y ahí están
+     * de lleno en tu giro cómodo.
+     */
+    distanciaMinima: 0,
 
     /** Qué tan rápido se corren para arriba o para abajo (px/s). */
     velocidadLateral: 68,

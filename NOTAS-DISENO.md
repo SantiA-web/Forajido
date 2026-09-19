@@ -14029,7 +14029,8 @@ día y de noche, con 1, 2, 4 y 5 jinetes.
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*
 
 En el campamento, **[1]** te larga en la huida con el Criollo y **[2]** con el
-Mustang: cinco jinetes y $1000 de mentira. No toca tu caballo ni tu plata, y
+Mustang: cinco jinetes y $1000 de mentira. **[3]** cambia el arma entre el Colt
+y el Smith (el cartel dice cuál está). No toca tu caballo ni tu plata, y
 los resultados dicen que fue una prueba (`prueba` en huidaScene.js, que
 saltea `applyRaidResult`). El cartel está arriba a la izquierda.
 

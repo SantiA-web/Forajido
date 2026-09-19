@@ -61,6 +61,10 @@ function revolver(n) {
 
 export function createCampScene(services) {
   const { input, scenes, hud, audio } = services;
+
+  // 🧪 El arma del atajo de prueba de la huida ([3] la cambia). Vive acá afuera
+  // para que se acuerde entre una prueba y la siguiente.
+  let armaDePrueba = 'colt';
   const colors = CONFIG.colors;
 
   let x, y, sentado, mensaje, scroll, avisoLejos, chispaTimer;
@@ -325,11 +329,15 @@ export function createCampScene(services) {
      *
      * ⚠️ SACARLO antes de mostrar el juego: está anotado en NOTAS-DISENO.md.
      */
+    // [3] cambia el arma de la prueba entre el Colt y el Smith *(Santi: "un
+    // botón para variar entre el Colt y el Smith")*.
+    if (input.wasPressed('Digit3')) armaDePrueba = armaDePrueba === 'colt' ? 'smith' : 'colt';
     if (input.wasPressed('Digit1') || input.wasPressed('Digit2')) {
       scenes.goTo('huida', {
         prueba: true,
         caballo: input.wasPressed('Digit2') ? 'mustang' : 'criollo',
         jinetes: 5,
+        arma: WEAPONS[armaDePrueba],
         summary: { outcome: 'escaped', money: 1000, collected: 1000, kills: 0, objetos: [], leftBehind: 0, alarm: true },
       });
       return;
@@ -1038,7 +1046,7 @@ export function createCampScene(services) {
   function dibujarInterfaz(r) {
     r.text(T.camp.title, r.width / 2, 12, colors.text);
     // 🧪 El atajo de prueba de la huida (ver `update`). Sacarlo con él.
-    r.text(T.huida.atajo, 8, 26, colors.textDim, 'left');
+    r.text(T.huida.atajo(WEAPONS[armaDePrueba].short), 8, 26, colors.textDim, 'left');
     r.text(`$${gameState.money}`, r.width - 8, 12, colors.bagLoot, 'right');
     if (gameState.bounty > 0) {
       r.text(`☠ $${gameState.bounty}`, 8, 12, colors.enemyAlert, 'left');

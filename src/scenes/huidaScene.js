@@ -580,7 +580,7 @@ export function createHuidaScene(services) {
     // Un jinete derribado acá es un jinete derribado: cuenta como en el asalto.
     summary.kills = (summary.kills || 0) + derribados;
     // Una prueba no suma plata, ni recompensa, ni asaltos: sólo muestra cómo te fue.
-    if (prueba) summary.prueba = caballo.name;
+    if (prueba) summary.prueba = `el ${caballo.name} y el ${arma.name}`;
     else applyRaidResult(summary);
     scenes.goTo('results', summary);
   }

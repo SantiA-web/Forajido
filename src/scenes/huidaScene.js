@@ -148,7 +148,7 @@ export function createHuidaScene(services) {
       y: yo.y + lado * (24 + escalon * 22),
       alive: true,
       perdido: false,
-      health: RIDERS.ley.health,
+      health: H.jinetes.vida ?? RIDERS.ley.health,   // ver `vida` en data/huida.js
       entra: 0,
       // Cada uno con su caballo, un poco más rápido o más lento que el resto.
       vel: J.velocidad + rng.range(-J.variacion, J.variacion),

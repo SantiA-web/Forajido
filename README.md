@@ -1759,7 +1759,11 @@ dice cuánto le falta al más cercano para quedar perdido.
   apuntando (apuntando no se corren), se la comen y quedan atrás.
 - La mira funciona igual que en el asalto: el círculo mide tu arma (tres veces
   más grande a caballo), y de vez en cuando se te va el pulso.
-- Cada jinete que tirás acá cuenta como uno tirado en el asalto.
+- **A caballo, un tiro basta**: en el asalto un jinete aguanta dos, pero a un
+  tipo galopando a fondo un balazo lo voltea. Es lo que hace que disparar
+  valga la pena.
+- Cada jinete que tirás acá cuenta como uno tirado en el asalto, **y te sube
+  la recompensa igual**: matar a la ley siempre se paga.
 
 Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 

@@ -172,6 +172,20 @@ export const HUIDA = {
      */
     distanciaMinima: 0,
 
+    /**
+     * A CABALLO, UN TIRO BASTA *(Santi, después de jugarlo: "en la huida no
+     * sirve disparar. Ya lo corroboré, es más rápido y seguro solo correr y
+     * esquivar")*. En el asalto un jinete aguanta dos (`RIDERS.ley.health`);
+     * acá uno, porque a un tipo galopando a fondo un balazo lo voltea.
+     *
+     * Era el problema de fondo: con dos tiros, pegarle una vez no cambiaba
+     * nada, y frenar para pelear costaba la mitad de la plata. Medido con un
+     * robot que apunta como una persona (reacciona tarde y le erra), contra 5
+     * jinetes con el Criollo: frenar y pelear pasó de **14 s perdiendo 53%** a
+     * **6 s perdiendo 11%** — y esquivar sin tirar son 14 s perdiendo 12%.
+     */
+    vida: 1,
+
     /** Qué tan rápido se corren para arriba o para abajo (px/s). */
     velocidadLateral: 68,
 

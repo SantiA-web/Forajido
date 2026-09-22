@@ -13803,6 +13803,7 @@ bien:
 | El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
 | El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
 | El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
+| El caballo del jinete caído | `huidaScene.js`, `pegarle` | Queda el cuerpo en el suelo y el caballo desaparece; debería seguir galopando solo |
 | Tirar para atrás | `huidaScene.js`, `dibujarme` | El jinete no se da vuelta: sólo crece el círculo. Falta el torso girado |
 
 ---
@@ -14023,6 +14024,47 @@ caballos, las dos armas, de día y de noche.
 
 Sin errores en 19.753 cuadros con teclas y mouse al azar: los dos caballos, de
 día y de noche, con 1, 2, 4 y 5 jinetes.
+
+#### Sexta vuelta: a caballo, un tiro basta
+
+*(Santi, después de jugarla: "hoy, en la huida no sirve disparar. Ya lo
+corroboré, es más rápido y seguro solo correr y esquivar")*
+
+**Tenía razón, y las mediciones anteriores no lo veían** porque el robot
+apuntaba mejor que una persona. Con un robot que reacciona tarde (0,3 s) y le
+erra (±22 px), contra 5 jinetes con el Criollo y el Colt, **frenar para pelear
+costaba el 53% de la plata** — el doble que esquivar sin tirar.
+
+Las cuatro razones por las que no servía:
+
+1. **Dos tiros por jinete**, desde atrás y a caballo.
+2. **Pegarle una vez no cambiaba nada**: seguía igual de rápido y seguía
+   tirando.
+3. **Disparar tiene precios**: el caballo se tuerce mirando atrás, y apuntando
+   manejás peor.
+4. **Matar sube la recompensa**, así que encima convenía no hacerlo.
+
+**Lo que se hizo, elegido por Santi sobre tres opciones medidas: en la huida un
+jinete cae de un tiro** (`HUIDA.jinetes.vida` = 1; en el asalto siguen con dos).
+La otra opción probada —que pegarle lo espante y lo frene un segundo— casi no
+movía la aguja (pelear pasaba de 53% a 47%). **La recompensa se queda como
+estaba**: matar a la ley se paga igual, y ahora disparar ya conviene en el
+momento.
+
+**Medido después**, 15 huidas por caso, 5 jinetes, mismo robot:
+
+| | Sólo esquivar | Correr y tirar | Frenar y pelear |
+|---|---|---|---|
+| Criollo + Colt | 17 s, pierde 19% | 8 s, 7%, baja 2,5 | 7 s, 12%, baja los 5 |
+| Criollo + Smith | 14 s, 17% | 9 s, 3%, baja 2,9 | 5 s, 9%, baja los 5 |
+| Mustang + Colt | 3 s, 1% | 3 s, 1% | 8 s, 20%, baja los 5 |
+
+Ahora las tres formas se defienden: con el Criollo, disparar es lo mejor; con
+el Mustang, correr sigue ganando (los perdés en 3 s) y pelear es una decisión
+de verdad, porque frenás a un caballo que no lo necesitaba.
+
+Sin errores en 12.751 cuadros con teclas y mouse al azar: los dos caballos,
+las dos armas, de día y de noche.
 
 #### 🧪 El atajo para probarla
 

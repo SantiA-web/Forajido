@@ -1771,6 +1771,12 @@ soltaste casi toda la plata.
 
 Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 
+**Y se siente como una persecución:** los seis caballos levantan polvo, las
+matas pasan pegadas a la cámara, hay rayas de velocidad, la cámara se balancea
+con el galope y se sacude cuando te pegan. La ley grita "¡alto ahí!" antes de
+tirar, los caballos relinchan cuando cae uno o cuando chocás, y las balas que
+te pasan cerca silban.
+
 **Tres formas de no pasar por esto:** escapar sin que suene la alarma,
 escapar antes de que lleguen los jinetes (tardan 25 segundos desde la
 alarma), o bajarlos a todos antes de saltar.

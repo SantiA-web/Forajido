@@ -235,5 +235,12 @@ export const HUIDA = {
     dispersion: 0.18,
 
     velocidadBala: 250,
+
+    /**
+     * EL GRITO. Cada tanto uno grita "¡alto ahí!" cuando se prepara para
+     * tirar; no en cada tiro, o sería un coro insoportable.
+     */
+    chanceGrito: 0.3,
+    gritoCada: 2.5,
   },
 };

@@ -14102,6 +14102,56 @@ caso real (mover el caballo alcanza), pero si alguna vez se ve, el número es
 Sin errores en 16.206 cuadros con teclas, clic y clic derecho al azar: los dos
 caballos, las dos armas, de día y de noche.
 
+#### Octava vuelta: que se sienta una persecución (polvo y sonido)
+
+*(Santi: "ahora sí se siente mejor el disparo, pero ¿por qué todavía no lo
+siento como una persecución real del Oeste?")*
+
+El diagnóstico, y queda anotado porque vale para cualquier escena nueva: **la
+huida tenía mecánica pero no tenía escena**. Las cinco cosas que faltaban eran
+no sentir la velocidad, la cámara clavada, cinco jinetes que son la misma
+copia, no ir a ningún lado, y estar casi muda. Santi eligió atacar las dos
+primeras y la última (las más baratas): **A (velocidad y cámara) + B (sonido)**.
+
+**A · Se siente la velocidad**
+
+- **El polvo de los cascos se mudó a `world/polvoDeCascos.js`** y ahora lo usan
+  el galope y la huida. Es el mismo de siempre —bocanadas que nacen bajo cada
+  casco y se quedan en el suelo—, pero acá lo levantan **los seis caballos**:
+  vos con 5 bocanadas por pisada y cada jinete con 3 (con 5 la pantalla se
+  tapaba).
+- **Rayas de velocidad y matas de adelante** (`engine/parallax.js`, las mismas
+  del galope). Las matas pasan **entre vos y la cámara**, abajo de todo: estar
+  cerca es lo que hace que se lea la velocidad.
+- **La cámara se mueve**: se balancea con la zancada (dos senos, uno por
+  pisada), da un tirón para atrás cuando chocás y se sacude cuando te pegan.
+
+**B · Ya no está muda** (tres sonidos nuevos en `engine/audio.js`, hechos con
+las mismas dos herramientas de siempre, sin grabaciones):
+
+| | Cuándo | Cómo está hecho |
+|---|---|---|
+| **El grito de la ley** | Al levantar el arma, 30% de las veces y no más de uno cada 2,5 s | Dos golpes de voz áspera, el segundo más corto y más arriba: la forma de "¡alto ahí!" sin palabras |
+| **El relincho** | Cuando cae un jinete y cuando chocás | Tres tonos cortos encadenados (el temblor del relincho) y una caída larga |
+| **La bala que silba** | Cuando una bala te pasa a menos de 26 y no te da | Un silbido agudo que cae en 90 ms: el Doppler de algo que pasa al lado |
+
+🐛 **Y UN ARREGLO QUE SALIÓ MIRANDO LA FOTO DE NOCHE:** los cactus, las rocas y
+las matas se dibujaban con su color de día, así que de noche quedaban verdes
+fosforescentes sobre el suelo oscuro. Ahora `dibujarObstaculoDesierto` recibe
+`noche` y los apaga al 40%, **en las dos escenas** — el galope también lo tenía
+y nadie lo había visto.
+
+Medido: el cuadro entero de la huida cuesta **1,24 ms** con seis caballos
+levantando polvo (el presupuesto de 60 cuadros por segundo son 16). Sin errores
+en 14.341 cuadros con teclas, clic y clic derecho al azar —los dos caballos,
+las dos armas, de día y de noche— más 900 cuadros de galope para confirmar que
+la mudanza del polvo no lo rompió.
+
+**Lo que queda de la lista, para cuando Santi lo pida:** que los jinetes se
+comporten como una partida (se griten entre ellos, se turnen, uno se adelante a
+cortarte) y que la huida tenga lugar y destino (un arroyo, un cañón, y que
+termine cuando llegás).
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

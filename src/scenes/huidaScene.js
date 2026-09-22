@@ -33,11 +33,13 @@ import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { caballoActual, HORSES, APROXIMACION as A } from '../data/horse.js';
 import { applyRaidResult, gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
-import { dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
+import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
 import { RIDERS } from '../data/riders.js';
 import { sembrarDesierto } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
+import { crearPolvo } from '../world/polvoDeCascos.js';
+import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor } from '../world/trenTresCuartos.js';
 
 export function createHuidaScene(services) {
@@ -47,7 +49,11 @@ export function createHuidaScene(services) {
   let summary, caballo, arma, prueba;
   let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, proximoObstaculo;
   let suelo, tiempo, dineroInicial, perdido, soltadas, derribados;
-  let fin, temblor, avisoCansancio;
+  let fin, temblor, avisoCansancio, ultimoGrito;
+  /** El polvo de los cascos: el mismo del galope (world/polvoDeCascos.js). */
+  const polvo = crearPolvo(colors.polvo);
+  /** Cuánto se sacude la cámara ahora, y el balanceo del galope. */
+  let bamboleo;
 
   /**
    * @param params.summary  lo que armó el asalto para la pantalla de
@@ -108,6 +114,9 @@ export function createHuidaScene(services) {
     fin = null;
     temblor = 0;
     avisoCansancio = false;
+    ultimoGrito = -99;
+    polvo.limpiar();
+    bamboleo = 0;
 
     const a = CONFIG.ambiente;
     audio.ambiente('galope', { cutoff: 420, q: 0.6, type: 'lowpass',
@@ -195,6 +204,8 @@ export function createHuidaScene(services) {
       carteles.push({ x: renderer.width / 2, y: 70, texto: T.huida.aflojan, color: colors.bagLoot, vida: 2.4 });
     }
 
+    polvo.actualizar(dt, suelo);
+    bamboleo += dt;
     sembrarObstaculos();
     moverme(dt);
     suelo += yo.vel * dt;
@@ -250,6 +261,7 @@ export function createHuidaScene(services) {
         ob.golpeado = true;
         yo.choque = A.obstaculoFrenado;
         audio.play('hitWall');
+        audio.play('relincho');
         carteles.push({ x: yo.x, y: yo.y - 30, texto: T.ride.choque, color: colors.enemyAlert, vida: 1 });
       }
     }
@@ -412,6 +424,11 @@ export function createHuidaScene(services) {
       j.cooldown -= dt;
       const d = Math.hypot(yo.x - j.x, yo.y - j.y);
       if (j.cooldown <= 0 && d < J.alcance && j.x > 16) {
+        // Cada tanto uno grita al levantar el arma: la ley avisa antes de tirar.
+        if (tiempo - ultimoGrito > J.gritoCada && rng.chance(J.chanceGrito)) {
+          ultimoGrito = tiempo;
+          audio.play('gritoLey');
+        }
         j.aimTimer = J.apuntar;
         j.aimDir = Math.atan2((yo.y - 8) - (j.y - 14), yo.x - (j.x + 6));
         j.cooldown = J.cadencia + rng.range(0, J.cadenciaAzar);
@@ -547,6 +564,10 @@ export function createHuidaScene(services) {
       } else if (yo.invuln <= 0 && Math.abs(b.x - yo.x) < 11 && Math.abs(b.y - (yo.y - 8)) < 11) {
         b.vida = 0;
         soltarBolsa();
+      } else if (!b.silbo && Math.abs(b.x - yo.x) < 26 && Math.abs(b.y - (yo.y - 8)) < 26) {
+        // Te pasó cerca y no te dio: el silbido es el que te avisa que casi.
+        b.silbo = true;
+        audio.play('balaSilba');
       }
     }
     balas = balas.filter((b) => b.vida > 0 && b.x > -20 && b.x < renderer.width + 20
@@ -560,6 +581,8 @@ export function createHuidaScene(services) {
     if (j.health > 0) return;
     j.alive = false;
     derribados += 1;
+    // El caballo sin jinete se queja y sigue de largo.
+    audio.play('relincho');
     // Queda tirado en el SUELO, que sigue desfilando: se va quedando atrás.
     caidos.push({ gx: j.x + suelo, y: j.y });
     audio.play('kill');
@@ -611,6 +634,24 @@ export function createHuidaScene(services) {
     if (casco > 0) return;
     casco = CONFIG.ambiente.zancadaCada;
     audio.play('zancada');
+    if (fin) return;
+
+    /**
+     * Y CADA ZANCADA LEVANTA POLVO, la tuya y la de ellos. Seis caballos a
+     * fondo sobre tierra seca es media pantalla de tierra en el aire, que es
+     * lo que faltaba para que se sienta una persecución y no una carrera
+     * prolija *(Santi: "¿por qué todavía no lo siento como una persecución
+     * real del Oeste?")*.
+     *
+     * Los jinetes levantan menos (3 bocanadas por casco contra 5): son seis
+     * caballos, y con la misma cantidad que vos la pantalla se tapaba.
+     */
+    const pisadas = [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6], [GOLPES.delanteraAca, 6]];
+    polvo.sembrar({ x: yo.x, y: yo.y, suelo, rumbo: yo.rumbo, fuerza: yo.choque > 0 ? 0.3 : 1, pisadas });
+    for (const j of siguiendo()) {
+      if (j.x < -20 || j.x > renderer.width + 20) continue;
+      polvo.sembrar({ x: j.x, y: j.y, suelo, fuerza: 0.8, pisadas, cuantas: 3 });
+    }
   }
 
   function mostrarCursorDelSistema(visible) {
@@ -626,7 +667,16 @@ export function createHuidaScene(services) {
     const C = colors.cielo;
 
     r.ctx.save();
-    if (temblor > 0) r.ctx.translate(rng.range(-2, 2), rng.range(-2, 2));
+    /**
+     * LA CÁMARA SE MUEVE: el balanceo del galope siempre (sube y baja con la
+     * zancada, como el lomo), el sacudón cuando te pegan, y un tirón cuando
+     * chocás. Antes estaba clavada y por eso parecía una cinta de correr.
+     */
+    const zancadaT = CONFIG.ambiente.zancadaCada;
+    const vaivén = Math.sin((bamboleo / zancadaT) * Math.PI * 2) * 0.9
+      + Math.sin((bamboleo / zancadaT) * Math.PI * 4) * 0.4;
+    r.ctx.translate(yo.choque > 0 ? -3 : 0, vaivén);
+    if (temblor > 0) r.ctx.translate(rng.range(-2.5, 2.5), rng.range(-2.5, 2.5));
 
     r.clear(dia ? colors.desiertoDia : colors.desiertoNoche);
     sembrarDesierto(r, {
@@ -647,6 +697,18 @@ export function createHuidaScene(services) {
     }
     r.rect(0, H.cielo, r.width, 1, tinte(C.bruma));
 
+    /**
+     * LAS RAYAS DE VELOCIDAD Y LAS MATAS DE ADELANTE, las mismas del galope
+     * (engine/parallax.js). Las matas pasan pegadas a la cámara, abajo de
+     * todo: son lo que de verdad hace sentir a qué velocidad vas, porque
+     * están cerca.
+     */
+    const P = CONFIG.parallax;
+    drawSpeedLines(r, suelo, r.width, {
+      ...P.rayas, velocidad: P.rayas.velocidad * P.velocidad,
+      desde: H.cielo + 10, hasta: r.height - 6,
+    });
+
     // Lo que quedó atrás en el suelo: los caídos y las bolsas.
     for (const c of caidos) dibujarTendido(r, c.gx - suelo, c.y + 4, { tipo: 'jineteLey', cinta: '#4a78b8' });
     for (const b of bolsas) dibujarBolsa(r, b.gx - suelo, b.y + b.z);
@@ -656,7 +718,7 @@ export function createHuidaScene(services) {
     for (const ob of obstaculos) {
       const ox = ob.gx - suelo;
       if (ox < -20 || ox > r.width + 20) continue;
-      cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ox, radioDe(ob)) });
+      cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ox, radioDe(ob), !dia) });
     }
     for (const j of jinetes) {
       if (!j.alive || j.perdido) continue;
@@ -664,11 +726,18 @@ export function createHuidaScene(services) {
     }
     cosas.push({ y: yo.y, draw: () => dibujarme(r, dia) });
     cosas.sort((a, b) => a.y - b.y);
+    // El polvo va detrás de todos los caballos: lo levantaron al pasar.
+    polvo.dibujar(r, suelo, !dia);
     for (const c of cosas) c.draw();
 
     for (const b of balas) {
       r.rect(b.x - 1, b.y - 1, 3, 2, b.mia ? colors.bulletP : colors.bulletE);
     }
+    // Las matas de adelante van ENCIMA de todo: pasan entre vos y la cámara.
+    drawParallax(r, P.capas.map((c, i) => ({
+      ...c, v: c.v * P.velocidad, y: r.height - 12 + i * 4,
+    })), suelo, r.width);
+
     for (const c of carteles) {
       r.ctx.globalAlpha = Math.min(1, c.vida * 2);
       r.text(c.texto, c.x, c.y, c.color);

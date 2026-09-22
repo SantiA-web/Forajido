@@ -48,6 +48,7 @@ import {
 } from '../world/trenTresCuartos.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
 import { sembrarDesierto } from '../world/desierto.js';
+import { crearPolvo } from '../world/polvoDeCascos.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { distance } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
@@ -92,7 +93,8 @@ export function createRideScene(services) {
    * dice en qué punto de la zancada va el caballo, y de ahí salen las patas
    * (`faseDeZancada`). `polvo`: las bocanadas que levantan los cascos.
    */
-  let zancadaIntervalo, polvo;
+  let zancadaIntervalo;
+  const polvo = crearPolvo(CONFIG.colors.polvo);
   let x, y, vel, aguante, reloj, gastado, scroll, alcanzada;
   let trastabilla, choque, saltando, terminado;
   let exposicion, visto, obstaculos, aviso;
@@ -673,7 +675,7 @@ export function createRideScene(services) {
     cascoTimer = 0;
     velCaballoActual = 0;
     zancadaIntervalo = 0;
-    polvo = [];
+    polvo.limpiar();
 
     hayTormenta = clima === 'tormenta' || (clima && clima.id === 'tormenta');
     truenoTimer = 0;
@@ -1326,7 +1328,7 @@ export function createRideScene(services) {
    */
   function dibujarObstaculo(r, ob, ox) {
     // El dibujo vive en world/obstaculosDesierto.js: la huida usa el mismo.
-    dibujarObstaculoDesierto(r, ob, ox, radioDe(ob));
+    dibujarObstaculoDesierto(r, ob, ox, radioDe(ob), !gameState.esDeDia);
   }
 
   /**
@@ -1568,102 +1570,25 @@ export function createRideScene(services) {
   }
 
   /**
-   * LA NUBE DE POLVO *(Santi: "añádele una nube de polvo como la de la imagen",
-   * y "lo más realista posible")*.
-   *
-   * No es una estela pegada al caballo: cada casco que pisa levanta sus
-   * bocanadas (`sembrarPolvo`, llamado con cada zancada que suena), y esas
-   * bocanadas SE QUEDAN DONDE NACIERON, sobre el suelo. El caballo sigue y las
-   * deja atrás; ellas crecen, suben un poco, derivan con el viento de la
-   * carrera y se deshacen. Eso es lo que hace que se lea como polvo de verdad y
-   * no como un humo que el caballo arrastra.
-   *
-   * ES SÓLO DIBUJO y usa `Math.random`, no el `rng` del juego: si usara el
-   * mismo generador que siembra obstáculos y tiros, cada bocanada correría los
-   * sorteos del galope.
+   * LA NUBE DE POLVO. El cómo vive en world/polvoDeCascos.js desde que la
+   * huida lo usa también; acá queda sólo cuándo pisa cada casco.
    */
   function sembrarPolvo(velocidad) {
     if (velocidad < 40 || terminado) return;
-    const fuerza = Math.min(1, velocidad / caballo.sprintSpeed);
-    // Dónde cae cada casco, respecto del centro del caballo.
-    const pisadas = [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6], [GOLPES.delanteraAca, 6]];
-    /**
-     * 🐛 LA PRIMERA VERSIÓN SE VEÍA COMO BOLITAS EN FILA, no como una nube: tres
-     * bocanadas chicas por pisada, todas yendo para atrás, y entre zancada y
-     * zancada el caballo avanza ~50 px de suelo, así que quedaban huecos. Ahora
-     * son cinco por pisada, más grandes y más largas, y salen disparadas para
-     * los dos lados (hacia atrás y hacia adelante, frenándose): se abren, se
-     * pisan entre ellas y cierran los huecos.
-     */
-    for (const [cuando, dx] of pisadas) {
-      for (let n = 0; n < 5; n++) {
-        polvo.push({
-          espera: cuando,
-          edad: 0,
-          vida: 1.2 + Math.random() * 1.0,
-          gx: null, gy: null,
-          dx: dx + Math.random() * 10 - 5,
-          dy: 4 + Math.random() * 4,
-          vx: -30 + Math.random() * 70,
-          vy: -2 - Math.random() * 7,
-          r0: 1.5 + Math.random(),
-          r1: (8 + Math.random() * 9) * (0.55 + fuerza * 0.6),
-        });
-      }
-    }
-    // Un tope, por las dudas: con cinco por pisada rondan las 60 vivas.
-    if (polvo.length > 160) polvo.splice(0, polvo.length - 160);
+    polvo.sembrar({
+      x, y, suelo, rumbo,
+      fuerza: Math.min(1, velocidad / caballo.sprintSpeed),
+      // Dónde cae cada casco, respecto del centro del caballo.
+      pisadas: [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6], [GOLPES.delanteraAca, 6]],
+    });
   }
 
   function actualizarPolvo(dt) {
-    for (const b of polvo) {
-      if (b.gx === null) {
-        b.espera -= dt;
-        if (b.espera > 0) continue;
-        // Nace ahora, bajo el casco, en coordenadas del SUELO: se queda ahí.
-        b.gx = x + suelo + b.dx * Math.cos(rumbo);
-        b.gy = y + b.dy + b.dx * Math.sin(rumbo);
-      }
-      b.edad += dt;
-      b.gx += b.vx * dt;
-      b.gy += b.vy * dt;
-      // El aire las frena: salen con el golpe del casco y se quedan flotando.
-      b.vx *= Math.max(0, 1 - 2.2 * dt);
-      b.vy *= Math.max(0, 1 - 1.2 * dt);
-    }
-    for (let i = polvo.length - 1; i >= 0; i--) {
-      if (polvo[i].gx !== null && polvo[i].edad >= polvo[i].vida) polvo.splice(i, 1);
-    }
+    polvo.actualizar(dt, suelo);
   }
 
-  /**
-   * Cada bocanada son tres círculos: la sombra abajo a la derecha, el cuerpo y
-   * la luz arriba a la izquierda. Crece rápido al principio y después se
-   * frena, y se apaga despacio: así se abre como una nube y no como un globo.
-   */
   function dibujarPolvo(r) {
-    const P = colors.polvo;
-    const tono = (hex) => (gameState.esDeDia ? hex : escalarColor(hex, 0.35));
-    const disco = (cx, cy, radio, color, alpha) => {
-      r.ctx.globalAlpha = alpha;
-      r.ctx.fillStyle = color;
-      r.ctx.beginPath();
-      r.ctx.arc(Math.round(cx), Math.round(cy), Math.max(1, radio), 0, Math.PI * 2);
-      r.ctx.fill();
-    };
-    r.ctx.save();
-    for (const b of polvo) {
-      if (b.gx === null) continue;
-      const t = Math.min(1, b.edad / b.vida);
-      const radio = b.r0 + (b.r1 - b.r0) * (1 - (1 - t) * (1 - t));
-      // Más transparentes que una sola: ahora se pisan varias en el mismo lugar.
-      const alpha = 0.42 * Math.pow(1 - t, 1.5);
-      const sx = b.gx - suelo;
-      disco(sx + radio * 0.25, b.gy + radio * 0.3, radio * 0.85, tono(P.sombra), alpha * 0.55);
-      disco(sx, b.gy, radio, tono(P.base), alpha);
-      disco(sx - radio * 0.3, b.gy - radio * 0.3, radio * 0.55, tono(P.luz), alpha * 0.7);
-    }
-    r.ctx.restore();
+    polvo.dibujar(r, suelo, !gameState.esDeDia);
   }
 
   /**

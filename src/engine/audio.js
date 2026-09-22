@@ -257,6 +257,52 @@ export function createAudio() {
       noise({ duration: 0.18, cutoff: 700, endCutoff: 90, gain: 0.22 });
     },
 
+    /**
+     * LOS TRES SONIDOS DE LA HUIDA *(Santi: "¿por qué todavía no lo siento como
+     * una persecución real del Oeste?" — la segunda respuesta era que está
+     * muda: sólo se oían los cascos y el viento)*.
+     *
+     * Ninguno es una grabación: son las mismas dos herramientas de siempre
+     * (`tone` y `noise`), como el resto del juego.
+     */
+
+    /**
+     * EL GRITO DE LA LEY: "¡ALTO AHÍ!". No se entienden las palabras —no hay
+     * voces en este juego— pero sí la FORMA de un grito: dos golpes de voz,
+     * el segundo más corto y más arriba, con la cuerda áspera de un tipo
+     * gritando a pleno pulmón a caballo.
+     */
+    gritoLey() {
+      tone({ from: 320, to: 260, duration: 0.2, gain: 0.1, type: 'sawtooth' });
+      tone({ from: 640, to: 520, duration: 0.16, gain: 0.04, type: 'square' });
+      tone({ from: 380, to: 300, duration: 0.26, gain: 0.09, type: 'sawtooth', delay: 0.24 });
+      tone({ from: 760, to: 560, duration: 0.2, gain: 0.035, type: 'square', delay: 0.24 });
+      noise({ duration: 0.12, cutoff: 1800, endCutoff: 700, gain: 0.03, type: 'bandpass', q: 1.2 });
+    },
+
+    /**
+     * EL RELINCHO. Un caballo que se queja: arranca arriba, baja, y en el medio
+     * TIEMBLA — ese temblor es todo el relincho, y se hace con tres tonos
+     * cortos encadenados en vez de uno largo y liso.
+     */
+    relincho() {
+      tone({ from: 880, to: 700, duration: 0.14, gain: 0.09, type: 'sawtooth' });
+      tone({ from: 760, to: 620, duration: 0.1, gain: 0.07, type: 'sawtooth', delay: 0.13 });
+      tone({ from: 700, to: 540, duration: 0.1, gain: 0.07, type: 'sawtooth', delay: 0.22 });
+      tone({ from: 600, to: 300, duration: 0.3, gain: 0.08, type: 'triangle', delay: 0.31 });
+      noise({ duration: 0.35, cutoff: 1100, endCutoff: 300, gain: 0.04, type: 'bandpass', q: 0.8, delay: 0.1 });
+    },
+
+    /**
+     * LA BALA QUE PASA CERCA. Es el sonido más corto del juego y el que más
+     * dice: te erraron POR POCO. Un silbido agudo que cae rápido — el efecto
+     * Doppler de algo que te pasa al lado y se va.
+     */
+    balaSilba() {
+      tone({ from: 2600, to: 900, duration: 0.09, gain: 0.05, type: 'sine' });
+      noise({ duration: 0.07, cutoff: 3000, endCutoff: 1200, gain: 0.045, type: 'bandpass', q: 2.4 });
+    },
+
     scream() {
       tone({ from: 900, to: 420, duration: 0.42, gain: 0.16, type: 'sawtooth' });
       tone({ from: 1350, to: 600, duration: 0.36, gain: 0.08, type: 'triangle', delay: 0.05 });

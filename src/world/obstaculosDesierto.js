@@ -9,9 +9,13 @@
  * `radio` es la huella del choque (`APROXIMACION.obstaculoRadios`, data/horse.js):
  * la sombra del piso se dibuja con él, así que lo que ves es lo que te frena.
  */
-export function dibujarObstaculoDesierto(r, ob, ox, radio) {
+
+import { escalarColor } from './trenTresCuartos.js';
+export function dibujarObstaculoDesierto(r, ob, ox, radio, noche = false) {
+  // De noche se apagan como todo lo demás (misma receta que el resto del arte).
+  const c = (hex) => (noche ? escalarColor(hex, 0.4) : hex);
   if (ob.golpeado) {
-    r.rect(ox - 5, ob.y - 2, 10, 3, '#3a2b20');
+    r.rect(ox - 5, ob.y - 2, 10, 3, c('#3a2b20'));
     return;
   }
 
@@ -27,28 +31,28 @@ export function dibujarObstaculoDesierto(r, ob, ox, radio) {
    */
   if (ob.tipo === 'roca') {
     // La más grande y la única realmente sólida: 20 px de ancho.
-    r.rect(ox - 10, ob.y - 4, 20, 8, '#4e453e');
-    r.rect(ox - 9, ob.y - 10, 18, 6, '#6e6359');
-    r.rect(ox - 7, ob.y - 12, 11, 2, '#6e6359');
-    r.rect(ox - 6, ob.y - 11, 6, 1, '#8a7e70');
+    r.rect(ox - 10, ob.y - 4, 20, 8, c('#4e453e'));
+    r.rect(ox - 9, ob.y - 10, 18, 6, c('#6e6359'));
+    r.rect(ox - 7, ob.y - 12, 11, 2, c('#6e6359'));
+    r.rect(ox - 6, ob.y - 11, 6, 1, c('#8a7e70'));
   } else if (ob.tipo === 'arbusto') {
-    r.rect(ox - 9, ob.y - 3, 18, 6, '#33401f');
-    r.rect(ox - 8, ob.y - 7, 8, 5, '#4d5c34');
-    r.rect(ox - 1, ob.y - 9, 9, 6, '#4d5c34');
-    r.rect(ox - 5, ob.y - 8, 3, 1, '#66773f');
-    r.rect(ox + 2, ob.y - 9, 4, 1, '#66773f');
+    r.rect(ox - 9, ob.y - 3, 18, 6, c('#33401f'));
+    r.rect(ox - 8, ob.y - 7, 8, 5, c('#4d5c34'));
+    r.rect(ox - 1, ob.y - 9, 9, 6, c('#4d5c34'));
+    r.rect(ox - 5, ob.y - 8, 3, 1, c('#66773f'));
+    r.rect(ox + 2, ob.y - 9, 4, 1, c('#66773f'));
   } else if (ob.tipo === 'cactus') {
     // La silueta más ALTA del desierto (la que más se distingue de lejos),
     // pero de tronco angosto — por eso su radio no es el mayor.
-    r.rect(ox - 3, ob.y - 16, 6, 21, '#3f6b3a');
-    r.rect(ox - 3, ob.y - 16, 2, 21, '#4f8247');
-    r.rect(ox - 2, ob.y - 18, 4, 2, '#5d9452');
-    r.rect(ox - 7, ob.y - 9, 4, 3, '#3f6b3a');
-    r.rect(ox - 8, ob.y - 13, 3, 5, '#3f6b3a');
-    r.rect(ox - 8, ob.y - 14, 3, 1, '#5d9452');
-    r.rect(ox + 3, ob.y - 5, 4, 3, '#3f6b3a');
-    r.rect(ox + 6, ob.y - 10, 3, 6, '#3f6b3a');
-    r.rect(ox + 6, ob.y - 11, 3, 1, '#5d9452');
+    r.rect(ox - 3, ob.y - 16, 6, 21, c('#3f6b3a'));
+    r.rect(ox - 3, ob.y - 16, 2, 21, c('#4f8247'));
+    r.rect(ox - 2, ob.y - 18, 4, 2, c('#5d9452'));
+    r.rect(ox - 7, ob.y - 9, 4, 3, c('#3f6b3a'));
+    r.rect(ox - 8, ob.y - 13, 3, 5, c('#3f6b3a'));
+    r.rect(ox - 8, ob.y - 14, 3, 1, c('#5d9452'));
+    r.rect(ox + 3, ob.y - 5, 4, 3, c('#3f6b3a'));
+    r.rect(ox + 6, ob.y - 10, 3, 6, c('#3f6b3a'));
+    r.rect(ox + 6, ob.y - 11, 3, 1, c('#5d9452'));
   } else {
     /**
      * Montículo de arena: bajo y chato, el más perdonador de los cuatro.
@@ -63,8 +67,8 @@ export function dibujarObstaculoDesierto(r, ob, ox, radio) {
      * más clara que la noche, y la cresta al revés, así que el montículo se
      * lee con las dos paletas sin necesidad de una versión por hora.
      */
-    r.rect(ox - 6, ob.y - 1, 12, 4, '#6b5334');
-    r.rect(ox - 5, ob.y - 3, 10, 3, '#a68a5c');
-    r.rect(ox - 3, ob.y - 5, 6, 3, '#c4a878');
+    r.rect(ox - 6, ob.y - 1, 12, 4, c('#6b5334'));
+    r.rect(ox - 5, ob.y - 3, 10, 3, c('#a68a5c'));
+    r.rect(ox - 3, ob.y - 5, 6, 3, c('#c4a878'));
   }
 }

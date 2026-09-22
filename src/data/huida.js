@@ -42,7 +42,7 @@ export const HUIDA = {
    * todos; esto sólo existe para que nunca quede colgada si algún día hay un
    * caballo más lento que los de la ley. Con los dos de hoy no se llega nunca.
    */
-  tope: 60,
+  tope: 90,
 
   /** Cuánto cielo se ve arriba de todo, en unidades. */
   cielo: 34,
@@ -144,11 +144,35 @@ export const HUIDA = {
 
   jinetes: {
     /**
-     * LA VELOCIDAD DE LOS CABALLOS DE LA LEY. Elegida por Santi entre 120, 130
-     * y 136. Sin chocar con nada, perderlos tarda unos 12 s con el Criollo
-     * (142) y unos 3 s con el Mustang (180): el Mustang es lo que pagaste.
+     * LA VELOCIDAD DE LOS CABALLOS DE LA LEY. 🔺 SUBIÓ DE 130 A 142, la del
+     * Criollo *(Santi, después de jugarlo: "sigue sin servir tanto [disparar] y
+     * entonces me gustaría que el caballo de ellos tenga la misma velocidad que
+     * el Criollo")*.
+     *
+     * LO QUE CAMBIA, Y ES TODO EL SENTIDO: con el Criollo ya no los podés
+     * perder corriendo, así que disparar deja de ser opcional. Con el Mustang
+     * (180) seguís escapando en 3 o 4 segundos: por eso se paga.
+     *
+     * Medido contra 5 jinetes con el Criollo y el Colt: sólo esquivar pasó de
+     * 14 s perdiendo 12% a **58 s perdiendo 78%**; correr y tirar, 13 s
+     * perdiendo 13%; frenar y pelear, 7 s perdiendo 21%.
      */
-    velocidad: 130,
+    velocidad: 142,
+
+    /**
+     * Y AL MINUTO SUS CABALLOS AFLOJAN *(opción elegida por Santi)*. A los
+     * `cansancio.desde` segundos bajan a `cansancio.velocidad` —en
+     * `cansancio.entra` segundos, no de golpe— y ahí sí los dejás atrás.
+     *
+     * Existe porque sin esto, con el Criollo, el que no dispara se queda
+     * dando vueltas hasta que salta el seguro. Huir sin pelear sigue siendo
+     * posible, pero carísimo: para cuando aflojan ya soltaste casi todo.
+     */
+    cansancio: {
+      desde: 45,
+      entra: 3,
+      velocidad: 120,
+    },
     /**
      * Y CADA UNO TIENE SU CABALLO: hasta 5 más o 5 menos. Así se van quedando
      * de a uno y no todos juntos, y se nota cuando perdiste a uno.

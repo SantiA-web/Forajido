@@ -1722,16 +1722,20 @@ que quedaban en el asalto (uno, dos, cinco...), así que lo que hiciste adentro
 se paga afuera.
 
 **No hay reloj: se gana con el caballo.** Todos galopan. Arrancan a 110 detrás
-tuyo; tu caballo va siempre a fondo y los de la ley a **130** (cada uno un poco
-distinto, hasta 5 más o 5 menos, así que se van quedando de a uno). Cuando uno
-queda a 250 —fuera de la pantalla— **lo perdiste**. La huida termina cuando no
-te sigue ninguno: porque los perdiste o porque los tiraste. La barra de arriba
+tuyo; tu caballo va siempre a fondo y los de la ley a **142, lo mismo que el
+Criollo** (cada uno un poco distinto, hasta 5 más o 5 menos). Cuando uno queda
+a 250 —fuera de la pantalla— **lo perdiste**. La huida termina cuando no te
+sigue ninguno: porque los perdiste o porque los tiraste. La barra de arriba
 dice cuánto le falta al más cercano para quedar perdido.
 
-| Tu caballo | Sin chocar con nada, los perdés en |
+| Tu caballo | Qué podés hacer |
 |---|---|
-| Criollo (142) | unos 12 segundos |
-| Mustang (180) | unos 3 segundos |
+| Criollo (142) | **No los podés perder corriendo**: van a tu misma velocidad. O los bajás, o aguantás hasta que sus caballos aflojen |
+| Mustang (180) | Los perdés en 3 o 4 segundos. Eso es lo que pagaste |
+
+**A los 45 segundos los caballos de la ley aflojan** y bajan a 120 (te avisa un
+cartel). Ahí los dejás atrás aunque no hayas disparado — pero para entonces ya
+soltaste casi toda la plata.
 
 - `W/S` esquivan, **el mouse apunta y el clic dispara**, igual que en el
   asalto. `R` recarga. El revólver sale con las balas que le quedaban.

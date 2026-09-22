@@ -235,6 +235,7 @@ export const T = {
     bolsas: (n) => (n === 1 ? 'soltaste 1 bolsa' : `soltaste ${n} bolsas`),
     recargando: 'RECARGANDO',
     seQuedo: 'SE QUEDÓ ATRÁS',
+    aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
     atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,
     teclas: ['[W/S] ESQUIVAR   [A] FRENAR', '[CLIC] TIRAR   [CLIC DER.] APUNTAR   [R] RECARGAR'],
   },

@@ -47,7 +47,7 @@ export function createHuidaScene(services) {
   let summary, caballo, arma, prueba;
   let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, proximoObstaculo;
   let suelo, tiempo, dineroInicial, perdido, soltadas, derribados;
-  let fin, temblor;
+  let fin, temblor, avisoCansancio;
 
   /**
    * @param params.summary  lo que armó el asalto para la pantalla de
@@ -107,6 +107,7 @@ export function createHuidaScene(services) {
     derribados = 0;
     fin = null;
     temblor = 0;
+    avisoCansancio = false;
 
     const a = CONFIG.ambiente;
     audio.ambiente('galope', { cutoff: 420, q: 0.6, type: 'lowpass',
@@ -187,6 +188,13 @@ export function createHuidaScene(services) {
       return;
     }
 
+    // El aviso de que sus caballos empiezan a aflojar, una sola vez.
+    const C = H.jinetes.cansancio;
+    if (!avisoCansancio && tiempo >= C.desde && siguiendo().length > 0) {
+      avisoCansancio = true;
+      carteles.push({ x: renderer.width / 2, y: 70, texto: T.huida.aflojan, color: colors.bagLoot, vida: 2.4 });
+    }
+
     sembrarObstaculos();
     moverme(dt);
     suelo += yo.vel * dt;
@@ -207,6 +215,17 @@ export function createHuidaScene(services) {
   /** Lo que corre un caballo ahora: a fondo, o casi parado si chocó. */
   function velocidadDe(fondo, choque) {
     return choque > 0 ? fondo * A.choqueFactor : fondo;
+  }
+
+  /**
+   * LO QUE LE QUEDA AL CABALLO DE UN JINETE. Hasta `cansancio.desde` va a lo
+   * suyo; de ahí en más afloja hasta `cansancio.velocidad`, y ahí es cuando el
+   * que nunca disparó por fin los deja atrás.
+   */
+  function velocidadDelJinete(j) {
+    const C = H.jinetes.cansancio;
+    const t = Math.max(0, Math.min(1, (tiempo - C.desde) / C.entra));
+    return j.vel + (C.velocidad - j.vel) * t;
   }
 
   function moverme(dt) {
@@ -349,7 +368,7 @@ export function createHuidaScene(services) {
        * chocás, se te viene encima (hasta `distanciaMinima`: va detrás tuyo,
        * no te pasa).
        */
-      j.x += (velocidadDe(j.vel, j.choque) - yo.vel) * dt;
+      j.x += (velocidadDe(velocidadDelJinete(j), j.choque) - yo.vel) * dt;
       j.x = Math.min(j.x, yo.x - J.distanciaMinima);
       if (yo.x - j.x > J.perdida) {
         j.perdido = true;

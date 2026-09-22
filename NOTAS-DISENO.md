@@ -14066,6 +14066,42 @@ de verdad, porque frenás a un caballo que no lo necesitaba.
 Sin errores en 12.751 cuadros con teclas y mouse al azar: los dos caballos,
 las dos armas, de día y de noche.
 
+#### Séptima vuelta: la ley corre como el Criollo, y al minuto afloja
+
+*(Santi, jugando otra vez: "sigue sin servir tanto [disparar] y entonces me
+gustaría que el caballo de ellos tenga la misma velocidad que el Criollo")*
+
+La ley pasó de **130 a 142**, la del Criollo. **Con el Criollo ya no se los
+puede perder corriendo**, así que disparar deja de ser opcional; con el Mustang
+(180) no cambia nada, y eso es exactamente lo que se paga por él.
+
+**Y como el que no dispara se quedaba dando vueltas hasta el seguro**, Santi
+eligió entre tres opciones: **a los 45 segundos los caballos de la ley aflojan**
+a 120, en 3 segundos y con un cartel que lo avisa (`jinetes.cansancio`). Huir
+sin pelear sigue existiendo, pero es la peor salida de lejos. El seguro
+(`tope`) subió a 90 s y ahora es sólo eso: un seguro.
+
+**Medido**, 12 huidas por caso, 5 jinetes:
+
+| | Sólo esquivar | Correr y tirar | Frenar y pelear |
+|---|---|---|---|
+| Criollo + Colt | 49 s, pierde 68% | 17 s, 16%, baja 4,8 | 6 s, 15%, baja los 5 |
+| Criollo + Smith | 49 s, 71% | 15 s, 15%, baja 4,7 | 4 s, 3%, baja los 5 |
+| Mustang + Colt | 4 s, 3% | 3 s, 2% | 7 s, 13% |
+| Mustang + Smith | 4 s, 2% | 3 s, 2% | 5 s, 8% |
+
+Con el Criollo quedó como se buscaba: pelear es lo más barato y lo más rápido,
+correr tirando es el término medio, y huir sin disparar es un desastre. Con el
+Mustang, correr sigue ganando.
+
+🔻 **QUEDA ANOTADO:** un jugador que no toca NADA choca con todo, y entonces ni
+el cansancio lo salva — la huida se estira hasta el seguro de 90 s. No es un
+caso real (mover el caballo alcanza), pero si alguna vez se ve, el número es
+`cansancio.velocidad`.
+
+Sin errores en 16.206 cuadros con teclas, clic y clic derecho al azar: los dos
+caballos, las dos armas, de día y de noche.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

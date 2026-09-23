@@ -213,7 +213,9 @@ export function createHuidaScene(services) {
     moverJinetes(dt, false);
     moverBalas(dt);
 
-    if (siguiendo().length === 0 || tiempo >= H.tope) {
+    // Llegaste a la quebrada: adentro no te siguen. Gana lo que pase primero.
+    if (suelo >= H.camino.largo) empezarFin('quebrada');
+    else if (siguiendo().length === 0 || tiempo >= H.tope) {
       empezarFin(derribados === jinetes.length ? 'limpio' : 'perdidos');
     }
   }
@@ -618,7 +620,12 @@ export function createHuidaScene(services) {
 
   function terminar() {
     summary.money = Math.max(0, (summary.money || 0) - perdido);
-    summary.huida = { jinetes: jinetes.length, derribados, bolsas: soltadas, perdido };
+    summary.huida = {
+      jinetes: jinetes.length, derribados, bolsas: soltadas, perdido,
+      // Cómo terminó: 'quebrada' (llegaste), 'limpio' (no quedó ninguno) o
+      // 'perdidos' (los dejaste atrás).
+      fin: fin ? fin.como : 'perdidos',
+    };
     // Un jinete derribado acá es un jinete derribado: cuenta como en el asalto.
     summary.kills = (summary.kills || 0) + derribados;
     // Una prueba no suma plata, ni recompensa, ni asaltos: sólo muestra cómo te fue.
@@ -678,13 +685,14 @@ export function createHuidaScene(services) {
     r.ctx.translate(yo.choque > 0 ? -3 : 0, vaivén);
     if (temblor > 0) r.ctx.translate(rng.range(-2.5, 2.5), rng.range(-2.5, 2.5));
 
-    r.clear(dia ? colors.desiertoDia : colors.desiertoNoche);
+    r.clear(colorDelSuelo(dia));
     sembrarDesierto(r, {
       x0: 0, y0: H.cielo, x1: r.width, y1: r.height + 10,
       desplaza: suelo, noche: !dia, colores: C,
       grandes: () => false,
     });
 
+    // Los hitos del camino van entre el suelo y el cielo: están lejos.
     // El cielo, con el horizonte y una cordillera baja.
     const [arriba, abajo] = dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
       : [C.nocheArriba, C.nocheHorizonte];
@@ -696,6 +704,8 @@ export function createHuidaScene(services) {
       r.rect(sx, H.cielo - alto, 2, alto, tinte(C.montanaLejos));
     }
     r.rect(0, H.cielo, r.width, 1, tinte(C.bruma));
+    dibujarHitos(r, dia);
+    dibujarQuebrada(r, dia);
 
     /**
      * LAS RAYAS DE VELOCIDAD Y LAS MATAS DE ADELANTE, las mismas del galope
@@ -746,6 +756,7 @@ export function createHuidaScene(services) {
 
     r.ctx.restore();
 
+    dibujarAcoso(r);
     dibujarMira(r);
     dibujarPanel(r);
   }
@@ -755,6 +766,150 @@ export function createHuidaScene(services) {
    * noche el caballo se apaga como el tuyo, y el brazo apunta HACIA VOS (en el
    * asalto apunta siempre hacia el tren).
    */
+  // -------------------------------------------------------------- el camino
+
+  /**
+   * EL SUELO CAMBIA A MEDIDA QUE AVANZÁS: arena al salir de la vía, pedregal
+   * en el medio, y pasto seco cerca de la quebrada. No es decoración: es lo
+   * que te dice que estás yendo a algún lado sin ningún cartel.
+   */
+  function colorDelSuelo(dia) {
+    const t = Math.max(0, Math.min(1, suelo / H.camino.largo));
+    const arena = '#8a6f47';
+    const pedregal = '#7b6a55';
+    const pasto = '#8a7c4d';
+    const hex = t < 0.5 ? mezclar(arena, pedregal, t / 0.5) : mezclar(pedregal, pasto, (t - 0.5) / 0.5);
+    return dia ? hex : escalarColor(hex, 0.22);
+  }
+
+  /** Dos colores mezclados, `t` de 0 a 1. */
+  function mezclar(a, b, t) {
+    const n = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const [r1, g1, b1] = n(a);
+    const [r2, g2, b2] = n(b);
+    const c = (x, y) => Math.round(x + (y - x) * Math.max(0, Math.min(1, t))).toString(16).padStart(2, '0');
+    return `#${c(r1, r2)}${c(g1, g2)}${c(b1, b2)}`;
+  }
+
+  /**
+   * LOS HITOS: cosas grandes que pasan LEJOS, apoyadas en el horizonte. No
+   * chocan con nadie —están del otro lado del campo— y se mueven a un tercio
+   * de lo que corre el suelo, que es lo que las hace leerse distantes.
+   *
+   * ⚠️ SIMPLE (por vestir): son siluetas de dos o tres rectángulos.
+   */
+  function dibujarHitos(r, dia) {
+    const base = H.cielo + 3;
+    for (const hito of H.camino.hitos) {
+      const gx = hito.en * H.camino.largo;
+      const x = r.width * 0.5 + (gx - suelo) * 0.34;
+      if (x < -40 || x > r.width + 40) continue;
+      const c = (hex) => (dia ? hex : escalarColor(hex, 0.35));
+      if (hito.tipo === 'via') {
+        // La vía por la que venía el tren, alejándose.
+        for (let i = 0; i < 9; i++) r.rect(x - 18 + i * 5, base + 1 - i * 0.2, 3, 1, c('#5a4a3a'));
+        r.rect(x - 20, base, 42, 1, c('#6b5a44'));
+      } else if (hito.tipo === 'huesos') {
+        r.rect(x - 5, base, 11, 2, c('#b9ae95'));
+        r.rect(x - 2, base - 3, 3, 3, c('#cbc0a6'));
+        r.rect(x + 3, base - 2, 4, 1, c('#cbc0a6'));
+      } else if (hito.tipo === 'rancho') {
+        r.rect(x - 9, base - 7, 18, 8, c('#6a5238'));
+        r.rect(x - 11, base - 10, 22, 3, c('#4e3c28'));
+        r.rect(x - 2, base - 4, 4, 5, c('#2e2418'));
+      } else {
+        // Una carreta rota, con la rueda caída al lado.
+        r.rect(x - 8, base - 5, 15, 4, c('#6a5238'));
+        r.rect(x - 8, base - 8, 3, 3, c('#4e3c28'));
+        r.rect(x + 8, base - 2, 3, 3, c('#4e3c28'));
+      }
+    }
+  }
+
+  /**
+   * LA QUEBRADA, CRECIENDO EN EL HORIZONTE. Es el final del camino: dos
+   * paredes de roca con un tajo en el medio. Se la ve desde lejos y crece
+   * mientras te acercás, así que **la quebrada ES el reloj**: no hace falta
+   * ningún número para saber cuánto falta.
+   *
+   * ⚠️ SIMPLE (por vestir): dos masas de roca y su sombra.
+   */
+  function dibujarQuebrada(r, dia) {
+    const C = H.camino;
+    const t = (suelo / C.largo - C.quebradaDesde) / (1 - C.quebradaDesde);
+    if (t <= 0) return;
+    const cerca = Math.min(1, t);
+    const c = (hex) => (dia ? hex : escalarColor(hex, 0.3));
+
+    /**
+     * 🔁 PRIMERO ERAN DOS PAREDES QUE APARECÍAN AL COSTADO DEL JUGADOR, y se
+     * veían como un muro plantado al lado de los caballos: no tenían dónde
+     * apoyarse, así que no se leían como algo que está ALLÁ. Ahora:
+     *
+     *  1. Hasta el 80% del tramo son **dos mesetas apoyadas en el horizonte**,
+     *     con un tajo oscuro en el medio. Crecen despacio: eso es el reloj.
+     *  2. En el último 20% **se te vienen encima**: bajan desde arriba y suben
+     *     desde abajo, dejando un pasillo a tu altura, y el mundo se va
+     *     metiendo en la sombra de la quebrada.
+     */
+    const base = H.cielo + 1;
+    const alto = 4 + cerca * cerca * 46;
+    const ancho = 26 + cerca * 90;
+    const x0 = Math.round(r.width * 0.58 - ancho / 2 + (1 - cerca) * 40);
+    const tajo = Math.max(5, 16 - cerca * 9);
+
+    const meseta = (mx, mw) => {
+      r.rect(mx, base - alto, mw, alto, c('#6b5c4c'));
+      r.rect(mx, base - alto, mw, 2, c('#8a7a66'));
+      r.rect(mx + 2, base - alto + 4, mw - 4, 1, c('#584a3c'));
+      r.rect(mx, base - 2, mw, 2, c('#463a2e'));
+    };
+    meseta(x0, (ancho - tajo) / 2);
+    meseta(x0 + (ancho + tajo) / 2, (ancho - tajo) / 2);
+    // El tajo: lo que hay entre las dos paredes es sombra, no cielo.
+    r.rect(x0 + (ancho - tajo) / 2, base - alto * 0.8, tajo, alto * 0.8, c('#2f2721'));
+
+    // --- Y en el último tramo, la boca te traga ---
+    const entrando = Math.max(0, (cerca - 0.8) / 0.2);
+    if (entrando <= 0) return;
+    const pasillo = 30 + (1 - entrando) * 60;
+    const avance = entrando * r.width * 1.3;
+    const bx = r.width - avance;
+    const pared = (y0, y1) => {
+      if (y1 <= y0) return;
+      r.rect(bx, y0, r.width - bx + 2, y1 - y0, c('#6b5c4c'));
+      r.rect(bx, y0, 2, y1 - y0, c('#8a7a66'));
+    };
+    pared(0, yo.y - pasillo);
+    pared(yo.y + pasillo, r.height);
+    // La sombra de adentro, que crece hasta tragarse la pantalla al entrar.
+    r.tinte('#1a1410', entrando * 0.35);
+  }
+
+  /**
+   * EL BORDE SE PONE ROJO CUANDO TE TIENEN ENCIMA. Reemplaza a la barra de
+   * distancia: se ve sin mirar la HUD, que es de lo que se trata cuando tenés
+   * a alguien a diez metros tirándote.
+   */
+  function dibujarAcoso(r) {
+    if (fin) return;
+    const quedan = siguiendo();
+    if (!quedan.length) return;
+    const cerca = Math.min(...quedan.map((j) => yo.x - j.x));
+    const t = Math.max(0, Math.min(1, (110 - cerca) / 80));
+    if (t <= 0) return;
+    r.ctx.save();
+    // Vienen de atrás, así que el aviso entra por la izquierda y se derrama
+    // por arriba y por abajo. La derecha queda limpia: para allá vas.
+    r.ctx.globalAlpha = 0.1 + t * 0.2;
+    r.ctx.fillStyle = colors.enemyAlert;
+    const grosor = 2 + t * 3;
+    r.ctx.fillRect(0, 0, grosor * 2.5, r.height);
+    r.ctx.fillRect(0, 0, r.width * 0.6, grosor);
+    r.ctx.fillRect(0, r.height - grosor, r.width * 0.6, grosor);
+    r.ctx.restore();
+  }
+
   function dibujarLey(r, j, dia) {
     r.ctx.globalAlpha = 0.25;
     r.box(j.x, j.y + 7, 11, 2, '#000');
@@ -832,21 +987,24 @@ export function createHuidaScene(services) {
     const centro = r.width / 2;
 
     if (fin) {
-      r.text(fin.como === 'limpio' ? T.huida.todosCaidos : T.huida.losPerdiste, centro, 60, colors.bagLoot);
+      const texto = fin.como === 'limpio' ? T.huida.todosCaidos
+        : fin.como === 'quebrada' ? T.huida.quebrada
+        : T.huida.losPerdiste;
+      r.text(texto, centro, 60, colors.bagLoot);
     } else {
       const quedan = siguiendo();
       r.text(T.huida.teSiguen(quedan.length), centro, 8, colors.enemyAlert);
       /**
-       * LA BARRA DE LA DISTANCIA, en vez del reloj: cuánto le falta al más
-       * cercano para quedar perdido. Se llena cuando te alejás y se vacía
-       * cuando chocás — es la cuenta que de verdad decide la huida.
+       * LA BARRA ES EL CAMINO: cuánto falta para la quebrada. La distancia a
+       * los jinetes ya no necesita barra — se ve, y cuando te tienen cerca el
+       * borde de la pantalla se pone rojo (ver `dibujarAcoso`).
        */
-      const J = H.jinetes;
-      const cerca = Math.min(...quedan.map((j) => yo.x - j.x));
-      const t = Math.max(0, Math.min(1, (cerca - J.distanciaMinima) / (J.perdida - J.distanciaMinima)));
       const ancho = 120;
+      const t = Math.max(0, Math.min(1, suelo / H.camino.largo));
       r.rect(centro - ancho / 2, 14, ancho, 3, '#241c18');
       r.rect(centro - ancho / 2, 14, ancho * t, 3, colors.doorGlow);
+      // La boca de la quebrada, al final de la barra.
+      r.rect(centro + ancho / 2 - 1, 12, 2, 7, colors.bagLoot);
     }
 
     r.text(`$${Math.max(0, dineroInicial - perdido)}`, 6, 9, colors.bagLoot, 'left');

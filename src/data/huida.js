@@ -47,6 +47,38 @@ export const HUIDA = {
   /** Cuánto cielo se ve arriba de todo, en unidades. */
   cielo: 34,
 
+  /**
+   * EL CAMINO: la huida va A ALGÚN LADO *(Santi eligió la quebrada, y 4000 de
+   * largo)*. Antes era un desierto infinito y se terminaba cuando un número se
+   * cumplía; ahora arrancás al lado de la vía y corrés hasta **la quebrada**,
+   * un tajo entre paredes de roca donde la ley no entra —el que va adelante se
+   * come un tiro desde arriba—.
+   *
+   * LAS DOS SALIDAS VALEN, y gana la que pase primero: perderlos (o tirarlos a
+   * todos) como hasta ahora, o llegar a la quebrada con los que queden encima.
+   * Con el Criollo (142) llegar son unos 28 segundos; con el Mustang (180),
+   * 22 — pero con el Mustang normalmente los perdés mucho antes y no la ves.
+   */
+  camino: {
+    largo: 4000,
+
+    /**
+     * Desde qué parte del camino se empieza a ver la quebrada en el horizonte.
+     * Con 0,62 aparece a los 1.520 de haber salido: bastante antes de llegar,
+     * que es lo que la hace servir de reloj sin ser un cartel.
+     */
+    quebradaDesde: 0.62,
+
+    /** Los hitos del camino, en fracción del largo. No chocan: son el mojón. */
+    hitos: [
+      { en: 0.08, tipo: 'via' },
+      { en: 0.22, tipo: 'huesos' },
+      { en: 0.38, tipo: 'rancho' },
+      { en: 0.55, tipo: 'carreta' },
+      { en: 0.74, tipo: 'huesos' },
+    ],
+  },
+
   jugador: {
     /**
      * Dónde vas en la pantalla, en fracción del ancho. Tu caballo va a fondo

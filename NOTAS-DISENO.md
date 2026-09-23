@@ -13803,6 +13803,7 @@ bien:
 | El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
 | El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
 | El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
+| La quebrada y los hitos del camino | `huidaScene.js`, `dibujarQuebrada` y `dibujarHitos` | Siluetas de dos o tres rectángulos: mesetas, rancho, carreta, huesos |
 | El caballo del jinete caído | `huidaScene.js`, `pegarle` | Queda el cuerpo en el suelo y el caballo desaparece; debería seguir galopando solo |
 | Tirar para atrás | `huidaScene.js`, `dibujarme` | El jinete no se da vuelta: sólo crece el círculo. Falta el torso girado |
 
@@ -14151,6 +14152,44 @@ la mudanza del polvo no lo rompió.
 comporten como una partida (se griten entre ellos, se turnen, uno se adelante a
 cortarte) y que la huida tenga lugar y destino (un arroyo, un cañón, y que
 termine cuando llegás).
+
+#### Novena vuelta: la huida tiene lugar y destino (la quebrada)
+
+*(Santi eligió, de cuatro opciones, la quebrada, y 4.000 de largo)*
+
+Era la más grande de la lista de "por qué no se siente una persecución": **no
+ibas a ningún lado**. Ahora la huida es un CAMINO (`HUIDA.camino`):
+
+- **4.000 de largo.** Con el Criollo (142) son 28 s; con el Mustang, 22 — pero
+  con el Mustang los perdés mucho antes y la quebrada no llega a verse.
+- **Gana lo que pase primero**: perderlos, tirarlos a todos, o llegar.
+  `empezarFin('quebrada')` es el tercer final, y va al resumen
+  (`summary.huida.fin`) y a la pantalla de resultados ("Cómo te los sacaste:
+  te metiste en la quebrada").
+- **El suelo cambia** de arena a pedregal a pasto seco (`colorDelSuelo`, dos
+  mezclas), y hay cinco **hitos** de fondo que pasan al 34% de tu velocidad:
+  la vía que dejaste, huesos, un rancho, una carreta.
+- **La quebrada crece en el horizonte** desde el 62% del camino, y en el último
+  20% se te viene encima: baja desde arriba, sube desde abajo, deja un pasillo
+  a tu altura y el mundo entra en su sombra.
+- **La barra de arriba pasó a ser el camino.** La distancia a los jinetes ya no
+  tiene barra: cuando te tienen cerca **el borde de la pantalla se pone rojo**
+  por la izquierda (de donde vienen), que se ve sin mirar la HUD.
+
+🔁 **LA QUEBRADA SE DIBUJÓ DOS VECES.** La primera eran dos paredes que
+aparecían al costado del jugador: se leían como un muro plantado al lado de los
+caballos, porque no tenían dónde apoyarse. La segunda las apoya en el horizonte
+como dos mesetas con un tajo negro en el medio, y recién al final se convierten
+en la boca. La regla que quedó: **una cosa que está lejos tiene que tocar el
+horizonte**, o el ojo la lee como cercana.
+
+Sin errores en 11.600 cuadros con teclas y mouse al azar (los dos caballos, las
+dos armas, de día y de noche), más una corrida entera sin disparar para ver los
+tres finales.
+
+**Lo que queda de la lista:** la Parte 2 del camino (que el camino ESTORBE: un
+alambrado que saltar, un paso angosto, la boca de la quebrada como embudo) y
+que los jinetes se comporten como una partida.
 
 #### 🧪 El atajo para probarla
 

@@ -1771,6 +1771,21 @@ soltaste casi toda la plata.
 
 Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 
+**Y la huida va A ALGÚN LADO: la quebrada.** No es un desierto infinito: es un
+camino de 4.000 que arranca al lado de la vía y termina en un tajo entre
+paredes de roca donde la ley no entra. Se la ve crecer en el horizonte desde
+la mitad del camino, así que **la quebrada es el reloj**: no hay ningún número
+que mirar. La barra de arriba dice cuánto falta para llegar.
+
+**Gana lo que pase primero:** los perdés, los tirás a todos, o llegás a la
+quebrada con los que queden encima. Con el Criollo llegar son unos 28
+segundos; con el Mustang normalmente los perdés mucho antes y nunca la ves.
+Mientras corrés, el suelo cambia (arena, pedregal, pasto seco) y pasan de lejos
+la vía que dejaste, huesos de vaca, un rancho abandonado y una carreta rota.
+
+**Y cuando te tienen encima, el borde de la pantalla se pone rojo**, del lado
+por donde vienen.
+
 **Y se siente como una persecución:** los seis caballos levantan polvo, las
 matas pasan pegadas a la cámara, hay rayas de velocidad, la cámara se balancea
 con el galope y se sacude cuando te pegan. La ley grita "¡alto ahí!" antes de

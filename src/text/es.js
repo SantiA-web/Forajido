@@ -229,6 +229,7 @@ export const T = {
   huida: {
     teSiguen: (n) => (n === 1 ? '¡UN JINETE TE SIGUE!' : `¡${n} JINETES TE SIGUEN!`),
     losPerdiste: 'LOS PERDISTE',
+    quebrada: '¡ADENTRO DE LA QUEBRADA!',
     todosCaidos: 'NO QUEDÓ NINGUNO',
     derribado: '¡ABAJO!',
     sinPlata: 'NO TE QUEDA NADA QUE SOLTAR',
@@ -591,6 +592,8 @@ export const T = {
     /** La huida: lo que soltaste con los jinetes detrás (ver scenes/huidaScene.js). */
     huida: (n) => (n === 0 ? 'La huida: no te tocaron' : n === 1 ? 'La huida: soltaste 1 bolsa' : `La huida: soltaste ${n} bolsas`),
     huidaJinetes: (n) => (n === 1 ? 'Jinete derribado en la huida' : 'Jinetes derribados en la huida'),
+    huidaQuebrada: 'Cómo te los sacaste',
+    huidaQuebradaSi: 'te metiste en la quebrada',
     lost: 'Botín que dejaste',
     kills: 'Guardias muertos',
     civilians: 'Civiles muertos',

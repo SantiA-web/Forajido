@@ -1737,11 +1737,11 @@ dice cuánto le falta al más cercano para quedar perdido.
 cartel). Ahí los dejás atrás aunque no hayas disparado — pero para entonces ya
 soltaste casi toda la plata.
 
-- **`W/S` doblan el caballo**, hasta 50° para cada lado, con sus nueve poses
-  (de alejándose al fondo a viniendo de frente). Cruzado a fondo avanzás el
-  64%: atajar por el costado cuesta camino. El mouse apunta y el clic dispara,
-  igual que en el asalto; `R` recarga, y el revólver sale con las balas que le
-  quedaban.
+- **`W/A/S/D` eligen el rumbo** y el caballo gira hacia ahí, con sus nueve
+  poses (alejándose, de perfil, viniendo de frente; hacia el oeste el dibujo se
+  espeja). Doblar cerrado cuesta envión. El mouse apunta y el clic dispara,
+  igual que en el asalto; `R` recarga, `SHIFT` frena para pelear, y el revólver
+  sale con las balas que le quedaban.
 - **Se ve más campo que en el resto del juego**: la huida se dibuja con una
   lupa de 3 en vez de 4, o sea 426 × 300 en vez de 320 × 225.
 - **`A` frena**: tu caballo baja a 85 y los jinetes se te ponen al costado.
@@ -1776,18 +1776,16 @@ soltaste casi toda la plata.
 
 Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 
-**Y la huida va A ALGÚN LADO, y no siempre al mismo.** Es un camino de 4.600
-que arranca al lado de la vía. A mitad de camino hay **una horquilla**: una
-cresta de roca parte el campo en dos, y cada entrada lleva a un destino
-distinto. Los dos se sortean al salir entre **la quebrada, el vado del río y
-el bosque de rocas**, y se ven venir en el horizonte, así que el camino lo
-elegís vos.
+**Y la huida es CAMPO ABIERTO.** No hay un camino: hay un campo y vos galopás
+a donde quieras —norte, sur, este u oeste—, con la cámara siguiéndote. El
+caballo tarda en doblar, así que el rumbo es una decisión y no un botón.
 
-**El destino está en el terreno, no alrededor tuyo.** Viene hacia vos mientras
-galopás, y tiene una entrada a una altura fija: si llegás frente a ella, pasás
-y se terminó; si llegás contra la pared, te clavás ahí (avanzás cinco veces
-menos) y tenés que buscarla con la ley encima. La ley también busca la
-entrada.
+**Hay tres refugios repartidos en el campo**, cada uno en su lugar y a su
+distancia: **la quebrada, el río y el bosque de rocas**. Cada uno es un anillo
+—de roca, de agua o de peñascos— con **una entrada**: meterte adentro termina
+la huida, pero la entrada hay que encontrarla, y si le pegás al anillo te
+clavás contra él. La ley también choca. Dónde están y cuánto falta lo dice la
+brújula del borde de la pantalla.
 
 **Y la boca de la quebrada es un embudo de verdad.** Desde el 88% del camino
 las paredes se cierran hasta dejar un paso de 26 en el MEDIO del campo: o te

@@ -1,30 +1,30 @@
 /**
- * LA HUIDA — después de saltar del tren, con la ley detrás.
+ * LA HUIDA — campo abierto, con la ley detrás.
  *
  * Ver data/huida.js para el pedido de Santi y los números. En corto:
  *
  *  - Te siguen LOS MISMOS jinetes que quedaban vivos en el asalto: lo que
  *    hiciste adentro se paga acá afuera.
- *  - TODOS GALOPAN. Tu caballo va siempre a fondo y cada jinete al suyo: la
- *    diferencia decide si se acercan o se quedan. Cuando uno queda a
- *    `perdida` detrás, lo perdiste. Se termina cuando no queda ninguno
- *    siguiéndote, porque los perdiste o porque los tiraste.
- *  - W/S esquivan y [A] frena (para que se te pongan al costado). El mouse
- *    apunta, el clic dispara, el clic derecho cierra la mira y [R] recarga,
- *    igual que en el asalto. Tirar para atrás se puede, pero cuesta puntería
- *    y el caballo se tuerce solo.
+ *  - **Galopás hacia donde quieras** *(Santi: "que literalmente el caballo
+ *    pueda cabalgar hacia el norte o sur en vez de solo hacia el este")*. El
+ *    mundo es un plano y la cámara te sigue; W/A/S/D eligen el rumbo y el
+ *    caballo tarda en doblar, como un caballo lanzado.
+ *  - **Hay tres refugios** en el campo, cada uno en su lugar y a su distancia:
+ *    la quebrada, el río y el bosque de rocas. Entrar en cualquiera termina la
+ *    huida. A cuál vas es tu decisión; la brújula dice para dónde queda cada
+ *    uno y cuánto falta.
  *  - CADA TIRO QUE TE PEGAN TE HACE SOLTAR UNA BOLSA. Nunca te agarran: lo peor
  *    que puede pasar es llegar con menos plata.
- *  - Los obstáculos del galope cuestan distancia: chocar te frena y se te
- *    acercan. Ellos también chocan.
+ *  - El mouse apunta, el clic dispara, el clic derecho cierra la mira y [R]
+ *    recarga, igual que en el asalto. [SHIFT] frena, que es para pelear.
  *
- * Vas siempre en el mismo lugar de la pantalla, y lo demás se mueve contra
- * vos: el suelo desfila a lo que corre tu caballo (`suelo`), y cada jinete se
- * corre según la diferencia entre su caballo y el tuyo. Así el mouse ya está
- * en coordenadas del mundo.
+ * 🔁 ES LA TERCERA FORMA DE ESTA ESCENA. Fue un reloj de 15 segundos, después
+ * un pasillo que iba al este con un destino al final, y ahora campo abierto.
+ * Las dos primeras eran más baratas de hacer, pero en un pasillo no se huye:
+ * se esquiva.
  *
- * ⚠️ GRÁFICOS SIMPLES: las bolsas, el "!" del aviso y el panel son dibujo de
- * prueba (ver "por vestir" en NOTAS-DISENO.md).
+ * ⚠️ GRÁFICOS SIMPLES: las bolsas, el "!" del aviso, los refugios y el panel
+ * son dibujo de prueba (ver "Por vestir" en NOTAS-DISENO.md).
  */
 
 import { CONFIG } from '../data/config.js';
@@ -35,36 +35,38 @@ import { applyRaidResult, gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
-import { RIDERS } from '../data/riders.js';
 import { sembrarDesierto } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
-import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
-import { escalarColor } from '../world/trenTresCuartos.js';
-import { DESTINOS, GROSOR, dibujarBarrera, dibujarAnuncio } from '../world/destinos.js';
+import {
+  DESTINOS, ACHATA, dibujarRefugio, dibujarDeLejos, chocaConElRefugio, adentroDelRefugio,
+} from '../world/destinos.js';
+
+/**
+ * EN TRES CUARTOS, IR AL NORTE RINDE MENOS EN PANTALLA QUE IR AL ESTE: la
+ * profundidad se ve aplastada. Es el mismo achatado de los refugios y el del
+ * campamento, así que una vuelta galopada se ve como una elipse y no como un
+ * círculo.
+ */
+const PROFUNDIDAD = ACHATA;
 
 export function createHuidaScene(services) {
   const { renderer, input, rng, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
 
   let summary, caballo, arma, prueba;
-  let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, proximoObstaculo;
-  let suelo, tiempo, dineroInicial, perdido, soltadas, derribados;
-  let fin, temblor, avisoCansancio, ultimoGrito;
+  let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, celdasSembradas;
+  let refugios, refugioTomado;
+  let tiempo, dineroInicial, perdido, soltadas, derribados;
+  let fin, temblor, avisoCansancio, ultimoGrito, bamboleo;
   /** El polvo de los cascos: el mismo del galope (world/polvoDeCascos.js). */
   const polvo = crearPolvo(colors.polvo);
-  /** Cuánto se sacude la cámara ahora, y el balanceo del galope. */
-  let bamboleo;
-  /** Las dos barreras del camino: la horquilla y el destino. */
-  let barreras, destinoElegido;
 
   /**
    * CUÁNTO MUNDO ENTRA EN PANTALLA CON NUESTRA LUPA. La escena se dibuja con
-   * `HUIDA.zoom` (3) en vez de la del mundo (4), así que se ve un tercio más de
-   * campo — y todas las cuentas de la escena van en ESTAS unidades, no en las
-   * del resto del juego.
+   * `HUIDA.zoom` (3) en vez de la del mundo (4): un tercio más de campo.
    */
-  const vista = { w: 320, h: 225 };
+  const vista = { w: 426, h: 300 };
   function medirVista() {
     const c = renderer.canvas;
     if (!c || !c.width) return;
@@ -79,24 +81,22 @@ export function createHuidaScene(services) {
    * @param params.jinetes  cuántos quedaban vivos.
    * @param params.arma / params.balas  el arma que tenías y cuántas balas le
    *   quedaban: saltar del tren no te recarga el revólver.
+   * @param params.caballo / params.prueba  los manda el atajo de prueba del
+   *   campamento: probar cualquier caballo sin tenerlo, y que no cuente.
    */
   function enter(params = {}) {
     medirVista();
     hud.hide();
     mostrarCursorDelSistema(false);
     summary = params.summary || { money: 0, kills: 0, outcome: 'escaped' };
-    // `caballo` y `prueba` los manda el atajo de prueba del campamento: probar
-    // cualquier caballo sin tenerlo, y sin que el resultado cuente.
     caballo = HORSES[params.caballo] || caballoActual(gameState);
     prueba = !!params.prueba;
     arma = params.arma || WEAPONS[DEFAULT_WEAPON];
 
-    const W = vista.w;
     yo = {
-      x: W * H.jugador.x,
-      vel: caballo.sprintSpeed,
-      y: (H.cielo + vista.h) / 2,
+      x: 0, y: 0,
       rumbo: 0,
+      vel: caballo.sprintSpeed,
       pose: 0,
       invuln: 0,
       fireTimer: 0,
@@ -105,13 +105,14 @@ export function createHuidaScene(services) {
       fogonazo: 0,
       choque: 0,
       frena: false,
-      contraLaPared: false,
       apuntado: 0,
-      // El caballo que se tuerce solo mientras mirás para atrás.
+      contraLaPared: false,
       desvio: 0,
       desvioDir: 0,
       proximoDesvio: 0,
     };
+
+    sembrarRefugios();
 
     jinetes = [];
     const n = Math.max(1, params.jinetes || 1);
@@ -122,9 +123,7 @@ export function createHuidaScene(services) {
     caidos = [];
     carteles = [];
     obstaculos = [];
-    suelo = 0;
-    proximoObstaculo = W + H.obstaculos.primero;
-    sembrarObstaculos();
+    celdasSembradas = new Set();
     tiempo = 0;
     dineroInicial = Math.max(0, summary.money || 0);
     perdido = 0;
@@ -134,9 +133,9 @@ export function createHuidaScene(services) {
     temblor = 0;
     avisoCansancio = false;
     ultimoGrito = -99;
-    polvo.limpiar();
     bamboleo = 0;
-    armarElCamino();
+    polvo.limpiar();
+    sembrarObstaculos();
 
     const a = CONFIG.ambiente;
     audio.ambiente('galope', { cutoff: 420, q: 0.6, type: 'lowpass',
@@ -147,6 +146,7 @@ export function createHuidaScene(services) {
     services.huida = {
       get yo() { return yo; },
       get jinetes() { return jinetes; },
+      get refugios() { return refugios; },
       get balas() { return balas; },
       get tiempo() { return tiempo; },
       get perdido() { return perdido; },
@@ -155,10 +155,8 @@ export function createHuidaScene(services) {
       get dineroInicial() { return dineroInicial; },
       get fin() { return fin; },
       get obstaculos() { return obstaculos; },
-      get suelo() { return suelo; },
-      get barreras() { return barreras; },
-      get destino() { return destinoElegido; },
       get vista() { return vista; },
+      get refugioTomado() { return refugioTomado; },
     };
   }
 
@@ -168,33 +166,67 @@ export function createHuidaScene(services) {
   }
 
   /**
-   * Cada jinete tiene su CARRIL: un corrimiento vertical respecto de vos y una
-   * distancia detrás. Repartidos arriba y abajo en abanico, así no se pisan y
-   * te pueden encerrar de los dos lados.
+   * LOS TRES REFUGIOS, REPARTIDOS EN EL CAMPO. Salen en un abanico delante
+   * tuyo —el tren iba al este, así que huís para ese lado—, cada uno a su
+   * distancia y con su entrada mirando hacia donde venís. Ninguna corrida es
+   * igual a la anterior: cambian el orden, el rumbo y la distancia.
+   */
+  function sembrarRefugios() {
+    const M = H.mundo;
+    const ids = Object.keys(DESTINOS);
+    // Barajar los tres, para que no salga siempre el mismo del mismo lado.
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = rng.int(0, i);
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    const sep = (M.separacionGrados * Math.PI) / 180;
+    const centro = rng.range(-0.35, 0.35);
+    refugios = ids.map((id, i) => {
+      const rumbo = centro + (i - 1) * sep + rng.range(-0.12, 0.12);
+      const dist = rng.range(M.distanciaMin, M.distanciaMax);
+      const x = Math.cos(rumbo) * dist;
+      const y = Math.sin(rumbo) * dist * PROFUNDIDAD;
+      return {
+        tipo: id,
+        nombre: DESTINOS[id].nombre,
+        cartel: DESTINOS[id].cartel,
+        x, y,
+        radio: M.radio,
+        // La entrada mira hacia donde saliste: es por donde vas a llegar.
+        mira: Math.atan2(-y / PROFUNDIDAD, -x) + rng.range(-0.3, 0.3),
+        abertura: (M.aberturaGrados * Math.PI) / 180,
+        aviso: false,
+      };
+    });
+    refugioTomado = null;
+  }
+
+  /**
+   * Cada jinete arranca detrás tuyo, abierto en abanico, y tiene su carril: a
+   * qué ángulo de tu cola se planta y a qué distancia.
    */
   function crearJinete(i, n) {
+    const J = H.jinetes;
     const lado = i % 2 === 0 ? -1 : 1;
     const escalon = Math.ceil(i / 2);
-    const J = H.jinetes;
+    const atras = J.distanciaInicial + i * J.separacionInicial;
     return {
-      x: yo.x - J.distanciaInicial - i * J.separacionInicial,
-      y: yo.y + lado * (24 + escalon * 22),
+      x: yo.x - Math.cos(yo.rumbo) * atras,
+      y: yo.y - Math.sin(yo.rumbo) * atras * PROFUNDIDAD,
+      rumbo: yo.rumbo,
       alive: true,
       perdido: false,
-      health: H.jinetes.vida ?? RIDERS.ley.health,   // ver `vida` en data/huida.js
-      entra: 0,
-      // Cada uno con su caballo, un poco más rápido o más lento que el resto.
+      health: H.jinetes.vida ?? 1,
       vel: J.velocidad + rng.range(-J.variacion, J.variacion),
-      // Uno solo va un poco abajo tuyo: si frenás se te pone al costado, no encima.
-      dy: n === 1 ? 34 : lado * (30 + escalon * 26),
-      cooldown: H.jinetes.cadencia * 0.6 + rng.range(0, H.jinetes.cadenciaAzar),
+      carril: n === 1 ? 0.25 : lado * (0.22 + escalon * 0.26),
+      atras: J.distanciaInicial * 0.75 + i * J.separacionInicial,
+      cooldown: J.cadencia * 0.6 + rng.range(0, J.cadenciaAzar),
       aimTimer: 0,
       aimDir: 0,
       hitFlash: 0,
       gallop: Math.random() * 6.28,
       fase: Math.random() * 6.28,
       choque: 0,
-      esquiva: null,
       choques: 0,
     };
   }
@@ -205,7 +237,9 @@ export function createHuidaScene(services) {
     medirVista();
     tiempo += dt;
     temblor = Math.max(0, temblor - dt);
+    bamboleo += dt;
     actualizarCascos(dt);
+    polvo.actualizar(dt, 0);
 
     for (const c of carteles) { c.vida -= dt; c.y -= 12 * dt; }
     carteles = carteles.filter((c) => c.vida > 0);
@@ -225,20 +259,16 @@ export function createHuidaScene(services) {
     const C = H.jinetes.cansancio;
     if (!avisoCansancio && tiempo >= C.desde && siguiendo().length > 0) {
       avisoCansancio = true;
-      carteles.push({ x: vista.w / 2, y: 70, texto: T.huida.aflojan, color: colors.bagLoot, vida: 2.4 });
+      carteles.push({ x: yo.x, y: yo.y - 40, texto: T.huida.aflojan, color: colors.bagLoot, vida: 2.4 });
     }
 
-    polvo.actualizar(dt, suelo);
-    bamboleo += dt;
     sembrarObstaculos();
     moverme(dt);
-    suelo += yo.vel * dt;
     disparar(dt);
     moverJinetes(dt, false);
     moverBalas(dt);
 
-    // Llegaste a la quebrada: adentro no te siguen. Gana lo que pase primero.
-    if (siguiendo().length === 0 || tiempo >= H.tope) {
+    if (!fin && (siguiendo().length === 0 || tiempo >= H.tope)) {
       empezarFin(derribados === jinetes.length ? 'limpio' : 'perdidos');
     }
   }
@@ -255,8 +285,8 @@ export function createHuidaScene(services) {
 
   /**
    * LO QUE LE QUEDA AL CABALLO DE UN JINETE. Hasta `cansancio.desde` va a lo
-   * suyo; de ahí en más afloja hasta `cansancio.velocidad`, y ahí es cuando el
-   * que nunca disparó por fin los deja atrás.
+   * suyo; de ahí en más afloja, y ahí es cuando el que nunca disparó por fin
+   * los deja atrás.
    */
   function velocidadDelJinete(j) {
     const C = H.jinetes.cansancio;
@@ -264,39 +294,74 @@ export function createHuidaScene(services) {
     return j.vel + (C.velocidad - j.vel) * t;
   }
 
+  /** Avanzar en el mundo: al norte rinde menos, porque se ve en tres cuartos. */
+  function avanzar(cosa, vel, dt) {
+    cosa.x += Math.cos(cosa.rumbo) * vel * dt;
+    cosa.y += Math.sin(cosa.rumbo) * vel * PROFUNDIDAD * dt;
+  }
+
+  /** Girar de a poco hacia un rumbo, sin pasarse. Devuelve lo que faltaba. */
+  function girarHacia(cosa, objetivo, velocidad, dt) {
+    const dif = Math.atan2(Math.sin(objetivo - cosa.rumbo), Math.cos(objetivo - cosa.rumbo));
+    const paso = velocidad * dt;
+    cosa.rumbo += Math.abs(dif) < paso ? dif : Math.sign(dif) * paso;
+    return Math.abs(dif);
+  }
+
   function moverme(dt) {
     const J = H.jugador;
+    const dx = (input.isDown('KeyD') || input.isDown('ArrowRight') ? 1 : 0)
+             - (input.isDown('KeyA') || input.isDown('ArrowLeft') ? 1 : 0);
     const dy = (input.isDown('KeyS') || input.isDown('ArrowDown') ? 1 : 0)
              - (input.isDown('KeyW') || input.isDown('ArrowUp') ? 1 : 0);
-    yo.frena = input.isDown('KeyA') || input.isDown('ArrowLeft');
+    yo.frena = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
+
     // El clic derecho cierra la mira en `tiempoCierre`, igual que en el asalto.
     const paso = dt / CONFIG.mira.tiempoCierre;
     yo.apuntado = input.mouse.right ? Math.min(1, yo.apuntado + paso) : Math.max(0, yo.apuntado - paso);
     const manejo = 1 - (1 - J.manejoApuntando) * yo.apuntado;
-    desviarse(dt);
-    /**
-     * 🔺 W/S YA NO ES "SUBIR Y BAJAR": ES DOBLAR *(Santi: "¿se puede hacer que
-     * el caballo pueda doblar más hacia el fondo o mirando hacia el jugador?
-     * O sea, que el camino sea menos línea recta hacia el este y un poco más
-     * de sensación de libertad")*.
-     *
-     * El caballo toma un RUMBO (hasta `giroMaximo`), y su velocidad se reparte
-     * entre avanzar y cruzarse: yendo torcido llegás más tarde al destino.
-     * Ese reparto es todo el cambio — y de paso las nueve poses del sprite, de
-     * "alejándose al fondo" a "viniendo de frente", por fin se usan enteras.
-     */
-    const J2 = H.jugador;
-    const objetivo = (dy + (yo.desvio > 0 ? yo.desvioDir * 0.6 : 0)) * J2.giroMaximo;
-    yo.rumbo += (objetivo - yo.rumbo) * Math.min(1, J2.giroInercia * dt * manejo);
 
-    if (yo.choque > 0) {
-      // Chocaste: el caballo casi se para y no lo podés manejar. Mismo precio
-      // que en el galope, pero acá se paga en distancia: se te acercan.
-      yo.choque -= dt;
-    } else {
-      const base = yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed;
-      const cruzado = Math.sin(yo.rumbo) * base * J2.cruzar;
-      yo.y = Math.max(H.cielo + 22, Math.min(vista.h - 12, yo.y + cruzado * dt));
+    desviarse(dt);
+
+    /**
+     * EL RUMBO SALE DE LAS TECLAS, Y EL CABALLO TARDA EN TOMARLO. W/A/S/D
+     * eligen a dónde querés ir —las ocho direcciones—, y el animal gira hacia
+     * ahí a `giroVelocidad`. Mirando para atrás, además, se tuerce solo (ver
+     * `desviarse`): no ves lo que tenés adelante.
+     */
+    let error = 0;
+    if (dx !== 0 || dy !== 0) {
+      const objetivo = Math.atan2(dy / PROFUNDIDAD, dx);
+      error = girarHacia(yo, objetivo, J.giroVelocidad * manejo, dt);
+    }
+    if (yo.desvio > 0) yo.rumbo += yo.desvioDir * 0.5 * dt;
+
+    if (yo.choque > 0) yo.choque -= dt;
+
+    // Doblando cerrado se pierde envión, y [SHIFT] frena para pelear.
+    const curva = 1 - (1 - J.frenoEnCurva) * Math.min(1, error / Math.PI);
+    const fondo = (yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed) * curva;
+    yo.vel = velocidadDe(fondo, yo.choque) * (yo.contraLaPared ? H.mundo.choquePared : 1);
+    avanzar(yo, yo.vel, dt);
+
+    chocarConLasCosas();
+
+    /**
+     * LAS NUEVE POSES DEL CABALLO salen del rumbo: al norte se lo ve alejarse,
+     * al sur viene de frente, al este y al oeste va de perfil. Para el oeste el
+     * dibujo se espeja (ver `dibujarCaballo`), porque la hoja mira a la
+     * derecha. La zona muerta de 0,8 es para que no parpadee entre dos poses.
+     */
+    const crudo = Math.sin(yo.rumbo) * 4;
+    if (Math.abs(crudo - yo.pose) > 0.8) yo.pose = Math.max(-4, Math.min(4, Math.round(crudo)));
+
+    yo.invuln = Math.max(0, yo.invuln - dt);
+    yo.fogonazo = Math.max(0, yo.fogonazo - dt);
+  }
+
+  /** Los choques del jugador: los obstáculos y la pared de un refugio. */
+  function chocarConLasCosas() {
+    if (yo.choque <= 0) {
       const ob = chocaCon(yo.x, yo.y);
       if (ob) {
         ob.golpeado = true;
@@ -307,60 +372,45 @@ export function createHuidaScene(services) {
       }
     }
 
-    /**
-     * Y LO QUE AVANZÁS ES LO QUE MIRÁS. Cruzado a fondo avanzás un 64% (el
-     * coseno de 50°): esquivar cuesta camino, y eso es lo que hace que doblar
-     * sea una decisión y no un adorno.
-     */
-    const fondo = (yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed) * Math.cos(yo.rumbo);
-    yo.vel = velocidadDe(fondo, yo.choque) * (yo.contraLaPared ? H.camino.choqueBarrera : 1);
-
-    // Las nueve poses del caballo salen del rumbo, con la zona muerta de
-    // siempre para que no parpadeen en el borde entre dos.
-    const tramo = J2.giroMaximo / 4;
-    const crudo = yo.rumbo / tramo;
-    if (Math.abs(crudo - yo.pose) > 0.75) yo.pose = Math.max(-4, Math.min(4, Math.round(crudo)));
-
-    chocarConLaBarrera();
-
-    yo.invuln = Math.max(0, yo.invuln - dt);
-    yo.fogonazo = Math.max(0, yo.fogonazo - dt);
-  }
-
-  /**
-   * LA PARED DEL CAMINO. Si llegaste a una barrera y NO estás frente a una
-   * entrada, te clavás contra la roca: seguís vivo, pero casi no avanzás
-   * mientras la buscás — y los que vienen atrás no aflojan.
-   *
-   * Si estás frente a la entrada, pasás: si era la horquilla, ahí queda
-   * elegido el destino; si era el destino, se terminó la huida.
-   */
-  function chocarConLaBarrera() {
     yo.contraLaPared = false;
-    for (const b of barreras) {
-      if (b.pasada) continue;
-      const sx = pantallaDe(b);
-      if (sx > yo.x + 12) continue;          // todavía no llegaste
-      const hueco = huecoDe(b, yo.y);
-      if (!hueco) {
-        // Contra la pared: te frena y no la pasás.
-        if (!yo.contraLaPared) {
-          if (!b.aviso) {
-            audio.play('hitWall');
-            carteles.push({ x: yo.x, y: yo.y - 30, texto: T.huida.pared, color: colors.enemyAlert, vida: 1.4 });
-            b.aviso = true;
-          }
-          yo.contraLaPared = true;
-        }
-        continue;
+    for (const d of refugios) {
+      if (adentroDelRefugio(d, yo.x, yo.y)) {
+        refugioTomado = d;
+        empezarFin('llegaste');
+        return;
       }
-      if (sx + GROSOR < yo.x) {
-        b.pasada = true;
-        if (b.esHorquilla) elegirDestino(hueco);
-        else if (b.esDestino) empezarFin('llegaste');
+      const empuje = chocaConElRefugio(d, yo.x, yo.y);
+      if (!empuje) continue;
+      yo.x = empuje.x;
+      yo.y = empuje.y;
+      yo.contraLaPared = true;
+      if (!d.aviso) {
+        d.aviso = true;
+        audio.play('hitWall');
+        carteles.push({ x: yo.x, y: yo.y - 30, texto: T.huida.pared, color: colors.enemyAlert, vida: 1.6 });
       }
     }
   }
+
+  /**
+   * NO VES ADELANTE: mientras apuntás pasado el giro cómodo del torso, el
+   * caballo se tuerce solo cada tanto. Mirando adelante no pasa nunca.
+   */
+  function desviarse(dt) {
+    const D = H.jugador.atras;
+    yo.desvio = Math.max(0, yo.desvio - dt);
+    if (cuantoAtras() <= 0 || fin) {
+      yo.proximoDesvio = D.desvioCada + rng.range(0, D.desvioAzar);
+      return;
+    }
+    yo.proximoDesvio -= dt;
+    if (yo.proximoDesvio > 0) return;
+    yo.desvio = D.desvioDura;
+    yo.desvioDir = rng.chance(0.5) ? 1 : -1;
+    yo.proximoDesvio = D.desvioDura + D.desvioCada + rng.range(0, D.desvioAzar);
+  }
+
+  // ----------------------------------------------------------------- el arma
 
   /** El mismo gatillo del asalto: clic sostenido, [R] recarga, vacío recarga solo. */
   function disparar(dt) {
@@ -377,13 +427,13 @@ export function createHuidaScene(services) {
     if (!input.mouse.down || yo.fireTimer > 0) return;
     if (yo.balas <= 0) { yo.recargando = arma.reloadTime; return; }
 
-    const [ox, oy] = boca();
     const angulo = haciaDondeApunto()
       + rng.spreadDeTiro(dispersionAhora(), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
+    const [ox, oy] = boca();
     balas.push({
       x: ox, y: oy,
       vx: Math.cos(angulo) * arma.bulletSpeed,
-      vy: Math.sin(angulo) * arma.bulletSpeed,
+      vy: Math.sin(angulo) * arma.bulletSpeed * PROFUNDIDAD,
       vida: 1.2, mia: true, danio: arma.damage,
     });
     yo.balas -= 1;
@@ -392,27 +442,48 @@ export function createHuidaScene(services) {
     audio.play('playerShot');
   }
 
+  /** De dónde sale tu tiro: a la altura del pecho del jinete. */
+  function boca() {
+    return [yo.x + 2, yo.y - 16];
+  }
+
+  /** Dónde cae el mouse EN LA PANTALLA, con nuestra lupa. */
+  function mouseEnPantalla() {
+    const d = input.mouse.px !== undefined ? H.zoom : 1;
+    return {
+      x: (input.mouse.px !== undefined ? input.mouse.px : input.mouse.x) / d,
+      y: (input.mouse.py !== undefined ? input.mouse.py : input.mouse.y) / d,
+    };
+  }
+
+  /** Y dónde cae EN EL MUNDO: la cámara te lleva siempre en el medio. */
+  function mouseEnElMundo() {
+    const m = mouseEnPantalla();
+    return { x: yo.x - vista.w / 2 + m.x, y: yo.y - vista.h / 2 + m.y };
+  }
+
   /** Hacia dónde apuntás: al mouse, para cualquier lado. */
   function haciaDondeApunto() {
+    const m = mouseEnElMundo();
     const [ox, oy] = boca();
-    return Math.atan2(input.mouse.y - oy, input.mouse.x - ox);
+    return Math.atan2(m.y - oy, m.x - ox);
   }
 
   /**
-   * CUÁNTO TE PASASTE DEL GIRO CÓMODO: 0 adentro (`giroDerecha` /
-   * `giroIzquierda`), 1 derecho hacia atrás, y en el medio de a poco.
+   * CUÁNTO TE PASASTE DEL GIRO CÓMODO DEL TORSO *(Santi: "el jugador no es un
+   * buho")*. Se mide contra el RUMBO del caballo, no contra el este: si
+   * galopás al sur, "adelante" es el sur.
    */
   function cuantoAtras() {
-    const g = (haciaDondeApunto() * 180) / Math.PI;
+    const a = haciaDondeApunto();
+    const rel = Math.atan2(Math.sin(a - yo.rumbo), Math.cos(a - yo.rumbo));
+    const g = (rel * 180) / Math.PI;
     const tope = g >= 0 ? H.jugador.giroDerecha : H.jugador.giroIzquierda;
     const pasado = Math.abs(g) - tope;
     return pasado <= 0 ? 0 : Math.min(1, pasado / (180 - tope));
   }
 
-  /**
-   * Tu dispersión ahora: la del arma (la apuntada si tenés el clic derecho),
-   * por lo que se pierde a caballo, y más si mirás para atrás.
-   */
+  /** Tu dispersión ahora: la del arma, peor a caballo, y peor mirando atrás. */
   function dispersionAhora() {
     const t = cuantoAtras();
     const suelta = arma.spread;
@@ -421,26 +492,7 @@ export function createHuidaScene(services) {
     return base * H.jugador.dispersionACaballo * (1 + t * (H.jugador.atras.dispersionMax - 1));
   }
 
-  /**
-   * NO VES ADELANTE: mientras apuntás pasado el giro cómodo, el caballo se
-   * tuerce solo cada tanto, un segundo, para arriba o para abajo. Mirando
-   * adelante no pasa nunca: el reloj se reinicia.
-   */
-  function desviarse(dt) {
-    const T = H.jugador.atras;
-    yo.desvio = Math.max(0, yo.desvio - dt);
-    if (cuantoAtras() <= 0 || fin) { yo.proximoDesvio = T.desvioCada + rng.range(0, T.desvioAzar); return; }
-    yo.proximoDesvio -= dt;
-    if (yo.proximoDesvio > 0) return;
-    yo.desvio = T.desvioDura;
-    yo.desvioDir = rng.chance(0.5) ? 1 : -1;
-    yo.proximoDesvio = T.desvioDura + T.desvioCada + rng.range(0, T.desvioAzar);
-  }
-
-  /** De dónde sale tu tiro: a la altura del pecho del jinete. */
-  function boca() {
-    return [yo.x + 2, yo.y - 16];
-  }
+  // ------------------------------------------------------------------ la ley
 
   function moverJinetes(dt, yendose) {
     const J = H.jinetes;
@@ -448,178 +500,97 @@ export function createHuidaScene(services) {
       j.gallop += dt;
       j.hitFlash = Math.max(0, j.hitFlash - dt);
       if (!j.alive || j.perdido) continue;
-      /**
-       * LA LEY TAMBIÉN TIENE QUE BUSCAR LA ENTRADA. Se aplica siempre, esté el
-       * jinete apuntando o chocado: si no, uno quedaba clavado adentro de la
-       * roca (pasó, y se vio en una foto).
-       */
-      apuntarALaEntrada(j, dt);
 
-      // Al final se quedan atrás del todo.
       if (yendose) {
-        j.x -= 200 * dt;
+        // Se van quedando: aflojan y los deja el mundo.
+        avanzar(j, j.vel * 0.4, dt);
         j.aimTimer = 0;
         continue;
       }
 
-      /**
-       * TODOS GALOPAN: el jinete se corre en la pantalla según la diferencia
-       * entre su caballo y el tuyo. Más lento que vos, se va quedando; si
-       * chocás, se te viene encima (hasta `distanciaMinima`: va detrás tuyo,
-       * no te pasa).
-       */
-      j.x += (velocidadDe(velocidadDelJinete(j), j.choque) - yo.vel) * dt;
-      j.x = Math.min(j.x, yo.x - J.distanciaMinima);
-      if (yo.x - j.x > J.perdida) {
+      const lejos = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+      if (lejos > J.perdida) {
         j.perdido = true;
-        carteles.push({ x: 40, y: j.y - 20, texto: T.huida.seQuedo, color: colors.bagLoot, vida: 1.6 });
+        carteles.push({ x: j.x, y: j.y - 20, texto: T.huida.seQuedo, color: colors.bagLoot, vida: 1.6 });
         continue;
       }
 
-      // Si se la comió, igual que vos: se frena, queda atrás y no tira.
       if (j.choque > 0) {
         j.choque -= dt;
+        avanzar(j, velocidadDe(velocidadDelJinete(j), j.choque), dt);
         j.aimTimer = 0;
         continue;
       }
 
-      // Mientras apunta no se corre para el costado: el aviso es justo porque
-      // el tiro sale de donde lo viste levantar el arma.
+      /**
+       * A DÓNDE VA: a SU lugar detrás tuyo, abierto en abanico. Como el campo
+       * es abierto, "detrás" es detrás de tu RUMBO: si doblás, la partida
+       * entera describe la curva con vos, unos metros más atrás.
+       */
+      const objetivo = {
+        x: yo.x - Math.cos(yo.rumbo + j.carril) * j.atras,
+        y: yo.y - Math.sin(yo.rumbo + j.carril) * j.atras * PROFUNDIDAD,
+      };
+      const haciaAlla = Math.atan2((objetivo.y - j.y) / PROFUNDIDAD, objetivo.x - j.x);
+
+      // Apuntando no dobla: el aviso vale porque el tiro sale de donde lo viste.
       if (j.aimTimer > 0) {
         j.aimTimer -= dt;
         if (j.aimTimer <= 0) tirar(j);
-        chocarJinete(j);
-        continue;
+      } else {
+        girarHacia(j, haciaAlla, 2.2, dt);
+        esquivarConElCaballo(j, dt);
       }
-
-      const ondula = Math.sin(tiempo * 1.3 + j.fase) * 8;
-      let ty = Math.max(H.cielo + 22, Math.min(vista.h - 12, yo.y + j.dy + ondula));
-      ty = esquivar(j, ty);
-      /**
-       * AL COSTADO TUYO DEJAN LUGAR: si frenás se te ponen a la par, y a la par
-       * no se te pueden subir encima. Si su carril queda pegado a vos (por el
-       * borde del campo o por esquivar algo), se corren al lado que haya.
-       */
-      const SEPARA = 30;
-      if (yo.x - j.x < 50 && Math.abs(ty - yo.y) < SEPARA) {
-        const abajo = yo.y + SEPARA <= vista.h - 12;
-        const arriba = yo.y - SEPARA >= H.cielo + 22;
-        ty = (ty >= yo.y && abajo) || !arriba ? yo.y + SEPARA : yo.y - SEPARA;
-      }
-      j.y += Math.sign(ty - j.y) * Math.min(Math.abs(ty - j.y), J.velocidadLateral * dt);
+      avanzar(j, velocidadDelJinete(j), dt);
       chocarJinete(j);
 
       j.cooldown -= dt;
-      const d = Math.hypot(yo.x - j.x, yo.y - j.y);
-      if (j.cooldown <= 0 && d < J.alcance && j.x > 16) {
-        // Cada tanto uno grita al levantar el arma: la ley avisa antes de tirar.
+      const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+      if (j.cooldown <= 0 && d < J.alcance && j.aimTimer <= 0) {
         if (tiempo - ultimoGrito > J.gritoCada && rng.chance(J.chanceGrito)) {
           ultimoGrito = tiempo;
           audio.play('gritoLey');
         }
         j.aimTimer = J.apuntar;
-        j.aimDir = Math.atan2((yo.y - 8) - (j.y - 14), yo.x - (j.x + 6));
+        j.aimDir = Math.atan2((yo.y - 8 - (j.y - 14)) / PROFUNDIDAD, yo.x - (j.x + 6));
         j.cooldown = J.cadencia + rng.range(0, J.cadenciaAzar);
       }
     }
-    if (!yendose) separarJinetes();
   }
 
   /**
-   * NO SE MONTAN UNO ENCIMA DEL OTRO. Cada uno tiene su carril, pero pegado a
-   * un borde del campo los carriles se aplastan contra el borde y quedaban tres
-   * caballos en el mismo lugar. Si dos se pisan, el de atrás le cede el paso:
-   * se queda `SEPARA_X` detrás del de adelante.
+   * LOS JINETES ESQUIVAN LO QUE VIENE *(pedido de Santi)*: miran adelante suyo
+   * y, si hay algo en el camino, doblan. No es infalible, y a propósito:
+   * apuntando no doblan, y ahí se la comen.
    */
-  function separarJinetes() {
-    const SEPARA_X = 36;
-    const SEPARA_Y = 24;
-    const activos = siguiendo().sort((a, b) => b.x - a.x);
-    for (let i = 1; i < activos.length; i++) {
-      const atras = activos[i];
-      for (let k = 0; k < i; k++) {
-        const adelante = activos[k];
-        if (Math.abs(adelante.y - atras.y) < SEPARA_Y && adelante.x - atras.x < SEPARA_X) {
-          atras.x = adelante.x - SEPARA_X;
-        }
-      }
-    }
-  }
-
-  // ------------------------------------------------------------ obstáculos
-
-  /**
-   * LOS OBSTÁCULOS, SEMBRADOS ADELANTE. Viven en coordenadas del SUELO (`gx`),
-   * igual que en el galope: el suelo desfila y ellos con él. Uno cada
-   * `obstaculoCada` de suelo, a cualquier altura del campo; los que ya quedaron
-   * atrás se tiran.
-   */
-  function sembrarObstaculos() {
-    const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
-    while (proximoObstaculo < suelo + vista.w + 40) {
-      obstaculos.push({
-        gx: proximoObstaculo + rng.range(-30, 30),
-        y: rng.range(H.cielo + 26, vista.h - 14),
-        tipo: tipos[rng.int(0, tipos.length - 1)],
-        golpeado: false,
-      });
-      proximoObstaculo += A.obstaculoCada;
-    }
-    obstaculos = obstaculos.filter((ob) => ob.gx - suelo > -40);
-  }
-
-  function radioDe(ob) {
-    return A.obstaculoRadios[ob.tipo] ?? A.obstaculoRadio;
-  }
-
-  /** La misma cuenta del galope: a menos de radio + 6 del centro, chocaste. */
-  function chocaCon(x, y) {
-    for (const ob of obstaculos) {
-      if (ob.golpeado) continue;
-      const ox = ob.gx - suelo;
-      const radio = radioDe(ob);
-      if (Math.abs(ox - x) > radio + 14) continue;
-      if (Math.hypot(ox - x, ob.y - y) < radio + 6) return ob;
-    }
-    return null;
+  function esquivarConElCaballo(j, dt) {
+    const O = H.obstaculos;
+    const frente = {
+      x: j.x + Math.cos(j.rumbo) * O.mira,
+      y: j.y + Math.sin(j.rumbo) * O.mira * PROFUNDIDAD,
+    };
+    const estorbo = chocaCon(frente.x, frente.y, O.margen);
+    if (!estorbo) return;
+    const hacia = Math.atan2((estorbo.y - j.y) / PROFUNDIDAD, estorbo.x - j.x);
+    const dif = Math.atan2(Math.sin(hacia - j.rumbo), Math.cos(hacia - j.rumbo));
+    girarHacia(j, j.rumbo - (dif >= 0 ? 1 : -1) * 0.7, 3, dt);
   }
 
   function chocarJinete(j) {
     const ob = chocaCon(j.x, j.y);
-    if (!ob) return;
-    ob.golpeado = true;
-    j.choque = A.obstaculoFrenado;
-    j.choques += 1;
-    j.esquiva = null;
-    audio.play('hitWall');
-  }
-
-  /**
-   * LOS JINETES TAMBIÉN ESQUIVAN *(pedido de Santi)*. Miran `mira` px adelante:
-   * si viene algo por su carril, se corren para el lado que tengan más libre y
-   * se quedan corridos hasta pasarlo. No es infalible, y a propósito: si lo ven
-   * tarde, o si están apuntando (apuntando no se mueven), se la comen.
-   */
-  function esquivar(j, ty) {
-    const O = H.obstaculos;
-    if (j.esquiva && j.esquiva.ob.gx - suelo < j.x - 12) j.esquiva = null;
-    if (!j.esquiva) {
-      for (const ob of obstaculos) {
-        if (ob.golpeado) continue;
-        const ox = ob.gx - suelo;
-        if (ox < j.x - 4 || ox - j.x > O.mira) continue;
-        const pasa = radioDe(ob) + O.margen;
-        if (Math.abs(ob.y - ty) >= pasa && Math.abs(ob.y - j.y) >= pasa) continue;
-        const arriba = ob.y - pasa;
-        const abajo = ob.y + pasa;
-        const puedeArriba = arriba > H.cielo + 22;
-        const puedeAbajo = abajo < vista.h - 12;
-        const porArriba = puedeArriba && (!puedeAbajo || Math.abs(j.y - arriba) < Math.abs(j.y - abajo));
-        j.esquiva = { ob, y: porArriba ? arriba : abajo };
-        break;
-      }
+    if (ob) {
+      ob.golpeado = true;
+      j.choque = A.obstaculoFrenado;
+      j.choques += 1;
+      audio.play('hitWall');
     }
-    return j.esquiva ? j.esquiva.y : ty;
+    for (const d of refugios) {
+      const empuje = chocaConElRefugio(d, j.x, j.y);
+      if (!empuje) continue;
+      j.x = empuje.x;
+      j.y = empuje.y;
+      j.choque = Math.max(j.choque, 0.25);
+    }
   }
 
   function tirar(j) {
@@ -629,7 +600,7 @@ export function createHuidaScene(services) {
     balas.push({
       x: j.x + 6, y: j.y - 14,
       vx: Math.cos(a) * J.velocidadBala,
-      vy: Math.sin(a) * J.velocidadBala,
+      vy: Math.sin(a) * J.velocidadBala * PROFUNDIDAD,
       vida: 1.4, mia: false,
     });
     audio.play('enemyShot');
@@ -642,24 +613,23 @@ export function createHuidaScene(services) {
       b.vida -= dt;
       if (b.mia) {
         for (const j of jinetes) {
-          if (!j.alive || j.entra > 0) continue;
-          if (Math.abs(b.x - j.x) < 12 && Math.abs(b.y - (j.y - 8)) < 12) {
+          if (!j.alive || j.perdido) continue;
+          if (Math.abs(b.x - j.x) < 12 && Math.abs(b.y - (j.y - 8)) < 10) {
             b.vida = 0;
             pegarle(j, b.danio);
             break;
           }
         }
-      } else if (yo.invuln <= 0 && Math.abs(b.x - yo.x) < 11 && Math.abs(b.y - (yo.y - 8)) < 11) {
+      } else if (yo.invuln <= 0 && Math.abs(b.x - yo.x) < 11 && Math.abs(b.y - (yo.y - 8)) < 9) {
         b.vida = 0;
         soltarBolsa();
-      } else if (!b.silbo && Math.abs(b.x - yo.x) < 26 && Math.abs(b.y - (yo.y - 8)) < 26) {
-        // Te pasó cerca y no te dio: el silbido es el que te avisa que casi.
+      } else if (!b.silbo && Math.abs(b.x - yo.x) < 26 && Math.abs(b.y - (yo.y - 8)) < 20) {
+        // Te pasó cerca y no te dio: el silbido avisa que fue por poco.
         b.silbo = true;
         audio.play('balaSilba');
       }
     }
-    balas = balas.filter((b) => b.vida > 0 && b.x > -20 && b.x < vista.w + 20
-      && b.y > -20 && b.y < vista.h + 20);
+    balas = balas.filter((b) => b.vida > 0);
   }
 
   function pegarle(j, danio) {
@@ -669,10 +639,8 @@ export function createHuidaScene(services) {
     if (j.health > 0) return;
     j.alive = false;
     derribados += 1;
-    // El caballo sin jinete se queja y sigue de largo.
+    caidos.push({ x: j.x, y: j.y });
     audio.play('relincho');
-    // Queda tirado en el SUELO, que sigue desfilando: se va quedando atrás.
-    caidos.push({ gx: j.x + suelo, y: j.y });
     audio.play('kill');
     carteles.push({ x: j.x, y: j.y - 28, texto: T.huida.derribado, color: colors.bagLoot, vida: 1.4 });
   }
@@ -680,7 +648,6 @@ export function createHuidaScene(services) {
   /**
    * TE PEGARON: SOLTÁS UNA BOLSA. Todas del mismo tamaño (una fracción de lo
    * que sacaste del tren, no de lo que te queda), para que se puedan contar.
-   * Sin plata no hay bolsa que soltar, y el tiro no te hace nada más.
    */
   function soltarBolsa() {
     yo.invuln = H.invulnerable;
@@ -694,11 +661,12 @@ export function createHuidaScene(services) {
     }
     perdido += monto;
     soltadas += 1;
-    bolsas.push({ gx: yo.x + suelo - 6, y: yo.y + 4, z: -18, vz: -60 });
+    bolsas.push({ x: yo.x - 6, y: yo.y + 4, z: -18, vz: -60 });
     carteles.push({ x: yo.x, y: yo.y - 30, texto: `−$${monto}`, color: colors.enemyAlert, vida: 1.4 });
   }
 
   function empezarFin(como) {
+    if (fin) return;
     fin = { como, timer: 1.8 };
     balas = balas.filter((b) => b.mia);
     audio.play('escape');
@@ -708,10 +676,10 @@ export function createHuidaScene(services) {
     summary.money = Math.max(0, (summary.money || 0) - perdido);
     summary.huida = {
       jinetes: jinetes.length, derribados, bolsas: soltadas, perdido,
-      // Cómo terminó: 'llegaste' (a donde te llevó el camino), 'limpio' (no
-      // quedó ninguno) o 'perdidos' (los dejaste atrás).
+      // Cómo terminó: 'llegaste' (a un refugio), 'limpio' (no quedó ninguno) o
+      // 'perdidos' (los dejaste atrás).
       fin: fin ? fin.como : 'perdidos',
-      lugar: destinoElegido ? destinoElegido.nombre : null,
+      lugar: refugioTomado ? refugioTomado.nombre : null,
     };
     // Un jinete derribado acá es un jinete derribado: cuenta como en el asalto.
     summary.kills = (summary.kills || 0) + derribados;
@@ -730,27 +698,70 @@ export function createHuidaScene(services) {
     audio.play('zancada');
     if (fin) return;
 
-    /**
-     * Y CADA ZANCADA LEVANTA POLVO, la tuya y la de ellos. Seis caballos a
-     * fondo sobre tierra seca es media pantalla de tierra en el aire, que es
-     * lo que faltaba para que se sienta una persecución y no una carrera
-     * prolija *(Santi: "¿por qué todavía no lo siento como una persecución
-     * real del Oeste?")*.
-     *
-     * Los jinetes levantan menos (3 bocanadas por casco contra 5): son seis
-     * caballos, y con la misma cantidad que vos la pantalla se tapaba.
-     */
+    // Y cada zancada levanta polvo: la tuya y la de ellos.
     const pisadas = [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6], [GOLPES.delanteraAca, 6]];
-    polvo.sembrar({ x: yo.x, y: yo.y, suelo, rumbo: yo.rumbo, fuerza: yo.choque > 0 ? 0.3 : 1, pisadas });
+    polvo.sembrar({ x: yo.x, y: yo.y, suelo: 0, rumbo: 0, fuerza: yo.choque > 0 ? 0.3 : 1, pisadas });
     for (const j of siguiendo()) {
-      if (j.x < -20 || j.x > vista.w + 20) continue;
-      polvo.sembrar({ x: j.x, y: j.y, suelo, fuerza: 0.8, pisadas, cuantas: 3 });
+      if (Math.hypot(j.x - yo.x, j.y - yo.y) > vista.w) continue;
+      polvo.sembrar({ x: j.x, y: j.y, suelo: 0, rumbo: 0, fuerza: 0.8, pisadas, cuantas: 3 });
     }
   }
 
   function mostrarCursorDelSistema(visible) {
     const canvas = renderer.canvas || (renderer.ctx && renderer.ctx.canvas);
     if (canvas) canvas.style.cursor = visible ? '' : 'none';
+  }
+
+  // -------------------------------------------------------------- obstáculos
+
+  /**
+   * LOS OBSTÁCULOS, SEMBRADOS ALREDEDOR TUYO. El campo es abierto, así que se
+   * siembran por CELDAS de mundo a medida que te acercás, y se tiran las que
+   * quedan lejos. Cada celda decide lo suyo una sola vez.
+   */
+  function sembrarObstaculos() {
+    const CELDA = 150;
+    const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
+    const alcance = vista.w;
+    const cx0 = Math.floor((yo.x - alcance) / CELDA);
+    const cx1 = Math.ceil((yo.x + alcance) / CELDA);
+    const cy0 = Math.floor((yo.y - alcance) / CELDA);
+    const cy1 = Math.ceil((yo.y + alcance) / CELDA);
+    for (let cx = cx0; cx <= cx1; cx++) {
+      for (let cy = cy0; cy <= cy1; cy++) {
+        const clave = `${cx},${cy}`;
+        if (celdasSembradas.has(clave)) continue;
+        celdasSembradas.add(clave);
+        const cuantos = rng.int(0, 2);
+        for (let i = 0; i < cuantos; i++) {
+          obstaculos.push({
+            x: cx * CELDA + rng.range(0, CELDA),
+            y: cy * CELDA + rng.range(0, CELDA),
+            tipo: tipos[rng.int(0, tipos.length - 1)],
+            golpeado: false,
+          });
+        }
+      }
+    }
+    // Los que quedaron lejos no se dibujan ni chocan: fuera de la lista.
+    if (obstaculos.length > 400) {
+      obstaculos = obstaculos.filter((ob) => Math.hypot(ob.x - yo.x, ob.y - yo.y) < alcance * 1.4);
+    }
+  }
+
+  function radioDe(ob) {
+    return A.obstaculoRadios[ob.tipo] ?? A.obstaculoRadio;
+  }
+
+  /** La misma cuenta del galope: a menos de radio + 6 del centro, chocaste. */
+  function chocaCon(x, y, extra = 6) {
+    for (const ob of obstaculos) {
+      if (ob.golpeado) continue;
+      const radio = radioDe(ob);
+      if (Math.abs(ob.x - x) > radio + 24) continue;
+      if (Math.hypot(ob.x - x, (ob.y - y) / PROFUNDIDAD) < radio + extra) return ob;
+    }
+    return null;
   }
 
   // ----------------------------------------------------------------- dibujar
@@ -760,80 +771,52 @@ export function createHuidaScene(services) {
     r.lupa(H.zoom);
     medirVista();
     const dia = gameState.esDeDia;
-    const tinte = (hex) => (dia ? hex : escalarColor(hex, 0.32));
-    const C = colors.cielo;
+
+    r.clear(dia ? colors.desiertoDia : colors.desiertoNoche);
 
     r.ctx.save();
     /**
-     * LA CÁMARA SE MUEVE: el balanceo del galope siempre (sube y baja con la
-     * zancada, como el lomo), el sacudón cuando te pegan, y un tirón cuando
-     * chocás. Antes estaba clavada y por eso parecía una cinta de correr.
+     * LA CÁMARA TE SIGUE: el mundo se corre para que vos quedes en el medio.
+     * Encima va el balanceo del galope y el sacudón de los tiros.
      */
     const zancadaT = CONFIG.ambiente.zancadaCada;
-    const vaivén = Math.sin((bamboleo / zancadaT) * Math.PI * 2) * 0.9
+    const vaiven = Math.sin((bamboleo / zancadaT) * Math.PI * 2) * 0.9
       + Math.sin((bamboleo / zancadaT) * Math.PI * 4) * 0.4;
-    r.ctx.translate(yo.choque > 0 ? -3 : 0, vaivén);
+    const camX = Math.round(yo.x - vista.w / 2);
+    const camY = Math.round(yo.y - vista.h / 2);
+    r.ctx.translate(-camX, -camY + vaiven);
     if (temblor > 0) r.ctx.translate(rng.range(-2.5, 2.5), rng.range(-2.5, 2.5));
 
-    r.clear(colorDelSuelo(dia));
+    // El suelo: pasto, piedritas y manchas, sembradas por celda (las mismas
+    // del galope y del asalto, así que el afuera es siempre el mismo lugar).
     sembrarDesierto(r, {
-      x0: 0, y0: H.cielo, x1: vista.w, y1: vista.h + 10,
-      desplaza: suelo, noche: !dia, colores: C,
-      grandes: () => false,
+      x0: camX, y0: camY, x1: camX + vista.w, y1: camY + vista.h,
+      noche: !dia, colores: colors.cielo, grandes: () => false,
     });
 
-    // Los hitos del camino van entre el suelo y el cielo: están lejos.
-    // El cielo, con el horizonte y una cordillera baja.
-    const [arriba, abajo] = dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
-      : [C.nocheArriba, C.nocheHorizonte];
-    r.cielo(0, 0, vista.w, H.cielo, arriba, abajo, 6);
-    for (let sx = 0; sx < vista.w; sx += 2) {
-      const u = sx + suelo * 0.03;
-      const h = 0.5 + 0.3 * Math.sin(u * 0.012) + 0.18 * Math.sin(u * 0.035 + 1.7);
-      const alto = Math.round(Math.max(0.1, h) * 12);
-      r.rect(sx, H.cielo - alto, 2, alto, tinte(C.montanaLejos));
-    }
-    r.rect(0, H.cielo, vista.w, 1, tinte(C.bruma));
-    dibujarHitos(r, dia);
+    // Lo que quedó tirado en el campo: los caídos y las bolsas.
+    for (const c of caidos) dibujarTendido(r, c.x, c.y + 4, { tipo: 'jineteLey', cinta: '#4a78b8' });
+    for (const b of bolsas) dibujarBolsa(r, b.x, b.y + b.z);
+
+    polvo.dibujar(r, 0, !dia);
+
     /**
-     * Y LO QUE VIENE, EN EL HORIZONTE: antes de la horquilla se ven los dos
-     * destinos posibles, uno arriba y otro abajo; después, sólo al que vas.
-     * Es lo que deja elegir el camino a tiempo en vez de adivinar.
+     * TODO SE DIBUJA POR DÓNDE PISA: lo que está más abajo tapa a lo que está
+     * más arriba. Entran los refugios, los obstáculos, los jinetes y vos.
      */
-    for (const b of barreras) {
-      const lejos = (b.gx - suelo) / H.camino.largo;
-      if (lejos < 0 || lejos > 0.9) continue;
-      for (const h of b.huecos) {
-        const d = DESTINOS[h.destino] || destinoElegido;
-        if (!d) continue;
-        const x = vista.w * 0.55 + (b.gx - suelo) * 0.25;
-        dibujarAnuncio(r, d.anuncio, x, H.cielo + 2, 0.5 + (1 - lejos) * 0.5, dia);
+    const cosas = [];
+    for (const d of refugios) {
+      const lejos = Math.hypot(d.x - yo.x, (d.y - yo.y) / PROFUNDIDAD);
+      if (lejos > vista.w * 0.9) {
+        // De lejos, su silueta: es lo que te dice para dónde está.
+        cosas.push({ y: d.y, draw: () => dibujarDeLejos(r, d, dia, Math.max(0.3, 1 - lejos / 4600)) });
+      } else {
+        cosas.push({ y: d.y, draw: () => dibujarRefugio(r, d, dia) });
       }
     }
-    dibujarBarreras(r, dia);
-
-    /**
-     * LAS RAYAS DE VELOCIDAD Y LAS MATAS DE ADELANTE, las mismas del galope
-     * (engine/parallax.js). Las matas pasan pegadas a la cámara, abajo de
-     * todo: son lo que de verdad hace sentir a qué velocidad vas, porque
-     * están cerca.
-     */
-    const P = CONFIG.parallax;
-    drawSpeedLines(r, suelo, vista.w, {
-      ...P.rayas, velocidad: P.rayas.velocidad * P.velocidad,
-      desde: H.cielo + 10, hasta: vista.h - 6,
-    });
-
-    // Lo que quedó atrás en el suelo: los caídos y las bolsas.
-    for (const c of caidos) dibujarTendido(r, c.gx - suelo, c.y + 4, { tipo: 'jineteLey', cinta: '#4a78b8' });
-    for (const b of bolsas) dibujarBolsa(r, b.gx - suelo, b.y + b.z);
-
-    // Por dónde tienen los pies: el de más abajo tapa al de más arriba.
-    const cosas = [];
     for (const ob of obstaculos) {
-      const ox = ob.gx - suelo;
-      if (ox < -20 || ox > vista.w + 20) continue;
-      cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ox, radioDe(ob), !dia) });
+      if (Math.abs(ob.x - yo.x) > vista.w || Math.abs(ob.y - yo.y) > vista.h) continue;
+      cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ob.x, radioDe(ob), !dia) });
     }
     for (const j of jinetes) {
       if (!j.alive || j.perdido) continue;
@@ -841,24 +824,15 @@ export function createHuidaScene(services) {
     }
     cosas.push({ y: yo.y, draw: () => dibujarme(r, dia) });
     cosas.sort((a, b) => a.y - b.y);
-    // El polvo va detrás de todos los caballos: lo levantaron al pasar.
-    polvo.dibujar(r, suelo, !dia);
     for (const c of cosas) c.draw();
 
-    for (const b of balas) {
-      r.rect(b.x - 1, b.y - 1, 3, 2, b.mia ? colors.bulletP : colors.bulletE);
-    }
-    // Las matas de adelante van ENCIMA de todo: pasan entre vos y la cámara.
-    drawParallax(r, P.capas.map((c, i) => ({
-      ...c, v: c.v * P.velocidad, y: vista.h - 12 + i * 4,
-    })), suelo, vista.w);
+    for (const b of balas) r.rect(b.x - 1, b.y - 1, 3, 2, b.mia ? colors.bulletP : colors.bulletE);
 
     for (const c of carteles) {
       r.ctx.globalAlpha = Math.min(1, c.vida * 2);
       r.text(c.texto, c.x, c.y, c.color);
     }
     r.ctx.globalAlpha = 1;
-
     r.ctx.restore();
 
     dibujarAcoso(r);
@@ -867,239 +841,46 @@ export function createHuidaScene(services) {
   }
 
   /**
-   * EL JINETE DE LA LEY, el mismo de entities/rider.js, con dos diferencias: de
-   * noche el caballo se apaga como el tuyo, y el brazo apunta HACIA VOS (en el
-   * asalto apunta siempre hacia el tren).
+   * UN CABALLO CON SU JINETE, ESPEJADO SI VA HACIA EL OESTE. La hoja del
+   * sprite mira a la derecha y tiene las cinco vistas de norte a sur; el otro
+   * medio giro es ésta misma dada vuelta.
    */
-  // -------------------------------------------------------------- el camino
-
-  /**
-   * EL CAMINO SE ARMA AL SALIR DEL TREN, y no es el mismo dos veces *(Santi:
-   * "que hayan diferentes caminos para tomar y que sea aleatorio el destino a
-   * dónde llegas")*.
-   *
-   * Son dos barreras: **la horquilla** a mitad de camino, que parte el campo
-   * en dos con una cresta de roca en el medio, y **el destino** al final. Cada
-   * rama de la horquilla lleva a un destino distinto, sorteado entre los tres.
-   * Hasta que pasás la horquilla el destino no está decidido: lo decidís vos
-   * con el lado por el que pasás.
-   */
-  function armarElCamino() {
-    const C = H.camino;
-    const arriba = H.cielo + 22;
-    const abajo = vista.h - 12;
-    const alto = abajo - arriba;
-
-    // Dos destinos distintos, sorteados de los tres.
-    const ids = Object.keys(DESTINOS);
-    const a = ids[rng.int(0, ids.length - 1)];
-    let b = a;
-    while (b === a) b = ids[rng.int(0, ids.length - 1)];
-
-    const yArriba = arriba + alto * 0.24;
-    const yAbajo = arriba + alto * 0.76;
-    const e = C.entrada;
-
-    barreras = [{
-      tipo: 'roca',
-      gx: C.largo * C.bifurcacion,
-      huecos: [
-        { y0: yArriba - e, y1: yArriba + e, destino: a },
-        { y0: yAbajo - e, y1: yAbajo + e, destino: b },
-      ],
-      esHorquilla: true,
-      pasada: false,
-    }];
-    destinoElegido = null;
-  }
-
-  /**
-   * CUANDO PASÁS LA HORQUILLA, EL DESTINO QUEDA DECIDIDO y aparece su barrera
-   * al final del camino, con su entrada a la altura de la rama que tomaste.
-   */
-  function elegirDestino(hueco) {
-    destinoElegido = DESTINOS[hueco.destino];
-    const centro = (hueco.y0 + hueco.y1) / 2;
-    const e = H.camino.entrada;
-    barreras.push({
-      tipo: destinoElegido.id,
-      gx: H.camino.largo,
-      huecos: [{ y0: centro - e, y1: centro + e }],
-      esDestino: true,
-      pasada: false,
-    });
-    carteles.push({ x: vista.w / 2, y: 70, texto: T.huida.rumbo(destinoElegido.nombre), color: colors.bagLoot, vida: 2.2 });
-  }
-
-  /**
-   * LA LEY BUSCA LA ENTRADA. Cuando tiene una barrera encima, su carril deja
-   * de ser "al lado tuyo" y pasa a ser "el hueco más cercano": se abren en
-   * abanico hacia las entradas, igual que haría una partida de verdad al ver
-   * un paredón.
-   */
-  function apuntarALaEntrada(j, dt) {
-    const b = barreraEn(j.x, 40);
-    if (!b) return;
-    const hueco = huecoDe(b, j.y) || b.huecos.reduce((mejor, h) => {
-      const c = (h.y0 + h.y1) / 2;
-      const cm = (mejor.y0 + mejor.y1) / 2;
-      return Math.abs(c - j.y) < Math.abs(cm - j.y) ? h : mejor;
-    }, b.huecos[0]);
-    const centro = (hueco.y0 + hueco.y1) / 2;
-    const paso = H.jinetes.velocidadLateral * 1.4 * dt;
-    j.y += Math.sign(centro - j.y) * Math.min(Math.abs(centro - j.y), paso);
-    // Y si aun así llegó pegado a la pared, se frena contra ella como vos.
-    const sx = pantallaDe(b);
-    if (!huecoDe(b, j.y) && j.x + 6 > sx && j.x - 6 < sx + GROSOR) j.choque = Math.max(j.choque, 0.2);
-  }
-
-  /** Dónde cae en la pantalla el borde de este lado de una barrera. */
-  function pantallaDe(b) {
-    return yo.x + (b.gx - suelo);
-  }
-
-  /** ¿Esta altura pasa por alguno de los huecos de la barrera? */
-  function huecoDe(b, y) {
-    return b.huecos.find((h) => y > h.y0 + 3 && y < h.y1 - 3) || null;
-  }
-
-  /**
-   * LA BARRERA QUE TENÉS ENCIMA, si es que hay alguna: la que ya te está
-   * tocando. Lo usan el jugador y los jinetes, así que la pared frena a todos
-   * igual.
-   */
-  function barreraEn(x, margen = 6) {
-    for (const b of barreras) {
-      const sx = pantallaDe(b);
-      if (x + margen > sx && x - margen < sx + GROSOR) return b;
-    }
-    return null;
-  }
-
-  /**
-   * EL SUELO CAMBIA A MEDIDA QUE AVANZÁS: arena al salir de la vía, pedregal
-   * en el medio, y pasto seco cerca de la quebrada. No es decoración: es lo
-   * que te dice que estás yendo a algún lado sin ningún cartel.
-   */
-  function colorDelSuelo(dia) {
-    const t = Math.max(0, Math.min(1, suelo / H.camino.largo));
-    const arena = '#8a6f47';
-    const pedregal = '#7b6a55';
-    const pasto = '#8a7c4d';
-    const hex = t < 0.5 ? mezclar(arena, pedregal, t / 0.5) : mezclar(pedregal, pasto, (t - 0.5) / 0.5);
-    return dia ? hex : escalarColor(hex, 0.22);
-  }
-
-  /** Dos colores mezclados, `t` de 0 a 1. */
-  function mezclar(a, b, t) {
-    const n = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-    const [r1, g1, b1] = n(a);
-    const [r2, g2, b2] = n(b);
-    const c = (x, y) => Math.round(x + (y - x) * Math.max(0, Math.min(1, t))).toString(16).padStart(2, '0');
-    return `#${c(r1, r2)}${c(g1, g2)}${c(b1, b2)}`;
-  }
-
-  /**
-   * LAS BARRERAS DEL CAMINO, dibujadas donde están en el terreno: vienen hacia
-   * vos porque el mundo desfila, no porque aparezcan alrededor tuyo.
-   */
-  function dibujarBarreras(r, dia) {
-    const arriba = H.cielo + 18;
-    const abajo = vista.h;
-    for (const b of barreras) {
-      const sx = pantallaDe(b);
-      if (sx > vista.w + 40 || sx + GROSOR < -40) continue;
-      dibujarBarrera(r, {
-        tipo: b.tipo, sx, huecos: b.huecos, y0: arriba, y1: abajo, dia, suelo,
-      });
-      // Encima de cada entrada, lo que hay del otro lado (sólo en la horquilla).
-      if (!b.esHorquilla) continue;
-      for (const h of b.huecos) {
-        const d = DESTINOS[h.destino];
-        if (d) dibujarAnuncio(r, d.anuncio, sx + GROSOR / 2, h.y0 - 6, 0.8, dia);
-      }
-    }
-  }
-
-  /**
-   * LOS HITOS: cosas grandes que pasan LEJOS, apoyadas en el horizonte. No
-   * chocan con nadie —están del otro lado del campo— y se mueven a un tercio
-   * de lo que corre el suelo, que es lo que las hace leerse distantes.
-   *
-   * ⚠️ SIMPLE (por vestir): son siluetas de dos o tres rectángulos.
-   */
-  function dibujarHitos(r, dia) {
-    const base = H.cielo + 3;
-    for (const hito of H.camino.hitos) {
-      const gx = hito.en * H.camino.largo;
-      const x = vista.w * 0.5 + (gx - suelo) * 0.34;
-      if (x < -40 || x > vista.w + 40) continue;
-      const c = (hex) => (dia ? hex : escalarColor(hex, 0.35));
-      if (hito.tipo === 'via') {
-        // La vía por la que venía el tren, alejándose.
-        for (let i = 0; i < 9; i++) r.rect(x - 18 + i * 5, base + 1 - i * 0.2, 3, 1, c('#5a4a3a'));
-        r.rect(x - 20, base, 42, 1, c('#6b5a44'));
-      } else if (hito.tipo === 'huesos') {
-        r.rect(x - 5, base, 11, 2, c('#b9ae95'));
-        r.rect(x - 2, base - 3, 3, 3, c('#cbc0a6'));
-        r.rect(x + 3, base - 2, 4, 1, c('#cbc0a6'));
-      } else if (hito.tipo === 'rancho') {
-        r.rect(x - 9, base - 7, 18, 8, c('#6a5238'));
-        r.rect(x - 11, base - 10, 22, 3, c('#4e3c28'));
-        r.rect(x - 2, base - 4, 4, 5, c('#2e2418'));
-      } else {
-        // Una carreta rota, con la rueda caída al lado.
-        r.rect(x - 8, base - 5, 15, 4, c('#6a5238'));
-        r.rect(x - 8, base - 8, 3, 3, c('#4e3c28'));
-        r.rect(x + 8, base - 2, 3, 3, c('#4e3c28'));
-      }
-    }
-  }
-
-    /**
-   * EL BORDE SE PONE ROJO CUANDO TE TIENEN ENCIMA. Reemplaza a la barra de
-   * distancia: se ve sin mirar la HUD, que es de lo que se trata cuando tenés
-   * a alguien a diez metros tirándote.
-   */
-  function dibujarAcoso(r) {
-    if (fin) return;
-    const quedan = siguiendo();
-    if (!quedan.length) return;
-    const cerca = Math.min(...quedan.map((j) => yo.x - j.x));
-    const t = Math.max(0, Math.min(1, (110 - cerca) / 80));
-    if (t <= 0) return;
+  function dibujarCaballo(quien, r, dibujo) {
+    const alOeste = Math.cos(quien.rumbo) < 0;
     r.ctx.save();
-    // Vienen de atrás, así que el aviso entra por la izquierda y se derrama
-    // por arriba y por abajo. La derecha queda limpia: para allá vas.
-    r.ctx.globalAlpha = 0.1 + t * 0.2;
-    r.ctx.fillStyle = colors.enemyAlert;
-    const grosor = 2 + t * 3;
-    r.ctx.fillRect(0, 0, grosor * 2.5, vista.h);
-    r.ctx.fillRect(0, 0, vista.w * 0.6, grosor);
-    r.ctx.fillRect(0, vista.h - grosor, vista.w * 0.6, grosor);
+    if (alOeste) {
+      r.ctx.translate(Math.round(quien.x) * 2, 0);
+      r.ctx.scale(-1, 1);
+    }
+    dibujo();
     r.ctx.restore();
   }
 
   function dibujarLey(r, j, dia) {
-    r.ctx.globalAlpha = 0.25;
-    r.box(j.x, j.y + 7, 11, 2, '#000');
-    r.ctx.globalAlpha = 1;
     const T0 = 0.56;
     const zancada = { t: ((j.gallop % T0) + T0) % T0, T: T0 };
     const trote = Math.round(Math.cos((zancada.t / T0 - 0.15) * Math.PI * 2) * 1.2);
-    const montura = dibujarAnimal(r, j.x, j.y, zancada, trote, 1, 0, null, !dia);
-    const rebote = Math.cos((zancada.t / T0 - 0.25) * Math.PI * 2) * 0.6;
-    dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, 0, 2, {
-      detalles: 'ley',
-      destello: j.hitFlash > 0,
-      estado: j.aimTimer > 0 ? 'alerta' : 'calma',
-    }, montura);
-    montura.adelante();
+    const pose = Math.max(-4, Math.min(4, Math.round(Math.sin(j.rumbo) * 4)));
+
+    r.ctx.globalAlpha = 0.25;
+    r.box(j.x, j.y + 7, 11, 2, '#000');
+    r.ctx.globalAlpha = 1;
+
+    dibujarCaballo(j, r, () => {
+      const montura = dibujarAnimal(r, j.x, j.y, zancada, trote, 1, pose, null, !dia);
+      const rebote = Math.cos((zancada.t / T0 - 0.25) * Math.PI * 2) * 0.6;
+      dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, pose, 2, {
+        detalles: 'ley',
+        destello: j.hitFlash > 0,
+        estado: j.aimTimer > 0 ? 'alerta' : 'calma',
+      }, montura);
+      montura.adelante();
+    });
 
     if (j.aimTimer > 0) {
       const px = j.x + 6;
-      const py = j.y - 14 + trote;
-      r.line(px, py, px + Math.cos(j.aimDir) * 11, py + Math.sin(j.aimDir) * 11, '#d8cdbb');
+      const py = j.y - 14;
+      r.line(px, py, px + Math.cos(j.aimDir) * 11, py + Math.sin(j.aimDir) * 11 * PROFUNDIDAD, '#d8cdbb');
       // ⚠️ SIMPLE: el aviso de que va a tirar. Por vestir.
       r.text('!', j.x, j.y - 36, colors.enemyAlert);
     }
@@ -1117,13 +898,15 @@ export function createHuidaScene(services) {
     r.ctx.globalAlpha = 0.25;
     r.ctx.fillStyle = '#000';
     r.ctx.beginPath();
-    r.ctx.ellipse(Math.round(yo.x), Math.round(yo.y + 7), 12, 2.5, yo.rumbo * 0.5, 0, Math.PI * 2);
+    r.ctx.ellipse(Math.round(yo.x), Math.round(yo.y + 7), 12, 2.5, 0, 0, Math.PI * 2);
     r.ctx.fill();
     r.ctx.restore();
 
-    const montura = dibujarAnimal(r, yo.x, yo.y, zancada, trote, 1, yo.pose, caballo.id, !dia);
-    dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, yo.pose, 2, {}, montura);
-    montura.adelante();
+    dibujarCaballo(yo, r, () => {
+      const montura = dibujarAnimal(r, yo.x, yo.y, zancada, trote, 1, yo.pose, caballo.id, !dia);
+      dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, yo.pose, 2, {}, montura);
+      montura.adelante();
+    });
 
     if (yo.fogonazo > 0) {
       const [ox, oy] = boca();
@@ -1139,18 +922,32 @@ export function createHuidaScene(services) {
     r.text('$', x + 0.5, y - 2, colors.bagLoot);
   }
 
-  /**
-   * LA MIRA, CON LA MISMA REGLA QUE EN EL ASALTO (ver CONFIG.mira): el círculo
-   * mide el ARMA, no el punto al que apuntás — se calcula siempre como si
-   * apuntaras a `distanciaReferencia` (80). A caballo es tres veces más grande
-   * porque la dispersión es tres veces mayor.
-   */
+  /** El círculo dice la dispersión real, con la misma regla que el asalto. */
   function dibujarMira(r) {
     const m = CONFIG.mira;
-    // Crece cuando apuntás para atrás: es la misma dispersión que usa el tiro.
     const radio = Math.max(m.radioMin, Math.min(m.radioMax,
       Math.tan(dispersionAhora()) * m.distanciaReferencia * m.escala));
-    r.circle(input.mouse.x, input.mouse.y, radio, yo.recargando > 0 ? m.colorBloqueado : m.color, m.alpha);
+    const p = mouseEnPantalla();
+    r.circle(p.x, p.y, radio, yo.recargando > 0 ? m.colorBloqueado : m.color, m.alpha);
+  }
+
+  /** El borde se pone rojo cuando te tienen encima. */
+  function dibujarAcoso(r) {
+    if (fin) return;
+    const quedan = siguiendo();
+    if (!quedan.length) return;
+    const cerca = Math.min(...quedan.map((j) => Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD)));
+    const t = Math.max(0, Math.min(1, (110 - cerca) / 80));
+    if (t <= 0) return;
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.1 + t * 0.2;
+    r.ctx.fillStyle = colors.enemyAlert;
+    const grosor = 2 + t * 3;
+    r.ctx.fillRect(0, 0, vista.w, grosor);
+    r.ctx.fillRect(0, vista.h - grosor, vista.w, grosor);
+    r.ctx.fillRect(0, 0, grosor, vista.h);
+    r.ctx.fillRect(vista.w - grosor, 0, grosor, vista.h);
+    r.ctx.restore();
   }
 
   function dibujarPanel(r) {
@@ -1158,26 +955,12 @@ export function createHuidaScene(services) {
 
     if (fin) {
       const texto = fin.como === 'limpio' ? T.huida.todosCaidos
-        : fin.como === 'llegaste' ? (destinoElegido ? destinoElegido.cartel : T.huida.losPerdiste)
+        : fin.como === 'llegaste' && refugioTomado ? refugioTomado.cartel
         : T.huida.losPerdiste;
-      r.text(texto, centro, 60, colors.bagLoot);
+      r.text(texto, centro, 70, colors.bagLoot);
     } else {
-      const quedan = siguiendo();
-      r.text(T.huida.teSiguen(quedan.length), centro, 8, colors.enemyAlert);
-      /**
-       * LA BARRA ES EL CAMINO: cuánto falta para la quebrada. La distancia a
-       * los jinetes ya no necesita barra — se ve, y cuando te tienen cerca el
-       * borde de la pantalla se pone rojo (ver `dibujarAcoso`).
-       */
-      const ancho = 120;
-      const t = Math.max(0, Math.min(1, suelo / H.camino.largo));
-      r.rect(centro - ancho / 2, 14, ancho, 3, '#241c18');
-      r.rect(centro - ancho / 2, 14, ancho * t, 3, colors.doorGlow);
-      // La horquilla y el destino, marcados sobre la barra del camino.
-      for (const b of barreras) {
-        const bx = centro - ancho / 2 + ancho * Math.min(1, b.gx / H.camino.largo);
-        r.rect(bx - 1, 12, 2, 7, b.esDestino ? colors.bagLoot : colors.textDim);
-      }
+      r.text(T.huida.teSiguen(siguiendo().length), centro, 8, colors.enemyAlert);
+      dibujarBrujula(r);
     }
 
     r.text(`$${Math.max(0, dineroInicial - perdido)}`, 6, 9, colors.bagLoot, 'left');
@@ -1187,22 +970,33 @@ export function createHuidaScene(services) {
       : `${arma.short} ${'●'.repeat(yo.balas)}${'○'.repeat(Math.max(0, arma.magazine - yo.balas))}`;
     r.text(municion, vista.w - 6, 9, yo.recargando > 0 ? colors.enemyAlert : colors.textDim, 'right');
 
-    if (tiempo < 5 && !fin) {
+    if (tiempo < 6 && !fin) {
       r.text(T.huida.teclas[0], centro, vista.h - 17, colors.textDim);
       r.text(T.huida.teclas[1], centro, vista.h - 7, colors.textDim);
     }
   }
 
-  return { enter, exit, update, render };
-}
+  /**
+   * LA BRÚJULA: una marca por refugio, pegada al borde de la pantalla en la
+   * dirección en la que está, con lo que falta para llegar. En campo abierto
+   * hace falta algo así — si no, huir es dar vueltas sin saber hacia dónde.
+   *
+   * ⚠️ SIMPLE (por vestir): un cuadradito y un número.
+   */
+  function dibujarBrujula(r) {
+    for (const d of refugios) {
+      const dx = d.x - yo.x;
+      const dy = (d.y - yo.y) / PROFUNDIDAD;
+      const dist = Math.hypot(dx, dy);
+      const a = Math.atan2(dy, dx);
+      const x = vista.w / 2 + Math.cos(a) * vista.w * 0.44;
+      const y = vista.h / 2 + Math.sin(a) * vista.h * 0.42;
+      const color = dist < 500 ? colors.doorGlow : colors.textDim;
+      r.rect(x - 2, y - 2, 5, 5, color);
+      r.rect(x + Math.cos(a) * 5 - 1, y + Math.sin(a) * 5 - 1, 3, 3, color);
+      r.text(`${Math.round(dist / 10)}`, x, y + 10, color);
+    }
+  }
 
-/**
- * Un entero revuelto a partir de otro, siempre el mismo para el mismo número:
- * para que la roca de la quebrada tenga su forma quebrada sin guardar una
- * lista y sin titilar. Es el mismo de rideScene y campScene.
- */
-function revolver(n) {
-  let t = (n * 374761393 + 668265263) | 0;
-  t = Math.imul(t ^ (t >>> 13), 1274126177);
-  return (t ^ (t >>> 16)) >>> 0;
+  return { enter, exit, update, render };
 }

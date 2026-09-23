@@ -23,7 +23,7 @@ export function createInput(canvas, densidad = () => 1) {
   // no alcanza: un clic sostenido tiraría al piso todo lo que fuera quedando
   // bajo el cursor, un bulto por cuadro.
   const mouse = {
-    x: 0, y: 0, down: false, right: false, pressed: false, rightPressed: false, wheel: 0,
+    x: 0, y: 0, px: 0, py: 0, down: false, right: false, pressed: false, rightPressed: false, wheel: 0,
   };
 
   window.addEventListener('keydown', (e) => {
@@ -72,8 +72,16 @@ export function createInput(canvas, densidad = () => 1) {
   function updateMousePosition(e) {
     const rect = canvas.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
-    mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width) / densidad();
-    mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height) / densidad();
+    /**
+     * `px` / `py` son los PUNTOS de pantalla crudos, sin dividir por la lupa.
+     * Hacen falta desde que una escena dibuja con su propia lupa (la huida, con
+     * `renderer.lupa`): `x` / `y` se dividen por la que estuviera puesta cuando
+     * se movió el mouse, que no tiene por qué ser la que usa esa escena.
+     */
+    mouse.px = (e.clientX - rect.left) * (canvas.width / rect.width);
+    mouse.py = (e.clientY - rect.top) * (canvas.height / rect.height);
+    mouse.x = mouse.px / densidad();
+    mouse.y = mouse.py / densidad();
   }
 
   window.addEventListener('mousemove', updateMousePosition);

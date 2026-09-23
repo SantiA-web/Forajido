@@ -1,195 +1,174 @@
 /**
- * A DÓNDE LLEGA LA HUIDA: la quebrada, el vado del río y el bosque de rocas.
+ * LOS TRES REFUGIOS DE LA HUIDA: la quebrada, el vado del río y el bosque de
+ * rocas.
  *
- * *(Santi: "me gustaría que podás tomar el camino en algunas ocasiones. O sea,
- * que hayan diferentes caminos para tomar y que sea aleatorio el destino a
- * dónde llegas: puede ser un río, una quebrada o un bosque de rocas. Lo que no
- * me cerraba en la quebrada es que se crea para el jugador, cuando en realidad
- * el jugador debería meterse ahí")*.
+ * *(Santi: "que hayan diferentes caminos para tomar y que sea aleatorio el
+ * destino a dónde llegas: puede ser un río, una quebrada o un bosque de
+ * rocas", y después: "que literalmente el caballo pueda cabalgar hacia el
+ * norte o sur en vez de solo hacia el este")*
  *
- * ESA ES LA IDEA CENTRAL DE ESTE ARCHIVO: **el destino está en el terreno, no
- * alrededor tuyo**. Cada uno es una BARRERA que cruza el campo entero en un
- * punto fijo del camino, con una o dos ENTRADAS a una altura fija. Viene hacia
- * vos porque el mundo desfila; si estás enfrente de una entrada, pasás; si no,
- * te comés la pared y tenés que buscarla con los jinetes encima.
+ * CADA UNO ESTÁ EN UN LUGAR DEL CAMPO, y el campo es abierto: no hay un camino
+ * que te lleve, hay tres lugares y vos elegís hacia cuál galopás. Un refugio es
+ * un **anillo** de roca, de agua o de peñascos con una **entrada** de unos
+ * sesenta grados: adentro la ley no entra, pero la entrada hay que encontrarla,
+ * y si le pegás al anillo te clavás contra él.
  *
- * La barrera vieja hacía lo contrario —se dibujaba centrada en el jugador— y
- * por eso no se leía como un lugar.
- *
- * ⚠️ DIBUJO SIMPLE (por vestir), pero con volumen: bloques con junta y canto
- * iluminado, agua con orillas y reflejos, y piedras con su sombra.
+ * ⚠️ DIBUJO SIMPLE (por vestir): bloques con junta y canto iluminado, agua con
+ * reflejos, peñascos con su sombra.
  */
 
 import { escalarColor } from './trenTresCuartos.js';
 
-/** Cuánto ocupa una barrera a lo largo del camino. */
-export const GROSOR = 22;
-
 export const DESTINOS = {
-  quebrada: {
-    id: 'quebrada',
-    nombre: 'LA QUEBRADA',
-    /** Lo que se ve venir de lejos, para poder elegir el camino a tiempo. */
-    anuncio: 'paredones',
-    cartel: '¡ADENTRO DE LA QUEBRADA!',
-  },
-  rio: {
-    id: 'rio',
-    nombre: 'EL RÍO',
-    anuncio: 'alamos',
-    cartel: '¡CRUZASTE EL RÍO!',
-  },
-  bosque: {
-    id: 'bosque',
-    nombre: 'EL BOSQUE DE ROCAS',
-    anuncio: 'penascos',
-    cartel: '¡ADENTRO DEL BOSQUE DE ROCAS!',
-  },
+  quebrada: { id: 'quebrada', nombre: 'LA QUEBRADA', cartel: '¡ADENTRO DE LA QUEBRADA!' },
+  rio: { id: 'rio', nombre: 'EL RÍO', cartel: '¡CRUZASTE EL RÍO!' },
+  bosque: { id: 'bosque', nombre: 'EL BOSQUE DE ROCAS', cartel: '¡ADENTRO DEL BOSQUE DE ROCAS!' },
 };
 
+/** El grosor de la pared de un refugio, hacia adentro del radio. */
+export const PARED = 26;
+
 /**
- * UNA BARRERA, DIBUJADA. `sx` es dónde cae en la pantalla su borde de este
- * lado; `huecos` son las franjas por donde se pasa.
+ * ¿ESTE PUNTO ESTÁ CONTRA LA PARED DEL REFUGIO? Devuelve lo que hay que
+ * corregir para sacarlo de ahí, o `null` si está libre (afuera, adentro, o
+ * justo en la entrada).
  *
- * Se dibuja de arriba abajo del campo, saltándose los huecos, así que lo que
- * ves es exactamente lo que te frena.
+ * Es la misma cuenta que usa el dibujo, así que la pared que ves es la que te
+ * frena.
  */
-export function dibujarBarrera(r, { tipo, sx, huecos, y0, y1, dia, suelo }) {
+export function chocaConElRefugio(d, x, y) {
+  const dx = x - d.x;
+  const dy = (y - d.y) / ACHATA;
+  const dist = Math.hypot(dx, dy);
+  if (dist > d.radio + 6 || dist < d.radio - PARED - 6) return null;
+  const a = Math.atan2(dy, dx);
+  if (enLaEntrada(d, a)) return null;
+  // Empujar hacia afuera o hacia adentro, lo que esté más cerca.
+  const haciaAfuera = dist > d.radio - PARED / 2;
+  const objetivo = haciaAfuera ? d.radio + 7 : d.radio - PARED - 7;
+  return { x: d.x + Math.cos(a) * objetivo, y: d.y + Math.sin(a) * objetivo * ACHATA };
+}
+
+/** ¿Ya estás adentro? */
+export function adentroDelRefugio(d, x, y) {
+  const dx = x - d.x;
+  const dy = (y - d.y) / ACHATA;
+  return Math.hypot(dx, dy) < d.radio - PARED - 4;
+}
+
+/** En tres cuartos lo redondo se ve aplastado: un círculo es una elipse. */
+export const ACHATA = 0.62;
+
+function enLaEntrada(d, a) {
+  const dif = Math.atan2(Math.sin(a - d.mira), Math.cos(a - d.mira));
+  return Math.abs(dif) < d.abertura / 2;
+}
+
+/**
+ * EL REFUGIO, DIBUJADO. Se dibuja por sectores: cada uno es un trozo de pared
+ * con su sombra, y los que caen en la entrada no se dibujan — por ahí se pasa.
+ */
+export function dibujarRefugio(r, d, dia) {
   const c = (hex) => (dia ? hex : escalarColor(hex, 0.55));
-  const tramos = tramosSinHuecos(y0, y1, huecos);
-  for (const [a, b] of tramos) {
-    if (tipo === 'rio') agua(r, c, sx, a, b);
-    else if (tipo === 'bosque') penascos(r, c, sx, a, b, suelo);
-    else roca(r, c, sx, a, b, suelo);
+  const pasos = 48;
+  const trozos = [];
+  for (let i = 0; i < pasos; i++) {
+    const a = (i / pasos) * Math.PI * 2 - Math.PI;
+    if (enLaEntrada(d, a)) continue;
+    trozos.push({ a, y: d.y + Math.sin(a) * d.radio * ACHATA });
   }
-  // El vado del río se ve: agua baja con piedras, no un agujero en el agua.
-  if (tipo === 'rio') for (const h of huecos) vado(r, c, sx, h.y0, h.y1);
-  // Y las entradas de roca tienen su sombra en el borde.
-  if (tipo !== 'rio') for (const h of huecos) bocaDeEntrada(r, c, sx, h.y0, h.y1);
-}
+  // De atrás hacia adelante, para que los de abajo tapen a los de arriba.
+  trozos.sort((p, q) => p.y - q.y);
 
-/** Lo que queda de [y0, y1] después de sacarle los huecos. */
-function tramosSinHuecos(y0, y1, huecos) {
-  const orden = [...huecos].sort((a, b) => a.y0 - b.y0);
-  const tramos = [];
-  let y = y0;
-  for (const h of orden) {
-    if (h.y0 > y) tramos.push([y, Math.min(h.y0, y1)]);
-    y = Math.max(y, h.y1);
-  }
-  if (y < y1) tramos.push([y, y1]);
-  return tramos.filter(([a, b]) => b - a > 1);
-}
-
-/**
- * PAREDÓN DE ROCA. Bloques de 16 con su junta, su canto iluminado arriba y la
- * cara de este lado en sombra: es lo que le da espesor a la pared en vez de
- * dejarla como una lámina.
- */
-function roca(r, c, sx, y0, y1, suelo) {
-  const alto = y1 - y0;
-  r.rect(sx, y0, GROSOR, alto, c('#6a5a4a'));
-  for (let y = y0; y < y1; y += 16) {
-    const h = Math.min(16, y1 - y);
-    const s = revolver(Math.round(sx + suelo) * 0 + Math.round(y) * 13);
-    const tonos = ['#6f5f4d', '#63543f', '#5a4c3d', '#75664f'];
-    r.rect(sx, y, GROSOR, h, c(tonos[s % 4]));
-    r.rect(sx, y, GROSOR, 1, c('#463a2e'));          // junta
-    r.rect(sx, y + 1, GROSOR - (s % 5), 1, c('#8a7a63')); // canto con luz
-    if (s % 5 === 0) r.rect(sx + 4 + (s % 9), y + 2, 1, h - 3, c('#3a2f26'));
-  }
-  // La cara de este lado, la que mirás: en sombra, y su remate arriba.
-  r.rect(sx, y0, 2, alto, c('#4a3e33'));
-  r.rect(sx + GROSOR - 2, y0, 2, alto, c('#3f342b'));
-  r.rect(sx, y0, GROSOR, 1, c('#9a8a73'));
-  r.rect(sx, y1 - 1, GROSOR, 1, c('#2e2620'));
-}
-
-/** EL RÍO: agua con su orilla, su brillo y la corriente. */
-function agua(r, c, sx, y0, y1) {
-  const alto = y1 - y0;
-  r.rect(sx, y0, GROSOR, alto, c('#3f5d6b'));
-  r.rect(sx, y0, 2, alto, c('#6f8f96'));            // la orilla de este lado
-  r.rect(sx + GROSOR - 2, y0, 2, alto, c('#31505e'));
-  for (let y = y0 + 2; y < y1 - 1; y += 5) {
-    const s = revolver(Math.round(y) * 7);
-    r.rect(sx + 3 + (s % 8), y, 4 + (s % 5), 1, c('#5d8391'));
-    if (s % 3 === 0) r.rect(sx + 10 + (s % 6), y + 2, 3, 1, c('#8fb3b8'));
-  }
-}
-
-/** EL VADO: por donde se cruza. Agua baja, piedras y el fondo que se ve. */
-function vado(r, c, sx, y0, y1) {
-  const alto = y1 - y0;
-  r.rect(sx, y0, GROSOR, alto, c('#6d7d6a'));
-  r.rect(sx, y0, GROSOR, 1, c('#8fb3b8'));
-  r.rect(sx, y1 - 1, GROSOR, 1, c('#8fb3b8'));
-  for (let y = y0 + 3; y < y1 - 2; y += 6) {
-    const s = revolver(Math.round(y) * 19 + 5);
-    r.rect(sx + 2 + (s % 14), y, 3, 2, c('#8a7f6a'));
-    r.rect(sx + 2 + (s % 14), y, 3, 1, c('#a79a80'));
-  }
-}
-
-/** EL BOSQUE DE ROCAS: peñascos grandes pegados unos a otros. */
-function penascos(r, c, sx, y0, y1, suelo) {
-  for (let y = y0; y < y1; y += 12) {
-    const h = Math.min(12, y1 - y);
-    const s = revolver(Math.round(y) * 29 + 7);
-    const ancho = GROSOR - (s % 6);
-    const x = sx + (s % 5);
-    r.rect(x, y, ancho, h, c(['#5e5346', '#6b5f4f', '#544a3f'][s % 3]));
-    r.rect(x, y, ancho, 1, c('#8e8069'));
-    r.rect(x + ancho - 1, y, 1, h, c('#3e362d'));
-    // La sombra al pie, que es lo que apoya el peñasco en el suelo.
-    r.ctx.save();
-    r.ctx.globalAlpha = 0.25;
-    r.rect(x - 2, y + h - 1, ancho + 4, 2, '#000');
-    r.ctx.restore();
-  }
-}
-
-/** La sombra de la entrada: adentro no hay sol. */
-function bocaDeEntrada(r, c, sx, y0, y1) {
+  // La sombra que el anillo tira hacia adentro: es lo que lo hace un lugar.
   r.ctx.save();
-  r.ctx.globalAlpha = 0.5;
-  r.rect(sx, y0, GROSOR, y1 - y0, '#1a1410');
+  r.ctx.globalAlpha = 0.22;
+  r.ctx.fillStyle = '#000';
+  r.ctx.beginPath();
+  r.ctx.ellipse(d.x, d.y, (d.radio - PARED) * 1.02, (d.radio - PARED) * ACHATA * 1.02, 0, 0, Math.PI * 2);
+  r.ctx.fill();
   r.ctx.restore();
-  r.rect(sx, y0 - 2, GROSOR, 2, c('#9a8a73'));
-  r.rect(sx, y1, GROSOR, 2, c('#9a8a73'));
+
+  for (const t of trozos) {
+    const x = d.x + Math.cos(t.a) * (d.radio - PARED / 2);
+    const y = d.y + Math.sin(t.a) * (d.radio - PARED / 2) * ACHATA;
+    if (d.tipo === 'rio') agua(r, c, x, y, t.a);
+    else if (d.tipo === 'bosque') penasco(r, c, x, y, t.a);
+    else roca(r, c, x, y, t.a);
+  }
+}
+
+/** Un bloque del paredón de la quebrada. */
+function roca(r, c, x, y, a) {
+  const s = revolver(Math.round(a * 100));
+  const w = PARED - (s % 6);
+  const alto = 18 + (s % 10);
+  r.ctx.save();
+  r.ctx.globalAlpha = 0.3;
+  r.rect(x - w / 2 - 2, y + 1, w + 4, 3, '#000');
+  r.ctx.restore();
+  r.rect(x - w / 2, y - alto, w, alto, c(['#6f5f4d', '#63543f', '#5a4c3d'][s % 3]));
+  r.rect(x - w / 2, y - alto, w, 2, c('#8a7a63'));
+  r.rect(x - w / 2, y - alto + 2, 2, alto - 2, c('#4a3e33'));
+  if (s % 4 === 0) r.rect(x - w / 2 + 3 + (s % 7), y - alto + 3, 1, alto - 5, c('#3a2f26'));
+}
+
+/** Un trozo del río: agua, orilla y brillo. */
+function agua(r, c, x, y, a) {
+  const s = revolver(Math.round(a * 100) + 11);
+  const w = PARED + 2;
+  r.rect(x - w / 2, y - 6, w, 10, c('#3f5d6b'));
+  r.rect(x - w / 2, y - 7, w, 2, c('#6f8f96'));
+  r.rect(x - w / 2 + (s % 6), y - 3, 5 + (s % 4), 1, c('#8fb3b8'));
+  r.rect(x - w / 2, y + 3, w, 1, c('#5b6a52'));
+}
+
+/** Un peñasco del bosque de rocas. */
+function penasco(r, c, x, y, a) {
+  const s = revolver(Math.round(a * 100) + 23);
+  const w = 14 + (s % 10);
+  const alto = 14 + (s % 12);
+  r.ctx.save();
+  r.ctx.globalAlpha = 0.28;
+  r.rect(x - w / 2 - 2, y, w + 5, 3, '#000');
+  r.ctx.restore();
+  r.rect(x - w / 2, y - alto, w, alto, c(['#5e5346', '#6b5f4f', '#544a3f'][s % 3]));
+  r.rect(x - w / 2, y - alto, w, 2, c('#8e8069'));
+  r.rect(x + w / 2 - 2, y - alto + 2, 2, alto - 2, c('#3e362d'));
 }
 
 /**
- * LO QUE SE VE DE LEJOS DE CADA DESTINO, apoyado en el horizonte. Es lo que te
- * deja ELEGIR el camino antes de llegar a la horquilla: unos paredones, la
- * fila de álamos del río o los peñascos.
+ * EL REFUGIO VISTO DE LEJOS, para poder elegir hacia cuál ir desde el
+ * arranque: una silueta chiquita en la dirección en la que está. Se dibuja en
+ * el mundo, así que crece sola a medida que te acercás.
  */
-export function dibujarAnuncio(r, tipo, x, base, escala, dia) {
+export function dibujarDeLejos(r, d, dia, escala) {
   const c = (hex) => (dia ? hex : escalarColor(hex, 0.4));
-  const s = Math.max(0.4, escala);
-  if (tipo === 'alamos') {
+  const s = Math.max(0.35, escala);
+  const x = d.x;
+  const y = d.y;
+  if (d.tipo === 'rio') {
     for (let i = 0; i < 5; i++) {
-      const ax = x - 14 * s + i * 7 * s;
-      const alto = (10 + (i % 3) * 4) * s;
-      r.rect(ax, base - alto, 2 * s, alto, c('#3f5637'));
-      r.rect(ax - 1 * s, base - alto, 4 * s, alto * 0.6, c('#4d6a41'));
+      const ax = x - 30 * s + i * 15 * s;
+      const alto = (22 + (i % 3) * 8) * s;
+      r.rect(ax, y - alto, 4 * s, alto, c('#3f5637'));
+      r.rect(ax - 2 * s, y - alto, 8 * s, alto * 0.6, c('#4d6a41'));
     }
-    r.rect(x - 18 * s, base - 1, 36 * s, 2, c('#5d8391'));
-  } else if (tipo === 'penascos') {
+    r.rect(x - 40 * s, y, 80 * s, 3 * s, c('#5d8391'));
+  } else if (d.tipo === 'bosque') {
     for (let i = 0; i < 4; i++) {
-      const ax = x - 16 * s + i * 9 * s;
-      const alto = (6 + ((i * 3) % 5)) * s;
-      r.rect(ax, base - alto, 8 * s, alto, c('#5e5346'));
-      r.rect(ax, base - alto, 8 * s, 1, c('#8e8069'));
+      const ax = x - 34 * s + i * 20 * s;
+      const alto = (14 + ((i * 5) % 12)) * s;
+      r.rect(ax, y - alto, 16 * s, alto, c('#5e5346'));
+      r.rect(ax, y - alto, 16 * s, 2 * s, c('#8e8069'));
     }
   } else {
-    // Los paredones de la quebrada, con su tajo en el medio.
-    const alto = 16 * s;
-    r.rect(x - 20 * s, base - alto, 16 * s, alto, c('#6b5c4c'));
-    r.rect(x + 4 * s, base - alto, 16 * s, alto, c('#6b5c4c'));
-    r.rect(x - 20 * s, base - alto, 16 * s, 2, c('#8a7a66'));
-    r.rect(x + 4 * s, base - alto, 16 * s, 2, c('#8a7a66'));
-    r.rect(x - 4 * s, base - alto * 0.9, 8 * s, alto * 0.9, c('#241d18'));
+    const alto = 34 * s;
+    r.rect(x - 42 * s, y - alto, 34 * s, alto, c('#6b5c4c'));
+    r.rect(x + 8 * s, y - alto, 34 * s, alto, c('#6b5c4c'));
+    r.rect(x - 42 * s, y - alto, 34 * s, 3 * s, c('#8a7a66'));
+    r.rect(x + 8 * s, y - alto, 34 * s, 3 * s, c('#8a7a66'));
+    r.rect(x - 8 * s, y - alto * 0.9, 16 * s, alto * 0.9, c('#241d18'));
   }
 }
 

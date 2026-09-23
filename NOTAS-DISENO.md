@@ -13803,7 +13803,8 @@ bien:
 | El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
 | El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
 | El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
-| Los tres destinos y los hitos | `world/destinos.js`, y `dibujarHitos` en `huidaScene.js` | Bloques de roca, una banda de agua con su vado y peñascos; los hitos son siluetas de dos o tres rectángulos |
+| Los tres refugios | `world/destinos.js` | Anillos de bloques de roca, de agua y de peñascos, con su sombra |
+| La brújula de la huida | `huidaScene.js`, `dibujarBrujula` | Un cuadradito y un número por refugio |
 | El caballo del jinete caído | `huidaScene.js`, `pegarle` | Queda el cuerpo en el suelo y el caballo desaparece; debería seguir galopando solo |
 | Tirar para atrás | `huidaScene.js`, `dibujarme` | El jinete no se da vuelta: sólo crece el círculo. Falta el torso girado |
 
@@ -14279,6 +14280,51 @@ y una prueba de clavarse contra la pared.
 **Lo que queda:** vestir los tres destinos (hoy son bloques, agua y peñascos
 simples), y que los jinetes se comporten como una partida (que se griten entre
 ellos, que se turnen, que uno se adelante a cortarte).
+
+#### 🔁 Duodécima vuelta: CAMPO ABIERTO (la escena, de nuevo)
+
+*(Santi, después de jugar la horquilla: "no me refería a esos caminos, sino a
+que literalmente el caballo pueda cabalgar hacia el norte o sur en vez de solo
+hacia el este. A eso me refería")*
+
+**Era otra cosa, y tenía razón.** Todas las versiones anteriores eran un
+pasillo que iba al este: el mundo desfilaba y el jugador subía y bajaba dentro
+de la pantalla. Los "caminos" que se habían construido eran ramas de ese
+pasillo, no libertad. Ahora:
+
+- **El mundo es un plano y la cámara te sigue.** `W/A/S/D` eligen el rumbo
+  entre las ocho direcciones, y el caballo gira a `giroVelocidad` (2,4 rad/s):
+  un caballo lanzado no dobla de golpe. Doblar cerrado cuesta envión.
+- **Las nueve poses del sprite se usan enteras**, y para el oeste el dibujo se
+  espeja (`dibujarCaballo`): la hoja mira a la derecha y tiene de norte a sur;
+  el otro medio giro es ésa misma dada vuelta.
+- **Ir al norte rinde menos que ir al este** (`PROFUNDIDAD`, 0,62): en tres
+  cuartos la profundidad se ve aplastada, así que una vuelta galopada se ve
+  como una elipse. Es el mismo achatado del campamento.
+- **Tres refugios repartidos en el campo** (`world/destinos.js`, rehecho): cada
+  uno es un **anillo** con una entrada de 66°, en un punto fijo del mundo. Se
+  sortean el orden, el rumbo (un abanico delante tuyo) y la distancia
+  (3.000-4.200). Entrar termina la huida; pegarle al anillo te frena contra él,
+  a vos y a ellos.
+- **La ley persigue en dos dimensiones**: cada jinete va a SU lugar detrás de
+  tu rumbo, así que cuando doblás la partida entera describe la curva con vos.
+  Y esquivan los obstáculos doblando, no corriéndose de carril.
+- **La brújula** marca los tres refugios en el borde de la pantalla con lo que
+  falta. En campo abierto hace falta: sin eso, huir es dar vueltas.
+- **Los obstáculos se siembran por celdas alrededor tuyo** y se tiran los que
+  quedan lejos, porque ya no hay un "adelante" por donde vengan.
+
+🐛 **Y UN ARREGLO QUE HIZO FALTA PARA ESTO:** el mouse se guardaba dividido por
+la lupa que estuviera puesta cuando se movió, y esta escena dibuja con la suya
+(3 en vez de 4). Ahora `input.mouse.px/py` trae los puntos crudos y la escena
+los convierte con SU lupa; si no, apuntar se corría un 33%.
+
+Sin errores en 39.970 cuadros con teclas y mouse al azar (los dos caballos, las
+dos armas, de día y de noche, 1 a 5 jinetes). El cuadro cuesta **0,53 ms**.
+
+**Lo que queda:** vestir los tres refugios y la brújula, y que la ley se
+comporte como una partida (que se griten, que se turnen, que alguno te corte
+el paso en vez de seguirte en fila).
 
 #### 🧪 El atajo para probarla
 

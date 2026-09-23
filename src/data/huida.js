@@ -52,73 +52,55 @@ export const HUIDA = {
    */
   zoom: 3,
 
-  /** Cuánto cielo se ve arriba de todo, en unidades. */
-  cielo: 34,
-
   /**
-   * EL CAMINO: la huida va A ALGÚN LADO *(Santi eligió la quebrada, y 4000 de
-   * largo)*. Antes era un desierto infinito y se terminaba cuando un número se
-   * cumplía; ahora arrancás al lado de la vía y corrés hasta **la quebrada**,
-   * un tajo entre paredes de roca donde la ley no entra —el que va adelante se
-   * come un tiro desde arriba—.
+   * 🔺 CAMPO ABIERTO, NO UNA FRANJA *(Santi, después de jugarlo: "no me refería
+   * a esos caminos, sino a que literalmente el caballo pueda cabalgar hacia el
+   * norte o sur en vez de solo hacia el este")*.
    *
-   * LAS DOS SALIDAS VALEN, y gana la que pase primero: perderlos (o tirarlos a
-   * todos) como hasta ahora, o llegar a la quebrada con los que queden encima.
-   * Con el Criollo (142) llegar son unos 28 segundos; con el Mustang (180),
-   * 22 — pero con el Mustang normalmente los perdés mucho antes y no la ves.
+   * Las versiones anteriores eran un pasillo que iba al este: el mundo
+   * desfilaba y vos subías y bajabas dentro de la pantalla. Ahora el mundo es
+   * un plano y la cámara te sigue: galopás hacia donde quieras, y los tres
+   * destinos están cada uno en SU lugar del campo, a distinta distancia y en
+   * distinta dirección. El camino es de verdad una elección: hacia cuál vas.
    */
-  camino: {
-    largo: 4600,
+  mundo: {
+    /** A qué distancia del punto donde saltaste nacen los destinos. */
+    distanciaMin: 3000,
+    distanciaMax: 4200,
 
     /**
-     * LA HORQUILLA *(Santi: "que hayan diferentes caminos para tomar y que sea
-     * aleatorio el destino a dónde llegas")*. A mitad de camino, una cresta de
-     * roca parte el campo en dos: pasás por arriba o por abajo, y cada lado
-     * lleva a un destino distinto. Los dos destinos se sortean al empezar
-     * entre la quebrada, el río y el bosque de rocas.
+     * Cuánto se separan entre sí, en grados. Con 50 los tres entran en el
+     * mismo cuarto del horizonte: se ven los tres desde el arranque y elegir
+     * es mirar, no adivinar.
      */
-    bifurcacion: 0.46,
+    separacionGrados: 50,
 
-    /** Medio ancho de una entrada (de la horquilla y del destino). */
-    entrada: 30,
+    /** El tamaño de cada refugio y cuánto mide su entrada, en grados. */
+    radio: 92,
+    aberturaGrados: 66,
 
     /**
-     * Chocar contra la pared de una barrera: te frena a esta fracción de tu
-     * velocidad mientras estés pegado a ella. No te mata: te cuesta la ventaja
-     * que tenías, que es de lo que se trata.
+     * Chocar contra la pared de un refugio: te frena a esta fracción mientras
+     * estés pegado. La entrada hay que buscarla, y eso cuesta.
      */
-    choqueBarrera: 0.18,
-
-    /** Los hitos del camino, en fracción del largo. No chocan: son el mojón. */
-    hitos: [
-      { en: 0.08, tipo: 'via' },
-      { en: 0.22, tipo: 'huesos' },
-      { en: 0.38, tipo: 'rancho' },
-      { en: 0.55, tipo: 'carreta' },
-      { en: 0.74, tipo: 'huesos' },
-    ],
+    choquePared: 0.2,
   },
 
   jugador: {
     /**
-     * Dónde vas en la pantalla, en fracción del ancho. Tu caballo va a fondo
-     * (`sprintSpeed`) salvo que aprietes [A]: ahí baja a su `brakeSpeed` (85
-     * los dos) y los jinetes se te vienen al costado. **Frenar es para
-     * pelear** *(Santi: "que exista la opción de usar la tecla A")*.
+     * [SHIFT] frena: tu caballo baja a su `brakeSpeed` (85) y los jinetes se
+     * te vienen al lado. **Frenar es para pelear**.
      */
-    x: 0.62,
     /**
-     * CUÁNTO DOBLA EL CABALLO *(Santi: "que el camino sea menos línea recta
-     * hacia el este y un poco más de sensación de libertad")*. 50° en
-     * radianes: con el giro a fondo avanzás el coseno de eso, o sea el 64% —
-     * cruzarse cuesta camino. `giroInercia` es lo que tarda en llegar al rumbo
-     * que le pedís (las riendas, no un volante), y `cruzar` cuánto de la
-     * velocidad se va para el costado: en tres cuartos la profundidad se ve
-     * aplastada, así que va menos que 1.
+     * CUÁNTO TARDA EN DOBLAR, en radianes por segundo. Galopás hacia donde
+     * mirás y podés ir a cualquier rumbo; lo que no se puede es cambiarlo de
+     * golpe: un caballo lanzado tarda en girar, y ese retraso es lo que hace
+     * que doblar se sienta como doblar.
      */
-    giroMaximo: 0.87,
-    giroInercia: 3.5,
-    cruzar: 0.75,
+    giroVelocidad: 2.4,
+
+    /** Doblando cerrado se pierde envión: al máximo, esta fracción. */
+    frenoEnCurva: 0.82,
     /**
      * A CABALLO SE TIRA PEOR: la dispersión de tu arma se multiplica por esto.
      * Con el Colt (0,035) queda en 0,105.
@@ -246,17 +228,11 @@ export const HUIDA = {
     separacionInicial: 14,
 
     /**
-     * A ESTA DISTANCIA LO PERDISTE: es cuando el jinete ya salió de la
-     * pantalla por la izquierda (vas a 0,62 del ancho, unos 200 de 320).
+     * A ESTA DISTANCIA LO PERDISTE. En campo abierto ya no alcanza con que
+     * salga de la pantalla: con la lupa de 3 se ve casi medio kilómetro de
+     * campo, así que se pierde cuando de verdad quedó lejos.
      */
-    perdida: 250,
-
-    /**
-     * Hasta dónde se te arriman: a la par tuya, nunca adelante. Con 0 y su
-     * carril arriba o abajo tuyo, si frenás quedan al costado — y ahí están
-     * de lleno en tu giro cómodo.
-     */
-    distanciaMinima: 0,
+    perdida: 520,
 
     /**
      * A CABALLO, UN TIRO BASTA *(Santi, después de jugarlo: "en la huida no
@@ -271,9 +247,6 @@ export const HUIDA = {
      * **6 s perdiendo 11%** — y esquivar sin tirar son 14 s perdiendo 12%.
      */
     vida: 1,
-
-    /** Qué tan rápido se corren para arriba o para abajo (px/s). */
-    velocidadLateral: 68,
 
     /** Más lejos que esto no tiran. */
     alcance: 230,

@@ -1737,8 +1737,13 @@ dice cuánto le falta al más cercano para quedar perdido.
 cartel). Ahí los dejás atrás aunque no hayas disparado — pero para entonces ya
 soltaste casi toda la plata.
 
-- `W/S` esquivan, **el mouse apunta y el clic dispara**, igual que en el
-  asalto. `R` recarga. El revólver sale con las balas que le quedaban.
+- **`W/S` doblan el caballo**, hasta 50° para cada lado, con sus nueve poses
+  (de alejándose al fondo a viniendo de frente). Cruzado a fondo avanzás el
+  64%: atajar por el costado cuesta camino. El mouse apunta y el clic dispara,
+  igual que en el asalto; `R` recarga, y el revólver sale con las balas que le
+  quedaban.
+- **Se ve más campo que en el resto del juego**: la huida se dibuja con una
+  lupa de 3 en vez de 4, o sea 426 × 300 en vez de 320 × 225.
 - **`A` frena**: tu caballo baja a 85 y los jinetes se te ponen al costado.
   Frenar es para pelear: al costado les tirás cómodo, pero también te tiran
   ellos de cerca.
@@ -1771,11 +1776,18 @@ soltaste casi toda la plata.
 
 Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 
-**Y la huida va A ALGÚN LADO: la quebrada.** No es un desierto infinito: es un
-camino de 4.000 que arranca al lado de la vía y termina en un tajo entre
-paredes de roca donde la ley no entra. Se la ve crecer en el horizonte desde
-la mitad del camino, así que **la quebrada es el reloj**: no hay ningún número
-que mirar. La barra de arriba dice cuánto falta para llegar.
+**Y la huida va A ALGÚN LADO, y no siempre al mismo.** Es un camino de 4.600
+que arranca al lado de la vía. A mitad de camino hay **una horquilla**: una
+cresta de roca parte el campo en dos, y cada entrada lleva a un destino
+distinto. Los dos se sortean al salir entre **la quebrada, el vado del río y
+el bosque de rocas**, y se ven venir en el horizonte, así que el camino lo
+elegís vos.
+
+**El destino está en el terreno, no alrededor tuyo.** Viene hacia vos mientras
+galopás, y tiene una entrada a una altura fija: si llegás frente a ella, pasás
+y se terminó; si llegás contra la pared, te clavás ahí (avanzás cinco veces
+menos) y tenés que buscarla con la ley encima. La ley también busca la
+entrada.
 
 **Y la boca de la quebrada es un embudo de verdad.** Desde el 88% del camino
 las paredes se cierran hasta dejar un paso de 26 en el MEDIO del campo: o te

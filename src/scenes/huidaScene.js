@@ -41,6 +41,7 @@ import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor } from '../world/trenTresCuartos.js';
+import { DESTINOS, GROSOR, dibujarBarrera, dibujarAnuncio } from '../world/destinos.js';
 
 export function createHuidaScene(services) {
   const { renderer, input, rng, scenes, hud, audio } = services;
@@ -54,6 +55,22 @@ export function createHuidaScene(services) {
   const polvo = crearPolvo(colors.polvo);
   /** Cuánto se sacude la cámara ahora, y el balanceo del galope. */
   let bamboleo;
+  /** Las dos barreras del camino: la horquilla y el destino. */
+  let barreras, destinoElegido;
+
+  /**
+   * CUÁNTO MUNDO ENTRA EN PANTALLA CON NUESTRA LUPA. La escena se dibuja con
+   * `HUIDA.zoom` (3) en vez de la del mundo (4), así que se ve un tercio más de
+   * campo — y todas las cuentas de la escena van en ESTAS unidades, no en las
+   * del resto del juego.
+   */
+  const vista = { w: 320, h: 225 };
+  function medirVista() {
+    const c = renderer.canvas;
+    if (!c || !c.width) return;
+    vista.w = Math.floor(c.width / H.zoom);
+    vista.h = Math.floor(c.height / H.zoom);
+  }
 
   /**
    * @param params.summary  lo que armó el asalto para la pantalla de
@@ -64,6 +81,7 @@ export function createHuidaScene(services) {
    *   quedaban: saltar del tren no te recarga el revólver.
    */
   function enter(params = {}) {
+    medirVista();
     hud.hide();
     mostrarCursorDelSistema(false);
     summary = params.summary || { money: 0, kills: 0, outcome: 'escaped' };
@@ -73,11 +91,11 @@ export function createHuidaScene(services) {
     prueba = !!params.prueba;
     arma = params.arma || WEAPONS[DEFAULT_WEAPON];
 
-    const W = renderer.width;
+    const W = vista.w;
     yo = {
       x: W * H.jugador.x,
       vel: caballo.sprintSpeed,
-      y: (H.cielo + renderer.height) / 2,
+      y: (H.cielo + vista.h) / 2,
       rumbo: 0,
       pose: 0,
       invuln: 0,
@@ -87,6 +105,7 @@ export function createHuidaScene(services) {
       fogonazo: 0,
       choque: 0,
       frena: false,
+      contraLaPared: false,
       apuntado: 0,
       // El caballo que se tuerce solo mientras mirás para atrás.
       desvio: 0,
@@ -117,6 +136,7 @@ export function createHuidaScene(services) {
     ultimoGrito = -99;
     polvo.limpiar();
     bamboleo = 0;
+    armarElCamino();
 
     const a = CONFIG.ambiente;
     audio.ambiente('galope', { cutoff: 420, q: 0.6, type: 'lowpass',
@@ -136,6 +156,9 @@ export function createHuidaScene(services) {
       get fin() { return fin; },
       get obstaculos() { return obstaculos; },
       get suelo() { return suelo; },
+      get barreras() { return barreras; },
+      get destino() { return destinoElegido; },
+      get vista() { return vista; },
     };
   }
 
@@ -179,6 +202,7 @@ export function createHuidaScene(services) {
   // -------------------------------------------------------------- actualizar
 
   function update(dt) {
+    medirVista();
     tiempo += dt;
     temblor = Math.max(0, temblor - dt);
     actualizarCascos(dt);
@@ -201,7 +225,7 @@ export function createHuidaScene(services) {
     const C = H.jinetes.cansancio;
     if (!avisoCansancio && tiempo >= C.desde && siguiendo().length > 0) {
       avisoCansancio = true;
-      carteles.push({ x: renderer.width / 2, y: 70, texto: T.huida.aflojan, color: colors.bagLoot, vida: 2.4 });
+      carteles.push({ x: vista.w / 2, y: 70, texto: T.huida.aflojan, color: colors.bagLoot, vida: 2.4 });
     }
 
     polvo.actualizar(dt, suelo);
@@ -214,8 +238,7 @@ export function createHuidaScene(services) {
     moverBalas(dt);
 
     // Llegaste a la quebrada: adentro no te siguen. Gana lo que pase primero.
-    if (suelo >= H.camino.largo) empezarFin('quebrada');
-    else if (siguiendo().length === 0 || tiempo >= H.tope) {
+    if (siguiendo().length === 0 || tiempo >= H.tope) {
       empezarFin(derribados === jinetes.length ? 'limpio' : 'perdidos');
     }
   }
@@ -251,14 +274,29 @@ export function createHuidaScene(services) {
     yo.apuntado = input.mouse.right ? Math.min(1, yo.apuntado + paso) : Math.max(0, yo.apuntado - paso);
     const manejo = 1 - (1 - J.manejoApuntando) * yo.apuntado;
     desviarse(dt);
+    /**
+     * 🔺 W/S YA NO ES "SUBIR Y BAJAR": ES DOBLAR *(Santi: "¿se puede hacer que
+     * el caballo pueda doblar más hacia el fondo o mirando hacia el jugador?
+     * O sea, que el camino sea menos línea recta hacia el este y un poco más
+     * de sensación de libertad")*.
+     *
+     * El caballo toma un RUMBO (hasta `giroMaximo`), y su velocidad se reparte
+     * entre avanzar y cruzarse: yendo torcido llegás más tarde al destino.
+     * Ese reparto es todo el cambio — y de paso las nueve poses del sprite, de
+     * "alejándose al fondo" a "viniendo de frente", por fin se usan enteras.
+     */
+    const J2 = H.jugador;
+    const objetivo = (dy + (yo.desvio > 0 ? yo.desvioDir * 0.6 : 0)) * J2.giroMaximo;
+    yo.rumbo += (objetivo - yo.rumbo) * Math.min(1, J2.giroInercia * dt * manejo);
+
     if (yo.choque > 0) {
       // Chocaste: el caballo casi se para y no lo podés manejar. Mismo precio
       // que en el galope, pero acá se paga en distancia: se te acercan.
       yo.choque -= dt;
     } else {
-      const tuerce = yo.desvio > 0 ? yo.desvioDir * J.atras.desvioVelocidad : 0;
-      yo.y = meterEnLaBoca(Math.max(H.cielo + 22,
-        Math.min(renderer.height - 12, yo.y + (dy * J.velocidadY * manejo + tuerce) * dt)));
+      const base = yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed;
+      const cruzado = Math.sin(yo.rumbo) * base * J2.cruzar;
+      yo.y = Math.max(H.cielo + 22, Math.min(vista.h - 12, yo.y + cruzado * dt));
       const ob = chocaCon(yo.x, yo.y);
       if (ob) {
         ob.golpeado = true;
@@ -269,18 +307,59 @@ export function createHuidaScene(services) {
       }
     }
 
-    // [A] frena a lo que frena tu caballo: para que se te pongan al costado.
-    yo.vel = velocidadDe(yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed, yo.choque);
+    /**
+     * Y LO QUE AVANZÁS ES LO QUE MIRÁS. Cruzado a fondo avanzás un 64% (el
+     * coseno de 50°): esquivar cuesta camino, y eso es lo que hace que doblar
+     * sea una decisión y no un adorno.
+     */
+    const fondo = (yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed) * Math.cos(yo.rumbo);
+    yo.vel = velocidadDe(fondo, yo.choque) * (yo.contraLaPared ? H.camino.choqueBarrera : 1);
 
-    // El caballo gira hacia donde lo llevás, con la misma inercia del galope.
-    const objetivo = (dy + (yo.desvio > 0 ? yo.desvioDir * 0.6 : 0)) * 0.5;
-    yo.rumbo += (objetivo - yo.rumbo) * Math.min(1, 6 * dt);
-    const tramo = 0.73 / 4;
+    // Las nueve poses del caballo salen del rumbo, con la zona muerta de
+    // siempre para que no parpadeen en el borde entre dos.
+    const tramo = J2.giroMaximo / 4;
     const crudo = yo.rumbo / tramo;
     if (Math.abs(crudo - yo.pose) > 0.75) yo.pose = Math.max(-4, Math.min(4, Math.round(crudo)));
 
+    chocarConLaBarrera();
+
     yo.invuln = Math.max(0, yo.invuln - dt);
     yo.fogonazo = Math.max(0, yo.fogonazo - dt);
+  }
+
+  /**
+   * LA PARED DEL CAMINO. Si llegaste a una barrera y NO estás frente a una
+   * entrada, te clavás contra la roca: seguís vivo, pero casi no avanzás
+   * mientras la buscás — y los que vienen atrás no aflojan.
+   *
+   * Si estás frente a la entrada, pasás: si era la horquilla, ahí queda
+   * elegido el destino; si era el destino, se terminó la huida.
+   */
+  function chocarConLaBarrera() {
+    yo.contraLaPared = false;
+    for (const b of barreras) {
+      if (b.pasada) continue;
+      const sx = pantallaDe(b);
+      if (sx > yo.x + 12) continue;          // todavía no llegaste
+      const hueco = huecoDe(b, yo.y);
+      if (!hueco) {
+        // Contra la pared: te frena y no la pasás.
+        if (!yo.contraLaPared) {
+          if (!b.aviso) {
+            audio.play('hitWall');
+            carteles.push({ x: yo.x, y: yo.y - 30, texto: T.huida.pared, color: colors.enemyAlert, vida: 1.4 });
+            b.aviso = true;
+          }
+          yo.contraLaPared = true;
+        }
+        continue;
+      }
+      if (sx + GROSOR < yo.x) {
+        b.pasada = true;
+        if (b.esHorquilla) elegirDestino(hueco);
+        else if (b.esDestino) empezarFin('llegaste');
+      }
+    }
   }
 
   /** El mismo gatillo del asalto: clic sostenido, [R] recarga, vacío recarga solo. */
@@ -370,11 +449,11 @@ export function createHuidaScene(services) {
       j.hitFlash = Math.max(0, j.hitFlash - dt);
       if (!j.alive || j.perdido) continue;
       /**
-       * NADIE ADENTRO DE LA ROCA, ESTÉ HACIENDO LO QUE ESTÉ HACIENDO. Va acá
-       * arriba de todo y no junto al movimiento: apuntando y chocado el jinete
-       * se saltea el movimiento, y así quedaba uno clavado dentro de la pared.
+       * LA LEY TAMBIÉN TIENE QUE BUSCAR LA ENTRADA. Se aplica siempre, esté el
+       * jinete apuntando o chocado: si no, uno quedaba clavado adentro de la
+       * roca (pasó, y se vio en una foto).
        */
-      j.y = meterEnLaBoca(j.y);
+      apuntarALaEntrada(j, dt);
 
       // Al final se quedan atrás del todo.
       if (yendose) {
@@ -414,10 +493,8 @@ export function createHuidaScene(services) {
       }
 
       const ondula = Math.sin(tiempo * 1.3 + j.fase) * 8;
-      let ty = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + j.dy + ondula));
+      let ty = Math.max(H.cielo + 22, Math.min(vista.h - 12, yo.y + j.dy + ondula));
       ty = esquivar(j, ty);
-      // Y si la quebrada ya se está cerrando, todos por el paso.
-      ty = meterEnLaBoca(ty);
       /**
        * AL COSTADO TUYO DEJAN LUGAR: si frenás se te ponen a la par, y a la par
        * no se te pueden subir encima. Si su carril queda pegado a vos (por el
@@ -425,7 +502,7 @@ export function createHuidaScene(services) {
        */
       const SEPARA = 30;
       if (yo.x - j.x < 50 && Math.abs(ty - yo.y) < SEPARA) {
-        const abajo = yo.y + SEPARA <= renderer.height - 12;
+        const abajo = yo.y + SEPARA <= vista.h - 12;
         const arriba = yo.y - SEPARA >= H.cielo + 22;
         ty = (ty >= yo.y && abajo) || !arriba ? yo.y + SEPARA : yo.y - SEPARA;
       }
@@ -479,15 +556,10 @@ export function createHuidaScene(services) {
    */
   function sembrarObstaculos() {
     const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
-    while (proximoObstaculo < suelo + renderer.width + 40) {
-      // Adentro de la quebrada no crece nada: los que nacen ahora nacen en el
-      // paso, no en la roca.
-      const b = laBoca();
+    while (proximoObstaculo < suelo + vista.w + 40) {
       obstaculos.push({
         gx: proximoObstaculo + rng.range(-30, 30),
-        y: b
-          ? rng.range(b.centro - b.medio + 8, b.centro + b.medio - 8)
-          : rng.range(H.cielo + 26, renderer.height - 14),
+        y: rng.range(H.cielo + 26, vista.h - 14),
         tipo: tipos[rng.int(0, tipos.length - 1)],
         golpeado: false,
       });
@@ -502,10 +574,8 @@ export function createHuidaScene(services) {
 
   /** La misma cuenta del galope: a menos de radio + 6 del centro, chocaste. */
   function chocaCon(x, y) {
-    const b = laBoca();
     for (const ob of obstaculos) {
       if (ob.golpeado) continue;
-      if (b && (ob.y < b.centro - b.medio || ob.y > b.centro + b.medio)) continue;
       const ox = ob.gx - suelo;
       const radio = radioDe(ob);
       if (Math.abs(ox - x) > radio + 14) continue;
@@ -543,7 +613,7 @@ export function createHuidaScene(services) {
         const arriba = ob.y - pasa;
         const abajo = ob.y + pasa;
         const puedeArriba = arriba > H.cielo + 22;
-        const puedeAbajo = abajo < renderer.height - 12;
+        const puedeAbajo = abajo < vista.h - 12;
         const porArriba = puedeArriba && (!puedeAbajo || Math.abs(j.y - arriba) < Math.abs(j.y - abajo));
         j.esquiva = { ob, y: porArriba ? arriba : abajo };
         break;
@@ -588,8 +658,8 @@ export function createHuidaScene(services) {
         audio.play('balaSilba');
       }
     }
-    balas = balas.filter((b) => b.vida > 0 && b.x > -20 && b.x < renderer.width + 20
-      && b.y > -20 && b.y < renderer.height + 20);
+    balas = balas.filter((b) => b.vida > 0 && b.x > -20 && b.x < vista.w + 20
+      && b.y > -20 && b.y < vista.h + 20);
   }
 
   function pegarle(j, danio) {
@@ -638,9 +708,10 @@ export function createHuidaScene(services) {
     summary.money = Math.max(0, (summary.money || 0) - perdido);
     summary.huida = {
       jinetes: jinetes.length, derribados, bolsas: soltadas, perdido,
-      // Cómo terminó: 'quebrada' (llegaste), 'limpio' (no quedó ninguno) o
-      // 'perdidos' (los dejaste atrás).
+      // Cómo terminó: 'llegaste' (a donde te llevó el camino), 'limpio' (no
+      // quedó ninguno) o 'perdidos' (los dejaste atrás).
       fin: fin ? fin.como : 'perdidos',
+      lugar: destinoElegido ? destinoElegido.nombre : null,
     };
     // Un jinete derribado acá es un jinete derribado: cuenta como en el asalto.
     summary.kills = (summary.kills || 0) + derribados;
@@ -672,7 +743,7 @@ export function createHuidaScene(services) {
     const pisadas = [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6], [GOLPES.delanteraAca, 6]];
     polvo.sembrar({ x: yo.x, y: yo.y, suelo, rumbo: yo.rumbo, fuerza: yo.choque > 0 ? 0.3 : 1, pisadas });
     for (const j of siguiendo()) {
-      if (j.x < -20 || j.x > renderer.width + 20) continue;
+      if (j.x < -20 || j.x > vista.w + 20) continue;
       polvo.sembrar({ x: j.x, y: j.y, suelo, fuerza: 0.8, pisadas, cuantas: 3 });
     }
   }
@@ -685,6 +756,9 @@ export function createHuidaScene(services) {
   // ----------------------------------------------------------------- dibujar
 
   function render(r) {
+    // NUESTRA LUPA: 3 en vez de 4, o sea un tercio más de campo (ver `zoom`).
+    r.lupa(H.zoom);
+    medirVista();
     const dia = gameState.esDeDia;
     const tinte = (hex) => (dia ? hex : escalarColor(hex, 0.32));
     const C = colors.cielo;
@@ -702,29 +776,41 @@ export function createHuidaScene(services) {
     if (temblor > 0) r.ctx.translate(rng.range(-2.5, 2.5), rng.range(-2.5, 2.5));
 
     r.clear(colorDelSuelo(dia));
-    const boca = laBoca();
     sembrarDesierto(r, {
-      x0: 0, y0: H.cielo, x1: r.width, y1: r.height + 10,
+      x0: 0, y0: H.cielo, x1: vista.w, y1: vista.h + 10,
       desplaza: suelo, noche: !dia, colores: C,
       grandes: () => false,
-      // Adentro de la quebrada el suelo es roca: el pasto queda en el paso.
-      saltar: boca ? (wx, wy) => wy < boca.centro - boca.medio || wy > boca.centro + boca.medio : null,
     });
 
     // Los hitos del camino van entre el suelo y el cielo: están lejos.
     // El cielo, con el horizonte y una cordillera baja.
     const [arriba, abajo] = dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
       : [C.nocheArriba, C.nocheHorizonte];
-    r.cielo(0, 0, r.width, H.cielo, arriba, abajo, 6);
-    for (let sx = 0; sx < r.width; sx += 2) {
+    r.cielo(0, 0, vista.w, H.cielo, arriba, abajo, 6);
+    for (let sx = 0; sx < vista.w; sx += 2) {
       const u = sx + suelo * 0.03;
       const h = 0.5 + 0.3 * Math.sin(u * 0.012) + 0.18 * Math.sin(u * 0.035 + 1.7);
       const alto = Math.round(Math.max(0.1, h) * 12);
       r.rect(sx, H.cielo - alto, 2, alto, tinte(C.montanaLejos));
     }
-    r.rect(0, H.cielo, r.width, 1, tinte(C.bruma));
+    r.rect(0, H.cielo, vista.w, 1, tinte(C.bruma));
     dibujarHitos(r, dia);
-    dibujarQuebrada(r, dia);
+    /**
+     * Y LO QUE VIENE, EN EL HORIZONTE: antes de la horquilla se ven los dos
+     * destinos posibles, uno arriba y otro abajo; después, sólo al que vas.
+     * Es lo que deja elegir el camino a tiempo en vez de adivinar.
+     */
+    for (const b of barreras) {
+      const lejos = (b.gx - suelo) / H.camino.largo;
+      if (lejos < 0 || lejos > 0.9) continue;
+      for (const h of b.huecos) {
+        const d = DESTINOS[h.destino] || destinoElegido;
+        if (!d) continue;
+        const x = vista.w * 0.55 + (b.gx - suelo) * 0.25;
+        dibujarAnuncio(r, d.anuncio, x, H.cielo + 2, 0.5 + (1 - lejos) * 0.5, dia);
+      }
+    }
+    dibujarBarreras(r, dia);
 
     /**
      * LAS RAYAS DE VELOCIDAD Y LAS MATAS DE ADELANTE, las mismas del galope
@@ -733,9 +819,9 @@ export function createHuidaScene(services) {
      * están cerca.
      */
     const P = CONFIG.parallax;
-    drawSpeedLines(r, suelo, r.width, {
+    drawSpeedLines(r, suelo, vista.w, {
       ...P.rayas, velocidad: P.rayas.velocidad * P.velocidad,
-      desde: H.cielo + 10, hasta: r.height - 6,
+      desde: H.cielo + 10, hasta: vista.h - 6,
     });
 
     // Lo que quedó atrás en el suelo: los caídos y las bolsas.
@@ -744,12 +830,9 @@ export function createHuidaScene(services) {
 
     // Por dónde tienen los pies: el de más abajo tapa al de más arriba.
     const cosas = [];
-    const b = laBoca();
     for (const ob of obstaculos) {
       const ox = ob.gx - suelo;
-      if (ox < -20 || ox > r.width + 20) continue;
-      // Los que quedaron abajo de la pared ya no existen: son roca.
-      if (b && (ob.y < b.centro - b.medio || ob.y > b.centro + b.medio)) continue;
+      if (ox < -20 || ox > vista.w + 20) continue;
       cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ox, radioDe(ob), !dia) });
     }
     for (const j of jinetes) {
@@ -767,8 +850,8 @@ export function createHuidaScene(services) {
     }
     // Las matas de adelante van ENCIMA de todo: pasan entre vos y la cámara.
     drawParallax(r, P.capas.map((c, i) => ({
-      ...c, v: c.v * P.velocidad, y: r.height - 12 + i * 4,
-    })), suelo, r.width);
+      ...c, v: c.v * P.velocidad, y: vista.h - 12 + i * 4,
+    })), suelo, vista.w);
 
     for (const c of carteles) {
       r.ctx.globalAlpha = Math.min(1, c.vida * 2);
@@ -791,31 +874,106 @@ export function createHuidaScene(services) {
   // -------------------------------------------------------------- el camino
 
   /**
-   * LA BOCA DE LA QUEBRADA, en números. La usan el dibujo Y el movimiento, así
-   * que la pared que ves es la pared que te frena — la regla de siempre en
-   * este juego.
+   * EL CAMINO SE ARMA AL SALIR DEL TREN, y no es el mismo dos veces *(Santi:
+   * "que hayan diferentes caminos para tomar y que sea aleatorio el destino a
+   * dónde llegas")*.
    *
-   * Devuelve `null` hasta que la boca empieza; después, el centro del paso
-   * (fijo, en el medio del campo) y su medio ancho, que se va cerrando.
+   * Son dos barreras: **la horquilla** a mitad de camino, que parte el campo
+   * en dos con una cresta de roca en el medio, y **el destino** al final. Cada
+   * rama de la horquilla lleva a un destino distinto, sorteado entre los tres.
+   * Hasta que pasás la horquilla el destino no está decidido: lo decidís vos
+   * con el lado por el que pasás.
    */
-  function laBoca() {
+  function armarElCamino() {
     const C = H.camino;
-    const t = (suelo / C.largo - C.bocaDesde) / (1 - C.bocaDesde);
-    if (t <= 0) return null;
-    const cerrado = Math.min(1, t);
     const arriba = H.cielo + 22;
-    const abajo = renderer.height - 12;
-    const centro = (arriba + abajo) / 2;
-    // De todo el campo abierto al pasillo, de a poco.
-    const medio = (abajo - arriba) / 2 - cerrado * ((abajo - arriba) / 2 - C.pasillo);
-    return { centro, medio, cerrado, arriba, abajo };
+    const abajo = vista.h - 12;
+    const alto = abajo - arriba;
+
+    // Dos destinos distintos, sorteados de los tres.
+    const ids = Object.keys(DESTINOS);
+    const a = ids[rng.int(0, ids.length - 1)];
+    let b = a;
+    while (b === a) b = ids[rng.int(0, ids.length - 1)];
+
+    const yArriba = arriba + alto * 0.24;
+    const yAbajo = arriba + alto * 0.76;
+    const e = C.entrada;
+
+    barreras = [{
+      tipo: 'roca',
+      gx: C.largo * C.bifurcacion,
+      huecos: [
+        { y0: yArriba - e, y1: yArriba + e, destino: a },
+        { y0: yAbajo - e, y1: yAbajo + e, destino: b },
+      ],
+      esHorquilla: true,
+      pasada: false,
+    }];
+    destinoElegido = null;
   }
 
-  /** Mete a un caballo en el paso: nadie atraviesa la roca. */
-  function meterEnLaBoca(y) {
-    const b = laBoca();
-    if (!b) return y;
-    return Math.max(b.centro - b.medio, Math.min(b.centro + b.medio, y));
+  /**
+   * CUANDO PASÁS LA HORQUILLA, EL DESTINO QUEDA DECIDIDO y aparece su barrera
+   * al final del camino, con su entrada a la altura de la rama que tomaste.
+   */
+  function elegirDestino(hueco) {
+    destinoElegido = DESTINOS[hueco.destino];
+    const centro = (hueco.y0 + hueco.y1) / 2;
+    const e = H.camino.entrada;
+    barreras.push({
+      tipo: destinoElegido.id,
+      gx: H.camino.largo,
+      huecos: [{ y0: centro - e, y1: centro + e }],
+      esDestino: true,
+      pasada: false,
+    });
+    carteles.push({ x: vista.w / 2, y: 70, texto: T.huida.rumbo(destinoElegido.nombre), color: colors.bagLoot, vida: 2.2 });
+  }
+
+  /**
+   * LA LEY BUSCA LA ENTRADA. Cuando tiene una barrera encima, su carril deja
+   * de ser "al lado tuyo" y pasa a ser "el hueco más cercano": se abren en
+   * abanico hacia las entradas, igual que haría una partida de verdad al ver
+   * un paredón.
+   */
+  function apuntarALaEntrada(j, dt) {
+    const b = barreraEn(j.x, 40);
+    if (!b) return;
+    const hueco = huecoDe(b, j.y) || b.huecos.reduce((mejor, h) => {
+      const c = (h.y0 + h.y1) / 2;
+      const cm = (mejor.y0 + mejor.y1) / 2;
+      return Math.abs(c - j.y) < Math.abs(cm - j.y) ? h : mejor;
+    }, b.huecos[0]);
+    const centro = (hueco.y0 + hueco.y1) / 2;
+    const paso = H.jinetes.velocidadLateral * 1.4 * dt;
+    j.y += Math.sign(centro - j.y) * Math.min(Math.abs(centro - j.y), paso);
+    // Y si aun así llegó pegado a la pared, se frena contra ella como vos.
+    const sx = pantallaDe(b);
+    if (!huecoDe(b, j.y) && j.x + 6 > sx && j.x - 6 < sx + GROSOR) j.choque = Math.max(j.choque, 0.2);
+  }
+
+  /** Dónde cae en la pantalla el borde de este lado de una barrera. */
+  function pantallaDe(b) {
+    return yo.x + (b.gx - suelo);
+  }
+
+  /** ¿Esta altura pasa por alguno de los huecos de la barrera? */
+  function huecoDe(b, y) {
+    return b.huecos.find((h) => y > h.y0 + 3 && y < h.y1 - 3) || null;
+  }
+
+  /**
+   * LA BARRERA QUE TENÉS ENCIMA, si es que hay alguna: la que ya te está
+   * tocando. Lo usan el jugador y los jinetes, así que la pared frena a todos
+   * igual.
+   */
+  function barreraEn(x, margen = 6) {
+    for (const b of barreras) {
+      const sx = pantallaDe(b);
+      if (x + margen > sx && x - margen < sx + GROSOR) return b;
+    }
+    return null;
   }
 
   /**
@@ -842,6 +1000,28 @@ export function createHuidaScene(services) {
   }
 
   /**
+   * LAS BARRERAS DEL CAMINO, dibujadas donde están en el terreno: vienen hacia
+   * vos porque el mundo desfila, no porque aparezcan alrededor tuyo.
+   */
+  function dibujarBarreras(r, dia) {
+    const arriba = H.cielo + 18;
+    const abajo = vista.h;
+    for (const b of barreras) {
+      const sx = pantallaDe(b);
+      if (sx > vista.w + 40 || sx + GROSOR < -40) continue;
+      dibujarBarrera(r, {
+        tipo: b.tipo, sx, huecos: b.huecos, y0: arriba, y1: abajo, dia, suelo,
+      });
+      // Encima de cada entrada, lo que hay del otro lado (sólo en la horquilla).
+      if (!b.esHorquilla) continue;
+      for (const h of b.huecos) {
+        const d = DESTINOS[h.destino];
+        if (d) dibujarAnuncio(r, d.anuncio, sx + GROSOR / 2, h.y0 - 6, 0.8, dia);
+      }
+    }
+  }
+
+  /**
    * LOS HITOS: cosas grandes que pasan LEJOS, apoyadas en el horizonte. No
    * chocan con nadie —están del otro lado del campo— y se mueven a un tercio
    * de lo que corre el suelo, que es lo que las hace leerse distantes.
@@ -852,8 +1032,8 @@ export function createHuidaScene(services) {
     const base = H.cielo + 3;
     for (const hito of H.camino.hitos) {
       const gx = hito.en * H.camino.largo;
-      const x = r.width * 0.5 + (gx - suelo) * 0.34;
-      if (x < -40 || x > r.width + 40) continue;
+      const x = vista.w * 0.5 + (gx - suelo) * 0.34;
+      if (x < -40 || x > vista.w + 40) continue;
       const c = (hex) => (dia ? hex : escalarColor(hex, 0.35));
       if (hito.tipo === 'via') {
         // La vía por la que venía el tren, alejándose.
@@ -876,171 +1056,7 @@ export function createHuidaScene(services) {
     }
   }
 
-  /**
-   * LA QUEBRADA. Es el final del camino, y tiene dos momentos:
-   *
-   *  1. **De lejos**, dos paredones apoyados en el horizonte con un tajo negro
-   *     en el medio. Crecen mientras te acercás: la quebrada ES el reloj.
-   *  2. **De cerca**, la boca: las paredes bajan y suben hasta dejar sólo el
-   *     paso, que está FIJO en el medio del campo (ver `laBoca`) — o entrás
-   *     por ahí, o te comés la roca.
-   *
-   * 🔁 SEGUNDA VUELTA DEL DIBUJO *(Santi: "la quebrada no parece una quebrada.
-   * Pensé que se estaba bugueando todo. Es una lámina gris sin sombras ni
-   * profundidad")*. Lo que le faltaba, y que ahora tiene:
-   *
-   *  - **Borde de arriba quebrado**, no una línea recta: la roca no tiene
-   *     escuadra. Sale de `revolver`, así que es siempre el mismo borde y no
-   *     titila.
-   *  - **Capas**: cada paredón son tres bandas de tono (la de arriba al sol,
-   *     la del medio, y el pie en sombra), más vetas verticales cada pocas
-   *     unidades.
-   *  - **Profundidad**: pegado al tajo la roca se oscurece, porque esa cara ya
-   *     está adentro de la grieta y no le da el sol.
-   *  - **Sombra en el suelo**, al pie de cada pared, y el suelo del paso más
-   *     oscuro: estás entrando en un lugar sin sol.
-   */
-  function dibujarQuebrada(r, dia) {
-    const C = H.camino;
-    const t = (suelo / C.largo - C.quebradaDesde) / (1 - C.quebradaDesde);
-    if (t <= 0) return;
-    const cerca = Math.min(1, t);
-    // De noche se apaga menos que el resto: si no, la pared desaparece y el
-    // paso deja de leerse (probado con 0,3 y no se veía nada).
-    const c = (hex) => (dia ? hex : escalarColor(hex, 0.55));
-
-    // --- 1. De lejos: dos paredones en el horizonte ---
-    const base = H.cielo + 1;
-    const alto = 4 + cerca * cerca * 46;
-    const ancho = 26 + cerca * 110;
-    const x0 = Math.round(r.width * 0.58 - ancho / 2 + (1 - cerca) * 40);
-    const tajo = Math.max(6, 18 - cerca * 10);
-    const mitad = (ancho - tajo) / 2;
-    paredon(r, c, x0, base, mitad, alto, 1);
-    paredon(r, c, x0 + mitad + tajo, base, mitad, alto, -1);
-    // El tajo es sombra, no cielo: es lo que hay ENTRE las dos paredes.
-    r.rect(x0 + mitad, base - alto * 0.82, tajo, alto * 0.82, c('#241d18'));
-    r.rect(x0 + mitad, base - 3, tajo, 3, c('#171310'));
-
-    // --- 2. De cerca: la boca, que es la que te frena ---
-    const b = laBoca();
-    if (!b) return;
-    const y0 = b.centro - b.medio;
-    const y1 = b.centro + b.medio;
-
-    // La sombra que la pared tira sobre el suelo del paso.
-    r.ctx.save();
-    r.ctx.globalAlpha = 0.3;
-    r.rect(0, y0, r.width, 5, '#000');
-    r.rect(0, y1 - 4, r.width, 4, '#000');
-    r.ctx.restore();
-
-    paredDeLaBoca(r, c, 0, y0, r.width, 1);
-    paredDeLaBoca(r, c, y1, r.height, r.width, -1);
-    // Adentro no hay sol.
-    r.tinte('#1a1410', b.cerrado * 0.3);
-  }
-
-  /**
-   * UN PAREDÓN VISTO DE LEJOS: apoyado en `base`, con el borde de arriba
-   * quebrado, tres capas de tono y vetas. `haciaElTajo` dice de qué lado está
-   * la grieta, para oscurecer esa cara.
-   */
-  function paredon(r, c, x, base, ancho, alto, haciaElTajo) {
-    if (ancho <= 1 || alto <= 1) return;
-    for (let i = 0; i < ancho; i += 2) {
-      // El borde de arriba, quebrado pero siempre igual (ver `revolver`).
-      const dientes = (revolver(Math.round(x) + i * 7) % 5) - 2;
-      const h = Math.max(2, alto + dientes);
-      const cima = base - h;
-      // Tres capas: sol arriba, cuerpo, pie en sombra.
-      r.rect(x + i, cima, 2, 2, c('#9a8a73'));
-      r.rect(x + i, cima + 2, 2, h * 0.45, c('#7a6b58'));
-      r.rect(x + i, cima + 2 + h * 0.45, 2, h, c('#5d5044'));
-      // Las vetas: una de cada cinco columnas va más oscura.
-      if ((revolver(Math.round(x) + i) % 5) === 0) {
-        r.rect(x + i, cima + 3, 1, h * 0.8, c('#4b4038'));
-      }
-      // La cara que da al tajo está adentro de la grieta: sin sol.
-      const alTajo = haciaElTajo > 0 ? i > ancho - 8 : i < 8;
-      if (alTajo) {
-        r.ctx.save();
-        r.ctx.globalAlpha = 0.45;
-        r.rect(x + i, cima, 2, h, '#201914');
-        r.ctx.restore();
-      }
-    }
-  }
-
-  /**
-   * UNA PARED DE LA BOCA, ya encima tuyo: ocupa toda la franja desde el borde
-   * de la pantalla hasta el paso. El canto que da al paso lleva la luz, y la
-   * roca se va a la sombra hacia adentro.
-   */
-  function paredDeLaBoca(r, c, desde, hasta, ancho, haciaElPaso) {
-    if (hasta - desde <= 0) return;
-    const alto = hasta - desde;
-    const canto = haciaElPaso > 0 ? hasta : desde;
-    const hacia = (d) => canto - haciaElPaso * d;
-
-    // El cuerpo de la roca, y más oscura cuanto más adentro (lejos del paso).
-    r.rect(0, desde, ancho, alto, c('#6a5a4a'));
-    for (let k = 0; k < 6; k++) {
-      r.ctx.save();
-      r.ctx.globalAlpha = 0.1;
-      const y = hacia(alto * (k + 1) / 6);
-      r.rect(0, Math.min(y, hacia(alto)), ancho, Math.abs(alto - alto * (k + 1) / 6) + 1, '#14100c');
-      r.ctx.restore();
-    }
-
     /**
-     * LOS BLOQUES. La roca de una quebrada está partida en bloques grandes,
-     * no es una plancha: cada uno con su tono, su junta oscura y su canto
-     * iluminado arriba. Se sortean con `revolver` sobre la posición REAL en el
-     * suelo, así que desfilan con el mundo en vez de quedarse pegados a la
-     * pantalla.
-     */
-    const desplaza = Math.round(suelo) % 24;
-    for (let bx = -24; bx < ancho + 24; bx += 24) {
-      const x = bx - desplaza;
-      const semilla = Math.round((suelo + bx) / 24);
-      for (let capa = 0; capa < 4; capa++) {
-        const h = alto / 4;
-        const y = Math.min(hacia(h * capa), hacia(h * (capa + 1)));
-        const s = revolver(semilla * 31 + capa * 7 + (haciaElPaso > 0 ? 0 : 999));
-        const tonos = ['#6f5f4d', '#63543f', '#5a4c3d', '#75664f'];
-        r.rect(x, y, 24, h, c(tonos[s % 4]));
-        // La junta entre bloques, y el canto que agarra luz.
-        r.rect(x, y, 24, 1, c('#463a2e'));
-        r.rect(x, y + 1, 24 - (s % 7), 1, c('#8a7a63'));
-        r.rect(x + 24 - 1, y, 1, h, c('#463a2e'));
-        // Una grieta cada tanto.
-        if (s % 6 === 0) r.rect(x + 6 + (s % 9), y + 2, 1, h - 4, c('#3a2f26'));
-      }
-    }
-
-    // El canto del paso: la línea que agarra el sol, y su sombra abajo.
-    const borde = haciaElPaso > 0 ? hasta - 3 : desde;
-    r.rect(0, borde, ancho, 2, c('#a08e74'));
-    r.rect(0, haciaElPaso > 0 ? borde + 2 : borde + 2, ancho, 1, c('#bfab8c'));
-
-    /**
-     * PIEDRAS SUELTAS AL PIE, sobre el suelo del paso: es lo que hace que la
-     * pared se APOYE en el piso en vez de estar recortada sobre él.
-     */
-    for (let px = -20; px < ancho + 20; px += 20) {
-      const x = px - (Math.round(suelo) % 20);
-      const s = revolver(Math.round((suelo + px) / 20) * 17 + (haciaElPaso > 0 ? 3 : 8));
-      if (s % 3 !== 0) continue;
-      const w = 5 + (s % 5);
-      const alt = 3 + (s % 4);
-      const y = haciaElPaso > 0 ? hasta - 1 : desde - alt + 1;
-      r.rect(x, y, w, alt, c('#5a4c3d'));
-      r.rect(x, y, w, 1, c('#83725c'));
-    }
-  }
-
-  /**
    * EL BORDE SE PONE ROJO CUANDO TE TIENEN ENCIMA. Reemplaza a la barra de
    * distancia: se ve sin mirar la HUD, que es de lo que se trata cuando tenés
    * a alguien a diez metros tirándote.
@@ -1058,9 +1074,9 @@ export function createHuidaScene(services) {
     r.ctx.globalAlpha = 0.1 + t * 0.2;
     r.ctx.fillStyle = colors.enemyAlert;
     const grosor = 2 + t * 3;
-    r.ctx.fillRect(0, 0, grosor * 2.5, r.height);
-    r.ctx.fillRect(0, 0, r.width * 0.6, grosor);
-    r.ctx.fillRect(0, r.height - grosor, r.width * 0.6, grosor);
+    r.ctx.fillRect(0, 0, grosor * 2.5, vista.h);
+    r.ctx.fillRect(0, 0, vista.w * 0.6, grosor);
+    r.ctx.fillRect(0, vista.h - grosor, vista.w * 0.6, grosor);
     r.ctx.restore();
   }
 
@@ -1138,11 +1154,11 @@ export function createHuidaScene(services) {
   }
 
   function dibujarPanel(r) {
-    const centro = r.width / 2;
+    const centro = vista.w / 2;
 
     if (fin) {
       const texto = fin.como === 'limpio' ? T.huida.todosCaidos
-        : fin.como === 'quebrada' ? T.huida.quebrada
+        : fin.como === 'llegaste' ? (destinoElegido ? destinoElegido.cartel : T.huida.losPerdiste)
         : T.huida.losPerdiste;
       r.text(texto, centro, 60, colors.bagLoot);
     } else {
@@ -1157,8 +1173,11 @@ export function createHuidaScene(services) {
       const t = Math.max(0, Math.min(1, suelo / H.camino.largo));
       r.rect(centro - ancho / 2, 14, ancho, 3, '#241c18');
       r.rect(centro - ancho / 2, 14, ancho * t, 3, colors.doorGlow);
-      // La boca de la quebrada, al final de la barra.
-      r.rect(centro + ancho / 2 - 1, 12, 2, 7, colors.bagLoot);
+      // La horquilla y el destino, marcados sobre la barra del camino.
+      for (const b of barreras) {
+        const bx = centro - ancho / 2 + ancho * Math.min(1, b.gx / H.camino.largo);
+        r.rect(bx - 1, 12, 2, 7, b.esDestino ? colors.bagLoot : colors.textDim);
+      }
     }
 
     r.text(`$${Math.max(0, dineroInicial - perdido)}`, 6, 9, colors.bagLoot, 'left');
@@ -1166,11 +1185,11 @@ export function createHuidaScene(services) {
 
     const municion = yo.recargando > 0 ? T.huida.recargando
       : `${arma.short} ${'●'.repeat(yo.balas)}${'○'.repeat(Math.max(0, arma.magazine - yo.balas))}`;
-    r.text(municion, r.width - 6, 9, yo.recargando > 0 ? colors.enemyAlert : colors.textDim, 'right');
+    r.text(municion, vista.w - 6, 9, yo.recargando > 0 ? colors.enemyAlert : colors.textDim, 'right');
 
     if (tiempo < 5 && !fin) {
-      r.text(T.huida.teclas[0], centro, r.height - 17, colors.textDim);
-      r.text(T.huida.teclas[1], centro, r.height - 7, colors.textDim);
+      r.text(T.huida.teclas[0], centro, vista.h - 17, colors.textDim);
+      r.text(T.huida.teclas[1], centro, vista.h - 7, colors.textDim);
     }
   }
 

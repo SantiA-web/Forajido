@@ -74,7 +74,8 @@ function buildPanel(s) {
      */
     s.huida ? row(T.results.huida(s.huida.bolsas), s.huida.perdido > 0 ? `−$${s.huida.perdido}` : '', s.huida.bolsas === 0, s.huida.bolsas > 0) : '',
     s.huida && s.huida.derribados > 0 ? row(T.results.huidaJinetes(s.huida.derribados), String(s.huida.derribados)) : '',
-    s.huida && s.huida.fin === 'quebrada' ? row(T.results.huidaQuebrada, T.results.huidaQuebradaSi, true) : '',
+    s.huida && s.huida.fin === 'llegaste' && s.huida.lugar
+      ? row(T.results.huidaQuebrada, T.results.huidaQuebradaSi(s.huida.lugar), true) : '',
     s.cleanBonus > 0 ? row(T.results.clean, `+$${s.cleanBonus}`, true) : '',
     s.rachaBonus > 0 ? row(T.results.racha(s.racha), `+$${s.rachaBonus}`, true) : '',
     s.rachaPerdida > 0 ? row(T.results.rachaPerdida(s.rachaPerdida), '', false, true) : '',

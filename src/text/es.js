@@ -229,7 +229,9 @@ export const T = {
   huida: {
     teSiguen: (n) => (n === 1 ? '¡UN JINETE TE SIGUE!' : `¡${n} JINETES TE SIGUEN!`),
     losPerdiste: 'LOS PERDISTE',
-    quebrada: '¡ADENTRO DE LA QUEBRADA!',
+    /** El cartel de llegada lo pone el destino (ver world/destinos.js). */
+    rumbo: (lugar) => `RUMBO A ${lugar}`,
+    pared: '¡LA PARED! ¡BUSCÁ LA ENTRADA!',
     todosCaidos: 'NO QUEDÓ NINGUNO',
     derribado: '¡ABAJO!',
     sinPlata: 'NO TE QUEDA NADA QUE SOLTAR',
@@ -593,7 +595,7 @@ export const T = {
     huida: (n) => (n === 0 ? 'La huida: no te tocaron' : n === 1 ? 'La huida: soltaste 1 bolsa' : `La huida: soltaste ${n} bolsas`),
     huidaJinetes: (n) => (n === 1 ? 'Jinete derribado en la huida' : 'Jinetes derribados en la huida'),
     huidaQuebrada: 'Cómo te los sacaste',
-    huidaQuebradaSi: 'te metiste en la quebrada',
+    huidaQuebradaSi: (lugar) => `te metiste en ${lugar.toLowerCase()}`,
     lost: 'Botín que dejaste',
     kills: 'Guardias muertos',
     civilians: 'Civiles muertos',

@@ -44,6 +44,14 @@ export const HUIDA = {
    */
   tope: 90,
 
+  /**
+   * LA LUPA DE ESTA ESCENA *(Santi: "podríamos reducir el zoom... y así se ve
+   * más terreno")*. El mundo se dibuja con 4 puntos por unidad; acá con 3, o
+   * sea **un tercio más de campo a lo ancho y a lo alto**. Entera a propósito:
+   * con 3,5 los puntos caerían a medias y el dibujo se vería sucio.
+   */
+  zoom: 3,
+
   /** Cuánto cielo se ve arriba de todo, en unidades. */
   cielo: 34,
 
@@ -60,23 +68,26 @@ export const HUIDA = {
    * 22 — pero con el Mustang normalmente los perdés mucho antes y no la ves.
    */
   camino: {
-    largo: 4000,
+    largo: 4600,
 
     /**
-     * Desde qué parte del camino se empieza a ver la quebrada en el horizonte.
-     * Con 0,62 aparece a los 1.520 de haber salido: bastante antes de llegar,
-     * que es lo que la hace servir de reloj sin ser un cartel.
+     * LA HORQUILLA *(Santi: "que hayan diferentes caminos para tomar y que sea
+     * aleatorio el destino a dónde llegas")*. A mitad de camino, una cresta de
+     * roca parte el campo en dos: pasás por arriba o por abajo, y cada lado
+     * lleva a un destino distinto. Los dos destinos se sortean al empezar
+     * entre la quebrada, el río y el bosque de rocas.
      */
-    quebradaDesde: 0.62,
+    bifurcacion: 0.46,
+
+    /** Medio ancho de una entrada (de la horquilla y del destino). */
+    entrada: 30,
 
     /**
-     * LA BOCA DE LA QUEBRADA. Desde `bocaDesde` del camino, las paredes se
-     * cierran y el campo se angosta hasta `pasillo`: **el paso queda fijo en
-     * el medio**, y el que no se meta ahí se come la roca. Antes el tajo te
-     * seguía a vos, así que no bloqueaba nada y los jinetes la atravesaban.
+     * Chocar contra la pared de una barrera: te frena a esta fracción de tu
+     * velocidad mientras estés pegado a ella. No te mata: te cuesta la ventaja
+     * que tenías, que es de lo que se trata.
      */
-    bocaDesde: 0.88,
-    pasillo: 26,
+    choqueBarrera: 0.18,
 
     /** Los hitos del camino, en fracción del largo. No chocan: son el mojón. */
     hitos: [
@@ -96,8 +107,18 @@ export const HUIDA = {
      * pelear** *(Santi: "que exista la opción de usar la tecla A")*.
      */
     x: 0.62,
-    /** Arriba y abajo (px/s): la misma del galope (`velVertical`). */
-    velocidadY: 105,
+    /**
+     * CUÁNTO DOBLA EL CABALLO *(Santi: "que el camino sea menos línea recta
+     * hacia el este y un poco más de sensación de libertad")*. 50° en
+     * radianes: con el giro a fondo avanzás el coseno de eso, o sea el 64% —
+     * cruzarse cuesta camino. `giroInercia` es lo que tarda en llegar al rumbo
+     * que le pedís (las riendas, no un volante), y `cruzar` cuánto de la
+     * velocidad se va para el costado: en tres cuartos la profundidad se ve
+     * aplastada, así que va menos que 1.
+     */
+    giroMaximo: 0.87,
+    giroInercia: 3.5,
+    cruzar: 0.75,
     /**
      * A CABALLO SE TIRA PEOR: la dispersión de tu arma se multiplica por esto.
      * Con el Colt (0,035) queda en 0,105.

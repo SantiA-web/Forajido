@@ -13803,7 +13803,7 @@ bien:
 | El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
 | El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
 | El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
-| La quebrada y los hitos del camino | `huidaScene.js`, `dibujarQuebrada` y `dibujarHitos` | Siluetas de dos o tres rectángulos: mesetas, rancho, carreta, huesos |
+| Los tres destinos y los hitos | `world/destinos.js`, y `dibujarHitos` en `huidaScene.js` | Bloques de roca, una banda de agua con su vado y peñascos; los hitos son siluetas de dos o tres rectángulos |
 | El caballo del jinete caído | `huidaScene.js`, `pegarle` | Queda el cuerpo en el suelo y el caballo desaparece; debería seguir galopando solo |
 | Tirar para atrás | `huidaScene.js`, `dibujarme` | El jinete no se da vuelta: sólo crece el círculo. Falta el torso girado |
 
@@ -14228,6 +14228,57 @@ vos. Nunca bloqueaba nada.
 Medido: **cero cuadros con alguien adentro de la roca** en 6.018 cuadros con
 teclas y mouse al azar (los dos caballos, de día y de noche, 1 y 5 jinetes), y
 sin errores.
+
+#### Undécima vuelta: más campo, doblar de verdad, y un camino que se elige
+
+*(Santi: "podríamos reducir el zoom... y quería preguntar: ¿se puede hacer que
+el caballo pueda doblar más hacia el fondo o mirando hacia el jugador? O sea,
+que el camino sea menos línea recta hacia el este y un poco más de sensación
+de libertad", y después: "me gustaría que podás tomar el camino en algunas
+ocasiones... que sea aleatorio el destino: puede ser un río, una quebrada o un
+bosque de rocas. Lo que no me cerraba en la quebrada es que se crea para el
+jugador, cuando en realidad el jugador debería meterse ahí")*
+
+**1. La lupa baja a 3** (`HUIDA.zoom`, y `renderer.lupa()`, nuevo). El mundo se
+dibuja con 4 puntos por unidad; acá con 3, o sea **426 × 300 en vez de
+320 × 225**: un tercio más de campo a lo ancho y a lo alto. Entera a propósito:
+con 3,5 los puntos caerían a medias. Toda la escena pasó a medir en unidades de
+ESA vista (`vista.w` / `vista.h`), porque las distancias de la huida (dónde
+arrancan, a qué distancia los perdés) sólo tienen sentido contra lo que se ve.
+
+**2. W/S ya no suben y bajan: DOBLAN.** El caballo toma un rumbo de hasta 50°
+(`giroMaximo`) con inercia de riendas, y su velocidad se reparte: lo que se va
+para el costado (`cruzar`) no se va para adelante. **Cruzado a fondo avanzás el
+64%**, así que esquivar y atajar cuestan camino. Y las nueve poses del sprite
+—de alejándose al fondo a viniendo de frente— por fin se usan enteras.
+
+**3. El camino se elige, y el destino se sortea** (`world/destinos.js`, nuevo).
+El camino (4.600) tiene dos BARRERAS:
+
+| | Qué es | Qué hace |
+|---|---|---|
+| **La horquilla**, al 46% | Una cresta de roca con dos entradas | Cada entrada lleva a un destino distinto, sorteado entre los tres. Pasar por una lo decide |
+| **El destino**, al final | La quebrada, el vado del río o el bosque de rocas | Entrar por su boca termina la huida |
+
+**LA IDEA QUE FALTABA, Y ERA LA QUEJA DE SANTI:** una barrera está en un punto
+FIJO del camino y **viene hacia vos**, con su entrada a una altura fija. La
+quebrada vieja se dibujaba centrada en el jugador, así que no se leía como un
+lugar: se leía como un efecto. Ahora, si llegás contra la pared te clavás ahí
+—medido: **52 de avance en 3 segundos, contra 400**— y tenés que buscar la
+entrada con la ley encima. La ley también la busca: cuando ve la barrera, sus
+carriles dejan de ser "al lado tuyo" y pasan a ser "el hueco más cercano".
+
+Y lo que hay del otro lado **se ve venir en el horizonte** (`dibujarAnuncio`):
+los paredones de la quebrada, la fila de álamos del río o los peñascos. Eso es
+lo que deja elegir a tiempo en vez de adivinar.
+
+Sin errores en 13.468 cuadros con teclas y mouse al azar (los dos caballos, las
+dos armas, de día y de noche, 1 a 5 jinetes), más una corrida por cada destino
+y una prueba de clavarse contra la pared.
+
+**Lo que queda:** vestir los tres destinos (hoy son bloques, agua y peñascos
+simples), y que los jinetes se comporten como una partida (que se griten entre
+ellos, que se turnen, que uno se adelante a cortarte).
 
 #### 🧪 El atajo para probarla
 

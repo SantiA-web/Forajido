@@ -194,6 +194,17 @@ export function createRenderer(canvas, vista) {
     escenaFija() { usar(densidadFija()); },
 
     /**
+     * BAJAR LA LUPA A PROPÓSITO, para ver más mundo *(Santi, sobre la huida:
+     * "podríamos reducir el zoom (que la pantalla se vea más chica y así se ve
+     * más terreno)")*. Con 3 en vez de 4 entra un tercio más de campo, y el
+     * dibujo sigue cayendo en puntos enteros porque la densidad es entera.
+     *
+     * La escena la pide en cada cuadro: `nuevoCuadro()` vuelve a poner la del
+     * mundo antes de dibujar, así que esto no se le pega a nadie más.
+     */
+    lupa(d) { usar(Math.max(1, Math.min(DENSIDAD, Math.round(d)))); },
+
+    /**
      * DÓNDE VA UNA ESCENA ARMADA PARA `CONFIG.view`, centrada en la pantalla de
      * hoy. El campamento, el mapa, los interiores y la tienda están pensados
      * para ese tamaño; se dibujan corridos por esto y su fondo llena lo que

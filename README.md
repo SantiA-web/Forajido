@@ -1798,9 +1798,11 @@ mínima.
 **Y cada refugio tiene su terreno**, porque si los tres son iguales elegir es
 tirar una moneda:
 
-- **El bosque de rocas** está sembrado de piedras alrededor. Cuesta llegar sin
-  chocar, pero la ley te sigue sin elegir por dónde: en los últimos 600, vos te
-  comés 0,9 piedras y ellos 2,5.
+- **El bosque de rocas** es un bosque de verdad: 900 unidades de campo sembrado
+  de piedras, una cada 43. Los últimos ocho segundos son esquivar y esquivar
+  —pasan 17 piedras al lado tuyo— pero la ley te sigue sin elegir por dónde:
+  vos te comés 4 y **ellos 13**. Por eso es el refugio donde menos plata
+  perdés, aunque sea el más difícil de cruzar.
 - **El río** tiene la llegada limpia y abierta: ahí no choca nadie, ni vos ni
   ellos. Llegás si tenés caballo, no maña.
 - **La quebrada** esconde la entrada de costado o casi del otro lado: hay que

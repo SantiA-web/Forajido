@@ -121,12 +121,24 @@ export const HUIDA = {
       /** Hasta dónde llega el terreno propio de un refugio, en unidades. */
       alrededor: 600,
 
-      /** Piedras por celda cerca del bosque (el campo normal tira 0 a 2). */
-      bosqueMin: 2,
-      bosqueMax: 4,
+      /**
+       * 🌲 EL BOSQUE ES UN BOSQUE *(Santi, después de jugarlo: "el bosque de
+       * piedras literal debería ser un bosque de piedras. Hoy en día solo hay
+       * algunas piedritas. Debería ser esquivar y esquivar")*. Tenía razón:
+       * con 2 a 4 por celda quedaba una piedra cada 87 unidades y se pasaba
+       * de largo sin tocar nada.
+       *
+       * Ahora el bosque empieza más lejos (`bosqueAlrededor`) y tiene
+       * `bosqueMin`-`bosqueMax` por celda de 150: una piedra cada ~43
+       * unidades, o sea una cada tres décimas de segundo a galope tendido. Se
+       * entra esquivando o no se entra.
+       */
+      bosqueAlrededor: 900,
+      bosqueMin: 7,
+      bosqueMax: 11,
 
       /** Y la mayoría son piedras, no yuyos: de cada 10, esta cantidad. */
-      bosqueRocas: 0.6,
+      bosqueRocas: 0.75,
 
       /**
        * Cuánto hay que rodear la quebrada, en grados desde donde llegás. 100
@@ -142,12 +154,27 @@ export const HUIDA = {
 
   jugador: {
     /**
-     * CUÁNTO TARDA EN DOBLAR, en radianes por segundo. Galopás hacia donde
-     * mirás y podés ir a cualquier rumbo; lo que no se puede es cambiarlo de
-     * golpe: un caballo lanzado tarda en girar, y ese retraso es lo que hace
-     * que doblar se sienta como doblar.
+     * 🐴 LAS RIENDAS: cuánto tarda en doblar, en radianes por segundo.
+     * Galopás hacia donde mirás y podés ir a cualquier rumbo; lo que no se
+     * puede es cambiarlo de golpe, y ese retraso es lo que hace que doblar se
+     * sienta como doblar.
+     *
+     * *(Santi, después de jugarlo: "creo que las riendas del caballo están en
+     * 0,4 segundos, si es así, me gustaría pasarlo a 0,7")*. Lo medido: con
+     * 2,4 el paso más chico —el de 45°, apretar una tecla al lado de la que
+     * venías— tardaba **0,33 s**, un cuarto de vuelta 0,65 y media vuelta
+     * 1,31. Con 1,12 ese paso chico pasa a los 0,7 que pidió:
+     *
+     * | radianes/s | 45° | 90° | 180° |
+     * |---|---|---|---|
+     * | 2,4 (antes) | 0,33 | 0,65 | 1,31 |
+     * | 1,6 | 0,49 | 0,98 | 1,96 |
+     * | 1,12 (puesto) | **0,70** | 1,40 | 2,80 |
+     *
+     * En tiempo de llegada casi no se paga (medido: +0,3 s hasta el río,
+     * +0,6 s cruzando el bosque). Lo que cambia es el peso del caballo.
      */
-    giroVelocidad: 2.4,
+    giroVelocidad: 1.12,
 
     /** Doblando cerrado se pierde envión: al máximo, esta fracción. */
     frenoEnCurva: 0.82,
@@ -252,6 +279,17 @@ export const HUIDA = {
      * perdiendo 13%; frenar y pelear, 7 s perdiendo 21%.
      */
     velocidad: 142,
+
+    /**
+     * 🐴 SUS RIENDAS, en radianes por segundo. Estaba escondido en el código
+     * (2,2) y tuvo que salir a la luz cuando las tuyas se pusieron pesadas
+     * (`jugador.giroVelocidad`, 1,12): si ellos doblan al doble que vos, las
+     * curvas dejan de ser un arma y son un regalo, porque se te pegan igual.
+     *
+     * Con 1,4 siguen doblando un poco mejor que vos —son la ley, andan
+     * livianos y sin bolsas— pero una curva cerrada les cuesta.
+     */
+    giro: 1.4,
 
     /**
      * Y AL MINUTO SUS CABALLOS AFLOJAN *(opción elegida por Santi)*. A los

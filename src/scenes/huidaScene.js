@@ -234,8 +234,12 @@ export function createHuidaScene(services) {
    * limpio. Devuelve el refugio dueño del punto, o `null` si es campo de nadie.
    */
   function terrenoDe(x, y) {
-    const lejos = H.mundo.caracter.alrededor;
-    return refugios.find((d) => Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < lejos) || null;
+    const C = H.mundo.caracter;
+    // El bosque es más grande que los otros dos: es un bosque, no un cantero.
+    return refugios.find((d) => {
+      const lejos = d.tipo === 'bosque' ? C.bosqueAlrededor : C.alrededor;
+      return Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < lejos;
+    }) || null;
   }
 
   /** Pegado a la pared de un refugio no nace nada: la entrada no se tapa. */
@@ -581,7 +585,7 @@ export function createHuidaScene(services) {
         j.aimTimer -= dt;
         if (j.aimTimer <= 0) tirar(j);
       } else {
-        girarHacia(j, haciaAlla, 2.2, dt);
+        girarHacia(j, haciaAlla, H.jinetes.giro, dt);
         esquivarConElCaballo(j, dt);
       }
       avanzar(j, velocidadDelJinete(j), dt);
@@ -757,6 +761,9 @@ export function createHuidaScene(services) {
 
   // -------------------------------------------------------------- obstáculos
 
+  /** Cuántos obstáculos se guardan antes de tirar los de lejos. */
+  const A_TOPE = 900;
+
   /**
    * LOS OBSTÁCULOS, SEMBRADOS ALREDEDOR TUYO. El campo es abierto, así que se
    * siembran por CELDAS de mundo a medida que te acercás, y se tiran las que
@@ -802,9 +809,23 @@ export function createHuidaScene(services) {
         }
       }
     }
-    // Los que quedaron lejos no se dibujan ni chocan: fuera de la lista.
-    if (obstaculos.length > 400) {
-      obstaculos = obstaculos.filter((ob) => Math.hypot(ob.x - yo.x, ob.y - yo.y) < alcance * 1.4);
+    /**
+     * LOS QUE QUEDARON LEJOS SE TIRAN, y la celda SE OLVIDA: si volvés, se
+     * siembra de nuevo. Antes la celda quedaba marcada para siempre, así que
+     * el campo que ya habías cruzado volvía pelado — y en el bosque de piedras,
+     * que tiene diez veces más, eso era medio bosque desapareciendo detrás
+     * tuyo. El tope está alto (900) para que un bosque entero entre sin que
+     * haya que tirar nada mientras estás adentro.
+     */
+    if (obstaculos.length > A_TOPE) {
+      const limite = alcance * 1.4;
+      obstaculos = obstaculos.filter((ob) => Math.hypot(ob.x - yo.x, ob.y - yo.y) < limite);
+      for (const clave of celdasSembradas) {
+        const [sx, sy] = clave.split(',');
+        const mx = Number(sx) * CELDA + CELDA / 2;
+        const my = Number(sy) * CELDA + CELDA / 2;
+        if (Math.hypot(mx - yo.x, my - yo.y) > limite) celdasSembradas.delete(clave);
+      }
     }
   }
 
@@ -841,10 +862,27 @@ export function createHuidaScene(services) {
     const zancadaT = CONFIG.ambiente.zancadaCada;
     const vaiven = Math.sin((bamboleo / zancadaT) * Math.PI * 2) * 0.9
       + Math.sin((bamboleo / zancadaT) * Math.PI * 4) * 0.4;
-    const camX = Math.round(yo.x - vista.w / 2);
-    const camY = Math.round(yo.y - vista.h / 2);
-    r.ctx.translate(-camX, -camY + vaiven);
-    if (temblor > 0) r.ctx.translate(rng.range(-2.5, 2.5), rng.range(-2.5, 2.5));
+    /**
+     * 🔺 LA CÁMARA SE CORRE DE A UN PUNTO DE PANTALLA, NO DE A UNA UNIDAD
+     * *(Santi: "la cámara, por más de que el caballo se mueva en diagonal, se
+     * sigue moviendo de forma recta, como una torre de ajedrez")*. Tenía
+     * razón: redondear en UNIDADES la movía de a 3 puntos, y como al norte se
+     * avanza el 62% de lo que se avanza al este, lo de arriba y abajo llegaba
+     * al salto siguiente mucho después que lo de los costados. El resultado
+     * era un escalón: derecho un rato, y de golpe un brinco.
+     *
+     * Redondear al PUNTO (un tercio de unidad con esta lupa) deja el paso tres
+     * veces más fino —el mínimo que se puede— y sigue cayendo justo en la
+     * grilla, así que no se borronea nada. El balanceo y el sacudón entran en
+     * la misma cuenta: antes se sumaban con decimales y ensuciaban el dibujo.
+     */
+    const aPunto = (v) => Math.round(v * H.zoom) / H.zoom;
+    const camX = aPunto(yo.x - vista.w / 2);
+    const camY = aPunto(yo.y - vista.h / 2 - vaiven);
+    r.ctx.translate(-camX, -camY);
+    if (temblor > 0) {
+      r.ctx.translate(aPunto(rng.range(-2.5, 2.5)), aPunto(rng.range(-2.5, 2.5)));
+    }
 
     // El suelo: pasto, piedritas y manchas, sembradas por celda (las mismas
     // del galope y del asalto, así que el afuera es siempre el mismo lugar).

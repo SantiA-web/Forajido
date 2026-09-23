@@ -14396,6 +14396,79 @@ la quebrada devolviéndote una bolsa—, y que la brújula no muestre los tres
 desde el arranque. Y las balas de los guardias, más rápidas y más lejos, van en
 la vuelta de la IA del asalto.
 
+#### 🔁 Decimocuarta vuelta: el bosque, las riendas y la cámara
+
+*(Santi, después de jugarlo: "el bosque de piedras literal debería ser un
+bosque de piedras. Hoy en día solo hay algunas piedritas. Debería ser esquivar
+y esquivar", "las riendas del caballo están en 0,4 segundos, si es así, me
+gustaría pasarlo a 0,7" y "la cámara, por más de que el caballo se mueva en
+diagonal, se sigue moviendo de forma recta, como una torre de ajedrez")*
+
+**Las tres tenían razón. La de la cámara era un bug fino y estaba a la vista.**
+
+**1. EL BOSQUE ES UN BOSQUE.** Con 2 a 4 piedras por celda y 600 de radio
+quedaba una cada 87 unidades: se cruzaba de largo sin tocar nada. Ahora son
+**7 a 11 por celda y 900 de radio** (una cada ~43), y el 75% son rocas y no
+yuyos.
+
+*Medido con un piloto que va al refugio esquivando lo que se le cruza (25
+corridas, Criollo, 3 jinetes), mientras cruza la zona:*
+
+| Bosque | Antes (2-4, zona 600) | Ahora (7-11, zona 900) |
+|---|---|---|
+| Piedras que te pasan al lado | 3,6 | **17,2** |
+| Segundos adentro del bosque | 4,2 | 8,4 |
+| Choques tuyos | 0,6 | 4,1 |
+| Choques de la ley | 2,6 | **13,2** |
+| Plata perdida en la corrida | $335 | **$256** |
+
+Lo importante es la última fila: **el bosque es el refugio donde menos plata
+perdés**, aunque sea el más difícil de cruzar, porque ellos vienen en montón y
+sin elegir la línea. Esquivar bien se paga.
+
+🐛 **Y hubo que arreglar cómo se tiran los obstáculos lejanos.** Había un tope
+de 400 y la celda quedaba marcada como sembrada PARA SIEMPRE: al pasar el tope
+se tiraban los de lejos y esa parte del campo quedaba pelada si volvías. Con el
+bosque nuevo eso era medio bosque desapareciendo. Ahora el tope es 900 y al
+tirar los de lejos **también se olvida la celda**, así que el campo se vuelve a
+sembrar. Un bosque entero son ~600 obstáculos y entran sin tirar nada.
+
+**2. LAS RIENDAS PESAN.** Lo medido: con `giroVelocidad` en 2,4 el paso más
+chico —el de 45°, apretar la tecla de al lado— tardaba **0,33 s** (los "0,4"
+que contó Santi), un cuarto de vuelta 0,65 y media vuelta 1,31.
+
+| radianes/s | 45° | 90° | 180° |
+|---|---|---|---|
+| 2,4 (antes) | 0,33 | 0,65 | 1,31 |
+| 1,6 | 0,49 | 0,98 | 1,96 |
+| **1,12 (puesto)** | **0,70** | 1,40 | 2,80 |
+
+En tiempo casi no se paga: **+0,3 s** hasta el río y **+0,6 s** cruzando el
+bosque, con las llegadas iguales. Lo que cambia es el peso del caballo.
+
+🐎 **Y salió a la luz un número escondido: las riendas de la ley.** Estaban en
+2,2 adentro del código. Con las tuyas en 1,12 eso los dejaba doblando al doble
+que vos, y una curva cerrada pasaba a ser un regalo: se te pegaban igual.
+Ahora es `jinetes.giro` y está en **1,4** — mejores que vos, porque andan
+livianos, pero les cuesta. Medido (15 corridas zigzagueando): con 2,2 el más
+cercano te corría a 141 de promedio; con 1,4, a 146; con 1,0, a 155 y en 3 de
+15 los perdías del todo.
+
+**3. LA CÁMARA SE MOVÍA COMO UNA TORRE.** Era exactamente eso: la cámara se
+redondeaba en UNIDADES del mundo, y con la lupa de esta escena una unidad son 3
+puntos de pantalla. Medido sobre una diagonal, el mundo se corría **de a 3 o de
+a 6 puntos por cuadro**, y como los dos ejes daban el salto en cuadros
+distintos, la diagonal se veía como un escalón: derecho un rato y de golpe un
+brinco. Redondeando al PUNTO (un tercio de unidad) los pasos pasan a ser **de 3
+o de 4**, que es lo más fino posible, y siguen cayendo justo en la grilla, así
+que no se borronea nada. El balanceo del galope y el sacudón de los tiros
+entraron en la misma cuenta: antes se sumaban con decimales y ensuciaban el
+dibujo.
+
+Sin errores en 19.493 cuadros con teclas y mouse al azar. El cuadro cuesta
+**0,96 ms** en el campo normal y **1,61 ms** adentro del bosque (con 596
+piedras en la lista); el presupuesto a 60 cuadros por segundo es 16,7.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

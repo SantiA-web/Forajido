@@ -1785,16 +1785,31 @@ distancia: **la quebrada, el río y el bosque de rocas**. Cada uno es un anillo
 —de roca, de agua o de peñascos— con **una entrada**: meterte adentro termina
 la huida, pero la entrada hay que encontrarla, y si le pegás al anillo te
 clavás contra él. La ley también choca. Dónde están y cuánto falta lo dice la
-brújula del borde de la pantalla.
+brújula del borde de la pantalla, con la inicial de cada uno (Q, R, B).
 
-**Y la boca de la quebrada es un embudo de verdad.** Desde el 88% del camino
-las paredes se cierran hasta dejar un paso de 26 en el MEDIO del campo: o te
-metés ahí, o te comés la roca. Vale para vos y para ellos, y adentro del paso
-ya no crece nada.
+**Y dónde caen se sortea de verdad.** Cada uno saca su rumbo dentro de un
+abanico de 120° para cada lado —uno puede quedarte al costado o un poco
+atrás— y SU distancia, entre 2.200 y 5.000. Entre el más cerca y el más lejos
+hay 1.400 de diferencia promedio, o sea diez segundos de galope, y sólo una de
+cada cuatro veces el más cercano es además el que tenés de frente. Lo único
+que no queda al azar es que no caigan dos en el mismo rumbo: se separan 70° de
+mínima.
 
-**Gana lo que pase primero:** los perdés, los tirás a todos, o llegás a la
-quebrada con los que queden encima. Con el Criollo llegar son unos 28
-segundos; con el Mustang normalmente los perdés mucho antes y nunca la ves.
+**Y cada refugio tiene su terreno**, porque si los tres son iguales elegir es
+tirar una moneda:
+
+- **El bosque de rocas** está sembrado de piedras alrededor. Cuesta llegar sin
+  chocar, pero la ley te sigue sin elegir por dónde: en los últimos 600, vos te
+  comés 0,9 piedras y ellos 2,5.
+- **El río** tiene la llegada limpia y abierta: ahí no choca nadie, ni vos ni
+  ellos. Llegás si tenés caballo, no maña.
+- **La quebrada** esconde la entrada de costado o casi del otro lado: hay que
+  rodear el paredón con ellos encima. Son 2,4 segundos más que el río en los
+  últimos 600.
+
+**Gana lo que pase primero:** los perdés, los tirás a todos, o llegás a un
+refugio con los que queden encima. Con el Criollo llegar son unos 27
+segundos; con el Mustang normalmente los perdés mucho antes y no ves ninguno.
 Mientras corrés, el suelo cambia (arena, pedregal, pasto seco) y pasan de lejos
 la vía que dejaste, huesos de vaca, un rancho abandonado y una carreta rota.
 

@@ -166,39 +166,82 @@ export function createHuidaScene(services) {
   }
 
   /**
-   * LOS TRES REFUGIOS, REPARTIDOS EN EL CAMPO. Salen en un abanico delante
-   * tuyo —el tren iba al este, así que huís para ese lado—, cada uno a su
-   * distancia y con su entrada mirando hacia donde venís. Ninguna corrida es
-   * igual a la anterior: cambian el orden, el rumbo y la distancia.
+   * LOS TRES REFUGIOS, REPARTIDOS EN EL CAMPO *(Santi: "deberíamos hacer que
+   * los puntos de llegada sean aleatorios sus ubicaciones, para que no siempre
+   * se elija uno y no otro")*.
+   *
+   * SE SORTEA TODO: cuál es cuál, a qué rumbo cae cada uno dentro de un
+   * abanico ancho (`abanicoGrados` para cada lado) y a qué distancia, cada uno
+   * por SU cuenta. Antes los tres salían casi a la misma distancia y en un
+   * abanico angosto adelante: el del medio era siempre el obvio.
+   *
+   * Lo único que no queda librado al azar es que no caigan dos en el mismo
+   * rumbo. El reparto: se apartan las dos separaciones mínimas, se tiran tres
+   * cortes al azar en lo que sobra del abanico, se ordenan, y cada refugio se
+   * corre una separación más que el anterior. Los tres pueden terminar
+   * apilados de un costado o uno en cada punta —lo que salga—, pero nunca uno
+   * encima del otro.
    */
   function sembrarRefugios() {
     const M = H.mundo;
+    const C = M.caracter;
+    const grados = (g) => (g * Math.PI) / 180;
     const ids = Object.keys(DESTINOS);
     // Barajar los tres, para que no salga siempre el mismo del mismo lado.
     for (let i = ids.length - 1; i > 0; i--) {
       const j = rng.int(0, i);
       [ids[i], ids[j]] = [ids[j], ids[i]];
     }
-    const sep = (M.separacionGrados * Math.PI) / 180;
-    const centro = rng.range(-0.35, 0.35);
+
+    const abanico = grados(M.abanicoGrados) * 2;
+    const sep = grados(M.separacionGrados);
+    const sobra = Math.max(0, abanico - sep * 2);
+    const cortes = [rng.range(0, sobra), rng.range(0, sobra), rng.range(0, sobra)]
+      .sort((a, b) => a - b);
+
     refugios = ids.map((id, i) => {
-      const rumbo = centro + (i - 1) * sep + rng.range(-0.12, 0.12);
+      const rumbo = -abanico / 2 + cortes[i] + sep * i;
       const dist = rng.range(M.distanciaMin, M.distanciaMax);
       const x = Math.cos(rumbo) * dist;
       const y = Math.sin(rumbo) * dist * PROFUNDIDAD;
+      // Para dónde queda el campo del que vas a venir, visto desde el refugio.
+      const llegada = Math.atan2(-y / PROFUNDIDAD, -x);
+      /**
+       * LA QUEBRADA ESCONDE LA ENTRADA: le cae de costado o casi del otro
+       * lado, así que hay que rodear el paredón con ellos encima. Los otros
+       * dos la tienen de frente, apenas corrida.
+       */
+      const rodeo = id === 'quebrada'
+        ? (rng.chance(0.5) ? 1 : -1) * rng.range(grados(C.quebradaRodeoMin), grados(C.quebradaRodeoMax))
+        : rng.range(-0.3, 0.3);
       return {
         tipo: id,
         nombre: DESTINOS[id].nombre,
         cartel: DESTINOS[id].cartel,
         x, y,
         radio: M.radio,
-        // La entrada mira hacia donde saliste: es por donde vas a llegar.
-        mira: Math.atan2(-y / PROFUNDIDAD, -x) + rng.range(-0.3, 0.3),
-        abertura: (M.aberturaGrados * Math.PI) / 180,
+        mira: llegada + rodeo,
+        abertura: grados(M.aberturaGrados),
         aviso: false,
       };
     });
     refugioTomado = null;
+  }
+
+  /**
+   * ¿DE QUIÉN ES ESTE PEDAZO DE CAMPO? Alrededor de cada refugio el terreno es
+   * suyo: el bosque de rocas lo tiene sembrado de piedras y el río lo tiene
+   * limpio. Devuelve el refugio dueño del punto, o `null` si es campo de nadie.
+   */
+  function terrenoDe(x, y) {
+    const lejos = H.mundo.caracter.alrededor;
+    return refugios.find((d) => Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < lejos) || null;
+  }
+
+  /** Pegado a la pared de un refugio no nace nada: la entrada no se tapa. */
+  function pegadoAUnRefugio(x, y) {
+    const despeje = H.mundo.caracter.despejeRefugio;
+    return refugios.some((d) => Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < d.radio + despeje);
   }
 
   /**
@@ -732,12 +775,28 @@ export function createHuidaScene(services) {
         const clave = `${cx},${cy}`;
         if (celdasSembradas.has(clave)) continue;
         celdasSembradas.add(clave);
-        const cuantos = rng.int(0, 2);
+        /**
+         * CUÁNTAS COSAS TIENE ESTA CELDA depende de en el campo de quién cae:
+         * el bosque de rocas está sembrado de piedras —cuesta llegar sin
+         * chocar, pero la ley viene atrás y no elige por dónde— y el río tiene
+         * la llegada limpia: se galopa derecho, pero no hay contra qué hacerlos
+         * chocar.
+         */
+        const C = H.mundo.caracter;
+        const terreno = terrenoDe(cx * CELDA + CELDA / 2, cy * CELDA + CELDA / 2);
+        let cuantos = rng.int(0, 2);
+        if (terreno && terreno.tipo === 'bosque') cuantos = rng.int(C.bosqueMin, C.bosqueMax);
+        else if (terreno && terreno.tipo === 'rio') cuantos = 0;
+
         for (let i = 0; i < cuantos; i++) {
+          const x = cx * CELDA + rng.range(0, CELDA);
+          const y = cy * CELDA + rng.range(0, CELDA);
+          if (pegadoAUnRefugio(x, y)) continue;
+          const roca = terreno && terreno.tipo === 'bosque' && rng.chance(C.bosqueRocas);
           obstaculos.push({
-            x: cx * CELDA + rng.range(0, CELDA),
-            y: cy * CELDA + rng.range(0, CELDA),
-            tipo: tipos[rng.int(0, tipos.length - 1)],
+            x,
+            y,
+            tipo: roca ? 'roca' : tipos[rng.int(0, tipos.length - 1)],
             golpeado: false,
           });
         }
@@ -994,6 +1053,8 @@ export function createHuidaScene(services) {
       const color = dist < 500 ? colors.doorGlow : colors.textDim;
       r.rect(x - 2, y - 2, 5, 5, color);
       r.rect(x + Math.cos(a) * 5 - 1, y + Math.sin(a) * 5 - 1, 3, 3, color);
+      // La inicial: cuál es cuál importa, porque cada uno tiene su terreno.
+      r.text(T.huida.brujula[d.tipo] || '?', x, y - 6, color);
       r.text(`${Math.round(dist / 10)}`, x, y + 10, color);
     }
   }

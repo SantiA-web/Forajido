@@ -14326,6 +14326,76 @@ dos armas, de día y de noche, 1 a 5 jinetes). El cuadro cuesta **0,53 ms**.
 comporte como una partida (que se griten, que se turnen, que alguno te corte
 el paso en vez de seguirte en fila).
 
+#### 🔁 Decimotercera vuelta: dónde caen se sortea, y cada uno es distinto
+
+*(Santi: "creo que deberíamos hacer que los puntos de llegada sean aleatorios
+sus ubicaciones, para que no siempre se elija uno y no otro. Es cierto que eso
+también se puede hacer dependiendo de que ruta tomes en el mapa de asaltos,
+pero por el momento pueden ser aleatorios")*
+
+**Había dos problemas, y el segundo era el grande.** El primero, el que se veía:
+los tres salían en un abanico angosto delante tuyo y casi a la misma distancia
+(3.000-4.200), así que el del medio era siempre el obvio. El segundo, el que no
+se veía: **los tres eran el mismo anillo con otra pintura**. Llegar a uno o a
+otro daba exactamente lo mismo, y si dan lo mismo, elegir es tirar una moneda
+aunque estén bien repartidos.
+
+**Dónde caen (`mundo` en `data/huida.js`):**
+
+- **Rumbo:** un abanico de **120° para cada lado** de por donde venías huyendo.
+  Uno puede quedarte al costado o un poco atrás. El círculo entero (180) quedó
+  afuera: un refugio justo atrás te obliga a cruzar por el medio de la partida,
+  y eso no es una decisión, es un castigo.
+- **Separación mínima:** **70°**. Es lo único que no queda al azar, porque el
+  sorteo suelto a veces pegaba dos en el mismo rumbo.
+- **Distancia:** cada uno saca la SUYA entre **2.200 y 5.000**. Con el Criollo
+  (142): 2.200 son unos 15 segundos, 3.500 unos 25 y 5.000 unos 35.
+
+*El reparto de los rumbos:* se apartan las dos separaciones mínimas, se tiran
+tres cortes al azar en lo que sobra del abanico, se ordenan, y cada refugio se
+corre una separación más que el anterior. Los tres pueden terminar apilados de
+un costado o uno en cada punta —lo que salga—, pero nunca uno encima del otro.
+
+**Medido en 400 corridas:** separación mínima 70° y promedio 95°; distancias
+2.204 a 4.998; **1.412 de diferencia promedio entre el más cerca y el más
+lejos** (diez segundos de galope); cada uno de los tres es el más cercano una
+de cada tres veces; y **sólo el 23% de las veces el más cercano está además de
+frente** (antes, prácticamente siempre).
+
+**Y cada uno tiene su terreno (`mundo.caracter`):**
+
+| Refugio | Qué tiene | Para quién es |
+|---|---|---|
+| Bosque de rocas | El campo de alrededor (600) sembrado de piedras: 2 a 4 por celda en vez de 0 a 2, y el 60% son rocas | El que maneja: la ley te sigue sin elegir por dónde |
+| Río | El campo de alrededor limpio: cero obstáculos | El que tiene caballo: se galopa derecho, pero no hay contra qué hacerlos chocar |
+| Quebrada | La entrada mira de costado o casi del otro lado (100° a 170° de donde llegás) | El que tiene distancia: hay que rodear el paredón con ellos encima |
+
+**Medido con un piloto que va derecho al refugio (30 corridas por refugio,
+Criollo, 3 jinetes), en los últimos 600 de la llegada:**
+
+| Refugio | Choques míos | Choques de la ley | Segundos de la llegada | Llegadas |
+|---|---|---|---|---|
+| Bosque | 0,9 | **2,5** | 4,4 | 30/30 |
+| Río | 0 | 0,6 | 3,9 | 30/30 |
+| Quebrada | 0,4 | 2,4 | **6,3** | 26/30 (las otras 4 los perdió rodeando) |
+
+O sea: **en el bosque la ley choca casi tres veces más que vos**, que era
+exactamente lo que se buscaba, y la quebrada cuesta 2,4 segundos más que el
+río — con ellos tirándote, que es el precio.
+
+🧭 **La brújula ahora dice CUÁL es cuál** (una inicial: Q, R, B). Desde que
+cada refugio tiene su terreno, saber a cuál estás yendo es parte de elegir.
+
+Sin errores en 21.008 cuadros con teclas y mouse al azar (los dos caballos, de
+día y de noche, 1 a 5 jinetes). El cuadro cuesta **0,67 ms** (era 0,53: las
+piedras del bosque se pagan).
+
+**Lo que queda** *(y que Santi dejó anotado para después)*: que llegar a uno o
+a otro DEJE algo distinto —el río borrando el rastro, el bosque escondiéndote,
+la quebrada devolviéndote una bolsa—, y que la brújula no muestre los tres
+desde el arranque. Y las balas de los guardias, más rápidas y más lejos, van en
+la vuelta de la IA del asalto.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

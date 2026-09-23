@@ -64,16 +64,35 @@ export const HUIDA = {
    * distinta dirección. El camino es de verdad una elección: hacia cuál vas.
    */
   mundo: {
-    /** A qué distancia del punto donde saltaste nacen los destinos. */
-    distanciaMin: 3000,
-    distanciaMax: 4200,
+    /**
+     * 🎲 DÓNDE CAEN LOS TRES, SORTEADO DE VERDAD *(Santi: "deberíamos hacer que
+     * los puntos de llegada sean aleatorios sus ubicaciones, para que no
+     * siempre se elija uno y no otro")*.
+     *
+     * Antes salían en un abanico angosto delante tuyo y casi a la misma
+     * distancia (3.000-4.200): el del medio era siempre el obvio y elegir no
+     * existía. Ahora cada uno saca SU distancia, así que siempre hay uno cerca
+     * y uno lejos y cuál es cuál cambia en cada corrida. Con el Criollo (142
+     * de galope): 2.200 son unos 15 segundos, 3.500 unos 25 y 5.000 unos 35.
+     */
+    distanciaMin: 2200,
+    distanciaMax: 5000,
 
     /**
-     * Cuánto se separan entre sí, en grados. Con 50 los tres entran en el
-     * mismo cuarto del horizonte: se ven los tres desde el arranque y elegir
-     * es mirar, no adivinar.
+     * EL ABANICO donde pueden caer, en grados PARA CADA LADO de por donde
+     * venías huyendo. Con 120 uno puede quedarte al costado o un poco atrás:
+     * hay que mirar la brújula y decidir, no seguir derecho. El círculo entero
+     * (180) quedó afuera porque un refugio justo atrás te obliga a cruzar por
+     * el medio de la partida, y eso no es una decisión: es un castigo.
      */
-    separacionGrados: 50,
+    abanicoGrados: 120,
+
+    /**
+     * LO MÍNIMO QUE SE SEPARAN entre sí, en grados. El sorteo suelto a veces
+     * pega dos en el mismo rumbo, y ahí elegir vuelve a no existir. Con 70 los
+     * tres quedan siempre a rumbos distintos de verdad.
+     */
+    separacionGrados: 70,
 
     /** El tamaño de cada refugio y cuánto mide su entrada, en grados. */
     radio: 92,
@@ -84,13 +103,44 @@ export const HUIDA = {
      * estés pegado. La entrada hay que buscarla, y eso cuesta.
      */
     choquePared: 0.2,
+
+    /**
+     * 🎭 CADA REFUGIO, DISTINTO. Hasta acá los tres eran el mismo anillo con
+     * otra pintura: llegar a uno o a otro daba exactamente lo mismo, y si dan
+     * lo mismo, elegir es tirar una moneda. Cada uno tiene ahora su terreno:
+     *
+     *  - EL BOSQUE DE ROCAS está sembrado de piedras alrededor. Cuesta llegar
+     *    sin chocar, pero la ley te sigue: el que sabe entrar los deja
+     *    plantados contra una roca.
+     *  - EL RÍO tiene la llegada limpia y abierta. Se galopa derecho, pero no
+     *    hay nada con qué hacerlos chocar: llegás si tenés caballo, no maña.
+     *  - LA QUEBRADA esconde la entrada del otro lado: hay que rodearla con
+     *    ellos encima. Es la más barata de alcanzar y la más cara de entrar.
+     */
+    caracter: {
+      /** Hasta dónde llega el terreno propio de un refugio, en unidades. */
+      alrededor: 600,
+
+      /** Piedras por celda cerca del bosque (el campo normal tira 0 a 2). */
+      bosqueMin: 2,
+      bosqueMax: 4,
+
+      /** Y la mayoría son piedras, no yuyos: de cada 10, esta cantidad. */
+      bosqueRocas: 0.6,
+
+      /**
+       * Cuánto hay que rodear la quebrada, en grados desde donde llegás. 100
+       * es entrar por el costado; 170, casi por el otro lado.
+       */
+      quebradaRodeoMin: 100,
+      quebradaRodeoMax: 170,
+
+      /** Ningún obstáculo nace a menos de esto de la pared de un refugio. */
+      despejeRefugio: 40,
+    },
   },
 
   jugador: {
-    /**
-     * [SHIFT] frena: tu caballo baja a su `brakeSpeed` (85) y los jinetes se
-     * te vienen al lado. **Frenar es para pelear**.
-     */
     /**
      * CUÁNTO TARDA EN DOBLAR, en radianes por segundo. Galopás hacia donde
      * mirás y podés ir a cualquier rumbo; lo que no se puede es cambiarlo de

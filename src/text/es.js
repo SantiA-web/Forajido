@@ -237,6 +237,12 @@ export const T = {
     sinPlata: 'NO TE QUEDA NADA QUE SOLTAR',
     bolsas: (n) => (n === 1 ? 'soltaste 1 bolsa' : `soltaste ${n} bolsas`),
     recargando: 'RECARGANDO',
+    /**
+     * La inicial de cada refugio en la brújula. Desde que cada uno tiene su
+     * terreno (piedras en el bosque, campo limpio en el río, la entrada
+     * escondida en la quebrada), saber cuál es cuál es parte de elegir.
+     */
+    brujula: { quebrada: 'Q', rio: 'R', bosque: 'B' },
     seQuedo: 'SE QUEDÓ ATRÁS',
     aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
     atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,

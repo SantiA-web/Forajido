@@ -89,10 +89,12 @@ export const HUIDA = {
 
     /**
      * LO MÍNIMO QUE SE SEPARAN entre sí, en grados. El sorteo suelto a veces
-     * pega dos en el mismo rumbo, y ahí elegir vuelve a no existir. Con 70 los
-     * tres quedan siempre a rumbos distintos de verdad.
+     * pega dos en el mismo rumbo, y ahí elegir vuelve a no existir. Con dos
+     * refugios en el desierto se puede pedir más que con tres: 90 son un
+     * cuarto de vuelta entre uno y otro, así que nunca están "casi en la misma
+     * dirección" y siempre hay que decidir.
      */
-    separacionGrados: 70,
+    separacionGrados: 90,
 
     /** El tamaño de cada refugio y cuánto mide su entrada, en grados. */
     radio: 92,
@@ -149,6 +151,25 @@ export const HUIDA = {
 
       /** Ningún obstáculo nace a menos de esto de la pared de un refugio. */
       despejeRefugio: 40,
+    },
+
+    /**
+     * 🏆 LO QUE TE DA CADA REFUGIO *(Santi: "cada refugio otorga algo
+     * distinto... quebrada (te devuelve una bolsa), o bosque de piedras")*.
+     *
+     * Son DOS MONEDAS DISTINTAS, y por eso la elección no es "cuál queda más
+     * cerca":
+     *
+     *  - LA QUEBRADA te devuelve PLATA, ahora: una de las bolsas que soltaste
+     *    (el 10% del botín). Se paga rodeándola, que es lo que cuesta entrar.
+     *  - EL BOSQUE te saca PESO DE ENCIMA: los jinetes que tiraste en la huida
+     *    no los vio nadie, así que no te suben la recompensa (15 cada uno, ver
+     *    CONFIG.bounty.pesoGuardia). Santi eligió esta versión chica sobre la
+     *    de borrar la recompensa del asalto entero: "la A me parece exagerada".
+     */
+    premios: {
+      quebradaBolsas: 1,
+      bosqueTapaJinetes: true,
     },
   },
 

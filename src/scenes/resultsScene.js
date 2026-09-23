@@ -76,6 +76,15 @@ function buildPanel(s) {
     s.huida && s.huida.derribados > 0 ? row(T.results.huidaJinetes(s.huida.derribados), String(s.huida.derribados)) : '',
     s.huida && s.huida.fin === 'llegaste' && s.huida.lugar
       ? row(T.results.huidaQuebrada, T.results.huidaQuebradaSi(s.huida.lugar), true) : '',
+    /**
+     * Y LO QUE TE DIO ESE REFUGIO. La quebrada devuelve plata; el bosque, en
+     * cambio, se ve en la fila de la recompensa —lo que no subió—, así que acá
+     * se dice con cuánto se ahorró.
+     */
+    s.huida && s.huida.devueltas > 0
+      ? row(T.results.huidaPremioBolsa(s.huida.devueltas), `+$${s.huida.plata}`, true) : '',
+    s.huida && s.killsSinTestigos > 0 && s.bountyAhorrado > 0
+      ? row(T.results.huidaPremioBosque(s.killsSinTestigos), `−$${s.bountyAhorrado}`, true) : '',
     s.cleanBonus > 0 ? row(T.results.clean, `+$${s.cleanBonus}`, true) : '',
     s.rachaBonus > 0 ? row(T.results.racha(s.racha), `+$${s.rachaBonus}`, true) : '',
     s.rachaPerdida > 0 ? row(T.results.rachaPerdida(s.rachaPerdida), '', false, true) : '',

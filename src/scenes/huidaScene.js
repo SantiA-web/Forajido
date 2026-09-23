@@ -31,7 +31,7 @@ import { CONFIG } from '../data/config.js';
 import { HUIDA as H } from '../data/huida.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { caballoActual, HORSES, APROXIMACION as A } from '../data/horse.js';
-import { applyRaidResult, gameState } from '../state/gameState.js';
+import { applyRaidResult, recompensaTapada, gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
@@ -39,7 +39,8 @@ import { sembrarDesierto } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
 import {
-  DESTINOS, ACHATA, dibujarRefugio, dibujarDeLejos, chocaConElRefugio, adentroDelRefugio,
+  DESTINOS, refugiosDeLaRegion, ACHATA, dibujarRefugio, dibujarDeLejos,
+  chocaConElRefugio, adentroDelRefugio,
 } from '../world/destinos.js';
 
 /**
@@ -166,28 +167,29 @@ export function createHuidaScene(services) {
   }
 
   /**
-   * LOS TRES REFUGIOS, REPARTIDOS EN EL CAMPO *(Santi: "deberíamos hacer que
-   * los puntos de llegada sean aleatorios sus ubicaciones, para que no siempre
-   * se elija uno y no otro")*.
+   * LOS REFUGIOS DE LA REGIÓN, REPARTIDOS EN EL CAMPO *(Santi: "deberíamos
+   * hacer que los puntos de llegada sean aleatorios sus ubicaciones, para que
+   * no siempre se elija uno y no otro")*.
    *
-   * SE SORTEA TODO: cuál es cuál, a qué rumbo cae cada uno dentro de un
-   * abanico ancho (`abanicoGrados` para cada lado) y a qué distancia, cada uno
-   * por SU cuenta. Antes los tres salían casi a la misma distancia y en un
-   * abanico angosto adelante: el del medio era siempre el obvio.
+   * En el desierto son DOS —la quebrada y el bosque de rocas—; el río se fue a
+   * esperar su región *(Santi: "eliminaría el río y lo dejaría para otra
+   * región... hoy estamos en desierto")*, ver `refugiosDeLaRegion`.
    *
-   * Lo único que no queda librado al azar es que no caigan dos en el mismo
-   * rumbo. El reparto: se apartan las dos separaciones mínimas, se tiran tres
-   * cortes al azar en lo que sobra del abanico, se ordenan, y cada refugio se
-   * corre una separación más que el anterior. Los tres pueden terminar
-   * apilados de un costado o uno en cada punta —lo que salga—, pero nunca uno
-   * encima del otro.
+   * SE SORTEA TODO: cuál cae de qué lado, a qué rumbo dentro de un abanico
+   * ancho (`abanicoGrados` para cada lado) y a qué distancia, cada uno por SU
+   * cuenta. Lo único que no queda librado al azar es que no caigan dos en el
+   * mismo rumbo. El reparto: se apartan las separaciones mínimas, se tira un
+   * corte al azar por refugio en lo que sobra del abanico, se ordenan, y cada
+   * uno se corre una separación más que el anterior. Pueden terminar los dos
+   * de un costado o uno en cada punta —lo que salga—, pero nunca uno encima
+   * del otro. Sirve para dos, para tres o para los que haya.
    */
   function sembrarRefugios() {
     const M = H.mundo;
     const C = M.caracter;
     const grados = (g) => (g * Math.PI) / 180;
-    const ids = Object.keys(DESTINOS);
-    // Barajar los tres, para que no salga siempre el mismo del mismo lado.
+    const ids = refugiosDeLaRegion('desierto');
+    // Barajar, para que no salga siempre el mismo del mismo lado.
     for (let i = ids.length - 1; i > 0; i--) {
       const j = rng.int(0, i);
       [ids[i], ids[j]] = [ids[j], ids[i]];
@@ -195,9 +197,8 @@ export function createHuidaScene(services) {
 
     const abanico = grados(M.abanicoGrados) * 2;
     const sep = grados(M.separacionGrados);
-    const sobra = Math.max(0, abanico - sep * 2);
-    const cortes = [rng.range(0, sobra), rng.range(0, sobra), rng.range(0, sobra)]
-      .sort((a, b) => a - b);
+    const sobra = Math.max(0, abanico - sep * (ids.length - 1));
+    const cortes = ids.map(() => rng.range(0, sobra)).sort((a, b) => a - b);
 
     refugios = ids.map((id, i) => {
       const rumbo = -abanico / 2 + cortes[i] + sep * i;
@@ -208,8 +209,8 @@ export function createHuidaScene(services) {
       const llegada = Math.atan2(-y / PROFUNDIDAD, -x);
       /**
        * LA QUEBRADA ESCONDE LA ENTRADA: le cae de costado o casi del otro
-       * lado, así que hay que rodear el paredón con ellos encima. Los otros
-       * dos la tienen de frente, apenas corrida.
+       * lado, así que hay que rodear el paredón con ellos encima. Los demás la
+       * tienen de frente, apenas corrida.
        */
       const rodeo = id === 'quebrada'
         ? (rng.chance(0.5) ? 1 : -1) * rng.range(grados(C.quebradaRodeoMin), grados(C.quebradaRodeoMax))
@@ -719,19 +720,65 @@ export function createHuidaScene(services) {
     audio.play('escape');
   }
 
+  /**
+   * 🏆 LO QUE TE DA EL REFUGIO AL QUE LLEGASTE (ver `mundo.premios`). Son dos
+   * monedas distintas, así que elegir no es medir cuál queda más cerca:
+   *
+   *  - LA QUEBRADA te devuelve una bolsa de las que soltaste: plata, ahora.
+   *  - EL BOSQUE tapa a los jinetes que tiraste ahí: no los vio nadie, así que
+   *    no te suben la recompensa.
+   *
+   * Devuelve lo que hay que contarle a la pantalla de resultados.
+   */
+  function cobrarElPremio() {
+    const P = H.mundo.premios;
+    const premio = { devueltas: 0, plata: 0, tapados: 0 };
+    if (!refugioTomado || !fin || fin.como !== 'llegaste') return premio;
+
+    if (refugioTomado.tipo === 'quebrada' && P.quebradaBolsas > 0) {
+      premio.devueltas = Math.min(P.quebradaBolsas, soltadas);
+      // Lo que vale una bolsa es lo mismo que costó soltarla (ver soltarBolsa).
+      const bolsa = Math.max(1, Math.round(dineroInicial * H.bolsaFraccion));
+      premio.plata = Math.min(perdido, premio.devueltas * bolsa);
+    }
+    if (refugioTomado.tipo === 'bosque' && P.bosqueTapaJinetes) {
+      premio.tapados = derribados;
+    }
+    return premio;
+  }
+
   function terminar() {
-    summary.money = Math.max(0, (summary.money || 0) - perdido);
+    /**
+     * El premio NO se descuenta de `perdido`: la pantalla de resultados cuenta
+     * lo que soltaste por un lado y lo que rescataste por el otro, y así la
+     * suma se lee sola (soltaste 3 = −$300, rescataste 1 = +$100). Lo único
+     * que va neto es la plata con la que te vas.
+     */
+    const premio = cobrarElPremio();
+    summary.money = Math.max(0, (summary.money || 0) - perdido + premio.plata);
     summary.huida = {
       jinetes: jinetes.length, derribados, bolsas: soltadas, perdido,
       // Cómo terminó: 'llegaste' (a un refugio), 'limpio' (no quedó ninguno) o
       // 'perdidos' (los dejaste atrás).
       fin: fin ? fin.como : 'perdidos',
       lugar: refugioTomado ? refugioTomado.nombre : null,
+      tipo: refugioTomado ? refugioTomado.tipo : null,
+      devueltas: premio.devueltas, plata: premio.plata,
     };
     // Un jinete derribado acá es un jinete derribado: cuenta como en el asalto.
     summary.kills = (summary.kills || 0) + derribados;
+    /**
+     * Los que tiraste adentro del bosque no le suman a la recompensa: nadie
+     * vio dónde terminaron. Lo descuenta `bountyDelta` (state/gameState.js), y
+     * sigue contando como muerte para todo lo demás.
+     */
+    summary.killsSinTestigos = premio.tapados;
     // Una prueba no suma plata, ni recompensa, ni asaltos: sólo muestra cómo te fue.
-    if (prueba) summary.prueba = `el ${caballo.name} y el ${arma.name}`;
+    if (prueba) {
+      summary.prueba = `el ${caballo.name} y el ${arma.name}`;
+      // La prueba no aplica nada, pero el premio del bosque se muestra igual.
+      summary.bountyAhorrado = recompensaTapada(summary);
+    }
     else applyRaidResult(summary);
     scenes.goTo('results', summary);
   }
@@ -1087,13 +1134,24 @@ export function createHuidaScene(services) {
       const dist = Math.hypot(dx, dy);
       const a = Math.atan2(dy, dx);
       const x = vista.w / 2 + Math.cos(a) * vista.w * 0.44;
-      const y = vista.h / 2 + Math.sin(a) * vista.h * 0.42;
+      /**
+       * Abajo se sube: ahí están las dos líneas de las teclas, y un refugio
+       * al sur dejaba el número escrito encima del texto.
+       */
+      const y = Math.min(vista.h - 30, vista.h / 2 + Math.sin(a) * vista.h * 0.42);
       const color = dist < 500 ? colors.doorGlow : colors.textDim;
       r.rect(x - 2, y - 2, 5, 5, color);
       r.rect(x + Math.cos(a) * 5 - 1, y + Math.sin(a) * 5 - 1, 3, 3, color);
-      // La inicial: cuál es cuál importa, porque cada uno tiene su terreno.
-      r.text(T.huida.brujula[d.tipo] || '?', x, y - 6, color);
-      r.text(`${Math.round(dist / 10)}`, x, y + 10, color);
+      /**
+       * La inicial (cuál es cuál importa, porque cada uno tiene su terreno) y
+       * lo que falta. Abajo de todo los dos se escriben ARRIBA de la marca:
+       * ahí está el cartel de las teclas, y el número le caía encima.
+       */
+      const abajo = y > vista.h - 42;
+      const letra = T.huida.brujula[d.tipo] || '?';
+      const falta = `${Math.round(dist / 10)}`;
+      r.text(letra, x, abajo ? y - 16 : y - 6, color);
+      r.text(falta, x, abajo ? y - 6 : y + 10, color);
     }
   }
 

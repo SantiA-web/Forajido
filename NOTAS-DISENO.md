@@ -13803,7 +13803,7 @@ bien:
 | El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
 | El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
 | El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
-| Los tres refugios | `world/destinos.js` | Anillos de bloques de roca, de agua y de peñascos, con su sombra |
+| Los dos refugios del desierto | `world/destinos.js` | Anillos de bloques de roca y de peñascos, con su sombra (el río espera su región) |
 | La brújula de la huida | `huidaScene.js`, `dibujarBrujula` | Un cuadradito y un número por refugio |
 | El caballo del jinete caído | `huidaScene.js`, `pegarle` | Queda el cuerpo en el suelo y el caballo desaparece; debería seguir galopando solo |
 | Tirar para atrás | `huidaScene.js`, `dibujarme` | El jinete no se da vuelta: sólo crece el círculo. Falta el torso girado |
@@ -14476,6 +14476,51 @@ dibujo.
 Sin errores en 19.493 cuadros con teclas y mouse al azar. El cuadro cuesta
 **0,96 ms** en el campo normal y **1,61 ms** adentro del bosque (con 596
 piedras en la lista); el presupuesto a 60 cuadros por segundo es 16,7.
+
+#### 🔁 Decimoquinta vuelta: dos refugios, y cada uno te da algo
+
+*(Santi: "cada refugio otorga algo distinto, pero eliminaría el río y lo
+dejaría para otra región —región pradera o bosque, hoy estamos en desierto—, y
+dejaría dos opciones: quebrada (te devuelve una bolsa), o bosque de piedras".
+Del premio del bosque eligió la versión chica: "la A me parece exagerada")*
+
+**El río se fue a esperar su región.** No se borró nada: `DESTINOS` ahora
+guarda a qué región pertenece cada refugio y `refugiosDeLaRegion('desierto')`
+devuelve los dos que van hoy. El anillo de agua, el vado y su silueta de lejos
+quedan escritos para cuando la huida pase por pradera.
+
+**Con dos, el sorteo pide más aire:** la separación mínima sube de 70° a
+**90°** (un cuarto de vuelta entre uno y otro). Medido en 300 corridas: se
+separan 139° en promedio, las distancias van de 2.210 a 4.994, y cada uno es
+el más cercano exactamente la mitad de las veces.
+
+**Y cada uno paga en una moneda distinta**, que es lo que hace que elegir no
+sea medir cuál queda más cerca:
+
+| Refugio | Qué cuesta | Qué te da |
+|---|---|---|
+| **Quebrada** | Rodear el paredón con ellos encima | **Una bolsa de vuelta** (el 10% del botín) |
+| **Bosque** | Cruzar 900 de piedras (17 te pasan al lado) | **Tapa a los jinetes que tiraste ahí**: no suben tu recompensa (15 cada uno) |
+
+**Cómo está hecho el premio del bosque.** El jinete tirado sigue contando como
+muerto para todo lo demás —la pantalla de resultados, el honor, las
+estadísticas—; lo único que no pasa es que le suba el precio a tu cabeza. En el
+código es `summary.killsSinTestigos`, y la cuenta vive en un solo lugar
+(`recompensaTapada`, en state/gameState.js), así que el número que muestra la
+pantalla y el que se descuenta de verdad son el mismo. Sin alarma no hay
+recompensa por nadie, así que tampoco hay nada que tapar.
+
+**Y la plata se cuenta en bruto.** La bolsa rescatada NO se le resta a lo que
+soltaste: la pantalla dice "soltaste 3 bolsas −$300" y abajo "rescataste 1
++$100", y la suma se lee sola. Lo único neto es la plata con la que te vas.
+
+🧭 La brújula, abajo de todo, escribe la inicial y la distancia **arriba** de
+la marca: un refugio al sur dejaba el número encima del cartel de las teclas.
+
+Probado: llegar a la quebrada con bolsas soltadas devuelve una y la plata
+final cierra; llegar al bosque con un jinete derribado deja la recompensa en
+15 en vez de 30 y lo dice en los resultados. Sin errores en 16.219 cuadros con
+teclas y mouse al azar, a 0,88 ms por cuadro.
 
 #### 🧪 El atajo para probarla
 

@@ -602,6 +602,13 @@ export const T = {
     huidaJinetes: (n) => (n === 1 ? 'Jinete derribado en la huida' : 'Jinetes derribados en la huida'),
     huidaQuebrada: 'Cómo te los sacaste',
     huidaQuebradaSi: (lugar) => `te metiste en ${lugar.toLowerCase()}`,
+    /** Los premios de cada refugio (ver data/huida.js, `mundo.premios`). */
+    huidaPremioBolsa: (n) => (n === 1
+      ? 'Bolsa que rescataste en la quebrada'
+      : `Bolsas que rescataste en la quebrada (${n})`),
+    huidaPremioBosque: (n) => (n === 1
+      ? 'El bosque tapó a tu muerto'
+      : `El bosque tapó a tus ${n} muertos`),
     lost: 'Botín que dejaste',
     kills: 'Guardias muertos',
     civilians: 'Civiles muertos',

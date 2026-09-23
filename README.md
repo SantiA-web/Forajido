@@ -1780,34 +1780,37 @@ Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 a donde quieras —norte, sur, este u oeste—, con la cámara siguiéndote. El
 caballo tarda en doblar, así que el rumbo es una decisión y no un botón.
 
-**Hay tres refugios repartidos en el campo**, cada uno en su lugar y a su
-distancia: **la quebrada, el río y el bosque de rocas**. Cada uno es un anillo
-—de roca, de agua o de peñascos— con **una entrada**: meterte adentro termina
-la huida, pero la entrada hay que encontrarla, y si le pegás al anillo te
-clavás contra él. La ley también choca. Dónde están y cuánto falta lo dice la
-brújula del borde de la pantalla, con la inicial de cada uno (Q, R, B).
+**Hay dos refugios repartidos en el campo del desierto**: **la quebrada** y
+**el bosque de rocas**. Cada uno es un anillo —de roca o de peñascos— con
+**una entrada**: meterte adentro termina la huida, pero la entrada hay que
+encontrarla, y si le pegás al anillo te clavás contra él. La ley también
+choca. Dónde están y cuánto falta lo dice la brújula del borde de la pantalla,
+con la inicial de cada uno (Q, B). *(El río existe y está escrito entero, pero
+espera su región: en el desierto no va.)*
 
 **Y dónde caen se sortea de verdad.** Cada uno saca su rumbo dentro de un
 abanico de 120° para cada lado —uno puede quedarte al costado o un poco
-atrás— y SU distancia, entre 2.200 y 5.000. Entre el más cerca y el más lejos
-hay 1.400 de diferencia promedio, o sea diez segundos de galope, y sólo una de
-cada cuatro veces el más cercano es además el que tenés de frente. Lo único
-que no queda al azar es que no caigan dos en el mismo rumbo: se separan 70° de
-mínima.
+atrás— y SU distancia, entre 2.200 y 5.000. Nunca caen a menos de 90° uno del
+otro, así que nunca están "casi en la misma dirección": medido en 300
+corridas, se separan 139° en promedio y cada uno es el más cercano la mitad de
+las veces.
 
-**Y cada refugio tiene su terreno**, porque si los tres son iguales elegir es
-tirar una moneda:
+**Cada refugio tiene su terreno Y te da algo distinto**, porque si los dos son
+iguales elegir es tirar una moneda:
 
 - **El bosque de rocas** es un bosque de verdad: 900 unidades de campo sembrado
   de piedras, una cada 43. Los últimos ocho segundos son esquivar y esquivar
   —pasan 17 piedras al lado tuyo— pero la ley te sigue sin elegir por dónde:
-  vos te comés 4 y **ellos 13**. Por eso es el refugio donde menos plata
-  perdés, aunque sea el más difícil de cruzar.
-- **El río** tiene la llegada limpia y abierta: ahí no choca nadie, ni vos ni
-  ellos. Llegás si tenés caballo, no maña.
+  vos te comés 4 y **ellos 13**. Y meterte ahí **tapa a los jinetes que tiraste
+  en la huida**: nadie vio dónde terminaron, así que no te suben la recompensa
+  (son 15 cada uno).
 - **La quebrada** esconde la entrada de costado o casi del otro lado: hay que
-  rodear el paredón con ellos encima. Son 2,4 segundos más que el río en los
-  últimos 600.
+  rodear el paredón con ellos encima, y eso cuesta un par de segundos y algún
+  balazo. A cambio, **te devuelve una de las bolsas que soltaste** (el 10% del
+  botín).
+
+O sea: **la quebrada te da plata ahora y el bosque te saca peso de encima.**
+Son dos monedas distintas, y por eso elegir no es medir cuál queda más cerca.
 
 **Gana lo que pase primero:** los perdés, los tirás a todos, o llegás a un
 refugio con los que queden encima. Con el Criollo llegar son unos 27

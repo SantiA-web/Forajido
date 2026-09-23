@@ -303,13 +303,35 @@ export function faltaParaLaHorca(bounty = gameState.bounty) {
  * te vayas del tren antes, así que amenazar ya casi siempre prende la alarma
  * por su cuenta.
  */
+/**
+ * CUÁNTA RECOMPENSA TE TAPÓ EL BOSQUE. Vive acá, al lado de la fórmula que la
+ * usa, para que el número que muestra la pantalla de resultados y el que se le
+ * descuenta de verdad a tu cabeza sean el mismo y salgan del mismo lugar.
+ *
+ * Sin alarma no hay recompensa por nadie, así que tampoco hay nada que tapar.
+ */
+export function recompensaTapada(summary) {
+  if (!summary.alarm) return 0;
+  const tapados = Math.min(summary.kills || 0, summary.killsSinTestigos || 0);
+  return tapados * CONFIG.bounty.pesoGuardia;
+}
+
 function bountyDelta(summary) {
   const { pesoGuardia, pesoCivil, pesoAmenaza, capturaFlat } = CONFIG.bounty;
   let delta = 0;
 
   if (summary.alarm) {
+    /**
+     * LOS QUE NADIE VIO NO SE PAGAN *(premio del bosque de rocas en la huida,
+     * ver data/huida.js `mundo.premios`)*. Meterte en el bosque con jinetes
+     * tirados atrás es meterte donde no queda testigo: siguen contando como
+     * muertes para todo lo demás —los resultados, el honor—, pero no le suben
+     * el precio a tu cabeza.
+     */
+    summary.bountyAhorrado = recompensaTapada(summary);
+    const vistos = Math.max(0, summary.kills - (summary.killsSinTestigos || 0));
     delta += (summary.civilians || 0) * pesoCivil
-      + summary.kills * pesoGuardia
+      + vistos * pesoGuardia
       + (summary.amenazados || 0) * pesoAmenaza;
   }
   if (summary.outcome !== 'escaped') {

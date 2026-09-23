@@ -19,11 +19,33 @@
 
 import { escalarColor } from './trenTresCuartos.js';
 
+/**
+ * 🗺️ CADA REFUGIO ES DE SU REGIÓN *(Santi: "eliminaría el río y lo dejaría
+ * para otra región —región pradera o bosque—, hoy estamos en desierto")*.
+ *
+ * El río no se borró: quedó esperando su región. Cuando la huida pase por
+ * pradera, `refugiosDeLaRegion('pradera')` lo devuelve y todo lo demás —el
+ * anillo, el vado, el dibujo de lejos— ya está escrito.
+ */
 export const DESTINOS = {
-  quebrada: { id: 'quebrada', nombre: 'LA QUEBRADA', cartel: '¡ADENTRO DE LA QUEBRADA!' },
-  rio: { id: 'rio', nombre: 'EL RÍO', cartel: '¡CRUZASTE EL RÍO!' },
-  bosque: { id: 'bosque', nombre: 'EL BOSQUE DE ROCAS', cartel: '¡ADENTRO DEL BOSQUE DE ROCAS!' },
+  quebrada: {
+    id: 'quebrada', region: 'desierto',
+    nombre: 'LA QUEBRADA', cartel: '¡ADENTRO DE LA QUEBRADA!',
+  },
+  bosque: {
+    id: 'bosque', region: 'desierto',
+    nombre: 'EL BOSQUE DE ROCAS', cartel: '¡ADENTRO DEL BOSQUE DE ROCAS!',
+  },
+  rio: {
+    id: 'rio', region: 'pradera',
+    nombre: 'EL RÍO', cartel: '¡CRUZASTE EL RÍO!',
+  },
 };
+
+/** Los refugios que pueden salir en esta región. */
+export function refugiosDeLaRegion(region = 'desierto') {
+  return Object.keys(DESTINOS).filter((id) => DESTINOS[id].region === region);
+}
 
 /** El grosor de la pared de un refugio, hacia adentro del radio. */
 export const PARED = 26;

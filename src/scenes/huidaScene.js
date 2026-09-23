@@ -257,7 +257,8 @@ export function createHuidaScene(services) {
       yo.choque -= dt;
     } else {
       const tuerce = yo.desvio > 0 ? yo.desvioDir * J.atras.desvioVelocidad : 0;
-      yo.y = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + (dy * J.velocidadY * manejo + tuerce) * dt));
+      yo.y = meterEnLaBoca(Math.max(H.cielo + 22,
+        Math.min(renderer.height - 12, yo.y + (dy * J.velocidadY * manejo + tuerce) * dt)));
       const ob = chocaCon(yo.x, yo.y);
       if (ob) {
         ob.golpeado = true;
@@ -368,6 +369,12 @@ export function createHuidaScene(services) {
       j.gallop += dt;
       j.hitFlash = Math.max(0, j.hitFlash - dt);
       if (!j.alive || j.perdido) continue;
+      /**
+       * NADIE ADENTRO DE LA ROCA, ESTÉ HACIENDO LO QUE ESTÉ HACIENDO. Va acá
+       * arriba de todo y no junto al movimiento: apuntando y chocado el jinete
+       * se saltea el movimiento, y así quedaba uno clavado dentro de la pared.
+       */
+      j.y = meterEnLaBoca(j.y);
 
       // Al final se quedan atrás del todo.
       if (yendose) {
@@ -409,6 +416,8 @@ export function createHuidaScene(services) {
       const ondula = Math.sin(tiempo * 1.3 + j.fase) * 8;
       let ty = Math.max(H.cielo + 22, Math.min(renderer.height - 12, yo.y + j.dy + ondula));
       ty = esquivar(j, ty);
+      // Y si la quebrada ya se está cerrando, todos por el paso.
+      ty = meterEnLaBoca(ty);
       /**
        * AL COSTADO TUYO DEJAN LUGAR: si frenás se te ponen a la par, y a la par
        * no se te pueden subir encima. Si su carril queda pegado a vos (por el
@@ -471,9 +480,14 @@ export function createHuidaScene(services) {
   function sembrarObstaculos() {
     const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
     while (proximoObstaculo < suelo + renderer.width + 40) {
+      // Adentro de la quebrada no crece nada: los que nacen ahora nacen en el
+      // paso, no en la roca.
+      const b = laBoca();
       obstaculos.push({
         gx: proximoObstaculo + rng.range(-30, 30),
-        y: rng.range(H.cielo + 26, renderer.height - 14),
+        y: b
+          ? rng.range(b.centro - b.medio + 8, b.centro + b.medio - 8)
+          : rng.range(H.cielo + 26, renderer.height - 14),
         tipo: tipos[rng.int(0, tipos.length - 1)],
         golpeado: false,
       });
@@ -488,8 +502,10 @@ export function createHuidaScene(services) {
 
   /** La misma cuenta del galope: a menos de radio + 6 del centro, chocaste. */
   function chocaCon(x, y) {
+    const b = laBoca();
     for (const ob of obstaculos) {
       if (ob.golpeado) continue;
+      if (b && (ob.y < b.centro - b.medio || ob.y > b.centro + b.medio)) continue;
       const ox = ob.gx - suelo;
       const radio = radioDe(ob);
       if (Math.abs(ox - x) > radio + 14) continue;
@@ -686,10 +702,13 @@ export function createHuidaScene(services) {
     if (temblor > 0) r.ctx.translate(rng.range(-2.5, 2.5), rng.range(-2.5, 2.5));
 
     r.clear(colorDelSuelo(dia));
+    const boca = laBoca();
     sembrarDesierto(r, {
       x0: 0, y0: H.cielo, x1: r.width, y1: r.height + 10,
       desplaza: suelo, noche: !dia, colores: C,
       grandes: () => false,
+      // Adentro de la quebrada el suelo es roca: el pasto queda en el paso.
+      saltar: boca ? (wx, wy) => wy < boca.centro - boca.medio || wy > boca.centro + boca.medio : null,
     });
 
     // Los hitos del camino van entre el suelo y el cielo: están lejos.
@@ -725,9 +744,12 @@ export function createHuidaScene(services) {
 
     // Por dónde tienen los pies: el de más abajo tapa al de más arriba.
     const cosas = [];
+    const b = laBoca();
     for (const ob of obstaculos) {
       const ox = ob.gx - suelo;
       if (ox < -20 || ox > r.width + 20) continue;
+      // Los que quedaron abajo de la pared ya no existen: son roca.
+      if (b && (ob.y < b.centro - b.medio || ob.y > b.centro + b.medio)) continue;
       cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ox, radioDe(ob), !dia) });
     }
     for (const j of jinetes) {
@@ -767,6 +789,34 @@ export function createHuidaScene(services) {
    * asalto apunta siempre hacia el tren).
    */
   // -------------------------------------------------------------- el camino
+
+  /**
+   * LA BOCA DE LA QUEBRADA, en números. La usan el dibujo Y el movimiento, así
+   * que la pared que ves es la pared que te frena — la regla de siempre en
+   * este juego.
+   *
+   * Devuelve `null` hasta que la boca empieza; después, el centro del paso
+   * (fijo, en el medio del campo) y su medio ancho, que se va cerrando.
+   */
+  function laBoca() {
+    const C = H.camino;
+    const t = (suelo / C.largo - C.bocaDesde) / (1 - C.bocaDesde);
+    if (t <= 0) return null;
+    const cerrado = Math.min(1, t);
+    const arriba = H.cielo + 22;
+    const abajo = renderer.height - 12;
+    const centro = (arriba + abajo) / 2;
+    // De todo el campo abierto al pasillo, de a poco.
+    const medio = (abajo - arriba) / 2 - cerrado * ((abajo - arriba) / 2 - C.pasillo);
+    return { centro, medio, cerrado, arriba, abajo };
+  }
+
+  /** Mete a un caballo en el paso: nadie atraviesa la roca. */
+  function meterEnLaBoca(y) {
+    const b = laBoca();
+    if (!b) return y;
+    return Math.max(b.centro - b.medio, Math.min(b.centro + b.medio, y));
+  }
 
   /**
    * EL SUELO CAMBIA A MEDIDA QUE AVANZÁS: arena al salir de la vía, pedregal
@@ -827,63 +877,167 @@ export function createHuidaScene(services) {
   }
 
   /**
-   * LA QUEBRADA, CRECIENDO EN EL HORIZONTE. Es el final del camino: dos
-   * paredes de roca con un tajo en el medio. Se la ve desde lejos y crece
-   * mientras te acercás, así que **la quebrada ES el reloj**: no hace falta
-   * ningún número para saber cuánto falta.
+   * LA QUEBRADA. Es el final del camino, y tiene dos momentos:
    *
-   * ⚠️ SIMPLE (por vestir): dos masas de roca y su sombra.
+   *  1. **De lejos**, dos paredones apoyados en el horizonte con un tajo negro
+   *     en el medio. Crecen mientras te acercás: la quebrada ES el reloj.
+   *  2. **De cerca**, la boca: las paredes bajan y suben hasta dejar sólo el
+   *     paso, que está FIJO en el medio del campo (ver `laBoca`) — o entrás
+   *     por ahí, o te comés la roca.
+   *
+   * 🔁 SEGUNDA VUELTA DEL DIBUJO *(Santi: "la quebrada no parece una quebrada.
+   * Pensé que se estaba bugueando todo. Es una lámina gris sin sombras ni
+   * profundidad")*. Lo que le faltaba, y que ahora tiene:
+   *
+   *  - **Borde de arriba quebrado**, no una línea recta: la roca no tiene
+   *     escuadra. Sale de `revolver`, así que es siempre el mismo borde y no
+   *     titila.
+   *  - **Capas**: cada paredón son tres bandas de tono (la de arriba al sol,
+   *     la del medio, y el pie en sombra), más vetas verticales cada pocas
+   *     unidades.
+   *  - **Profundidad**: pegado al tajo la roca se oscurece, porque esa cara ya
+   *     está adentro de la grieta y no le da el sol.
+   *  - **Sombra en el suelo**, al pie de cada pared, y el suelo del paso más
+   *     oscuro: estás entrando en un lugar sin sol.
    */
   function dibujarQuebrada(r, dia) {
     const C = H.camino;
     const t = (suelo / C.largo - C.quebradaDesde) / (1 - C.quebradaDesde);
     if (t <= 0) return;
     const cerca = Math.min(1, t);
-    const c = (hex) => (dia ? hex : escalarColor(hex, 0.3));
+    // De noche se apaga menos que el resto: si no, la pared desaparece y el
+    // paso deja de leerse (probado con 0,3 y no se veía nada).
+    const c = (hex) => (dia ? hex : escalarColor(hex, 0.55));
 
-    /**
-     * 🔁 PRIMERO ERAN DOS PAREDES QUE APARECÍAN AL COSTADO DEL JUGADOR, y se
-     * veían como un muro plantado al lado de los caballos: no tenían dónde
-     * apoyarse, así que no se leían como algo que está ALLÁ. Ahora:
-     *
-     *  1. Hasta el 80% del tramo son **dos mesetas apoyadas en el horizonte**,
-     *     con un tajo oscuro en el medio. Crecen despacio: eso es el reloj.
-     *  2. En el último 20% **se te vienen encima**: bajan desde arriba y suben
-     *     desde abajo, dejando un pasillo a tu altura, y el mundo se va
-     *     metiendo en la sombra de la quebrada.
-     */
+    // --- 1. De lejos: dos paredones en el horizonte ---
     const base = H.cielo + 1;
     const alto = 4 + cerca * cerca * 46;
-    const ancho = 26 + cerca * 90;
+    const ancho = 26 + cerca * 110;
     const x0 = Math.round(r.width * 0.58 - ancho / 2 + (1 - cerca) * 40);
-    const tajo = Math.max(5, 16 - cerca * 9);
+    const tajo = Math.max(6, 18 - cerca * 10);
+    const mitad = (ancho - tajo) / 2;
+    paredon(r, c, x0, base, mitad, alto, 1);
+    paredon(r, c, x0 + mitad + tajo, base, mitad, alto, -1);
+    // El tajo es sombra, no cielo: es lo que hay ENTRE las dos paredes.
+    r.rect(x0 + mitad, base - alto * 0.82, tajo, alto * 0.82, c('#241d18'));
+    r.rect(x0 + mitad, base - 3, tajo, 3, c('#171310'));
 
-    const meseta = (mx, mw) => {
-      r.rect(mx, base - alto, mw, alto, c('#6b5c4c'));
-      r.rect(mx, base - alto, mw, 2, c('#8a7a66'));
-      r.rect(mx + 2, base - alto + 4, mw - 4, 1, c('#584a3c'));
-      r.rect(mx, base - 2, mw, 2, c('#463a2e'));
-    };
-    meseta(x0, (ancho - tajo) / 2);
-    meseta(x0 + (ancho + tajo) / 2, (ancho - tajo) / 2);
-    // El tajo: lo que hay entre las dos paredes es sombra, no cielo.
-    r.rect(x0 + (ancho - tajo) / 2, base - alto * 0.8, tajo, alto * 0.8, c('#2f2721'));
+    // --- 2. De cerca: la boca, que es la que te frena ---
+    const b = laBoca();
+    if (!b) return;
+    const y0 = b.centro - b.medio;
+    const y1 = b.centro + b.medio;
 
-    // --- Y en el último tramo, la boca te traga ---
-    const entrando = Math.max(0, (cerca - 0.8) / 0.2);
-    if (entrando <= 0) return;
-    const pasillo = 30 + (1 - entrando) * 60;
-    const avance = entrando * r.width * 1.3;
-    const bx = r.width - avance;
-    const pared = (y0, y1) => {
-      if (y1 <= y0) return;
-      r.rect(bx, y0, r.width - bx + 2, y1 - y0, c('#6b5c4c'));
-      r.rect(bx, y0, 2, y1 - y0, c('#8a7a66'));
-    };
-    pared(0, yo.y - pasillo);
-    pared(yo.y + pasillo, r.height);
-    // La sombra de adentro, que crece hasta tragarse la pantalla al entrar.
-    r.tinte('#1a1410', entrando * 0.35);
+    // La sombra que la pared tira sobre el suelo del paso.
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.3;
+    r.rect(0, y0, r.width, 5, '#000');
+    r.rect(0, y1 - 4, r.width, 4, '#000');
+    r.ctx.restore();
+
+    paredDeLaBoca(r, c, 0, y0, r.width, 1);
+    paredDeLaBoca(r, c, y1, r.height, r.width, -1);
+    // Adentro no hay sol.
+    r.tinte('#1a1410', b.cerrado * 0.3);
+  }
+
+  /**
+   * UN PAREDÓN VISTO DE LEJOS: apoyado en `base`, con el borde de arriba
+   * quebrado, tres capas de tono y vetas. `haciaElTajo` dice de qué lado está
+   * la grieta, para oscurecer esa cara.
+   */
+  function paredon(r, c, x, base, ancho, alto, haciaElTajo) {
+    if (ancho <= 1 || alto <= 1) return;
+    for (let i = 0; i < ancho; i += 2) {
+      // El borde de arriba, quebrado pero siempre igual (ver `revolver`).
+      const dientes = (revolver(Math.round(x) + i * 7) % 5) - 2;
+      const h = Math.max(2, alto + dientes);
+      const cima = base - h;
+      // Tres capas: sol arriba, cuerpo, pie en sombra.
+      r.rect(x + i, cima, 2, 2, c('#9a8a73'));
+      r.rect(x + i, cima + 2, 2, h * 0.45, c('#7a6b58'));
+      r.rect(x + i, cima + 2 + h * 0.45, 2, h, c('#5d5044'));
+      // Las vetas: una de cada cinco columnas va más oscura.
+      if ((revolver(Math.round(x) + i) % 5) === 0) {
+        r.rect(x + i, cima + 3, 1, h * 0.8, c('#4b4038'));
+      }
+      // La cara que da al tajo está adentro de la grieta: sin sol.
+      const alTajo = haciaElTajo > 0 ? i > ancho - 8 : i < 8;
+      if (alTajo) {
+        r.ctx.save();
+        r.ctx.globalAlpha = 0.45;
+        r.rect(x + i, cima, 2, h, '#201914');
+        r.ctx.restore();
+      }
+    }
+  }
+
+  /**
+   * UNA PARED DE LA BOCA, ya encima tuyo: ocupa toda la franja desde el borde
+   * de la pantalla hasta el paso. El canto que da al paso lleva la luz, y la
+   * roca se va a la sombra hacia adentro.
+   */
+  function paredDeLaBoca(r, c, desde, hasta, ancho, haciaElPaso) {
+    if (hasta - desde <= 0) return;
+    const alto = hasta - desde;
+    const canto = haciaElPaso > 0 ? hasta : desde;
+    const hacia = (d) => canto - haciaElPaso * d;
+
+    // El cuerpo de la roca, y más oscura cuanto más adentro (lejos del paso).
+    r.rect(0, desde, ancho, alto, c('#6a5a4a'));
+    for (let k = 0; k < 6; k++) {
+      r.ctx.save();
+      r.ctx.globalAlpha = 0.1;
+      const y = hacia(alto * (k + 1) / 6);
+      r.rect(0, Math.min(y, hacia(alto)), ancho, Math.abs(alto - alto * (k + 1) / 6) + 1, '#14100c');
+      r.ctx.restore();
+    }
+
+    /**
+     * LOS BLOQUES. La roca de una quebrada está partida en bloques grandes,
+     * no es una plancha: cada uno con su tono, su junta oscura y su canto
+     * iluminado arriba. Se sortean con `revolver` sobre la posición REAL en el
+     * suelo, así que desfilan con el mundo en vez de quedarse pegados a la
+     * pantalla.
+     */
+    const desplaza = Math.round(suelo) % 24;
+    for (let bx = -24; bx < ancho + 24; bx += 24) {
+      const x = bx - desplaza;
+      const semilla = Math.round((suelo + bx) / 24);
+      for (let capa = 0; capa < 4; capa++) {
+        const h = alto / 4;
+        const y = Math.min(hacia(h * capa), hacia(h * (capa + 1)));
+        const s = revolver(semilla * 31 + capa * 7 + (haciaElPaso > 0 ? 0 : 999));
+        const tonos = ['#6f5f4d', '#63543f', '#5a4c3d', '#75664f'];
+        r.rect(x, y, 24, h, c(tonos[s % 4]));
+        // La junta entre bloques, y el canto que agarra luz.
+        r.rect(x, y, 24, 1, c('#463a2e'));
+        r.rect(x, y + 1, 24 - (s % 7), 1, c('#8a7a63'));
+        r.rect(x + 24 - 1, y, 1, h, c('#463a2e'));
+        // Una grieta cada tanto.
+        if (s % 6 === 0) r.rect(x + 6 + (s % 9), y + 2, 1, h - 4, c('#3a2f26'));
+      }
+    }
+
+    // El canto del paso: la línea que agarra el sol, y su sombra abajo.
+    const borde = haciaElPaso > 0 ? hasta - 3 : desde;
+    r.rect(0, borde, ancho, 2, c('#a08e74'));
+    r.rect(0, haciaElPaso > 0 ? borde + 2 : borde + 2, ancho, 1, c('#bfab8c'));
+
+    /**
+     * PIEDRAS SUELTAS AL PIE, sobre el suelo del paso: es lo que hace que la
+     * pared se APOYE en el piso en vez de estar recortada sobre él.
+     */
+    for (let px = -20; px < ancho + 20; px += 20) {
+      const x = px - (Math.round(suelo) % 20);
+      const s = revolver(Math.round((suelo + px) / 20) * 17 + (haciaElPaso > 0 ? 3 : 8));
+      if (s % 3 !== 0) continue;
+      const w = 5 + (s % 5);
+      const alt = 3 + (s % 4);
+      const y = haciaElPaso > 0 ? hasta - 1 : desde - alt + 1;
+      r.rect(x, y, w, alt, c('#5a4c3d'));
+      r.rect(x, y, w, 1, c('#83725c'));
+    }
   }
 
   /**
@@ -1021,4 +1175,15 @@ export function createHuidaScene(services) {
   }
 
   return { enter, exit, update, render };
+}
+
+/**
+ * Un entero revuelto a partir de otro, siempre el mismo para el mismo número:
+ * para que la roca de la quebrada tenga su forma quebrada sin guardar una
+ * lista y sin titilar. Es el mismo de rideScene y campScene.
+ */
+function revolver(n) {
+  let t = (n * 374761393 + 668265263) | 0;
+  t = Math.imul(t ^ (t >>> 13), 1274126177);
+  return (t ^ (t >>> 16)) >>> 0;
 }

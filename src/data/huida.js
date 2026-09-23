@@ -69,6 +69,15 @@ export const HUIDA = {
      */
     quebradaDesde: 0.62,
 
+    /**
+     * LA BOCA DE LA QUEBRADA. Desde `bocaDesde` del camino, las paredes se
+     * cierran y el campo se angosta hasta `pasillo`: **el paso queda fijo en
+     * el medio**, y el que no se meta ahí se come la roca. Antes el tajo te
+     * seguía a vos, así que no bloqueaba nada y los jinetes la atravesaban.
+     */
+    bocaDesde: 0.88,
+    pasillo: 26,
+
     /** Los hitos del camino, en fracción del largo. No chocan: son el mojón. */
     hitos: [
       { en: 0.08, tipo: 'via' },

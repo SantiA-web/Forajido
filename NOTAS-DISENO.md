@@ -14191,6 +14191,44 @@ tres finales.
 alambrado que saltar, un paso angosto, la boca de la quebrada como embudo) y
 que los jinetes se comporten como una partida.
 
+#### 🐛 Décima vuelta: la quebrada era una lámina, y se podía atravesar
+
+*(Santi, jugándola: "la quebrada no parece una quebrada. Pensé que se estaba
+bugueando todo. Es una lámina gris sin sombras ni profundidad ni atractivo,
+además, los caballos de la ley pueden atravesarla")*
+
+**Las dos cosas eran ciertas, y la segunda era un error de verdad:** la boca
+era SÓLO dibujo, y encima su tajo se centraba en `yo.y`, o sea que te seguía a
+vos. Nunca bloqueaba nada.
+
+**Lo que se hizo:**
+
+1. **La boca existe en números** (`laBoca`, y `HUIDA.camino.bocaDesde` /
+   `pasillo`): desde el 88% del camino las paredes se cierran hasta un paso de
+   26 **fijo en el medio del campo**. La misma cuenta la usan el dibujo y el
+   movimiento —la regla de siempre acá: la pared que ves es la que te frena—,
+   y se aplica a vos y a cada jinete.
+2. 🐛 **Y se aplica en TODOS sus estados.** La primera versión clavaba el paso
+   sólo en el bloque de movimiento, y un jinete apuntando o chocado se saltea
+   ese bloque: quedaba uno clavado adentro de la roca. Ahora se clava arriba
+   de todo, apenas se sabe que el jinete sigue vivo.
+3. **Adentro de la quebrada no crece nada**: los obstáculos que nacen ahí nacen
+   en el paso, los que quedaron bajo la pared dejan de dibujarse y de chocar, y
+   el pasto de `sembrarDesierto` se saltea la roca.
+4. **La roca dejó de ser una plancha**: cada pared está partida en **bloques de
+   24** con su tono sorteado, su junta oscura y su canto iluminado; hay grietas
+   verticales, el fondo se oscurece hacia el borde de la pantalla (estás
+   adentro), piedras sueltas al pie —que es lo que la hace apoyarse en el
+   piso—, y sombra sobre el suelo del paso. De lejos, los dos paredones tienen
+   el borde de arriba quebrado (`revolver`), tres capas de tono, vetas, y la
+   cara que da al tajo en sombra.
+5. **De noche se apaga menos que el resto** (0,55 en vez de 0,3): con 0,3 la
+   pared desaparecía y el paso dejaba de leerse.
+
+Medido: **cero cuadros con alguien adentro de la roca** en 6.018 cuadros con
+teclas y mouse al azar (los dos caballos, de día y de noche, 1 y 5 jinetes), y
+sin errores.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

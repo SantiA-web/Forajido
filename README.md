@@ -1777,6 +1777,11 @@ paredes de roca donde la ley no entra. Se la ve crecer en el horizonte desde
 la mitad del camino, así que **la quebrada es el reloj**: no hay ningún número
 que mirar. La barra de arriba dice cuánto falta para llegar.
 
+**Y la boca de la quebrada es un embudo de verdad.** Desde el 88% del camino
+las paredes se cierran hasta dejar un paso de 26 en el MEDIO del campo: o te
+metés ahí, o te comés la roca. Vale para vos y para ellos, y adentro del paso
+ya no crece nada.
+
 **Gana lo que pase primero:** los perdés, los tirás a todos, o llegás a la
 quebrada con los que queden encima. Con el Criollo llegar son unos 28
 segundos; con el Mustang normalmente los perdés mucho antes y nunca la ves.

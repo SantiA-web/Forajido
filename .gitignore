@@ -8,3 +8,6 @@
 # El juego armado en un solo archivo por armar-archivo.ps1. Es un resultado que
 # se vuelve a generar, no código: si se subiera, quedaría viejo al primer cambio.
 /Forajido-jugar.html
+
+# Copia vieja suelta con su propio .git adentro: no es parte del juego
+src/Forajido/

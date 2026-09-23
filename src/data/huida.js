@@ -159,22 +159,28 @@ export const HUIDA = {
      * puede es cambiarlo de golpe, y ese retraso es lo que hace que doblar se
      * sienta como doblar.
      *
-     * *(Santi, después de jugarlo: "creo que las riendas del caballo están en
-     * 0,4 segundos, si es así, me gustaría pasarlo a 0,7")*. Lo medido: con
-     * 2,4 el paso más chico —el de 45°, apretar una tecla al lado de la que
-     * venías— tardaba **0,33 s**, un cuarto de vuelta 0,65 y media vuelta
-     * 1,31. Con 1,12 ese paso chico pasa a los 0,7 que pidió:
+     * *(Santi pidió primero 0,7 —"las riendas están en 0,4 segundos, me
+     * gustaría pasarlo a 0,7"— lo jugó y volvió: "los 0,7 son pesadísimos, lo
+     * pongamos en 0,5". El caballo lanzado tiene que costar, pero no puede
+     * dejar de contestar.)*
      *
-     * | radianes/s | 45° | 90° | 180° |
+     * ⚠️ LA CUENTA VA SOBRE EL PASO DE VERDAD, QUE NO ES DE 45°. Las teclas dan
+     * ocho rumbos, pero en tres cuartos el norte rinde el 62% (`PROFUNDIDAD`),
+     * así que el sudeste de la pantalla es un rumbo de **58°** en el mundo, no
+     * de 45. Ir del este al sudeste —una tecla más— es el paso que uno siente,
+     * y es ése el que hay que medir. Medido adentro del juego, no en el papel:
+     *
+     * | radianes/s | este→sudeste | 90° | media vuelta |
      * |---|---|---|---|
-     * | 2,4 (antes) | 0,33 | 0,65 | 1,31 |
-     * | 1,6 | 0,49 | 0,98 | 1,96 |
-     * | 1,12 (puesto) | **0,70** | 1,40 | 2,80 |
+     * | 2,4 (el original) | 0,42 | 0,65 | 1,31 |
+     * | 1,12 (probado: pesadísimo) | 0,91 | 1,40 | 2,80 |
+     * | **2,03 (puesto)** | **0,50** | 0,77 | 1,55 |
      *
-     * En tiempo de llegada casi no se paga (medido: +0,3 s hasta el río,
-     * +0,6 s cruzando el bosque). Lo que cambia es el peso del caballo.
+     * Los 0,42 del original son los "0,4" que había contado Santi: tenía el
+     * número exacto. Y por hacer la cuenta con 45° en vez de 58° la primera
+     * vez, el 0,7 que pidió salió 0,91 — de ahí el "pesadísimo".
      */
-    giroVelocidad: 1.12,
+    giroVelocidad: 2.03,
 
     /** Doblando cerrado se pierde envión: al máximo, esta fracción. */
     frenoEnCurva: 0.82,
@@ -286,10 +292,13 @@ export const HUIDA = {
      * (`jugador.giroVelocidad`, 1,12): si ellos doblan al doble que vos, las
      * curvas dejan de ser un arma y son un regalo, porque se te pegan igual.
      *
-     * Con 1,4 siguen doblando un poco mejor que vos —son la ley, andan
-     * livianos y sin bolsas— pero una curva cerrada les cuesta.
+     * Con 1,8 doblan UN POCO PEOR que vos, y esa diferencia chica es lo que
+     * hace que una curva cerrada te dé metros: medido, el más cercano te corre
+     * a 136 zigzagueando contra 129 si doblaran como vos. Bajarlos más (1,4)
+     * los hace perdibles con puro volante —4 de 12 corridas los dejaban
+     * atrás—, y eso convierte la huida en dar vueltas.
      */
-    giro: 1.4,
+    giro: 1.8,
 
     /**
      * Y AL MINUTO SUS CABALLOS AFLOJAN *(opción elegida por Santi)*. A los

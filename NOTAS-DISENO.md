@@ -14433,26 +14433,34 @@ bosque nuevo eso era medio bosque desapareciendo. Ahora el tope es 900 y al
 tirar los de lejos **también se olvida la celda**, así que el campo se vuelve a
 sembrar. Un bosque entero son ~600 obstáculos y entran sin tirar nada.
 
-**2. LAS RIENDAS PESAN.** Lo medido: con `giroVelocidad` en 2,4 el paso más
-chico —el de 45°, apretar la tecla de al lado— tardaba **0,33 s** (los "0,4"
-que contó Santi), un cuarto de vuelta 0,65 y media vuelta 1,31.
+**2. LAS RIENDAS PESAN — Y ACÁ ME EQUIVOQUÉ UNA VUELTA.** Santi pidió pasar
+"los 0,4" a 0,7; le puse `giroVelocidad` en 1,12, lo jugó y volvió con "los 0,7
+son pesadísimos, lo pongamos en 0,5".
 
-| radianes/s | 45° | 90° | 180° |
+**El error fue la cuenta, no el pedido.** Yo calculé sobre un paso de 45°, pero
+las teclas no dan 45°: en tres cuartos el norte rinde el 62% (`PROFUNDIDAD`),
+así que el sudeste DE LA PANTALLA es un rumbo de **58° en el mundo**. Ir del
+este al sudeste —una tecla más, el paso que uno siente— es ése. Medido adentro
+del juego:
+
+| radianes/s | este→sudeste | 90° | media vuelta |
 |---|---|---|---|
-| 2,4 (antes) | 0,33 | 0,65 | 1,31 |
-| 1,6 | 0,49 | 0,98 | 1,96 |
-| **1,12 (puesto)** | **0,70** | 1,40 | 2,80 |
+| 2,4 (el original) | **0,42** | 0,65 | 1,31 |
+| 1,12 (lo que puse: pesadísimo) | **0,91** | 1,40 | 2,80 |
+| **2,03 (puesto)** | **0,50** | 0,78 | 1,55 |
 
-En tiempo casi no se paga: **+0,3 s** hasta el río y **+0,6 s** cruzando el
-bosque, con las llegadas iguales. Lo que cambia es el peso del caballo.
+Los 0,42 del original son los "0,4" que había contado Santi: tenía el número
+exacto de memoria. Y mi 1,12 no daba los 0,7 que pidió, daba 0,91 — un 30% más
+pesado que lo pedido, de ahí el "pesadísimo". **Lección: medir el paso adentro
+del juego antes de convertir un pedido en un número.**
 
 🐎 **Y salió a la luz un número escondido: las riendas de la ley.** Estaban en
-2,2 adentro del código. Con las tuyas en 1,12 eso los dejaba doblando al doble
-que vos, y una curva cerrada pasaba a ser un regalo: se te pegaban igual.
-Ahora es `jinetes.giro` y está en **1,4** — mejores que vos, porque andan
-livianos, pero les cuesta. Medido (15 corridas zigzagueando): con 2,2 el más
-cercano te corría a 141 de promedio; con 1,4, a 146; con 1,0, a 155 y en 3 de
-15 los perdías del todo.
+2,2 adentro del código. Ahora es `jinetes.giro` y está en **1,8**: doblan un
+poco peor que vos, y esa diferencia chica es lo que hace que una curva cerrada
+te dé metros. Medido con un piloto que zigzaguea (12 corridas): con 1,8 el más
+cercano te corre a 136 de promedio y nunca lo perdés sólo doblando; con 2,2, a
+129; con 1,4, a 170 y en **4 de 12** los dejabas atrás con puro volante, que
+convierte la huida en dar vueltas.
 
 **3. LA CÁMARA SE MOVÍA COMO UNA TORRE.** Era exactamente eso: la cámara se
 redondeaba en UNIDADES del mundo, y con la lupa de esta escena una unidad son 3

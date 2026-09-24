@@ -247,9 +247,16 @@ export const T = {
     /** El caballo se quedó sin fondo: cae al paso hasta que se repone. */
     reventado: '¡EL CABALLO NO DA MÁS!',
     repuesto: 'EL CABALLO SE REPUSO',
+    /** El forcejeo: un jinete se te colgó a la par. */
+    forcejeo: '¡TE AGARRÓ!',
+    forcejeoGolpes: '[E] [E] [E]',
+    forcejeoSolto: 'TE SOLTÓ',
+    forcejeoChoque: 'LOS SEPARÓ EL GOLPE',
+    forcejeoEnvion: 'TE LO SACASTE DE ENCIMA',
+    loTiraste: '¡LO TIRASTE DEL CABALLO!',
     aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
     atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,
-    teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [CLIC DER.] APUNTAR   [R] RECARGAR'],
+    teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [CLIC DER.] APUNTAR   [R] RECARGAR   [E] ZAFAR'],
   },
 
   ride: {
@@ -603,6 +610,7 @@ export const T = {
     /** La huida: lo que soltaste con los jinetes detrás (ver scenes/huidaScene.js). */
     huida: (n) => (n === 0 ? 'La huida: no te tocaron' : n === 1 ? 'La huida: soltaste 1 bolsa' : `La huida: soltaste ${n} bolsas`),
     huidaJinetes: (n) => (n === 1 ? 'Jinete derribado en la huida' : 'Jinetes derribados en la huida'),
+    huidaTirados: (n) => (n === 1 ? 'Jinete que tiraste del caballo' : 'Jinetes que tiraste del caballo'),
     huidaQuebrada: 'Cómo te los sacaste',
     huidaQuebradaSi: (lugar) => `te metiste en ${lugar.toLowerCase()}`,
     /** Los premios de cada refugio (ver data/huida.js, `mundo.premios`). */

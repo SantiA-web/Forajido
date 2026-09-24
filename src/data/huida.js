@@ -266,6 +266,47 @@ export const HUIDA = {
     },
 
     /**
+     * 🤝 EL FORCEJEO — [E] *(Santi: "que pueden acercarse a vos (estar a la par
+     * tuya con ayuda de ese impulso del caballo) y forcejear con vos. Ese
+     * forcejeo no suelta bolsas, pero hace que la velocidad del caballo se vaya
+     * deteniendo y no puedas disparar. Apretando un par de veces E rápidamente
+     * podrás lanzar al jinete y salir del forcejeo. Si chocan con un obstáculo
+     * el forcejeo se detiene. Puedes usar el impulso (si lo tienes disponible),
+     * para salirte del forcejeo, pero no tirarás al jinete")*.
+     *
+     * Todo eso, tal cual, y un número más que no estaba pedido: `gracia`.
+     * Sin él, dos jinetes te encadenan forcejeos y la huida se te va de las
+     * manos sin que hayas hecho nada mal — perder el control es lo que más
+     * frustra, así que tiene que ser corto y tiene que haber aire entre uno y
+     * otro.
+     */
+    forcejeo: {
+      /** Cuándo engancha: a la par tuya, en unidades y en radianes de rumbo. */
+      /**
+       * LA CAJA DEL AGARRE: a la par tuya (28 al costado), a la altura de la
+       * montura (28 de largo) y con el rumbo parecido. Medido, con 22 de largo
+       * el que llegaba bien se te escapaba igual la mitad de las veces: la
+       * ventana era más chica que el propio caballo.
+       */
+      agarra: { costado: 28, largo: 28, rumbo: 0.8 },
+
+      /** Cuánto dura si no hacés nada, y cuántos [E] para tirarlo. */
+      dura: 4,
+      golpes: 6,
+
+      /**
+       * Y CÓMO TE FRENA: arranca a esta fracción de tu galope y termina en la
+       * otra. No te saca bolsas —lo dijo Santi— pero te deja servido para los
+       * que vienen atrás.
+       */
+      frena: 0.6,
+      frenaFinal: 0.3,
+
+      /** Después de uno, nadie te agarra por este rato. */
+      gracia: 7,
+    },
+
+    /**
      * 🫁 EL FONDO DEL CABALLO — la resistencia, gastándose SIEMPRE *(Santi:
      * "haría que la resistencia sea una unidad presente en todo momento, no
      * solo que aparezca con el impulso. La resistencia determinará cuánto
@@ -618,6 +659,47 @@ export const HUIDA = {
 
         /** Sólo lo intenta el que ya está cerca: de más lejos no llega. */
         distanciaMax: 320,
+      },
+
+      /**
+       * 🤝 EL QUE SE ARRIMA *(Santi: "para el forcejeo obviamente tiene que
+       * existir la posibilidad de que el jinete se te acerque. Hoy no se
+       * acerca... cuando lo añadas recordá que tiene que haber la probabilidad
+       * real de que se pueda acercar cerca tuyo")*.
+       *
+       * Es el mismo truco del cortador pero apuntando AL COSTADO tuyo, pegado:
+       * corre sostenido hasta ponerse a la par, y si llega, agarra (ver
+       * `jugador.forcejeo`). Sin esto el forcejeo no existiría: en la
+       * persecución normal se quedan a 110-170 de tu cola y nunca se arriman.
+       */
+      arrimador: {
+        cada: 7,
+        dura: 6,
+        empuje: 0.45,
+        /**
+         * A qué costado tuyo apunta. TIENE QUE SER MENOS QUE EL AGARRE
+         * (`jugador.forcejeo.agarra.costado`, 28): la primera versión apuntaba
+         * a 26 con un agarre de 24, o sea que el jinete llegaba perfecto a un
+         * lugar desde donde no podía agarrarte, y de 1,4 arrimadas salía medio
+         * forcejeo por corrida.
+         */
+        costado: 18,
+        distanciaMax: 300,
+
+        /**
+         * Y CUANDO YA ESTÁ A LA ALTURA se acomoda a tu velocidad, como el
+         * cortador cuando te pasó. Sin esto llegaba lanzado, te pasaba de
+         * largo y el agarre no se daba nunca: de 1,4 arrimadas salía apenas
+         * medio forcejeo por corrida.
+         */
+        acomodaDesde: 34,
+
+        /**
+         * Y sólo se acomoda si además YA ESTÁ AL COSTADO: si todavía le falta
+         * cruzar, tiene que seguir corriendo. Igualar la velocidad estando
+         * lejos lo deja trotando en paralelo sin llegar nunca.
+         */
+        acomodaCostado: 45,
       },
     },
 

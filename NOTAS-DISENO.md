@@ -14816,6 +14816,65 @@ unas vueltas. El envión compensa una parte, pero conviene una pasada de
 equilibrio midiendo TODO junto con un piloto que juegue bien, en vez de ajustar
 número por número.
 
+#### 🔁 Vigésima vuelta: EL FORCEJEO ([E]) y el que se arrima
+
+*(Santi: "que pueden acercarse a vos (estar a la par tuya con ayuda de ese
+impulso del caballo) y forcejear con vos. Ese forcejeo no suelta bolsas, pero
+hace que la velocidad del caballo se vaya deteniendo y no puedas disparar.
+Apretando un par de veces E rápidamente podrás lanzar al jinete y salir del
+forcejeo. Si chocan con un obstáculo el forcejeo se detiene. Puedes usar el
+impulso para salirte del forcejeo, pero no tirarás al jinete". Y al pedirlo:
+"tiene que haber la probabilidad real de que se pueda acercar cerca tuyo")*
+
+**Primero hizo falta que puedan arrimarse.** En la persecución normal se quedan
+a 110-170 de tu cola y nunca se te ponen al lado. Así que el rol del cortador
+se duplicó: ahora el sorteo elige, cada 7 segundos y a uno solo, entre
+**cruzarte por delante** y **pegarse a tu costado**. El que se arrima usa el
+mismo empuje sostenido (45%) y, cuando llega a la altura de tu montura, **se
+acomoda a tu velocidad** en vez de pasarte de largo.
+
+**El forcejeo, tal como lo pidió Santi:** no podés disparar, el caballo se va
+frenando (del 60% al 30% de tu galope en 4 segundos), **no te saca bolsas**, se
+sale a los golpes de **[E]** (seis), lo corta un choque contra un obstáculo, y
+el envión te lo saca de encima **sin tirarlo**. Si aguantás los 4 segundos, te
+suelta solo.
+
+**Y el que tirás del caballo no cuenta como muerto:** va aparte en los
+resultados ("Jinetes que tiraste del caballo") y **no te sube la recompensa**.
+No lo mataste — lo bajaste. Es la primera salida no letal que tiene la huida.
+
+🐛 **Dos números mal puestos, encontrados midiendo** (y valen como lección):
+
+1. **El que se arrimaba apuntaba a 26 del costado y el agarre pedía 24.** O
+   sea: llegaba perfecto a un lugar desde donde no podía agarrarte. Ahora
+   apunta a 18 y el agarre acepta 28.
+2. **Igualar la velocidad apenas estaba a la altura, sin mirar si ya estaba al
+   costado**, lo dejaba trotando en paralelo a 60 unidades sin acercarse nunca.
+   Ahora se acomoda sólo si además ya está al lado.
+
+📏 **Medido (20 corridas, Criollo, misma distancia y mismo refugio):**
+
+| | Intentos de arrimarse | Agarres | Jinetes tirados |
+|---|---|---|---|
+| Sin corregir los dos números | 1,4 | 0,2 | 0 |
+| **Corregido (puesto)** | **1,3** | **0,8** | **0,8** |
+
+O sea: **te agarran casi una vez por corrida**, y con [E] te los sacás de encima
+casi siempre. Cuando no hacés nada, el agarre dura 1,6 segundos de media (los
+corta un choque tan seguido como el reloj). Y **con el Mustang no te agarran
+nunca**: a 180 no se le arriman.
+
+Sin errores en 15.181 cuadros con teclas y mouse al azar (incluido [E]), a 0,72
+ms por cuadro.
+
+📌 **Y ACÁ VA UNA ADVERTENCIA HONESTA SOBRE EL EQUILIBRIO.** Entre las balas
+nuevas, el anticipo, el cortador y el forcejeo, el piloto automático que no usa
+el envión perdía $250-300 hace unas vueltas y ahora pierde **$750-800** de cada
+$1.000. Una parte es que el piloto es tonto (no usa el envión, no frena para
+recuperar fondo, no dispara). Pero antes de agregar el lazo conviene hacer **la
+pasada de equilibrio con todo junto**: un piloto que juegue bien, y de ahí
+decidir si la huida tiene que costar lo que cuesta.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

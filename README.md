@@ -1795,6 +1795,15 @@ soltaste casi toda la plata.
 - **Cada tiro que te pegan te hace soltar una bolsa** con el 10% de lo que
   sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
   con menos plata.
+- **Y uno se te puede colgar a la par: el FORCEJEO.** Mientras te tiene
+  agarrado no podés disparar y el caballo se va frenando (del 60% al 30% de tu
+  galope), pero **no te saca bolsas**. Salís **machacando [E]** —seis golpes y
+  lo tirás del caballo—, o te lo sacás con el envión (sin tirarlo), o los
+  separa un choque contra una piedra. Si no hacés nada, te suelta a los cuatro
+  segundos. Medido: te agarran casi una vez por corrida, y con el Mustang no te
+  alcanzan nunca.
+- **Al que tirás del caballo no lo mataste**: va aparte en los resultados y
+  **no te sube la recompensa**.
 - **Hay obstáculos, los mismos del galope** (rocas, arbustos, cactus y
   montículos). Chocar te frena medio segundo y **se te acercan**: con el
   Criollo, un choque son unos 5 segundos más de huida. **Ellos también los

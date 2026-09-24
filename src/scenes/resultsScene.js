@@ -74,6 +74,11 @@ function buildPanel(s) {
      */
     s.huida ? row(T.results.huida(s.huida.bolsas), s.huida.perdido > 0 ? `−$${s.huida.perdido}` : '', s.huida.bolsas === 0, s.huida.bolsas > 0) : '',
     s.huida && s.huida.derribados > 0 ? row(T.results.huidaJinetes(s.huida.derribados), String(s.huida.derribados)) : '',
+    /**
+     * LOS QUE TIRASTE DEL CABALLO FORCEJEANDO van aparte de los muertos: no
+     * los mataste, así que no suman recompensa ni cuentan como muertes.
+     */
+    s.huida && s.huida.tirados > 0 ? row(T.results.huidaTirados(s.huida.tirados), String(s.huida.tirados), true) : '',
     s.huida && s.huida.fin === 'llegaste' && s.huida.lugar
       ? row(T.results.huidaQuebrada, T.results.huidaQuebradaSi(s.huida.lugar), true) : '',
     /**

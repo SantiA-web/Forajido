@@ -59,6 +59,8 @@ export function createHuidaScene(services) {
   let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, celdasSembradas;
   let refugios, refugioTomado;
   let tiempo, dineroInicial, perdido, soltadas, derribados;
+  /** Cuántos tiraste del caballo forcejeando (no son muertos: van aparte). */
+  let tirados;
   let fin, temblor, avisoCansancio, ultimoGrito, bamboleo;
   /** Cuánto falta para que a alguno le toque cortarte el paso (ver `elegirCortador`). */
   let proximoCortador;
@@ -125,6 +127,13 @@ export function createHuidaScene(services) {
       impulsoTimer: 0,
       esperaImpulso: 0,
       reventado: false,
+      /**
+       * EL FORCEJEO (ver `HUIDA.jugador.forcejeo`): `forcejeo` es el jinete
+       * que te tiene agarrado y cómo va la pulseada; `gracia`, el rato en que
+       * nadie puede volver a agarrarte.
+       */
+      forcejeo: null,
+      gracia: 0,
     };
 
     sembrarRefugios();
@@ -144,6 +153,7 @@ export function createHuidaScene(services) {
     perdido = 0;
     soltadas = 0;
     derribados = 0;
+    tirados = 0;
     fin = null;
     temblor = 0;
     avisoCansancio = false;
@@ -168,6 +178,7 @@ export function createHuidaScene(services) {
       get perdido() { return perdido; },
       get soltadas() { return soltadas; },
       get derribados() { return derribados; },
+      get tirados() { return tirados; },
       get dineroInicial() { return dineroInicial; },
       get fin() { return fin; },
       get obstaculos() { return obstaculos; },
@@ -299,6 +310,9 @@ export function createHuidaScene(services) {
       /** Cuánto le queda de intentar cortarte el paso (0 = va en la cola). */
       corta: 0,
       cortaLado: 1,
+      /** Y lo mismo, pero para arrimarse a tu costado y agarrarte. */
+      arrima: 0,
+      arrimaLado: 1,
     };
   }
 
@@ -335,6 +349,7 @@ export function createHuidaScene(services) {
 
     sembrarObstaculos();
     moverme(dt);
+    forcejear(dt);
     disparar(dt);
     moverJinetes(dt, false);
     moverBalas(dt);
@@ -417,7 +432,8 @@ export function createHuidaScene(services) {
     const base = yo.reventado ? J.fondo.pasoVelocidad
       : yo.frena ? caballo.brakeSpeed
       : caballo.sprintSpeed + yo.extra;
-    const fondo = base * curva;
+    // Y forcejeando te van frenando: es lo que hace el tipo colgado de vos.
+    const fondo = base * curva * frenoDelForcejeo();
     yo.vel = velocidadDe(fondo, yo.choque) * (yo.contraLaPared ? H.mundo.choquePared : 1);
     avanzar(yo, yo.vel, dt);
 
@@ -505,6 +521,82 @@ export function createHuidaScene(services) {
     }
   }
 
+  /**
+   * 🤝 EL FORCEJEO — la parte tuya. Ver `HUIDA.jugador.forcejeo` para el
+   * pedido de Santi y los números.
+   */
+  function frenoDelForcejeo() {
+    if (!yo.forcejeo) return 1;
+    const F = H.jugador.forcejeo;
+    const t = Math.min(1, yo.forcejeo.t / F.dura);
+    return F.frena + (F.frenaFinal - F.frena) * t;
+  }
+
+  /** ¿ESTE JINETE TE ENGANCHÓ? Sólo el que viene arrimándose, y a la par. */
+  function intentarAgarrar(j) {
+    if (yo.forcejeo || yo.gracia > 0 || fin || yo.choque > 0 || j.choque > 0) return;
+    const F = H.jugador.forcejeo.agarra;
+    const dx = j.x - yo.x;
+    const dy = (j.y - yo.y) / PROFUNDIDAD;
+    // Cuánto te sacó (sobre tu rumbo) y cuánto está al costado.
+    const largo = dx * Math.cos(yo.rumbo) + dy * Math.sin(yo.rumbo);
+    const costado = -dx * Math.sin(yo.rumbo) + dy * Math.cos(yo.rumbo);
+    if (Math.abs(largo) > F.largo || Math.abs(costado) > F.costado) return;
+    const dif = Math.atan2(Math.sin(j.rumbo - yo.rumbo), Math.cos(j.rumbo - yo.rumbo));
+    if (Math.abs(dif) > F.rumbo) return;
+
+    yo.forcejeo = { j, t: 0, golpes: 0, lado: costado >= 0 ? 1 : -1 };
+    j.arrima = 0;
+    temblor = 0.3;
+    audio.play('gritoLey');
+    carteles.push({ x: yo.x, y: yo.y - 34, texto: T.huida.forcejeo, color: colors.enemyAlert, vida: 1.4 });
+  }
+
+  /**
+   * MIENTRAS TE TIENE AGARRADO: te frena, no podés disparar, y se sale a los
+   * golpes de [E]. Lo corta un choque, el envión (pero no lo tirás) o el
+   * tiempo — nunca te saca bolsas, que eso lo dijo Santi desde el principio.
+   */
+  function forcejear(dt) {
+    yo.gracia = Math.max(0, yo.gracia - dt);
+    if (!yo.forcejeo) return;
+    const F = H.jugador.forcejeo;
+    const f = yo.forcejeo;
+    f.t += dt;
+
+    if (input.wasPressed('KeyE')) {
+      f.golpes += 1;
+      temblor = 0.18;
+      audio.play('hitFlesh');
+      if (f.golpes >= F.golpes) { soltarForcejeo('tirado'); return; }
+    }
+
+    if (!f.j.alive || f.j.perdido || fin) { soltarForcejeo('nada'); return; }
+    if (yo.choque > 0 || f.j.choque > 0) { soltarForcejeo('choque'); return; }
+    if (yo.impulsoTimer > 0) { soltarForcejeo('envion'); return; }
+    if (f.t >= F.dura) { soltarForcejeo('solto'); return; }
+  }
+
+  function soltarForcejeo(como) {
+    const f = yo.forcejeo;
+    if (!f) return;
+    yo.forcejeo = null;
+    yo.gracia = H.jugador.forcejeo.gracia;
+    if (como === 'tirado') {
+      f.j.alive = false;
+      tirados += 1;
+      caidos.push({ x: f.j.x, y: f.j.y });
+      audio.play('relincho');
+      audio.play('hitFlesh');
+      carteles.push({ x: f.j.x, y: f.j.y - 28, texto: T.huida.loTiraste, color: colors.bagLoot, vida: 1.8 });
+      return;
+    }
+    if (como === 'nada') return;
+    const texto = como === 'choque' ? T.huida.forcejeoChoque
+      : como === 'envion' ? T.huida.forcejeoEnvion : T.huida.forcejeoSolto;
+    carteles.push({ x: yo.x, y: yo.y - 34, texto, color: colors.textDim, vida: 1.4 });
+  }
+
   /** Los choques del jugador: los obstáculos y la pared de un refugio. */
   function chocarConLasCosas() {
     if (yo.choque <= 0) {
@@ -561,6 +653,8 @@ export function createHuidaScene(services) {
   /** El mismo gatillo del asalto: clic sostenido, [R] recarga, vacío recarga solo. */
   function disparar(dt) {
     yo.fireTimer -= dt;
+    // Con un tipo colgado del brazo no se tira: las dos manos están ocupadas.
+    if (yo.forcejeo) return;
     if (yo.recargando > 0) {
       yo.recargando -= dt;
       if (yo.recargando <= 0) yo.balas = arma.magazine;
@@ -647,11 +741,20 @@ export function createHuidaScene(services) {
    * que Santi lo pidió del lado de ellos.
    */
   function elegirCortador(dt) {
-    const C = H.jinetes.tactica.cortador;
+    const T = H.jinetes.tactica;
     proximoCortador -= dt;
     const siguiendoAhora = siguiendo();
-    if (siguiendoAhora.some((j) => j.corta > 0)) return;
-    if (proximoCortador > 0 || siguiendoAhora.length < 2) return;
+    // Uno por vez y nada más: ni dos cortando, ni uno cortando y otro colgado.
+    if (siguiendoAhora.some((j) => j.corta > 0 || j.arrima > 0)) return;
+    if (proximoCortador > 0 || siguiendoAhora.length < 2 || yo.forcejeo) return;
+
+    /**
+     * SE ALTERNAN LOS DOS TRABAJOS: uno se te cruza adelante y el siguiente se
+     * te pega al costado a agarrarte. Así la partida no hace siempre lo mismo
+     * y cada corrida tiene las dos cosas.
+     */
+    const arrimar = yo.gracia <= 0 && rng.chance(0.5);
+    const C = arrimar ? T.arrimador : T.cortador;
 
     let elegido = null;
     let mejor = C.distanciaMax;
@@ -662,9 +765,14 @@ export function createHuidaScene(services) {
     proximoCortador = C.cada;
     if (!elegido) return;
 
-    elegido.corta = C.dura;
-    elegido.cortaLado = rng.chance(0.5) ? 1 : -1;
-    // Le presta el envión, si le queda: sin eso nunca llega adelante.
+    if (arrimar) {
+      elegido.arrima = C.dura;
+      elegido.arrimaLado = rng.chance(0.5) ? 1 : -1;
+    } else {
+      elegido.corta = C.dura;
+      elegido.cortaLado = rng.chance(0.5) ? 1 : -1;
+    }
+    // Le presta el envión, si le queda: sin eso no llega ni adelante ni al lado.
     if (elegido.usos > 0 && elegido.empuje <= 0) {
       elegido.empuje = H.jinetes.impulso.dura;
       elegido.recarga = H.jinetes.impulso.recarga;
@@ -676,6 +784,7 @@ export function createHuidaScene(services) {
   function moverJinetes(dt, yendose) {
     const J = H.jinetes;
     const C = J.tactica.cortador;
+    const AR = J.tactica.arrimador;
     if (!yendose && !fin) elegirCortador(dt);
 
     /**
@@ -698,6 +807,20 @@ export function createHuidaScene(services) {
         // Se van quedando: aflojan y los deja el mundo.
         avanzar(j, j.vel * 0.4, dt);
         j.aimTimer = 0;
+        continue;
+      }
+
+      /**
+       * EL QUE TE TIENE AGARRADO no persigue nada: va pegado a tu costado,
+       * con tu mismo rumbo, y no dispara — tiene las dos manos ocupadas.
+       */
+      if (yo.forcejeo && yo.forcejeo.j === j) {
+        const F = H.jugador.forcejeo.agarra;
+        j.x = yo.x - Math.sin(yo.rumbo) * F.costado * 1.15 * yo.forcejeo.lado;
+        j.y = yo.y + Math.cos(yo.rumbo) * F.costado * 1.15 * yo.forcejeo.lado * PROFUNDIDAD;
+        j.rumbo = yo.rumbo;
+        j.aimTimer = 0;
+        j.empujeVel = 0;
         continue;
       }
 
@@ -731,12 +854,19 @@ export function createHuidaScene(services) {
           y: futuro.y + (Math.sin(yo.rumbo) * C.adelanto
             + Math.cos(yo.rumbo) * C.costado * j.cortaLado) * PROFUNDIDAD,
         }
+        : j.arrima > 0
+        ? {
+          // Pegado a tu costado: es desde donde te puede agarrar.
+          x: futuro.x - Math.sin(yo.rumbo) * AR.costado * j.arrimaLado,
+          y: futuro.y + Math.cos(yo.rumbo) * AR.costado * j.arrimaLado * PROFUNDIDAD,
+        }
         : {
           x: futuro.x - Math.cos(yo.rumbo + j.carril) * j.atras,
           y: futuro.y - Math.sin(yo.rumbo + j.carril) * j.atras * PROFUNDIDAD,
         };
       const haciaAlla = Math.atan2((objetivo.y - j.y) / PROFUNDIDAD, objetivo.x - j.x);
       if (j.corta > 0) j.corta -= dt;
+      if (j.arrima > 0) { j.arrima -= dt; intentarAgarrar(j); }
 
       // Apuntando no dobla: el aviso vale porque el tiro sale de donde lo viste.
       if (j.aimTimer > 0) {
@@ -800,15 +930,24 @@ export function createHuidaScene(services) {
    */
   function velocidadDelCortador(j) {
     const base = velocidadDelJinete(j) + j.empujeVel;
-    if (j.corta <= 0) return base;
+    const T = H.jinetes.tactica;
+    if (j.corta <= 0 && j.arrima <= 0) return base;
 
-    const C = H.jinetes.tactica.cortador;
     // Cuánto te sacó midiendo SOBRE TU RUMBO: positivo, ya está adelante.
     const dx = j.x - yo.x;
     const dy = (j.y - yo.y) / PROFUNDIDAD;
     const adelanto = dx * Math.cos(yo.rumbo) + dy * Math.sin(yo.rumbo);
-    if (adelanto > C.bloqueaDesde) return Math.min(base, yo.vel + C.bloqueaExtra);
-    return base + j.vel * C.empuje;
+
+    if (j.arrima > 0) {
+      // A la altura de tu montura Y ya al costado, se acomoda; si no, corre.
+      const costado = -dx * Math.sin(yo.rumbo) + dy * Math.cos(yo.rumbo);
+      const aLaAltura = Math.abs(adelanto) < T.arrimador.acomodaDesde
+        && Math.abs(costado) < T.arrimador.acomodaCostado;
+      if (aLaAltura) return Math.min(base, yo.vel);
+      return base + j.vel * T.arrimador.empuje;
+    }
+    if (adelanto > T.cortador.bloqueaDesde) return Math.min(base, yo.vel + T.cortador.bloqueaExtra);
+    return base + j.vel * T.cortador.empuje;
   }
 
   function empujarJinete(j, dt) {
@@ -978,7 +1117,7 @@ export function createHuidaScene(services) {
     const premio = cobrarElPremio();
     summary.money = Math.max(0, (summary.money || 0) - perdido + premio.plata);
     summary.huida = {
-      jinetes: jinetes.length, derribados, bolsas: soltadas, perdido,
+      jinetes: jinetes.length, derribados, tirados, bolsas: soltadas, perdido,
       // Cómo terminó: 'llegaste' (a un refugio), 'limpio' (no quedó ninguno) o
       // 'perdidos' (los dejaste atrás).
       fin: fin ? fin.como : 'perdidos',
@@ -1323,6 +1462,16 @@ export function createHuidaScene(services) {
         : fin.como === 'llegaste' && refugioTomado ? refugioTomado.cartel
         : T.huida.losPerdiste;
       r.text(texto, centro, 70, colors.bagLoot);
+    } else if (yo.forcejeo) {
+      /**
+       * EL CARTEL DEL FORCEJEO: lo único que importa mientras dura es que
+       * tenés que machacar [E], así que ocupa el lugar del contador de
+       * jinetes y muestra cuánto te falta.
+       */
+      const F = H.jugador.forcejeo;
+      r.text(T.huida.forcejeo, centro, 8, colors.enemyAlert);
+      const hechos = '●'.repeat(yo.forcejeo.golpes) + '○'.repeat(Math.max(0, F.golpes - yo.forcejeo.golpes));
+      r.text(`[E] ${hechos}`, centro, 20, colors.bagLoot);
     } else {
       r.text(T.huida.teSiguen(siguiendo().length), centro, 8, colors.enemyAlert);
       dibujarBrujula(r);

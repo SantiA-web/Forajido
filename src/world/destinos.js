@@ -333,7 +333,7 @@ export function trozosDelParedon(d, dia, cerca) {
    * chico) porque es suelo: la meseta de roca, el piso de la garganta y la
    * sombra que las paredes tiran adentro.
    */
-  trozos.push({ y: -1e9, draw: (r) => mesetaDelMacizo(r, c, d) });
+  trozos.push({ y: -1e9, draw: (r) => mesetaDelMacizo(r, c, d, cerca) });
 
   /**
    * Y LAS DOS PAREDES DE LA GARGANTA, hacia adentro.
@@ -524,7 +524,7 @@ function bloqueDePared(r, c, x, y, u, i, alBorde, recorte = 1) {
  *
  * Es SUELO, así que se dibuja detrás de todo lo demás: no tapa a nadie.
  */
-function mesetaDelMacizo(r, c, d) {
+function mesetaDelMacizo(r, c, d, cerca) {
   const G = PAREDON;
   const mitad = d.largo / 2;
   const P = (u, v) => desdeLaPared(d, u, v);
@@ -532,15 +532,44 @@ function mesetaDelMacizo(r, c, d) {
 
   r.ctx.save();
 
-  // 1. La roca, de la cara hasta el fondo del macizo.
+  /**
+   * 1. LA ROCA DEL MACIZO, de la cara hasta el fondo.
+   *
+   * 🐛 Era UN COLOR PLANO distinto al de las paredes *(Santi: "hay algo pintado
+   * alrededor de la garganta con otro color; eso no debería ser otro color,
+   * debería ser roca como las paredes de la garganta")*, y se leía exactamente
+   * así: una mancha pintada. Es el MISMO `ROCA` de las paredes, apenas más
+   * oscuro porque es la cara de arriba, y encima lleva el mismo grano y las
+   * mismas vetas que la roca de al lado.
+   */
   const a = P(-mitad, -PARED / 2), b = P(mitad, -PARED / 2);
   const e = P(mitad, G.garganta + 30), f = P(-mitad, G.garganta + 30);
-  r.ctx.fillStyle = c('#4a3228');
+  r.ctx.fillStyle = c(escalarColor(ROCA, 0.62));
   r.ctx.beginPath();
   r.ctx.moveTo(a.x, a.y); r.ctx.lineTo(b.x, b.y);
   r.ctx.lineTo(e.x, e.y); r.ctx.lineTo(f.x, f.y);
   r.ctx.closePath();
   r.ctx.fill();
+
+  /**
+   * Y EL GRANO DE ESA ROCA, sólo donde se ve. Sin esto la meseta es una chapa:
+   * lo que la vuelve piedra son las manchas de tono y alguna veta larga, igual
+   * que las chorreaduras de las paredes pero vistas desde arriba.
+   */
+  const claro = c(escalarColor(ROCA, 0.74));
+  const oscuro = c(escalarColor(ROCA, 0.5));
+  const paso = 11;
+  for (let u = -mitad; u <= mitad; u += paso) {
+    for (let v = -PARED / 2; v <= G.garganta + 30; v += paso) {
+      const p = P(u, v);
+      if (Math.abs(p.x - cerca.x) > cerca.w || Math.abs(p.y - cerca.y) > cerca.h) continue;
+      const s = revolver(Math.round(u) * 7919 + Math.round(v));
+      if (s % 5 === 0) r.rect(p.x, p.y, 4 + (s % 5), 2, claro);
+      else if (s % 7 === 0) r.rect(p.x, p.y, 3 + (s % 4), 2, oscuro);
+      // Alguna veta larga, para que se lea la dirección de la roca.
+      if (s % 23 === 0) r.rect(p.x, p.y, 1, 7 + (s % 9), oscuro);
+    }
+  }
 
   // 2. El piso de la garganta: arena clara entre las dos paredes.
   const bordeIzq = [], bordeDer = [];

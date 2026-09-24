@@ -323,11 +323,17 @@ export function createHuidaScene(services) {
        * vería flotando adentro de la roca.
        */
       if (esPared(d)) {
+        /**
+         * 🐛 EN LA QUEBRADA EL DESPEJE ES TODO EL MACIZO, no la franja de la
+         * cara. Con sólo la franja crecían cactus y arbustos **encima de la
+         * roca**, que es exactamente donde no hay tierra.
+         */
         const dx = x - d.x;
         const dy = (y - d.y) / PROFUNDIDAD;
         const u = dx * Math.cos(d.rumboPared) + dy * Math.sin(d.rumboPared);
         const v = -dx * Math.sin(d.rumboPared) + dy * Math.cos(d.rumboPared);
-        return Math.abs(v) < PARED / 2 + despeje && Math.abs(u) < d.largo / 2;
+        const dentro = v > -PARED / 2 - despeje && v < PAREDON.garganta + 40;
+        return dentro && Math.abs(u) < d.largo / 2 + despeje;
       }
       return Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < d.radio + despeje;
     });

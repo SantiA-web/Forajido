@@ -2171,6 +2171,16 @@ export const CONFIG = {
     armonicaVariacion: 13,
 
     guitarraVolumen: 0.034,
+
+    /**
+     * 🎵 EL VOLUMEN DE LAS CANCIONES DEL CAMPAMENTO (`assets/musica/`).
+     *
+     * Va aparte del de la guitarra sintetizada porque son dos cosas distintas:
+     * aquélla son notas generadas con osciladores y ésta es una grabación, que
+     * ya viene con su propio nivel. Es música de FONDO: tiene que dejar oír el
+     * fuego, los grillos y lo que diga la gente del campamento.
+     */
+    cancionVolumen: 0.55,
     /** Cada cuánto cae una púa del arpegio. Es el pulso de todo lo demás. */
     pulsoCada: 0.42,
   },

@@ -1847,6 +1847,12 @@ soltaste casi toda la plata.
 
 Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 
+**La música del campamento son dos canciones**, "Fogata de noche" (una
+instrumental y la otra con la armónica al frente). **Se acuerdan dónde
+quedaron**: salir al asalto no las reinicia, y al volver siguen desde el segundo
+en que las cortaste. Cuando una termina, arranca la otra. El pueblo se queda con
+la guitarra sintetizada.
+
 **La quebrada no es un anillo: es un MACIZO CON UNA GARGANTA.** Una pared de
 roca de 2.600 unidades atravesada en tu camino, con una boca de **60** — y
 detrás no hay campo abierto: hay **260 de garganta** que se cierra a **46** y

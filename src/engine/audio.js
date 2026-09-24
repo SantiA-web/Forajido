@@ -670,13 +670,111 @@ export function createAudio() {
    */
   const PATRON = [0, 1, 2, 3, 0, 2, 3, 1];
 
+  /**
+   * 🎵 LA MÚSICA DEL CAMPAMENTO SON DOS CANCIONES DE VERDAD *(Santi: "me
+   * gustaría que reemplaces la música del campamento por estas dos canciones.
+   * Cuando volvés de un asalto o del campamento la música sonará desde dónde la
+   * cortaste")*.
+   *
+   * Las dos son suyas (`santiarce08`): "Fogata de noche", una instrumental y la
+   * otra con la armónica al frente. Tres minutos cada una.
+   *
+   * ⚠️ NO PASAN POR EL `AudioContext`, y es a propósito: en el archivo suelto
+   * (`Forajido-jugar.html`) el mp3 viaja como un `data:`, y un
+   * `createMediaElementSource` sobre un `data:` puede quedar mudo por las
+   * reglas de origen. Con el volumen del propio `<audio>` no hay ese riesgo.
+   *
+   * 🔖 Y SE ACUERDAN DÓNDE QUEDARON. Salir al asalto no reinicia la canción:
+   * `pararMusica` anota el segundo y `arrancarMusica` vuelve ahí. Volver al
+   * campamento tiene que sentirse como volver, no como entrar de nuevo.
+   */
+  const CANCIONES = [
+    { titulo: 'Fogata de noche', url: 'src/assets/musica/fogata-de-noche.mp3' },
+    { titulo: 'Fogata de noche (armónica al frente)', url: 'src/assets/musica/fogata-de-noche-armonica.mp3' },
+  ];
+  let pistas = null;
+  let cualCancion = 0;
+  const dondeQuedo = CANCIONES.map(() => 0);
+  let cancionSonando = false;
+
+  function volumenDeLaCancion() {
+    return (CONFIG.audio.master ?? 0.5) * (CONFIG.ambiente.cancionVolumen ?? 0.55);
+  }
+
+  /**
+   * 🐛 EL MP3 SE BAJA ENTERO Y SE LE PASA UN `blob:`, NO LA DIRECCIÓN.
+   *
+   * Medido: el servidor de desarrollo contesta 200 a un pedido por rango en
+   * vez de 206, y sin `Accept-Ranges` el navegador marca el audio como **no
+   * buscable** (`seekable.end(0) === 0`) aunque lo tenga entero en memoria.
+   * Resultado: volver a la canción donde la cortaste era imposible, arrancaba
+   * de cero siempre. Un `blob:` siempre se puede buscar, y de paso esto anda
+   * igual con el mp3 metido como `data:` en el archivo suelto.
+   */
+  function crearPistas() {
+    if (pistas) return;
+    pistas = CANCIONES.map((c, i) => {
+      const el = new Audio();
+      el.preload = 'auto';
+      el.volume = volumenDeLaCancion();
+      // Al terminar una, empieza la otra desde el principio.
+      el.addEventListener('ended', () => {
+        dondeQuedo[i] = 0;
+        cualCancion = (i + 1) % CANCIONES.length;
+        if (cancionSonando) sonarCancion();
+      });
+      fetch(c.url)
+        .then((resp) => resp.blob())
+        .then((b) => {
+          el.src = URL.createObjectURL(b);
+          // Si mientras se bajaba ya había que estar sonando, arranca ahora.
+          if (cancionSonando && cualCancion === i) sonarCancion();
+        })
+        .catch(() => { /* sin música: el juego sigue igual */ });
+      return el;
+    });
+  }
+
+  function sonarCancion() {
+    crearPistas();
+    const el = pistas[cualCancion];
+    // Todavía se está bajando: arranca sola cuando llegue.
+    if (!el.src) return;
+    el.volume = volumenDeLaCancion();
+    const t = dondeQuedo[cualCancion];
+    if (t > 0 && Number.isFinite(el.duration) && t < el.duration - 0.3) {
+      try { el.currentTime = t; } catch (e) { /* todavía no cargó: arranca de cero */ }
+    }
+    const p = el.play();
+    // El navegador puede negarse si todavía no hubo un clic: no es un error.
+    if (p && p.catch) p.catch(() => {});
+  }
+
+  function guardarDondeQuedo() {
+    if (!pistas) return;
+    const el = pistas[cualCancion];
+    if (Number.isFinite(el.currentTime)) dondeQuedo[cualCancion] = el.currentTime;
+    el.pause();
+  }
+
   let musicaOn = false;
   let armonicaTimer = 0;
   let pulsoTimer = 0;
   let pasoDelPatron = 0;
   let acordeActual = 0;
 
-  function arrancarMusica() {
+  /**
+   * `tipo` elige qué música: las CANCIONES (el campamento) o la GUITARRA
+   * sintetizada de siempre (el pueblo). Son dos lugares distintos y no tienen
+   * por qué sonar igual.
+   */
+  function arrancarMusica(tipo = 'canciones') {
+    if (tipo === 'canciones') {
+      if (!CONFIG.audio.enabled) return;
+      cancionSonando = true;
+      sonarCancion();
+      return;
+    }
     musicaOn = true;
     // La guitarra entra casi enseguida (es la base, y sin base no hay música);
     // la armónica se toma su tiempo, porque entrar a una pantalla y que te
@@ -689,6 +787,8 @@ export function createAudio() {
 
   function pararMusica() {
     musicaOn = false;
+    if (cancionSonando) guardarDondeQuedo();
+    cancionSonando = false;
   }
 
   /**
@@ -822,6 +922,19 @@ export function createAudio() {
     arrancarMusica,
     pararMusica,
     updateMusica,
+    /**
+     * 🔬 Sólo para mirar desde la consola (F12) si la canción quedó donde tenía
+     * que quedar: qué canción va, en qué segundo y si está sonando.
+     */
+    estadoDeLaMusica() {
+      const el = pistas && pistas[cualCancion];
+      return {
+        cancion: CANCIONES[cualCancion].titulo,
+        segundo: el ? +el.currentTime.toFixed(1) : 0,
+        guardado: dondeQuedo.map((t) => +t.toFixed(1)),
+        sonando: !!(el && !el.paused),
+      };
+    },
     /** Toca un efecto por nombre; si el audio no arrancó todavía, no pasa nada. */
     play(name) {
       if (!ctx || !CONFIG.audio.enabled) return;

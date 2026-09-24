@@ -54,6 +54,17 @@ foreach ($f in $archivos) {
     return $m.Groups[1].Value + $m.Groups[2].Value + 'forajido/' + ($partes -join '/') + $m.Groups[2].Value
   })
 
+  # LA MUSICA TAMBIEN VIAJA ADENTRO. Los .js que nombran un mp3 de
+  # `src/assets/` se reescriben con el audio entero en base64: el archivo suelto
+  # tiene que sonar sin depender de ninguna carpeta al lado.
+  $codigo = [regex]::Replace($codigo, "(['""])src/assets/([^'""]+\.mp3)\1", {
+    param($m)
+    $ruta = Join-Path $src ('assets/' + $m.Groups[2].Value)
+    if (-not (Test-Path $ruta)) { return $m.Value }
+    $bytes = [System.IO.File]::ReadAllBytes($ruta)
+    return $m.Groups[1].Value + 'data:audio/mpeg;base64,' + [Convert]::ToBase64String($bytes) + $m.Groups[1].Value
+  })
+
   $b64 = [Convert]::ToBase64String($utf8.GetBytes($codigo))
   $imports.Add("    `"forajido/$rel`": `"data:text/javascript;charset=utf-8;base64,$b64`"")
 }

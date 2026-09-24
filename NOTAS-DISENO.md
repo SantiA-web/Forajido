@@ -15198,6 +15198,50 @@ quedar detrás—. De los 173 bloques, en pantalla entran unos 40.
 
 ---
 
+### 🎵 LA MÚSICA DEL CAMPAMENTO: DOS CANCIONES DE VERDAD
+
+*(Santi: "me gustaría que reemplaces la música del campamento por estas dos
+canciones. Cuando volvés de un asalto o del campamento la música sonará desde
+dónde la cortaste")*
+
+Son suyas (`santiarce08`): **"Fogata de noche"**, una instrumental y la otra con
+la armónica al frente, de 3:03 y 3:14. Viven en `src/assets/musica/`.
+
+**El campamento pasa a las canciones; el pueblo se queda con la guitarra
+sintetizada** — son dos lugares distintos y no tienen por qué sonar igual. Por
+eso `arrancarMusica` ahora recibe qué música querés (`'canciones'` por omisión,
+`'guitarra'` para el pueblo).
+
+**Y se acuerdan dónde quedaron.** Salir al asalto no reinicia la canción:
+`pararMusica` anota el segundo y `arrancarMusica` vuelve ahí. Cuando una
+termina, arranca la otra.
+
+🐛 **Y ahí apareció el problema del día, que no era del juego sino del
+servidor.** Volver a la canción donde la cortaste **no funcionaba**: arrancaba
+de cero siempre. Medido: `servidor.ps1` contesta **200 a un pedido por rango**
+en vez de 206 y no manda `Accept-Ranges`, así que el navegador marca el audio
+como **no buscable** (`seekable.end(0) === 0`) aunque lo tenga entero en
+memoria. La solución no toca el servidor: el mp3 **se baja entero con `fetch` y
+se le pasa un `blob:`**, que siempre se puede buscar — y de paso anda igual con
+el mp3 metido como `data:` en el archivo suelto.
+
+⚠️ **No pasan por el `AudioContext`**, a propósito: un
+`createMediaElementSource` sobre un `data:` puede quedar mudo por las reglas de
+origen. El volumen se maneja con el del propio `<audio>`
+(`CONFIG.ambiente.cancionVolumen`).
+
+📦 **Y `armar-archivo.ps1` aprendió a empaquetar audio**: cualquier `.js` que
+nombre un mp3 de `src/assets/` sale con el audio entero adentro, en base64.
+
+⚠️ **LO QUE ESO CUESTA, Y ES MUCHO:** los dos mp3 pesan **9 MB**, y el
+`Forajido-jugar.html` pasó de **2,6 MB a 17,8**. No son 9 ni 12: el audio se
+codifica en base64 para meterlo en el `.js`, y después el `.js` entero se vuelve
+a codificar en base64 para el importmap — **dos capas**, 9 MB se vuelven 16.
+Reexportar las dos canciones a 64 kbps mono (unos 3 MB en total) dejaría el
+archivo en unos 8 MB, y para una guitarra y una armónica de fondo se oye igual.
+
+---
+
 ### 🧊 EL PROTOTIPO 3D (carpeta `proto3d/`, aparte del juego)
 
 *(Santi: "¿qué tan costoso y recomendado es hacer que sean 3D las escenas de

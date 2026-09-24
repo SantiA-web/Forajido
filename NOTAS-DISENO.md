@@ -15136,6 +15136,58 @@ iluminados a los costados, o sea jambas. Ahora es una raja —ancha arriba,
 angosta al pie— con los bordes mordidos en escalones y sin ningún canto
 iluminado.
 
+###### Cuarta vuelta: no era el dibujo, era la forma
+
+*(Santi, con una foto de la Quebrada de La Troya: "yo pensaba que era algo como
+esta foto; que luego de la puerta de la quebrada sigue siendo estrecho y sigue
+habiendo pared de rocas. Cuando dije muro no me refería a que tenga más
+salientes y cosas puntiagudas")*
+
+Ahí estaba el error de verdad, y era mío de fondo: yo había entendido "le falta
+textura" cuando lo que me estaba diciendo era **otra cosa**. Una pared de 26 de
+espesor con un agujero nunca se iba a parecer a esa foto, por más que se le
+rompiera el borde. Una quebrada es **un macizo de roca con una garganta metida
+adentro**: entrás por la boca y **seguís entre dos paredes**.
+
+Así quedó: el macizo tiene **260 de fondo**, y adentro hay una garganta que se
+cierra de 60 a **46** y hace una **curva suave** (`s²(3−2s)`, que arranca y
+termina derecha, así que no hay ningún codo donde encajarse). Se gana **al fondo
+de la garganta**, no en la boca.
+
+**Y ellos frenan en la boca**: para la ley la garganta es roca maciza. Eso hace
+que el último tramo lo hagas solo, entre las paredes — que es el premio.
+
+🐛 **Dos bugs que sólo aparecieron midiendo:**
+
+1. **La brújula te mandaba a salir.** Apuntaba al punto del refugio, que ahora es
+   la boca: apenas entrabas, la flecha señalaba para atrás. El piloto entraba y
+   se daba media vuelta, y **cero corridas terminaban en la quebrada**. Ahora
+   `puntoDeEntrada` apunta a la boca desde afuera y a un tramo más profundo una
+   vez adentro, siguiendo la curva. Pasó a 10 de 16.
+2. **La ley se metía igual.** Al empujarlos los corría contra la pared de la
+   garganta, igual que a vos, así que el que alcanzaba a meter el hocico quedaba
+   adentro raspando — 1,2 segundos de ley adentro por corrida. Ahora salen
+   siempre hacia el campo, esté donde esté del macizo: bajó a 0,67 s, que son
+   los cuadros sueltos entre que entran y el empujón los saca.
+
+📏 **Medido con el piloto que juega bien (18 corridas de cuatro jinetes):** la
+corrida dura **27 s**, se pasan **1,7 s adentro de la garganta** y sólo **0,44 s
+raspando** el paredón, y 5 de 18 terminan en la quebrada (10 en el bosque).
+
+🎨 **Y la roca se redibujó con la foto al lado:** no hay hiladas horizontales,
+hay **erosión vertical** —chorreaduras de arriba abajo, unas más oscuras y otras
+más claras— y la pared está **picada de huecos** (tafoni), en tonos rojizos.
+
+🐛 Y un tropiezo más en el camino: al principio cada bloque sacaba su color de
+una paleta de cinco, y con las chorreaduras encima el resultado era una
+**columnata**, como caños de órgano. La roca es **una sola masa**: ahora es un
+único tono con una variación mínima por bloque, y lo que cambia de un lado a
+otro es la luz, no el material.
+
+⚠️ Y **la pared de la garganta que queda entre la cámara y vos va recortada** a
+un tercio de su altura. Si no, taparía al caballo entero mientras cruzás: es el
+recorte de siempre de los juegos vistos desde arriba.
+
 ⚠️ Y el paredón **entra trozo por trozo** en la lista que se ordena por
 profundidad: cruza la pantalla entera, así que no puede ordenarse como UNA cosa
 —el jinete que está al sur tiene que taparlo y el que está al norte tiene que

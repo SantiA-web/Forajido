@@ -40,7 +40,7 @@ import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
 import {
   DESTINOS, refugiosDeLaRegion, ACHATA, dibujarRefugio, dibujarDeLejos,
-  chocaConElRefugio, adentroDelRefugio, esPared, trozosDelParedon, PAREDON, PARED,
+  chocaConElRefugio, adentroDelRefugio, esPared, trozosDelParedon, puntoDeEntrada, PAREDON, PARED,
 } from '../world/destinos.js';
 
 /**
@@ -1250,7 +1250,8 @@ export function createHuidaScene(services) {
       audio.play('hitWall');
     }
     for (const d of refugios) {
-      const empuje = chocaConElRefugio(d, j.x, j.y);
+      // `true`: para la ley la garganta de la quebrada es roca maciza.
+      const empuje = chocaConElRefugio(d, j.x, j.y, true);
       if (!empuje) continue;
       j.x = empuje.x;
       j.y = empuje.y;
@@ -1903,8 +1904,14 @@ export function createHuidaScene(services) {
    */
   function dibujarBrujula(r) {
     for (const d of refugios) {
-      const dx = d.x - yo.x;
-      const dy = (d.y - yo.y) / PROFUNDIDAD;
+      /**
+       * No apunta al refugio, apunta **a dónde hay que ir para entrar**: en la
+       * quebrada eso es la boca desde afuera y el fondo de la garganta una vez
+       * adentro (ver `puntoDeEntrada`).
+       */
+      const meta = puntoDeEntrada(d, yo.x, yo.y);
+      const dx = meta.x - yo.x;
+      const dy = (meta.y - yo.y) / PROFUNDIDAD;
       const dist = Math.hypot(dx, dy);
       const a = Math.atan2(dy, dx);
       const x = vista.w / 2 + Math.cos(a) * vista.w * 0.44;

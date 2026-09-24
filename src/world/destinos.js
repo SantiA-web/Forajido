@@ -67,6 +67,19 @@ export const PARED = 26;
  *
  * El bosque de rocas sigue siendo anillo: acá cambia sólo la quebrada.
  */
+/**
+ * 🏜️ Y LO QUE VIENE DESPUÉS DE LA BOCA *(Santi, con una foto de la Quebrada de
+ * La Troya: "yo pensaba que era algo como esta foto; que luego de la puerta de
+ * la quebrada sigue siendo estrecho y sigue habiendo pared de rocas")*.
+ *
+ * Tenía razón, y el error era más de fondo que el dibujo: una pared de 26 de
+ * espesor con un agujero nunca se iba a parecer a eso, por más que se le
+ * rompiera el borde. Una quebrada es un **macizo de roca con una garganta
+ * metida adentro**: entrás por la boca y seguís entre dos paredes.
+ *
+ * Y eso mejora el final de la corrida: **ellos frenan en la boca** —ahí no
+ * entran— así que el último tramo lo hacés solo, entre las paredes.
+ */
 export const PAREDON = {
   /**
    * LARGO TOTAL, mitad para cada lado del hueco. "Infinita" de verdad dejaría
@@ -83,9 +96,53 @@ export const PAREDON = {
    */
   hueco: 60,
 
-  /** Cuánto se hunde el hueco: el tramo de penumbra que cruzás. */
-  fondo: 40,
+  /**
+   * CUÁNTO MIDE LA GARGANTA hacia adentro del macizo. Son unos dos segundos a
+   * galope: 150 es un zaguán y 450 son cuatro segundos de pasillo después de
+   * que ya se terminó la tensión.
+   */
+  garganta: 260,
+
+  /**
+   * Y CUÁNTO SE CIERRA ADENTRO. La boca mide 60; adentro baja a 46, que se
+   * siente que se cierra sin que vayas rebotando de pared a pared (con 32, sí).
+   */
+  ancho: 46,
+
+  /** Cuánto se corre de costado la garganta de la boca al fondo: la curva. */
+  curva: 70,
 };
+
+/**
+ * POR DÓNDE VA LA GARGANTA a cada profundidad. Una curva suave que arranca y
+ * termina derecha (`s² (3 − 2s)`), así que no hay ningún codo donde encajarse.
+ */
+function centroDeLaGarganta(v) {
+  const s = Math.max(0, Math.min(1, v / PAREDON.garganta));
+  return PAREDON.curva * s * s * (3 - 2 * s);
+}
+
+/** Y cuánto mide de ancho: la boca se cierra en el primer cuarto. */
+function anchoDeLaGarganta(d, v) {
+  const s = Math.max(0, Math.min(1, v / (PAREDON.garganta * 0.3)));
+  return d.hueco + (PAREDON.ancho - d.hueco) * s;
+}
+
+/**
+ * 🧭 HACIA DÓNDE HAY QUE IR PARA ENTRAR A ESTE REFUGIO.
+ *
+ * 🐛 Con el anillo alcanzaba con su centro, pero con la garganta no: apenas
+ * pasabas la boca, la brújula te seguía apuntando **a la boca**, o sea que
+ * adentro te mandaba a salir. Afuera apunta a la boca; adentro, a un tramo más
+ * profundo, siguiendo la curva.
+ */
+export function puntoDeEntrada(d, x, y) {
+  if (!esPared(d)) return { x: d.x, y: d.y };
+  const { v } = enLaPared(d, x, y);
+  if (v < PARED / 2) return { x: d.x, y: d.y };
+  const t = Math.min(PAREDON.garganta + 6, v + 90);
+  return desdeLaPared(d, centroDeLaGarganta(t), t);
+}
 
 /** ¿Este refugio es un paredón o un anillo? */
 export const esPared = (d) => d.forma === 'pared';
@@ -119,8 +176,8 @@ function desdeLaPared(d, u, v) {
  * Es la misma cuenta que usa el dibujo, así que la pared que ves es la que te
  * frena.
  */
-export function chocaConElRefugio(d, x, y) {
-  if (esPared(d)) return chocaConElParedon(d, x, y);
+export function chocaConElRefugio(d, x, y, esLey) {
+  if (esPared(d)) return chocaConElParedon(d, x, y, esLey);
   const dx = x - d.x;
   const dy = (y - d.y) / ACHATA;
   const dist = Math.hypot(dx, dy);
@@ -138,14 +195,43 @@ export function chocaConElRefugio(d, x, y) {
  * hay que correrte, o `null` si estás libre— pero en coordenadas de la pared:
  * te frena si estás dentro de su grosor, dentro de su largo y fuera del hueco.
  */
-function chocaConElParedon(d, x, y) {
+function chocaConElParedon(d, x, y, esLey) {
   const { u, v } = enLaPared(d, x, y);
-  const medio = PARED / 2;
-  if (Math.abs(v) > medio + 6 || Math.abs(u) > d.largo / 2) return null;
-  // El hueco: por ahí se pasa. Se deja un pelo de margen contra cada punta.
-  if (Math.abs(u) < d.hueco / 2 - 4) return null;
-  // Te salís por el lado que tenés más cerca.
-  return desdeLaPared(d, u, v >= 0 ? medio + 7 : -(medio + 7));
+  const cara = PARED / 2;
+  const G = PAREDON;
+
+  // Delante del macizo o pasado el fondo de la garganta: campo libre.
+  if (v < -cara - 6 || v > G.garganta + 10) return null;
+  // Y a los costados del paredón, también.
+  if (Math.abs(u) > d.largo / 2 && v < G.garganta) return null;
+
+  /**
+   * ¿VA POR LA GARGANTA? El centro se corre con la profundidad (la curva) y el
+   * ancho se cierra después de la boca.
+   *
+   * ⚠️ PARA LA LEY, LA GARGANTA ES ROCA. No entran: frenan en la boca, y por
+   * eso el último tramo lo hacés solo. Es lo que convierte a la garganta en el
+   * final de la corrida y no en un pasillo más.
+   */
+  const uc = centroDeLaGarganta(v);
+  const w = anchoDeLaGarganta(d, v);
+  const dentroDeLaGarganta = Math.abs(u - uc) < w / 2 - 4;
+  if (dentroDeLaGarganta && !esLey) return null;
+
+  /**
+   * Contra la cara de afuera te salís hacia adelante, al campo.
+   *
+   * 🐛 Y LA LEY SALE SIEMPRE PARA AFUERA, esté donde esté del macizo. La
+   * primera versión los corría contra la pared de la garganta igual que a vos,
+   * así que los que alcanzaban a meter el hocico en la boca quedaban **adentro**
+   * raspando: medidos, 1,2 segundos por corrida de ley adentro de la quebrada,
+   * que es justo lo que no tiene que pasar.
+   */
+  if (v < cara || esLey) return desdeLaPared(d, u, -cara - 7);
+
+  // Ya adentro del macizo: te corre contra la pared de la garganta.
+  const lado = u >= uc ? 1 : -1;
+  return desdeLaPared(d, uc + lado * (w / 2 - 4), v);
 }
 
 /**
@@ -154,8 +240,13 @@ function chocaConElParedon(d, x, y) {
  */
 export function adentroDelRefugio(d, x, y) {
   if (esPared(d)) {
+    /**
+     * EN LA QUEBRADA SE GANA AL FONDO DE LA GARGANTA, no en la boca. Es lo que
+     * hace que el tramo de adentro exista: entrás, ellos se quedan afuera, y
+     * recién cuando llegaste al fondo estás a salvo.
+     */
     const { u, v } = enLaPared(d, x, y);
-    return v > PARED / 2 + 6 && Math.abs(u) < d.hueco;
+    return v > PAREDON.garganta - 14 && Math.abs(u - centroDeLaGarganta(v)) < d.hueco;
   }
   const dx = x - d.x;
   const dy = (y - d.y) / ACHATA;
@@ -237,6 +328,37 @@ export function trozosDelParedon(d, dia, cerca) {
   const mitad = d.largo / 2;
   const borde = d.hueco / 2;
 
+  /**
+   * 🏜️ PRIMERO, EL MACIZO VISTO DESDE ARRIBA. Va detrás de todo (`y` muy
+   * chico) porque es suelo: la meseta de roca, el piso de la garganta y la
+   * sombra que las paredes tiran adentro.
+   */
+  trozos.push({ y: -1e9, draw: (r) => mesetaDelMacizo(r, c, d) });
+
+  /**
+   * Y LAS DOS PAREDES DE LA GARGANTA, hacia adentro.
+   *
+   * ⚠️ LA PARED DE ADELANTE VA RECORTADA. En tres cuartos, la pared que queda
+   * entre la cámara y vos taparía al caballo entero mientras cruzás: de las dos
+   * se dibuja entera la del fondo, y la de adelante queda como un borde bajo.
+   * Es el recorte de siempre de los juegos vistos desde arriba.
+   */
+  for (let v = 4; v <= PAREDON.garganta; v += BLOQUE) {
+    const uc = centroDeLaGarganta(v);
+    const w = anchoDeLaGarganta(d, v);
+    const lados = [-1, 1].map((lado) => {
+      const u = uc + lado * (w / 2 + BLOQUE * 0.45);
+      return { u, p: desdeLaPared(d, u, v) };
+    });
+    lados.sort((a, b) => a.p.y - b.p.y);
+    lados.forEach((k, orden) => {
+      if (Math.abs(k.p.x - cerca.x) > cerca.w || Math.abs(k.p.y - cerca.y) > cerca.h) return;
+      const i = Math.round(v / BLOQUE) * 31 + (k.u > uc ? 7 : 3);
+      const recorte = orden === 0 ? 1 : 0.36;
+      trozos.push({ y: k.p.y, draw: (r) => bloqueDePared(r, c, k.p.x, k.p.y, k.u, i, false, recorte) });
+    });
+  }
+
   for (let u = -mitad; u <= mitad; u += BLOQUE) {
     if (Math.abs(u) < borde) continue;
     const i = Math.round(u / BLOQUE);
@@ -255,7 +377,7 @@ export function trozosDelParedon(d, dia, cerca) {
     if (Math.abs(p.x - cerca.x) > cerca.w || Math.abs(p.y - cerca.y) > cerca.h) continue;
     // El bloque que da al hueco se dibuja en sombra: es el canto de la grieta.
     const alBorde = Math.abs(Math.abs(u) - borde) < BLOQUE;
-    trozos.push({ y: p.y, draw: (r) => bloqueDePared(r, c, p.x, p.y, u, i, alBorde) });
+    trozos.push({ y: p.y, draw: (r) => bloqueDePared(r, c, p.x, p.y, u, i, alBorde, 1) });
   }
 
   /**
@@ -264,8 +386,6 @@ export function trozosDelParedon(d, dia, cerca) {
    * que la pared tira hacia el lado del que venís. Sin la sombra, el paredón
    * es una cerca; con ella, es alto.
    */
-  const boca = desdeLaPared(d, 0, 0);
-  trozos.push({ y: boca.y - 0.5, draw: (r) => bocaDeLaQuebrada(r, c, d) });
   return trozos;
 }
 
@@ -294,89 +414,102 @@ function alturaDeLaPared(u) {
  * bloques vecinos: las vetas se continúan a lo largo del paredón, como en un
  * corte de roca de verdad.
  */
-const BANDAS = [7, 5, 9, 6, 11, 5, 8];
-const CAPAS = ['#7a6047', '#6b5340', '#856a4e', '#5c4735', '#725a42'];
+/** El color de la arenisca de la quebrada: uno solo para todo el macizo. */
+const ROCA = '#8a6049';
 
 /** Un ruido de 0 a 1, fijo para cada bloque. */
 function ruido(i, sal) {
   return (revolver(i * 2654435761 + sal) % 1024) / 1024;
 }
 
-/** Un bloque del paredón: estratos en diagonal, cresta rota y falda de pedregullo. */
-function bloqueDePared(r, c, x, y, u, i, alBorde) {
+/**
+ * UN BLOQUE DE ROCA DEL MACIZO.
+ *
+ * 🏜️ LA TEXTURA SALE DE LA FOTO QUE PASÓ SANTI (la Quebrada de La Troya): no
+ * hay hiladas horizontales, hay **erosión vertical** —chorreaduras de arriba
+ * abajo— y la pared está **picada de huecos**, en tonos rojizos. Los estratos
+ * prolijos que tenía antes eran justamente lo que la hacía parecer mampostería.
+ *
+ * `recorte` es cuánto se dibuja de su altura: las paredes de la garganta que
+ * quedan entre la cámara y el jugador van recortadas a un borde bajo, si no
+ * taparían al caballo mientras cruza.
+ */
+function bloqueDePared(r, c, x, y, u, i, alBorde, recorte = 1) {
   const s = revolver(i);
-  const alto = alturaDeLaPared(u);
-  // Los bloques se pisan un poco entre sí: sin eso se ven las juntas verticales.
+  const alto = Math.max(10, Math.round(alturaDeLaPared(u) * recorte));
   const w = BLOQUE + 3;
   const x0 = x - w / 2;
   const mod = (k, m) => ((k % m) + m) % m;
 
-  // La sombra al pie: es lo que la despega del suelo y la hace alta.
+  // La sombra al pie: es lo que la despega del suelo.
   r.ctx.save();
   r.ctx.globalAlpha = 0.3;
   r.rect(x0 - 2, y, w + 4, 6, '#000');
   r.ctx.restore();
 
   /**
-   * EL CUERPO, EN BANDAS QUE VAN EN DIAGONAL. Las bandas se cuentan desde la
-   * base —así se continúan de bloque a bloque— pero el índice se corre con `u`,
-   * y eso hace que los estratos **bajen despacio** a lo largo del paredón en
-   * vez de ser rayas horizontales perfectas. Las rayas perfectas y paralelas
-   * son hiladas de ladrillo, no roca sedimentaria.
+   * EL CUERPO: **un solo tono de arenisca para todo el paredón**, con una
+   * variación mínima por bloque.
+   *
+   * 🐛 Antes cada bloque sacaba su color de una paleta de cinco, y con las
+   * chorreaduras encima el resultado era una **columnata**: se veía bloque por
+   * bloque, como caños de órgano. La roca es una sola masa; lo que cambia de un
+   * lado a otro es la luz, no el material.
    */
-  const corrida = Math.round(u * 0.06);
-  let desdeAbajo = 0;
-  let banda = 0;
-  while (desdeAbajo < alto) {
-    const k = banda + corrida;
-    const h = Math.min(alto - desdeAbajo, BANDAS[mod(k, BANDAS.length)]);
-    const yb = y - desdeAbajo - h;
-    r.rect(x0, yb, w, h, c(CAPAS[mod(k, CAPAS.length)]));
-    if (h > 3) r.rect(x0, yb + h - 1, w, 1, c('#493c2e'));
-    desdeAbajo += h;
-    banda += 1;
+  const base = escalarColor(ROCA, 0.93 + ruido(i, 3) * 0.14);
+  r.rect(x0, y - alto, w, alto, c(base));
+
+  /**
+   * LAS CHORREADURAS: franjas verticales que bajan desde el tope, unas más
+   * oscuras y otras más claras. Es lo que hace la lluvia sobre la arenisca, y
+   * es lo contrario de una hilada.
+   */
+  const cuantas = 3 + (s % 3);
+  for (let k = 0; k < cuantas; k++) {
+    const gx = x0 + 1 + Math.floor(ruido(i * 5 + k, 11) * (w - 2));
+    const ancho = ruido(i + k, 23) > 0.7 ? 2 : 1;
+    const largo = Math.round(alto * (0.35 + ruido(i + k, 37) * 0.6));
+    const tono = ruido(i + k, 41) > 0.55 ? '#5a3b2e' : '#9c7560';
+    r.rect(gx, y - alto + 1, ancho, largo, c(tono));
   }
 
   /**
-   * 🐛 LA CRESTA VA ROTA, no plana. Un tope parejo con escaloncitos de bloque
-   * en bloque es exactamente un almenado: el bloque se parte en tres columnas
-   * que suben distinto, y encima va una línea de luz que sigue ese dentado.
+   * Y LOS HUECOS (tafoni): la roca picada de la foto. Van en el medio de la
+   * cara, nunca contra el borde, para que no se coman la silueta.
+   */
+  const huecos = 3 + (s % 4);
+  for (let k = 0; k < huecos; k++) {
+    const hx = x0 + 2 + Math.floor(ruido(i * 7 + k, 59) * (w - 5));
+    const hy = y - alto + 3 + Math.floor(ruido(i * 11 + k, 61) * Math.max(1, alto - 7));
+    const tam = ruido(i + k, 67) > 0.72 ? 2 : 1;
+    r.rect(hx, hy, tam + 1, tam, c('#4a3025'));
+    r.rect(hx, hy + tam, tam + 1, 1, c('#a4806a'));
+  }
+
+  /**
+   * LA CRESTA VA ROTA, no plana: el bloque se parte en tres columnitas que
+   * suben distinto. Un tope parejo con escaloncitos es un almenado.
    */
   const tercio = Math.ceil(w / 3);
   for (let k = 0; k < 3; k++) {
     const cx = x0 + k * tercio;
     const cw = Math.min(tercio, x0 + w - cx);
     if (cw <= 0) break;
-    const sube = Math.round((ruido(i * 3 + k, 19) - 0.3) * 10);
+    const sube = Math.round((ruido(i * 3 + k, 19) - 0.3) * 8 * recorte);
     const techo = y - alto - Math.max(0, sube);
-    if (sube > 0) r.rect(cx, techo, cw, sube + 2, c(CAPAS[mod(i + k, CAPAS.length)]));
-    r.rect(cx, techo, cw, 1, c('#9d8a6d'));
+    if (sube > 0) r.rect(cx, techo, cw, sube + 2, c(base));
+    r.rect(cx, techo, cw, 1, c(escalarColor(ROCA, 1.28)));
   }
 
-  /** Las grietas verticales van salteadas: una por bloque sería una tapia. */
-  if (s % 5 === 0) {
-    const gx = x0 + 3 + (s % (w - 6));
-    const largo = 10 + (s % Math.max(1, alto - 14));
-    r.rect(gx, y - alto + 4, 1, largo, c('#3a2f24'));
-    r.rect(gx + 1, y - alto + 4, 1, Math.round(largo * 0.6), c('#6d5943'));
-  }
-
-  /**
-   * LA FALDA DE PEDREGULLO. Es lo que se fue desprendiendo del paredón y se
-   * amontonó al pie, y es otra cosa que una muralla no tiene: la roca se cae.
-   */
+  /** La falda de pedregullo: la roca se desprende y se amontona al pie. */
   const pie = 3 + Math.round(ruido(i, 31) * 4);
   for (let k = 0; k < pie; k++) {
     const ancho = w - k * 2 - Math.round(ruido(i + k, 53) * 3);
     if (ancho <= 2) break;
-    r.rect(x0 + k + 1, y + k, ancho, 1, c(k < 2 ? '#6d5b45' : '#5b4c3b'));
-  }
-  if (s % 3 === 0) {
-    const k = (s >>> 5) % 7;
-    r.rect(x0 + 2 + k, y + pie, 3 + (k % 3), 2, c('#665644'));
+    r.rect(x0 + k + 1, y + k, ancho, 1, c(k < 2 ? '#7a5a46' : '#66483a'));
   }
 
-  // El bloque que mira al hueco va oscurecido: es el canto de la grieta.
+  // El bloque que mira a la boca va en sombra: es el canto de la grieta.
   if (alBorde) {
     r.ctx.save();
     r.ctx.globalAlpha = 0.5;
@@ -386,63 +519,67 @@ function bloqueDePared(r, c, x, y, u, i, alBorde) {
 }
 
 /**
- * LA BOCA: el fondo negro entre las dos puntas y la penumbra del paso. Lo que
- * se ve por el hueco no es campo abierto — es la grieta metiéndose adentro.
+ * 🏜️ EL MACIZO VISTO DESDE ARRIBA: la meseta de roca, el piso de la garganta
+ * metiéndose adentro, y la sombra que las paredes tiran sobre ese piso.
+ *
+ * Es SUELO, así que se dibuja detrás de todo lo demás: no tapa a nadie.
  */
-function bocaDeLaQuebrada(r, c, d) {
-  const medio = d.hueco / 2 - 2;
-  const alto = alturaDeLaPared(0);
-  const esquina = (u, v) => desdeLaPared(d, u, v);
-
-  /**
-   * 🐛 LA BOCA SIGUE LA LÍNEA DE LA PARED, CON LOS COSTADOS VERTICALES.
-   *
-   * La primera versión armaba el pasillo en perspectiva —la boca adelante y el
-   * fondo corrido hacia adentro— y con la pared inclinada eso salía **torcido**:
-   * un tajo oscuro caído de costado, como una losa apoyada. La profundidad acá
-   * no se dibuja: **se pinta**, con tres tonos de sombra cada vez más oscuros.
-   */
-  /**
-   * 🐛 LA GRIETA SE ABRE ARRIBA Y SE CIERRA ABAJO, y no lleva jambas.
-   *
-   * La versión anterior era un rectángulo con dos cantos iluminados a los
-   * costados: eso es el dibujo de una PUERTA, y una puerta en una pared de
-   * piedra es un castillo. Una quebrada es una raja — ancha arriba, angosta al
-   * pie, y con los bordes mordidos.
-   */
-  const tajo = (arribaAncho, abajoAncho, altura, color) => {
-    const la = esquina(-medio * arribaAncho, 0);
-    const ra = esquina(medio * arribaAncho, 0);
-    const lb = esquina(-medio * abajoAncho, 0);
-    const rb = esquina(medio * abajoAncho, 0);
-    r.ctx.fillStyle = color;
-    r.ctx.beginPath();
-    r.ctx.moveTo(lb.x, lb.y + 2);
-    r.ctx.lineTo(rb.x, rb.y + 2);
-    // El borde derecho, mordido en tres escalones.
-    r.ctx.lineTo(rb.x + (ra.x - rb.x) * 0.45, rb.y - alto * altura * 0.35);
-    r.ctx.lineTo(ra.x, ra.y - alto * altura * 0.7);
-    r.ctx.lineTo(ra.x - 2, ra.y - alto * altura);
-    r.ctx.lineTo(la.x + 2, la.y - alto * altura);
-    r.ctx.lineTo(la.x, la.y - alto * altura * 0.68);
-    r.ctx.lineTo(lb.x + (la.x - lb.x) * 0.4, lb.y - alto * altura * 0.33);
-    r.ctx.closePath();
-    r.ctx.fill();
-  };
+function mesetaDelMacizo(r, c, d) {
+  const G = PAREDON;
+  const mitad = d.largo / 2;
+  const P = (u, v) => desdeLaPared(d, u, v);
+  const pasos = 14;
 
   r.ctx.save();
-  // Tres capas cada vez más angostas y más oscuras: la profundidad se pinta.
-  tajo(1, 0.5, 0.96, '#332619');
-  tajo(0.78, 0.3, 0.86, '#1d1610');
-  tajo(0.46, 0.14, 0.7, '#0e0b08');
 
-  // La sombra que el paredón tira sobre el campo del que llega.
-  r.ctx.globalAlpha = 0.22;
+  // 1. La roca, de la cara hasta el fondo del macizo.
+  const a = P(-mitad, -PARED / 2), b = P(mitad, -PARED / 2);
+  const e = P(mitad, G.garganta + 30), f = P(-mitad, G.garganta + 30);
+  r.ctx.fillStyle = c('#4a3228');
+  r.ctx.beginPath();
+  r.ctx.moveTo(a.x, a.y); r.ctx.lineTo(b.x, b.y);
+  r.ctx.lineTo(e.x, e.y); r.ctx.lineTo(f.x, f.y);
+  r.ctx.closePath();
+  r.ctx.fill();
+
+  // 2. El piso de la garganta: arena clara entre las dos paredes.
+  const bordeIzq = [], bordeDer = [];
+  for (let k = 0; k <= pasos; k++) {
+    const v = (k / pasos) * G.garganta;
+    const uc = centroDeLaGarganta(v);
+    const w = anchoDeLaGarganta(d, v) / 2;
+    bordeIzq.push(P(uc - w, v));
+    bordeDer.push(P(uc + w, v));
+  }
+  r.ctx.fillStyle = c('#7a6149');
+  r.ctx.beginPath();
+  r.ctx.moveTo(bordeIzq[0].x, bordeIzq[0].y);
+  for (const p of bordeIzq) r.ctx.lineTo(p.x, p.y);
+  for (let k = bordeDer.length - 1; k >= 0; k--) r.ctx.lineTo(bordeDer[k].x, bordeDer[k].y);
+  r.ctx.closePath();
+  r.ctx.fill();
+
+  /**
+   * 3. Y LA SOMBRA DE LAS PAREDES SOBRE ESE PISO, que es lo que da la
+   * oscuridad: la garganta se ensombrece cuanto más adentro, y el fondo queda
+   * casi negro. Por eso vale la pena entrar: adentro no te ven.
+   */
   r.ctx.fillStyle = '#000';
-  const s0 = esquina(-d.largo / 2, -PARED / 2);
-  const s1 = esquina(d.largo / 2, -PARED / 2);
-  const s2 = esquina(d.largo / 2, -PARED / 2 - 20);
-  const s3 = esquina(-d.largo / 2, -PARED / 2 - 20);
+  for (let k = 0; k < pasos; k++) {
+    r.ctx.globalAlpha = 0.18 + (k / pasos) * 0.5;
+    r.ctx.beginPath();
+    r.ctx.moveTo(bordeIzq[k].x, bordeIzq[k].y);
+    r.ctx.lineTo(bordeDer[k].x, bordeDer[k].y);
+    r.ctx.lineTo(bordeDer[k + 1].x, bordeDer[k + 1].y);
+    r.ctx.lineTo(bordeIzq[k + 1].x, bordeIzq[k + 1].y);
+    r.ctx.closePath();
+    r.ctx.fill();
+  }
+
+  // 4. La sombra que el macizo tira sobre el campo del que llega.
+  r.ctx.globalAlpha = 0.22;
+  const s0 = P(-mitad, -PARED / 2), s1 = P(mitad, -PARED / 2);
+  const s2 = P(mitad, -PARED / 2 - 20), s3 = P(-mitad, -PARED / 2 - 20);
   r.ctx.beginPath();
   r.ctx.moveTo(s0.x, s0.y); r.ctx.lineTo(s1.x, s1.y);
   r.ctx.lineTo(s2.x, s2.y); r.ctx.lineTo(s3.x, s3.y);

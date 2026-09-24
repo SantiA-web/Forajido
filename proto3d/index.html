@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forajido — prototipo 3D (dos vagones)</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0b0a09; color: #d8cbb4; overflow: hidden;
+      font-family: ui-monospace, "Courier New", monospace;
+      height: 100vh; display: grid; place-items: center;
+    }
+    /**
+     * EL LIENZO SE DIBUJA CHICO Y SE ESTIRA. Es el truco de siempre del retro
+     * 3D (Barony, Quake): render a 480x270 y escalado con el navegador, sin
+     * suavizar. Se ve a píxeles a propósito Y cuesta cuatro veces menos.
+     */
+    canvas {
+      image-rendering: pixelated;
+      width: 100vw; height: 100vh;
+      display: block; cursor: none;
+    }
+    #hud {
+      position: fixed; inset: 0; pointer-events: none;
+      display: grid; grid-template-rows: auto 1fr auto;
+      padding: 14px 18px; font-size: 15px; letter-spacing: 0.5px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    #arriba { display: flex; justify-content: space-between; align-items: flex-start; }
+    #objetivo { color: #e8c979; }
+    #costo { color: #6b6255; font-size: 12px; }
+    #medio { display: grid; place-items: center; }
+    #cartel { font-size: 22px; color: #e8c979; text-align: center; line-height: 1.5; }
+    #abajo { display: flex; justify-content: space-between; align-items: flex-end; }
+    #aviso { color: #c4603f; }
+    #teclas { color: #6b6255; font-size: 12px; text-align: right; }
+    #tapa {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      background: rgba(11, 10, 9, 0.88); cursor: pointer; text-align: center;
+      padding: 30px; line-height: 1.7;
+    }
+    #tapa h1 { font-size: 20px; color: #e8c979; margin-bottom: 14px; }
+    #tapa p { font-size: 14px; color: #9a8f7d; max-width: 520px; }
+    .chico { font-size: 12px !important; color: #6b6255 !important; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <canvas id="lienzo"></canvas>
+
+  <div id="hud">
+    <div id="arriba">
+      <div id="objetivo">OBJETIVO: llegar a la caja fuerte del segundo vagón</div>
+      <div id="costo"></div>
+    </div>
+    <div id="medio"><div id="cartel"></div></div>
+    <div id="abajo">
+      <div id="aviso"></div>
+      <div id="teclas">
+        [W A S D] MOVERTE &nbsp; [MOUSE] MIRAR &nbsp; [CLIC] TIRAR<br />
+        [CTRL] AGACHARTE &nbsp; [E] FORZAR LA CAJA &nbsp; [ESC] SOLTAR EL MOUSE
+      </div>
+    </div>
+  </div>
+
+  <div id="tapa">
+    <div>
+      <h1>PROTOTIPO 3D — DOS VAGONES</h1>
+      <p>
+        Una sola pregunta: <strong>¿el asalto se siente mejor acá adentro que
+        mirándolo desde arriba?</strong><br />
+        Entrá al segundo vagón, forzá la caja fuerte y volvé a la puerta por
+        donde entraste. Hay tres guardias.
+      </p>
+      <p class="chico">CLIC PARA EMPEZAR (el mouse queda capturado; ESC lo suelta)</p>
+    </div>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -14950,6 +14950,59 @@ el cortador, el forcejeo y los refugios tienen tiempo de pasar.
 
 Sin errores en 17.024 cuadros con teclas y mouse al azar.
 
+### 🧊 EL PROTOTIPO 3D (carpeta `proto3d/`, aparte del juego)
+
+*(Santi: "¿qué tan costoso y recomendado es hacer que sean 3D las escenas de
+acción?" — y después: "yo pensaba que se vea algo como el Barony")*
+
+**La primera respuesta fue que no, y era a otra pregunta.** Rehacer el asalto
+en 3D "normal" —modelos, esqueletos, animaciones— es tirar lo que hace barato
+a este juego: **167 funciones de dibujo** que hacen todo el arte con código, y
+los números medidos de 42.900 líneas, que están pensados para un mundo plano.
+
+**Con Barony en la cabeza la cuenta cambia.** El retro-3D (Quake, Doom, Ultima
+Underworld) está hecho justamente para no necesitar arte caro:
+
+| | 3D "normal" | Estilo Barony |
+|---|---|---|
+| Un vagón | Modelado y texturizado | Cajas y planos hechos con código |
+| Las paredes | Materiales y mapas | Texturas de 32×32 dibujadas con código |
+| Un guardia | Modelo + esqueleto + 8 animaciones | **El dibujo que ya tiene el juego**, en un cartel que gira |
+| El jugador | Modelo, animaciones, cámara que esquive paredes | **Nada**: en primera persona no te ves |
+
+Así que se armó el prototipo: **dos vagones, tres guardias, una caja fuerte**.
+Primera persona porque es la cámara más barata que existe.
+
+**Lo que se reusó del juego:** `dibujarPersona`. Los guardias son literalmente
+la misma figura de siempre, dibujada en un lienzo aparte y pegada en un plano
+que gira para quedar de frente. Es lo que hacía Doom, y es lo que hace que el
+prototipo no necesite un modelador.
+
+🐛 **Y ahí apareció la única trampa del día:** `dibujarPersona` no dibuja sólo
+con `rect` — adentro hace `drawImage` **en unidades del mundo**, confiando en
+que el contexto ya tiene la lupa puesta. El adaptador multiplicaba cada
+rectángulo por la escala en vez de ponerla en el contexto, así que el guardia
+salía del tamaño de una uña en la esquina de la estampa. La escala va en el
+`setTransform`, no en las cuentas.
+
+📏 **Lo medido:** **0,39 ms por cuadro**, 52 triángulos, 16 llamadas de dibujo,
+con el lienzo a 455×270 estirado por el navegador (de ahí el aspecto a píxeles
+y la velocidad). Probado de punta a punta: el tiro voltea al guardia y levanta
+la alarma, la caja se fuerza con [E] y volver a la puerta cierra la corrida.
+
+**Cómo abrirlo:** `http://localhost:8082/proto3d/index.html` — todo lo demás
+está en `proto3d/LEEME.md`.
+
+⚠️ **Lo que el prototipo NO contesta**, y conviene tenerlo claro antes de
+mirarlo: si conviene mudar el juego entero. Eso sigue siendo el trabajo grande.
+El prototipo contesta una sola cosa: **si el asalto se siente mejor adentro del
+vagón**. Y de paso pone sobre la mesa algo que no es gráfico: en primera
+persona **no ves lo que tenés detrás**, así que el sigilo deja de jugarse
+mirando la barrita del guardia y pasa a jugarse de oído. Es otro juego de
+sigilo, no el mismo con otra cámara.
+
+---
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

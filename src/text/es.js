@@ -256,7 +256,7 @@ export const T = {
     loTiraste: '¡LO TIRASTE DEL CABALLO!',
     aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
     atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,
-    teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [CLIC DER.] APUNTAR   [R] RECARGAR   [E] ZAFAR'],
+    teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [R] RECARGAR   [E] ZAFAR'],
   },
 
   ride: {

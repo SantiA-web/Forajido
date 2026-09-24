@@ -353,15 +353,27 @@ export const HUIDA = {
      * multiplica por esto mientras vas galopando. Frenado ([SHIFT]) recargás
      * normal, porque ahí podés soltar las riendas.
      *
-     * En 1 está apagado — es el número de una propuesta de equilibrio, no una
-     * decisión tomada. Ver la pasada de equilibrio en NOTAS-DISENO.md.
+     * Con dos tiros por jinete (ver `jinetes.vida`) el cilindro se vacía de
+     * verdad, así que esto pasó a tener sentido: 1,8 es medio segundo más de
+     * recarga con el Colt, el tiempo justo para que te alcancen si la pedís en
+     * mal momento.
      */
-    recargaACaballo: 1,
+    recargaACaballo: 1.8,
 
     /**
-     * APUNTAR CON CLIC DERECHO, como en el asalto *(Santi: "o que exista la
-     * posibilidad de apuntar con click derecho")*: la dispersión pasa a la
-     * `spreadApuntado` del arma (la mitad) en `CONFIG.mira.tiempoCierre`.
+     * ⛔ APUNTAR CON CLIC DERECHO: ACÁ NO *(Santi: "haría que no se pueda
+     * apuntar con click derecho durante la persecución. Me parece irreal que
+     * se pueda apuntar mientras vas cabalgando, esquivando obstáculos y encima
+     * mientras te disparan")*.
+     *
+     * Estaba puesto porque en el asalto existe y porque lo había pedido él
+     * mismo cuando el círculo hacia atrás se agrandaba demasiado; el círculo
+     * ya se arregló por otro lado (`atras.dispersionMax`, 1,5). Los números de
+     * abajo quedan escritos porque describen lo que HACÍA, y porque si algún
+     * día hay una postura de tiro a caballo van a volver a hacer falta.
+     *
+     * Lo que hacía: la dispersión pasaba a la `spreadApuntado` del arma (la
+     * mitad) en `CONFIG.mira.tiempoCierre`.
      *
      * Y SE PAGA IGUAL QUE EN EL ASALTO, CON EL CUERPO: allá apuntando caminás
      * más lento; acá, con la cabeza en el arma, manejás peor el caballo — W/S
@@ -511,7 +523,15 @@ export const HUIDA = {
      * jinetes con el Criollo: frenar y pelear pasó de **14 s perdiendo 53%** a
      * **6 s perdiendo 11%** — y esquivar sin tirar son 14 s perdiendo 12%.
      */
-    vida: 1,
+    vida: 2,
+
+    /**
+     * 🎯 PERO DE CERCA, UNO SOLO: a menos de `remate` unidades el tiro lo
+     * voltea igual. Es el espíritu de lo que había pedido Santi cuando puso
+     * `vida` en 1 —"a un tipo galopando a fondo un balazo lo voltea"— sin que
+     * eso convierta la huida en un tiro al blanco.
+     */
+    remate: 90,
 
     /**
      * 🔫 TIRAN A CUALQUIER DISTANCIA *(Santi: "balas más rápidas y alcance de

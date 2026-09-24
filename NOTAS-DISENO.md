@@ -14917,17 +14917,38 @@ Con dos tiros ya no alcanza un cilindro: hay que elegir a quién bajar, recargar
 en movimiento y aceptar que a alguno lo vas a tener encima. Y la brecha entre
 jugar bien y jugar mal queda en **tres veces**, que es sana.
 
-⚠️ **Esto toca una decisión que Santi tomó a mano** ("a caballo, un tiro
-basta"), y la tomó cuando la huida no tenía nada más: ni envión, ni forcejeo,
-ni cortador, ni refugios con premio. La regla de un tiro era lo que hacía que
-disparar valiera la pena; hoy es lo que hace que lo demás no exista. **Queda
-propuesto, no hecho:** `jinetes.vida` sigue en 1 hasta que Santi decida.
+⚠️ **Esto tocaba una decisión que Santi tomó a mano** ("a caballo, un tiro
+basta"), tomada cuando la huida no tenía nada más: ni envión, ni forcejeo, ni
+cortador, ni refugios con premio. La regla de un tiro era lo que hacía que
+disparar valiera la pena; hoy era lo que hacía que lo demás no existiera.
 
-🔧 **Y quedó puesto un número apagado:** `jugador.recargaACaballo` multiplica el
-tiempo de recarga mientras galopás (frenado recargás normal). Está en 1 —
-apagado— porque midiéndolo casi no cambia nada: con un tiro por jinete el
-piloto recarga media vez por corrida. Cobra sentido recién si se pasa a dos
-tiros.
+✅ **Santi eligió la tercera fila: dos tiros, pero uno solo a quemarropa**
+(`jinetes.vida: 2` y `jinetes.remate: 90`). Y pidió otra cosa en la misma
+vuelta: **que no se pueda apuntar con clic derecho en la huida** *("me parece
+irreal que se pueda apuntar mientras vas cabalgando, esquivando obstáculos y
+encima mientras te disparan")*. El clic derecho ahora no hace nada acá; en el
+asalto sigue igual.
+
+🔧 **Y con eso se encendió `jugador.recargaACaballo`, en 1,8**: recargar al
+galope cuesta medio segundo más con el Colt, y frenado recargás normal. Con un
+tiro por jinete no tenía sentido (el piloto recargaba media vez por corrida);
+con dos, el cilindro se vacía de verdad — 8 a 13 balas por corrida — y cuándo
+recargás pasa a ser una decisión.
+
+📏 **Cómo quedó, medido con el mismo piloto (25 corridas por fila):**
+
+| | Plata perdida | Dura | Balas |
+|---|---|---|---|
+| Criollo, jugando bien, 3 jinetes | **$124** | 17 s | 8,4 + 1 recarga |
+| Criollo, jugando bien, 5 jinetes | **$264** | 24 s | 12,6 + 1,7 recargas |
+| Criollo, sólo corriendo, 3 jinetes | **$696** | 40 s | 0 |
+| Mustang, jugando bien, 3 jinetes | $80 | 17 s | 6,6 |
+
+La brecha entre jugar bien y jugar mal pasó de **catorce veces a cinco y
+media**, y la corrida pasó de durar 5-9 segundos a durar **17-24**: recién ahí
+el cortador, el forcejeo y los refugios tienen tiempo de pasar.
+
+Sin errores en 17.024 cuadros con teclas y mouse al azar.
 
 #### 🧪 El atajo para probarla
 

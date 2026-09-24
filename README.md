@@ -1747,9 +1747,8 @@ soltaste casi toda la plata.
 - **`A` frena**: tu caballo baja a 85 y los jinetes se te ponen al costado.
   Frenar es para pelear: al costado les tirás cómodo, pero también te tiran
   ellos de cerca.
-- A caballo se tira peor: tu dispersión se multiplica por 3. **Con el clic
-  derecho apuntás**, como en el asalto (la mira se cierra a la mitad), pero con
-  la cabeza en el arma manejás peor: W/S van al 60%.
+- A caballo se tira peor: tu dispersión se multiplica por 3, y **acá no hay
+  forma de apuntar**: el clic derecho no hace nada en la huida.
 - **No sos un búho.** Tirar hasta 150° del lado de tu brazo (abajo en la
   pantalla) y 110° del otro es cómodo. Más atrás podés, pero **el círculo se
   agranda** —hasta 1,5 veces derecho hacia atrás— y, como no ves adelante,
@@ -1811,9 +1810,16 @@ soltaste casi toda la plata.
   apuntando (apuntando no se corren), se la comen y quedan atrás.
 - La mira funciona igual que en el asalto: el círculo mide tu arma (tres veces
   más grande a caballo), y de vez en cuando se te va el pulso.
-- **A caballo, un tiro basta**: en el asalto un jinete aguanta dos, pero a un
-  tipo galopando a fondo un balazo lo voltea. Es lo que hace que disparar
-  valga la pena.
+- **Un jinete aguanta dos tiros, pero a quemarropa basta uno** (a menos de 90).
+  Medido: con un solo tiro por jinete, la huida se resolvía a los tiros en
+  cinco segundos y nada de lo demás llegaba a pasar; ahora dura 17 a 24 y hay
+  que elegir a quién bajar.
+- **Acá no se apunta con el clic derecho.** A caballo, esquivando piedras y con
+  la ley tirándote, el que dispara lo hace como puede. En el asalto sigue
+  existiendo.
+- **Y recargar al galope cuesta**: el revólver tarda casi el doble si no
+  frenás. Con dos tiros por jinete, el cilindro se vacía de verdad (8 a 13
+  balas por corrida), así que cuándo recargás es una decisión.
 - Cada jinete que tirás acá cuenta como uno tirado en el asalto, **y te sube
   la recompensa igual**: matar a la ley siempre se paga.
 

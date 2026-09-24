@@ -402,10 +402,14 @@ export function createHuidaScene(services) {
              - (input.isDown('KeyW') || input.isDown('ArrowUp') ? 1 : 0);
     yo.frena = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
 
-    // El clic derecho cierra la mira en `tiempoCierre`, igual que en el asalto.
-    const paso = dt / CONFIG.mira.tiempoCierre;
-    yo.apuntado = input.mouse.right ? Math.min(1, yo.apuntado + paso) : Math.max(0, yo.apuntado - paso);
-    const manejo = 1 - (1 - J.manejoApuntando) * yo.apuntado;
+    /**
+     * ⛔ ACÁ NO SE APUNTA *(Santi: "me parece irreal que se pueda apuntar
+     * mientras vas cabalgando, esquivando obstáculos y encima mientras te
+     * disparan")*. En el asalto el clic derecho cierra la mira; a caballo,
+     * el que dispara lo hace como puede.
+     */
+    yo.apuntado = 0;
+    const manejo = 1;
 
     desviarse(dt);
 
@@ -1029,7 +1033,8 @@ export function createHuidaScene(services) {
           if (!j.alive || j.perdido) continue;
           if (Math.abs(b.x - j.x) < 12 && Math.abs(b.y - (j.y - 8)) < 10) {
             b.vida = 0;
-            pegarle(j, b.danio);
+            const cerca = Math.hypot(j.x - yo.x, (j.y - yo.y) / PROFUNDIDAD) < H.jinetes.remate;
+            pegarle(j, b.danio, cerca);
             break;
           }
         }
@@ -1045,8 +1050,9 @@ export function createHuidaScene(services) {
     balas = balas.filter((b) => b.vida > 0);
   }
 
-  function pegarle(j, danio) {
-    j.health -= danio;
+  function pegarle(j, danio, deCerca) {
+    // De cerca no hay segundo tiro: lo voltea igual (ver `jinetes.remate`).
+    j.health -= deCerca ? Math.max(danio, j.health) : danio;
     j.hitFlash = 0.12;
     audio.play('hitFlesh');
     if (j.health > 0) return;

@@ -254,6 +254,15 @@ export const T = {
     forcejeoChoque: 'LOS SEPARÓ EL GOLPE',
     forcejeoEnvion: 'TE LO SACASTE DE ENCIMA',
     loTiraste: '¡LO TIRASTE DEL CABALLO!',
+
+    /** 🪢 El lazo: el aviso, el enganche y las tres formas de zafar. */
+    lazoViene: '¡REVOLEA EL LAZO!',
+    lazoFallo: 'EL LAZO PASÓ DE LARGO',
+    enlazado: '¡TE ENLAZARON!',
+    lazoCortado: '¡CORTASTE LA SOGA!',
+    lazoChoque: 'LA SOGA SE CORTÓ EN EL GOLPE',
+    lazoEnvion: 'EL ENVIÓN TE SOLTÓ',
+    lazoSolto: 'SE LE ESCAPÓ LA SOGA',
     aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
     atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,
     teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [R] RECARGAR   [E] ZAFAR'],

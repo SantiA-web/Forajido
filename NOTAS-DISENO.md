@@ -14950,6 +14950,90 @@ el cortador, el forcejeo y los refugios tienen tiempo de pasar.
 
 Sin errores en 17.024 cuadros con teclas y mouse al azar.
 
+#### 🪢 EL LAZO — el forcejeo, pero de lejos
+
+*(Santi, en el plan original de los jinetes: "podría existir la probabilidad de
+que alguno/s de esos jinetes tenga un lazo que pueda enganchar al caballo y
+hacerlo retroceder; el lazo funcionaría exactamente como la mecánica del
+forcejeo solo que a distancia y necesitaría una cierta puntería (puede fallar
+al lanzarlo)")*
+
+Era el último punto que quedaba del plan de la huida. Uno de cada dos jinetes lo
+lleva, **y se le ve** enrollado en la montura: sin eso sería una trampa
+invisible, y perder el control sin haber hecho nada mal es lo que más frustra de
+una persecución.
+
+**La jugada tiene cuatro tiempos**, y los cuatro existen para que nunca sea
+instantánea:
+
+1. **Se acerca.** Con el envión prestado, igual que el cortador, hasta ponerse a
+   unas 110 unidades.
+2. **Revolea** la soga sobre la cabeza 0,7 s. Ése es tu aviso.
+3. **La tira.** La soga vuela 0,25 s.
+4. **Si pega**, te frena (60% → 30% de tu galope), no podés disparar y **te
+   arrastra hacia atrás** a 26 u/s *(Santi: "hacerlo retroceder")*. Se corta con
+   ocho [E] o con un choque, y cortarla lo deja **sin lazo** para el resto de la
+   huida. Al jinete no lo tirás nunca: está lejos.
+
+La puntería es 70% a 60 unidades y baja 0,4 puntos por unidad — a 160 queda en
+30% — y pierde 25 puntos más si estás doblando.
+
+##### 🐛 Tres errores, y los tres eran el mismo error
+
+Todos eran variantes de **"la mecánica no ocurre nunca"**, y ninguno tiró una
+excepción: había que medir para verlos.
+
+1. **`T` tapaba a `T`.** Dentro de `elegirCortador` había un `const T =
+   H.jinetes.tactica`, y `T` son los textos del juego. El cartel del lazo pedía
+   `T.huida.lazoViene` y se encontraba con la táctica de los jinetes. La local
+   se llama `TAC` ahora.
+2. **El lazo esperaba a estar a tiro, pero nadie se acercaba.** Salía sólo si el
+   que lo llevaba ya estaba entre 60 y 160 unidades, y los jinetes van a
+   200-340: **0,6 revoleos y 0,2 enganches por corrida**. El cortador y el
+   arrimador se acercan a hacer lo suyo; el del lazo también tenía que hacerlo.
+3. **Tenía reloj propio pero seguía detrás del turno del cortador.** El `return`
+   de `proximoCortador > 0` estaba arriba del bloque del lazo, así que sólo
+   podía salir en el mismo instante que le tocaba al cortador: **una vez por
+   corrida** en vez de las cuatro o cinco que le corresponden.
+
+##### ⚠️ Y una desviación del plan: el envión ya no corta la soga
+
+En el plan estaba que sí, igual que el forcejeo. **Medido, eso mataba la
+mecánica.** El envión es también la forma de ESQUIVAR el lazo (le baja la
+puntería), así que el mismo botón evitaba el enganche *y* lo cortaba al
+instante: la soga duraba 0,39 s y no pasaba nada nunca. Ahora el envión es el
+esquive y nada más — enlazado, un tirón de velocidad más bien **tensa** la soga.
+
+Por la misma razón el envión pasó de anular el lazo a **dificultarlo** (le deja
+el 40% de la puntería): un piloto que juega bien tiene el envión listo casi cada
+vez que alguien revolea, así que "reaccionar lo anula" significaba "no se
+enlaza nunca". Reaccionar tiene que AYUDAR, no anular.
+
+##### 📏 Cómo quedó, medido
+
+Tandas de 16 corridas de cuatro jinetes, con el piloto que juega bien:
+
+| llevan | cada | envión corta | Revoleos | **Enganches** | Segundos enlazado |
+|---|---|---|---|---|---|
+| 0,34 | 8 s | sí | 1,7 | 0,69 | 0,39 |
+| 0,34 | 8 s | no | 1,0 | 0,56 | 0,55 |
+| **0,5** | **6 s** | **no** | **1,8** | **0,95** | **0,93** |
+
+Se eligió la tercera: **un enganche por corrida**, que es lo mismo que rinde el
+forcejeo (0,8). De las veces que engancha, el 84% las cortás con [E] y el resto
+se cortan porque chocaste — que es un efecto de segundo orden lindo: la soga te
+frena y te arrastra justo cuando estás esquivando piedras.
+
+🔬 **Y quedó el banco de pruebas** (`banco-huida.js`, fuera del repositorio, y
+`window.HUIDA_BANCO` en la escena, que se enciende sólo con `prueba: true`): el
+piloto automático que juega bien, para no volver a elegir números a ojo.
+
+⚠️ **Lo que sigue por vestir:** el revoleo y el lazo enrollado son dos
+rectángulos claros, del mismo nivel de dibujo que el `!` del que te apunta.
+
+Sin errores en 25.280 cuadros con teclas y mouse al azar, a 0,88 ms por cuadro
+con dibujo.
+
 ### 🧊 EL PROTOTIPO 3D (carpeta `proto3d/`, aparte del juego)
 
 *(Santi: "¿qué tan costoso y recomendado es hacer que sean 3D las escenas de

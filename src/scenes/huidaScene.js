@@ -64,6 +64,17 @@ export function createHuidaScene(services) {
   let fin, temblor, avisoCansancio, ultimoGrito, bamboleo;
   /** Cuánto falta para que a alguno le toque cortarte el paso (ver `elegirCortador`). */
   let proximoCortador;
+  /**
+   * Y EL LAZO TIENE SU PROPIO RELOJ, aparte del de arriba.
+   *
+   * 🐛 Con uno solo no salía NUNCA. El turno se revisa cada 7 u 8 segundos, y
+   * en ese instante exacto el que lleva el lazo tenía que estar además entre
+   * 60 y 140 unidades — una ventana de un cuadro contra una condición de
+   * distancia que va y viene. Los otros dos se pueden lanzar desde cualquier
+   * lado; el lazo no, así que necesita esperar su momento en vez de perder el
+   * turno.
+   */
+  let proximoLazo;
   /** El polvo de los cascos: el mismo del galope (world/polvoDeCascos.js). */
   const polvo = crearPolvo(colors.polvo);
 
@@ -134,7 +145,27 @@ export function createHuidaScene(services) {
        */
       forcejeo: null,
       gracia: 0,
+      /**
+       * 🪢 EL LAZO (ver `HUIDA.jinetes.lazo`): el jinete que te tiene
+       * enlazado y cómo va el corte de la soga. Comparte la `gracia` con el
+       * forcejeo a propósito: son la misma mecánica, una de cerca y otra de
+       * lejos, y encadenarlas te sacaría el control de la huida.
+       */
+      lazo: null,
+      /** Cuánto estás doblando ahora mismo: al que lazea le cuesta más pegarte. */
+      doblando: 0,
     };
+
+    /**
+     * 🔬 EL BANCO DE PRUEBAS — sólo con `prueba`, y sólo de lectura.
+     *
+     * Es lo que deja correr pilotos automáticos desde la consola (F12) para
+     * MEDIR la huida, que es como se eligieron todos los números de esta
+     * escena: cuántos lazos por corrida, cuánta plata cuesta jugarla bien y
+     * cuánta jugarla mal. Sin esto hay que adivinar, y adivinar fue lo que
+     * llevó a poner las riendas en 0,7 cuando correspondían 0,5.
+     */
+    if (prueba) window.HUIDA_BANCO = () => ({ yo, jinetes, obstaculos, refugios, tiempo, fin, perdido, soltadas, tirados, derribados });
 
     sembrarRefugios();
 
@@ -159,6 +190,7 @@ export function createHuidaScene(services) {
     avisoCansancio = false;
     ultimoGrito = -99;
     proximoCortador = H.jinetes.tactica.cortador.cada;
+    proximoLazo = H.jinetes.lazo.cada * 0.5;
     bamboleo = 0;
     polvo.limpiar();
     sembrarObstaculos();
@@ -313,6 +345,16 @@ export function createHuidaScene(services) {
       /** Y lo mismo, pero para arrimarse a tu costado y agarrarte. */
       arrima: 0,
       arrimaLado: 1,
+      /**
+       * 🪢 EL LAZO: uno de cada tres lo lleva, y se le ve enrollado en la
+       * montura. `revolea` es lo que le falta de revolearlo antes de soltarlo
+       * —el aviso— y `soga` es la que ya salió y está volando hacia vos.
+       */
+      lazo: rng.chance(J.lazo.llevan),
+      /** Cuánto le queda de acercarse para poder tirarlo (0 = va en la cola). */
+      lazando: 0,
+      revolea: 0,
+      soga: 0,
     };
   }
 
@@ -350,6 +392,7 @@ export function createHuidaScene(services) {
     sembrarObstaculos();
     moverme(dt);
     forcejear(dt);
+    tironearDelLazo(dt);
     disparar(dt);
     moverJinetes(dt, false);
     moverBalas(dt);
@@ -424,6 +467,9 @@ export function createHuidaScene(services) {
       const objetivo = Math.atan2(dy / PROFUNDIDAD, dx);
       error = girarHacia(yo, objetivo, J.giroVelocidad * manejo, dt);
     }
+    // Lo guardamos porque al que te lazea le cuesta más pegarle a un blanco
+    // que está doblando (ver `enlazar`).
+    yo.doblando = error;
     if (yo.desvio > 0) yo.rumbo += yo.desvioDir * 0.5 * dt;
 
     if (yo.choque > 0) yo.choque -= dt;
@@ -530,10 +576,18 @@ export function createHuidaScene(services) {
    * pedido de Santi y los números.
    */
   function frenoDelForcejeo() {
-    if (!yo.forcejeo) return 1;
-    const F = H.jugador.forcejeo;
-    const t = Math.min(1, yo.forcejeo.t / F.dura);
-    return F.frena + (F.frenaFinal - F.frena) * t;
+    let freno = 1;
+    if (yo.forcejeo) {
+      const F = H.jugador.forcejeo;
+      const t = Math.min(1, yo.forcejeo.t / F.dura);
+      freno = Math.min(freno, F.frena + (F.frenaFinal - F.frena) * t);
+    }
+    if (yo.lazo) {
+      const L = H.jinetes.lazo;
+      const t = Math.min(1, yo.lazo.t / L.dura);
+      freno = Math.min(freno, L.frena + (L.frenaFinal - L.frena) * t);
+    }
+    return freno;
   }
 
   /** ¿ESTE JINETE TE ENGANCHÓ? Sólo el que viene arrimándose, y a la par. */
@@ -601,6 +655,96 @@ export function createHuidaScene(services) {
     carteles.push({ x: yo.x, y: yo.y - 34, texto, color: colors.textDim, vida: 1.4 });
   }
 
+  // -------------------------------------------------------------- el lazo
+
+  /** ¿Está a tiro de soga? Ni encima tuyo ni a media legua. */
+  function aTiroDeLazo(j) {
+    const L = H.jinetes.lazo;
+    const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+    return d >= L.desde && d <= L.hasta;
+  }
+
+  /**
+   * 🪢 LA SOGA LLEGÓ: acá se decide si te enganchó. Ver `HUIDA.jinetes.lazo`
+   * para el pedido de Santi y los números.
+   *
+   * La puntería baja con la distancia y con lo que estés doblando, y con el
+   * envión puesto **falla siempre**: ése es el premio por haber reaccionado al
+   * revoleo, y es lo que hace que el aviso valga la pena.
+   */
+  function enlazar(j) {
+    const L = H.jinetes.lazo;
+    const fallar = (porque) => {
+      carteles.push({ x: yo.x, y: yo.y - 34, texto: porque, color: colors.textDim, vida: 1.3 });
+    };
+    if (yo.lazo || yo.forcejeo || yo.gracia > 0 || fin || !j.alive || j.perdido) return;
+
+    const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+    let p = L.punteria - Math.max(0, d - L.desde) * L.porUnidad;
+    if (Math.abs(yo.doblando) > L.giroQueCuenta) p -= L.doblando;
+    p = Math.max(0.03, Math.min(0.95, p));
+    // Y el envión no lo anula: lo dificulta (ver `lazo.conEnvion`).
+    if (yo.impulsoTimer > 0) p *= L.conEnvion;
+    if (!rng.chance(p)) { fallar(T.huida.lazoFallo); return; }
+
+    yo.lazo = { j, t: 0, golpes: 0 };
+    temblor = 0.35;
+    audio.play('relincho');
+    carteles.push({ x: yo.x, y: yo.y - 34, texto: T.huida.enlazado, color: colors.enemyAlert, vida: 1.6 });
+  }
+
+  /**
+   * MIENTRAS TE TIENE ENLAZADO: te frena como el forcejeo, no podés disparar
+   * y **te arrastra hacia atrás** *(Santi: "hacerlo retroceder")*, que es la
+   * diferencia de verdad con el forcejeo. Se sale a los golpes de [E], y lo
+   * cortan también un choque o el envión.
+   */
+  function tironearDelLazo(dt) {
+    if (!yo.lazo) return;
+    const L = H.jinetes.lazo;
+    const f = yo.lazo;
+    f.t += dt;
+
+    if (input.wasPressed('KeyE')) {
+      f.golpes += 1;
+      temblor = 0.18;
+      audio.play('hitFlesh');
+      if (f.golpes >= L.golpes) { cortarElLazo('cortado'); return; }
+    }
+
+    if (!f.j.alive || f.j.perdido || fin) { cortarElLazo('nada'); return; }
+    if (yo.choque > 0 || f.j.choque > 0) { cortarElLazo('choque'); return; }
+    if (yo.impulsoTimer > 0 && L.cortaConEnvion) { cortarElLazo('envion'); return; }
+    if (f.t >= L.dura) { cortarElLazo('solto'); return; }
+
+    // Y la soga te lleva: perdés terreno de verdad, no sólo velocidad.
+    yo.x -= Math.cos(yo.rumbo) * L.arrastre * dt;
+    yo.y -= Math.sin(yo.rumbo) * L.arrastre * dt * PROFUNDIDAD;
+  }
+
+  /**
+   * SE SOLTÓ, Y CÓMO. Cortarla es lo único que lo deja **sin lazo para el
+   * resto de la huida**: si no, el mismo jinete te reengancha apenas se te
+   * termina la gracia. Y al jinete no lo tirás nunca — está lejos.
+   */
+  function cortarElLazo(como) {
+    const f = yo.lazo;
+    if (!f) return;
+    yo.lazo = null;
+    yo.gracia = H.jugador.forcejeo.gracia;
+    if (como === 'cortado') f.j.lazo = false;
+    if (como === 'nada') return;
+    const texto = como === 'cortado' ? T.huida.lazoCortado
+      : como === 'choque' ? T.huida.lazoChoque
+      : como === 'envion' ? T.huida.lazoEnvion : T.huida.lazoSolto;
+    carteles.push({
+      x: yo.x, y: yo.y - 34, texto,
+      color: como === 'cortado' ? colors.bagLoot : colors.textDim,
+      vida: 1.6,
+    });
+    if (como === 'cortado') audio.play('hitFlesh');
+  }
+
   /** Los choques del jugador: los obstáculos y la pared de un refugio. */
   function chocarConLasCosas() {
     if (yo.choque <= 0) {
@@ -663,7 +807,8 @@ export function createHuidaScene(services) {
   function disparar(dt) {
     yo.fireTimer -= dt;
     // Con un tipo colgado del brazo no se tira: las dos manos están ocupadas.
-    if (yo.forcejeo) return;
+    // Y con la soga en el cuello del caballo, tampoco: estás sujetándote.
+    if (yo.forcejeo || yo.lazo) return;
     if (yo.recargando > 0) {
       yo.recargando -= dt;
       if (yo.recargando <= 0) yo.balas = arma.magazine;
@@ -750,12 +895,60 @@ export function createHuidaScene(services) {
    * que Santi lo pidió del lado de ellos.
    */
   function elegirCortador(dt) {
-    const T = H.jinetes.tactica;
+    /**
+     * ⚠️ SE LLAMA `TAC` Y NO `T` A PROPÓSITO: `T` son los textos del juego
+     * (`text/es.js`), y llamar `T` a la táctica acá adentro los tapaba. La
+     * primera versión del lazo pedía `T.huida.lazoViene` y se encontraba con
+     * la táctica de los jinetes.
+     */
+    const TAC = H.jinetes.tactica;
     proximoCortador -= dt;
+    proximoLazo -= dt;
     const siguiendoAhora = siguiendo();
-    // Uno por vez y nada más: ni dos cortando, ni uno cortando y otro colgado.
-    if (siguiendoAhora.some((j) => j.corta > 0 || j.arrima > 0)) return;
-    if (proximoCortador > 0 || siguiendoAhora.length < 2 || yo.forcejeo) return;
+    // Uno por vez y nada más: ni dos cortando, ni uno cortando y otro colgado,
+    // ni uno colgado y otro revoleando el lazo.
+    if (siguiendoAhora.some((j) => j.corta > 0 || j.arrima > 0 || j.lazando > 0 || j.revolea > 0 || j.soga > 0)) return;
+    if (yo.forcejeo || yo.lazo || siguiendoAhora.length === 0) return;
+
+    /**
+     * 🪢 Y PRIMERO, EL LAZO. Si hay alguno que lo lleve y esté a tiro de soga,
+     * le toca a él casi la mitad de las veces. Va antes que los otros dos
+     * porque es el único que necesita una distancia concreta: el cortador y el
+     * arrimador pueden salir en cualquier momento, el lazo no.
+     */
+    const L = H.jinetes.lazo;
+    const conLazo = yo.gracia > 0 || proximoLazo > 0
+      ? []
+      : siguiendoAhora.filter((j) => j.lazo);
+    if (conLazo.length > 0) {
+      let elLazador = conLazo[0];
+      for (const j of conLazo) {
+        const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+        const mejorD = Math.hypot(yo.x - elLazador.x, (yo.y - elLazador.y) / PROFUNDIDAD);
+        if (d < mejorD) elLazador = j;
+      }
+      // Se le acerca con el lazo en la mano: recién cuando llegue lo revolea.
+      elLazador.lazando = L.acercaDura;
+      proximoLazo = L.cada;
+      // Y se le da aire al otro turno, para que no te caiga un cortador encima
+      // justo mientras estás cortando la soga.
+      proximoCortador = Math.max(proximoCortador, 4);
+      if (elLazador.usos > 0 && elLazador.empuje <= 0) {
+        elLazador.empuje = H.jinetes.impulso.dura;
+        elLazador.recarga = H.jinetes.impulso.recarga;
+        elLazador.usos -= 1;
+      }
+      audio.play('gritoLey');
+      return;
+    }
+
+    /**
+     * 🐛 Y RECIEN ACA EL TURNO DE LOS OTROS DOS. El lazo quedaba debajo de
+     * este `return` aunque tuviera su propio reloj, así que sólo podía salir
+     * en el mismo instante en que le tocaba al cortador: una vez por corrida
+     * en vez de las cuatro o cinco que corresponden.
+     */
+    if (proximoCortador > 0 || siguiendoAhora.length < 2) return;
 
     /**
      * SE ALTERNAN LOS DOS TRABAJOS: uno se te cruza adelante y el siguiente se
@@ -763,7 +956,7 @@ export function createHuidaScene(services) {
      * y cada corrida tiene las dos cosas.
      */
     const arrimar = yo.gracia <= 0 && rng.chance(0.5);
-    const C = arrimar ? T.arrimador : T.cortador;
+    const C = arrimar ? TAC.arrimador : TAC.cortador;
 
     let elegido = null;
     let mejor = C.distanciaMax;
@@ -870,12 +1063,41 @@ export function createHuidaScene(services) {
           y: futuro.y + Math.cos(yo.rumbo) * AR.costado * j.arrimaLado * PROFUNDIDAD,
         }
         : {
-          x: futuro.x - Math.cos(yo.rumbo + j.carril) * j.atras,
-          y: futuro.y - Math.sin(yo.rumbo + j.carril) * j.atras * PROFUNDIDAD,
+          /**
+           * EL DE LA COLA va a SU lugar — salvo que esté yendo a lazarte, y
+           * entonces el mismo lugar pero mucho más cerca: `lazo.acerca`.
+           */
+          x: futuro.x - Math.cos(yo.rumbo + j.carril) * (j.lazando > 0 ? H.jinetes.lazo.acerca : j.atras),
+          y: futuro.y - Math.sin(yo.rumbo + j.carril) * (j.lazando > 0 ? H.jinetes.lazo.acerca : j.atras) * PROFUNDIDAD,
         };
       const haciaAlla = Math.atan2((objetivo.y - j.y) / PROFUNDIDAD, objetivo.x - j.x);
       if (j.corta > 0) j.corta -= dt;
       if (j.arrima > 0) { j.arrima -= dt; intentarAgarrar(j); }
+
+      /**
+       * 🪢 EL LAZO, EN DOS TIEMPOS: primero lo revolea sobre la cabeza (ése es
+       * tu aviso) y después la soga vuela un momento antes de llegar. Los dos
+       * tiempos existen para lo mismo: que el enganche nunca sea instantáneo.
+       */
+      if (j.lazando > 0) {
+        j.lazando -= dt;
+        // Llegó a tiro: ahora sí lo revolea. Y si se le acabó el tiempo sin
+        // llegar, se vuelve a la cola sin tirar nada.
+        if (aTiroDeLazo(j) && !yo.lazo && !yo.forcejeo && yo.gracia <= 0) {
+          j.lazando = 0;
+          j.revolea = H.jinetes.lazo.revoleo;
+          carteles.push({
+            x: j.x, y: j.y - 38,
+            texto: T.huida.lazoViene, color: colors.enemyAlert, vida: 1.2,
+          });
+        }
+      } else if (j.revolea > 0) {
+        j.revolea -= dt;
+        if (j.revolea <= 0) j.soga = H.jinetes.lazo.vuelo;
+      } else if (j.soga > 0) {
+        j.soga -= dt;
+        if (j.soga <= 0) enlazar(j);
+      }
 
       // Apuntando no dobla: el aviso vale porque el tiro sale de donde lo viste.
       if (j.aimTimer > 0) {
@@ -940,6 +1162,9 @@ export function createHuidaScene(services) {
   function velocidadDelCortador(j) {
     const base = velocidadDelJinete(j) + j.empujeVel;
     const T = H.jinetes.tactica;
+    // El que va a lazarte corre igual que el que va a cruzarse: sin eso no
+    // llega nunca a tiro de soga y el lazo no existe.
+    if (j.lazando > 0) return base + j.vel * T.cortador.empuje;
     if (j.corta <= 0 && j.arrima <= 0) return base;
 
     // Cuánto te sacó midiendo SOBRE TU RUMBO: positivo, ya está adelante.
@@ -1341,6 +1566,7 @@ export function createHuidaScene(services) {
     cosas.sort((a, b) => a.y - b.y);
     for (const c of cosas) c.draw();
 
+    dibujarLaSoga(r);
     for (const b of balas) dibujarBala(r, b);
 
     for (const c of carteles) {
@@ -1399,6 +1625,60 @@ export function createHuidaScene(services) {
       // ⚠️ SIMPLE: el aviso de que va a tirar. Por vestir.
       r.text('!', j.x, j.y - 36, colors.enemyAlert);
     }
+
+    if (j.lazo || j.revolea > 0 || j.soga > 0) dibujarSuLazo(r, j);
+  }
+
+  /**
+   * 🪢 EL LAZO DE UN JINETE, en sus tres estados. El primero es el que más
+   * importa: **enrollado en la montura se le ve**, y por eso sabés cuál de los
+   * que vienen atrás te lo puede tirar antes de que pase nada.
+   *
+   * ⚠️ Se dibuja FUERA de `dibujarCaballo` a propósito: ahí adentro el lienzo
+   * está espejado cuando el caballo va al oeste, y una soga espejada saldría
+   * del lado equivocado.
+   */
+  function dibujarSuLazo(r, j) {
+    const SOGA = '#d9c9a4';
+    const lado = Math.cos(j.rumbo) < 0 ? -1 : 1;
+
+    if (j.revolea > 0) {
+      // Revoleándolo sobre la cabeza: es TU aviso, así que se mueve y se ve.
+      const giro = tiempo * 15;
+      const cx = j.x + Math.cos(giro) * 8;
+      const cy = j.y - 31 + Math.sin(giro) * 4 * PROFUNDIDAD;
+      r.line(j.x + 5 * lado, j.y - 20, cx, cy, SOGA);
+      r.box(cx, cy, 4, 2, SOGA);
+      return;
+    }
+
+    if (j.soga > 0) {
+      // Ya salió: la soga viaja hacia vos.
+      const t = 1 - j.soga / H.jinetes.lazo.vuelo;
+      const x0 = j.x + 5 * lado, y0 = j.y - 20;
+      r.line(x0, y0, x0 + (yo.x - x0) * t, y0 + (yo.y - 10 - y0) * t, SOGA);
+      return;
+    }
+
+    // Enrollado en la montura, esperando su turno.
+    r.box(j.x - 7 * lado, j.y - 11, 5, 3, SOGA);
+    r.box(j.x - 7 * lado, j.y - 11, 3, 1, '#8f7c58');
+  }
+
+  /**
+   * LA SOGA TENSA, de su mano a tu caballo. Va con panza y se mueve: una línea
+   * recta se lee como un palo, no como una soga.
+   */
+  function dibujarLaSoga(r) {
+    if (!yo.lazo) return;
+    const j = yo.lazo.j;
+    const lado = Math.cos(j.rumbo) < 0 ? -1 : 1;
+    const x0 = j.x + 5 * lado, y0 = j.y - 20;
+    const x1 = yo.x, y1 = yo.y - 10;
+    const panza = 4 + Math.sin(tiempo * 11) * 2;
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + panza;
+    r.line(x0, y0, mx, my, '#d9c9a4');
+    r.line(mx, my, x1, y1, '#d9c9a4');
   }
 
   function dibujarme(r, dia) {
@@ -1482,6 +1762,12 @@ export function createHuidaScene(services) {
       const F = H.jugador.forcejeo;
       r.text(T.huida.forcejeo, centro, 8, colors.enemyAlert);
       const hechos = '●'.repeat(yo.forcejeo.golpes) + '○'.repeat(Math.max(0, F.golpes - yo.forcejeo.golpes));
+      r.text(`[E] ${hechos}`, centro, 20, colors.bagLoot);
+    } else if (yo.lazo) {
+      // Lo mismo que el forcejeo: enlazado, lo único que importa es [E].
+      const L = H.jinetes.lazo;
+      r.text(T.huida.enlazado, centro, 8, colors.enemyAlert);
+      const hechos = '●'.repeat(yo.lazo.golpes) + '○'.repeat(Math.max(0, L.golpes - yo.lazo.golpes));
       r.text(`[E] ${hechos}`, centro, 20, colors.bagLoot);
     } else {
       r.text(T.huida.teSiguen(siguiendo().length), centro, 8, colors.enemyAlert);

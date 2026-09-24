@@ -734,6 +734,127 @@ export const HUIDA = {
     },
 
     /**
+     * 🪢 EL LAZO *(Santi, en el plan original: "podria existir la probabilidad
+     * de que alguno/s de esos jinetes tenga un lazo que pueda enganchar al
+     * caballo y hacerlo retroceder; el lazo funcionaria exactamente como la
+     * mecanica del forcejeo solo que a distancia y necesitaria una cierta
+     * punteria (puede fallar al lanzarlo)")*.
+     *
+     * ES EL FORCEJEO A DISTANCIA, con tres diferencias que importan:
+     *
+     *  1. **Te arrastra** (`arrastre`), que es lo que pidio Santi: no solo te
+     *     frena, te hace perder terreno de verdad.
+     *  2. **No lo tiras del caballo**: esta lejos. Cortas la soga y el sigue
+     *     ahi — pero se queda sin lazo para el resto de la huida.
+     *  3. **Se avisa** (`revoleo`): revolea la soga sobre la cabeza antes de
+     *     soltarla. Ese es tu tiempo para reaccionar, y sin el esto seria una
+     *     trampa invisible. Perder el control sin haber hecho nada mal es lo
+     *     que mas frustra de una persecucion.
+     *
+     * ⚠️ Y ENTRA EN LA MISMA ROTACION que el cortador y el arrimador (un solo
+     * jinete haciendo algo especial a la vez) y comparte la `gracia` del
+     * forcejeo. Con cuatro mecanicas que te sacan el control, sin esas dos
+     * reglas la huida deja de ser tuya.
+     */
+    lazo: {
+      /**
+       * CUANTOS JINETES LO LLEVAN. Se les ve enrollado en la montura.
+       *
+       * 📏 Medido con el piloto que juega bien, en tandas de 16 corridas de
+       * cuatro jinetes:
+       *
+       * | llevan | cada | revoleos | enganches | seg enlazado |
+       * |--------|------|----------|-----------|--------------|
+       * | 0,34   | 8    | 1,0      | 0,56      | 0,55         |
+       * | 0,5    | 6    | 2,2      | **1,00**  | 0,67         |
+       *
+       * Se eligio el segundo: un enganche por corrida es lo mismo que rinde el
+       * forcejeo (0,8), y con menos que eso la mecanica no llega a existir.
+       */
+      llevan: 0.5,
+
+      /** Entre estas dos distancias lo tira: mas cerca se arrima, mas lejos no llega. */
+      desde: 60,
+      hasta: 160,
+
+      /**
+       * 🐛 Y PRIMERO SE TIENE QUE ACERCAR, que es lo que faltaba.
+       *
+       * Medido: con el lazo saliendo solo cuando el tipo YA estaba a tiro,
+       * salian 0,6 revoleos y 0,2 enganches por corrida — o sea que la mecanica
+       * casi no existia. La razon es simple: los jinetes van a 200-340 unidades
+       * y la soga llega a 160. El cortador y el arrimador se acercan a hacer lo
+       * suyo; el del lazo tambien tiene que hacerlo.
+       *
+       * `acerca` es a que distancia se pone y `acercaDura` cuanto lo intenta
+       * antes de rendirse y volver a la cola.
+       */
+      acerca: 110,
+      acercaDura: 6,
+
+      /** Lo revolea esto antes de soltarlo: es TU aviso. */
+      revoleo: 0.7,
+
+      /** Y la soga tarda esto en llegar, para que el tiron no sea instantaneo. */
+      vuelo: 0.25,
+
+      /**
+       * LA PUNTERIA: `punteria` es la chance a quemarropa (a `desde`) y baja
+       * `porUnidad` por cada unidad de mas. A 140 queda en 38%.
+       *
+       * `doblando` es lo que pierde si estas girando de verdad (mas de
+       * `giroQueCuenta` radianes de error de rumbo), y con el envion puesto
+       * falla SIEMPRE: ese es el premio por reaccionar al revoleo.
+       */
+      punteria: 0.7,
+      porUnidad: 0.004,
+      doblando: 0.25,
+      giroQueCuenta: 1.2,
+
+      /**
+       * LO QUE LE QUEDA DE PUNTERIA SI USASTE EL ENVION.
+       *
+       * 🐛 Arranco en 0 —el envion lo esquivaba SIEMPRE— y medido eso mataba la
+       * mecanica: un piloto que juega bien tiene el envion listo casi cada vez
+       * que alguien revolea, asi que no se enlazaba nunca. Reaccionar tiene que
+       * AYUDAR, no anular: si anula, la jugada no existe.
+       */
+      conEnvion: 0.4,
+
+      /** Cada cuanto le toca a alguien lazar, y cuanto dura el enganche. */
+      cada: 6,
+      dura: 5,
+
+      /** Cuantos [E] para cortar la soga. El forcejeo son 6: una soga cuesta mas. */
+      golpes: 8,
+
+      /**
+       * ⚠️ ¿EL ENVION TE SUELTA? EN EL LAZO NO, Y ES UNA DESVIACION DEL PLAN.
+       *
+       * En el plan decia que si, igual que el forcejeo. Medido, eso lo rompia:
+       * el envion es tambien la forma de ESQUIVAR el lazo (baja la punteria a
+       * `conEnvion`), asi que el mismo boton evitaba el enganche Y lo cortaba
+       * al instante. La soga duraba 0,39 s y no pasaba nada nunca.
+       *
+       * Con el envion como esquive y nada mas, la soga dura 0,55 s y hay que
+       * cortarla a mano. Enlazado, un tiron de velocidad TENSA la soga; no
+       * tiene por que soltarla.
+       */
+      cortaConEnvion: false,
+
+      /** Te frena como el forcejeo: arranca en esto y termina en lo otro. */
+      frena: 0.6,
+      frenaFinal: 0.3,
+
+      /**
+       * Y ADEMAS TE ARRASTRA HACIA ATRAS, en unidades por segundo. El Criollo
+       * galopa a 142: 26 es perder mas o menos una quinta parte de lo que
+       * avanzarias, encima de lo que ya te frena.
+       */
+      arrastre: 26,
+    },
+
+    /**
      * 🐎 SU ENVIÓN. El mismo tirón que el tuyo, del otro lado: lo usan para
      * volver a pegarse cuando quedaron descolgados —más de `desde` unidades
      * atrás— y para llegar adelante tuyo cuando les toca cortarte el paso.

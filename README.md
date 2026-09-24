@@ -1801,6 +1801,24 @@ soltaste casi toda la plata.
   separa un choque contra una piedra. Si no hacés nada, te suelta a los cuatro
   segundos. Medido: te agarran casi una vez por corrida, y con el Mustang no te
   alcanzan nunca.
+- **Y uno de cada dos lleva LAZO.** Se le ve enrollado en la montura, así que
+  sabés cuál te lo puede tirar. Cuando le toca **se acerca** con el envión
+  prestado, **revolea la soga sobre la cabeza siete décimas** —ése es tu
+  aviso— y la suelta. Puede fallar: acierta el 70% a 60 unidades y sólo el 30%
+  a 160, y le cuesta 25 puntos más si estás doblando.
+- **Si te engancha** es el forcejeo pero de lejos: te frena igual (del 60% al
+  30%), no podés disparar y encima **te arrastra para atrás**, o sea que
+  perdés terreno. Se sale **machacando [E] ocho veces**, o si chocás contra una
+  piedra. **Cortar la soga lo deja sin lazo** para el resto de la huida, pero
+  al jinete no lo tirás: está lejos.
+- **El envión esquiva el lazo, pero no lo corta.** Si lo usás cuando ves el
+  revoleo, le queda el 40% de la puntería. Una vez enlazado, un tirón de
+  velocidad más bien tensa la soga: ahí sólo sirve [E]. Medido: **te enlazan
+  una vez por corrida**, y el 84% de las veces la cortás vos.
+- Después de zafar de un forcejeo **o de un lazo**, nadie puede volver a
+  agarrarte por siete segundos. Son cuatro mecánicas que te sacan el control
+  (el que te cruza, el que se arrima, el forcejeo y el lazo) y **sale una a la
+  vez**: si no, la huida deja de ser tuya.
 - **Al que tirás del caballo no lo mataste**: va aparte en los resultados y
   **no te sube la recompensa**.
 - **Hay obstáculos, los mismos del galope** (rocas, arbustos, cactus y

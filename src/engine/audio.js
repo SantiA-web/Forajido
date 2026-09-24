@@ -723,16 +723,49 @@ export function createAudio() {
         cualCancion = (i + 1) % CANCIONES.length;
         if (cancionSonando) sonarCancion();
       });
-      fetch(c.url)
-        .then((resp) => resp.blob())
-        .then((b) => {
-          el.src = URL.createObjectURL(b);
-          // Si mientras se bajaba ya había que estar sonando, arranca ahora.
+      cargarPista(c.url)
+        .then((src) => {
+          el.src = src;
+          // Si mientras se cargaba ya había que estar sonando, arranca ahora.
           if (cancionSonando && cualCancion === i) sonarCancion();
         })
-        .catch(() => { /* sin música: el juego sigue igual */ });
+        .catch(() => {
+          // Último recurso: la dirección tal cual. Suena, pero puede no dejar
+          // volver al segundo exacto (ver la nota del `blob:`).
+          el.src = c.url;
+          if (cancionSonando && cualCancion === i) sonarCancion();
+        });
       return el;
     });
+  }
+
+  /**
+   * 🐛 DESDE UN ARCHIVO SUELTO (`file://`) NO SE PUEDE USAR `fetch`.
+   *
+   * *(Santi: "pego el juego en Chrome y no se escucha la música")* — y el resto
+   * del juego andaba. Ésa es la pista: los módulos viajan en el importmap, que
+   * no usa `fetch`; la música era lo único que sí. Abierto como archivo, Chrome
+   * le da a la página un origen NULO, y ahí `fetch` se cae.
+   *
+   * En el archivo suelto el mp3 ya viene adentro, como `data:`, así que no hay
+   * nada que bajar: se decodifica el base64 a mano con `atob`. Sin red, sin
+   * origen, sin permisos. `fetch` queda sólo para cuando el juego corre con el
+   * servidor, que es donde el audio sí es un archivo aparte.
+   */
+  function dataURLaBlob(url) {
+    const coma = url.indexOf(',');
+    const tipo = url.slice(5, coma).split(';')[0] || 'audio/mpeg';
+    const crudo = atob(url.slice(coma + 1));
+    const bytes = new Uint8Array(crudo.length);
+    for (let i = 0; i < crudo.length; i++) bytes[i] = crudo.charCodeAt(i);
+    return new Blob([bytes], { type: tipo });
+  }
+
+  function cargarPista(url) {
+    if (url.startsWith('data:')) {
+      return Promise.resolve(URL.createObjectURL(dataURLaBlob(url)));
+    }
+    return fetch(url).then((resp) => resp.blob()).then((b) => URL.createObjectURL(b));
   }
 
   function sonarCancion() {

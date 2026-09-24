@@ -641,15 +641,28 @@ export function createHuidaScene(services) {
     }
   }
 
+  /**
+   * EL PULSO DE UN JINETE A ESTA DISTANCIA. De cerca es `dispersion`; pasadas
+   * `dispersionDesde` unidades se le abre el abanico, y por eso pueden tirar a
+   * cualquier distancia sin que eso sea una sentencia desde fuera de pantalla.
+   */
+  function dispersionDelJinete(j) {
+    const J = H.jinetes;
+    const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+    const extra = (Math.max(0, d - J.dispersionDesde) / 100) * J.dispersionPorCien;
+    return Math.min(J.dispersionTope, J.dispersion + extra);
+  }
+
   function tirar(j) {
     const J = H.jinetes;
     // Parejo para todos, como en el asalto: a ellos también se les va el pulso.
-    const a = j.aimDir + rng.spreadDeTiro(J.dispersion, CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
+    const a = j.aimDir
+      + rng.spreadDeTiro(dispersionDelJinete(j), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
     balas.push({
       x: j.x + 6, y: j.y - 14,
       vx: Math.cos(a) * J.velocidadBala,
       vy: Math.sin(a) * J.velocidadBala * PROFUNDIDAD,
-      vida: 1.4, mia: false,
+      vida: J.duracionBala, mia: false,
     });
     audio.play('enemyShot');
   }
@@ -970,7 +983,7 @@ export function createHuidaScene(services) {
     cosas.sort((a, b) => a.y - b.y);
     for (const c of cosas) c.draw();
 
-    for (const b of balas) r.rect(b.x - 1, b.y - 1, 3, 2, b.mia ? colors.bulletP : colors.bulletE);
+    for (const b of balas) dibujarBala(r, b);
 
     for (const c of carteles) {
       r.ctx.globalAlpha = Math.min(1, c.vida * 2);
@@ -1118,6 +1131,33 @@ export function createHuidaScene(services) {
       r.text(T.huida.teclas[0], centro, vista.h - 17, colors.textDim);
       r.text(T.huida.teclas[1], centro, vista.h - 7, colors.textDim);
     }
+  }
+
+  /** Un punto de pantalla, en unidades del mundo, con la lupa de esta escena. */
+  const PUNTO = 1 / H.zoom;
+
+  /**
+   * LA BALA: UN TRAZO, NO UN LADRILLO *(Santi: "vestir el pixel de esa bala de
+   * manera distinta, hoy es muy juego arcade")*.
+   *
+   * Era un rectángulo de 3×2 unidades — con la lupa de 3, nueve por seis
+   * puntos de pantalla: una ficha volando. Una bala no es un objeto que se
+   * mira, es un destello que cruza, así que ahora se dibuja el TRAMO que
+   * recorrería en un pedacito de segundo, con la punta encendida.
+   *
+   * La de ellos es más larga y más apagada: viene de atrás y lo que importa es
+   * verla venir. La tuya es corta y clara, porque sale de tu propia mano y ya
+   * la anuncia el fogonazo.
+   */
+  function dibujarBala(r, b) {
+    const tramo = b.mia ? 0.03 : 0.045;
+    const cx = b.x - b.vx * tramo;
+    const cy = b.y - b.vy * tramo;
+    const color = b.mia ? colors.bulletP : colors.bulletE;
+    r.line(cx, cy, b.x, b.y, color, b.mia ? 0.6 : 0.8, PUNTO);
+    // El último tercio, encendido: es lo que le da la punta caliente.
+    r.line(cx + (b.x - cx) * 0.66, cy + (b.y - cy) * 0.66, b.x, b.y, '#fff2c8', 0.55, PUNTO);
+    r.rect(b.x - PUNTO, b.y - PUNTO, PUNTO * 2, PUNTO * 2, '#fff6d8');
   }
 
   /**

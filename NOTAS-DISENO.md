@@ -14522,6 +14522,76 @@ final cierra; llegar al bosque con un jinete derribado deja la recompensa en
 15 en vez de 30 y lo dice en los resultados. Sin errores en 16.219 cuadros con
 teclas y mouse al azar, a 0,88 ms por cuadro.
 
+#### 🔁 Decimosexta vuelta: las balas de los jinetes
+
+*(Santi: "mejoraría la IA de los guardias de la ley: balas más rápidas y
+alcance de ellas infinito, además de vestir el pixel de esa bala de manera
+distinta (hoy es muy juego arcade)". Y aclaró el alcance del trabajo: "primero
+vamos a diseñar los jinetes. No vamos a tocar nada de los guardias del tren")*
+
+⚠️ **ESTO ES SÓLO DE LOS JINETES DE LA HUIDA.** Los guardias del tren
+(`CONFIG.enemy`, systems/ai.js) no se tocaron: siguen con bala a 210 y alcance
+198.
+
+**Tiran a cualquier distancia.** El tope de 230 se fue: quedaba raro que te
+alejaras veinte metros y dejaran de tirar, como si el revólver supiera dónde
+termina la pantalla. El límite de verdad ya existía y es otro: `perdida` (520),
+cuando dejan de seguirte.
+
+**Y la bala vuela a 380** (era 250). Tu Colt tira a 330: ahora la de ellos vuela
+un poco más que la tuya, que es lo que corresponde cuando vos tirás para atrás
+y ellos de frente. Lo que cambia de verdad es el tiempo: una bala desde 200
+unidades tardaba 0,80 s y ahora tarda 0,53. El medio segundo del aviso sigue
+siendo tuyo; después del fogonazo ya casi no hay nada que hacer.
+
+**Y de lejos se les abre el pulso** (`dispersionDesde` 200, `dispersionPorCien`
+0,05): a 300 tiran con 0,23 de abanico, a 450 con 0,30. Era la idea para que
+"tiran desde cualquier lado" no fuera "te matan desde afuera de la pantalla".
+
+📏 **Lo medido (40 corridas con el Criollo, 25 con el Mustang, piloto que corre
+al refugio esquivando):**
+
+| | Criollo | Mustang |
+|---|---|---|
+| Antes (alcance 230, bala 250) | **$418** perdidos, 4,2 balazos, 33 tiros | $0 |
+| Ahora (sin tope, bala 380) | **$588**, 5,9 balazos, 38 tiros | $84 |
+
+O sea: **la huida pasó a costar un 40% más de plata**, y el Mustang dejó de ser
+gratis (antes te alejabas y no te alcanzaba ni un tiro; ahora te siguen
+tirando mientras te vas, y 10 de esos 15 tiros salen de fuera de la pantalla).
+
+🔍 **Y algo que hay que anotar porque me lo esperaba al revés: la dispersión
+que crece con la distancia casi no cambia el daño.** Con 0,05 y con 0,10 por
+cada 100 unidades el resultado es el mismo ($588 contra $595). El motivo es que
+**los balazos que te pegan vienen de cerca** —el jinete más cercano está a unas
+130 unidades cuando te sacan una bolsa—, y ahí la dispersión todavía no se
+abrió. Lo que sí mueve la aguja es cuánto seguido tiran o cuánto avisan:
+
+| Cambio | Criollo |
+|---|---|
+| Aviso de 0,50 a 0,65 | $438 |
+| Tiran cada 2,2 en vez de 1,5 | $425 |
+| Aviso de 0,50 a 0,80 | $493 |
+
+Quedó como lo pidió Santi (sin compensar), y la tabla queda acá para cuando
+decida si la huida tiene que costar eso.
+
+🎨 **Y la bala dejó de ser un ladrillo.** Era un rectángulo de 3×2 unidades —con
+la lupa de 3, nueve por seis puntos de pantalla— o sea una ficha volando. Ahora
+se dibuja el TRAMO que recorrería en un pedacito de segundo, con el último
+tercio encendido y un grano caliente en la punta: la de ellos más larga y más
+apagada (viene de atrás y lo que importa es verla venir), la tuya corta y clara
+porque ya la anuncia el fogonazo.
+
+Sin errores en 16.973 cuadros con teclas y mouse al azar, a 0,58 ms por cuadro.
+
+⚠️ **Y una trampa de medición, otra vez** (ya había pasado con la ventana de 37
+unidades): la primera tanda de números salió de una ventana de 100×50 unidades
+—el panel del navegador se había achicado— y daba cualquier cosa. **Antes de
+creerle a una medición hay que llamar a `fitToScreen` y comprobar que
+`vista.w` esté cerca de 426.** Ahora la función de medir lo verifica y revienta
+si no.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

@@ -366,8 +366,18 @@ export const HUIDA = {
      */
     vida: 1,
 
-    /** Más lejos que esto no tiran. */
-    alcance: 230,
+    /**
+     * 🔫 TIRAN A CUALQUIER DISTANCIA *(Santi: "balas más rápidas y alcance de
+     * ellas infinito")*. Antes había un tope de 230 y quedaba raro: te
+     * alejabas veinte metros y dejaban de tirar, como si el revólver supiera
+     * dónde termina la pantalla.
+     *
+     * El límite de verdad ahora es OTRO y ya existía: `perdida` (520). Cuando
+     * de verdad quedaron atrás dejan de seguirte, y ahí se acabó el tiroteo.
+     * Entre medio tiran siempre — pero de lejos casi no le pegan a nada, ver
+     * `dispersionDesde`.
+     */
+    alcance: 9999,
 
     /**
      * EL AVISO ANTES DEL TIRO, igual que los jinetes del asalto
@@ -382,12 +392,41 @@ export const HUIDA = {
     cadenciaAzar: 0.8,
 
     /**
-     * Radianes de abanico. Subió de 0,10 a 0,18 midiendo: con 0,10, quedarte
-     * quieto con UN jinete era un tiro casi seguro cada vez.
+     * Radianes de abanico DE CERCA. Subió de 0,10 a 0,18 midiendo: con 0,10,
+     * quedarte quieto con UN jinete era un tiro casi seguro cada vez.
      */
     dispersion: 0.18,
 
-    velocidadBala: 250,
+    /**
+     * Y DE LEJOS SE LES ABRE. Es lo que hace que "tiran a cualquier distancia"
+     * no sea "te matan desde afuera de la pantalla": pasados
+     * `dispersionDesde`, el abanico crece `dispersionPorCien` por cada 100
+     * unidades más. De lejos son fuego de contención —te hacen galopar— y no
+     * una sentencia.
+     *
+     * Con 0,18 de base: a 300 tiran con 0,23, a 450 con 0,30 y a 520 (donde te
+     * pierden) con 0,34. A 450, ese abanico es errarle por 130 unidades: te
+     * pega el que tenga suerte.
+     */
+    dispersionDesde: 200,
+    dispersionPorCien: 0.05,
+    dispersionTope: 0.5,
+
+    /**
+     * MÁS RÁPIDAS *(Santi: "balas más rápidas")*. De 250 a 380 — tu Colt tira
+     * a 330, así que ahora la bala de ellos vuela un poco más que la tuya, que
+     * es lo que corresponde: no estás tirando de frente, estás tirando para
+     * atrás a caballo.
+     *
+     * Lo que cambia de verdad es el tiempo que tenés: una bala que sale a 250
+     * desde 200 unidades tarda 0,80 s en llegar; a 380, 0,53 s. El medio
+     * segundo del aviso (`apuntar`) sigue siendo tuyo, pero después del
+     * fogonazo ya casi no hay nada que hacer.
+     */
+    velocidadBala: 380,
+
+    /** Cuánto vive una bala suya: a 380, 1,8 s son 680 unidades de vuelo. */
+    duracionBala: 1.8,
 
     /**
      * EL GRITO. Cada tanto uno grita "¡alto ahí!" cuando se prepara para

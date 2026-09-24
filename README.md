@@ -1758,6 +1758,15 @@ soltaste casi toda la plata.
 - Antes de tirar, cada jinete **avisa**: se frena, levanta el arma hacia vos y
   le aparece un **!**. El tiro sale hacia donde estabas en ese momento, así
   que moverte en ese medio segundo es esquivarlo.
+- **Tiran desde cualquier distancia y la bala vuela a 380** (tu Colt, a 330).
+  No hay un tope de alcance: el límite es cuándo dejan de seguirte (520). De
+  lejos el pulso se les abre —a 450 unidades el abanico es el doble— así que
+  son fuego de contención, pero te siguen tirando mientras te alejás. Medido:
+  con el Criollo la huida pasó a costar $588 de cada $1.000 (antes $418), y el
+  Mustang dejó de ser gratis ($84, antes $0).
+- **La bala es un trazo, no un cuadradito**: se dibuja el tramo que recorre en
+  un pedacito de segundo, con la punta encendida. La de ellos, más larga y
+  apagada; la tuya, corta y clara.
 - **Cada tiro que te pegan te hace soltar una bolsa** con el 10% de lo que
   sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
   con menos plata.

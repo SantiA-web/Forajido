@@ -191,6 +191,21 @@ export const HORSES = {
   },
 };
 
+/**
+ * CADA CUÁNTO PUEDE IMPULSAR ESTE CABALLO, en segundos *(Santi: "la
+ * aceleración que sea lo que indique cada cuánto podés usar el impulso y qué
+ * tan rápido es")*.
+ *
+ * Sale de la ACELERACIÓN y de nada más, para que no haya dos números diciendo
+ * lo mismo: 240 (nivel 1) son 9 segundos de espera y 620 (nivel 5) son 4. En el
+ * medio, la recta. El Mustang (520) queda en 5,3.
+ */
+export function esperaDelImpulso(caballo) {
+  const acc = caballo.aceleracion || 240;
+  const espera = 9 - ((acc - 240) * 5) / 380;
+  return Math.max(3.5, Math.min(10, Math.round(espera * 10) / 10));
+}
+
 export const DEFAULT_HORSE = 'criollo';
 
 /** El caballo que estás montando ahora. */

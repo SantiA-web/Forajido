@@ -76,7 +76,14 @@ export const HUIDA = {
      * de galope): 2.200 son unos 15 segundos, 3.500 unos 25 y 5.000 unos 35.
      */
     distanciaMin: 2200,
-    distanciaMax: 5000,
+    /**
+     * 🔻 Era 5.000 y se acercó a 4.000 *(Santi, al hacer que la resistencia
+     * sea el reloj de la huida)*: el Mustang tiene 17 segundos de galope y un
+     * refugio a 5.000 son 28 — te quedabas a pie a mitad de camino por cómo
+     * salió el sorteo, no por lo que hiciste. A 4.000 son 22 segundos: sigue
+     * siendo caro para el Mustang, pero es una decisión y no una condena.
+     */
+    distanciaMax: 4000,
 
     /**
      * EL ABANICO donde pueden caer, en grados PARA CADA LADO de por donde
@@ -227,22 +234,71 @@ export const HUIDA = {
      *    también CUÁNTO envión llegás a sacarle a cada tirón: el que acelera
      *    despacio, en medio segundo, todavía no llegó arriba.
      */
+    /**
+     * 🐎 EL ENVIÓN — [ESPACIO], un toque *(Santi, después de jugarlo: "haría
+     * que sea menos exagerado el impulso. Con el Criollo, que es el caballo
+     * más lento del juego, uso el impulso y ya me escapo de los jinetes")*.
+     *
+     * Tenía razón y el número lo decía: a fondo daba **+337 unidades**, más
+     * que la distancia a la que te sigue la ley. Eso no era una habilidad, era
+     * un botón de ganar.
+     *
+     * AHORA ES UN TOQUE, IGUAL PARA TODOS *(Santi: "todos los impulsos duran
+     * la misma cantidad de segundos... el impulso no depende de la
+     * resistencia, sí de la aceleración")*: un segundo, +35%, unos **+50** de
+     * ventaja. Alcanza para romper un tiro que te venía apuntado o para meterte
+     * en un hueco; no para escaparte.
+     *
+     * Lo que cambia de un caballo a otro es **cada cuánto lo tenés** y **qué
+     * tan rápido entra** — las dos cosas salen de la ACELERACIÓN, ver
+     * `esperaDelImpulso` en data/horse.js.
+     */
     impulso: {
-      /** Cuánto más corre, como fracción de su galope (Criollo 142 → 206). */
-      empuje: 0.45,
+      dura: 1.0,
+      empuje: 0.35,
 
-      /** Aguante por segundo mientras lo tenés apretado. */
-      gasto: 30,
+      /** Lo que le saca al fondo del caballo, de golpe (4 segundos de galope). */
+      costo: 15,
 
-      /** Y cuánto recupera por segundo, después de `espera` sin usarlo. */
-      recupera: 14,
-      espera: 1.0,
-
-      /** Al soltarlo, el envión se cae a este ritmo (px/s²), parejo para todos. */
+      /** Cuando se termina, el envión se cae a este ritmo (px/s²). */
       caida: 260,
+    },
 
-      /** Con menos aguante que esto no arranca: si no, tiembla en el cero. */
-      minimo: 15,
+    /**
+     * 🫁 EL FONDO DEL CABALLO — la resistencia, gastándose SIEMPRE *(Santi:
+     * "haría que la resistencia sea una unidad presente en todo momento, no
+     * solo que aparezca con el impulso. La resistencia determinará cuánto
+     * puede estar el caballo galopando y si usas el impulso, por supuesto que
+     * la quemarás rápido")*.
+     *
+     * Es el mismo tanque del caballo (`aguanteMax`: Criollo 160, Mustang 60) y
+     * ahora es **el reloj de la huida**, que es justo lo que Santi había
+     * pedido cuando se sacó el reloj de verdad: que la huida la decida el
+     * caballo y no un cronómetro.
+     *
+     *  - Galopando se gasta `galopeGasto` por segundo → el Criollo aguanta
+     *    **45 s** de galope; el Mustang, **17 s**.
+     *  - Frenado ([SHIFT]) no gasta: **recupera** `recupera` por segundo.
+     *  - Cada envión cuesta 15 de golpe, o sea cuatro segundos de galope.
+     *
+     * Y SI SE VACÍA, NO PERDÉS EL ASALTO *(de las dos ideas de Santi se eligió
+     * la segunda)*: el caballo **cae al paso** y la única salida es pelear —
+     * que es algo que el juego ya sabe hacer y está medido (frenar y pelear
+     * son unos 6 segundos y el 11-15% del botín). La primera idea —que te tire
+     * y pierdas el asalto— rompía la promesa de esta escena ("nunca te
+     * agarran, lo peor es llegar con menos plata"), castigaba con la pérdida
+     * total al que todavía no entendió el sistema, y era la muerte más
+     * invisible del juego: te mata una barrita, no un enemigo.
+     */
+    fondo: {
+      galopeGasto: 3.5,
+      recupera: 5,
+
+      /** Reventado, el caballo va a esto (el Criollo galopa a 142). */
+      pasoVelocidad: 50,
+
+      /** Y vuelve a galopar cuando recuperó esta fracción del tanque. */
+      revive: 0.3,
     },
     /**
      * A CABALLO SE TIRA PEOR: la dispersión de tu arma se multiplica por esto.

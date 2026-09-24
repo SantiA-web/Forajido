@@ -14671,6 +14671,75 @@ efecto.
 Sin errores en 15.423 cuadros con teclas y mouse al azar (incluido [ESPACIO]),
 a 0,74 ms por cuadro.
 
+#### 🔁 Decimoctava vuelta: la RESISTENCIA es el reloj, y el envión es un toque
+
+*(Santi, después de jugar el envión: "haría que sea menos exagerado el impulso.
+Con el Criollo, que es el caballo más lento del juego, uso el impulso y ya me
+escapo de los jinetes". Y el rediseño: "haría que la resistencia sea una unidad
+presente en todo momento, no solo que aparezca con el impulso... la aceleración
+que sea lo que indique cada cuánto podés usar el impulso y qué tan rápido es,
+pero todos los impulsos duran la misma cantidad de segundos")*
+
+**Tenía razón y el número lo decía**: el envión a fondo daba +337 unidades, más
+que la distancia a la que te sigue la ley. No era una habilidad, era un botón
+de ganar.
+
+**AHORA HAY UNA SOLA COSA QUE SE GASTA: el fondo del caballo.**
+
+- **Galopar cuesta 3,5 por segundo.** El Criollo (tanque 160) galopa **45,7 s
+  medidos**; el Mustang (60), **17**.
+- **Frenado ([SHIFT]) o al paso, recupera 5 por segundo.** Es el único momento
+  en que respira, y por eso [SHIFT] dejó de ser sólo "frenar para pelear".
+- **El envión cuesta 15 de golpe**, o sea cuatro segundos de galope.
+
+**Y EL ENVIÓN ES UN TOQUE, IGUAL PARA TODOS**: 1 segundo, +35%. Medido, da
+**+49 unidades con el Criollo y +67 con el Mustang** (contra los +337 de antes).
+Alcanza para romper un tiro que te venía apuntado o para meterte en un hueco;
+no para escaparte.
+
+**Lo único que cambia de un caballo a otro es la ACELERACIÓN**, y decide dos
+cosas: qué tan rápido entra el tirón y **cada cuánto lo tenés**
+(`esperaDelImpulso`, en data/horse.js: 240 → 9 s, 620 → 4 s, con la recta en el
+medio; el Mustang, 520, queda en 5,3). Así no hay dos números diciendo lo mismo.
+
+**SI SE VACÍA EL TANQUE, EL CABALLO CAE AL PASO (50) y la única salida es
+pelear.** De las dos ideas de Santi se eligió ésta y no la de perder el asalto,
+por tres motivos que quedaron escritos en `data/huida.js`: rompía la promesa de
+la escena ("nunca te agarran"), castigaba con la pérdida total al que todavía no
+entendió el sistema, y era la muerte más invisible del juego — te mata una
+barrita, no un enemigo. Se repone al 30% del tanque, que con el Criollo son
+**9,6 segundos al paso**.
+
+📏 **Medido (25 corridas, siempre a la quebrada y con la distancia fija en
+3.200, que es la única forma de comparar tandas):**
+
+| Caballo | Cómo lo juega | Plata perdida | Enviones | Veces que reventó |
+|---|---|---|---|---|
+| Criollo | sin envión | $680 | 0 | 0,3 |
+| Criollo | **envión medido** (sólo cuando le apuntan y con tanque) | **$464** | 2 | 0,8 |
+| Criollo | envión siempre que puede | $468 | 4,1 | 0,9 |
+| Mustang | sin envión | **$85** | 0 | 0,9 |
+| Mustang | envión medido | $190 | 1 | 2,4 |
+| Mustang | envión siempre que puede | $220 | 4,1 | 4,2 |
+
+**Y ahí está lo interesante: el envión dejó de ser gratis y cada caballo lo usa
+distinto.** Con el Criollo sigue conviniendo (te ahorra $215), porque tiene
+fondo para pagarlo. **Con el Mustang es una trampa**: su tanque de 17 segundos
+no da para enviones, y cada uno que gasta lo deja a pie antes — usándolo se
+pierde el doble de plata que no usándolo.
+
+⚠️ **Y el Mustang revienta ~1 vez por huida aunque no lo uses**, porque sus 17
+segundos de galope son menos que los 21 que dura la corrida. Es coherente con
+lo que es —"volador, pero no tiene fondo"— y Santi pidió expresamente no
+tocarle el tanque; la salida está en las manos del jugador ([SHIFT] para que
+respire). Queda anotado para mirarlo cuando lo juegue.
+
+🔻 **Y el refugio más lejano se acercó de 5.000 a 4.000** *(pedido de Santi al
+hacer este cambio)*: con 17 segundos de galope, un refugio a 5.000 —28 segundos—
+te dejaba a pie por cómo salió el sorteo y no por lo que hiciste.
+
+Sin errores en 16.692 cuadros con teclas y mouse al azar, a 0,61 ms por cuadro.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

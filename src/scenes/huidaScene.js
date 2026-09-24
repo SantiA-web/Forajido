@@ -30,7 +30,7 @@
 import { CONFIG } from '../data/config.js';
 import { HUIDA as H } from '../data/huida.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
-import { caballoActual, HORSES, APROXIMACION as A } from '../data/horse.js';
+import { caballoActual, HORSES, esperaDelImpulso, APROXIMACION as A } from '../data/horse.js';
 import { applyRaidResult, recompensaTapada, gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
@@ -112,14 +112,17 @@ export function createHuidaScene(services) {
       desvioDir: 0,
       proximoDesvio: 0,
       /**
-       * EL ENVIÓN ([ESPACIO], ver `HUIDA.jugador.impulso`): `extra` es lo que
-       * está empujando de más ahora mismo, `aguante` el tanque del caballo
-       * —el mismo con el que alcanzás el tren— y `reposo` lo que falta para
-       * que el tanque vuelva a llenarse.
+       * EL FONDO Y EL ENVIÓN (ver `HUIDA.jugador.fondo` e `.impulso`):
+       * `aguante` es el tanque del caballo, que se gasta SIEMPRE que galopa;
+       * `extra` es lo que está empujando de más ahora mismo; `impulsoTimer` lo
+       * que le queda al envión; `esperaImpulso` cuánto falta para el próximo, y
+       * `reventado` es el caballo caído al paso porque se quedó sin nada.
        */
       extra: 0,
       aguante: caballo.aguanteMax,
-      reposo: 0,
+      impulsoTimer: 0,
+      esperaImpulso: 0,
+      reventado: false,
     };
 
     sembrarRefugios();
@@ -404,7 +407,10 @@ export function createHuidaScene(services) {
 
     // Doblando cerrado se pierde envión, y [SHIFT] frena para pelear.
     const curva = 1 - (1 - J.frenoEnCurva) * Math.min(1, error / Math.PI);
-    const base = yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed + yo.extra;
+    // Sin fondo el caballo va al paso, y ahí lo único que queda es pelear.
+    const base = yo.reventado ? J.fondo.pasoVelocidad
+      : yo.frena ? caballo.brakeSpeed
+      : caballo.sprintSpeed + yo.extra;
     const fondo = base * curva;
     yo.vel = velocidadDe(fondo, yo.choque) * (yo.contraLaPared ? H.mundo.choquePared : 1);
     avanzar(yo, yo.vel, dt);
@@ -439,26 +445,57 @@ export function createHuidaScene(services) {
    */
   function empujar(dt) {
     const I = H.jugador.impulso;
-    const quiere = !fin && !yo.frena && input.isDown('Space')
-      && yo.aguante > (yo.extra > 0 ? 0 : I.minimo);
+    const F = H.jugador.fondo;
 
-    const objetivo = quiere ? caballo.sprintSpeed * I.empuje : 0;
+    /**
+     * 1. EL FONDO SE GASTA SIEMPRE QUE GALOPÁS. Frenado o al paso, en cambio,
+     * el caballo respira: es el único momento en que recupera, y por eso
+     * [SHIFT] dejó de ser sólo "frenar para pelear".
+     */
+    if (!fin) {
+      if (yo.frena || yo.reventado) {
+        yo.aguante = Math.min(caballo.aguanteMax, yo.aguante + F.recupera * dt);
+      } else {
+        yo.aguante = Math.max(0, yo.aguante - F.galopeGasto * dt);
+      }
+    }
+
+    // 2. Sin nada en el tanque, el caballo cae al paso hasta que se repone.
+    if (!yo.reventado && yo.aguante <= 0 && !fin) {
+      yo.reventado = true;
+      yo.impulsoTimer = 0;
+      audio.play('relincho');
+      carteles.push({ x: yo.x, y: yo.y - 30, texto: T.huida.reventado, color: colors.enemyAlert, vida: 2.4 });
+    } else if (yo.reventado && yo.aguante >= caballo.aguanteMax * F.revive) {
+      yo.reventado = false;
+      carteles.push({ x: yo.x, y: yo.y - 30, texto: T.huida.repuesto, color: colors.bagLoot, vida: 1.6 });
+    }
+
+    /**
+     * 3. EL ENVIÓN ES UN TOQUE: dura lo mismo para todos y la espera sale de
+     * la aceleración del caballo (`esperaDelImpulso`). Frenando y reventado no
+     * hay envión.
+     */
+    yo.esperaImpulso = Math.max(0, yo.esperaImpulso - dt);
+    if (yo.impulsoTimer > 0) yo.impulsoTimer -= dt;
+
+    const puede = !fin && !yo.frena && !yo.reventado
+      && yo.esperaImpulso <= 0 && yo.impulsoTimer <= 0 && yo.aguante > I.costo;
+    if (puede && input.wasPressed('Space')) {
+      yo.impulsoTimer = I.dura;
+      yo.esperaImpulso = esperaDelImpulso(caballo);
+      yo.aguante = Math.max(0, yo.aguante - I.costo);
+      audio.play('zancada');
+    }
+
+    const objetivo = yo.impulsoTimer > 0 ? caballo.sprintSpeed * I.empuje : 0;
     if (yo.extra < objetivo) yo.extra = Math.min(objetivo, yo.extra + caballo.aceleracion * dt);
     else yo.extra = Math.max(objetivo, yo.extra - I.caida * dt);
 
-    if (quiere) {
-      yo.aguante = Math.max(0, yo.aguante - I.gasto * dt);
-      yo.reposo = I.espera;
-      // Una estela de polvo, pero no una sola nube maciza: de a tres cuadros.
-      if (rng.chance(0.3)) {
-        polvo.sembrar({ x: yo.x, y: yo.y, suelo: 0, rumbo: 0, fuerza: 0.5,
-          pisadas: [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6]], cuantas: 1 });
-      }
-    } else {
-      yo.reposo = Math.max(0, yo.reposo - dt);
-      if (yo.reposo <= 0) {
-        yo.aguante = Math.min(caballo.aguanteMax, yo.aguante + I.recupera * dt);
-      }
+    // Una estela de polvo, pero no una sola nube maciza: de a tres cuadros.
+    if (yo.impulsoTimer > 0 && rng.chance(0.3)) {
+      polvo.sembrar({ x: yo.x, y: yo.y, suelo: 0, rumbo: 0, fuerza: 0.5,
+        pisadas: [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6]], cuantas: 1 });
     }
   }
 
@@ -1234,7 +1271,21 @@ export function createHuidaScene(services) {
     const lleno = Math.max(0, Math.min(1, yo.aguante / caballo.aguanteMax));
     r.rect(x, y, ancho, alto, colors.textDim);
     r.rect(x, y, Math.round(ancho * lleno), alto,
-      yo.extra > 0 ? colors.bagLoot : lleno < 0.25 ? colors.enemyAlert : colors.doorGlow);
+      yo.reventado ? colors.enemyAlert
+        : yo.extra > 0 ? colors.bagLoot
+        : lleno < 0.25 ? colors.enemyAlert : colors.doorGlow);
+
+    /**
+     * Y ABAJO, LA ESPERA DEL ENVIÓN: se llena sola y desaparece cuando está
+     * listo. Sin esto, la única forma de saber si tenías envión era apretar.
+     */
+    const espera = esperaDelImpulso(caballo);
+    if (yo.esperaImpulso > 0) {
+      const listo = 1 - yo.esperaImpulso / espera;
+      r.rect(x, y + alto + 1, Math.round(ancho * listo), 1, colors.textDim);
+    } else if (!yo.reventado) {
+      r.rect(x, y + alto + 1, ancho, 1, colors.doorGlow);
+    }
   }
 
   /** Un punto de pantalla, en unidades del mundo, con la lupa de esta escena. */

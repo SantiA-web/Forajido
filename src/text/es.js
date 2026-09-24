@@ -244,6 +244,9 @@ export const T = {
      */
     brujula: { quebrada: 'Q', rio: 'R', bosque: 'B' },
     seQuedo: 'SE QUEDÓ ATRÁS',
+    /** El caballo se quedó sin fondo: cae al paso hasta que se repone. */
+    reventado: '¡EL CABALLO NO DA MÁS!',
+    repuesto: 'EL CABALLO SE REPUSO',
     aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
     atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,
     teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [CLIC DER.] APUNTAR   [R] RECARGAR'],

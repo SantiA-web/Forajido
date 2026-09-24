@@ -1767,18 +1767,21 @@ soltaste casi toda la plata.
 - **La bala es un trazo, no un cuadradito**: se dibuja el tramo que recorre en
   un pedacito de segundo, con la punta encendida. La de ellos, más larga y
   apagada; la tuya, corta y clara.
-- **[ESPACIO] es el envión**: mientras te quede aguante, el caballo empuja un
-  45% más. **Cuánto tenés lo decide la RESISTENCIA** del animal (el Criollo, 5,3
-  segundos; el Mustang, 2) y **qué tan rápido entra, la ACELERACIÓN** (el
-  Mustang salta en 0,17 s; el Criollo se demora 0,27). Por eso el Mustang
-  rinde en los toques cortos y el Criollo en los tirones largos. La barrita
-  abajo del dinero es el tanque.
+- **El caballo tiene FONDO, y se gasta siempre.** Galopar cuesta 3,5 por
+  segundo: el Criollo aguanta **45 segundos** de galope y el Mustang, **17**.
+  Frenado o al paso recupera. Si se vacía, **el caballo cae al paso y la única
+  salida es pelear** — no perdés el asalto, pero los tenés encima.
+- **[ESPACIO] es el envión**: un toque de 1 segundo, +35%, igual para todos
+  (unas +50 unidades de ventaja). Cuesta 15 del fondo, o sea cuatro segundos de
+  galope. **La ACELERACIÓN decide cada cuánto lo tenés** (Criollo, 9 s;
+  Mustang, 5,3) y qué tan rápido entra. La barrita abajo del dinero es el
+  fondo, y la rayita de abajo, la espera del envión.
+- Medido: con el Criollo, usarlo bien te ahorra $215 de cada $1.000. **Con el
+  Mustang es una trampa**: su tanque de 17 segundos no da para enviones, y
+  gastarlos lo deja a pie.
 - **Ellos también tienen envión**, pero corto y contado: lo usan para volver a
   pegarse cuando quedaron a más de 320, dos veces por huida y nunca después de
   que sus caballos aflojen.
-- Medido: con las balas nuevas, la huida cuesta **$640** de cada $1.000 si no
-  usás el envión y **$303** si lo usás cuando te apuntan — que es lo que
-  costaba antes. La herramienta nueva es la que devuelve el equilibrio.
 - **Cada tiro que te pegan te hace soltar una bolsa** con el 10% de lo que
   sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
   con menos plata.

@@ -712,7 +712,9 @@ export function createHuidaScene(services) {
       if (f.golpes >= L.golpes) { cortarElLazo('cortado'); return; }
     }
 
-    if (!f.j.alive || f.j.perdido || fin) { cortarElLazo('nada'); return; }
+    // Si le pegaste al que te tiene enlazado, la soga se va con él.
+    if (!f.j.alive) { cortarElLazo('tirador'); return; }
+    if (f.j.perdido || fin) { cortarElLazo('nada'); return; }
     if (yo.choque > 0 || f.j.choque > 0) { cortarElLazo('choque'); return; }
     if (yo.impulsoTimer > 0 && L.cortaConEnvion) { cortarElLazo('envion'); return; }
     if (f.t >= L.dura) { cortarElLazo('solto'); return; }
@@ -735,11 +737,13 @@ export function createHuidaScene(services) {
     if (como === 'cortado') f.j.lazo = false;
     if (como === 'nada') return;
     const texto = como === 'cortado' ? T.huida.lazoCortado
+      : como === 'tirador' ? T.huida.lazoTirador
       : como === 'choque' ? T.huida.lazoChoque
       : como === 'envion' ? T.huida.lazoEnvion : T.huida.lazoSolto;
+    const bueno = como === 'cortado' || como === 'tirador';
     carteles.push({
       x: yo.x, y: yo.y - 34, texto,
-      color: como === 'cortado' ? colors.bagLoot : colors.textDim,
+      color: bueno ? colors.bagLoot : colors.textDim,
       vida: 1.6,
     });
     if (como === 'cortado') audio.play('hitFlesh');
@@ -806,9 +810,15 @@ export function createHuidaScene(services) {
 
   function disparar(dt) {
     yo.fireTimer -= dt;
-    // Con un tipo colgado del brazo no se tira: las dos manos están ocupadas.
-    // Y con la soga en el cuello del caballo, tampoco: estás sujetándote.
-    if (yo.forcejeo || yo.lazo) return;
+    /**
+     * Con un tipo colgado del brazo no se tira: las dos manos están ocupadas.
+     *
+     * ⚠️ ENLAZADO SÍ SE TIRA *(Santi: "si tira el lazo hacia el caballo, el
+     * jugador sí podría disparar")*, y tiene razón: la soga va al pescuezo del
+     * animal, no a vos. Y eso le da vuelta la jugada — el que te enlaza queda
+     * atado a vos, cerca y quieto: **enlazarte lo expone**.
+     */
+    if (yo.forcejeo) return;
     if (yo.recargando > 0) {
       yo.recargando -= dt;
       if (yo.recargando <= 0) yo.balas = arma.magazine;

@@ -263,6 +263,7 @@ export const T = {
     lazoChoque: 'LA SOGA SE CORTÓ EN EL GOLPE',
     lazoEnvion: 'EL ENVIÓN TE SOLTÓ',
     lazoSolto: 'SE LE ESCAPÓ LA SOGA',
+    lazoTirador: '¡LE PEGASTE Y SOLTÓ!',
     aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
     atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,
     teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [R] RECARGAR   [E] ZAFAR'],

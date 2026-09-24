@@ -1807,10 +1807,14 @@ soltaste casi toda la plata.
   aviso— y la suelta. Puede fallar: acierta el 70% a 60 unidades y sólo el 30%
   a 160, y le cuesta 25 puntos más si estás doblando.
 - **Si te engancha** es el forcejeo pero de lejos: te frena igual (del 60% al
-  30%), no podés disparar y encima **te arrastra para atrás**, o sea que
-  perdés terreno. Se sale **machacando [E] ocho veces**, o si chocás contra una
-  piedra. **Cortar la soga lo deja sin lazo** para el resto de la huida, pero
-  al jinete no lo tirás: está lejos.
+  30%) y encima **te arrastra para atrás**, o sea que perdés terreno. Se sale
+  **machacando [E] ocho veces**, o si chocás contra una piedra. **Cortar la
+  soga lo deja sin lazo** para el resto de la huida, pero al jinete no lo
+  tirás: está lejos.
+- **Pero enlazado SÍ podés disparar**, al revés que en el forcejeo: la soga va
+  al pescuezo del caballo, no a vos, así que las manos te quedan libres. Y eso
+  le da vuelta la jugada: el que te enlaza queda **atado a vos, cerca y
+  quieto** — enlazarte lo expone. Si lo bajás, la soga se va con él.
 - **El envión esquiva el lazo, pero no lo corta.** Si lo usás cuando ves el
   revoleo, le queda el 40% de la puntería. Una vez enlazado, un tirón de
   velocidad más bien tensa la soga: ahí sólo sirve [E]. Medido: **te enlazan

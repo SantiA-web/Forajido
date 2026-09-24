@@ -14970,10 +14970,18 @@ instantánea:
    unas 110 unidades.
 2. **Revolea** la soga sobre la cabeza 0,7 s. Ése es tu aviso.
 3. **La tira.** La soga vuela 0,25 s.
-4. **Si pega**, te frena (60% → 30% de tu galope), no podés disparar y **te
-   arrastra hacia atrás** a 26 u/s *(Santi: "hacerlo retroceder")*. Se corta con
-   ocho [E] o con un choque, y cortarla lo deja **sin lazo** para el resto de la
-   huida. Al jinete no lo tirás nunca: está lejos.
+4. **Si pega**, te frena (60% → 30% de tu galope) y **te arrastra hacia atrás**
+   a 26 u/s *(Santi: "hacerlo retroceder")*. Se corta con ocho [E] o con un
+   choque, y cortarla lo deja **sin lazo** para el resto de la huida. Al jinete
+   no lo tirás nunca: está lejos.
+
+🔫 **Y enlazado SÍ se dispara**, al revés que en el forcejeo *(Santi: "si tira
+el lazo hacia el caballo, el jugador sí podría disparar")*. Es correcto: la soga
+va al pescuezo del animal, no a vos. Y no es sólo coherencia — **le da vuelta la
+jugada**: el que te enlaza queda atado a vos, cerca y quieto, así que enlazarte
+lo expone. Medido, el piloto no llega a bajarlo en el segundo que dura el
+enganche (son dos tiros a 110 unidades), así que no lo rompe: lo que cambia es
+que no perdés tu tiempo de tiro. La corrida pasó de costar $590 a $490.
 
 La puntería es 70% a 60 unidades y baja 0,4 puntos por unidad — a 160 queda en
 30% — y pierde 25 puntos más si estás doblando.

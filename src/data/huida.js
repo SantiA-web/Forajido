@@ -349,6 +349,16 @@ export const HUIDA = {
     dispersionACaballo: 3,
 
     /**
+     * ⏱️ Y RECARGAR A GALOPE TENDIDO CUESTA: el tiempo de recarga del arma se
+     * multiplica por esto mientras vas galopando. Frenado ([SHIFT]) recargás
+     * normal, porque ahí podés soltar las riendas.
+     *
+     * En 1 está apagado — es el número de una propuesta de equilibrio, no una
+     * decisión tomada. Ver la pasada de equilibrio en NOTAS-DISENO.md.
+     */
+    recargaACaballo: 1,
+
+    /**
      * APUNTAR CON CLIC DERECHO, como en el asalto *(Santi: "o que exista la
      * posibilidad de apuntar con click derecho")*: la dispersión pasa a la
      * `spreadApuntado` del arma (la mitad) en `CONFIG.mira.tiempoCierre`.

@@ -14875,6 +14875,60 @@ recuperar fondo, no dispara). Pero antes de agregar el lazo conviene hacer **la
 pasada de equilibrio con todo junto**: un piloto que juegue bien, y de ahí
 decidir si la huida tiene que costar lo que cuesta.
 
+#### ⚖️ LA PASADA DE EQUILIBRIO DE LA HUIDA (y lo que encontró)
+
+Después de las balas nuevas, el envión, el anticipo, el cortador y el forcejeo
+hacía falta medir **todo junto** en vez de número por número. Para eso se armó
+un piloto que juega bien: esquiva piedras, aprieta el envión cuando le apuntan,
+machaca [E] para zafar del forcejeo, frena para recuperar fondo **y le tira a
+los jinetes** con un pulso humano (reacciona a los 0,25 s y le erra ±18).
+
+📏 **Criollo, 25 corridas por fila:**
+
+| Cómo se juega | 3 jinetes | 5 jinetes |
+|---|---|---|
+| Sólo correr al refugio (sin envión, sin tiros) | **$703** | — |
+| Jugando bien **y disparando** | **$16-52**, 5-9 s | $120, 20 s |
+
+**Y ahí está el problema, que no era el que yo buscaba:** la huida se resuelve
+a los tiros en **cinco a nueve segundos**, gastando **cuatro o cinco balas** de
+las seis del Colt. El 57% de los tiros pega, y cada uno que pega saca a un
+jinete (`jinetes.vida: 1`). O sea que **todo lo que se construyó arriba —el
+cortador, el forcejeo, el alcance infinito, el anticipo— casi nunca llega a
+pasar**: la partida está muerta antes.
+
+La diferencia entre jugar bien y jugar mal es de **catorce veces** ($50 contra
+$703). Un juego quiere una diferencia, no un abismo.
+
+**Lo que NO lo arregla:** la puntería. Medido, subir `dispersionACaballo` de 3
+a 4,5 y a 6 deja el resultado casi igual ($36 y $72 con tres jinetes), porque
+los tiros que importan son de cerca y ahí el abanico no alcanza a salvar a
+nadie.
+
+**Lo que SÍ lo cambia es cuánto aguanta un jinete.** Medido con el mismo piloto:
+
+| Regla | 3 jinetes | 5 jinetes |
+|---|---|---|
+| Un tiro (hoy) | $16-52 · 5-9 s · 4-5 balas | $120 · 20 s · 9 balas |
+| **Dos tiros** | $176 · 20 s · **10 balas** | $260 · 23 s · **15 balas** |
+| **Dos tiros, pero uno solo a quemarropa (<90)** | $112 · 19 s · 10 balas | $272 · 21 s · 14 balas |
+
+Con dos tiros ya no alcanza un cilindro: hay que elegir a quién bajar, recargar
+en movimiento y aceptar que a alguno lo vas a tener encima. Y la brecha entre
+jugar bien y jugar mal queda en **tres veces**, que es sana.
+
+⚠️ **Esto toca una decisión que Santi tomó a mano** ("a caballo, un tiro
+basta"), y la tomó cuando la huida no tenía nada más: ni envión, ni forcejeo,
+ni cortador, ni refugios con premio. La regla de un tiro era lo que hacía que
+disparar valiera la pena; hoy es lo que hace que lo demás no exista. **Queda
+propuesto, no hecho:** `jinetes.vida` sigue en 1 hasta que Santi decida.
+
+🔧 **Y quedó puesto un número apagado:** `jugador.recargaACaballo` multiplica el
+tiempo de recarga mientras galopás (frenado recargás normal). Está en 1 —
+apagado— porque midiéndolo casi no cambia nada: con un tiro por jinete el
+piloto recarga media vez por corrida. Cobra sentido recién si se pasa a dos
+tiros.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

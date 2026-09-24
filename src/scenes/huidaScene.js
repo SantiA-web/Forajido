@@ -651,6 +651,11 @@ export function createHuidaScene(services) {
   // ----------------------------------------------------------------- el arma
 
   /** El mismo gatillo del asalto: clic sostenido, [R] recarga, vacío recarga solo. */
+  /** Recargar a galope tendido cuesta; frenado, no (ver `recargaACaballo`). */
+  function costoDeRecargar() {
+    return yo.frena ? 1 : (H.jugador.recargaACaballo || 1);
+  }
+
   function disparar(dt) {
     yo.fireTimer -= dt;
     // Con un tipo colgado del brazo no se tira: las dos manos están ocupadas.
@@ -661,11 +666,11 @@ export function createHuidaScene(services) {
       return;
     }
     if (input.wasPressed('KeyR') && yo.balas < arma.magazine) {
-      yo.recargando = arma.reloadTime;
+      yo.recargando = arma.reloadTime * costoDeRecargar();
       return;
     }
     if (!input.mouse.down || yo.fireTimer > 0) return;
-    if (yo.balas <= 0) { yo.recargando = arma.reloadTime; return; }
+    if (yo.balas <= 0) { yo.recargando = arma.reloadTime * costoDeRecargar(); return; }
 
     const angulo = haciaDondeApunto()
       + rng.spreadDeTiro(dispersionAhora(), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);

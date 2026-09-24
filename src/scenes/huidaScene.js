@@ -111,6 +111,15 @@ export function createHuidaScene(services) {
       desvio: 0,
       desvioDir: 0,
       proximoDesvio: 0,
+      /**
+       * EL ENVIÓN ([ESPACIO], ver `HUIDA.jugador.impulso`): `extra` es lo que
+       * está empujando de más ahora mismo, `aguante` el tanque del caballo
+       * —el mismo con el que alcanzás el tren— y `reposo` lo que falta para
+       * que el tanque vuelva a llenarse.
+       */
+      extra: 0,
+      aguante: caballo.aguanteMax,
+      reposo: 0,
     };
 
     sembrarRefugios();
@@ -276,6 +285,11 @@ export function createHuidaScene(services) {
       fase: Math.random() * 6.28,
       choque: 0,
       choques: 0,
+      /** Su envión: cuánto le queda de tirón y cuánto para el próximo. */
+      empuje: 0,
+      empujeVel: 0,
+      recarga: rng.range(0, J.impulso.recarga),
+      usos: J.impulso.usos,
     };
   }
 
@@ -386,9 +400,12 @@ export function createHuidaScene(services) {
 
     if (yo.choque > 0) yo.choque -= dt;
 
+    empujar(dt);
+
     // Doblando cerrado se pierde envión, y [SHIFT] frena para pelear.
     const curva = 1 - (1 - J.frenoEnCurva) * Math.min(1, error / Math.PI);
-    const fondo = (yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed) * curva;
+    const base = yo.frena ? caballo.brakeSpeed : caballo.sprintSpeed + yo.extra;
+    const fondo = base * curva;
     yo.vel = velocidadDe(fondo, yo.choque) * (yo.contraLaPared ? H.mundo.choquePared : 1);
     avanzar(yo, yo.vel, dt);
 
@@ -405,6 +422,44 @@ export function createHuidaScene(services) {
 
     yo.invuln = Math.max(0, yo.invuln - dt);
     yo.fogonazo = Math.max(0, yo.fogonazo - dt);
+  }
+
+  /**
+   * 🐎 EL ENVIÓN: [ESPACIO] mientras haya aguante *(Santi: "un avance de
+   * velocidad cortito... la cantidad de impulso va a depender de la
+   * resistencia del caballo y la velocidad de ese impulso de la aceleración")*.
+   *
+   * Los dos números salen del ANIMAL, no de la escena: el tanque es su
+   * `aguanteMax` (el Criollo tiene fondo, el Mustang no) y lo que tarda el
+   * tirón en entrar es su `aceleracion` (el Mustang salta, el Criollo se
+   * demora). Como el envión se usa de a tirones cortos, esa demora también
+   * decide cuánto le sacás a cada toque.
+   *
+   * Frenando ([SHIFT]) no hay envión: son dos cosas opuestas.
+   */
+  function empujar(dt) {
+    const I = H.jugador.impulso;
+    const quiere = !fin && !yo.frena && input.isDown('Space')
+      && yo.aguante > (yo.extra > 0 ? 0 : I.minimo);
+
+    const objetivo = quiere ? caballo.sprintSpeed * I.empuje : 0;
+    if (yo.extra < objetivo) yo.extra = Math.min(objetivo, yo.extra + caballo.aceleracion * dt);
+    else yo.extra = Math.max(objetivo, yo.extra - I.caida * dt);
+
+    if (quiere) {
+      yo.aguante = Math.max(0, yo.aguante - I.gasto * dt);
+      yo.reposo = I.espera;
+      // Una estela de polvo, pero no una sola nube maciza: de a tres cuadros.
+      if (rng.chance(0.3)) {
+        polvo.sembrar({ x: yo.x, y: yo.y, suelo: 0, rumbo: 0, fuerza: 0.5,
+          pisadas: [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6]], cuantas: 1 });
+      }
+    } else {
+      yo.reposo = Math.max(0, yo.reposo - dt);
+      if (yo.reposo <= 0) {
+        yo.aguante = Math.min(caballo.aguanteMax, yo.aguante + I.recupera * dt);
+      }
+    }
   }
 
   /** Los choques del jugador: los obstáculos y la pared de un refugio. */
@@ -589,19 +644,22 @@ export function createHuidaScene(services) {
         girarHacia(j, haciaAlla, H.jinetes.giro, dt);
         esquivarConElCaballo(j, dt);
       }
-      avanzar(j, velocidadDelJinete(j), dt);
+      empujarJinete(j, dt);
+      avanzar(j, velocidadDelJinete(j) + j.empujeVel, dt);
       chocarJinete(j);
 
       j.cooldown -= dt;
       const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
       if (j.cooldown <= 0 && d < J.alcance && j.aimTimer <= 0) {
+        // De lejos tiran, pero mucho menos seguido (ver `cadenciaLejos`).
+        const lejano = d > J.cadenciaLejosDesde ? J.cadenciaLejos : 1;
         if (tiempo - ultimoGrito > J.gritoCada && rng.chance(J.chanceGrito)) {
           ultimoGrito = tiempo;
           audio.play('gritoLey');
         }
         j.aimTimer = J.apuntar;
         j.aimDir = Math.atan2((yo.y - 8 - (j.y - 14)) / PROFUNDIDAD, yo.x - (j.x + 6));
-        j.cooldown = J.cadencia + rng.range(0, J.cadenciaAzar);
+        j.cooldown = (J.cadencia + rng.range(0, J.cadenciaAzar)) * lejano;
       }
     }
   }
@@ -622,6 +680,35 @@ export function createHuidaScene(services) {
     const hacia = Math.atan2((estorbo.y - j.y) / PROFUNDIDAD, estorbo.x - j.x);
     const dif = Math.atan2(Math.sin(hacia - j.rumbo), Math.cos(hacia - j.rumbo));
     girarHacia(j, j.rumbo - (dif >= 0 ? 1 : -1) * 0.7, 3, dt);
+  }
+
+  /**
+   * 🐎 EL ENVIÓN DE UN JINETE. El mismo tirón que el tuyo, del otro lado:
+   * cuando quedó descolgado aprieta y se vuelve a pegar. Tiene recarga para
+   * que no sea un caballo volando todo el tiempo.
+   *
+   * Por ahora lo usan SÓLO para eso. Cortarte el paso y anticiparte —que es
+   * para lo que pidió Santi el envión de ellos— viene en la vuelta siguiente.
+   */
+  function empujarJinete(j, dt) {
+    const I = H.jinetes.impulso;
+    j.recarga -= dt;
+    if (j.empuje > 0) {
+      j.empuje -= dt;
+    } else if (j.recarga <= 0 && j.usos > 0 && tiempo < H.jinetes.cansancio.desde) {
+      // Cansados ya no: lo que aflojan a los 45 segundos es todo lo que tienen.
+      const lejos = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+      if (lejos > I.desde) {
+        j.empuje = I.dura;
+        j.recarga = I.recarga;
+        j.usos -= 1;
+      }
+    }
+    j.empujeVel = j.empuje > 0 ? j.vel * I.empuje : 0;
+    if (j.empuje > 0 && rng.chance(0.3)) {
+      polvo.sembrar({ x: j.x, y: j.y, suelo: 0, rumbo: 0, fuerza: 0.6,
+        pisadas: [[GOLPES.traseraAlla, -8]], cuantas: 1 });
+    }
   }
 
   function chocarJinete(j) {
@@ -1127,10 +1214,27 @@ export function createHuidaScene(services) {
       : `${arma.short} ${'●'.repeat(yo.balas)}${'○'.repeat(Math.max(0, arma.magazine - yo.balas))}`;
     r.text(municion, vista.w - 6, 9, yo.recargando > 0 ? colors.enemyAlert : colors.textDim, 'right');
 
+    dibujarAguante(r);
+
     if (tiempo < 6 && !fin) {
       r.text(T.huida.teclas[0], centro, vista.h - 17, colors.textDim);
       r.text(T.huida.teclas[1], centro, vista.h - 7, colors.textDim);
     }
+  }
+
+  /**
+   * EL AGUANTE DEL CABALLO, para el envión. Una barra chica abajo del dinero:
+   * lo único que hay que poder leer de un vistazo es si te queda o no.
+   *
+   * ⚠️ Dibujo simple a propósito (lista "Por vestir").
+   */
+  function dibujarAguante(r) {
+    if (fin) return;
+    const ancho = 46, alto = 3, x = 6, y = soltadas > 0 ? 25 : 15;
+    const lleno = Math.max(0, Math.min(1, yo.aguante / caballo.aguanteMax));
+    r.rect(x, y, ancho, alto, colors.textDim);
+    r.rect(x, y, Math.round(ancho * lleno), alto,
+      yo.extra > 0 ? colors.bagLoot : lleno < 0.25 ? colors.enemyAlert : colors.doorGlow);
   }
 
   /** Un punto de pantalla, en unidades del mundo, con la lupa de esta escena. */

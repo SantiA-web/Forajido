@@ -246,7 +246,7 @@ export const T = {
     seQuedo: 'SE QUEDÓ ATRÁS',
     aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
     atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,
-    teclas: ['[W A S D] GALOPAR A DONDE QUIERAS   [SHIFT] FRENAR', '[CLIC] TIRAR   [CLIC DER.] APUNTAR   [R] RECARGAR'],
+    teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [CLIC DER.] APUNTAR   [R] RECARGAR'],
   },
 
   ride: {

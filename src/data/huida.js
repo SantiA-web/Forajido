@@ -205,6 +205,45 @@ export const HUIDA = {
 
     /** Doblando cerrado se pierde envión: al máximo, esta fracción. */
     frenoEnCurva: 0.82,
+
+    /**
+     * 🐎 EL ENVIÓN — [ESPACIO] *(Santi: "añadiría una habilidad al caballo
+     * (tanto del jugador como el del guardia): algo como un avance de
+     * velocidad cortito... la cantidad de impulso va a depender de la
+     * resistencia del caballo y la velocidad de ese impulso de una nueva
+     * estadística: la aceleración")*.
+     *
+     * Lo apretás y lo mantenés. Mientras te quede aguante, el caballo empuja
+     * `empuje` más de lo que venía; al soltarlo se le va solo.
+     *
+     * **DE DÓNDE SALEN LOS DOS NÚMEROS QUE PIDIÓ SANTI:**
+     *
+     *  - CUÁNTO ENVIÓN TENÉS = la RESISTENCIA del caballo (`aguanteMax`, el
+     *    mismo tanque con el que alcanzás el tren). El Criollo tiene 160 y son
+     *    unos 5 segundos de envión; el Mustang tiene 60 y son 2. El lento tiene
+     *    fondo, el rápido no.
+     *  - QUÉ TAN RÁPIDO ENTRA = la ACELERACIÓN (`aceleracion`). Y como el
+     *    envión se usa de a tirones cortos, la aceleración termina decidiendo
+     *    también CUÁNTO envión llegás a sacarle a cada tirón: el que acelera
+     *    despacio, en medio segundo, todavía no llegó arriba.
+     */
+    impulso: {
+      /** Cuánto más corre, como fracción de su galope (Criollo 142 → 206). */
+      empuje: 0.45,
+
+      /** Aguante por segundo mientras lo tenés apretado. */
+      gasto: 30,
+
+      /** Y cuánto recupera por segundo, después de `espera` sin usarlo. */
+      recupera: 14,
+      espera: 1.0,
+
+      /** Al soltarlo, el envión se cae a este ritmo (px/s²), parejo para todos. */
+      caida: 260,
+
+      /** Con menos aguante que esto no arranca: si no, tiembla en el cero. */
+      minimo: 15,
+    },
     /**
      * A CABALLO SE TIRA PEOR: la dispersión de tu arma se multiplica por esto.
      * Con el Colt (0,035) queda en 0,105.
@@ -385,11 +424,28 @@ export const HUIDA = {
      * "!" arriba. La dirección queda fija cuando empiezan a apuntar, así que
      * moverte en ese medio segundo es esquivar.
      */
-    apuntar: 0.5,
+    apuntar: 0.65,
 
     /** Cada cuánto tira cada uno, más un poco al azar para que no vayan en coro. */
     cadencia: 1.5,
     cadenciaAzar: 0.8,
+
+    /**
+     * ⏳ Y DE LEJOS TIRAN MUCHO MENOS SEGUIDO. Pasadas `cadenciaLejosDesde`
+     * unidades, la espera entre tiros se multiplica por `cadenciaLejos`.
+     *
+     * Es la compensación de haberles sacado el tope de alcance. Medido con la
+     * distancia al refugio fija (si no, la variación entre tandas se come
+     * cualquier conclusión): con el alcance infinito y la bala a 380, la huida
+     * pasó de costar ~$257 a ~$590 de cada $1.000. Alargar el aviso a 0,65
+     * —lo que pidió Santi— recupera unos $60 de esos $330: ayuda, pero no
+     * alcanza, porque el problema no es el aviso sino CUÁNTOS tiros comés.
+     *
+     * Con esto siguen tirando desde donde quieran —se ve, se escucha y te hace
+     * galopar— pero el tiroteo de verdad vuelve a ser el de cerca.
+     */
+    cadenciaLejosDesde: 240,
+    cadenciaLejos: 2.2,
 
     /**
      * Radianes de abanico DE CERCA. Subió de 0,10 a 0,18 midiendo: con 0,10,
@@ -427,6 +483,37 @@ export const HUIDA = {
 
     /** Cuánto vive una bala suya: a 380, 1,8 s son 680 unidades de vuelo. */
     duracionBala: 1.8,
+
+    /**
+     * 🐎 SU ENVIÓN. El mismo tirón que el tuyo, del otro lado: cuando uno
+     * quedó descolgado —más de `desde` unidades atrás— aprieta y se vuelve a
+     * pegar. Por ahora lo usan SÓLO para eso; cortarte el paso y anticiparte
+     * viene en la vuelta siguiente.
+     *
+     * Su tanque no se dibuja ni se mide: alcanza con que no puedan encadenarlo
+     * (`recarga`), o serían tres caballos volando todo el tiempo.
+     */
+    impulso: {
+      empuje: 0.35,
+      dura: 1.2,
+      recarga: 10,
+
+      /**
+       * Recién cuando se descolgó DE VERDAD. Con 200 saltaba todo el tiempo
+       * —van a 110-170 de tu cola— y el resultado medido fue una huida que no
+       * terminaba nunca: se pegaban siempre, el Mustang dejó de despegarse y
+       * la corrida llegaba al tope de tiempo sin resolverse.
+       */
+      desde: 320,
+
+      /**
+       * Y CUÁNTAS VECES PUEDE EN TODA LA HUIDA. Es el freno que hace que un
+       * caballo mejor siga sirviendo: los dos primeros tirones te los pelean,
+       * después es cuestión de quién corre más. Sin esto, el envión de ellos
+       * anulaba la ventaja de comprar un caballo.
+       */
+      usos: 2,
+    },
 
     /**
      * EL GRITO. Cada tanto uno grita "¡alto ahí!" cuando se prepara para

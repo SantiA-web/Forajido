@@ -1767,6 +1767,18 @@ soltaste casi toda la plata.
 - **La bala es un trazo, no un cuadradito**: se dibuja el tramo que recorre en
   un pedacito de segundo, con la punta encendida. La de ellos, más larga y
   apagada; la tuya, corta y clara.
+- **[ESPACIO] es el envión**: mientras te quede aguante, el caballo empuja un
+  45% más. **Cuánto tenés lo decide la RESISTENCIA** del animal (el Criollo, 5,3
+  segundos; el Mustang, 2) y **qué tan rápido entra, la ACELERACIÓN** (el
+  Mustang salta en 0,17 s; el Criollo se demora 0,27). Por eso el Mustang
+  rinde en los toques cortos y el Criollo en los tirones largos. La barrita
+  abajo del dinero es el tanque.
+- **Ellos también tienen envión**, pero corto y contado: lo usan para volver a
+  pegarse cuando quedaron a más de 320, dos veces por huida y nunca después de
+  que sus caballos aflojen.
+- Medido: con las balas nuevas, la huida cuesta **$640** de cada $1.000 si no
+  usás el envión y **$303** si lo usás cuando te apuntan — que es lo que
+  costaba antes. La herramienta nueva es la que devuelve el equilibrio.
 - **Cada tiro que te pegan te hace soltar una bolsa** con el 10% de lo que
   sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
   con menos plata.

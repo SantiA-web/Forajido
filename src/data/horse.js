@@ -93,7 +93,19 @@ export const HORSES = {
 
     sprintSpeed: 142,
     brakeSpeed: 85,
-    aceleracion: 320,
+
+    /**
+     * ACELERACIÓN 1 (px/s²). Era 320, igual que el Mustang: una stat que no
+     * distinguía a nadie. Desde el envión de la huida ([ESPACIO], ver
+     * `HUIDA.jugador.impulso`) decide QUÉ TAN RÁPIDO entra ese tirón, y con
+     * 240 este caballo tarda 0,27 s en llegar arriba — o sea que un toque
+     * corto casi no le rinde. Es el mismo animal de siempre: tiene fondo, pero
+     * hay que pedírselo con tiempo.
+     *
+     * En la aproximación al tren (rideScene) esto casi no se nota: son
+     * centésimas sobre una corrida de 40 segundos.
+     */
+    aceleracion: 240,
 
     /**
      * RESISTENCIA: calibrada para que llegue al 3º enganche y no al 4º.
@@ -160,7 +172,13 @@ export const HORSES = {
      */
     sprintSpeed: 180,
     brakeSpeed: 85,
-    aceleracion: 320,
+
+    /**
+     * ACELERACIÓN 4 (px/s²). El tirón le entra en 0,16 s, así que un toque
+     * corto de [ESPACIO] ya lo pone arriba: es el caballo del golpe seco. Le
+     * dura poco (aguanteMax 60), pero lo que da, lo da al toque.
+     */
+    aceleracion: 520,
     aguanteMax: 60,
     aguanteGasto: 6,
 

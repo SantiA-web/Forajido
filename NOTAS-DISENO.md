@@ -14592,6 +14592,85 @@ creerle a una medición hay que llamar a `fitToScreen` y comprobar que
 `vista.w` esté cerca de 426.** Ahora la función de medir lo verifica y revienta
 si no.
 
+#### 🔁 Decimoséptima vuelta: EL ENVIÓN ([ESPACIO])
+
+*(Santi: "añadiría una habilidad al caballo (tanto del jugador como el del
+guardia): algo como un avance de velocidad cortito. Si el jugador lo usa es
+para alejarse de un jinete y si un jinete lo usa puede ser para alcanzar al
+jugador o ponerse adelante de él". Y después: "la cantidad de impulso va a
+depender de la resistencia del caballo y la velocidad de ese impulso de una
+nueva estadística: la aceleración")*
+
+**Lo apretás y lo mantenés**: mientras te quede aguante, el caballo empuja un
+45% más. Al soltarlo se le va solo. Frenando ([SHIFT]) no hay envión, que son
+dos cosas opuestas.
+
+**Los dos números salen del ANIMAL, como pidió Santi:**
+
+| | De dónde sale | Criollo | Mustang |
+|---|---|---|---|
+| Cuánto envión tenés | `aguanteMax` (la RESISTENCIA, el mismo tanque con el que alcanzás el tren) | 160 → **5,3 s** de envión | 60 → **2,0 s** |
+| Qué tan rápido entra | `aceleracion` (la stat nueva de verdad) | 240 → entra en **0,27 s** | 520 → **0,17 s** |
+| Lo que corre de más | | 142 → **206** | 180 → **261** |
+
+**Y eso les da dos enviones distintos**, que es lo lindo: el Criollo tiene fondo
+pero hay que pedírselo con tiempo; el Mustang es el golpe seco, entra al toque
+pero se queda en dos segundos. Medido, la distancia extra que te da cada uno:
+
+| Cómo lo usás | Criollo | Mustang |
+|---|---|---|
+| Un toque (0,4 s) | +26 | **+30** |
+| Un tirón (1,2 s) | +76 | **+103** |
+| Todo el tanque | **+337** | +216 |
+
+⚠️ **`aceleracion` existía y valía 320 en los dos**: era una stat que no
+distinguía a nadie, usada sólo para arrancar en la aproximación al tren. Ahora
+vale 240 y 520. En rideScene eso son centésimas sobre una corrida de 40
+segundos, así que la aproximación no se mueve.
+
+**El envión de ellos** es el mismo tirón, más corto (35%, 1,2 s), y por ahora
+lo usan SÓLO para volver a pegarse cuando quedaron descolgados. Dos reglas que
+salieron de medirlo:
+
+- **Recién a 320 de distancia** (probado con 200: van a 110-170 de tu cola, así
+  que lo usaban todo el tiempo y la huida no terminaba nunca — el Mustang dejó
+  de despegarse y las corridas llegaban al tope de tiempo).
+- **Dos veces por huida y nada más**, y **no después de los 45 segundos**
+  (cuando sus caballos aflojan). Sin eso, el envión de la ley anulaba la
+  ventaja de haberte comprado un caballo mejor.
+
+📏 **Y ACÁ ESTÁ LO IMPORTANTE, midiendo las balas nuevas y el envión juntos**
+(30 corridas, Criollo, siempre a la quebrada y con la distancia fija, que es la
+única forma de que dos tandas se puedan comparar):
+
+| | Plata perdida | Tiros que te tiran |
+|---|---|---|
+| Como estaba antes de las balas nuevas | **$297** | 31 |
+| Con las balas nuevas, **sin usar el envión** | **$640** | 43 |
+| Con las balas nuevas, **usando el envión** cuando te apuntan | **$303** | 32 |
+
+O sea: **el envión ES la compensación**. La huida se puso el doble de cara y la
+herramienta nueva te la devuelve entera — pero sólo si la usás. El que no
+aprieta [ESPACIO] paga el doble.
+
+🔍 **Y hay que corregir algo que dije la vuelta pasada.** Propuse compensar las
+balas alargando el aviso a 0,65 y dije que eso devolvía el costo viejo. Midiendo
+con la distancia al refugio FIJA —antes no lo estaba, y la variación entre
+tandas era de ±$150, más grande que lo que quería medir— el aviso a 0,65
+recupera bastante menos de lo que había estimado. Quedó igual (0,65 es mejor
+que 0,50 y no le saca nada a lo que pidió Santi), pero la compensación de
+verdad no era ésa. También se agregó que **de lejos tiren menos seguido**
+(`cadenciaLejos`, ×2,2 pasadas 240 unidades): baja los tiros de 43 a 33 sin
+tocar el tiroteo de cerca, que es el que pega.
+
+**Lección de medición, van dos seguidas:** primero fue la ventana chica; ahora,
+comparar tandas donde cambiaba el refugio y la distancia. Para medir plata en
+la huida hay que fijar **el refugio y la distancia**, o el ruido se come el
+efecto.
+
+Sin errores en 15.423 cuadros con teclas y mouse al azar (incluido [ESPACIO]),
+a 0,74 ms por cuadro.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

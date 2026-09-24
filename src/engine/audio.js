@@ -698,7 +698,7 @@ export function createAudio() {
   let cancionSonando = false;
 
   function volumenDeLaCancion() {
-    return (CONFIG.audio.master ?? 0.5) * (CONFIG.ambiente.cancionVolumen ?? 0.55);
+    return (CONFIG.audio.master ?? 0.5) * (CONFIG.ambiente.cancionVolumen ?? 0.3);
   }
 
   /**

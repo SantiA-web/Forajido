@@ -2177,10 +2177,15 @@ export const CONFIG = {
      *
      * Va aparte del de la guitarra sintetizada porque son dos cosas distintas:
      * aquélla son notas generadas con osciladores y ésta es una grabación, que
-     * ya viene con su propio nivel. Es música de FONDO: tiene que dejar oír el
-     * fuego, los grillos y lo que diga la gente del campamento.
+     * ya viene con su propio nivel.
+     *
+     * 🔉 ES MÚSICA DE FONDO, NO LA PROTAGONISTA *(Santi: "recuerda bajarle el
+     * volumen para que quede de fondo y no como protagonista")*. Se multiplica
+     * por `CONFIG.audio.master` (0,5), así que **0,3 acá son 0,15 de verdad**:
+     * la canción se oye debajo del fuego, los grillos y lo que diga la gente.
+     * Si alguna vez hay que moverla, es este número y nada más.
      */
-    cancionVolumen: 0.55,
+    cancionVolumen: 0.3,
     /** Cada cuánto cae una púa del arpegio. Es el pulso de todo lo demás. */
     pulsoCada: 0.42,
   },

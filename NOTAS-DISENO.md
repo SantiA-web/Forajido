@@ -15003,6 +15003,92 @@ sigilo, no el mismo con otra cámara.
 
 ---
 
+#### 🧊 VUELTA 2: "eso no es un prototipo", y tenía razón
+
+*(Santi, después de jugarlo: "visualmente el 3D está mucho peor. Y quiero saber
+si sos consciente de que este prototipo no está ni cerca de un prototipo real.
+Porque si para vos esto cumple una función de prueba estás equivocado")*
+
+**Y es cierto: lo de arriba era una maqueta TÉCNICA, no una prueba.** Probaba
+que la tubería es barata —0,39 ms, cero modelos, los sprites que ya existen— y
+nada más. Le faltaba justamente lo que produce la sensación: sonido (cero),
+el tren andando (quieto), el disparo como acto (el guardia se evaporaba), y
+guardias que se comporten. Encima se lo comparó contra un juego 2D con meses de
+pulido: en esa comparación lo que se nota es el pulido, no la dimensión.
+
+**La trampa de método, escrita para no repetirla:** un prototipo cuyo trabajo es
+contestar *"¿se siente mejor?"* no sirve si la diferencia de terminación entre
+las dos cosas es más grande que la diferencia que se quiere medir.
+
+De las tres salidas posibles —hacerlo entero, abandonar el 3D, o hacer sólo lo
+que carga la sensación— Santi eligió **la tercera**: el tren en movimiento, el
+sonido, y el disparo con su golpe y su cuerpo en el piso. Y además:
+
+*(Santi: "el vagón que me diste es diminuto, agrandalo teniendo en cuenta las
+dimensiones del 2D")*
+
+##### 📏 La escala, que era el problema de fondo
+
+El pasillo de la primera versión estaba dibujado a ojo: **12 m x 2,8**. El vagón
+que él juega mide **40 x 10 baldosas**. O sea, tres veces y media más corto y la
+mitad de ancho. **No eran dos cámaras del mismo mapa, eran dos mapas.**
+
+Para convertir baldosas a metros había dos cuentas posibles, y dan distinto:
+
+| | De dónde sale | 1 baldosa | Vagón | Interior | Pasillo |
+|---|---|---|---|---|---|
+| **A** ✅ | La **huella** del cuerpo (`hw 4.5, hh 3.5` → 9x7 unidades ≈ 55 cm de ancho de persona) | **1 m** | 40 m | 6 m | 2 m |
+| B | El **alto** del dibujo (`ALTO_PERSONA 20` ≈ 1,75 m) | 1,4 m | 56 m | 8,4 m | 2,8 m |
+| C | Un vagón de época de verdad | — | 23 m | 3 m | 0,9 m |
+
+Se eligió **A**: la huella es la medida honesta para un plano de piso, porque
+los muñecos de tres cuartos SIEMPRE se dibujan más altos de lo que miden —por
+eso B infla todo un 40%—. Y C sería realista pero dejaría de ser el mapa del
+juego, que es lo único que acá se quiere comparar.
+
+##### 🎯 Y de ahí salió la idea que hace que esto valga como prueba
+
+Si la escala es 1 baldosa = 1 metro, el vagón no hace falta dibujarlo: se
+**genera leyendo el `layout` de `data/wagons.js`**, el mismo texto que juega el
+2D. Los catorce recovecos, las ventanillas donde van, el enganche al aire libre.
+El tren del prototipo es ahora **pasajeros (40) + enganche (3) + blindado (30) =
+73 metros**, con los **cinco guardias** en las rondas que trae cada vagón
+(`enemies[].path`).
+
+Y las velocidades salen del mismo lado, si no 40 metros se sienten un galpón:
+`CONFIG.player.speed` 78 u/s = **4,9 m/s** (una unidad son 6,25 cm),
+`CONFIG.enemy.patrolSpeed` 24 = 1,5 m/s, `viewDistance` 118 = 7,4 m. Cruzar el
+tren tarda **14 segundos**, los mismos que tarda en el 2D.
+
+##### 🐛 Los cuatro errores del armado, que valen como lección
+
+1. **Las caras se dibujaban sólo contra el piso.** Como al lado de la pared hay
+   un asiento (1 m) y no piso, la pared de arriba del respaldo no existía: no
+   había dónde poner la ventanilla, y por encima del asiento se veía el vacío
+   negro. Lo que corresponde es dibujar **el pedazo que asoma**: de lo que mide
+   el vecino hasta lo que mide ésta.
+2. **El techo iba sólo sobre el piso pisable**, así que arriba de los asientos
+   se abría un pozo.
+3. **Las ventanillas estaban hundidas 2 cm EN la pared**, o sea tapadas por la
+   pared misma. El vidrio va un pelo por delante.
+4. **Las texturas salían aclaradas.** El canvas dibuja en sRGB; sin
+   `colorSpace = SRGBColorSpace` three las toma como luz lineal y las vuelve a
+   convertir. El cielo de noche, casi negro, terminaba siendo una pared celeste.
+
+##### 📏 Lo medido en esta vuelta
+
+**~0,2 ms por cuadro**, 3.700 triángulos, **23 llamadas de dibujo** — y esto
+último es el número importante: el tren tiene ~1.200 caras y si cada una fuera
+su propio objeto serían 1.200 llamadas. Se juntan en **seis mallas**, una por
+textura. Probado con **12.000 cuadros de teclas al azar**: ni un error, y nunca
+quedó trabado dentro de una pared.
+
+**Lo que sigue faltando** (y por eso esto TODAVÍA no contesta la pregunta): el
+sonido, el bamboleo del tren, el revólver en pantalla y el cuerpo en el piso, y
+guardias que se cubran.
+
+---
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

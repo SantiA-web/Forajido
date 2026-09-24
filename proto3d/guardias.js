@@ -107,8 +107,11 @@ export function crearGuardia(escena, { z0, z1, x = 0, ropa = 'guardia' }) {
   };
 }
 
-/** Lo que ve un guardia: cono, distancia y nada de paredes en el medio. */
-const VISION = { lejos: 9, cono: Math.cos(0.7), cerca: 2.2 };
+/**
+ * LO QUE VE UN GUARDIA, con los números del 2D: `CONFIG.enemy.viewDistance` es
+ * 118 unidades y una unidad son 6,25 cm, o sea **7,4 metros**.
+ */
+const VISION = { lejos: 7.4, cono: Math.cos(0.7), cerca: 2.2 };
 
 export function moverGuardia(g, dt, jugador, mundo, avisar) {
   if (!g.vivo) return;
@@ -155,7 +158,7 @@ export function moverGuardia(g, dt, jugador, mundo, avisar) {
     // Patrulla: va de una punta a la otra de su pedazo de pasillo.
     g.espera -= dt;
     if (g.espera <= 0) {
-      g.z += g.dir * dt * 1.1;
+      g.z += g.dir * dt * 1.5;   // CONFIG.enemy.patrolSpeed: 24 u/s = 1,5 m/s
       g.fase += dt * 5;
       if (g.z > g.z1) { g.z = g.z1; g.dir = -1; g.espera = 1.2; }
       if (g.z < g.z0) { g.z = g.z0; g.dir = 1; g.espera = 1.2; }
@@ -172,13 +175,21 @@ export function moverGuardia(g, dt, jugador, mundo, avisar) {
   g.mesh.position.set(g.x, g.mesh.position.y, g.z);
 }
 
-/** Dos puntos están en el mismo vagón si no hay un fuelle entre medio. */
+/**
+ * DOS PUNTOS ESTÁN EN EL MISMO VAGÓN si les toca el mismo tramo del tren. El
+ * enganche cuenta como parte de los dos: parado ahí te ven de los dos lados,
+ * que es justo lo que lo hace el peor lugar del tren para quedarse.
+ */
+function tramo(z, mundo) {
+  const i = mundo.cortes.findIndex((v) => z >= v.z0 && z < v.z1);
+  return i < 0 ? -1 : i;
+}
+
 function mismoVagon(za, zb, mundo) {
-  const corte1 = mundo.largoVagon;
-  const corte2 = mundo.largoVagon + mundo.fuelle;
-  const cual = (z) => (z < corte1 ? 0 : z > corte2 ? 2 : 1);
-  const a = cual(za), b = cual(zb);
-  return a === b || a === 1 || b === 1;
+  const a = tramo(za, mundo), b = tramo(zb, mundo);
+  if (a === b) return true;
+  const enganche = (i) => mundo.cortes[i] && mundo.cortes[i].id === 'enganche';
+  return enganche(a) || enganche(b);
 }
 
 /** Lo voltea: en el prototipo, un tiro basta. */

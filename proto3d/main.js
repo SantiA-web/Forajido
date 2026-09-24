@@ -17,8 +17,9 @@
  */
 
 import * as THREE from 'three';
-import { armarTren, VAGON, LARGO_TOTAL } from './mundo.js';
+import { armarTren, receta } from './mundo.js';
 import { crearGuardia, moverGuardia, voltear } from './guardias.js';
+
 
 const lienzo = document.getElementById('lienzo');
 const hud = {
@@ -38,13 +39,16 @@ escena.background = new THREE.Color(0x090a0c);
  * en la penumbra y que la luz de las lámparas signifique algo. Y de paso tapa
  * el final del tren sin tener que dibujarlo.
  */
-escena.fog = new THREE.Fog(0x090a0c, 3, 20);
-escena.add(new THREE.AmbientLight(0x4a4436, 1.1));
+escena.fog = new THREE.Fog(0x090a0c, 3, 22);
+/**
+ * LA LUZ DE FONDO. Con el vagón chico alcanzaba con una penumbra apenas
+ * insinuada; con 40 metros de largo y 6 de ancho hay mucho más para iluminar,
+ * así que sube — si no, el vagón es una cueva y no se ve ni el pasillo.
+ */
+escena.add(new THREE.AmbientLight(0x6b6050, 1.4));
 
-const camara = new THREE.PerspectiveCamera(74, 16 / 9, 0.05, 40);
+const camara = new THREE.PerspectiveCamera(74, 16 / 9, 0.05, 90);
 const tren = armarTren(escena);
-tren.largoVagon = VAGON.largo;
-tren.fuelle = VAGON.fuelle;
 
 const renderer = new THREE.WebGLRenderer({ canvas: lienzo, antialias: false, preserveDrawingBuffer: true });
 renderer.setPixelRatio(1);
@@ -102,11 +106,31 @@ document.addEventListener('mousedown', (e) => {
 
 // ---------------------------------------------------------------- guardias
 
-const guardias = [
-  crearGuardia(escena, { z0: 3.5, z1: 9, x: 0.15 }),
-  crearGuardia(escena, { z0: VAGON.largo + VAGON.fuelle + 1.5, z1: LARGO_TOTAL - 3, x: -0.2 }),
-  crearGuardia(escena, { z0: LARGO_TOTAL - 5, z1: LARGO_TOTAL - 1.8, x: 0.3 }),
-];
+/**
+ * LAS RONDAS TAMBIÉN SALEN DEL 2D. Cada vagón del juego trae sus guardias con
+ * su recorrido (`enemies[].path`, en columnas y filas del layout); acá se toma
+ * la primera y la última columna de ese recorrido y el guardia camina entre
+ * esas dos. Son los mismos guardias, en los mismos lugares, que los que te
+ * esperan cuando jugás el asalto desde arriba.
+ */
+const guardias = [];
+for (const v of tren.cortes) {
+  const plantilla = receta(v.id);
+  if (!plantilla || !plantilla.enemies) continue;
+  for (const e of plantilla.enemies) {
+    if (!e.path || e.path.length < 2) continue;
+    const cols = e.path.map((p) => p[0]);
+    const filas = e.path.map((p) => p[1]);
+    const medio = filas.reduce((a, b) => a + b, 0) / filas.length - tren.filas / 2 + 0.5;
+    guardias.push(crearGuardia(escena, {
+      z0: v.z0 + Math.min(...cols) + 0.5,
+      z1: v.z0 + Math.max(...cols) + 0.5,
+      // Acá caminan sólo por el pasillo: la ronda del 2D entra y sale de los
+      // recovecos, y el prototipo todavía no sabe doblar.
+      x: Math.max(-0.5, Math.min(0.5, medio)),
+    }));
+  }
+}
 
 let alarma = false;
 function avisar() {
@@ -142,25 +166,28 @@ function tirar() {
 
 // -------------------------------------------------------------- moverse
 
-function chocar(x, z) {
-  const p = tren.paredes;
-  const nx = Math.max(p.x0, Math.min(p.x1, x));
-  let nz = Math.max(p.z0, Math.min(p.z1, z));
-  let fx = nx;
-  // El fuelle es angosto: en esa franja hay que ir por el medio.
-  const enFuelle = nz > VAGON.largo - 0.3 && nz < VAGON.largo + VAGON.fuelle + 0.3;
-  if (enFuelle) fx = Math.max(-0.45, Math.min(0.45, nx));
-  // Y los asientos: cajas contra las que no se pasa.
-  for (const c of tren.choques) {
-    if (c.alto < 0.45) continue;   // los asientos bajos se esquivan solos
-    if (fx > c.x0 - 0.28 && fx < c.x1 + 0.28 && nz > c.z0 - 0.28 && nz < c.z1 + 0.28) {
-      // Se sale por donde menos haya entrado.
-      const salirX = fx < (c.x0 + c.x1) / 2 ? c.x0 - 0.28 : c.x1 + 0.28;
-      const salirZ = nz < (c.z0 + c.z1) / 2 ? c.z0 - 0.28 : c.z1 + 0.28;
-      if (Math.abs(salirX - fx) < Math.abs(salirZ - nz)) fx = salirX; else nz = salirZ;
+/**
+ * CHOCAR CONTRA EL TREN. No hay una lista de cajas: se le pregunta a la GRILLA
+ * del 2D, baldosa por baldosa, igual que hace el juego de arriba. El cuerpo es
+ * un cuadradito de 30 cm, y los dos ejes se prueban por separado: eso es lo que
+ * hace que resbales por una pared en vez de quedarte pegado a ella.
+ */
+const CUERPO = 0.3;
+
+function libre(x, z, alturaOjos) {
+  for (const dx of [-CUERPO, CUERPO]) {
+    for (const dz of [-CUERPO, CUERPO]) {
+      if (tren.esSolido(x + dx, z + dz, alturaOjos)) return false;
     }
   }
-  return [fx, nz];
+  return true;
+}
+
+function chocar(x, z, alturaOjos) {
+  let nx = jugador.x, nz = jugador.z;
+  if (libre(x, nz, alturaOjos)) nx = x;
+  if (libre(nx, z, alturaOjos)) nz = z;
+  return [nx, nz];
 }
 
 function moverme(dt) {
@@ -170,14 +197,21 @@ function moverme(dt) {
 
   const adelante = (teclas.has('KeyW') ? 1 : 0) - (teclas.has('KeyS') ? 1 : 0);
   const costado = (teclas.has('KeyD') ? 1 : 0) - (teclas.has('KeyA') ? 1 : 0);
-  const vel = (jugador.agachado ? 1.1 : jugador.corriendo ? 3.4 : 2.2) * dt;
+  /**
+   * LAS VELOCIDADES SALEN DEL 2D TAMBIÉN, si no un vagón de 40 m se siente un
+   * galpón: `CONFIG.player.speed` son 78 unidades por segundo y una unidad son
+   * 6,25 cm, o sea 4,9 m/s. Es rapidísimo para una persona de verdad, pero es
+   * exactamente lo que corre tu personaje hoy — y da la casualidad de que es
+   * la velocidad del Quake, que es el estilo que estamos probando.
+   */
+  const vel = (jugador.agachado ? 2.5 : jugador.corriendo ? 6.5 : 4.9) * dt;
 
   if (adelante || costado) {
     const largo = Math.hypot(adelante, costado) || 1;
     // Adelante y el costado derecho, tal como los entiende la cámara.
     const dx = (-Math.sin(jugador.giro) * adelante + Math.cos(jugador.giro) * costado) / largo;
     const dz = (-Math.cos(jugador.giro) * adelante - Math.sin(jugador.giro) * costado) / largo;
-    const [nx, nz] = chocar(jugador.x + dx * vel, jugador.z + dz * vel);
+    const [nx, nz] = chocar(jugador.x + dx * vel, jugador.z + dz * vel, jugador.y);
     jugador.x = nx; jugador.z = nz;
   }
 
@@ -193,7 +227,7 @@ function moverme(dt) {
 function objetivo(dt) {
   if (!jugador.vivo) return;
   const c = tren.cajaFuerte;
-  const cerca = Math.hypot(jugador.x - c.x, jugador.z - c.z) < 1.3;
+  const cerca = Math.hypot(jugador.x - c.x, jugador.z - c.z) < 1.6;
 
   if (!jugador.tieneLaPlata) {
     if (cerca && teclas.has('KeyE')) {
@@ -201,7 +235,7 @@ function objetivo(dt) {
       hud.cartel.textContent = `FORZANDO LA CAJA… ${Math.round(jugador.forzando * 100)}%`;
       // Forzar hace ruido: los que estén cerca te empiezan a buscar.
       for (const g of guardias) {
-        if (g.vivo && Math.abs(g.z - c.z) < 8) g.sospecha = Math.min(1, g.sospecha + dt * 0.5);
+        if (g.vivo && Math.abs(g.z - c.z) < 12) g.sospecha = Math.min(1, g.sospecha + dt * 0.5);
       }
       if (jugador.forzando >= 1) {
         jugador.tieneLaPlata = true;
@@ -267,6 +301,16 @@ function paso(dt) {
 }
 
 function pintar(dt) {
+  /**
+   * EL TREN ESTÁ ANDANDO, y esto es todo lo que hace falta para decirlo: las
+   * dos texturas de la noche se corren de costado. La del enganche va casi
+   * tres veces más rápido que la de la ventanilla, porque lo que se ve desde
+   * la plataforma está mucho más cerca que el cerro del fondo — el mismo
+   * truco de siempre para dar profundidad sin dibujar profundidad.
+   */
+  tren.texNoche.offset.x -= dt * 0.22;
+  tren.texCampo.offset.x -= dt * 0.6;
+
   // El fogonazo: un destello corto pegado a la cámara.
   fogonazoT = Math.max(0, fogonazoT - dt);
   fogonazo.position.copy(camara.position);

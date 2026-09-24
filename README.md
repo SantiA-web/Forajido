@@ -1783,12 +1783,15 @@ soltaste casi toda la plata.
   pegarse cuando quedaron a más de 320, dos veces por huida y nunca después de
   que sus caballos aflojen.
 - **Te anticipan**: no persiguen dónde estás sino **dónde vas a estar** dentro
-  de cuatro décimas, así que cuando doblás te cortan la curva por adentro en
-  vez de dibujarla entera detrás tuyo.
-- **Y uno te cruza.** Cada siete segundos a uno le toca **adelantarse y meterse
-  en tu camino** —gasta su envión para llegar y grita al abrirse de la fila—.
-  Uno solo a la vez: dos cortando serían una pinza de la que no se sale. Medido:
-  lo intenta 3,5 veces por huida y lo logra una.
+  de seis décimas, así que cuando doblás te cortan la curva por adentro en vez
+  de dibujarla entera detrás tuyo.
+- **Y uno te cruza de verdad.** Cada nueve segundos a uno le toca **adelantarse
+  y meterse en tu camino**: corre al 45% más durante cinco segundos para
+  pasarte, grita al abrirse de la fila y, cuando ya te pasó, **se planta a tu
+  velocidad** para quedarse cruzado adelante. Uno solo a la vez: dos cortando
+  serían una pinza de la que no se sale. Medido con el Criollo: lo logra **dos
+  veces por huida**, y hay alguien adelante tuyo el 40% del tiempo. **Con el
+  Mustang casi no lo consiguen**: a 180 no lo alcanzan ni corriendo.
 - **Cada tiro que te pegan te hace soltar una bolsa** con el 10% de lo que
   sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
   con menos plata.

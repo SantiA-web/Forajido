@@ -14762,21 +14762,48 @@ refugio, sin usar el envión):
 | 0,6 | $715 |
 | 0,8 | $865 |
 
-Se eligió **0,4**: con eso ya se ve que cortan la curva, y de ahí para arriba lo
-único que sube es el daño.
+Se eligió 0,4 y, después de jugarlo, Santi lo subió a **0,6** ("se nota poco"):
+entre esos dos hay $35 de diferencia y la lectura en pantalla cambia bastante.
 
-**2. EL CORTADOR.** Cada 7 segundos a UNO le toca adelantarse a meterse en tu
-camino: apunta a 130 adelante tuyo y 55 al costado, y **quema su envión para
-llegar** —que es justo para lo que Santi lo había pedido del lado de ellos—. Lo
-intenta 5 segundos y vuelve a la cola.
+**2. EL CORTADOR.** Cada 9 segundos a UNO le toca adelantarse a meterse en tu
+camino: apunta a 130 adelante tuyo y 55 al costado, y **grita** al abrirse de
+la fila. Lo intenta 5 segundos y vuelve a la cola. Uno solo a la vez, y a
+propósito: dos cortando son una pinza de la que no se sale, y eso no es una
+persecución, es una trampa.
 
-**Uno solo a la vez, y a propósito:** dos cortando son una pinza de la que no
-se sale, y eso no es una persecución, es una trampa. Medido: **3,5 intentos por
-huida y entre 0,6 y 0,9 logrados** (llegar a menos de 150 y adelante tuyo). O
-sea, uno se te cruza de verdad más o menos una vez por corrida — lo suficiente
-para que sea un momento y no un estado.
+🐛 **Y LA PRIMERA VERSIÓN NO LLEGABA NUNCA** *(Santi, jugándola: "en ningún
+momento el caballo se logra poner delante del jugador, eso no estaba en los
+planes")*. La cuenta explica por qué, y yo la había dado por buena mirando una
+métrica demasiado blanda: para pasar de tu cola (130 atrás) a tu frente hacen
+falta unas 260 unidades, y con el envión normal —1,2 s al 35%— ganaba **60**.
+Se quedaba a mitad de camino, al costado, y volvía a la fila.
 
-Cuando le toca, **grita**: es el aviso de que uno se abrió de la fila.
+**Ahora el que corta sostiene el empuje los 5 segundos** (45%): gana 64 por
+segundo, así que en cuatro te pasa. Y cuando ya te pasó **se planta a tu
+velocidad** para quedarse cruzado adelante, en vez de seguir de largo.
+
+📏 **Medido de nuevo, y ahora sí** (20 corridas, Criollo, misma distancia y
+mismo refugio), contando "adelante" como estar por delante tuyo MEDIDO SOBRE TU
+RUMBO y no en un cono generoso:
+
+| | Intentos | Logrados | Del tiempo, con uno adelante |
+|---|---|---|---|
+| Cada 6 s, dura 6 | 4,5 | 3,4 | **60%** |
+| **Cada 9 s, dura 5 (puesto)** | 2,9 | **2,1** | **40%** |
+| Cada 12 s, dura 5 | 2 | 1,4 | 20% |
+| Sin cortador | 0 | 0 | 10% |
+
+Se eligió 9: **dos cruces logrados por corrida**. Con 6 hay alguien adelante el
+60% del tiempo, y eso ya no es sentirse rodeado a veces — es estarlo siempre.
+
+**Y la plata casi no se mueve entre las cuatro filas** ($710, $715, $655, $790):
+el que corta deja de tirarte mientras corre, así que lo que suma por delante lo
+resta por detrás. Es decir: **el cortador se elige por cómo se siente, no por
+cuánto cuesta.**
+
+⚔️ **Con el Mustang casi no lo logran** (0,5 por corrida, y el máximo que te
+sacan son 39 unidades): a 180 no lo alcanzan ni corriendo. Eso también es lo
+que pagaste al comprarlo.
 
 Sin errores en 17.153 cuadros con teclas y mouse al azar, a 0,71 ms por cuadro.
 

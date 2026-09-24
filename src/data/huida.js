@@ -555,11 +555,14 @@ export const HUIDA = {
        *
        * ⚠️ ES EL NÚMERO MÁS CARO DE ESTA ESCENA, porque los deja más tiempo en
        * el lugar desde donde te pegan. Medido (20 corridas, misma distancia y
-       * mismo refugio, sin envión): 0 cuesta , **0,4 cuesta **, 0,6
-       * cuesta  y 0,8 cuesta . Con 0,4 ya se ve que cortan la curva;
-       * de ahí para arriba lo único que sube es el daño.
+       * mismo refugio, sin envión): con 0 se pierden $495, con 0,4 son $680,
+       * con 0,6 son $715 y con 0,8 son $865.
+       *
+       * Se puso en 0,4 y Santi lo subió a **0,6** después de jugarlo ("se nota
+       * poco"): el salto de plata entre esos dos es chico ($35) y la lectura
+       * en pantalla cambia bastante.
        */
-      anticipo: 0.4,
+      anticipo: 0.6,
 
       /**
        * 🚧 EL CORTADOR: uno solo se adelanta para ponerse en tu camino, y
@@ -568,18 +571,53 @@ export const HUIDA = {
        * persecución, es una trampa.
        */
       cortador: {
-        /** Cada cuánto se elige uno (si no hay ninguno intentándolo). */
-        cada: 7,
-
-        /** Cuánto lo intenta antes de volver a la cola. */
+        /**
+         * Cada cuánto se elige uno (si no hay ninguno intentándolo) y cuánto
+         * lo intenta. Medido con el Criollo: con 6 y 6 hay alguien adelante
+         * tuyo el **60%** de la huida —eso ya no es sentirse rodeado a veces,
+         * es estarlo siempre—; con 9 y 5 son **2 cruces logrados por corrida**
+         * y el 40% del tiempo; con 12, uno solo y el 20%.
+         *
+         * La plata casi no se mueve entre las tres (el cortador saca a uno de
+         * la línea de tiro mientras corre), así que se elige por cómo se
+         * siente y no por cuánto cuesta.
+         */
+        cada: 9,
         dura: 5,
+
+        /**
+         * 🐎 Y CORRE TODO ESE RATO *(Santi, después de jugarlo: "en ningún
+         * momento el caballo se logra poner delante del jugador, eso no estaba
+         * en los planes")*. Tenía razón, y la cuenta explica por qué: para
+         * pasar de tu cola (130 atrás) a tu frente hacen falta unas 260
+         * unidades, y con el envión normal —1,2 s al 35%— ganaba 60. Nunca
+         * llegaba.
+         *
+         * Ahora el que corta **sostiene el empuje todo el intento**: al 45%
+         * gana 64 por segundo, así que en cuatro segundos te pasa. No es el
+         * envión de siempre, es su arranque de caballo reventándose para
+         * cruzarte, y por eso dura lo que dura y después vuelve a la cola.
+         *
+         * Con un caballo más rápido que el suyo (el Mustang, 180) ya no te
+         * alcanza: gana 26 por segundo y no llega. Eso también es lo que
+         * pagaste al comprarlo.
+         */
+        empuje: 0.45,
 
         /** A dónde apunta: tanto adelante tuyo y tanto al costado. */
         adelanto: 130,
         costado: 55,
 
+        /**
+         * Y CUANDO YA TE PASÓ, se planta: corre a TU velocidad (más esto) para
+         * quedarse cruzado adelante en vez de seguir de largo y volver a ser
+         * uno más de la cola.
+         */
+        bloqueaDesde: 40,
+        bloqueaExtra: 8,
+
         /** Sólo lo intenta el que ya está cerca: de más lejos no llega. */
-        distanciaMax: 280,
+        distanciaMax: 320,
       },
     },
 

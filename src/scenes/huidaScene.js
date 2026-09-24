@@ -747,7 +747,7 @@ export function createHuidaScene(services) {
         esquivarConElCaballo(j, dt);
       }
       empujarJinete(j, dt);
-      avanzar(j, velocidadDelJinete(j) + j.empujeVel, dt);
+      avanzar(j, velocidadDelCortador(j), dt);
       chocarJinete(j);
 
       j.cooldown -= dt;
@@ -792,6 +792,25 @@ export function createHuidaScene(services) {
    * Por ahora lo usan SÓLO para eso. Cortarte el paso y anticiparte —que es
    * para lo que pidió Santi el envión de ellos— viene en la vuelta siguiente.
    */
+  /**
+   * LO QUE CORRE ESTE JINETE AHORA. Lo normal es su galope más el envión si lo
+   * está usando; el que te está cortando el paso, en cambio, sostiene el
+   * empuje todo el intento —si no, nunca te pasa— y **se planta a tu
+   * velocidad** en cuanto logró ponerse adelante.
+   */
+  function velocidadDelCortador(j) {
+    const base = velocidadDelJinete(j) + j.empujeVel;
+    if (j.corta <= 0) return base;
+
+    const C = H.jinetes.tactica.cortador;
+    // Cuánto te sacó midiendo SOBRE TU RUMBO: positivo, ya está adelante.
+    const dx = j.x - yo.x;
+    const dy = (j.y - yo.y) / PROFUNDIDAD;
+    const adelanto = dx * Math.cos(yo.rumbo) + dy * Math.sin(yo.rumbo);
+    if (adelanto > C.bloqueaDesde) return Math.min(base, yo.vel + C.bloqueaExtra);
+    return base + j.vel * C.empuje;
+  }
+
   function empujarJinete(j, dt) {
     const I = H.jinetes.impulso;
     j.recarga -= dt;

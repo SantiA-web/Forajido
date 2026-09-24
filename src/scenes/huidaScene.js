@@ -60,6 +60,8 @@ export function createHuidaScene(services) {
   let refugios, refugioTomado;
   let tiempo, dineroInicial, perdido, soltadas, derribados;
   let fin, temblor, avisoCansancio, ultimoGrito, bamboleo;
+  /** Cuánto falta para que a alguno le toque cortarte el paso (ver `elegirCortador`). */
+  let proximoCortador;
   /** El polvo de los cascos: el mismo del galope (world/polvoDeCascos.js). */
   const polvo = crearPolvo(colors.polvo);
 
@@ -146,6 +148,7 @@ export function createHuidaScene(services) {
     temblor = 0;
     avisoCansancio = false;
     ultimoGrito = -99;
+    proximoCortador = H.jinetes.tactica.cortador.cada;
     bamboleo = 0;
     polvo.limpiar();
     sembrarObstaculos();
@@ -293,6 +296,9 @@ export function createHuidaScene(services) {
       empujeVel: 0,
       recarga: rng.range(0, J.impulso.recarga),
       usos: J.impulso.usos,
+      /** Cuánto le queda de intentar cortarte el paso (0 = va en la cola). */
+      corta: 0,
+      cortaLado: 1,
     };
   }
 
@@ -634,8 +640,55 @@ export function createHuidaScene(services) {
 
   // ------------------------------------------------------------------ la ley
 
+  /**
+   * 🚧 A UNO LE TOCA CORTARTE EL PASO. Se elige al más cercano de los que
+   * están en condiciones, y sólo si no hay otro intentándolo: uno adelante y
+   * el resto en la cola. Le presta el envión para llegar, que es justo para lo
+   * que Santi lo pidió del lado de ellos.
+   */
+  function elegirCortador(dt) {
+    const C = H.jinetes.tactica.cortador;
+    proximoCortador -= dt;
+    const siguiendoAhora = siguiendo();
+    if (siguiendoAhora.some((j) => j.corta > 0)) return;
+    if (proximoCortador > 0 || siguiendoAhora.length < 2) return;
+
+    let elegido = null;
+    let mejor = C.distanciaMax;
+    for (const j of siguiendoAhora) {
+      const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+      if (d < mejor) { mejor = d; elegido = j; }
+    }
+    proximoCortador = C.cada;
+    if (!elegido) return;
+
+    elegido.corta = C.dura;
+    elegido.cortaLado = rng.chance(0.5) ? 1 : -1;
+    // Le presta el envión, si le queda: sin eso nunca llega adelante.
+    if (elegido.usos > 0 && elegido.empuje <= 0) {
+      elegido.empuje = H.jinetes.impulso.dura;
+      elegido.recarga = H.jinetes.impulso.recarga;
+      elegido.usos -= 1;
+    }
+    audio.play('gritoLey');
+  }
+
   function moverJinetes(dt, yendose) {
     const J = H.jinetes;
+    const C = J.tactica.cortador;
+    if (!yendose && !fin) elegirCortador(dt);
+
+    /**
+     * DÓNDE VAS A ESTAR dentro de un ratito. Todos los jinetes persiguen ESTE
+     * punto y no el de ahora: es lo que los hace cortar las curvas por adentro
+     * en vez de dibujarlas enteras detrás tuyo.
+     */
+    const anticipo = J.tactica.anticipo;
+    const futuro = {
+      x: yo.x + Math.cos(yo.rumbo) * yo.vel * anticipo,
+      y: yo.y + Math.sin(yo.rumbo) * yo.vel * PROFUNDIDAD * anticipo,
+    };
+
     for (const j of jinetes) {
       j.gallop += dt;
       j.hitFlash = Math.max(0, j.hitFlash - dt);
@@ -663,15 +716,27 @@ export function createHuidaScene(services) {
       }
 
       /**
-       * A DÓNDE VA: a SU lugar detrás tuyo, abierto en abanico. Como el campo
-       * es abierto, "detrás" es detrás de tu RUMBO: si doblás, la partida
-       * entera describe la curva con vos, unos metros más atrás.
+       * A DÓNDE VA. Dos lugares posibles, y los dos se calculan sobre DÓNDE
+       * VAS A ESTAR y no sobre dónde estás (ver `tactica.anticipo`):
+       *
+       *  - EL DE LA COLA va a SU lugar detrás tuyo, abierto en abanico. Como
+       *    el campo es abierto, "detrás" es detrás de tu RUMBO: si doblás, la
+       *    partida entera describe la curva con vos.
+       *  - EL CORTADOR va adelante y al costado, a meterse en tu camino.
        */
-      const objetivo = {
-        x: yo.x - Math.cos(yo.rumbo + j.carril) * j.atras,
-        y: yo.y - Math.sin(yo.rumbo + j.carril) * j.atras * PROFUNDIDAD,
-      };
+      const objetivo = j.corta > 0
+        ? {
+          x: futuro.x + Math.cos(yo.rumbo) * C.adelanto
+            - Math.sin(yo.rumbo) * C.costado * j.cortaLado,
+          y: futuro.y + (Math.sin(yo.rumbo) * C.adelanto
+            + Math.cos(yo.rumbo) * C.costado * j.cortaLado) * PROFUNDIDAD,
+        }
+        : {
+          x: futuro.x - Math.cos(yo.rumbo + j.carril) * j.atras,
+          y: futuro.y - Math.sin(yo.rumbo + j.carril) * j.atras * PROFUNDIDAD,
+        };
       const haciaAlla = Math.atan2((objetivo.y - j.y) / PROFUNDIDAD, objetivo.x - j.x);
+      if (j.corta > 0) j.corta -= dt;
 
       // Apuntando no dobla: el aviso vale porque el tiro sale de donde lo viste.
       if (j.aimTimer > 0) {

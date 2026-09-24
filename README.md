@@ -1782,6 +1782,13 @@ soltaste casi toda la plata.
 - **Ellos también tienen envión**, pero corto y contado: lo usan para volver a
   pegarse cuando quedaron a más de 320, dos veces por huida y nunca después de
   que sus caballos aflojen.
+- **Te anticipan**: no persiguen dónde estás sino **dónde vas a estar** dentro
+  de cuatro décimas, así que cuando doblás te cortan la curva por adentro en
+  vez de dibujarla entera detrás tuyo.
+- **Y uno te cruza.** Cada siete segundos a uno le toca **adelantarse y meterse
+  en tu camino** —gasta su envión para llegar y grita al abrirse de la fila—.
+  Uno solo a la vez: dos cortando serían una pinza de la que no se sale. Medido:
+  lo intenta 3,5 veces por huida y lo logra una.
 - **Cada tiro que te pegan te hace soltar una bolsa** con el 10% de lo que
   sacaste del tren. **Nunca te agarran**: lo peor que puede pasar es llegar
   con menos plata.
@@ -1814,7 +1821,7 @@ espera su región: en el desierto no va.)*
 
 **Y dónde caen se sortea de verdad.** Cada uno saca su rumbo dentro de un
 abanico de 120° para cada lado —uno puede quedarte al costado o un poco
-atrás— y SU distancia, entre 2.200 y 5.000. Nunca caen a menos de 90° uno del
+atrás— y SU distancia, entre 2.200 y 4.500. Nunca caen a menos de 90° uno del
 otro, así que nunca están "casi en la misma dirección": medido en 300
 corridas, se separan 139° en promedio y cada uno es el más cercano la mitad de
 las veces.

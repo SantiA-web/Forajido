@@ -77,13 +77,14 @@ export const HUIDA = {
      */
     distanciaMin: 2200,
     /**
-     * 🔻 Era 5.000 y se acercó a 4.000 *(Santi, al hacer que la resistencia
-     * sea el reloj de la huida)*: el Mustang tiene 17 segundos de galope y un
-     * refugio a 5.000 son 28 — te quedabas a pie a mitad de camino por cómo
-     * salió el sorteo, no por lo que hiciste. A 4.000 son 22 segundos: sigue
-     * siendo caro para el Mustang, pero es una decisión y no una condena.
+     * 🔻 Era 5.000 y se acercó *(Santi, al hacer que la resistencia sea el
+     * reloj de la huida)*: el Mustang tiene 17 segundos de galope y un refugio
+     * a 5.000 son 28 — te quedabas a pie a mitad de camino por cómo salió el
+     * sorteo y no por lo que hiciste. Primero se probó 4.000; jugándolo, Santi
+     * lo dejó en **4.500** (25 segundos): sigue siendo caro para el Mustang,
+     * pero es una decisión y no una condena.
      */
-    distanciaMax: 4000,
+    distanciaMax: 4500,
 
     /**
      * EL ABANICO donde pueden caer, en grados PARA CADA LADO de por donde
@@ -541,10 +542,51 @@ export const HUIDA = {
     duracionBala: 1.8,
 
     /**
-     * 🐎 SU ENVIÓN. El mismo tirón que el tuyo, del otro lado: cuando uno
-     * quedó descolgado —más de `desde` unidades atrás— aprieta y se vuelve a
-     * pegar. Por ahora lo usan SÓLO para eso; cortarte el paso y anticiparte
-     * viene en la vuelta siguiente.
+     * 🧠 CÓMO TE PERSIGUEN *(Santi: "lo otro es que se puedan poner adelante
+     * tuyo para rodearte de alguna manera. Además, tienen que saber distinguir
+     * hacia dónde vas para intentar anticipar un movimiento")*.
+     */
+    tactica: {
+      /**
+       * NO VAN A DONDE ESTÁS, VAN A DONDE VAS A ESTAR. Apuntan a tu posición
+       * de dentro de `anticipo` segundos, así que cuando doblás cortan la
+       * curva por adentro en vez de dibujarla entera detrás tuyo. Con 0 vuelve
+       * a ser la persecución en fila de antes.
+       *
+       * ⚠️ ES EL NÚMERO MÁS CARO DE ESTA ESCENA, porque los deja más tiempo en
+       * el lugar desde donde te pegan. Medido (20 corridas, misma distancia y
+       * mismo refugio, sin envión): 0 cuesta , **0,4 cuesta **, 0,6
+       * cuesta  y 0,8 cuesta . Con 0,4 ya se ve que cortan la curva;
+       * de ahí para arriba lo único que sube es el daño.
+       */
+      anticipo: 0.4,
+
+      /**
+       * 🚧 EL CORTADOR: uno solo se adelanta para ponerse en tu camino, y
+       * quema su envión para llegar. Los demás siguen en la cola — dos
+       * cortando a la vez es una pinza de la que no se sale, y eso no es una
+       * persecución, es una trampa.
+       */
+      cortador: {
+        /** Cada cuánto se elige uno (si no hay ninguno intentándolo). */
+        cada: 7,
+
+        /** Cuánto lo intenta antes de volver a la cola. */
+        dura: 5,
+
+        /** A dónde apunta: tanto adelante tuyo y tanto al costado. */
+        adelanto: 130,
+        costado: 55,
+
+        /** Sólo lo intenta el que ya está cerca: de más lejos no llega. */
+        distanciaMax: 280,
+      },
+    },
+
+    /**
+     * 🐎 SU ENVIÓN. El mismo tirón que el tuyo, del otro lado: lo usan para
+     * volver a pegarse cuando quedaron descolgados —más de `desde` unidades
+     * atrás— y para llegar adelante tuyo cuando les toca cortarte el paso.
      *
      * Su tanque no se dibuja ni se mide: alcanza con que no puedan encadenarlo
      * (`recarga`), o serían tres caballos volando todo el tiempo.

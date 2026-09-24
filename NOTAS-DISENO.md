@@ -14740,6 +14740,55 @@ te dejaba a pie por cómo salió el sorteo y no por lo que hiciste.
 
 Sin errores en 16.692 cuadros con teclas y mouse al azar, a 0,61 ms por cuadro.
 
+#### 🔁 Decimonovena vuelta: te anticipan y te cortan el paso
+
+*(Santi: "lo otro es que se puedan poner adelante tuyo para rodearte de alguna
+manera. Además, tienen que saber distinguir hacia dónde vas para intentar
+anticipar un movimiento")*
+
+**1. NO VAN A DONDE ESTÁS, VAN A DONDE VAS A ESTAR.** Todos persiguen tu
+posición de dentro de `tactica.anticipo` segundos, no la de ahora. La
+diferencia se ve cuando doblás: antes dibujaban la curva entera detrás tuyo,
+ahora la cortan por adentro.
+
+⚠️ **Es el número más caro de toda la escena**, porque los deja más tiempo en el
+lugar desde donde te pegan. Medido (20 corridas, misma distancia y mismo
+refugio, sin usar el envión):
+
+| Anticipo | Plata perdida |
+|---|---|
+| 0 (como estaba) | $495 |
+| **0,4 (puesto)** | **$680** |
+| 0,6 | $715 |
+| 0,8 | $865 |
+
+Se eligió **0,4**: con eso ya se ve que cortan la curva, y de ahí para arriba lo
+único que sube es el daño.
+
+**2. EL CORTADOR.** Cada 7 segundos a UNO le toca adelantarse a meterse en tu
+camino: apunta a 130 adelante tuyo y 55 al costado, y **quema su envión para
+llegar** —que es justo para lo que Santi lo había pedido del lado de ellos—. Lo
+intenta 5 segundos y vuelve a la cola.
+
+**Uno solo a la vez, y a propósito:** dos cortando son una pinza de la que no
+se sale, y eso no es una persecución, es una trampa. Medido: **3,5 intentos por
+huida y entre 0,6 y 0,9 logrados** (llegar a menos de 150 y adelante tuyo). O
+sea, uno se te cruza de verdad más o menos una vez por corrida — lo suficiente
+para que sea un momento y no un estado.
+
+Cuando le toca, **grita**: es el aviso de que uno se abrió de la fila.
+
+Sin errores en 17.153 cuadros con teclas y mouse al azar, a 0,71 ms por cuadro.
+
+**Y el refugio más lejano quedó en 4.500** *(Santi, después de jugar la
+resistencia: "pon el más lejano a 4500 mejor")*.
+
+📌 **Lo que hay que mirar cuando estén el forcejeo y el lazo:** entre las balas
+nuevas, el anticipo y el cortador, la huida se puso bastante más cara que hace
+unas vueltas. El envión compensa una parte, pero conviene una pasada de
+equilibrio midiendo TODO junto con un piloto que juegue bien, en vez de ajustar
+número por número.
+
 #### 🧪 El atajo para probarla
 
 *(Santi: "podrías simplificarme algo para que yo pueda probar los dos caballos rápidamente en la huída?")*

@@ -12,3 +12,5 @@
 # Copia vieja suelta con su propio .git adentro: no es parte del juego
 src/Forajido/
 /banco-huida.js
+/probar-audio.html
+/probar-audio.template.html

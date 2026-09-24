@@ -40,7 +40,7 @@ import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
 import {
   DESTINOS, refugiosDeLaRegion, ACHATA, dibujarRefugio, dibujarDeLejos,
-  chocaConElRefugio, adentroDelRefugio,
+  chocaConElRefugio, adentroDelRefugio, esPared, trozosDelParedon, PAREDON, PARED,
 } from '../world/destinos.js';
 
 /**
@@ -265,15 +265,8 @@ export function createHuidaScene(services) {
       const y = Math.sin(rumbo) * dist * PROFUNDIDAD;
       // Para dónde queda el campo del que vas a venir, visto desde el refugio.
       const llegada = Math.atan2(-y / PROFUNDIDAD, -x);
-      /**
-       * LA QUEBRADA ESCONDE LA ENTRADA: le cae de costado o casi del otro
-       * lado, así que hay que rodear el paredón con ellos encima. Los demás la
-       * tienen de frente, apenas corrida.
-       */
-      const rodeo = id === 'quebrada'
-        ? (rng.chance(0.5) ? 1 : -1) * rng.range(grados(C.quebradaRodeoMin), grados(C.quebradaRodeoMax))
-        : rng.range(-0.3, 0.3);
-      return {
+      const rodeo = rng.range(-0.3, 0.3);
+      const base = {
         tipo: id,
         nombre: DESTINOS[id].nombre,
         cartel: DESTINOS[id].cartel,
@@ -282,6 +275,25 @@ export function createHuidaScene(services) {
         mira: llegada + rodeo,
         abertura: grados(M.aberturaGrados),
         aviso: false,
+      };
+
+      /**
+       * 🧱 LA QUEBRADA NO ES UN ANILLO: ES UN PAREDÓN *(Santi: "diría que sea
+       * una pared de rocas infinita se podría decir, con un hueco estrecho")*.
+       *
+       * Se planta ATRAVESADA en tu camino —perpendicular a la línea que va de
+       * donde arrancás hasta acá— con una inclinación de hasta 20 grados para
+       * que no sean todas iguales. El hueco queda justo en `x, y`, o sea que
+       * la brújula te apunta al hueco: lo difícil no es encontrarlo, es llegar
+       * derecho con ellos encima.
+       */
+      if (id !== 'quebrada') return base;
+      return {
+        ...base,
+        forma: 'pared',
+        rumboPared: llegada + Math.PI / 2 + rng.range(-grados(20), grados(20)),
+        largo: PAREDON.largo,
+        hueco: PAREDON.hueco,
       };
     });
     refugioTomado = null;
@@ -304,7 +316,21 @@ export function createHuidaScene(services) {
   /** Pegado a la pared de un refugio no nace nada: la entrada no se tapa. */
   function pegadoAUnRefugio(x, y) {
     const despeje = H.mundo.caracter.despejeRefugio;
-    return refugios.some((d) => Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < d.radio + despeje);
+    return refugios.some((d) => {
+      /**
+       * Contra el paredón el despeje es una FRANJA, no un círculo: una piedra
+       * plantada en la boca del hueco lo taparía, y una encima de la pared se
+       * vería flotando adentro de la roca.
+       */
+      if (esPared(d)) {
+        const dx = x - d.x;
+        const dy = (y - d.y) / PROFUNDIDAD;
+        const u = dx * Math.cos(d.rumboPared) + dy * Math.sin(d.rumboPared);
+        const v = -dx * Math.sin(d.rumboPared) + dy * Math.cos(d.rumboPared);
+        return Math.abs(v) < PARED / 2 + despeje && Math.abs(u) < d.largo / 2;
+      }
+      return Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < d.radio + despeje;
+    });
   }
 
   /**
@@ -1557,9 +1583,22 @@ export function createHuidaScene(services) {
     const cosas = [];
     for (const d of refugios) {
       const lejos = Math.hypot(d.x - yo.x, (d.y - yo.y) / PROFUNDIDAD);
-      if (lejos > vista.w * 0.9) {
+      if (lejos > vista.w * 0.9 && !esPared(d)) {
         // De lejos, su silueta: es lo que te dice para dónde está.
         cosas.push({ y: d.y, draw: () => dibujarDeLejos(r, d, dia, Math.max(0.3, 1 - lejos / 4600)) });
+      } else if (esPared(d)) {
+        /**
+         * ⚠️ EL PAREDÓN ENTRA TROZO POR TROZO. Cruza la pantalla entera, así
+         * que no se puede ordenar como UNA cosa: el jinete que está al sur
+         * tiene que taparlo y el que está al norte tiene que quedar detrás.
+         * De lejos, en cambio, va su silueta con el corte a la vista.
+         */
+        if (lejos > vista.w * 1.3) {
+          cosas.push({ y: d.y, draw: () => dibujarDeLejos(r, d, dia, Math.max(0.3, 1 - lejos / 4600)) });
+        } else {
+          const cerca = { x: yo.x, y: yo.y, w: vista.w, h: vista.h };
+          for (const t of trozosDelParedon(d, dia, cerca)) cosas.push({ y: t.y, draw: () => t.draw(r) });
+        }
       } else {
         cosas.push({ y: d.y, draw: () => dibujarRefugio(r, d, dia) });
       }

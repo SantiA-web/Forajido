@@ -1847,6 +1847,15 @@ soltaste casi toda la plata.
 
 Y la pantalla de resultados dice cuántas bolsas soltaste y cuánto era.
 
+**La quebrada no es un anillo: es un PAREDÓN.** Una pared de roca de 2.600
+unidades atravesada en tu camino, con un **hueco de 60** — y el refugio es
+**el otro lado**: ganás cuando cruzás el hueco. La brújula te apunta al hueco y
+de lejos se ve la silueta del paredón con el corte a la vista, así que
+corregir a tiempo es gratis. **Lo que se paga es no mirar**: medido, llegar 300
+unidades errado y corregir temprano cuesta 1,6 segundos, y llegar encima sin
+haber corregido son 17 segundos raspando la pared con ellos tirándote. El bosque
+de rocas sigue siendo un anillo con entrada.
+
 **Y la huida es CAMPO ABIERTO.** No hay un camino: hay un campo y vos galopás
 a donde quieras —norte, sur, este u oeste—, con la cámara siguiéndote. El
 caballo tarda en doblar, así que el rumbo es una decisión y no un botón.

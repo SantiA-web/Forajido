@@ -150,13 +150,6 @@ export const HUIDA = {
       /** Y la mayoría son piedras, no yuyos: de cada 10, esta cantidad. */
       bosqueRocas: 0.75,
 
-      /**
-       * Cuánto hay que rodear la quebrada, en grados desde donde llegás. 100
-       * es entrar por el costado; 170, casi por el otro lado.
-       */
-      quebradaRodeoMin: 100,
-      quebradaRodeoMax: 170,
-
       /** Ningún obstáculo nace a menos de esto de la pared de un refugio. */
       despejeRefugio: 40,
     },

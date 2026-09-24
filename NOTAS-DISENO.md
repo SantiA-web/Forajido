@@ -15042,6 +15042,83 @@ rectángulos claros, del mismo nivel de dibujo que el `!` del que te apunta.
 Sin errores en 25.280 cuadros con teclas y mouse al azar, a 0,88 ms por cuadro
 con dibujo.
 
+#### 🧱 LA QUEBRADA: DE ANILLO A PAREDÓN
+
+*(Santi: "diría que sea una pared de rocas infinita se podría decir, con un
+hueco estrecho y esa sensación de oscuridad")*
+
+Era la primera vuelta de **vestir**, y terminó cambiando la forma y no sólo el
+dibujo. La quebrada era un **anillo** de radio 92 con una entrada de 66 grados
+que además se escondía (le caía de costado, 100 a 170 grados de rodeo). Ahora es
+un **paredón atravesado en tu camino** con un hueco angosto.
+
+**Y eso cambia qué significa llegar.** En un anillo, "adentro" es el centro: un
+destino difuso. En el paredón **el refugio es el otro lado**, y el momento de
+ganar es pasar el hueco. Es un umbral, que es mucho mejor final para una corrida.
+El bosque de rocas sigue siendo anillo: cambió sólo la quebrada.
+
+##### Los números, elegidos antes de construir
+
+| | Largo de la pared | Qué pasa si venís errado |
+|---|---|---|
+| | 1.200 | Rodearla es viable: la pared casi no manda |
+| ✅ | **2.600** | Rodearla no se piensa, pero sigue teniendo dos puntas |
+| | Infinita | Imposible errarle de costado, pero deja encerrado al que llega mal |
+
+| | Ancho del hueco | Cómo se siente |
+|---|---|---|
+| | 90 | Se entra de casualidad |
+| ✅ | **60** | Lo ves de lejos pero hay que apuntar |
+| | 34 | Hay que llegar casi derecho; con un jinete colgado, cruel |
+
+El hueco queda justo en el punto del refugio, así que **la brújula te apunta al
+hueco**: lo difícil no es encontrarlo, es llegar derecho con ellos encima.
+
+##### 📏 Lo medido, y una corrección a lo que yo había dicho
+
+Antes de construirlo dije que errarle 300 unidades serían "unos tres segundos
+corrigiendo". **Medido, son 1,6** — y ni siquiera rozás la pared, porque
+corregís antes de llegar. Lo interesante apareció al medir el otro extremo:
+
+| El piloto… | Dura | Segundos contra la pared | Llega a la quebrada |
+|---|---|---|---|
+| apunta exacto al hueco | 27,3 s | 0 | 10 de 12 |
+| llega 300 errado y corrige temprano | 28,9 s | 0,03 | 10 de 12 |
+| llega 300 errado y **corrige recién al verla** (260) | **67,2 s** | **17,2** | 2 de 14 |
+
+O sea: **la pared no castiga errarle, castiga no mirar.** Con la brújula y la
+silueta de lejos —que se dibuja con el corte a la vista— corregís temprano y no
+cuesta nada; si llegás encima sin haber corregido, te arrastrás diecisiete
+segundos pegado al paredón con ellos tirándote.
+
+##### 🎨 Y el dibujo: dos vueltas
+
+La primera versión se leía como **una tapia de ladrillos**: cada bloque sorteaba
+sus propias capas, así que las juntas no coincidían con las del bloque de al
+lado, y todos tenían la misma altura y una grieta vertical cada uno.
+
+Lo que lo convirtió en roca:
+
+- **Los estratos se cuentan desde la base**, que es la misma para los bloques
+  vecinos, así que las vetas **se continúan** a lo largo del paredón.
+- **El perfil de arriba ondula** con tres ondas de distinto largo, más alguna
+  aguja suelta, en vez de ser parejo.
+- **Las grietas verticales van salteadas** (una cada cinco bloques): una por
+  bloque es exactamente el dibujo de una pared de ladrillos.
+- **Los bloques se pisan entre sí** tres unidades, para que no se vean las
+  juntas verticales.
+- **Pedregullo al pie** y la sombra larga que lo despega del suelo.
+
+⚠️ Y el paredón **entra trozo por trozo** en la lista que se ordena por
+profundidad: cruza la pantalla entera, así que no puede ordenarse como UNA cosa
+—el jinete que está al sur tiene que taparlo y el que está al norte tiene que
+quedar detrás—. De los 173 bloques, en pantalla entran unos 40.
+
+📏 Cuesta **1,18 ms por cuadro** con el paredón ocupando media pantalla, contra
+0,88 sin él.
+
+---
+
 ### 🧊 EL PROTOTIPO 3D (carpeta `proto3d/`, aparte del juego)
 
 *(Santi: "¿qué tan costoso y recomendado es hacer que sean 3D las escenas de

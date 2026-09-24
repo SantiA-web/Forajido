@@ -239,11 +239,23 @@ export function trozosDelParedon(d, dia, cerca) {
 
   for (let u = -mitad; u <= mitad; u += BLOQUE) {
     if (Math.abs(u) < borde) continue;
-    const p = desdeLaPared(d, u, 0);
+    const i = Math.round(u / BLOQUE);
+    /**
+     * 🐛 LA CARA DEL PAREDÓN NO ES UNA REGLA *(Santi: "parece más un muro de
+     * un castillo que una quebrada")*. Cada bloque se adelanta o se retira un
+     * poco, así que el frente queda dentado y la línea de la base deja de ser
+     * recta. Es lo que más separa una roca de una tapia — el tope parejo y la
+     * cara plana son literalmente cómo se dibuja una muralla.
+     *
+     * El retiro se queda dentro del grosor (26), así que la pared que ves
+     * sigue siendo la que te frena.
+     */
+    const retiro = (ruido(i, 7) - 0.5) * 11 + Math.sin(u * 0.011) * 4;
+    const p = desdeLaPared(d, u, retiro);
     if (Math.abs(p.x - cerca.x) > cerca.w || Math.abs(p.y - cerca.y) > cerca.h) continue;
     // El bloque que da al hueco se dibuja en sombra: es el canto de la grieta.
     const alBorde = Math.abs(Math.abs(u) - borde) < BLOQUE;
-    trozos.push({ y: p.y, draw: (r) => bloqueDePared(r, c, p.x, p.y, u, alBorde) });
+    trozos.push({ y: p.y, draw: (r) => bloqueDePared(r, c, p.x, p.y, u, i, alBorde) });
   }
 
   /**
@@ -285,13 +297,19 @@ function alturaDeLaPared(u) {
 const BANDAS = [7, 5, 9, 6, 11, 5, 8];
 const CAPAS = ['#7a6047', '#6b5340', '#856a4e', '#5c4735', '#725a42'];
 
-/** Un bloque del paredón: estratos, canto iluminado, grietas y pedregullo. */
-function bloqueDePared(r, c, x, y, u, alBorde) {
-  const s = revolver(Math.round(u / BLOQUE));
+/** Un ruido de 0 a 1, fijo para cada bloque. */
+function ruido(i, sal) {
+  return (revolver(i * 2654435761 + sal) % 1024) / 1024;
+}
+
+/** Un bloque del paredón: estratos en diagonal, cresta rota y falda de pedregullo. */
+function bloqueDePared(r, c, x, y, u, i, alBorde) {
+  const s = revolver(i);
   const alto = alturaDeLaPared(u);
   // Los bloques se pisan un poco entre sí: sin eso se ven las juntas verticales.
   const w = BLOQUE + 3;
   const x0 = x - w / 2;
+  const mod = (k, m) => ((k % m) + m) % m;
 
   // La sombra al pie: es lo que la despega del suelo y la hace alta.
   r.ctx.save();
@@ -299,26 +317,43 @@ function bloqueDePared(r, c, x, y, u, alBorde) {
   r.rect(x0 - 2, y, w + 4, 6, '#000');
   r.ctx.restore();
 
-  // El cuerpo, en bandas contadas DESDE LA BASE para que se continúen.
+  /**
+   * EL CUERPO, EN BANDAS QUE VAN EN DIAGONAL. Las bandas se cuentan desde la
+   * base —así se continúan de bloque a bloque— pero el índice se corre con `u`,
+   * y eso hace que los estratos **bajen despacio** a lo largo del paredón en
+   * vez de ser rayas horizontales perfectas. Las rayas perfectas y paralelas
+   * son hiladas de ladrillo, no roca sedimentaria.
+   */
+  const corrida = Math.round(u * 0.06);
   let desdeAbajo = 0;
   let banda = 0;
   while (desdeAbajo < alto) {
-    const h = Math.min(alto - desdeAbajo, BANDAS[banda % BANDAS.length]);
+    const k = banda + corrida;
+    const h = Math.min(alto - desdeAbajo, BANDAS[mod(k, BANDAS.length)]);
     const yb = y - desdeAbajo - h;
-    r.rect(x0, yb, w, h, c(CAPAS[banda % CAPAS.length]));
-    if (h > 2) r.rect(x0, yb + h - 1, w, 1, c('#493c2e'));
+    r.rect(x0, yb, w, h, c(CAPAS[mod(k, CAPAS.length)]));
+    if (h > 3) r.rect(x0, yb + h - 1, w, 1, c('#493c2e'));
     desdeAbajo += h;
     banda += 1;
   }
 
-  // El canto de arriba, donde pega el sol.
-  r.rect(x0, y - alto, w, 2, c('#a08d70'));
-  r.rect(x0, y - alto + 2, w, 1, c('#8a7758'));
-
   /**
-   * LAS GRIETAS VERTICALES VAN SALTEADAS, no una por bloque: una por bloque es
-   * exactamente el dibujo de una pared de ladrillos.
+   * 🐛 LA CRESTA VA ROTA, no plana. Un tope parejo con escaloncitos de bloque
+   * en bloque es exactamente un almenado: el bloque se parte en tres columnas
+   * que suben distinto, y encima va una línea de luz que sigue ese dentado.
    */
+  const tercio = Math.ceil(w / 3);
+  for (let k = 0; k < 3; k++) {
+    const cx = x0 + k * tercio;
+    const cw = Math.min(tercio, x0 + w - cx);
+    if (cw <= 0) break;
+    const sube = Math.round((ruido(i * 3 + k, 19) - 0.3) * 10);
+    const techo = y - alto - Math.max(0, sube);
+    if (sube > 0) r.rect(cx, techo, cw, sube + 2, c(CAPAS[mod(i + k, CAPAS.length)]));
+    r.rect(cx, techo, cw, 1, c('#9d8a6d'));
+  }
+
+  /** Las grietas verticales van salteadas: una por bloque sería una tapia. */
   if (s % 5 === 0) {
     const gx = x0 + 3 + (s % (w - 6));
     const largo = 10 + (s % Math.max(1, alto - 14));
@@ -326,18 +361,26 @@ function bloqueDePared(r, c, x, y, u, alBorde) {
     r.rect(gx + 1, y - alto + 4, 1, Math.round(largo * 0.6), c('#6d5943'));
   }
 
-  // Pedregullo al pie: lo que se fue desprendiendo del paredón.
+  /**
+   * LA FALDA DE PEDREGULLO. Es lo que se fue desprendiendo del paredón y se
+   * amontonó al pie, y es otra cosa que una muralla no tiene: la roca se cae.
+   */
+  const pie = 3 + Math.round(ruido(i, 31) * 4);
+  for (let k = 0; k < pie; k++) {
+    const ancho = w - k * 2 - Math.round(ruido(i + k, 53) * 3);
+    if (ancho <= 2) break;
+    r.rect(x0 + k + 1, y + k, ancho, 1, c(k < 2 ? '#6d5b45' : '#5b4c3b'));
+  }
   if (s % 3 === 0) {
     const k = (s >>> 5) % 7;
-    r.rect(x0 + 2 + k, y + 1, 3 + (k % 3), 2, c('#6a5946'));
-    r.rect(x0 + 8 - k, y + 3, 2, 2, c('#5a4b3b'));
+    r.rect(x0 + 2 + k, y + pie, 3 + (k % 3), 2, c('#665644'));
   }
 
   // El bloque que mira al hueco va oscurecido: es el canto de la grieta.
   if (alBorde) {
     r.ctx.save();
     r.ctx.globalAlpha = 0.5;
-    r.rect(x0, y - alto, w, alto, '#000');
+    r.rect(x0, y - alto - 6, w, alto + 6, '#000');
     r.ctx.restore();
   }
 }
@@ -359,36 +402,39 @@ function bocaDeLaQuebrada(r, c, d) {
    * un tajo oscuro caído de costado, como una losa apoyada. La profundidad acá
    * no se dibuja: **se pinta**, con tres tonos de sombra cada vez más oscuros.
    */
-  const bordes = (u) => {
-    const p = esquina(u, 0);
-    return p;
-  };
-  const L = bordes(-medio);
-  const R = bordes(medio);
-
-  const tajo = (encoge, arriba, color) => {
-    const li = bordes(-medio * encoge);
-    const ri = bordes(medio * encoge);
+  /**
+   * 🐛 LA GRIETA SE ABRE ARRIBA Y SE CIERRA ABAJO, y no lleva jambas.
+   *
+   * La versión anterior era un rectángulo con dos cantos iluminados a los
+   * costados: eso es el dibujo de una PUERTA, y una puerta en una pared de
+   * piedra es un castillo. Una quebrada es una raja — ancha arriba, angosta al
+   * pie, y con los bordes mordidos.
+   */
+  const tajo = (arribaAncho, abajoAncho, altura, color) => {
+    const la = esquina(-medio * arribaAncho, 0);
+    const ra = esquina(medio * arribaAncho, 0);
+    const lb = esquina(-medio * abajoAncho, 0);
+    const rb = esquina(medio * abajoAncho, 0);
     r.ctx.fillStyle = color;
     r.ctx.beginPath();
-    r.ctx.moveTo(li.x, li.y + 2);
-    r.ctx.lineTo(ri.x, ri.y + 2);
-    r.ctx.lineTo(ri.x, ri.y - alto * arriba);
-    r.ctx.lineTo(li.x, li.y - alto * arriba);
+    r.ctx.moveTo(lb.x, lb.y + 2);
+    r.ctx.lineTo(rb.x, rb.y + 2);
+    // El borde derecho, mordido en tres escalones.
+    r.ctx.lineTo(rb.x + (ra.x - rb.x) * 0.45, rb.y - alto * altura * 0.35);
+    r.ctx.lineTo(ra.x, ra.y - alto * altura * 0.7);
+    r.ctx.lineTo(ra.x - 2, ra.y - alto * altura);
+    r.ctx.lineTo(la.x + 2, la.y - alto * altura);
+    r.ctx.lineTo(la.x, la.y - alto * altura * 0.68);
+    r.ctx.lineTo(lb.x + (la.x - lb.x) * 0.4, lb.y - alto * altura * 0.33);
     r.ctx.closePath();
     r.ctx.fill();
   };
 
   r.ctx.save();
-  // Tres capas: la boca, el pasillo y el fondo. Cada una más angosta y más
-  // oscura que la anterior — eso es lo que se lee como "se mete para adentro".
-  tajo(1, 0.92, '#33281e');
-  tajo(0.72, 0.84, '#1f1811');
-  tajo(0.42, 0.74, '#100d09');
-
-  // Los dos cantos de la grieta, iluminados apenas: marcan dónde está el paso.
-  r.rect(L.x - 1, L.y - alto * 0.92, 1, alto * 0.92, c('#6d5b45'));
-  r.rect(R.x, R.y - alto * 0.92, 1, alto * 0.92, c('#6d5b45'));
+  // Tres capas cada vez más angostas y más oscuras: la profundidad se pinta.
+  tajo(1, 0.5, 0.96, '#332619');
+  tajo(0.78, 0.3, 0.86, '#1d1610');
+  tajo(0.46, 0.14, 0.7, '#0e0b08');
 
   // La sombra que el paredón tira sobre el campo del que llega.
   r.ctx.globalAlpha = 0.22;

@@ -15091,7 +15091,7 @@ silueta de lejos —que se dibuja con el corte a la vista— corregís temprano 
 cuesta nada; si llegás encima sin haber corregido, te arrastrás diecisiete
 segundos pegado al paredón con ellos tirándote.
 
-##### 🎨 Y el dibujo: dos vueltas
+##### 🎨 Y el dibujo: tres vueltas
 
 La primera versión se leía como **una tapia de ladrillos**: cada bloque sorteaba
 sus propias capas, así que las juntas no coincidían con las del bloque de al
@@ -15108,6 +15108,33 @@ Lo que lo convirtió en roca:
 - **Los bloques se pisan entre sí** tres unidades, para que no se vean las
   juntas verticales.
 - **Pedregullo al pie** y la sombra larga que lo despega del suelo.
+
+###### Tercera vuelta: "parece un muro de castillo"
+
+*(Santi, viendo la segunda: "pero la quebrada parece más un muro de un castillo
+que una quebrada")* — y tenía razón. Con los estratos arreglados seguía siendo
+una muralla, porque lo que la delataba no eran las vetas sino **las líneas
+rectas**. Una muralla es exactamente eso: tope parejo, cara plana y una puerta.
+
+Las cuatro que la convirtieron en roca:
+
+1. **La cara dejó de ser una regla.** Cada bloque se adelanta o se retira hasta
+   cinco unidades (dentro del grosor, así que la pared que ves sigue siendo la
+   que te frena), y con eso **la línea de la base también se rompe**. Era lo más
+   importante: un frente perfectamente recto no existe en la naturaleza.
+2. **La cresta va rota.** Cada bloque se parte en tres columnitas que suben
+   distinto. Antes cada bloque tenía un tope plano y el conjunto escalonaba: eso
+   es un almenado, literalmente.
+3. **Los estratos van en diagonal.** El índice de banda se corre con la
+   posición, así que las vetas bajan despacio a lo largo del paredón. Rayas
+   horizontales paralelas y del mismo grosor son hiladas de ladrillo.
+4. **Hay falda de pedregullo al pie.** La roca se desprende y se amontona; una
+   muralla no.
+
+Y **la boca dejó de ser una puerta**: era un rectángulo con dos cantos
+iluminados a los costados, o sea jambas. Ahora es una raja —ancha arriba,
+angosta al pie— con los bordes mordidos en escalones y sin ningún canto
+iluminado.
 
 ⚠️ Y el paredón **entra trozo por trozo** en la lista que se ordena por
 profundidad: cruza la pantalla entera, así que no puede ordenarse como UNA cosa

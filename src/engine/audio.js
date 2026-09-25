@@ -700,7 +700,7 @@ export function createAudio() {
   let cancionSonando = false;
 
   function volumenDeLaCancion() {
-    return (CONFIG.audio.master ?? 0.5) * (CONFIG.ambiente.cancionVolumen ?? 0.3);
+    return (CONFIG.audio.master ?? 0.5) * (CONFIG.ambiente.cancionVolumen ?? 0.22);
   }
 
   /**
@@ -831,9 +831,12 @@ export function createAudio() {
   let acordeActual = 0;
 
   /**
-   * `tipo` elige qué música: las CANCIONES (el campamento) o la GUITARRA
-   * sintetizada de siempre (el pueblo). Son dos lugares distintos y no tienen
-   * por qué sonar igual.
+   * `tipo` elige qué música: las CANCIONES o la GUITARRA sintetizada.
+   *
+   * ⚠️ HOY NADIE PIDE LA GUITARRA: el campamento y el pueblo llevan los dos las
+   * canciones. El arpegio sintetizado queda escrito y funcionando porque no
+   * molesta a nadie y porque un lugar nuevo puede querer su propia música
+   * —una cantina, un salón— sin tener que grabarla.
    */
   function arrancarMusica(tipo = 'canciones') {
     if (tipo === 'canciones') {

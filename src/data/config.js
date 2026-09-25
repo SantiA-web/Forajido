@@ -2180,12 +2180,14 @@ export const CONFIG = {
      * ya viene con su propio nivel.
      *
      * 🔉 ES MÚSICA DE FONDO, NO LA PROTAGONISTA *(Santi: "recuerda bajarle el
-     * volumen para que quede de fondo y no como protagonista")*. Se multiplica
-     * por `CONFIG.audio.master` (0,5), así que **0,3 acá son 0,15 de verdad**:
-     * la canción se oye debajo del fuego, los grillos y lo que diga la gente.
-     * Si alguna vez hay que moverla, es este número y nada más.
+     * volumen para que quede de fondo y no como protagonista", y después de
+     * oírla: "me gustaría que bajes un poco el volumen")*.
+     *
+     * Se multiplica por `CONFIG.audio.master` (0,5), así que **0,22 acá son
+     * 0,11 de verdad**: la canción queda debajo del fuego, los grillos y lo que
+     * diga la gente. Si alguna vez hay que moverla, es este número y nada más.
      */
-    cancionVolumen: 0.3,
+    cancionVolumen: 0.22,
     /** Cada cuánto cae una púa del arpegio. Es el pulso de todo lo demás. */
     pulsoCada: 0.42,
   },

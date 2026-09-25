@@ -94,9 +94,12 @@ export function createTownScene(services) {
         cada: CONFIG.ambiente.vientoCada,
       },
     });
-    // El pueblo se queda con la guitarra sintetizada: las canciones de la
-    // fogata son del campamento.
-    audio.arrancarMusica('guitarra');
+    /**
+     * El pueblo lleva LAS MISMAS CANCIONES que el campamento *(Santi: "añadí
+     * la música para el pueblo")*, y la misma cuenta de dónde quedaron: ir del
+     * campamento al pueblo no reinicia nada, la canción sigue.
+     */
+    audio.arrancarMusica();
 
     // Para depurar desde la consola: FORAJIDO.services.town
     services.town = {

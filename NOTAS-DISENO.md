@@ -15207,10 +15207,18 @@ dónde la cortaste")*
 Son suyas (`santiarce08`): **"Fogata de noche"**, una instrumental y la otra con
 la armónica al frente, de 3:03 y 3:14. Viven en `src/assets/musica/`.
 
-**El campamento pasa a las canciones; el pueblo se queda con la guitarra
-sintetizada** — son dos lugares distintos y no tienen por qué sonar igual. Por
-eso `arrancarMusica` ahora recibe qué música querés (`'canciones'` por omisión,
-`'guitarra'` para el pueblo).
+**El campamento y el pueblo llevan las dos canciones** *(Santi: "añadí la
+música para el pueblo")* — son los dos lugares donde no te están persiguiendo, y
+comparten la cuenta de dónde quedaron: ir de uno al otro no reinicia nada.
+
+`arrancarMusica` recibe igual qué música querés (`'canciones'` por omisión,
+`'guitarra'` para el arpegio sintetizado). Hoy **nadie pide la guitarra**, y
+queda escrita a propósito: un lugar nuevo —una cantina, un salón— puede querer
+su propia música sin tener que grabarla.
+
+🔉 **Y el volumen quedó en 0,22** *(Santi, después de oírla: "me gustaría que
+bajes un poco el volumen")*, que multiplicado por `CONFIG.audio.master` son
+**0,11 de verdad**.
 
 **Y se acuerdan dónde quedaron.** Salir al asalto no reinicia la canción:
 `pararMusica` anota el segundo y `arrancarMusica` vuelve ahí. Cuando una

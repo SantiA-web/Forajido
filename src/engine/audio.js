@@ -693,6 +693,8 @@ export function createAudio() {
     { titulo: 'Fogata de noche (armónica al frente)', url: 'src/assets/musica/fogata-de-noche-armonica.mp3' },
   ];
   let pistas = null;
+  /** Lo último que salió mal con la música, para poder preguntárselo (F12). */
+  let ultimoProblema = null;
   let cualCancion = 0;
   const dondeQuedo = CANCIONES.map(() => 0);
   let cancionSonando = false;
@@ -729,12 +731,17 @@ export function createAudio() {
           // Si mientras se cargaba ya había que estar sonando, arranca ahora.
           if (cancionSonando && cualCancion === i) sonarCancion();
         })
-        .catch(() => {
+        .catch((e) => {
           // Último recurso: la dirección tal cual. Suena, pero puede no dejar
           // volver al segundo exacto (ver la nota del `blob:`).
+          ultimoProblema = 'no se pudo cargar: ' + (e && e.name ? e.name : e);
           el.src = c.url;
           if (cancionSonando && cualCancion === i) sonarCancion();
         });
+      el.addEventListener('error', () => {
+        const c2 = el.error ? el.error.code : '?';
+        ultimoProblema = 'el reproductor la rechazó (código ' + c2 + ')';
+      });
       return el;
     });
   }
@@ -779,8 +786,35 @@ export function createAudio() {
       try { el.currentTime = t; } catch (e) { /* todavía no cargó: arranca de cero */ }
     }
     const p = el.play();
-    // El navegador puede negarse si todavía no hubo un clic: no es un error.
-    if (p && p.catch) p.catch(() => {});
+    /**
+     * 🔇 SI EL NAVEGADOR SE NIEGA, SE VUELVE A INTENTAR AL PRIMER CLIC.
+     *
+     * Chrome no deja sonar nada hasta que el que juega tocó algo en ESA página,
+     * y si el campamento arranca antes de ese toque, `play()` se rechaza. Antes
+     * ese rechazo se tragaba y la música no volvía a intentarlo NUNCA: quedaba
+     * muda toda la partida sin decir por qué. Ahora se queda esperando el
+     * primer clic o la primera tecla y arranca ahí.
+     */
+    if (p && p.catch) {
+      p.catch((e) => {
+        ultimoProblema = e && e.name ? e.name : 'no arrancó';
+        esperarUnToque();
+      });
+    }
+  }
+
+  let esperando = false;
+  function esperarUnToque() {
+    if (esperando) return;
+    esperando = true;
+    const reintentar = () => {
+      document.removeEventListener('pointerdown', reintentar);
+      document.removeEventListener('keydown', reintentar);
+      esperando = false;
+      if (cancionSonando) sonarCancion();
+    };
+    document.addEventListener('pointerdown', reintentar);
+    document.addEventListener('keydown', reintentar);
   }
 
   function guardarDondeQuedo() {
@@ -966,6 +1000,9 @@ export function createAudio() {
         segundo: el ? +el.currentTime.toFixed(1) : 0,
         guardado: dondeQuedo.map((t) => +t.toFixed(1)),
         sonando: !!(el && !el.paused),
+        cargada: !!(el && el.src),
+        volumen: el ? el.volume : volumenDeLaCancion(),
+        problema: ultimoProblema,
       };
     },
     /** Toca un efecto por nombre; si el audio no arrancó todavía, no pasa nada. */

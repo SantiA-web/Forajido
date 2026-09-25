@@ -1855,6 +1855,18 @@ en que las cortaste. Ir del campamento al pueblo tampoco las corta. Cuando una
 termina, arranca la otra. Van a **0,11 de volumen**: por debajo del fuego, los
 grillos y lo que diga la gente.
 
+**Y el bosque de piedras es un MANCHÓN DE AGUJAS**, sin puerta: 260 unidades de
+agujas de roca altas y apretadas —siete por cada 100 x 100— y **se gana llegando
+al corazón**, un claro de 90 en el medio. Las agujas son obstáculos de verdad:
+chocarlas te frena como una piedra, y los jinetes también se las comen. Medido,
+cuesta **4 choques por corrida**. Así los dos refugios piden cosas distintas: la
+quebrada es puntería y el bosque es manejo.
+
+**Y no arrancan todos encima tuyo.** Los tres primeros salen pegados (110 a 138)
+y el resto entre 280 y 445, viniendo al galope tendido a sumarse — **y sin tirar
+mientras corren**. Con siete jinetes eso es la diferencia entre llegar con $629
+y llegar con $929.
+
 **La quebrada no es un anillo: es un MACIZO CON UNA GARGANTA.** Una pared de
 roca de 2.600 unidades atravesada en tu camino, con una boca de **60** — y
 detrás no hay campo abierto: hay **260 de garganta** que se cierra a **46** y

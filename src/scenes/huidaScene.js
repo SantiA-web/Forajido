@@ -40,7 +40,8 @@ import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
 import {
   DESTINOS, refugiosDeLaRegion, ACHATA, dibujarRefugio, dibujarDeLejos,
-  chocaConElRefugio, adentroDelRefugio, esPared, trozosDelParedon, puntoDeEntrada, PAREDON, PARED,
+  chocaConElRefugio, adentroDelRefugio, esPared, esBosque, trozosDelParedon,
+  puntoDeEntrada, dibujarClaroDelBosque, PAREDON, PARED, BOSQUE,
 } from '../world/destinos.js';
 
 /**
@@ -287,6 +288,15 @@ export function createHuidaScene(services) {
        * la brújula te apunta al hueco: lo difícil no es encontrarlo, es llegar
        * derecho con ellos encima.
        */
+      /**
+       * 🗿 EL BOSQUE ES UN MANCHÓN DE AGUJAS, no un anillo: no hay puerta que
+       * encontrar, hay que meterse hasta el corazón trenzando entre las
+       * piedras. Las agujas las siembra `sembrarObstaculos` como obstáculos
+       * comunes (ver `BOSQUE`).
+       */
+      if (id === 'bosque') {
+        return { ...base, forma: 'bosque', radio: BOSQUE.radio, corazon: BOSQUE.corazon };
+      }
       if (id !== 'quebrada') return base;
       return {
         ...base,
@@ -317,6 +327,9 @@ export function createHuidaScene(services) {
   function pegadoAUnRefugio(x, y) {
     const despeje = H.mundo.caracter.despejeRefugio;
     return refugios.some((d) => {
+      // En el bosque no se despeja nada salvo el claro del corazón: las agujas
+      // TIENEN que nacer adentro, son el refugio.
+      if (esBosque(d)) return Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < d.corazon;
       /**
        * Contra el paredón el despeje es una FRANJA, no un círculo: una piedra
        * plantada en la boca del hueco lo taparía, y una encima de la pared se
@@ -347,7 +360,15 @@ export function createHuidaScene(services) {
     const J = H.jinetes;
     const lado = i % 2 === 0 ? -1 : 1;
     const escalon = Math.ceil(i / 2);
-    const atras = J.distanciaInicial + i * J.separacionInicial;
+    /**
+     * DOS OLAS (ver `HUIDA.jinetes.olas`): el pelotón arranca encima tuyo y el
+     * resto, mucho más atrás, viene al galope tendido a sumarse.
+     */
+    const O = J.olas;
+    const enElPeloton = i < O.peloton;
+    const atras = enElPeloton
+      ? J.distanciaInicial + i * J.separacionInicial
+      : O.segundaDesde + (i - O.peloton) * O.segundaSeparacion;
     return {
       x: yo.x - Math.cos(yo.rumbo) * atras,
       y: yo.y - Math.sin(yo.rumbo) * atras * PROFUNDIDAD,
@@ -357,7 +378,13 @@ export function createHuidaScene(services) {
       health: H.jinetes.vida ?? 1,
       vel: J.velocidad + rng.range(-J.variacion, J.variacion),
       carril: n === 1 ? 0.25 : lado * (0.22 + escalon * 0.26),
+      /**
+       * Su lugar en la fila es el de siempre, esté donde esté ahora: el de la
+       * segunda ola corre hasta acá y recién entonces se acomoda.
+       */
       atras: J.distanciaInicial * 0.75 + i * J.separacionInicial,
+      /** Viniendo a sumarse: corre más, no tira y no le toca ninguna táctica. */
+      alcanzando: !enElPeloton,
       cooldown: J.cadencia * 0.6 + rng.range(0, J.cadenciaAzar),
       aimTimer: 0,
       aimDir: 0,
@@ -961,7 +988,7 @@ export function createHuidaScene(services) {
     const L = H.jinetes.lazo;
     const conLazo = yo.gracia > 0 || proximoLazo > 0
       ? []
-      : siguiendoAhora.filter((j) => j.lazo);
+      : siguiendoAhora.filter((j) => j.lazo && !j.alcanzando);
     if (conLazo.length > 0) {
       let elLazador = conLazo[0];
       for (const j of conLazo) {
@@ -1003,6 +1030,7 @@ export function createHuidaScene(services) {
     let elegido = null;
     let mejor = C.distanciaMax;
     for (const j of siguiendoAhora) {
+      if (j.alcanzando) continue;
       const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
       if (d < mejor) { mejor = d; elegido = j; }
     }
@@ -1155,7 +1183,15 @@ export function createHuidaScene(services) {
 
       j.cooldown -= dt;
       const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
-      if (j.cooldown <= 0 && d < J.alcance && j.aimTimer <= 0) {
+
+      /**
+       * ¿YA SE SUMÓ? Mientras viene de atrás no dispara: el que corre a los
+       * pedales para alcanzar al grupo no va apuntando. Se suma cuando llegó a
+       * su lugar en la fila.
+       */
+      if (j.alcanzando && d <= j.atras + J.olas.seSumaA) j.alcanzando = false;
+
+      if (j.cooldown <= 0 && !j.alcanzando && d < J.alcance && j.aimTimer <= 0) {
         // De lejos tiran, pero mucho menos seguido (ver `cadenciaLejos`).
         const lejano = d > J.cadenciaLejosDesde ? J.cadenciaLejos : 1;
         if (tiempo - ultimoGrito > J.gritoCada && rng.chance(J.chanceGrito)) {
@@ -1204,6 +1240,8 @@ export function createHuidaScene(services) {
   function velocidadDelCortador(j) {
     const base = velocidadDelJinete(j) + j.empujeVel;
     const T = H.jinetes.tactica;
+    // El que todavía viene de atrás corre más hasta alcanzar a los demás.
+    if (j.alcanzando) return base * H.jinetes.olas.apuro;
     // El que va a lazarte corre igual que el que va a cruzarse: sin eso no
     // llega nunca a tiro de soga y el lazo no existe.
     if (j.lazando > 0) return base + j.vel * T.cortador.empuje;
@@ -1477,19 +1515,33 @@ export function createHuidaScene(services) {
          */
         const C = H.mundo.caracter;
         const terreno = terrenoDe(cx * CELDA + CELDA / 2, cy * CELDA + CELDA / 2);
+        /**
+         * 🗿 Y ADENTRO DEL MANCHÓN DEL BOSQUE, AGUJAS. Es el mismo sistema de
+         * siempre con otra densidad y otro tipo: así chocarlas frena igual que
+         * una piedra, los jinetes también se las comen y el dibujo se ordena
+         * solo. El bosque ralo de afuera (hasta `bosqueAlrededor`) se queda
+         * como antesala.
+         */
+        const enElManchon = refugios.some((d) => esBosque(d)
+          && Math.hypot(d.x - (cx * CELDA + CELDA / 2), (d.y - (cy * CELDA + CELDA / 2)) / PROFUNDIDAD) < BOSQUE.radio + CELDA);
+
         let cuantos = rng.int(0, 2);
-        if (terreno && terreno.tipo === 'bosque') cuantos = rng.int(C.bosqueMin, C.bosqueMax);
+        if (enElManchon) cuantos = BOSQUE.porCelda;
+        else if (terreno && terreno.tipo === 'bosque') cuantos = rng.int(C.bosqueMin, C.bosqueMax);
         else if (terreno && terreno.tipo === 'rio') cuantos = 0;
 
         for (let i = 0; i < cuantos; i++) {
           const x = cx * CELDA + rng.range(0, CELDA);
           const y = cy * CELDA + rng.range(0, CELDA);
           if (pegadoAUnRefugio(x, y)) continue;
+          const aguja = refugios.some((d) => esBosque(d)
+            && Math.hypot(d.x - x, (d.y - y) / PROFUNDIDAD) < BOSQUE.radio);
+          if (!aguja && enElManchon && rng.chance(0.55)) continue;
           const roca = terreno && terreno.tipo === 'bosque' && rng.chance(C.bosqueRocas);
           obstaculos.push({
             x,
             y,
-            tipo: roca ? 'roca' : tipos[rng.int(0, tipos.length - 1)],
+            tipo: aguja ? 'aguja' : roca ? 'roca' : tipos[rng.int(0, tipos.length - 1)],
             golpeado: false,
           });
         }
@@ -1606,6 +1658,10 @@ export function createHuidaScene(services) {
           const cerca = { x: yo.x, y: yo.y, w: vista.w, h: vista.h };
           for (const t of trozosDelParedon(d, dia, cerca)) cosas.push({ y: t.y, draw: () => t.draw(r) });
         }
+      } else if (esBosque(d)) {
+        // Sólo el claro del corazón: las agujas son obstáculos y ya entran
+        // en esta misma lista, cada una por dónde pisa.
+        cosas.push({ y: d.y - d.corazon, draw: () => dibujarClaroDelBosque(r, d, dia) });
       } else {
         cosas.push({ y: d.y, draw: () => dibujarRefugio(r, d, dia) });
       }

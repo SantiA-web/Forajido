@@ -637,6 +637,12 @@ export const APROXIMACION = {
      * elegir POR DÓNDE pasar sea una decisión y no sólo "esquivá todo".
      */
     monticulo: 6,
+    /**
+     * 🗿 LA AGUJA DEL BOSQUE DE PIEDRAS: angosta y alta. Su huella es chica
+     * —más que la roca— porque adentro del manchón hay una cada 38 unidades y
+     * con la huella de una roca no quedaría por dónde pasar.
+     */
+    aguja: 7,
   },
 
   /** Para cualquier tipo que no esté en la tabla de arriba. */

@@ -15198,6 +15198,70 @@ quedar detrás—. De los 173 bloques, en pantalla entran unos 40.
 
 ---
 
+#### 🗿 EL BOSQUE DE PIEDRAS: DE ANILLO A MANCHÓN DE AGUJAS
+
+Era un aro de peñascos con una puerta de 66 grados — **la misma forma que tenía
+la quebrada**. Y con los dos refugios de la misma forma, elegir uno u otro daba
+lo mismo. Ahora es un **manchón denso de agujas** sin puerta, y estás a salvo
+cuando llegaste **al corazón**.
+
+Con eso los dos refugios piden cosas distintas: la quebrada es **puntería**
+(llegar derecho al hueco) y el bosque es **manejo** (entrar a fondo trenzando).
+Y le da sentido al premio que ya tenía: adentro no te ven, así que los jinetes
+que tiraste no te suben la recompensa.
+
+⚠️ **LAS AGUJAS NO SON UNA PARED: SON OBSTÁCULOS DE LOS DE SIEMPRE.** Se
+siembran con el mismo sistema que las rocas del campo, así que chocarlas frena
+igual que una piedra, los jinetes también se las comen, la IA que esquiva ya
+sabe esquivarlas y el dibujo se ordena solo por profundidad. Nada de esto es un
+caso aparte — y por eso salió en una tarde y no en tres.
+
+📏 **La densidad, medida** (14 corridas de cinco jinetes por fila):
+
+| Agujas por 100x100 | Choques por corrida |
+|---|---|
+| 5,3 | 3,4 |
+| **7,1** ✅ | **4,0** |
+| 9,8 | 5,2 |
+
+Se eligió 7,1: hay que trenzar de verdad pero se puede pasar a galope. Y el
+reparto entre refugios quedó **8 y 8 de 16** (antes el bosque se llevaba 10 de
+18, porque la quebrada tenía pared y él no tenía nada).
+
+🐛 **El claro y el corazón eran dos círculos distintos** —se despejaba 46 y el
+claro se dibujaba a 90— y quedaban agujas plantadas adentro del claro: el lugar
+al que llegabas no era el lugar que veías. Ahora donde termina la piedra es
+exactamente donde ganás.
+
+#### 🌊 LOS JINETES YA NO ARRANCAN TODOS ENCIMA TUYO
+
+*(Santi: "que algunos jinetes empiecen considerablemente más lejos que otros y
+después se sumen a los más cercanos. Porque me pasó que en un asalto aparecí con
+7 tipos detrás mío y me balearon entero y me sacaron todo el dinero")*
+
+Y tenía toda la razón. Con `distanciaInicial 110` y 14 de separación, siete
+jinetes arrancaban entre **110 y 194 unidades**: todos adentro de la distancia
+de tiro desde el primer segundo. Siete escopetas a la vez no es dificultad, es
+una emboscada que no se puede jugar.
+
+Ahora el **pelotón son los primeros tres** y el resto arranca entre 280 y 445 y
+viene **al galope tendido a sumarse** (18% más rápido), **sin tirar mientras
+corre**: el que viene a los pedales a alcanzar al grupo no va apuntando. Tampoco
+le toca ninguna táctica —ni cortar, ni arrimarse, ni lazar— hasta que llegó a su
+lugar en la fila.
+
+⚠️ Los de la segunda ola tienen que nacer adentro de `perdida` (520): uno que
+nazca más lejos se da por perdido en el primer cuadro y nunca existió.
+
+📏 **Medido, con siete jinetes** (14 corridas por fila):
+
+| | Plata perdida | Con cuánto llegás |
+|---|---|---|
+| Todos juntos (como estaba) | $1.471 | $629 |
+| **En dos olas** ✅ | **$1.129** | **$929** |
+
+O sea: de siete bolsas a cinco y media, y llegás con un **48% más de plata**.
+
 ### 🎵 LA MÚSICA DEL CAMPAMENTO: DOS CANCIONES DE VERDAD
 
 *(Santi: "me gustaría que reemplaces la música del campamento por estas dos

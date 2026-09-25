@@ -138,14 +138,58 @@ function anchoDeLaGarganta(d, v) {
  */
 export function puntoDeEntrada(d, x, y) {
   if (!esPared(d)) return { x: d.x, y: d.y };
+  // (el bosque y el anillo apuntan a su centro y listo)
   const { v } = enLaPared(d, x, y);
   if (v < PARED / 2) return { x: d.x, y: d.y };
   const t = Math.min(PAREDON.garganta + 6, v + 90);
   return desdeLaPared(d, centroDeLaGarganta(t), t);
 }
 
-/** ¿Este refugio es un paredón o un anillo? */
+/**
+ * 🗿 EL BOSQUE DE PIEDRAS TAMPOCO ES UN ANILLO *(Santi: "dale con B y B")*.
+ *
+ * Era un aro de peñascos con una puerta de 66 grados — la misma forma que tenía
+ * la quebrada. Y con los dos refugios de la misma forma, elegir uno u otro daba
+ * lo mismo. Un bosque de piedras no tiene puerta: es un **manchón denso de
+ * agujas**, y estás a salvo cuando llegaste **al corazón**.
+ *
+ * Con eso los dos refugios pasan a pedir cosas distintas: la quebrada es
+ * PUNTERÍA (llegar derecho al hueco) y el bosque es MANEJO (entrar a fondo
+ * trenzando entre las piedras). Y le da sentido al premio que ya tenía: adentro
+ * no te ven, así que los jinetes que tiraste no te suben la recompensa.
+ *
+ * ⚠️ LAS AGUJAS NO SON UNA PARED: son OBSTÁCULOS de los de siempre. Se siembran
+ * con el mismo sistema que las rocas del campo (`sembrarObstaculos`), así que
+ * chocarlas te frena igual que una piedra, los jinetes también se las comen y
+ * el dibujo se ordena solo por profundidad. Nada de esto es un caso aparte.
+ */
+export const BOSQUE = {
+  /** De acá para adentro el campo se llena de agujas. */
+  radio: 260,
+
+  /** Y de acá para adentro estás a salvo: es el corazón. */
+  corazon: 90,
+
+  /**
+   * 🐛 EL CLARO ES EL CORAZÓN, el mismo círculo y no dos.
+   *
+   * Al principio eran dos números distintos —se despejaba 46 y el claro se
+   * dibujaba a 90— y quedaban agujas plantadas ADENTRO del claro dibujado: el
+   * lugar al que llegabas no era el lugar que veías. Ahora donde termina la
+   * piedra es exactamente donde ganás.
+   */
+
+  /**
+   * CUÁNTAS AGUJAS POR CELDA DE 150. Son 7 por cada 100x100, que medido es lo
+   * que obliga a trenzar: con 4 se cruza derecho y no es un bosque, y con 11
+   * no se pasa a galope, o frenás o chocás siempre.
+   */
+  porCelda: 16,
+};
+
+/** ¿Este refugio es un paredón, un manchón de agujas, o un anillo? */
 export const esPared = (d) => d.forma === 'pared';
+export const esBosque = (d) => d.forma === 'bosque';
 
 /**
  * LAS COORDENADAS DE LA PARED. `u` es a lo largo del paredón (0 en el hueco) y
@@ -177,6 +221,9 @@ function desdeLaPared(d, u, v) {
  * frena.
  */
 export function chocaConElRefugio(d, x, y, esLey) {
+  // El bosque no frena a nadie: lo que te frena son sus agujas, que son
+  // obstáculos comunes y ya se resuelven con el choque de siempre.
+  if (esBosque(d)) return null;
   if (esPared(d)) return chocaConElParedon(d, x, y, esLey);
   const dx = x - d.x;
   const dy = (y - d.y) / ACHATA;
@@ -239,6 +286,10 @@ function chocaConElParedon(d, x, y, esLey) {
  * **adentro es del otro lado**: cruzaste el hueco.
  */
 export function adentroDelRefugio(d, x, y) {
+  if (esBosque(d)) {
+    // En el bosque se gana llegando al corazón: no hay puerta que cruzar.
+    return Math.hypot(x - d.x, (y - d.y) / ACHATA) < d.corazon;
+  }
   if (esPared(d)) {
     /**
      * EN LA QUEBRADA SE GANA AL FONDO DE LA GARGANTA, no en la boca. Es lo que
@@ -675,11 +726,19 @@ export function dibujarDeLejos(r, d, dia, escala) {
     }
     r.rect(x - 40 * s, y, 80 * s, 3 * s, c('#5d8391'));
   } else if (d.tipo === 'bosque') {
-    for (let i = 0; i < 4; i++) {
-      const ax = x - 34 * s + i * 20 * s;
-      const alto = (14 + ((i * 5) % 12)) * s;
-      r.rect(ax, y - alto, 16 * s, alto, c('#5e5346'));
-      r.rect(ax, y - alto, 16 * s, 2 * s, c('#8e8069'));
+    /**
+     * EL BOSQUE DE LEJOS: un montón de agujas altas y finas de distinto alto,
+     * no cuatro bloques. Lo que tenés que leer desde el otro lado del campo es
+     * "ahí hay un cerco de piedras donde meterse", y eso lo dice la silueta
+     * irregular, no el color.
+     */
+    for (let i = 0; i < 11; i++) {
+      const k = revolver(i * 977);
+      const ax = x - 60 * s + i * 11 * s;
+      const alto = (16 + (k % 26)) * s;
+      const ancho = (4 + (k % 3)) * s;
+      r.rect(ax, y - alto, ancho, alto, c(['#7b5442', '#6d4a3a', '#8a6049'][k % 3]));
+      r.rect(ax, y - alto, ancho, 2 * s, c('#a4806a'));
     }
   } else {
     /**
@@ -696,6 +755,44 @@ export function dibujarDeLejos(r, d, dia, escala) {
     r.rect(x + corte, y - alto, largo - corte, 2 * s, c('#8a7a66'));
     // El corte, negro: es lo que buscás desde lejos.
     r.rect(x - corte, y - alto * 0.8, corte * 2, alto * 0.8, c('#1d1712'));
+  }
+}
+
+/**
+ * 🗿 EL CLARO DEL CORAZÓN DEL BOSQUE: el hueco entre las agujas donde te metés.
+ *
+ * Es lo ÚNICO que se dibuja del bosque, porque las agujas son obstáculos
+ * comunes y ya se dibujan solas. Y tiene que verse: si el corazón no se
+ * distingue del resto del manchón, entrar no se siente como llegar.
+ */
+export function dibujarClaroDelBosque(r, d, dia) {
+  const c = (hex) => (dia ? hex : escalarColor(hex, 0.55));
+  const R = d.corazon;
+
+  r.ctx.save();
+  // La tierra pisada del claro, más clara que el campo.
+  r.ctx.fillStyle = c('#8a7355');
+  r.ctx.beginPath();
+  r.ctx.ellipse(d.x, d.y, R, R * ACHATA, 0, 0, Math.PI * 2);
+  r.ctx.fill();
+
+  // Y la sombra de las agujas cayendo adentro, que es por qué acá no te ven.
+  r.ctx.globalAlpha = 0.3;
+  r.ctx.fillStyle = '#000';
+  r.ctx.beginPath();
+  r.ctx.ellipse(d.x, d.y, R * 0.96, R * ACHATA * 0.96, 0, 0, Math.PI * 2);
+  r.ctx.fill();
+  r.ctx.globalAlpha = 1;
+  r.ctx.restore();
+
+  // Pedregullo suelto, lo que se fue cayendo de las agujas de alrededor.
+  for (let i = 0; i < 14; i++) {
+    const s = revolver(Math.round(d.x) + i * 131);
+    const a = (s % 628) / 100;
+    const rr = R * (0.25 + ((s >>> 9) % 70) / 100);
+    const px = d.x + Math.cos(a) * rr;
+    const py = d.y + Math.sin(a) * rr * ACHATA;
+    r.rect(px, py, 2 + (s % 3), 2, c('#6b5641'));
   }
 }
 

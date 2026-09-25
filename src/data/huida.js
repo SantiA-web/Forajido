@@ -498,6 +498,43 @@ export const HUIDA = {
     separacionInicial: 14,
 
     /**
+     * 🌊 NO ARRANCAN TODOS ENCIMA TUYO: VIENEN EN DOS OLAS.
+     *
+     * *(Santi: "que algunos jinetes empiecen considerablemente más lejos que
+     * otros y después se sumen a los más cercanos. Porque me pasó que en un
+     * asalto aparecí con 7 tipos detrás mío y me balearon entero y me sacaron
+     * todo el dinero")*
+     *
+     * Y tenía toda la razón: con `distanciaInicial 110` y 14 de separación,
+     * siete jinetes arrancaban entre 110 y 194 unidades — **todos adentro de
+     * la distancia de tiro desde el primer segundo**. Siete escopetas a la vez
+     * no es dificultad, es una emboscada que no se puede jugar.
+     *
+     * Ahora el PELOTÓN son los primeros tres y el resto arranca lejos y viene
+     * **al galope tendido a sumarse** (`apuro`), sin tirar mientras corre: el
+     * que viene a los pedales a alcanzar al grupo no va apuntando. Así la
+     * presión ENTRA DE A POCO en vez de estar toda desde el arranque.
+     *
+     * ⚠️ `segundaDesde` y `segundaSeparacion` tienen que dejar a todos adentro
+     * de `perdida` (520): un jinete que nace más lejos que eso se da por
+     * perdido en el primer cuadro y nunca existió.
+     */
+    olas: {
+      /** Cuántos arrancan encima tuyo. Los demás vienen de atrás. */
+      peloton: 3,
+
+      /** Y desde dónde arranca la segunda ola, y cuánto más atrás cada uno. */
+      segundaDesde: 280,
+      segundaSeparacion: 55,
+
+      /** Cuánto más rápido corren mientras vienen a sumarse. */
+      apuro: 1.18,
+
+      /** Dejan de apurarse (y vuelven a tirar) al llegar a esto de su carril. */
+      seSumaA: 40,
+    },
+
+    /**
      * A ESTA DISTANCIA LO PERDISTE. En campo abierto ya no alcanza con que
      * salga de la pantalla: con la lupa de 3 se ve casi medio kilómetro de
      * campo, así que se pierde cuando de verdad quedó lejos.

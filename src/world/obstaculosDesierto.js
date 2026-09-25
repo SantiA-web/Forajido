@@ -11,6 +11,13 @@
  */
 
 import { escalarColor } from './trenTresCuartos.js';
+
+/** El revuelto de siempre: forma fija para cada lugar, sin guardar nada. */
+function revolver(n) {
+  let t = (n * 374761393 + 668265263) | 0;
+  t = Math.imul(t ^ (t >>> 13), 1274126177);
+  return (t ^ (t >>> 16)) >>> 0;
+}
 export function dibujarObstaculoDesierto(r, ob, ox, radio, noche = false) {
   // De noche se apagan como todo lo demás (misma receta que el resto del arte).
   const c = (hex) => (noche ? escalarColor(hex, 0.4) : hex);
@@ -29,6 +36,44 @@ export function dibujarObstaculoDesierto(r, ob, ox, radio, noche = false) {
    * iluminadas arriba, y el cactus lleva la luz en el costado y en las puntas.
    * Las siluetas mantienen el ancho de siempre, que es lo que va con su radio.
    */
+  if (ob.tipo === 'aguja') {
+    /**
+     * 🗿 UNA AGUJA DEL BOSQUE DE PIEDRAS: alta, angosta y de base más ancha,
+     * como las de la quebrada pero sueltas. Lo que las hace un BOSQUE y no un
+     * montón de piedras es que son ALTAS: de lejos se lee un cerco irregular
+     * que te tapa, y eso es justo el premio del refugio (adentro no te ven).
+     *
+     * Cada una saca su forma de dónde está plantada, así que nunca titilan ni
+     * hace falta guardarles nada.
+     */
+    const s = revolver(Math.round(ob.x) * 7919 + Math.round(ob.y));
+    const alto = 26 + (s % 22);
+    const ancho = 7 + (s % 4);
+    const punta = Math.max(2, ancho - 3 - ((s >>> 4) % 2));
+    const medio = Math.round((ancho + punta) / 2);
+
+    // La sombra larga: es lo que las despega del suelo y dice que son altas.
+    r.ctx.globalAlpha = 0.26;
+    r.rect(ox - ancho + 1, ob.y + 1, ancho * 2 + 2, 3, '#000');
+    r.ctx.globalAlpha = 1;
+
+    // El cuerpo, afinándose hacia arriba en tres tramos.
+    const tonos = ['#7b5442', '#8a6049', '#6d4a3a'];
+    const base = tonos[s % tonos.length];
+    r.rect(ox - ancho, ob.y - Math.round(alto * 0.34), ancho * 2, Math.round(alto * 0.34) + 3, c(base));
+    r.rect(ox - medio, ob.y - Math.round(alto * 0.72), medio * 2, Math.round(alto * 0.4), c(base));
+    r.rect(ox - punta, ob.y - alto, punta * 2, Math.round(alto * 0.32) + 1, c(base));
+
+    // La chorreadura de siempre y el canto donde pega el sol.
+    r.rect(ox - punta + 1, ob.y - alto + 2, 1, Math.round(alto * 0.6), c('#5a3b2e'));
+    r.rect(ox - punta, ob.y - alto, punta * 2, 1, c('#b08e74'));
+    r.rect(ox + medio - 2, ob.y - Math.round(alto * 0.7), 2, Math.round(alto * 0.36), c('#5a3b2e'));
+
+    // Pedregullo al pie.
+    r.rect(ox - ancho - 1 + (s % 3), ob.y + 2, 3, 2, c('#66483a'));
+    return;
+  }
+
   if (ob.tipo === 'roca') {
     // La más grande y la única realmente sólida: 20 px de ancho.
     r.rect(ox - 10, ob.y - 4, 20, 8, c('#4e453e'));

@@ -13794,13 +13794,15 @@ vivo, 5) los compañeros.
 
 ### 🧺 Por vestir
 
-**La lista quedó vacía.** Lo que había acá —las bolsas, el aviso del que te
-apunta, el lazo, los dos refugios, la brújula, el panel, el fondo, el caballo
-del caído y tirar para atrás— está hecho, cada uno con su sección más abajo.
+**Casi vacía.** Las bolsas, el aviso del que te apunta, el lazo, los dos
+refugios, la brújula, el panel, el caballo del caído y tirar para atrás están
+hechos, cada uno con su sección más abajo.
 
-Lo único que sigue pendiente de la huida no es vestir sino contenido: **el tren
-a lo lejos**, que tendría que verse alejándose en el horizonte los primeros
-segundos de la corrida.
+Queda **una sola cosa, y es la más difícil de las que hubo: EL FONDO.**
+
+| Qué | Dónde | Cómo está |
+|---|---|---|
+| El fondo de la huida | `huidaScene.js`, `render` | Desierto liso: el mismo suelo sembrado en todas partes. Se probó con un horizonte y **no va en esta cámara** (ver la sección de abajo). El paisaje lo tiene que hacer el suelo: zonas de terreno distinto, cauces secos, algo que diga dónde estás |
 
 
 ---
@@ -15227,73 +15229,91 @@ hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
 📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
 cuadro con dibujo.
 
-#### 🏔️ LA ÚLTIMA VUELTA DE LA HUIDA: EL HORIZONTE, EL CABALLO SUELTO, EL BRAZO Y EL PANEL
+#### 🏔️ LA ÚLTIMA VUELTA DE LA HUIDA: EL FONDO, EL CABALLO SUELTO, EL BRAZO Y EL PANEL
 
-Las cuatro que quedaban, de la más grande a la más chica.
+**1. El fondo: ACÁ NO VA UN HORIZONTE, y se probó.** Se trajo la franja de cielo
+con montañas del galope —que ya estaba resuelta y la había elegido Santi— y
+quedó mal. Santi: *"lo siento ajeno al sector por dónde corren los caballos. Los
+cactus, piedras y esas cosas aparecen encima del fondo. La verdad que quedó
+horrible"*.
 
-**1. El horizonte.** La huida se jugaba en un vacío: suelo y nada más. Pero el
-galope ya tenía esto resuelto y lo eligió Santi en su momento —*"que se pueda
-ver el cielo y las montañas a lo lejos"*—, así que el dibujo se sacó de
-`rideScene.js` a **`world/horizonte.js`** y ahora **las dos escenas miran el
-mismo cielo**, no uno parecido. Es el mismo criterio con el que el suelo se
-siembra desde `world/desierto.js` en las dos: pasan en el mismo desierto.
+⚠️ **Y EL MOTIVO ES LA CÁMARA, no el dibujo.** Un horizonte dice "esto está
+lejísimos, más allá del suelo". El galope puede tenerlo porque su cámara está
+inclinada y **el campo termina abajo del horizonte**: hay un adentro y un
+afuera. La huida mira casi desde arriba y te sigue por campo abierto, así que
+arriba de la pantalla **no hay "lejos": hay más suelo**, con sus cactus y sus
+piedras. Cielo y suelo terminan ocupando el mismo lugar, y por eso las cosas del
+piso se ven "arriba del fondo" — están, literalmente.
 
-⚠️ **Y acá hay una diferencia con el galope que obliga a invertir el orden.**
-Allá el campo termina abajo del horizonte, así que el cielo puede taparlo todo.
-Acá la cámara te sigue en campo abierto: **si corrés al sur, los que te
-persiguen quedan arriba de la pantalla**, justo donde va la franja. Si el cielo
-se dibujara encima se los tragaría, así que va PRIMERO y el mundo le pasa por
-arriba. Cuesta que un jinete lejano se vea un instante recortado contra la
-montaña; lo otro era que desapareciera, y eso no se puede.
+No era un problema de ajuste: son dos espacios que no pueden convivir. Se sacó.
+En una vista así **el paisaje lo tiene que hacer el suelo**, y eso es lo que
+hacen los juegos con esta cámara: no dibujan cielo, le dan carácter al piso.
 
-🐛 **Y la franja del panel se comía el cielo entero.** El horizonte empezó en 26
-y el panel también mide 26: las montañas se apoyan en el borde de abajo y crecen
-para arriba, o sea que quedaban justo debajo del panel. En 38 se ven.
+🔁 Lo que SÍ quedó de la prueba: el cielo del galope vive ahora en
+`world/horizonte.js` en vez de adentro de `rideScene.js`. No cambió cómo se ve
+el galope, pero queda listo para cualquier escena de cámara inclinada.
 
 **2. El caballo del jinete caído.** Cuando bajabas a uno, el cuerpo quedaba en
 el suelo y **el animal se borraba del mundo en el mismo cuadro**, como si el
 jinete y su caballo fueran una sola cosa. Ahora queda suelto: abre para un
-costado —el susto lo saca de la fila—, afloja y se pierde a los seis segundos.
+costado, afloja y se pierde a los seis segundos.
 
-🔁 Y va **con la silla puesta**, que era lo primero que salió mal: al jinete lo
-bajaron de un tiro, así que el recado sigue ahí. La montura la dibujaba
-`dibujarJinete`, o sea que un caballo sin persona salía pelado; se sacó a
-`dibujarMontura` para que exista sin jinete.
+🔁 Y va **con la silla puesta**: al jinete lo bajaron de un tiro, así que el
+recado sigue ahí. La montura la dibujaba `dibujarJinete`, o sea que un caballo
+sin persona salía pelado; se sacó a `dibujarMontura` para que exista sin jinete.
 
-**3. Tirar para atrás.** Hasta ahora el jinete **no se daba vuelta ni un poco**:
-lo único que pasaba era que la mira crecía, así que el disparo no se veía salir
-de ningún lado.
+**3. El brazo del revólver sigue al mouse SIEMPRE.** Antes el jinete no se daba
+vuelta ni un poco: lo único que pasaba era que la mira crecía. La primera
+versión sacaba el brazo sólo en el momento del tiro y era peor que nada —el
+revólver aparecía y desaparecía de golpe—. Santi: *"debería acompañar en todo
+momento al mouse… y no lo digo solamente cuando mira hacia atrás, sino cuando
+mira hacia adelante o hacia los costados también"*. Ahora está siempre puesto, y
+**la mira deja de ser lo único que te dice a dónde apuntás**.
 
-⚠️ **GIRA EL BRAZO Y NO EL CUERPO, y se le avisó a Santi antes de hacerlo**,
-porque la fila de la lista pedía el torso girado y eso **contradice una decisión
-suya anterior**: *"hay veces que el caballo no cambia de dirección pero el
-personaje sí, entonces se ve raro"* — que es por lo que hoy la vista del jinete
-la manda el caballo. El brazo solo alcanza para que se entienda sin traer de
-vuelta lo que molestaba. Lo aprobó así.
+⚠️ **GIRA EL BRAZO Y NO EL CUERPO**, y se avisó antes de hacerlo: girar el torso
+contradice una decisión anterior de Santi —*"hay veces que el caballo no cambia
+de dirección pero el personaje sí, entonces se ve raro"*—, que es por lo que la
+vista del jinete la manda el caballo. El ángulo (`armaDir`) va en 16 pasos y
+achatado como la vista, porque cada figura se guarda dibujada.
 
-El ángulo (`armaDir`) va en **16 pasos** y achatado como la vista, porque cada
-figura se guarda dibujada: con el ángulo libre habría una figura nueva por
-cuadro.
+🐛 **Salió invisible dos veces, las dos porque algo lo tapaba.** Con el brazo en
+13 la mano caía ADENTRO del cuerpo apuntando al oeste (el torso mide 24 de
+ancho); con 17 sale de la silueta. Y apuntando al norte quedaba detrás del
+sombrero, porque el brazo se dibujaba dentro del torso y la cabeza va después:
+ahora, cuando la escena manda un ángulo, el brazo va **después de la cabeza**.
 
-🐛 **Dos veces salió invisible, y las dos por lo mismo: algo lo tapaba.**
-Primero el brazo medía 13 y **la mano caía adentro del cuerpo** apuntando al
-oeste (el torso mide 24 de ancho): el revólver existía y no se veía. Con 17 sale
-de la silueta. Y apuntando al norte quedaba **detrás del sombrero**, porque el
-brazo se dibujaba dentro del torso y la cabeza va después; ahora, cuando la
-escena manda un ángulo, el brazo se dibuja **después de la cabeza** — un brazo
-levantado pasa por delante de la cara, no por atrás.
+**4. El panel: no hay panel.** Se probaron dos franjas oscuras para apoyar el
+texto y sobraban. Santi: *"no quiero panel, pon que las letras blancas tengan un
+pequeño borde negro y listo"*. El borde ya lo tenía: `r.text` le pinta un halo
+negro de un punto en las ocho direcciones (`HALO`, en renderer.js). Alcanzó con
+sacar las franjas.
 
-**4. El panel.** Era texto suelto sobre el desierto: sobre una mancha clara
-—arena de día, una bolsa, un caballo bayo— el dinero y las balas se perdían
-justo cuando hacían falta. Ahora hay dos franjas oscuras transparentes, arriba
-siempre y abajo mientras están las teclas. No es un marco dibujado a propósito:
-en una persecución lo último que querés es que la pantalla se achique.
+#### 🐛 EL BANCO DE PRUEBAS APUNTABA A UN PUNTO FIJO — Y NO AVISABA
 
-📏 **15.000 cuadros** con teclas y mouse al azar repartidos entre la huida, el
-galope, el campamento, el pueblo, la tienda y el mapa: **0 errores**, 1,06 ms
-por cuadro. Tanda de 8 huidas con la vista en 426: 0 errores y los números en la
-banda de siempre. El galope se miró aparte, que es el que más riesgo corría por
-la mudanza del cielo.
+Buscando por qué el brazo no seguía al mouse en una prueba apareció algo peor.
+
+⚠️ **`mouseEnPantalla` PREFIERE `input.mouse.px/py`** —los píxeles del lienzo que
+pone el mouse de verdad— y sólo usa `x/y` si no existen. El banco
+(`banco-huida.js`) seteaba `x/y`. Si el puntero pasó alguna vez por el lienzo,
+`px` queda definido **y el piloto apunta siempre al mismo lugar**.
+
+Y no fallaba: las corridas terminaban bien, sin un error, con números de aspecto
+razonable. Medido con el mismo código, seis corridas de cada lado:
+
+| | Derribados por corrida | Plata perdida | Duración |
+|---|---|---|---|
+| Como estaba (puntería rota) | 2,17 | $1.067 | 28,8 s |
+| Con el arreglo | **4,50** | **$367** | **18,7 s** |
+
+O sea que el piloto bajaba **la mitad** de los jinetes y perdía **el triple** de
+plata. Los números de tandas de esta vuelta —plata perdida, derribados,
+duración— se midieron con un piloto que casi no podía tirar y **no valen**. Los
+de errores y milisegundos por cuadro sí: ésos no dependen de la puntería.
+
+El arreglo son dos líneas (`delete s.input.mouse.px/py` en `arrancar`), y la
+lección es la de siempre acá: **una herramienta de medición que falla callada es
+peor que una que se rompe**. El banco ya avisa cuando la pantalla es chica; le
+faltaba avisar de esto.
 
 #### ⏳ LA SEGUNDA VUELTA DE VESTIR: EL AVISO, EL LAZO Y LAS BOLSAS
 

@@ -65,20 +65,6 @@ export const HUIDA = {
    */
   mundo: {
     /**
-     * 🏔️ CUÁNTA FRANJA DE HORIZONTE SE VE, arriba de todo.
-     *
-     * 🐛 Empezó en 26 y **la franja del panel se la comía entera**: el panel
-     * también mide 26 y va encima, así que el cielo quedaba tapado justo donde
-     * están las montañas (que se apoyan en el borde de abajo y crecen para
-     * arriba). En 38 la cordillera queda por debajo del panel y se ve.
-     *
-     * ⚠️ NO ES SÓLO ADORNO: acá arriba pueden quedar los jinetes que te
-     * persiguen si corrés al sur, así que el mundo se dibuja ENCIMA del cielo
-     * (ver `render` en huidaScene.js). Cuanto más alta la franja, más rato se
-     * ve un jinete recortado contra la montaña — por eso no es más grande.
-     */
-    horizonte: 38,
-    /**
      * 🎲 DÓNDE CAEN LOS TRES, SORTEADO DE VERDAD *(Santi: "deberíamos hacer que
      * los puntos de llegada sean aleatorios sus ubicaciones, para que no
      * siempre se elija uno y no otro")*.

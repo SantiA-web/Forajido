@@ -43,8 +43,6 @@ import {
   chocaConElRefugio, adentroDelRefugio, esPared, esBosque, trozosDelParedon,
   puntoDeEntrada, dibujarClaroDelBosque, PAREDON, PARED, BOSQUE,
 } from '../world/destinos.js';
-import { dibujarHorizonte } from '../world/horizonte.js';
-import { escalarColor } from '../world/trenTresCuartos.js';
 
 /**
  * EN TRES CUARTOS, IR AL NORTE RINDE MENOS EN PANTALLA QUE IR AL ESTE: la
@@ -1668,33 +1666,23 @@ export function createHuidaScene(services) {
     r.clear(dia ? colors.desiertoDia : colors.desiertoNoche);
 
     /**
-     * 🏔️ EL HORIZONTE, arriba de todo. Es **el mismo cielo del galope**
-     * (`world/horizonte.js`), no uno parecido: las dos escenas pasan en el
-     * mismo desierto y dos cordilleras distintas se notarían. Hasta ahora la
-     * huida se jugaba en un vacío — suelo y nada más.
+     * 🐛 ACÁ NO VA UN HORIZONTE, Y SE PROBÓ. Se trajo la franja de cielo con
+     * montañas del galope y **quedó mal**, no por cómo estaba dibujada sino
+     * porque no puede estar acá *(Santi: "lo siento ajeno al sector por dónde
+     * corren los caballos. Los cactus, piedras y esas cosas aparecen encima del
+     * fondo. La verdad que quedó horrible")*.
      *
-     * ⚠️ Y ACÁ HAY UNA DIFERENCIA CON EL GALOPE que obliga a dibujarlo primero.
-     * Allá el campo termina abajo del horizonte, así que el cielo puede taparlo
-     * todo. Acá la cámara te sigue en campo abierto: **si corrés al sur, los
-     * que te persiguen quedan arriba de la pantalla**, justo donde va la
-     * franja. Si el cielo se dibujara encima, se los tragaría.
+     * ⚠️ EL MOTIVO ES LA CÁMARA. Un horizonte dice "esto está lejísimos, más
+     * allá del suelo". El galope puede tenerlo porque su cámara está inclinada
+     * y **el campo termina abajo del horizonte**: hay un adentro y un afuera.
+     * Acá la cámara mira casi desde arriba y te sigue por campo abierto, así
+     * que arriba de la pantalla no hay "lejos": hay más suelo, con sus cactus y
+     * sus piedras encima. Cielo y suelo quedan ocupando el mismo lugar, y por
+     * eso las cosas del piso se ven "arriba del fondo" — están, literalmente.
      *
-     * Por eso va ANTES que el mundo y el mundo le pasa por arriba. Cuesta que
-     * un jinete lejano se vea un instante contra la montaña; lo otro era que
-     * desapareciera, y eso sí no se puede.
+     * No es un problema de ajuste: son dos espacios que no pueden convivir.
+     * En una vista así el paisaje lo tiene que hacer **el suelo**, no el fondo.
      */
-    const hy = H.mundo.horizonte;
-    dibujarHorizonte(r, {
-      hy,
-      avance: yo.x,
-      dia,
-      C: colors.cielo,
-      tinte: (hex) => (dia ? hex : escalarColor(hex, 0.32)),
-      altoMax: hy,
-      cielo: dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
-        : [colors.cielo.nocheArriba, colors.cielo.nocheHorizonte],
-    });
-
     r.ctx.save();
     /**
      * LA CÁMARA TE SIGUE: el mundo se corre para que vos quedes en el medio.
@@ -1730,10 +1718,6 @@ export function createHuidaScene(services) {
     sembrarDesierto(r, {
       x0: camX, y0: camY, x1: camX + vista.w, y1: camY + vista.h,
       noche: !dia, colores: colors.cielo, grandes: () => false,
-      // Nada de pasto arriba del horizonte: el suelo se dibuja ENCIMA del
-      // cielo (ver el comentario de la franja), así que ahí quedaría flotando
-      // una mata en el aire. Los jinetes sí pasan: ésos tienen que verse.
-      saltar: (wx, wy) => wy < camY + hy,
     });
 
     // Lo que quedó tirado en el campo: los caídos y las bolsas.
@@ -1998,16 +1982,23 @@ export function createHuidaScene(services) {
      *
      * El ángulo va ACHATADO como la vista: si no, tirar al norte se dibujaría
      * mucho más vertical de lo que se ve.
+     *
+     * ⚠️ **EL BRAZO SIGUE AL MOUSE SIEMPRE, no sólo al disparar** *(pedido de
+     * Santi: "debería acompañar en todo momento al mouse… y no lo digo
+     * solamente cuando mira hacia atrás, sino cuando mira hacia adelante o
+     * hacia los costados también")*. La primera versión lo sacaba sólo en el
+     * momento del tiro y era peor que nada: el revólver aparecía y desaparecía
+     * de golpe. Con el brazo siempre puesto, **la mira deja de ser lo único que
+     * te dice a dónde estás apuntando**.
      */
-    const apuntando = input.mouse.down || yo.fireTimer > 0 || yo.fogonazo > 0;
     const a = haciaDondeApunto();
     const armaDir = Math.atan2(Math.sin(a) * PROFUNDIDAD, Math.cos(a));
 
     dibujarCaballo(yo, r, () => {
       const montura = dibujarAnimal(r, yo.x, yo.y, zancada, trote, 1, yo.pose, caballo.id, !dia);
       dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, yo.pose, 2, {
-        arma: apuntando || undefined,
-        armaDir: apuntando ? armaDir : undefined,
+        arma: true,
+        armaDir,
       }, montura);
       montura.adelante();
     });
@@ -2085,25 +2076,15 @@ export function createHuidaScene(services) {
     const centro = vista.w / 2;
 
     /**
-     * 🧾 DOS FRANJAS QUE APOYAN EL TEXTO. El panel era texto suelto sobre el
-     * desierto: sobre una mancha clara —la arena de día, una bolsa, un caballo
-     * bayo— el dinero y las balas se perdían justo cuando hacían falta.
+     * 🧾 ACÁ NO HAY PANEL, Y ES A PROPÓSITO *(Santi: "no quiero panel, pon que
+     * las letras blancas tengan un pequeño borde negro y listo")*. Se probaron
+     * dos franjas oscuras para apoyar el texto y sobraban: en una persecución
+     * lo último que querés es que la pantalla se achique.
      *
-     * Van oscuras y transparentes, no un marco dibujado: en una persecución lo
-     * último que querés es que la pantalla se achique. Lo que hacen es separar
-     * lo que leés de lo que jugás, nada más.
+     * El borde negro ya lo tiene todo el texto del juego: `r.text` le pinta un
+     * halo de un punto en las ocho direcciones (ver `HALO` en renderer.js). Por
+     * eso alcanza con no dibujar nada.
      */
-    const franja = (y, alto, alpha) => {
-      r.ctx.save();
-      r.ctx.globalAlpha = alpha;
-      r.rect(0, y, vista.w, alto, '#000');
-      r.ctx.restore();
-    };
-    franja(0, 26, 0.34);
-    r.ctx.save();
-    r.ctx.globalAlpha = 0.18;
-    r.rect(0, 26, vista.w, 1, '#c9a227');
-    r.ctx.restore();
 
     if (fin) {
       const texto = fin.como === 'limpio' ? T.huida.todosCaidos
@@ -2141,8 +2122,6 @@ export function createHuidaScene(services) {
     dibujarAguante(r);
 
     if (tiempo < 6 && !fin) {
-      // La de abajo sólo mientras están las teclas: después no hay qué apoyar.
-      franja(vista.h - 24, 24, 0.34 * Math.min(1, 6 - tiempo));
       r.text(T.huida.teclas[0], centro, vista.h - 17, colors.textDim);
       r.text(T.huida.teclas[1], centro, vista.h - 7, colors.textDim);
     }

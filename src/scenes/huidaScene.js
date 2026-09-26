@@ -1748,6 +1748,19 @@ export function createHuidaScene(services) {
     r.box(j.x, j.y + 7, 11, 2, '#000');
     r.ctx.globalAlpha = 1;
 
+    /**
+     * 🎯 EL AVISO DE QUE VA A TIRAR ES EL CUERPO, EN DOS TIEMPOS *(pedido de
+     * Santi: "algo más visual, como que el jinete agacha un poco la cabeza
+     * antes de disparar, simulando que está apuntando")*.
+     *
+     * Primera mitad del aviso: **levanta el revólver**. Segunda mitad: además
+     * **baja la cabeza sobre el caño**. El agache es el "ya va": ése es el
+     * momento del envión. Lo dibuja `dibujarJinete` con `apunta` (ver
+     * caballo.js); acá sólo se decide en qué tiempo está.
+     */
+    const apuntando = j.aimTimer <= 0 ? 0
+      : j.aimTimer > H.jinetes.apuntar * 0.5 ? 1 : 2;
+
     dibujarCaballo(j, r, () => {
       const montura = dibujarAnimal(r, j.x, j.y, zancada, trote, 1, pose, null, !dia);
       const rebote = Math.cos((zancada.t / T0 - 0.25) * Math.PI * 2) * 0.6;
@@ -1755,41 +1768,10 @@ export function createHuidaScene(services) {
         detalles: 'ley',
         destello: j.hitFlash > 0,
         estado: j.aimTimer > 0 ? 'alerta' : 'calma',
+        apunta: apuntando,
       }, montura);
       montura.adelante();
     });
-
-    if (j.aimTimer > 0) {
-      /**
-       * ⏳ EL AVISO ES UNA CUENTA ATRÁS *(pedido de Santi)*. Antes era una raya
-       * quieta y un "!" quieto: te decían que iba a tirar, pero no CUÁNDO, así
-       * que el segundo de aviso no servía para decidir nada. Ahora la raya se
-       * **enciende desde el revólver hacia vos** y la bala sale justo cuando la
-       * luz llega a la punta. El apagado de atrás se sigue viendo, que es lo
-       * que te deja medir cuánto falta.
-       */
-      const px = j.x + 6;
-      const py = j.y - 14;
-      const LARGO = 22;
-      const p = Math.max(0, Math.min(1, 1 - j.aimTimer / H.jinetes.apuntar));
-      const dx = Math.cos(j.aimDir), dy = Math.sin(j.aimDir) * PROFUNDIDAD;
-      // El riel apagado va en transparencia, no en un color oscuro: sobre este
-      // fondo casi negro un gris tostado se ve igual de encendido que la luz, y
-      // entonces la raya parece siempre llena y no se cuenta nada.
-      r.line(px, py, px + dx * LARGO, py + dy * LARGO, '#d8cdbb', 0.18);
-      r.line(px, py, px + dx * LARGO * p, py + dy * LARGO * p, '#f0dca8');
-      r.box(px + dx * LARGO * p, py + dy * LARGO * p, 1, 1, '#fff2c9');
-
-      /**
-       * Y el "!" late cada vez más rápido, de unos 3 parpadeos por segundo a
-       * unos 11 sobre el final. Es la misma cuenta contada de otra manera, para
-       * el que mira arriba del jinete y no la raya. En el último tercio se pone
-       * blanco: ése es el momento de usar el envión.
-       */
-      if (Math.sin(tiempo * (18 + p * 52)) > -0.2) {
-        r.text('!', j.x, j.y - 36 - p * 4, p > 0.66 ? '#fff2c9' : colors.enemyAlert);
-      }
-    }
 
     if (j.lazo || j.revolea > 0 || j.soga > 0) dibujarSuLazo(r, j);
   }

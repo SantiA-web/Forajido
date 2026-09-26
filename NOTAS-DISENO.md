@@ -15232,20 +15232,43 @@ cuadro con dibujo.
 
 Tres cosas que se dibujaban con lo mínimo y ya pedían lo suyo.
 
-**1. El aviso del que te apunta es una CUENTA ATRÁS.** Antes era una raya quieta
-y un `!` quieto: te decían *que* iba a tirar, pero no *cuándo*, así que el
-segundo de aviso (`apuntar`, 0,65 s) no servía para decidir nada. Ahora la raya
-se **enciende desde el revólver hacia vos** y la bala sale justo cuando la luz
-llega a la punta, con una cabecita blanca marcando dónde va. Y el `!` late cada
-vez más rápido —de unos 3 parpadeos por segundo a unos 11— y se pone blanco en
-el último tercio: es la misma cuenta contada de otra manera, para el que mira
-arriba del jinete y no la raya. **No se cambió ningún número de la pelea**: el
-aviso dura lo mismo que antes, sólo que ahora se puede usar.
+**1. El aviso del que te apunta es EL CUERPO DEL JINETE.** Primero se probó con
+una cuenta atrás dibujada: la raya se encendía desde el revólver y el `!` latía
+cada vez más rápido. Santi la vio y fue terminante — *"el aviso de disparo es
+pésimo y horrible. Yo haría algo más visual, como que el jinete agacha un poco
+la cabeza antes de disparar, simulando que está apuntando"*. Tenía razón: era
+información correcta dibujada como un cartel, encima de un juego que no tiene
+carteles en ningún otro lado.
 
-🐛 **El riel apagado tuvo que ir en transparencia, no en un color oscuro.**
-Primero se probó con un gris tostado (`#6b5f4c`), y sobre este fondo casi negro
-se veía **igual de encendido que la luz**: la raya parecía siempre llena y no se
-contaba nada. Con `alpha 0.18` del mismo color claro, la diferencia se lee.
+Se fueron **la raya y el `!`**. Ahora el jinete **se agacha a apuntar**, en dos
+tiempos dentro del mismo medio segundo de siempre: en la primera mitad baja un
+poco el tronco y **saca el revólver**, y en la segunda **se agacha del todo
+sobre el caño**. El agache grande es el "ya va": ése es el momento del envión.
+Lo único que se pierde es hacia dónde va el tiro, que mostraba la raya — y casi
+siempre es hacia vos. **No se cambió ningún número de la pelea**: el aviso dura
+lo mismo que antes.
+
+⚠️ **ESTO NO SE PUDO MEDIR, y se avisó antes de hacerlo.** El piloto del banco
+lee el `aimTimer` por adentro, no mira la pantalla: puede decir que no se rompió
+nada, pero no si el aviso **se entiende**. Un cuerpo que se agacha es más sutil
+que un `!` gritándote en la cara. Eso lo decide Santi jugando.
+
+🐛 **Y el primer intento no se veía de frente, que es la vista más común de la
+huida.** El agache se había hecho con `echado`, que es lo que ya inclina al
+jinete al galope… y la inclinación **sólo se dibuja de costado**: en figura.js,
+`lateral` vale 0 en la vista de frente, así que `ECHADO` quedaba multiplicado
+por cero. Un jinete que viene de frente apuntándote no cambiaba ni un píxel.
+
+La solución fue **agacharse, que no es lo mismo que echarse adelante**: bajar el
+tronco con los pies quietos, que se ve desde cualquier lado. Se aprovechó el
+mismo mecanismo con el que un guardia se asoma de un reparo (`asomado.dy`, que
+baja torso, cabeza y sombrero juntos), con un campo nuevo `agacha`.
+
+🐛 **Y por eso los dos tiempos no son "primero el arma, después la cabeza".**
+De frente el revólver apunta a la cámara y no es más que un punto: un tiempo
+marcado sólo con el arma era invisible justo donde más importa. Los dos tiempos
+son **dos alturas del agache** (2 y 5), y el arma se manda igual porque de
+costado y en diagonal sí cambia la silueta y ahí suma gratis.
 
 **2. El lazo, en sus dos estados.** El revoleo era un rectangulito dando vueltas
 sobre la cabeza; ahora es una **argolla de verdad**, un aro hueco que se ve

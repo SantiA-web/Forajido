@@ -402,7 +402,17 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
    * dibujo por dentro (`deformar`, en gente/dibujo.js): el mismo mecanismo con
    * el que la gente se tira adelante al trotar.
    */
-  const echado = Math.max(0, Math.min(3, Math.round(inclina * 1.5)));
+  /**
+   * 🎯 Y SE AGACHA A APUNTAR *(pedido de Santi: "algo más visual, como que el
+   * jinete agacha un poco la cabeza antes de disparar, simulando que está
+   * apuntando")*. `ropa.apunta` viene en dos tiempos: 1 es levantar el
+   * revólver, 2 es además bajar la cabeza sobre el caño. El segundo tiempo usa
+   * el escalón extra de `ECHADO` (ver figura.js), porque al galope el jinete YA
+   * está echado a fondo y sin ese escalón no habría a dónde agacharse.
+   */
+  const apunta = ropa.apunta || 0;
+  const echado = Math.max(0, Math.min(4,
+    Math.round(inclina * 1.5) + (apunta >= 2 ? 1 : 0)));
   const gira = -pose * 0.012;                // y se vuelca un poco hacia adentro
   const sx = x;
   const sy = asiento + ALTO_SENTADO;
@@ -441,6 +451,15 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
     abre: montura ? montura.flanco : 0,
     estado: ropa.estado,
     destello: ropa.destello,
+    /**
+     * Los DOS TIEMPOS son dos alturas del agache, no "primero el arma y
+     * después la cabeza": de frente el revólver apunta a la cámara y no es más
+     * que un punto, así que un tiempo marcado sólo con el arma no se vería en
+     * la vista más común de la huida. El arma se manda igual porque de costado
+     * y en diagonal sí cambia la silueta, y ahí suma gratis.
+     */
+    arma: apunta > 0,
+    agacha: apunta >= 2 ? 5 : apunta === 1 ? 2 : 0,
     panuelo: quien === 'jugador',
   });
 

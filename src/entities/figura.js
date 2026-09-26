@@ -169,11 +169,16 @@ function medidas(esc = 1) {
  * SE QUEDAN donde están, que es lo que pasa de verdad. Girando todo, las botas
  * se escapaban del estribo.
  *
- * Son cuatro pasos y no un número continuo porque cada figura se guarda
+ * Son cinco pasos y no un número continuo porque cada figura se guarda
  * dibujada (ver `armar`): con el ángulo libre habría una figura nueva por
- * cuadro. Cuatro pasos alcanzan para que se note, y son cuatro dibujos.
+ * cuadro. Cinco pasos alcanzan para que se note, y son cinco dibujos.
+ *
+ * Los cuatro primeros son el galope, del trote al galope tendido. **El quinto
+ * es el que se agacha a apuntar**: va más allá de lo que da el galope a fondo
+ * a propósito, porque el aviso de que te van a tirar tiene que salirse de lo
+ * que el jinete ya viene haciendo, si no no se nota que cambió algo.
  */
-const ECHADO = [0.12, 0.2, 0.28, 0.36];
+const ECHADO = [0.12, 0.2, 0.28, 0.36, 0.52];
 
 const guardados = new Map();
 /** Redondeo al punto de pantalla: si no, el dibujo queda borroso. */
@@ -277,7 +282,7 @@ export function dibujarPersona(r, f) {
    * la hoja). Los dos llegan redondeados a pasos, para no llenar la memoria de
    * figuras casi iguales.
    */
-  const echado = modo === 'montado' ? Math.max(0, Math.min(3, Math.round(f.echado || 0))) : 0;
+  const echado = modo === 'montado' ? Math.max(0, Math.min(4, Math.round(f.echado || 0))) : 0;
   const abre = modo === 'montado' ? Math.round(Math.max(0, Math.min(30, f.abre || 0)) / 2) * 2 : 0;
 
   const cart = ROPA[tipo] && ROPA[tipo].bandolera ? f.cartuchos : null;
@@ -285,9 +290,27 @@ export function dibujarPersona(r, f) {
     ? Math.max(0, Math.min(4, Math.round((cart.cargados / cart.total) * 4)))
     : null;
 
+  /**
+   * 🎯 AGACHARSE, QUE NO ES LO MISMO QUE ECHARSE ADELANTE. `echado` inclina el
+   * cuerpo y **de frente no se ve nada**, porque la inclinación se dibuja de
+   * costado (`lateral` vale 0 en la vista de frente). Agacharse, en cambio, es
+   * bajar el tronco con los pies quietos, y eso se ve desde cualquier lado.
+   *
+   * Se aprovecha el mismo mecanismo con el que un guardia se asoma de un
+   * reparo: `asomado.dy` baja torso, cabeza y sombrero juntos y deja las
+   * piernas donde están. Va en la medida de adentro del dibujo, donde 4 es un
+   * punto del mundo.
+   */
+  const agacha = Math.max(0, Math.min(6, Math.round(f.agacha || 0)));
+
   // El dibujo se arma mirando a la derecha: si va en espejo, asomarse para la
   // derecha del mundo es asomarse para la izquierda del dibujo.
-  const asomadoDibujo = asomado ? { dx: espejo ? -asomado.dx : asomado.dx, dy: asomado.dy } : null;
+  const asomadoDibujo = asomado || agacha
+    ? {
+      dx: asomado ? (espejo ? -asomado.dx : asomado.dx) : 0,
+      dy: (asomado ? asomado.dy : 0) + agacha,
+    }
+    : null;
 
   const esc = f.escala || 1;
   const M = medidas(esc);

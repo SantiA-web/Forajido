@@ -63,7 +63,7 @@ import {
 import { updateBullets } from '../systems/combat.js';
 import { updateExplosives } from '../systems/explosives.js';
 import { createAlertSystem } from '../systems/alert.js';
-import { applyRaidResult, gameState } from '../state/gameState.js';
+import { applyRaidResult, gameState, numero } from '../state/gameState.js';
 
 export function createRaidScene(services) {
   const { renderer, input, bus, rng, scenes, hud, audio } = services;
@@ -2897,7 +2897,7 @@ export function createRaidScene(services) {
     // `pa.botin`: el pasajero RICO lleva lo suyo (Fase 5, data/paquetes.js).
     // Cualquier otro cae en los números de siempre.
     const rango = pa.botin || { min: c.robMin, max: c.robMax };
-    const valor = rng.int(rango.min, rango.max);
+    const valor = numero(rng.int(rango.min, rango.max), 'el botin de un pasajero');
     collected += valor;
     amenazados++;
     amenazado(pa);
@@ -3337,7 +3337,7 @@ export function createRaidScene(services) {
       if (lugar) l.objeto.forma = [lugar.w, lugar.h];
       objetos.push(l.objeto);
     } else {
-      collected += l.value;
+      collected += numero(l.value, 'el valor de un botin levantado');
     }
 
     /**
@@ -3437,7 +3437,7 @@ export function createRaidScene(services) {
   function goToResults() {
     const leftBehind = loot
       .filter((l) => !l.taken)
-      .reduce((sum, l) => sum + l.value, 0);
+      .reduce((sum, l) => sum + numero(l.value, 'el valor de un botin sin levantar'), 0);
 
     // Trabajo limpio: escapar sin que suene la alarma paga el doble. Es lo que
     // hace que jugar callado compita con reventar la caja fuerte a los tiros.

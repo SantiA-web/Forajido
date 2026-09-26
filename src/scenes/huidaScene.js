@@ -31,7 +31,7 @@ import { CONFIG } from '../data/config.js';
 import { HUIDA as H } from '../data/huida.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { caballoActual, HORSES, esperaDelImpulso, APROXIMACION as A } from '../data/horse.js';
-import { applyRaidResult, recompensaTapada, gameState } from '../state/gameState.js';
+import { applyRaidResult, recompensaTapada, gameState, numero } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
@@ -1432,7 +1432,8 @@ export function createHuidaScene(services) {
      * que va neto es la plata con la que te vas.
      */
     const premio = cobrarElPremio();
-    summary.money = Math.max(0, (summary.money || 0) - perdido + premio.plata);
+    summary.money = Math.max(0, numero(summary.money || 0, 'la plata con la que entraste a la huida')
+      - numero(perdido, 'las bolsas que soltaste') + premio.plata);
     summary.huida = {
       jinetes: jinetes.length, derribados, tirados, bolsas: soltadas, perdido,
       // Cómo terminó: 'llegaste' (a un refugio), 'limpio' (no quedó ninguno) o

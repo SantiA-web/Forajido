@@ -23,7 +23,7 @@
 
 import { CONFIG } from '../data/config.js';
 import { INTERIORES, PARED_ALTO } from '../data/interiors.js';
-import { gameState } from '../state/gameState.js';
+import { gameState, numero } from '../state/gameState.js';
 import { crearMenu } from '../engine/menu.js';
 import { tasarLote } from '../data/perista.js';
 import { T } from '../text/es.js';
@@ -192,7 +192,7 @@ export function createInteriorScene(services) {
     }
 
     const t = tasarLote(objetos, gameState.honor);
-    gameState.money += t.total;
+    gameState.money += numero(t.total, 'lo que te paga el perista');
     // `length = 0` y no una lista nueva: es el mismo array que mira el resto
     // del juego, igual que los arrays del mundo en el asalto.
     objetos.length = 0;

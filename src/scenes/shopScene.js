@@ -33,7 +33,7 @@
 
 import { CONFIG } from '../data/config.js';
 import { TIENDAS } from '../data/tienda.js';
-import { gameState } from '../state/gameState.js';
+import { gameState, numero } from '../state/gameState.js';
 import { T } from '../text/es.js';
 
 /**
@@ -144,7 +144,15 @@ export function createShopScene(services) {
     const datos = item(sel);
     if (esTuyo(sel)) { decir(T.tienda.yaEsTuyo); audio.play('cover'); return; }
 
-    const precio = def.precio(datos);
+    /**
+     * 🐛 EL PRECIO SE VALIDA ANTES DE COMPARARLO.
+     *
+     * `gameState.money < precio` da **falso** cuando `precio` es `NaN`, o sea
+     * que una compra con el precio roto no se frenaba: pasaba, restaba `NaN` y
+     * te dejaba la partida en `$NaN` para siempre. Es una de las puertas por
+     * las que podía entrar el bug del cartel del campamento.
+     */
+    const precio = numero(def.precio(datos), `el precio de "${sel}"`);
     if (gameState.money < precio) {
       decir(T.tienda.faltaPlata(precio - gameState.money));
       audio.play('hitWall');

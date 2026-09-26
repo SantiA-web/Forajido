@@ -126,11 +126,40 @@ export function resetGame() {
  * Aplica el resultado de un asalto al estado del mundo.
  * Acá es donde, más adelante, van a engancharse fama, recompensa y honor.
  */
+/**
+ * 🐛 UN NÚMERO DE VERDAD, O SE AVISA Y SE CUENTA COMO 0.
+ *
+ * *(Santi vio un `$NaN` en el cartel del campamento hace varias sesiones y
+ * nunca se pudo reproducir.)*
+ *
+ * ⚠️ LO QUE HACE GRAVE AL BUG NO ES DE DÓNDE SALE, ES DÓNDE CAE.
+ * `gameState.money` es un ACUMULADOR: un solo `NaN` que entre UNA vez deja la
+ * partida con `$NaN` **para siempre**, porque a partir de ahí toda cuenta que
+ * lo toque también da `NaN`. Y cuando lo ves, el asalto que lo causó ya pasó y
+ * no queda ni rastro de cuál campo vino mal — por eso era imposible de
+ * encontrar.
+ *
+ * Así que se corta la cadena **en el único lugar donde el daño se vuelve
+ * permanente**, y de paso queda escrito en la consola (F12) QUÉ campo llegó
+ * mal, que es lo que faltaba para poder cazarlo.
+ *
+ * No se tapa el error: se avisa fuerte y se sigue jugando.
+ */
+export function numero(valor, deQue) {
+  if (Number.isFinite(valor)) return valor;
+  console.error(
+    `[Forajido] "${deQue}" llegó como ${valor} en vez de un número. `
+    + 'Se cuenta como 0 para no dejar la partida en $NaN. '
+    + 'Si ves esto, copiá esta línea: es el bug del $NaN.'
+  );
+  return 0;
+}
+
 export function applyRaidResult(summary) {
   gameState.raidCount += 1;
   gameState.stats.raids += 1;
-  gameState.stats.kills += summary.kills;
-  gameState.stats.civilians += summary.civilians || 0;
+  gameState.stats.kills += numero(summary.kills, 'summary.kills');
+  gameState.stats.civilians += numero(summary.civilians || 0, 'summary.civilians');
 
   /**
    * `summary.money` ya no es sólo "lo que gané si escapé": desde el rescate
@@ -139,7 +168,7 @@ export function applyRaidResult(summary) {
    * agarraron lejos del caballo, el rescate si estabas cerca, o el botín
    * entero (con los bonos) si escapaste.
    */
-  gameState.money += summary.money;
+  gameState.money += numero(summary.money, 'summary.money');
 
   /**
    * LA MERCADERÍA VA AL INVENTARIO, NO AL BOLSILLO (ver data/objetos.js).
@@ -159,8 +188,9 @@ export function applyRaidResult(summary) {
 
   if (summary.outcome === 'escaped') {
     gameState.stats.escapes += 1;
-    if (summary.money > gameState.stats.bestLoot) {
-      gameState.stats.bestLoot = summary.money;
+    const ganado = numero(summary.money, 'summary.money');
+    if (ganado > gameState.stats.bestLoot) {
+      gameState.stats.bestLoot = ganado;
     }
   } else {
     gameState.stats.captures += 1;
@@ -178,12 +208,12 @@ export function applyRaidResult(summary) {
   // Se guarda en el summary (no sólo en gameState.bounty) para que la
   // pantalla de resultados pueda mostrar cuánto subió ESTE asalto sin
   // duplicar la fórmula.
-  summary.bountyGain = bountyDelta(summary);
+  summary.bountyGain = numero(bountyDelta(summary), 'la recompensa del asalto');
   gameState.bounty += summary.bountyGain;
 
   // Mismo patrón que `bountyGain`: se guarda en el summary para que la
   // pantalla lo muestre sin repetir la cuenta.
-  summary.honorGain = honorDelta(summary);
+  summary.honorGain = numero(honorDelta(summary), 'el honor del asalto');
   gameState.honor += summary.honorGain;
 
   aplicarPremioDelJefe(summary);
@@ -329,7 +359,7 @@ function bountyDelta(summary) {
      * el precio a tu cabeza.
      */
     summary.bountyAhorrado = recompensaTapada(summary);
-    const vistos = Math.max(0, summary.kills - (summary.killsSinTestigos || 0));
+    const vistos = Math.max(0, numero(summary.kills, 'summary.kills') - (summary.killsSinTestigos || 0));
     delta += (summary.civilians || 0) * pesoCivil
       + vistos * pesoGuardia
       + (summary.amenazados || 0) * pesoAmenaza;

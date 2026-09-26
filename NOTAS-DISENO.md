@@ -15198,6 +15198,47 @@ quedar detrás—. De los 173 bloques, en pantalla entran unos 40.
 
 ---
 
+#### 🐛 EL `$NaN` DEL CAMPAMENTO: NO SE ARREGLA DÓNDE SALE, SE ARREGLA DÓNDE CAE
+
+Santi lo vio hace varias sesiones y nunca se pudo reproducir. Buscar la línea
+culpable era el camino equivocado, y por eso no aparecía nunca:
+
+⚠️ **`gameState.money` es un ACUMULADOR.** Un solo `NaN` que entre UNA vez deja
+la partida en `$NaN` **para siempre**, porque a partir de ahí toda cuenta que lo
+toque también da `NaN`. Y cuando lo ves, el asalto que lo causó ya pasó y no
+queda ni rastro de qué campo vino mal.
+
+Así que se cortó la cadena **en los cinco lugares donde el daño se vuelve
+permanente** — los cinco que escriben plata:
+
+| Dónde | Qué se cuida ahora |
+|---|---|
+| `applyRaidResult` | `money`, `kills`, la recompensa y el honor |
+| El botín del asalto | lo que afloja un pasajero, el valor de cada botín levantado y el de los que quedaron |
+| La huida | la plata con la que entraste y las bolsas que soltaste |
+| La tienda | el precio de lo que comprás |
+| El perista | lo que te paga por el lote |
+
+Todos pasan por `numero(valor, deQue)`: si no es un número **avisa en la consola
+(F12) diciendo QUÉ campo llegó mal** y lo cuenta como 0. No tapa el error — lo
+hace ruidoso y deja de ser permanente.
+
+🕳️ **Y de paso apareció un agujero de verdad en la tienda**: `gameState.money <
+precio` da **falso** cuando `precio` es `NaN`, así que una compra con el precio
+roto **no se frenaba**: pasaba, restaba `NaN` y dejaba la partida arruinada en
+silencio. Hoy ninguno de los seis artículos tiene el precio roto (se verificó
+uno por uno), pero la puerta estaba abierta.
+
+📏 Probado: un resumen envenenado a propósito (`money: undefined`,
+`kills: undefined`) deja la plata, la recompensa y las muertes **en números** y
+escribe cuatro avisos con el nombre del campo. Un asalto normal de $850 suma
+exactamente $850 y no escribe ninguno. Y las diez escenas se abren y se dibujan
+sin un solo error.
+
+⚠️ **Lo que NO se sabe todavía:** de dónde salió el `NaN` original. Quedó
+cerrado que pueda arruinar una partida, y queda escrito para que se delate solo
+la próxima vez.
+
 #### 🗿 EL BOSQUE DE PIEDRAS: DE ANILLO A MANCHÓN DE AGUJAS
 
 Era un aro de peñascos con una puerta de 66 grados — **la misma forma que tenía

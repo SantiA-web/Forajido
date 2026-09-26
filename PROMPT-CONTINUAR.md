@@ -134,8 +134,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
 
 ## Pendientes sueltos
 
-- El **`$NaN` en el HUD del campamento**, visto hace varias sesiones y todavía
-  sin mirar.
+- El **`$NaN` en el HUD del campamento**: ya no puede quedar pegado (ver
+  `numero()` en `state/gameState.js`). **Si vuelve a aparecer, la consola (F12)
+  dice qué campo llegó mal** — esa línea es lo que falta para cerrarlo del todo.
 - La **cantina** (contratar compañeros) sigue sin existir.
 - El precio del hacha (900) sigue sin confirmar: el bosque no existe.
 - `alertaEnPuerta` (systems/ai.js) sigue sin que nadie la llame: candidata a

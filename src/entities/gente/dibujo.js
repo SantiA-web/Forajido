@@ -463,3 +463,60 @@ export function apuntar(L, R, hombro, mano, dir, largo) {
   tramo(L, tambor, fin, 1.2, '#4a443e');
   L.rect(fin[0], fin[1], 1, 1, '#8a8278');
 }
+
+/**
+ * 🔫 EL RIFLE, AGARRADO CON LAS DOS MANOS. Es `apuntar` pero para un arma
+ * larga: la mano de atrás en el gatillo, la de adelante en la caña, y un brazo
+ * saliendo del hombro hacia cada una.
+ *
+ * ⚠️ **VA ACÁ ADENTRO Y NO DIBUJADO ENCIMA DEL JINETE**, y eso es todo el
+ * asunto. El primer intento lo pintaba en la escena, sobre el muñeco, con dos
+ * cuadraditos color piel haciendo de manos mientras los brazos de verdad
+ * seguían en las riendas. Santi: *"el rifle se ve horripilante, parece que está
+ * levitando junto al guardia. No parece que el guardia lo esté agarrando"*.
+ * Tenía razón, y la razón es estructural: un fierro que una persona sostiene
+ * tiene que salir de los mismos brazos que el resto del cuerpo. Pintado encima
+ * se va a ver pegado siempre, por bien que esté dibujado.
+ *
+ * Funcionó con el lazo porque una soga puede colgar; un rifle, no.
+ *
+ * El orden importa: primero el brazo de atrás (queda debajo), después el arma,
+ * y **el brazo de adelante encima de todo** — ése es el que se lee agarrando.
+ */
+export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano, culata = 5) {
+  const [M0, ML, MS] = R.manga;
+  const [nx, ny] = dir;
+  const punto = (p, d) => [p[0] + nx * d, p[1] + ny * d];
+
+  tramo(L, [hombroT[0], hombroT[1] + 1], [manoT[0], manoT[1] + 1], 3, MS);
+  tramo(L, hombroT, manoT, 2.6, M0);
+
+  /**
+   * ⚠️ VA CLARO, Y NO POR GUSTO. El caballo es marrón oscuro, el desierto de
+   * noche también, y **el pescuezo del animal se dibuja DESPUÉS del jinete**
+   * (`montura.adelante()`), así que el arma compite con un fondo oscuro que
+   * encima la tapa en parte. Con la madera y el fierro en sus tonos reales el
+   * rifle desaparecía: no es un arma realista, es un arma que se ve.
+   */
+  tramo(L, manoT, punto(manoT, -culata), 3.2, CULATA_L);
+  tramo(L, manoT, punto(manoT, -culata * 0.55), 1.1, '#b08d5c');
+
+  // La caja entre las dos manos, y el caño para adelante.
+  tramo(L, manoT, manoF, 2.4, '#4a443e');
+  const boca = punto(manoF, cano);
+  if (cano <= 3) {
+    // Apuntando a la cámara: se ve la boca, no el caño.
+    L.elipse(boca[0], boca[1], 2.2, 2.2, '#6b6258');
+    L.rect(Math.round(boca[0]), Math.round(boca[1]), 1, 1, NEGRO);
+  } else {
+    tramo(L, manoF, boca, 1.6, '#9a9288');
+    tramo(L, manoF, punto(manoF, cano * 0.7), 0.8, '#c4bcb0');
+    L.rect(Math.round(boca[0]), Math.round(boca[1]), 1, 1, '#e0d8cc');
+  }
+
+  tramo(L, [hombroF[0], hombroF[1] + 1], [manoF[0], manoF[1] + 1], 3, MS);
+  tramo(L, hombroF, manoF, 2.6, M0);
+  L.rect(Math.round((hombroF[0] + manoF[0]) / 2), Math.round((hombroF[1] + manoF[1]) / 2) - 1, 2, 1, ML);
+  L.elipse(manoT[0], manoT[1], 2, 2, PIEL);
+  L.elipse(manoF[0], manoF[1], 2, 2, PIEL);
+}

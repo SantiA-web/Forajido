@@ -7,7 +7,7 @@
  * una tabla.
  */
 import {
-  ROPA, tono, mover, tramo, apuntar, sombreroLado,
+  ROPA, tono, mover, tramo, apuntar, rifle, sombreroLado,
   OJO_B, PIEL, PIEL_O, PIEL_S, CAM, CAM_L, CAM_S, PAN_R, PAN_RL, PAN_RS,
   BOTA, BOTA_L, ESPUELA, CINTO, FUNDA, CULATA, CULATA_L, LATON, BLANCA, CORBATA,
 } from './dibujo.js';
@@ -251,6 +251,18 @@ export function lado(L, o = {}) {
   if (o.manosArriba) {
     tramo(U, [24, 33], [22, 19], 2.6, M0);
     U.elipse(22, 17, 2.5, 2.5, PIEL);
+  } else if (o.arma === 'rifle') {
+    // Cruzado sobre las piernas, apuntando un poco para arriba: derecho se
+    // hundía entero detrás del pescuezo del caballo.
+    rifle(U, R, [23, 35], [21, 47], [26, 35], [30, 45], [0.97, -0.24], 8);
+  } else if (o.arma === 'rifleListo') {
+    /**
+     * Al hombro: la culata contra el hombro y la cara sobre la caja. Va **a la
+     * altura del mentón** (y 33) y no del pecho: más abajo lo tapa el pescuezo
+     * del animal, que se dibuja después. Ocho unidades de diferencia con la
+     * pose cruzada — eso es el aviso.
+     */
+    rifle(U, R, [24, 34], [28, 33], [25, 35], [36, 33], [1, 0], 9);
   } else if (o.arma) {
     apuntar(U, R, [24, 34], [37, 38], [1, 0], 9);
   } else {

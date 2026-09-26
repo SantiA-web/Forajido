@@ -457,12 +457,7 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
     abre: montura ? montura.flanco : 0,
     estado: ropa.estado,
     destello: ropa.destello,
-    /**
-     * Las manos quedan en las riendas aunque esté apuntando: **el rifle lo
-     * dibuja la escena encima**, con sus propias manos agarrándolo. Si acá se
-     * le pusiera además el revólver en la mano, se le verían dos armas.
-     */
-    arma: !!ropa.arma,
+    arma: ropa.arma,
     agacha: apunta >= 2 ? 5 : apunta === 1 ? 2 : 0,
     panuelo: quien === 'jugador',
   });

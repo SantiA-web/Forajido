@@ -264,7 +264,13 @@ export function dibujarPersona(r, f) {
     }
   }
   const estado = f.estado && f.estado !== 'calma' ? f.estado : undefined;
-  const arma = !!f.arma;
+  /**
+   * `arma` es `true` para el revólver de siempre, o el nombre de la pose de
+   * rifle (`'rifle'` cruzado, `'rifleListo'` encarándote). Las tres se guardan
+   * como dibujos distintos, que son tres por vista y por tipo de gente: sólo
+   * las usa la ley a caballo de la huida.
+   */
+  const arma = f.arma === 'rifle' || f.arma === 'rifleListo' ? f.arma : !!f.arma;
   const manos = !!f.manosArriba;
   const mochila = Math.min(4, Math.round(f.mochila || 0));
   /**
@@ -314,7 +320,7 @@ export function dibujarPersona(r, f) {
 
   const esc = f.escala || 1;
   const M = medidas(esc);
-  const clave = [tipo, nombre, g, modo, cuadro, estado, arma ? 'a' : '', manos ? 'm' : '', mochila,
+  const clave = [tipo, nombre, g, modo, cuadro, estado, arma === true ? 'a' : (arma || ''), manos ? 'm' : '', mochila,
     f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : '', esc,
     cartuchos == null ? '' : 'c' + cartuchos,
     modo === 'montado' ? 'e' + echado + 'a' + abre : ''].join('|');

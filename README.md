@@ -1754,14 +1754,14 @@ soltaste casi toda la plata.
   agranda** —hasta 1,5 veces derecho hacia atrás— y, como no ves adelante,
   **el caballo se tuerce solo** cada tanto, un segundo, para arriba o para
   abajo. Corregilo con `W/S` o te comés una piedra.
-- **Los jinetes de la ley llevan RIFLE**, y se les ve siempre: cruzado bajo
-  sobre los muslos mientras galopan. Es lo que explica que te tiren desde
-  cualquier distancia.
-- Antes de tirar, cada jinete **avisa con el arma**: se frena, **levanta el
-  rifle medio cuerpo** y gira hasta encararte, agachándose detrás. El fierro
-  sube en medio segundo y el tiro sale de la boca del caño, así que se ve venir
-  de lejos y desde cualquier lado. El tiro va hacia donde estabas cuando empezó
-  a apuntar, así que moverte en ese medio segundo es esquivarlo.
+- **Los jinetes de la ley llevan RIFLE**, y se les ve siempre: cruzado sobre las
+  piernas mientras galopan, agarrado con las dos manos. Es lo que explica que te
+  tiren desde cualquier distancia.
+- Antes de tirar, cada jinete **avisa con el arma**: se frena y **se lleva el
+  rifle a la cara**, encarándote, agachándose detrás. El arma pasa de las
+  piernas a la altura del mentón en medio segundo, así que se ve venir de lejos
+  y desde cualquier lado. El tiro va hacia donde estabas cuando empezó a
+  apuntar, así que moverte en ese medio segundo es esquivarlo.
 - **Tiran desde cualquier distancia y la bala vuela a 380** (tu Colt, a 330).
   No hay un tope de alcance: el límite es cuándo dejan de seguirte (520). De
   lejos el pulso se les abre —a 450 unidades el abanico es el doble— así que

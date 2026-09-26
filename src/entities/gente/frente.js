@@ -6,7 +6,7 @@
  * en espejo, y eso lo resuelve `entities/figura.js` al estampar.
  */
 import {
-  ROPA, tono, mover, corrido, apuntar,
+  ROPA, tono, mover, corrido, apuntar, rifle,
   OJO_B, PIEL, PIEL_S, CAM, CAM_L, CAM_S, PAN_R, PAN_RL, PAN_RS,
   BOTA, BOTA_L, ESPUELA, CINTO, FUNDA, CULATA, CULATA_L, LATON, BLANCA, CORBATA,
 } from './dibujo.js';
@@ -266,8 +266,15 @@ function torsoFrente(L, R, o, g, f) {
   const jinete = o.postura === 'montado';
   const mI = jinete ? -10 : f.mI, mD = jinete ? -10 : f.mD;
   if (R.capa) capa(L, R.capa, f, false);
-  // Los brazos: el de la izquierda entero; el otro, girado, casi tapado.
-  if (!o.manosArriba) {
+  /**
+   * Los brazos: el de la izquierda entero; el otro, girado, casi tapado.
+   *
+   * ⚠️ Con el rifle no se dibuja ninguno de los dos acá: los pone `rifle()`,
+   * que los lleva a las manos que agarran el arma. Si se dibujaran igual, el
+   * jinete tendría dos brazos izquierdos — uno colgando y otro en la caña.
+   */
+  const conRifle = o.arma === 'rifle' || o.arma === 'rifleListo';
+  if (!o.manosArriba && !conRifle) {
     L.poly([[9 + g, 33], [14 + g, 32], [14 + g, 53 + mI], [9 + g, 54 + mI]], M0);
     L.rect(10 + g, 34, 3, 1, ML); L.rect(11 + g, 38, 1, 8 + Math.min(0, mI), MS);
   }
@@ -307,6 +314,7 @@ function torsoFrente(L, R, o, g, f) {
   // Una mano que sube viene hacia adelante: se ve un poco más grande.
   const mano = (x, m, c) => L.elipse(x, 56 + m, m <= -4 ? 2.5 : 2, 3, c);
   if (o.manosArriba) brazosArriba(L, R, g);
+  else if (conRifle) { /* las dos manos las pone `rifle()`, sobre el arma */ }
   else if (jinete && !o.arma) {
     // Los antebrazos, cerrándose hacia adelante, y las dos manos a las riendas.
     L.poly([[11 + g, 43], [15 + g, 43], [21, 48], [18, 51]], M0);
@@ -328,7 +336,23 @@ function torsoFrente(L, R, o, g, f) {
   } else if (R.cuello === 'corbata') L.rect(19 + d, 30, 11, 2, BLANCA);
   else L.rect(18 + d, 30, 13, 3, CS);
   // Apuntando: de frente el caño viene hacia la cámara; girado, en diagonal.
-  if (o.arma) {
+  if (o.arma === 'rifle') {
+    // Cruzado sobre las piernas: de frente se ve el arma de costado, o sea una
+    // barra que cruza el cuerpo entero. Es la pose que mejor se lee de todas.
+    rifle(L, R, [12 + g, 35], [17, 47], [35 - g, 35], [29, 45], [0.97, -0.24], 8);
+  } else if (o.arma === 'rifleListo') {
+    /**
+     * Encarándote, el rifle va **en diagonal**, del hombro derecho para abajo y
+     * para afuera, con la boca saliéndose de la silueta. Dos razones:
+     *
+     * 1. Lo fiel sería apuntarlo a la cámara, pero de frente un caño visto de
+     *    punta no es más que un punto.
+     * 2. Horizontal tampoco servía: **la pose cruzada ya es horizontal**, así
+     *    que las dos se veían igual y el aviso no avisaba nada. Lo que se lee
+     *    es el CAMBIO de ángulo, no el arma.
+     */
+    rifle(L, R, [33 - g, 34], [27, 34], [13 + g, 35], [15, 40], [-0.89, 0.45], 10);
+  } else if (o.arma) {
     if (g) apuntar(L, R, [33, 34], [40, 44], [0.7, 0.7], 6);
     else apuntar(L, R, [34, 34], [30, 44], [0, 1], 3);
   }
@@ -391,7 +415,9 @@ export function espalda(L, o = {}) {
    */
   const jinete = o.postura === 'montado';
   const mI = jinete ? -10 : cuadro.mI, mD = jinete ? -10 : cuadro.mD;
-  if (!o.manosArriba) {
+  // Con el rifle los dos brazos los pone `rifle()`: ver la nota en `torsoFrente`.
+  const conRifle = o.arma === 'rifle' || o.arma === 'rifleListo';
+  if (!o.manosArriba && !conRifle) {
     if (g) U.poly([[12, 34], [15, 33], [15, 52 + mI], [12, 53 + mI]], MS);
     else U.poly([[9, 33], [14, 32], [14, 53 + mI], [9, 54 + mI]], MS);
     if (!o.arma) U.poly([[34 - g, 32], [39 - g, 33], [39 - g, 54 + mD], [34 - g, 53 + mD]], M0);
@@ -409,6 +435,7 @@ export function espalda(L, o = {}) {
     U.poly([[12 + g, 49], [16 + g, 49], [16 + g, 55], [11 + g, 55]], CULATA);
   }
   if (o.manosArriba) brazosArriba(U, R, g);
+  else if (conRifle) { /* las manos van sobre el arma */ }
   else if (!jinete) {
     U.elipse(g ? 13 : 11, 56 + cuadro.mI, 2, 3, PIEL_S);
     if (!o.arma) U.elipse(37 - g, 56 + cuadro.mD, 2, 3, PIEL);
@@ -425,7 +452,13 @@ export function espalda(L, o = {}) {
   } else if (R.cuello === 'corbata') U.rect(19, 29, 11, 3, BLANCA);
   else U.rect(18, 29, 13, 4, CS);
   // Apuntando de espaldas: el brazo se va para arriba, al costado de la cabeza.
-  if (o.arma) {
+  if (o.arma === 'rifle') {
+    rifle(U, R, [13 + g, 35], [17, 47], [34 - g, 35], [29, 45], [0.97, -0.24], 8);
+  } else if (o.arma === 'rifleListo') {
+    // De espaldas apunta para el fondo: la misma diagonal que de frente pero
+    // para arriba, con la boca saliendo al costado de la cabeza.
+    rifle(U, R, [33 - g, 34], [29, 33], [14 + g, 34], [20, 27], [-0.79, -0.61], 8);
+  } else if (o.arma) {
     if (g) apuntar(U, R, [33, 33], [39, 27], [0.6, -0.8], 6);
     else apuntar(U, R, [34, 33], [35, 25], [0, -1], 5);
   }

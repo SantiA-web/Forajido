@@ -15232,8 +15232,8 @@ cuadro con dibujo.
 
 Tres cosas que se dibujaban con lo mínimo y ya pedían lo suyo.
 
-**1. El aviso del que te apunta: EL RIFLE.** Llegó en tres intentos, y los dos
-primeros están acá porque el tercero se entiende con ellos.
+**1. El aviso del que te apunta: EL RIFLE.** Llegó en cuatro intentos, y los
+tres primeros están acá porque el cuarto se entiende con ellos.
 
 **Intento 1 — una cuenta atrás dibujada.** La raya se encendía desde el arma y
 el `!` latía cada vez más rápido. Santi: *"el aviso de disparo es pésimo y
@@ -15242,54 +15242,69 @@ antes de disparar, simulando que está apuntando"*. Tenía razón: era informaci
 correcta dibujada como un cartel, encima de un juego que no tiene carteles en
 ningún otro lado.
 
-**Intento 2 — el jinete se agacha.** Se fueron la raya y el `!`, y el jinete
-pasó a agacharse a apuntar en dos tiempos. Santi lo jugó: *"no se nota nada"*.
-Y la cuenta le da la razón: **el agache mueve el cuerpo 1,25 unidades, menos de
-4 píxeles en pantalla**. Es real y es diminuto.
+**Intento 2 — el jinete se agacha.** Santi lo jugó: *"no se nota nada"*. Y la
+cuenta le da la razón: **el agache mueve el cuerpo 1,25 unidades, menos de 4
+píxeles en pantalla**. Es real y es diminuto.
 
-**Intento 3 — el rifle *(idea de Santi: "que tengan un rifle en vez de un
-revólver, entonces se nota mucho más cuando levanta el arma y la apunta")*.** Un
-rifle es una barra de 11 unidades: **diez veces más cambio que el agache**. Y
-explica de paso algo que con un revólver nunca cerró — que **tiren desde
-cualquier distancia**, sin tope de alcance.
+**Intento 3 — el rifle, pintado encima del jinete *(idea de Santi: "que tengan
+un rifle en vez de un revólver, entonces se nota mucho más cuando levanta el
+arma y la apunta")*.** Un rifle es una barra de 11 unidades: diez veces más
+cambio que el agache. Se veía… y se veía mal. Santi: *"el rifle se ve
+horripilante, parece que está levitando junto al guardia. No parece que el
+guardia lo esté agarrando. Este es uno de los problemas que no quería que
+pasaran"*.
 
-Va **dibujado en la escena y no adentro del muñeco**, igual que el lazo: así se
-lo apunta al ángulo exacto y se ve desde cualquier lado, en vez de depender de
-las ocho vistas de la figura. Y **se ve siempre**, cruzado bajo y casi plano
-sobre los muslos mientras galopa: un fierro que aparece de la nada se nota raro,
-y así el cambio es de algo a algo. Al apuntar sube diez unidades —medio cuerpo—
-y gira hasta encararte, en curva y no de un tirón. El agache del intento 2 se
-quedó: solo no alcanzaba, acompañando suma.
+⚠️ **Y el error no fue del dibujo sino de dónde se dibujaba.** El rifle iba
+pintado en la escena, encima del muñeco, con dos cuadraditos color piel haciendo
+de manos **mientras los brazos de verdad seguían en las riendas**. No parecía
+agarrado porque no estaba agarrado. Se eligió ese camino a propósito, para no
+tocar el dibujo de las personas, y ése fue el error: había funcionado con el
+lazo —una soga puede colgar— y se estiró a un fierro que una persona tiene que
+sostener con las manos.
 
-🐛 **Y la primera versión del rifle era un garrote.** Medía 14 unidades y tenía
-el caño de 2 puntos de grueso con una boca blanca de 2×2: parecía un tronco. El
-largo sale de la persona y no del ojo — el muñeco mide 20 unidades ≈ 1,75 m, así
-que una carabina de 1 m son **11 unidades** (7 de caño y 4 de culata).
+**Intento 4 — el rifle ADENTRO del muñeco.** Hay un `rifle()` nuevo en
+`gente/dibujo.js`, hermano de `apuntar()` (el brazo del revólver): la mano de
+atrás en el gatillo, la de adelante en la caña, y **un brazo saliendo del hombro
+hacia cada una**. Dos poses —`'rifle'` cruzado y `'rifleListo'` encarándote— en
+las tres vistas del dibujo. El orden importa: primero el brazo de atrás, después
+el arma, y el brazo de adelante encima de todo, que es el que se lee agarrando.
 
-🐛 **Y el descanso quedaba cruzado sobre el pecho**, o sea ya medio levantado, y
-entonces levantarlo de verdad casi no se notaba. Bajó a los muslos y se aplanó:
-**lo que hace el aviso es la diferencia entre las dos posiciones**, no el rifle.
+Son tres dibujos guardados por vista en vez de uno, y sólo los usa la ley a
+caballo de la huida: el resto del juego no se entera.
 
-⚠️ **La bala ahora sale de la boca del caño**, no de un punto al lado del cuerpo:
-un tiro que nace en otro lado delata que el fierro es un adorno. Es un cambio
-chico pero real en de dónde arranca el disparo. Y el jinete **se queda apuntando
-0,35 s antes de bajar el rifle** (`BAJA_RIFLE`), porque si volviera al muslo en
-el mismo cuadro del disparo, el tiro saldría de la nada.
+🐛 **Tres cosas que salieron mal en el camino, y las tres son del MISMO tipo:
+cosas que tapan al rifle.**
 
-⚠️ **NADA DE ESTO SE PUDO MEDIR, y se avisó antes de empezar.** El piloto del
-banco lee el `aimTimer` por adentro y no mira la pantalla: puede decir que no se
-rompió nada, pero no si el aviso se entiende. Los intentos 1 y 2 pasaron sus
-pruebas igual, y los dos estaban mal.
+1. **El pescuezo del caballo se dibuja DESPUÉS del jinete** (`montura.adelante()`).
+   Un rifle cruzado a la altura de las piernas se hundía entero detrás del
+   animal. Subió a las piernas altas y se inclinó un poco para arriba; apuntando
+   va a la altura del mentón, que es lo primero que queda por encima del
+   pescuezo.
+2. **La cabeza también se dibuja después del torso.** De frente, cualquier cosa
+   arriba de y=31 queda tapada por la cara: ahí no hay lugar para el arma.
+3. **Y el caballo es marrón oscuro sobre un desierto de noche.** Con la madera y
+   el fierro en sus tonos reales el rifle desaparecía. Va en tonos claros a
+   propósito: no es un arma realista, es un arma que se ve.
+
+🐛 **Y una cuarta, la más tonta: de frente las dos poses eran iguales.** Cruzado
+es una barra horizontal… y la primera versión de "apuntando" también era una
+barra horizontal, un poco más arriba. Dos poses distintas que se veían igual, o
+sea ningún aviso. Apuntando pasó a ser **una diagonal con la boca saliéndose de
+la silueta**: lo que se lee es el CAMBIO de ángulo, no el arma.
+
+⚠️ **NADA DE ESTO SE PUDO MEDIR, y se avisó cada vez.** El piloto del banco lee
+el `aimTimer` por adentro y no mira la pantalla: puede decir que no se rompió
+nada, pero no si el aviso se entiende. Los tres primeros intentos pasaron sus
+pruebas igual, y los tres estaban mal.
 
 🐛 **Por qué el intento 2 no se veía de frente**, que es la vista más común de la
 huida: el agache se había hecho con `echado`, que es lo que ya inclina al jinete
 al galope, y la inclinación **sólo se dibuja de costado** — en figura.js,
 `lateral` vale 0 en la vista de frente, así que `ECHADO` quedaba multiplicado por
-cero. Un jinete que venía de frente apuntándote no cambiaba ni un píxel. La
-solución fue **agacharse, que no es lo mismo que echarse adelante**: bajar el
-tronco con los pies quietos se ve desde cualquier lado. Se aprovechó el mismo
-mecanismo con el que un guardia se asoma de un reparo (`asomado.dy`), con un
-campo nuevo `agacha`.
+cero. La solución fue **agacharse, que no es lo mismo que echarse adelante**:
+bajar el tronco con los pies quietos se ve desde cualquier lado. Se aprovechó el
+mismo mecanismo con el que un guardia se asoma de un reparo (`asomado.dy`), con
+un campo nuevo `agacha`. El agache quedó: solo no alcanzaba, acompañando suma.
 
 **2. El lazo, en sus dos estados.** El revoleo era un rectangulito dando vueltas
 sobre la cabeza; ahora es una **argolla de verdad**, un aro hueco que se ve

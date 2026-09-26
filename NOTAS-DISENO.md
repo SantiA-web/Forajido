@@ -13794,15 +13794,14 @@ vivo, 5) los compañeros.
 
 ### 🧺 Por vestir
 
-Lo que se dibujó simple a propósito y hay que vestir cuando el asalto esté
-bien:
+**La lista quedó vacía.** Lo que había acá —las bolsas, el aviso del que te
+apunta, el lazo, los dos refugios, la brújula, el panel, el fondo, el caballo
+del caído y tirar para atrás— está hecho, cada uno con su sección más abajo.
 
-| Qué | Dónde | Cómo está |
-|---|---|---|
-| El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
-| El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
-| El caballo del jinete caído | `huidaScene.js`, `pegarle` | Queda el cuerpo en el suelo y el caballo desaparece; debería seguir galopando solo |
-| Tirar para atrás | `huidaScene.js`, `dibujarme` | El jinete no se da vuelta: sólo crece el círculo. Falta el torso girado |
+Lo único que sigue pendiente de la huida no es vestir sino contenido: **el tren
+a lo lejos**, que tendría que verse alejándose en el horizonte los primeros
+segundos de la corrida.
+
 
 ---
 
@@ -15227,6 +15226,74 @@ hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
 
 📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
 cuadro con dibujo.
+
+#### 🏔️ LA ÚLTIMA VUELTA DE LA HUIDA: EL HORIZONTE, EL CABALLO SUELTO, EL BRAZO Y EL PANEL
+
+Las cuatro que quedaban, de la más grande a la más chica.
+
+**1. El horizonte.** La huida se jugaba en un vacío: suelo y nada más. Pero el
+galope ya tenía esto resuelto y lo eligió Santi en su momento —*"que se pueda
+ver el cielo y las montañas a lo lejos"*—, así que el dibujo se sacó de
+`rideScene.js` a **`world/horizonte.js`** y ahora **las dos escenas miran el
+mismo cielo**, no uno parecido. Es el mismo criterio con el que el suelo se
+siembra desde `world/desierto.js` en las dos: pasan en el mismo desierto.
+
+⚠️ **Y acá hay una diferencia con el galope que obliga a invertir el orden.**
+Allá el campo termina abajo del horizonte, así que el cielo puede taparlo todo.
+Acá la cámara te sigue en campo abierto: **si corrés al sur, los que te
+persiguen quedan arriba de la pantalla**, justo donde va la franja. Si el cielo
+se dibujara encima se los tragaría, así que va PRIMERO y el mundo le pasa por
+arriba. Cuesta que un jinete lejano se vea un instante recortado contra la
+montaña; lo otro era que desapareciera, y eso no se puede.
+
+🐛 **Y la franja del panel se comía el cielo entero.** El horizonte empezó en 26
+y el panel también mide 26: las montañas se apoyan en el borde de abajo y crecen
+para arriba, o sea que quedaban justo debajo del panel. En 38 se ven.
+
+**2. El caballo del jinete caído.** Cuando bajabas a uno, el cuerpo quedaba en
+el suelo y **el animal se borraba del mundo en el mismo cuadro**, como si el
+jinete y su caballo fueran una sola cosa. Ahora queda suelto: abre para un
+costado —el susto lo saca de la fila—, afloja y se pierde a los seis segundos.
+
+🔁 Y va **con la silla puesta**, que era lo primero que salió mal: al jinete lo
+bajaron de un tiro, así que el recado sigue ahí. La montura la dibujaba
+`dibujarJinete`, o sea que un caballo sin persona salía pelado; se sacó a
+`dibujarMontura` para que exista sin jinete.
+
+**3. Tirar para atrás.** Hasta ahora el jinete **no se daba vuelta ni un poco**:
+lo único que pasaba era que la mira crecía, así que el disparo no se veía salir
+de ningún lado.
+
+⚠️ **GIRA EL BRAZO Y NO EL CUERPO, y se le avisó a Santi antes de hacerlo**,
+porque la fila de la lista pedía el torso girado y eso **contradice una decisión
+suya anterior**: *"hay veces que el caballo no cambia de dirección pero el
+personaje sí, entonces se ve raro"* — que es por lo que hoy la vista del jinete
+la manda el caballo. El brazo solo alcanza para que se entienda sin traer de
+vuelta lo que molestaba. Lo aprobó así.
+
+El ángulo (`armaDir`) va en **16 pasos** y achatado como la vista, porque cada
+figura se guarda dibujada: con el ángulo libre habría una figura nueva por
+cuadro.
+
+🐛 **Dos veces salió invisible, y las dos por lo mismo: algo lo tapaba.**
+Primero el brazo medía 13 y **la mano caía adentro del cuerpo** apuntando al
+oeste (el torso mide 24 de ancho): el revólver existía y no se veía. Con 17 sale
+de la silueta. Y apuntando al norte quedaba **detrás del sombrero**, porque el
+brazo se dibujaba dentro del torso y la cabeza va después; ahora, cuando la
+escena manda un ángulo, el brazo se dibuja **después de la cabeza** — un brazo
+levantado pasa por delante de la cara, no por atrás.
+
+**4. El panel.** Era texto suelto sobre el desierto: sobre una mancha clara
+—arena de día, una bolsa, un caballo bayo— el dinero y las balas se perdían
+justo cuando hacían falta. Ahora hay dos franjas oscuras transparentes, arriba
+siempre y abajo mientras están las teclas. No es un marco dibujado a propósito:
+en una persecución lo último que querés es que la pantalla se achique.
+
+📏 **15.000 cuadros** con teclas y mouse al azar repartidos entre la huida, el
+galope, el campamento, el pueblo, la tienda y el mapa: **0 errores**, 1,06 ms
+por cuadro. Tanda de 8 huidas con la vista en 426: 0 errores y los números en la
+banda de siempre. El galope se miró aparte, que es el que más riesgo corría por
+la mudanza del cielo.
 
 #### ⏳ LA SEGUNDA VUELTA DE VESTIR: EL AVISO, EL LAZO Y LAS BOLSAS
 

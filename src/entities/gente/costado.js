@@ -263,7 +263,7 @@ export function lado(L, o = {}) {
      * pose cruzada — eso es el aviso.
      */
     rifle(U, R, [24, 34], [25, 33], [25, 35], [38, 33], [1, 0]);
-  } else if (o.arma) {
+  } else if (o.arma && o.armaDir == null) {
     apuntar(U, R, [24, 34], [37, 38], [1, 0], 9);
   } else {
     // El hombro de adelante, redondo y con luz arriba.
@@ -275,4 +275,6 @@ export function lado(L, o = {}) {
   if (o.panuelo) { U.rect(19, 14, 6, 5, '#e4ddcc'); U.rect(19, 14, 6, 1, '#f4f0e4'); }
 
   L.rigido(() => { cabezaLado(U, o); sombreroLado(U, R.sombrero); });
+  // Ver la nota en `frente`: con ángulo, el brazo va por delante de la cabeza.
+  if (o.arma === true && o.armaDir != null) apuntar(U, R, [24, 34], [37, 38], [1, 0], 9, o.armaDir);
 }

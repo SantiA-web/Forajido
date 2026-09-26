@@ -52,6 +52,7 @@ import { crearPolvo } from '../world/polvoDeCascos.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { distance } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
+import { dibujarHorizonte } from '../world/horizonte.js';
 
 export function createRideScene(services) {
   const { renderer, input, rng, scenes, hud, audio } = services;
@@ -1127,27 +1128,28 @@ export function createRideScene(services) {
     dibujarVia(r, camX, vistaW, base, tinte);
     r.ctx.restore();
 
-    // --- 2. El cielo de lejos, en pantalla ---
-    const hy = cieloDeLejos(z);
-    if (hy > 0) {
-      const [arriba, abajo] = hayTormenta ? [C.tormentaArriba, C.tormentaHorizonte]
+    /**
+     * --- 2. El cielo de lejos, en pantalla ---
+     *
+     * 🔁 El dibujo se mudó a `world/horizonte.js` para que **la huida use este
+     * mismo cielo** y no uno parecido: las dos escenas pasan en el mismo
+     * desierto. Acá no cambió un píxel; lo único que sigue siendo del galope es
+     * cuánta franja se ve (`cieloDeLejos`, que depende del zoom) y que las
+     * cordilleras se corren con lo que avanzaste SOBRE EL SUELO (`camX + suelo`)
+     * y no contra el tren.
+     */
+    dibujarHorizonte(r, {
+      hy: cieloDeLejos(z),
+      avance: camX + suelo,
+      dia,
+      C,
+      tinte,
+      altoMax: CIELO_LEJOS,
+      tormenta: hayTormenta,
+      cielo: hayTormenta ? [C.tormentaArriba, C.tormentaHorizonte]
         : dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
-          : [C.nocheArriba, C.nocheHorizonte];
-      r.cielo(0, 0, r.width, hy, arriba, abajo, 6);
-      if (!hayTormenta && hy > 20) dibujarAstro(r, hy, dia);
-      /**
-       * Dos cordilleras que se corren con lo que avanzaste SOBRE EL SUELO
-       * (`camX + suelo`), no contra el tren. La de atrás casi no se mueve y la
-       * de adelante un poco más: esa diferencia es la que el ojo lee como
-       * distancia (ver engine/parallax.js). Crecen con la franja, así que se
-       * hunden en el horizonte a medida que te acercás.
-       */
-      const avance = camX + suelo;
-      const escala = hy / CIELO_LEJOS;
-      cordillera(r, hy, avance * 0.015, 26 * escala, tinte(hayTormenta ? C.montanaTormenta : C.montanaLejos), 1.3, true);
-      cordillera(r, hy, avance * 0.05, 11 * escala, tinte(C.montanaCerca), 4.1, false);
-      r.rect(0, hy, r.width, 1, tinte(C.bruma));
-    }
+          : [C.nocheArriba, C.nocheHorizonte],
+    });
 
     // --- 3. El campo por donde galopás ---
     r.ctx.save();
@@ -1181,59 +1183,6 @@ export function createRideScene(services) {
   function cieloDeLejos(z) {
     const t = Math.max(0, Math.min(1, (0.75 - z) / (0.75 - A.zoomLejos)));
     return Math.round(CIELO_LEJOS * t);
-  }
-
-  /** El sol de día; de noche la luna en cuarto y las estrellas. Van en pantalla. */
-  function dibujarAstro(r, hy, dia) {
-    const C = colors.cielo;
-    const cx = Math.round(r.width * 0.78);
-    const cy = Math.round(hy * 0.4);
-    const disco = (x, y, radio, color, alpha = 1) => {
-      r.ctx.save();
-      r.ctx.globalAlpha = alpha;
-      r.ctx.fillStyle = color;
-      r.ctx.beginPath();
-      r.ctx.arc(x, y, radio, 0, Math.PI * 2);
-      r.ctx.fill();
-      r.ctx.restore();
-    };
-    if (dia) {
-      disco(cx, cy, 13, C.sol, 0.16);
-      disco(cx, cy, 6, C.sol);
-      return;
-    }
-    /**
-     * Las estrellas quedan clavadas a la pantalla: están a distancia infinita.
-     *
-     * 🐛 Primero eran `(i * 137) % ancho` y `(i * 71) % alto`, y salieron en
-     * DIAGONALES: rayitas que parecían estrellas fugaces congeladas. Es el mismo
-     * error que ya tuvieron las matas del campamento, y se arregla igual.
-     */
-    for (let i = 0; i < 40; i++) {
-      r.ctx.globalAlpha = 0.3 + (i % 3) * 0.25;
-      r.rect(revolver(i) % r.width, revolver(i + 977) % Math.max(1, hy - 8), 1, 1, C.estrella);
-    }
-    r.ctx.globalAlpha = 1;
-    disco(cx, cy, 5, C.luna);
-    disco(cx + 2, cy - 2, 4, C.nocheArriba);
-  }
-
-  /**
-   * UNA CORDILLERA, apoyada en el horizonte `hy`, en columnas de 2 px. La
-   * altura sale de tres ondas superpuestas: nunca se repite a la vista, y es la
-   * misma forma cada vez que se dibuja (no titila).
-   */
-  function cordillera(r, hy, desplazo, altoMax, color, semilla, mesetas) {
-    for (let sx = 0; sx < r.width; sx += 2) {
-      const u = sx + desplazo;
-      let h = 0.5 + 0.28 * Math.sin(u * 0.011 + semilla)
-        + 0.16 * Math.sin(u * 0.031 + semilla * 2.3)
-        + 0.07 * Math.sin(u * 0.093 + semilla * 5.1);
-      h = Math.max(0.08, Math.min(1, h));
-      if (mesetas) h = Math.round(h * 5) / 5;
-      const alto = Math.round(h * altoMax);
-      r.rect(sx, hy - alto, 2, alto, color);
-    }
   }
 
   /**
@@ -1700,15 +1649,4 @@ export function createRideScene(services) {
   }
 
   return { enter, exit, update, render };
-}
-
-/**
- * Un entero revuelto a partir de otro, siempre el mismo para el mismo número:
- * para sembrar cosas quietas sin que salgan en fila. Es el de las matas del
- * campamento (ver `revolver` en scenes/campScene.js).
- */
-function revolver(n) {
-  let t = (n * 374761393 + 668265263) | 0;
-  t = Math.imul(t ^ (t >>> 13), 1274126177);
-  return (t ^ (t >>> 16)) >>> 0;
 }

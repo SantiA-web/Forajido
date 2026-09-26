@@ -352,9 +352,9 @@ function torsoFrente(L, R, o, g, f) {
      *    es el CAMBIO de ángulo, no el arma.
      */
     rifle(L, R, [33 - g, 34], [30, 34], [13 + g, 35], [18, 43], [-0.8, 0.6]);
-  } else if (o.arma) {
-    if (g) apuntar(L, R, [33, 34], [40, 44], [0.7, 0.7], 6);
-    else apuntar(L, R, [34, 34], [30, 44], [0, 1], 3);
+  } else if (o.arma && o.armaDir == null) {
+    if (g) apuntar(L, R, [33, 34], [40, 44], [0.7, 0.7], 6, o.armaDir);
+    else apuntar(L, R, [34, 34], [30, 44], [0, 1], 3, o.armaDir);
   }
 }
 
@@ -371,6 +371,16 @@ export function frente(L, o = {}) {
   torsoFrente(U, R, { ...o, manosArriba: (quieto && quieto.rendido) || o.manosArriba }, g, cuadro);
   if (o.panuelo) panueloBlanco(U, g);
   L.rigido(() => { cabezaFrente(U, o, g); sombrero(U, R.sombrero, g, false); });
+  /**
+   * 🎯 EL BRAZO QUE APUNTA A UN ÁNGULO VA DESPUÉS DE LA CABEZA. Adentro del
+   * torso quedaba TAPADO justo cuando más importa: apuntando para arriba el
+   * revólver caía detrás del sombrero y no se veía nada. Un brazo levantado
+   * pasa por delante de la cara, no por atrás.
+   *
+   * Sólo cuando la escena manda el ángulo (hoy, el jugador a caballo tirando
+   * para atrás). Los guardias a pie siguen con su pose de siempre.
+   */
+  if (o.arma === true && o.armaDir != null) apuntar(U, R, [24, 33], [30, 44], [0, 1], 3, o.armaDir);
 }
 
 /**
@@ -458,10 +468,12 @@ export function espalda(L, o = {}) {
     // De espaldas apunta para el fondo: la misma diagonal que de frente pero
     // para arriba, con la boca saliendo al costado de la cabeza.
     rifle(U, R, [33 - g, 34], [30, 33], [14 + g, 34], [18, 24], [-0.8, -0.6]);
-  } else if (o.arma) {
-    if (g) apuntar(U, R, [33, 33], [39, 27], [0.6, -0.8], 6);
-    else apuntar(U, R, [34, 33], [35, 25], [0, -1], 5);
+  } else if (o.arma && o.armaDir == null) {
+    if (g) apuntar(U, R, [33, 33], [39, 27], [0.6, -0.8], 6, o.armaDir);
+    else apuntar(U, R, [34, 33], [35, 25], [0, -1], 5, o.armaDir);
   }
   if (o.panuelo) panueloBlanco(U, g);
   L.rigido(() => sombrero(U, R.sombrero, g, true));
+  // Ver la nota en `frente`: con ángulo, el brazo va por delante de la cabeza.
+  if (o.arma === true && o.armaDir != null) apuntar(U, R, [24, 33], [35, 25], [0, -1], 5, o.armaDir);
 }

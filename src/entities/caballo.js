@@ -373,6 +373,32 @@ function cuerda(r, x1, y1, x2, y2, color, panza = 0) {
  * `inclina`: cuánto se echa hacia adelante, de 0 (parado) a 2 (a fondo).
  * `riendas`: dónde está el bocado, si hay caballo (lo devuelve `dibujarAnimal`).
  */
+/**
+ * LA MONTURA, y va acá y no en el caballo: el sprite que generó Santi es un
+ * caballo PELADO. Sin silla ni estribos el jinete flotaba encima del lomo, y
+ * ésa era la mitad de por qué se leía "pegado".
+ *
+ * Va DEBAJO de la persona y encima del animal: primero la carona, después el
+ * asiento. Se angosta con el giro, igual que el caballo.
+ *
+ * 🔁 Está aparte de `dibujarJinete` porque **un caballo puede quedar sin
+ * jinete y con la silla puesta**: es lo que pasa cuando bajás a uno en la
+ * huida (ver `dibujarSuelto` en huidaScene.js). Antes el caballo suelto salía
+ * pelado, que es lo que se veía si la silla sólo la dibujaba la persona.
+ *
+ * Devuelve el ancho, que es lo que después necesita el estribo.
+ */
+export function dibujarMontura(r, sx, asiento, pose) {
+  const anchoM = (6.5 - Math.abs(pose) * 0.55) * (r.ctx ? 1 : 0);
+  if (anchoM > 0) {
+    r.rect(sx - anchoM / 2, asiento + 0.75, anchoM, 2, '#6b2b24');
+    r.rect(sx - anchoM / 2, asiento + 0.75, anchoM, 0.5, '#8e4234');
+    r.rect(sx - anchoM / 2 + 1, asiento - 0.75, anchoM - 2, 2, '#3a2418');
+    r.rect(sx - anchoM / 2 + 0.75, asiento - 1.75, 1.25, 1.25, '#22150d');
+  }
+  return anchoM;
+}
+
 export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, montura = null) {
   const quien = ropa.detalles || 'jugador';
   /**
@@ -430,21 +456,7 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
     r.ctx.translate(-sx, -sy);
   }
 
-  /**
-   * LA MONTURA, y va acá y no en el caballo: el sprite que generó Santi es un
-   * caballo PELADO. Sin silla ni estribos el jinete flotaba encima del lomo, y
-   * ésa era la mitad de por qué se leía "pegado".
-   *
-   * Va DEBAJO de la persona y encima del animal: primero la carona, después el
-   * asiento. Se angosta con el giro, igual que el caballo.
-   */
-  const anchoM = (6.5 - Math.abs(pose) * 0.55) * (r.ctx ? 1 : 0);
-  if (anchoM > 0) {
-    r.rect(sx - anchoM / 2, asiento + 0.75, anchoM, 2, '#6b2b24');
-    r.rect(sx - anchoM / 2, asiento + 0.75, anchoM, 0.5, '#8e4234');
-    r.rect(sx - anchoM / 2 + 1, asiento - 0.75, anchoM - 2, 2, '#3a2418');
-    r.rect(sx - anchoM / 2 + 0.75, asiento - 1.75, 1.25, 1.25, '#22150d');
-  }
+  const anchoM = dibujarMontura(r, sx, asiento, pose);
 
   const persona = dibujarPersona(r, {
     tipo: quien === 'ley' ? 'jineteLey' : 'jugador',
@@ -458,6 +470,7 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
     estado: ropa.estado,
     destello: ropa.destello,
     arma: ropa.arma,
+    armaDir: ropa.armaDir,
     agacha: apunta >= 2 ? 5 : apunta === 1 ? 2 : 0,
     panuelo: quien === 'jugador',
   });

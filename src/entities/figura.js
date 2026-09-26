@@ -309,6 +309,22 @@ export function dibujarPersona(r, f) {
    */
   const agacha = Math.max(0, Math.min(6, Math.round(f.agacha || 0)));
 
+  /**
+   * 🎯 HACIA DÓNDE APUNTA EL BRAZO, cuando quien dibuja quiere mandarlo (hoy,
+   * el jugador a caballo tirando para atrás). Es un ángulo **de pantalla**, ya
+   * achatado por la vista de tres cuartos.
+   *
+   * ⚠️ GIRA EL BRAZO, NO EL CUERPO, y eso es a propósito *(Santi, hace varias
+   * vueltas: "hay veces que el caballo no cambia de dirección pero el personaje
+   * sí, entonces se ve raro")*. Por eso la vista del jinete la sigue mandando
+   * el caballo: acá sólo se mueve el brazo del arma.
+   *
+   * Va en 16 pasos porque cada figura se guarda dibujada: con el ángulo libre
+   * habría una figura nueva por cuadro.
+   */
+  const armaDir = f.armaDir == null ? null
+    : Math.round((f.armaDir / (Math.PI * 2)) * 16 + 32) % 16;
+
   // El dibujo se arma mirando a la derecha: si va en espejo, asomarse para la
   // derecha del mundo es asomarse para la izquierda del dibujo.
   const asomadoDibujo = asomado || agacha
@@ -323,6 +339,7 @@ export function dibujarPersona(r, f) {
   const clave = [tipo, nombre, g, modo, cuadro, estado, arma === true ? 'a' : (arma || ''), manos ? 'm' : '', mochila,
     f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : '', esc,
     cartuchos == null ? '' : 'c' + cartuchos,
+    armaDir == null ? '' : 'd' + armaDir,
     modo === 'montado' ? 'e' + echado + 'a' + abre : ''].join('|');
   // Al trotar y a caballo el torso se va para adelante; de frente casi no se
   // nota, y de espaldas tampoco: por eso `lateral` lo apaga.
@@ -333,6 +350,9 @@ export function dibujarPersona(r, f) {
     const L = Lienzo(M.ancho, M.alto, OX, OY, M.s, deformar(inclina));
     const datos = {
       tipo, g, estado, arma, manosArriba: manos, mochila, cartuchos,
+      // En pasos de 16, y espejado si la figura se dibuja al revés.
+      armaDir: armaDir == null ? null
+        : (espejo ? (8 - armaDir + 16) % 16 : armaDir) * (Math.PI * 2 / 16),
       asomado: asomadoDibujo, panuelo: !!f.panuelo, abre,
     };
     if (modo === 'trotar') datos.trote = cuadro;

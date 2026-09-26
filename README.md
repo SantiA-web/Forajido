@@ -1754,6 +1754,13 @@ soltaste casi toda la plata.
   agranda** —hasta 1,5 veces derecho hacia atrás— y, como no ves adelante,
   **el caballo se tuerce solo** cada tanto, un segundo, para arriba o para
   abajo. Corregilo con `W/S` o te comés una piedra.
+- **La huida tiene horizonte**: arriba de todo asoma la misma franja de cielo
+  con montañas que ves galopando, con su sol o su luna. Los que te persiguen se
+  dibujan encima, así que nunca se pierden atrás de la montaña.
+- **Al que bajás se le escapa el caballo**: el cuerpo queda en el suelo y el
+  animal sigue galopando solo, con la silla puesta, hasta perderse.
+- **Podés tirar para atrás y se te ve**: el brazo del revólver apunta a donde
+  está el mouse aunque el caballo siga derecho. Gira el brazo, no el cuerpo.
 - **Los jinetes de la ley llevan RIFLE**, y se les ve siempre: cruzado sobre las
   piernas mientras galopan, agarrado con las dos manos. Es lo que explica que te
   tiren desde cualquier distancia.

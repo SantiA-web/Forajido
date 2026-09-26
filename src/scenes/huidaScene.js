@@ -33,7 +33,7 @@ import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { caballoActual, HORSES, esperaDelImpulso, APROXIMACION as A } from '../data/horse.js';
 import { applyRaidResult, recompensaTapada, gameState, numero } from '../state/gameState.js';
 import { T } from '../text/es.js';
-import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
+import { GOLPES, dibujarAnimal, dibujarJinete, dibujarMontura } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
 import { sembrarDesierto } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
@@ -43,6 +43,8 @@ import {
   chocaConElRefugio, adentroDelRefugio, esPared, esBosque, trozosDelParedon,
   puntoDeEntrada, dibujarClaroDelBosque, PAREDON, PARED, BOSQUE,
 } from '../world/destinos.js';
+import { dibujarHorizonte } from '../world/horizonte.js';
+import { escalarColor } from '../world/trenTresCuartos.js';
 
 /**
  * EN TRES CUARTOS, IR AL NORTE RINDE MENOS EN PANTALLA QUE IR AL ESTE: la
@@ -65,6 +67,8 @@ export function createHuidaScene(services) {
 
   let summary, caballo, arma, prueba;
   let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, celdasSembradas;
+  /** Los caballos que quedaron sin jinete y siguen galopando (ver `pegarle`). */
+  let sueltos;
   let refugios, refugioTomado;
   let tiempo, dineroInicial, perdido, soltadas, derribados;
   /** Cuántos tiraste del caballo forcejeando (no son muertos: van aparte). */
@@ -184,6 +188,7 @@ export function createHuidaScene(services) {
     balas = [];
     bolsas = [];
     caidos = [];
+    sueltos = [];
     carteles = [];
     obstaculos = [];
     celdasSembradas = new Set();
@@ -438,6 +443,16 @@ export function createHuidaScene(services) {
 
     for (const c of carteles) { c.vida -= dt; c.y -= 12 * dt; }
     carteles = carteles.filter((c) => c.vida > 0);
+
+    // Los caballos sin jinete: siguen de largo, aflojando, hasta perderse.
+    for (const s of sueltos) {
+      s.vida -= dt;
+      s.vel = Math.max(40, s.vel * (1 - 0.22 * dt));
+      s.x += Math.cos(s.rumbo) * s.vel * dt;
+      s.y += Math.sin(s.rumbo) * s.vel * dt * PROFUNDIDAD;
+      s.gallop += dt;
+    }
+    sueltos = sueltos.filter((s) => s.vida > 0);
     /**
      * 💰 LA BOLSA CAE, PICA UNA VEZ Y SUELTA MONEDAS. El rebote no es adorno:
      * antes la bolsa se clavaba en el piso de golpe y no se veía el momento en
@@ -1407,6 +1422,23 @@ export function createHuidaScene(services) {
     j.alive = false;
     derribados += 1;
     caidos.push({ x: j.x, y: j.y });
+    /**
+     * 🐎 Y EL CABALLO SIGUE SOLO. Hasta ahora, cuando bajabas a uno, el cuerpo
+     * quedaba en el suelo y **el animal se borraba del mundo**: desaparecía en
+     * el mismo cuadro, como si el jinete y su caballo fueran una sola cosa.
+     *
+     * Ahora queda suelto: abre para un costado —el susto lo saca de la fila— y
+     * se va aflojando hasta perderse. No choca con nada ni te hace nada; es lo
+     * que pasó, nada más.
+     */
+    sueltos.push({
+      x: j.x,
+      y: j.y,
+      rumbo: j.rumbo + rng.range(0.5, 1.1) * (rng.chance(0.5) ? 1 : -1),
+      vel: j.vel != null ? j.vel : H.jinetes.velocidad,
+      gallop: j.gallop,
+      vida: 6,
+    });
     audio.play('relincho');
     audio.play('kill');
     carteles.push({ x: j.x, y: j.y - 28, texto: T.huida.derribado, color: colors.bagLoot, vida: 1.4 });
@@ -1635,6 +1667,34 @@ export function createHuidaScene(services) {
 
     r.clear(dia ? colors.desiertoDia : colors.desiertoNoche);
 
+    /**
+     * 🏔️ EL HORIZONTE, arriba de todo. Es **el mismo cielo del galope**
+     * (`world/horizonte.js`), no uno parecido: las dos escenas pasan en el
+     * mismo desierto y dos cordilleras distintas se notarían. Hasta ahora la
+     * huida se jugaba en un vacío — suelo y nada más.
+     *
+     * ⚠️ Y ACÁ HAY UNA DIFERENCIA CON EL GALOPE que obliga a dibujarlo primero.
+     * Allá el campo termina abajo del horizonte, así que el cielo puede taparlo
+     * todo. Acá la cámara te sigue en campo abierto: **si corrés al sur, los
+     * que te persiguen quedan arriba de la pantalla**, justo donde va la
+     * franja. Si el cielo se dibujara encima, se los tragaría.
+     *
+     * Por eso va ANTES que el mundo y el mundo le pasa por arriba. Cuesta que
+     * un jinete lejano se vea un instante contra la montaña; lo otro era que
+     * desapareciera, y eso sí no se puede.
+     */
+    const hy = H.mundo.horizonte;
+    dibujarHorizonte(r, {
+      hy,
+      avance: yo.x,
+      dia,
+      C: colors.cielo,
+      tinte: (hex) => (dia ? hex : escalarColor(hex, 0.32)),
+      altoMax: hy,
+      cielo: dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
+        : [colors.cielo.nocheArriba, colors.cielo.nocheHorizonte],
+    });
+
     r.ctx.save();
     /**
      * LA CÁMARA TE SIGUE: el mundo se corre para que vos quedes en el medio.
@@ -1670,6 +1730,10 @@ export function createHuidaScene(services) {
     sembrarDesierto(r, {
       x0: camX, y0: camY, x1: camX + vista.w, y1: camY + vista.h,
       noche: !dia, colores: colors.cielo, grandes: () => false,
+      // Nada de pasto arriba del horizonte: el suelo se dibuja ENCIMA del
+      // cielo (ver el comentario de la franja), así que ahí quedaría flotando
+      // una mata en el aire. Los jinetes sí pasan: ésos tienen que verse.
+      saltar: (wx, wy) => wy < camY + hy,
     });
 
     // Lo que quedó tirado en el campo: los caídos y las bolsas.
@@ -1717,6 +1781,7 @@ export function createHuidaScene(services) {
       if (!j.alive || j.perdido) continue;
       cosas.push({ y: j.y, draw: () => dibujarLey(r, j, dia) });
     }
+    for (const s of sueltos) cosas.push({ y: s.y, draw: () => dibujarSuelto(r, s, dia) });
     cosas.push({ y: yo.y, draw: () => dibujarme(r, dia) });
     cosas.sort((a, b) => a.y - b.y);
     for (const c of cosas) c.draw();
@@ -1749,6 +1814,31 @@ export function createHuidaScene(services) {
       r.ctx.scale(-1, 1);
     }
     dibujo();
+    r.ctx.restore();
+  }
+
+  /**
+   * 🐎 UN CABALLO SIN JINETE, **con la silla puesta**: al jinete lo bajaron de
+   * un tiro, así que el recado sigue ahí. Por eso la montura se dibuja aparte
+   * (`dibujarMontura`, en caballo.js) y no adentro de la persona — si no, el
+   * caballo suelto salía pelado. Se va borrando sobre el final.
+   */
+  function dibujarSuelto(r, s, dia) {
+    const T0 = 0.56;
+    const zancada = { t: ((s.gallop % T0) + T0) % T0, T: T0 };
+    const trote = Math.round(Math.cos((zancada.t / T0 - 0.15) * Math.PI * 2) * 1.2);
+    const pose = Math.max(-4, Math.min(4, Math.round(Math.sin(s.rumbo) * 4)));
+
+    r.ctx.save();
+    r.ctx.globalAlpha = Math.max(0, Math.min(1, s.vida / 1.5));
+    r.ctx.globalAlpha *= 0.25;
+    r.box(s.x, s.y + 7, 11, 2, '#000');
+    r.ctx.globalAlpha = Math.max(0, Math.min(1, s.vida / 1.5));
+    dibujarCaballo(s, r, () => {
+      const montura = dibujarAnimal(r, s.x, s.y, zancada, trote, 1, pose, null, !dia);
+      dibujarMontura(r, montura.asiento.x, montura.asiento.y, pose);
+      montura.adelante();
+    });
     r.ctx.restore();
   }
 
@@ -1894,9 +1984,31 @@ export function createHuidaScene(services) {
     r.ctx.fill();
     r.ctx.restore();
 
+    /**
+     * 🎯 EL BRAZO APUNTA A DONDE MIRÁS, aunque sea para atrás. Hasta ahora,
+     * tirando hacia atrás **el jinete no se daba vuelta ni un poco**: lo único
+     * que pasaba era que la mira crecía, así que el disparo no se veía salir de
+     * ningún lado.
+     *
+     * ⚠️ GIRA EL BRAZO Y NO EL CUERPO, a propósito. Girar el torso entero es
+     * justo lo que Santi marcó hace varias vueltas —*"hay veces que el caballo
+     * no cambia de dirección pero el personaje sí, entonces se ve raro"*— y por
+     * eso la vista del jinete la manda el caballo. El brazo solo alcanza para
+     * que se entienda, sin traer de vuelta lo que molestaba.
+     *
+     * El ángulo va ACHATADO como la vista: si no, tirar al norte se dibujaría
+     * mucho más vertical de lo que se ve.
+     */
+    const apuntando = input.mouse.down || yo.fireTimer > 0 || yo.fogonazo > 0;
+    const a = haciaDondeApunto();
+    const armaDir = Math.atan2(Math.sin(a) * PROFUNDIDAD, Math.cos(a));
+
     dibujarCaballo(yo, r, () => {
       const montura = dibujarAnimal(r, yo.x, yo.y, zancada, trote, 1, yo.pose, caballo.id, !dia);
-      dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, yo.pose, 2, {}, montura);
+      dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, yo.pose, 2, {
+        arma: apuntando || undefined,
+        armaDir: apuntando ? armaDir : undefined,
+      }, montura);
       montura.adelante();
     });
 
@@ -1972,6 +2084,27 @@ export function createHuidaScene(services) {
   function dibujarPanel(r) {
     const centro = vista.w / 2;
 
+    /**
+     * 🧾 DOS FRANJAS QUE APOYAN EL TEXTO. El panel era texto suelto sobre el
+     * desierto: sobre una mancha clara —la arena de día, una bolsa, un caballo
+     * bayo— el dinero y las balas se perdían justo cuando hacían falta.
+     *
+     * Van oscuras y transparentes, no un marco dibujado: en una persecución lo
+     * último que querés es que la pantalla se achique. Lo que hacen es separar
+     * lo que leés de lo que jugás, nada más.
+     */
+    const franja = (y, alto, alpha) => {
+      r.ctx.save();
+      r.ctx.globalAlpha = alpha;
+      r.rect(0, y, vista.w, alto, '#000');
+      r.ctx.restore();
+    };
+    franja(0, 26, 0.34);
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.18;
+    r.rect(0, 26, vista.w, 1, '#c9a227');
+    r.ctx.restore();
+
     if (fin) {
       const texto = fin.como === 'limpio' ? T.huida.todosCaidos
         : fin.como === 'llegaste' && refugioTomado ? refugioTomado.cartel
@@ -2008,6 +2141,8 @@ export function createHuidaScene(services) {
     dibujarAguante(r);
 
     if (tiempo < 6 && !fin) {
+      // La de abajo sólo mientras están las teclas: después no hay qué apoyar.
+      franja(vista.h - 24, 24, 0.34 * Math.min(1, 6 - tiempo));
       r.text(T.huida.teclas[0], centro, vista.h - 17, colors.textDim);
       r.text(T.huida.teclas[1], centro, vista.h - 7, colors.textDim);
     }

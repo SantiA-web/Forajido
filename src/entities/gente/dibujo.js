@@ -445,8 +445,26 @@ export function tramo(L, a, b, w, col) {
  * a la mano, y el caño hacia `dir`. Con el caño corto (apuntando hacia la
  * cámara) se ve la boca en vez del caño.
  */
-export function apuntar(L, R, hombro, mano, dir, largo) {
+export function apuntar(L, R, hombro, mano, dir, largo, haciaDonde = null) {
   const [M0, ML, MS] = R.manga;
+  /**
+   * 🎯 SI LA ESCENA MANDA UN ÁNGULO, el brazo va para allá: la mano se planta
+   * a un brazo de distancia del hombro y el caño sale derecho desde ahí. Es lo
+   * que deja tirar para atrás **sin girar el cuerpo** (ver `armaDir` en
+   * figura.js). Sin ángulo, cada vista usa su pose de siempre.
+   */
+  if (haciaDonde != null) {
+    /**
+     * 🐛 EL BRAZO TIENE QUE SACAR LA MANO DE LA SILUETA. Con 13 la mano caía
+     * ADENTRO del cuerpo apuntando al oeste, y detrás de la cabeza apuntando al
+     * norte: el revólver existía y no se veía. El torso mide unas 24 de ancho,
+     * así que el brazo tiene que pasar de la mitad de eso desde el hombro.
+     */
+    const BRAZO = 17;
+    dir = [Math.cos(haciaDonde), Math.sin(haciaDonde)];
+    mano = [hombro[0] + dir[0] * BRAZO, hombro[1] + dir[1] * BRAZO];
+    largo = 10;
+  }
   tramo(L, [hombro[0], hombro[1] + 1], [mano[0], mano[1] + 1], 3, MS);
   tramo(L, hombro, mano, 2.6, M0);
   L.rect(Math.round((hombro[0] + mano[0]) / 2), Math.round((hombro[1] + mano[1]) / 2) - 1, 2, 1, ML);

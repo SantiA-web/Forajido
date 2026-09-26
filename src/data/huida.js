@@ -74,6 +74,13 @@ export const HUIDA = {
      */
     zonaTerreno: 120,
     /**
+     * 🏜️ CUÁNTAS DE CADA DIEZ CELDAS LLEVAN MANCHA *(Santi eligió el tamaño y
+     * pidió bajar la cantidad: "yo dejaría este tamaño, pero bajaría la
+     * cantidad")*. Tiene que quedar suelo pelado entre las manchas: si todas
+     * las celdas tuvieran, no habría contra qué leerlas.
+     */
+    zonaLlenas: 2,
+    /**
      * 🎲 DÓNDE CAEN LOS TRES, SORTEADO DE VERDAD *(Santi: "deberíamos hacer que
      * los puntos de llegada sean aleatorios sus ubicaciones, para que no
      * siempre se elija uno y no otro")*.

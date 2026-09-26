@@ -15272,9 +15272,26 @@ datos nunca puede poder eso. Ahora el tamaño tiene piso (20) y las filas techo
 (220), y `tamano: 0` es "sin manchas", que es lo que hace falta para medir el
 costo contra nada.
 
+🔻 **CUÁNTAS CELDAS LLEVAN MANCHA VA APARTE DEL TONO** *(Santi, viendo la
+primera versión: "yo dejaría este tamaño, pero bajaría la cantidad")*. Al
+principio la presencia y el tono salían del mismo resto del sorteo, así que
+bajar la cantidad también borraba tonos: con tres de cada diez celdas llenas,
+uno de los cuatro tonos no aparecía nunca. Ahora salen de bits distintos.
+
+Medido con el piloto, cinco corridas por valor:
+
+| De cada diez celdas | Zonas por corrida | Cada cuánto cambia | Cuánto tiempo pisás mancha |
+|---|---|---|---|
+| 4 | 12,6 | 1,8 s | 42% |
+| 3 | 10,2 | 1,9 s | 33% |
+| **2** *(elegido)* | **8,2** | **2,5 s** | **25%** |
+
+Con 4 la pantalla era casi toda mancha y el suelo base no se veía; el desierto
+volvía a ser liso, sólo que manchado. Con 2 hay suelo pelado entre medio y
+cada zona se lee como un lugar al que entrás.
+
 📏 **Cuesta 0,3 ms por cuadro**, y casi no depende del tamaño de las manchas
-(0,79 sin ellas, 1,03-1,09 con ellas). Con las manchas en 120 cruzás **14,4
-zonas por corrida, una cada 1,3 segundos**.
+(0,79 sin ellas, 1,03-1,09 con ellas).
 
 #### 🏔️ LA ÚLTIMA VUELTA DE LA HUIDA: EL FONDO, EL CABALLO SUELTO, EL BRAZO Y EL PANEL
 

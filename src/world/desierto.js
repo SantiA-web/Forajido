@@ -194,12 +194,19 @@ export function sembrarDesierto(r, opciones) {
  */
 const filasDe = (ry) => Math.max(8, Math.min(220, Math.round(ry * 1.5)));
 
+/** Los tonos, como factores del color del suelo. */
+const TONOS = [1.11, 0.89, 0.79, 1.05];
+
 /**
- * Los tonos, como factores del color del suelo. El 0 es "no pintar nada", y es
- * la mitad de las celdas: si todas tuvieran mancha no habría suelo base contra
- * el cual leerlas.
+ * ⚠️ CUÁNTAS CELDAS TIENEN MANCHA VA APARTE DEL TONO, y sale de bits distintos
+ * del mismo sorteo. Antes los dos salían del mismo resto, así que bajar la
+ * cantidad también borraba tonos: con tres de cada diez celdas llenas, uno de
+ * los cuatro tonos no aparecía nunca.
+ *
+ * Y tiene que quedar suelo base sin mancha: si todas tuvieran, no habría contra
+ * qué leerlas y el desierto volvería a ser un color liso, sólo que otro.
  */
-const ZONAS = [0, 0, 1.11, 0.89, 0.79, 1.05];
+const DE_CADA = 10;
 
 export function pintarSuelo(r, opciones) {
   const { x0, y0, x1, y1, noche = false, base, semilla = 0 } = opciones;
@@ -214,6 +221,8 @@ export function pintarSuelo(r, opciones) {
    * Un número que llega de un archivo de datos nunca puede poder eso.
    */
   const tamano = Math.max(20, opciones.tamano || 120);
+  /** Cuántas de cada diez celdas llevan mancha. El resto queda suelo pelado. */
+  const llenas = Math.max(0, Math.min(DE_CADA, opciones.llenas ?? 2));
 
   const cx0 = Math.floor(x0 / tamano) - 1;
   const cx1 = Math.ceil(x1 / tamano) + 1;
@@ -223,8 +232,8 @@ export function pintarSuelo(r, opciones) {
   for (let cy = cy0; cy <= cy1; cy++) {
     for (let cx = cx0; cx <= cx1; cx++) {
       const h = revolver(cx * 15485863 + cy * 32452843 + semilla);
-      const zona = ZONAS[h % ZONAS.length];
-      if (!zona) continue;
+      if (h % DE_CADA >= llenas) continue;
+      const zona = TONOS[(h >>> 3) % TONOS.length];
 
       // El centro cae dentro de la celda, pero la mancha es MÁS GRANDE que la
       // celda: así las vecinas se pisan y el borde no se lee como una grilla.
@@ -269,7 +278,9 @@ export function pintarSuelo(r, opciones) {
 }
 
 /** Qué zona pisa un punto: para medir cuántas cruza una corrida. */
-export function zonaDe(x, y, tamano = 120, semilla = 0) {
+export function zonaDe(x, y, tamano = 120, llenas = 2, semilla = 0) {
   const cx = Math.floor(x / tamano), cy = Math.floor(y / tamano);
-  return revolver(cx * 15485863 + cy * 32452843 + semilla) % ZONAS.length;
+  const h = revolver(cx * 15485863 + cy * 32452843 + semilla);
+  // 0 es el suelo pelado; los demás, cada tono.
+  return h % DE_CADA >= llenas ? 0 : 1 + ((h >>> 3) % TONOS.length);
 }

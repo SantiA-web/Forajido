@@ -1725,6 +1725,7 @@ export function createHuidaScene(services) {
       noche: !dia,
       base: dia ? colors.desiertoDia : colors.desiertoNoche,
       tamano: H.mundo.zonaTerreno,
+      llenas: H.mundo.zonaLlenas,
     });
 
     sembrarDesierto(r, {

@@ -24,6 +24,9 @@ const PUNTO = 0.25;
 /** El lado de la celda donde puede caer una cosa, en unidades. */
 const CELDA = 30;
 
+/** Las manchas de suelo son elipses achatadas, como todo en tres cuartos. */
+const ACHATA_SUELO = 0.62;
+
 /** Un número fijo entre 0 y 2³²−1 para cada celda. */
 function revolver(n) {
   let h = n >>> 0;
@@ -159,4 +162,114 @@ export function sembrarDesierto(r, opciones) {
       r.ctx.drawImage(img, wx - w / 2, wy - alto, w, alto);
     }
   }
+}
+
+/**
+ * 🏜️ LAS MANCHAS DE TERRENO: lo que hace que el campo sea un LUGAR.
+ *
+ * *(Santi, sobre el intento anterior, que fue ponerle un horizonte: "lo siento
+ * ajeno al sector por dónde corren los caballos… quedó horrible". Y después, la
+ * explicación exacta: "en el galope no te deja pasar al otro lado de la vía del
+ * tren (o sea, acercarte al fondo). En el escape sí podés ir por dónde querás".)*
+ *
+ * ⚠️ ÉSA ES LA REGLA, Y ES DE CÁMARA. Un fondo pintado sólo aguanta si hay algo
+ * que te impida llegar hasta él — en el galope, la vía. Donde podés cabalgar a
+ * cualquier lado no hay "lejos" que se pueda falsear: **el paisaje lo tiene que
+ * hacer el suelo**, que es adonde sí vas.
+ *
+ * Son manchas grandes y achatadas —la misma vista de tres cuartos que todo lo
+ * demás— sorteadas por celda, sin azar: la misma celda da siempre la misma
+ * mancha, así que el desierto no titila ni cambia cuando volvés sobre tus pasos.
+ *
+ * ⚠️ Y VAN EN TONOS DEL MISMO COLOR, no en colores distintos. Es la lección que
+ * dejó la quebrada: con cinco colores el paredón se veía como un órgano de
+ * tubos. Lo que separa una zona de otra acá es la LUZ, no el tinte.
+ */
+
+/**
+ * 🐛 LAS FILAS SE CUENTAN DESDE EL TAMAÑO, no son un número fijo. Con 16 filas
+ * una mancha grande quedaba en escalones de siete unidades: se leía como una
+ * escalera, no como una mancha de tierra. Ahora hay una fila y media por unidad
+ * de alto, o sea filas de menos de un punto de pantalla.
+ */
+const filasDe = (ry) => Math.max(8, Math.min(220, Math.round(ry * 1.5)));
+
+/**
+ * Los tonos, como factores del color del suelo. El 0 es "no pintar nada", y es
+ * la mitad de las celdas: si todas tuvieran mancha no habría suelo base contra
+ * el cual leerlas.
+ */
+const ZONAS = [0, 0, 1.11, 0.89, 0.79, 1.05];
+
+export function pintarSuelo(r, opciones) {
+  const { x0, y0, x1, y1, noche = false, base, semilla = 0 } = opciones;
+  if (x1 <= x0 || y1 <= y0) return;
+  // `tamano: 0` es "sin manchas", para poder comparar el costo contra nada.
+  if (opciones.tamano === 0) return;
+
+  /**
+   * 🐛 EL TAMAÑO TIENE PISO, y no es una paranoia: probando con un valor
+   * diminuto el bucle se comió la pestaña. Recorre `(ancho / tamaño)` celdas,
+   * así que un número chico no dibuja manchas chiquitas — **cuelga el juego**.
+   * Un número que llega de un archivo de datos nunca puede poder eso.
+   */
+  const tamano = Math.max(20, opciones.tamano || 120);
+
+  const cx0 = Math.floor(x0 / tamano) - 1;
+  const cx1 = Math.ceil(x1 / tamano) + 1;
+  const cy0 = Math.floor(y0 / tamano) - 1;
+  const cy1 = Math.ceil(y1 / tamano) + 1;
+
+  for (let cy = cy0; cy <= cy1; cy++) {
+    for (let cx = cx0; cx <= cx1; cx++) {
+      const h = revolver(cx * 15485863 + cy * 32452843 + semilla);
+      const zona = ZONAS[h % ZONAS.length];
+      if (!zona) continue;
+
+      // El centro cae dentro de la celda, pero la mancha es MÁS GRANDE que la
+      // celda: así las vecinas se pisan y el borde no se lee como una grilla.
+      const wx = cx * tamano + ((h >>> 6) % tamano);
+      const wy = cy * tamano + ((h >>> 14) % tamano);
+      const rx = tamano * (0.6 + ((h >>> 22) % 5) / 12);
+      const ry = rx * ACHATA_SUELO;
+      if (wx + rx < x0 || wx - rx > x1 || wy + ry < y0 || wy - ry > y1) continue;
+
+      /**
+       * 🐛 DE NOCHE LA DIFERENCIA HAY QUE ABRIRLA, no cerrarla. Los tonos son
+       * multiplicativos y el suelo nocturno ya es casi negro (#1b1610): un
+       * factor de 1,11 sobre 27 son TRES valores de diferencia, invisibles,
+       * mientras que sobre el 138 del día son quince. La primera versión encima
+       * los acercaba a 1 de noche, o sea que borraba las zonas justo cuando
+       * menos se veían. Ahora se separa el doble para que la diferencia en
+       * pantalla sea parecida a la del día — pero SÓLO lo justo: con el doble y pico
+       * las manchas oscuras dejaban de leerse como tierra y parecían pozos.
+       */
+      const color = tono(base, noche ? 1 + (zona - 1) * 1.6 : zona);
+      const filas = filasDe(ry);
+      const alto = (2 * ry) / filas;
+      for (let i = 0; i < filas; i++) {
+        const t = (i + 0.5) / filas * 2 - 1;          // de -1 a 1
+        /**
+         * El borde no es una elipse limpia: cada fila se corre un poco, y el
+         * corrimiento va SUAVE de una fila a la siguiente (se mezclan dos
+         * sorteos vecinos). Si cada fila sacara su número suelto el borde
+         * quedaría peludo en vez de irregular.
+         */
+        const k = i / 5;
+        const a = (revolver(h + Math.floor(k) * 2654435761) % 1000) / 1000;
+        const b = (revolver(h + (Math.floor(k) + 1) * 2654435761) % 1000) / 1000;
+        const u = k - Math.floor(k);
+        const j = a + (b - a) * (u * u * (3 - 2 * u));
+        const medio = rx * Math.sqrt(Math.max(0, 1 - t * t)) * (0.84 + j * 0.16);
+        if (medio < 1) continue;
+        r.rect(wx - medio, wy - ry + i * alto, medio * 2, alto + 0.4, color);
+      }
+    }
+  }
+}
+
+/** Qué zona pisa un punto: para medir cuántas cruza una corrida. */
+export function zonaDe(x, y, tamano = 120, semilla = 0) {
+  const cx = Math.floor(x / tamano), cy = Math.floor(y / tamano);
+  return revolver(cx * 15485863 + cy * 32452843 + semilla) % ZONAS.length;
 }

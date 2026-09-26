@@ -13802,7 +13802,7 @@ Queda **una sola cosa, y es la más difícil de las que hubo: EL FONDO.**
 
 | Qué | Dónde | Cómo está |
 |---|---|---|
-| El fondo de la huida | `huidaScene.js`, `render` | Desierto liso: el mismo suelo sembrado en todas partes. Se probó con un horizonte y **no va en esta cámara** (ver la sección de abajo). El paisaje lo tiene que hacer el suelo: zonas de terreno distinto, cauces secos, algo que diga dónde estás |
+| El fondo de la huida (B) | `huidaScene.js`, `render` | **La mitad hecha.** El suelo ya tiene zonas de terreno (A). Falta lo que se ve a lo lejos: **mojones grandes** —mesas y farallones puestos en el mundo, que crecen cuando te acercás y les podés pasar al lado—, con el mismo mecanismo con el que ves la quebrada y el bosque de lejos |
 
 
 ---
@@ -15228,6 +15228,53 @@ hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
 
 📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
 cuadro con dibujo.
+
+#### 🏜️ EL PAISAJE LO HACE EL SUELO (A): LAS ZONAS DE TERRENO
+
+*(Santi, después de que el horizonte saliera mal, con el diagnóstico exacto: "en
+el galope no te deja pasar al otro lado de la vía del tren (o sea, acercarte al
+fondo). En el escape sí podés ir por dónde querás".)*
+
+⚠️ **ÉSA ES LA REGLA, Y VALE PARA CUALQUIER ESCENA DE ACÁ EN ADELANTE.** Un
+fondo pintado sólo aguanta si hay algo que te impida llegar hasta él — en el
+galope, la vía. Donde podés cabalgar a cualquier lado no hay "lejos" que se
+pueda falsear: **el paisaje lo tiene que hacer el suelo**, que es adonde sí vas.
+
+Ahora el campo tiene manchas grandes de terreno distinto (`pintarSuelo`, en
+`world/desierto.js`): elipses achatadas sorteadas por celda, sin azar, así que
+la misma celda da siempre la misma mancha y el desierto no titila ni cambia
+cuando volvés sobre tus pasos. Van DEBAJO del pasto y las piedritas, que es
+donde va el suelo.
+
+⚠️ **Y son tonos del mismo color, no colores distintos.** Es la lección que dejó
+la quebrada: con cinco colores el paredón se veía como un órgano de tubos. Lo
+que separa una zona de otra es la LUZ.
+
+🐛 **De noche había que ABRIR la diferencia, no cerrarla.** Los tonos son
+multiplicativos y el suelo nocturno ya es casi negro (`#1b1610`): un factor de
+1,11 sobre 27 son tres valores, invisibles, mientras que sobre el 138 del día
+son quince. La primera versión encima los acercaba a 1 de noche, o sea que
+borraba las zonas justo cuando menos se veían. Y pasada de rosca tampoco: con el
+doble y pico las manchas oscuras dejaban de leerse como tierra y parecían pozos.
+
+🐛 **El borde salía escalonado.** Las manchas se dibujan en filas de
+rectángulos, y con 16 filas fijas una mancha grande quedaba en escalones de
+siete unidades: una escalera, no una mancha. Ahora las filas se cuentan desde el
+tamaño (una y media por unidad de alto) y el corrimiento de cada fila se mezcla
+con el de la vecina — si cada una sacara su número suelto el borde quedaría
+peludo en vez de irregular.
+
+🐛 **Y DOS AGUJEROS DEL MISMO TIPO, los dos encontrados rompiéndolo a propósito
+para medir.** `pintarSuelo` recorre `(ancho / tamaño)` celdas y dibuja
+`(alto × 1,5)` filas por mancha, así que **un tamaño muy chico o muy grande no
+hacía manchas raras: colgaba la pestaña**. Un número que llega de un archivo de
+datos nunca puede poder eso. Ahora el tamaño tiene piso (20) y las filas techo
+(220), y `tamano: 0` es "sin manchas", que es lo que hace falta para medir el
+costo contra nada.
+
+📏 **Cuesta 0,3 ms por cuadro**, y casi no depende del tamaño de las manchas
+(0,79 sin ellas, 1,03-1,09 con ellas). Con las manchas en 120 cruzás **14,4
+zonas por corrida, una cada 1,3 segundos**.
 
 #### 🏔️ LA ÚLTIMA VUELTA DE LA HUIDA: EL FONDO, EL CABALLO SUELTO, EL BRAZO Y EL PANEL
 

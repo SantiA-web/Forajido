@@ -65,6 +65,15 @@ export const HUIDA = {
    */
   mundo: {
     /**
+     * 🏜️ EL TAMAÑO DE LAS MANCHAS DE TERRENO, en unidades. Es el lado de la
+     * celda que sortea cada zona; la mancha sale más grande que la celda para
+     * que las vecinas se pisen y el borde no se lea como una grilla.
+     *
+     * Chicas se leen como suciedad del suelo; grandes, como regiones por las
+     * que pasás. La pantalla mide 426 de ancho.
+     */
+    zonaTerreno: 120,
+    /**
      * 🎲 DÓNDE CAEN LOS TRES, SORTEADO DE VERDAD *(Santi: "deberíamos hacer que
      * los puntos de llegada sean aleatorios sus ubicaciones, para que no
      * siempre se elija uno y no otro")*.

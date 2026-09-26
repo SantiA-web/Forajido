@@ -35,7 +35,7 @@ import { applyRaidResult, recompensaTapada, gameState, numero } from '../state/g
 import { T } from '../text/es.js';
 import { GOLPES, dibujarAnimal, dibujarJinete, dibujarMontura } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
-import { sembrarDesierto } from '../world/desierto.js';
+import { sembrarDesierto, pintarSuelo } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
 import {
@@ -1715,6 +1715,18 @@ export function createHuidaScene(services) {
 
     // El suelo: pasto, piedritas y manchas, sembradas por celda (las mismas
     // del galope y del asalto, así que el afuera es siempre el mismo lugar).
+    /**
+     * 🏜️ PRIMERO LAS ZONAS DE TERRENO Y DESPUÉS LO QUE CRECE ENCIMA. Las
+     * manchas son el suelo mismo; el pasto y las piedritas van arriba, como en
+     * la vida. Al revés el pasto quedaba enterrado.
+     */
+    pintarSuelo(r, {
+      x0: camX, y0: camY, x1: camX + vista.w, y1: camY + vista.h,
+      noche: !dia,
+      base: dia ? colors.desiertoDia : colors.desiertoNoche,
+      tamano: H.mundo.zonaTerreno,
+    });
+
     sembrarDesierto(r, {
       x0: camX, y0: camY, x1: camX + vista.w, y1: camY + vista.h,
       noche: !dia, colores: colors.cielo, grandes: () => false,

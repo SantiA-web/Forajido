@@ -1754,6 +1754,11 @@ soltaste casi toda la plata.
   agranda** —hasta 1,5 veces derecho hacia atrás— y, como no ves adelante,
   **el caballo se tuerce solo** cada tanto, un segundo, para arriba o para
   abajo. Corregilo con `W/S` o te comés una piedra.
+- **El campo no es una textura repetida**: hay manchas grandes de terreno
+  distinto —arena clara, tierra apretada, pedregullo oscuro— así que en una
+  corrida pasás por unas catorce zonas, una cada segundo y pico. No hay cielo
+  ni montañas pintadas al fondo: acá la cámara mira casi desde arriba y podés
+  cabalgar a cualquier lado, así que el paisaje lo hace el suelo.
 - **Al que bajás se le escapa el caballo**: el cuerpo queda en el suelo y el
   animal sigue galopando solo, con la silla puesta, hasta perderse.
 - **El revólver te sigue el mouse todo el tiempo**: el brazo apunta a donde

@@ -483,7 +483,19 @@ export function apuntar(L, R, hombro, mano, dir, largo) {
  * El orden importa: primero el brazo de atrás (queda debajo), después el arma,
  * y **el brazo de adelante encima de todo** — ése es el que se lee agarrando.
  */
-export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano, culata = 5) {
+/**
+ * 📏 EL LARGO VA EN UNIDADES DE ESTA GRILLA, QUE NO SON LAS DEL JUEGO. Acá una
+ * persona mide **74 de alto** y en el juego mide **20**: cada unidad de grilla
+ * son 0,28 del juego. La primera versión se midió a ojo contra el torso (que
+ * mide unas 16 de ancho) y salió un arma de 22 de grilla = **6 unidades del
+ * juego**, que es justo el largo de un revólver. Santi: *"cambiaste el rifle
+ * por el revólver, o eso parece"*.
+ *
+ * Una carabina de 1 m sobre una persona de 1,75 m son **40 de grilla**
+ * (culata 9 + 13 entre las manos + 18 de caño), y hay lugar de sobra: el
+ * lienzo llega hasta la 79.
+ */
+export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano = 18, culata = 9) {
   const [M0, ML, MS] = R.manga;
   const [nx, ny] = dir;
   const punto = (p, d) => [p[0] + nx * d, p[1] + ny * d];
@@ -509,8 +521,8 @@ export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano, culata = 
     L.elipse(boca[0], boca[1], 2.2, 2.2, '#6b6258');
     L.rect(Math.round(boca[0]), Math.round(boca[1]), 1, 1, NEGRO);
   } else {
-    tramo(L, manoF, boca, 1.6, '#9a9288');
-    tramo(L, manoF, punto(manoF, cano * 0.7), 0.8, '#c4bcb0');
+    tramo(L, manoF, boca, 2, '#9a9288');
+    tramo(L, manoF, punto(manoF, cano * 0.7), 0.9, '#c4bcb0');
     L.rect(Math.round(boca[0]), Math.round(boca[1]), 1, 1, '#e0d8cc');
   }
 

@@ -339,7 +339,7 @@ function torsoFrente(L, R, o, g, f) {
   if (o.arma === 'rifle') {
     // Cruzado sobre las piernas: de frente se ve el arma de costado, o sea una
     // barra que cruza el cuerpo entero. Es la pose que mejor se lee de todas.
-    rifle(L, R, [12 + g, 35], [17, 47], [35 - g, 35], [29, 45], [0.97, -0.24], 8);
+    rifle(L, R, [12 + g, 35], [13, 47], [35 - g, 35], [26, 44], [0.974, -0.225]);
   } else if (o.arma === 'rifleListo') {
     /**
      * Encarándote, el rifle va **en diagonal**, del hombro derecho para abajo y
@@ -351,7 +351,7 @@ function torsoFrente(L, R, o, g, f) {
      *    que las dos se veían igual y el aviso no avisaba nada. Lo que se lee
      *    es el CAMBIO de ángulo, no el arma.
      */
-    rifle(L, R, [33 - g, 34], [27, 34], [13 + g, 35], [15, 40], [-0.89, 0.45], 10);
+    rifle(L, R, [33 - g, 34], [30, 34], [13 + g, 35], [18, 43], [-0.8, 0.6]);
   } else if (o.arma) {
     if (g) apuntar(L, R, [33, 34], [40, 44], [0.7, 0.7], 6);
     else apuntar(L, R, [34, 34], [30, 44], [0, 1], 3);
@@ -453,11 +453,11 @@ export function espalda(L, o = {}) {
   else U.rect(18, 29, 13, 4, CS);
   // Apuntando de espaldas: el brazo se va para arriba, al costado de la cabeza.
   if (o.arma === 'rifle') {
-    rifle(U, R, [13 + g, 35], [17, 47], [34 - g, 35], [29, 45], [0.97, -0.24], 8);
+    rifle(U, R, [13 + g, 35], [13, 47], [34 - g, 35], [26, 44], [0.974, -0.225]);
   } else if (o.arma === 'rifleListo') {
     // De espaldas apunta para el fondo: la misma diagonal que de frente pero
     // para arriba, con la boca saliendo al costado de la cabeza.
-    rifle(U, R, [33 - g, 34], [29, 33], [14 + g, 34], [20, 27], [-0.79, -0.61], 8);
+    rifle(U, R, [33 - g, 34], [30, 33], [14 + g, 34], [18, 24], [-0.8, -0.6]);
   } else if (o.arma) {
     if (g) apuntar(U, R, [33, 33], [39, 27], [0.6, -0.8], 6);
     else apuntar(U, R, [34, 33], [35, 25], [0, -1], 5);

@@ -15292,6 +15292,19 @@ barra horizontal, un poco más arriba. Dos poses distintas que se veían igual, 
 sea ningún aviso. Apuntando pasó a ser **una diagonal con la boca saliéndose de
 la silueta**: lo que se lee es el CAMBIO de ángulo, no el arma.
 
+🐛 **Y el rifle salió del largo de un revólver.** Santi, viendo el resultado:
+*"me gusta mucho la animación… pero cambiaste el rifle por el revólver, o eso
+parece"*. No se había cambiado nada: estaba mal medido.
+
+⚠️ **LA GRILLA DEL DIBUJO NO SON LAS UNIDADES DEL JUEGO.** Acá adentro una
+persona mide **74 de alto**; en el juego mide **20**. Cada unidad de la grilla
+son 0,28 del juego. El arma se midió a ojo contra el torso —que mide unas 16 de
+ancho— y salió de 22 de grilla, o sea **6 unidades del juego**: justo el largo
+de un revólver. Una carabina de 1 m sobre una persona de 1,75 m son **40 de
+grilla** (9 de culata + 13 entre las manos + 18 de caño). Y había lugar de
+sobra: el lienzo llega hasta la 79, así que el miedo a que no entrara era
+infundado — el problema era el otro.
+
 ⚠️ **NADA DE ESTO SE PUDO MEDIR, y se avisó cada vez.** El piloto del banco lee
 el `aimTimer` por adentro y no mira la pantalla: puede decir que no se rompió
 nada, pero no si el aviso se entiende. Los tres primeros intentos pasaron sus

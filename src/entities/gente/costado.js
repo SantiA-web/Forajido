@@ -254,7 +254,7 @@ export function lado(L, o = {}) {
   } else if (o.arma === 'rifle') {
     // Cruzado sobre las piernas, apuntando un poco para arriba: derecho se
     // hundía entero detrás del pescuezo del caballo.
-    rifle(U, R, [23, 35], [21, 47], [26, 35], [30, 45], [0.97, -0.24], 8);
+    rifle(U, R, [23, 35], [16, 49], [26, 35], [29, 46], [0.974, -0.225]);
   } else if (o.arma === 'rifleListo') {
     /**
      * Al hombro: la culata contra el hombro y la cara sobre la caja. Va **a la
@@ -262,7 +262,7 @@ export function lado(L, o = {}) {
      * del animal, que se dibuja después. Ocho unidades de diferencia con la
      * pose cruzada — eso es el aviso.
      */
-    rifle(U, R, [24, 34], [28, 33], [25, 35], [36, 33], [1, 0], 9);
+    rifle(U, R, [24, 34], [25, 33], [25, 35], [38, 33], [1, 0]);
   } else if (o.arma) {
     apuntar(U, R, [24, 34], [37, 38], [1, 0], 9);
   } else {

@@ -15232,43 +15232,64 @@ cuadro con dibujo.
 
 Tres cosas que se dibujaban con lo mínimo y ya pedían lo suyo.
 
-**1. El aviso del que te apunta es EL CUERPO DEL JINETE.** Primero se probó con
-una cuenta atrás dibujada: la raya se encendía desde el revólver y el `!` latía
-cada vez más rápido. Santi la vio y fue terminante — *"el aviso de disparo es
-pésimo y horrible. Yo haría algo más visual, como que el jinete agacha un poco
-la cabeza antes de disparar, simulando que está apuntando"*. Tenía razón: era
-información correcta dibujada como un cartel, encima de un juego que no tiene
-carteles en ningún otro lado.
+**1. El aviso del que te apunta: EL RIFLE.** Llegó en tres intentos, y los dos
+primeros están acá porque el tercero se entiende con ellos.
 
-Se fueron **la raya y el `!`**. Ahora el jinete **se agacha a apuntar**, en dos
-tiempos dentro del mismo medio segundo de siempre: en la primera mitad baja un
-poco el tronco y **saca el revólver**, y en la segunda **se agacha del todo
-sobre el caño**. El agache grande es el "ya va": ése es el momento del envión.
-Lo único que se pierde es hacia dónde va el tiro, que mostraba la raya — y casi
-siempre es hacia vos. **No se cambió ningún número de la pelea**: el aviso dura
-lo mismo que antes.
+**Intento 1 — una cuenta atrás dibujada.** La raya se encendía desde el arma y
+el `!` latía cada vez más rápido. Santi: *"el aviso de disparo es pésimo y
+horrible. Yo haría algo más visual, como que el jinete agacha un poco la cabeza
+antes de disparar, simulando que está apuntando"*. Tenía razón: era información
+correcta dibujada como un cartel, encima de un juego que no tiene carteles en
+ningún otro lado.
 
-⚠️ **ESTO NO SE PUDO MEDIR, y se avisó antes de hacerlo.** El piloto del banco
-lee el `aimTimer` por adentro, no mira la pantalla: puede decir que no se rompió
-nada, pero no si el aviso **se entiende**. Un cuerpo que se agacha es más sutil
-que un `!` gritándote en la cara. Eso lo decide Santi jugando.
+**Intento 2 — el jinete se agacha.** Se fueron la raya y el `!`, y el jinete
+pasó a agacharse a apuntar en dos tiempos. Santi lo jugó: *"no se nota nada"*.
+Y la cuenta le da la razón: **el agache mueve el cuerpo 1,25 unidades, menos de
+4 píxeles en pantalla**. Es real y es diminuto.
 
-🐛 **Y el primer intento no se veía de frente, que es la vista más común de la
-huida.** El agache se había hecho con `echado`, que es lo que ya inclina al
-jinete al galope… y la inclinación **sólo se dibuja de costado**: en figura.js,
-`lateral` vale 0 en la vista de frente, así que `ECHADO` quedaba multiplicado
-por cero. Un jinete que viene de frente apuntándote no cambiaba ni un píxel.
+**Intento 3 — el rifle *(idea de Santi: "que tengan un rifle en vez de un
+revólver, entonces se nota mucho más cuando levanta el arma y la apunta")*.** Un
+rifle es una barra de 11 unidades: **diez veces más cambio que el agache**. Y
+explica de paso algo que con un revólver nunca cerró — que **tiren desde
+cualquier distancia**, sin tope de alcance.
 
-La solución fue **agacharse, que no es lo mismo que echarse adelante**: bajar el
-tronco con los pies quietos, que se ve desde cualquier lado. Se aprovechó el
-mismo mecanismo con el que un guardia se asoma de un reparo (`asomado.dy`, que
-baja torso, cabeza y sombrero juntos), con un campo nuevo `agacha`.
+Va **dibujado en la escena y no adentro del muñeco**, igual que el lazo: así se
+lo apunta al ángulo exacto y se ve desde cualquier lado, en vez de depender de
+las ocho vistas de la figura. Y **se ve siempre**, cruzado bajo y casi plano
+sobre los muslos mientras galopa: un fierro que aparece de la nada se nota raro,
+y así el cambio es de algo a algo. Al apuntar sube diez unidades —medio cuerpo—
+y gira hasta encararte, en curva y no de un tirón. El agache del intento 2 se
+quedó: solo no alcanzaba, acompañando suma.
 
-🐛 **Y por eso los dos tiempos no son "primero el arma, después la cabeza".**
-De frente el revólver apunta a la cámara y no es más que un punto: un tiempo
-marcado sólo con el arma era invisible justo donde más importa. Los dos tiempos
-son **dos alturas del agache** (2 y 5), y el arma se manda igual porque de
-costado y en diagonal sí cambia la silueta y ahí suma gratis.
+🐛 **Y la primera versión del rifle era un garrote.** Medía 14 unidades y tenía
+el caño de 2 puntos de grueso con una boca blanca de 2×2: parecía un tronco. El
+largo sale de la persona y no del ojo — el muñeco mide 20 unidades ≈ 1,75 m, así
+que una carabina de 1 m son **11 unidades** (7 de caño y 4 de culata).
+
+🐛 **Y el descanso quedaba cruzado sobre el pecho**, o sea ya medio levantado, y
+entonces levantarlo de verdad casi no se notaba. Bajó a los muslos y se aplanó:
+**lo que hace el aviso es la diferencia entre las dos posiciones**, no el rifle.
+
+⚠️ **La bala ahora sale de la boca del caño**, no de un punto al lado del cuerpo:
+un tiro que nace en otro lado delata que el fierro es un adorno. Es un cambio
+chico pero real en de dónde arranca el disparo. Y el jinete **se queda apuntando
+0,35 s antes de bajar el rifle** (`BAJA_RIFLE`), porque si volviera al muslo en
+el mismo cuadro del disparo, el tiro saldría de la nada.
+
+⚠️ **NADA DE ESTO SE PUDO MEDIR, y se avisó antes de empezar.** El piloto del
+banco lee el `aimTimer` por adentro y no mira la pantalla: puede decir que no se
+rompió nada, pero no si el aviso se entiende. Los intentos 1 y 2 pasaron sus
+pruebas igual, y los dos estaban mal.
+
+🐛 **Por qué el intento 2 no se veía de frente**, que es la vista más común de la
+huida: el agache se había hecho con `echado`, que es lo que ya inclina al jinete
+al galope, y la inclinación **sólo se dibuja de costado** — en figura.js,
+`lateral` vale 0 en la vista de frente, así que `ECHADO` quedaba multiplicado por
+cero. Un jinete que venía de frente apuntándote no cambiaba ni un píxel. La
+solución fue **agacharse, que no es lo mismo que echarse adelante**: bajar el
+tronco con los pies quietos se ve desde cualquier lado. Se aprovechó el mismo
+mecanismo con el que un guardia se asoma de un reparo (`asomado.dy`), con un
+campo nuevo `agacha`.
 
 **2. El lazo, en sus dos estados.** El revoleo era un rectangulito dando vueltas
 sobre la cabeza; ahora es una **argolla de verdad**, un aro hueco que se ve

@@ -405,10 +405,16 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
   /**
    * 🎯 Y SE AGACHA A APUNTAR *(pedido de Santi: "algo más visual, como que el
    * jinete agacha un poco la cabeza antes de disparar, simulando que está
-   * apuntando")*. `ropa.apunta` viene en dos tiempos: 1 es levantar el
-   * revólver, 2 es además bajar la cabeza sobre el caño. El segundo tiempo usa
-   * el escalón extra de `ECHADO` (ver figura.js), porque al galope el jinete YA
-   * está echado a fondo y sin ese escalón no habría a dónde agacharse.
+   * apuntando")*. `ropa.apunta` viene en dos tiempos: 1 es encarar el arma, 2
+   * es agacharse del todo detrás de ella. El segundo tiempo usa el escalón
+   * extra de `ECHADO` (ver figura.js), porque al galope el jinete YA está
+   * echado a fondo y sin ese escalón no habría a dónde agacharse.
+   *
+   * ⚠️ El agache SOLO NO ALCANZA, y está medido: mueve el cuerpo 1,25 unidades,
+   * o sea menos de 4 píxeles en pantalla. *(Santi, viéndolo: "no se nota
+   * nada".)* El aviso que se ve de verdad es **el rifle**, y ése lo dibuja la
+   * escena encima del jinete (`dibujarSuRifle`, en huidaScene.js). Esto es lo
+   * que lo acompaña.
    */
   const apunta = ropa.apunta || 0;
   const echado = Math.max(0, Math.min(4,
@@ -452,13 +458,11 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
     estado: ropa.estado,
     destello: ropa.destello,
     /**
-     * Los DOS TIEMPOS son dos alturas del agache, no "primero el arma y
-     * después la cabeza": de frente el revólver apunta a la cámara y no es más
-     * que un punto, así que un tiempo marcado sólo con el arma no se vería en
-     * la vista más común de la huida. El arma se manda igual porque de costado
-     * y en diagonal sí cambia la silueta, y ahí suma gratis.
+     * Las manos quedan en las riendas aunque esté apuntando: **el rifle lo
+     * dibuja la escena encima**, con sus propias manos agarrándolo. Si acá se
+     * le pusiera además el revólver en la mano, se le verían dos armas.
      */
-    arma: apunta > 0,
+    arma: !!ropa.arma,
     agacha: apunta >= 2 ? 5 : apunta === 1 ? 2 : 0,
     panuelo: quien === 'jugador',
   });

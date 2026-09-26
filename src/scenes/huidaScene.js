@@ -52,6 +52,13 @@ import {
  */
 const PROFUNDIDAD = ACHATA;
 
+/**
+ * Lo que tarda un jinete en bajar el rifle después de tirar. No es un número de
+ * balance —no cambia nada de la pelea—, es para que el fierro no vuelva al
+ * muslo en el mismo cuadro del disparo.
+ */
+const BAJA_RIFLE = 0.35;
+
 export function createHuidaScene(services) {
   const { renderer, input, rng, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
@@ -388,6 +395,8 @@ export function createHuidaScene(services) {
       cooldown: J.cadencia * 0.6 + rng.range(0, J.cadenciaAzar),
       aimTimer: 0,
       aimDir: 0,
+      /** Lo que le falta para bajar el rifle después de tirar (ver BAJA_RIFLE). */
+      bajaRifle: 0,
       hitFlash: 0,
       gallop: Math.random() * 6.28,
       fase: Math.random() * 6.28,
@@ -1210,6 +1219,7 @@ export function createHuidaScene(services) {
       chocarJinete(j);
 
       j.cooldown -= dt;
+      j.bajaRifle = Math.max(0, j.bajaRifle - dt);
       const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
 
       /**
@@ -1348,8 +1358,17 @@ export function createHuidaScene(services) {
     // Parejo para todos, como en el asalto: a ellos también se les va el pulso.
     const a = j.aimDir
       + rng.spreadDeTiro(dispersionDelJinete(j), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
+    /**
+     * La bala sale de **la boca del rifle**, no de un punto al lado del cuerpo:
+     * el arma ya está dibujada apuntándote (`dibujarSuRifle`) y una bala que
+     * nace en otro lado delata que el fierro es un adorno.
+     */
+    // Y se queda apuntando un momento antes de bajar el fierro: si volviera al
+    // muslo en el mismo cuadro del disparo, el tiro saldría de la nada.
+    j.bajaRifle = BAJA_RIFLE;
+    const boca = bocaDelRifle(j);
     balas.push({
-      x: j.x + 6, y: j.y - 14,
+      x: boca.x, y: boca.y,
       vx: Math.cos(a) * J.velocidadBala,
       vy: Math.sin(a) * J.velocidadBala * PROFUNDIDAD,
       vida: J.duracionBala, mia: false,
@@ -1773,7 +1792,87 @@ export function createHuidaScene(services) {
       montura.adelante();
     });
 
+    dibujarSuRifle(r, j);
     if (j.lazo || j.revolea > 0 || j.soga > 0) dibujarSuLazo(r, j);
+  }
+
+  /**
+   * 🔫 EL RIFLE, Y ÉSTE ES EL AVISO DE VERDAD *(Santi: "no se nota nada. Lo que
+   * yo haría, que puede ser una solución muy buena, es que tengan un rifle en
+   * vez de un revólver, entonces se nota mucho más cuando levanta el arma y la
+   * apunta")*.
+   *
+   * ⚠️ Y la cuenta le da la razón: el agache mueve el cuerpo 1,25 unidades,
+   * **menos de 4 píxeles**. El rifle es una barra de 14 unidades: diez veces
+   * más cambio. Encima explica algo que con un revólver nunca cerró — que
+   * **tiren desde cualquier distancia** (ver `alcance` en data/huida.js).
+   *
+   * Va DIBUJADO EN LA ESCENA y no adentro del muñeco, igual que el lazo: así se
+   * lo apunta al ángulo exacto y se ve desde cualquier lado, en vez de depender
+   * de las ocho vistas de la figura — que es justo donde se cayó el intento
+   * anterior, porque de frente la inclinación del cuerpo no se dibuja.
+   *
+   * Y **se ve siempre**, cruzado sobre el recado mientras galopa: un fierro que
+   * aparece de la nada se nota raro, y así el cambio es de algo a algo.
+   */
+  function dibujarSuRifle(r, j) {
+    const R = poseDelRifle(j);
+
+    // La culata, de madera y un poco más gruesa; el caño, CLARO para que se
+    // recorte del fondo (un caño gris oscuro sobre este desierto no existe).
+    r.line(R.ux, R.uy, R.cx, R.cy, '#7a5c31', 1, 2);
+    r.line(R.cx, R.cy, R.bx, R.by, '#8d857a', 1, 1);
+    r.box(R.bx, R.by, 0.5, 0.5, '#c9c0b2');
+
+    // Las dos manos, una en el guardamonte y otra en la caña.
+    r.box(R.cx - R.dx * 1.2, R.cy - R.dy * 1.2, 0.8, 0.8, '#c08a5a');
+    r.box(R.cx + R.dx * 2.8, R.cy + R.dy * 2.8, 0.8, 0.8, '#c08a5a');
+  }
+
+  /** Dónde está el rifle de un jinete, para dibujarlo y para que salga la bala. */
+  function poseDelRifle(j) {
+    const lado = Math.cos(j.rumbo) < 0 ? -1 : 1;
+    const encarando = j.aimTimer > 0 || j.bajaRifle > 0;
+    const p = j.aimTimer > 0
+      ? Math.max(0, Math.min(1, 1 - j.aimTimer / H.jinetes.apuntar))
+      : Math.max(0, Math.min(1, j.bajaRifle / BAJA_RIFLE));
+    // Sube en curva y no de un tirón: un fierro que salta se lee como un error.
+    const s = p * p * (3 - 2 * p);
+
+    /**
+     * Cruzado sobre el recado ←→ encarado hacia vos, por el camino más corto.
+     * El descanso va **bajo y casi plano**, apoyado en los muslos: la primera
+     * versión lo dejaba cruzado sobre el pecho y en diagonal, o sea ya medio
+     * levantado, y entonces levantarlo de verdad casi no se notaba. Lo que
+     * hace el aviso es la DIFERENCIA entre las dos posiciones, no el rifle.
+     */
+    const guardado = lado > 0 ? -0.28 : Math.PI + 0.28;
+    const destino = encarando ? j.aimDir : guardado;
+    const vuelta = Math.atan2(Math.sin(destino - guardado), Math.cos(destino - guardado));
+    const a = guardado + vuelta * s;
+
+    // Y de paso sube del recado al hombro: diez unidades, medio cuerpo.
+    const cx = j.x + 3 * lado * (1 - s);
+    const cy = j.y - 9 - 10 * s;
+    const dx = Math.cos(a), dy = Math.sin(a) * PROFUNDIDAD;
+
+    /**
+     * 📏 EL LARGO SALE DE LA PERSONA, no del ojo: el muñeco mide 20 unidades de
+     * alto ≈ 1,75 m, así que una carabina de 1 m son **11 unidades**. La
+     * primera versión medía 14 y era gruesa como un tronco: parecía un garrote,
+     * no un arma.
+     */
+    return {
+      cx, cy, dx, dy,
+      bx: cx + dx * 7, by: cy + dy * 7,
+      ux: cx - dx * 4, uy: cy - dy * 4,
+    };
+  }
+
+  /** La boca del caño: de ahí sale la bala. */
+  function bocaDelRifle(j) {
+    const R = poseDelRifle(j);
+    return { x: R.bx, y: R.by };
   }
 
   /**

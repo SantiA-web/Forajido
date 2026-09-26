@@ -155,6 +155,29 @@ export const HUIDA = {
     },
 
     /**
+     * 🧭 LA BRÚJULA DE LA HUIDA.
+     *
+     * En campo abierto hace falta algo que diga para dónde ir — si no, huir es
+     * dar vueltas. Pero es una AYUDA, no un tablero: en una persecución no
+     * tenés tiempo de leer, así que el cartel dice QUÉ refugio es con un
+     * dibujito (una grieta, tres agujas) y no con una letra.
+     */
+    brujula: {
+      /**
+       * A QUÉ DISTANCIA SE APAGA EL CARTEL, porque ya ves el refugio.
+       *
+       * La pantalla muestra 426 unidades de ancho, o sea que el refugio asoma
+       * por el borde cerca de las 200. Con 200 se apaga justo cuando aparece,
+       * y con 500 te quedás sin guía en todo el tramo final. En 320 se apaga
+       * cuando ya lo tenés claramente a la vista, desvaneciéndose de a poco.
+       */
+      seApagaA: 320,
+
+      /** Y de acá para adentro el cartel se enciende: lo tenés al alcance. */
+      cerca: 500,
+    },
+
+    /**
      * 🏆 LO QUE TE DA CADA REFUGIO *(Santi: "cada refugio otorga algo
      * distinto... quebrada (te devuelve una bolsa), o bosque de piedras")*.
      *

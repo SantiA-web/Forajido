@@ -13803,8 +13803,6 @@ bien:
 | El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
 | El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
 | El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
-| Los dos refugios del desierto | `world/destinos.js` | Anillos de bloques de roca y de peñascos, con su sombra (el río espera su región) |
-| La brújula de la huida | `huidaScene.js`, `dibujarBrujula` | Un cuadradito y un número por refugio |
 | El caballo del jinete caído | `huidaScene.js`, `pegarle` | Queda el cuerpo en el suelo y el caballo desaparece; debería seguir galopando solo |
 | Tirar para atrás | `huidaScene.js`, `dibujarme` | El jinete no se da vuelta: sólo crece el círculo. Falta el torso girado |
 
@@ -15197,6 +15195,40 @@ quedar detrás—. De los 173 bloques, en pantalla entran unos 40.
 0,88 sin él.
 
 ---
+
+#### 🧭 LA BRÚJULA: UN DIBUJITO EN VEZ DE UNA LETRA, Y QUE SE APAGUE
+
+Era "un cuadradito y un número" con la inicial del refugio (`Q` / `B`). Funciona,
+pero hay que **leerlo**, y en una persecución no tenés tiempo de leer.
+
+Ahora cada refugio lleva **su silueta en chiquito** —la quebrada, dos bloques de
+roca con el hueco en el medio; el bosque, tres agujas de distinto alto— más una
+**flecha** que apunta y la distancia debajo. Son las mismas siluetas que después
+ves en el horizonte, así que se reconocen sin leer nada.
+
+🐛 **Y el cartel se apaga cuando ya ves el refugio.** Antes se quedaba ahí
+aunque tuvieras el paredón entero en pantalla, **tapando justo lo que estabas
+mirando**. Se desvanece de a poco: entero hasta `seApagaA` (320), apagado del
+todo a la mitad de eso (160).
+
+⚠️ **Con una excepción, y es la que importa: adentro de la garganta de la
+quebrada NO se apaga.** Ahí estás entre dos paredes, no ves el fondo, y la
+brújula es lo único que te dice para qué lado sigue — que es justo cuando más
+hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
+
+🐛 **Dos errores de dibujo en el camino:**
+
+1. **La flecha salía como un bloque.** Eran tres cuadraditos de 4, 3 y 2 píxeles
+   apilados a un píxel de distancia: se pisaban entre sí y quedaba un cuadrado
+   que no apuntaba a ningún lado. Son cuatro rayas **perpendiculares** al rumbo,
+   cada una más corta que la anterior — eso sí dibuja una punta.
+2. **El cartel de abajo quedaba cortado.** Sólo se frenaba por el alto del
+   dibujito, y la flecha va 14 píxeles más afuera: con un refugio al sur se
+   salía de la pantalla. Ahora entra entero, con margen para las dos líneas de
+   las teclas.
+
+📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
+cuadro con dibujo.
 
 #### 🐛 EL `$NaN` DEL CAMPAMENTO: NO SE ARREGLA DÓNDE SALE, SE ARREGLA DÓNDE CAE
 

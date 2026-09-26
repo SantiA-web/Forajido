@@ -1855,6 +1855,12 @@ en que las cortaste. Ir del campamento al pueblo tampoco las corta. Cuando una
 termina, arranca la otra. Van a **0,11 de volumen**: por debajo del fuego, los
 grillos y lo que diga la gente.
 
+**La brújula muestra la silueta de cada refugio**, no una letra: dos bloques
+con un hueco para la quebrada, tres agujas para el bosque, una flecha que apunta
+y la distancia. **Y se apaga cuando ya lo ves** (se desvanece entre 320 y 160),
+salvo adentro de la garganta de la quebrada, donde es lo único que te dice para
+qué lado sigue.
+
 **Y el bosque de piedras es un MANCHÓN DE AGUJAS**, sin puerta: 260 unidades de
 agujas de roca altas y apretadas —siete por cada 100 x 100— y **se gana llegando
 al corazón**, un claro de 90 en el medio. Las agujas son obstáculos de verdad:

@@ -1963,9 +1963,12 @@ export function createHuidaScene(services) {
    * dirección en la que está, con lo que falta para llegar. En campo abierto
    * hace falta algo así — si no, huir es dar vueltas sin saber hacia dónde.
    *
-   * ⚠️ SIMPLE (por vestir): un cuadradito y un número.
+   * Cada refugio lleva su DIBUJITO —una grieta en el paredón, tres agujas—
+   * en vez de una letra: en una persecución no tenés tiempo de leer, y son las
+   * mismas siluetas que después ves en el horizonte.
    */
   function dibujarBrujula(r) {
+    const B = H.mundo.brujula;
     for (const d of refugios) {
       /**
        * No apunta al refugio, apunta **a dónde hay que ir para entrar**: en la
@@ -1976,26 +1979,89 @@ export function createHuidaScene(services) {
       const dx = meta.x - yo.x;
       const dy = (meta.y - yo.y) / PROFUNDIDAD;
       const dist = Math.hypot(dx, dy);
+
+      /**
+       * 🐛 EL CARTEL SE APAGA CUANDO YA VES EL REFUGIO. Antes se quedaba ahí
+       * aunque tuvieras el paredón entero en pantalla, tapando justo lo que
+       * estabas mirando. Ahora se desvanece de `seApagaA` a la mitad de eso.
+       *
+       * ⚠️ Salvo adentro de la garganta de la quebrada, y ahí es cuando MÁS
+       * hace falta: estás entre dos paredes, no ves el fondo y la brújula es
+       * lo único que te dice para qué lado sigue. Se reconoce porque
+       * `puntoDeEntrada` deja de devolver la boca.
+       */
+      const enLaGarganta = esPared(d) && (meta.x !== d.x || meta.y !== d.y);
+      const lejos = B.seApagaA;
+      const alpha = enLaGarganta ? 1
+        : Math.max(0, Math.min(1, (dist - lejos * 0.5) / (lejos * 0.5)));
+      if (alpha <= 0.02) continue;
+
       const a = Math.atan2(dy, dx);
-      const x = vista.w / 2 + Math.cos(a) * vista.w * 0.44;
       /**
-       * Abajo se sube: ahí están las dos líneas de las teclas, y un refugio
-       * al sur dejaba el número escrito encima del texto.
+       * 🐛 EL CARTEL ENTERO TIENE QUE ENTRAR EN LA PANTALLA, flecha incluida.
+       * Antes sólo se frenaba por abajo y por el alto del cartelito: con un
+       * refugio al sur, la flecha (que va 14 px más afuera que el dibujo) se
+       * salía por el borde y el cartel quedaba cortado por la mitad.
+       *
+       * Abajo se sube más que en los otros lados porque ahí están las dos
+       * líneas de las teclas.
        */
-      const y = Math.min(vista.h - 30, vista.h / 2 + Math.sin(a) * vista.h * 0.42);
-      const color = dist < 500 ? colors.doorGlow : colors.textDim;
-      r.rect(x - 2, y - 2, 5, 5, color);
-      r.rect(x + Math.cos(a) * 5 - 1, y + Math.sin(a) * 5 - 1, 3, 3, color);
-      /**
-       * La inicial (cuál es cuál importa, porque cada uno tiene su terreno) y
-       * lo que falta. Abajo de todo los dos se escriben ARRIBA de la marca:
-       * ahí está el cartel de las teclas, y el número le caía encima.
-       */
+      const MARGEN = 18;
+      const dentro = (v, min, max) => Math.max(min, Math.min(max, v));
+      const x = dentro(vista.w / 2 + Math.cos(a) * vista.w * 0.44, MARGEN, vista.w - MARGEN);
+      const y = dentro(vista.h / 2 + Math.sin(a) * vista.h * 0.42, MARGEN, vista.h - 50);
+      const color = dist < B.cerca ? colors.doorGlow : colors.textDim;
+
+      r.ctx.save();
+      r.ctx.globalAlpha = alpha;
+      dibujarSenal(r, d, x, y, a, color);
+      // Lo que falta, en decenas. Abajo de todo va ARRIBA de la marca: ahí
+      // está el cartel de las teclas y el número le caía encima.
       const abajo = y > vista.h - 42;
-      const letra = T.huida.brujula[d.tipo] || '?';
-      const falta = `${Math.round(dist / 10)}`;
-      r.text(letra, x, abajo ? y - 16 : y - 6, color);
-      r.text(falta, x, abajo ? y - 6 : y + 10, color);
+      r.text(`${Math.round(dist / 10)}`, x, abajo ? y - 12 : y + 10, color);
+      r.ctx.restore();
+    }
+  }
+
+  /**
+   * EL CARTELITO DE UN REFUGIO: su silueta y la flecha que apunta.
+   *
+   * Las siluetas son las mismas que se ven de lejos en el campo, en chiquito:
+   * la quebrada es dos bloques de roca con el hueco en el medio y el bosque
+   * son tres agujas de distinto alto. Con eso se sabe cuál es sin leer nada.
+   */
+  function dibujarSenal(r, d, x, y, a, color) {
+    if (d.tipo === 'quebrada') {
+      r.rect(x - 6, y - 4, 4, 8, color);
+      r.rect(x + 2, y - 4, 4, 8, color);
+      // El canto iluminado de arriba, que es lo que lo lee como roca.
+      r.rect(x - 6, y - 4, 4, 1, colors.textDim);
+      r.rect(x + 2, y - 4, 4, 1, colors.textDim);
+    } else if (d.tipo === 'bosque') {
+      r.rect(x - 5, y - 3, 2, 7, color);
+      r.rect(x - 1, y - 5, 2, 9, color);
+      r.rect(x + 3, y - 2, 2, 6, color);
+    } else {
+      // Cualquier refugio que todavía no tenga dibujo: su inicial.
+      r.text(T.huida.brujula[d.tipo] || '?', x, y + 3, color);
+    }
+
+    /**
+     * Y LA FLECHA, por fuera de la silueta.
+     *
+     * 🐛 Son cuatro rayas PERPENDICULARES al rumbo, cada una más corta que la
+     * anterior: eso dibuja una punta. La primera versión apilaba cuadraditos
+     * de 4, 3 y 2 a un píxel de distancia y, como se pisaban entre sí, salía
+     * un bloque cuadrado que no apuntaba a ningún lado.
+     */
+    const nx = -Math.sin(a);
+    const ny = Math.cos(a);
+    for (let k = 0; k < 4; k++) {
+      const d = 9 + k * 1.6;
+      const medio = 3 - k * 0.8;
+      const cx = x + Math.cos(a) * d;
+      const cy = y + Math.sin(a) * d;
+      r.line(cx - nx * medio, cy - ny * medio, cx + nx * medio, cy + ny * medio, color);
     }
   }
 

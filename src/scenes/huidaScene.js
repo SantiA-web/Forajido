@@ -23,8 +23,8 @@
  * Las dos primeras eran más baratas de hacer, pero en un pasillo no se huye:
  * se esquiva.
  *
- * ⚠️ GRÁFICOS SIMPLES: las bolsas, el "!" del aviso, los refugios y el panel
- * son dibujo de prueba (ver "Por vestir" en NOTAS-DISENO.md).
+ * ⚠️ GRÁFICOS SIMPLES: el panel y el fondo todavía son dibujo de prueba
+ * (ver "Por vestir" en NOTAS-DISENO.md).
  */
 
 import { CONFIG } from '../data/config.js';
@@ -166,7 +166,7 @@ export function createHuidaScene(services) {
      * cuánta jugarla mal. Sin esto hay que adivinar, y adivinar fue lo que
      * llevó a poner las riendas en 0,7 cuando correspondían 0,5.
      */
-    if (prueba) window.HUIDA_BANCO = () => ({ yo, jinetes, obstaculos, refugios, tiempo, fin, perdido, soltadas, tirados, derribados });
+    if (prueba) window.HUIDA_BANCO = () => ({ yo, jinetes, obstaculos, refugios, tiempo, fin, perdido, soltadas, tirados, derribados, bolsas });
 
     sembrarRefugios();
 
@@ -429,9 +429,37 @@ export function createHuidaScene(services) {
 
     for (const c of carteles) { c.vida -= dt; c.y -= 12 * dt; }
     carteles = carteles.filter((c) => c.vida > 0);
+    /**
+     * 💰 LA BOLSA CAE, PICA UNA VEZ Y SUELTA MONEDAS. El rebote no es adorno:
+     * antes la bolsa se clavaba en el piso de golpe y no se veía el momento en
+     * que la perdías. Las monedas saltan en el primer golpe y quedan tiradas
+     * alrededor, que de lejos es lo que dice "ahí cayó plata".
+     */
     for (const b of bolsas) {
       b.vz += 260 * dt;
-      b.z = Math.min(0, b.z + b.vz * dt);
+      b.z += b.vz * dt;
+      if (b.z >= 0) {
+        b.z = 0;
+        if (b.vz > 40 && b.botes < 2) {
+          b.botes += 1;
+          b.vz = -b.vz * 0.35;
+          if (b.botes === 1) {
+            for (let k = 0; k < 4; k++) {
+              b.monedas.push({
+                dx: 0, dy: 0, z: 0, vx: rng.range(-26, 26),
+                vy: rng.range(-13, 13) * PROFUNDIDAD, vz: rng.range(-52, -26),
+              });
+            }
+          }
+        } else b.vz = 0;
+      }
+      for (const m of b.monedas) {
+        m.vz += 260 * dt;
+        m.dx += m.vx * dt;
+        m.dy += m.vy * dt;
+        m.z += m.vz * dt;
+        if (m.z >= 0) { m.z = 0; m.vz = 0; m.vx *= 0.8; m.vy *= 0.8; }
+      }
     }
 
     if (fin) {
@@ -1386,7 +1414,7 @@ export function createHuidaScene(services) {
     }
     perdido += monto;
     soltadas += 1;
-    bolsas.push({ x: yo.x - 6, y: yo.y + 4, z: -18, vz: -60 });
+    bolsas.push({ x: yo.x - 6, y: yo.y + 4, z: -18, vz: -60, botes: 0, monedas: [] });
     carteles.push({ x: yo.x, y: yo.y - 30, texto: `−$${monto}`, color: colors.enemyAlert, vida: 1.4 });
   }
 
@@ -1632,7 +1660,7 @@ export function createHuidaScene(services) {
 
     // Lo que quedó tirado en el campo: los caídos y las bolsas.
     for (const c of caidos) dibujarTendido(r, c.x, c.y + 4, { tipo: 'jineteLey', cinta: '#4a78b8' });
-    for (const b of bolsas) dibujarBolsa(r, b.x, b.y + b.z);
+    for (const b of bolsas) dibujarBolsa(r, b);
 
     polvo.dibujar(r, 0, !dia);
 
@@ -1732,11 +1760,35 @@ export function createHuidaScene(services) {
     });
 
     if (j.aimTimer > 0) {
+      /**
+       * ⏳ EL AVISO ES UNA CUENTA ATRÁS *(pedido de Santi)*. Antes era una raya
+       * quieta y un "!" quieto: te decían que iba a tirar, pero no CUÁNDO, así
+       * que el segundo de aviso no servía para decidir nada. Ahora la raya se
+       * **enciende desde el revólver hacia vos** y la bala sale justo cuando la
+       * luz llega a la punta. El apagado de atrás se sigue viendo, que es lo
+       * que te deja medir cuánto falta.
+       */
       const px = j.x + 6;
       const py = j.y - 14;
-      r.line(px, py, px + Math.cos(j.aimDir) * 11, py + Math.sin(j.aimDir) * 11 * PROFUNDIDAD, '#d8cdbb');
-      // ⚠️ SIMPLE: el aviso de que va a tirar. Por vestir.
-      r.text('!', j.x, j.y - 36, colors.enemyAlert);
+      const LARGO = 22;
+      const p = Math.max(0, Math.min(1, 1 - j.aimTimer / H.jinetes.apuntar));
+      const dx = Math.cos(j.aimDir), dy = Math.sin(j.aimDir) * PROFUNDIDAD;
+      // El riel apagado va en transparencia, no en un color oscuro: sobre este
+      // fondo casi negro un gris tostado se ve igual de encendido que la luz, y
+      // entonces la raya parece siempre llena y no se cuenta nada.
+      r.line(px, py, px + dx * LARGO, py + dy * LARGO, '#d8cdbb', 0.18);
+      r.line(px, py, px + dx * LARGO * p, py + dy * LARGO * p, '#f0dca8');
+      r.box(px + dx * LARGO * p, py + dy * LARGO * p, 1, 1, '#fff2c9');
+
+      /**
+       * Y el "!" late cada vez más rápido, de unos 3 parpadeos por segundo a
+       * unos 11 sobre el final. Es la misma cuenta contada de otra manera, para
+       * el que mira arriba del jinete y no la raya. En el último tercio se pone
+       * blanco: ése es el momento de usar el envión.
+       */
+      if (Math.sin(tiempo * (18 + p * 52)) > -0.2) {
+        r.text('!', j.x, j.y - 36 - p * 4, p > 0.66 ? '#fff2c9' : colors.enemyAlert);
+      }
     }
 
     if (j.lazo || j.revolea > 0 || j.soga > 0) dibujarSuLazo(r, j);
@@ -1756,12 +1808,29 @@ export function createHuidaScene(services) {
     const lado = Math.cos(j.rumbo) < 0 ? -1 : 1;
 
     if (j.revolea > 0) {
-      // Revoleándolo sobre la cabeza: es TU aviso, así que se mueve y se ve.
+      /**
+       * 🪢 EL REVOLEO *(pedido de Santi)*: antes era un rectangulito dando
+       * vueltas. Ahora es una **argolla de verdad** — un aro hueco que se ve
+       * ancho cuando pasa por delante y de canto cuando pasa por los costados,
+       * que es como se ve un lazo revoleado. Y **se agranda sobre el final**:
+       * eso solo ya te avisa que está por salir, sin mirar ningún número.
+       */
       const giro = tiempo * 15;
-      const cx = j.x + Math.cos(giro) * 8;
-      const cy = j.y - 31 + Math.sin(giro) * 4 * PROFUNDIDAD;
-      r.line(j.x + 5 * lado, j.y - 20, cx, cy, SOGA);
-      r.box(cx, cy, 4, 2, SOGA);
+      const listo = Math.max(0, Math.min(1, 1 - j.revolea / H.jinetes.lazo.revoleo));
+      const radio = 7 + listo * 3;
+      const cx = j.x + Math.cos(giro) * radio;
+      const cy = j.y - 32 + Math.sin(giro) * radio * 0.5 * PROFUNDIDAD;
+      const aroW = 3 + Math.abs(Math.sin(giro)) * (2.5 + listo * 1.5);
+      /**
+       * La soga llega al BORDE del aro, no a su centro: si va al centro la
+       * cruza y sale del otro lado, y el conjunto deja de parecer un lazo para
+       * parecer una llave.
+       */
+      const hx = j.x + 5 * lado, hy = j.y - 20;
+      const ux = cx - hx, uy = cy - hy, L = Math.hypot(ux, uy) || 1;
+      const corte = Math.min(L - 1, aroW);
+      r.line(hx, hy, cx - (ux / L) * corte, cy - (uy / L) * corte, SOGA);
+      dibujarAro(r, cx, cy, aroW, 2.2, SOGA);
       return;
     }
 
@@ -1773,9 +1842,27 @@ export function createHuidaScene(services) {
       return;
     }
 
-    // Enrollado en la montura, esperando su turno.
-    r.box(j.x - 7 * lado, j.y - 11, 5, 3, SOGA);
-    r.box(j.x - 7 * lado, j.y - 11, 3, 1, '#8f7c58');
+    /**
+     * Enrollado en la montura, esperando su turno: **tres vueltas de soga
+     * colgadas del recado**, no un ladrillo. Esto es lo que te deja mirar a los
+     * que vienen atrás y saber cuál te puede enlazar antes de que pase nada, así
+     * que tiene que leerse de lejos.
+     */
+    const ex = j.x - 6 * lado, ey = j.y - 9;
+    dibujarAro(r, ex, ey, 3.2, 1.9, '#a89268');
+    r.box(ex + 3.2 * lado, ey + 2.2, 0.5, 2, '#8f7c58');
+  }
+
+  /** Un aro de soga: ocho tramos en óvalo. Hueco, que es lo que lo hace un aro. */
+  function dibujarAro(r, cx, cy, rw, rh, color) {
+    const N = 8;
+    let px = cx + rw, py = cy;
+    for (let i = 1; i <= N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const x = cx + Math.cos(a) * rw, y = cy + Math.sin(a) * rh;
+      r.line(px, py, x, y, color);
+      px = x; py = y;
+    }
   }
 
   /**
@@ -1823,11 +1910,38 @@ export function createHuidaScene(services) {
     }
   }
 
-  /** ⚠️ SIMPLE: una bolsa es un bulto con un signo. Por vestir. */
-  function dibujarBolsa(r, x, y) {
-    r.rect(x - 3, y - 6, 7, 6, '#8a6a3a');
-    r.rect(x - 1, y - 8, 3, 2, '#6a4f2a');
-    r.text('$', x + 0.5, y - 2, colors.bagLoot);
+  /**
+   * 💰 UNA BOLSA TIRADA EN EL CAMPO. Es un saco de tela: panza ancha abajo,
+   * cuello atado con su piolín, la luz de un lado y la sombra del otro. Antes
+   * eran dos rectángulos con un "$" escrito encima — una letra, no una cosa.
+   *
+   * La sombra va en el **piso** (`b.y`) y la bolsa en el **aire** (`b.y + b.z`):
+   * eso es lo que hace que se vea caer en vez de aparecer.
+   */
+  function dibujarBolsa(r, b) {
+    const x = b.x, suelo = b.y, y = b.y + b.z;
+
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.3;
+    r.ctx.fillStyle = '#000';
+    r.ctx.beginPath();
+    r.ctx.ellipse(Math.round(x), Math.round(suelo), 6, 2, 0, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.ctx.restore();
+
+    for (const m of b.monedas) {
+      const mx = x + m.dx, my = suelo + m.dy + m.z;
+      r.rect(mx - 1, my - 1, 2, 2, colors.bagLoot);
+      r.rect(mx - 1, my - 1, 1, 1, '#fff2c9');
+    }
+
+    r.rect(x - 4, y - 5, 9, 4, '#8a6a3a');   // la panza
+    r.rect(x - 3, y - 7, 7, 2, '#7a5c31');   // el hombro, más angosto
+    r.rect(x - 3, y - 1, 7, 1, '#5d4526');   // apoyada en el piso
+    r.rect(x - 4, y - 5, 2, 4, '#a07f49');   // la luz de un lado
+    r.rect(x - 2, y - 9, 5, 2, '#6a4f2a');   // el cuello
+    r.rect(x - 2, y - 8, 5, 1, '#c2ae86');   // el piolín que lo ata
+    r.rect(x + 3, y - 9, 2, 1, '#c2ae86');   // y la punta suelta
   }
 
   /** El círculo dice la dispersión real, con la misma regla que el asalto. */

@@ -13799,8 +13799,6 @@ bien:
 
 | Qué | Dónde | Cómo está |
 |---|---|---|
-| Las bolsas que se caen en la huida | `huidaScene.js`, `dibujarBolsa` | Un bulto marrón con un **$** |
-| El aviso de que un jinete va a tirar | `huidaScene.js`, `dibujarLey` | Un **!** rojo y una raya |
 | El panel de la huida | `huidaScene.js`, `dibujarPanel` | Texto y una barra |
 | El fondo de la huida | `huidaScene.js`, `render` | Desierto y una cordillera baja, sin tren a lo lejos |
 | El caballo del jinete caído | `huidaScene.js`, `pegarle` | Queda el cuerpo en el suelo y el caballo desaparece; debería seguir galopando solo |
@@ -15229,6 +15227,54 @@ hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
 
 📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
 cuadro con dibujo.
+
+#### ⏳ LA SEGUNDA VUELTA DE VESTIR: EL AVISO, EL LAZO Y LAS BOLSAS
+
+Tres cosas que se dibujaban con lo mínimo y ya pedían lo suyo.
+
+**1. El aviso del que te apunta es una CUENTA ATRÁS.** Antes era una raya quieta
+y un `!` quieto: te decían *que* iba a tirar, pero no *cuándo*, así que el
+segundo de aviso (`apuntar`, 0,65 s) no servía para decidir nada. Ahora la raya
+se **enciende desde el revólver hacia vos** y la bala sale justo cuando la luz
+llega a la punta, con una cabecita blanca marcando dónde va. Y el `!` late cada
+vez más rápido —de unos 3 parpadeos por segundo a unos 11— y se pone blanco en
+el último tercio: es la misma cuenta contada de otra manera, para el que mira
+arriba del jinete y no la raya. **No se cambió ningún número de la pelea**: el
+aviso dura lo mismo que antes, sólo que ahora se puede usar.
+
+🐛 **El riel apagado tuvo que ir en transparencia, no en un color oscuro.**
+Primero se probó con un gris tostado (`#6b5f4c`), y sobre este fondo casi negro
+se veía **igual de encendido que la luz**: la raya parecía siempre llena y no se
+contaba nada. Con `alpha 0.18` del mismo color claro, la diferencia se lee.
+
+**2. El lazo, en sus dos estados.** El revoleo era un rectangulito dando vueltas
+sobre la cabeza; ahora es una **argolla de verdad**, un aro hueco que se ve
+ancho cuando pasa por delante y de canto cuando pasa por los costados —que es
+como se ve un lazo revoleado— y **se agranda sobre el final**, lo que ya avisa
+solo que está por salir. Y el lazo enrollado en la montura, que eran dos
+rectángulos claros, es un **aro colgado del recado** con su punta suelta: eso es
+lo que te deja mirar a los que vienen atrás y saber cuál te puede enlazar antes
+de que pase nada.
+
+🐛 **La soga iba al CENTRO del aro y lo cruzaba**, saliendo del otro lado: el
+conjunto parecía una llave o una lupa, no un lazo. Ahora frena en el **borde**.
+
+🐛 **Y el enrollado quedaba enorme y blanco**, indistinguible del aro revoleado
+—justo lo contrario de lo que tiene que hacer, que es diferenciarse—. Se achicó
+a la mitad y se pasó a los tonos apagados de la soga.
+
+**3. Las bolsas son un saco de tela, y pican.** Eran dos rectángulos con un `$`
+escrito encima: una letra, no una cosa. Ahora tienen panza ancha abajo, cuello
+atado con su piolín, luz de un lado y sombra del otro, y su sombra en el piso
+—que es lo que hace que se vean **caer** en vez de aparecer—. Además **pican una
+vez y sueltan cuatro monedas** que quedan desparramadas alrededor: de lejos eso
+es lo que dice "ahí cayó plata". Antes la bolsa se clavaba en el piso de golpe y
+no se veía el momento en que la perdías.
+
+📏 **Sin errores en 13.000 cuadros** con teclas y mouse al azar, a **0,80 ms por
+cuadro** con dibujo. Y una tanda de 8 huidas con el piloto: 1,00 enganche por
+corrida y 28,3 s de media, iguales a las de antes — como tenía que ser, porque
+esto es todo dibujo y no toca la balanza.
 
 #### 🐛 EL `$NaN` DEL CAMPAMENTO: NO SE ARREGLA DÓNDE SALE, SE ARREGLA DÓNDE CAE
 

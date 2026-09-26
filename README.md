@@ -1754,9 +1754,13 @@ soltaste casi toda la plata.
   agranda** —hasta 1,5 veces derecho hacia atrás— y, como no ves adelante,
   **el caballo se tuerce solo** cada tanto, un segundo, para arriba o para
   abajo. Corregilo con `W/S` o te comés una piedra.
-- Antes de tirar, cada jinete **avisa**: se frena, levanta el arma hacia vos y
-  le aparece un **!**. El tiro sale hacia donde estabas en ese momento, así
-  que moverte en ese medio segundo es esquivarlo.
+- Antes de tirar, cada jinete **avisa, y el aviso es una cuenta atrás**: se
+  frena, levanta el arma hacia vos y **una raya se le va encendiendo desde el
+  revólver**. La bala sale justo cuando la luz llega a la punta. Arriba de él
+  late un **!** cada vez más rápido, que se pone blanco en el último tercio:
+  es la misma cuenta, para el que mira al jinete y no a la raya. El tiro sale
+  hacia donde estabas en ese momento, así que moverte en ese medio segundo es
+  esquivarlo — y ahora se ve **cuánto falta** para decidirlo.
 - **Tiran desde cualquier distancia y la bala vuela a 380** (tu Colt, a 330).
   No hay un tope de alcance: el límite es cuándo dejan de seguirte (520). De
   lejos el pulso se les abre —a 450 unidades el abanico es el doble— así que

@@ -1759,6 +1759,10 @@ soltaste casi toda la plata.
   corrida pasás por unas ocho zonas, una cada dos segundos y medio. No hay cielo
   ni montañas pintadas al fondo: acá la cámara mira casi desde arriba y podés
   cabalgar a cualquier lado, así que el paisaje lo hace el suelo.
+- **Y hay MOJONES**: mesas de roca grandes, con su meseta plana arriba, que se
+  ven de lejos y te sirven para ubicarte. Están plantadas en el mundo, no
+  pintadas en un fondo: crecen cuando te acercás, les podés pasar al lado y te
+  frenan si las chocás. Ves unas cuatro por corrida y chocás una cada dos.
 - **Al que bajás se le escapa el caballo**: el cuerpo queda en el suelo y el
   animal sigue galopando solo, con la silla puesta, hasta perderse.
 - **El revólver te sigue el mouse todo el tiempo**: el brazo apunta a donde

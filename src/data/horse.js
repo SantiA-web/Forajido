@@ -643,6 +643,16 @@ export const APROXIMACION = {
      * con la huella de una roca no quedaría por dónde pasar.
      */
     aguja: 7,
+    /**
+     * 🏔️ EL MOJÓN: una mesa de las grandes. Es **tres veces la piedra**, que
+     * es lo que lo hace un accidente del terreno y no un obstáculo más — de
+     * lejos te sirve para ubicarte, y de cerca hay que rodearlo.
+     *
+     * ⚠️ Por eso van MUY separados (ver `mojones` en data/huida.js): con esta
+     * huella, varios juntos serían un laberinto y la huida dejaría de ser
+     * campo abierto, que es lo que Santi eligió.
+     */
+    mojon: 30,
   },
 
   /** Para cualquier tipo que no esté en la tabla de arriba. */

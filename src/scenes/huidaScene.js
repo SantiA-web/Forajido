@@ -1566,10 +1566,55 @@ export function createHuidaScene(services) {
    * siembran por CELDAS de mundo a medida que te acercás, y se tiran las que
    * quedan lejos. Cada celda decide lo suyo una sola vez.
    */
+  /**
+   * 🏔️ LOS MOJONES: las mesas grandes que se ven de lejos.
+   *
+   * Van en SU PROPIA GRILLA, mucho más gruesa que la de los obstáculos
+   * comunes, y esto es lo que los hace mojones y no piedras grandes: uno cada
+   * `cada` unidades como mucho, así que cuando ves uno es **el** accidente del
+   * terreno que tenés a la vista, y te sirve para saber dónde estás.
+   *
+   * Entran a la misma lista que todo lo demás, y eso es a propósito: chocan
+   * igual, los jinetes los esquivan igual y el dibujo se ordena solo por dónde
+   * pisan. Un mojón que se pudiera atravesar sería exactamente lo que Santi
+   * marcó del horizonte — algo ajeno al lugar por donde corren los caballos.
+   */
+  function sembrarMojones(alcance) {
+    const M = H.mundo.mojones;
+    /**
+     * 🐛 EL MISMO AGUJERO QUE TUVO `pintarSuelo`, y lo encontré igual: probando
+     * un valor raro para medir. Este bucle recorre `(alcance / cada)` celdas,
+     * así que `cada: 0` no siembra cero mojones — **cuelga el juego**, porque
+     * el rango va de menos infinito a infinito. Un número que sale de un
+     * archivo de datos nunca puede poder eso. Cero es "sin mojones".
+     */
+    if (!(M.cada > 0) || M.chance <= 0) return;
+    const cx0 = Math.floor((yo.x - alcance) / M.cada);
+    const cx1 = Math.ceil((yo.x + alcance) / M.cada);
+    const cy0 = Math.floor((yo.y - alcance) / M.cada);
+    const cy1 = Math.ceil((yo.y + alcance) / M.cada);
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const clave = `M${cx},${cy}`;
+        if (celdasSembradas.has(clave)) continue;
+        celdasSembradas.add(clave);
+        // No en todas las celdas: si no, quedan en cuadrícula y se nota.
+        if (!rng.chance(M.chance)) continue;
+        const x = cx * M.cada + rng.range(M.cada * 0.2, M.cada * 0.8);
+        const y = cy * M.cada + rng.range(M.cada * 0.2, M.cada * 0.8);
+        // Ni encima de un refugio ni encima tuyo al arrancar.
+        if (pegadoAUnRefugio(x, y)) continue;
+        if (Math.hypot(x - yo.x, (y - yo.y) / PROFUNDIDAD) < 160) continue;
+        obstaculos.push({ x, y, tipo: 'mojon', golpeado: false });
+      }
+    }
+  }
+
   function sembrarObstaculos() {
     const CELDA = 150;
     const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
     const alcance = vista.w;
+    sembrarMojones(alcance);
     const cx0 = Math.floor((yo.x - alcance) / CELDA);
     const cx1 = Math.ceil((yo.x + alcance) / CELDA);
     const cy0 = Math.floor((yo.y - alcance) / CELDA);

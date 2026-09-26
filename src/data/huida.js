@@ -81,6 +81,12 @@ export const HUIDA = {
      */
     zonaLlenas: 2,
     /**
+     * 🏔️ LOS MOJONES: cada cuántas unidades puede caer una mesa grande, y con
+     * qué probabilidad. Separados a propósito: con la huella que tienen
+     * (`mojon` en data/horse.js), varios juntos serían un laberinto.
+     */
+    mojones: { cada: 400, chance: 0.6 },
+    /**
      * 🎲 DÓNDE CAEN LOS TRES, SORTEADO DE VERDAD *(Santi: "deberíamos hacer que
      * los puntos de llegada sean aleatorios sus ubicaciones, para que no
      * siempre se elija uno y no otro")*.

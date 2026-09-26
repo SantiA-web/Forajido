@@ -13794,15 +13794,14 @@ vivo, 5) los compañeros.
 
 ### 🧺 Por vestir
 
-**Casi vacía.** Las bolsas, el aviso del que te apunta, el lazo, los dos
-refugios, la brújula, el panel, el caballo del caído y tirar para atrás están
-hechos, cada uno con su sección más abajo.
+**La lista quedó vacía.** Las bolsas, el aviso del que te apunta, el lazo, los
+dos refugios, la brújula, el panel, el caballo del caído, tirar para atrás y el
+fondo están hechos, cada uno con su sección más abajo.
 
-Queda **una sola cosa, y es la más difícil de las que hubo: EL FONDO.**
-
-| Qué | Dónde | Cómo está |
-|---|---|---|
-| El fondo de la huida (B) | `huidaScene.js`, `render` | **La mitad hecha.** El suelo ya tiene zonas de terreno (A). Falta lo que se ve a lo lejos: **mojones grandes** —mesas y farallones puestos en el mundo, que crecen cuando te acercás y les podés pasar al lado—, con el mismo mecanismo con el que ves la quebrada y el bosque de lejos |
+El fondo era el último y el más difícil, y se hizo en dos partes: **las zonas
+de terreno (A)** y **los mojones (B)**. La regla que dejó, y que vale para
+cualquier escena nueva: *un fondo pintado sólo aguanta si hay algo que te
+impida llegar hasta él*.
 
 
 ---
@@ -15228,6 +15227,57 @@ hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
 
 📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
 cuadro con dibujo.
+
+#### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
+
+La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la
+que te da **algo que ver a lo lejos**, que era lo que faltaba.
+
+⚠️ **Y "lejos" acá es el borde de la pantalla**, porque la cámara mira casi
+desde arriba. Por eso un mojón **no está pintado en un fondo: está plantado en
+el mundo**. Crece cuando te acercás, le podés pasar al lado y te choca si se lo
+pedís — justo las tres cosas que el horizonte pintado no podía hacer, y que son
+las que lo hacían sentirse *"ajeno al sector por dónde corren los caballos"*.
+
+Son mesas: tres escalones de roca que se angostan y una meseta plana con luz
+arriba. Cada una saca su forma de dónde está plantada, así que no se guarda nada
+y nunca titilan.
+
+Entran a la **misma lista que los obstáculos comunes**, y eso es a propósito:
+chocan igual, los jinetes los esquivan igual y el dibujo se ordena solo por
+dónde pisan. Lo único distinto es la huella —30, tres veces la piedra— y que
+van en **su propia grilla**, mucho más gruesa.
+
+🐛 **La primera versión era una torta de bodas**: tres rectángulos perfectos
+centrados uno arriba del otro. Es el mismo error que tuvo la quebrada cuando
+parecía un muro de castillo. Ahora cada escalón se corre para su lado, los
+altos varían, y el pie tiene muescas de talud: una mesa apoyada en una línea
+recta se lee pegada al fondo, no plantada.
+
+🐛 **Y APARECIÓ OTRA VEZ EL AGUJERO DE `pintarSuelo`**, encontrado igual:
+probando un valor raro para medir. `sembrarMojones` recorre `(alcance / cada)`
+celdas, así que `cada: 0` no siembra cero mojones — **cuelga el juego**, porque
+el rango va de menos infinito a infinito. Es la segunda vez en la misma vuelta:
+**cualquier número que salga de un archivo de datos y termine dividiendo tiene
+que tener guarda**. Ahora `cada: 0` es "sin mojones", que además es lo que hace
+falta para medir contra nada.
+
+📏 Medido con el piloto, doce corridas por valor:
+
+| Cada | Mojones que ves por corrida | Choques | Plata perdida |
+|---|---|---|---|
+| Sin mojones | 0 | 0 | $467 |
+| 500 | 1,7 | 0,42 | $317 |
+| **400** *(elegido)* | **4,2** | **1,08** | **$550** |
+
+Con 700 se veía **menos de uno por corrida**: no servía de nada. Con 400 ves uno
+cada cinco o seis segundos de galope, que es lo que hace que el campo tenga
+referencias.
+
+⚠️ **De la plata no se puede concluir nada todavía.** Entre corridas la
+diferencia salta más que la diferencia entre columnas ($300 a $550 con la misma
+configuración), así que los $467 contra $550 pueden ser puro ruido. Lo que sí es
+señal es la columna de mojones vistos: 0,8 contra 1,7 contra 4,2 no es ruido.
 
 #### 🏜️ EL PAISAJE LO HACE EL SUELO (A): LAS ZONAS DE TERRENO
 

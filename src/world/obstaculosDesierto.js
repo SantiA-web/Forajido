@@ -36,6 +36,83 @@ export function dibujarObstaculoDesierto(r, ob, ox, radio, noche = false) {
    * iluminadas arriba, y el cactus lleva la luz en el costado y en las puntas.
    * Las siluetas mantienen el ancho de siempre, que es lo que va con su radio.
    */
+  if (ob.tipo === 'mojon') {
+    /**
+     * 🏔️ UN MOJÓN: una mesa de las grandes, con su meseta plana arriba.
+     *
+     * *(Es la parte B de arreglar el fondo. La A —las zonas de terreno— hizo
+     * que el suelo fuera un lugar; ésta es la que te da algo QUE VER a lo
+     * lejos. Y acá "lejos" es el borde de la pantalla, porque la cámara mira
+     * casi desde arriba: por eso el mojón no está pintado en un fondo sino
+     * PLANTADO EN EL MUNDO — crece cuando te acercás y le podés pasar al lado,
+     * que es lo que el horizonte pintado no podía hacer.)*
+     *
+     * Saca toda su forma de dónde está plantado, igual que las agujas: no
+     * guarda nada y nunca titila.
+     */
+    const s = revolver(Math.round(ob.x) * 31337 + Math.round(ob.y) * 6271);
+    const w = radio;                       // el ancho ES su radio de choque
+    const alto = 34 + (s % 26);
+    const corona = Math.round(w * (0.62 + ((s >>> 3) % 4) / 20));
+    const cuello = Math.round((w + corona) / 2);
+    const tonos = ['#7b5442', '#8a6049', '#6d4a3a'];
+    const base = tonos[s % tonos.length];
+
+    // La sombra, larga y ancha: es la que dice "esto es grande".
+    r.ctx.globalAlpha = 0.3;
+    r.rect(ox - w - 2, ob.y - 1, w * 2 + 4, 5, '#000');
+    r.ctx.globalAlpha = 1;
+
+    /**
+     * El cuerpo en tres escalones que se angostan hacia arriba, cada uno con
+     * su repisa iluminada: eso es lo que lo lee como roca estratificada y no
+     * como un cajón. Los escalones NO son parejos — el de abajo es el más alto.
+     */
+    /**
+     * ⚠️ CADA ESCALÓN SE CORRE PARA SU LADO. Sin esto los tres salen centrados
+     * y el mojón es una torta de bodas: tres rectángulos perfectos, uno arriba
+     * del otro. Es el mismo error que tuvo la quebrada cuando parecía un muro
+     * de castillo — lo que lo vuelve roca es que las líneas NO estén alineadas.
+     */
+    const t1 = Math.round(alto * (0.40 + ((s >>> 6) % 4) / 40));
+    const t2 = Math.round(alto * (0.74 + ((s >>> 9) % 3) / 40));
+    const co1 = ((s >>> 12) % 5) - 2;
+    const co2 = ((s >>> 15) % 7) - 3;
+    r.rect(ox - w, ob.y - t1, w * 2, t1 + 3, c(base));
+    r.rect(ox - cuello + co1, ob.y - t2, cuello * 2, t2 - t1 + 1, c(base));
+    r.rect(ox - corona + co2, ob.y - alto, corona * 2, alto - t2 + 1, c(base));
+    r.rect(ox - w, ob.y - t1, w * 2, 1, c('#9a7358'));
+    r.rect(ox - cuello + co1, ob.y - t2, cuello * 2, 1, c('#9a7358'));
+
+    /** La meseta: la tapa plana con luz, que es la firma de una mesa. */
+    r.rect(ox - corona + co2, ob.y - alto - 2, corona * 2, 3, c('#a8815f'));
+    r.rect(ox - corona + co2 + 1, ob.y - alto - 2, corona * 2 - 2, 1, c('#c49b74'));
+
+    /**
+     * Y el pie no termina en una raya: tres muescas de talud lo rompen. Una
+     * mesa apoyada en una línea recta se lee pegada al fondo, no plantada.
+     */
+    for (let k = 0; k < 3; k++) {
+      const q = revolver(s + k * 104729);
+      const mx = ox - w + (q % Math.max(1, w * 2 - 6));
+      r.rect(mx, ob.y + 1, 4 + (q % 5), 2, c(base));
+    }
+
+    // Las chorreaduras verticales y la cara en sombra de un lado.
+    for (let k = 0; k < 4; k++) {
+      const dx = -corona + 2 + ((s >>> (k * 3)) % Math.max(1, corona * 2 - 3));
+      r.rect(ox + dx, ob.y - alto + 2, 1, Math.round(alto * (0.4 + (k % 3) * 0.2)), c('#5a3b2e'));
+    }
+    r.rect(ox + w - 3, ob.y - t1, 3, t1 + 2, c('#5a3b2e'));
+
+    // Pedregullo al pie, desparramado a los dos lados.
+    for (let k = 0; k < 5; k++) {
+      const q = revolver(s + k * 7919);
+      r.rect(ox - w - 3 + (q % (w * 2 + 6)), ob.y + 1 + (q % 3), 2 + (q % 3), 2, c('#66483a'));
+    }
+    return;
+  }
+
   if (ob.tipo === 'aguja') {
     /**
      * 🗿 UNA AGUJA DEL BOSQUE DE PIEDRAS: alta, angosta y de base más ancha,

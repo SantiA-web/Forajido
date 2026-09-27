@@ -3596,7 +3596,22 @@ export function createRaidScene(services) {
      * `base` es `y + hh`: el borde de abajo de la caja con la que cada uno choca.
      * La caja no cambió; sólo se usa para saber quién está adelante.
      */
-    drawPisoDelTren(r, train, colors, swayX, camera.renderY);
+    /**
+     * 🔆 EL MENEO DE LA LUZ. Va acá y no en `update` porque **no es estado del
+     * juego**: no cambia nada de lo que pasa, sólo de lo que se ve. Sale del
+     * mismo reloj (`scroll`) que todo lo demás del vagón, así que si alguna vez
+     * el tren frena de verdad, la luz frena con él.
+     *
+     * Y se suma al traqueteo que ya existía: cuando el tren acelera o frena,
+     * `swayX` corre la cámara y los charcos se van para el otro lado. No hubo
+     * que hacer nada para eso — sale solo de que uno mueve la cámara y el otro
+     * mueve la luz.
+     */
+    const L = CONFIG.tresCuartos.luzVentanilla;
+    drawPisoDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, {
+      meneo: Math.sin(scroll * L.velocidad * Math.PI * 2) * L.balanceo,
+      dia: gameState.esDeDia,
+    });
 
     // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
     // la lista `enemies` es un guardia común.

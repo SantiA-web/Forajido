@@ -1786,7 +1786,8 @@ export function isInsideZone(entity, zone) {
  * NADA DE ESTO TOCA EL JUEGO: la grilla, los choques, la vista y las balas
  * siguen igual. Sólo cambia dónde se pinta.
  */
-export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
+export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, luz = {}) {
+  const { meneo = 0, dia = true } = luz;
   const map = train.map;
   const size = map.size;
   const anchoVista = vistaW || r.width;
@@ -1905,6 +1906,94 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
    *    jinetes de abajo cabalgan delante y se pintan después.
    */
   const tc = CONFIG.tresCuartos;
+
+  /**
+   * 🔆 LOS CHARCOS DE LUZ DE LAS VENTANILLAS, y su meneo.
+   *
+   * ⚠️ VA ACÁ, EN EL PISO, y no colgado de un farol: desde esta cámara casi
+   * cenital un farol que se hamaca se ve de canto y no se nota, mientras que
+   * su charco ocupa media baldosa y **se mueve contra las tablas**. Lo que se
+   * lee como "el vagón se está meciendo" es el movimiento RELATIVO, y el que
+   * lo tiene es el charco.
+   *
+   * ⚠️ Y LA PUNTA SE MUEVE MÁS QUE LA BASE. El haz está clavado a su
+   * ventanilla: si se corriera entero parecería una mancha que patina por el
+   * piso, no luz entrando por un agujero.
+   *
+   * Va DESPUÉS de las tablas y ANTES de la sombra de la pared, que es el orden
+   * de la vida: la luz cae sobre el piso, y la pared le hace sombra al pie.
+   */
+  const L = tc.luzVentanilla;
+  const fuerza = dia ? L.fuerzaDia : L.fuerzaNoche;
+  if (fuerza > 0) {
+    const color = dia ? '#e0c98f' : '#8fa6c4';
+    const alcance = size * L.alcance;
+    const FILAS = 7;
+    const altoFila = Math.ceil(alcance / FILAS) + 1;
+
+    /**
+     * PRIMERO SE JUNTAN LOS HACES Y DESPUÉS SE PINTAN POR FILAS, no uno entero
+     * por vez: así `globalAlpha` se cambia siete veces por cuadro en vez de
+     * una por fila y por columna (unas 220).
+     *
+     * ⚠️ PERO NO ERA AHÍ EL GASTO, y conviene dejarlo escrito para no volver a
+     * buscar por el lado equivocado: medido, el cambio ahorró **0,07 ms de los
+     * 0,50** que cuesta la luz. Lo caro es la CANTIDAD de rectángulos (unos 220
+     * por cuadro, uno por fila de cada haz), no la transparencia. Si alguna vez
+     * hay que bajarlo de verdad, el camino es guardar el haz dibujado y
+     * estamparlo de una, como hace `pieza` con todo lo demás.
+     *
+     * Hoy no hace falta: el asalto entero se dibuja en 1,1 ms.
+     */
+    const haces = [];
+    const charco = (x0, yBorde, haciaAdentro) => haces.push({ x0, yBorde, haciaAdentro });
+
+    for (let col = colDesde; col <= colHasta; col++) {
+      const x = col * size;
+      const casilla = (f) => (map.grid[f] || [])[col];
+      // La góndola no tiene adentro: su carbón se come cualquier haz.
+      const tipoCol = WAGONS[train.tipoPorColumna[col]];
+      if (tipoCol && tipoCol.carbon) continue;
+
+      // La pared del fondo: el haz entra hacia abajo de la pantalla.
+      let r1 = -1;
+      while (r1 + 1 < map.rows && esPared(casilla(r1 + 1))) r1++;
+      if (r1 >= 0) {
+        let hay = false;
+        for (let f = 0; f <= r1; f++) if (casilla(f) === 'W') hay = true;
+        const adentro = casilla(r1 + 1);
+        if (hay && adentro !== undefined && adentro !== 'X') charco(x, (r1 + 1) * size, 1);
+      }
+
+      // Y la de adelante: el haz entra hacia arriba.
+      let r2 = map.rows;
+      while (r2 - 1 > r1 && esPared(casilla(r2 - 1))) r2--;
+      if (r2 < map.rows) {
+        let hay = false;
+        for (let f = r2; f < map.rows; f++) if (casilla(f) === 'W') hay = true;
+        const adentro = casilla(r2 - 1);
+        if (hay && adentro !== undefined && adentro !== 'X') charco(x, r2 * size, -1);
+      }
+    }
+
+    for (let i = 0; i < FILAS; i++) {
+      const t = i / FILAS;
+      // Se apaga tarde y de golpe: un haz sobre tablas tiene borde, no es un
+      // degradado. Con la caída suave quedaba un manchón sin forma.
+      r.ctx.globalAlpha = fuerza * (1 - t * t * t);
+      const dy = Math.round(t * alcance);
+      const ancho = Math.round(size * (0.82 + t * L.abre));
+      const margen = (size - ancho) / 2;
+      // La base apenas se mueve; la punta, todo lo que diga `balanceo`.
+      const corre = Math.round(meneo * (0.25 + t * 1.1));
+      for (const h of haces) {
+        const y = h.haciaAdentro > 0 ? h.yBorde + dy : h.yBorde - dy - altoFila;
+        r.rect(Math.round(h.x0 + margen + corre), y, ancho, altoFila, color);
+      }
+    }
+    r.ctx.globalAlpha = 1;
+  }
+
   for (let col = colDesde; col <= colHasta; col++) {
     const x = col * size;
     const casilla = (f) => (map.grid[f] || [])[col];

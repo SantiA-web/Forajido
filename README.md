@@ -449,6 +449,15 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 
 ### Adentro del tren
 
+**El vagón se está meciendo, y se nota en el piso.** La luz que entra por las
+ventanillas cae en tablas y se hamaca despacio: la punta del haz se va de un
+lado al otro mientras la base queda clavada a su ventanilla. De día es sol; de
+noche, luna, y apenas se ve.
+
+No se mueve ni el tren ni la cámara: si se moviera el vagón se moverían con él
+el piso, las paredes y vos, y en pantalla no pasaría nada. Lo que se lee como
+movimiento es siempre una cosa moviéndose contra otra.
+
 | Tecla | Acción |
 |---|---|
 | `W A S D` o flechas | Moverse |

@@ -15228,6 +15228,54 @@ hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
 📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
 cuadro con dibujo.
 
+#### 🔆 EL BALANCEO DEL TREN (1): LOS CHARCOS DE LUZ DE LAS VENTANILLAS
+
+*(Santi: "me gustaría que haya un pequeño balanceo en el tren para meter más al
+jugador en el asalto. No sé si hacer que el tren se balancee o que la cámara lo
+haga. Aconsejame".)*
+
+⚠️ **NI EL TREN NI LA CÁMARA: LA LUZ.** El tren está descartado de entrada y por
+dos motivos. Uno, si se mueve el vagón se mueven con él el piso, las paredes, los
+guardias y vos: **en pantalla no pasa nada**, porque para ver un balanceo algo
+tiene que moverse RESPECTO DE OTRA COSA. Y dos, si se moviera sólo el dibujo y no
+el choque, las paredes quedarían uno o dos píxeles de donde de verdad te frenan
+— en un juego donde te pegás a la cobertura y tirás por un hueco de una baldosa,
+eso es una fábrica de bugs.
+
+La cámara sí es segura (su `offset` sólo existe al dibujar, y apuntar ya la
+ignora a propósito: `world.aimX = input.mouse.x + camera.x`), y de hecho el
+traqueteo de acelerar/frenar **ya la usaba**. Pero sola no alcanza: un balanceo
+constante de cámara se lee como "la cámara está floja", no como "el tren se
+mueve", porque adentro del vagón no hay nada en pantalla que lo explique.
+
+Por eso la primera pieza es la que más rinde desde esta cámara: **la luz que
+entra por las ventanillas y cae sobre el piso**. Desde casi arriba un farol
+colgado se ve de canto y no se nota; su charco ocupa media baldosa y **se mueve
+contra las tablas**, que es justo el movimiento relativo que faltaba.
+
+**Y LA PUNTA SE MUEVE MÁS QUE LA BASE** (`meneo * (0,25 + t * 1,1)`). El haz está
+clavado a su ventanilla: si se corriera entero parecería una mancha patinando
+por el piso, no luz entrando por un agujero.
+
+De día es sol tibio; de noche, luna fría y apenas visible. Los faroles del vagón
+—que serían la otra fuente de noche— son la pieza 3 y todavía no están.
+
+🐛 **La primera versión eran manchones largos y sin forma.** Llegaban 2,2
+baldosas adentro, se abrían mucho y se apagaban con una caída suave: parecía una
+viñeta, no luz. Con 1,5 baldosas, menos apertura y una caída que **se apaga tarde
+y de golpe** (`1 − t³`), el haz tiene borde — que es lo que tiene un haz de sol
+sobre tablas.
+
+📏 **Cuesta 0,43 ms por cuadro**: el asalto pasa de 0,67 a 1,10.
+
+⚠️ **Y UNA OPTIMIZACIÓN QUE CASI NO SIRVIÓ, anotada para no volver a buscar por
+el lado equivocado.** Se juntaron los haces para pintarlos por filas y cambiar
+`globalAlpha` siete veces por cuadro en vez de 220. Medido: ahorró **0,07 ms de
+los 0,50**. Lo caro no es la transparencia sino la CANTIDAD de rectángulos (unos
+220, uno por fila de cada haz). Si alguna vez hay que bajarlo de verdad, el
+camino es guardar el haz dibujado y estamparlo de una, como hace `pieza` con
+todo lo demás. Hoy no hace falta.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

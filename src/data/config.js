@@ -1441,6 +1441,32 @@ export const CONFIG = {
    */
   tresCuartos: {
     /**
+     * 🔆 LA LUZ QUE ENTRA POR LAS VENTANILLAS, y su balanceo *(pedido de Santi:
+     * "me gustaría que haya un pequeño balanceo en el tren para meter más al
+     * jugador en el asalto")*.
+     *
+     * ⚠️ VA EN EL PISO Y NO EN EL FAROL, y eso es por la cámara. Desde casi
+     * arriba, un farol colgado que se hamaca se ve de canto y no se nota; su
+     * charco de luz, en cambio, ocupa media baldosa y **se mueve contra las
+     * tablas**. Lo que el ojo lee como "esto se está meciendo" es el
+     * movimiento RELATIVO, y el charco es el que lo tiene.
+     *
+     * El `alcance` es cuánto entra el haz al vagón; `abre` cuánto se abre el
+     * charco al alejarse de la ventanilla, y `balanceo` cuánto se va de costado
+     * la punta del haz (la base casi no se mueve: el haz está clavado a su
+     * ventanilla, como uno de verdad).
+     */
+    luzVentanilla: {
+      alcance: 1.5,
+      abre: 0.18,
+      balanceo: 3.4,
+      /** Vueltas por segundo del meneo. Lento: un vagón no vibra, se mece. */
+      velocidad: 0.62,
+      /** Cuánto pinta, de día y de noche. De noche es la luna: apenas. */
+      fuerzaDia: 0.3,
+      fuerzaNoche: 0.12,
+    },
+    /**
      * 🔺 DE 12 A 20, DESPUÉS DE MIRARLA. *(Santi: "se está perdiendo mucho el
      * potencial [...] está media confusa y como que cargada. Además, mientras
      * mirás de afuera al tren, se debería ver más altas las paredes de

@@ -449,10 +449,11 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 
 ### Adentro del tren
 
-**El vagón se está meciendo, y se nota en el piso.** La luz que entra por las
-ventanillas cae en tablas y se hamaca despacio: la punta del haz se va de un
-lado al otro mientras la base queda clavada a su ventanilla. De día es sol; de
-noche, luna, y apenas se ve.
+**El vagón se está meciendo, y se nota en el piso.** El sol entra por los
+ventanales y cae sobre las tablas, y el charco se inclina despacio: la base
+queda clavada a su ventanal y la punta se va de un lado al otro. Entra sólo
+por la pared del fondo —el sol está arriba, no abajo del tren— y de noche es
+luna, apenas visible.
 
 No se mueve ni el tren ni la cámara: si se moviera el vagón se moverían con él
 el piso, las paredes y vos, y en pantalla no pasaría nada. Lo que se lee como

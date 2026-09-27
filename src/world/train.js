@@ -1793,7 +1793,10 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
   const anchoVista = vistaW || r.width;
   const altoVista = vistaH || r.height;
 
-  const colDesde = Math.max(0, Math.floor(camX / size) - 1);
+  // ⚠️ TRES COLUMNAS DE MARGEN y no una: un ventanal lo dibuja entero su
+  // primera columna, así que si esa queda apenas afuera de la pantalla el
+  // vidrio no se dibujaría nunca. Lo de más se recorta solo en el lienzo.
+  const colDesde = Math.max(0, Math.floor(camX / size) - 3);
   const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 1);
   const filaDesde = Math.max(0, Math.floor(camY / size) - 1);
   const filaHasta = Math.min(map.rows - 1, Math.ceil((camY + altoVista) / size) + 1);
@@ -1928,67 +1931,74 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
   if (fuerza > 0) {
     const color = dia ? '#e0c98f' : '#8fa6c4';
     const alcance = size * L.alcance;
-    const FILAS = 7;
-    const altoFila = Math.ceil(alcance / FILAS) + 1;
 
     /**
-     * PRIMERO SE JUNTAN LOS HACES Y DESPUÉS SE PINTAN POR FILAS, no uno entero
-     * por vez: así `globalAlpha` se cambia siete veces por cuadro en vez de
-     * una por fila y por columna (unas 220).
+     * ⚠️ SÓLO DESDE LA PARED DEL FONDO *(Santi: "no tiene sentido: si el sol
+     * está arriba, no debería entrar luz por debajo")*. Tenía razón y era un
+     * error de física, no de dibujo: la primera versión también tiraba un haz
+     * desde la pared de ADELANTE hacia adentro del vagón, y eso sólo puede
+     * pasar si el sol está abajo del tren. Por la pared de adelante la luz
+     * entra yéndose para afuera, o sea que desde acá no se ve.
      *
-     * ⚠️ PERO NO ERA AHÍ EL GASTO, y conviene dejarlo escrito para no volver a
-     * buscar por el lado equivocado: medido, el cambio ahorró **0,07 ms de los
-     * 0,50** que cuesta la luz. Lo caro es la CANTIDAD de rectángulos (unos 220
-     * por cuadro, uno por fila de cada haz), no la transparencia. Si alguna vez
-     * hay que bajarlo de verdad, el camino es guardar el haz dibujado y
-     * estamparlo de una, como hace `pieza` con todo lo demás.
+     * 🪟 Y VA UN HAZ POR VENTANAL, no uno por columna. Es la misma corrida que
+     * usa el vidrio (ver `ventanalDe` en `cosasAltasDelTren`): un ventanal de
+     * dos baldosas tira UN charco de dos baldosas de ancho.
      *
-     * Hoy no hace falta: el asalto entero se dibuja en 1,1 ms.
+     * 🐛 Y ESO ES LO QUE ARREGLA EL GUSANO *(Santi: "más que luz, parece un
+     * gusano moviéndose")*. El problema no era el meneo sino el ANCHO: una
+     * tira angosta de una baldosa, partida en siete filas de distinto ancho y
+     * cada una corrida un poco más que la anterior, se lee como un bicho
+     * reptando. Un charco ancho con el mismo meneo se lee como lo que es: una
+     * mancha de sol que se inclina porque el vagón se mece.
      */
-    const haces = [];
-    const charco = (x0, yBorde, haciaAdentro) => haces.push({ x0, yBorde, haciaAdentro });
+    const conVidrio = (c, hasta) => {
+      for (let f = 0; f <= hasta; f++) if ((map.grid[f] || [])[c] === 'W') return true;
+      return false;
+    };
 
+    const haces = [];
     for (let col = colDesde; col <= colHasta; col++) {
-      const x = col * size;
       const casilla = (f) => (map.grid[f] || [])[col];
       // La góndola no tiene adentro: su carbón se come cualquier haz.
       const tipoCol = WAGONS[train.tipoPorColumna[col]];
       if (tipoCol && tipoCol.carbon) continue;
 
-      // La pared del fondo: el haz entra hacia abajo de la pantalla.
       let r1 = -1;
       while (r1 + 1 < map.rows && esPared(casilla(r1 + 1))) r1++;
-      if (r1 >= 0) {
-        let hay = false;
-        for (let f = 0; f <= r1; f++) if (casilla(f) === 'W') hay = true;
-        const adentro = casilla(r1 + 1);
-        if (hay && adentro !== undefined && adentro !== 'X') charco(x, (r1 + 1) * size, 1);
-      }
+      if (r1 < 0) continue;
+      if (!conVidrio(col, r1)) continue;
+      if (conVidrio(col - 1, r1)) continue;    // no es la primera del ventanal
+      const adentro = casilla(r1 + 1);
+      if (adentro === undefined || adentro === 'X') continue;
 
-      // Y la de adelante: el haz entra hacia arriba.
-      let r2 = map.rows;
-      while (r2 - 1 > r1 && esPared(casilla(r2 - 1))) r2--;
-      if (r2 < map.rows) {
-        let hay = false;
-        for (let f = r2; f < map.rows; f++) if (casilla(f) === 'W') hay = true;
-        const adentro = casilla(r2 - 1);
-        if (hay && adentro !== undefined && adentro !== 'X') charco(x, r2 * size, -1);
-      }
+      let largo = 1;
+      while (conVidrio(col + largo, r1)) largo++;
+      haces.push({ x0: col * size, yBorde: (r1 + 1) * size, ancho: largo * size });
     }
 
+    /**
+     * Se pinta por filas y no haz por haz: así `globalAlpha` se cambia unas
+     * pocas veces por cuadro en vez de una por fila y por haz.
+     *
+     * ⚠️ PERO NO ES AHÍ EL GASTO, y conviene dejarlo escrito para no volver a
+     * buscar por el lado equivocado: medido, ese cambio ahorró 0,07 ms de los
+     * 0,50 que costaba. Lo caro es la CANTIDAD de rectángulos. Si alguna vez
+     * hay que bajarlo de verdad, el camino es guardar el haz dibujado y
+     * estamparlo de una, como hace `pieza` con todo lo demás.
+     */
+    const FILAS = 8;
+    const altoFila = Math.ceil(alcance / FILAS) + 1;
     for (let i = 0; i < FILAS; i++) {
       const t = i / FILAS;
       // Se apaga tarde y de golpe: un haz sobre tablas tiene borde, no es un
       // degradado. Con la caída suave quedaba un manchón sin forma.
       r.ctx.globalAlpha = fuerza * (1 - t * t * t);
       const dy = Math.round(t * alcance);
-      const ancho = Math.round(size * (0.82 + t * L.abre));
-      const margen = (size - ancho) / 2;
-      // La base apenas se mueve; la punta, todo lo que diga `balanceo`.
-      const corre = Math.round(meneo * (0.25 + t * 1.1));
+      // Se inclina entero: la base clavada a su ventanal y la punta corrida.
+      const corre = Math.round(meneo * t);
+      const crece = Math.round(size * L.abre * t);
       for (const h of haces) {
-        const y = h.haciaAdentro > 0 ? h.yBorde + dy : h.yBorde - dy - altoFila;
-        r.rect(Math.round(h.x0 + margen + corre), y, ancho, altoFila, color);
+        r.rect(h.x0 - crece + corre, h.yBorde + dy, h.ancho + crece * 2, altoFila, color);
       }
     }
     r.ctx.globalAlpha = 1;
@@ -2017,17 +2027,30 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
     if (esPared(casilla(ultima))) {
       let r2 = ultima;
       while (r2 - 1 >= 0 && esPared(casilla(r2 - 1))) r2--;
-      let ventana = false;
-      for (let f = r2; f <= ultima; f++) if (casilla(f) === 'W') ventana = true;
+      /**
+       * 🪟 Y ACÁ TAMBIÉN UN VENTANAL, no dos ventanitas: es la MISMA pared
+       * mirada desde afuera, así que si adentro es un vidrio de dos baldosas,
+       * afuera tiene que ser el mismo. Lo dibuja entero la primera columna del
+       * par (ver `ventanalDe` en `cosasAltasDelTren`).
+       */
+      const hayVidrio = (c) => {
+        for (let f = r2; f <= ultima; f++) if ((map.grid[f] || [])[c] === 'W') return true;
+        return false;
+      };
+      let largoV = 0;
+      if (hayVidrio(col) && !hayVidrio(col - 1)) {
+        largoV = 1;
+        while (hayVidrio(col + largoV)) largoV++;
+      }
       const y0 = map.rows * size;
       const alto = tc.alturaCaraAfuera;
       // La misma cara de tablas que por dentro: es la MISMA pared, mirada del
       // otro lado. Si ésta quedaba lisa, el vagón se veía a medio terminar
       // justo desde donde lo mirás al llegar a caballo.
       estampar(r, piezaCaraPared(colors.wall, alto / PUNTO, varianteDe(col, 99, 7)), x, y0);
-      if (ventana) {
+      if (largoV > 0) {
         estampar(r, piezaVentana(colors.window, colors.windowGlass,
-          (size - 4) / PUNTO, (alto - 10) / PUNTO), x + 2 - 2 * PUNTO, y0 + 4 - 2 * PUNTO);
+          (largoV * size - 4) / PUNTO, (alto - 10) / PUNTO), x + 2 - 2 * PUNTO, y0 + 4 - 2 * PUNTO);
       }
       r.ctx.globalAlpha = 0.35;
       r.rect(x, y0 + alto, size, 3, '#000');
@@ -2075,7 +2098,10 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
   const anchoVista = vistaW || r.width;
   const altoVista = vistaH || r.height;
 
-  const colDesde = Math.max(0, Math.floor(camX / size) - 1);
+  // ⚠️ TRES COLUMNAS DE MARGEN y no una: un ventanal lo dibuja entero su
+  // primera columna, así que si esa queda apenas afuera de la pantalla el
+  // vidrio no se dibujaría nunca. Lo de más se recorta solo en el lienzo.
+  const colDesde = Math.max(0, Math.floor(camX / size) - 3);
   const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 1);
   // Una fila más abajo que el piso: la tapa levantada de una casilla que queda
   // justo debajo de la pantalla puede asomar adentro.
@@ -2084,6 +2110,23 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
 
   const casilla = (c, f) => (map.grid[f] || [])[c];
   const cosas = [];
+
+  /**
+   * 🪟 DÓNDE EMPIEZA UN VENTANAL Y CUÁNTAS COLUMNAS MIDE. Los planos escriben
+   * las ventanillas de a pares (`####WW###WW###`); un ventanal es una CORRIDA
+   * de columnas con vidrio en la misma pared, y lo dibuja entero la primera.
+   */
+  const conVidrio = (c, desde, hasta) => {
+    for (let f = desde; f <= hasta; f++) if (casilla(c, f) === 'W') return true;
+    return false;
+  };
+  const ventanalDe = (c, desde, hasta) => {
+    if (!conVidrio(c, desde, hasta)) return { primera: false, largo: 0 };
+    if (conVidrio(c - 1, desde, hasta)) return { primera: false, largo: 0 };
+    let largo = 1;
+    while (conVidrio(c + largo, desde, hasta)) largo++;
+    return { primera: true, largo };
+  };
 
   /**
    * LAS DOS PAREDES LARGAS DE CADA COLUMNA: la del fondo (filas de pared desde
@@ -2156,8 +2199,15 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
           if (row <= r1) {
             if (row !== r1) break;   // el bloque entero lo dibuja su última fila
             const pie = (r1 + 1) * size;
-            let ventana = false;
-            for (let f = 0; f <= r1; f++) if (casilla(col, f) === 'W') ventana = true;
+            /**
+             * 🪟 UN VENTANAL, NO DOS VENTANITAS *(Santi: "un par de ventanas
+             * debería ser un solo ventanal")*. Los planos escriben las
+             * ventanillas de a pares (`####WW###WW###`) y cada columna dibujaba
+             * SU vidrio, así que un ventanal de dos baldosas salía partido al
+             * medio por un montante que no existe. Ahora la primera columna del
+             * par dibuja el vidrio entero y la segunda no dibuja ninguno.
+             */
+            const v = ventanalDe(col, 0, r1);
             cosas.push({ base: pie - 0.01, draw: () => {
               /**
                * 🔁 ETAPA 3. El techo del vagón es una mancha grande de un solo
@@ -2168,9 +2218,10 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
               r.rect(x, -alto, size, pie - alto + 2, tapa);
               estampar(r, piezaCantoPared(colors.wall), x, -alto);
               estampar(r, piezaCaraPared(colors.wall, alto / PUNTO, varianteDe(col, 0, 7)), x, pie - alto);
-              if (ventana) {
+              if (v.primera) {
                 estampar(r, piezaVentana(colors.window, colors.windowGlass,
-                  (size - 4) / PUNTO, (alto - 9) / PUNTO), x + 2 - 2 * PUNTO, pie - alto + 3 - 2 * PUNTO);
+                  (v.largo * size - 4) / PUNTO, (alto - 9) / PUNTO),
+                x + 2 - 2 * PUNTO, pie - alto + 3 - 2 * PUNTO);
               }
             } });
             break;

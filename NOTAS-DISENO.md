@@ -15228,53 +15228,68 @@ hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
 📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
 cuadro con dibujo.
 
-#### 🔆 EL BALANCEO DEL TREN (1): LOS CHARCOS DE LUZ DE LAS VENTANILLAS
+#### 🔆 EL BALANCEO DEL TREN (1): LA LUZ DE LOS VENTANALES
 
 *(Santi: "me gustaría que haya un pequeño balanceo en el tren para meter más al
 jugador en el asalto. No sé si hacer que el tren se balancee o que la cámara lo
 haga. Aconsejame".)*
 
-⚠️ **NI EL TREN NI LA CÁMARA: LA LUZ.** El tren está descartado de entrada y por
-dos motivos. Uno, si se mueve el vagón se mueven con él el piso, las paredes, los
-guardias y vos: **en pantalla no pasa nada**, porque para ver un balanceo algo
-tiene que moverse RESPECTO DE OTRA COSA. Y dos, si se moviera sólo el dibujo y no
-el choque, las paredes quedarían uno o dos píxeles de donde de verdad te frenan
-— en un juego donde te pegás a la cobertura y tirás por un hueco de una baldosa,
+⚠️ **NI EL TREN NI LA CÁMARA: LA LUZ.** El tren está descartado por dos motivos.
+Uno, si se mueve el vagón se mueven con él el piso, las paredes, los guardias y
+vos: **en pantalla no pasa nada**, porque para ver un balanceo algo tiene que
+moverse RESPECTO DE OTRA COSA. Y dos, si se moviera sólo el dibujo y no el
+choque, las paredes quedarían uno o dos píxeles de donde de verdad te frenan —
+en un juego donde te pegás a la cobertura y tirás por un hueco de una baldosa,
 eso es una fábrica de bugs.
 
 La cámara sí es segura (su `offset` sólo existe al dibujar, y apuntar ya la
-ignora a propósito: `world.aimX = input.mouse.x + camera.x`), y de hecho el
-traqueteo de acelerar/frenar **ya la usaba**. Pero sola no alcanza: un balanceo
-constante de cámara se lee como "la cámara está floja", no como "el tren se
-mueve", porque adentro del vagón no hay nada en pantalla que lo explique.
+ignora a propósito: `world.aimX = input.mouse.x + camera.x`), y el traqueteo de
+acelerar/frenar **ya la usaba**. Pero sola se lee como "la cámara está floja":
+adentro del vagón no hay nada en pantalla que la explique.
 
-Por eso la primera pieza es la que más rinde desde esta cámara: **la luz que
-entra por las ventanillas y cae sobre el piso**. Desde casi arriba un farol
-colgado se ve de canto y no se nota; su charco ocupa media baldosa y **se mueve
-contra las tablas**, que es justo el movimiento relativo que faltaba.
+Así que lo que se mece es **la luz que entra por los ventanales y cae en el
+piso**. Desde esta cámara casi cenital un farol colgado se ve de canto y no se
+nota; un charco de luz ocupa media baldosa y **se mueve contra las tablas**.
 
-**Y LA PUNTA SE MUEVE MÁS QUE LA BASE** (`meneo * (0,25 + t * 1,1)`). El haz está
-clavado a su ventanilla: si se corriera entero parecería una mancha patinando
-por el piso, no luz entrando por un agujero.
+🐛 **LA PRIMERA VERSIÓN ESTUVO MAL EN TRES COSAS, Y LAS TRES LAS MARCÓ SANTI.**
+
+**1. Eran dos ventanitas donde va un ventanal** *("un par de ventanas debería ser
+un solo ventanal")*. Los planos escriben las ventanillas de a pares
+(`####WW###WW###`) y cada columna dibujaba SU vidrio, así que un ventanal de dos
+baldosas salía partido al medio por un montante que no existe. Ahora la primera
+columna del par dibuja el vidrio entero — adentro y en la cara de afuera, que es
+la misma pared mirada del otro lado.
+
+⚠️ Eso obligó a ampliar el margen de columnas que se dibujan de 1 a 3: un
+ventanal lo dibuja entero su primera columna, y si ésa queda apenas afuera de la
+pantalla el vidrio no se dibujaría nunca.
+
+**2. Entraba luz desde abajo** *("no tiene sentido: si el sol está arriba, no
+debería entrar luz por debajo")*. Error de física, no de dibujo: la primera
+versión también tiraba un haz desde la pared de ADELANTE hacia adentro, y eso
+sólo puede pasar con el sol abajo del tren. Ahora la luz entra **sólo por la
+pared del fondo**.
+
+**3. Parecía un gusano** *("más que luz, parece un gusano moviéndose")*. Y el
+problema no era el meneo sino el ANCHO: una tira de una baldosa, partida en
+filas de distinto ancho y cada una corrida un poco más que la anterior, se lee
+como un bicho reptando. Con un charco de dos baldosas —uno por ventanal, no uno
+por columna— el mismo meneo se lee como lo que es: una mancha de sol que se
+inclina porque el vagón se mece.
+
+📏 **Y arreglar esas tres lo hizo GRATIS.** Antes costaba 0,43 ms por cuadro;
+ahora la diferencia entre dibujarlo y no dibujarlo **está por debajo del ruido de
+medición** (1,30 ms contra 1,35, con una dispersión de 1,23 a 1,55 dentro de cada
+grupo). El motivo es que hay unas cuatro veces menos rectángulos: un haz por
+ventanal en vez de uno por columna, y una pared en vez de dos.
+
+⚠️ Queda anotado, para no volver a buscar por el lado equivocado, que la
+optimización que se probó primero —juntar los haces para cambiar `globalAlpha`
+pocas veces— ahorró **0,07 ms de los 0,50**. Lo caro nunca fue la transparencia
+sino la CANTIDAD de rectángulos, y lo que la bajó fue corregir el dibujo.
 
 De día es sol tibio; de noche, luna fría y apenas visible. Los faroles del vagón
 —que serían la otra fuente de noche— son la pieza 3 y todavía no están.
-
-🐛 **La primera versión eran manchones largos y sin forma.** Llegaban 2,2
-baldosas adentro, se abrían mucho y se apagaban con una caída suave: parecía una
-viñeta, no luz. Con 1,5 baldosas, menos apertura y una caída que **se apaga tarde
-y de golpe** (`1 − t³`), el haz tiene borde — que es lo que tiene un haz de sol
-sobre tablas.
-
-📏 **Cuesta 0,43 ms por cuadro**: el asalto pasa de 0,67 a 1,10.
-
-⚠️ **Y UNA OPTIMIZACIÓN QUE CASI NO SIRVIÓ, anotada para no volver a buscar por
-el lado equivocado.** Se juntaron los haces para pintarlos por filas y cambiar
-`globalAlpha` siete veces por cuadro en vez de 220. Medido: ahorró **0,07 ms de
-los 0,50**. Lo caro no es la transparencia sino la CANTIDAD de rectángulos (unos
-220, uno por fila de cada haz). Si alguna vez hay que bajarlo de verdad, el
-camino es guardar el haz dibujado y estamparlo de una, como hace `pieza` con
-todo lo demás. Hoy no hace falta.
 
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 

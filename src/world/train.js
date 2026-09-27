@@ -1797,7 +1797,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
   // primera columna, así que si esa queda apenas afuera de la pantalla el
   // vidrio no se dibujaría nunca. Lo de más se recorta solo en el lienzo.
   const colDesde = Math.max(0, Math.floor(camX / size) - 3);
-  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 1);
+  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 3);
   const filaDesde = Math.max(0, Math.floor(camY / size) - 1);
   const filaHasta = Math.min(map.rows - 1, Math.ceil((camY + altoVista) / size) + 1);
 
@@ -1831,10 +1831,40 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
       const y = row * size;
 
       switch (tile) {
-        case 'X':
-          // El vacío: no dibujamos nada y se ve el paisaje pasando por detrás.
-          // Eso es lo que hace que los enganches se lean como "afuera".
+        case 'X': {
+          /**
+           * 🕳️ EL HUECO ENTRE DOS VAGONES. Acá no hay tren, así que se ve el
+           * suelo de abajo: es lo que hace que los enganches se lean como
+           * "afuera".
+           *
+           * 🐛 PERO ANTES NO SE DIBUJABA NADA Y QUEDABA EL COLOR PELADO DEL
+           * FONDO *(Santi: "el suelo del desierto parecía comerse algunos
+           * cuadrados de la pared del tren")*. Tenía razón y el problema no era
+           * que se viera el suelo —eso está bien— sino que se veía el `clear`
+           * liso: una franja de un solo color, sin balasto ni piedras, cortando
+           * el vagón de arriba abajo. El desierto de afuera tiene textura; un
+           * rectángulo liso del mismo color no se lee como suelo sino como un
+           * agujero en el dibujo.
+           *
+           * Ahora lleva tierra con sus piedritas, y **sombra contra los dos
+           * vagones**: eso es lo que convierte el hueco en un hueco ENTRE dos
+           * cosas en vez de un tajo.
+           */
+          const C = colors.cielo;
+          const v = varianteDe(col, row, 31);
+          r.rect(x, y, size, size, oscurecer(C.tierraOscura, 0.92));
+          for (let k = 0; k < 3; k++) {
+            const h = varianteDe(col * 13 + k, row * 7 + k, 91);
+            r.rect(x + (h % (size - 3)), y + ((h >> 3) % (size - 2)), 2, 1,
+              oscurecer(C.tierraOscura, k === v % 3 ? 1.18 : 0.8));
+          }
+          // La sombra que tiran los vagones adentro del hueco, de los dos lados.
+          r.ctx.globalAlpha = 0.3;
+          if ((map.grid[row] || [])[col - 1] !== 'X') r.rect(x, y, 3, size, '#000');
+          if ((map.grid[row] || [])[col + 1] !== 'X') r.rect(x + size - 3, y, 3, size, '#000');
+          r.ctx.globalAlpha = 1;
           break;
+        }
 
         // Pared, ventanilla y baranda: la cosa alta las cubre enteras (o, la
         // baranda, deja ver el paisaje), así que en el piso no va nada.
@@ -2037,10 +2067,16 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
         for (let f = r2; f <= ultima; f++) if ((map.grid[f] || [])[c] === 'W') return true;
         return false;
       };
+      /**
+       * 🐛 También acá lo dibuja la ÚLTIMA columna del par: este bucle va de
+       * izquierda a derecha pintando cara y vidrio columna por columna, así que
+       * si el vidrio ancho lo ponía la primera, la cara de la segunda le tapaba
+       * la mitad derecha. Es el mismo error que adentro.
+       */
       let largoV = 0;
-      if (hayVidrio(col) && !hayVidrio(col - 1)) {
+      if (hayVidrio(col) && !hayVidrio(col + 1)) {
         largoV = 1;
-        while (hayVidrio(col + largoV)) largoV++;
+        while (hayVidrio(col - largoV)) largoV++;
       }
       const y0 = map.rows * size;
       const alto = tc.alturaCaraAfuera;
@@ -2049,8 +2085,9 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
       // justo desde donde lo mirás al llegar a caballo.
       estampar(r, piezaCaraPared(colors.wall, alto / PUNTO, varianteDe(col, 99, 7)), x, y0);
       if (largoV > 0) {
+        const x0 = x - (largoV - 1) * size;
         estampar(r, piezaVentana(colors.window, colors.windowGlass,
-          (largoV * size - 4) / PUNTO, (alto - 10) / PUNTO), x + 2 - 2 * PUNTO, y0 + 4 - 2 * PUNTO);
+          (largoV * size - 4) / PUNTO, (alto - 10) / PUNTO), x0 + 2 - 2 * PUNTO, y0 + 4 - 2 * PUNTO);
       }
       r.ctx.globalAlpha = 0.35;
       r.rect(x, y0 + alto, size, 3, '#000');
@@ -2102,7 +2139,7 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
   // primera columna, así que si esa queda apenas afuera de la pantalla el
   // vidrio no se dibujaría nunca. Lo de más se recorta solo en el lienzo.
   const colDesde = Math.max(0, Math.floor(camX / size) - 3);
-  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 1);
+  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 3);
   // Una fila más abajo que el piso: la tapa levantada de una casilla que queda
   // justo debajo de la pantalla puede asomar adentro.
   const filaDesde = Math.max(0, Math.floor(camY / size) - 1);
@@ -2120,12 +2157,20 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
     for (let f = desde; f <= hasta; f++) if (casilla(c, f) === 'W') return true;
     return false;
   };
+  /**
+   * 🐛 LO DIBUJA LA ÚLTIMA COLUMNA DEL PAR, NO LA PRIMERA *(Santi: "la mitad de
+   * un ventanal quedó como metido dentro de la pared")*. Cada columna de pared
+   * entra a la lista `cosas` con la MISMA `base`, así que el orden entre ellas
+   * es el de inserción: de izquierda a derecha. Si el vidrio ancho lo ponía la
+   * primera, la pared de la segunda se dibujaba después y le tapaba la mitad
+   * derecha — exactamente "medio ventanal metido en la pared".
+   */
   const ventanalDe = (c, desde, hasta) => {
-    if (!conVidrio(c, desde, hasta)) return { primera: false, largo: 0 };
-    if (conVidrio(c - 1, desde, hasta)) return { primera: false, largo: 0 };
+    if (!conVidrio(c, desde, hasta)) return { ultima: false, largo: 0 };
+    if (conVidrio(c + 1, desde, hasta)) return { ultima: false, largo: 0 };
     let largo = 1;
-    while (conVidrio(c + largo, desde, hasta)) largo++;
-    return { primera: true, largo };
+    while (conVidrio(c - largo, desde, hasta)) largo++;
+    return { ultima: true, largo };
   };
 
   /**
@@ -2218,10 +2263,13 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
               r.rect(x, -alto, size, pie - alto + 2, tapa);
               estampar(r, piezaCantoPared(colors.wall), x, -alto);
               estampar(r, piezaCaraPared(colors.wall, alto / PUNTO, varianteDe(col, 0, 7)), x, pie - alto);
-              if (v.primera) {
+              if (v.ultima) {
+                // Arranca en la PRIMERA columna del par, que es ésta menos las
+                // que vienen antes.
+                const x0 = x - (v.largo - 1) * size;
                 estampar(r, piezaVentana(colors.window, colors.windowGlass,
                   (v.largo * size - 4) / PUNTO, (alto - 9) / PUNTO),
-                x + 2 - 2 * PUNTO, pie - alto + 3 - 2 * PUNTO);
+                x0 + 2 - 2 * PUNTO, pie - alto + 3 - 2 * PUNTO);
               }
             } });
             break;

@@ -15228,6 +15228,30 @@ hace falta. Se reconoce porque `puntoDeEntrada` deja de devolver la boca.
 📏 Sin errores en 12.209 cuadros con teclas y mouse al azar, a 1,09 ms por
 cuadro con dibujo.
 
+#### 🐛 EL ARNÉS DEL ASALTO NO MOVÍA AL JUGADOR — Y TAMPOCO AVISABA
+
+Buscando dónde el desierto se comía la pared apareció esto, y es de la misma
+familia que el piloto que apuntaba a un punto fijo.
+
+⚠️ **EL JUGADOR LEE `input.anyDown('KeyD', 'ArrowRight')`, NO `isDown`**
+(`entities/player.js`). El arnés de pruebas reemplazaba `isDown` y `wasPressed`
+pero no `anyDown`, así que en el asalto **el jugador nunca se movía**: las
+corridas de miles de cuadros probaban el dibujo, los guardias y el reloj, pero
+ni un paso, ni un choque contra una pared, ni una cobertura.
+
+Y como siempre, no fallaba: terminaba sin un error y con números de aspecto
+razonable. Con el jugador moviéndose de verdad, el costo por cuadro del asalto
+pasó de 1,2 a 1,7 ms — o sea que media pantalla de sistemas no se estaba
+ejecutando.
+
+**La huida no está afectada:** su jugador lee `input.isDown` directo
+(`huidaScene.js`), que el arnés sí reemplazaba. Los números de la huida valen.
+
+**La regla que deja:** cuando el arnés simula la entrada, tiene que reemplazar
+**todas** las puertas de entrada, no las que uno se acuerda. Van tres veces en
+pocas vueltas que una herramienta de medición falla callada (la pantalla chica,
+el mouse del piloto, y ésta), y las tres se encontraron de casualidad.
+
 #### 🔆 EL BALANCEO DEL TREN (1): LA LUZ DE LOS VENTANALES
 
 *(Santi: "me gustaría que haya un pequeño balanceo en el tren para meter más al
@@ -15276,6 +15300,26 @@ filas de distinto ancho y cada una corrida un poco más que la anterior, se lee
 como un bicho reptando. Con un charco de dos baldosas —uno por ventanal, no uno
 por columna— el mismo meneo se lee como lo que es: una mancha de sol que se
 inclina porque el vagón se mece.
+
+🐛 **MEDIO VENTANAL QUEDABA METIDO EN LA PARED** *(Santi)*. El vidrio ancho lo
+dibujaba la PRIMERA columna del par, y cada columna de pared entra a la lista
+`cosas` con la misma `base`, así que el orden entre ellas es el de inserción: de
+izquierda a derecha. La pared de la segunda columna se dibujaba después y le
+tapaba la mitad derecha al vidrio. Ahora lo dibuja **la última columna del par**,
+adentro y en la cara de afuera, que tenía el mismo error por el mismo motivo.
+
+🐛 **Y EL DESIERTO SE COMÍA CUADRADOS DE LA PARED** *(Santi: "el suelo del
+desierto parecía comerse algunos cuadrados de la pared del tren")*. Pasaba en el
+**hueco entre dos vagones**: esas casillas son `X` (vacío) y no se dibujaba nada,
+así que quedaba el color pelado del `clear` — una franja lisa de un solo tono
+cortando el tren de arriba abajo.
+
+⚠️ Lo que estaba mal no era que se viera el suelo, que es lo correcto —entre dos
+vagones no hay tren—, sino que **se veía el `clear` y no suelo**: el desierto de
+afuera tiene balasto, pasto y piedras, y un rectángulo liso del mismo color no se
+lee como suelo sino como un agujero en el dibujo. Ahora el hueco lleva tierra con
+sus piedritas y **sombra contra los dos vagones**, que es lo que lo convierte en
+un hueco ENTRE dos cosas en vez de un tajo.
 
 📏 **Y arreglar esas tres lo hizo GRATIS.** Antes costaba 0,43 ms por cuadro;
 ahora la diferencia entre dibujarlo y no dibujarlo **está por debajo del ruido de

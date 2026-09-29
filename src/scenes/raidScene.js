@@ -26,7 +26,7 @@ import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor } from '../world/trenTresCuartos.js';
 import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
 
-import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, isInsideZone } from '../world/train.js';
+import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual,
 } from '../entities/player.js';
@@ -3792,10 +3792,26 @@ export function createRaidScene(services) {
      * mueve la luz.
      */
     const L = CONFIG.tresCuartos.luzVentanilla;
-    luzDeLosVentanales(r, train, swayX, undefined, {
+    const luz = {
       meneo: Math.sin(scroll * L.velocidad * Math.PI * 2) * L.balanceo,
       dia: gameState.esDeDia,
-    });
+    };
+    luzDeLosVentanales(r, train, swayX, undefined, luz);
+
+    /**
+     * 🌙 DE NOCHE, EL TREN SE APAGA Y LO PRENDEN LOS FAROLES (world/train.js).
+     *
+     * ⚠️ Los jinetes de abajo se vuelven a pintar después de oscurecer: cabalgan
+     * pegados al tren y medio cuerpo les cae encima de la cara de afuera de la
+     * pared, que es tren y se oscurece. Sin esto quedaban partidos, con la
+     * mitad de arriba de noche y la de abajo de día. Los de arriba no hace
+     * falta: la pared del fondo ya los tapa en esa franja.
+     */
+    if (!luz.dia) {
+      oscuridadDeNoche(r, train, swayX);
+      for (const rd of riders) if (rd.y > map.height) drawRider(r, rd);
+    }
+    farolesDelTren(r, train, swayX, undefined, luz);
 
     // Los jinetes de arriba del tren quedan detrás de la pared del fondo: se
     // los sigue viendo en silueta, encima de ella.

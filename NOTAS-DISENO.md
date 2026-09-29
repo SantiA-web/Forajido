@@ -15511,6 +15511,47 @@ su centro.
 📏 Costo de dibujo: 1,33–1,36 ms por cuadro en casi todas las tandas, igual
 que antes.
 
+#### 🏮 EL BALANCEO DEL TREN (3): LOS FAROLES, Y LA NOCHE ADENTRO DEL VAGÓN
+
+*(Santi: "de día tienen que estar apagados y de noche encendidos". Eligió un
+farol cada 8 columnas y 55% de brillo —más oscuro que el 65% recomendado—, y
+agregó: "lo de debajo del farol no solo tiene que estar más iluminado, sino
+que tiene que ser una luz cálida".)*
+
+⚠️ **LO QUE HUBO QUE HACER PRIMERO: APAGAR EL VAGÓN.** De noche el interior se
+veía tan claro como de día; lo único que cambiaba era el desierto. Un charco
+de luz sobre un piso ya iluminado no se lee como luz. Ahora de noche **todo lo
+que es tren** —paredes, piso, lo que está parado, las barandas, la
+locomotora— queda al 55% con un poco de azul (`multiply`,
+`oscuridadDeNoche`). Lo de afuera no: el desierto y la vía que se ve por los
+enganches ya tienen sus colores de noche, y oscurecerlos otra vez los volvía
+el vacío negro que ya se había sacado.
+
+**Los faroles** (`farolesDelTren`, world/train.js): cuelgan del techo sobre el
+pasillo, repartidos parejo en cada vagón con techo (no en el ganado ni en la
+góndola). Se hamacan con el mismo reloj que la luz de los ventanales y las
+botellas. **El charco es cálido porque aclara mucho el rojo, algo el verde y
+casi nada el azul** (`aclaraCentro: [2.5, 1.95, 1.2]`), con `color-dodge`
+como la luz de los ventanales: no pinta, aclara lo que toca.
+
+Es **sólo dibujo**: los guardias ven igual de día que de noche. Que la
+oscuridad esconda sería un cambio de sigilo aparte, a decidir con el banco.
+
+🐛 **Tres cosas que se vieron mirándolo:**
+- **Los jinetes de abajo quedaban partidos**, con medio cuerpo de noche: les cae
+  encima de la cara de afuera de la pared, que es tren y se oscurece. Se
+  vuelven a pintar después de oscurecer.
+- **Las barandas del ganado quedaban claras** contra el vagón a oscuras: la
+  primera versión las dejaba afuera por la vía que asoma entre los postes.
+- **El farol era un puntito**: a tamaño real (9×14 puntos) de día no se leía
+  como farol. Quedó en 11×16, con borde oscuro.
+
+📏 **Y costaba el doble de noche**: 3,2 ms por cuadro contra 1,5 de día. La
+oscuridad se pintaba columna por columna, unos 80 rectángulos con `multiply`
+por cuadro. Juntando las columnas iguales en un solo rectángulo (un vagón por
+dentro es igual de punta a punta) quedó en **1,6–1,9 de noche contra 1,3–1,5 de
+día**.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

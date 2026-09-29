@@ -465,6 +465,13 @@ caboose). Van y vienen con el mismo vaivén que la luz, salen disparadas con el
 tirón del tren de carga, y si las pisás o les tirás, saltan (la botella se
 rompe). Son adorno: no lastiman, no frenan y no hacen ruido.
 
+**Del techo cuelgan faroles**, uno cada 8 casillas sobre el pasillo, en los
+vagones con techo. Se hamacan con el mismo vaivén que la luz y las botellas.
+De día están apagados. **De noche el tren queda a oscuras** (55% del brillo,
+con un poco de azul de luna) y los faroles prendidos tiran un charco de **luz
+cálida** debajo: las tablas, los asientos y quien pase por ahí se ven
+iluminados. Es sólo dibujo: los guardias ven igual de día que de noche.
+
 **Por los huecos entre vagones se ve la vía pasando**: el mismo desierto de los
 costados, a la misma velocidad, con el terraplén y los rieles en el medio.
 

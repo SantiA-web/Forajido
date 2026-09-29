@@ -1475,6 +1475,43 @@ export const CONFIG = {
       /** Hasta dónde llega pareja (0 a 1 del alcance); de ahí a la punta se apaga. */
       parejo: 0.6,
     },
+
+    /**
+     * 🏮 LOS FAROLES COLGADOS Y LA NOCHE ADENTRO DEL VAGÓN — la pieza 3 del
+     * balanceo *(Santi: "de día tienen que estar apagados y de noche
+     * encendidos")*.
+     *
+     * ⚠️ SIN OSCURECER EL VAGÓN, UN FAROL NO SE NOTA. Hasta acá, de noche el
+     * interior se veía tan claro como de día: lo único que cambiaba era el
+     * desierto. Por eso de noche el tren entero queda a `brilloNoche`, y lo que
+     * vuelve a verse claro es lo que tocan los faroles. Es sólo dibujo: los
+     * guardias ven igual que siempre.
+     */
+    faroles: {
+      /** Uno cada tantas columnas, colgado sobre el pasillo *(elegido con Santi)*. */
+      cadaColumnas: 8,
+      /**
+       * Cuánto brillo le queda al tren de noche, con un poco de azul (la luna).
+       * 🔻 55% y no el 65% recomendado *(Santi eligió el más oscuro)*: los
+       * guardias en las zonas sin farol cuestan más de ver.
+       */
+      brilloNoche: 0.55,
+      /** El tono de esa oscuridad: rojo, verde, azul (1 = no se toca). */
+      tinteNoche: [0.9, 0.97, 1.22],
+      /**
+       * EL CHARCO DE LUZ, CÁLIDO *(Santi: "no solo tiene que estar más
+       * iluminado, sino que tiene que ser una luz cálida")*: cuánto aclara en el
+       * centro cada canal. Rojo mucho, verde algo, azul casi nada: eso es lo que
+       * lo vuelve amarillo de lámpara de aceite y no blanco.
+       */
+      aclaraCentro: [2.5, 1.95, 1.2],
+      /** El radio del charco, en unidades (a lo alto se achata, es tres cuartos). */
+      radio: 42,
+      /** A qué altura cuelga, sobre el piso (la pared mide 20). */
+      altura: 17,
+      /** Cuánto se hamaca de costado, en unidades. Mismo reloj que la luz. */
+      balanceo: 1.6,
+    },
     /**
      * 🔺 DE 12 A 20, DESPUÉS DE MIRARLA. *(Santi: "se está perdiendo mucho el
      * potencial [...] está media confusa y como que cargada. Además, mientras

@@ -19,7 +19,7 @@
 import { CONFIG } from '../data/config.js';
 import { createTilemap } from './tilemap.js';
 import {
-  PUNTO, estampar, varianteDe, piezaPiso, piezaCantoPared, piezaCaraPared,
+  PUNTO, estampar, pieza, varianteDe, piezaPiso, piezaCantoPared, piezaCaraPared,
   piezaVentana, piezaAsiento, piezaCama, piezaCajon, piezaPasarela, piezaSalida, piezaBaranda,
 } from './piezas.js';
 import { createPlayer } from '../entities/player.js';
@@ -2114,6 +2114,219 @@ export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}) {
     ctx.fill();
   }
   ctx.restore();
+}
+
+/**
+ * 🌙 LA NOCHE ADENTRO DEL TREN: todo lo del tren queda a
+ * `faroles.brilloNoche`, con un poco de azul de luna.
+ *
+ * ⚠️ SIN ESTO UN FAROL NO SE NOTA. Hasta acá el vagón se veía de noche tan
+ * claro como de día —lo único que cambiaba era el desierto—, y un charco de
+ * luz sobre un piso ya iluminado no se lee como luz.
+ *
+ * Se oscurece CON `multiply` y SÓLO LO QUE ES TREN: las paredes (con lo que
+ * se levantan arriba y la cara que cuelga abajo), el piso y todo lo que está
+ * parado encima. Lo de afuera —el desierto, la vía que se ve por los
+ * enganches— ya tiene sus colores de noche; oscurecerlo otra vez lo dejaba
+ * negro, que es el vacío que ya se había sacado una vez.
+ *
+ * Va DESPUÉS de todo lo parado y ANTES de los faroles: los faroles son los
+ * que vuelven a encender lo que tocan (`farolesDelTren`).
+ */
+export function oscuridadDeNoche(r, train, camX, vistaW) {
+  const F = CONFIG.tresCuartos.faroles;
+  const tc = CONFIG.tresCuartos;
+  const map = train.map;
+  const size = map.size;
+  const anchoVista = vistaW || r.width;
+  const colDesde = Math.max(0, Math.floor(camX / size) - 1);
+  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 1);
+  const canal = (i) => Math.round(255 * Math.min(1, F.brilloNoche * F.tinteNoche[i]));
+
+  /**
+   * 📏 Las columnas iguales van juntas, en UN rectángulo. La primera versión
+   * pintaba columna por columna —unos 80 rectángulos con `multiply` por
+   * cuadro— y de noche el asalto costaba el doble que de día. Un vagón por
+   * dentro es todo igual de punta a punta, así que casi todo se junta.
+   */
+  const tramos = [];
+  const tramoDe = (col) => {
+    const casilla = (f) => (map.grid[f] || [])[col];
+    const tipo = train.tipoPorColumna[col];
+    if (tipo === 'locomotora') return [[22, map.height - 22]];
+    const partes = [];
+    const plantilla = WAGONS[tipo];
+    let desde = null;
+    if (esPared(casilla(0))) desde = -(plantilla && plantilla.carbon ? tc.alturaParedBaja : tc.alturaPared);
+    // Las casillas del tren, de corrido. El aire no: por ahí se ve la vía,
+    // que ya es de noche.
+    //
+    // 🐛 La baranda SÍ, con los postes que se levantan arriba de su casilla.
+    // La primera versión la dejaba afuera por la vía que asoma entre los
+    // postes, y el ganado quedaba con las barandas iluminadas como de día
+    // contra un vagón a oscuras. Que esa franja de vía quede un poco más
+    // oscura se lee como la sombra de la baranda; la baranda clara, no.
+    for (let f = 0; f <= map.rows; f++) {
+      const t = casilla(f);
+      const esTren = f < map.rows && !esHueco(t);
+      if (esTren && desde === null) desde = t === 'H' ? f * size - tc.alturaBaranda : f * size;
+      if (!esTren && desde !== null) {
+        const hasta = f === map.rows && esPared(casilla(map.rows - 1))
+          ? map.rows * size + tc.alturaCaraAfuera + 3
+          : f * size;
+        partes.push([desde, hasta]);
+        desde = null;
+      }
+    }
+    return partes;
+  };
+  for (let col = colDesde; col <= colHasta; col++) {
+    const partes = tramoDe(col);
+    const clave = partes.map((p) => p.join(':')).join('|');
+    const ultimo = tramos[tramos.length - 1];
+    if (ultimo && ultimo.clave === clave) ultimo.hasta = col;
+    else tramos.push({ clave, partes, desde: col, hasta: col });
+  }
+
+  const ctx = r.ctx;
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = `rgb(${canal(0)},${canal(1)},${canal(2)})`;
+  for (const t of tramos) {
+    const x = t.desde * size;
+    const w = (t.hasta - t.desde + 1) * size;
+    for (const [y0, y1] of t.partes) ctx.fillRect(x, y0, w, y1 - y0);
+  }
+  ctx.restore();
+}
+
+/**
+ * 🏮 DÓNDE CUELGAN LOS FAROLES: uno cada `faroles.cadaColumnas`, sobre el
+ * pasillo, en los vagones con techo. En el de ganado no hay techo de donde
+ * colgarlo, y la góndola va llena de carbón hasta arriba. Se calcula una vez
+ * por tren.
+ */
+function farolesDe(train) {
+  if (train.faroles) return train.faroles;
+  const F = CONFIG.tresCuartos.faroles;
+  const size = train.map.size;
+  const lista = [];
+  for (const w of train.wagons) {
+    if (w.esCola || !w.tieneTecho || w.carbon) continue;
+    const cols = Math.round(w.width / size);
+    // Repartidos parejo: el mismo margen en las dos puntas del vagón.
+    const cuantos = Math.max(1, Math.floor((cols - 2) / F.cadaColumnas));
+    const sobra = cols - cuantos * F.cadaColumnas;
+    for (let i = 0; i < cuantos; i++) {
+      lista.push({ x: (w.colStart + sobra / 2 + (i + 0.5) * F.cadaColumnas) * size, y: train.map.height / 2 });
+    }
+  }
+  train.faroles = lista;
+  return lista;
+}
+
+/**
+ * EL FAROL, sin la cadena (la cadena se dibuja aparte, porque se inclina
+ * cuando se hamaca). 11×16 puntos, con borde oscuro para que se lea sobre las
+ * tablas: el sombrerito, el vidrio entre dos
+ * parantes y la base. Apagado, el vidrio es ámbar oscuro; prendido, amarillo
+ * con la llama casi blanca.
+ */
+function piezaFarol(prendido) {
+  return pieza(`farol|${prendido ? 1 : 0}`, 11, 16, (p) => {
+    const metal = '#4a4037';
+    const luz = '#7a6b5c';
+    const borde = '#1a120c';
+    p(4, 0, 3, 1, borde);             // el aro de la cadena
+    p(2, 1, 7, 3, borde);             // el sombrerito, con su borde
+    p(3, 1, 5, 2, metal);
+    p(3, 1, 5, 1, luz);
+    p(0, 4, 11, 1, borde);
+    p(1, 5, 9, 8, borde);             // el vidrio, en su jaula
+    p(2, 5, 7, 8, prendido ? '#ffc95a' : '#5a4a30');
+    p(5, 5, 1, 8, prendido ? '#e0a040' : metal);     // el alambre del medio
+    if (prendido) p(4, 7, 3, 4, '#fff1c2');          // la llama
+    else p(3, 6, 1, 4, '#8a7a5c');                   // el reflejo, apagado
+    p(0, 13, 11, 2, borde);           // la base
+    p(1, 13, 9, 1, metal);
+    p(3, 15, 5, 1, borde);
+  });
+}
+
+/** El charco se achata a lo alto, como todo el piso en tres cuartos. */
+const PROFUNDIDAD_CHARCO = 0.62;
+
+/**
+ * 🏮 LOS FAROLES: de día apagados, de noche prendidos *(Santi)*.
+ *
+ * De noche, cada uno tira un CHARCO DE LUZ CÁLIDA en el piso *(Santi: "no solo
+ * tiene que estar más iluminado, sino que tiene que ser una luz cálida")*, con
+ * `color-dodge` —el mismo modo que la luz de los ventanales—: no pinta, aclara
+ * lo que toca, y aclara mucho más el rojo que el azul (`aclaraCentro`). Eso es
+ * lo que lo vuelve luz de lámpara de aceite y no un foco blanco.
+ *
+ * Y SE HAMACAN con el mismo reloj que la luz de los ventanales y las botellas
+ * (`meneo`): las tres cosas cuentan juntas que el vagón se mece. El charco va
+ * con el farol, porque está justo debajo.
+ *
+ * Van encima de todo lo parado: cuelgan del techo, por arriba de las cabezas.
+ */
+export function farolesDelTren(r, train, camX, vistaW, luz = {}) {
+  const { meneo = 0, dia = true } = luz;
+  const F = CONFIG.tresCuartos.faroles;
+  const L = CONFIG.tresCuartos.luzVentanilla;
+  const anchoVista = vistaW || r.width;
+  const inclina = L.balanceo ? meneo / L.balanceo : 0;
+  const corre = inclina * F.balanceo;
+  const ctx = r.ctx;
+  const visibles = farolesDe(train).filter((f) => f.x > camX - F.radio - 10 && f.x < camX + anchoVista + F.radio + 10);
+  if (visibles.length === 0) return;
+
+  if (!dia) {
+    const canal = (i) => Math.round(255 * (1 - 1 / F.aclaraCentro[i]));
+    const rgb = `${canal(0)},${canal(1)},${canal(2)}`;
+    ctx.save();
+    ctx.globalCompositeOperation = 'color-dodge';
+    for (const f of visibles) {
+      ctx.save();
+      ctx.translate(f.x + corre, f.y);
+      ctx.scale(1, PROFUNDIDAD_CHARCO);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, F.radio);
+      g.addColorStop(0, `rgba(${rgb},1)`);
+      g.addColorStop(0.35, `rgba(${rgb},0.8)`);
+      g.addColorStop(1, `rgba(${rgb},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, F.radio, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  const img = piezaFarol(!dia);
+  const w = img.width * PUNTO;
+  const h = img.height * PUNTO;
+  for (const f of visibles) {
+    const abajo = f.y - F.altura;                 // donde termina el farol
+    const x = f.x + corre;
+    // La cadena: del techo (a la altura de la pared) al farol, inclinada.
+    r.line(f.x, f.y - CONFIG.tresCuartos.alturaPared - 4, x, abajo - h, '#6a5d4e', 1, 0.5);
+    if (!dia) {
+      // El resplandor alrededor del vidrio: chico, para que no tape el charco.
+      ctx.save();
+      ctx.globalCompositeOperation = 'color-dodge';
+      const g = ctx.createRadialGradient(x, abajo - h / 2, 0, x, abajo - h / 2, 6);
+      g.addColorStop(0, 'rgba(150,110,40,0.9)');
+      g.addColorStop(1, 'rgba(150,110,40,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, abajo - h / 2, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    estampar(r, img, Math.round((x - w / 2) / PUNTO) * PUNTO, Math.round((abajo - h) / PUNTO) * PUNTO);
+  }
 }
 
 /**

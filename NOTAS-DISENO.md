@@ -15464,6 +15464,53 @@ mate al jugador en medio y mide el total de 300 cuadros): **1,30–1,50 ms por
 cuadro antes, 1,30–1,51 después** de los tres arreglos juntos, y 1,34–1,59 con
 la vía nueva.
 
+#### 🍾 EL BALANCEO DEL TREN (2): LAS BOTELLAS Y LATAS QUE RUEDAN
+
+*(Santi eligió las tres recomendaciones: puro adorno, en los vagones con gente,
+y la cantidad "que no siempre hayan dos estrictamente, sino que puedan cambiar
+y variar en cantidad entre 1 y 3".)*
+
+**Qué son.** Botellas (verdes o marrones) y latas tiradas en el piso libre,
+entre 1 y 3 por vagón, sorteadas vagón por vagón (`CONFIG.sueltas`,
+`entities/suelta.js`). No lastiman, no frenan, no se juntan, no hacen ruido.
+
+⚠️ **No se parecen a los barriles, y es una regla de juego.** Los barriles y
+cajones que ruedan (`rodante.js`) te lastiman; un adorno parecido sería una
+trampa — la lección de los adornos del desierto. Por eso quedó afuera el
+"cajón mal atado" que se había pensado al principio.
+
+**Qué las mueve, y nada es azar:**
+1. **El vaivén, con el mismo reloj que la luz de los ventanales**: cuando el
+   haz se inclina para un lado, ruedan para ese lado. Unas 7 unidades para cada
+   lado.
+2. **El tirón del tren de carga**: salen a 141 por segundo contra 28 del vaivén
+   solo, hacia la cola si acelera y hacia la locomotora si frena.
+3. **Los pies**: si alguien les pasa por encima salen pateadas. Y las balas: la
+   botella se rompe en vidrios; la lata sale volando.
+
+🐛 **Arrancaban deslizándose todas para el mismo lado.** Una cosa quieta a la
+que se le empieza a aplicar un vaivén no sólo va y viene: se desliza hasta que
+el roce la frena. Medido: 29 a 61 unidades en los primeros diez segundos,
+cuando el vaivén sólo las mueve 14 de punta a punta. Ahora arrancan con la
+velocidad que ya tendrían si hubieran estado rodando desde antes.
+
+🔺 **Más grandes que de verdad, y con borde.** Del tamaño real (una lata de 5×6
+puntos al lado de una persona de 80) se veían como una manchita en la veta.
+Quedaron en 7×16 la botella y 7×8 la lata, con el borde oscuro de los demás
+objetos. Siguen siendo discretas, que para un adorno está bien.
+
+⚠️ **Los vagones van por su `id` exacto.** Las variantes cortas del tren veloz
+(`pasajeros_corto`...) no cuentan; ese tren ya no sale sorteado. Con el reparto
+actual salen **unas 12 por tren de pasajeros y unas 2 por tren de carga**: en
+el de carga sólo viaja gente en el caboose.
+
+🐛 **De paso: el punto de salto a la cola** quedaba en el borde izquierdo de la
+plataforma nueva (la cuenta era la de la plataforma de 8 columnas). Ahora es
+su centro.
+
+📏 Costo de dibujo: 1,33–1,36 ms por cuadro en casi todas las tandas, igual
+que antes.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

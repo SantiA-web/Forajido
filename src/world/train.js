@@ -464,7 +464,12 @@ export function planificarTramos(composicion, caballoEn = 0) {
 export function plataformasDe(tramos, tileSize) {
   const plataformas = [];
   const centro = (t) => (t.colStart + t.cols / 2) * tileSize;
-  plataformas[1] = (tramos[0].colStart + tramos[0].cols - 2) * tileSize;
+  /**
+   * 🐛 La cola, en su centro. Era `cols - 2` —el lado de la pasarela de la
+   * plataforma vieja, de 8—, y con la nueva de 2 columnas eso daba su borde
+   * izquierdo: la marca del salto quedaba colgando detrás del tren.
+   */
+  plataformas[1] = centro(tramos[0]);
   for (const t of tramos) {
     if (t.tipo === 'enganche') plataformas[t.wagon + 1] = centro(t);
   }

@@ -459,6 +459,12 @@ La luz **aclara lo que toca** en vez de pintarle un color encima: las tablas
 siguen mostrando su veta, y el asiento, la carga o el guardia que queden en el
 haz se ven iluminados.
 
+**Y por el piso ruedan botellas y latas sueltas**, entre 1 y 3 por vagón donde
+viaja gente (pasajeros, comedor, dormitorio, guardias, primera clase y
+caboose). Van y vienen con el mismo vaivén que la luz, salen disparadas con el
+tirón del tren de carga, y si las pisás o les tirás, saltan (la botella se
+rompe). Son adorno: no lastiman, no frenan y no hacen ruido.
+
 **Por los huecos entre vagones se ve la vía pasando**: el mismo desierto de los
 costados, a la misma velocidad, con el terraplén y los rieles en el medio.
 

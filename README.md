@@ -455,6 +455,13 @@ queda clavada a su ventanal y la punta se va de un lado al otro. Entra sólo
 por la pared del fondo —el sol está arriba, no abajo del tren— y de noche es
 luna, apenas visible.
 
+La luz **aclara lo que toca** en vez de pintarle un color encima: las tablas
+siguen mostrando su veta, y el asiento, la carga o el guardia que queden en el
+haz se ven iluminados.
+
+**Por los huecos entre vagones se ve la vía pasando**: el mismo desierto de los
+costados, a la misma velocidad, con el terraplén y los rieles en el medio.
+
 No se mueve ni el tren ni la cámara: si se moviera el vagón se moverían con él
 el piso, las paredes y vos, y en pantalla no pasaría nada. Lo que se lee como
 movimiento es siempre una cosa moviéndose contra otra.

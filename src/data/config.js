@@ -1462,9 +1462,18 @@ export const CONFIG = {
       balanceo: 3.4,
       /** Vueltas por segundo del meneo. Lento: un vagón no vibra, se mece. */
       velocidad: 0.62,
-      /** Cuánto pinta, de día y de noche. De noche es la luna: apenas. */
-      fuerzaDia: 0.3,
-      fuerzaNoche: 0.12,
+      /**
+       * CUÁNTO ACLARA LO QUE TOCA: 1,4 es un 40% más claro. No pinta color
+       * encima —las vetas y las sombras siguen viéndose—, multiplica el brillo
+       * (ver `luzDeLosVentanales`, world/train.js). De noche es la luna: apenas.
+       */
+      aclaraDia: 1.4,
+      aclaraNoche: 1.15,
+      /** Cómo se reparte entre rojo, verde y azul: el sol entibia, la luna enfría. */
+      tinteDia: [1, 0.9, 0.62],
+      tinteNoche: [0.75, 0.9, 1],
+      /** Hasta dónde llega pareja (0 a 1 del alcance); de ahí a la punta se apaga. */
+      parejo: 0.6,
     },
     /**
      * 🔺 DE 12 A 20, DESPUÉS DE MIRARLA. *(Santi: "se está perdiendo mucho el

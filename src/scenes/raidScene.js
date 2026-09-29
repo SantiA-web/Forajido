@@ -24,9 +24,9 @@ import { createCamera } from '../engine/camera.js';
 import { distance, moveAndCollide } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor } from '../world/trenTresCuartos.js';
-import { sembrarDesierto } from '../world/desierto.js';
+import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
 
-import { buildTrain, drawPisoDelTren, cosasAltasDelTren, isInsideZone } from '../world/train.js';
+import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, isInsideZone } from '../world/train.js';
 import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual,
 } from '../entities/player.js';
@@ -161,6 +161,13 @@ export function createRaidScene(services) {
     );
     map = train.map;
     player = train.player;
+
+    /**
+     * 🔬 EL BANCO DE PRUEBAS, igual que el de la huida: sólo con `prueba`, y
+     * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
+     * tener que caminarlo.
+     */
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies });
     enemies = train.enemies;
     passengers = train.passengers;
     loot = train.loot;
@@ -3596,22 +3603,7 @@ export function createRaidScene(services) {
      * `base` es `y + hh`: el borde de abajo de la caja con la que cada uno choca.
      * La caja no cambió; sólo se usa para saber quién está adelante.
      */
-    /**
-     * 🔆 EL MENEO DE LA LUZ. Va acá y no en `update` porque **no es estado del
-     * juego**: no cambia nada de lo que pasa, sólo de lo que se ve. Sale del
-     * mismo reloj (`scroll`) que todo lo demás del vagón, así que si alguna vez
-     * el tren frena de verdad, la luz frena con él.
-     *
-     * Y se suma al traqueteo que ya existía: cuando el tren acelera o frena,
-     * `swayX` corre la cámara y los charcos se van para el otro lado. No hubo
-     * que hacer nada para eso — sale solo de que uno mueve la cámara y el otro
-     * mueve la luz.
-     */
-    const L = CONFIG.tresCuartos.luzVentanilla;
-    drawPisoDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, {
-      meneo: Math.sin(scroll * L.velocidad * Math.PI * 2) * L.balanceo,
-      dia: gameState.esDeDia,
-    });
+    drawPisoDelTren(r, train, colors, swayX, camera.renderY);
 
     // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
     // la lista `enemies` es un guardia común.
@@ -3639,6 +3631,25 @@ export function createRaidScene(services) {
     }
     cosas.sort((a, b) => a.base - b.base);
     for (const c of cosas) c.draw();
+
+    // La luz de los ventanales va DESPUÉS de todo lo parado: aclara el piso,
+    // los asientos y a quien cruce el haz (ver `luzDeLosVentanales`).
+    /**
+     * 🔆 EL MENEO DE LA LUZ. Va acá y no en `update` porque **no es estado del
+     * juego**: no cambia nada de lo que pasa, sólo de lo que se ve. Sale del
+     * mismo reloj (`scroll`) que todo lo demás del vagón, así que si alguna vez
+     * el tren frena de verdad, la luz frena con él.
+     *
+     * Y se suma al traqueteo que ya existía: cuando el tren acelera o frena,
+     * `swayX` corre la cámara y los charcos se van para el otro lado. No hubo
+     * que hacer nada para eso — sale solo de que uno mueve la cámara y el otro
+     * mueve la luz.
+     */
+    const L = CONFIG.tresCuartos.luzVentanilla;
+    luzDeLosVentanales(r, train, swayX, undefined, {
+      meneo: Math.sin(scroll * L.velocidad * Math.PI * 2) * L.balanceo,
+      dia: gameState.esDeDia,
+    });
 
     // Los jinetes de arriba del tren quedan detrás de la pared del fondo: se
     // los sigue viendo en silueta, encima de ella.
@@ -4181,6 +4192,57 @@ export function createRaidScene(services) {
 
     franjaDeDesierto(r, 0, arriba, false, vel, dia);
     franjaDeDesierto(r, abajo, r.height, true, vel, dia);
+    lechoDeLaVia(r, arriba, abajo, alturaMapa, vel, dia);
+  }
+
+  /**
+   * 🛤️ LO QUE HAY DEBAJO DEL TREN: EL MISMO DESIERTO, CON LA VÍA. Sólo se ve por
+   * los agujeros —los enganches, los costados de la plataforma de atrás—, pero
+   * se pinta entero y el tren lo tapa.
+   *
+   * 🐛 ANTES CADA HUECO PINTABA SU PROPIO SUELO *(Santi: "el desierto alrededor
+   * del enganche parece estático y ajeno al desierto que pasa al costado del
+   * tren")*. Tenía razón, y por dos lados: ese suelo estaba pintado en las
+   * casillas del tren, así que viajaba CON el tren —quieto en pantalla mientras
+   * el de al lado volaba—, y encima era de otro color. Ahora es el mismo suelo
+   * que el de los costados, en la misma pasada y con el mismo reloj:
+   *
+   *  - Las MISMAS cosas del suelo (`sembrarDesierto`), con la misma semilla que
+   *    la franja de abajo y corriendo a la misma velocidad. No puede quedar
+   *    ajeno porque es el mismo.
+   *  - Y en el medio, la vía (`pintarLechoDeVia`, world/desierto.js), que va a
+   *    ESA velocidad y no a la del rastrojo: lo que tiene al lado son las matas
+   *    y las piedras, y son ellas las que el ojo compara.
+   *
+   * Los rieles van más separados de lo que irían de verdad: todo el vagón está
+   * agrandado para que se pueda jugar adentro, y con la trocha de verdad los dos
+   * rieles quedarían escondidos debajo de la pasarela del enganche.
+   */
+  function lechoDeLaVia(r, y0, y1, alturaMapa, vel, dia) {
+    if (y1 - y0 < 3) return;
+    // De unidades del mundo (0 = borde de arriba del mapa) a la pantalla.
+    const en = (wy) => Math.round(wy - camera.renderY);
+    const h = alturaMapa;
+    const desde = h * 0.16;
+    const alto = Math.round(h * 0.68);
+    const desplaza = scroll * 900 * vel;
+
+    // Primero la vía y después las matas: una que crece justo debajo del
+    // terraplén asoma por delante de su borde, como en tres cuartos tiene que ser.
+    pintarLechoDeVia(r, {
+      arriba: en(desde), alto,
+      rieles: [h * 0.115, h * 0.565],
+      durmientes: [h * 0.05, h * 0.63],
+      desplaza, colores: colors.cielo, noche: !dia, ancho: r.width,
+    });
+    const b0 = en(desde), b1 = en(desde + alto);
+    sembrarDesierto(r, {
+      x0: 0, y0, x1: r.width, y1,
+      desplaza, noche: !dia, colores: colors.cielo, escala: 0.7, semilla: 0,
+      // Pegado a la vía no crece nada grande: lo desmalezan.
+      grandes: () => false,
+      saltar: (wx, wy) => wy > b0 - 2 && wy < b1,
+    });
   }
 
   /**

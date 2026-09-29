@@ -284,3 +284,104 @@ export function zonaDe(x, y, tamano = 120, llenas = 2, semilla = 0) {
   // 0 es el suelo pelado; los demás, cada tono.
   return h % DE_CADA >= llenas ? 0 : 1 + ((h >>> 3) % TONOS.length);
 }
+
+/**
+ * 🛤️ EL LECHO DE LA VÍA VISTO DESDE ARRIBA, pasando a toda velocidad. Es lo que
+ * se ve por los huecos del tren en el asalto (`lechoDeLaVia`, raidScene.js).
+ *
+ * SE DIBUJA UNA VEZ Y SE CORRE. Un tramo de `ANCHO_LECHO` unidades se arma la
+ * primera vez que se pide —la piedra, los durmientes, la grava y los dos
+ * rieles— y cada cuadro se estampa corrido lo que avanzó el suelo. Cuesta dos o
+ * tres estampas por cuadro, no mil rayitas.
+ *
+ * ⚠️ LA GRAVA VA SORTEADA, NO EN FILAS. La primera versión eran rayitas en siete
+ * filas parejas, cada una con su separación fija: con los dos rieles al lado se
+ * leía como una ruta con sus líneas pintadas. La piedra de verdad no tiene
+ * carriles.
+ *
+ * ⚠️ Y SIN DURMIENTES SUELTOS, aunque en el galope los haya. Allá el suelo pasa
+ * a 90 por segundo; acá, a 900: quince unidades por cuadro, con durmientes cada
+ * nueve. Dibujados de a uno parecerían ir para atrás o quedarse quietos —la
+ * rueda de carreta de las películas—. A esa velocidad el ojo ve una franja más
+ * oscura, y eso es lo que se pinta.
+ *
+ * @param opciones.arriba      dónde empieza el lecho, en la pantalla
+ * @param opciones.alto        cuánto mide de borde a borde, en unidades
+ * @param opciones.rieles      a qué distancia del borde de arriba va cada riel
+ * @param opciones.durmientes  [desde, hasta], también desde el borde de arriba
+ * @param opciones.desplaza    cuánto corrió el suelo, en unidades
+ * @param opciones.ancho       hasta dónde hay que cubrir
+ */
+const ANCHO_LECHO = 256;
+
+export function pintarLechoDeVia(r, opciones) {
+  const { arriba, alto, rieles, durmientes, desplaza, colores, noche, ancho } = opciones;
+  if (!(alto > 2) || !(ancho > 0)) return;
+  const img = lechoDibujado(alto, rieles, durmientes, colores, noche);
+  const y = Math.round(arriba);
+  let x = -((((desplaza % ANCHO_LECHO) + ANCHO_LECHO) % ANCHO_LECHO));
+  for (; x < ancho; x += ANCHO_LECHO) {
+    r.ctx.drawImage(img, Math.round(x), y, ANCHO_LECHO, img.height * PUNTO);
+  }
+}
+
+/** Mezcla dos colores: `t` = 0 es todo `a`, 1 es todo `b`. */
+function mezcla(a, b, t) {
+  const na = parseInt(a.slice(1), 16), nb = parseInt(b.slice(1), 16);
+  const c = (s) => Math.round(((na >> s) & 255) * (1 - t) + ((nb >> s) & 255) * t);
+  return '#' + ((1 << 24) | (c(16) << 16) | (c(8) << 8) | c(0)).toString(16).slice(1);
+}
+
+function lechoDibujado(alto, rieles, durmientes, colores, noche) {
+  const P = (u) => Math.round(u / PUNTO);
+  const anchoP = P(ANCHO_LECHO);
+  const altoP = P(alto);
+  const clave = `lecho|${altoP}|${rieles.map(P).join(',')}|${durmientes.map(P).join(',')}|${noche ? 1 : 0}`;
+  return pieza(clave, anchoP, altoP, (p) => {
+    // De noche un paso más apagado, igual que el balasto de las franjas de afuera.
+    const t = (c, f = 1) => tono(c, (noche ? 0.9 : 1) * f);
+    const piedra = t(colores.balasto);
+
+    /**
+     * 1. LA PIEDRA, CON EL BORDE MORDIDO. El terraplén no termina en una regla:
+     * cada dos puntos el borde entra un poco, y por ahí asoma la tierra de
+     * abajo. Es lo que lo hace un montón de piedra y no una franja pintada.
+     */
+    for (let x = 0; x < anchoP; x += 2) {
+      const h = revolver(x * 31 + 7);
+      const deArriba = h % 7;
+      const deAbajo = (h >>> 8) % 7;
+      p(x, deArriba, 2, altoP - deArriba - deAbajo, piedra);
+    }
+
+    // 2. Los durmientes, borroneados: más oscuro en el medio, con el borde suave.
+    const d0 = P(durmientes[0]), d1 = P(durmientes[1]);
+    const dur = t(colores.durmiente);
+    p(0, d0, anchoP, d1 - d0, mezcla(piedra, dur, 0.22));
+    p(0, d0 + 3, anchoP, d1 - d0 - 6, mezcla(piedra, dur, 0.4));
+
+    // 3. La grava, sorteada: largo, lugar y tono de cada rayita.
+    const tonos = [t(colores.grava), t(colores.piedrita), t(colores.balasto, 0.72), t(colores.piedritaLuz)];
+    const cuantas = Math.round((anchoP * altoP) / 110);
+    for (let i = 0; i < cuantas; i++) {
+      const h = revolver(i * 7919 + 1013);
+      const h2 = revolver(h + 17);
+      const x = h % anchoP;
+      const y = 4 + ((h >>> 12) % Math.max(1, altoP - 8));
+      const largo = 2 + (h2 % 12);
+      const color = tonos[(h2 >>> 8) % tonos.length];
+      p(x, y, largo, 1, color);
+      // Lo que se pasa del borde vuelve por el otro lado: así el tramo empalma
+      // consigo mismo y no se ve la costura.
+      if (x + largo > anchoP) p(x - anchoP, y, largo, 1, color);
+    }
+
+    // 4. Los rieles: el brillo, el acero y la sombra que tiran sobre la piedra.
+    for (const u of rieles) {
+      const y = P(u);
+      p(0, y - 2, anchoP, 1, t(colores.riel, 1.25));
+      p(0, y - 1, anchoP, 3, t(colores.riel));
+      p(0, y + 2, anchoP, 2, t(colores.rielSombra));
+    }
+  });
+}

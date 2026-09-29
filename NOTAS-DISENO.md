@@ -15335,6 +15335,73 @@ sino la CANTIDAD de rectángulos, y lo que la bajó fue corregir el dibujo.
 De día es sol tibio; de noche, luna fría y apenas visible. Los faroles del vagón
 —que serían la otra fuente de noche— son la pieza 3 y todavía no están.
 
+#### 🔆 LA SEGUNDA VUELTA: LA LUZ ACLARA, LA PARED ENTERA, EL ENGANCHE CON VÍA
+
+*(Santi, las tres juntas: "sigue habiendo partes de las paredes del tren que
+desaparecen, que es como que el desierto se les superpone"; "el desierto
+alrededor del enganche parece estático y ajeno al desierto que pasa al costado
+del tren"; y "la luz de las ventanas no deberían ser líneas de colores, sino
+que la luz debería afectar al piso y a los objetos junto al ventanal".)*
+
+🐛 **1. LA PARED TENÍA UNA FRANJA SIN PINTAR, Y ERA UNA CUENTA.** La tapa de la
+pared del fondo —el techo del muro, visto desde arriba— se dibujaba con alto
+`pie - alto + 2` cuando tenía que ser `pie`. Quedaba una franja vacía entre el
+borde de arriba y la cara: 12 unidades en una pared de una fila, 18 en una de
+dos, y lo mismo en las puntas de los vagones. Por ahí asomaba el desierto de
+atrás. Se encontró pintando el fondo de **magenta** un momento: todo lo magenta
+que quedaba adentro del tren era un hueco sin dibujar.
+
+> **Esa prueba del magenta vale para cualquier "algo desaparece":** pintar el
+> fondo de un color que no existe en el juego y mirar dónde aparece. Adivinar
+> mirando el dibujo normal no sirve, porque el hueco se ve del color del fondo,
+> y el fondo parece parte del dibujo.
+
+**2. EL SUELO DEL ENGANCHE VIAJABA CON EL TREN.** El arreglo anterior le había
+puesto tierra con piedritas al hueco, pero pintada en las casillas del tren: iba
+**quieta en pantalla mientras el desierto de al lado volaba**, y encima era de
+otro color. Ahora el hueco no pinta suelo: deja ver lo que hay debajo del tren,
+que se pinta en la misma pasada que el desierto de los costados
+(`lechoDeLaVia`, raidScene.js):
+
+- **Las mismas cosas del suelo** (`sembrarDesierto`), con la misma semilla que
+  la franja de abajo y a la misma velocidad. No puede quedar ajeno porque es el
+  mismo desierto.
+- **Y la vía**: un terraplén de piedra con el borde mordido, los durmientes y
+  los dos rieles (`pintarLechoDeVia`, world/desierto.js). Se dibuja una vez, se
+  guarda, y cada cuadro se estampa corrido: dos o tres estampas por cuadro.
+
+⚠️ **La primera versión de la vía parecía una ruta.** Eran rayitas de grava en
+siete filas parejas, cada una con su separación fija, y con los dos rieles al
+lado se leía como una ruta con sus líneas pintadas. La piedra de verdad no tiene
+carriles: ahora cada rayita tiene su largo, su lugar y su tono sorteados.
+
+⚠️ **Sin durmientes sueltos, aunque el galope los tenga.** Allá el suelo pasa a
+90 por segundo; acá a 900, quince unidades por cuadro, con durmientes cada
+nueve. De a uno parecerían ir para atrás o quedarse quietos (la rueda de carreta
+de las películas). A esa velocidad el ojo ve una franja más oscura, y eso es lo
+que se pinta.
+
+De yapa, **la locomotora ahora se ve apoyada sobre su vía**: está hecha de
+casillas de hueco, y lo que asoma entre el ténder y la cabina es el mismo
+terraplén.
+
+**3. LA LUZ ACLARA, NO PINTA.** Las dos versiones anteriores pintaban un amarillo
+semitransparente ENCIMA, y un color encima tapa lo de abajo: las vetas se
+lavaban y quedaba una mancha con forma de haz, hecha de ocho franjas que se
+leían como rayas. Ahora es **una forma por ventanal dibujada con
+`color-dodge`**, un modo que no pone color sino que **multiplica el brillo de
+cada píxel que toca**: la veta, los clavos y las sombras siguen ahí, iluminados.
+
+Y va **después de todo lo parado**, no en el piso: así el sol le pega también al
+asiento o a la pila de encomiendas que está junto al ventanal, y al guardia que
+cruza el haz. De día aclara un 40% (`aclaraDia: 1.4`), de noche un 15%
+(`aclaraNoche: 1.15`); el tinte reparte eso entre rojo, verde y azul.
+
+📏 **Nada de esto se nota en el costo.** Medido con el banco nuevo del asalto
+(`banco-asalto.js`, que congela el juego, saca a los guardias para que nadie
+mate al jugador en medio y mide el total de 300 cuadros): **1,30–1,50 ms por
+cuadro antes, 1,30–1,51 después** de los tres arreglos juntos.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

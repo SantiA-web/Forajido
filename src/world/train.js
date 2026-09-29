@@ -1786,15 +1786,14 @@ export function isInsideZone(entity, zone) {
  * NADA DE ESTO TOCA EL JUEGO: la grilla, los choques, la vista y las balas
  * siguen igual. Sólo cambia dónde se pinta.
  */
-export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, luz = {}) {
-  const { meneo = 0, dia = true } = luz;
+export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
   const map = train.map;
   const size = map.size;
   const anchoVista = vistaW || r.width;
   const altoVista = vistaH || r.height;
 
-  // ⚠️ TRES COLUMNAS DE MARGEN y no una: un ventanal lo dibuja entero su
-  // primera columna, así que si esa queda apenas afuera de la pantalla el
+  // ⚠️ TRES COLUMNAS DE MARGEN y no una: un ventanal lo dibuja entero UNA
+  // sola de sus columnas (la última), así que si esa queda apenas afuera el
   // vidrio no se dibujaría nunca. Lo de más se recorta solo en el lienzo.
   const colDesde = Math.max(0, Math.floor(camX / size) - 3);
   const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 3);
@@ -1846,22 +1845,23 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
            * rectángulo liso del mismo color no se lee como suelo sino como un
            * agujero en el dibujo.
            *
-           * Ahora lleva tierra con sus piedritas, y **sombra contra los dos
-           * vagones**: eso es lo que convierte el hueco en un hueco ENTRE dos
-           * cosas en vez de un tajo.
+           * 🔁 Y DESPUÉS, TAMPOCO ERA ESTO *(Santi: "el desierto alrededor del
+           * enganche parece estático y ajeno al desierto que pasa al costado
+           * del tren")*. La tierra que se pintaba acá viajaba con el tren:
+           * quieta en pantalla mientras la de al lado volaba. Ahora el hueco no
+           * pinta suelo: deja ver la vía que pasa por debajo, que es la misma
+           * pasada que el desierto de los costados (`lechoDeLaVia`,
+           * raidScene.js). Acá queda sólo lo que SÍ es del tren: la **sombra
+           * contra los dos vagones**, que es lo que convierte el hueco en un
+           * hueco ENTRE dos cosas en vez de un tajo.
            */
-          const C = colors.cielo;
-          const v = varianteDe(col, row, 31);
-          r.rect(x, y, size, size, oscurecer(C.tierraOscura, 0.92));
-          for (let k = 0; k < 3; k++) {
-            const h = varianteDe(col * 13 + k, row * 7 + k, 91);
-            r.rect(x + (h % (size - 3)), y + ((h >> 3) % (size - 2)), 2, 1,
-              oscurecer(C.tierraOscura, k === v % 3 ? 1.18 : 0.8));
-          }
           // La sombra que tiran los vagones adentro del hueco, de los dos lados.
           r.ctx.globalAlpha = 0.3;
-          if ((map.grid[row] || [])[col - 1] !== 'X') r.rect(x, y, 3, size, '#000');
-          if ((map.grid[row] || [])[col + 1] !== 'X') r.rect(x + size - 3, y, 3, size, '#000');
+          // Sólo contra un vagón de verdad: afuera del mapa no hay nada que
+          // haga sombra, y la franja oscura en el borde se veía como un tajo.
+          const hayVagon = (c) => { const t = (map.grid[row] || [])[c]; return t !== undefined && t !== 'X'; };
+          if (hayVagon(col - 1)) r.rect(x, y, 3, size, '#000');
+          if (hayVagon(col + 1)) r.rect(x + size - 3, y, 3, size, '#000');
           r.ctx.globalAlpha = 1;
           break;
         }
@@ -1940,100 +1940,6 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
    */
   const tc = CONFIG.tresCuartos;
 
-  /**
-   * 🔆 LOS CHARCOS DE LUZ DE LAS VENTANILLAS, y su meneo.
-   *
-   * ⚠️ VA ACÁ, EN EL PISO, y no colgado de un farol: desde esta cámara casi
-   * cenital un farol que se hamaca se ve de canto y no se nota, mientras que
-   * su charco ocupa media baldosa y **se mueve contra las tablas**. Lo que se
-   * lee como "el vagón se está meciendo" es el movimiento RELATIVO, y el que
-   * lo tiene es el charco.
-   *
-   * ⚠️ Y LA PUNTA SE MUEVE MÁS QUE LA BASE. El haz está clavado a su
-   * ventanilla: si se corriera entero parecería una mancha que patina por el
-   * piso, no luz entrando por un agujero.
-   *
-   * Va DESPUÉS de las tablas y ANTES de la sombra de la pared, que es el orden
-   * de la vida: la luz cae sobre el piso, y la pared le hace sombra al pie.
-   */
-  const L = tc.luzVentanilla;
-  const fuerza = dia ? L.fuerzaDia : L.fuerzaNoche;
-  if (fuerza > 0) {
-    const color = dia ? '#e0c98f' : '#8fa6c4';
-    const alcance = size * L.alcance;
-
-    /**
-     * ⚠️ SÓLO DESDE LA PARED DEL FONDO *(Santi: "no tiene sentido: si el sol
-     * está arriba, no debería entrar luz por debajo")*. Tenía razón y era un
-     * error de física, no de dibujo: la primera versión también tiraba un haz
-     * desde la pared de ADELANTE hacia adentro del vagón, y eso sólo puede
-     * pasar si el sol está abajo del tren. Por la pared de adelante la luz
-     * entra yéndose para afuera, o sea que desde acá no se ve.
-     *
-     * 🪟 Y VA UN HAZ POR VENTANAL, no uno por columna. Es la misma corrida que
-     * usa el vidrio (ver `ventanalDe` en `cosasAltasDelTren`): un ventanal de
-     * dos baldosas tira UN charco de dos baldosas de ancho.
-     *
-     * 🐛 Y ESO ES LO QUE ARREGLA EL GUSANO *(Santi: "más que luz, parece un
-     * gusano moviéndose")*. El problema no era el meneo sino el ANCHO: una
-     * tira angosta de una baldosa, partida en siete filas de distinto ancho y
-     * cada una corrida un poco más que la anterior, se lee como un bicho
-     * reptando. Un charco ancho con el mismo meneo se lee como lo que es: una
-     * mancha de sol que se inclina porque el vagón se mece.
-     */
-    const conVidrio = (c, hasta) => {
-      for (let f = 0; f <= hasta; f++) if ((map.grid[f] || [])[c] === 'W') return true;
-      return false;
-    };
-
-    const haces = [];
-    for (let col = colDesde; col <= colHasta; col++) {
-      const casilla = (f) => (map.grid[f] || [])[col];
-      // La góndola no tiene adentro: su carbón se come cualquier haz.
-      const tipoCol = WAGONS[train.tipoPorColumna[col]];
-      if (tipoCol && tipoCol.carbon) continue;
-
-      let r1 = -1;
-      while (r1 + 1 < map.rows && esPared(casilla(r1 + 1))) r1++;
-      if (r1 < 0) continue;
-      if (!conVidrio(col, r1)) continue;
-      if (conVidrio(col - 1, r1)) continue;    // no es la primera del ventanal
-      const adentro = casilla(r1 + 1);
-      if (adentro === undefined || adentro === 'X') continue;
-
-      let largo = 1;
-      while (conVidrio(col + largo, r1)) largo++;
-      haces.push({ x0: col * size, yBorde: (r1 + 1) * size, ancho: largo * size });
-    }
-
-    /**
-     * Se pinta por filas y no haz por haz: así `globalAlpha` se cambia unas
-     * pocas veces por cuadro en vez de una por fila y por haz.
-     *
-     * ⚠️ PERO NO ES AHÍ EL GASTO, y conviene dejarlo escrito para no volver a
-     * buscar por el lado equivocado: medido, ese cambio ahorró 0,07 ms de los
-     * 0,50 que costaba. Lo caro es la CANTIDAD de rectángulos. Si alguna vez
-     * hay que bajarlo de verdad, el camino es guardar el haz dibujado y
-     * estamparlo de una, como hace `pieza` con todo lo demás.
-     */
-    const FILAS = 8;
-    const altoFila = Math.ceil(alcance / FILAS) + 1;
-    for (let i = 0; i < FILAS; i++) {
-      const t = i / FILAS;
-      // Se apaga tarde y de golpe: un haz sobre tablas tiene borde, no es un
-      // degradado. Con la caída suave quedaba un manchón sin forma.
-      r.ctx.globalAlpha = fuerza * (1 - t * t * t);
-      const dy = Math.round(t * alcance);
-      // Se inclina entero: la base clavada a su ventanal y la punta corrida.
-      const corre = Math.round(meneo * t);
-      const crece = Math.round(size * L.abre * t);
-      for (const h of haces) {
-        r.rect(h.x0 - crece + corre, h.yBorde + dy, h.ancho + crece * 2, altoFila, color);
-      }
-    }
-    r.ctx.globalAlpha = 1;
-  }
-
   for (let col = colDesde; col <= colHasta; col++) {
     const x = col * size;
     const casilla = (f) => (map.grid[f] || [])[col];
@@ -2101,6 +2007,110 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, lu
 }
 
 /**
+ * 🔆 LA LUZ QUE ENTRA POR LOS VENTANALES, y su meneo.
+ *
+ * 🔁 TERCERA VERSIÓN: LA LUZ ACLARA, NO PINTA *(Santi: "no deberían ser líneas
+ * de colores, sino que la luz debería afectar al piso y a los objetos junto al
+ * ventanal, o sea, los pixeles de los objetos deberían ser más claritos cuando
+ * le pega la luz")*. Tenía razón, y era el error de fondo de las dos versiones
+ * anteriores: pintaban un color amarillo semitransparente ENCIMA, y un color
+ * encima tapa lo de abajo —las vetas de las tablas se lavaban y quedaba una
+ * mancha de color con forma de haz—. Además estaba hecha de ocho franjas, cada
+ * una con su transparencia, y eso se leía como rayas.
+ *
+ * Ahora es UNA forma por ventanal, dibujada con `color-dodge`: ese modo no
+ * pone color, **multiplica el brillo de cada píxel que toca**. Una tabla
+ * oscura queda un poco más clara y una clara bastante más; la veta, los
+ * clavos y las sombras siguen ahí, sólo que iluminados. Es lo que hace la luz
+ * de verdad.
+ *
+ * ⚠️ POR ESO VA DESPUÉS DE TODO LO PARADO, y no en el piso como antes. La
+ * escena la llama después de pintar los asientos, los cajones y la gente
+ * (raidScene.js): así el sol que entra por el ventanal le pega también al
+ * asiento que está abajo, y al guardia que cruza el haz.
+ *
+ * ⚠️ SÓLO DESDE LA PARED DEL FONDO *(Santi: "si el sol está arriba, no debería
+ * entrar luz por debajo")*. Por la pared de adelante la luz entra yéndose para
+ * afuera, o sea que desde esta cámara no se ve.
+ *
+ * 🪟 UN HAZ POR VENTANAL, no uno por columna *(el "gusano" de la primera
+ * versión)*. Con la base clavada al ventanal y la punta corrida por el meneo:
+ * si se corriera entero parecería una mancha que patina por el piso.
+ */
+export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}) {
+  const { meneo = 0, dia = true } = luz;
+  const L = CONFIG.tresCuartos.luzVentanilla;
+  const aclara = dia ? L.aclaraDia : L.aclaraNoche;
+  if (!(aclara > 1)) return;
+
+  const map = train.map;
+  const size = map.size;
+  const anchoVista = vistaW || r.width;
+  const colDesde = Math.max(0, Math.floor(camX / size) - 3);
+  const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 3);
+
+  const conVidrio = (c, hasta) => {
+    for (let f = 0; f <= hasta; f++) if ((map.grid[f] || [])[c] === 'W') return true;
+    return false;
+  };
+
+  const haces = [];
+  for (let col = colDesde; col <= colHasta; col++) {
+    const casilla = (f) => (map.grid[f] || [])[col];
+    // La góndola no tiene adentro: su carbón se come cualquier haz.
+    const tipoCol = WAGONS[train.tipoPorColumna[col]];
+    if (tipoCol && tipoCol.carbon) continue;
+
+    let r1 = -1;
+    while (r1 + 1 < map.rows && esPared(casilla(r1 + 1))) r1++;
+    if (r1 < 0) continue;
+    if (!conVidrio(col, r1)) continue;
+    if (conVidrio(col - 1, r1)) continue;    // no es la primera del ventanal
+    const adentro = casilla(r1 + 1);
+    if (adentro === undefined || adentro === 'X') continue;
+
+    let largo = 1;
+    while (conVidrio(col + largo, r1)) largo++;
+    haces.push({ x0: col * size, yBorde: (r1 + 1) * size, ancho: largo * size });
+  }
+  if (haces.length === 0) return;
+
+  /**
+   * CUÁNTO SE ACLARA CADA CANAL. `color-dodge` divide cada píxel por
+   * (1 − color): para aclarar un 40% hay que pintar con 1 − 1/1,4. El tinte
+   * reparte la aclarada entre rojo, verde y azul —el sol entibia, la luna
+   * enfría— sin cambiar cuánta luz entra.
+   */
+  const tinte = dia ? L.tinteDia : L.tinteNoche;
+  const canal = (i) => Math.round(255 * (1 - 1 / (1 + (aclara - 1) * tinte[i])));
+  const rgb = `${canal(0)},${canal(1)},${canal(2)}`;
+  const alcance = size * L.alcance;
+  const abre = Math.round(size * L.abre);
+
+  const ctx = r.ctx;
+  ctx.save();
+  ctx.globalCompositeOperation = 'color-dodge';
+  for (const h of haces) {
+    const y0 = h.yBorde;
+    const y1 = y0 + alcance;
+    // Pareja casi hasta la punta y ahí se apaga: un charco de sol tiene borde.
+    const g = ctx.createLinearGradient(0, y0, 0, y1);
+    g.addColorStop(0, `rgba(${rgb},1)`);
+    g.addColorStop(L.parejo, `rgba(${rgb},1)`);
+    g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(h.x0, y0);
+    ctx.lineTo(h.x0 + h.ancho, y0);
+    ctx.lineTo(h.x0 + h.ancho + abre + meneo, y1);
+    ctx.lineTo(h.x0 - abre + meneo, y1);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
  * '#6a4a33' -> el mismo color multiplicado por `f`: 0,7 es 30% más oscuro y
  * 1,3 es 30% más claro (tope en 255).
  */
@@ -2135,8 +2145,8 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
   const anchoVista = vistaW || r.width;
   const altoVista = vistaH || r.height;
 
-  // ⚠️ TRES COLUMNAS DE MARGEN y no una: un ventanal lo dibuja entero su
-  // primera columna, así que si esa queda apenas afuera de la pantalla el
+  // ⚠️ TRES COLUMNAS DE MARGEN y no una: un ventanal lo dibuja entero UNA
+  // sola de sus columnas (la última), así que si esa queda apenas afuera el
   // vidrio no se dibujaría nunca. Lo de más se recorta solo en el lienzo.
   const colDesde = Math.max(0, Math.floor(camX / size) - 3);
   const colHasta = Math.min(map.cols - 1, Math.ceil((camX + anchoVista) / size) + 3);
@@ -2260,7 +2270,18 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
                * ese tamaño no agrega nada. Lo que se MIRA —el canto de arriba y
                * la cara con sus tablas— va estampado.
                */
-              r.rect(x, -alto, size, pie - alto + 2, tapa);
+              /**
+               * 🐛 LA TAPA TIENE QUE LLEGAR HASTA LA CARA *(Santi: "sigue
+               * habiendo partes de las paredes del tren que desaparecen, como
+               * que el desierto se les superpone")*. Tenía razón y era una
+               * cuenta: el alto era `pie - alto + 2` en vez de `pie`. La tapa
+               * va de `-alto` hasta donde arranca la cara (`pie - alto`), o sea
+               * que mide `pie`. Con la cuenta vieja quedaba una franja sin
+               * pintar entre el borde de arriba y la cara —12 unidades en una
+               * pared de una fila, 18 en una de dos, y también en las puntas de
+               * los vagones— y por ahí asomaba el desierto de atrás.
+               */
+              r.rect(x, -alto, size, pie, tapa);
               estampar(r, piezaCantoPared(colors.wall), x, -alto);
               estampar(r, piezaCaraPared(colors.wall, alto / PUNTO, varianteDe(col, 0, 7)), x, pie - alto);
               if (v.ultima) {

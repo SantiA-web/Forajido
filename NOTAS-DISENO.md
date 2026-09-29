@@ -15546,6 +15546,12 @@ oscuridad esconda sería un cambio de sigilo aparte, a decidir con el banco.
 - **El farol era un puntito**: a tamaño real (9×14 puntos) de día no se leía
   como farol. Quedó en 11×16, con borde oscuro.
 
+🔻 **Y DESPUÉS, SIN FAROL** *(Santi: "la silueta, la forma de los farol es
+terrible y espantosa. Quiero que solo aparezca la luz moviéndose")*. Se sacó el
+farol de metal, su cadena y el resplandor del vidrio: queda sólo el charco
+cálido hamacándose, y el farol queda sobreentendido. De día, por lo tanto, no
+se dibuja nada.
+
 📏 **Y costaba el doble de noche**: 3,2 ms por cuadro contra 1,5 de día. La
 oscuridad se pintaba columna por columna, unos 80 rectángulos con `multiply`
 por cuadro. Juntando las columnas iguales en un solo rectángulo (un vagón por

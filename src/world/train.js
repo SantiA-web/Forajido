@@ -19,7 +19,7 @@
 import { CONFIG } from '../data/config.js';
 import { createTilemap } from './tilemap.js';
 import {
-  PUNTO, estampar, pieza, varianteDe, piezaPiso, piezaCantoPared, piezaCaraPared,
+  PUNTO, estampar, varianteDe, piezaPiso, piezaCantoPared, piezaCaraPared,
   piezaVentana, piezaAsiento, piezaCama, piezaCajon, piezaPasarela, piezaSalida, piezaBaranda,
 } from './piezas.js';
 import { createPlayer } from '../entities/player.js';
@@ -2225,108 +2225,59 @@ function farolesDe(train) {
   return lista;
 }
 
-/**
- * EL FAROL, sin la cadena (la cadena se dibuja aparte, porque se inclina
- * cuando se hamaca). 11×16 puntos, con borde oscuro para que se lea sobre las
- * tablas: el sombrerito, el vidrio entre dos
- * parantes y la base. Apagado, el vidrio es ámbar oscuro; prendido, amarillo
- * con la llama casi blanca.
- */
-function piezaFarol(prendido) {
-  return pieza(`farol|${prendido ? 1 : 0}`, 11, 16, (p) => {
-    const metal = '#4a4037';
-    const luz = '#7a6b5c';
-    const borde = '#1a120c';
-    p(4, 0, 3, 1, borde);             // el aro de la cadena
-    p(2, 1, 7, 3, borde);             // el sombrerito, con su borde
-    p(3, 1, 5, 2, metal);
-    p(3, 1, 5, 1, luz);
-    p(0, 4, 11, 1, borde);
-    p(1, 5, 9, 8, borde);             // el vidrio, en su jaula
-    p(2, 5, 7, 8, prendido ? '#ffc95a' : '#5a4a30');
-    p(5, 5, 1, 8, prendido ? '#e0a040' : metal);     // el alambre del medio
-    if (prendido) p(4, 7, 3, 4, '#fff1c2');          // la llama
-    else p(3, 6, 1, 4, '#8a7a5c');                   // el reflejo, apagado
-    p(0, 13, 11, 2, borde);           // la base
-    p(1, 13, 9, 1, metal);
-    p(3, 15, 5, 1, borde);
-  });
-}
-
 /** El charco se achata a lo alto, como todo el piso en tres cuartos. */
 const PROFUNDIDAD_CHARCO = 0.62;
 
 /**
- * 🏮 LOS FAROLES: de día apagados, de noche prendidos *(Santi)*.
+ * 🏮 LA LUZ DE LOS FAROLES: de noche, un CHARCO DE LUZ CÁLIDA por farol; de
+ * día, nada *(Santi: "de día tienen que estar apagados y de noche
+ * encendidos")*.
  *
- * De noche, cada uno tira un CHARCO DE LUZ CÁLIDA en el piso *(Santi: "no solo
- * tiene que estar más iluminado, sino que tiene que ser una luz cálida")*, con
- * `color-dodge` —el mismo modo que la luz de los ventanales—: no pinta, aclara
- * lo que toca, y aclara mucho más el rojo que el azul (`aclaraCentro`). Eso es
- * lo que lo vuelve luz de lámpara de aceite y no un foco blanco.
+ * 🔻 SIN FAROL, SÓLO LA LUZ *(Santi: "la silueta, la forma de los farol es
+ * terrible y espantosa. Quiero que solo aparezca la luz moviéndose")*. La
+ * primera versión dibujaba el farol de metal colgado de su cadena; ahora lo
+ * único que se ve es el charco, y el farol queda sobreentendido. De día,
+ * entonces, no se dibuja nada.
  *
- * Y SE HAMACAN con el mismo reloj que la luz de los ventanales y las botellas
- * (`meneo`): las tres cosas cuentan juntas que el vagón se mece. El charco va
- * con el farol, porque está justo debajo.
+ * Es cálido *(Santi: "no solo tiene que estar más iluminado, sino que tiene que
+ * ser una luz cálida")*: `color-dodge` —el mismo modo que la luz de los
+ * ventanales— no pinta, aclara lo que toca, y aclara mucho más el rojo que el
+ * azul (`aclaraCentro`). Eso es lo que lo vuelve luz de lámpara de aceite y no
+ * un foco blanco.
  *
- * Van encima de todo lo parado: cuelgan del techo, por arriba de las cabezas.
+ * Y SE HAMACA con el mismo reloj que la luz de los ventanales y las botellas
+ * (`meneo`): las tres cosas cuentan juntas que el vagón se mece.
  */
 export function farolesDelTren(r, train, camX, vistaW, luz = {}) {
   const { meneo = 0, dia = true } = luz;
+  if (dia) return;
   const F = CONFIG.tresCuartos.faroles;
   const L = CONFIG.tresCuartos.luzVentanilla;
   const anchoVista = vistaW || r.width;
-  const inclina = L.balanceo ? meneo / L.balanceo : 0;
-  const corre = inclina * F.balanceo;
-  const ctx = r.ctx;
+  const corre = (L.balanceo ? meneo / L.balanceo : 0) * F.balanceo;
   const visibles = farolesDe(train).filter((f) => f.x > camX - F.radio - 10 && f.x < camX + anchoVista + F.radio + 10);
   if (visibles.length === 0) return;
 
-  if (!dia) {
-    const canal = (i) => Math.round(255 * (1 - 1 / F.aclaraCentro[i]));
-    const rgb = `${canal(0)},${canal(1)},${canal(2)}`;
+  const canal = (i) => Math.round(255 * (1 - 1 / F.aclaraCentro[i]));
+  const rgb = `${canal(0)},${canal(1)},${canal(2)}`;
+  const ctx = r.ctx;
+  ctx.save();
+  ctx.globalCompositeOperation = 'color-dodge';
+  for (const f of visibles) {
     ctx.save();
-    ctx.globalCompositeOperation = 'color-dodge';
-    for (const f of visibles) {
-      ctx.save();
-      ctx.translate(f.x + corre, f.y);
-      ctx.scale(1, PROFUNDIDAD_CHARCO);
-      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, F.radio);
-      g.addColorStop(0, `rgba(${rgb},1)`);
-      g.addColorStop(0.35, `rgba(${rgb},0.8)`);
-      g.addColorStop(1, `rgba(${rgb},0)`);
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(0, 0, F.radio, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
+    ctx.translate(f.x + corre, f.y);
+    ctx.scale(1, PROFUNDIDAD_CHARCO);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, F.radio);
+    g.addColorStop(0, `rgba(${rgb},1)`);
+    g.addColorStop(0.35, `rgba(${rgb},0.8)`);
+    g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, F.radio, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
-
-  const img = piezaFarol(!dia);
-  const w = img.width * PUNTO;
-  const h = img.height * PUNTO;
-  for (const f of visibles) {
-    const abajo = f.y - F.altura;                 // donde termina el farol
-    const x = f.x + corre;
-    // La cadena: del techo (a la altura de la pared) al farol, inclinada.
-    r.line(f.x, f.y - CONFIG.tresCuartos.alturaPared - 4, x, abajo - h, '#6a5d4e', 1, 0.5);
-    if (!dia) {
-      // El resplandor alrededor del vidrio: chico, para que no tape el charco.
-      ctx.save();
-      ctx.globalCompositeOperation = 'color-dodge';
-      const g = ctx.createRadialGradient(x, abajo - h / 2, 0, x, abajo - h / 2, 6);
-      g.addColorStop(0, 'rgba(150,110,40,0.9)');
-      g.addColorStop(1, 'rgba(150,110,40,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, abajo - h / 2, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-    estampar(r, img, Math.round((x - w / 2) / PUNTO) * PUNTO, Math.round((abajo - h) / PUNTO) * PUNTO);
-  }
+  ctx.restore();
 }
 
 /**

@@ -1507,9 +1507,11 @@ export const CONFIG = {
       aclaraCentro: [2.5, 1.95, 1.2],
       /** El radio del charco, en unidades (a lo alto se achata, es tres cuartos). */
       radio: 42,
-      /** A qué altura cuelga, sobre el piso (la pared mide 20). */
-      altura: 17,
-      /** Cuánto se hamaca de costado, en unidades. Mismo reloj que la luz. */
+      /**
+       * Cuánto se hamaca el charco de costado, en unidades. Mismo reloj que la
+       * luz de los ventanales. (El farol en sí no se dibuja: *Santi: "quiero
+       * que solo aparezca la luz moviéndose"*.)
+       */
       balanceo: 1.6,
     },
     /**

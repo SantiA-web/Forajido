@@ -1322,20 +1322,35 @@ export const WAGONS = {
  * Dos: no hay dónde cubrirse. Cruzar de un vagón a otro te expone, siempre.
  */
 export const TRAMOS = {
-  /** La plataforma trasera. Acá te espera el caballo y es la única salida. */
+  /**
+   * La plataforma trasera. Acá te espera el caballo y es la única salida.
+   *
+   * 🔁 DE 8 COLUMNAS A 2, CON BARANDAS Y AL AIRE *(Santi: "el primer enganche
+   * del tren sigue igual [...] quiero que ese enganche sea la mitad de
+   * longitud que un enganche normal. Y hazle las barandillas que hay en el
+   * vagón de ganado")*:
+   *
+   *  - La mitad de un enganche (3) sería 1,5, y el tren se arma con casillas
+   *    enteras: 2 es lo más cerca (elegido con Santi). Las dos son 'E', así que
+   *    el asalto arranca parado sobre la salida.
+   *  - Arriba y abajo, 'O' y no 'X': el aire del enganche, que deja pasar la
+   *    vista y las balas (ver `TILE_RULES`, world/tilemap.js).
+   *  - Y a los dos costados de la plataforma, la baranda del ganado ('H'): no
+   *    te deja caer, te podés parapetar detrás, pero no para una bala.
+   */
   salida: {
     id: 'salida',
     layout: [
-      'XXXXXXXX',
-      'XXXXXXXX',
-      'XXXXXXXX',
-      'XXXXXXXX',
-      'EEEE++++',
-      'EEEE++++',
-      'XXXXXXXX',
-      'XXXXXXXX',
-      'XXXXXXXX',
-      'XXXXXXXX',
+      'OO',
+      'OO',
+      'OO',
+      'HH',
+      'EE',
+      'EE',
+      'HH',
+      'OO',
+      'OO',
+      'OO',
     ],
   },
 

@@ -3,7 +3,7 @@
  *
  * El tren es UN SOLO mapa largo hecho de tramos pegados uno al lado del otro:
  *
- *   [salida 8] [vagón 40] [enganche 3] [vagón 40] [enganche 3] ... [enganche 3]
+ *   [salida 2] [vagón 40] [enganche 3] [vagón 40] [enganche 3] ... [enganche 3]
  *
  * Los vagones miden todos 40 columnas, pero los tramos al aire libre no, así
  * que el armador trabaja con anchos variables y va acumulando dónde empieza

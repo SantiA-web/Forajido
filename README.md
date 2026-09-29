@@ -467,6 +467,12 @@ jinetes que van al costado del tren, y ellos te ven y te tiran a vos. Tampoco
 te podés parapetar contra el aire: la única cobertura ahí son las puntas de los
 vagones.
 
+**La plataforma de atrás, la del caballo, es corta y tiene barandas**: dos
+casillas, las dos de salida, con la baranda del vagón de ganado a los costados
+(te podés parapetar detrás, pero no para una bala). Arrancás el asalto parado
+ahí. Aunque sea más corta que un enganche, saltar a ella desde el caballo es
+igual de exigente que saltar a un enganche.
+
 No se mueve ni el tren ni la cámara: si se moviera el vagón se moverían con él
 el piso, las paredes y vos, y en pantalla no pasaría nada. Lo que se lee como
 movimiento es siempre una cosa moviéndose contra otra.

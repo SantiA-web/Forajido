@@ -237,7 +237,14 @@ export function createRaidScene(services) {
     endTimer = 0;
     outcome = null;
 
-    wagonActual = train.boardedAt;
+    /**
+     * 🐛 DONDE ESTÁS PARADO, NO DONDE DEJASTE EL CABALLO. `boardedAt` es el
+     * vagón al que te subiste, pero aparecés en la plataforma de al lado: si
+     * `wagonActual` arrancaba en el vagón, el primer cuadro descubría que
+     * estabas en la plataforma y tiraba su propio aviso ("TU CABALLO") encima
+     * del aviso de entrada. Los dos letreros salían encimados.
+     */
+    wagonActual = train.wagonAt(player.x);
     wagonMasProfundo = train.boardedAt;
     ultimoVisto = { x: player.x, y: player.y };
 
@@ -3678,9 +3685,12 @@ export function createRaidScene(services) {
 
     drawPrompts(r);
 
+    // Sin salirse de la pantalla: el aviso de entrada nace sobre el jugador, y
+    // la plataforma de atrás está pegada al borde del mapa.
+    const enPantalla = { dentroDe: [swayX + 2, swayX + r.width - 2] };
     for (const f of floaters) {
       r.ctx.globalAlpha = Math.min(1, f.life * 2);
-      r.text(f.text, f.x, f.y, f.color);
+      r.text(f.text, f.x, f.y, f.color, 'center', enPantalla);
     }
     r.ctx.globalAlpha = 1;
 
@@ -4369,10 +4379,13 @@ export function createRaidScene(services) {
 
   function drawPrompts(r) {
     if (!player.alive || finished) return;
+    // Los carteles van sobre el jugador, pero sin salirse de la pantalla.
+    const x0 = camera.renderX + Math.round(traqueteoSwayX);
+    const enPantalla = { dentroDe: [x0 + 2, x0 + r.width - 2] };
 
     if (player.enTecho) {
       if (bordeParaBajar() !== null) {
-        r.text(T.prompts.bajar, player.x, player.y - 16, colors.doorGlow);
+        r.text(T.prompts.bajar, player.x, player.y - 16, colors.doorGlow, 'center', enPantalla);
         if (techoBajarProgress > 0) {
           const w = 22;
           r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
@@ -4383,7 +4396,7 @@ export function createRaidScene(services) {
       // Las teclas cambian acá arriba, así que se recuerdan los primeros
       // segundos: nadie tiene por qué adivinar que Espacio dejó de agachar.
       if (scroll < 8) {
-        r.text(T.prompts.techoAyuda, player.x, player.y + 22, colors.textDim);
+        r.text(T.prompts.techoAyuda, player.x, player.y + 22, colors.textDim, 'center', enPantalla);
       }
       return;
     }
@@ -4402,7 +4415,7 @@ export function createRaidScene(services) {
 
     const nearest = nearestLoot();
     if (nearest) {
-      r.text(T.prompts.loot(nearest.name), player.x, player.y - 16, colors.text);
+      r.text(T.prompts.loot(nearest.name), player.x, player.y - 16, colors.text, 'center', enPantalla);
       return;
     }
 
@@ -4422,8 +4435,8 @@ export function createRaidScene(services) {
     if (cajon) {
       const lleno = player.dynamite >= CONFIG.player.dynamiteMax;
       if (cajon.cargado && !cajon.tieneCartucho) {
-        r.text(T.prompts.cajonSinCartucho, player.x, player.y - 16, colors.textDim);
-        r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim);
+        r.text(T.prompts.cajonSinCartucho, player.x, player.y - 16, colors.textDim, 'center', enPantalla);
+        r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim, 'center', enPantalla);
       } else if (cajon.tieneCartucho) {
         r.text(lleno ? T.prompts.cartuchoLleno : T.prompts.cartucho,
           player.x, player.y - 16, lleno ? colors.textDim : colors.dynamiteBand);
@@ -4433,16 +4446,16 @@ export function createRaidScene(services) {
           r.rect(player.x - w / 2, player.y - 12,
             w * (cajon.progreso / EXPLOSIVES.cajonPolvora.abrirHold), 3, colors.dynamite);
         }
-        r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim);
+        r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim, 'center', enPantalla);
       } else {
-        r.text(T.prompts.empujarCajon, player.x, player.y - 16, colors.text);
+        r.text(T.prompts.empujarCajon, player.x, player.y - 16, colors.text, 'center', enPantalla);
       }
       return;
     }
 
     const tranquera = tranqueraCerca();
     if (tranquera) {
-      r.text(T.prompts.tranquera, player.x, player.y - 16, colors.enemySus);
+      r.text(T.prompts.tranquera, player.x, player.y - 16, colors.enemySus, 'center', enPantalla);
       if (tranquera.progreso > 0) {
         const w = 22;
         r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
@@ -4454,7 +4467,7 @@ export function createRaidScene(services) {
 
     const victima = nearestPassenger();
     if (victima) {
-      r.text(T.prompts.threaten, player.x, player.y - 16, colors.civilianRun);
+      r.text(T.prompts.threaten, player.x, player.y - 16, colors.civilianRun, 'center', enPantalla);
       if (victima.robProgress > 0) {
         const w = 22;
         r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
@@ -4465,7 +4478,7 @@ export function createRaidScene(services) {
     }
 
     if (isInsideZone(player, train.exitZone)) {
-      r.text(T.prompts.escape, player.x, player.y - 16, colors.doorGlow);
+      r.text(T.prompts.escape, player.x, player.y - 16, colors.doorGlow, 'center', enPantalla);
       if (escapeProgress > 0) {
         const w = 22;
         r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
@@ -4478,11 +4491,11 @@ export function createRaidScene(services) {
     }
 
     if (player.cover && player.peek < 0.2) {
-      r.text(T.prompts.peek, player.x, player.y - 16, '#9fd8b8');
+      r.text(T.prompts.peek, player.x, player.y - 16, '#9fd8b8', 'center', enPantalla);
     }
 
     if (player.ammo === 0 && player.reloadTimer <= 0) {
-      r.text(T.prompts.empty, player.x, player.y + 16, '#ff9a63');
+      r.text(T.prompts.empty, player.x, player.y + 16, '#ff9a63', 'center', enPantalla);
     }
   }
 

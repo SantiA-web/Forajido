@@ -328,8 +328,20 @@ export function createRenderer(canvas, vista) {
       ctx.textAlign = align;
       ctx.textBaseline = 'middle';
 
-      const px = q(x);
+      let px = q(x);
       const py = q(y);
+
+      /**
+       * `dentroDe: [x0, x1]` corre el texto lo justo para que no se salga de
+       * esa franja. Es para los carteles que van sobre el jugador: pegado al
+       * borde del tren (la plataforma de atrás empieza en el borde del mapa),
+       * el cartel centrado en él salía cortado por la mitad.
+       */
+      if (opciones.dentroDe && align === 'center') {
+        const [x0, x1] = opciones.dentroDe;
+        const medio = ctx.measureText(str).width / 2 + 1;   // +1: el halo
+        if (x1 - x0 > medio * 2) px = Math.min(Math.max(px, x0 + medio), x1 - medio);
+      }
 
       if (halo) {
         ctx.fillStyle = halo;

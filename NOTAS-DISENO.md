@@ -15432,6 +15432,32 @@ verte parado en medio de la nada. Ahora el aire es sólido para caminar pero no
 da cobertura (`daCoberturaAt`); en la pasarela, lo único contra lo que pegarse
 son las puntas de los vagones. La plataforma de atrás sigue con su vacío ciego.
 
+🔁 **LA PLATAFORMA DE ATRÁS: A LA MITAD, ABIERTA Y CON BARANDAS** *(Santi: "el
+primer enganche del tren (que en realidad solo engancha con el primer vagón)
+sigue igual. Además de corregir eso quiero que ese enganche sea la mitad de
+longitud que un enganche normal. Y hazle las barandillas que hay en el vagón
+de ganado")*:
+
+- **2 columnas en vez de 8.** La mitad de un enganche (3) es 1,5, y el tren se
+  arma con casillas enteras: 2 es lo más cerca, elegido con Santi. Las dos son
+  'E' (la salida), así que el asalto arranca parado sobre ella.
+- **Arriba y abajo, aire ('O')**, como en los enganches: se ve y se tira a
+  través. **Y a los dos costados, la baranda del ganado ('H')**, que no te deja
+  caer y cubre sin parar balas.
+- ⚠️ **El salto desde el caballo NO se achicó con ella.** La ventana del salto
+  seguía el largo de la plataforma: habría pasado de ±68 a ±20 unidades, más
+  angosta que la de un enganche (±28), y subir por la cola —lo más fácil—
+  pasaba a ser lo más difícil. Ahora cuenta como un enganche
+  (`columnasDeSalto`, rideScene.js). Es una decisión que Santi puede dar vuelta.
+
+🐛 **De paso: los dos letreros encimados al arrancar.** El asalto creía que
+estabas en el vagón donde subiste, pero aparecés en la plataforma de al lado:
+el primer cuadro se daba cuenta y tiraba "TU CABALLO" encima de "VAGÓN 1 ·
+CABOOSE". Pasaba desde antes; con la plataforma pegada al borde del mapa,
+además, los dos salían cortados. Ahora arranca sabiendo dónde estás, y los
+carteles que van sobre el jugador no se salen de la pantalla (`dentroDe`, en
+`r.text`).
+
 📏 **Nada de esto se nota en el costo.** Medido con el banco nuevo del asalto
 (`banco-asalto.js`, que congela el juego, saca a los guardias para que nadie
 mate al jugador en medio y mide el total de 300 cuadros): **1,30–1,50 ms por

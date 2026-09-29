@@ -358,11 +358,23 @@ export function createRideScene(services) {
     return y - train.map.height;
   }
 
+  /**
+   * CUÁNTAS COLUMNAS CUENTAN PARA SALTAR a la plataforma `i`: un enganche, 3.
+   *
+   * ⚠️ LA COLA, COMO UN ENGANCHE, AUNQUE SEA MÁS CORTA. La plataforma de atrás
+   * medía 8 columnas y pasó a 2 *(Santi: "la mitad de longitud que un enganche
+   * normal")*. Si la ventana del salto siguiera su largo, pasaba de ±68 a ±20
+   * unidades —más angosta que la de cualquier enganche (±28)—, y subir por la
+   * cola, que era lo más fácil, pasaba a ser lo más difícil. Con esto queda
+   * igual de exigente que un enganche. Aterrizás en la plataforma igual.
+   */
+  const columnasDeSalto = (i) => (i === 1 ? Math.max(3, train.tramos[0].cols) : 3);
+
   /** El enganche que tengo al lado, o null si estoy pasando por un vagón. */
   function plataformaBajoElCaballo() {
     for (let i = 1; i < plataformas.length; i++) {
       if (plataformas[i] === undefined) continue;
-      const ancho = (i === 1 ? train.tramos[0].cols : 3) * size / 2;
+      const ancho = columnasDeSalto(i) * size / 2;
       if (Math.abs(x - plataformas[i]) <= ancho + caballo.saltoTolerancia) return i;
     }
     return null;
@@ -1294,7 +1306,7 @@ export function createRideScene(services) {
 
     const px = plataformas[p];
     const base = train.map.height;
-    const ancho = (p === 1 ? train.tramos[0].cols : 3) * size / 2 + caballo.saltoTolerancia;
+    const ancho = columnasDeSalto(p) * size / 2 + caballo.saltoTolerancia;
     const cerca = distanciaAlTren() <= caballo.saltoDistancia;
 
     // La franja válida, apagada.

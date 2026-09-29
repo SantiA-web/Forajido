@@ -1996,6 +1996,20 @@ export const CONFIG = {
     /** Multiplicador general. Subilo y todo el mundo acelera. */
     velocidad: 1.0,
 
+    /**
+     * 🛤️ A CUÁNTO PASA EL SUELO EN EL ASALTO (unidades por segundo): las matas y
+     * las piedras de los costados, el desierto de los huecos y la vía. Los tres
+     * van con este mismo número, porque son el mismo suelo: si la vía fuera
+     * distinta de las matas que tiene al lado, se despegaría de ellas.
+     *
+     * 🔻 ERA 900 *(Santi: "que la vía que pase por debajo se vea que pasa más
+     * lenta y no que parece un disco rayando")*. A 900 el suelo salta 15
+     * unidades por cuadro, y la piedra de la vía no se puede seguir con la vista:
+     * cada cuadro es un dibujo nuevo. A 300 salta 5, y cada piedra se ve
+     * corriéndose. Las rayitas de las capas de arriba no usan este número.
+     */
+    suelo: 300,
+
     capas: [
       // cerros lejanos: casi quietos, son la referencia de "esto está lejos"
       { v: 110,  sep: 78, alto: 3, color: '#2b211a' },

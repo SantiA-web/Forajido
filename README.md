@@ -462,6 +462,11 @@ haz se ven iluminados.
 **Por los huecos entre vagones se ve la vía pasando**: el mismo desierto de los
 costados, a la misma velocidad, con el terraplén y los rieles en el medio.
 
+**En el enganche no hay pared.** Desde la pasarela les podés tirar a los
+jinetes que van al costado del tren, y ellos te ven y te tiran a vos. Tampoco
+te podés parapetar contra el aire: la única cobertura ahí son las puntas de los
+vagones.
+
 No se mueve ni el tren ni la cámara: si se moviera el vagón se moverían con él
 el piso, las paredes y vos, y en pantalla no pasaría nada. Lo que se lee como
 movimiento es siempre una cosa moviéndose contra otra.

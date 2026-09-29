@@ -1830,7 +1830,8 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
       const y = row * size;
 
       switch (tile) {
-        case 'X': {
+        case 'X':
+        case 'O': {
           /**
            * 🕳️ EL HUECO ENTRE DOS VAGONES. Acá no hay tren, así que se ve el
            * suelo de abajo: es lo que hace que los enganches se lean como
@@ -1859,7 +1860,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
           r.ctx.globalAlpha = 0.3;
           // Sólo contra un vagón de verdad: afuera del mapa no hay nada que
           // haga sombra, y la franja oscura en el borde se veía como un tajo.
-          const hayVagon = (c) => { const t = (map.grid[row] || [])[c]; return t !== undefined && t !== 'X'; };
+          const hayVagon = (c) => { const t = (map.grid[row] || [])[c]; return t !== undefined && !esHueco(t); };
           if (hayVagon(col - 1)) r.rect(x, y, 3, size, '#000');
           if (hayVagon(col + 1)) r.rect(x + size - 3, y, 3, size, '#000');
           r.ctx.globalAlpha = 1;
@@ -1950,7 +1951,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
       let r1 = 0;
       while (r1 + 1 < map.rows && esPared(casilla(r1 + 1))) r1++;
       const pisoDeAdentro = casilla(r1 + 1);
-      if (pisoDeAdentro !== undefined && pisoDeAdentro !== 'X') {
+      if (pisoDeAdentro !== undefined && !esHueco(pisoDeAdentro)) {
         r.ctx.globalAlpha = 0.22;
         r.rect(x, (r1 + 1) * size, size, 7, '#000');
         r.ctx.globalAlpha = 0.18;
@@ -2067,7 +2068,7 @@ export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}) {
     if (!conVidrio(col, r1)) continue;
     if (conVidrio(col - 1, r1)) continue;    // no es la primera del ventanal
     const adentro = casilla(r1 + 1);
-    if (adentro === undefined || adentro === 'X') continue;
+    if (adentro === undefined || esHueco(adentro)) continue;
 
     let largo = 1;
     while (conVidrio(col + largo, r1)) largo++;
@@ -2121,6 +2122,8 @@ function oscurecer(hex, f) {
 }
 
 const esPared = (ch) => ch === '#' || ch === 'W';
+/** Donde no hay tren: el vacío ('X') y el aire del enganche ('O'). */
+const esHueco = (ch) => ch === 'X' || ch === 'O';
 
 /**
  * LO QUE SE LEVANTA DEL PISO, en tres cuartos (ver `drawPisoDelTren`).
@@ -2307,7 +2310,7 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
           }
 
           const norte = casilla(col, row - 1);
-          const adentroDetras = norte !== undefined && !esPared(norte) && norte !== 'X';
+          const adentroDetras = norte !== undefined && !esPared(norte) && !esHueco(norte);
           const h = (adentroDetras || deCarbon) ? tc.alturaParedBaja : Math.round(alto * 0.7);
           const conCara = !esPared(debajo);
           cosas.push({ base, draw: () => {

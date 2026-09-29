@@ -33,6 +33,9 @@ export function findCoverSurface(x, y, hw, hh, map, reach) {
       const probeX = x + dir.dx * offset;
       const probeY = y + dir.dy * offset;
       if (!map.isSolidAt(probeX, probeY)) continue;
+      // Sólido pero sin nada contra qué pegarse (el aire del enganche): en esta
+      // dirección no hay pared, y no hay que seguir buscando más allá.
+      if (map.daCoberturaAt && !map.daCoberturaAt(probeX, probeY)) break;
 
       const col = Math.floor(probeX / size);
       const row = Math.floor(probeY / size);
@@ -63,6 +66,7 @@ export function coverStillValid(x, y, hw, hh, surface, map) {
   const half = surface.nx !== 0 ? hw : hh;
   const probeX = x - surface.nx * (half + 2);
   const probeY = y - surface.ny * (half + 2);
+  if (map.daCoberturaAt) return map.daCoberturaAt(probeX, probeY);
   return map.isSolidAt(probeX, probeY);
 }
 

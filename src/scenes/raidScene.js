@@ -4225,7 +4225,7 @@ export function createRaidScene(services) {
     const h = alturaMapa;
     const desde = h * 0.16;
     const alto = Math.round(h * 0.68);
-    const desplaza = scroll * 900 * vel;
+    const desplaza = scroll * CONFIG.parallax.suelo * vel;
 
     // Primero la vía y después las matas: una que crece justo debajo del
     // terraplén asoma por delante de su borde, como en tres cuartos tiene que ser.
@@ -4312,7 +4312,7 @@ export function createRaidScene(services) {
      */
     sembrarDesierto(r, {
       x0: 0, y0, x1: r.width, y1,
-      desplaza: scroll * 900 * vel,
+      desplaza: scroll * CONFIG.parallax.suelo * vel,
       noche: !dia,
       colores: colors.cielo,
       escala: 0.7,

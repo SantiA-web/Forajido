@@ -15397,10 +15397,46 @@ asiento o a la pila de encomiendas que está junto al ventanal, y al guardia que
 cruza el haz. De día aclara un 40% (`aclaraDia: 1.4`), de noche un 15%
 (`aclaraNoche: 1.15`); el tinte reparte eso entre rojo, verde y azul.
 
+🔁 **Y DESPUÉS DE JUGARLO, DOS COSAS MÁS** *(Santi: "que la vía que pase por
+debajo se vea que pasa más lenta y no que parece un disco rayando. Además, haz
+que por los enganches se pueda disparar, porque en realidad ahí no hay
+pared")*:
+
+**La vía rayaba por dos motivos a la vez.** El suelo saltaba 15 unidades por
+cuadro, y la grava era de puntitos de cuatro tonos muy distintos: algo que
+contrasta y salta más que su propio largo no se puede seguir con la vista, y
+cada cuadro parece un dibujo nuevo. Se arreglaron los dos:
+
+- **El suelo del asalto pasa a 300 y no a 900** (`CONFIG.parallax.suelo`): cinco
+  unidades por cuadro. ⚠️ **Es TODO el suelo, no sólo la vía**: las matas y las
+  piedras de los costados también. Si se frenaba sólo la vía, en el mismo hueco
+  del enganche se veían matas corriendo a una velocidad y la vía a otra, que era
+  justo el "ajeno" que se había arreglado. Las rayitas de las capas de arriba
+  (cerros, rastrojo) siguen igual.
+- **La grava fina va casi del color de la piedra**, y lo que se ve pasar son
+  **piedras sueltas y separadas**, cada una con su luz y su sombra. La regla que
+  lo decide: para seguir una cosa con la vista, tiene que estar a más del doble
+  de lo que avanza en un cuadro de la siguiente.
+
+**El enganche ya no es una caja cerrada.** A los costados de la pasarela había
+'X' —el vacío, que frena vista y balas—. Ahora es **'O', el aire del enganche**:
+no se pisa, pero se ve y se tira a través (`world/tilemap.js`). Desde la
+pasarela le tirás a un jinete, y él a vos: cruzar de un vagón a otro te expone,
+que era la idea del enganche desde el principio.
+
+⚠️ **Y no te podés parapetar contra el aire.** La cobertura se buscaba contra
+cualquier casilla sólida, y el vacío lo era: en la pasarela te "pegabas" al
+aire de arriba o de abajo y quedabas escondido. Con el vacío ciego no importaba
+—nadie veía a través—, pero con el aire abierto los jinetes habrían dejado de
+verte parado en medio de la nada. Ahora el aire es sólido para caminar pero no
+da cobertura (`daCoberturaAt`); en la pasarela, lo único contra lo que pegarse
+son las puntas de los vagones. La plataforma de atrás sigue con su vacío ciego.
+
 📏 **Nada de esto se nota en el costo.** Medido con el banco nuevo del asalto
 (`banco-asalto.js`, que congela el juego, saca a los guardias para que nadie
 mate al jugador en medio y mide el total de 300 cuadros): **1,30–1,50 ms por
-cuadro antes, 1,30–1,51 después** de los tres arreglos juntos.
+cuadro antes, 1,30–1,51 después** de los tres arreglos juntos, y 1,34–1,59 con
+la vía nueva.
 
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 

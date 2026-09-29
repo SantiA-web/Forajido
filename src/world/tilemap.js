@@ -35,6 +35,21 @@ const TILE_RULES = {
   'X': { solid: true,  blocksSight: true,  blocksBullets: true },   // el vacío: fuera del tren
 
   /**
+   * 🌬️ EL AIRE DEL ENGANCHE: a los costados de la pasarela, entre dos vagones.
+   * No se pisa (te caerías del tren), pero **ahí no hay pared** *(Santi: "haz
+   * que por los enganches se pueda disparar, porque en realidad ahí no hay
+   * pared")*: pasan la vista y las balas, como por una ventanilla.
+   *
+   * Antes era 'X', el vacío ciego, y eso hacía del enganche una caja cerrada:
+   * no le podías tirar a un jinete desde ahí, y él a vos tampoco.
+   *
+   * `sinCobertura`: sigue siendo sólida para caminar, pero **no es una pared
+   * contra la que pegarse** (`findCoverSurface`, systems/cover.js). Sin esto
+   * te parapetabas contra el aire y los jinetes dejaban de verte.
+   */
+  'O': { solid: true,  blocksSight: false, blocksBullets: false, sinCobertura: true },
+
+  /**
    * LA RES COLGADA (vagón refrigerado) — lo contrario de la ventanilla.
    *
    * Tapa la vista y NO las balas: un laberinto donde se ve poco y se tira a
@@ -139,6 +154,11 @@ export function createTilemap(layout) {
      * une nunca se sale del rectángulo del mapa.
      */
     isSolidAt: (px, py) => TILE_RULES[tileAtPixel(px, py)].solid,
+    /** ¿Hay acá algo contra lo que pegarse? Lo sólido, menos el aire del enganche. */
+    daCoberturaAt: (px, py) => {
+      const regla = TILE_RULES[tileAtPixel(px, py)];
+      return regla.solid && !regla.sinCobertura;
+    },
     blocksSightAt,
     blocksBulletsAt: (px, py) =>
       dentro(px, py) && TILE_RULES[tileAtPixel(px, py)].blocksBullets,

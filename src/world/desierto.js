@@ -300,10 +300,12 @@ export function zonaDe(x, y, tamano = 120, llenas = 2, semilla = 0) {
  * carriles.
  *
  * ⚠️ Y SIN DURMIENTES SUELTOS, aunque en el galope los haya. Allá el suelo pasa
- * a 90 por segundo; acá, a 900: quince unidades por cuadro, con durmientes cada
- * nueve. Dibujados de a uno parecerían ir para atrás o quedarse quietos —la
- * rueda de carreta de las películas—. A esa velocidad el ojo ve una franja más
- * oscura, y eso es lo que se pinta.
+ * a 90 por segundo; acá, a 300 (`CONFIG.parallax.suelo`): cinco unidades por
+ * cuadro, con durmientes cada nueve. Para seguir una cosa con la vista tiene
+ * que estar a más del doble de lo que avanza en un cuadro de la siguiente, y
+ * nueve no llega a diez: dibujados de a uno parecerían ir para atrás o
+ * quedarse quietos —la rueda de carreta de las películas—. Se pinta la franja
+ * más oscura que ve el ojo, y lo que cuenta el movimiento son las piedras.
  *
  * @param opciones.arriba      dónde empieza el lecho, en la pantalla
  * @param opciones.alto        cuánto mide de borde a borde, en unidades
@@ -360,23 +362,49 @@ function lechoDibujado(alto, rieles, durmientes, colores, noche) {
     p(0, d0, anchoP, d1 - d0, mezcla(piedra, dur, 0.22));
     p(0, d0 + 3, anchoP, d1 - d0 - 6, mezcla(piedra, dur, 0.4));
 
-    // 3. La grava, sorteada: largo, lugar y tono de cada rayita.
-    const tonos = [t(colores.grava), t(colores.piedrita), t(colores.balasto, 0.72), t(colores.piedritaLuz)];
-    const cuantas = Math.round((anchoP * altoP) / 110);
+    /**
+     * 3. LA GRAVA FINA, CASI DEL COLOR DE LA PIEDRA. 🐛 Antes era de cuatro
+     * tonos bien distintos y parecía un disco rayando *(Santi)*: un montón de
+     * puntitos que contrastan y que saltan más que su propio largo en cada
+     * cuadro no se pueden seguir con la vista, y se leen como ruido que
+     * titila. Con poco contraste el ruido sigue dándole textura, pero no
+     * titila.
+     */
+    const fina = [t(colores.balasto, 0.88), t(colores.balasto, 1.12)];
+    const cuantas = Math.round((anchoP * altoP) / 60);
+    // Lo que se pasa del borde vuelve por el otro lado: así el tramo empalma
+    // consigo mismo y no se ve la costura.
+    const conVuelta = (x, y, w, hh, color) => {
+      p(x, y, w, hh, color);
+      if (x + w > anchoP) p(x - anchoP, y, w, hh, color);
+    };
     for (let i = 0; i < cuantas; i++) {
       const h = revolver(i * 7919 + 1013);
       const h2 = revolver(h + 17);
-      const x = h % anchoP;
-      const y = 4 + ((h >>> 12) % Math.max(1, altoP - 8));
-      const largo = 2 + (h2 % 12);
-      const color = tonos[(h2 >>> 8) % tonos.length];
-      p(x, y, largo, 1, color);
-      // Lo que se pasa del borde vuelve por el otro lado: así el tramo empalma
-      // consigo mismo y no se ve la costura.
-      if (x + largo > anchoP) p(x - anchoP, y, largo, 1, color);
+      conVuelta(h % anchoP, 4 + ((h >>> 12) % Math.max(1, altoP - 8)), 1 + (h2 % 3), 1, fina[(h2 >>> 8) & 1]);
     }
 
-    // 4. Los rieles: el brillo, el acero y la sombra que tiran sobre la piedra.
+    /**
+     * 4. LAS PIEDRAS QUE SE VEN PASAR. Pocas y separadas, cada una con su luz
+     * arriba y su sombra abajo: son las que el ojo agarra y sigue. Para que se
+     * puedan seguir tienen que estar más lejos entre sí que lo que el suelo
+     * avanza en un cuadro (ver `CONFIG.parallax.suelo`): si no, el ojo empalma
+     * cada piedra con la vecina y la ve ir para atrás.
+     */
+    const piedras = Math.round((anchoP * altoP) / (56 * 56));
+    for (let i = 0; i < piedras; i++) {
+      const h = revolver(i * 104729 + 4243);
+      const h2 = revolver(h + 91);
+      const w = 3 + (h2 % 4);
+      const hh = 2 + ((h2 >>> 4) % 2);
+      const x = h % anchoP;
+      const y = 4 + ((h >>> 12) % Math.max(1, altoP - 10));
+      conVuelta(x, y, w, hh, t(colores.piedrita));
+      conVuelta(x, y, w, 1, t(colores.piedritaLuz));
+      conVuelta(x, y + hh, w, 1, t(colores.balasto, 0.7));
+    }
+
+    // 5. Los rieles: el brillo, el acero y la sombra que tiran sobre la piedra.
     for (const u of rieles) {
       const y = P(u);
       p(0, y - 2, anchoP, 1, t(colores.riel, 1.25));

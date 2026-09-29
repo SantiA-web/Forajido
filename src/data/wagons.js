@@ -13,6 +13,7 @@
  *   .  suelo libre
  *   +  plataforma de enganche (el paso de un vagón al siguiente, al aire libre)
  *   X  el vacío             (fuera del tren: no se puede pisar)
+ *   O  el aire del enganche (no se pisa, pero se ve y se tira a través)
  *   E  salida               (la plataforma trasera: ahí está tu caballo)
  *
  * REGLAS DE FORMA, para que los vagones se puedan enganchar entre sí:
@@ -1377,20 +1378,24 @@ export const TRAMOS = {
     ],
   },
 
-  /** El enganche entre dos vagones: tres columnas de aire libre. */
+  /**
+   * El enganche entre dos vagones: tres columnas de aire libre. A los costados
+   * de la pasarela, 'O' y no 'X': no se pisa, pero se ve y se tira a través
+   * (ver `TILE_RULES`, world/tilemap.js).
+   */
   enganche: {
     id: 'enganche',
     layout: [
-      'XXX',
-      'XXX',
-      'XXX',
-      'XXX',
+      'OOO',
+      'OOO',
+      'OOO',
+      'OOO',
       '+++',
       '+++',
-      'XXX',
-      'XXX',
-      'XXX',
-      'XXX',
+      'OOO',
+      'OOO',
+      'OOO',
+      'OOO',
     ],
   },
 };

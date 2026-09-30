@@ -504,7 +504,7 @@ export function drawEnemy(r, e) {
     // cuerpo negro no quedaba nada más que dijera "este te está peleando".
     dibujarAviso(r, e.x, arriba, 'alerta');
   } else if (e.suspicion > 0.04) {
-    // "?" y la barrita de cuánto te queda para romper el contacto.
+    // El "?" se va llenando con cuánto te falta para que te vea.
     dibujarAviso(r, e.x, arriba, 'sospecha', e.suspicion);
   } else if (e.vigilaLider) {
     /**

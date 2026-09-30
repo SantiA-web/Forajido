@@ -418,9 +418,17 @@ const SIGNO_SOSPECHA = ['xxx', '..x', '.xx', '...', '.x.'];
  * EL AVISO ENCIMA DE LA CABEZA, desde `arriba` hacia arriba.
  *
  *  - 'alerta':   un "!" rojo, fijo mientras pelea.
- *  - 'sospecha': un "?" amarillo y, debajo, la barrita de cuánto le falta para
- *    verte (se pone naranja pasado el 66%). La barrita no es adorno: te dice
- *    si llegás a esconderte.
+ *  - 'sospecha': un "?" que SE VA LLENANDO de abajo hacia arriba con cuánto le
+ *    falta para verte (`llenado`, de 0 a 1): amarillo, y naranja pasado el
+ *    66%. Lleno, te vio, y pasa a ser el "!". Te dice si llegás a esconderte.
+ *
+ * 🔁 ANTES ERA UN "?" FIJO CON UNA BARRITA ABAJO *(Santi: "podrías eliminar esa
+ * barrita y hacer que el signo de encima sea el que se vaya pintando?")*. Es la
+ * misma información en un solo dibujo, y sin barritas encima de la gente, que
+ * es lo que se sacó por "arcade".
+ *
+ * LOS DOS LLEVAN BORDE NEGRO, como los textos: el "?" vacío es apagado a
+ * propósito, y sin borde se perdía contra el piso de madera.
  *
  * Sigue midiendo lo mismo que antes a propósito: los avisos son información
  * para jugar, no dibujo, así que no se achicaron ni se agrandaron con la gente.
@@ -429,21 +437,35 @@ const SIGNO_SOSPECHA = ['xxx', '..x', '.xx', '...', '.x.'];
  */
 export function dibujarAviso(r, x, arriba, estado, llenado = 0) {
   const cx = Math.round(x);
-  const signo = (forma, color, y0) => {
+  const B = 0.25;   // el borde: un punto
+  const celdas = (forma, y0, dibujar) => {
     const ox = cx - Math.floor(forma[0].length / 2);
     forma.forEach((fila, i) => {
-      for (let j = 0; j < fila.length; j++) if (fila[j] !== '.') r.rect(ox + j, y0 + i, 1, 1, color);
+      for (let j = 0; j < fila.length; j++) if (fila[j] !== '.') dibujar(ox + j, y0 + i);
     });
   };
+  const borde = (forma, y0) => celdas(forma, y0, (cxx, cy) => r.rect(cxx - B, cy - B, 1 + B * 2, 1 + B * 2, '#000'));
+
   if (estado === 'alerta') {
-    signo(SIGNO_ALERTA, '#ff3a2a', arriba - 7);
+    const y0 = arriba - 7;
+    borde(SIGNO_ALERTA, y0);
+    celdas(SIGNO_ALERTA, y0, (cxx, cy) => r.rect(cxx, cy, 1, 1, '#ff3a2a'));
     return arriba - 8;
   }
   if (estado === 'sospecha') {
-    r.rect(cx - 6, arriba - 4, 12, 2, '#1a1512');
-    r.rect(cx - 6, arriba - 4, Math.round(12 * Math.min(1, llenado)), 2, llenado > 0.66 ? '#e07a4a' : '#e0c44a');
-    signo(SIGNO_SOSPECHA, '#f8d830', arriba - 10);
-    return arriba - 11;
+    const y0 = arriba - 7;
+    const alto = SIGNO_SOSPECHA.length;
+    // Hasta dónde llega lo pintado, en puntos enteros: de abajo hacia arriba.
+    const lleno = Math.round(Math.min(1, Math.max(0, llenado)) * alto / B) * B;
+    const corte = y0 + alto - lleno;
+    const color = llenado > 0.66 ? '#e07a4a' : '#f8d830';
+    borde(SIGNO_SOSPECHA, y0);
+    celdas(SIGNO_SOSPECHA, y0, (cxx, cy) => {
+      r.rect(cxx, cy, 1, 1, '#5a5040');
+      const desde = Math.max(cy, corte);
+      if (desde < cy + 1) r.rect(cxx, desde, 1, cy + 1 - desde, color);
+    });
+    return arriba - 8;
   }
   return arriba;
 }

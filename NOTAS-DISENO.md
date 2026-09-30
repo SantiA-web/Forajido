@@ -15764,6 +15764,14 @@ manchas de 3 no se distinguían de la veta ni de la costura, ni con la foto
 ampliada al doble. Quedaron agujeros de una unidad (4 puntos) con borde claro,
 rajaduras de 2 puntos de grueso y manchas de 6×5 en rojo vivo.
 
+🔁 **Y la barrita de sospecha también se fue** *(Santi: "podrías eliminar esa
+barrita y hacer que el signo de encima sea el que se vaya pintando?")*. El "?"
+empieza apagado y **se va llenando de abajo hacia arriba** con cuánto le falta
+al guardia para verte: amarillo, y naranja pasado el 66%. Lleno, te vio, y pasa
+a ser el "!" rojo. Es la misma información que daba la barrita, en un solo
+dibujo. Los dos signos llevan borde negro como los textos: el "?" vacío es
+apagado a propósito, y sin borde se perdía contra la madera.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

@@ -44,7 +44,7 @@ atrás. Se está pasando por etapas, primero el tren:
 | Etapa | Qué | Estado |
 |---|---|---|
 | A | El orden de dibujo: paredes, asientos, carga y el resto con volumen, y todo ordenado por dónde tiene los pies | ✅ |
-| B | La gente en **sombras cabezonas** (lo que se ve hoy; ya está diseñado su reemplazo, ver abajo): siluetas negras y sombrerudas (14 a 19 px) donde el color sale de los detalles —el pañuelo, la insignia, la estrella, la capa—, en 8 direcciones y caminando. El estado de los guardias va en los ojos y encima de la cabeza: un "?" con la barrita o un "!" fijo mientras pelean. El jugador se agacha detrás de la cobertura, los guardias se sientan de franco y se rinden con pañuelo blanco, y en el galope vas en silueta sobre el caballo de siempre. La caja que recibe las balas no cambió | ✅ |
+| B | La gente en **sombras cabezonas** (lo que se ve hoy; ya está diseñado su reemplazo, ver abajo): siluetas negras y sombrerudas (14 a 19 px) donde el color sale de los detalles —el pañuelo, la insignia, la estrella, la capa—, en 8 direcciones y caminando. El estado de los guardias va en los ojos y encima de la cabeza: un "?" que se va llenando o un "!" fijo mientras pelean. El jugador se agacha detrás de la cobertura, los guardias se sientan de franco y se rinden con pañuelo blanco, y en el galope vas en silueta sobre el caballo de siempre. La caja que recibe las balas no cambió | ✅ |
 | C | Las cosas: botín, puertas, cajones, barriles, dinamita, balas | Falta |
 | D | El techo | Falta |
 | E | El galope en tres cuartos: del tren se ve la pared y la tapa del techo (y lo que llevan los vagones abiertos), del caballo el lomo y la montura, del jinete el ala del sombrero, y el desierto llena la pantalla. Al girar con W o S el caballo cambia de pose (nueve): se lo ve alejarse hacia las vías o venir de frente hacia abajo. Corre con pose de carrera (cuello estirado, cola y crin al viento, el jinete echado hacia adelante), las patas pisan justo cuando suena cada golpe del "tucu-TÚN", y cada pisada levanta una nube de polvo que queda atrás. Mientras estás lejos asoma el cielo arriba de todo. Se juega igual | ✅ |
@@ -2230,8 +2230,10 @@ callado, van al lugar equivocado. Pero cada tiro tuyo vuelve a delatarte.
 - **El color del cuerpo NUNCA dice el tipo, dice el estado** (gris tranquilo,
   amarillo sospechando, rojo combate). Eso es lo más importante que hay que
   poder leer de un vistazo, así que el tipo va en la silueta.
-- **Te van viendo, no te ven de golpe.** La barrita amarilla sobre la cabeza es
-  cuánto sospechan. Si rompés el contacto antes de que se llene, baja sola.
+- **Te van viendo, no te ven de golpe.** El "?" sobre la cabeza se va llenando
+  de abajo hacia arriba con cuánto sospechan (naranja cuando falta poco). Si
+  rompés el contacto antes de que se llene, se vacía solo; lleno, te vieron y
+  pasa a ser el "!".
 - **Y te oyen caminar.** No hace falta que te vean: uno de espaldas te escucha
   igual. El aro amarillo que late alrededor tuyo es hasta dónde te están
   oyendo — unas 3,5 baldosas. **Agachado (`Espacio`) no hacés ni un ruido**, y

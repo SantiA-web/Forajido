@@ -5,7 +5,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, dibujarAviso, dibujarVida, faseDeAndar, ROPA_DE_LOOK } from './figura.js';
+import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_LOOK } from './figura.js';
+import { dibujarHeridas } from './danio.js';
 import { GUARD_TYPES, DEFAULT_GUARD_TYPE, guardHealth } from '../data/guards.js';
 import { T } from '../text/es.js';
 
@@ -488,13 +489,15 @@ export function drawEnemy(r, e) {
   }
 
   /**
-   * LO QUE VA ENCIMA DE LA CABEZA, apilado de abajo hacia arriba: primero las
-   * muescas de vida (sólo si está herido: la vida va de 2 a 4 según el tipo y
-   * la dificultad, y sin esto no se sabe si le queda un tiro o tres), y arriba
-   * de todo el aviso de estado o lo que dice.
+   * 🩸 HERIDO SE VE EN EL CUERPO, NO EN UNA BARRITA *(Santi: "eliminar lo que
+   * hoy parece arcade, que podría ser los cuadros de vida que aparecen encima
+   * del personaje")*. Una mancha de sangre por cada tiro que recibió (ver
+   * entities/danio.js): con dos manchas, a un guardia de tres le queda uno.
    */
-  let arriba = fig.arriba;
-  if (e.health < e.maxHealth) arriba = dibujarVida(r, e.x, arriba, e.health, e.maxHealth);
+  dibujarHeridas(r, e, fig.x, fig.pechoY, fig.manoY, e.maxHealth - e.health);
+
+  // Encima de la cabeza queda sólo el aviso de estado o lo que dice.
+  const arriba = fig.arriba;
 
   if (e.state === 'combat') {
     // 🔁 FIJO MIENTRAS PELEA: antes duraba un segundo (`alertMark`), y con el

@@ -22,7 +22,7 @@
 
 import { CONFIG } from '../data/config.js';
 import { EXPLOSIVES } from '../data/explosives.js';
-import { dibujarVida } from './figura.js';
+import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 
 export function createCajon(x, y, tieneCartucho = true) {
@@ -248,5 +248,5 @@ export function drawCajon(r, c) {
    * regresiva de una explosión: el que le pegó dos tiros sin querer tiene que
    * poder ver que le queda uno.
    */
-  if (c.vida < c.vidaMax) dibujarVida(r, c.x, c.y - h - 3, c.vida, c.vidaMax, { ancho: 13 });
+  dibujarDanio(r, c, c.x - w, c.y - h, w * 2, h * 2, etapaDeDanio(c.vida, c.vidaMax));
 }

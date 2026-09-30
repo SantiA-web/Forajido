@@ -15735,6 +15735,35 @@ el arma), junto con el daño por zona.
   dañado, muy dañado y roto. Las barritas de encima de los personajes se
   sacan.
 
+#### 🩸 SIN BARRITAS DE VIDA: SANGRE EN LA GENTE, TEXTURA EN LAS COSAS
+
+*(Santi: "eliminar lo que hoy parece arcade, que podría ser los cuadros de vida
+que aparecen encima del personaje". Y para los objetos: "en vez de barritas,
+pondría textura: intacta, dañada, muy dañada, rota".)*
+
+- **La gente sangra** (`dibujarHeridas`, entities/danio.js): una mancha por
+  tiro recibido, hasta tres, cada una en su lugar del torso (pecho, panza,
+  hombro). Sorteadas libres, dos caían una encima de la otra y se leían como
+  una sola, y cuántas son es justo lo que tienen que decir.
+- **El jefe también**, aunque su barra estaba siempre a la vista a propósito
+  ("contra un jefe, saber cuánto falta ES la pelea"). Ahora lo dicen sus
+  manchas —una por cada tercio que perdió— y la furia, que ya le cambia la
+  actitud cuando está por caer. Si hace falta, la alternativa es una barra en
+  el borde de la pantalla, como en las peleas de jefe, no encima de él.
+- **Las cosas pasan por cuatro etapas** (`dibujarDanio`): intacta, dañada (dos
+  agujeros de bala con el borde astillado y una rajadura), muy dañada (cuatro
+  agujeros, tres rajaduras, una esquina arrancada y astillas) y rota, que ya
+  existía. Con 3 de vida: 3 intacta, 2 dañada, 1 muy dañada.
+
+⚠️ **La etapa dice lo que decía la barrita.** En el cajón de pólvora la barrita
+era la cuenta regresiva de una explosión ("el que le pegó dos tiros sin querer
+tiene que poder ver que le queda uno"): "muy dañado" es exactamente eso.
+
+🔺 **La primera versión no se veía**: agujeros de 2 puntos, rajaduras de 1 y
+manchas de 3 no se distinguían de la veta ni de la costura, ni con la foto
+ampliada al doble. Quedaron agujeros de una unidad (4 puntos) con borde claro,
+rajaduras de 2 puntos de grueso y manchas de 6×5 en rojo vivo.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

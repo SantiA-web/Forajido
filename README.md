@@ -2220,8 +2220,13 @@ callado, van al lugar equivocado. Pero cada tiro tuyo vuelve a delatarte.
 
 - **No son todos iguales, y se nota mirándolos.** El guardia común aguanta dos
   balazos. El **guardia blindado** (los del vagón blindado) tiene una placa gris
-  en el pecho y un sombrero más ancho, y aguanta uno más. Cuando a alguno le
-  pegaste, aparecen unas rayitas sobre su cabeza con lo que le queda.
+  en el pecho y un sombrero más ancho, y aguanta uno más. **No hay barritas de
+  vida**: cada tiro que recibe le deja una mancha de sangre en el torso, así
+  que contando las manchas sabés cuánto le queda.
+- **Las puertas, los cajones y los barriles muestran el daño en la madera**:
+  intactos, dañados (un par de agujeros y una rajadura), muy dañados
+  (agujeros, rajaduras y una esquina arrancada: un tiro más y se rompen) y
+  rotos.
 - **El color del cuerpo NUNCA dice el tipo, dice el estado** (gris tranquilo,
   amarillo sospechando, rojo combate). Eso es lo más importante que hay que
   poder leer de un vistazo, así que el tipo va en la silueta.

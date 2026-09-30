@@ -19,7 +19,7 @@
 
 import { CONFIG } from '../data/config.js';
 import { dibujarCuerpoCajon } from './cajon.js';
-import { dibujarVida } from './figura.js';
+import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
@@ -142,8 +142,8 @@ export function drawRodante(r, ro) {
   // Cuánto le queda, sólo si ya le pegaste. Las mismas rayitas que usan los
   // guardias: si el juego ya tiene una forma de decir "cuánto aguanta esto",
   // inventar otra sólo obliga a aprender dos.
-  if (ro.balea && ro.vida < ro.vidaMax) {
-    dibujarVida(r, ro.x, ro.y - ro.hh - 3, ro.vida, ro.vidaMax, { ancho: 13 });
+  if (ro.balea) {
+    dibujarDanio(r, ro, ro.x - ro.hw, ro.y - ro.hh, ro.hw * 2, ro.hh * 2, etapaDeDanio(ro.vida, ro.vidaMax));
   }
 }
 

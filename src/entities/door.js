@@ -24,8 +24,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { estampar, piezaPuerta, piezaTranca } from '../world/piezas.js';
-import { dibujarVida } from './figura.js';
+import { estampar, piezaPuerta, piezaTranca, PUNTO } from '../world/piezas.js';
+import { dibujarDanio, etapaDeDanio } from './danio.js';
 
 export function createDoor(x, y, { kind = 'normal', insideDir = 1 } = {}) {
   return {
@@ -182,7 +182,8 @@ export function drawDoor(r, d, colors) {
    * pliegan contra las paredes — el paso se ve libre porque lo está.
    */
   const color = d.kind === 'blindada' ? '#626a74' : colors.wall;
-  estampar(r, piezaPuerta(d.kind, color, d.open), d.x - d.hw, d.y - d.hh);
+  const img = piezaPuerta(d.kind, color, d.open);
+  estampar(r, img, d.x - d.hw, d.y - d.hh);
 
   /**
    * TRABADA: un tablón clavado en diagonal, en el rojo que usa el juego para
@@ -195,8 +196,14 @@ export function drawDoor(r, d, colors) {
     estampar(r, piezaTranca(colors ? colors.enemyAlert : '#c86a52'), d.x - d.hw, d.y - d.hh);
   }
 
-  // Las muescas de daño, las mismas que la vida de un guardia (figura.js).
-  if (d.kind !== 'blindada' && d.health < CONFIG.doors.health) {
-    dibujarVida(r, d.x, d.y - d.hh - 2, d.health, CONFIG.doors.health, { ancho: 14 });
+  /**
+   * 🪵 EL DAÑO EN LA MADERA, NO EN UNA BARRITA *(Santi: "textura: intacta,
+   * dañada, muy dañada, rota")*: agujeros, rajaduras y astillas (ver
+   * entities/danio.js). Abierta no: las hojas plegadas contra la pared ya no
+   * son lo que hay que romper.
+   */
+  if (d.kind !== 'blindada' && !d.open) {
+    dibujarDanio(r, d, d.x - d.hw, d.y - d.hh, img.width * PUNTO, img.height * PUNTO,
+      etapaDeDanio(d.health, CONFIG.doors.health));
   }
 }

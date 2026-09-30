@@ -19,7 +19,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, dibujarVida, faseDeAndar, ROPA_DE_JEFE } from './figura.js';
+import { dibujarPersona, dibujarTendido, faseDeAndar, ROPA_DE_JEFE } from './figura.js';
+import { dibujarHeridas } from './danio.js';
 
 export function createBoss(x, y, tipo, options = {}) {
   return {
@@ -266,14 +267,15 @@ export function drawBoss(r, bo) {
 
   const arriba = fig.arriba;
 
-  // --- Cuánto le queda ---
-  // Siempre visible, desde el primer cuadro y no recién al herirlo como a un
-  // guardia: contra un jefe, saber cuánto falta ES la pelea.
-  // La misma barra que la de un guardia (`dibujarVida`, entities/figura.js),
-  // un poco más ancha y más alta, como él: un jefe mide 15% más.
-  dibujarVida(r, bo.x, arriba, bo.health, bo.maxHealth, {
-    ancho: 15, alto: 12, color: bo.enFuria ? '#ff6a3a' : '#e0c44a',
-  });
+  /**
+   * 🩸 SIN BARRA, CON SANGRE *(Santi: sacar "los cuadros de vida que aparecen
+   * encima del personaje")*. La barra del jefe estaba siempre a la vista, y a
+   * propósito: contra un jefe, saber cuánto falta ES la pelea. Ahora lo dicen
+   * las manchas (hasta tres) y la furia, que ya le cambia la actitud cuando
+   * está por caer.
+   */
+  const perdida = (bo.maxHealth - bo.health) / bo.maxHealth;
+  dibujarHeridas(r, bo, fig.x, fig.pechoY, fig.manoY, Math.ceil(perdida * 3 - 0.001));
 
   if (bo.fase === 'aturdido') {
     // Las estrellitas de siempre: es la señal de "pegale AHORA".

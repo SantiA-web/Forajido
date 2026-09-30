@@ -449,43 +449,6 @@ export function dibujarAviso(r, x, arriba, estado, llenado = 0) {
 }
 
 /**
- * CUÁNTO LE QUEDA, en muescas encima de la cabeza. Devuelve dónde termina,
- * para poder apilarle el aviso arriba.
- *
- * ANCHO FIJO, y la muesca sale de repartirlo — no al revés: con la muesca de
- * ancho fijo, un jefe de ocho de vida tenía una barra que flotaba sobre medio
- * vagón. El paso va en PUNTOS ENTEROS de dibujo, porque si no las muescas se
- * agrupan de a 2-4-2.
- *
- * 🔁 Y LLEVA LA MISMA ORILLA OSCURA DE 2 PUNTOS QUE LA GENTE. Con el dibujo
- * viejo, de 15 unidades y un solo color, dos muescas peladas de 3×2 alcanzaban;
- * al lado de una persona de 80 px quedaban dos manchitas amarillas del mismo
- * tamaño que el "?" de sospecha, encimadas con él. La orilla las despega del
- * fondo y las hace otra cosa distinta del aviso.
- */
-export function dibujarVida(r, x, arriba, vida, maxVida, opciones = {}) {
-  if (!(maxVida > 0)) return arriba;
-  // Todo esto se piensa en PUNTOS DE DIBUJO (un cuarto de unidad), como el
-  // resto del arte, y recién al dibujar se pasa a unidades.
-  const P = 0.25;
-  const ancho = (opciones.ancho || 12) / P;
-  const alto = opciones.alto || 10;
-  const hueco = 3;
-  const paso = Math.max(hueco + 1, Math.round(ancho / maxVida));
-  const seg = paso - hueco;
-  const total = maxVida * paso - hueco;
-
-  const y = arriba - (alto + 2) * P;
-  const x0 = Math.round(x * 4) / 4 - (total * P) / 2;
-  r.rect(x0 - 2 * P, y - 2 * P, (total + 4) * P, (alto + 4) * P, NEGRO);
-  for (let i = 0; i < maxVida; i++) {
-    r.rect(x0 + i * paso * P, y, seg * P, alto * P,
-      i < vida ? (opciones.color || '#e0c44a') : '#4a3a22');
-  }
-  return y - 2 * P;
-}
-
-/**
  * UNA PERSONA TIRADA EN EL PISO: muerta o desmayada. Acostada, con un brazo y
  * las piernas abiertas y el sombrero volado al lado (con su cinta, así se sabe
  * quién era). `sangre` agrega el charco; el desmayado no tiene, respira y

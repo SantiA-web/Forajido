@@ -15,6 +15,7 @@ import { dañarPuerta } from '../entities/door.js';
 import { dañarRodante } from '../entities/rodante.js';
 import { dañarCajon } from '../entities/cajon.js';
 import { prenderCajon, soltarExplosivo } from './explosives.js';
+import { yDeBala } from '../entities/bullet.js';
 
 export function updateBullets(bullets, dt, world) {
   for (const b of bullets) {
@@ -48,7 +49,7 @@ export function updateBullets(bullets, dt, world) {
        */
       if (world.map.blocksBulletsAt(b.x, b.y) || puertaBlindadaEnMedio(b, world)) {
         b.alive = false;
-        world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
         break;
       }
 
@@ -66,7 +67,7 @@ export function updateBullets(bullets, dt, world) {
           if (b._puertasGolpeadas.has(d)) continue;
           b._puertasGolpeadas.add(d);
           dañarPuerta(d, b.damage);
-          world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
+          world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
         }
       }
 
@@ -94,7 +95,7 @@ export function updateBullets(bullets, dt, world) {
           if (!cj.alive || !pointInBody(b.x, b.y, cj)) continue;
           b.alive = false;
           pegoCajon = true;
-          world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
+          world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
           /**
            * `b.owner`: el que hizo saltar la mecha se hace cargo de lo que
            * pase después, aunque haya sido sin querer.
@@ -150,7 +151,7 @@ export function updateBullets(bullets, dt, world) {
           b.alive = false;
           pegoRodante = true;
           const rompio = dañarRodante(ro, b.damage);
-          world.bus.emit('impact', { x: b.x, y: b.y, kind: 'wall' });
+          world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
           if (rompio) {
             // Cargado, deja una mecha encendida donde estaba; vacío, se hace
             // astillas y ya. La misma madera, dos finales.
@@ -171,7 +172,7 @@ export function updateBullets(bullets, dt, world) {
         pa.alive = false;
         pa.hitFlash = 0.12;
         hitCivilian = true;
-        world.bus.emit('impact', { x: b.x, y: b.y, kind: 'flesh' });
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona });
         world.bus.emit('passengerKilled', { passenger: pa, byPlayer: b.owner === 'player' });
         break;
       }
@@ -186,7 +187,7 @@ export function updateBullets(bullets, dt, world) {
         b.alive = false;
         hitEnemy = true;
         const died = damageEnemy(e, b.damage, b.x - b.vx, b.y - b.vy);
-        world.bus.emit('impact', { x: b.x, y: b.y, kind: 'flesh' });
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona });
         if (died) world.bus.emit('enemyKilled', { enemy: e, byPlayer: b.owner === 'player' });
         break;
       }
@@ -201,7 +202,7 @@ export function updateBullets(bullets, dt, world) {
           b.alive = false;
           hitRider = true;
           const murio = damageRider(rd, b.damage);
-          world.bus.emit('impact', { x: b.x, y: b.y, kind: 'flesh' });
+          world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona });
           if (murio) world.bus.emit('riderKilled', { rider: rd });
           break;
         }
@@ -226,7 +227,7 @@ export function updateBullets(bullets, dt, world) {
           const hurt = damagePlayer(p, b.damage, b.x - b.vx, b.y - b.vy);
           if (hurt) {
             b.alive = false;
-            world.bus.emit('impact', { x: b.x, y: b.y, kind: 'flesh' });
+            world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona });
             world.bus.emit('playerHit', { x: b.x, y: b.y });
             if (!p.alive) world.bus.emit('playerDown', {});
           }

@@ -35,6 +35,7 @@ import {
 } from '../entities/rodante.js';
 import { updateCajon, drawCajon, vaciarCajon } from '../entities/cajon.js';
 import { WAGONS } from '../data/wagons.js';
+import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
@@ -2360,8 +2361,21 @@ export function createRaidScene(services) {
     // mira (que se dibuja en el mundo) se iría separando del mouse hasta 6
     // píxeles, ida y vuelta, todo el tiempo. Contándolo, la mira se queda
     // debajo del mouse y la bala va a lo que ves debajo de la mira.
-    world.aimX = input.mouse.x + camera.x + vaivenCamaraX;
-    world.aimY = input.mouse.y + camera.y;
+    world.miraX = input.mouse.x + camera.x + vaivenCamaraX;
+    world.miraY = input.mouse.y + camera.y;
+    /**
+     * 🎯 SI LA MIRA ESTÁ SOBRE EL CUERPO DE ALGUIEN, SE LE APUNTA A ÉL *(Santi:
+     * "les disparo a la cabeza y no les hago daño")*. La mira se dibuja donde
+     * está el mouse, pero la bala va a los pies de ese alguien —su lugar en el
+     * piso—, y la altura a la que apuntaste queda como la zona del golpe. Ver
+     * systems/golpe.js para el porqué: en tres cuartos, apuntarle a la cabeza
+     * era apuntarle al piso de atrás suyo.
+     */
+    const blanco = blancoBajoLaMira(world.miraX, world.miraY, world);
+    world.aimX = blanco ? blanco.x : world.miraX;
+    world.aimY = blanco ? blanco.y : world.miraY;
+    world.aimAlto = blanco ? blanco.alto : null;
+    world.aimZona = blanco ? blanco.zona : null;
 
     // El lastre se calcula ANTES de mover al jugador: es lo que decide a qué
     // velocidad camina este cuadro (ver `lastreActual` y CONFIG.peso).
@@ -4131,7 +4145,9 @@ export function createRaidScene(services) {
      * derecho a recibir la bala como el medio. El círculo entero ES la
      * respuesta.
      */
-    r.circle(world.aimX, world.aimY, radio, color, m.alpha);
+    // Donde está el mouse, no el blanco: si le apuntás a una cabeza, la mira
+    // queda en la cabeza aunque la bala vaya a sus pies (ver `blancoBajoLaMira`).
+    r.circle(world.miraX ?? world.aimX, world.miraY ?? world.aimY, radio, color, m.alpha);
   }
 
   /**

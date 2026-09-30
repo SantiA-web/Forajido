@@ -742,6 +742,12 @@ function shoot(p, world) {
     damage: w.damage,
     range: w.range,
     owner: 'player',
+    // Si le apuntaste a alguien: a qué altura del cuerpo y qué zona (ver
+    // `blancoBajoLaMira`, systems/golpe.js). Es para dibujar la bala y para
+    // cuando la zona cambie el daño.
+    alto: world.aimAlto ?? undefined,
+    distancia: world.aimAlto != null ? Math.hypot(world.aimX - p.x, world.aimY - p.y) : 0,
+    zona: world.aimZona || undefined,
   });
 
   p.ammo -= 1;

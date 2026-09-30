@@ -2120,6 +2120,31 @@ export const CONFIG = {
     rayas: { cantidad: 7, velocidad: 2200, largo: 24, color: '#6b5a44', alpha: 0.3 },
   },
 
+  /**
+   * 🎯 EL CUERPO TAL COMO SE VE, para saber a quién le apuntás y a qué parte
+   * (ver systems/golpe.js). En unidades del mundo; una persona mide 20
+   * (`ALTO_PERSONA`, figura.js).
+   */
+  golpe: {
+    /** A qué altura sale la bala del arma, sobre los pies. */
+    alturaArma: 10,
+    /** Media anchura del cuerpo: el torso con los brazos, sin el ala del sombrero. */
+    ancho: 4,
+    /** De los pies a la coronilla. */
+    alto: 20,
+    /** Qué parte del alto es cabeza y qué parte torso, desde arriba; el resto, piernas. */
+    cabeza: 0.22,
+    torso: 0.38,
+    /** El jefe se dibuja un 15% más grande (entities/boss.js). */
+    escalaJefe: 1.15,
+    /** De rodillas, la cabeza baja 3,5 (`baja` en figura.js). */
+    bajaRendido: 3.5,
+    /** Tirado en el piso: media anchura, y cuánto arriba y abajo del centro. */
+    tendido: { ancho: 9, arriba: 4, abajo: 3 },
+    /** El jinete y su caballo: de los cascos hasta la cabeza del jinete. */
+    jineteAlto: 26,
+  },
+
   feel: {
     shakeShoot: 0.7,
     shakeHit: 3.2,

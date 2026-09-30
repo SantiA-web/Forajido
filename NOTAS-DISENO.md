@@ -15663,6 +15663,64 @@ bien porque es chico y suave; si algún día se quiere "más de verdad", lo que
 falta no es más amplitud sino **irregularidad** (golpecitos sueltos en las
 juntas de los rieles, además del vaivén).
 
+#### 🎯 LE APUNTABAS A LA CABEZA Y NO LE PEGABAS: ERA LA VISTA DE TRES CUARTOS
+
+*(Santi, arrancando a mejorar lo que ya existe antes de sumar cosas: "la hit
+box de los personajes, porque me pasa que hoy les disparo a la cabeza y no les
+hago daño".)*
+
+**La causa.** La bala viaja por el piso y sólo le pega a la caja con la que
+cada uno choca (9×7, a la altura de los pies). Desde que la gente se dibuja
+parada, el cuerpo mide 20 hacia arriba de esos pies. En tres cuartos, "más
+arriba en la pantalla" quiere decir "más alto" **o** "más al fondo", y la bala
+no distingue: con la mira en la cabeza, iba al punto del piso que está 17
+unidades detrás del guardia y le pasaba por arriba. Desde abajo o desde arriba
+igual le pegaba —el camino cruza sus pies—, pero **de costado, nunca**.
+
+**Lo que se probó primero y se descartó: agrandar la caja al tamaño del
+dibujo.** Resolvía el tiro al pasillo, pero no el de costado a alguien parado
+delante de una pared o de un asiento de atrás: la bala, por el piso, cruza esas
+casillas antes de llegar a la cabeza, que se dibuja encima de ellas. Y la
+cobertura se rompía: una cabeza dibujada por encima del asiento recibía balas
+a través de su propio reparo. Hacían falta reglas especiales para cada caso, y
+cada una abría otro.
+
+**Lo que quedó (systems/golpe.js):** si la mira está sobre el cuerpo de
+alguien, **la bala va a sus pies** —su lugar en el piso—, y **la altura a la
+que apuntaste es la zona**: cabeza, torso o piernas. El de más adelante gana si
+hay varios encimados. La mira se sigue dibujando donde está el mouse, y la bala
+se dibuja subiendo desde el arma (`alturaArma`, 10) hasta esa altura, para que
+se vea ir a la cabeza y no a los pies.
+
+📏 **Por qué no cambia el equilibrio:** la bala sigue viajando por el piso, así
+que paredes, asientos y cobertura frenan exactamente lo mismo que antes. Se le
+pega tanto como antes le pegabas al que le apuntabas a los pies; lo único
+nuevo es que ahora también le pegás cuando le apuntás al cuerpo, que es lo
+natural. Los guardias no cambiaron.
+
+Probado con el juego de verdad (mouse sobre el guardia, disparo, 10 veces
+cada uno, con trenes sorteados):
+
+| Tiro | Sin la corrección | Con la corrección |
+|---|---|---|
+| De costado, a la cabeza | 0 de 10 | 9 de 10 |
+| De costado, al torso | 0 de 10 | 10 de 10 |
+| Desde arriba y desde abajo, a la cabeza, en el pasillo | — | 10 de 10 |
+
+El que falla de costado es la dispersión normal del arma a 60 unidades. Y cada
+tiro reconoce su zona (cabeza, torso, piernas).
+
+Las zonas todavía quitan lo mismo: quedan anunciadas en cada impacto
+(`zona`) para el daño por zona, distancia y arma, que viene después.
+
+📝 **Decidido con Santi para lo que sigue** (la 2 y la 3 del plan):
+- **El reloj del asalto va a ser un caballo**, no un número: la cabeza del
+  caballo con una barrita que se vacía, porque el tiempo pasa a ser el aguante
+  del caballo que trota al lado del tren.
+- **Los objetos no van a tener barritas de vida sino textura**: intacto,
+  dañado, muy dañado y roto. Las barritas de encima de los personajes se
+  sacan.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

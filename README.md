@@ -499,7 +499,7 @@ movimiento es siempre una cosa moviéndose contra otra.
 | Tecla | Acción |
 |---|---|
 | `W A S D` o flechas | Moverse |
-| Mouse | Apuntar |
+| Mouse | Apuntar. **Apuntale al cuerpo**: a la cabeza, al torso o a las piernas, le pega igual |
 | Clic izquierdo | Disparar |
 | **Clic derecho (mantener)** | **Afinar la puntería.** A cubierto, además te asoma |
 | **`Espacio` (mantener)** | **Agacharse**: mitad de velocidad, tardan el doble en verte |

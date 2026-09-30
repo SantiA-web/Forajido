@@ -1519,6 +1519,31 @@ export const CONFIG = {
        */
       balanceo: 1.6,
     },
+
+    /**
+     * 🎥 LA CÁMARA SE MECE CON EL VAGÓN — sólo adentro *(Santi: "puedes poner
+     * el movimiento de cámara del vaivén para quedarme tranquilo que es la
+     * mejor decisión. Recuerda que solo tiene que aparecer cuando el jugador
+     * cae dentro del tren y que el movimiento tiene que ser acorde al
+     * movimiento de la luz del farol, la luz que entra por la ventana y los
+     * objetos")*.
+     *
+     * Es el MISMO reloj que la luz de los ventanales, los faroles y las
+     * botellas, y va para el MISMO lado: cuando las botellas ruedan a la
+     * derecha, el vagón entero se corre a la derecha. Las cuatro cosas se
+     * mueven juntas.
+     *
+     * Sólo adentro de un vagón. En el techo, en los enganches y en la
+     * plataforma de atrás no hay vagón alrededor que se mezca con vos. Entra y
+     * sale de a poco (`entra`, `sale`, en segundos) para no pegar un salto al
+     * cruzar una puerta.
+     */
+    vaivenCamara: {
+      /** Cuánto se corre de cada lado, en unidades (1 unidad = 4 píxeles). */
+      amplitud: 1.5,
+      entra: 0.6,
+      sale: 0.4,
+    },
     /**
      * 🔺 DE 12 A 20, DESPUÉS DE MIRARLA. *(Santi: "se está perdiendo mucho el
      * potencial [...] está media confusa y como que cargada. Además, mientras

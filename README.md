@@ -472,6 +472,12 @@ iluminados, y el charco se hamaca con el mismo vaivén que la luz y las
 botellas. De día no hay nada. Es sólo dibujo: los guardias ven igual de día
 que de noche.
 
+**Adentro de un vagón, la cámara también se mece**, con el mismo ritmo y para
+el mismo lado que la luz, los faroles y las botellas: las cuatro cosas se
+mueven juntas. Son 6 píxeles de cada lado, y entra y sale de a poco. En el
+techo, en los enganches y en la plataforma de atrás no se mece. La mira se
+queda siempre debajo del mouse, y la bala va a lo que ves debajo de ella.
+
 **Por los huecos entre vagones se ve la vía pasando**: el mismo desierto de los
 costados, a la misma velocidad, con el terraplén y los rieles en el medio.
 

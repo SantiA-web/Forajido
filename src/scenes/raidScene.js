@@ -35,6 +35,7 @@ import {
 } from '../entities/rodante.js';
 import { updateCajon, drawCajon, vaciarCajon } from '../entities/cajon.js';
 import { crearSuelta, dibujarSuelta, colorDeSuelta, TIPOS_SUELTA, RADIO_SUELTA } from '../entities/suelta.js';
+import { WAGONS } from '../data/wagons.js';
 import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
@@ -88,6 +89,9 @@ export function createRaidScene(services) {
   let hayTormenta, truenoTimer, cubiertoAntes;
   let traqueteoTimer, traqueteoFase, traqueteoFaseTimer, traqueteoVariante, traqueteoSwayX;
   let traqueteoVelMult = 1;
+  /** El vaivén de la cámara adentro del vagón (ver `actualizarVaivenCamara`). */
+  let vaivenCamaraX = 0;
+  let vaivenPeso = 0;
   let timeLeft, duracionInicial, collected, kills, civilians, amenazados, escapeProgress;
   /**
    * LO QUE LLEVÁS ENCIMA QUE NO ES PLATA (ver data/objetos.js). Va aparte de
@@ -170,7 +174,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, sueltas, bullets });
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, sueltas, bullets, vaivenCamaraX, vaivenPeso, world });
     enemies = train.enemies;
     passengers = train.passengers;
     loot = train.loot;
@@ -204,6 +208,8 @@ export function createRaidScene(services) {
     traqueteoVariante = null;
     traqueteoSwayX = 0;
     traqueteoVelMult = 1;
+    vaivenCamaraX = 0;
+    vaivenPeso = 0;
 
     /**
      * Adelantar el caballo se paga en reloj, y el precio es LITERAL: los
@@ -1539,7 +1545,7 @@ export function createRaidScene(services) {
            * rodando desde antes, ese arrastre no existe.
            */
           const w0 = CONFIG.tresCuartos.luzVentanilla.velocidad * Math.PI * 2;
-          s.vx = -(S.vaiven / w0) * Math.cos(scroll * w0);
+          s.vx = (S.vaiven / w0) * Math.cos(scroll * w0);
           lista.push(s);
           break;
         }
@@ -1566,7 +1572,17 @@ export function createRaidScene(services) {
   function updateSueltas(dt) {
     const S = CONFIG.sueltas;
     const L = CONFIG.tresCuartos.luzVentanilla;
-    let ax = Math.sin(scroll * L.velocidad * Math.PI * 2) * S.vaiven;
+    /**
+     * 🔁 EL EMPUJE VA AL REVÉS DE LA INCLINACIÓN, y es a propósito. Una cosa
+     * que se empuja de un lado a otro llega a su punta con medio vaivén de
+     * atraso: empujada "con" la luz, cada botella estaba en su punto más a la
+     * izquierda justo cuando el haz se inclinaba a la derecha. Medido contra
+     * la cámara daba −0,88 (−1 es exactamente al revés). Empujándola al revés,
+     * la botella queda EN FASE con la luz, los faroles y la cámara *(Santi:
+     * "el movimiento tiene que ser acorde al movimiento de la luz del farol, la
+     * luz que entra por la ventana y los objetos")*.
+     */
+    let ax = -Math.sin(scroll * L.velocidad * Math.PI * 2) * S.vaiven;
     if (traqueteoFase === 'efecto') ax += (traqueteoVariante === 'acelera' ? -1 : 1) * S.tiron;
 
     const gente = [player, ...enemies, ...passengers];
@@ -2477,8 +2493,16 @@ export function createRaidScene(services) {
       return;
     }
 
+    actualizarVaivenCamara(dt);
+
     // El apuntado usa la cámara SIN la sacudida: si no, el temblor te haría fallar.
-    world.aimX = input.mouse.x + camera.x;
+    //
+    // 🎥 PERO CON EL VAIVÉN. El vaivén no es un temblor de un segundo: está
+    // siempre que estás adentro de un vagón. Si la puntería no lo contara, la
+    // mira (que se dibuja en el mundo) se iría separando del mouse hasta 6
+    // píxeles, ida y vuelta, todo el tiempo. Contándolo, la mira se queda
+    // debajo del mouse y la bala va a lo que ves debajo de la mira.
+    world.aimX = input.mouse.x + camera.x + vaivenCamaraX;
     world.aimY = input.mouse.y + camera.y;
 
     // El lastre se calcula ANTES de mover al jugador: es lo que decide a qué
@@ -3720,6 +3744,44 @@ export function createRaidScene(services) {
 
   // ---------------------------------------------------------------- dibujar
 
+  /**
+   * 🎥 EL VAIVÉN DE LA CÁMARA ADENTRO DEL VAGÓN *(pedido de Santi)*.
+   *
+   * Sale del MISMO reloj y la MISMA cuenta que la luz de los ventanales, los
+   * faroles y las botellas (`luzVentanilla.velocidad`), y va para el MISMO
+   * lado que ruedan las botellas: el vagón entero se corre hacia donde se
+   * inclina. Las cuatro cosas se mueven juntas, que es lo que Santi pidió.
+   *
+   * Sólo adentro de un vagón: ni en el techo, ni en los enganches, ni en la
+   * plataforma de atrás. Entra y sale de a poco (`vaivenPeso`) para no pegar
+   * un salto al cruzar una puerta.
+   *
+   * Se redondea al píxel de la pantalla: con medio píxel de corrimiento todo el
+   * dibujo se ve borroso.
+   */
+  function actualizarVaivenCamara(dt) {
+    const V = CONFIG.tresCuartos.vaivenCamara;
+    const L = CONFIG.tresCuartos.luzVentanilla;
+    const tipo = train.tipoPorColumna[Math.floor(player.x / map.size)];
+    const adentro = player.alive && !player.enTecho && !!WAGONS[tipo];
+    const paso = dt / Math.max(0.01, adentro ? V.entra : V.sale);
+    vaivenPeso = adentro ? Math.min(1, vaivenPeso + paso) : Math.max(0, vaivenPeso - paso);
+    // Suave al entrar y al salir, no en línea recta.
+    const suave = vaivenPeso * vaivenPeso * (3 - 2 * vaivenPeso);
+    const x = -Math.sin(scroll * L.velocidad * Math.PI * 2) * V.amplitud * suave;
+    const d = renderer.densidad || 1;
+    vaivenCamaraX = Math.round(x * d) / d;
+  }
+
+  /**
+   * Cuánto se corre el dibujo del mundo: la cámara, el tirón del tren y el
+   * vaivén. Una sola cuenta para todo lo que la necesita (el dibujo y los
+   * carteles), así no puede quedar uno corrido del otro.
+   */
+  function desplazamientoX() {
+    return camera.renderX + Math.round(traqueteoSwayX) + vaivenCamaraX;
+  }
+
   function render(r) {
     drawOutside(r);
 
@@ -3728,7 +3790,7 @@ export function createRaidScene(services) {
     // efecto visual encima de la cámara, no un movimiento real de la cámara
     // (world.aimX/aimY siguen usando camera.x limpio, así que el balanceo no
     // te desvía la puntería — sólo se ve).
-    const swayX = camera.renderX + Math.round(traqueteoSwayX);
+    const swayX = desplazamientoX();
     r.ctx.translate(-swayX, -camera.renderY);
 
     /**
@@ -4535,7 +4597,7 @@ export function createRaidScene(services) {
   function drawPrompts(r) {
     if (!player.alive || finished) return;
     // Los carteles van sobre el jugador, pero sin salirse de la pantalla.
-    const x0 = camera.renderX + Math.round(traqueteoSwayX);
+    const x0 = desplazamientoX();
     const enPantalla = { dentroDe: [x0 + 2, x0 + r.width - 2] };
 
     if (player.enTecho) {

@@ -15566,6 +15566,38 @@ por cuadro. Juntando las columnas iguales en un solo rectángulo (un vagón por
 dentro es igual de punta a punta) quedó en **1,6–1,9 de noche contra 1,3–1,5 de
 día**.
 
+#### 🎥 EL BALANCEO DEL TREN (4): LA CÁMARA, SÓLO ADENTRO
+
+*(Santi: "puedes poner el movimiento de cámara del vaivén para quedarme
+tranquilo que es la mejor decisión. Recuerda que solo tiene que aparecer
+cuando el jugador cae dentro del tren y que el movimiento tiene que ser acorde
+al movimiento de la luz del farol, la luz que entra por la ventana y los
+objetos".)*
+
+Al principio del balanceo la recomendación había sido NO mover la cámara sola,
+porque adentro no había nada que explicara el movimiento y se leía como "la
+cámara está floja". Ahora sí hay con qué acompañarla: la luz de los
+ventanales, los faroles y las botellas. Santi quiso probarla para quedarse
+tranquilo, y es un número (`vaivenCamara.amplitud`): si no convence, se apaga
+con 0.
+
+**Cómo es:** ±1,5 unidades (6 píxeles), con el mismo reloj que las otras tres
+cosas y para el mismo lado. Sólo adentro de un vagón —no en el techo, ni en los
+enganches, ni en la plataforma de atrás—, y entra en 0,6 s y sale en 0,4 s para
+no pegar un salto al cruzar una puerta. Se redondea al píxel: medio píxel de
+corrimiento deja todo el dibujo borroso.
+
+⚠️ **La puntería cuenta el vaivén** (el tirón del tren no). El tirón dura un
+segundo; el vaivén está siempre. Sin contarlo, la mira —que se dibuja en el
+mundo— se separaba del mouse hasta 6 píxeles, ida y vuelta, todo el tiempo.
+Ahora se queda debajo del mouse, y la bala va a lo que se ve debajo.
+
+🐛 **Las botellas iban al revés de todo lo demás.** Una cosa empujada de un
+lado a otro llega a su punta con medio vaivén de atraso: empujadas "con" la
+luz, estaban en su punto más a la izquierda justo cuando el haz se inclinaba a
+la derecha. Medido contra la cámara daba **−0,88** (−1 es exactamente al revés).
+Con el empuje invertido da **+0,93**: van juntas.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

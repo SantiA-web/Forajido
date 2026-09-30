@@ -1555,10 +1555,9 @@ export const CONFIG = {
      * movimiento de la luz del farol, la luz que entra por la ventana y los
      * objetos")*.
      *
-     * Es el MISMO reloj que la luz de los ventanales, los faroles y las
-     * botellas, y va para el MISMO lado: cuando las botellas ruedan a la
-     * derecha, el vagón entero se corre a la derecha. Las cuatro cosas se
-     * mueven juntas.
+     * Es el MISMO reloj que la luz de los ventanales y los faroles, y va
+     * para el MISMO lado: cuando la luz se inclina a la derecha, el vagón
+     * entero se corre a la derecha. Las tres cosas se mueven juntas.
      *
      * Sólo adentro de un vagón. En el techo, en los enganches y en la
      * plataforma de atrás no hay vagón alrededor que se mezca con vos. Entra y
@@ -1783,45 +1782,6 @@ export const CONFIG = {
     levantarse: 1.5,
     empuje: 160,         // con cuánta fuerza te manda para atrás
     ruidoGolpe: 240,     // el porrazo se oye: radio en px
-  },
-
-  /**
-   * 🍾 LAS BOTELLAS Y LATAS QUE RUEDAN SUELTAS POR EL PISO (entities/suelta.js).
-   *
-   * Adorno: no lastiman, no frenan, no hacen ruido. Cuentan que el vagón se
-   * mece. *(Decidido con Santi: puro adorno, entre 1 y 3 por vagón —"que no
-   * siempre hayan dos estrictamente"—, y sólo donde viaja gente que toma.)*
-   */
-  sueltas: {
-    /** Cuántas por vagón: se sortea entre estos dos, en cada asalto. */
-    porVagon: [1, 3],
-    /**
-     * En qué vagones: donde viaja o duerme gente. En el correo, el blindado, el
-     * de armas, el ganado o el carbón no hay quien tome.
-     *
-     * Van por el `id` exacto del vagón. Las variantes cortas (`pasajeros_corto`
-     * y compañía) no están porque sólo las usa el tren veloz, que ya no sale
-     * sorteado (data/train.js).
-     */
-    vagones: ['pasajeros', 'comedor', 'dormitorio', 'guardias', 'primeraClase', 'caboose'],
-    /**
-     * Cuánto las empuja la inclinación del vagón (unidades/s²). Sale del MISMO
-     * reloj que la luz de los ventanales (`tresCuartos.luzVentanilla`): cuando
-     * el haz se inclina para un lado, ruedan para ese lado.
-     */
-    vaiven: 110,
-    /** El empujón del tirón del tren (unidades/s²): acelera → a la cola. */
-    tiron: 320,
-    /** Cuánto frena el rodar, por segundo. Poco: una botella rueda lejos. */
-    roce: 0.6,
-    /** De costado no ruedan, se arrastran: frenan enseguida. */
-    roceCostado: 7,
-    /** Cuánto de la velocidad les queda al rebotar contra algo. */
-    rebote: 0.4,
-    /** A qué velocidad salen cuando alguien las pisa. */
-    patada: 75,
-    /** A qué velocidad sale una lata cuando le pega una bala (la botella se rompe). */
-    balazo: 140,
   },
 
   /**

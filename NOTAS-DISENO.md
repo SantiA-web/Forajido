@@ -15638,6 +15638,31 @@ día, 1,4–1,65 de noche**, lo mismo que antes. El truco que lo permite:
 encimar `color-dodge` multiplica lo que aclara cada capa, así que en cada
 punto se multiplica todo y se escribe un solo color que aclara lo mismo.
 
+#### 🗑️ SE SACARON LAS BOTELLAS Y LAS LATAS
+
+*(Santi: "ahora que se ve mucho mejor la cámara con el movimiento y se ve mejor
+la luz con el degradado, quisiera eliminar las botellas y latas. Mi hermano me
+dice que los trenes no tienen ese tambaleo, que sería irreal".)*
+
+Con la cámara meciéndose y la luz con degradado, el vaivén ya se lee sin
+ellas. Se borró todo: `entities/suelta.js`, `CONFIG.sueltas` y lo que las
+sembraba, movía y rompía en raidScene.js.
+
+**¿Tenía razón el hermano? A medias.** Los trenes de la época SÍ se sacudían, y
+bastante más que uno de hoy: vía de riel corto con juntas cada pocos metros,
+vagones de madera sobre bogies duros y enganches de eslabón y perno con juego,
+que en cada arranque y cada frenada tiraban un tirón de punta a punta. Lo que
+no era real es la forma en que lo hacían las botellas: un **vaivén parejo, como
+un péndulo, sin parar**. El movimiento de verdad es irregular —golpecitos en
+las juntas, tirones, curvas—, y una botella en el piso no va y viene de un lado
+a otro cada segundo y medio: se queda quieta y de golpe se desliza.
+
+⚠️ Queda anotado para no repetirlo: **el vaivén de la luz, los faroles y la
+cámara tiene la misma regularidad** que tenían las botellas. En ellos se lee
+bien porque es chico y suave; si algún día se quiere "más de verdad", lo que
+falta no es más amplitud sino **irregularidad** (golpecitos sueltos en las
+juntas de los rieles, además del vaivén).
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

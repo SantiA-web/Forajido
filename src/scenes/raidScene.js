@@ -34,7 +34,6 @@ import {
   createRodante, updateRodante, drawRodante, TIPOS_RODANTE,
 } from '../entities/rodante.js';
 import { updateCajon, drawCajon, vaciarCajon } from '../entities/cajon.js';
-import { crearSuelta, dibujarSuelta, colorDeSuelta, TIPOS_SUELTA, RADIO_SUELTA } from '../entities/suelta.js';
 import { WAGONS } from '../data/wagons.js';
 import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
@@ -79,8 +78,6 @@ export function createRaidScene(services) {
   // Cuánto llevás sosteniendo [E] para trepar o bajar del carbón (etapa 5).
   let carbonProgress = 0;
   let rodantes, rodanteTimer, rodanteRafaga, rodanteRafagaTimer;
-  /** Las botellas y latas sueltas: adorno que rueda con el vaivén (ver `updateSueltas`). */
-  let sueltas = [];
   let tranqueras, estampidas, estampidaSiguienteId;
   // Los cajones de pólvora del vagón de armas (Fase 6a, entities/cajon.js).
   let cajones;
@@ -174,7 +171,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, sueltas, bullets, vaivenCamaraX, vaivenPeso, world });
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world });
     enemies = train.enemies;
     passengers = train.passengers;
     loot = train.loot;
@@ -191,7 +188,6 @@ export function createRaidScene(services) {
     techoSpawnTimer = CONFIG.techo.obstaculoCada;
 
     rodantes = [];
-    sueltas = sembrarSueltas();
     rodanteTimer = train.rodantesCada || 0;
     rodanteRafaga = 0;
     rodanteRafagaTimer = 0;
@@ -1507,144 +1503,6 @@ export function createRaidScene(services) {
   }
 
   /**
-   * 🍾 DÓNDE QUEDARON TIRADAS LAS BOTELLAS Y LAS LATAS: entre 1 y 3 por vagón
-   * de los que tienen gente que toma (`CONFIG.sueltas`), en el piso libre.
-   *
-   * La cantidad se sortea vagón por vagón *(Santi: "que no siempre hayan dos
-   * estrictamente, sino que puedan cambiar y variar en cantidad entre 1 y
-   * 3")*. Cada una queda encerrada entre las dos puntas de su vagón: rodando
-   * no se van por la puerta.
-   */
-  function sembrarSueltas() {
-    const S = CONFIG.sueltas;
-    const lista = [];
-    const size = map.size;
-    for (const w of train.wagons) {
-      if (w.esCola || !S.vagones.includes(w.id)) continue;
-      const cols = Math.round(w.width / size);
-      const cuantas = rng.int(S.porVagon[0], S.porVagon[1]);
-      for (let k = 0; k < cuantas; k++) {
-        for (let intento = 0; intento < 30; intento++) {
-          const col = rng.int(w.colStart + 1, w.colStart + cols - 2);
-          const row = rng.int(1, map.rows - 2);
-          if (map.tileAt(col, row) !== '.') continue;
-          const x = (col + 0.5) * size + rng.spread(4);
-          const y = (row + 0.5) * size + rng.spread(4);
-          // Nunca dos pegadas: se leerían como una sola cosa rara.
-          if (lista.some((o) => Math.abs(o.x - x) < 12 && Math.abs(o.y - y) < 8)) continue;
-          const s = crearSuelta(x, y, rng.pick(TIPOS_SUELTA), rng);
-          s.x0 = w.x + size + 2;
-          s.x1 = w.x + w.width - size - 2;
-          /**
-           * 🐛 ARRANCAN YA MECIÉNDOSE, no quietas. Una cosa quieta a la que se
-           * le empieza a aplicar un vaivén no sólo va y viene: además se
-           * desliza toda para un lado hasta que el roce la frena. Medido,
-           * recorrían 29 a 61 unidades en los primeros diez segundos, todas
-           * para el mismo lado, cuando el vaivén solo las mueve unas 7 para
-           * cada lado. Con la velocidad que ya tendrían si hubieran estado
-           * rodando desde antes, ese arrastre no existe.
-           */
-          const w0 = CONFIG.tresCuartos.luzVentanilla.velocidad * Math.PI * 2;
-          s.vx = (S.vaiven / w0) * Math.cos(scroll * w0);
-          lista.push(s);
-          break;
-        }
-      }
-    }
-    return lista;
-  }
-
-  /**
-   * 🍾 CÓMO RUEDAN. Tres cosas las mueven, y ninguna es azar:
-   *
-   *  1. EL VAIVÉN, con el mismo reloj (`scroll`) y la misma cuenta que la luz
-   *     de los ventanales: cuando el haz se inclina para un lado, ruedan para
-   *     ese lado. Las dos cosas cuentan juntas que el vagón se mece.
-   *  2. EL TIRÓN del tren (`traqueteoFase`): acelera y salen para la cola,
-   *     frena y salen para la locomotora. Es la misma dirección que te empuja a
-   *     vos, así que además te avisan.
-   *  3. LOS PIES: si alguien —vos, un guardia, un pasajero— les pasa por
-   *     encima, salen pateadas. Sin ruido: son adorno (decidido con Santi).
-   *
-   * Y las balas: la botella que cruza una se rompe en vidrios; la lata sale
-   * volando. Tampoco cambia nada del juego — es para que se note el tiro.
-   */
-  function updateSueltas(dt) {
-    const S = CONFIG.sueltas;
-    const L = CONFIG.tresCuartos.luzVentanilla;
-    /**
-     * 🔁 EL EMPUJE VA AL REVÉS DE LA INCLINACIÓN, y es a propósito. Una cosa
-     * que se empuja de un lado a otro llega a su punta con medio vaivén de
-     * atraso: empujada "con" la luz, cada botella estaba en su punto más a la
-     * izquierda justo cuando el haz se inclinaba a la derecha. Medido contra
-     * la cámara daba −0,88 (−1 es exactamente al revés). Empujándola al revés,
-     * la botella queda EN FASE con la luz, los faroles y la cámara *(Santi:
-     * "el movimiento tiene que ser acorde al movimiento de la luz del farol, la
-     * luz que entra por la ventana y los objetos")*.
-     */
-    let ax = -Math.sin(scroll * L.velocidad * Math.PI * 2) * S.vaiven;
-    if (traqueteoFase === 'efecto') ax += (traqueteoVariante === 'acelera' ? -1 : 1) * S.tiron;
-
-    const gente = [player, ...enemies, ...passengers];
-    for (const s of sueltas) {
-      if (s.rota) continue;
-      s.vx += ax * dt;
-
-      for (const q of gente) {
-        if (!q.alive || q.enTecho) continue;
-        const dx = s.x - q.x;
-        const dy = s.y - q.y;
-        if (Math.abs(dx) > (q.hw ?? 4) + 1.5 || Math.abs(dy) > (q.hh ?? 4) + 1.5) continue;
-        const lado = dx === 0 ? (rng.chance(0.5) ? 1 : -1) : Math.sign(dx);
-        if (Math.sign(s.vx) !== lado || Math.abs(s.vx) < S.patada) s.vx = lado * S.patada;
-        s.vy = (dy < 0 ? -1 : 1) * S.patada * 0.3;
-      }
-
-      s.vx *= Math.exp(-S.roce * dt);
-      s.vy *= Math.exp(-S.roceCostado * dt);
-
-      // Choca con lo que choca la gente (paredes, asientos, carga) y con las
-      // puntas de su vagón, y rebota perdiendo casi toda la velocidad.
-      const radio = 1.2;
-      const nx = s.x + s.vx * dt;
-      if (nx < s.x0 || nx > s.x1 || map.isSolidAt(nx + Math.sign(s.vx) * radio, s.y)) {
-        s.vx *= -S.rebote;
-      } else {
-        s.x = nx;
-        s.giro += (s.vx * dt) / RADIO_SUELTA[s.tipo];
-      }
-      const ny = s.y + s.vy * dt;
-      if (map.isSolidAt(s.x, ny + Math.sign(s.vy) * radio)) s.vy *= -S.rebote;
-      else s.y = ny;
-    }
-
-    // Las balas que en este cuadro pasaron por encima de una.
-    for (const b of bullets) {
-      if (b.previoX === undefined) continue;
-      for (const s of sueltas) {
-        if (s.rota || distanciaAlTramo(s.x, s.y, b.previoX, b.previoY, b.x, b.y) > 2) continue;
-        if (s.tipo === 'botella') {
-          s.rota = true;
-          spawnParticles(s.x, s.y, colorDeSuelta(s), 7);
-        } else {
-          const largo = Math.hypot(b.vx, b.vy) || 1;
-          s.vx = (b.vx / largo) * S.balazo;
-          s.vy = (b.vy / largo) * S.balazo * 0.3;
-        }
-      }
-    }
-  }
-
-  /** Cuánto le pasa lejos el punto (px, py) al tramo que va de A a B. */
-  function distanciaAlTramo(px, py, ax, ay, bx, by) {
-    const dx = bx - ax;
-    const dy = by - ay;
-    const largo2 = dx * dx + dy * dy;
-    const t = largo2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / largo2)) : 0;
-    return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
-  }
-
-  /**
    * LO QUE SE SUELTA ADENTRO DEL VAGÓN — barriles y cajones.
    *
    * Es el mismo lenguaje que los carteles del techo: aparece, viene hacia vos,
@@ -2543,10 +2401,7 @@ export function createRaidScene(services) {
     separateEnemies(enemies, map);
     for (const pa of passengers) updatePassenger(pa, dt, world);
     for (const d of doors) updateDoor(d, dt, world);
-    // De dónde venía cada bala: para saber si en este cuadro cruzó una botella.
-    for (const b of bullets) { b.previoX = b.x; b.previoY = b.y; }
     updateBullets(bullets, dt, world);
-    updateSueltas(dt);
     updateExplosives(explosives, dt, world);
     updateCajones(dt);
     updateRiders(riders, dt, world);
@@ -3747,10 +3602,10 @@ export function createRaidScene(services) {
   /**
    * 🎥 EL VAIVÉN DE LA CÁMARA ADENTRO DEL VAGÓN *(pedido de Santi)*.
    *
-   * Sale del MISMO reloj y la MISMA cuenta que la luz de los ventanales, los
-   * faroles y las botellas (`luzVentanilla.velocidad`), y va para el MISMO
-   * lado que ruedan las botellas: el vagón entero se corre hacia donde se
-   * inclina. Las cuatro cosas se mueven juntas, que es lo que Santi pidió.
+   * Sale del MISMO reloj y la MISMA cuenta que la luz de los ventanales y los
+   * faroles (`luzVentanilla.velocidad`), y va para el MISMO lado que se
+   * inclina la luz: el vagón entero se corre hacia ahí. Las tres cosas se
+   * mueven juntas, que es lo que Santi pidió.
    *
    * Sólo adentro de un vagón: ni en el techo, ni en los enganches, ni en la
    * plataforma de atrás. Entra y sale de a poco (`vaivenPeso`) para no pegar
@@ -3774,7 +3629,7 @@ export function createRaidScene(services) {
      * precisión, y se siente como el forajido plantando los pies para tirar.
      * Va con `apuntado`, que ya entra y sale de a poco con el clic derecho,
      * así que la cámara se asienta con la misma suavidad con que se cierra la
-     * mira. El vagón (la luz, los faroles, las botellas) se sigue meciendo.
+     * mira. El vagón (la luz, los faroles) se sigue meciendo.
      */
     const firme = 1 - Math.min(1, Math.max(0, player.apuntado || 0));
     const x = -Math.sin(scroll * L.velocidad * Math.PI * 2) * V.amplitud * suave * firme;
@@ -3817,10 +3672,6 @@ export function createRaidScene(services) {
      * La caja no cambió; sólo se usa para saber quién está adelante.
      */
     drawPisoDelTren(r, train, colors, swayX, camera.renderY);
-
-    // Las botellas y latas van con el piso: son chatas, y cualquiera que esté
-    // parado encima o delante las tapa.
-    for (const s of sueltas) if (visible(s)) dibujarSuelta(r, s);
 
     // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
     // la lista `enemies` es un guardia común.

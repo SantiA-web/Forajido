@@ -465,22 +465,14 @@ en la mitad de lo que aclaraba de más. Nunca llega a cero: el sol baja, no se
 pone. El haz no tiene bordes: es pleno contra la ventana y se apaga de a poco
 hacia los costados y hacia la punta.
 
-**Y por el piso ruedan botellas y latas sueltas**, entre 1 y 3 por vagón donde
-viaja gente (pasajeros, comedor, dormitorio, guardias, primera clase y
-caboose). Van y vienen con el mismo vaivén que la luz, salen disparadas con el
-tirón del tren de carga, y si las pisás o les tirás, saltan (la botella se
-rompe). Son adorno: no lastiman, no frenan y no hacen ruido.
-
 **De noche el tren queda a oscuras** (55% del brillo, con un poco de azul de
 luna), y cada 8 casillas, sobre el pasillo, cae un charco de **luz cálida** de
 un farol que no se ve: las tablas, los asientos y quien pase por ahí quedan
-iluminados, y el charco se hamaca con el mismo vaivén que la luz y las
-botellas. De día no hay nada. Es sólo dibujo: los guardias ven igual de día
+iluminados, y el charco se hamaca con el mismo vaivén que la luz. De día no hay nada. Es sólo dibujo: los guardias ven igual de día
 que de noche.
 
 **Adentro de un vagón, la cámara también se mece**, con el mismo ritmo y para
-el mismo lado que la luz, los faroles y las botellas: las cuatro cosas se
-mueven juntas. Son 6 píxeles de cada lado, y entra y sale de a poco. En el
+el mismo lado que la luz y los faroles: las tres cosas se mueven juntas. Son 6 píxeles de cada lado, y entra y sale de a poco. En el
 techo, en los enganches y en la plataforma de atrás no se mece. **Mientras
 apuntás (clic derecho), la cámara se queda quieta**, como si el forajido
 plantara los pies para tirar; al soltar vuelve a mecerse. La mira se queda

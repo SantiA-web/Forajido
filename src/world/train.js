@@ -2339,7 +2339,7 @@ const PROFUNDIDAD_CHARCO = 0.62;
  * azul (`aclaraCentro`). Eso es lo que lo vuelve luz de lámpara de aceite y no
  * un foco blanco.
  *
- * Y SE HAMACA con el mismo reloj que la luz de los ventanales y las botellas
+ * Y SE HAMACA con el mismo reloj que la luz de los ventanales y la cámara
  * (`meneo`): las tres cosas cuentan juntas que el vagón se mece.
  */
 export function farolesDelTren(r, train, camX, vistaW, luz = {}) {

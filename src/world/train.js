@@ -2085,39 +2085,129 @@ export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}) {
   if (haces.length === 0) return;
 
   /**
-   * CUÁNTO SE ACLARA CADA CANAL. `color-dodge` divide cada píxel por
-   * (1 − color): para aclarar un 40% hay que pintar con 1 − 1/1,4. El tinte
-   * reparte la aclarada entre rojo, verde y azul —el sol entibia, la luna
-   * enfría— sin cambiar cuánta luz entra.
+   * 🔁 DEGRADADO DE VERDAD, EN CAPAS *(Santi: "ahora que es más grande me
+   * gustaría que también le agregues un degradado como hiciste con la de
+   * farol")*. Antes era UNA forma con los costados cortados a cuchillo, pareja
+   * hasta el 60% del largo y de ahí a cero. Ahora son `capasHaz` formas
+   * encimadas, cada una un poco más ancha y más larga que la anterior: donde
+   * se pisan todas —el medio, contra la ventana— la luz es plena, y hacia los
+   * costados y la punta cada vez se pisan menos, así que se apaga sola, sin
+   * borde (ver `hazDibujado`).
+   *
+   * 📏 Y SE CALCULA UNA VEZ. Dibujadas en cada cuadro, las seis capas llevaban
+   * el asalto de 1,4 a 2,5 ms por cuadro. Pero el haz no cambia de forma entre
+   * un cuadro y otro —sólo se inclina con el meneo—, así que se arma una vez
+   * como imagen y se estampa inclinado. El sol que baja con el reloj se
+   * redondea a veinte escalones, para no rearmarlo en cada cuadro.
    */
-  const tinte = dia ? L.tinteDia : L.tinteNoche;
-  const canal = (i) => Math.round(255 * (1 - 1 / (1 + (aclara - 1) * tinte[i])));
-  const rgb = `${canal(0)},${canal(1)},${canal(2)}`;
-  // El sol entra más y se abre más que la luna.
-  const alcance = size * (dia ? L.alcanceDia : L.alcance);
-  const abre = Math.round(size * (dia ? L.abreDia : L.abre));
+  const solPaso = dia ? Math.round(sol * 20) / 20 : 1;
 
   const ctx = r.ctx;
-  ctx.save();
-  ctx.globalCompositeOperation = 'color-dodge';
   for (const h of haces) {
-    const y0 = h.yBorde;
-    const y1 = y0 + alcance;
-    // Pareja casi hasta la punta y ahí se apaga: un charco de sol tiene borde.
-    const g = ctx.createLinearGradient(0, y0, 0, y1);
-    g.addColorStop(0, `rgba(${rgb},1)`);
-    g.addColorStop(L.parejo, `rgba(${rgb},1)`);
-    g.addColorStop(1, `rgba(${rgb},0)`);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(h.x0, y0);
-    ctx.lineTo(h.x0 + h.ancho, y0);
-    ctx.lineTo(h.x0 + h.ancho + abre + meneo, y1);
-    ctx.lineTo(h.x0 - abre + meneo, y1);
-    ctx.closePath();
-    ctx.fill();
+    const img = hazDibujado(h.ancho, dia, solPaso);
+    ctx.save();
+    ctx.globalCompositeOperation = 'color-dodge';
+    // Suavizado prendido: la imagen está a media unidad por punto, y sin
+    // suavizar se vería en escalones.
+    ctx.imageSmoothingEnabled = true;
+    // La base clavada al ventanal y la punta corrida por el meneo: un corte en
+    // diagonal, que corre cada fila en proporción a lo lejos que está.
+    ctx.transform(1, 0, meneo / img.alcance, 1, h.x0, h.yBorde);
+    ctx.drawImage(img.lienzo, -img.izq, 0, img.anchoU, img.altoU);
+    ctx.restore();
   }
-  ctx.restore();
+}
+
+/** Los haces ya armados, por ancho de ventanal, día o noche y sol. */
+const hacesGuardados = new Map();
+
+/**
+ * ARMA UN HAZ UNA SOLA VEZ, como una imagen para `color-dodge`.
+ *
+ * En cada punto se multiplica lo que aclara cada capa que lo toca (encimar
+ * `color-dodge` multiplica: cada capa divide por su propio 1 − color), y al
+ * final se escribe el color que, solo, aclara todo eso junto: 1 − 1/total.
+ * Donde no llega ninguna capa el color es negro, y un `color-dodge` negro no
+ * cambia nada.
+ *
+ * CUÁNTO ACLARA CADA CAPA. Con N capas encimadas, cada una aclara la raíz
+ * N-ésima de lo que aclaran todas juntas en el medio. El tinte reparte la
+ * aclarada entre rojo, verde y azul —el sol entibia, la luna enfría— sin
+ * cambiar cuánta luz entra.
+ */
+function hazDibujado(anchoU, dia, sol) {
+  const clave = `${anchoU}|${dia ? 1 : 0}|${sol}`;
+  const guardado = hacesGuardados.get(clave);
+  if (guardado) return guardado;
+
+  const L = CONFIG.tresCuartos.luzVentanilla;
+  const size = CONFIG.tileSize;
+  const alcance = size * (dia ? L.alcanceDia : L.alcance);
+  const abre = Math.round(size * (dia ? L.abreDia : L.abre));
+  const aclara = dia ? 1 + (L.aclaraDia - 1) * sol : L.aclaraNoche;
+  const tinte = dia ? L.tinteDia : L.tinteNoche;
+  const capas = Math.max(1, L.capasHaz);
+  // Cuánto aclara cada capa, por canal, como `color-dodge` lo entiende.
+  const porCapa = [0, 1, 2].map((i) => 1 - Math.pow(1 + (aclara - 1) * tinte[i], -1 / capas));
+
+  // A lo largo cada capa se apaga así: plena contra la ventana, nada en la punta.
+  const PASOS = [[0, 1], [0.35, 0.92], [0.65, 0.55], [0.88, 0.18], [1, 0]];
+  const alfa = (f) => {
+    for (let i = 1; i < PASOS.length; i++) {
+      if (f <= PASOS[i][0]) {
+        const [f0, a0] = PASOS[i - 1];
+        const [f1, a1] = PASOS[i];
+        return a0 + (a1 - a0) * ((f - f0) / (f1 - f0));
+      }
+    }
+    return 0;
+  };
+
+  const RES = 2;                                   // puntos por unidad
+  const izq = abre + L.bordeSuave + 2;
+  const anchoTotal = anchoU + izq * 2;
+  const altoTotal = alcance * 1.2 + 1;
+  const w = Math.ceil(anchoTotal * RES);
+  const hh = Math.ceil(altoTotal * RES);
+  const lienzo = document.createElement('canvas');
+  lienzo.width = w;
+  lienzo.height = hh;
+  const g = lienzo.getContext('2d');
+  const datos = g.createImageData(w, hh);
+
+  for (let py = 0; py < hh; py++) {
+    const y = (py + 0.5) / RES;
+    for (let px = 0; px < w; px++) {
+      const x = (px + 0.5) / RES - izq;
+      let r0 = 1, g0 = 1, b0 = 1;
+      for (let k = 0; k < capas; k++) {
+        const t = capas > 1 ? k / (capas - 1) : 1;
+        // De la más angosta y corta a la más ancha y larga. Contra la pared
+        // se abren poco (la luz sale del ventanal); en la punta, todo el borde.
+        const margen = -3 + (L.bordeSuave + 3) * t;
+        const largo = alcance * (0.75 + 0.45 * t);
+        if (y > largo) continue;
+        const f = y / largo;
+        const xi = -margen * 0.35 + (-abre - margen + margen * 0.35) * f;
+        const xd = anchoU + margen * 0.35 + (abre + margen - margen * 0.35) * f;
+        if (x < xi || x > xd) continue;
+        const a = alfa(f);
+        r0 *= 1 + (a * porCapa[0]) / (1 - porCapa[0]);
+        g0 *= 1 + (a * porCapa[1]) / (1 - porCapa[1]);
+        b0 *= 1 + (a * porCapa[2]) / (1 - porCapa[2]);
+      }
+      const o = (py * w + px) * 4;
+      datos.data[o] = Math.round(255 * (1 - 1 / r0));
+      datos.data[o + 1] = Math.round(255 * (1 - 1 / g0));
+      datos.data[o + 2] = Math.round(255 * (1 - 1 / b0));
+      datos.data[o + 3] = 255;
+    }
+  }
+  g.putImageData(datos, 0, 0);
+
+  const hecho = { lienzo, izq, anchoU: anchoTotal, altoU: altoTotal, alcance };
+  hacesGuardados.set(clave, hecho);
+  return hecho;
 }
 
 /**

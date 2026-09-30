@@ -3768,7 +3768,16 @@ export function createRaidScene(services) {
     vaivenPeso = adentro ? Math.min(1, vaivenPeso + paso) : Math.max(0, vaivenPeso - paso);
     // Suave al entrar y al salir, no en línea recta.
     const suave = vaivenPeso * vaivenPeso * (3 - 2 * vaivenPeso);
-    const x = -Math.sin(scroll * L.velocidad * Math.PI * 2) * V.amplitud * suave;
+    /**
+     * 🎯 APUNTANDO, LA CÁMARA SE QUEDA QUIETA *(Santi eligió esto para que el
+     * vaivén no canse en una partida larga)*. Es justo cuando necesitás
+     * precisión, y se siente como el forajido plantando los pies para tirar.
+     * Va con `apuntado`, que ya entra y sale de a poco con el clic derecho,
+     * así que la cámara se asienta con la misma suavidad con que se cierra la
+     * mira. El vagón (la luz, los faroles, las botellas) se sigue meciendo.
+     */
+    const firme = 1 - Math.min(1, Math.max(0, player.apuntado || 0));
+    const x = -Math.sin(scroll * L.velocidad * Math.PI * 2) * V.amplitud * suave * firme;
     const d = renderer.densidad || 1;
     vaivenCamaraX = Math.round(x * d) / d;
   }

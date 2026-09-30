@@ -1482,14 +1482,25 @@ export const CONFIG = {
        * aclarando un 35%, apenas menos que antes de este cambio. Nunca llega a
        * cero: el sol baja, no se pone.
        */
-      alcanceDia: 2.3,
+      /**
+       * 🔺 3 y no 2,3: con el degradado en capas la luz se apaga de a poco en
+       * todo el largo, y con 2,3 casi no llegaba lejos de la ventana *(Santi:
+       * "si sientes que el degradado sigue forzado agranda más la luz")*.
+       */
+      alcanceDia: 3,
       abreDia: 0.3,
       solAlFinal: 0.5,
       /** Cómo se reparte entre rojo, verde y azul: el sol entibia, la luna enfría. */
       tinteDia: [1, 0.9, 0.62],
       tinteNoche: [0.75, 0.9, 1],
-      /** Hasta dónde llega pareja (0 a 1 del alcance); de ahí a la punta se apaga. */
-      parejo: 0.6,
+      /**
+       * EL DEGRADADO DEL HAZ (ver `luzDeLosVentanales`): cuántas capas se
+       * encima y cuánto más ancha es la última, en unidades, de cada lado.
+       * Más capas, más suave; más `bordeSuave`, más larga la caída de los
+       * costados.
+       */
+      capasHaz: 6,
+      bordeSuave: 12,
     },
 
     /**

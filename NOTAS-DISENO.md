@@ -15613,6 +15613,31 @@ a cero".)*
   termina aclarando un 35%, apenas menos que antes de este cambio: el sol
   baja, no se pone.
 
+#### 🎯 LA CÁMARA SE QUEDA QUIETA AL APUNTAR, Y EL SOL SIN BORDES
+
+**¿Cansa el vaivén en una partida larga?** *(pregunta de Santi)*. A algunas
+personas un movimiento de cámara constante las marea. Se eligió la primera de
+dos recomendaciones: **mientras apuntás, la cámara se queda quieta** (va con
+`player.apuntado`, que ya entra y sale de a poco con el clic derecho). Es
+justo cuando se necesita precisión y cuando más molestaría. La segunda —un
+interruptor "movimiento de cámara: sí / no"— queda para cuando haya menú de
+opciones, antes de mostrarle el juego a otra gente.
+
+**El sol con degradado** *(Santi: "ahora que es más grande me gustaría que
+también le agregues un degradado como hiciste con la de farol. Si sientes que
+el degradado sigue forzado agranda más la luz")*. El haz era una forma con los
+costados cortados a cuchillo. Ahora son 6 capas encimadas (`capasHaz`), cada
+una más ancha y más larga (`bordeSuave: 12`): donde se pisan todas la luz es
+plena, y hacia los costados y la punta se apaga sola. Con el degradado la luz
+llegaba poco lejos, así que el sol entra 3 baldosas y no 2,3.
+
+📏 **Dibujadas en cada cuadro, las 6 capas llevaron el asalto de 1,4 a 2,5 ms.**
+Como el haz no cambia de forma —sólo se inclina con el meneo—, ahora se arma
+una vez como imagen (`hazDibujado`) y se estampa inclinado: **1,2–1,45 ms de
+día, 1,4–1,65 de noche**, lo mismo que antes. El truco que lo permite:
+encimar `color-dodge` multiplica lo que aclara cada capa, así que en cada
+punto se multiplica todo y se escribe un solo color que aclara lo mismo.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

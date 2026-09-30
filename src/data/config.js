@@ -1467,8 +1467,24 @@ export const CONFIG = {
        * encima —las vetas y las sombras siguen viéndose—, multiplica el brillo
        * (ver `luzDeLosVentanales`, world/train.js). De noche es la luna: apenas.
        */
-      aclaraDia: 1.4,
+      aclaraDia: 1.7,
       aclaraNoche: 1.15,
+      /**
+       * ☀️ EL SOL, MÁS GRANDE Y MÁS FUERTE, Y BAJANDO CON EL ASALTO *(Santi:
+       * "podrías hacer la luz del sol (de día) más grande y fuerte. Y que a
+       * medida que pasa el tiempo de asalto va disminuyendo un poquito pero
+       * nunca llega a cero")*.
+       *
+       * De día el haz entra más (`alcanceDia`, en baldosas, contra `alcance`
+       * de la luna) y se abre más (`abreDia`), y aclara un 70% en vez de 40%.
+       * Y a medida que corre el reloj del asalto, lo que aclara de más va
+       * bajando hasta quedar en `solAlFinal` de lo que era: con 0,5 termina
+       * aclarando un 35%, apenas menos que antes de este cambio. Nunca llega a
+       * cero: el sol baja, no se pone.
+       */
+      alcanceDia: 2.3,
+      abreDia: 0.3,
+      solAlFinal: 0.5,
       /** Cómo se reparte entre rojo, verde y azul: el sol entibia, la luna enfría. */
       tinteDia: [1, 0.9, 0.62],
       tinteNoche: [0.75, 0.9, 1],

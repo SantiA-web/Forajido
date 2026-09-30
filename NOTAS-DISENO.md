@@ -15598,6 +15598,21 @@ luz, estaban en su punto más a la izquierda justo cuando el haz se inclinaba a
 la derecha. Medido contra la cámara daba **−0,88** (−1 es exactamente al revés).
 Con el empuje invertido da **+0,93**: van juntas.
 
+#### ☀️ EL SOL, MÁS GRANDE Y MÁS FUERTE, Y BAJANDO CON EL RELOJ
+
+*(Santi: "podrías hacer la luz del sol (de día) más grande y fuerte. Y que a
+medida que pasa el tiempo de asalto va disminuyendo un poquito pero nunca llega
+a cero".)*
+
+- **Más grande**, sólo de día: el haz entra 2,3 baldosas en vez de 1,5
+  (`alcanceDia`) y se abre 0,3 en vez de 0,18 (`abreDia`). La luna de noche
+  quedó como estaba.
+- **Más fuerte**: aclara un 70% en vez de un 40% (`aclaraDia: 1.7`).
+- **Bajando con el reloj**: lo que aclara de más se multiplica por lo que queda
+  del asalto, de 1 al empezar a `solAlFinal` (0,5) al terminar. O sea que
+  termina aclarando un 35%, apenas menos que antes de este cambio: el sol
+  baja, no se pone.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

@@ -459,6 +459,11 @@ La luz **aclara lo que toca** en vez de pintarle un color encima: las tablas
 siguen mostrando su veta, y el asiento, la carga o el guardia que queden en el
 haz se ven iluminados.
 
+**Y el sol va bajando mientras dura el asalto.** Al subir, el haz entra largo
+y fuerte; a medida que corre el reloj se va apagando de a poco, hasta quedar
+en la mitad de lo que aclaraba de más. Nunca llega a cero: el sol baja, no se
+pone.
+
 **Y por el piso ruedan botellas y latas sueltas**, entre 1 y 3 por vagón donde
 viaja gente (pasajeros, comedor, dormitorio, guardias, primera clase y
 caboose). Van y vienen con el mismo vaivén que la luz, salen disparadas con el

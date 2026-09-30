@@ -2046,7 +2046,10 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
 export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}) {
   const { meneo = 0, dia = true } = luz;
   const L = CONFIG.tresCuartos.luzVentanilla;
-  const aclara = dia ? L.aclaraDia : L.aclaraNoche;
+  // De día, el sol baja con el reloj del asalto (`luz.sol`, de 1 a
+  // `solAlFinal`): se achica lo que aclara de más, nunca hasta cero.
+  const sol = luz.sol ?? 1;
+  const aclara = dia ? 1 + (L.aclaraDia - 1) * sol : L.aclaraNoche;
   if (!(aclara > 1)) return;
 
   const map = train.map;
@@ -2090,8 +2093,9 @@ export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}) {
   const tinte = dia ? L.tinteDia : L.tinteNoche;
   const canal = (i) => Math.round(255 * (1 - 1 / (1 + (aclara - 1) * tinte[i])));
   const rgb = `${canal(0)},${canal(1)},${canal(2)}`;
-  const alcance = size * L.alcance;
-  const abre = Math.round(size * L.abre);
+  // El sol entra más y se abre más que la luna.
+  const alcance = size * (dia ? L.alcanceDia : L.alcance);
+  const abre = Math.round(size * (dia ? L.abreDia : L.abre));
 
   const ctx = r.ctx;
   ctx.save();

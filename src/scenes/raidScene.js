@@ -3854,9 +3854,13 @@ export function createRaidScene(services) {
      * mueve la luz.
      */
     const L = CONFIG.tresCuartos.luzVentanilla;
+    // Cuánto del asalto ya pasó: el sol va bajando con el reloj (ver
+    // `solAlFinal` en CONFIG.tresCuartos.luzVentanilla).
+    const pasado = duracionInicial > 0 ? Math.min(1, Math.max(0, 1 - timeLeft / duracionInicial)) : 0;
     const luz = {
       meneo: Math.sin(scroll * L.velocidad * Math.PI * 2) * L.balanceo,
       dia: gameState.esDeDia,
+      sol: 1 - (1 - L.solAlFinal) * pasado,
     };
     luzDeLosVentanales(r, train, swayX, undefined, luz);
 

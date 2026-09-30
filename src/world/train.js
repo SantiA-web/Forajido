@@ -2268,8 +2268,20 @@ export function farolesDelTren(r, train, camX, vistaW, luz = {}) {
     ctx.translate(f.x + corre, f.y);
     ctx.scale(1, PROFUNDIDAD_CHARCO);
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, F.radio);
+    /**
+     * 🔁 MÁS ANCHO Y MÁS DEGRADADO *(Santi: "que la luz se marque bien debajo
+     * del farol, pero que el diámetro del círculo de la luz se haga un poco más
+     * extenso hacia todos los lados para así dejar lugar a un degradado de
+     * iluminación más natural")*. Antes caía de golpe: plena hasta un tercio
+     * del radio y de ahí derecho a cero, con un borde que se veía. Ahora el
+     * centro sigue pleno, pero la caída se reparte en todo el radio —que
+     * además creció— y se apaga de a poco, como se apaga la luz de verdad.
+     */
     g.addColorStop(0, `rgba(${rgb},1)`);
-    g.addColorStop(0.35, `rgba(${rgb},0.8)`);
+    g.addColorStop(0.12, `rgba(${rgb},0.95)`);
+    g.addColorStop(0.3, `rgba(${rgb},0.68)`);
+    g.addColorStop(0.55, `rgba(${rgb},0.34)`);
+    g.addColorStop(0.8, `rgba(${rgb},0.1)`);
     g.addColorStop(1, `rgba(${rgb},0)`);
     ctx.fillStyle = g;
     ctx.beginPath();

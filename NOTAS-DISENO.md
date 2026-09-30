@@ -15552,6 +15552,14 @@ farol de metal, su cadena y el resplandor del vidrio: queda sólo el charco
 cálido hamacándose, y el farol queda sobreentendido. De día, por lo tanto, no
 se dibuja nada.
 
+🔁 **Y MÁS ANCHO Y MÁS DEGRADADO** *(Santi: "que la luz se marque bien debajo
+del farol, pero que el diámetro del círculo de la luz se haga un poco más
+extenso hacia todos los lados para así dejar lugar a un degradado de
+iluminación más natural")*. El radio pasó de 42 a 64, y la caída ya no es
+"plena hasta un tercio y de ahí a cero": el centro sigue pleno y se apaga de a
+poco en seis pasos a lo largo de todo el radio. Con faroles cada 128 unidades,
+las colas de dos charcos vecinos se tocan: entre uno y otro queda penumbra.
+
 📏 **Y costaba el doble de noche**: 3,2 ms por cuadro contra 1,5 de día. La
 oscuridad se pintaba columna por columna, unos 80 rectángulos con `multiply`
 por cuadro. Juntando las columnas iguales en un solo rectángulo (un vagón por

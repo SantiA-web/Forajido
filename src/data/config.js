@@ -1505,8 +1505,13 @@ export const CONFIG = {
        * lo vuelve amarillo de lámpara de aceite y no blanco.
        */
       aclaraCentro: [2.5, 1.95, 1.2],
-      /** El radio del charco, en unidades (a lo alto se achata, es tres cuartos). */
-      radio: 42,
+      /**
+       * El radio del charco, en unidades (a lo alto se achata, es tres cuartos).
+       * 🔺 De 42 a 64, para que la luz tenga dónde degradarse *(Santi)*. Con
+       * los faroles cada 8 columnas (128 unidades), las colas de dos charcos
+       * vecinos justo se tocan: entre farol y farol queda penumbra, no negro.
+       */
+      radio: 64,
       /**
        * Cuánto se hamaca el charco de costado, en unidades. Mismo reloj que la
        * luz de los ventanales. (El farol en sí no se dibuja: *Santi: "quiero

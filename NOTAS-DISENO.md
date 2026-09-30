@@ -15713,6 +15713,20 @@ tiro reconoce su zona (cabeza, torso, piernas).
 Las zonas todavía quitan lo mismo: quedan anunciadas en cada impacto
 (`zona`) para el daño por zona, distancia y arma, que viene después.
 
+🧪 **Mensajes de prueba** *(Santi: "unos mensajes temporales para probar
+esto nuevo")*: cada bala tuya que le pega a alguien dice "DISPARASTE A LA
+CABEZA / AL TORSO / A LAS PIERNAS", y "(SIN APUNTARLE)" si le pegó sin que lo
+tuvieras bajo la mira. Es la llave `CONFIG.golpe.pruebaZonas`: **se saca antes
+de mostrar el juego**, junto con el atajo 🧪 del campamento.
+
+⚠️ **Pendiente de decidir** *(Santi: "yo estoy literalmente al norte suyo, yo
+no puedo decir quiero que mi bala vaya más arriba o más abajo")*. Tiene razón:
+al norte o al sur del blanco, arriba y abajo en la pantalla es la misma
+dirección en la que tirás, así que elegir la zona con la altura de la mira es
+arbitrario. La recomendación es que la mira elija A QUIÉN y la zona salga por
+probabilidad (más cabeza apuntando con el clic derecho, menos de lejos, según
+el arma), junto con el daño por zona.
+
 📝 **Decidido con Santi para lo que sigue** (la 2 y la 3 del plan):
 - **El reloj del asalto va a ser un caballo**, no un número: la cabeza del
   caballo con una barrita que se vacía, porque el tiempo pasa a ser el aguante

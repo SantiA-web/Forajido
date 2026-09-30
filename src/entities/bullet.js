@@ -17,6 +17,8 @@ export function createBullet({ x, y, angle, speed, damage, range, owner, fromRid
     distancia: distancia ?? 0,
     /** La parte del cuerpo a la que apuntaste. Hoy todas quitan lo mismo. */
     zona: zona || 'torso',
+    /** Si la zona la eligió la mira (o es el torso por no apuntarle a nadie). */
+    zonaElegida: !!zona,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     damage,

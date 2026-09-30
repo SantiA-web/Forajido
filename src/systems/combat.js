@@ -172,7 +172,7 @@ export function updateBullets(bullets, dt, world) {
         pa.alive = false;
         pa.hitFlash = 0.12;
         hitCivilian = true;
-        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona });
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
         world.bus.emit('passengerKilled', { passenger: pa, byPlayer: b.owner === 'player' });
         break;
       }
@@ -187,7 +187,7 @@ export function updateBullets(bullets, dt, world) {
         b.alive = false;
         hitEnemy = true;
         const died = damageEnemy(e, b.damage, b.x - b.vx, b.y - b.vy);
-        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona });
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
         if (died) world.bus.emit('enemyKilled', { enemy: e, byPlayer: b.owner === 'player' });
         break;
       }
@@ -202,7 +202,7 @@ export function updateBullets(bullets, dt, world) {
           b.alive = false;
           hitRider = true;
           const murio = damageRider(rd, b.damage);
-          world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona });
+          world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
           if (murio) world.bus.emit('riderKilled', { rider: rd });
           break;
         }
@@ -227,7 +227,7 @@ export function updateBullets(bullets, dt, world) {
           const hurt = damagePlayer(p, b.damage, b.x - b.vx, b.y - b.vy);
           if (hurt) {
             b.alive = false;
-            world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona });
+            world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
             world.bus.emit('playerHit', { x: b.x, y: b.y });
             if (!p.alive) world.bus.emit('playerDown', {});
           }

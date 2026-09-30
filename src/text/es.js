@@ -51,6 +51,18 @@ export const T = {
     toExit: (n) => (n === 0 ? 'SALIDA' : `SALIDA: ${n} ${n === 1 ? 'VAGÓN' : 'VAGONES'}`),
   },
 
+  /**
+   * 🧪 DE PRUEBA (`CONFIG.golpe.pruebaZonas`): en qué zona pegó tu bala. Se
+   * saca junto con esa llave.
+   */
+  pruebaZona: {
+    cabeza: 'DISPARASTE A LA CABEZA',
+    torso: 'DISPARASTE AL TORSO',
+    piernas: 'DISPARASTE A LAS PIERNAS',
+    // La bala le pegó sin que lo tuvieras bajo la mira: cuenta como torso.
+    sinBlanco: ' (SIN APUNTARLE)',
+  },
+
   prompts: {
     loot: (name) => `[E] ${name}`,
     jackpot: (valor) => `¡EL GOLPE DE TU VIDA! +$${valor}`,

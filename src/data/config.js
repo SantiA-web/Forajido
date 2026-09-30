@@ -2143,6 +2143,12 @@ export const CONFIG = {
     tendido: { ancho: 9, arriba: 4, abajo: 3 },
     /** El jinete y su caballo: de los cascos hasta la cabeza del jinete. */
     jineteAlto: 26,
+    /**
+     * 🧪 DE PRUEBA, SACARLO ANTES DE MOSTRAR EL JUEGO *(Santi: "unos mensajes
+     * temporales para probar esto nuevo")*: cada bala tuya que le pega a
+     * alguien avisa en qué zona pegó ("DISPARASTE A LA CABEZA").
+     */
+    pruebaZonas: true,
   },
 
   feel: {

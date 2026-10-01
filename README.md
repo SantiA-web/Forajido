@@ -375,6 +375,11 @@ que se recorta son las siluetas.
 ves el desierto entero; a medida que te acercás, la escena se cierra hasta
 quedar a la misma escala que el asalto. Nadie te avisa que estás llegando: se ve.
 
+**Y se cierra cuando estás cerca del tren, no sólo cuando avanzás.** Si llegás a
+la par de la cola pero bien al sur, la cámara sigue abierta lo justo para que
+entren las ventanillas del tren arriba y tu caballo abajo; a medida que subís
+hacia la vía, se cierra. Pegado al tren, para saltar, va a escala 1 y quieta.
+
 **No se galopa por un pasillo.** Estás casi trescientos píxeles por debajo de la
 vía, así que llegar al tren es una **diagonal larga y libre** — elegís tu propia
 línea, esquivando **rocas, arbustos, cactus y montículos de arena**. Y esquivar

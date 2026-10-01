@@ -560,6 +560,23 @@ export const APROXIMACION = {
   zoomFijoDesde: 140,
 
   /**
+   * 🔁 LO QUE TIENE QUE ENTRAR EN PANTALLA, y por eso el zoom también se abre
+   * cuando estás lejos AL SUR *(Santi: "puede que avance hacia adelante y
+   * quedarme bien al sur de la pantalla y el zoom se hace igual")*. Ver
+   * `zoomQueEntra` en scenes/rideScene.js.
+   *
+   *  - `pared`: cuánto del tren, de la vía para arriba, tiene que verse. 45
+   *    llega a las ventanillas (están a 39): ves quién te mira.
+   *  - `debajo`: lo que ocupa tu caballo debajo de sus cascos, más un margen.
+   *
+   * Primero se probó pesar más la distancia al sur dentro de la cuenta de
+   * siempre (×1, ×1,5, ×2). Con cualquiera de los tres, a 130 px al sur el
+   * zoom seguía casi en 1 y el tren quedaba ENTERO fuera de pantalla: el
+   * problema no era cuánto zoom, era qué entra en el cuadro.
+   */
+  encuadre: { pared: 45, debajo: 35 },
+
+  /**
    * FALLAR EL SALTO. Trastabillás: el caballo se te va para atrás un momento y
    * perdés aguante. No te caés ni perdés el asalto — el castigo es que el tren
    * te gana terreno y el enganche que querías te queda atrás.

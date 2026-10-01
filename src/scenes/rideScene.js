@@ -199,6 +199,7 @@ export function createRideScene(services) {
       get x() { return x; },
       get y() { return y; },
       get vel() { return vel; },
+      get zoom() { return zoomActual(); },
       get aguante() { return aguante; },
       get reloj() { return reloj; },
       /** ¿Ya alcanzaste la cola? Desde ahí el reloj del asalto empieza a correr. */
@@ -973,30 +974,56 @@ export function createRideScene(services) {
   // ------------------------------------------------------------------ dibujo
 
   /**
-   * EL ZOOM DE ESTE INSTANTE — lejos 0,5, pegado a la cola 1.
+   * EL ZOOM DE ESTE INSTANTE — lejos 0,4, pegado al tren 1.
    *
    * Ver `zoomLejos`/`zoomCerca`/`zoomDistancia` en data/horse.js para el porqué.
-   * Se calcula con la MISMA variable que ya movía la cámara (`falta`, lo que
-   * queda hasta la cola), así que el encuadre entero —posición y escala— cuenta
-   * una sola cosa: qué tan cerca estás.
+   * Se calcula con qué tan cerca del tren estás —atrás de la cola o al sur—,
+   * así que el encuadre entero cuenta una sola cosa: qué tan cerca estás.
    *
    * `suavizar` es una curva suave (smoothstep) en vez de una recta: sin ella el
    * zoom arranca y frena de golpe, y un cambio de escala con bordes duros se lee
    * como un tirón de cámara. Con ella, la escena se cierra sobre el tren sin que
    * se note dónde empieza el movimiento.
    */
-  function zoomActual() {
+  function zoomActual(r = services.renderer) {
     const falta = Math.max(0, plataformas[1] - x);
     // Los últimos `zoomFijoDesde` px van a escala 1 clavada: ver el porqué en
     // data/horse.js. Sin esto el zoom sigue corrigiéndose mientras apuntás el salto.
     const rango = Math.max(1, A.zoomDistancia - A.zoomFijoDesde);
     const t = Math.min(1, Math.max(0, (falta - A.zoomFijoDesde) / rango));
     const suavizar = t * t * (3 - 2 * t);
-    return A.zoomCerca + (A.zoomLejos - A.zoomCerca) * suavizar;
+    const porDistancia = A.zoomCerca + (A.zoomLejos - A.zoomCerca) * suavizar;
+    return Math.max(A.zoomLejos, Math.min(porDistancia, zoomQueEntra(r)));
   }
 
+  /**
+   * 🔁 Y TAMBIÉN SE ABRE SI ESTÁS LEJOS AL SUR *(Santi: "debería agrandarse
+   * cuanto más cerca del tren estés [...] puede que avance hacia adelante y
+   * quedarme bien al sur de la pantalla y el zoom se hace igual")*.
+   *
+   * Antes el zoom miraba sólo cuánto te faltaba para la cola. A la par de la
+   * cola pero 130 px al sur ya estaba a escala 1, y el tren quedaba entero
+   * FUERA de la pantalla: veías desierto y tu caballo, nada más.
+   *
+   * Ahora la cámara se pregunta qué tiene que entrar —las ventanillas del tren
+   * arriba y tu caballo abajo (`A.encuadre`)— y se abre lo justo para que entre.
+   * Pegado al tren eso da más que 1 y no cambia nada; a 100 px al sur ya se
+   * empieza a abrir, y en el fondo del campo llega a lo mismo que de lejos.
+   * El cielo que asoma de lejos le come lugar arriba, así que se cuenta.
+   */
+  function zoomQueEntra(r) {
+    const E = A.encuadre;
+    const alto = (y - train.map.height) + E.pared + E.debajo;
+    const util = r.height - DESPLAZO_HUD;
+    const z = util / alto;
+    return (util - cieloDeLejos(Math.min(1, z))) / alto;
+  }
+
+  /** Lo que la HUD tapa arriba, en píxeles de pantalla (ver `render`). */
+  const DESPLAZO_HUD = 20;
+
   function render(r) {
-    const z = zoomActual();
+    const z = zoomActual(r);
     /** Cuánto mundo entra en la pantalla con este zoom. */
     const vistaW = r.width / z;
     const vistaH = r.height / z;
@@ -1045,11 +1072,19 @@ export function createRideScene(services) {
      * desplazamiento son siempre los mismos píxeles EN PANTALLA, esté el zoom
      * donde esté.
      */
-    const DESPLAZO_HUD = 20;
     // Y DE LEJOS BAJA TAMBIÉN LO QUE OCUPA EL CIELO (`cieloDeLejos`): la franja
     // de cielo se abre arriba sin taparle el tren a nadie.
-    const camY = Math.max(0, Math.min(campoAbajo - vistaH, y - vistaH * 0.62))
+    // Y nunca tan abajo que se pierdan las ventanillas (ver `zoomQueEntra`)...
+    const camYTren = Math.min(train.map.height - A.encuadre.pared,
+      Math.max(0, Math.min(campoAbajo - vistaH, y - vistaH * 0.62)))
       - (DESPLAZO_HUD + cieloDeLejos(z)) / z;
+    /**
+     * 🐛 ...NI TAN ARRIBA QUE SE PIERDA TU CABALLO. Al bajar el mundo por la
+     * HUD y el cielo, en la esquina de la largada el caballo quedaba debajo
+     * del borde de la pantalla: arrancabas sin verte. Si no entran los dos,
+     * gana el caballo.
+     */
+    const camY = Math.max(camYTren, y + A.encuadre.debajo - vistaH);
 
     dibujarAfuera(r, camX, z, camY, vistaW, vistaH);
 

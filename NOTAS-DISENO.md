@@ -15797,6 +15797,25 @@ agarran en la estación (el final es el mismo de antes, cambia el porqué).
   del vagón sigue quedando abajo, sin pisarse.
 - 🔺 **La barra, más todavía** *(Santi: "quiero que la barra sea más grande")*:
   240 × 20, casi del alto de la herradura. La herradura quedó en 42.
+
+🎥 **El zoom del galope se cierra cuando estás cerca del tren, no cuando
+avanzás** *(Santi: "puede que avance hacia adelante y quedarme bien al sur de la
+pantalla y el zoom se hace igual")*. Tenía razón y era peor de lo que parecía:
+medido, a la par de la cola pero 130 px al sur, la cámara ya estaba a escala 1 y
+**el tren quedaba entero fuera de pantalla**.
+
+- **Primero probé pesar más la distancia al sur** dentro de la cuenta de
+  siempre (×1, ×1,5, ×2). No alcanzaba con ninguno: el problema no era cuánto
+  zoom, era qué entra en el cuadro (en tres cuartos la pared del tren sube por
+  encima de la vía, y la pantalla del galope mide 180 de alto, no 270).
+- **Quedó así:** el zoom de siempre (por lo que te falta para la cola), pero la
+  cámara además se abre lo justo para que entren **las ventanillas del tren y tu
+  caballo** (`APROXIMACION.encuadre` en `data/horse.js`). Pegado al tren eso no
+  cambia nada; a ~100 px al sur se empieza a abrir, y en el fondo del campo
+  llega a 0,4, lo mismo que de lejos.
+- 🐛 **De paso apareció otro:** en la esquina de la largada tu caballo quedaba
+  debajo del borde de la pantalla (el mundo se baja para dejar lugar a la HUD y
+  al cielo, y lo empujaba afuera). Ahora la cámara nunca deja afuera al caballo.
 - **Pendiente** *(Santi: "podría condicionar la resistencia en el escape. Eso lo
   iremos viendo")*: que un asalto largo deje al caballo cansado para la huida.
 

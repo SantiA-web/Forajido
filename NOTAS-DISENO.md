@@ -15790,6 +15790,11 @@ agarran en la estación (el final es el mismo de antes, cambia el porqué).
   sea una herradura y no una cabeza")*. Con 30 s o menos la barra se pone roja y
   la herradura titila. La primera herradura, finita y gris, se leía como un
   imán; quedó gruesa, con tres clavos por lado y los talones cerrándose.
+- 🔺 **Y al triple** *(Santi: "la barra y la herradura deberían ser más
+  grandes")*: herradura de 42 píxeles y barra de 168 × 14. Me dejó moverla a la
+  izquierda y mandar las balas a la derecha si no entraba, pero entra en el
+  medio sin tocar nada: ahí estaba el reloj, es lo que más se mira, y el cartel
+  del vagón sigue quedando abajo, sin pisarse.
 - **Pendiente** *(Santi: "podría condicionar la resistencia en el escape. Eso lo
   iremos viendo")*: que un asalto largo deje al caballo cansado para la huida.
 

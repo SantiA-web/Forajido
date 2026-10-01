@@ -125,6 +125,9 @@ export const HORSES = {
     aguanteMax: 160,
     aguanteGasto: 6,
 
+    /** Cuánto dura trotando al lado del tren: ×1,2 el reloj del tren (ver `fondoDelAsalto`). */
+    fondoAsalto: 1.2,
+
     saltoTolerancia: 4,
     saltoPreciso: 4,
 
@@ -182,6 +185,9 @@ export const HORSES = {
     aguanteMax: 60,
     aguanteGasto: 6,
 
+    /** ×0,8 el reloj del tren: el que no tiene fondo, tampoco lo tiene al trote. */
+    fondoAsalto: 0.8,
+
     saltoTolerancia: 5,
     saltoPreciso: 8,
 
@@ -211,6 +217,26 @@ export const DEFAULT_HORSE = 'criollo';
 /** El caballo que estás montando ahora. */
 export function caballoActual(gameState) {
   return HORSES[gameState && gameState.horse] || HORSES[DEFAULT_HORSE];
+}
+
+/**
+ * 🐴 EL RELOJ DEL ASALTO ES EL CABALLO *(Santi: "el tiempo ya no será que
+ * indique cuanto le falta al tren para llegar a la parada, sino la
+ * resistencia del caballo que tiene que ir a trote al lado del tren")*.
+ *
+ * Mientras estás adentro, tu caballo trota a la par. Cuando no da más se
+ * queda atrás, y sin caballo no hay cómo bajarse: te agarran en la estación.
+ * El tren sigue poniendo la base (`raidDuration`) y el caballo la multiplica
+ * con `fondoAsalto`, que es su RESISTENCIA:
+ *
+ *   Resistencia 2 (Mustang) ×0,8 · Resistencia 5 (Criollo) ×1,2
+ *
+ * *(Santi eligió abrir la diferencia —había propuesto 1 y 0,8— "para dejar
+ * espacio para otros caballos": los niveles 3 y 4 caen en el medio, ~0,93 y
+ * ~1,07.)* En un tren de 180 s: el Criollo trota 216 s, el Mustang 144.
+ */
+export function fondoDelAsalto(caballo, segundosDelTren) {
+  return segundosDelTren * (caballo.fondoAsalto ?? 1);
 }
 
 /**

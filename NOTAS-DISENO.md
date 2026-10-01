@@ -15772,6 +15772,27 @@ a ser el "!" rojo. Es la misma información que daba la barrita, en un solo
 dibujo. Los dos signos llevan borde negro como los textos: el "?" vacío es
 apagado a propósito, y sin borde se perdía contra la madera.
 
+🐴 **El reloj del asalto pasó a ser el aguante del caballo** *(Santi: "el tiempo
+ya no será que indique cuanto le falta al tren para llegar a la parada, sino la
+resistencia del caballo que tiene que ir a trote al lado del tren")*. Mientras
+estás adentro tu caballo trota a la par; cuando no da más se queda atrás y te
+agarran en la estación (el final es el mismo de antes, cambia el porqué).
+
+- **El tren pone la base y el caballo la multiplica** (`fondoAsalto` en
+  `data/horse.js`). Propuse Criollo ×1 y Mustang ×0,8; Santi abrió la diferencia
+  a **×1,2 y ×0,8** *"para dejar espacio para otros caballos"*: resistencia 5 y
+  2, con los niveles 3 y 4 en el medio (~1,07 y ~0,93). En un tren de 180 s son
+  **216 s y 144 s**. Medido corriendo el asalto entero sin guardias: el Criollo
+  con 12 s de galope en la llegada terminó en 3:24 (216 − 12), el Mustang en 144.
+- **No se usó la misma proporción que en la huida** (60/160 daría al Mustang
+  67 s): el asalto no se puede jugar con eso.
+- **En pantalla, una herradura y una barra, sin números** *(Santi: "quiero que
+  sea una herradura y no una cabeza")*. Con 30 s o menos la barra se pone roja y
+  la herradura titila. La primera herradura, finita y gris, se leía como un
+  imán; quedó gruesa, con tres clavos por lado y los talones cerrándose.
+- **Pendiente** *(Santi: "podría condicionar la resistencia en el escape. Eso lo
+  iremos viendo")*: que un asalto largo deje al caballo cansado para la huida.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

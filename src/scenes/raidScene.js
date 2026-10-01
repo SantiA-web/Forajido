@@ -35,6 +35,7 @@ import {
 } from '../entities/rodante.js';
 import { updateCajon, drawCajon, vaciarCajon } from '../entities/cajon.js';
 import { WAGONS } from '../data/wagons.js';
+import { caballoActual, fondoDelAsalto } from '../data/horse.js';
 import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
@@ -90,7 +91,7 @@ export function createRaidScene(services) {
   /** El vaivén de la cámara adentro del vagón (ver `actualizarVaivenCamara`). */
   let vaivenCamaraX = 0;
   let vaivenPeso = 0;
-  let timeLeft, duracionInicial, collected, kills, civilians, amenazados, escapeProgress;
+  let timeLeft, duracionInicial, fondoTotal, collected, kills, civilians, amenazados, escapeProgress;
   /**
    * LO QUE LLEVÁS ENCIMA QUE NO ES PLATA (ver data/objetos.js). Va aparte de
    * `collected` a propósito: `collected` es el dinero, y sobre el dinero están
@@ -217,9 +218,12 @@ export function createRaidScene(services) {
      * aproximación larga: hasta acá se puede cobrar, y ni un segundo más.
      */
     const cobrado = Math.min(params.tiempoGastado || 0, CONFIG.raid.maxCobroAproximacion);
-    // `train.raidDuration`: el estándar usa CONFIG.raid.duration de siempre,
-    // pero el veloz y el de carga traen el suyo propio (ver data/train.js).
-    duracionInicial = train.raidDuration - cobrado;
+    // `train.raidDuration` pone la base y el caballo la multiplica: el reloj
+    // es cuánto aguanta tu caballo trotando al lado (ver `fondoDelAsalto`).
+    // Lo que gastó galopando en la llegada ya viene descontado: la barra
+    // arranca un poco vacía, porque el caballo llega cansado.
+    fondoTotal = fondoDelAsalto(caballoActual(gameState), train.raidDuration);
+    duracionInicial = fondoTotal - cobrado;
     timeLeft = duracionInicial;
     collected = 0;
     objetos = [];
@@ -2452,6 +2456,7 @@ export function createRaidScene(services) {
       maxDynamite: CONFIG.player.dynamiteMax,
       fuseLit: player.fuse > 0,
       timeLeft,
+      fondo: fondoTotal > 0 ? timeLeft / fondoTotal : 0,
       urgent: timeLeft <= CONFIG.raid.urgentAt,
       money: collected,
       // Cuántas casillas de la mochila llevás ocupadas y cuántas hay. La

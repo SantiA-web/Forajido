@@ -17,6 +17,18 @@ export function createHud() {
   const exitEl = document.getElementById('hud-exit');
   const dynamiteEl = document.getElementById('hud-dynamite');
 
+  /**
+   * 🐴 EL RELOJ ES UNA HERRADURA Y UNA BARRA *(Santi: "quiero que sea una
+   * herradura y no una cabeza. Y cuando va quedando poco tiempo, la herradura
+   * empieza a titilar para avisar al jugador, además de la barra")*.
+   *
+   * Ya no hay segundos escritos: lo que se acaba es el aguante de tu caballo,
+   * que trota al lado del tren (ver `fondoDelAsalto`, data/horse.js). La barra
+   * arranca un poco gastada si galopaste mucho para llegar.
+   */
+  timerEl.innerHTML = `${herradura()}<div class="hud-fondo"><div></div></div>`;
+  const fondoEl = timerEl.querySelector('.hud-fondo > div');
+
   return {
     show() { root.classList.remove('hidden'); },
     hide() { root.classList.add('hidden'); },
@@ -50,8 +62,8 @@ export function createHud() {
       dynamiteEl.innerHTML = dyn;
       dynamiteEl.classList.toggle('lit', data.fuseLit);
 
-      // Reloj + estado de alarma
-      timerEl.textContent = formatTime(data.timeLeft);
+      // El aguante del caballo: la barra se vacía, y al final todo titila.
+      fondoEl.style.width = `${Math.round(Math.max(0, Math.min(1, data.fondo ?? 0)) * 100)}%`;
       timerEl.classList.toggle('urgent', data.urgent);
 
       /**
@@ -102,6 +114,39 @@ export function createHud() {
       exitEl.classList.toggle('far', data.toExit >= 4);
     },
   };
+}
+
+/**
+ * LA HERRADURA, punto por punto: 14 × 13, abierta para abajo, gruesa, con
+ * tres clavos por lado y los talones cerrándose hacia adentro. La primera,
+ * finita y gris, se leía como un imán.
+ * `#` hierro, `+` brillo, `-` sombra, `o` agujero de clavo.
+ */
+const HERRADURA = [
+  '....######....',
+  '..##++++++##..',
+  '.#++######++#.',
+  '.#+##----##+#.',
+  '#+o#-....-#o+#',
+  '#+##-....-##+#',
+  '#+o#-....-#o+#',
+  '#+##-....-##+#',
+  '#+o#-....-#o+#',
+  '.#+#-....-#+#.',
+  '.#+#-....-#+#.',
+  '.###......###.',
+  '..##......##..',
+];
+const HIERRO = { '#': '#7a716a', '+': '#c9c0b4', '-': '#4a4440', o: '#141211' };
+
+function herradura() {
+  let rects = '';
+  HERRADURA.forEach((fila, y) => {
+    [...fila].forEach((c, x) => {
+      if (HIERRO[c]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${HIERRO[c]}"/>`;
+    });
+  });
+  return `<svg class="hud-herradura" viewBox="0 0 14 13" shape-rendering="crispEdges">${rects}</svg>`;
 }
 
 export function formatTime(seconds) {

@@ -615,7 +615,7 @@ export const T = {
 
     subEscaped: 'Llegaste al furgón de cola y saltaste. El caballo estaba ahí.',
     subPrueba: (lo) => `Prueba de la huida con ${lo}. No cuenta para nada.`,
-    subTime: 'El tren llegó a la estación con vos adentro.',
+    subTime: 'Tu caballo no dio más y se quedó atrás. El tren llegó a la estación con vos adentro.',
     subDead: 'Caíste herido. Te esposaron ahí mismo.',
 
     loot: 'Botín',

@@ -337,11 +337,28 @@ donde llegaron, no donde los dejaste.
 |---|---|---|
 | **Velocidad** | Qué tan rápido alcanzás la cola del tren | Con el **Criollo** (el que tenés al empezar) son ~11 s galopando a fondo, desde la esquina del desierto. |
 | **Equilibrio** | Cuánto te perdona el salto al enganche | Con el Criollo, la mayoría de tus saltos van a salir sucios (despiertan el vagón) salvo que apuntes casi exacto. Con el Mustang, bastante menos. |
-| **Resistencia** | Hasta qué enganche te alcanza el aliento antes de quedarte sin fuerzas para seguir acelerando | El Criollo llega al **3º**. El Mustang, más rápido pero más corto de aliento, llega al **2º** y no más. |
+| **Resistencia** | Hasta qué enganche te alcanza el aliento antes de quedarte sin fuerzas para seguir acelerando, **y cuánto dura el asalto** | El Criollo llega al **3º**. El Mustang, más rápido pero más corto de aliento, llega al **2º** y no más. |
 
 **Ningún caballo es estrictamente mejor que otro.** El Mustang es el que
 elegís si querés entrar rápido y bajarte pronto; el Criollo, lento y torpe
 para caer, es el único que hoy te deja empujar hasta el tercer enganche.
+
+**El reloj del asalto es tu caballo.** Mientras estás adentro, el caballo trota
+al lado del tren y se va cansando. Arriba, en el medio, hay **una herradura y una
+barra** que se vacía: es cuánto le queda. Cuando falta poco la barra se pone roja
+y la herradura **titila**. Si se vacía, el caballo no da más y se queda atrás, y
+sin caballo no hay cómo bajarse: te agarran en la estación.
+
+Cuánto aguanta depende del tren y del caballo. El tren pone la base (180 s el de
+pasajeros y el de carga) y la resistencia la multiplica:
+
+| Caballo | Resistencia | En un tren de 180 s |
+|---|---|---|
+| Criollo | 5 → ×1,2 | **216 s** |
+| Mustang | 2 → ×0,8 | **144 s** |
+
+Lo que galopaste para adelantarte en la llegada ya viene descontado: la barra
+arranca un poco gastada, porque el caballo llega cansado.
 
 ### Galopando a la par del tren (antes de subir)
 

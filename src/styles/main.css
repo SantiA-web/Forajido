@@ -74,7 +74,7 @@ canvas {
    reloj: es lo que más vas a mirar, y ahí entra sin mover nada. */
 #hud-timer { display: flex; align-items: center; gap: 12px; height: 44px; margin-bottom: 4px; }
 .hud-herradura { width: 42px; height: 39px; filter: drop-shadow(3px 3px 0 #000); }
-.hud-fondo { width: 168px; height: 14px; background: #2a1f18; border: 3px solid #120d0a; box-shadow: 3px 3px 0 #000; }
+.hud-fondo { width: 240px; height: 20px; background: #2a1f18; border: 3px solid #120d0a; box-shadow: 3px 3px 0 #000; }
 .hud-fondo > div { height: 100%; background: var(--gold); }
 #hud-timer.urgent .hud-fondo > div { background: var(--danger); }
 #hud-timer.urgent .hud-herradura { animation: blink 0.6s steps(2, end) infinite; }

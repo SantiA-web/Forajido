@@ -15795,6 +15795,8 @@ agarran en la estación (el final es el mismo de antes, cambia el porqué).
   izquierda y mandar las balas a la derecha si no entraba, pero entra en el
   medio sin tocar nada: ahí estaba el reloj, es lo que más se mira, y el cartel
   del vagón sigue quedando abajo, sin pisarse.
+- 🔺 **La barra, más todavía** *(Santi: "quiero que la barra sea más grande")*:
+  240 × 20, casi del alto de la herradura. La herradura quedó en 42.
 - **Pendiente** *(Santi: "podría condicionar la resistencia en el escape. Eso lo
   iremos viendo")*: que un asalto largo deje al caballo cansado para la huida.
 

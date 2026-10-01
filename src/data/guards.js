@@ -1,3 +1,5 @@
+import { CONFIG } from './config.js';
+
 /**
  * Tipos de guardia.
  *
@@ -13,25 +15,31 @@
  *   del juego momento a momento. Así que el tipo se distingue por la SILUETA,
  *   nunca por el color del cuerpo.
  *
- * El techo de vida es 4 y es un compromiso, no un detalle: el Rifle de Caza
- * saca 5, así que mata de un tiro a cualquier guardia del juego. Si algún día
- * aparece un tipo con 5 de vida, esa promesa se rompe en silencio.
+ * El techo de vida es 200 y es un compromiso, no un detalle: si algún día
+ * vuelve un rifle que mata de un tiro a cualquier guardia, esa promesa se
+ * rompe en silencio con un tipo de más vida.
+ *
+ * 💥 LA VIDA ESTÁ EN 100 *(Santi: "y si hacemos que tengan 100 de vida")*.
+ * Todos los guardias tienen 100 —el blindado también: lo que lo hace duro
+ * ahora es el pecho protegido (`golpe.danio.blindadoPecho`)— salvo el
+ * Dinamitero, que tiene 200 (era el único con 4: *"el dinamitero sí o sí
+ * cuatro de vida"*). Cuánto saca cada bala está en `CONFIG.golpe.danio`.
  */
 
-export const MAX_GUARD_HEALTH = 4;
+export const MAX_GUARD_HEALTH = 200;
 
 export const GUARD_TYPES = {
   normal: {
     id: 'normal',
     name: 'Guardia',
-    health: 2,
+    health: 100,
     look: 'normal',
   },
 
   blindado: {
     id: 'blindado',
     name: 'Guardia blindado',
-    health: 3,
+    health: 100,
     look: 'placa',      // se le ve la placa en el pecho
   },
 
@@ -70,7 +78,7 @@ export const GUARD_TYPES = {
   pistolero: {
     id: 'pistolero',
     name: 'Pistolero',
-    health: 2,
+    health: 100,
     look: 'dosRevolveres',
     evitaCobertura: true,
     /**
@@ -130,8 +138,12 @@ export const GUARD_TYPES = {
      * NO ROMPE EL TECHO DE 4, que es lo que garantiza que un Rifle de Caza mate
      * de un tiro a cualquier guardia del juego: `guardHealth` topea en
      * `MAX_GUARD_HEALTH`, así que en un tren escoltado sigue teniendo 4 y no 5.
+     *
+     * 💥 Con la vida en 100, son 200 (el techo): dos tiros a la cabeza, unos
+     * cuatro al torso. El único guardia común al que un tiro limpio a la
+     * cabeza no tumba.
      */
-    health: 4,
+    health: 200,
     look: 'bandolera',
 
     /**
@@ -226,7 +238,7 @@ export const GUARD_TYPES = {
   encubierto: {
     id: 'encubierto',
     name: 'Civil encubierto',
-    health: 2,
+    health: 100,
     look: 'civil',
     evitaCobertura: true,
   },
@@ -247,7 +259,7 @@ export const GUARD_TYPES = {
   sheriff: {
     id: 'sheriff',
     name: 'El Sheriff',
-    health: 2,
+    health: 100,
     look: 'estrella',
   },
 };
@@ -258,10 +270,12 @@ export const DEFAULT_GUARD_TYPE = 'normal';
  * La vida final de un guardia = la de su tipo + lo que sume la dificultad del
  * tren, con tope en MAX_GUARD_HEALTH.
  *
- * En un tren tranquilo: guardia común 2, blindado 3.
- * En un tren escoltado: guardia común 3, blindado 4.
+ * `vidaExtra` (data/train.js) sigue anotado en tiros de los de antes: cada uno
+ * son 50 de vida. En un tren tranquilo el guardia común tiene 100; en uno
+ * escoltado, 150 — y ahí un tiro a la cabeza ya no alcanza.
  */
 export function guardHealth(typeId, vidaExtra = 0) {
   const tipo = GUARD_TYPES[typeId] || GUARD_TYPES[DEFAULT_GUARD_TYPE];
-  return Math.min(MAX_GUARD_HEALTH, tipo.health + vidaExtra);
+  const extra = vidaExtra * CONFIG.golpe.danio.puntosPorTiro.guardia;
+  return Math.min(MAX_GUARD_HEALTH, tipo.health + extra);
 }

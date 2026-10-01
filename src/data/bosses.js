@@ -22,7 +22,11 @@
 
 import { CONFIG } from './config.js';
 
-/** Ningún disparo del juego saca más de 1, y esto no es la excepción. */
+/**
+ * Ningún disparo del juego saca más de un tiro, y esto no es la excepción.
+ * (Anotado en tiros de los de antes: ver `golpe.danio.puntosPorTiro`. Sus
+ * balas, como todas, sacan según la zona — `CONFIG.golpe.danio`.)
+ */
 const DANIO_DE_BALA = 1;
 
 export const BOSSES = {
@@ -89,8 +93,11 @@ export const BOSSES = {
      *
      * Si algún día hay un jefe más, éste es el lugar donde vive la excepción:
      * `data/guards.js` sigue siendo la ley para todo el resto del tren.
+     *
+     * 💥 Con la vida en 100 *(ver `CONFIG.golpe.danio`)*, 8 tiros son 400: ocho
+     * al torso, cuatro a la cabeza.
      */
-    health: 8,
+    health: 400,
 
     /**
      * EL ACECHO — no sube corriendo, se hace esperar.
@@ -445,7 +452,7 @@ export const BOSSES = {
     furia: {
       // La mitad de `health`. Si se toca la vida, hay que tocar esto: es la
       // mitad real, no un número suelto.
-      mitad: 4,
+      mitad: 200,
       invulnerable: 0.5,
       embestidaCooldown: 4.5,      // contra 7,0
       disparoMult: 0.75,           // 25% más seguido
@@ -580,8 +587,10 @@ export const BOSSES = {
      * que la tropa y menos que la caja fuerte. Y sigue respetando
      * `MAX_GUARD_HEALTH` sin excepciones — la única del juego sigue siendo el
      * Cazarrecompensas, arriba.
+     *
+     * 💥 Con la vida en 100, 3 tiros son 150: dos a la cabeza, tres al torso.
      */
-    vida: 3,
+    vida: 150,
 
     /**
      * SE REPLIEGA A 64 px/s, más rápido que un guardia (46) y más lento que

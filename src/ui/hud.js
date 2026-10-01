@@ -27,6 +27,8 @@ export function createHud() {
    * arranca un poco gastada si galopaste mucho para llegar.
    */
   timerEl.innerHTML = `${herradura()}<div class="hud-fondo"><div></div></div>`;
+  healthEl.innerHTML = '<div class="hud-vida"><div></div></div>';
+  const vidaEl = healthEl.querySelector('.hud-vida > div');
   const fondoEl = timerEl.querySelector('.hud-fondo > div');
 
   return {
@@ -34,12 +36,12 @@ export function createHud() {
     hide() { root.classList.add('hidden'); },
 
     update(data) {
-      // Vida
-      let health = '';
-      for (let i = 0; i < data.maxHealth; i++) {
-        health += i < data.health ? '<span>●</span>' : '<span class="hurt">●</span>';
-      }
-      healthEl.innerHTML = health;
+      /**
+       * 🔁 LA VIDA, EN BARRA. Eran cuatro círculos, uno por tiro; con la vida
+       * en 100 y cada bala sacando distinto según dónde pega, un círculo ya
+       * no dice nada. Es una barra roja del mismo estilo que la del caballo.
+       */
+      vidaEl.style.width = `${Math.round(Math.max(0, Math.min(1, data.health / data.maxHealth)) * 100)}%`;
 
       // Balas
       if (data.reloading) {

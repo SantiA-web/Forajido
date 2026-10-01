@@ -59,8 +59,10 @@ export const T = {
     cabeza: 'DISPARASTE A LA CABEZA',
     torso: 'DISPARASTE AL TORSO',
     piernas: 'DISPARASTE A LAS PIERNAS',
-    // La bala le pegó sin que lo tuvieras bajo la mira: cuenta como torso.
+    // La bala le pegó sin que lo tuvieras bajo la mira: la zona se sorteó.
     sinBlanco: ' (SIN APUNTARLE)',
+    // La puntería la mandó a la zona de al lado.
+    querias: (z) => ` (QUERÍAS ${{ cabeza: 'LA CABEZA', torso: 'EL TORSO', piernas: 'LAS PIERNAS' }[z]})`,
   },
 
   prompts: {

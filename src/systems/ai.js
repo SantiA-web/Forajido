@@ -57,7 +57,9 @@ function frenoEn(e, map) {
   const casilla = map.frenoAt ? map.frenoAt(e.x, e.y) : 1;
   const descolgando = e.desenfundando > 0 && !e.francoQuieto
     ? CONFIG.enemy.francoCubreVelocidad : 1;
-  return casilla * descolgando;
+  // 🦵 Rengo por dos tiros en las piernas (ver `pegarEnLaPierna`, entities/enemy.js).
+  const rengo = e.rengo > 0 ? CONFIG.golpe.piernas.rengo.velocidad : 1;
+  return casilla * descolgando * rengo;
 }
 
 export function updateEnemy(e, dt, world) {
@@ -67,6 +69,8 @@ export function updateEnemy(e, dt, world) {
   e.alertMark = Math.max(0, e.alertMark - dt);
   e.cooldown = Math.max(0, e.cooldown - dt);
   e.meleeTimer = Math.max(0, e.meleeTimer - dt);
+  // La renguera se cura sola; la vida que perdió, no.
+  if (e.rengo > 0) e.rengo = Math.max(0, e.rengo - dt);
 
   /**
    * DE FRANCO, DESCOLGANDO EL ARMA (ver `empezarADesenfundar` en
@@ -108,6 +112,12 @@ export function updateEnemy(e, dt, world) {
    */
   if (e.rendido) {
     considerarTraicion(e, dt, world);
+    return;
+  }
+
+  // 🦵 Tirado por un tiro en la pierna: dispara desde el piso (ver abajo).
+  if (e.caido > 0) {
+    actualizarCaido(e, dt, world);
     return;
   }
 
@@ -185,6 +195,59 @@ export function updateEnemy(e, dt, world) {
   // que cada rama de la IA se acuerde de respetarla — se aplica siempre, al
   // final, sobre lo que sea que haya decidido moverlo.
   confinar(e);
+}
+
+/**
+ * 🦵 TIRADO EN EL PISO POR UN TIRO EN LA PIERNA *(Santi: "el guardia
+ * disparará desde el piso hasta que vea un lugar para poder ir a cubierto")*.
+ *
+ * Desde el piso te sigue apuntando y tirando, con el mismo ciclo de siempre
+ * (`tryFire`: se planta, avisa y suelta la ráfaga). Cada tanto mira si hay una
+ * cobertura cerca (`coberturaCerca`); si la hay, se levanta y va — y desde ahí
+ * sigue el combate normal. Sin cobertura cerca, se levanta solo a los
+ * `caidoMax` segundos: quedarse tirado para siempre no es un plan, es un bug.
+ */
+function actualizarCaido(e, dt, world) {
+  const L = CONFIG.golpe.piernas;
+  e.caido -= dt;
+  e.caidoDesde = (e.caidoDesde || 0) + dt;
+
+  const player = world.player;
+  const teVe = player.alive && !player.enTecho &&
+    canSeeFrom(e.x, e.y, e.facing, player, world.map, false);
+  const mira = teVe ? player : e.lastSeen;
+  if (mira) turnTowards(e, Math.atan2(mira.y - e.y, mira.x - e.x), dt, 8);
+  if (teVe) {
+    e.lastSeen = { x: player.x, y: player.y };
+    tryFire(e, dt, world, player, false);
+  }
+
+  // No busca en cada cuadro: con cuatro veces por segundo alcanza para verla.
+  e.caidoBusca = (e.caidoBusca || 0) - dt;
+  if (e.caidoDesde >= L.caidoMin && e.caidoBusca <= 0 && mira) {
+    e.caidoBusca = 0.25;
+    const taken = [];
+    for (const other of world.enemies) {
+      if (other !== e && other.alive && other.coverPoint) taken.push(other.coverPoint);
+    }
+    const spot = findCoverPoint(world.map, e.x, e.y, mira.x, mira.y, taken);
+    if (spot && distance(e.x, e.y, spot.x, spot.y) <= L.coberturaCerca) {
+      levantarseDelPiso(e);
+      e.coverPoint = spot;
+      e.atCover = false;
+      e.repositionTimer = 0;
+      return;
+    }
+  }
+
+  if (e.caido <= 0) levantarseDelPiso(e);
+}
+
+function levantarseDelPiso(e) {
+  e.caido = 0;
+  e.caidoDesde = 0;
+  e.aimTimer = 0;
+  e.burstLeft = 0;
 }
 
 /**
@@ -1744,7 +1807,7 @@ function dispararPorLaEspalda(e, world) {
   if (!p.alive) return;
   // Punto en blanco, sin apuntado ni dispersión: el aviso ya era el cuerpo
   // parándose, no un ángulo que se pueda esquivar corriendo.
-  const hurt = damagePlayer(p, 1, e.x, e.y);
+  const hurt = damagePlayer(p, CONFIG.golpe.danio.puntosPorTiro.jugador, e.x, e.y);
   if (hurt) {
     world.bus.emit('impact', { x: p.x, y: p.y, kind: 'flesh' });
     world.bus.emit('playerHit', { x: p.x, y: p.y });
@@ -2384,7 +2447,8 @@ function doEnemyMelee(e, dt, world) {
       e.meleeTimer = c.meleeCooldown;
       // Si te corriste a tiempo, pega al aire.
       if (distance(e.x, e.y, player.x, player.y) < c.meleeRange + 5) {
-        if (damagePlayer(player, c.meleeDamage, e.x, e.y)) {
+        // `meleeDamage` está en tiros de los de antes (ver `golpe.danio.puntosPorTiro`).
+        if (damagePlayer(player, c.meleeDamage * CONFIG.golpe.danio.puntosPorTiro.jugador, e.x, e.y)) {
           world.audio.play('melee');
           world.bus.emit('playerHit', { x: player.x, y: player.y });
           if (!player.alive) world.bus.emit('playerDown', {});

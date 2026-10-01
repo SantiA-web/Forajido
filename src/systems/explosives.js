@@ -17,6 +17,10 @@ import { damagePlayer } from '../entities/player.js';
 import { volarPuerta } from '../entities/door.js';
 import { reventarCaja, esCajaFuerte } from '../entities/lootable.js';
 import { EXPLOSIVES } from '../data/explosives.js';
+import { CONFIG } from '../data/config.js';
+
+/** Los daños de data/explosives.js están en tiros de los de antes: ver `golpe.danio.puntosPorTiro`. */
+const POR_TIRO = () => CONFIG.golpe.danio.puntosPorTiro;
 
 export function updateExplosives(explosives, dt, world) {
   for (const ex of explosives) {
@@ -93,7 +97,7 @@ export function explode(ex, world) {
       world.bus.emit('impact', { x: e.x, y: e.y, kind: 'flesh' });
       world.bus.emit('enemyKilled', { enemy: e, byPlayer: porJugador });
     } else {
-      const murio = damageEnemy(e, t.enemyDamage, ex.x, ex.y);
+      const murio = damageEnemy(e, t.enemyDamage * POR_TIRO().guardia, ex.x, ex.y);
       world.bus.emit('impact', { x: e.x, y: e.y, kind: 'flesh' });
       if (murio) world.bus.emit('enemyKilled', { enemy: e, byPlayer: porJugador });
     }
@@ -113,7 +117,7 @@ export function explode(ex, world) {
   if (p.alive) {
     const efecto = blastAt(ex, p.x, p.y, map);
     if (efecto) {
-      const daño = efecto === 'letal' ? t.playerDamage : t.playerEdgeDamage;
+      const daño = (efecto === 'letal' ? t.playerDamage : t.playerEdgeDamage) * POR_TIRO().jugador;
       // Salta la invulnerabilidad: si te comés el estruendo, te lo comés.
       p.invuln = 0;
       if (damagePlayer(p, daño, ex.x, ex.y)) {

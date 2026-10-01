@@ -723,7 +723,7 @@ function atropellar(bo, world) {
     player.tumbado = t.tumbaAlJugador;
   }
 
-  if (damagePlayer(player, t.danio, bo.x, bo.y)) {
+  if (damagePlayer(player, t.danio * CONFIG.golpe.danio.puntosPorTiro.jugador, bo.x, bo.y)) {
     world.bus.emit('playerHit', { x: player.x, y: player.y });
     if (!player.alive) world.bus.emit('playerDown', {});
   }

@@ -279,6 +279,9 @@ export function damageEnemy(e, amount, fromX, fromY) {
   e.health -= amount;
   e.hitFlash = CONFIG.feel.hitFlash;
   e.lastSeen = { x: fromX, y: fromY };
+  // Una mancha de sangre por golpe (ver `dibujarHeridas`): con la vida en 100
+  // ya no se puede sacar de cuánta vida perdió.
+  if (amount > 0) e.heridas = (e.heridas || 0) + 1;
 
   /**
    * UN MINI JEFE NO PIERDE EL APUNTADO PORQUE LE PEGUEN.
@@ -325,6 +328,39 @@ export function damageEnemy(e, amount, fromX, fromY) {
   return false;
 }
 
+/**
+ * 🦵 UN TIRO EN LA PIERNA (ver `CONFIG.golpe.piernas`). Casi no saca vida,
+ * pero:
+ *
+ *  - Lo puede TIRAR AL PISO (`caido`). Tirado te sigue disparando, y cuando ve
+ *    una cobertura cerca se levanta y va (ver `actualizarCaido`, systems/ai.js).
+ *  - El segundo lo deja RENGO un rato: camina más lento. La vida no vuelve; la
+ *    renguera, sí.
+ *
+ * Los jefes no: tienen su propia pelea (la embestida, la furia) y un tumbo la
+ * rompería.
+ */
+export function pegarEnLaPierna(e, world) {
+  if (!e.alive || e.esJefe) return;
+  const L = CONFIG.golpe.piernas;
+
+  e.tirosPierna = (e.tirosPierna || 0) + 1;
+  if (e.tirosPierna >= L.rengo.tiros) {
+    e.rengo = L.rengo.duracion;
+    e.tirosPierna = 0;
+  }
+
+  if (e.caido > 0 || e.rendido || e.inconsciente > 0) return;
+  if (!world.rng.chance(L.tumbaGuardia)) return;
+  e.caido = L.caidoMax;
+  e.caidoDesde = 0;
+  e.coverPoint = null;
+  e.atCover = false;
+  e.peeking = false;
+  e.aimTimer = 0;
+  e.burstLeft = 0;
+}
+
 /** La cinta del sombrero de cada tipo: es lo que se ve del que quedó tirado. */
 const CINTA_DE = {
   guardia: '#4a78b8', blindado: '#4a78b8', pistolero: '#b8ad98',
@@ -366,6 +402,24 @@ export function drawEnemy(r, e) {
     dibujarTendido(r, e.x, e.y, {
       tipo, cinta, dormido: true, respira: Math.sin(e.inconsciente * 3) * 0.5,
     });
+    return;
+  }
+
+  /**
+   * 🦵 TUMBADO POR UN TIRO EN LA PIERNA: tirado como el desmayado, pero
+   * despierto y con el arma en la mano apuntándote. Es la diferencia que hay
+   * que leer de un vistazo: el de la "z" no es un problema; éste, sí.
+   */
+  if (e.caido > 0) {
+    dibujarTendido(r, e.x, e.y, { tipo, cinta });
+    const ang = e.facing;
+    const apunta = e.aimTimer > 0;
+    const largo = apunta ? 9 : 6;
+    const bx = e.x, by = e.y - 2;
+    r.line(bx, by, bx + Math.cos(ang) * largo, by + Math.sin(ang) * largo * 0.62,
+      apunta ? '#d8cdbb' : '#6a625a', 1, 0.75);
+    if (apunta) r.rect(bx + Math.cos(ang) * largo - 0.5, by + Math.sin(ang) * largo * 0.62 - 0.5, 1, 1, '#fff6d0');
+    if (e.state === 'combat') dibujarAviso(r, e.x, e.y - 6, 'alerta');
     return;
   }
 
@@ -492,9 +546,9 @@ export function drawEnemy(r, e) {
    * 🩸 HERIDO SE VE EN EL CUERPO, NO EN UNA BARRITA *(Santi: "eliminar lo que
    * hoy parece arcade, que podría ser los cuadros de vida que aparecen encima
    * del personaje")*. Una mancha de sangre por cada tiro que recibió (ver
-   * entities/danio.js): con dos manchas, a un guardia de tres le queda uno.
+   * entities/danio.js), hasta tres.
    */
-  dibujarHeridas(r, e, fig.x, fig.pechoY, fig.manoY, e.maxHealth - e.health);
+  dibujarHeridas(r, e, fig.x, fig.pechoY, fig.manoY, e.heridas || 0);
 
   // Encima de la cabeza queda sólo el aviso de estado o lo que dice.
   const arriba = fig.arriba;

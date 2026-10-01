@@ -8,8 +8,10 @@
  */
 
 import { pointInBody } from '../engine/collision.js';
-import { damageEnemy } from '../entities/enemy.js';
-import { damagePlayer, isHidden } from '../entities/player.js';
+import { damageEnemy, pegarEnLaPierna } from '../entities/enemy.js';
+import { damagePlayer, isHidden, tumbar } from '../entities/player.js';
+import { danioDeBala } from './golpe.js';
+import { CONFIG } from '../data/config.js';
 import { damageRider } from './riders.js';
 import { dañarPuerta } from '../entities/door.js';
 import { dañarRodante } from '../entities/rodante.js';
@@ -186,8 +188,11 @@ export function updateBullets(bullets, dt, world) {
         if (!e.alive || !pointInBody(b.x, b.y, e)) continue;
         b.alive = false;
         hitEnemy = true;
-        const died = damageEnemy(e, b.damage, b.x - b.vx, b.y - b.vy);
-        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
+        // 💥 Cuánto saca según la zona, el arma y la distancia (systems/golpe.js).
+        const { puntos, zona } = danioDeBala(b, e, 'guardia', world.rng);
+        const died = damageEnemy(e, puntos, b.x - b.vx, b.y - b.vy);
+        if (!died && zona === 'piernas') pegarEnLaPierna(e, world);
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona, puntos, queria: b.zonaElegida ? b.zona : null, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
         if (died) world.bus.emit('enemyKilled', { enemy: e, byPlayer: b.owner === 'player' });
         break;
       }
@@ -224,10 +229,21 @@ export function updateBullets(bullets, dt, world) {
         if (b.fromRider && isHidden(p)) continue;
 
         if (p.alive && pointInBody(b.x, b.y, p)) {
-          const hurt = damagePlayer(p, b.damage, b.x - b.vx, b.y - b.vy);
+          const { puntos, zona } = danioDeBala(b, p, 'jugador', world.rng);
+          const hurt = damagePlayer(p, puntos, b.x - b.vx, b.y - b.vy);
           if (hurt) {
             b.alive = false;
-            world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
+            /**
+             * 🦵 UN TIRO EN LA PIERNA TE PUEDE TIRAR AL PISO (`tumbaJugador`),
+             * con un tumbo más corto que el de un barril. Rengo no: *(Santi:
+             * "disparos a la pierna no pueden dejar rengo al jugador")*.
+             */
+            const L = CONFIG.golpe.piernas;
+            if (p.alive && zona === 'piernas' && world.rng.chance(L.tumbaJugador) &&
+                tumbar(p, b.x - b.vx, world)) {
+              p.knockX *= L.empujeJugador;
+            }
+            world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona, puntos, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
             world.bus.emit('playerHit', { x: b.x, y: b.y });
             if (!p.alive) world.bus.emit('playerDown', {});
           }

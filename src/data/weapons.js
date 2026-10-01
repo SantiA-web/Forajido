@@ -91,6 +91,13 @@ export const WEAPONS = {
     range: 240,          // px que recorre la bala antes de perderse
 
     /**
+     * 📏 CUÁNTO PIERDE CON LA DISTANCIA: pega completo hasta el 70% del
+     * alcance y desde ahí baja hasta el 70% del daño en la punta. Es el arma de
+     * media distancia: el que más lejos sigue pegando entero.
+     */
+    caida: { plenoHasta: 0.7, alFinal: 0.7 },
+
+    /**
      * CUÁNTOS VAGONES DE MÁS DESPIERTA UN TIRO, más allá del propio —y sólo
      * cuenta UNA VEZ QUE LA ALARMA YA ESTÁ SONANDO (`spreadAlarm`,
      * raidScene.js): antes de eso, el vagón donde disparaste entero y los dos
@@ -172,6 +179,14 @@ export const WEAPONS = {
     retroceso: 0.0425,
 
     range: 220,
+
+    /**
+     * 📏 PEGA COMPLETO SÓLO HASTA EL 40% del alcance y en la punta saca la
+     * mitad. Antes era igual de fuerte a cualquier distancia y además más
+     * rápido que el Colt, o sea que no tenía contra: ahora es el de pelear
+     * cerca.
+     */
+    caida: { plenoHasta: 0.4, alFinal: 0.5 },
     noiseWagons: 0,
 
     price: 600,

@@ -133,7 +133,8 @@ export function playerMelee(p, world) {
   }
 
   // Golpe de frente: hace daño y lo aturde, pero es un escándalo.
-  const died = damageEnemy(e, arma.damage, p.x, p.y);
+  // `damage` está en tiros de los de antes (ver `golpe.danio.puntosPorTiro`).
+  const died = damageEnemy(e, arma.damage * CONFIG.golpe.danio.puntosPorTiro.guardia, p.x, p.y);
   e.stagger = m.stagger;
   e.aimTimer = 0;
   e.peeking = false;

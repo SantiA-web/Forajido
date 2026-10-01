@@ -99,7 +99,10 @@ canvas {
 /* Con la alarma sonando, lo que llevás encima pesa y te frena. El dorado se
    apaga: la misma plata, ahora convertida en un problema. */
 #hud-money.pesado { color: #b08a34; font-size: 13px; }
-#hud-health .hurt { color: #4a2c26; }
+/* La vida: una barra roja, del mismo estilo que la del caballo pero más chica
+   (la del caballo es lo que más se mira; ésta se mira cuando te dieron). */
+.hud-vida { width: 120px; height: 12px; margin: 3px 0 4px; background: #2a1f18; border: 3px solid #120d0a; box-shadow: 3px 3px 0 #000; }
+.hud-vida > div { height: 100%; background: var(--danger); }
 #hud-ammo .spent { color: #4a3a26; }
 #hud-ammo.reloading { color: var(--ink-dim); }
 

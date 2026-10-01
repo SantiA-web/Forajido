@@ -467,7 +467,7 @@ export function golpearEnTecho(p, x, y, world) {
   p.techoCaido = CONFIG.techo.levantarse;
   p.techoSalto = 0;
   p.techoAgachado = false;
-  damagePlayer(p, CONFIG.techo.obstaculoDanio, x, y);
+  damagePlayer(p, CONFIG.techo.obstaculoDanio * CONFIG.golpe.danio.puntosPorTiro.jugador, x, y);
   world.audio.play('hitWall');
   return true;
 }
@@ -748,6 +748,10 @@ function shoot(p, world) {
     alto: world.aimAlto ?? undefined,
     distancia: world.aimAlto != null ? Math.hypot(world.aimX - p.x, world.aimY - p.y) : 0,
     zona: world.aimZona || undefined,
+    // Apuntar (clic derecho) hace que la bala vaya más seguido a la zona que
+    // tenía la mira; y cada arma pierde distinto con la distancia.
+    apuntado: p.apuntado || 0,
+    caida: w.caida,
   });
 
   p.ammo -= 1;

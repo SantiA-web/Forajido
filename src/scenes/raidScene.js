@@ -888,17 +888,19 @@ export function createRaidScene(services) {
   /** Los sistemas avisan por el bus; la escena reacciona. */
   function listen() {
     unsubscribers = [
-      bus.on('impact', ({ x, y, kind, zona, deJugador, apuntada }) => {
+      bus.on('impact', ({ x, y, kind, zona, puntos, queria, deJugador, apuntada }) => {
         const color = kind === 'flesh' ? colors.blood : '#c9b28a';
         spawnParticles(x, y, color, kind === 'flesh' ? 7 : 4);
         audio.play(kind === 'flesh' ? 'hitFlesh' : 'hitWall');
         // 🧪 De prueba (`CONFIG.golpe.pruebaZonas`): en qué zona pegó tu bala.
+        // Y cuánto sacó, y si la puntería la mandó a otra zona que la que querías.
         if (kind === 'flesh' && deJugador && CONFIG.golpe.pruebaZonas) {
           const Z = T.pruebaZona;
+          const otra = queria && queria !== zona ? Z.querias(queria) : '';
           floaters.push({
             x, y: y - 6,
-            text: (Z[zona] || Z.torso) + (apuntada ? '' : Z.sinBlanco),
-            life: 1.3, color: '#f0e6b8',
+            text: (Z[zona] || Z.torso) + (puntos != null ? ` −${puntos}` : '') + otra + (apuntada ? '' : Z.sinBlanco),
+            life: 1.6, color: '#f0e6b8',
           });
         }
       }),

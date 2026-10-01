@@ -621,7 +621,7 @@ Ahí está todo el juego de esta arma:
 - **La "cocinás" y la tirás sobre el final:** explota casi al caer y no llegan
   a huir. Pero estás más cerca del estruendo y a un segundo de que te vuele
   la mano.
-- **Si nunca la tirás, te explota en la mano** y te saca 3 de tus 4 de vida.
+- **Si nunca la tirás, te explota en la mano** y te saca 75 de tus 100 de vida.
 
 Otras reglas:
 
@@ -705,7 +705,7 @@ situación exacta en la que está:
   de cinco balas**. Tira más sucio que de costumbre, y si todavía no llegó a su
   cobertura, dispara mientras camina. Correr por el pasillo apretando el gatillo
   dejó de ser gratis.
-- **Si le queda un solo tiro de vida y tiene un compañero al lado, se
+- **Si un tiro más al cuerpo lo puede matar y tiene un compañero al lado, se
   repliega.** Te da la espalda y se va caminando por el pasillo, **sin
   disparar** — mientras el otro se planta y sostiene el lugar cubriéndolo.
   Cuando termina la maniobra, el que cubría vuelve a venir por vos.
@@ -2240,11 +2240,37 @@ callado, van al lugar equivocado. Pero cada tiro tuyo vuelve a delatarte.
 
 ## Los guardias
 
-- **No son todos iguales, y se nota mirándolos.** El guardia común aguanta dos
-  balazos. El **guardia blindado** (los del vagón blindado) tiene una placa gris
-  en el pecho y un sombrero más ancho, y aguanta uno más. **No hay barritas de
-  vida**: cada tiro que recibe le deja una mancha de sangre en el torso, así
-  que contando las manchas sabés cuánto le queda.
+- **No son todos iguales, y se nota mirándolos.** El **guardia blindado** (los
+  del vagón blindado) tiene una placa gris en el pecho y un sombrero más ancho:
+  **la placa le protege el pecho** (ahí tus tiros le sacan menos de la mitad),
+  pero no la cabeza. **No hay barritas de vida**: cada tiro que recibe le deja
+  una mancha de sangre en el torso, hasta tres.
+- **Dónde le pegás importa.** Todos tienen 100 de vida (el Dinamitero, 200), y
+  vos también. Cada bala saca un número al azar según la parte del cuerpo:
+
+  | Parte | Tus tiros a un guardia | Los suyos a vos |
+  |---|---|---|
+  | **Cabeza** | 100 a 120: un guardia común cae siempre | 45 a 55 |
+  | **Torso** | 40 a 60: a veces dos tiros, a veces tres | 20 a 30 |
+  | **Piernas** | 8 a 15, casi nada, pero lo puede tirar al piso | 5 a 10 |
+  | **Pecho del blindado** | 16 a 24: unos cinco o seis tiros | — |
+
+- **La mira elige la parte; la puntería decide si le das.** Con la mira sobre la
+  cabeza de un guardia, la bala va a la cabeza 9 de cada 10 veces de cerca
+  apuntando (clic derecho), y la mitad de las veces en el límite del alcance.
+  Sin apuntar, 7 de cada 10 de cerca y 3 de lejos. Si falla, le pega en la
+  parte de al lado. Ellos no eligen: la mayoría de sus balas te dan en el
+  cuerpo, y en promedio te sacan lo mismo que antes (unos cuatro tiros al
+  cuerpo te matan).
+- **Y el arma y la distancia.** El **Colt** pega completo hasta el 70% de su
+  alcance y en la punta saca el 70%: es el de media distancia. El **Smith**
+  pega completo sólo hasta el 40% y en la punta saca la mitad: es el de pelear
+  cerca. Las balas de los guardias pierden como el Colt.
+- **Un tiro en la pierna lo puede tirar al piso** (la mitad de las veces).
+  Tirado te sigue disparando; si tiene una cobertura cerca se levanta y va, y
+  si no, se levanta solo a los 3 segundos. **El segundo tiro en las piernas lo
+  deja rengo**: camina un 25% más lento durante 15 segundos. A vos un tiro en
+  la pierna también te puede tirar (1 de cada 5), pero nunca te deja rengo.
 - **Las puertas, los cajones y los barriles muestran el daño en la madera**:
   intactos, dañados (un par de agujeros y una rajadura), muy dañados
   (agujeros, rajaduras y una esquina arrancada: un tiro más y se rompen) y

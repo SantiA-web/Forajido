@@ -209,7 +209,12 @@ export const CONFIG = {
      */
     hw: 4.5, hh: 3.5,
 
-    health: 4,
+    /**
+     * 💥 100, NO 4 *(Santi: "el jugador también tendría 100 de vida")*. Las
+     * balas de los guardias te sacan la mitad que las tuyas a ellos, así que
+     * seguís aguantando unos 4 tiros al torso: ver `golpe.danio`.
+     */
+    health: 100,
     invulnTime: 0.6,     // invulnerabilidad tras recibir un impacto
     knockback: 26,
     coverReach: 11,      // a qué distancia detecta una pared para cubrirse
@@ -871,14 +876,16 @@ export const CONFIG = {
      */
 
     /**
-     * CON CUÁNTA VIDA SE QUIEBRA. 1 = el último golpe posible, sea cual sea su
-     * tipo: un guardia común (2) se repliega tras el primer balazo, uno blindado
-     * (3 o 4) tras el segundo o el tercero. Se eligió esto por sobre "la mitad
-     * de su vida máxima" porque es lo único que se lee igual para todos: **un
-     * tiro más y se muere**, y eso el jugador ya lo sabe sin ninguna barra de
-     * vida en pantalla.
+     * CON CUÁNTA VIDA SE QUIEBRA: cuando un tiro más al torso lo puede matar,
+     * sea cual sea su tipo. Se eligió esto por sobre "la mitad de su vida
+     * máxima" porque es lo único que se lee igual para todos: **un tiro más y
+     * se muere**, y eso el jugador ya lo sabe sin ninguna barra de vida.
+     *
+     * 🔁 Con la vida en 100 *(ver `golpe.danio`)* era 1 y pasó a 60, lo máximo
+     * que saca un tiro al torso: un guardia común se sigue replegando tras el
+     * primer balazo al cuerpo.
      */
-    repliegueVidaUmbral: 1,
+    repliegueVidaUmbral: 60,
 
     /**
      * QUÉ TAN CERCA TIENE QUE ESTAR EL COMPAÑERO. 90px, el mismo número que la
@@ -2149,6 +2156,103 @@ export const CONFIG = {
      * alguien avisa en qué zona pegó ("DISPARASTE A LA CABEZA").
      */
     pruebaZonas: true,
+
+    /**
+     * 💥 CUÁNTO SACA CADA BALA, SEGÚN DÓNDE PEGA *(Santi: "y si hacemos que
+     * tengan 100 de vida para hacer que los tiros a la cabeza, torso y piernas
+     * sea más variable (el jugador también tendría 100 de vida)")*.
+     *
+     * La vida pasó a 100 y cada bala saca un número AL AZAR dentro de un rango.
+     * El 100 solo no hace variar nada —un torso que saca siempre 50 es lo mismo
+     * que antes con otros números—; lo que varía es el rango.
+     *
+     * La tabla depende de A QUIÉN le pega, no de quién tiró: una bala de un
+     * guardia que le da a otro guardia saca lo mismo que una tuya, igual que
+     * antes (un tiro era un tiro).
+     *
+     *  - **Contra un guardia (100):** la cabeza lo mata siempre (100-120: un
+     *    tiro limpio a la cabeza que a veces no mata se siente como un error
+     *    del juego, no como variación); el torso, a veces con 2 y a veces con
+     *    3 (mitad y mitad); las piernas casi nada, pero tumban.
+     *  - **Contra vos (100):** la mitad, para que sigas aguantando lo mismo
+     *    que hoy: unos 4 tiros al torso, 2 a la cabeza.
+     *
+     * Con el sorteo de los guardias (`sorteoGuardia`) te sacan en promedio
+     * 24 por bala, contra los 25 de antes (1 de 4): la dificultad no se movió.
+     */
+    danio: {
+      contraGuardia: { cabeza: [100, 120], torso: [40, 60], piernas: [8, 15] },
+      contraJugador: { cabeza: [45, 55], torso: [20, 30], piernas: [5, 10] },
+
+      /**
+       * 🛡️ EL BLINDADO LLEVA EL PECHO PROTEGIDO *(Santi: "me gusta mucho la
+       * idea del blindado")*: el torso le saca el 40% (16-24, unos 5 o 6
+       * tiros) y la cabeza, lo de cualquiera. Antes aguantaba más tiros en
+       * todo el cuerpo; ahora se gana con puntería, no con más balas.
+       */
+      blindadoPecho: 0.4,
+
+      /** Los guardias no eligen la zona: les toca esto. */
+      sorteoGuardia: { cabeza: 0.15, torso: 0.6, piernas: 0.25 },
+
+      /**
+       * 🎯 A QUÉ PARTE LE PEGÁS ES UNA PROBABILIDAD. La mira dice a quién y a
+       * qué parte querés pegarle; esto es la chance de que la bala vaya ahí,
+       * de cerca y en el límite del alcance del arma, apuntando (clic
+       * derecho) o no. Si falla, cae en la de al lado: la cabeza y las
+       * piernas falladas pegan en el torso; el torso fallado, en las piernas
+       * (3 de 4) o la cabeza (1 de 4).
+       *
+       * Es la respuesta a *"yo me encuentro literalmente al norte suyo, yo no
+       * puedo decir quiero que mi bala vaya más arriba o más abajo"*: la
+       * altura no se elige con la geometría, se elige con la puntería.
+       */
+      acierto: { apuntadoCerca: 0.9, apuntadoLejos: 0.5, sueltoCerca: 0.7, sueltoLejos: 0.3 },
+
+      /**
+       * LA CAÍDA CON LA DISTANCIA de las balas de los guardias: la misma del
+       * Colt (cada arma tuya trae la suya, `caida` en data/weapons.js).
+       */
+      caidaGuardias: { plenoHasta: 0.7, alFinal: 0.7 },
+
+      /**
+       * LO QUE NO ES UNA BALA sigue anotado "en tiros" donde vive (la dinamita,
+       * los golpes, la embestida del jefe, el obstáculo del techo) y se pasa
+       * acá a la escala nueva: un tiro de antes era la mitad de un guardia (2
+       * de vida) y un cuarto tuyo (4). Así nada de eso duele distinto que antes.
+       */
+      puntosPorTiro: { guardia: 50, jugador: 25 },
+    },
+
+    /**
+     * 🦵 LAS PIERNAS *(Santi: "las piernas no bajan casi nada, pero hacen que
+     * un disparo ahí pueda tumbar al guardia, el guardia disparará desde el
+     * piso hasta que vea un lugar para poder ir a cubierto. Y con dos tiros en
+     * las piernas la velocidad del guardia se reduce un 25% durante una
+     * cantidad de tiempo hasta curarse")*.
+     *
+     *  - `tumbaGuardia`: la chance de que un tiro en la pierna lo tire al
+     *    piso. Tirado te sigue disparando; si ve una cobertura a menos de
+     *    `coberturaCerca`, se levanta y va. Nunca más de `caidoMax` segundos
+     *    (sin cobertura cerca se quedaría tirado para siempre), y nunca menos
+     *    de `caidoMin` (lo que tarda en caer y reponerse).
+     *  - `tumbaJugador`: a vos también te puede tirar *(Santi: "una
+     *    posibilidad del 20% de que el jugador sea tumbado")* — el mismo
+     *    tumbo que un barril. Rengo, en cambio, nunca: *"disparos a la pierna
+     *    no pueden dejar rengo al jugador"*.
+     *  - `rengo`: al segundo tiro en las piernas camina más lento un rato. La
+     *    vida no vuelve; la renguera, sí.
+     */
+    piernas: {
+      tumbaGuardia: 0.5,
+      tumbaJugador: 0.2,
+      caidoMin: 0.6,
+      caidoMax: 3,
+      coberturaCerca: 64,
+      /** El tumbo tuyo por un tiro es más corto que el de un barril que te pasa por encima. */
+      empujeJugador: 0.35,
+      rengo: { tiros: 2, duracion: 15, velocidad: 0.75 },
+    },
   },
 
   feel: {

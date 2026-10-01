@@ -606,12 +606,14 @@ export function createRideScene(services) {
   function recibirTiro(b) {
     // Piso 1: no se puede morir galopando. Perder el asalto antes de haber
     // subido al tren sería el peor castigo posible por el peor motivo.
-    vida = Math.max(1, vida - 1);
+    // Un tiro de los de antes: un cuarto de tu vida (ver `golpe.danio.puntosPorTiro`).
+    const tiro = CONFIG.golpe.danio.puntosPorTiro.jugador;
+    vida = Math.max(1, vida - tiro);
     invuln = A.invulnTras;
     vel = Math.max(-A.trastabillaEmpuje, vel - A.disparoEspanto);
     audio.play('playerHurt');
     aviso = {
-      texto: vida <= 1 ? T.ride.malherido : T.ride.teDieron,
+      texto: vida <= tiro ? T.ride.malherido : T.ride.teDieron,
       color: colors.enemyAlert, life: 1.4,
     };
   }
@@ -1637,10 +1639,10 @@ export function createRideScene(services) {
 
     // Vida: sólo aparece si te dieron. Si nunca te tocaron, no hay por qué
     // ocupar pantalla recordándote que estás sano.
+    // 🔁 Una barra roja, como la del asalto: la vida ya no son 4 puntos, son 100.
     if (vida < CONFIG.player.health) {
-      let s = '';
-      for (let i = 0; i < CONFIG.player.health; i++) s += i < vida ? '●' : '○';
-      r.text(s, bx, yBarra + 15, colors.enemyAlert, 'left');
+      r.rect(bx, yBarra + 10, ancho, 4, '#241c18');
+      r.rect(bx, yBarra + 10, ancho * (vida / CONFIG.player.health), 4, colors.enemyAlert);
     }
 
     // Lo del tren se lee una vez y no vuelve a mirarse: al borde de abajo, que

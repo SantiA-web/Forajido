@@ -2,7 +2,7 @@
 
 import { CONFIG } from '../data/config.js';
 
-export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona }) {
+export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida }) {
   return {
     x, y,
     /**
@@ -15,10 +15,24 @@ export function createBullet({ x, y, angle, speed, damage, range, owner, fromRid
     altoSalida: CONFIG.golpe.alturaArma,
     altoFinal: alto ?? null,
     distancia: distancia ?? 0,
-    /** La parte del cuerpo a la que apuntaste. Hoy todas quitan lo mismo. */
+    /**
+     * La parte del cuerpo a la que apuntaste. Si le pega ahí o en la de al
+     * lado lo decide `danioDeBala` (systems/golpe.js) al llegar.
+     */
     zona: zona || 'torso',
-    /** Si la zona la eligió la mira (o es el torso por no apuntarle a nadie). */
+    /** Si la zona la eligió la mira (o no tenías a nadie bajo la mira). */
     zonaElegida: !!zona,
+    /** Cuánto alcance tiene (para saber qué tan lejos llegó al pegar). */
+    rango: range,
+    /** Qué tan cerrada estaba la mira al tirar, de 0 a 1: apuntar acierta más. */
+    apuntado: apuntado || 0,
+    /** Cuánto pierde con la distancia (`caida` del arma; si no hay, la de los guardias). */
+    caida: caida || null,
+    /**
+     * `damage` sigue en TIROS (1 = un tiro): es lo que les saca a las cosas
+     * —puertas, cajones, barriles— y a los jinetes. A la gente le saca
+     * `danioDeBala`, en la escala de 100.
+     */
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     damage,

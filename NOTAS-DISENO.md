@@ -15797,6 +15797,8 @@ agarran en la estación (el final es el mismo de antes, cambia el porqué).
   del vagón sigue quedando abajo, sin pisarse.
 - 🔺 **La barra, más todavía** *(Santi: "quiero que la barra sea más grande")*:
   240 × 20, casi del alto de la herradura. La herradura quedó en 42.
+- **Pendiente** *(Santi: "podría condicionar la resistencia en el escape. Eso lo
+  iremos viendo")*: que un asalto largo deje al caballo cansado para la huida.
 
 🎥 **El zoom del galope se cierra cuando estás cerca del tren, no cuando
 avanzás** *(Santi: "puede que avance hacia adelante y quedarme bien al sur de la
@@ -15816,8 +15818,53 @@ medido, a la par de la cola pero 130 px al sur, la cámara ya estaba a escala 1 
 - 🐛 **De paso apareció otro:** en la esquina de la largada tu caballo quedaba
   debajo del borde de la pantalla (el mundo se baja para dejar lugar a la HUD y
   al cielo, y lo empujaba afuera). Ahora la cámara nunca deja afuera al caballo.
-- **Pendiente** *(Santi: "podría condicionar la resistencia en el escape. Eso lo
-  iremos viendo")*: que un asalto largo deje al caballo cansado para la huida.
+
+💥 **El daño depende del arma, la distancia y dónde pegás** *(Santi: "depende de
+con que arma, a que distancia y dónde le des le baja más o menos vida y lo mismo
+los guardias con el jugador")*. Todo en `CONFIG.golpe.danio` y `golpe.piernas`;
+la cuenta, en `danioDeBala` (systems/golpe.js).
+
+- **La vida pasó a 100** *(idea de Santi: "para hacer que los tiros a la cabeza,
+  torso y piernas sea más variable")*. Le advertí que el 100 solo no hace variar
+  nada; lo que varía es que **cada zona saca un rango al azar**. Guardias 100
+  (el blindado también), Dinamitero 200, Cazarrecompensas 400, Sheriff 150, vos
+  100. La dificultad del tren (`vidaExtra`) sigue sumando "un tiro", o sea 50:
+  en un tren escoltado el guardia común tiene 150 y la cabeza ya no lo mata de
+  uno.
+- ⚠️ **Corrección mía:** en la propuesta escribí "Sheriff: 8 de vida". El de 8
+  era **el Cazarrecompensas**; el Sheriff tenía 3. Quedaron 400 y 150.
+- **Contra un guardia:** cabeza 100-120 (el común cae siempre: un tiro limpio a
+  la cabeza que a veces no mata se siente como un error), torso 40-60 (dos o
+  tres tiros, mitad y mitad: medido 53/47), piernas 8-15. **Contra vos, la
+  mitad**: 45-55, 20-30, 5-10. Con el sorteo de los guardias (cabeza 15%, torso
+  60%, piernas 25%) te sacan 24,3 por bala, medido en 10.000 tiros, contra 25
+  de antes: la dificultad no se movió.
+- **El blindado con el pecho protegido** *(Santi: "me gusta mucho la idea")*:
+  el torso le saca el 40%, cinco o seis tiros; la cabeza, uno.
+- **La mira elige la zona, la puntería decide** (era la "opción B" pendiente):
+  medido, apuntando va a la zona elegida el 88% de cerca y el 49% en la punta
+  del alcance; sin apuntar, 68% y 30%. Si falla, la de al lado.
+- **El arma y la distancia:** Colt completo hasta el 70% del alcance y 70% en
+  la punta; Smith completo hasta el 40% y 50% en la punta (antes no tenía
+  contra: más rápido e igual de fuerte a cualquier distancia). Las balas de
+  los guardias caen como el Colt — eso las hace un poco más débiles de lejos
+  que antes; si los tiroteos largos se sienten fáciles, es ahí.
+- **Las piernas** *(Santi: 50% de tumbar al guardia, 20% al jugador, "disparos a
+  la pierna no pueden dejar rengo al jugador")*: el guardia tirado sigue
+  disparando desde el piso (medido: cuatro balas en tres segundos) y, si ve una
+  cobertura a menos de 64 px, se levanta y va (medido: a los 0,6 s, a una a 16
+  px). Sin cobertura cerca se levanta a los 3 s. El segundo tiro en las piernas
+  lo deja rengo: 25% más lento por 15 s. A vos te tira con el tumbo del barril,
+  más corto. Los jefes no se tumban ni renguean: tienen su propia pelea.
+- **Lo que no es bala** (dinamita, golpes, la embestida, el obstáculo del
+  techo, los tiros del galope) sigue anotado "en tiros" donde vive y se pasa a
+  la escala nueva (`puntosPorTiro`: 50 a un guardia, 25 a vos): duele lo mismo
+  que antes. Los jinetes y las cosas (puertas, cajones, barriles) siguen
+  contando tiros.
+- **Tu vida es una barra roja** en vez de cuatro círculos, en el asalto y en el
+  galope. Las manchas de sangre ahora cuentan golpes, no vida perdida.
+- 🧪 Los mensajes de prueba dicen además cuánto sacó y si la puntería la mandó a
+  otra zona ("DISPARASTE AL TORSO −49 (QUERÍAS LA CABEZA)").
 
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 

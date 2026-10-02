@@ -842,7 +842,17 @@ export function buildTrain(
          */
         pathFinal = [];
         pathIndexFinal = 0;
-        start = { x: puertaX, y: puertaY };
+        /**
+         * 🔁 CUALQUIERA DE LAS DOS PUERTAS *(Santi: "quiero que hayan de las
+         * dos formas: que ve hacia dentro del vagón hacia el este pero también
+         * hacia el oeste")*. Mitad y mitad: la de entrada (oeste, lado cola)
+         * mirando al este, o la de salida (este, lado locomotora) mirando al
+         * oeste. Siempre de espaldas a la puerta que cuida.
+         */
+        const enLaDeSalida = rng.chance(0.5);
+        start = enLaDeSalida
+          ? { x: (t.colStart + t.cols) * map.size - CONFIG.enemy.puertaAdentro, y: puertaY }
+          : { x: puertaX, y: puertaY };
         /**
          * 🐛 MIRABA PARA CUALQUIER LADO. Heredaba la `facing` de su
          * patrulla original, que no tiene por qué apuntar hacia la puerta
@@ -855,7 +865,7 @@ export function buildTrain(
          * centinela apoyado en la puerta que cuida lo de adentro. El precio
          * lo paga él: el que entra por esa puerta le cae por la espalda.
          */
-        facingFinal = FACINGS.right;
+        facingFinal = enLaDeSalida ? FACINGS.left : FACINGS.right;
         esVigilando = true;
       } else if (comportamiento === 'conversando' && idx < 2) {
         // Sólo los DOS primeros — si el vagón tiene una tercera patrulla

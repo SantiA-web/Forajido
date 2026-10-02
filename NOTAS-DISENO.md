@@ -15932,6 +15932,15 @@ centinela apoyado en la puerta. Consecuencia de juego: el que entra por esa
 puerta le cae por la espalda (lo podés noquear o degollar), y el peligro pasa
 a ser cruzar el vagón por delante de él.
 
+🔁 **Y cualquiera de las dos puertas** *(Santi: "que ve hacia dentro del vagón
+hacia el este pero también hacia el oeste")*. Hasta acá sólo cuidaba la de
+entrada (oeste) mirando al este. Ahora se sortea mitad y mitad: la de entrada
+mirando al este, o la de salida (este) mirando al oeste — siempre de espaldas a
+su puerta. Así no siempre te cae de espaldas: si cuida la de salida, entrás por
+la otra y lo tenés de frente, mirándote cruzar el vagón. Probado en 30 trenes:
+salen de los dos lados, siempre mirando hacia adentro y nunca sobre un asiento.
+Los que caminan a su puerta cuando suena la alarma siguen yendo a la de entrada.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

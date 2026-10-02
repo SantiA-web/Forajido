@@ -15941,6 +15941,24 @@ la otra y lo tenés de frente, mirándote cruzar el vagón. Probado en 30 trenes
 salen de los dos lados, siempre mirando hacia adentro y nunca sobre un asiento.
 Los que caminan a su puerta cuando suena la alarma siguen yendo a la de entrada.
 
+💰 **La recompensa se puede pagar en la oficina del sheriff** *(Santi: "que la
+recompensa que el jugador tenga por su cabeza se pueda pagar en la oficina del
+sheriff del pueblo. Pero con una condición: tenés que tener todo el dinero y no
+ir restando")*. Se le paga al ayudante, que antes sólo decía una frase.
+
+- **Cuesta el doble de la recompensa** (`bounty.precioLimpiar: 2`; Santi eligió
+  la B entre ×1, ×2 y ×3). Con ×1 convenía casi siempre —un buen asalto deja
+  $700-1200 y una captura suma $300— y la recompensa dejaba de importar. Con ×2
+  limpiar tu nombre cuesta un asalto entero. La ficción: no pagás la
+  recompensa, comprás que el cartel "se pierda".
+- **Todo de una o nada.** Si no alcanza, no cobra y dice cuánto falta. Si
+  alcanza, pide confirmación ("¿Seguro? Te quedan $X.") y la recompensa vuelve a
+  0: la cartelera deja de mostrar tu cara y el Cazarrecompensas deja de venir.
+  La fama no se toca.
+- Sin recompensa, el ayudante dice lo de siempre.
+- Probado en el juego: con $500 y $400 de recompensa no cobró nada ("Te faltan
+  $300"); con $1000 cobró $800 y la recompensa quedó en 0.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

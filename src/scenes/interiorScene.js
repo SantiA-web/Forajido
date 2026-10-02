@@ -218,7 +218,55 @@ export function createInteriorScene(services) {
     audio.play('cover');
   }
 
+  /**
+   * 💰 EL AYUDANTE DEL SHERIFF TE VENDE TU CARTEL (ver `bounty.precioLimpiar`
+   * en CONFIG). Sin recompensa no hay nada que hablar: dice lo de siempre.
+   * Con recompensa, te ofrece hacerla desaparecer por el doble — y sólo si
+   * traés todo junto: con menos no te cobra nada, te dice cuánto falta.
+   */
+  function hablarConElAyudante() {
+    const recompensa = gameState.bounty;
+    if (!(recompensa > 0)) {
+      decir(T.interior.dichos.ayudante);
+      audio.play('cover');
+      return;
+    }
+    const precio = Math.round(recompensa * CONFIG.bounty.precioLimpiar);
+    const A = T.interior.ayudante;
+    mensaje = null;
+    menu.abrir(A.pregunta(precio), [
+      { id: 'limpiar', texto: A.limpiar(precio) },
+      { id: 'nada', texto: T.interior.opciones.nada },
+    ], (id) => {
+      if (id !== 'limpiar') {
+        decir(A.nada);
+        audio.play('cover');
+        return false;
+      }
+      if (gameState.money < precio) {
+        decir(A.falta(precio, precio - gameState.money));
+        audio.play('cover');
+        return false;
+      }
+      // Es mucha plata de un golpe: se confirma.
+      menu.abrir(A.seguro(gameState.money - precio), [
+        { id: 'pagar', texto: A.pagar },
+        { id: 'no', texto: A.mejorNo },
+      ], (op) => {
+        if (op !== 'pagar') { decir(A.nada); audio.play('cover'); return false; }
+        gameState.money -= precio;
+        gameState.bounty = 0;
+        decir(A.pagado(precio), 4);
+        audio.play('loot');
+        return false;
+      });
+      return true;
+    });
+  }
+
   function usar(p) {
+    if (p.id === 'ayudante') { hablarConElAyudante(); return; }
+
     // Los vendedores preguntan; las cosas contestan.
     if (p.dialogo) { abrirDialogo(p); return; }
 

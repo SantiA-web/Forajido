@@ -492,6 +492,21 @@ export const T = {
       return lineas;
     },
 
+    /**
+     * 💰 EL AYUDANTE DEL SHERIFF, cuando hay un cartel con tu cara. Nunca dice
+     * "pagar la recompensa": lo que se compra es que el cartel se pierda.
+     */
+    ayudante: {
+      pregunta: (precio) => `"Por $${precio}, ese cartel se pierde."`,
+      limpiar: (precio) => `LIMPIAR MI NOMBRE ($${precio})`,
+      nada: '"Como quieras. El cartel sigue ahí."',
+      falta: (precio, falta) => [`"Con eso no alcanza. Volvé con $${precio}."`, `Te faltan $${falta}.`],
+      seguro: (queda) => `"¿Seguro? Te quedan $${queda}."`,
+      pagar: 'SÍ, PAGAR',
+      mejorNo: 'MEJOR NO',
+      pagado: (precio) => [`Cuenta los $${precio} sin apuro y arranca tu cartel.`, '"Nunca te vi."'],
+    },
+
     dialogoAyuda: '[W/S] ELEGIR     [E] ACEPTAR     [ESC] CORTAR',
 
     prompts: {

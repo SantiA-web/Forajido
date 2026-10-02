@@ -1947,6 +1947,21 @@ export const CONFIG = {
 
     // Salto fijo si te capturan, APARTE de todo lo demás (tienen tu cara).
     capturaFlat: 300,
+
+    /**
+     * 💰 LIMPIAR TU NOMBRE: cuánto cuesta pagarle al ayudante del sheriff
+     * para que tu cartel "se pierda", en veces tu recompensa *(Santi: "que la
+     * recompensa que el jugador tenga por su cabeza se pueda pagar en la
+     * oficina del sheriff [...] tenés que tener todo el dinero y no ir
+     * restando")*.
+     *
+     * Elegido por Santi entre ×1, ×2 y ×3. Con ×1 convenía casi siempre (un
+     * buen asalto deja $700-1200 y una captura suma $300): la recompensa
+     * dejaba de importar. Con ×2 cuesta un asalto entero, así que es una
+     * decisión. No estás pagando la recompensa: estás comprando el silencio de
+     * la ley, y eso sale caro. Todo de una o nada — no se paga en cuotas.
+     */
+    precioLimpiar: 2,
   },
 
   /**

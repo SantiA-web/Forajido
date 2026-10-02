@@ -169,7 +169,7 @@ Una calle de tierra, de día, más ancha que la pantalla: hay que recorrerla.
 | **Establo** | **Sólo de día** | **Los caballos, y se los puede ir a ver** |
 | **Armería** | **Sólo de día** | **Las armas, y se las puede ir a ver.** El armero vende dos cosas: fuego y **acero** (cuchillo y hacha) |
 | **Cantina** | Siempre | Contratar compañeros. Barra, mesas y **mesa de póker** |
-| **Oficina del Sheriff** | Siempre | **Tu cartel de "se busca", y a cuánto estás de la horca** |
+| **Oficina del Sheriff** | Siempre | **Tu cartel de "se busca", a cuánto estás de la horca, y el ayudante que por el doble lo hace desaparecer** |
 | **Casa de empeños** | **Siempre** | **El perista: acá se vende lo que sacaste del tren de carga** |
 
 **El perista abre cuando los demás cierran**, y es lo único que hay que saber del
@@ -2332,8 +2332,14 @@ No mide lo que hiciste: mide **si te identificaron haciéndolo**.
   aparte de todo lo anterior: tienen tu cara.
 - **La plata robada no la toca.** Un ladrón cuidadoso que vacía el tren entero
   sin matar a nadie puede tener recompensa cero.
-- **Se paga en la cárcel** — o **matando al cazarrecompensas**, que es la única
-  forma de bajarla sin entregarte (ver arriba). Ver abajo.
+- **Se paga en la cárcel** — o **matando al cazarrecompensas** (ver arriba), o
+  **comprándole al ayudante del sheriff que tu cartel se pierda**.
+- **Limpiar tu nombre cuesta el doble de tu recompensa, y todo de una.** En la
+  oficina del sheriff, hablale al ayudante: *"Por $X, ese cartel se pierde."*
+  Si no traés toda la plata no te cobra nada y te dice cuánto te falta; si la
+  traés, te pide que confirmes y tu recompensa vuelve a cero. No es pagar la
+  recompensa: es comprar el silencio de la ley, y por eso sale el doble (con lo
+  mismo que la recompensa, convenía siempre y dejaba de importar).
 
 Se ve en la pantalla de resultados, en el campamento, en el pueblo y —sobre
 todo— en el cartel de "se busca" de la oficina del sheriff.

@@ -15866,6 +15866,40 @@ la cuenta, en `danioDeBala` (systems/golpe.js).
 - 🧪 Los mensajes de prueba dicen además cuánto sacó y si la puntería la mandó a
   otra zona ("DISPARASTE AL TORSO −49 (QUERÍAS LA CABEZA)").
 
+🤖 **El daño, medido con un bot** *(Santi: "quiero confirmarlos con un bot.
+Prueba bastantes asaltos con ambas armas...")*. `banco-bot.js` (en la raíz, no
+se versiona): el bot entra por la cola y avanza vagón por vagón peleando con
+todo guardia que ve, sin cubrirse ni robar (cruza el blindado como por el
+techo). Dos trenes × dos armas × lejos (se planta al 80% del alcance) o cerca
+(al 25%) × tres estilos: **parar y apuntar a la cabeza** (clic derecho),
+**cabeza sin parar** (moviéndose de costado) y **torso sin parar**. 50 asaltos
+por combinación, 1.200 en total, dificultad fácil; y 1.760 más probando
+cambios. Guardias derribados por asalto, promedio de los dos trenes:
+
+| | Parar y apuntar (cabeza) | Cabeza sin parar | Torso sin parar |
+|---|---|---|---|
+| Colt lejos | **8,1** | 7,2 | 4,2 |
+| Colt cerca | 4,6 | **6,8** | 3,6 |
+| Smith lejos | **13,6** | 7,4 | 4,4 |
+| Smith cerca | **9,6** | 8,8 | 4,7 |
+
+- **Los números del diseño se cumplen** en el juego de verdad (cabeza de un
+  tiro, torso dos o tres, 24 por bala contra vos).
+- **Cabeza le gana siempre al torso** (1,7 a 3 veces). El bot pone la mira en
+  la cabeza perfecto; una persona, no, así que en la mano la distancia es menor.
+- **Parar a apuntar conviene de lejos** (Colt +13%, Smith +82%) y **no de
+  cerca** (Colt −32%: mientras se planta lo agarran; Smith empata).
+- **El Smith le gana al Colt en todo** (13,6 contra 8,1 en lo mejor de cada
+  uno), y no por el daño: recarga en 1 s contra 3,5 y tira más rápido.
+- **La caída con la distancia casi no pesa**: "lejos" pelea a 114 px de
+  mediana (la mitad del alcance), porque los guardias se acercan.
+- **Cambios medidos que NO movieron nada** (diferencias dentro del ruido): el
+  Smith perdiendo más con la distancia (35% en la punta), el torso más fácil de
+  acertar (+15 puntos), el torso 45-60 en vez de 40-60, y el Colt pegando un 20%
+  más. **Uno movió poco:** el Smith apuntando menos preciso (0,06) bajó un 10% su
+  mejor combinación. Lo que decide los tiroteos es el tiempo (cadencia y
+  recarga) y la cabeza, no el número de daño.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

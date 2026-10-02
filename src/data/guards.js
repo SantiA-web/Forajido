@@ -256,6 +256,26 @@ export const GUARD_TYPES = {
    * Lo peligroso de este tipo igual no es cuánto aguanta: es lo que le hace al
    * resto del tren mientras respira.
    */
+  /**
+   * 📜 EL ENCARGADO DEL TREN *(Santi: "al matar a un guardia especial podés
+   * registrarlo para encontrar el papel que dice dónde está la caja fuerte";
+   * "el encargado diría que vaya por el vagón de almacén y cerrados (en el de
+   * carga) y por el de correo y algún otro más en el de pasajeros")*.
+   *
+   * Uno por tren, en los dos trenes. Da vueltas entre el almacén (carga) o el
+   * correo (pasajeros) y sus vecinos, con la misma ronda de tres vagones que
+   * el Dinamitero (ver world/train.js), y lleva la llave del tren. Va SIEMPRE,
+   * haya caja oculta o no: si sólo viajara cuando hay una, verlo ya sería la
+   * pista. Se lo reconoce por la silueta: gorra y una cartera de cuero
+   * colgada al costado.
+   */
+  encargado: {
+    id: 'encargado',
+    name: 'Encargado del tren',
+    health: 100,
+    look: 'cartera',
+  },
+
   sheriff: {
     id: 'sheriff',
     name: 'El Sheriff',

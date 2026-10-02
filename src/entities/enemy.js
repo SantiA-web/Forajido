@@ -364,7 +364,7 @@ export function pegarEnLaPierna(e, world) {
 /** La cinta del sombrero de cada tipo: es lo que se ve del que quedó tirado. */
 const CINTA_DE = {
   guardia: '#4a78b8', blindado: '#4a78b8', pistolero: '#b8ad98',
-  dinamitero: '#e03a2a', encubierto: '#3fa870', sheriff: '#e8c34a',
+  dinamitero: '#e03a2a', encubierto: '#3fa870', sheriff: '#e8c34a', encargado: '#c8a84a',
 };
 
 export function drawEnemy(r, e) {

@@ -70,6 +70,12 @@ export const ROPA = {
     pant: '#443a2e', cuello: 'saco', funda: true, barba: '#3e2a1c', barbaP: 40, bigote: 'grande',
     bandolera: true, extras: bandolera,
   },
+  // 📜 El Encargado del tren: gorra, saco oscuro de botones dorados, y la cartera.
+  encargado: {
+    sombrero: 'kepi', chal: ['#2a2c34', '#40434e', '#1c1e24'], manga: ['#2a2c34', '#40434e', '#1c1e24'],
+    pant: '#2a2a2e', cuello: 'saco', saco: true, botones: ORO, funda: true,
+    barba: '#7a706a', barbaP: 24, bigote: 'grande', extras: cartera,
+  },
   sheriff: {
     sombrero: 'alto', chal: ['#2e2a28', '#464240', '#1e1c1a'], manga: ['#2e2a28', '#464240', '#1e1c1a'],
     pant: '#2a2622', cuello: 'panuelo', panueloColor: '#4a4a52', saco: true, botones: ORO, funda: true,
@@ -108,6 +114,7 @@ export const ROPA_DE_LOOK = {
   bandolera: 'dinamitero',
   civil: 'encubierto',
   estrella: 'sheriff',
+  cartera: 'encargado',
 };
 
 export const ROPA_DE_JEFE = {
@@ -138,6 +145,27 @@ function bandolera(L, vista, o = {}) {
     const lleno = i >= 4 - quedan;
     L.rect(19 + i * 3, y + 3 + i * 3, 2, 3, lleno ? '#b8603a' : '#4a3018');
   }
+}
+/**
+ * 📜 LA CARTERA DEL ENCARGADO: la correa cruzada y el bolso de cuero a la
+ * cadera, que SOBRESALE del cuerpo. Es lo que lo distingue de lejos de un
+ * guardia común (los dos llevan gorra): la silueta tiene un bulto al costado.
+ * Ahí adentro van los papeles del tren.
+ */
+function cartera(L, vista) {
+  const CUERO = '#86562e', CUERO_L = '#a87442', CUERO_S = '#5a3820';
+  if (vista === 'lado') {
+    L.poly([[22, 32], [25, 32], [21, 48], [18, 48]], CUERO_S);
+    L.rect(12, 46, 8, 9, CUERO);
+    L.rect(12, 46, 8, 2, CUERO_L);
+    L.rect(15, 49, 2, 2, LATON);
+    return;
+  }
+  L.poly([[29, 32], [32, 33], [17, 49], [14, 48]], vista === 'espalda' ? CUERO_S : CUERO);
+  L.rect(8, 46, 9, 9, CUERO);
+  L.rect(8, 46, 9, 2, CUERO_L);
+  L.rect(8, 53, 9, 2, CUERO_S);
+  if (vista !== 'espalda') L.rect(11, 49, 2, 2, LATON);
 }
 function estrella(L, vista) {
   if (vista === 'espalda') return;

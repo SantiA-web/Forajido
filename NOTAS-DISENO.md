@@ -15980,6 +15980,37 @@ lo que ya abrís")*.
   pasajeros → siguen los civiles y ningún papel. En el juego: agarrar el bulto
   con papel muestra la pista, y la caja aparece al llegar al lugar.
 
+📜 **Registrar guardias especiales** *(Santi: "al matar a un guardia especial
+podés registrarlo para encontrar el papel que dice dónde está la caja fuerte,
+aquí no importaría si es de pasajeros o carga"; "lo podés noquear, pero también
+me refería al dinamitero y al pistolero")*.
+
+- **Quiénes:** el Encargado (nuevo), el Dinamitero y los Pistoleros
+  (`REGISTRABLES` en world/train.js). Si hay caja oculta, los tres llevan el
+  papel.
+- **Cómo:** al caer —muerto o noqueado— deja a sus pies un botín invisible
+  (`LOOT_TYPES.registro`): `[E] Registrar`, 1,5 s, en silencio. Da $40-80
+  siempre, y el papel si hay caja. Si el noqueado se despierta antes, deja de
+  poder registrarse; si lo volteás de nuevo, vuelve a poder.
+- **El Encargado del tren** *(Santi: "diría que vaya por el vagón de almacén y
+  cerrados (en el de carga) y por el de correo y algún otro más en el de
+  pasajeros")*: uno por tren, 100 de vida, ronda entre el almacén y los cerrados
+  (carga) o el correo y el comedor (pasajeros). El orden de los vagones se
+  sortea, así que la primera versión —la vuelta de tres vagones del Dinamitero
+  alrededor del almacén o el correo— no pasaba por los cerrados ni el comedor la
+  mitad de las veces. Ahora camina de punta a punta entre el primero y el último
+  de los suyos. No cruza el blindado (puertas de chapa): si quedan de los dos
+  lados, se queda con los del lado del principal. Lleva la llave del tren, no se
+  congela por lejanía y está siempre, haya caja o no (si no, verlo sería la
+  pista). El "algún otro más" del correo lo elegí yo: el comedor.
+- **Su dibujo:** gorra (como el guardia común, a propósito: es del tren),
+  saco oscuro de botones dorados, bigote gris y una cartera de cuero a la cadera
+  que sobresale del cuerpo — es lo que lo distingue de lejos. La primera cartera
+  era muy oscura contra el saco; se aclaró el cuero.
+- Probado: 40 trenes → siempre un Encargado, papel sólo con caja, Dinamitero
+  registrable en los de armas. Registrarlo tarda 1,5 s y muestra la pista y la
+  plata; el noqueado que se despierta ya no se deja registrar.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

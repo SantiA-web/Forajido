@@ -333,6 +333,59 @@ function barridoDe(cols) {
  * puede entrar— así que incluirlo sería mandarlo a empujar una pared. De ese
  * lado la ronda se queda adentro del vagón de armas.
  */
+/**
+ * 📜 LA VUELTA DEL ENCARGADO: va y viene entre SUS vagones, estén donde estén.
+ * En el de carga, el almacén y los cerrados; en el de pasajeros, el correo y el
+ * comedor. El orden de los vagones se sortea, así que no siempre son vecinos:
+ * camina de punta a punta entre el primero y el último de los suyos, cruzando
+ * lo que haya en el medio (lleva la llave, las puertas trabadas no lo frenan).
+ *
+ * Lo único que no cruza es el blindado —sus puertas son de chapa—: si sus
+ * vagones quedan de los dos lados, se queda con los del lado del principal
+ * (el almacén o el correo). Si el tren no tiene ninguno de los suyos, hace la
+ * vuelta de tres vagones del Dinamitero alrededor del último vagón abierto.
+ */
+function rondaEncargado(rng, tramos, map) {
+  const size = map.size;
+  const vagones = tramos.filter((t) => t.tipo === 'vagon');
+  const id = (t) => t.plantilla.id;
+  const principal = vagones.find((t) => id(t) === 'almacen') || vagones.find((t) => id(t).startsWith('correo'));
+  if (!principal) {
+    const ultimo = vagones.slice().reverse().find((t) => !t.plantilla.puertasBlindadas);
+    if (!ultimo) return null;
+    return { ...rondaDinamitero(rng, ultimo, tramos, map), tramo: ultimo };
+  }
+  const esSuyo = id(principal) === 'almacen'
+    ? (t) => id(t) === 'almacen' || id(t) === 'cerrado'
+    : (t) => id(t).startsWith('correo') || id(t).startsWith('comedor');
+
+  // Del principal hacia cada lado, hasta toparse con un blindado.
+  const i = vagones.indexOf(principal);
+  let a = i, b = i;
+  for (let k = i - 1; k >= 0 && !vagones[k].plantilla.puertasBlindadas; k--) if (esSuyo(vagones[k])) a = k;
+  for (let k = i + 1; k < vagones.length && !vagones[k].plantilla.puertasBlindadas; k++) if (esSuyo(vagones[k])) b = k;
+  if (a === b) return { ...rondaDinamitero(rng, principal, tramos, map), tramo: principal };
+
+  const primero = vagones[a], ultimo = vagones[b];
+  const y = map.tileCenter(0, 4).y;
+  const xIzq = (primero.colStart + 3) * size;
+  const xDer = (ultimo.colStart + ultimo.cols - 3) * size;
+  const haciaDerecha = rng.chance(0.5);
+  return {
+    path: [{ x: xIzq, y }, { x: xDer, y }],
+    startX: (principal.colStart + principal.cols / 2) * size,
+    pathIndex: haciaDerecha ? 1 : 0,
+    facing: haciaDerecha ? FACINGS.right : FACINGS.left,
+    y,
+    x0: primero.colStart * size + 6,
+    x1: (ultimo.colStart + ultimo.cols) * size - 6,
+    tramo: principal,
+  };
+}
+
+/** 📜 Los guardias que llevan papeles encima y se pueden registrar. */
+const REGISTRABLES = new Set(['encargado', 'dinamitero', 'pistolero']);
+
 function rondaDinamitero(rng, tramoArmas, tramos, map) {
   const size = map.size;
   const vagones = tramos.filter((t) => t.tipo === 'vagon');
@@ -1406,6 +1459,39 @@ export function buildTrain(
   }
 
   /**
+   * --- 📜 EL ENCARGADO DEL TREN ---
+   *
+   * *(Santi: "el encargado diría que vaya por el vagón de almacén y cerrados
+   * (en el de carga) y por el de correo y algún otro más en el de pasajeros")*
+   *
+   * Uno por tren. Va y viene entre el almacén y los cerrados (carga) o entre
+   * el correo y el comedor (pasajeros) — ver `rondaEncargado`. Igual que el
+   * Dinamitero: no sale de esa vuelta, no se congela por lejanía, y lleva la
+   * llave del tren (es el que está a cargo).
+   */
+  const rondaEnc = rondaEncargado(rng, tramos, map);
+  if (rondaEnc) {
+    const ronda = rondaEnc;
+    const tramoEncargado = rondaEnc.tramo;
+    const guard = createEnemy(ronda.startX, ronda.y, {
+      path: ronda.path,
+      facing: ronda.facing,
+      type: 'encargado',
+      health: guardHealth('encargado', dificultad.vidaExtra),
+      ai: { ...perfilIA, patrolSpeed: CONFIG.enemy.speed },
+    });
+    guard.pathIndex = ronda.pathIndex;
+    guard.confinado = { x0: ronda.x0, x1: ronda.x1 };
+    guard.rondaLarga = true;
+    guard.tieneLlave = true;
+    guard.wagon = tramoEncargado.wagon;
+    guard.homePath = guard.path;
+    enemies.push(guard);
+    wagons[tramoEncargado.wagon].guardiasVivos++;
+    revisar(avisos, map, guard, 'el Encargado del tren');
+  }
+
+  /**
    * --- LA CAJA FUERTE OCULTA (Fase 5, segunda vuelta) ---
    *
    * *(Santi: "puede estar en cualquier vagón. Hay tres civiles por tren que
@@ -1495,6 +1581,7 @@ export function buildTrain(
         const pos = map.tileCenter(donde.col + tramo.colStart, donde.row);
         const caja = createLootable(pos.x, pos.y, 'cajaOculta', rng);
         caja.wagon = tramo.wagon;
+        caja.escondite = escondite;
         caja.oculto = true;
 
         /**
@@ -1543,6 +1630,20 @@ export function buildTrain(
         }
       }
     }
+  }
+
+  /**
+   * 📜 LOS QUE SE PUEDEN REGISTRAR *(Santi: "al matar a un guardia especial
+   * podés registrarlo para encontrar el papel [...] también me refería al
+   * dinamitero y al pistolero")*: el Encargado, el Dinamitero y los
+   * Pistoleros, muertos o noqueados, en los dos trenes. Si hay caja oculta,
+   * los tres llevan el papel; si no, unos pesos (ver LOOT_TYPES.registro).
+   */
+  const cajaDelTren = loot.find((l) => l.typeId === 'cajaOculta');
+  for (const e of enemies) {
+    if (!REGISTRABLES.has(e.type)) continue;
+    e.registrable = true;
+    if (cajaDelTren) e.papelCaja = { caja: cajaDelTren, vagon: cajaDelTren.wagon, escondite: cajaDelTren.escondite };
   }
 
   if (avisos.length) {

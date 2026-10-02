@@ -906,6 +906,7 @@ export function createRaidScene(services) {
       }),
 
       bus.on('enemyKilled', ({ enemy, byPlayer, rendido, indefenso }) => {
+        dejarParaRegistrar(enemy);
         /**
          * MATAR AL CAZARRECOMPENSAS NO CUENTA COMO UN MUERTO MÁS.
          *
@@ -1074,7 +1075,8 @@ export function createRaidScene(services) {
 
       // Noqueo limpio (culata, por la espalda, a alguien que nunca te vio):
       // mueve `honor` un poco. Ver CONFIG.honor.noquearLimpio.
-      bus.on('enemyKnockedOut', ({ limpio }) => {
+      bus.on('enemyKnockedOut', ({ enemy, limpio }) => {
+        dejarParaRegistrar(enemy);
         if (limpio) noqueadosLimpios++;
       }),
 
@@ -2906,6 +2908,8 @@ export function createRaidScene(services) {
     let nearestDist = CONFIG.loot.radius;
     for (const l of loot) {
       if (l.taken) continue;
+      // El noqueado que se despertó ya no se deja registrar: se fue caminando.
+      if (l.guardia && l.guardia.alive && !(l.guardia.inconsciente > 0)) continue;
       /**
        * LA CAJA ESCONDIDA APARECE CUANDO LA TENÉS AL LADO (Fase 5).
        *
@@ -3376,9 +3380,26 @@ export function createRaidScene(services) {
     }
   }
 
+  /**
+   * 📜 UN CUERPO QUE SE PUEDE REGISTRAR (ver REGISTRABLES en world/train.js):
+   * cuando cae —muerto o noqueado— deja a sus pies algo que se "levanta" con
+   * [E] como cualquier botín. Se registra una sola vez; si estaba noqueado y
+   * se despierta antes, se vuelve a poder cuando lo voltees de nuevo.
+   */
+  function dejarParaRegistrar(e) {
+    if (!e || !e.registrable || e.registrado) return;
+    if (e.registro && !e.registro.taken) return;
+    const l = createLootable(e.x, e.y, 'registro', rng);
+    l.guardia = e;
+    l.papelCaja = e.papelCaja || null;
+    e.registro = l;
+    loot.push(l);
+  }
+
   function takeLoot(l) {
     l.taken = true;
     l.progress = 0;
+    if (l.guardia) l.guardia.registrado = true;
 
     /**
      * UN OBJETO NO SE COBRA ACÁ (ver data/objetos.js). Va a la espalda, no al
@@ -3510,7 +3531,8 @@ export function createRaidScene(services) {
 
   function goToResults() {
     const leftBehind = loot
-      .filter((l) => !l.taken)
+      // Lo que tenía un cuerpo en el bolsillo no es "botín que dejaste".
+      .filter((l) => !l.taken && l.typeId !== 'registro')
       .reduce((sum, l) => sum + numero(l.value, 'el valor de un botin sin levantar'), 0);
 
     // Trabajo limpio: escapar sin que suene la alarma paga el doble. Es lo que

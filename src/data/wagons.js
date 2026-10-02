@@ -1497,6 +1497,20 @@ export const LOOT_TYPES = {
    * haber encontrado algo que estaba escondido— y meterle otra lotería
    * encima sería premiar dos veces la misma jugada.
    */
+  /**
+   * 📜 REGISTRAR UN CUERPO: el del Encargado, el Dinamitero o un Pistolero,
+   * muerto o noqueado. Un segundo y medio, en silencio. Si el tren esconde
+   * una caja, en el bolsillo está el papel que dice dónde; si no, unos pesos.
+   * No se dibuja: lo que se ve es el cuerpo.
+   */
+  registro: {
+    id: 'registro',
+    name: 'Registrar',
+    min: 40, max: 80,
+    noisy: false,
+    tiempo: 1.5,
+  },
+
   cajaOculta: {
     id: 'cajaOculta',
     name: 'Caja fuerte oculta',

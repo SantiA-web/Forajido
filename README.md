@@ -1489,6 +1489,19 @@ Escondites del tren de carga: entre la carga (vagón cerrado), entre los cajones
 (ganado), entre los bultos (plataforma), y en el caboose. En la góndola no:
 ahí se camina arriba del carbón.
 
+**Y en los dos trenes, registrando a ciertos guardias.** El **Encargado del
+tren** (gorra, saco de botones dorados y una cartera de cuero colgada al
+costado), el **Dinamitero** y los **Pistoleros** llevan papeles encima. Muerto o
+noqueado, parate al lado del cuerpo y mantené `[E] Registrar` un segundo y
+medio, en silencio: siempre encontrás unos pesos ($40-80), y si el tren esconde
+una caja, el papel que dice dónde está. Si estaba noqueado y se despierta antes,
+ya no se deja.
+
+El Encargado va **uno por tren** y da vueltas entre sus vagones: el almacén y
+los cerrados en el de carga, el correo y el comedor en el de pasajeros. Lleva la
+llave del tren, y está aunque no haya caja: si sólo viajara cuando hay una,
+verlo ya sería la pista.
+
 Vale más que una caja normal ($400-900 contra $150-600) y tarda más en
 abrirse (8 segundos contra 6,5): estaba escondida por algo.
 

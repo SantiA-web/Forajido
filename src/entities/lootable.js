@@ -206,6 +206,8 @@ function piezaCajaFuerte(base, adentro, reventada) {
 
 export function drawLootable(r, l) {
   const col = CONFIG.colors;
+  // Registrar un cuerpo: lo que se ve es el cuerpo, no hay nada más que dibujar.
+  if (l.typeId === 'registro') return;
   // Escondida: no hay nada que ver. Ni una silueta, ni una sombra — si algo
   // se dibujara, dejaría de estar oculta.
   if (l.oculto) return;

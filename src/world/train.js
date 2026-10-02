@@ -792,7 +792,7 @@ export function buildTrain(
     // usa `puertaDeEntradaDe` en systems/ai.js para "alertaEnPuerta", así que
     // un guardia "vigilandoPuerta" nace exactamente donde ese sistema ya
     // sabe mandar a un guardia alertado.
-    const puertaX = t.colStart * map.size + 10;
+    const puertaX = t.colStart * map.size + CONFIG.enemy.puertaAdentro;
     const puertaY = enTiles([0, 4]).y;
 
     // La caja fuerte de este vagón, si tiene una (ver `elegibleCaja` en

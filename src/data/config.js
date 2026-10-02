@@ -797,6 +797,17 @@ export const CONFIG = {
     loseTargetTime: 9.0,    // cuánto te sigue buscando después de perderte
 
     /**
+     * 🚪 DÓNDE SE PARA EL QUE CUIDA LA PUERTA, contado desde el borde del
+     * vagón. *(Santi: "los guardias que custodian las puertas literal aparecen
+     * encima de la puerta. Debería aparecer delante")*. Era 10, y la puerta
+     * ocupa los primeros 16 px del vagón: el guardia quedaba parado ADENTRO
+     * del marco. 30 = la puerta (16) + medio cuerpo (6) + un paso (8): delante
+     * de la puerta, del lado de adentro. Lo usan el que nace vigilándola y el
+     * que va hacia ella cuando suena la alarma (`puertaDeEntradaDe`).
+     */
+    puertaAdentro: 30,
+
+    /**
      * EL PÁNICO — tercera versión. Ya no es "está cerca": es "lo vi, está
      * expuesto, y viene derecho hacia mí". Historia completa en
      * NOTAS-DISENO.md; acá el resumen de la versión que quedó.

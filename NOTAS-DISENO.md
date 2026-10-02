@@ -15917,6 +15917,14 @@ cambios. Guardias derribados por asalto, promedio de los dos trenes:
   de lejos. El precio: el principio del juego, con el Colt, es un poco más
   fácil (parando a apuntar de lejos perdés 9 de vida por guardia, contra 12).
 
+🚪 **El que cuida la puerta se para delante, no adentro del marco** *(Santi:
+"los guardias que custodian las puertas literal aparecen encima de la puerta")*.
+Nacía a 10 px del borde del vagón y la puerta ocupa los primeros 16: quedaba
+parado dentro de la puerta. Ahora a 30 (`enemy.puertaAdentro`): la puerta, medio
+cuerpo y un paso. Mismo arreglo para el que camina hacia su puerta cuando suena
+la alarma (`puertaDeEntradaDe`), que tenía el mismo +10. Probado en 30 trenes
+(15 de cada uno): en ningún vagón ese lugar cae sobre un asiento o un bulto.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

@@ -462,13 +462,13 @@ export function alertaEnPuerta(e, world) {
  * buscarla en `world.doors`: cada vagón guarda su propio borde de menor `x`
  * (`train.wagons[i].x`, world/train.js), que es exactamente ese lado, porque
  * los vagones se arman en orden creciente de `x` desde la cola hacia la
- * locomotora. `+10` para pararse un paso adentro del marco, no clavado en la
- * línea del enganche.
+ * locomotora. `puertaAdentro` para pararse un paso adentro, delante de la
+ * puerta (era `+10`, y eso es adentro del marco: ver CONFIG.enemy).
  */
 function puertaDeEntradaDe(wagonIndex, world) {
   const w = world.train && world.train.wagons[wagonIndex];
   if (!w) return null;
-  return { x: w.x + 10, y: CONFIG.techo.centroY };
+  return { x: w.x + CONFIG.enemy.puertaAdentro, y: CONFIG.techo.centroY };
 }
 
 function enterCombat(e, world, shout = true) {

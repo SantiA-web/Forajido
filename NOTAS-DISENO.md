@@ -15899,6 +15899,23 @@ cambios. Guardias derribados por asalto, promedio de los dos trenes:
   más. **Uno movió poco:** el Smith apuntando menos preciso (0,06) bajó un 10% su
   mejor combinación. Lo que decide los tiroteos es el tiempo (cadencia y
   recarga) y la cabeza, no el número de daño.
+- ✅ **El Colt recarga en 2,5 s en vez de 3,5** *(Santi: "aplica el 2,5"; la
+  otra opción, que apuntar no le sirva al Smith, la descartó: "no es realista
+  ni conveniente")*. Medido en 1.200 asaltos más, guardias por asalto:
+
+  | | Colt 3,5 s | Colt 3,0 s | **Colt 2,5 s** | Smith |
+  |---|---|---|---|---|
+  | Lejos, parar y apuntar | 8,1 | 10,3 | **10,9** | 13,6 |
+  | Lejos, cabeza sin parar | 7,2 | 7,9 | **9,1** | 7,4 |
+  | Lejos, torso sin parar | 4,2 | 4,4 | **4,7** | 4,4 |
+  | Cerca, parar y apuntar | 4,6 | 6,1 | **6,1** | 9,6 |
+  | Cerca, cabeza sin parar | 6,8 | 6,6 | **7,7** | 8,8 |
+  | Cerca, torso sin parar | 3,6 | 3,4 | **4,0** | 4,7 |
+
+  De lejos sin pararse el Colt pasa a ganar, de cerca gana el Smith, y lo mejor
+  del Smith le sigue sacando ventaja (paga sus $600). Con 3,0 quedaban empatados
+  de lejos. El precio: el principio del juego, con el Colt, es un poco más
+  fácil (parando a apuntar de lejos perdés 9 de vida por guardia, contra 12).
 
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 

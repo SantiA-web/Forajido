@@ -35,8 +35,19 @@ export const WEAPONS = {
      * SEGUNDOS Y MEDIO de diferencia: el Colt tarda tres veces y media lo que
      * el Smith, y esa es la clase de número que se nota parado detrás de un
      * asiento con alguien asomándose.
+     *
+     * 🔁 Y BAJÓ A 2,5, MEDIDO CON UN BOT *(Santi: "aplica el 2,5")*. Con el
+     * daño nuevo (vida en 100, zonas, caída con la distancia), 2.960 asaltos
+     * de bot mostraron que lo que decide un tiroteo es el tiempo —cadencia y
+     * recarga—, no el número de daño, y que con 3,5 el Smith le ganaba al
+     * Colt en TODO, también de lejos. Con 2,5 (medido en 600 asaltos más):
+     * de lejos sin pararse a apuntar el Colt pasa a ganar (9,1 guardias por
+     * asalto contra 7,4 del Smith), de cerca el Smith sigue mejor, y la mejor
+     * combinación del Smith le sigue sacando ventaja (13,6 contra 10,9), que
+     * es lo que paga su precio. Con 3,0 quedaban empatados de lejos. Sigue
+     * siendo dos veces y media lo del Smith: la diferencia se sigue sintiendo.
      */
-    reloadTime: 3.5,
+    reloadTime: 2.5,
     bulletSpeed: 330,
     spread: 0.035,       // preciso: esa es su virtud
 

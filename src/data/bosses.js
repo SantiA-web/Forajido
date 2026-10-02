@@ -86,7 +86,7 @@ export const BOSSES = {
      * IA, era aritmética. 0,40 s por tiro × 5 tiros = 2 segundos.
      *
      * 8 son DOS tambores con una recarga obligada en el medio — y la recarga
-     * del Colt son 3,5 segundos (`data/weapons.js`), que es exactamente cuando
+     * del Colt eran 3,5 segundos (hoy 2,5, ver `data/weapons.js`), que es exactamente cuando
      * te embiste. Ahí aparece el ciclo que un jefe tiene que tener: tirás, te
      * carga, esquivás, le pegás en la ventana del aturdido, y recargás bajo
      * presión.

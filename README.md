@@ -2046,9 +2046,9 @@ entraste; éste ya venía en camino antes de que subieras:
   vagón te da tiempo; nunca lo apaga.
 - **No se le puede poner uno a la espalda.** Un guardia mira para donde
   camina. Éste tiene la cabeza en 360°.
-- **Aguanta ocho balazos**: dos tambores del Colt, con una recarga obligada
-  en el medio. Es lo único del juego que pasa el techo de cuatro — y ese techo
-  sigue valiendo para todos los guardias, sin excepción.
+- **Aguanta 400 de vida**: ocho balazos al cuerpo (dos tambores del Colt,
+  con una recarga obligada en el medio) o cuatro a la cabeza. Es lo único del
+  juego que pasa el techo de los guardias (200).
 - **Corre tan rápido como vos.** Si le disparaste hace poco, se acerca
   cubriéndose (para no regalarte un tiro limpio); si no, te persigue derecho.
   Correr a fondo en línea recta ya no te lo saca de encima gratis.
@@ -2262,7 +2262,10 @@ callado, van al lugar equivocado. Pero cada tiro tuyo vuelve a delatarte.
   parte de al lado. Ellos no eligen: la mayoría de sus balas te dan en el
   cuerpo, y en promedio te sacan lo mismo que antes (unos cuatro tiros al
   cuerpo te matan).
-- **Y el arma y la distancia.** El **Colt** pega completo hasta el 70% de su
+- **Y el arma, la distancia y la recarga.** El Colt recarga en 2,5 segundos y el
+  Smith en 1: medido con un bot, lo que más decide un tiroteo es el tiempo
+  (cadencia y recarga), no el daño. Así, **de lejos sin pararte gana el Colt y
+  de cerca el Smith**. El **Colt** pega completo hasta el 70% de su
   alcance y en la punta saca el 70%: es el de media distancia. El **Smith**
   pega completo sólo hasta el 40% y en la punta saca la mitad: es el de pelear
   cerca. Las balas de los guardias pierden como el Colt.

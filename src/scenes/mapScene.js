@@ -230,7 +230,12 @@ export function createMapScene(services) {
     } else {
       tren.encubiertos = tren.composicion.map(() => false);
       tren.paquetes = tren.composicion.map(() => null);
-      tren.cajaOculta = false;
+      /**
+       * 📜 EL TREN DE CARGA TAMBIÉN ESCONDE CAJAS, con la misma chance. Acá no
+       * hay pasajeros que te lo digan: lo dicen PAPELES metidos en lo que se
+       * saquea (ver `PAPELES_QUE_DICEN`, data/paquetes.js).
+       */
+      tren.cajaOculta = rng.chance(CHANCE_CAJA_OCULTA);
     }
   }
 

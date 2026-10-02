@@ -25,7 +25,7 @@ import {
 import { createPlayer } from '../entities/player.js';
 import { createEnemy } from '../entities/enemy.js';
 import { createPassenger } from '../entities/passenger.js';
-import { createLootable } from '../entities/lootable.js';
+import { createLootable, esCajaFuerte } from '../entities/lootable.js';
 import { createDoor, trabarPuerta } from '../entities/door.js';
 import { createCajon } from '../entities/cajon.js';
 import { EXPLOSIVES } from '../data/explosives.js';
@@ -37,7 +37,7 @@ import {
   CLIMA, CLIMA_POR_DEFECTO, sortearCuantasPuertasTrabadas, sortearVarianteGuardia,
 } from '../data/modifiers.js';
 import {
-  PAQUETES, ESCONDITES, TILE_DE_ESCONDITE, CIVILES_QUE_SABEN,
+  PAQUETES, ESCONDITES, TILE_DE_ESCONDITE, CIVILES_QUE_SABEN, PAPELES_QUE_DICEN,
 } from '../data/paquetes.js';
 import { guardHealth, GUARD_TYPES, DEFAULT_GUARD_TYPE } from '../data/guards.js';
 import { crearObjeto, nivelDeBotin } from '../data/objetos.js';
@@ -1422,7 +1422,8 @@ export function buildTrain(
    * cosa. Va PEGADA y no ADENTRO del mueble por un motivo práctico: adentro
    * no habría forma de alcanzarla.
    */
-  if (cajaOculta && passengers.length) {
+  // Con pasajeros, la delatan ellos; sin pasajeros (el tren de carga), papeles.
+  if (cajaOculta) {
     const posibles = tramos.filter((t) => t.tipo === 'vagon' && ESCONDITES[t.plantilla.id]);
     if (posibles.length) {
       const tramo = rng.pick(posibles);
@@ -1522,6 +1523,23 @@ export function buildTrain(
         for (const pa of barajados.slice(0, CIVILES_QUE_SABEN)) {
           pa.sabeDeCaja = caja;
           pa.pistaCaja = { vagon: tramo.wagon, escondite };
+        }
+
+        /**
+         * 📜 SIN PASAJEROS, LO DICEN PAPELES: tres cosas de las que se
+         * saquean, de cualquier vagón, llevan uno (ver PAPELES_QUE_DICEN).
+         * Nunca una caja fuerte —ésas se abren con ruido y tiempo, y la pista
+         * tiene que estar en lo cotidiano— ni la caja oculta misma.
+         */
+        if (!passengers.length) {
+          const saqueables = loot.filter((l) => l !== caja && !esCajaFuerte(l) && !l.taken);
+          for (let i = saqueables.length - 1; i > 0; i--) {
+            const j = rng.int(0, i);
+            const tmp = saqueables[i]; saqueables[i] = saqueables[j]; saqueables[j] = tmp;
+          }
+          for (const l of saqueables.slice(0, PAPELES_QUE_DICEN)) {
+            l.papelCaja = { caja, vagon: tramo.wagon, escondite };
+          }
         }
       }
     }

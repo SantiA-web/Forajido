@@ -236,7 +236,15 @@ export const T = {
       // Fase 6a: el vagón de armas. El mejor escondite del tren, y el único
       // donde encontrarla puede costarte el vagón entero.
       cajones: 'ENTRE LOS CAJONES',
+      // El caboose (los dos trenes) y los del tren de carga.
+      escritorio: 'DEBAJO DEL ESCRITORIO',
+      carga: 'ENTRE LA CARGA',
+      hielo: 'ENTRE EL HIELO',
+      bultos: 'ENTRE LOS BULTOS',
     },
+    /** 📜 El papel que encontrás en lo que saqueaste (tren de carga). */
+    // Corto, como lo que dicen los pasajeros: largo se salía de la pantalla.
+    papelCaja: (vagon, donde) => `UN PAPEL: VAGÓN ${vagon}, ${donde}`,
   },
 
   /** La huida: los jinetes que quedaban te siguen al escapar (scenes/huidaScene.js). */

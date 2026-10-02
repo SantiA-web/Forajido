@@ -126,6 +126,16 @@ export const CHANCE_CAJA_OCULTA = 0.25;
 export const CIVILES_QUE_SABEN = 3;
 
 /**
+ * 📜 EN EL TREN DE CARGA, PAPELES *(Santi eligió que vayan "adentro de lo que
+ * ya abrís")*. No hay pasajeros a quien amenazar, así que la pista la llevan
+ * tres de las cosas que se saquean —bolsas, bultos, cajones de mercadería—,
+ * elegidas entre todas las del tren. Al agarrar una, además del botín leés el
+ * papel. Tres, por lo mismo que los tres pasajeros: ninguna forma de saber
+ * cuál, y no tantas como para que abrir cualquier cosa alcance.
+ */
+export const PAPELES_QUE_DICEN = 3;
+
+/**
  * DÓNDE PUEDE ESTAR ESCONDIDA, SEGÚN QUÉ VAGÓN SEA.
  *
  * *(Santi: "puede estar 'debajo de una ventana' o 'debajo de un asiento' si
@@ -164,9 +174,10 @@ export const ESCONDITES = {
   armas: ['cajones'],
 
   /**
-   * LOS VAGONES NUEVOS DEL TREN DE PASAJEROS (etapa 1). Sólo ahí hay caja
-   * oculta —necesita pasajeros que la delaten—, así que los del de carga no
-   * figuran. Todos reusan escondites que ya existen:
+   * LOS VAGONES NUEVOS DEL TREN DE PASAJEROS (etapa 1). Cuando se armaron,
+   * sólo ese tren tenía caja oculta (necesitaba pasajeros que la delataran);
+   * desde los papeles, el de carga también — ver los suyos más abajo. Todos
+   * reusan escondites que ya existen:
    *
    *  - El caboose: el escritorio de la tripulación, o una ventana.
    *  - El dormitorio: SÓLO la ventana. Las literas no sirven de escondite con
@@ -175,10 +186,20 @@ export const ESCONDITES = {
    *  - Guardias: debajo de una mesa de cartas. Esconderla entre la escolta.
    *  - Primera clase: debajo de una ventana o de un sillón.
    */
-  caboose: ['mesa', 'ventana'],
+  caboose: ['escritorio', 'ventana'],
   dormitorio: ['ventana'],
   guardias: ['mesa'],
   primeraClase: ['ventana', 'asiento'],
+
+  /**
+   * 📜 LOS DEL TREN DE CARGA *(elegidos por Santi)*. La góndola no: ahí se
+   * camina arriba del carbón y no hay dónde esconder nada. El ganado y el de
+   * armas ya estaban.
+   */
+  cerrado: ['carga'],
+  almacen: ['cajones'],
+  refrigerado: ['hielo'],
+  plataforma: ['bultos'],
 };
 
 /** El carácter del layout al que se pega la caja en cada escondite. */
@@ -188,6 +209,10 @@ export const TILE_DE_ESCONDITE = {
   mesa: 'C',
   corral: 'C',
   cajones: 'C',
+  escritorio: 'C',
+  carga: 'C',
+  hielo: 'R',
+  bultos: 'C',
 };
 
 /**

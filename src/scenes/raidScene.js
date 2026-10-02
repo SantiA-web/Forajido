@@ -3424,6 +3424,22 @@ export function createRaidScene(services) {
     }
     audio.play(l.noisy ? 'strongbox' : 'loot');
 
+    /**
+     * 📜 EL PAPEL QUE DICE DÓNDE ESTÁ LA CAJA OCULTA (tren de carga, ver
+     * PAPELES_QUE_DICEN). Sale arriba del botín, más alto y más largo que el
+     * cartel de la plata, porque es lo que hay que llegar a leer. Si la caja
+     * ya apareció, el papel no dice nada nuevo y no se muestra.
+     */
+    if (l.papelCaja && l.papelCaja.caja.oculto) {
+      const { vagon, escondite } = l.papelCaja;
+      floaters.push({
+        x: l.x, y: l.y - 20,
+        text: T.ambiente.papelCaja(vagon, T.ambiente.escondites[escondite]),
+        life: 4, color: colors.strongbox,
+      });
+      audio.play('cock');
+    }
+
     // La caja fuerte hace un ruido que se oye en el vagón entero y en los de
     // al lado. Ya no es "todo el mapa": el mapa ahora es un tren de 4500px.
     if (l.noisy) bus.emit('noise', { x: l.x, y: l.y, radius: 900 });

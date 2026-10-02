@@ -15959,6 +15959,27 @@ ir restando")*. Se le paga al ayudante, que antes sólo decía una frase.
 - Probado en el juego: con $500 y $400 de recompensa no cobró nada ("Te faltan
   $300"); con $1000 cobró $800 y la recompensa quedó en 0.
 
+📜 **La caja fuerte oculta, en el tren de carga: la delatan papeles** *(lo
+pendiente: "en el de carga no hay a quién amenazar, así que la pista tiene que
+ser documentos que encuentres por el tren"; Santi eligió que vayan "adentro de
+lo que ya abrís")*.
+
+- **Misma chance que en el de pasajeros** (25%). Antes ese tren nunca tenía.
+- **Tres cosas saqueables del tren llevan un papel** (`PAPELES_QUE_DICEN`),
+  sorteadas entre todas —nunca una caja fuerte ni la oculta—. Al agarrar una
+  sale `UN PAPEL: VAGÓN 5, ENTRE LOS BULTOS` arriba del botín. La primera
+  versión decía "CAJA DE CAUDALES" y el escondite largo, y se salía de la
+  pantalla: quedó del largo de lo que dicen los pasajeros.
+- **Escondites nuevos** *(Santi: "me sirven")*: cerrado → entre la carga,
+  almacén → entre los cajones, refrigerado → entre el hielo, plataforma →
+  entre los bultos. Ganado y armas ya estaban. La góndola no (se camina sobre
+  el carbón). El caboose, en los dos trenes, ahora dice "debajo del
+  escritorio" en vez de "de una mesa", que es lo que es.
+- Probado: 200 trenes de carga con caja → siempre aparece, siempre con 3
+  papeles, nunca en una caja fuerte, repartida en todos los escondites; 30 de
+  pasajeros → siguen los civiles y ningún papel. En el juego: agarrar el bulto
+  con papel muestra la pista, y la caja aparece al llegar al lugar.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

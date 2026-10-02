@@ -1055,7 +1055,7 @@ dos trenes, no distingue nada.
 
 | | **De pasajeros** | **De carga** |
 |---|---|---|
-| **Suyo, y de nadie más** | **Primera clase** con sus ricos y guardaespaldas, el vagón de guardias, la caja fuerte oculta, los testigos, el civil encubierto, y los dos que suben por vos (**el Cazarrecompensas y el Sheriff**) | **La carga que se suelta** y **el piso que traiciona**, el ganado que se puede soltar, **el vagón de armas** con su pólvora y su Dinamitero, y **el vagón almacén** con la mercadería que después hay que vender |
+| **Suyo, y de nadie más** | **Primera clase** con sus ricos y guardaespaldas, el vagón de guardias, los pasajeros que delatan la caja fuerte oculta, los testigos, el civil encubierto, y los dos que suben por vos (**el Cazarrecompensas y el Sheriff**) | **La carga que se suelta** y **el piso que traiciona**, el ganado que se puede soltar, **el vagón de armas** con su pólvora y su Dinamitero, y **el vagón almacén** con la mercadería que después hay que vender |
 | **La pregunta** | ¿podés robarles sin que ninguno grite? | ¿podés cruzarlo sin que el tren te mate? |
 
 **Los barriles que ruedan y el piso traicionero eran del tren veloz y se mudaron
@@ -1378,10 +1378,9 @@ son la identidad de nadie — son el día que le tocó a ese servicio, y eso le
 puede tocar a cualquiera.
 
 Lo que **sí** es exclusivo del tren de pasajeros son las cosas que dependen de
-tener a quién amenazar: **el civil encubierto y la caja fuerte oculta**. La única
-forma de enterarte dónde está la caja escondida es que te lo suelte un pasajero,
-y el de carga ya no lleva a nadie: esconder una caja ahí sería esconderla de
-verdad.
+tener a quién amenazar: **el civil encubierto**. La caja fuerte oculta está en
+los dos: en el de pasajeros te la delata un pasajero, y en el de carga un papel
+metido en lo que saqueás.
 
 **Cómo está el tren** — pueden salir varias a la vez, o ninguna:
 
@@ -1472,8 +1471,23 @@ Y eso es todo lo que te llevás: **la caja no se marca en pantalla**. Tenés
 que ir hasta ese vagón y buscarla — aparece recién cuando la tenés al lado,
 como cualquier cosa al alcance de la mano. Los escondites dependen del vagón:
 debajo de una ventana o de un asiento en los de pasajeros y en primera clase,
-debajo de una mesa en el comedor, el correo, el caboose y el vagón de guardias,
-y debajo de una ventana en los camarotes del dormitorio.
+debajo de una mesa en el comedor, el correo y el vagón de guardias, debajo del
+escritorio o de una ventana en el caboose, y debajo de una ventana en los
+camarotes del dormitorio.
+
+**En el tren de carga también, y ahí lo dicen papeles.** Con la misma chance (1
+de cada 4). Como no hay pasajeros a quien preguntarle, **tres de las cosas que
+se saquean** —bolsas, bultos, cajones de mercadería, de cualquier vagón— llevan
+un papel adentro. Al agarrar una, además del botín leés:
+
+```
+UN PAPEL: VAGÓN 5, ENTRE LOS BULTOS
+```
+
+Escondites del tren de carga: entre la carga (vagón cerrado), entre los cajones
+(almacén y vagón de armas), entre el hielo (refrigerado), junto al corral
+(ganado), entre los bultos (plataforma), y en el caboose. En la góndola no:
+ahí se camina arriba del carbón.
 
 Vale más que una caja normal ($400-900 contra $150-600) y tarda más en
 abrirse (8 segundos contra 6,5): estaba escondida por algo.
@@ -2456,7 +2470,7 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `TRAIN_TYPES.<id>.sustituciones` (`data/train.js`) | Cada cuánto ese tren cambia un vagón por otro. Hoy: **el de carga** cambia ganado por armas una de cada cuatro veces |
 | `TRAIN_TYPES.<id>.peso` (`data/train.js`) | **Cada cuánto sale ese tipo de tren.** Hoy 50/50 entre pasajeros y carga; el veloz está en 0. Si se mueve, hay que mover `sustituciones` en sentido contrario o el vagón de armas cambia de frecuencia sin que nadie lo pida |
 | `TRAIN_TYPES.<id>.modificadores` (`data/train.js`) | Si ese tren entra en el sorteo de **clima, estado, comportamientos y tipos de guardia**. Hoy: los dos |
-| `TRAIN_TYPES.<id>.gente` (`data/train.js`) | Si ese tren sortea **paquete, civil encubierto y caja fuerte oculta**. Hoy: sólo el de pasajeros — las tres necesitan pasajeros a quienes amenazar |
+| `TRAIN_TYPES.<id>.gente` (`data/train.js`) | Si ese tren sortea **paquete y civil encubierto**. Hoy: sólo el de pasajeros — los dos necesitan pasajeros a quienes amenazar. La caja fuerte oculta sale en los dos trenes |
 | `loot.strongboxTime` | Cuánto tardás en abrir una caja fuerte |
 | `alert.interval` / `alert.max` | Ritmo y tope de la gente de la locomotora |
 | `raid.duration` | Los segundos del asalto entero |

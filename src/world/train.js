@@ -846,12 +846,16 @@ export function buildTrain(
         /**
          * 🐛 MIRABA PARA CUALQUIER LADO. Heredaba la `facing` de su
          * patrulla original, que no tiene por qué apuntar hacia la puerta
-         * una vez reposicionado acá — podía terminar de espaldas a lo que
-         * se supone que vigila. `FACINGS.left`: la puerta de entrada está
-         * del lado de la cola (menor x), así que mirar "para la izquierda"
-         * es mirar hacia la pasarela por donde entra cualquiera.
+         * una vez reposicionado acá.
+         *
+         * 🔁 Y AHORA LE DA LA ESPALDA A LA PUERTA *(Santi: "el que vigila no
+         * tiene que mirar la puerta. Tiene que su espalda dar contra la
+         * puerta y el guardia mira hacia dentro del vagón")*. Antes miraba
+         * para la pasarela (`left`); ahora mira el vagón (`right`), como un
+         * centinela apoyado en la puerta que cuida lo de adentro. El precio
+         * lo paga él: el que entra por esa puerta le cae por la espalda.
          */
-        facingFinal = FACINGS.left;
+        facingFinal = FACINGS.right;
         esVigilando = true;
       } else if (comportamiento === 'conversando' && idx < 2) {
         // Sólo los DOS primeros — si el vagón tiene una tercera patrulla

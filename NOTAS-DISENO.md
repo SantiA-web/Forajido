@@ -15925,6 +15925,13 @@ cuerpo y un paso. Mismo arreglo para el que camina hacia su puerta cuando suena
 la alarma (`puertaDeEntradaDe`), que tenía el mismo +10. Probado en 30 trenes
 (15 de cada uno): en ningún vagón ese lugar cae sobre un asiento o un bulto.
 
+🔁 **Y le da la espalda a la puerta** *(Santi: "el que vigila no tiene que mirar
+la puerta. Tiene que su espalda dar contra la puerta y el guardia mira hacia
+dentro del vagón")*. Antes miraba la pasarela; ahora mira el vagón, como un
+centinela apoyado en la puerta. Consecuencia de juego: el que entra por esa
+puerta le cae por la espalda (lo podés noquear o degollar), y el peligro pasa
+a ser cruzar el vagón por delante de él.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

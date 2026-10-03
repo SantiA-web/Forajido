@@ -1351,7 +1351,7 @@ export const CONFIG = {
    */
   mochila: {
     /**
-     * DIECISÉIS CASILLAS, y cada cosa ocupa de 1 a 4 (ver `slots` en
+     * VEINTE CASILLAS (eran dieciséis, ver `columnas`), y cada cosa ocupa de 1 a 4 (ver `slots` en
      * data/objetos.js). Se llenan en orden, consecutivas: no hay que acomodar
      * nada, entra o no entra.
      *
@@ -1359,7 +1359,7 @@ export const CONFIG = {
      * tamaños que tienen, te llevás cuatro cajones grandes o una decena de
      * cosas chicas: bastante menos de la mitad del tren.
      */
-    casillas: 16,
+    casillas: 20,
 
     /**
      * LA GRILLA: 4 columnas × 4 filas. Lo que pidió Santi.
@@ -1372,8 +1372,17 @@ export const CONFIG = {
      * columna suelta al costado: es angosta a propósito, porque es lo que hace
      * que el orden en que agarrás las cosas importe.
      */
-    columnas: 4,
+    columnas: 5,
     filas: 4,
+
+    /*
+     * 🔺 DE 4×4 A 5×4 *(Santi: "la mochila también se agrande un poquito")*.
+     * Una columna más: entra un atado largo y al costado un cajón, que en 4×4
+     * no entraban juntos en la misma franja. Medido con el bot ladrón en el
+     * tren de carga (sin riesgo, con reloj ×1,2 y alforjas de 12): de 3,9 a 5,1
+     * bultos comunes por asalto. En el de pasajeros sólo cambia cuánta
+     * dinamita entra sin frenarte, porque la plata no ocupa lugar.
+     */
 
     /**
      * QUÉ FORMA TIENE UN CARTUCHO DE DINAMITA. Una casilla: es lo más chico
@@ -1417,6 +1426,31 @@ export const CONFIG = {
      * gratis. Lo que cambia es sólo cuánto pesa la mitad de arriba.
      */
     frenoMaximo: 0.25,
+  },
+
+  /**
+   * LAS ALFORJAS DEL CABALLO — un segundo lugar donde guardar, que se queda
+   * afuera del tren.
+   *
+   * *(Santi: "el jugador puede dejar cosas en las alforjas del caballo")*
+   *
+   * EXISTEN PORQUE LA MOCHILA ERA EL TECHO DEL TREN DE CARGA, no el reloj.
+   * Medido con el bot ladrón: con 25% más de tiempo sacaba lo mismo ($269
+   * contra $242), porque con 3 o 4 cosas la mochila ya estaba llena. Las
+   * alforjas convierten el tiempo de más en VIAJES: llenás la mochila, volvés
+   * al caballo, descargás y entrás de nuevo.
+   *
+   * SIN TETRIS: se cuelga lo que entra por casillas, sin acomodar. Acomodar es
+   * la decisión de adentro del tren, con guardias; al lado del caballo sería
+   * trámite.
+   *
+   * Lo que va en las alforjas está a salvo de la mochila pero NO de perder:
+   * si te matan o se te acaba el caballo, se pierde con todo lo demás.
+   */
+  alforjas: {
+    casillas: 12,
+    /** Segundos manteniendo [E] al lado del caballo para colgar lo que llevás. */
+    tiempoCargar: 1.0,
   },
 
   /**

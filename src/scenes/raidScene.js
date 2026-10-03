@@ -100,6 +100,21 @@ export function createRaidScene(services) {
    */
   let objetos;
 
+  /**
+   * LO QUE YA COLGASTE DEL CABALLO (ver `CONFIG.alforjas`). Son objetos como
+   * los de la mochila, pero fuera del tren: no pesan, no se sueltan, y al
+   * escapar se suman a los otros.
+   */
+  let alforjas;
+  /** Cuánto llevás sosteniendo [E] para cargarlas. */
+  let cargaProgress;
+  /**
+   * Después de cargar hay que SOLTAR la [E] para que empiece a contar el
+   * escape. Si no, el mismo apretón que cuelga las cosas te saca del tren, y
+   * el que sólo quería descargar y volver a entrar se va sin querer.
+   */
+  let soltarParaEscapar;
+
   /** ¿Está abierta la mochila ([TAB])? El tiempo NO se detiene mientras la mirás. */
   let mochilaAbierta;
 
@@ -173,7 +188,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alarma: alarm.active });
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active });
     enemies = train.enemies;
     passengers = train.passengers;
     loot = train.loot;
@@ -227,6 +242,9 @@ export function createRaidScene(services) {
     timeLeft = duracionInicial;
     collected = 0;
     objetos = [];
+    alforjas = [];
+    cargaProgress = 0;
+    soltarParaEscapar = false;
     mochilaAbierta = false;
     mochila = crearGrilla(CONFIG.mochila.columnas, CONFIG.mochila.filas);
     arrastre = null;
@@ -2749,15 +2767,72 @@ export function createRaidScene(services) {
     }
 
     if (!nearest && !victima && !cajon && !tranquera && isInsideZone(player, train.exitZone)) {
-      if (holding) {
+      if (!holding) soltarParaEscapar = false;
+      /**
+       * AL LADO DEL CABALLO, [E] PRIMERO CARGA Y DESPUÉS ESCAPA. Si llevás algo
+       * que entra en las alforjas, el apretón lo cuelga; recién con la mochila
+       * sin nada para colgar (o las alforjas llenas) el mismo [E] te saca del
+       * tren. Es una sola tecla, como todo lo demás de este verbo.
+       */
+      const paraCargar = loQueEntraEnLasAlforjas();
+      if (holding && paraCargar.length) {
+        escapeProgress = 0;
+        cargaProgress += dt;
+        if (cargaProgress >= CONFIG.alforjas.tiempoCargar) {
+          cargarEnLasAlforjas(paraCargar);
+          cargaProgress = 0;
+          soltarParaEscapar = true;
+        }
+      } else if (holding && !soltarParaEscapar) {
+        cargaProgress = 0;
         escapeProgress += dt;
         if (escapeProgress >= CONFIG.raid.escapeHold) endRaid('escaped');
       } else {
         escapeProgress = 0;
+        cargaProgress = 0;
       }
     } else {
       escapeProgress = 0;
+      cargaProgress = 0;
     }
+  }
+
+  /** Cuántas casillas de las alforjas están ocupadas. */
+  function casillasAlforjas() {
+    return alforjas.reduce((suma, o) => suma + (o.slots || 1), 0);
+  }
+
+  /**
+   * QUÉ DE LA MOCHILA ENTRA EN LAS ALFORJAS, lo más caro por casilla primero.
+   * La dinamita no: es lo que usás adentro.
+   */
+  function loQueEntraEnLasAlforjas() {
+    let libre = CONFIG.alforjas.casillas - casillasAlforjas();
+    if (libre <= 0) return [];
+    const candidatas = mochila.entradas
+      .filter((e) => e.dato !== DINAMITA)
+      .sort((a, b) => b.dato.valor / (b.dato.slots || 1) - a.dato.valor / (a.dato.slots || 1));
+    const entran = [];
+    for (const e of candidatas) {
+      const s = e.dato.slots || 1;
+      if (s <= libre) { entran.push(e); libre -= s; }
+    }
+    return entran;
+  }
+
+  function cargarEnLasAlforjas(entradas) {
+    for (const e of entradas) {
+      sacar(mochila, e);
+      const i = objetos.indexOf(e.dato);
+      if (i >= 0) objetos.splice(i, 1);
+      alforjas.push(e.dato);
+    }
+    floaters.push({
+      x: player.x, y: player.y - 22,
+      text: T.prompts.alforjasCargadas(entradas.length, casillasAlforjas(), CONFIG.alforjas.casillas),
+      life: 2, color: colors.doorGlow,
+    });
+    audio.play('loot');
   }
 
   /**
@@ -3006,7 +3081,7 @@ export function createRaidScene(services) {
 
   /** Lo que valen juntas las cosas que llevás encima. */
   function valorObjetos() {
-    return objetos.reduce((suma, o) => suma + o.valor, 0);
+    return [...objetos, ...alforjas].reduce((suma, o) => suma + o.valor, 0);
   }
 
   /**
@@ -3146,8 +3221,23 @@ export function createRaidScene(services) {
     return {
       lado, sep, cols: m.columnas, filas: m.filas, anchoGrilla, altoGrilla,
       x0: Math.round((renderer.width - anchoGrilla) / 2),
-      y0: Math.round((renderer.height - altoGrilla) / 2) - 4,
+      /*
+       * Y SUBE SI LA LISTA DE ABAJO NO ENTRA. Con el renglón de las alforjas,
+       * el panel se metía detrás de la ayuda del pie: se vio en la foto. El
+       * borde de abajo del panel (grilla + 10 + un renglón por cosa, más el
+       * del título) no pasa de 4 px antes de la ayuda; arriba, el título
+       * necesita 18 px.
+       */
+      y0: Math.max(18, Math.min(
+        Math.round((renderer.height - altoGrilla) / 2) - 4,
+        renderer.height - 26 - altoGrilla - 10 - (1 + renglonesMochila()) * 9,
+      )),
     };
+  }
+
+  /** Cuántos renglones van debajo de la grilla de la mochila. */
+  function renglonesMochila() {
+    return (player.dynamite > 0 ? 1 : 0) + Math.max(1, objetos.length) + (alforjas.length ? 1 : 0);
   }
 
   /** Sobre qué casilla está el mouse, o `null` si está fuera de la grilla. */
@@ -3609,7 +3699,8 @@ export function createRaidScene(services) {
        * entero quedó descrito en un papel. No hay mitad de un cargamento que
        * sea limpia.
        */
-      objetos: escaped ? objetos.map((o) => ({ ...o, caliente: !limpio })) : [],
+      // Lo de la mochila y lo de las alforjas: al escapar es todo lo mismo.
+      objetos: escaped ? [...objetos, ...alforjas].map((o) => ({ ...o, caliente: !limpio })) : [],
       valorObjetos: escaped ? valorObjetos() : 0,
       cleanBonus,
       racha,
@@ -3903,7 +3994,7 @@ export function createRaidScene(services) {
      * borde es lo mismo que ya hace la pantalla de resultados, y por el mismo
      * motivo: donde hay que leer, el mundo se tapa.
      */
-    const lineas = 1 + (player.dynamite > 0 ? 1 : 0) + Math.max(1, objetos.length);
+    const lineas = 1 + renglonesMochila();
     const panelAlto = 16 + altoGrilla + 10 + lineas * 9;
     const panelAncho = 190;
     const panelCy = y0 - 16 + panelAlto / 2;
@@ -4091,6 +4182,13 @@ export function createRaidScene(services) {
     }
     if (!objetos.length) {
       r.text(T.hud.mochilaVacia, r.width / 2, ly, colors.textDim);
+      ly += 9;
+    }
+    // Lo que ya está en el caballo: un renglón, para saber cuánto lugar queda
+    // afuera antes de decidir si volver.
+    if (alforjas.length) {
+      const valor = alforjas.reduce((s, o) => s + o.valor, 0);
+      r.text(T.hud.mochilaAlforjas(alforjas.length, casillasAlforjas(), CONFIG.alforjas.casillas, valor), r.width / 2, ly, colors.doorGlow);
       ly += 9;
     }
     r.text(T.hud.mochilaAyuda, r.width / 2, r.height - 17, colors.textDim);
@@ -4624,6 +4722,16 @@ export function createRaidScene(services) {
         r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
         r.rect(player.x - w / 2, player.y - 12,
           w * (victima.robProgress / robTimeDe(victima)), 3, colors.bagLoot);
+      }
+      return;
+    }
+
+    if (isInsideZone(player, train.exitZone) && loQueEntraEnLasAlforjas().length) {
+      r.text(T.prompts.alforjas(casillasAlforjas(), CONFIG.alforjas.casillas), player.x, player.y - 16, colors.doorGlow, 'center', enPantalla);
+      if (cargaProgress > 0) {
+        const w = 22;
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12, w * (cargaProgress / CONFIG.alforjas.tiempoCargar), 3, colors.doorGlow);
       }
       return;
     }

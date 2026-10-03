@@ -350,12 +350,13 @@ y la herradura **titila**. Si se vacía, el caballo no da más y se queda atrás
 sin caballo no hay cómo bajarse: te agarran en la estación.
 
 Cuánto aguanta depende del tren y del caballo. El tren pone la base (180 s el de
-pasajeros y el de carga) y la resistencia la multiplica:
+pasajeros, 216 s el de carga, que va más lento y cansa menos) y la resistencia la
+multiplica:
 
-| Caballo | Resistencia | En un tren de 180 s |
-|---|---|---|
-| Criollo | 5 → ×1,2 | **216 s** |
-| Mustang | 2 → ×0,8 | **144 s** |
+| Caballo | Resistencia | Tren de pasajeros (180 s) | Tren de carga (216 s) |
+|---|---|---|---|
+| Criollo | 5 → ×1,2 | **216 s** | **259 s** |
+| Mustang | 2 → ×0,8 | **144 s** | **173 s** |
 
 Lo que galopaste para adelantarte en la llegada ya viene descontado: la barra
 arranca un poco gastada, porque el caballo llega cansado.
@@ -532,6 +533,7 @@ movimiento es siempre una cosa moviéndose contra otra.
 | Clic izquierdo (con la mecha encendida) | Lanzarla |
 | `R` | **Recargar.** Mientras lo hacés caminás lento, como si fueras de costado |
 | `E` (mantener) | Robar botín / **amenazar a un pasajero** / escapar |
+| **`E` al lado del caballo** | **Colgar lo que llevás en las alforjas.** Soltá y volvé a mantener para escapar |
 | **`TAB`** | **Abrir la mochila.** Y el tren no te espera: el reloj sigue corriendo |
 | **Arrastrar** (mochila abierta) | **Acomodar un bulto**: lo agarrás con el clic izquierdo y lo soltás donde quieras |
 | **Ruedita** (con un bulto en la mano) | **Girarlo**: así un atado largo se puede parar en una columna |
@@ -979,13 +981,15 @@ traen adentro**:
 | | Sale | Vagones | Largo | El asalto dura | Qué te ataca |
 |---|---|---|---|---|---|
 | **De pasajeros** | 50% | 8 (caboose, dormitorio, comedor, 2 de pasajeros, el especial, correo, express) | 4.800 px | 180 s | **La gente te delata** |
-| **De carga** | 50% | 9 (caboose, almacén, 2 cerrados, 2 plataformas, ganado, góndola, refrigerado) | 4.528 px | 180 s | **El tren te ataca a vos** |
+| **De carga** | 50% | 9 (caboose, almacén, 2 cerrados, 2 plataformas, ganado, góndola, refrigerado) | 4.528 px | **216 s** | **El tren te ataca a vos** |
 
-**Los dos duran lo mismo, a propósito.** Había una regla sin escribir: los relojes
-de antes (145 s y 165 s) daban ~40 s por cada 1.000 px de tren. El de pasajeros
-nuevo mide un 6% más que el de carga y por esa regla le tocarían ~192 s; se dejó
-en 180 igual, un poco más apretado, para que ningún tren se distinga por el
-reloj.
+**El de carga dura un 20% más.** Duraban lo mismo (180 s, ~40 s cada 1.000 px de
+tren), hasta que Santi pidió más tiempo para el de carga: *va más lento, así que
+el caballo se cansa menos*. Solo no servía —medido con un bot, con 25% más de
+tiempo sacaba lo mismo, porque la mochila ya estaba llena—, así que llegó junto
+con **las alforjas del caballo** (ver "La mochila"): el tiempo de más es el de
+volver a descargar y entrar otra vez, y el de llegar al almacén cuando toca en
+la otra punta.
 
 ### Los vagones nuevos
 
@@ -1077,7 +1081,7 @@ quién vendérselas.
 
 | Nivel | Vale | De dónde sale |
 |---|---|---|
-| **Común** *(fardo de tabaco, cajón de whisky, rollo de telas…)* | $45-95 | Las bolsas |
+| **Común** *(fardo de tabaco, cajón de whisky, rollo de telas…)* | $60-120 | Las bolsas |
 | **Valioso** *(cubertería de plata, estuche de relojes, polvo de oro…)* | $220-560 | Una caja fuerte |
 | **Raro** *(reloj de oro, documentos lacrados, lingotes de plata)* | **$900-1800** | **Sólo** una caja del almacén, o una caja fuerte oculta |
 
@@ -1096,10 +1100,11 @@ El color lo da el nivel (madera lo común, gris de chapa lo valioso, dorado el
 raro) y la forma la da la silueta, así que de un vistazo sabés las dos cosas sin
 que ninguna tape a la otra.
 
-### La mochila: dieciséis casillas, y cada cosa tiene su forma
+### La mochila: veinte casillas, y cada cosa tiene su forma
 
 Llevás una mochila en la espalda —**se le ve el bulto, y crece con lo que
-metés**— y adentro hay una grilla de **4×4**. Se abre con `TAB`, y el reloj sigue
+metés**— y adentro hay una grilla de **5×4** (era de 4×4: se agrandó una columna
+junto con las alforjas). Se abre con `TAB`, y el reloj sigue
 corriendo mientras la mirás.
 
 | Forma | Qué |
@@ -1110,11 +1115,11 @@ corriendo mientras la mirás.
 | **2×2** | **Lingotes de plata**, cajón de whisky, cajón de munición, caja de herramientas |
 
 **Y no alcanza con que sobre lugar: tiene que sobrar lugar de la forma
-correcta.** Tres atados acostados ocupan nueve casillas y dejan siete libres — y
-un cajón de 2×2 **ya no entra**, porque lo que queda son columnas sueltas de una
-casilla. Un anillo, en cambio, entra en cualquier rendija.
+correcta.** Si lo que queda son columnas sueltas de una casilla, un cajón de 2×2
+**no entra** aunque sobren cuatro. Un anillo, en cambio, entra en cualquier
+rendija.
 
-**Y se ven las dieciséis casillas siempre**, aunque un cajón ocupe cuatro: cada
+**Y se ven las veinte casillas siempre**, aunque un cajón ocupe cuatro: cada
 casilla ocupada se pinta por separado, con su separador, y **un contorno claro
 rodea el bulto entero**. Así se lee todo sin una palabra — *hueco oscuro entre
 casillas, la misma cosa; línea clara, ahí termina un bulto y empieza otro*. De un
@@ -1123,6 +1128,22 @@ vistazo sabés cuánto abulta cada cosa y de qué forma es el lugar que te queda
 Los bultos largos **se acuestan solos** cuando los levantás, si es lo único que
 cabe: un atado de 3×1 entra parado en una columna. Agarrar nunca te hace parar a
 pensar — este juego cobra en tiempo y exposición, no en administración.
+
+### Las alforjas del caballo
+
+Cuando la mochila se llena, **volvés al caballo y le colgás lo que traés**:
+parado al lado, mantené `E` un segundo y todo lo que entra pasa a las alforjas
+(**12 casillas**, sin acomodar nada: se cuelga lo que entra, lo más caro por
+casilla primero). La dinamita se queda en la mochila. Después **soltá la `E`**:
+volver a mantenerla es escapar, así nadie se va del tren por querer descargar.
+
+Lo que está en el caballo **no pesa ni se suelta**, y en el `TAB` aparece en un
+renglón aparte: cuántas cosas, cuánto lugar queda y cuánto valen. Al escapar se
+suma con lo de la mochila. Pero **no está a salvo**: si te matan o se te acaba el
+caballo, se pierde con todo lo demás.
+
+Es lo que hace que el tren de carga se juegue en viajes: llenar, volver,
+descargar, entrar otra vez — y cada viaje es el tren de punta a punta de nuevo.
 
 ### Y adentro se acomoda con el mouse
 
@@ -2497,7 +2518,8 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `traqueteo.avisoTiempo` / `efectoTiempo` | Cuánto dura el aviso sin efecto y cuánto el sacudón de verdad |
 | `TRAIN_TYPES.<id>.traqueteoCada` (`data/train.js`) | Cada cuánto se pone traicionero el piso. Sin ese campo, ese tren nunca lo hace |
 | `mochila.sinCostoHasta` / `frenoMaximo` | **Cuánto te frena lo que llevás en la mochila.** Hasta la mitad llena no frena nada; de ahí sube derecho hasta −25% con la mochila llena |
-| `mochila.columnas` / `filas` | El tamaño de la grilla (hoy 4×4). Es lo que decide si un cajón de 2×2 todavía entra |
+| `mochila.columnas` / `filas` | El tamaño de la grilla (hoy 5×4). Es lo que decide si un cajón de 2×2 todavía entra |
+| `alforjas.casillas` / `tiempoCargar` | **Cuánto le colgás al caballo** (12 casillas, sin forma) y cuánto tenés que mantener `E` para hacerlo (1 s) |
 | `estampida.abrirHold` / `arranque` | Lo que tardás en abrir la tranquera, y el respiro que tenés para correrte antes de que salga la manada |
 | `estampida.reses` / `velocidad` / `alcance` | Cuántas salen, qué tan rápido y cuánto corren antes de perderse adelante |
 | `estampida.aturdeGuardia` | Cuánto queda en el piso el guardia atropellado — 3 s, calculado para que te dé tiempo a llegar y rematarlo (el cuerpo a cuerpo, para comparar: 0,45 s) |

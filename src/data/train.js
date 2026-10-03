@@ -459,8 +459,17 @@ export const TRAIN_TYPES = {
     sustituciones: [{ de: 'plataforma', por: 'armas', chance: 0.25 }],
 
     peso: 50,
-    // Trenes nuevos: 180 s, igual que el de pasajeros (~40 s cada 1.000 px).
-    raidDuration: 180,
+    /**
+     * 216 s, UN 20% MÁS QUE EL DE PASAJEROS *(Santi: "el de carga va más
+     * lento por lo que el caballo se cansa menos")*.
+     *
+     * Antes eran 180, iguales (~40 s cada 1.000 px). Solo, el tiempo de más no
+     * servía: medido con el bot ladrón, +25% sacaba lo mismo porque la mochila
+     * ya estaba llena. Sirve junto con las alforjas (`CONFIG.alforjas`): es el
+     * tiempo de volver al caballo a descargar y entrar otra vez, y el de llegar
+     * al almacén, que puede tocar en la otra punta del tren.
+     */
+    raidDuration: 216,
 
     /**
      * LA CAPA DE VARIEDAD TAMBIÉN ES SUYA. Clima, estado del tren,

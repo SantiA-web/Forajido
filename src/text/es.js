@@ -10,6 +10,7 @@ export const T = {
     /** LA MOCHILA ([TAB]) — ver `drawMochila` en scenes/raidScene.js. */
     mochilaTitulo: 'LA MOCHILA',
     mochilaVacia: 'Nada más adentro.',
+    mochilaAlforjas: (n, usadas, max, valor) => `En el caballo: ${n} ${n === 1 ? 'cosa' : 'cosas'}  ·  ${usadas}/${max}  ·  $${valor}`,
     mochilaDinamita: (n) => (n === 1 ? 'Un cartucho de dinamita  ·  1' : `${n} cartuchos de dinamita  ·  ${n}`),
     /**
      * La ayuda son DOS renglones desde que la mochila se maneja con el mouse:
@@ -70,6 +71,8 @@ export const T = {
     jackpot: (valor) => `¡EL GOLPE DE TU VIDA! +$${valor}`,
     threaten: '[E] AMENAZAR',
     escape: '[E] ESCAPAR',
+    alforjas: (usadas, max) => `[E] A LAS ALFORJAS  ${usadas}/${max}`,
+    alforjasCargadas: (n, usadas, max) => `${n === 1 ? 'UNA COSA' : `${n} COSAS`} AL CABALLO  ${usadas}/${max}`,
     empty: 'SIN BALAS  [R]',
     peek: '[CLIC DER.] ASOMARSE',
     reinforcementEngine: 'VIENEN DE LA LOCOMOTORA',

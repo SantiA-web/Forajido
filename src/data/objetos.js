@@ -36,10 +36,17 @@
  *             Nunca de una bolsa, nunca de una caja cualquiera.
  */
 export const NIVELES = {
+  /**
+   * 🔺 SUBIÓ DE $45-95 A $60-120 *(Santi: "no creo que una caja de botellas de
+   * whisky de la época valga 55 dólares")*. Es la mercadería que más abulta (3
+   * o 4 casillas) y la que menos rendía por casilla (~$20 contra ~$260 de lo
+   * valioso): con las alforjas, ir y volver a buscar más tiene que pagar el
+   * viaje. Las cajas fuertes (valioso y raro) no se tocaron.
+   */
   comun: {
     id: 'comun',
-    valorMin: 45,
-    valorMax: 95,
+    valorMin: 60,
+    valorMax: 120,
   },
   valioso: {
     id: 'valioso',

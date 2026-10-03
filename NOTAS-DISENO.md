@@ -16043,6 +16043,72 @@ riesgo** (no lo matan y no pelea: mide sólo cuánto deja juntar el reloj).
 - No incluye la huida (en el de pasajeros te persiguen más seguido: los
   jinetes de afuera) ni el bono de trabajo limpio, que el bot nunca consigue.
 
+⚠️ **CORRECCIÓN: LA CONCLUSIÓN DE ARRIBA ESTABA MAL, y era el bot.** Agarraba
+lo que tenía más cerca: se llenaba en los primeros vagones y **nunca llegaba a
+las cajas fuertes del almacén**, que suele tocar lejos (en una medición, a 4.360
+px del caballo). Las cajas son lo chico y caro del tren (lo valioso ocupa 1-2
+casillas y vale $220-560; lo raro, $900-1.800). Con el bot yendo primero a las
+cajas fuertes, el de carga **ya rendía parecido al de pasajeros**: ~$975 contra
+~$840-1.100 (sin riesgo). Además tenía otro error: buscaba el blindado por
+`wagon.type`, que no existe (es `wagon.id`), así que "sin el blindado" no lo
+sacaba de la cuenta del botín del tren.
+
+🐴 **Más tiempo al de carga, alforjas, mochila 5×4 y mercadería común más cara**
+*(Santi: "haría que haya más tiempo, el jugador puede dejar cosas en las
+alforjas del caballo y además, las cosas valen un poquito más y la mochila
+también se agrande un poquito, porque no creo que una caja de botellas de whisky
+de la época valen 55 dólares. Utiliza tu criterio, estadísticas y datos para
+poner los números y yo evaluaré")*.
+
+- **Las alforjas** (`CONFIG.alforjas`): al lado del caballo, `[E]` un segundo
+  cuelga lo que entra (12 casillas, sin forma, lo más caro por casilla
+  primero; la dinamita no). Hay que soltar la `[E]` para que cuente el escape.
+  Se pierden si te matan o se acaba el caballo. En el `TAB`, un renglón.
+- **Reloj del de carga 180 → 216 s** (×1,2). Criollo 259 s, Mustang 173 s.
+- **Mochila 4×4 → 5×4** (20 casillas). En el de pasajeros sólo cambia cuánta
+  dinamita entra sin frenar.
+- **Común $45-95 → $60-120.** Lo valioso y lo raro no se tocaron.
+- 💬 Sobre el whisky: para la época, un cajón de botellas valía bastante menos
+  de $55 (del orden de $10-20); la plata del juego ya está inflada (unos
+  bolsillos dan $30-65, el sueldo de un mes de un peón). Se subió porque en el
+  juego rendía poco por lo que abulta (~$20 por casilla contra ~$260 lo
+  valioso), no por la época.
+
+Medido con el bot ladrón **sin riesgo** (va primero a las cajas fuertes, 30-40
+asaltos cada fila, Criollo):
+
+| Tren de carga | Bultos comunes | Común | Valioso | Raro | Le sobra |
+|---|---|---|---|---|---|
+| Antes de todo (16, sin alforjas, 180 s) | 2,0 | $140 | $587 | $248 | 15 s |
+| + alforjas 12 | 2,6 | $189 | $510 | $352 | 16 s |
+| + reloj ×1,2 | 3,9 | $266 | $601 | $529 | 17 s |
+| + mochila 5×4 | 5,1 | $350 | $533 | $520 | 22 s |
+| mochila 5×4, alforjas 12, ×1,3 | 5,2 | $375 | $539 | $584 | 27 s |
+| mochila 5×4, alforjas 16, ×1,3 | 6,2 | $442 | $675 | $331 | 15 s |
+| mochila 5×4, sin alforjas, ×1,3 | 3,4 | $239 | $590 | $300 | 23 s |
+| **Lo elegido, con precios nuevos** | **5,1** | **$461** | **$573** | **$334** | **17 s** |
+
+(Común/Valioso/Raro en precio de base, antes del bono de limpio; las filas de
+arriba con el precio común viejo.) El tren de pasajeros, igual que antes: ~$840-
+1.125 en plata (la diferencia es la suerte del jackpot), sin abrir el blindado,
+que con dinamita suma unos $950 más.
+
+- **Lo raro es pura suerte** (sale en ~1 de cada 4 asaltos) y mueve el promedio
+  $250-$600 entre tandas iguales: las comparaciones se leen en la columna común.
+- **Lo que mueve cada cosa:** las alforjas solas, poco (+0,6 bultos: la mochila
+  se llena tarde y no queda tiempo para el viaje); con el reloj ×1,2, el viaje
+  entra (+1,9); la mochila 5×4 suma +1,2 más. Sin alforjas, ni el reloj ×1,3 ni
+  la mochila grande llegan a lo mismo (3,4).
+- **Resultado:** el de carga queda en ~$1.370 por asalto sin riesgo (~$1.040 sin
+  lo raro), contra ~$1.000 del de pasajeros sin blindado. Más, pero hay que
+  venderlo, el almacén es ruidoso y tiene cuatro guardias blindados.
+- **El riesgo no se pudo medir.** El bot con riesgo, yendo a las cajas, muere
+  en más de la mitad de los asaltos en los dos trenes (pasajeros 21 de 40,
+  carga 22-30 de 40) y vuelve apenas lo hieren: mide su puntería, no el tren.
+- El bot ahora sabe: ir primero a las cajas fuertes (`cajasPrimero`), volver a
+  descargar cuando algo no le entra y le alcanza el tiempo para ir y volver, y
+  soltar la `[E]` después de cargar.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

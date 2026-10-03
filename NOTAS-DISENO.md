@@ -16109,6 +16109,39 @@ que con dinamita suma unos $950 más.
   descargar cuando algo no le entra y le alcanza el tiempo para ir y volver, y
   soltar la `[E]` después de cargar.
 
+🔧 **Cosas que hacían el juego difícil de más** *(Santi: "que el carbón
+penalice menos la velocidad [...] aumentaría la velocidad de las balas tiradas
+por el jugador. Y haría que las alforjas puedan llevar hasta 16 y que si quedás
+atrapado en el tren, los objetos de la alforja no se pierden, pero sí contarían
+como buscados")*. Eligió las recomendaciones.
+
+- **Carbón 0,5 → 0,75** (`casillasQueFrenan.carbon`): la góndola de 448 px se
+  cruza en 7,7 s en vez de 11,5. Opciones: 0,65 (8,8 s), 0,75, 0,85 (6,8 s,
+  casi no se nota). Frena a todos igual, como antes.
+- **Balas del jugador 330 → 550** (`bulletSpeed`, Colt y Smith; también al
+  galope en la huida). A 200 px la bala llega en 0,36 s en vez de 0,61, y un
+  guardia corriendo se corre 17 px en vez de 28. Opciones: 450, 550, 700 (casi
+  instantánea, se pierde la estela). Los guardias siguen en 210. Medido con el
+  bot de tiroteos (pasajeros, de lejos, 16 asaltos por fila):
+
+  | | Acierto 330 → 550 | Guardias muertos por asalto |
+  |---|---|---|
+  | Colt, parado apuntando | 58% → **77%** | 11,5 → **15,2** |
+  | Smith, parado apuntando | 47% → **54%** | 17,2 → 17,6 (y termina vivo 7 de 16 en vez de 4) |
+  | Colt, tirando en movimiento | 64% → 65% | 4,9 → 4,6 |
+  | Smith, tirando en movimiento | 37% → 38% | 6,1 → 4,9 |
+
+  Lo que más cambia es el tiro apuntado de lejos, que es donde el guardia
+  tenía tiempo de moverse. El tiro en movimiento no cambia: ahí el que falla es
+  el pulso, no la bala.
+- **Alforjas 12 → 16.**
+- **Perder ya no te saca las alforjas** *(Santi, corrigiendo: "solo hay dos
+  formas de perder: que te maten a tiros o que se acabe el tiempo del galope
+  del caballo. En ambos casos el jugador termina siendo descubierto")*: el
+  caballo vuelve con lo colgado, siempre marcado (`caliente`). La pantalla de
+  resultados dice "Tu caballo volvió con N cosas · Marcadas". Probado: lo de las
+  alforjas llega marcado y lo de la mochila se pierde.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

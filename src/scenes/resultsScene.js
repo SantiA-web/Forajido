@@ -65,7 +65,9 @@ function buildPanel(s) {
      * todavía no es plata. Sólo aparece si de verdad trajiste algo.
      */
     (s.objetos || []).length
-      ? row(T.results.objetos(s.objetos.length), T.results.objetosSinVender, true)
+      ? (escaped
+        ? row(T.results.objetos(s.objetos.length), T.results.objetosSinVender, true)
+        : row(T.results.objetosCaballo(s.objetos.length), T.results.objetosMarcados, true))
       : '',
     /**
      * LA HUIDA va justo debajo del botín: es lo que se le cayó por el camino.

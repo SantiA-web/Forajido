@@ -48,7 +48,15 @@ export const WEAPONS = {
      * siendo dos veces y media lo del Smith: la diferencia se sigue sintiendo.
      */
     reloadTime: 2.5,
-    bulletSpeed: 330,
+    /**
+     * 🔺 DE 330 A 550 *(Santi: "aumentaría la velocidad de las balas tiradas
+     * por el jugador")*, igual en las dos armas. A 200 px la bala tardaba 0,61 s
+     * y un guardia corriendo (46 px/s) se corría 28 px —tres cuerpos— antes de
+     * que llegara; ahora tarda 0,36 s y se corre 17. Las de los guardias siguen
+     * en 210. Con 700 la bala era casi instantánea y se perdía la estela.
+     * Avanza en pasitos de 4 px (systems/combat.js), así que no atraviesa nada.
+     */
+    bulletSpeed: 550,
     spread: 0.035,       // preciso: esa es su virtud
 
     /**
@@ -159,7 +167,7 @@ export const WEAPONS = {
     fireRate: 0.28,      // contra 0,40 del Colt
     magazine: 5,         // una menos: ese es el costo
     reloadTime: 1.0,     // se parte al medio y las expulsa todas de un saque
-    bulletSpeed: 330,
+    bulletSpeed: 550,    // la misma que el Colt: ver su ficha
     spread: 0.085,       // contra 0,035: notablemente más sucio de lejos
 
     /**

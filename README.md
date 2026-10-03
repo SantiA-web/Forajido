@@ -1007,7 +1007,7 @@ refrigerado, los guardias de franco y la góndola ya tienen la suya:
 | **Primera clase** | Pasajeros (especial) | **Los tres ricos** del tren, con sombrero de copa, y dos guardaespaldas VIGILANDO. ~$600 entre los tres | — |
 | **Cerrado** | Carga | El correo liviano de siempre, con su nombre de tren de carga | — |
 | **Plataforma** | Carga | Carga amarrada sin paredes: te tapa de los guardias, no de los jinetes | — |
-| **Góndola** | Carga | **Carbón hasta arriba**: se cruza por encima, a la mitad, trepando y bajando en los enganches. Paredes altas: los jinetes no te alcanzan. Montículos para cubrirte de los guardias | — |
+| **Góndola** | Carga | **Carbón hasta arriba**: se cruza por encima, al 75% de la velocidad, trepando y bajando en los enganches. Paredes altas: los jinetes no te alcanzan. Montículos para cubrirte de los guardias | — |
 | **Refrigerado** | Carga | Hileras de reses colgadas, dos guardias. **Las reses tapan la vista y no las balas**, y se atraviesan a media velocidad | — |
 
 > **Nada de esto está jugado.** Está medido (10.000 trenes de cada uno cumplen
@@ -1047,7 +1047,7 @@ encima del carbón, y eso es lo mismo que caminar por el techo.
 |---|---|
 | **Subir y bajar** | En los **enganches**: mantené **[E] 0,4 s** al borde, en silencio. Hasta que no trepaste, el carbón es una pared |
 | **Caerse** | Parado en el carbón, las puntas no tienen pared: si salís caminando por una punta, **te caés al enganche** con ruido, como al errar un salto en el techo. Por los costados no se cae |
-| **Cruzarla** | **A la mitad**, para todos: vos 39 px/s, un guardia persiguiéndote 23. La cruzan también las reses de la estampida y el Sheriff: nadie queda cortado |
+| **Cruzarla** | **Al 75% de la velocidad**, para todos: vos 58 px/s (7,7 s de punta a punta; era a la mitad, 11,5 s), un guardia persiguiéndote 35. La cruzan también las reses de la estampida y el Sheriff: nadie queda cortado |
 | **Por el techo** | Si venís por arriba de otro vagón, seguís de largo sin caerte, y frena igual. Desde el caballo se puede saltar encima |
 | **Jinetes** | **No te alcanzan**: las paredes de la góndola son altas y vas encima del carbón. No te ven ni te pegan, ni sobre el carbón ni por el techo |
 | **Montículos** | Cobertura contra los guardias: tapan la vista y las balas |
@@ -1133,14 +1133,16 @@ pensar — este juego cobra en tiempo y exposición, no en administración.
 
 Cuando la mochila se llena, **volvés al caballo y le colgás lo que traés**:
 parado al lado, mantené `E` un segundo y todo lo que entra pasa a las alforjas
-(**12 casillas**, sin acomodar nada: se cuelga lo que entra, lo más caro por
+(**16 casillas**, sin acomodar nada: se cuelga lo que entra, lo más caro por
 casilla primero). La dinamita se queda en la mochila. Después **soltá la `E`**:
 volver a mantenerla es escapar, así nadie se va del tren por querer descargar.
 
 Lo que está en el caballo **no pesa ni se suelta**, y en el `TAB` aparece en un
 renglón aparte: cuántas cosas, cuánto lugar queda y cuánto valen. Al escapar se
-suma con lo de la mochila. Pero **no está a salvo**: si te matan o se te acaba el
-caballo, se pierde con todo lo demás.
+suma con lo de la mochila. **Y si perdés el asalto, se salva**: te maten o se
+te acabe el caballo, el caballo vuelve con lo que tenía colgado. Pero llega
+**marcado** —te descubrieron igual—, así que el perista lo paga a precio de
+base, sin el doble de lo limpio. Lo de la mochila sí se pierde.
 
 Es lo que hace que el tren de carga se juegue en viajes: llenar, volver,
 descargar, entrar otra vez — y cada viaje es el tren de punta a punta de nuevo.
@@ -1893,7 +1895,7 @@ soltaste casi toda la plata.
   piernas a la altura del mentón en medio segundo, así que se ve venir de lejos
   y desde cualquier lado. El tiro va hacia donde estabas cuando empezó a
   apuntar, así que moverte en ese medio segundo es esquivarlo.
-- **Tiran desde cualquier distancia y la bala vuela a 380** (tu Colt, a 330).
+- **Tiran desde cualquier distancia y la bala vuela a 380** (tu Colt, a 550).
   No hay un tope de alcance: el límite es cuándo dejan de seguirte (520). De
   lejos el pulso se les abre —a 450 unidades el abanico es el doble— así que
   son fuego de contención, pero te siguen tirando mientras te alejás. Medido:
@@ -2519,7 +2521,7 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `TRAIN_TYPES.<id>.traqueteoCada` (`data/train.js`) | Cada cuánto se pone traicionero el piso. Sin ese campo, ese tren nunca lo hace |
 | `mochila.sinCostoHasta` / `frenoMaximo` | **Cuánto te frena lo que llevás en la mochila.** Hasta la mitad llena no frena nada; de ahí sube derecho hasta −25% con la mochila llena |
 | `mochila.columnas` / `filas` | El tamaño de la grilla (hoy 5×4). Es lo que decide si un cajón de 2×2 todavía entra |
-| `alforjas.casillas` / `tiempoCargar` | **Cuánto le colgás al caballo** (12 casillas, sin forma) y cuánto tenés que mantener `E` para hacerlo (1 s) |
+| `alforjas.casillas` / `tiempoCargar` | **Cuánto le colgás al caballo** (16 casillas, sin forma) y cuánto tenés que mantener `E` para hacerlo (1 s) |
 | `estampida.abrirHold` / `arranque` | Lo que tardás en abrir la tranquera, y el respiro que tenés para correrte antes de que salga la manada |
 | `estampida.reses` / `velocidad` / `alcance` | Cuántas salen, qué tan rápido y cuánto corren antes de perderse adelante |
 | `estampida.aturdeGuardia` | Cuánto queda en el piso el guardia atropellado — 3 s, calculado para que te dé tiempo a llegar y rematarlo (el cuerpo a cuerpo, para comparar: 0,45 s) |

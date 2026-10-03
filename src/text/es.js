@@ -653,6 +653,9 @@ export const T = {
      */
     objetos: (n) => (n === 1 ? 'Te llevaste 1 cosa' : `Te llevaste ${n} cosas`),
     objetosSinVender: 'Sin vender',
+    // Perdiste, pero el caballo volvió con las alforjas: marcadas.
+    objetosCaballo: (n) => (n === 1 ? 'Tu caballo volvió con 1 cosa' : `Tu caballo volvió con ${n} cosas`),
+    objetosMarcados: 'Marcadas',
     clean: 'Trabajo limpio',
     racha: (n) => `Racha limpia (${n})`,
     rachaPerdida: (n) => `Se cortó la racha (llevabas ${n})`,

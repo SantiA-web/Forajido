@@ -1444,11 +1444,16 @@ export const CONFIG = {
    * la decisión de adentro del tren, con guardias; al lado del caballo sería
    * trámite.
    *
-   * Lo que va en las alforjas está a salvo de la mochila pero NO de perder:
-   * si te matan o se te acaba el caballo, se pierde con todo lo demás.
+   * 🐴 SI PERDÉS EL ASALTO, LO DE LAS ALFORJAS SE SALVA, PERO MARCADO *(Santi:
+   * "si quedás atrapado en el tren, los objetos de la alforja no se pierden,
+   * pero sí contarían como buscados")*. Las dos formas de perder —te matan o
+   * se acaba el caballo— terminan con vos descubierto, así que el perista lo
+   * paga a precio de base, sin el doble de lo limpio. Lo de la mochila se
+   * pierde, como siempre.
    */
   alforjas: {
-    casillas: 12,
+    /** 🔺 Eran 12 *(Santi: "que las alforjas puedan llevar hasta 16")*. */
+    casillas: 16,
     /** Segundos manteniendo [E] al lado del caballo para colgar lo que llevás. */
     tiempoCargar: 1.0,
   },
@@ -1474,10 +1479,16 @@ export const CONFIG = {
    * px se cruza en 11,5 s en vez de 5,7. Frena a todos los que la pisan, a las
    * reses de la estampida y también al que pasa por el techo, porque por
    * encima del carbón es el mismo camino.
+   *
+   * 🔻 EL CARBÓN SUBIÓ A 0,75 *(Santi: "que el carbón penalice menos la
+   * velocidad y no tanto como hoy")*: la góndola se cruza en 7,7 s en vez de
+   * 11,5. Sigue frenando a todos por igual (guardias, reses, techo). Se
+   * eligió entre 0,65 (8,8 s), 0,75 y 0,85 (6,8 s, que ya casi no se nota).
+   * Las reses se quedan en la mitad.
    */
   casillasQueFrenan: {
     reses: 0.5,
-    carbon: 0.5,
+    carbon: 0.75,
   },
 
   /**

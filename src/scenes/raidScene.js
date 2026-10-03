@@ -3700,8 +3700,12 @@ export function createRaidScene(services) {
        * sea limpia.
        */
       // Lo de la mochila y lo de las alforjas: al escapar es todo lo mismo.
-      objetos: escaped ? [...objetos, ...alforjas].map((o) => ({ ...o, caliente: !limpio })) : [],
-      valorObjetos: escaped ? valorObjetos() : 0,
+      // Si perdiste, el caballo se vuelve con lo que tenía colgado, y marcado:
+      // te descubrieron igual (ver `CONFIG.alforjas`).
+      objetos: escaped
+        ? [...objetos, ...alforjas].map((o) => ({ ...o, caliente: !limpio }))
+        : alforjas.map((o) => ({ ...o, caliente: true })),
+      valorObjetos: escaped ? valorObjetos() : alforjas.reduce((s, o) => s + o.valor, 0),
       cleanBonus,
       racha,
       rachaBonus,

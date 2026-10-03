@@ -16011,6 +16011,38 @@ me refería al dinamitero y al pistolero")*.
   registrable en los de armas. Registrarlo tarda 1,5 s y muestra la pista y la
   plata; el noqueado que se despierta ya no se deja registrar.
 
+🤖 **¿Qué tren conviene más? Medido con un bot ladrón** *(Santi: "sospecho que
+el de pasajeros es mucho más conveniente. Además, creo que deberíamos sumar
+tiempo al de carga")*. `banco-ladron.js` (raíz, no se versiona): entra por la
+cola, avanza juntando todo (bolsas, cajas fuertes, mercadería, pasajeros,
+cuerpos), prefiere la mercadería rara, deja lo que no entra en la mochila, y
+vuelve al caballo cuando el camino de vuelta ya no le da. Las puertas trabadas
+se destraban al empezar (salen igual en los dos trenes y el bot no sabe
+rodearlas por el techo) y el blindado lo cruza como por el techo. Con el Colt y
+el Criollo (216 s), dificultad sorteada como en el juego. Dos versiones:
+**normal** (lo pueden matar; pelea parado apuntando a la cabeza) y **sin
+riesgo** (no lo matan y no pelea: mide sólo cuánto deja juntar el reloj).
+
+| | Pasajeros | Carga | Carga con +25% de tiempo |
+|---|---|---|---|
+| Lo que hay en el tren (sin el blindado) | $2.300 | $2.700-3.000 | igual |
+| **Sin riesgo:** se lleva, escapando | **$750** (32%) | **$242** (9%), 3,4 objetos | $269, 3,3 objetos |
+| Sin riesgo: tiempo que le sobra al llegar | 45 s | 19 s | 23 s |
+| **Normal:** escapa | 60% | 63% | 42% |
+| Normal: se lleva, escapando | $222 | $111 | $128 |
+| Normal: vida al escapar (mediana) | 21 | 22 | 24 |
+
+- **Santi tenía razón: el de pasajeros paga unas tres veces más.**
+- **Pero no es por el tiempo: es la mochila.** En el de carga entran 3 o 4
+  objetos (16 casillas, cada objeto común ocupa 3 o 4, y la dinamita también),
+  y después no entra nada. Con 25% más de tiempo saca lo mismo: medido, $269
+  contra $242 — el tiempo de más se va en caminar, no en cargar.
+- El bot normal pelea mal (no se cubre) y vuelve apenas lo hieren: sale con
+  ~21 de vida y le sobra la mitad del reloj. Sus números miden sus tiros, no el
+  tren; la comparación que importa es la del sin riesgo.
+- No incluye la huida (en el de pasajeros te persiguen más seguido: los
+  jinetes de afuera) ni el bono de trabajo limpio, que el bot nunca consigue.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

@@ -173,7 +173,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world });
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alarma: alarm.active });
     enemies = train.enemies;
     passengers = train.passengers;
     loot = train.loot;

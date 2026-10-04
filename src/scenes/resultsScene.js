@@ -10,6 +10,7 @@
 import { T } from '../text/es.js';
 import { gameState } from '../state/gameState.js';
 import { formatTime } from '../ui/hud.js';
+import { CONFIG } from '../data/config.js';
 
 export function createResultsScene(services) {
   const { input, scenes, hud } = services;
@@ -51,10 +52,12 @@ export function createResultsScene(services) {
 
 function buildPanel(s) {
   const escaped = s.outcome === 'escaped';
-  const title = escaped ? T.results.escaped : T.results.capturedTime;
+  const rendido = s.outcome === 'rendicion';
+  const title = escaped ? T.results.escaped : rendido ? T.results.rendicion : T.results.capturedTime;
   const subtitle = s.prueba ? T.results.subPrueba(s.prueba)
     : escaped
     ? T.results.subEscaped
+    : rendido ? T.results.subRendicion
     : s.outcome === 'capturedDead' ? T.results.subDead : T.results.subTime;
 
   const rows = [
@@ -116,6 +119,8 @@ function buildPanel(s) {
     s.jefeMuerto && s.bountyBajada <= 0
       ? row(T.results.jefe(s.jefeNombre), T.results.jefeSinRebaja, true) : '',
     s.famaGanada > 0 ? row(T.results.fama, `+${s.famaGanada}`, true) : '',
+    // Lo que te ahorraste levantando las manos (ver CONFIG.rendicion).
+    rendido ? row(T.results.rendicionAhorro, `$${CONFIG.bounty.capturaFlat}`, true) : '',
     row(T.results.bountyTotal, `$${gameState.bounty}`, false, gameState.bounty > 0),
     /**
      * `honorGain` puede ir para cualquier lado (a diferencia de `bountyGain`,

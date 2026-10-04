@@ -73,6 +73,12 @@ export const T = {
     escape: '[E] ESCAPAR',
     // Un guardia que vació el arma (ver data/armasGuardia.js).
     recargo: '¡RECARGO!',
+    // La escuadra (ver systems/escuadra.js): uno tira para que el otro avance.
+    teCubro: '¡TE CUBRO!',
+    avanzo: '¡AVANZO!',
+    // El primer guardia que te ve, con poca recompensa (ver CONFIG.rendicion).
+    alto: '¡ALTO! ¡MANOS ARRIBA!',
+    rendirse: '[H] RENDIRTE',
     alforjas: (usadas, max) => `[E] A LAS ALFORJAS  ${usadas}/${max}`,
     alforjasCargadas: (n, usadas, max) => `${n === 1 ? 'UNA COSA' : `${n} COSAS`} AL CABALLO  ${usadas}/${max}`,
     empty: 'SIN BALAS  [R]',
@@ -642,11 +648,15 @@ export const T = {
     escaped: 'ESCAPASTE',
     capturedTime: 'CAPTURADO',
     capturedDead: 'CAPTURADO',
+    rendicion: 'TE RENDISTE',
 
     subEscaped: 'Llegaste al furgón de cola y saltaste. El caballo estaba ahí.',
     subPrueba: (lo) => `Prueba de la huida con ${lo}. No cuenta para nada.`,
     subTime: 'Tu caballo no dio más y se quedó atrás. El tren llegó a la estación con vos adentro.',
     subDead: 'Caíste herido. Te esposaron ahí mismo.',
+    subRendicion: 'Levantaste las manos. Te esposaron sin un tiro más.',
+    // Lo que te ahorraste por rendirte: los $300 de que te agarren (CONFIG.bounty.capturaFlat).
+    rendicionAhorro: 'Por rendirte, no te suman',
 
     loot: 'Botín',
     /**

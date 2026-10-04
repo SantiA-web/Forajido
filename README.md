@@ -739,6 +739,51 @@ caminando más lento. Y el que sabe **recarga de oficio**: escondido y con menos
 de la mitad del cargador, carga antes de volver a asomarse — ése no grita,
 porque no lo agarraste vacío.
 
+### Pelean en equipo: uno cubre, el otro avanza
+
+Los guardias que pelean **en el mismo vagón** se reparten el trabajo según el
+arma que llevan:
+
+| Arma | Qué hace en el grupo |
+|---|---|
+| **Winchester** | **Cubre.** Se queda atrás y tira. Nunca es el que avanza |
+| **Escopeta** | **Avanza**, de cobertura en cobertura, cuando alguien la cubre |
+| **Revólver** | Lo que falte: cubre si no hay Winchester, avanza si no hay escopeta |
+
+- **"¡TE CUBRO!" / "¡AVANZO!"**: si estás agachado detrás de algo (o el que
+  quiere avanzar no te ve), uno empieza a tirar **a donde te vio** y el otro
+  corre a una cobertura más cerca. **De a uno por vez**, y el grito te avisa
+  que alguien viene. Si te quedás abajo, las balas pegan en lo que te tapa; si
+  salís a tirar mientras te cubren, **te pegan a vos**. No hay más castigo que
+  ése: las balas son de verdad. El que cubre no avanza, y si el compañero le
+  tapa el tiro se corre al costado.
+- Si estás **afuera tirando**, no avanza nadie: todos te tiran.
+- **Cubren al que recarga**: cuando uno grita "¡RECARGO!", otro se pone a tirar.
+- **Nunca recargan todos a la vez.** Con dos o más en el vagón, siempre queda
+  uno con balas: el que tiene una sola se la guarda mientras otro carga, y
+  nadie empieza a cargar si otro ya está cargando (cuenta también el herido que
+  se va y el que está tirado en el piso).
+- **Se dan cuenta cuando empezás a recargar** (si te ven, o si están a menos de
+  110 px y oyen el tambor): el de la escopeta o el revólver sale a acercarse
+  ya, aunque esté solo. **Pero no saben cuándo terminaste**: el que salió llega
+  hasta su cobertura aunque ya tengas el arma llena. Ahí lo esperás.
+
+### "¡Alto, manos arriba!" — rendirte con H
+
+Si **tu recompensa es menor a $900** y todavía nadie disparó en el asalto, el
+primer guardia que te ve grita **"¡ALTO! ¡MANOS ARRIBA!"** y nadie tira durante
+**1,5 segundos**. Abajo tuyo aparece **[H] RENDIRTE** con una barrita que se
+vacía. Pasa una sola vez por asalto. Con más recompensa ya no te piden nada:
+te quieren muerto.
+
+- **Con H te rendís.** Vas a la cárcel igual, pero **no te suman los $300** de
+  que te agarren. Lo que hiciste en el asalto (los muertos) sí cuenta.
+- **La plata y las alforjas siguen la misma regla que al caer**: te quedás con
+  la parte que te toca según lo cerca que estés del caballo, y el caballo vuelve
+  con las alforjas, marcadas. Así rendirte nunca es peor que morir: es lo mismo
+  sin los $300.
+- **Si disparás o tirás dinamita**, se terminó la charla.
+
 ### Los guardias no pelean todos igual, ni de principio a fin
 
 Un guardia no es un muñeco que dispara hasta que se le acaba la vida. Hay dos

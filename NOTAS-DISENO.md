@@ -16283,6 +16283,86 @@ distinción entre las armas")*.
 - Queda anotado el **esqueleto de los personajes** en los pendientes
   (PROMPT-CONTINUAR.md): la causa de fondo de esos errores.
 
+🤝 **GUARDIAS MÁS INTELIGENTES — ETAPA 2: pelean en equipo** *(Santi: "los
+guardias actúan dependiendo de cuántos son, qué armas tienen, qué están
+haciendo sus compañeros, y dónde y qué está haciendo el jugador")*. Ajustó mi
+plan: el Winchester **cubre y no es cubierto**; los tiros de aviso son de verdad
+y **no hay castigo de nervios** por salir a tirar mientras te tiran; rendirse
+con H sin los $300. Aceptó mis recomendaciones: los gritos, avanzar de a uno,
+el rescate igual que al caer, y que aprovechen tu recarga. Y marcó dos reglas:
+
+> "Si en un mismo vagón donde hay dos o más guardias, esos guardias se
+> encuentran recargando al mismo tiempo, es porque hay algo mal."
+>
+> "Un guardia podría saber cuándo empezás a recargar, pero no cuándo
+> terminaste."
+
+- **La escuadra** (`systems/escuadra.js`, nuevo): los que pelean en un mismo
+  vagón. No mueve a nadie: decide quién hace qué y le deja la orden puesta
+  (`e.cubriendo`, o una cobertura nueva al que avanza); el combate de siempre
+  (`systems/ai.js`) hace el resto. Roles por arma: Winchester cubre y nunca
+  avanza; escopeta avanza primero; revólver lo que falte.
+- **El avance** (`CONFIG.escuadra`): si estás agachado (o el que avanza no te
+  ve), el que cubre grita "¡TE CUBRO!" y empieza a tirar a donde te vio; 0,6 s
+  después el otro grita "¡AVANZO!" y corre a una cobertura **real** que lo
+  acerque al menos 20 px y quede a menos de 120 de donde está (si no hay, no
+  avanza: no se larga al descubierto). Uno por vez, 2,5 s entre avances, 4 s
+  máximo cada uno. Cubriendo, entre ráfaga y ráfaga se esconde 0,25-0,5 s en vez
+  de 1-2,4, y **no avanza**. Si estás afuera y el que iba a avanzar te ve, no
+  avanza nadie.
+- **Cubrir al que recarga**: cuando uno empieza a cargar, se elige quién lo
+  cubre (Winchester primero) por lo que dure la recarga.
+- **Regla 1, nunca todos recargando**: `companeroRecargando` (cualquier guardia
+  vivo de su vagón con el arma vacía, también el herido que se va y el tirado
+  en el piso). Con eso: nadie **empieza** a cargar si otro está cargando, y la
+  **última bala** no se tira (se corta la ráfaga, no se asoma, no tira a ciegas
+  por puertas ni techo). Igual se mide (`world.escuadra.todosRecargando`, y un
+  aviso en la consola).
+- **Regla 2, tu recarga**: al empezar a recargar se avisa (`jugadorRecarga`, en
+  `startReload`) y se enteran los que te ven o están a menos de 110 px. El que
+  puede, sale a avanzar ya, aunque esté solo y sin quien lo cubra; y la marca
+  se borra ahí. **No hay ningún aviso del final**, y ni la IA ni la escuadra
+  leen `reloadTimer`: el que salió llega a su cobertura aunque ya tengas el arma
+  llena.
+- **"¡ALTO, MANOS ARRIBA!"** (`CONFIG.rendicion`): el primero que te **ve** (no
+  el que te oye ni el que encuentra un cuerpo), si nadie disparó todavía y tu
+  recompensa es menor a $900. 1,5 s sin tiros ni golpes de nadie, `[H]
+  RENDIRTE` debajo tuyo con su barrita (arriba se encimaba con el grito). Una
+  vez por asalto; disparar o tirar dinamita la cierra. Rendido: resultado
+  `rendicion`, a la cárcel, **sin `capturaFlat`**; las muertes del asalto
+  cuentan; plata con el mismo rescate que al caer, alforjas marcadas. La
+  pantalla dice "TE RENDISTE" y "Por rendirte, no te suman $300".
+- 🐛 **Tres cosas que salieron probando:**
+  1. **El que cubría no tiraba** si todavía iba caminando a su cobertura (sólo
+     tiraba el que llegaba): ahora tira mientras camina, y sin cobertura se
+     queda quieto tirando en vez de avanzar.
+  2. **El compañero que avanza le tapaba el tiro** al que cubría (el pasillo es
+     angosto y caminan por la misma línea): 0 balas en una prueba de 20 s.
+     Ahora el que cubre se corre al costado, igual que el Pistolero.
+  3. **Contando sólo a los que pelean, igual pasaba 3 veces en 40 asaltos** que
+     recargaban todos: uno era un herido retirándose. Ahora cuenta cualquiera
+     vivo del vagón.
+- **Medido con el bot agente** (tren de pasajeros, 80 asaltos antes y 80
+  después, en dos tandas de 40; el de antes corrió en una copia aparte):
+
+  | | Antes | Después |
+  |---|---|---|
+  | **Veces que recargaron todos a la vez** | **22** (19 + 3) | **0** |
+  | Guardias que voltea el bot | 4,6 / 4,0 | 4,2 / 5,3 |
+  | Segundos que dura | 77 / 69 | 72 / 78 |
+  | Vida que pierde por guardia | 24,0 / 26,9 | 27,4 / 20,6 |
+  | Avances por asalto ("¡AVANZO!") | — | 0,9 (más de la mitad, por su recarga) |
+  | Veces que cubren al que recarga | — | 2,3 por asalto |
+
+  **La dificultad para el bot no cambia** (las dos tandas del mismo código se
+  separan más que antes y después). Es lo esperable: el bot pelea a ~100 px,
+  y a esa distancia el revólver ya está donde quiere (se para a 92), así que
+  casi nunca hace falta avanzar — de cada 100 veces que una escuadra miró si
+  avanzar, 58 fue "ya estoy cerca" y 38 "nadie puede" (todos Winchester, o
+  con orden de quedarse). El avance aparece cuando te quedás lejos y tapado,
+  que es lo que el bot no hace. Y el "¡ALTO!" no salió nunca con el bot porque
+  siempre tira primero desde el sigilo; probado aparte, con H y la pantalla.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

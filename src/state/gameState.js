@@ -364,7 +364,8 @@ function bountyDelta(summary) {
       + vistos * pesoGuardia
       + (summary.amenazados || 0) * pesoAmenaza;
   }
-  if (summary.outcome !== 'escaped') {
+  // Rendido no: ése es justamente el beneficio de levantar las manos (CONFIG.rendicion).
+  if (summary.outcome !== 'escaped' && summary.outcome !== 'rendicion') {
     delta += capturaFlat;
   }
 

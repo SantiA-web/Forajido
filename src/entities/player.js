@@ -700,7 +700,7 @@ function updateWeapon(p, dt, world) {
   }
 
   if (input.wasPressed('KeyR') && p.ammo < p.weapon.magazine) {
-    startReload(p);
+    startReload(p, world);
     return;
   }
 
@@ -709,12 +709,19 @@ function updateWeapon(p, dt, world) {
 
   if (input.mouse.down && p.fireTimer <= 0 && canShoot) {
     if (p.ammo > 0) shoot(p, world);
-    else startReload(p);
+    else startReload(p, world);
   }
 }
 
-function startReload(p) {
+function startReload(p, world) {
   p.reloadTimer = p.weapon.reloadTime;
+  /**
+   * EL AVISO ES DEL COMIENZO, NUNCA DEL FINAL *(Santi: "un guardia podría
+   * saber cuándo empezás a recargar, pero no cuándo terminaste")*. Los
+   * guardias que te ven o te oyen se enteran acá (ver systems/escuadra.js), y
+   * no hay ningún aviso cuando el arma vuelve a estar llena.
+   */
+  if (world && world.bus) world.bus.emit('jugadorRecarga', { x: p.x, y: p.y });
 }
 
 function shoot(p, world) {

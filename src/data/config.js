@@ -1189,6 +1189,67 @@ export const CONFIG = {
   },
 
   /**
+   * 🤝 LA ESCUADRA — guardias, etapa 2 *(Santi: "los guardias actúan
+   * dependiendo de cuántos son, qué armas tienen, qué están haciendo sus
+   * compañeros, y dónde y qué está haciendo el jugador")*. Ver
+   * systems/escuadra.js.
+   *
+   * Los guardias que pelean en un mismo vagón se reparten ROLES según el arma:
+   *
+   *   Winchester  CUBRE. Nunca es el que avanza: se queda atrás y tira.
+   *   escopeta    AVANZA, de cobertura en cobertura, cuando alguien lo cubre.
+   *   revólver    lo que falte: cubre si no hay Winchester, avanza si no hay
+   *               escopeta.
+   *
+   * EL AVANCE ("¡TE CUBRO!" / "¡AVANZO!"): uno tira a donde estás para que te
+   * quedes agachado y el otro corre a una cobertura más cerca. Uno por vez.
+   * Los tiros son de verdad: si salís a tirar mientras te cubren, te pegan. No
+   * hay ningún castigo inventado encima *(Santi: "no debería haber un sistema
+   * de nerviosismo o pena por salir a disparar mientras te disparan")*.
+   */
+  escuadra: {
+    // Cada cuánto puede arrancar un avance nuevo, una vez que terminó el anterior.
+    pausaEntreAvances: 2.5,
+    // El que cubre empieza a tirar un momento ANTES de que el otro salga.
+    preAviso: 0.6,
+    // Si en este tiempo no llegó, el avance se da por terminado igual.
+    avanceMax: 4,
+    // Hasta dónde puede quedar la cobertura nueva, desde donde está el que avanza.
+    tramoMax: 120,
+    // Y tiene que acercarlo al menos esto: si no, no es un avance.
+    ganaMin: 20,
+    // Mientras cubre, entre ráfaga y ráfaga se esconde esto (en vez de 1-2,4 s).
+    cubrirPausa: [0.25, 0.5],
+    /**
+     * TU RECARGA *(Santi: "un guardia podría saber cuando empezás a recargar,
+     * pero no cuando terminaste")*. Se enteran los que te VEN o los que están
+     * a esta distancia (oyen el tambor). El que se entera sale a avanzar y NO
+     * se frena a mitad de camino si terminaste: no tiene cómo saberlo.
+     */
+    oyeRecargaRadio: 110,
+  },
+
+  /**
+   * 🙌 "¡ALTO, MANOS ARRIBA!" Y RENDIRSE CON H *(Santi: "rendirte con H, y
+   * tiene el beneficio de que no te sumen los 300 dólares, pero toda la
+   * recompensa anterior (asesinatos del asalto) sí cuenta")*.
+   *
+   * El primer guardia que te ve, si todavía nadie disparó en el asalto y tu
+   * recompensa es menor que `recompensaMax`, grita "¡ALTO!" y nadie tira
+   * durante `ventana` segundos. Con H te rendís; si disparás, se terminó la
+   * charla. Una vez por asalto. Con más recompensa ya no te piden nada: te
+   * quieren muerto.
+   *
+   * Al rendirte, la plata y las alforjas siguen la MISMA regla que al caer:
+   * el rescate según lo cerca que estés del caballo, y las alforjas vuelven
+   * marcadas. Así rendirse nunca es peor que morir — es lo mismo sin los $300.
+   */
+  rendicion: {
+    recompensaMax: 900,
+    ventana: 1.5,
+  },
+
+  /**
    * CUERPO A CUERPO — lo que es del SISTEMA, no del arma.
    *
    * El daño, la velocidad y si el golpe por la espalda mata o noquea salen del

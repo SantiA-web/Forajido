@@ -36,6 +36,7 @@ import {
 } from '../data/modifiers.js';
 import { T } from '../text/es.js';
 import { ARMAS_GUARDIA, ARMAS_DOBLES, armaDeGuardia } from '../data/armasGuardia.js';
+import { companeroRecargando } from './escuadra.js';
 
 // ------------------------------------------------------------- las armas
 
@@ -72,9 +73,11 @@ function balasDe(e) {
  * LOS NÚMEROS CON LOS QUE TIRA: los del guardia (`e.ai`, con la dificultad y
  * el aura ya adentro) pasados por su arma.
  */
-function tiroDe(e, enPanico) {
+function tiroDe(e, enPanico, world) {
   const c = e.ai, a = armaDe(e);
-  const rafaga = enPanico ? c.panicoBurstSize : (a.rafaga ?? c.burstSize);
+  let rafaga = enPanico ? c.panicoBurstSize : (a.rafaga ?? c.burstSize);
+  // Si otro está recargando, la última bala no se tira (ver `puedeGastar`).
+  if (world && e.municion && companeroRecargando(e, world)) rafaga = Math.min(rafaga, balasDe(e) - 1);
   return {
     aimTime: c.aimTime * (a.apuntar ?? 1),
     fireCooldown: c.fireCooldown * (a.cadencia ?? 1),
@@ -92,6 +95,13 @@ function tiroDe(e, enPanico) {
 function empezarRecarga(e, world, grito = true) {
   const a = armaDe(e);
   if (e.recargando > 0 || balasDe(e) >= a.cargador) return;
+  /**
+   * ⚠️ NUNCA RECARGAN TODOS A LA VEZ *(Santi: "si en un mismo vagón donde hay
+   * dos o más guardias, esos guardias se encuentran recargando al mismo
+   * tiempo, es porque hay algo mal")*. Si otro de su vagón está cargando,
+   * espera a que termine. Ver systems/escuadra.js.
+   */
+  if (companeroRecargando(e, world)) return;
   e.recargando = a.recarga;
   e.recargaTotal = a.recarga;
   e.burstLeft = 0;
@@ -99,6 +109,16 @@ function empezarRecarga(e, world, grito = true) {
   e.peeking = false;
   world.audio.play('recargaGuardia');
   if (grito) world.bus.emit('guardiaRecarga', { x: e.x, y: e.y, guardia: e });
+}
+
+/**
+ * ¿PUEDE TIRAR ESTA BALA? No si es la última y otro de su vagón está
+ * recargando: se la guarda, para que siempre quede alguien con el arma
+ * cargada (ver `empezarRecarga`).
+ */
+function puedeGastar(e, world) {
+  if (!e.municion) return true;
+  return !(balasDe(e) <= 1 && companeroRecargando(e, world));
 }
 
 /** Gasta una bala; si fue la última, empieza a recargar. */
@@ -635,7 +655,11 @@ function updateSuspicion(e, dt, world, visible) {
     e.lastSeen = { x: player.x, y: player.y };
 
     if (e.suspicion >= 1) {
-      if (e.state !== 'combat') enterCombat(e, world);
+      if (e.state !== 'combat') {
+        enterCombat(e, world);
+        // Te VIO (no te oyó ni encontró un cuerpo): el que puede gritar "¡ALTO!".
+        world.bus.emit('guardiaTeVio', { guardia: e });
+      }
     } else if (e.state === 'patrol' && e.suspicion > 0.3) {
       e.state = 'suspicious';
       e.target = { ...e.lastSeen };
@@ -2265,7 +2289,7 @@ export function doCombat(e, dt, world) {
   // De cerca no dispara: te caga a golpes. En el techo esto no aplica: un
   // guardia adentro del vagón no te puede alcanzar a golpes ahí arriba.
   // Y el de franco no pega mientras descuelga el arma: tiene las manos ocupadas.
-  if (player.alive && !player.enTecho && !(e.desenfundando > 0) &&
+  if (player.alive && !player.enTecho && !(e.desenfundando > 0) && !world.alto &&
       distance(e.x, e.y, player.x, player.y) < c.meleeRange) {
     doEnemyMelee(e, dt, world);
     return;
@@ -2383,6 +2407,20 @@ export function doCombat(e, dt, world) {
   }
 
   /**
+   * 🤝 EL QUE CUBRE, CON EL COMPAÑERO EN LA LÍNEA, SE CORRE AL COSTADO.
+   *
+   * El pasillo es angosto y el que avanza camina justo por la línea de tiro
+   * del que lo cubre. Sin esto el que cubría gritaba "¡TE CUBRO!" y no tiraba
+   * nunca (medido: 0 balas en una prueba de 20 s), porque nadie dispara con un
+   * compañero adelante. Hace lo mismo que el Pistolero: un paso al costado
+   * para recuperar el ángulo (la rama de `tapadoPorCompanero`, más abajo).
+   * Si está asomado desde una cobertura, se arregla como siempre: busca otra.
+   */
+  const cubreTapado = e.cubriendo > 0 && !!e.lastSeen && !e.atCover &&
+    allyInLine(e, world, aimAt.x, aimAt.y);
+  if (cubreTapado) tapadoPorCompanero = true;
+
+  /**
    * OJO QUE NADA DE ESTO LE SACA EL REPLIEGUE DEL HERIDO: `retirarseHerido`
    * le pone un `coverPoint` por su cuenta, más arriba, y desde ahí sigue el
    * camino de siempre. Un pistolero al que le queda un tiro de vida y tiene
@@ -2446,7 +2484,7 @@ export function doCombat(e, dt, world) {
     }
   }
 
-  if (e.coverPoint && !e.atCover) {
+  if (e.coverPoint && !e.atCover && !cubreTapado) {
     const moved = moveToward(e, e.coverPoint.x, e.coverPoint.y, c.speed, dt, world.map);
     e.stuckTimer = moved < 0.2 ? (e.stuckTimer || 0) + dt : 0;
 
@@ -2468,7 +2506,9 @@ export function doCombat(e, dt, world) {
      * camina), y si va a disparar tiene que vérselo apuntando a quien le
      * está tirando, no a la silla.
      */
-    if (enPanico && engaged) {
+    // 🤝 Y el que está cubriendo a un compañero (systems/escuadra.js) tampoco
+    // espera a llegar: tira mientras camina, a donde te vio.
+    if ((enPanico && engaged) || (e.cubriendo > 0 && e.lastSeen)) {
       turnTowards(e, Math.atan2(aimAt.y - e.y, aimAt.x - e.x), dt, 10);
       tryFire(e, dt, world, aimAt, enPanico);
     }
@@ -2547,6 +2587,8 @@ export function doCombat(e, dt, world) {
       moveToward(e, aimAt.x, aimAt.y, c.speed, dt, world.map);
     }
     turnTowards(e, ang, dt, 10);
+  } else if (e.cubriendo > 0) {
+    // 🤝 Cubriendo no avanza: se queda y tira, para que avance el otro.
   } else if (esDefensivo(e)) {
     // Nada: se queda en su puesto. Si tiene tiro, dispara igual (abajo).
   } else if (dist > c.routeDistance) {
@@ -2556,7 +2598,8 @@ export function doCombat(e, dt, world) {
     moveToward(e, player.x, player.y, c.speed, dt, world.map);
   }
 
-  if (engaged) tryFire(e, dt, world, aimAt, enPanico);
+  // El que cubre (ver systems/escuadra.js) tira a donde te vio aunque ahora no te vea.
+  if (engaged || (e.cubriendo > 0 && e.lastSeen)) tryFire(e, dt, world, aimAt, enPanico);
   else e.aimTimer = 0;
 }
 
@@ -2638,7 +2681,8 @@ function holdCoverAndFire(e, dt, world, engaged, aimAt, enPanico) {
    * volver a asomarse, en vez de salir con dos balas. Es lo que hace el que
    * sabe: no grita, porque no lo agarraste vacío.
    */
-  if (!e.peeking && e.burstLeft <= 0 && balasDe(e) < armaDe(e).cargador / 2 && !enPanico) {
+  if (!e.peeking && e.burstLeft <= 0 && balasDe(e) < armaDe(e).cargador / 2 && !enPanico &&
+      !(e.cubriendo > 0) && !companeroRecargando(e, world)) {
     empezarRecarga(e, world, false);
     return;
   }
@@ -2653,7 +2697,14 @@ function holdCoverAndFire(e, dt, world, engaged, aimAt, enPanico) {
        * se asoma apenas se cumpla `e.cooldown` (el mismo que separa cualquier
        * ráfaga de la siguiente): no hay una segunda espera encima.
        */
-      e.holdTimer = enPanico ? 0 : world.rng.range(c.coverHoldMin, c.coverHoldMax);
+      /**
+       * CUBRIENDO, SE ESCONDE POCO: vuelve a asomarse enseguida, para que el
+       * que avanza (o el que recarga) tenga a alguien tirando todo el tiempo.
+       */
+      const cp = CONFIG.escuadra.cubrirPausa;
+      e.holdTimer = enPanico ? 0
+        : e.cubriendo > 0 ? world.rng.range(cp[0], cp[1])
+        : world.rng.range(c.coverHoldMin, c.coverHoldMax);
     }
     return;
   }
@@ -2673,10 +2724,23 @@ function holdCoverAndFire(e, dt, world, engaged, aimAt, enPanico) {
      * permite es UNA ráfaga de contención al lugar donde te vio por última
      * vez, justo después de perderte. Después se queda quieto y va a buscarte.
      */
-    if (!engaged) {
+    /**
+     * SALVO QUE ESTÉ CUBRIENDO A UN COMPAÑERO (systems/escuadra.js): ahí tira
+     * a donde te vio aunque estés agachado detrás de algo. Son tiros de
+     * verdad: si te quedás abajo pegan en lo que te tapa; si salís, te pegan
+     * a vos. *(Santi: "disparan a dónde está el jugador obligándolo a
+     * cubrirse y agacharse")*.
+     */
+    if (!engaged && !(e.cubriendo > 0)) {
       const puedeTirarDeContencion = e.suppressionLeft > 0 && e.lostTimer < 0.9;
       if (!puedeTirarDeContencion) return;
       e.suppressionLeft = 0;
+    }
+
+    // Con una sola bala y otro recargando, no se asoma: se la guarda.
+    if (!puedeGastar(e, world)) {
+      e.holdTimer = 0.3;
+      return;
     }
 
     /**
@@ -2685,7 +2749,7 @@ function holdCoverAndFire(e, dt, world, engaged, aimAt, enPanico) {
      * `MAX_ASOMADOS`. Sólo aplica a los que pelean en formación
      * (`grupoDefensa`); un guardia suelto no tiene a quién esperar.
      */
-    if (e.grupoDefensa && companerosAsomados(e, world) >= cupoDeAsomados(e, world)) {
+    if (e.grupoDefensa && !(e.cubriendo > 0) && companerosAsomados(e, world) >= cupoDeAsomados(e, world)) {
       e.holdTimer = 0.3;
       return;
     }
@@ -2705,7 +2769,7 @@ function holdCoverAndFire(e, dt, world, engaged, aimAt, enPanico) {
     // que ya usa el disparo ciego por la puerta para decir "no apunta con
     // cuidado" — no hizo falta inventar uno nuevo. Topeada por las balas que
     // le quedan y por lo que tira su arma (ver `tiroDe`).
-    e.burstLeft = tiroDe(e, enPanico).burstSize;
+    e.burstLeft = tiroDe(e, enPanico, world).burstSize;
     startAim(e, world, aimAt);
   }
 }
@@ -2760,11 +2824,19 @@ function tryFire(e, dt, world, aimAt, enPanico) {
   // Recargando no tira. Y el que se quedó sin balas, carga.
   if (e.recargando > 0) return;
   if (e.municion && balasDe(e) <= 0) { empezarRecarga(e, world); return; }
+  // 🙌 "¡ALTO, MANOS ARRIBA!": mientras dura, nadie tira (ver CONFIG.rendicion).
+  if (world.alto) { e.aimTimer = 0; e.burstLeft = 0; return; }
 
-  const t = tiroDe(e, enPanico);
+  const t = tiroDe(e, enPanico, world);
   if (e.aimTimer > 0) {
     e.aimTimer -= dt;
     if (e.aimTimer <= 0) {
+      // La última bala no sale si otro está recargando: corta la ráfaga ahí.
+      if (!puedeGastar(e, world)) {
+        e.burstLeft = 0;
+        e.cooldown = Math.max(e.cooldown, 0.3);
+        return;
+      }
       fire(e, world, enPanico);
       e.burstLeft -= 1;
       e.burstTimer = t.burstDelay;
@@ -2791,7 +2863,8 @@ function tryFire(e, dt, world, aimAt, enPanico) {
    * (ver el llamado a `tryFire` en `doCombat`), así que tiene que poder
    * arrancar el ciclo de apuntado aunque `e.coverPoint` siga puesto.
    */
-  if (e.cooldown <= 0 && (!e.coverPoint || enPanico)) {
+  if (e.cooldown <= 0 && (!e.coverPoint || enPanico || e.cubriendo > 0)) {
+    if (!puedeGastar(e, world)) { e.cooldown = 0.3; return; }
     if (allyInLine(e, world, aimAt.x, aimAt.y)) {
       e.cooldown = 0.3;   // hay un compañero adelante: aguanta el tiro
       return;
@@ -2889,8 +2962,8 @@ function dispararACiegasPorPuerta(e, dt, world) {
   // Sin arma no hay ráfaga a ciegas: la dinamita no se tira contra una puerta
   // cerrada esperando que pase por abajo. Ni la hay mientras la descuelga.
   if (e.sinArmaDeFuego || e.desenfundando > 0) return;
-  // Sin balas o cargando, tampoco.
-  if (e.recargando > 0 || (e.municion && balasDe(e) <= 0)) return;
+  // Sin balas o cargando, tampoco. Ni durante el "¡ALTO!".
+  if (e.recargando > 0 || (e.municion && balasDe(e) <= 0) || world.alto) return;
 
   e.doorFireCooldown = Math.max(0, (e.doorFireCooldown || 0) - dt);
 
@@ -2920,7 +2993,7 @@ function dispararACiegasPorPuerta(e, dt, world) {
 
 function fireDoorBlind(e, world, target) {
   const c = CONFIG.enemy;
-  if (e.recargando > 0) return;
+  if (e.recargando > 0 || !puedeGastar(e, world)) return;
   const angle = Math.atan2(target.y - e.y, target.x - e.x) + world.rng.spread(c.doorSpread);
   gastarBala(e, world);
 
@@ -2962,7 +3035,7 @@ function dispararACiegasPorTecho(e, dt, world) {
   // una dinamita hacia arriba le caería en la cabeza. Tampoco el de franco
   // mientras descuelga el arma.
   if (e.sinArmaDeFuego || e.desenfundando > 0) return;
-  if (e.recargando > 0 || (e.municion && balasDe(e) <= 0)) return;
+  if (e.recargando > 0 || (e.municion && balasDe(e) <= 0) || world.alto) return;
 
   const target = e.lastSeen;
   if (!target) return;
@@ -2991,7 +3064,7 @@ function dispararACiegasPorTecho(e, dt, world) {
 
 function fireTechoBlind(e, world, target) {
   const c = CONFIG.enemy;
-  if (e.recargando > 0) return;
+  if (e.recargando > 0 || !puedeGastar(e, world)) return;
   const angle = Math.atan2(target.y - e.y, target.x - e.x) + world.rng.spread(c.techoSpread);
   gastarBala(e, world);
 

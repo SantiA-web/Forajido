@@ -40,6 +40,7 @@ import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
+import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga } from '../systems/escuadra.js';
 import {
   updateSheriff, updateEscolta, actualizarAuraDelSheriff, apagarAura,
 } from '../systems/sheriff.js';
@@ -151,6 +152,13 @@ export function createRaidScene(services) {
   let jefe, jefeMuerto, jefePendiente, jefeTimer;
   let sheriff, auraTimer, sheriffMuerto;
   let finished, endTimer, outcome;
+  /**
+   * 🙌 EL "¡ALTO, MANOS ARRIBA!" (ver CONFIG.rendicion). `alto` es la ventana
+   * abierta (quién gritó y cuánto queda), `altoUsado` que ya hubo uno en este
+   * asalto, y `tiroteo` que alguien ya disparó: con balas volando nadie te
+   * pide que levantes las manos.
+   */
+  let alto, altoUsado, tiroteo;
   let wagonActual, wagonMasProfundo, ultimoVisto;
   let scroll = 0;
   let blastMarks = [];
@@ -268,6 +276,9 @@ export function createRaidScene(services) {
     finished = false;
     endTimer = 0;
     outcome = null;
+    alto = null;
+    altoUsado = false;
+    tiroteo = false;
 
     /**
      * 🐛 DONDE ESTÁS PARADO, NO DONDE DEJASTE EL CABALLO. `boardedAt` es el
@@ -284,8 +295,20 @@ export function createRaidScene(services) {
       map, player, enemies, passengers, bullets, explosives, riders, loot, doors,
       bus, rng, input, camera, audio,
       aimX: player.x, aimY: player.y,
-      spawnBullet: (options) => bullets.push(createBullet(options)),
-      spawnExplosive: (options) => explosives.push(createExplosive(options)),
+      spawnBullet: (options) => {
+        tiroteo = true;
+        // Disparaste durante el "¡ALTO!": se terminó la charla.
+        if (alto && options.owner === 'player') alto = null;
+        bullets.push(createBullet(options));
+      },
+      spawnExplosive: (options) => {
+        tiroteo = true;
+        alto = null;
+        explosives.push(createExplosive(options));
+      },
+      // 🤝 Las escuadras de guardias (systems/escuadra.js) y el "¡ALTO!".
+      escuadra: crearEscuadra(),
+      get alto() { return alto; },
       // El tren, para que `dispararACiegasPorTecho` (systems/ai.js) pueda
       // preguntar "¿este guardia está en el mismo vagón que el jugador?".
       train,
@@ -1131,6 +1154,34 @@ export function createRaidScene(services) {
       }),
 
       bus.on('playerDown', () => endRaid('capturedDead')),
+
+      // 🤝 "¡TE CUBRO!" / "¡AVANZO!" (systems/escuadra.js).
+      bus.on('guardiaGrita', ({ guardia, texto }) => {
+        floaters.push({
+          x: guardia.x, y: guardia.y - 16,
+          text: T.prompts[texto], life: 1.1, color: colors.enemyAlert,
+        });
+      }),
+      // Empezaste a recargar: se enteran los que te ven o te oyen. Del final, nadie.
+      bus.on('jugadorRecarga', () => jugadorEmpiezaRecarga(world)),
+
+      /**
+       * 🙌 EL PRIMERO QUE TE VE GRITA "¡ALTO!" — si nadie disparó todavía, si
+       * no hubo otro "¡ALTO!" en este asalto y si tu recompensa es baja
+       * *(Santi: "propongo que ocurra cuando tiene menos de 900 de
+       * recompensa")*. Con más, te quieren muerto: tiran directo.
+       */
+      bus.on('guardiaTeVio', ({ guardia }) => {
+        if (altoUsado || tiroteo || finished || !player.alive) return;
+        if (gameState.bounty >= CONFIG.rendicion.recompensaMax) return;
+        if (guardia.esJefe || (guardia.sinArmaDeFuego && !guardia.armaId)) return;
+        altoUsado = true;
+        alto = { guardia, t: CONFIG.rendicion.ventana };
+        floaters.push({
+          x: guardia.x, y: guardia.y - 16,
+          text: T.prompts.alto, life: CONFIG.rendicion.ventana + 0.3, color: colors.enemyAlert,
+        });
+      }),
 
       // Un ruido (disparo, caja fuerte) hace que los guardias vayan a mirar
       // y que los pasajeros cercanos se descompongan.
@@ -2442,6 +2493,8 @@ export function createRaidScene(services) {
     player.mochila = casillasUsadas() / CONFIG.mochila.casillas;
 
     updatePlayer(player, dt, world);
+    actualizarAlto(dt);
+    if (finished) return;
     updateTecho(dt);
     updateEstampidas(dt);
     updateRodantes(dt);
@@ -2532,8 +2585,25 @@ export function createRaidScene(services) {
     spawnJefe(tipo);
   }
 
+  /**
+   * 🙌 LA VENTANA DEL "¡ALTO!": con H te rendís. Se cierra sola cuando pasa el
+   * tiempo, si disparás (ver `spawnBullet`) o si el que gritó cae.
+   */
+  function actualizarAlto(dt) {
+    if (!alto) return;
+    if (input.wasPressed('KeyH')) {
+      alto = null;
+      endRaid('rendicion');
+      return;
+    }
+    alto.t -= dt;
+    if (alto.t <= 0 || !alto.guardia.alive) alto = null;
+  }
+
   function updateEnemies(dt) {
     const cull = CONFIG.raid.cullPatrolDistance;
+    // 🤝 Primero se reparten los roles; después cada guardia hace lo suyo.
+    actualizarEscuadras(world, dt);
     for (const e of enemies) {
       /**
        * El mini jefe corre SIEMPRE, a cualquier distancia y sin pasar por el
@@ -4648,6 +4718,17 @@ export function createRaidScene(services) {
     // Los carteles van sobre el jugador, pero sin salirse de la pantalla.
     const x0 = desplazamientoX();
     const enPantalla = { dentroDe: [x0 + 2, x0 + r.width - 2] };
+
+    // 🙌 El "¡ALTO!" le gana a cualquier otro cartel: es ahora o nunca.
+    // Va DEBAJO del jugador: arriba sube el grito del guardia, y si está
+    // cerca se encimaban.
+    if (alto) {
+      r.text(T.prompts.rendirse, player.x, player.y + 22, colors.enemyAlert, 'center', enPantalla);
+      const w = 22;
+      r.rect(player.x - w / 2, player.y + 25, w, 3, '#1a1512');
+      r.rect(player.x - w / 2, player.y + 25, w * (alto.t / CONFIG.rendicion.ventana), 3, colors.enemyAlert);
+      return;
+    }
 
     if (player.enTecho) {
       if (bordeParaBajar() !== null) {

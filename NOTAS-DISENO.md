@@ -16993,6 +16993,18 @@ saltea `applyRaidResult`). El cartel está arriba a la izquierda.
 ⚠️ **SACARLO antes de mostrar el juego:** son las dos marcas 🧪 de
 `campScene.js`.
 
+> **Borrado** *(Santi, 2026-10-04: "borrar el atajo de la corrida en
+> caballo")*. Lo reemplaza el de los guardias: **[1] te larga en la puerta del
+> vagón de correo** con tres guardias —Winchester, escopeta y revólver— y nadie
+> más en el tren (ni jefe), para probar la escuadra de la etapa 2. El "¡ALTO!"
+> sale aunque tengas $900 o más. No cuenta para nada: los resultados dicen que
+> fue una prueba, no se aplica `applyRaidResult` y, aunque te rindas o caigas,
+> volvés al campamento en vez de ir a la cárcel. El caballo queda en el vagón 1:
+> para escapar hay que volver caminando. Marcas 🧪 en `campScene.js`,
+> `raidScene.js` (`pruebaCorreo`) y `text/es.js` (`atajoCorreo`): sacarlas antes
+> de mostrar el juego. La huida se sigue pudiendo probar desde la consola
+> (`prueba` en huidaScene.js sigue existiendo).
+
 #### La mira: qué tan real es el círculo
 
 *(Santi: "que tal real es el circulo de la putería? hay probabilidad real de

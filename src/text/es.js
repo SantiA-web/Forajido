@@ -298,7 +298,6 @@ export const T = {
     lazoSolto: 'SE LE ESCAPÓ LA SOGA',
     lazoTirador: '¡LE PEGASTE Y SOLTÓ!',
     aflojan: 'SUS CABALLOS ESTÁN AFLOJANDO',
-    atajo: (arma) => `PRUEBA · [1] HUIDA CON CRIOLLO · [2] CON MUSTANG · [3] ARMA: ${arma}`,
     teclas: ['[W A S D] GALOPAR   [ESPACIO] ENVIÓN   [SHIFT] FRENAR', '[CLIC] TIRAR   [R] RECARGAR   [E] ZAFAR'],
   },
 
@@ -325,6 +324,8 @@ export const T = {
     title: 'EL CAMPAMENTO',
     keys: '[W A S D] MOVERSE     [E] USAR     [ALT+ENTER] PANTALLA COMPLETA',
     lejos: 'MEJOR NO ALEJARSE DE LA FOGATA',
+    // 🧪 El atajo de prueba de los guardias (ver campScene.js). Sacarlo con él.
+    atajoCorreo: 'PRUEBA · [1] VAGÓN DE CORREO CON 3 GUARDIAS',
 
     // Lo que dice el cartel sobre tu cabeza cuando estás al lado de cada cosa.
     prompts: {
@@ -651,7 +652,7 @@ export const T = {
     rendicion: 'TE RENDISTE',
 
     subEscaped: 'Llegaste al furgón de cola y saltaste. El caballo estaba ahí.',
-    subPrueba: (lo) => `Prueba de la huida con ${lo}. No cuenta para nada.`,
+    subPrueba: (lo) => `Prueba ${lo}. No cuenta para nada.`,
     subTime: 'Tu caballo no dio más y se quedó atrás. El tren llegó a la estación con vos adentro.',
     subDead: 'Caíste herido. Te esposaron ahí mismo.',
     subRendicion: 'Levantaste las manos. Te esposaron sin un tiro más.',

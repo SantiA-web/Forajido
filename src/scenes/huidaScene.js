@@ -1525,7 +1525,7 @@ export function createHuidaScene(services) {
     summary.killsSinTestigos = premio.tapados;
     // Una prueba no suma plata, ni recompensa, ni asaltos: sólo muestra cómo te fue.
     if (prueba) {
-      summary.prueba = `el ${caballo.name} y el ${arma.name}`;
+      summary.prueba = `de la huida con el ${caballo.name} y el ${arma.name}`;
       // La prueba no aplica nada, pero el premio del bosque se muestra igual.
       summary.bountyAhorrado = recompensaTapada(summary);
     }

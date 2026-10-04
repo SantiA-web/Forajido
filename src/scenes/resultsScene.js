@@ -22,7 +22,8 @@ export function createResultsScene(services) {
     hud.hide();
     // Si te agarraron, de acá no se vuelve al campamento: se va a la cárcel.
     // Escapaste o no es la única bifurcación del juego que cambia a dónde vas.
-    capturado = summary.outcome !== 'escaped';
+    // Una prueba no te manda a ningún lado: volvés al campamento.
+    capturado = summary.outcome !== 'escaped' && !summary.prueba;
     overlay.classList.remove('hidden');
     overlay.innerHTML = buildPanel(summary);
 
@@ -136,8 +137,8 @@ function buildPanel(s) {
       <h1 class="${escaped ? 'good' : 'bad'}">${title}</h1>
       <p class="subtitle">${subtitle}</p>
       <dl>${rows}</dl>
-      ${escaped ? '' : `<p class="note">${T.results.jailNote}</p>`}
-      <button>${escaped ? T.results.retry : T.results.verJail}</button>
+      ${escaped || s.prueba ? '' : `<p class="note">${T.results.jailNote}</p>`}
+      <button>${escaped || s.prueba ? T.results.retry : T.results.verJail}</button>
     </div>
   `;
 }

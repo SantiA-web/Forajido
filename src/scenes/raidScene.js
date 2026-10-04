@@ -41,6 +41,7 @@ import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga } from '../systems/escuadra.js';
+import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
 import {
   updateSheriff, updateEscolta, actualizarAuraDelSheriff, apagarAura,
 } from '../systems/sheriff.js';
@@ -159,6 +160,8 @@ export function createRaidScene(services) {
    * pide que levantes las manos.
    */
   let alto, altoUsado, tiroteo;
+  // 🧪 El atajo de prueba de los guardias (ver `prepararPruebaCorreo`).
+  let pruebaCorreo = false;
   let wagonActual, wagonMasProfundo, ultimoVisto;
   let scroll = 0;
   let blastMarks = [];
@@ -201,6 +204,8 @@ export function createRaidScene(services) {
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
     for (const e of enemies) armarGuardia(e, rng);
+    pruebaCorreo = !!params.pruebaCorreo;
+    if (pruebaCorreo) prepararPruebaCorreo();
     passengers = train.passengers;
     loot = train.loot;
     doors = train.doors;
@@ -604,7 +609,8 @@ export function createRaidScene(services) {
     auraTimer = 0;
 
     // `train.tipoTren` es el OBJETO del catálogo (data/train.js), no el id.
-    const elegido = params.jefeForzado
+    // En la prueba de los guardias no sube ningún jefe: sólo la escuadra.
+    const elegido = params.pruebaCorreo ? null : params.jefeForzado
       ? BOSSES[params.jefeForzado]
       : jefeParaEsteAsalto(gameState.bounty, train.tipoTren.id, rng);
 
@@ -1173,7 +1179,8 @@ export function createRaidScene(services) {
        */
       bus.on('guardiaTeVio', ({ guardia }) => {
         if (altoUsado || tiroteo || finished || !player.alive) return;
-        if (gameState.bounty >= CONFIG.rendicion.recompensaMax) return;
+        // En la prueba sale siempre, para poder probarlo con cualquier recompensa.
+        if (!pruebaCorreo && gameState.bounty >= CONFIG.rendicion.recompensaMax) return;
         if (guardia.esJefe || (guardia.sinArmaDeFuego && !guardia.armaId)) return;
         altoUsado = true;
         alto = { guardia, t: CONFIG.rendicion.ventana };
@@ -2586,6 +2593,39 @@ export function createRaidScene(services) {
   }
 
   /**
+   * 🧪 EL ATAJO DE PRUEBA DE LOS GUARDIAS ([1] en el campamento). Te para en
+   * la puerta del vagón de correo, con sus tres guardias armados uno de cada
+   * cosa —Winchester, escopeta, revólver—, y saca a todos los demás del tren,
+   * para que se vea sólo la escuadra (systems/escuadra.js). No cuenta para
+   * nada: ver `goToResults`.
+   *
+   * ⚠️ SACARLO antes de mostrar el juego, con el atajo del campamento.
+   */
+  function prepararPruebaCorreo() {
+    const k = train.wagons.findIndex((w) => w.short === 'CORREO');
+    if (k < 0) return;
+    const w = train.wagons[k];
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      if (train.wagonAt(enemies[i].x) !== k) enemies.splice(i, 1);
+    }
+    const armas = ['winchester', 'escopeta', 'revolver'];
+    enemies.slice(3).forEach((e) => enemies.splice(enemies.indexOf(e), 1));
+    enemies.forEach((e, i) => {
+      const a = armas[i % armas.length];
+      e.armaId = a;
+      e.armaEnMano = a;
+      e.municion = { [a]: ARMAS_GUARDIA[a].cargador };
+      e.recargando = 0;
+    });
+    // En la plataforma de antes del vagón, a la altura de la puerta. Y se
+    // cuenta como subido ahí, para que el cartel de entrada diga "CORREO".
+    // El caballo queda donde estaba: para escapar hay que volver caminando.
+    player.x = w.x - 24;
+    player.y = 72;
+    train.boardedAt = k;
+  }
+
+  /**
    * 🙌 LA VENTANA DEL "¡ALTO!": con H te rendís. Se cierra sola cuando pasa el
    * tiempo, si disparás (ver `spawnBullet`) o si el que gritó cae.
    */
@@ -3831,6 +3871,13 @@ export function createRaidScene(services) {
      * Sin plata encima no hay persecución: lo único que se pierde en la huida
      * son bolsas, y sin nada que soltar serían 15 segundos sin nada en juego.
      */
+    // 🧪 La prueba de los guardias no suma nada ni pasa por la huida.
+    if (pruebaCorreo) {
+      summary.prueba = 'de los guardias en el vagón de correo';
+      scenes.goTo('results', summary);
+      return;
+    }
+
     const jinetesVivos = riders.filter((rd) => rd.alive).length;
     if (escaped && alarm.active && jinetesVivos > 0 && summary.money > 0) {
       scenes.goTo('huida', {

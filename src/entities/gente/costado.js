@@ -262,7 +262,12 @@ export function lado(L, o = {}) {
      * del animal, que se dibuja después. Ocho unidades de diferencia con la
      * pose cruzada — eso es el aviso.
      */
-    rifle(U, R, [24, 34], [25, 33], [25, 35], [38, 33], [1, 0], ...medidasLarga(o.arma));
+    const al = armaLarga(o.arma);
+    if (al.cadera) rifle(U, R, [24, 34], [23, 45], [25, 36], [33, 43], [0.97, -0.24], ...medidasLarga(o.arma));
+    // El Winchester sube a la altura de la cara: la culata al hombro y la
+    // mejilla sobre la caja (la cabeza baja, más abajo).
+    else if (al.mira) rifle(U, R, [24, 34], [26, 30], [25, 35], [38, 30], [1, 0], ...medidasLarga(o.arma));
+    else rifle(U, R, [24, 34], [25, 33], [25, 35], [38, 33], [1, 0], ...medidasLarga(o.arma));
   } else if (o.arma && o.armaDir == null) {
     apuntar(U, R, [24, 34], [37, 38], [1, 0], 9);
   } else {
@@ -274,7 +279,14 @@ export function lado(L, o = {}) {
   // El pañuelo blanco del que se rinde, en la mano levantada.
   if (o.panuelo) { U.rect(19, 14, 6, 5, '#e4ddcc'); U.rect(19, 14, 6, 1, '#f4f0e4'); }
 
-  L.rigido(() => { cabezaLado(U, o); sombreroLado(U, R.sombrero); });
+  /**
+   * 🎯 CON EL WINCHESTER APUNTANDO, LA CABEZA BAJA SOBRE EL ARMA *(Santi: "al
+   * apuntar tenga la cabeza más sobre el arma (su ojo más cerca)")*: adelante
+   * y abajo, el ojo en la mira. La escopeta no: se tira desde la cadera.
+   */
+  const conMira = (armaLarga(o.arma) || {}).mira && armaLarga(o.arma).listo;
+  const H = conMira ? mover(U, 2, 3) : U;
+  L.rigido(() => { cabezaLado(H, o); sombreroLado(H, R.sombrero); });
   // Ver la nota en `frente`: con ángulo, el brazo va por delante de la cabeza.
   if (o.arma === true && o.armaDir != null) apuntar(U, R, [24, 34], [37, 38], [1, 0], 9, o.armaDir);
 }

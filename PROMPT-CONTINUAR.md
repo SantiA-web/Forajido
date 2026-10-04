@@ -142,6 +142,16 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
 - `alertaEnPuerta` (systems/ai.js) sigue sin que nadie la llame: candidata a
   limpieza.
 - En el código los barriles de pólvora se llaman `cajon` / `cajonPolvora`.
+- **El esqueleto de los personajes** (pedido por Santi para más adelante,
+  2026-10-04). Hoy cada pose está dibujada con coordenadas sueltas (la cabeza
+  en un lugar, el sombrero en otro, el arma en otro), y al mover una pieza las
+  demás no se enteran: así salieron el sombrero flotando y las armas cruzando
+  el torso al hacer las poses del Winchester y la escopeta. La idea: cada pieza
+  pegada a otra (sombrero a la cabeza, mano al brazo, arma a la mano) y una
+  pose = cómo se doblan brazos y cabeza. No cambia cómo se ven; hace que cada
+  pose o arma nueva salga bien en las 8 direcciones. Conviene antes de la
+  escopeta del jugador, los compañeros, los civiles que reaccionan y las
+  habilidades (rodar). Trabajo mediano.
 
 ## Cómo trabajar conmigo
 

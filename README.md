@@ -716,10 +716,20 @@ Pistolero, sus dos revólveres; el Dinamitero, la recortada además de la
 dinamita; el **Sheriff**, Winchester de lejos y revólver si le quedás a menos
 de 70 px.
 
-**Se ve qué lleva:** el Winchester y las escopetas se agarran con las dos manos
-—cruzados mientras patrulla, encarados cuando pelea—; el Winchester tiene el
-caño largo y fino, la escopeta dos caños cortos y gruesos, la recortada casi
-nada de caño. **Y se oye:** el escopetazo es grave y sucio, el Winchester seco.
+**Se ve qué lleva, y se ve en el cuerpo:**
+
+- **El Winchester** es largo y claro, con la **caja de bronce** dorada, el aro
+  de la palanca y el tubo del cargador. **Se apunta con la cabeza sobre el
+  arma**: de costado, el ojo en la mira; de frente, los codos abiertos y la boca
+  del caño mirándote; de espaldas, **los codos arriba** y el caño asomando al
+  lado del sombrero.
+- **La escopeta** es corta, gruesa y casi negra, con madera rojiza, y **se
+  dispara desde la cadera**: de frente se le ven las dos bocas a la altura de
+  la cintura; de espaldas, **los codos abajo**. La recortada del Dinamitero es
+  la misma, serruchada.
+
+Así, aunque no llegues a ver el arma, la postura te dice cuál es. **Y se oye:**
+el escopetazo es grave y sucio, el Winchester seco.
 
 **Recargar es tu ventana.** El que vacía el arma grita **"¡RECARGO!"**, se mete
 detrás de su cobertura (hasta el Pistolero, que nunca se cubre) y le aparece

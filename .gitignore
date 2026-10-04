@@ -18,3 +18,7 @@ src/Forajido/
 /banco-bot.js
 /banco-ladron.js
 /banco-agente.js
+/banco-dibujo.js
+/poses-*.png
+/proto-*.png
+/zoom-*.png

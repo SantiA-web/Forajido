@@ -66,7 +66,8 @@ export const ARMAS_GUARDIA = {
     vistaCombate: 170,
     distanciaIdeal: 140,
     paradaAvance: 140,
-    dibujo: 'rifle',
+    // Caja de bronce, palanca y tubo; apunta con la cabeza sobre el arma.
+    dibujo: 'winchester',
   },
 
   /**

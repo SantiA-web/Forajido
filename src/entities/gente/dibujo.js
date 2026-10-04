@@ -543,20 +543,38 @@ export function apuntar(L, R, hombro, mano, dir, largo, haciaDonde = null) {
  */
 /**
  * LAS ARMAS LARGAS Y CÓMO SE DIBUJA CADA UNA, con las medidas en unidades de
- * esta grilla (ver la nota de arriba). Todas usan las dos poses del rifle:
- * cruzada (`'rifle'`) y lista para tirar (`'rifleListo'`), y lo mismo con
- * `'escopeta'`/`'escopetaListo'` y `'recortada'`/`'recortadaListo'`.
+ * esta grilla (ver la nota de arriba). Cada una tiene dos poses: patrullando
+ * (`'winchester'`) y lista para tirar (`'winchesterListo'`).
  *
- *   rifle      el Winchester: el caño largo y fino de siempre.
- *   escopeta   doble caño: más corta, y los dos caños se ven uno al lado
- *              del otro.
- *   recortada  la del Dinamitero: caño y culata serruchados, casi una pistola
- *              grande.
+ *   rifle       el de los jinetes de la ley en la huida: caño largo y fino.
+ *   winchester  el de los guardias (abajo).
+ *   escopeta    el doble caño de los guardias, a la cadera (abajo).
+ *   recortada   la del Dinamitero: la misma escopeta, serruchada.
+ *
+ * `mira` y `cadera` cambian la POSE, no sólo el arma: con el Winchester se
+ * apunta con la cabeza sobre el arma (codos arriba de espaldas); con la
+ * escopeta, desde la cintura (codos abajo). Así se distinguen aunque no se vea
+ * el arma. De frente y de espaldas las dibujan `apuntaDeFrente`,
+ * `apuntaDiagonalFrente` y `apuntaDeEspaldas`.
  */
 const LARGAS = {
   rifle: { cano: 18, culata: 9, doble: false },
-  escopeta: { cano: 10, culata: 8, doble: true },
-  recortada: { cano: 5, culata: 3, doble: true },
+
+  /**
+   * EL WINCHESTER DE LOS GUARDIAS *(Santi eligió el prototipo: caja de bronce,
+   * aro de la palanca, tubo del cargador)*. `mira`: al apuntar baja la cabeza
+   * sobre el arma —el ojo en la mira—, que es además lo que lo distingue de la
+   * escopeta, que se tira desde la cadera.
+   */
+  winchester: { cano: 21, culata: 10, doble: false, estilo: { laton: true }, mira: true },
+
+  /**
+   * LA ESCOPETA DE LOS GUARDIAS *(Santi eligió la B: "a la cadera")*: corta,
+   * gruesa y oscura, y se dispara DESDE LA CINTURA. Reemplaza a la de antes,
+   * que de lejos no se distinguía del Winchester.
+   */
+  escopeta: { cano: 13, culata: 8, doble: true, estilo: { gorda: true }, cadera: true },
+  recortada: { cano: 6, culata: 4, doble: true, estilo: { gorda: true }, cadera: true },
 };
 
 /** Si `arma` es un arma larga, cuál y en qué pose; si no, `null`. */
@@ -570,10 +588,144 @@ export function armaLarga(arma) {
 /** Los tres últimos argumentos de `rifle()` para esta arma. */
 export function medidasLarga(arma) {
   const a = armaLarga(arma) || LARGAS.rifle;
-  return [a.cano, a.culata, a.doble];
+  return [a.cano, a.culata, a.doble, a.estilo || {}];
 }
 
-export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano = 18, culata = 9, doble = false) {
+/**
+ * 🎯 APUNTANDO DE FRENTE (vista de frente, sin girar): el arma te mira.
+ *
+ * *(Santi: "quiero que los guardias de espaldas y de frente se pueda
+ * distinguir la pose de disparo, porque ahora parece que están bugueados")*.
+ * Antes el arma iba en diagonal cruzando el cuerpo, casi igual que
+ * patrullando. Ahora:
+ *
+ *   Winchester  al hombro: la culata en el hombro, la caja de bronce debajo
+ *               del mentón y LA BOCA DEL CAÑO apuntándote, con el tubo del
+ *               cargador abajo. La cabeza baja sobre el arma (ver `frente`).
+ *   escopeta    a la cadera: los dos brazos bajos y LAS DOS BOCAS a la altura
+ *               de la cintura, una al lado de la otra.
+ *
+ * Va DESPUÉS de la cabeza: el arma está delante de la cara.
+ */
+export function apuntaDeFrente(L, R, a) {
+  const [M0, , MS] = R.manga;
+  const brazo = (h, m) => { tramo(L, [h[0], h[1] + 1], [m[0], m[1] + 1], 3, MS); tramo(L, h, m, 2.6, M0); };
+  if (a.cadera) {
+    const k = a.cano < 8 ? 0.8 : 1;   // la recortada, un poco más chica
+    brazo([13, 35], [19, 46]);
+    brazo([35, 35], [31, 45]);
+    tramo(L, [31, 46], [36, 49], 4.2, '#6e3e22');
+    tramo(L, [19, 47], [31, 46], 4.6 * k, '#5a2e18');
+    tramo(L, [19, 45.6], [31, 44.6], 1, '#8a4a2a');
+    for (const cx of [21.5, 26.5]) {
+      L.elipse(cx, 46, 2.6 * k, 2.6 * k, '#9a9ea6');
+      L.elipse(cx, 46, 1.8 * k, 1.8 * k, '#2a2c32');
+      L.elipse(cx, 46, 0.9, 0.9, NEGRO);
+    }
+    L.elipse(31, 46, 2, 2, PIEL);
+    L.elipse(18, 47, 2, 2, PIEL);
+    return;
+  }
+  // Los dos codos abiertos hacia afuera: la silueta de alguien encarando un rifle.
+  brazo([13, 35], [7, 38]); brazo([7, 38], [20, 37]);
+  brazo([35, 35], [41, 37]); brazo([41, 37], [30, 35]);
+  tramo(L, [35, 34], [28, 33], 3.4, CULATA_L);
+  tramo(L, [28, 33], [25, 33], 3.4, LATON);
+  tramo(L, [28, 32], [25, 32], 1, '#e8cc84');
+  L.elipse(23.5, 36.6, 1.3, 1.3, '#8a8278');
+  // La boca del caño mirándote: un aro claro con el agujero negro adentro.
+  L.elipse(23.5, 33, 2.8, 2.8, '#b4ac9e');
+  L.elipse(23.5, 33, 1.8, 1.8, '#3a342e');
+  L.elipse(23.5, 33, 0.9, 0.9, NEGRO);
+  L.elipse(30, 35, 2, 2, PIEL);
+  L.elipse(20, 37, 2, 2, PIEL);
+}
+
+/**
+ * 🎯 APUNTANDO EN DIAGONAL HACIA LA CÁMARA (vista `diagF`: mira abajo a la
+ * derecha; la otra diagonal es el espejo). El arma apunta HACIA DONDE MIRA, y
+ * más corta, porque viene hacia vos.
+ *
+ * 🐛 Antes reusaba la pose de los jinetes de la huida, que apunta para el otro
+ * lado: el guardia miraba abajo a la derecha y el arma iba abajo a la
+ * izquierda, cruzándole el torso. *(Santi: "armas bugueadas y atravesando
+ * torsos")*.
+ *
+ *   Winchester  al hombro derecho, el caño saliendo abajo a la derecha.
+ *   escopeta    a la cadera derecha, los caños saliendo abajo a la derecha.
+ */
+export function apuntaDiagonalFrente(L, R, a) {
+  const corto = (k) => Math.max(4, Math.round(a.cano * k));
+  if (a.cadera) {
+    rifle(L, R, [34, 35], [30, 46], [14, 35], [35, 47], [0.86, 0.5], corto(0.6), Math.min(5, a.culata), a.doble, a.estilo || {});
+    return;
+  }
+  rifle(L, R, [34, 34], [31, 34], [14, 35], [36, 38], [0.72, 0.69], corto(0.55), 6, a.doble, a.estilo || {});
+}
+
+/**
+ * 🎯 APUNTANDO DE ESPALDAS: el arma apunta al fondo, así que LOS ANTEBRAZOS
+ * VAN HACIA ADELANTE y el cuerpo los tapa. Se ven los codos, no las manos —
+ * lo mismo que ya hace el jinete de espaldas. *(Santi: "manos en los
+ * costados")*: dibujarlas al costado era lo que lo hacía parecer con las manos
+ * en la cintura.
+ *
+ *   Winchester  codos ARRIBA y afuera, a la altura del hombro, y el caño
+ *               asomando por arriba del hombro derecho, al costado del
+ *               sombrero (no por encima: lo atravesaba).
+ *   escopeta    codos ABAJO y afuera, a la cintura, y la culata asomando atrás
+ *               de la cadera derecha.
+ *
+ * `g` es la diagonal (vista `diagE`: mira arriba a la derecha): ahí el caño
+ * sale para arriba a la derecha, hacia donde mira.
+ *
+ * Va DESPUÉS del sombrero: el caño pasa al lado del ala.
+ */
+/**
+ * De espaldas, con los antebrazos hacia adelante (agarrando algo que el cuerpo
+ * tapa): se ven los brazos hasta el codo, doblados, y nada más.
+ */
+export function codosAdelante(L, R, g = 0) {
+  const [M0, , MS] = R.manga;
+  for (const [h, c] of [[[14 + g, 35], [11 + g, 44]], [[34 - g, 35], [37 - g, 44]]]) {
+    tramo(L, [h[0], h[1] + 1], [c[0], c[1] + 1], 3.2, MS);
+    tramo(L, h, c, 2.8, M0);
+    L.elipse(c[0], c[1], 1.6, 1.6, M0);
+  }
+}
+
+export function apuntaDeEspaldas(L, R, a, g = 0) {
+  const [M0, , MS] = R.manga;
+  const codo = (h, c) => { tramo(L, [h[0], h[1] + 1], [c[0], c[1] + 1], 3.2, MS); tramo(L, h, c, 2.8, M0); L.elipse(c[0], c[1], 1.6, 1.6, M0); };
+  const cano = (p, q, ancho, color, luz) => { tramo(L, p, q, ancho, color); if (luz) tramo(L, p, q, 0.7, luz); };
+  if (a.cadera) {
+    codo([14 + g, 36], [10 + g, 44]);
+    codo([34 - g, 36], [38 - g, 44]);
+    if (g) {
+      // Los caños salen arriba a la derecha, a la altura de la cintura.
+      const l = Math.max(4, Math.round(a.cano * 0.5));
+      cano([33, 45], [33 + l * 0.75, 45 - l * 0.66], 2.6, '#2a2c32');
+      cano([34.4, 46.4], [34.4 + l * 0.75, 46.4 - l * 0.66], 2.6, '#34363c', '#8a8e96');
+    }
+    // Derecho de espaldas no asoma nada: la culata marrón en la cadera se
+    // confundía con una mano. Los codos bajos alcanzan.
+    return;
+  }
+  codo([14 + g, 34], [9 + g, 30]);
+  codo([34 - g, 34], [40 - g, 30]);
+  if (g) {
+    tramo(L, [33, 31], [35, 28], 3, LATON);
+    cano([35, 28], [43, 17], 2, '#6e665c', '#c4bcb0');
+    return;
+  }
+  // La caja y el caño EN LA MISMA LÍNEA: con un quiebre entre los dos, el arma
+  // se veía doblada.
+  tramo(L, [35.6, 30], [35.96, 26], 3, LATON);
+  cano([35.96, 26], [37.5, 9], 2, '#6e665c', '#c4bcb0');
+  L.rect(37, 9, 1, 1, '#e0d8cc');
+}
+
+export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano = 18, culata = 9, doble = false, estilo = {}) {
   const [M0, ML, MS] = R.manga;
   const [nx, ny] = dir;
   const punto = (p, d) => [p[0] + nx * d, p[1] + ny * d];
@@ -588,13 +740,70 @@ export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano = 18, cula
    * encima la tapa en parte. Con la madera y el fierro en sus tonos reales el
    * rifle desaparecía: no es un arma realista, es un arma que se ve.
    */
-  tramo(L, manoT, punto(manoT, -culata), 3.2, CULATA_L);
-  tramo(L, manoT, punto(manoT, -culata * 0.55), 1.1, '#b08d5c');
-
-  // La caja entre las dos manos, y el caño para adelante.
-  tramo(L, manoT, manoF, 2.4, '#4a443e');
+  // Perpendicular al arma, hacia "abajo" de ella: ahí van la palanca y el tubo.
+  const px = -ny, py = nx;
+  const de = (p, k) => [p[0] + px * k, p[1] + py * k];
   const boca = punto(manoF, cano);
-  if (cano <= 3) {
+
+  if (estilo.laton) {
+    /**
+     * 🧪 EL WINCHESTER: culata de madera con su cantonera oscura, LA CAJA DE
+     * BRONCE (lo que lo hace un Winchester de palanca y lo que se ve de lejos),
+     * el aro de la palanca colgando abajo, un guardamanos de madera fino, y el
+     * caño largo y fino con el tubo del cargador debajo.
+     */
+    tramo(L, manoT, punto(manoT, -culata), 3.2, CULATA_L);
+    tramo(L, punto(manoT, -culata + 1.2), punto(manoT, -culata), 3.4, '#3a2a1e');
+    tramo(L, manoT, punto(manoT, -culata * 0.6), 1.1, '#c49a64');
+    const caja0 = punto(manoT, 0.5), caja1 = punto(manoT, 5.5);
+    tramo(L, caja0, caja1, 3.2, LATON);
+    tramo(L, caja0, caja1, 1, '#e8cc84');
+    const aro = de(punto(manoT, 2.5), 2.6);
+    L.elipse(aro[0], aro[1], 1.7, 1.7, LATON);
+    L.rect(Math.round(aro[0]), Math.round(aro[1]), 1, 1, NEGRO);
+    tramo(L, caja1, manoF, 2.2, '#8a5a32');
+    if (cano > 3) {
+      tramo(L, de(manoF, 1.2), de(punto(manoF, cano * 0.8), 1.2), 1.2, '#6e665c');
+      tramo(L, manoF, boca, 1.7, '#4e4842');
+      tramo(L, manoF, punto(manoF, cano * 0.9), 0.7, '#b4ac9e');
+      L.rect(Math.round(boca[0]), Math.round(boca[1]), 1, 1, '#e0d8cc');
+    }
+  } else if (estilo.gorda) {
+    /**
+     * 🧪 LA ESCOPETA: la silueta contraria del Winchester. Gruesa y OSCURA
+     * (fierro pavonado, casi negro, donde el Winchester es claro y fino),
+     * culata ancha y madera rojiza oscura —no naranja: si no, se confunde con
+     * la mano—, un guardamanos que abraza los dos caños y dos bocas chiquitas.
+     */
+    tramo(L, manoT, punto(manoT, -culata), 4.2, '#6e3e22');
+    tramo(L, manoT, punto(manoT, -culata * 0.6), 1.2, '#9a5a32');
+    tramo(L, manoT, manoF, 3.4, '#26282c');
+    if (cano > 3) {
+      const ox = px * 1.5, oy = py * 1.5;
+      const lado = (p, k) => [p[0] + ox * k, p[1] + oy * k];
+      tramo(L, lado(manoF, 1), lado(boca, 1), 2.7, '#2a2c32');
+      tramo(L, lado(manoF, -1), lado(boca, -1), 2.7, '#34363c');
+      tramo(L, lado(manoF, -1.6), lado(boca, -1.6), 0.8, '#8a8e96');
+      // El guardamanos: madera oscura que abraza los dos caños, cerca de la mano.
+      tramo(L, punto(manoF, -1), punto(manoF, cano * 0.35), 5.4, '#5a2e18');
+      tramo(L, de(punto(manoF, -1), -1.8), de(punto(manoF, cano * 0.35), -1.8), 1, '#8a4a2a');
+      L.rect(Math.round(lado(boca, 1)[0]), Math.round(lado(boca, 1)[1]), 1, 1, '#c8c0b4');
+      L.rect(Math.round(lado(boca, -1)[0]), Math.round(lado(boca, -1)[1]), 1, 1, '#c8c0b4');
+    }
+  } else {
+    tramo(L, manoT, punto(manoT, -culata), 3.2, CULATA_L);
+    tramo(L, manoT, punto(manoT, -culata * 0.55), 1.1, '#b08d5c');
+    // La caja entre las dos manos.
+    tramo(L, manoT, manoF, 2.4, '#4a443e');
+  }
+
+  // El caño para adelante (los prototipos ya dibujaron el suyo).
+  if (estilo.laton || estilo.gorda) {
+    if (cano <= 3) {
+      L.elipse(boca[0], boca[1], 2.2, 2.2, '#6b6258');
+      L.rect(Math.round(boca[0]), Math.round(boca[1]), 1, 1, NEGRO);
+    }
+  } else if (cano <= 3) {
     // Apuntando a la cámara: se ve la boca, no el caño.
     L.elipse(boca[0], boca[1], 2.2, 2.2, '#6b6258');
     L.rect(Math.round(boca[0]), Math.round(boca[1]), 1, 1, NEGRO);
@@ -602,9 +811,9 @@ export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano = 18, cula
     // DOS CAÑOS, uno al lado del otro: más gruesos y separados por una raya
     // oscura. Es lo que dice "escopeta" sin leer nada.
     const ox = -ny * 1.3, oy = nx * 1.3;
-    const de = (p, k) => [p[0] + ox * k, p[1] + oy * k];
-    tramo(L, de(manoF, 1), de(boca, 1), 2.4, '#8a8278');
-    tramo(L, de(manoF, -1), de(boca, -1), 2.4, '#9a9288');
+    const ld = (p, k) => [p[0] + ox * k, p[1] + oy * k];
+    tramo(L, ld(manoF, 1), ld(boca, 1), 2.4, '#8a8278');
+    tramo(L, ld(manoF, -1), ld(boca, -1), 2.4, '#9a9288');
     tramo(L, manoF, boca, 0.6, '#3a342e');
     L.rect(Math.round(boca[0] + ox), Math.round(boca[1] + oy), 1, 1, '#e0d8cc');
     L.rect(Math.round(boca[0] - ox), Math.round(boca[1] - oy), 1, 1, '#e0d8cc');

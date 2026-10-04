@@ -6,7 +6,7 @@
  * en espejo, y eso lo resuelve `entities/figura.js` al estampar.
  */
 import {
-  ROPA, tono, mover, corrido, apuntar, rifle, armaLarga, medidasLarga,
+  ROPA, tono, mover, corrido, apuntar, rifle, armaLarga, medidasLarga, apuntaDeFrente, apuntaDeEspaldas, apuntaDiagonalFrente, codosAdelante,
   OJO_B, PIEL, PIEL_S, CAM, CAM_L, CAM_S, PAN_R, PAN_RL, PAN_RS,
   BOTA, BOTA_L, ESPUELA, CINTO, FUNDA, CULATA, CULATA_L, LATON, BLANCA, CORBATA,
 } from './dibujo.js';
@@ -351,7 +351,12 @@ function torsoFrente(L, R, o, g, f) {
      *    que las dos se veían igual y el aviso no avisaba nada. Lo que se lee
      *    es el CAMBIO de ángulo, no el arma.
      */
-    rifle(L, R, [33 - g, 34], [30, 34], [13 + g, 35], [18, 43], [-0.8, 0.6], ...medidasLarga(o.arma));
+    const al = armaLarga(o.arma);
+    // De frente del todo, el Winchester y la escopeta apuntan A LA CÁMARA:
+    // los dibuja `apuntaDeFrente`, después de la cabeza (ver `frente`).
+    if (al.mira || al.cadera) { /* después de la cabeza: `apuntaDeFrente` o `apuntaDiagonalFrente` */ }
+    else if (al.cadera) rifle(L, R, [33 - g, 34], [31, 46], [13 + g, 35], [21, 48], [-0.9, 0.42], ...medidasLarga(o.arma));
+    else rifle(L, R, [33 - g, 34], [30, 34], [13 + g, 35], [18, 43], [-0.8, 0.6], ...medidasLarga(o.arma));
   } else if (o.arma && o.armaDir == null) {
     if (g) apuntar(L, R, [33, 34], [40, 44], [0.7, 0.7], 6, o.armaDir);
     else apuntar(L, R, [34, 34], [30, 44], [0, 1], 3, o.armaDir);
@@ -370,7 +375,15 @@ export function frente(L, o = {}) {
   const cuadro = quieto ? CAMINATA[0] : f;
   torsoFrente(U, R, { ...o, manosArriba: (quieto && quieto.rendido) || o.manosArriba }, g, cuadro);
   if (o.panuelo) panueloBlanco(U, g);
-  L.rigido(() => { cabezaFrente(U, o, g); sombrero(U, R.sombrero, g, false); });
+  // 🎯 Apuntando con el Winchester, la cabeza baja sobre el arma (ver `apuntaDeFrente`).
+  const al = armaLarga(o.arma);
+  const apunta = al && al.listo;
+  const H = apunta && al.mira ? mover(U, 0, 2) : U;
+  L.rigido(() => { cabezaFrente(H, o, g); sombrero(H, R.sombrero, g, false); });
+  if (apunta && (al.mira || al.cadera)) {
+    if (g) apuntaDiagonalFrente(U, R, al);
+    else apuntaDeFrente(U, R, al);
+  }
   /**
    * 🎯 EL BRAZO QUE APUNTA A UN ÁNGULO VA DESPUÉS DE LA CABEZA. Adentro del
    * torso quedaba TAPADO justo cuando más importa: apuntando para arriba el
@@ -432,6 +445,14 @@ export function espalda(L, o = {}) {
     else U.poly([[9, 33], [14, 32], [14, 53 + mI], [9, 54 + mI]], MS);
     if (!o.arma) U.poly([[34 - g, 32], [39 - g, 33], [39 - g, 54 + mD], [34 - g, 53 + mD]], M0);
   }
+  /**
+   * 🐛 PATRULLANDO, EL ARMA VA ADELANTE DEL CUERPO, así que de espaldas se
+   * dibuja ANTES del saco: el cuerpo la tapa y asoman las dos puntas (la culata
+   * de un lado, el caño del otro). Antes iba encima de la espalda, como si la
+   * llevara colgada atrás. Los codos, doblados hacia adelante, van después.
+   */
+  const alP = armaLarga(o.arma);
+  if (alP && !alP.listo) rifle(U, R, [13 + g, 35], [13, 47], [34 - g, 35], [26, 44], [0.974, -0.225], ...medidasLarga(o.arma));
   const largo = R.saco ? 57 : 55;
   U.poly([[13 + g, 32], [35 - g, 32], [34 - g, largo], [14 + g, largo]], C0);
   U.sobre(13, 32, 23, 26, [C0], CS, 14);
@@ -450,7 +471,11 @@ export function espalda(L, o = {}) {
     U.elipse(g ? 13 : 11, 56 + cuadro.mI, 2, 3, PIEL_S);
     if (!o.arma) U.elipse(37 - g, 56 + cuadro.mD, 2, 3, PIEL);
   }
-  L.rigido(() => cabezaEspalda(U, o, g));
+  // 🎯 Apuntando con el Winchester, la cabeza se inclina hacia el arma.
+  const alE = armaLarga(o.arma);
+  // 🐛 La cabeza bajaba y el sombrero no: quedaba flotando. Ahora van juntos.
+  const HE = alE && alE.listo && alE.mira ? mover(U, 1, 2) : U;
+  L.rigido(() => cabezaEspalda(HE, o, g));
   if (R.cuello === 'panuelo') {
     const pr = R.panueloColor || PAN_R;
     const ps = R.panueloColor ? tono(pr, 0.72) : PAN_RS;
@@ -463,17 +488,22 @@ export function espalda(L, o = {}) {
   else U.rect(18, 29, 13, 4, CS);
   // Apuntando de espaldas: el brazo se va para arriba, al costado de la cabeza.
   if (armaLarga(o.arma) && !armaLarga(o.arma).listo) {
-    rifle(U, R, [13 + g, 35], [13, 47], [34 - g, 35], [26, 44], [0.974, -0.225], ...medidasLarga(o.arma));
+    codosAdelante(U, R, g);
   } else if ((armaLarga(o.arma) || {}).listo) {
     // De espaldas apunta para el fondo: la misma diagonal que de frente pero
     // para arriba, con la boca saliendo al costado de la cabeza.
-    rifle(U, R, [33 - g, 34], [30, 33], [14 + g, 34], [18, 24], [-0.8, -0.6], ...medidasLarga(o.arma));
+    const al = armaLarga(o.arma);
+    // De espaldas del todo los dibuja `apuntaDeEspaldas` (los codos dicen cuál es).
+    if (al.mira || al.cadera) { /* después del sombrero: `apuntaDeEspaldas` */ }
+    else if (al.cadera) rifle(U, R, [33 - g, 34], [31, 45], [14 + g, 34], [21, 41], [-0.9, -0.42], ...medidasLarga(o.arma));
+    else rifle(U, R, [33 - g, 34], [30, 33], [14 + g, 34], [18, 24], [-0.8, -0.6], ...medidasLarga(o.arma));
   } else if (o.arma && o.armaDir == null) {
     if (g) apuntar(U, R, [33, 33], [39, 27], [0.6, -0.8], 6, o.armaDir);
     else apuntar(U, R, [34, 33], [35, 25], [0, -1], 5, o.armaDir);
   }
   if (o.panuelo) panueloBlanco(U, g);
-  L.rigido(() => sombrero(U, R.sombrero, g, true));
+  L.rigido(() => sombrero(HE, R.sombrero, g, true));
+  if (alE && alE.listo && (alE.mira || alE.cadera)) apuntaDeEspaldas(U, R, alE, g);
   // Ver la nota en `frente`: con ángulo, el brazo va por delante de la cabeza.
   if (o.arma === true && o.armaDir != null) apuntar(U, R, [24, 33], [35, 25], [0, -1], 5, o.armaDir);
 }

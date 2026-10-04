@@ -16258,6 +16258,31 @@ equivoque")*.
   siempre llegando ya herido. No es una comparación pareja; la de los comunes
   sí lo es.
 
+🎨 **El Winchester y la escopeta se distinguen a la vista** *(Santi: "entre el
+Winchester y la Escopeta no se diferencia casi nada lo gráfico/visual")*.
+Prototipos con imágenes antes de llevarlos al juego; eligió el Winchester con
+caja de bronce y la escopeta B, **a la cadera** *("con el Winchester, me
+gustaría que al apuntar tenga la cabeza más sobre el arma [...] esto agrega
+distinción entre las armas")*.
+
+- **Winchester**: largo y claro, caja de bronce, aro de la palanca, tubo del
+  cargador. Apunta con la cabeza sobre el arma (de costado la cabeza baja y
+  se adelanta; de frente, codos abiertos y la boca del caño mirándote; de
+  espaldas, codos arriba y el caño al lado del sombrero).
+- **Escopeta**: corta, gruesa, casi negra, madera rojiza oscura (la clara se
+  confundía con la mano). Desde la cadera: de frente las dos bocas a la
+  cintura; de espaldas, codos abajo. La recortada, igual y más corta.
+- 🐛 **La primera tanda de poses salió mal en las diagonales y de espaldas** y
+  la vio Santi: el sombrero no bajaba con la cabeza; en diagonal el arma
+  apuntaba al lado contrario de donde miraba el guardia (reusé la pose de los
+  jinetes sin mirarla); de espaldas se veían manos a los costados (de espaldas
+  los antebrazos van adelante: se ven los codos); y patrullando de espaldas el
+  arma iba encima de la espalda. Corregido, y desde ahora cada dibujo se
+  revisa agrandado en las 8 direcciones antes de mostrárselo
+  (`banco-dibujo.js`, raíz, no se versiona).
+- Queda anotado el **esqueleto de los personajes** en los pendientes
+  (PROMPT-CONTINUAR.md): la causa de fondo de esos errores.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

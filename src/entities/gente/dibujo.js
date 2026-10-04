@@ -541,7 +541,39 @@ export function apuntar(L, R, hombro, mano, dir, largo, haciaDonde = null) {
  * (culata 9 + 13 entre las manos + 18 de caño), y hay lugar de sobra: el
  * lienzo llega hasta la 79.
  */
-export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano = 18, culata = 9) {
+/**
+ * LAS ARMAS LARGAS Y CÓMO SE DIBUJA CADA UNA, con las medidas en unidades de
+ * esta grilla (ver la nota de arriba). Todas usan las dos poses del rifle:
+ * cruzada (`'rifle'`) y lista para tirar (`'rifleListo'`), y lo mismo con
+ * `'escopeta'`/`'escopetaListo'` y `'recortada'`/`'recortadaListo'`.
+ *
+ *   rifle      el Winchester: el caño largo y fino de siempre.
+ *   escopeta   doble caño: más corta, y los dos caños se ven uno al lado
+ *              del otro.
+ *   recortada  la del Dinamitero: caño y culata serruchados, casi una pistola
+ *              grande.
+ */
+const LARGAS = {
+  rifle: { cano: 18, culata: 9, doble: false },
+  escopeta: { cano: 10, culata: 8, doble: true },
+  recortada: { cano: 5, culata: 3, doble: true },
+};
+
+/** Si `arma` es un arma larga, cuál y en qué pose; si no, `null`. */
+export function armaLarga(arma) {
+  if (typeof arma !== 'string') return null;
+  const listo = arma.endsWith('Listo');
+  const m = LARGAS[listo ? arma.slice(0, -5) : arma];
+  return m ? { ...m, listo } : null;
+}
+
+/** Los tres últimos argumentos de `rifle()` para esta arma. */
+export function medidasLarga(arma) {
+  const a = armaLarga(arma) || LARGAS.rifle;
+  return [a.cano, a.culata, a.doble];
+}
+
+export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano = 18, culata = 9, doble = false) {
   const [M0, ML, MS] = R.manga;
   const [nx, ny] = dir;
   const punto = (p, d) => [p[0] + nx * d, p[1] + ny * d];
@@ -566,6 +598,16 @@ export function rifle(L, R, hombroT, manoT, hombroF, manoF, dir, cano = 18, cula
     // Apuntando a la cámara: se ve la boca, no el caño.
     L.elipse(boca[0], boca[1], 2.2, 2.2, '#6b6258');
     L.rect(Math.round(boca[0]), Math.round(boca[1]), 1, 1, NEGRO);
+  } else if (doble) {
+    // DOS CAÑOS, uno al lado del otro: más gruesos y separados por una raya
+    // oscura. Es lo que dice "escopeta" sin leer nada.
+    const ox = -ny * 1.3, oy = nx * 1.3;
+    const de = (p, k) => [p[0] + ox * k, p[1] + oy * k];
+    tramo(L, de(manoF, 1), de(boca, 1), 2.4, '#8a8278');
+    tramo(L, de(manoF, -1), de(boca, -1), 2.4, '#9a9288');
+    tramo(L, manoF, boca, 0.6, '#3a342e');
+    L.rect(Math.round(boca[0] + ox), Math.round(boca[1] + oy), 1, 1, '#e0d8cc');
+    L.rect(Math.round(boca[0] - ox), Math.round(boca[1] - oy), 1, 1, '#e0d8cc');
   } else {
     tramo(L, manoF, boca, 2, '#9a9288');
     tramo(L, manoF, punto(manoF, cano * 0.7), 0.9, '#c4bcb0');

@@ -189,7 +189,12 @@ export function findCoverAtras(map, fromX, fromY, targetX, targetY, occupied = [
  * Recorre las baldosas cercanas y se queda con la que tenga un obstáculo justo
  * en la dirección del objetivo Y desde la que se pueda asomar a tirar.
  */
-export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = []) {
+/**
+ * `ideal` es a qué distancia del blanco prefiere quedarse (80 por defecto; el
+ * Winchester 140, la escopeta 50, ver data/armasGuardia.js) y `lejosMax` hasta
+ * dónde acepta una cobertura (la vista del guardia, o la del arma).
+ */
+export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = [], ideal = 80, lejosMax = null) {
   const c = CONFIG.enemy;
   const size = map.size;
   const radiusInTiles = Math.ceil(c.coverSearchRadius / size);
@@ -211,7 +216,7 @@ export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = [
       if (distToSelf > c.coverSearchRadius) continue;
 
       const distToTarget = Math.hypot(point.x - targetX, point.y - targetY);
-      if (distToTarget < c.coverMinDistance || distToTarget > c.viewDistance) continue;
+      if (distToTarget < c.coverMinDistance || distToTarget > (lejosMax || c.viewDistance)) continue;
 
       // Si ya la eligió un compañero, que se busque otra: si no, terminan
       // los tres amontonados detrás del mismo asiento.
@@ -229,7 +234,7 @@ export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = [
       if (!peek) continue;
 
       // Preferimos coberturas cercanas, a media distancia y que expongan poco.
-      const score = distToSelf * 0.7 + Math.abs(distToTarget - 80) * 0.6 + peek.offset * 1.2;
+      const score = distToSelf * 0.7 + Math.abs(distToTarget - ideal) * 0.6 + peek.offset * 1.2;
       if (score < bestScore) {
         bestScore = score;
         best = { x: point.x, y: point.y, peek };

@@ -696,6 +696,39 @@ cuenta como alguien que no te ve.
 - **Los cuerpos quedan tirados.** Un guardia que ve un cadáver da la alarma.
   Dónde matás importa tanto como a quién.
 
+### Cada guardia lleva su arma, y tiene que recargarla
+
+Ya no tiran todos con el mismo revólver, ni tiran para siempre. **Cada uno nace
+con un arma, se le ve en las manos, y cuando la vacía tiene que recargar.**
+
+| Arma | Cómo pelea | Balas | Recarga |
+|---|---|---|---|
+| **Revólver Colt** | Media distancia, de a dos balas, como siempre | 6 | 3 s, bala por bala |
+| **Winchester** | **Se queda lejos** y tira de a una, apuntando más: avisa más, pero el doble de preciso, con una bala más rápida y que llega más lejos. Ve más lejos una vez que está peleando | 10 | 4 s |
+| **Escopeta de doble caño** | **Te viene a buscar**, de cobertura en cobertura. Larga seis perdigones en abanico: a 30 px te saca ~37 de vida por caño, a 60 px ~14, a 100 px casi nada | 2 | 2,5 s |
+| **Recortada** (el Dinamitero) | La escopeta serruchada: más abierta y más corta | 2 | 2 s |
+| **Dos revólveres** (el Pistolero) | Ráfagas de cuatro, rápido y sucio | 12 | 4,5 s |
+
+**Quién lleva qué:** el guardia común (también el Encargado y los de franco),
+6 de cada 10 revólver, 2 Winchester y 2 escopeta. El **blindado** (vagón
+blindado y almacén), 4 de cada 10 Winchester, 4 escopeta y 2 revólver. El
+Pistolero, sus dos revólveres; el Dinamitero, la recortada además de la
+dinamita; el **Sheriff**, Winchester de lejos y revólver si le quedás a menos
+de 70 px.
+
+**Se ve qué lleva:** el Winchester y las escopetas se agarran con las dos manos
+—cruzados mientras patrulla, encarados cuando pelea—; el Winchester tiene el
+caño largo y fino, la escopeta dos caños cortos y gruesos, la recortada casi
+nada de caño. **Y se oye:** el escopetazo es grave y sucio, el Winchester seco.
+
+**Recargar es tu ventana.** El que vacía el arma grita **"¡RECARGO!"**, se mete
+detrás de su cobertura (hasta el Pistolero, que nunca se cubre) y le aparece
+arriba de la cabeza **un tambor que se va llenando**: mientras se vea, ese
+guardia no te puede tirar. Si no tiene dónde meterse, recarga ahí mismo,
+caminando más lento. Y el que sabe **recarga de oficio**: escondido y con menos
+de la mitad del cargador, carga antes de volver a asomarse — ése no grita,
+porque no lo agarraste vacío.
+
 ### Los guardias no pelean todos igual, ni de principio a fin
 
 Un guardia no es un muñeco que dispara hasta que se le acaba la vida. Hay dos
@@ -926,6 +959,11 @@ al mismo tipo de tren no te lo ponen en el mismo lado. Cronometrarlo sirve
 > accidente.
 
 ### El Dinamitero: no tiene revólver, y eso lo explica todo
+
+> **Ahora lleva una escopeta recortada** además de la dinamita (ver "Cada
+> guardia lleva su arma"). Ya no retrocede si te le pegás: te tira con la
+> recortada. Lo de abajo sigue valiendo para su dinamita.
+
 
 No es un guardia con un cartucho de más. **Es lo único que sabe hacer**, y de
 ahí sale cada cosa que le pasa:
@@ -2131,6 +2169,18 @@ no se termina solo. Por primera vez en el juego, quedarte quieto y callado es
 una forma de que un enemigo **no** venga.
 
 #### Sus dos armas dicen dónde querés estar
+
+**Su equipo se sortea cada vez que aparece:**
+
+| Equipo | Chance | Cómo pelea |
+|---|---|---|
+| **Winchester + revólver** | 50% | Lo de siempre (abajo): se queda a 90 px y te trabaja con el rifle |
+| **Escopeta + revólver** | 25% | Revólver de lejos y la escopeta a menos de 70 px. Se queda a 45 px, no a 90: **te viene encima** |
+| **Dos revólveres** | 25% | Sin arma larga: ráfagas de cuatro a cualquier distancia, a 70 px |
+
+Mientras te acecha ya lleva en la mano el arma larga de su equipo: mirándolo
+sabés cuál le tocó. **Y también recarga**, con el mismo grito y el mismo tambor
+que un guardia.
 
 | | |
 |---|---|

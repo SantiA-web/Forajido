@@ -71,6 +71,8 @@ export const T = {
     jackpot: (valor) => `¡EL GOLPE DE TU VIDA! +$${valor}`,
     threaten: '[E] AMENAZAR',
     escape: '[E] ESCAPAR',
+    // Un guardia que vació el arma (ver data/armasGuardia.js).
+    recargo: '¡RECARGO!',
     alforjas: (usadas, max) => `[E] A LAS ALFORJAS  ${usadas}/${max}`,
     alforjasCargadas: (n, usadas, max) => `${n === 1 ? 'UNA COSA' : `${n} COSAS`} AL CABALLO  ${usadas}/${max}`,
     empty: 'SIN BALAS  [R]',

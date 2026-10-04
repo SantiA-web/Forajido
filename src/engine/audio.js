@@ -214,6 +214,29 @@ export function createAudio() {
       tone({ from: 85, to: 40, duration: 0.1, gain: 0.14, type: 'sine' });
     },
 
+    /**
+     * EL ESCOPETAZO: más grave, más largo y más sucio que un tiro de revólver.
+     * Es lo que te avisa, sin mirar, que el que tira tiene escopeta.
+     */
+    escopetazo() {
+      noise({ duration: 0.22, cutoff: 1300, endCutoff: 120, gain: 0.36 });
+      tone({ from: 70, to: 32, duration: 0.18, gain: 0.22, type: 'sine' });
+    },
+
+    /** El Winchester: seco y con un chasquido arriba, y después la palanca. */
+    rifleGuardia() {
+      noise({ duration: 0.1, cutoff: 3600, endCutoff: 300, gain: 0.3 });
+      tone({ from: 120, to: 50, duration: 0.09, gain: 0.14, type: 'sine' });
+      noise({ duration: 0.04, cutoff: 3000, endCutoff: 1800, gain: 0.08, type: 'highpass', q: 2 });
+    },
+
+    /** Un guardia recargando: tres clics metálicos, como balas entrando. */
+    recargaGuardia() {
+      for (let i = 0; i < 3; i++) {
+        noise({ duration: 0.025, cutoff: 4600, endCutoff: 2600, gain: 0.1, type: 'highpass', q: 3, delay: i * 0.11 });
+      }
+    },
+
     /** El martillo del arma: es el aviso de que un guardia va a disparar. */
     cock() {
       noise({ duration: 0.03, cutoff: 5200, endCutoff: 3000, gain: 0.16, type: 'highpass', q: 2 });

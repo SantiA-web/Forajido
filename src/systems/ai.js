@@ -35,6 +35,111 @@ import {
   CONVERSANDO_CONTAGIO,
 } from '../data/modifiers.js';
 import { T } from '../text/es.js';
+import { ARMAS_GUARDIA, ARMAS_DOBLES, armaDeGuardia } from '../data/armasGuardia.js';
+
+// ------------------------------------------------------------- las armas
+
+/**
+ * EL ARMA DEL GUARDIA (ver data/armasGuardia.js). Se le da la primera vez que
+ * se actualiza, y no al crearlo, porque los guardias nacen en siete lugares
+ * distintos (el tren, la redada, los refuerzos, el Sheriff y su escolta…) y
+ * ninguno tiene que acordarse: el que llega acá sin arma, la recibe.
+ *
+ * `municion` guarda las balas de CADA arma que lleva: el Sheriff tiene dos y
+ * cada una con su cargador.
+ */
+export function armarGuardia(e, rng) {
+  if (e.armaId) return;
+  e.armaId = armaDeGuardia(e.type, rng);
+  e.armaEnMano = e.armaId;
+  e.municion = { [e.armaId]: ARMAS_GUARDIA[e.armaId].cargador };
+  const doble = ARMAS_DOBLES[e.type];
+  if (doble) e.municion[doble.corta] = ARMAS_GUARDIA[doble.corta].cargador;
+  e.recargando = 0;
+}
+
+/** El arma que tiene en la mano ahora. */
+export function armaDe(e) {
+  return ARMAS_GUARDIA[e.armaEnMano || e.armaId] || ARMAS_GUARDIA.revolver;
+}
+
+function balasDe(e) {
+  const a = armaDe(e);
+  return e.municion ? (e.municion[a.id] ?? a.cargador) : a.cargador;
+}
+
+/**
+ * LOS NÚMEROS CON LOS QUE TIRA: los del guardia (`e.ai`, con la dificultad y
+ * el aura ya adentro) pasados por su arma.
+ */
+function tiroDe(e, enPanico) {
+  const c = e.ai, a = armaDe(e);
+  const rafaga = enPanico ? c.panicoBurstSize : (a.rafaga ?? c.burstSize);
+  return {
+    aimTime: c.aimTime * (a.apuntar ?? 1),
+    fireCooldown: c.fireCooldown * (a.cadencia ?? 1),
+    // Nadie tira más balas de las que tiene en el arma.
+    burstSize: Math.max(1, Math.min(rafaga, balasDe(e))),
+    burstDelay: a.rafagaPausa ?? c.burstDelay,
+  };
+}
+
+/**
+ * EMPIEZA A RECARGAR. Se esconde (ver `holdCoverAndFire` y `doCombat`), grita
+ * y se le ve el cartel: es la ventana del jugador. `grito` en false para la
+ * recarga de oficio, la que hace escondido antes de vaciar el arma.
+ */
+function empezarRecarga(e, world, grito = true) {
+  const a = armaDe(e);
+  if (e.recargando > 0 || balasDe(e) >= a.cargador) return;
+  e.recargando = a.recarga;
+  e.recargaTotal = a.recarga;
+  e.burstLeft = 0;
+  e.aimTimer = 0;
+  e.peeking = false;
+  world.audio.play('recargaGuardia');
+  if (grito) world.bus.emit('guardiaRecarga', { x: e.x, y: e.y, guardia: e });
+}
+
+/** Gasta una bala; si fue la última, empieza a recargar. */
+function gastarBala(e, world) {
+  if (!e.municion) return;
+  const a = armaDe(e);
+  e.municion[a.id] = Math.max(0, balasDe(e) - 1);
+  if (e.municion[a.id] <= 0) {
+    e.burstLeft = 0;
+    empezarRecarga(e, world);
+  }
+}
+
+/**
+ * EL QUE LLEVA DOS ARMAS (el Sheriff) SACA LA CORTA SI LO TENÉS ENCIMA. No
+ * cambia en medio de una ráfaga ni recargando: primero termina lo que empezó.
+ */
+function elegirArma(e, dist) {
+  const doble = ARMAS_DOBLES[e.type];
+  if (!doble || e.recargando > 0 || e.burstLeft > 0 || e.aimTimer > 0) return;
+  const quiere = dist < doble.hasta ? doble.corta : doble.larga;
+  if (quiere !== e.armaEnMano) {
+    e.armaEnMano = quiere;
+    e.cooldown = Math.max(e.cooldown, 0.4);   // cambiar de arma lleva un momento
+  }
+}
+
+/**
+ * LA RECARGA CORRE SIEMPRE, peleando o no, igual que la dinamita del
+ * Dinamitero: si sólo corriera en combate, el que te pierde de vista con el
+ * arma vacía quedaría vacío para siempre.
+ */
+function actualizarRecarga(e, dt) {
+  if (!(e.recargando > 0)) return;
+  e.recargando -= dt;
+  if (e.recargando <= 0) {
+    e.recargando = 0;
+    const a = armaDe(e);
+    e.municion[a.id] = a.cargador;
+  }
+}
 
 /**
  * `isSolidForMovementAt` (si existe) suma la puerta blindada al choque real
@@ -59,12 +164,16 @@ function frenoEn(e, map) {
     ? CONFIG.enemy.francoCubreVelocidad : 1;
   // 🦵 Rengo por dos tiros en las piernas (ver `pegarEnLaPierna`, entities/enemy.js).
   const rengo = e.rengo > 0 ? CONFIG.golpe.piernas.rengo.velocidad : 1;
-  return casilla * descolgando * rengo;
+  // Recargando camina más lento: tiene las manos ocupadas.
+  const recargando = e.recargando > 0 ? CONFIG.enemy.recargaVelocidad : 1;
+  return casilla * descolgando * rengo * recargando;
 }
 
 export function updateEnemy(e, dt, world) {
   e.hitFlash = Math.max(0, e.hitFlash - dt);
   if (!e.alive) return;
+  armarGuardia(e, world.rng);
+  actualizarRecarga(e, dt);
 
   e.alertMark = Math.max(0, e.alertMark - dt);
   e.cooldown = Math.max(0, e.cooldown - dt);
@@ -366,7 +475,9 @@ function spreadAt(e, dist, extra = 0) {
   const c = e.ai;
   const span = c.spreadFarDistance - c.spreadNearDistance;
   const t = Math.max(0, Math.min(1, (dist - c.spreadNearDistance) / span));
-  return c.spreadNear + (c.spreadFar - c.spreadNear) * t + extra;
+  // El arma la multiplica: el Winchester tira al doble de fino.
+  const punteria = e.armaId ? (armaDe(e).punteria ?? 1) : 1;
+  return (c.spreadNear + (c.spreadFar - c.spreadNear) * t) * punteria + extra;
 }
 
 // ------------------------------------------------------------------ alertas
@@ -2119,8 +2230,11 @@ export function doCombat(e, dt, world) {
 
   // Desde dónde mira: si está parapetado, mira desde donde se asomaría.
   const probe = e.atCover && e.coverPoint ? peekPosition(e) : { x: e.x, y: e.y };
+  // El Sheriff decide con qué tirar antes de mirar: la vista es la del arma.
+  elegirArma(e, distance(e.x, e.y, player.x, player.y));
+  const arma = armaDe(e);
   const engaged = player.alive &&
-    canSeeFrom(probe.x, probe.y, e.facing, player, world.map, false);
+    canSeeFrom(probe.x, probe.y, e.facing, player, world.map, false, arma.vistaCombate);
 
   if (engaged) {
     e.lostTimer = 0;
@@ -2163,7 +2277,7 @@ export function doCombat(e, dt, world) {
    * cualquier otra cosa: en la franja entre el cuerpo a cuerpo (15 px) y el
    * mínimo de su arma (62) no puede hacer nada. Ver `retrocederParaTirar`.
    */
-  if (e.sinArmaDeFuego && retrocederParaTirar(e, dt, world)) return;
+  if (e.sinArmaDeFuego && !e.armaId && retrocederParaTirar(e, dt, world)) return;
 
   // ¿Tiene con qué sacarte de ahí? Entonces la dinamita. (El del blindado sólo
   // si te ve parapetado; el Dinamitero, siempre que pueda: no tiene otra cosa.)
@@ -2275,8 +2389,19 @@ export function doCombat(e, dt, world) {
    * quién lo cubra se retira igual que cualquiera — lo que no hace es
    * cuidarse mientras está entero y con tiro.
    */
-  const alDescubierto = e.evitaCobertura &&
+  // Recargando, hasta el que no se cubre busca dónde meterse.
+  const alDescubierto = e.evitaCobertura && !(e.recargando > 0) &&
     (e.bloqueadoTimer || 0) < CONFIG.enemy.descubiertoBloqueoMax;
+
+  /**
+   * EL DE LA ESCOPETA NO SE QUEDA LEJOS. Si su cobertura le queda a más de lo
+   * que alcanza a pegar de verdad, se busca otra más adelante sin esperar los
+   * siete segundos de siempre: avanza de cobertura en cobertura.
+   */
+  if (arma.perdigones && e.atCover && !(e.recargando > 0) && !e.yaSeReplego &&
+      distance(e.x, e.y, aimAt.x, aimAt.y) > arma.alcance * 0.75) {
+    e.repositionTimer = Math.max(e.repositionTimer, c.repositionAfter + 0.01);
+  }
 
   const needsCover = !alDescubierto && (
     !e.coverPoint ||
@@ -2304,7 +2429,8 @@ export function doCombat(e, dt, world) {
      */
     const spot = e.yaSeReplego
       ? (findCoverAtras(world.map, e.x, e.y, aimAt.x, aimAt.y, taken) || e.coverPoint)
-      : findCoverPoint(world.map, e.x, e.y, aimAt.x, aimAt.y, taken);
+      : findCoverPoint(world.map, e.x, e.y, aimAt.x, aimAt.y, taken,
+        arma.distanciaIdeal, arma.vistaCombate);
 
     // El contador se reinicia SIEMPRE que se buscó. Si no, cuando la mejor
     // cobertura resultaba ser la que ya tenía, el guardia volvía a buscar en
@@ -2380,7 +2506,9 @@ export function doCombat(e, dt, world) {
    * ya construida, con otro motivo y con reloj.
    */
   const dist = distance(e.x, e.y, aimAt.x, aimAt.y);
-  if (tapadoPorCompanero) {
+  if (e.recargando > 0) {
+    // Recargando y sin dónde cubrirse: no avanza. Se queda y carga.
+  } else if (tapadoPorCompanero) {
     /**
      * SE CORRE AL COSTADO PARA RECUPERAR EL ÁNGULO.
      *
@@ -2423,7 +2551,8 @@ export function doCombat(e, dt, world) {
     // Nada: se queda en su puesto. Si tiene tiro, dispara igual (abajo).
   } else if (dist > c.routeDistance) {
     viajarHacia(e, dt, world, aimAt.x, aimAt.y, c.speed);
-  } else if (dist > 92) {
+  } else if (dist > arma.paradaAvance) {
+    // Cada arma se para a su distancia: el Winchester lejos, la escopeta encima.
     moveToward(e, player.x, player.y, c.speed, dt, world.map);
   }
 
@@ -2499,6 +2628,21 @@ function holdCoverAndFire(e, dt, world, engaged, aimAt, enPanico) {
   moveToward(e, anchor.x, anchor.y, c.speed * 1.4, dt, world.map);
   turnTowards(e, Math.atan2(aimAt.y - e.y, aimAt.x - e.x), dt, 10);
 
+  // Recargando no se asoma: se queda tapado hasta tener el arma llena.
+  if (e.recargando > 0) {
+    e.peeking = false;
+    return;
+  }
+  /**
+   * LA RECARGA DE OFICIO: escondido y con menos de la mitad, carga antes de
+   * volver a asomarse, en vez de salir con dos balas. Es lo que hace el que
+   * sabe: no grita, porque no lo agarraste vacío.
+   */
+  if (!e.peeking && e.burstLeft <= 0 && balasDe(e) < armaDe(e).cargador / 2 && !enPanico) {
+    empezarRecarga(e, world, false);
+    return;
+  }
+
   if (e.peeking) {
     tryFire(e, dt, world, aimAt, enPanico);
     if (e.burstLeft <= 0 && e.aimTimer <= 0 && e.cooldown > 0) {
@@ -2559,15 +2703,16 @@ function holdCoverAndFire(e, dt, world, engaged, aimAt, enPanico) {
     e.peeking = true;
     // En pánico, la ráfaga larga: `panicoBurstSize` (5) es el mismo número
     // que ya usa el disparo ciego por la puerta para decir "no apunta con
-    // cuidado" — no hizo falta inventar uno nuevo.
-    e.burstLeft = enPanico ? c.panicoBurstSize : c.burstSize;
+    // cuidado" — no hizo falta inventar uno nuevo. Topeada por las balas que
+    // le quedan y por lo que tira su arma (ver `tiroDe`).
+    e.burstLeft = tiroDe(e, enPanico).burstSize;
     startAim(e, world, aimAt);
   }
 }
 
 function startAim(e, world, aimAt) {
-  const c = e.ai;   // aimTime: cuánto avisa antes de disparar
-  e.aimTimer = c.aimTime;
+  // aimTime: cuánto avisa antes de disparar. El Winchester avisa más.
+  e.aimTimer = tiroDe(e).aimTime;
   e.aimDir = Math.atan2(aimAt.y - e.y, aimAt.x - e.x);
   world.audio.play('cock');
 }
@@ -2608,17 +2753,22 @@ function tryFire(e, dt, world, aimAt, enPanico) {
    * disparar es la señal más engañosa que podría tener el juego, justo en el
    * lugar donde todo se lee por el cuerpo.
    */
-  if (e.sinArmaDeFuego) return;
+  // El Dinamitero ahora lleva la recortada: con arma, tira como cualquiera.
+  if (e.sinArmaDeFuego && !e.armaId) return;
   // El de franco, mientras descuelga el arma: todavía no la tiene en la mano.
   if (e.desenfundando > 0) return;
+  // Recargando no tira. Y el que se quedó sin balas, carga.
+  if (e.recargando > 0) return;
+  if (e.municion && balasDe(e) <= 0) { empezarRecarga(e, world); return; }
 
+  const t = tiroDe(e, enPanico);
   if (e.aimTimer > 0) {
     e.aimTimer -= dt;
     if (e.aimTimer <= 0) {
       fire(e, world, enPanico);
       e.burstLeft -= 1;
-      e.burstTimer = c.burstDelay;
-      if (e.burstLeft <= 0) e.cooldown = c.fireCooldown;
+      e.burstTimer = t.burstDelay;
+      if (e.burstLeft <= 0) e.cooldown = t.fireCooldown;
     }
     return;
   }
@@ -2647,7 +2797,7 @@ function tryFire(e, dt, world, aimAt, enPanico) {
       return;
     }
     // Mismo criterio que en holdCoverAndFire: en pánico, ráfaga larga.
-    e.burstLeft = enPanico ? c.panicoBurstSize : c.burstSize;
+    e.burstLeft = t.burstSize;
     startAim(e, world, aimAt);
   }
 }
@@ -2665,18 +2815,35 @@ function fire(e, world, enPanico) {
   // de vez en cuando — parejo con el jugador. Ver CONFIG.mira.fallaChance.
   const mira = CONFIG.mira;
   const angle = e.aimDir + world.rng.spreadDeTiro(spreadAt(e, dist, extra), mira.fallaChance, mira.fallaMultiplicador);
+  const arma = armaDe(e);
 
-  world.spawnBullet({
-    x: e.x + Math.cos(angle) * 9,
-    y: e.y + Math.sin(angle) * 9,
-    angle,
-    speed: c.bulletSpeed,
-    damage: 1,
-    range: c.viewDistance + 80,
-    owner: 'enemy',
-  });
+  /**
+   * LOS PERDIGONES: la escopeta larga `perdigones` balas en abanico alrededor
+   * de donde apuntó. Todas comparten el número de disparo (`perdigon`), que es
+   * lo que deja que pegue más de una aunque el jugador quede invulnerable un
+   * instante después del primer impacto (ver systems/combat.js).
+   */
+  const n = arma.perdigones || 1;
+  const disparo = n > 1 ? (world.perdigonesId = (world.perdigonesId || 0) + 1) : null;
+  for (let i = 0; i < n; i++) {
+    const abre = n > 1 ? (i / (n - 1) - 0.5) * arma.abanico + world.rng.spread(arma.abanico / (n * 2)) : 0;
+    const a = angle + abre;
+    world.spawnBullet({
+      x: e.x + Math.cos(a) * 9,
+      y: e.y + Math.sin(a) * 9,
+      angle: a,
+      speed: arma.velocidadBala ?? c.bulletSpeed,
+      damage: 1,
+      range: arma.alcance ?? (c.viewDistance + 80),
+      owner: 'enemy',
+      caida: arma.caida,
+      factor: arma.factorPerdigon,
+      perdigon: disparo,
+    });
+  }
+  gastarBala(e, world);
 
-  world.audio.play('enemyShot');
+  world.audio.play(arma.perdigones ? 'escopetazo' : arma.id === 'winchester' ? 'rifleGuardia' : 'enemyShot');
   world.camera.shake(0.4, 0.08);
   // `world.train.hearRadius`, no `c.hearRadius` a secas: una tormenta lo agranda.
   world.bus.emit('noise', { x: e.x, y: e.y, radius: world.train ? world.train.hearRadius : c.hearRadius });
@@ -2721,6 +2888,8 @@ function dispararACiegasPorPuerta(e, dt, world) {
   // Sin arma no hay ráfaga a ciegas: la dinamita no se tira contra una puerta
   // cerrada esperando que pase por abajo. Ni la hay mientras la descuelga.
   if (e.sinArmaDeFuego || e.desenfundando > 0) return;
+  // Sin balas o cargando, tampoco.
+  if (e.recargando > 0 || (e.municion && balasDe(e) <= 0)) return;
 
   e.doorFireCooldown = Math.max(0, (e.doorFireCooldown || 0) - dt);
 
@@ -2750,7 +2919,9 @@ function dispararACiegasPorPuerta(e, dt, world) {
 
 function fireDoorBlind(e, world, target) {
   const c = CONFIG.enemy;
+  if (e.recargando > 0) return;
   const angle = Math.atan2(target.y - e.y, target.x - e.x) + world.rng.spread(c.doorSpread);
+  gastarBala(e, world);
 
   world.spawnBullet({
     x: e.x + Math.cos(angle) * 9,
@@ -2789,6 +2960,7 @@ function dispararACiegasPorTecho(e, dt, world) {
   // una dinamita hacia arriba le caería en la cabeza. Tampoco el de franco
   // mientras descuelga el arma.
   if (e.sinArmaDeFuego || e.desenfundando > 0) return;
+  if (e.recargando > 0 || (e.municion && balasDe(e) <= 0)) return;
 
   const target = e.lastSeen;
   if (!target) return;
@@ -2817,7 +2989,9 @@ function dispararACiegasPorTecho(e, dt, world) {
 
 function fireTechoBlind(e, world, target) {
   const c = CONFIG.enemy;
+  if (e.recargando > 0) return;
   const angle = Math.atan2(target.y - e.y, target.x - e.x) + world.rng.spread(c.techoSpread);
+  gastarBala(e, world);
 
   world.spawnBullet({
     x: e.x + Math.cos(angle) * 9,

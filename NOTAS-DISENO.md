@@ -16142,6 +16142,62 @@ como buscados")*. Eligió las recomendaciones.
   resultados dice "Tu caballo volvió con N cosas · Marcadas". Probado: lo de las
   alforjas llega marcado y lo de la mochila se pierde.
 
+🔫 **GUARDIAS MÁS INTELIGENTES — ETAPA 1: armas distintas y recarga** *(Santi:
+"quiero que no todos tengan un revólver, sino que hayan armas diferentes, que
+tengan que recargar, cubrirse entre sí, y todo lo que haría un agente de la
+ley")*. Plan en cuatro etapas, una por vez y medida con el bot: **1** armas y
+recarga, **2** cubrirse entre sí (cubren al que recarga, fuego de cobertura,
+avanzar de cobertura en cobertura), **3** rodearte (flanqueo, cortar la salida,
+pasarse tu posición), **4** el jefe del grupo. Pendiente para la etapa 2: el
+**"¡Alto, manos arriba!"** del primero que te descubre, *sólo si tu recompensa
+es menor a $900* (más que eso, te buscan vivo o muerto y tiran directo).
+
+- **Las armas** (`data/armasGuardia.js`): revólver Colt (6, 3 s — *Santi
+  preguntó Colt o Schofield; Colt, porque se carga bala por bala y esa recarga
+  lenta es la ventana del jugador; el Schofield es su Smith*), Winchester (10,
+  4 s, ×0,45 de dispersión, ×1,5 de apuntar, de a 1, bala a 330, alcance 300,
+  ve a 170 peleando, se queda a 140), escopeta doble caño (2, 2,5 s, 6
+  perdigones en 0,30 rad, 0,35 de bala cada uno, alcance 120, avanza a 40-50),
+  recortada (2, 2 s, 0,45 rad, alcance 90) y dos revólveres (12, 4,5 s).
+- **El arma multiplica o reemplaza a `e.ai`**, no lo pisa: la dificultad del
+  tren y el aura del Sheriff siguen entrando igual. El revólver deja todo como
+  estaba.
+- **Reparto** (elegido por Santi): común 60/20/20 revólver/Winchester/escopeta,
+  blindado 20/40/40. Medido en 30 trenes: común 60/18/22, blindado 13/45/43.
+  Fijas: Pistolero dos revólveres, Dinamitero recortada (deja de retroceder:
+  tira), Sheriff Winchester + revólver a menos de 70 px.
+- **Cazarrecompensas**: equipo sorteado 50% Winchester + revólver (el de
+  siempre), 25% escopeta + revólver (escopeta a menos de 70 px, trabaja a 45
+  en vez de 90), 25% dos revólveres (a 70). También recarga.
+- **Recargar**: grita "¡RECARGO!", se esconde (hasta el Pistolero), tambor sobre
+  la cabeza que se llena de bronce, camina al 60%. Recarga de oficio, sin
+  grito, escondido con menos de la mitad. La recarga corre siempre, peleando o
+  no. Los tiros a ciegas por puertas y techo también gastan balas.
+- 🐛 **Dos cosas que aparecieron midiendo la escopeta:** (1) después de un
+  impacto el jugador queda invulnerable 0,6 s, así que **los perdigones del mismo
+  disparo se saltan esa invulnerabilidad** (comparten número, `perdigon`) — si
+  no, el primero tapaba a los otros cinco; (2) **el segundo caño pegaba siempre
+  dentro de esa invulnerabilidad**: con 0,35 s entre caños, de seis escopetazos
+  pegaban tres. Los caños pasaron a 0,65 s. Y el perdigón, de un cuarto a 0,35 de
+  bala: a 30 px entran 3 o 4 de 6, no todos. Medido después: **37 por caño a
+  30 px, 14 a 60, 3 a 100**.
+- **Medido contra antes**, mismo bot de tiroteos, 20 asaltos por fila (la copia
+  de antes corrió en un worktree aparte):
+
+  | | Guardias que voltea (antes → ahora) | Vida que pierde por guardia |
+  |---|---|---|
+  | Pasajeros · Colt de lejos apuntando | 13,8 → 12,1 | 7,0 → 8,2 |
+  | Pasajeros · Colt de cerca suelto | 4,2 → 4,8 | 23,8 → 20,6 |
+  | Pasajeros · Smith de cerca suelto | 5,5 → 5,7 | 18,3 → 17,7 |
+  | Carga · Colt de lejos apuntando | 11,5 → 10,3 | 8,3 → 9,5 |
+  | Carga · Colt de cerca suelto | 4,7 → 4,8 | 21,3 → 20,8 |
+  | Carga · Smith de cerca suelto | 3,6 → 5,1 | 27,4 → 19,6 |
+
+  **La dificultad quedó casi igual**: de lejos un poco más difícil (los
+  Winchester), de cerca un poco más fácil (las recargas pesan más que las
+  escopetas). Y el bot no aprovecha las recargas a propósito: un jugador que
+  espere el "¡RECARGO!" la va a pasar mejor que él.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

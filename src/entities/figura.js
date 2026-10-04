@@ -25,7 +25,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { ROPA, Lienzo, deformar, NEGRO } from './gente/dibujo.js';
+import { ROPA, Lienzo, deformar, NEGRO, armaLarga } from './gente/dibujo.js';
 import { frente, espalda } from './gente/frente.js';
 import { lado } from './gente/costado.js';
 import { tendido, TENDIDO } from './gente/tendido.js';
@@ -270,7 +270,7 @@ export function dibujarPersona(r, f) {
    * como dibujos distintos, que son tres por vista y por tipo de gente: sólo
    * las usa la ley a caballo de la huida.
    */
-  const arma = f.arma === 'rifle' || f.arma === 'rifleListo' ? f.arma : !!f.arma;
+  const arma = armaLarga(f.arma) ? f.arma : !!f.arma;
   const manos = !!f.manosArriba;
   const mochila = Math.min(4, Math.round(f.mochila || 0));
   /**
@@ -413,6 +413,8 @@ export function dibujarPersona(r, f) {
 
 const SIGNO_ALERTA = ['xx', 'xx', 'xx', '..', 'xx'];
 const SIGNO_SOSPECHA = ['xxx', '..x', '.xx', '...', '.x.'];
+// El tambor de un revólver visto de frente: las recámaras y el eje.
+const SIGNO_RECARGA = ['.xxx.', 'x.x.x', 'xxxxx', 'x.x.x', '.xxx.'];
 
 /**
  * EL AVISO ENCIMA DE LA CABEZA, desde `arriba` hacia arriba.
@@ -450,6 +452,24 @@ export function dibujarAviso(r, x, arriba, estado, llenado = 0) {
     const y0 = arriba - 7;
     borde(SIGNO_ALERTA, y0);
     celdas(SIGNO_ALERTA, y0, (cxx, cy) => r.rect(cxx, cy, 1, 1, '#ff3a2a'));
+    return arriba - 8;
+  }
+  /**
+   * 'recarga': el tambor de un revólver que se va llenando de bronce, de abajo
+   * hacia arriba, con cuánto le falta para volver a tirar. Mientras se ve,
+   * ese guardia no te puede disparar: es tu ventana.
+   */
+  if (estado === 'recarga') {
+    const y0 = arriba - 7;
+    const alto = SIGNO_RECARGA.length;
+    const lleno = Math.round(Math.min(1, Math.max(0, llenado)) * alto / B) * B;
+    const corte = y0 + alto - lleno;
+    borde(SIGNO_RECARGA, y0);
+    celdas(SIGNO_RECARGA, y0, (cxx, cy) => {
+      r.rect(cxx, cy, 1, 1, '#5a5040');
+      const desde = Math.max(cy, corte);
+      if (desde < cy + 1) r.rect(cxx, desde, 1, cy + 1 - desde, '#e8b84a');
+    });
     return arriba - 8;
   }
   if (estado === 'sospecha') {

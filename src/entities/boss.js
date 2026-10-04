@@ -19,7 +19,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, faseDeAndar, ROPA_DE_JEFE } from './figura.js';
+import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_JEFE } from './figura.js';
 import { dibujarHeridas } from './danio.js';
 
 export function createBoss(x, y, tipo, options = {}) {
@@ -239,9 +239,10 @@ export function drawBoss(r, bo) {
    * ve corta. Mientras carga no apunta.
    */
   const conRifle = bo.armaActual === 'rifle';
+  const conEscopeta = bo.armaActual === 'escopeta';
   const gunLength = acechando ? 5
-    : bo.aimTimer > 0 ? (conRifle ? 13 : 9)
-    : (conRifle ? 10 : 7);
+    : bo.aimTimer > 0 ? (conRifle ? 13 : conEscopeta ? 11 : 9)
+    : (conRifle ? 10 : conEscopeta ? 8 : 7);
   const angulo = cargando ? Math.atan2(bo.cargaDir.y, bo.cargaDir.x) : bo.facing;
 
   const fig = dibujarPersona(r, {
@@ -259,10 +260,18 @@ export function drawBoss(r, bo) {
     },
   });
 
-  // El rifle cruzado a la espalda cuando está con el revólver: es lo que dice
-  // "este tipo tiene otra arma" antes de que la saque.
-  if (bo.armaActual === 'revolver' && !cargando) {
+  // El arma larga cruzada a la espalda cuando está con el revólver: es lo que
+  // dice "este tipo tiene otra arma" antes de que la saque. El de los dos
+  // revólveres no tiene: no lleva nada a la espalda.
+  const larga = bo.equipo ? bo.equipo.id : 'rifle';
+  if (bo.armaActual === 'revolver' && !cargando && larga !== 'dosRevolveres') {
     r.line(bo.x - 6, fig.pechoY + 4, bo.x + 5, fig.pechoY - 5, '#8a6a4a');
+    if (larga === 'escopeta') r.line(bo.x - 5, fig.pechoY + 5, bo.x + 3, fig.pechoY - 3, '#6a5240');
+  }
+  // La escopeta en la mano: el segundo caño, al lado del primero.
+  if (conEscopeta && !cargando && !acechando) {
+    const ox = -Math.sin(bo.facing), oy = Math.cos(bo.facing);
+    r.line(fig.x + ox, fig.manoY + oy, fig.x + ox + Math.cos(bo.facing) * gunLength, fig.manoY + oy + Math.sin(bo.facing) * gunLength, '#9a9288');
   }
 
   const arriba = fig.arriba;
@@ -276,6 +285,9 @@ export function drawBoss(r, bo) {
    */
   const perdida = (bo.maxHealth - bo.health) / bo.maxHealth;
   dibujarHeridas(r, bo, fig.x, fig.pechoY, fig.manoY, Math.ceil(perdida * 3 - 0.001));
+
+  // Recargando, como un guardia: el tambor que se llena (ver data/armasGuardia.js).
+  if (bo.recargando > 0) dibujarAviso(r, bo.x, arriba, 'recarga', 1 - bo.recargando / (bo.recargaTotal || 1));
 
   if (bo.fase === 'aturdido') {
     // Las estrellitas de siempre: es la señal de "pegale AHORA".

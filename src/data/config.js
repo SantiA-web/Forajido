@@ -735,6 +735,12 @@ export const CONFIG = {
     reactionTime: 0.3,
 
     /**
+     * RECARGANDO CAMINA MÁS LENTO, como el jugador (ver data/armasGuardia.js
+     * para cuánto tarda cada arma). Tiene las manos ocupadas.
+     */
+    recargaVelocidad: 0.6,
+
+    /**
      * LOS GUARDIAS DE FRANCO (vagón de guardias, etapa 4 de los trenes nuevos).
      *
      * Están sentados jugando a las cartas con el arma colgada. La PRIMERA vez

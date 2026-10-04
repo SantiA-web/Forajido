@@ -140,6 +140,8 @@ export function danioDeBala(b, persona, victima, rng) {
     const t = (lejos - caida.plenoHasta) / Math.max(0.001, 1 - caida.plenoHasta);
     puntos *= 1 + (caida.alFinal - 1) * t;
   }
+  // Un perdigón pega una parte de una bala (ver data/armasGuardia.js).
+  puntos *= b.factor ?? 1;
 
   return { puntos: Math.round(puntos), zona };
 }

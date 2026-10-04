@@ -61,7 +61,7 @@ import {
   updateDoor, puertaTapaVision, drawDoor, trabarPuerta, destrabarPuerta, dañarPuerta,
 } from '../entities/door.js';
 import {
-  updateEnemy, alertTo, alertCombat, alertaEnGuardia, separateEnemies,
+  updateEnemy, alertTo, alertCombat, alertaEnGuardia, separateEnemies, armarGuardia,
 } from '../systems/ai.js';
 import { updateBullets } from '../systems/combat.js';
 import { updateExplosives } from '../systems/explosives.js';
@@ -190,6 +190,9 @@ export function createRaidScene(services) {
      */
     if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active });
     enemies = train.enemies;
+    // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
+    // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
+    for (const e of enemies) armarGuardia(e, rng);
     passengers = train.passengers;
     loot = train.loot;
     doors = train.doors;
@@ -680,6 +683,7 @@ export function createRaidScene(services) {
     sheriff.defensivo = true;
     sheriff.grupoDefensa = sheriff;
     enemies.push(sheriff);
+    armarGuardia(sheriff, rng);
     v.guardiasVivos++;
 
     /**
@@ -724,6 +728,7 @@ export function createRaidScene(services) {
        */
       g.ai = { ...g.ai, patrolSpeed: tipo.velocidadRepliegue };
       enemies.push(g);
+      armarGuardia(g, rng);
       v.guardiasVivos++;
     }
   }
@@ -1109,6 +1114,14 @@ export function createRaidScene(services) {
         floaters.push({
           x: enemy.x, y: enemy.y - 14,
           text: T.prompts.seRinde, life: 2.2, color: colors.text,
+        });
+      }),
+
+      // "¡RECARGO!": el guardia se quedó sin balas (ver data/armasGuardia.js).
+      bus.on('guardiaRecarga', ({ guardia }) => {
+        floaters.push({
+          x: guardia.x, y: guardia.y - 16,
+          text: T.prompts.recargo, life: 1.3, color: colors.enemyAlert,
         });
       }),
 

@@ -230,7 +230,15 @@ export function updateBullets(bullets, dt, world) {
 
         if (p.alive && pointInBody(b.x, b.y, p)) {
           const { puntos, zona } = danioDeBala(b, p, 'jugador', world.rng);
+          /**
+           * LOS PERDIGONES DEL MISMO ESCOPETAZO PEGAN TODOS. Después de un
+           * impacto el jugador queda invulnerable un instante, y sin esto el
+           * primer perdigón tapaba a los otros cinco: la escopeta pegaba como
+           * un cuarto de bala. Uno de OTRO disparo sí respeta ese instante.
+           */
+          if (b.perdigon != null && p.ultimoPerdigon === b.perdigon) p.invuln = 0;
           const hurt = damagePlayer(p, puntos, b.x - b.vx, b.y - b.vy);
+          if (hurt && b.perdigon != null) p.ultimoPerdigon = b.perdigon;
           if (hurt) {
             b.alive = false;
             /**

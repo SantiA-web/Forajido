@@ -243,6 +243,23 @@ export const BOSSES = {
     corteDeArma: 90,   // px: más lejos que esto, rifle; más cerca, revólver
 
     /**
+     * 🎲 SU EQUIPO SE SORTEA *(Santi: "el cazarrecompensa puede variar")*. Cada
+     * equipo trae su propio corte de distancia (`corte`), que reemplaza a
+     * `corteDeArma`: es a qué distancia se queda y cuándo cambia de arma.
+     *
+     *   rifle          lo de siempre: Winchester de lejos, revólver de cerca.
+     *   escopeta       revólver de lejos y escopeta adentro de `corteEscopeta`:
+     *                  se queda a 45 px y no a 90, o sea que te viene encima.
+     *   dosRevolveres  sin arma larga: dos revólveres a cualquier distancia,
+     *                  ráfagas de cuatro.
+     */
+    equipos: [
+      { id: 'rifle', peso: 50, corte: 90 },
+      { id: 'escopeta', peso: 25, corte: 45, corteEscopeta: 70 },
+      { id: 'dosRevolveres', peso: 25, corte: 70 },
+    ],
+
+    /**
      * HASTA DÓNDE VE — y esto era un bug de los feos, encontrado midiendo.
      *
      * El jefe estaba usando la visión de un guardia común
@@ -299,6 +316,9 @@ export const BOSSES = {
       burstDelay: 0,
       bulletSpeed: 380,
       range: 300,          // llega más lejos que la vista de un guardia (118)
+      // Recarga como el Winchester de los guardias (data/armasGuardia.js).
+      cargador: 10,
+      recarga: 4.0,
       /**
        * Un rifle es escandaloso. Le despierta DOS vagones a cada tiro (el Colt
        * del jugador despierta 1), así que su sola presencia te empeora el tren
@@ -330,6 +350,42 @@ export const BOSSES = {
       bulletSpeed: 330,
       range: 240,
       noiseWagons: 1,
+      cargador: 6,
+      recarga: 3.0,
+    },
+
+    /** La escopeta de su equipo de escopeta: la de los guardias, en sus manos. */
+    escopeta: {
+      name: 'Escopeta de doble caño',
+      spread: 0.12,
+      aimTime: 0.3,
+      fireCooldown: 0.9,
+      burstSize: 2,
+      burstDelay: 0.65,    // > invulnerabilidad del jugador: ver data/armasGuardia.js
+      bulletSpeed: 260,
+      range: 120,
+      noiseWagons: 2,
+      cargador: 2,
+      recarga: 2.5,
+      perdigones: 6,
+      abanico: 0.30,
+      factorPerdigon: 0.35,
+      caida: { plenoHasta: 0.3, alFinal: 0.3 },
+    },
+
+    /** Los dos revólveres de su equipo sin arma larga: ráfagas de cuatro. */
+    dosRevolveres: {
+      name: 'Dos revólveres',
+      spread: 0.19,
+      aimTime: 0.26,
+      fireCooldown: 0.75,
+      burstSize: 4,
+      burstDelay: 0.16,
+      bulletSpeed: 330,
+      range: 240,
+      noiseWagons: 1,
+      cargador: 12,
+      recarga: 4.5,
     },
 
     danioBala: DANIO_DE_BALA,

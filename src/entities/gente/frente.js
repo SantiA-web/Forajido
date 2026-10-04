@@ -6,7 +6,7 @@
  * en espejo, y eso lo resuelve `entities/figura.js` al estampar.
  */
 import {
-  ROPA, tono, mover, corrido, apuntar, rifle,
+  ROPA, tono, mover, corrido, apuntar, rifle, armaLarga, medidasLarga,
   OJO_B, PIEL, PIEL_S, CAM, CAM_L, CAM_S, PAN_R, PAN_RL, PAN_RS,
   BOTA, BOTA_L, ESPUELA, CINTO, FUNDA, CULATA, CULATA_L, LATON, BLANCA, CORBATA,
 } from './dibujo.js';
@@ -273,7 +273,7 @@ function torsoFrente(L, R, o, g, f) {
    * que los lleva a las manos que agarran el arma. Si se dibujaran igual, el
    * jinete tendría dos brazos izquierdos — uno colgando y otro en la caña.
    */
-  const conRifle = o.arma === 'rifle' || o.arma === 'rifleListo';
+  const conRifle = !!armaLarga(o.arma);
   if (!o.manosArriba && !conRifle) {
     L.poly([[9 + g, 33], [14 + g, 32], [14 + g, 53 + mI], [9 + g, 54 + mI]], M0);
     L.rect(10 + g, 34, 3, 1, ML); L.rect(11 + g, 38, 1, 8 + Math.min(0, mI), MS);
@@ -336,11 +336,11 @@ function torsoFrente(L, R, o, g, f) {
   } else if (R.cuello === 'corbata') L.rect(19 + d, 30, 11, 2, BLANCA);
   else L.rect(18 + d, 30, 13, 3, CS);
   // Apuntando: de frente el caño viene hacia la cámara; girado, en diagonal.
-  if (o.arma === 'rifle') {
+  if (armaLarga(o.arma) && !armaLarga(o.arma).listo) {
     // Cruzado sobre las piernas: de frente se ve el arma de costado, o sea una
     // barra que cruza el cuerpo entero. Es la pose que mejor se lee de todas.
-    rifle(L, R, [12 + g, 35], [13, 47], [35 - g, 35], [26, 44], [0.974, -0.225]);
-  } else if (o.arma === 'rifleListo') {
+    rifle(L, R, [12 + g, 35], [13, 47], [35 - g, 35], [26, 44], [0.974, -0.225], ...medidasLarga(o.arma));
+  } else if ((armaLarga(o.arma) || {}).listo) {
     /**
      * Encarándote, el rifle va **en diagonal**, del hombro derecho para abajo y
      * para afuera, con la boca saliéndose de la silueta. Dos razones:
@@ -351,7 +351,7 @@ function torsoFrente(L, R, o, g, f) {
      *    que las dos se veían igual y el aviso no avisaba nada. Lo que se lee
      *    es el CAMBIO de ángulo, no el arma.
      */
-    rifle(L, R, [33 - g, 34], [30, 34], [13 + g, 35], [18, 43], [-0.8, 0.6]);
+    rifle(L, R, [33 - g, 34], [30, 34], [13 + g, 35], [18, 43], [-0.8, 0.6], ...medidasLarga(o.arma));
   } else if (o.arma && o.armaDir == null) {
     if (g) apuntar(L, R, [33, 34], [40, 44], [0.7, 0.7], 6, o.armaDir);
     else apuntar(L, R, [34, 34], [30, 44], [0, 1], 3, o.armaDir);
@@ -426,7 +426,7 @@ export function espalda(L, o = {}) {
   const jinete = o.postura === 'montado';
   const mI = jinete ? -10 : cuadro.mI, mD = jinete ? -10 : cuadro.mD;
   // Con el rifle los dos brazos los pone `rifle()`: ver la nota en `torsoFrente`.
-  const conRifle = o.arma === 'rifle' || o.arma === 'rifleListo';
+  const conRifle = !!armaLarga(o.arma);
   if (!o.manosArriba && !conRifle) {
     if (g) U.poly([[12, 34], [15, 33], [15, 52 + mI], [12, 53 + mI]], MS);
     else U.poly([[9, 33], [14, 32], [14, 53 + mI], [9, 54 + mI]], MS);
@@ -462,12 +462,12 @@ export function espalda(L, o = {}) {
   } else if (R.cuello === 'corbata') U.rect(19, 29, 11, 3, BLANCA);
   else U.rect(18, 29, 13, 4, CS);
   // Apuntando de espaldas: el brazo se va para arriba, al costado de la cabeza.
-  if (o.arma === 'rifle') {
-    rifle(U, R, [13 + g, 35], [13, 47], [34 - g, 35], [26, 44], [0.974, -0.225]);
-  } else if (o.arma === 'rifleListo') {
+  if (armaLarga(o.arma) && !armaLarga(o.arma).listo) {
+    rifle(U, R, [13 + g, 35], [13, 47], [34 - g, 35], [26, 44], [0.974, -0.225], ...medidasLarga(o.arma));
+  } else if ((armaLarga(o.arma) || {}).listo) {
     // De espaldas apunta para el fondo: la misma diagonal que de frente pero
     // para arriba, con la boca saliendo al costado de la cabeza.
-    rifle(U, R, [33 - g, 34], [30, 33], [14 + g, 34], [18, 24], [-0.8, -0.6]);
+    rifle(U, R, [33 - g, 34], [30, 33], [14 + g, 34], [18, 24], [-0.8, -0.6], ...medidasLarga(o.arma));
   } else if (o.arma && o.armaDir == null) {
     if (g) apuntar(U, R, [33, 33], [39, 27], [0.6, -0.8], 6, o.armaDir);
     else apuntar(U, R, [34, 33], [35, 25], [0, -1], 5, o.armaDir);

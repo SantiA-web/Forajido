@@ -38,9 +38,44 @@ import { canSeeFrom, viajarHacia, moveToward, turnTowards } from './ai.js';
 import { findCoverPoint, findPeek } from './cover.js';
 import { damagePlayer, isHidden, tumbar } from '../entities/player.js';
 
+/**
+ * 🎲 EL EQUIPO DEL JEFE (ver `equipos` en data/bosses.js): se sortea la primera
+ * vez que se actualiza. Cada arma con su cargador.
+ */
+function equipar(bo, rng) {
+  if (bo.equipo || !bo.tipo.equipos) return;
+  const lista = bo.tipo.equipos;
+  let t = rng.next() * lista.reduce((s, q) => s + q.peso, 0);
+  bo.equipo = lista.find((q) => (t -= q.peso) < 0) || lista[0];
+  bo.municion = {};
+  for (const k of ['rifle', 'revolver', 'escopeta', 'dosRevolveres']) {
+    if (bo.tipo[k]) bo.municion[k] = bo.tipo[k].cargador || 99;
+  }
+  bo.recargando = 0;
+}
+
+/** A qué distancia trabaja: la de su equipo, o la de siempre. */
+function corteDe(bo) {
+  return bo.equipo ? bo.equipo.corte : bo.tipo.corteDeArma;
+}
+
+/** El nombre de un arma del tipo (`'rifle'`, `'revolver'`…). */
+function claveDe(bo, arma) {
+  return ['rifle', 'revolver', 'escopeta', 'dosRevolveres'].find((k) => bo.tipo[k] === arma);
+}
+
 export function updateBoss(bo, dt, world) {
   bo.hitFlash = Math.max(0, bo.hitFlash - dt);
   if (!bo.alive) return;
+  equipar(bo, world.rng);
+  if (bo.recargando > 0) {
+    bo.recargando -= dt;
+    if (bo.recargando <= 0) {
+      bo.recargando = 0;
+      const a = bo.tipo[bo.recargaDe];
+      if (a) bo.municion[bo.recargaDe] = a.cargador;
+    }
+  }
 
   bo.invulnerable = Math.max(0, bo.invulnerable - dt);
   bo.cooldown = Math.max(0, bo.cooldown - dt);
@@ -125,7 +160,9 @@ function faseAcecho(bo, dt, world) {
   // Siempre mirándote. No patrulla, no mira para otro lado: te mide.
   turnTowards(bo, Math.atan2(player.y - bo.y, player.x - bo.x), dt, 3);
 
-  bo.armaActual = 'rifle';
+  // Acechando lleva el arma larga de su equipo; el de los dos revólveres, un revólver.
+  bo.armaActual = !bo.equipo || bo.equipo.id === 'rifle' ? 'rifle'
+    : bo.equipo.id === 'escopeta' ? 'escopeta' : 'dosRevolveres';
 
   /**
    * EL SONIDO DEL ACECHO — la otra mitad del arreglo de `acecho.distancia`.
@@ -263,7 +300,10 @@ function cadencia(bo, arma) {
 
 /** Qué arma le toca a esta distancia. Ver `corteDeArma` en data/bosses.js. */
 function armaPara(bo, dist) {
-  return dist > bo.tipo.corteDeArma ? bo.tipo.rifle : bo.tipo.revolver;
+  const q = bo.equipo ? bo.equipo.id : 'rifle';
+  if (q === 'dosRevolveres') return bo.tipo.dosRevolveres;
+  if (q === 'escopeta') return dist < bo.equipo.corteEscopeta ? bo.tipo.escopeta : bo.tipo.revolver;
+  return dist > corteDe(bo) ? bo.tipo.rifle : bo.tipo.revolver;
 }
 
 // ------------------------------------------------------------------- rastreo
@@ -420,7 +460,7 @@ function faseCombate(bo, dt, world, teVe) {
   if (consideraEmbestir(bo, world, dist)) return;
 
   const arma = armaPara(bo, dist);
-  bo.armaActual = arma === bo.tipo.rifle ? 'rifle' : 'revolver';
+  bo.armaActual = claveDe(bo, arma) || 'revolver';
 
   /**
    * ¿YA ESTÁ EN SU DISTANCIA? ENTONCES SE PARAPETA.
@@ -434,7 +474,7 @@ function faseCombate(bo, dt, world, teVe) {
    * tocarlo. Matarlo pasa a pedir flanquearlo o cazarlo aturdido — la mecánica
    * central del juego, que esta pelea no estaba usando.
    */
-  const enSuDistancia = dist >= bo.tipo.corteDeArma &&
+  const enSuDistancia = dist >= corteDe(bo) &&
     dist <= bo.tipo.distanciaDeTrabajo;
 
   /**
@@ -488,7 +528,7 @@ function faseCombate(bo, dt, world, teVe) {
    * estado natural y pasa a ser lo que saca cuando VOS le quedaste encima,
    * que es lo que el corte de arma quería decir desde el principio.
    */
-  if (dist < bo.tipo.corteDeArma) {
+  if (dist < corteDe(bo)) {
     /**
      * SÓLO RETROCEDE SI ESTÁ BAJO FUEGO. Si no, te agarró — déjalo pelear.
      *
@@ -771,12 +811,23 @@ function disparar(bo, dt, world, arma, dist) {
   }
 
   if (bo.cooldown > 0) return;
+  // Recargando no tira; sin balas, recarga (con el mismo grito que un guardia).
+  if (bo.recargando > 0) return;
+  const clave = claveDe(bo, arma);
+  if (bo.municion && clave && bo.municion[clave] <= 0) {
+    bo.recargando = arma.recarga || 3;
+    bo.recargaTotal = bo.recargando;
+    bo.recargaDe = clave;
+    world.audio.play('recargaGuardia');
+    world.bus.emit('guardiaRecarga', { x: bo.x, y: bo.y, guardia: bo });
+    return;
+  }
   if (dist > arma.range) return;
   if (isHidden(player)) return;
 
   bo.aimTimer = arma.aimTime;
   bo.aimDir = Math.atan2(player.y - bo.y, player.x - bo.x);
-  bo.burstLeft = arma.burstSize;
+  bo.burstLeft = Math.min(arma.burstSize, bo.municion && clave ? bo.municion[clave] : arma.burstSize);
   world.audio.play('cock');
 }
 
@@ -788,17 +839,28 @@ function soltarBala(bo, world, arma) {
     arma.spread + (world.dispersionExtra || 0), mira.fallaChance, mira.fallaMultiplicador
   );
 
-  world.spawnBullet({
-    x: bo.x + Math.cos(bo.facing) * 10,
-    y: bo.y + Math.sin(bo.facing) * 10,
-    angle: angulo,
-    speed: arma.bulletSpeed,
-    damage: bo.tipo.danioBala,
-    range: arma.range,
-    owner: 'enemy',
-  });
+  // La escopeta larga perdigones en abanico, como la de los guardias.
+  const n = arma.perdigones || 1;
+  const disparo = n > 1 ? (world.perdigonesId = (world.perdigonesId || 0) + 1) : null;
+  for (let i = 0; i < n; i++) {
+    const a = angulo + (n > 1 ? (i / (n - 1) - 0.5) * arma.abanico + world.rng.spread(arma.abanico / (n * 2)) : 0);
+    world.spawnBullet({
+      x: bo.x + Math.cos(bo.facing) * 10,
+      y: bo.y + Math.sin(bo.facing) * 10,
+      angle: a,
+      speed: arma.bulletSpeed,
+      damage: bo.tipo.danioBala,
+      range: arma.range,
+      owner: 'enemy',
+      caida: arma.caida,
+      factor: arma.factorPerdigon,
+      perdigon: disparo,
+    });
+  }
+  const clave = claveDe(bo, arma);
+  if (bo.municion && clave) bo.municion[clave] = Math.max(0, bo.municion[clave] - 1);
 
-  world.audio.play('enemyShot');
+  world.audio.play(n > 1 ? 'escopetazo' : 'enemyShot');
   world.camera.shake(0.6, 0.08);
 
   /**
@@ -816,6 +878,7 @@ function soltarBala(bo, world, arma) {
   });
 
   bo.burstLeft -= 1;
+  if (bo.municion && clave && bo.municion[clave] <= 0) bo.burstLeft = 0;
   if (bo.burstLeft > 0) {
     bo.burstTimer = arma.burstDelay;
   } else {

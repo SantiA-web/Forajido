@@ -8,6 +8,7 @@ import { CONFIG } from '../data/config.js';
 import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_LOOK } from './figura.js';
 import { dibujarHeridas } from './danio.js';
 import { GUARD_TYPES, DEFAULT_GUARD_TYPE, guardHealth } from '../data/guards.js';
+import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
 import { T } from '../text/es.js';
 
 export function createEnemy(x, y, options = {}) {
@@ -499,6 +500,14 @@ export function drawEnemy(r, e) {
   // El único aviso de que va a disparar: se para en seco y levanta el arma.
   // (Antes había una línea roja marcando la trayectoria; era demasiado fácil.)
   const conArma = !sentado && !(e.desenfundando > 0);
+  /**
+   * EL ARMA LARGA SE VE (ver data/armasGuardia.js): el Winchester y las dos
+   * escopetas se dibujan agarradas con las dos manos, cruzadas mientras
+   * patrulla y encaradas cuando pelea. El revólver, como siempre.
+   */
+  const defArma = ARMAS_GUARDIA[e.armaEnMano || e.armaId];
+  const larga = defArma && typeof defArma.dibujo === 'string' ? defArma.dibujo : null;
+  const poseLarga = larga && (e.state === 'combat' || e.aimTimer > 0 ? larga + 'Listo' : larga);
   const fig = dibujarPersona(r, {
     tipo, x: e.x, pies, angulo: e.facing,
     // Patrullando caminan; cuando te vieron, trotan. A cubierto, asomarse y
@@ -512,7 +521,7 @@ export function drawEnemy(r, e) {
     estado,
     destello: e.hitFlash > 0,
     cartuchos: { cargados: e.dynamite || 0, total: e.dynamiteMax || 0 },
-    arma: conArma ? {
+    arma: conArma && poseLarga ? poseLarga : conArma ? {
       angulo: e.facing,
       largo: e.aimTimer > 0 ? 10 : 7,
       color: e.aimTimer > 0 ? '#d8cdbb' : '#6a625a',
@@ -553,7 +562,10 @@ export function drawEnemy(r, e) {
   // Encima de la cabeza queda sólo el aviso de estado o lo que dice.
   const arriba = fig.arriba;
 
-  if (e.state === 'combat') {
+  if (e.recargando > 0) {
+    // RECARGANDO: el tambor reemplaza al "!" mientras dure (ver data/armasGuardia.js).
+    dibujarAviso(r, e.x, arriba, 'recarga', 1 - e.recargando / (e.recargaTotal || 1));
+  } else if (e.state === 'combat') {
     // 🔁 FIJO MIENTRAS PELEA: antes duraba un segundo (`alertMark`), y con el
     // cuerpo negro no quedaba nada más que dijera "este te está peleando".
     dibujarAviso(r, e.x, arriba, 'alerta');

@@ -2839,6 +2839,7 @@ function fire(e, world, enPanico) {
       caida: arma.caida,
       factor: arma.factorPerdigon,
       perdigon: disparo,
+      tirador: e,
     });
   }
   gastarBala(e, world);
@@ -2931,6 +2932,7 @@ function fireDoorBlind(e, world, target) {
     damage: 1,
     range: c.viewDistance + 80,
     owner: 'enemy',
+    tirador: e,
   });
 
   world.audio.play('enemyShot');
@@ -3001,6 +3003,7 @@ function fireTechoBlind(e, world, target) {
     damage: 1,
     range: c.viewDistance + 80,
     owner: 'enemy',
+    tirador: e,
   });
 
   world.audio.play('enemyShot');

@@ -251,7 +251,7 @@ export function updateBullets(bullets, dt, world) {
                 tumbar(p, b.x - b.vx, world)) {
               p.knockX *= L.empujeJugador;
             }
-            world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona, puntos, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
+            world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona, puntos, deJugador: b.owner === 'player', apuntada: b.zonaElegida, tirador: b.tirador });
             world.bus.emit('playerHit', { x: b.x, y: b.y });
             if (!p.alive) world.bus.emit('playerDown', {});
           }

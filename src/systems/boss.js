@@ -855,6 +855,7 @@ function soltarBala(bo, world, arma) {
       caida: arma.caida,
       factor: arma.factorPerdigon,
       perdigon: disparo,
+      tirador: bo,
     });
   }
   const clave = claveDe(bo, arma);

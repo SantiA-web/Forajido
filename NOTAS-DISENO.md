@@ -16198,6 +16198,66 @@ es menor a $900* (más que eso, te buscan vivo o muerto y tiran directo).
   escopetas). Y el bot no aprovecha las recargas a propósito: un jugador que
   espere el "¡RECARGO!" la va a pasar mejor que él.
 
+🎯 **¿Qué arma de guardia es la más peligrosa de verdad?** *(Santi: "necesito
+saber qué arma le baja más daño por cada muerte [...] los revólveres aparecen
+más que las otras dos armas, por lo que harás cálculos matemáticos para saber
+cuál es la más peligrosa realmente [...] el bot no tiene que tener puntería
+perfecta, tiene que saber cubrirse, tomar distancias, usar el sigilo y
+reconocer cada arma antes de hacer algo, y lo más importante es que se
+equivoque")*.
+
+- **El bot agente** (`banco-agente.js`, raíz, no se versiona): camina agachado
+  mientras nadie lo vio y embosca al que no lo vio (parado, a la cabeza); lee
+  el arma de cada guardia la primera vez que lo ve; se aleja de la escopeta
+  (no la deja a menos de ~95-110 px), le corta la vista al Winchester; se mete
+  en cobertura (Shift) y se asoma a tirar (clic derecho); se esconde para
+  recargar, al recibir un tiro y al ver un Winchester apuntándole; el que
+  grita "¡RECARGO!" pasa a ser su blanco. **Se equivoca**: reacciona tarde
+  (0,25-0,6 s), pulso que crece con la distancia y un tiro feo de vez en
+  cuando (7 por asalto), lee mal el arma (12%: cree que es revólver; 0,9 por
+  asalto), a veces no se cubre (15% por enfrentamiento; 1,6 por asalto) y a
+  veces no ve el aviso del Winchester (30%; 2,5 por asalto). Colt o Smith al
+  azar. Entra al vagón blindado como si hubiera volado la puerta (si no,
+  nunca peleaba con un blindado).
+- **Cómo atribuye el daño:** cada bala lleva a su tirador (`bullet.tirador`,
+  agregado al juego: no cambia nada, sólo viaja en el aviso de impacto), así
+  que cada punto se carga al arma y al tipo de quien la disparó. Golpes y
+  dinamita van aparte. Y mide la **exposición**: cuántos guardias de cada arma
+  pelearon contra él con línea de vista y cuántos segundos.
+- **250 asaltos, tren de pasajeros.** Murió en los 250 (el bot juega peor que
+  una persona): 4,3 guardias por asalto, 66 s, llega al vagón 3,9, 5,5 s
+  cubierto y 2,5 recargas aprovechadas por asalto.
+
+| Arma · tipo | Guardias que pelearon | % de los guardias | % del daño | Daño por guardia | Daño por minuto a la vista | De cada muerte |
+|---|---|---|---|---|---|---|
+| Revólver · común | 941 | 51,6% | 47,1% | 13,8 | 263 | 46,4 |
+| **Winchester · común** | 288 | 15,8% | 17,3% | **16,6** | **395** | 17,1 |
+| Escopeta · común | 313 | 17,2% | 12,6% | 11,1 | 235 | 12,8 |
+| Revólver · blindado | 58 | 3,2% | 1,8% | 8,7 | 162 | 1,9 |
+| Winchester · blindado | 99 | 5,4% | 3,1% | 8,6 | 216 | 3,2 |
+| Escopeta · blindado | 123 | 6,8% | 4,9% | 11,0 | 242 | 5,1 |
+| Jinetes de afuera | — | — | 4,0% | — | — | 3,8 |
+| Golpes cuerpo a cuerpo | — | — | 6,9% | — | — | 7,2 |
+| Dinamita | — | — | 2,4% | — | — | 2,5 |
+
+- **Las cuentas contra la frecuencia.** El revólver hace casi la mitad del daño
+  porque es el 60% de los guardias, no porque pegue más. Dividiendo % del daño
+  por % de los guardias (1 = pega lo que le corresponde por lo seguido que
+  aparece): **Winchester común 1,09**, revólver común 0,91, escopeta común
+  0,73; blindados 0,56 / 0,57 / 0,72.
+- **El más peligroso es el Winchester**: el que más saca por guardia (16,6,
+  un 20% más que el revólver) y, sobre todo, por minuto que te tiene a la
+  vista (395, un 50% más). Pega de una bala por vez pero acierta mucho más
+  (24,8 por impacto, igual que el revólver: la diferencia es la puntería).
+- **La escopeta es la que menos**, *para alguien que se le aleja*: el bot no
+  la deja acercarse, y de lejos sus perdigones casi no pegan (5,9 por
+  perdigón). Es lo que se buscaba —su respuesta es la distancia—, pero
+  significa que en manos de un jugador que la lee, asusta más de lo que pega.
+- **Los blindados pegan menos que los comunes**, y no por el arma: los peleó
+  adentro de su vagón (confinados, en un pasillo sin dónde moverse) y casi
+  siempre llegando ya herido. No es una comparación pareja; la de los comunes
+  sí lo es.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

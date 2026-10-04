@@ -2,7 +2,7 @@
 
 import { CONFIG } from '../data/config.js';
 
-export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon }) {
+export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon, tirador }) {
   return {
     x, y,
     /**
@@ -32,6 +32,9 @@ export function createBullet({ x, y, angle, speed, damage, range, owner, fromRid
     // mismo disparo comparten número (`perdigon`): ver systems/combat.js.
     factor: factor ?? 1,
     perdigon: perdigon ?? null,
+    // Quién la disparó: un guardia, un jefe o un jinete. Sólo para saber de
+    // dónde vino cada herida (la lee el aviso de impacto).
+    tirador: tirador || null,
     /**
      * `damage` sigue en TIROS (1 = un tiro): es lo que les saca a las cosas
      * —puertas, cajones, barriles— y a los jinetes. A la gente le saca

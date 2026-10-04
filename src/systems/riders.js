@@ -390,6 +390,7 @@ function disparar(rd, world) {
     range: 260,
     owner: 'enemy',
     fromRider: true,
+    tirador: rd,
   });
 
   world.audio.play('enemyShot');

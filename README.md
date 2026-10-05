@@ -783,6 +783,16 @@ arma que llevan:
   te ve, todos saben dónde estás. Y mientras sigas donde te vieron, no se
   olvidan de vos. Para que te pierdan tenés que **irte sin que te vean**: ahí
   sí, a los ~9 s dejan de buscarte.
+- **"¡CUIDO LA SALIDA!"**: cuando suena la alarma, uno de los guardias que
+  quedaron **entre vos y tu caballo** no te viene a buscar: se planta del lado
+  del caballo de la puerta de su vagón, cubierto (o parado en el pasillo si no
+  hay dónde), apuntando a esa puerta, y no se olvida de vos. Uno solo por
+  asalto. Si lo pasás, pelea como cualquiera. Si a los de atrás ya los
+  liquidaste, no queda nadie para cuidarla.
+- **"¡SE FUE PARA ATRÁS!" / "¡PARA ADELANTE!"**: si un guardia te ve cruzar
+  una puerta, avisa, y los del vagón donde entraste se ponen en rojo y te
+  esperan 6 s cubiertos apuntando a esa puerta. Si cruzás sin que nadie te vea,
+  no se entera nadie.
 
 ### "¡Alto, manos arriba!" — rendirte con H
 

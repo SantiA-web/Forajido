@@ -1649,7 +1649,9 @@ function doInvestigate(e, dt, world) {
  * que lo consultan —`doCombat` y `doInvestigate`— no se puedan desincronizar.
  */
 function esDefensivo(e) {
-  return !!e.defensivo || e.cubriendoTimer > 0 || !!e.esperandoCompanero;
+  // `esperaPuerta`: lo avisaron de que entraste por una puerta, y la espera
+  // cubierto (ver `jugadorCambiaDeVagon` en systems/escuadra.js).
+  return !!e.defensivo || e.cubriendoTimer > 0 || !!e.esperandoCompanero || e.esperaPuerta > 0;
 }
 
 /**
@@ -2335,7 +2337,8 @@ export function doCombat(e, dt, world) {
     const paciencia = c.loseTargetTime * (e.spooked ? c.spookedPatience : 1);
     // 🤝 No se olvida si un compañero del vagón te vio hace poco, ni si
     // seguís donde te vieron (ver "se pasan tu posición" en systems/escuadra.js).
-    if (e.lostTimer > paciencia && !(e.escuadraVioHace < paciencia) && !e.sigueAhi) {
+    // Y el que cuida la salida no se olvida nunca: está esperando, no buscando.
+    if (e.lostTimer > paciencia && !(e.escuadraVioHace < paciencia) && !e.sigueAhi && !e.cuidaSalida) {
       e.state = 'suspicious';
       e.target = e.lastSeen ? { ...e.lastSeen } : { x: e.x, y: e.y };
       e.suspicion = 0.9;
@@ -2427,6 +2430,22 @@ export function doCombat(e, dt, world) {
    * 🔄 RODEANDO (systems/escuadra.js): va por la ruta a un lugar desde donde
    * te vería. Si te ve en el camino, o llega, vuelve al combate de siempre.
    */
+  /**
+   * 🚪 EL QUE CUIDA LA SALIDA va a su puesto por la ruta (puede estar al otro
+   * lado del vagón) y ahí se cubre. Si te ve en el camino, pelea desde donde
+   * esté: es `defensivo`, no avanza.
+   */
+  if (e.puestoSalida && !engaged) {
+    if (distance(e.x, e.y, e.puestoSalida.x, e.puestoSalida.y) > 8) {
+      e.coverPoint = null;
+      e.atCover = false;
+      e.peeking = false;
+      viajarHacia(e, dt, world, e.puestoSalida.x, e.puestoSalida.y, c.speed);
+      return;
+    }
+    e.puestoSalida = null;   // llegó: desde acá, la cobertura de siempre
+  }
+
   if (e.rodeoPunto) {
     e.rodeoTimer = (e.rodeoTimer || 0) - dt;
     if (engaged || e.rodeoTimer <= 0 || e.recargando > 0 ||

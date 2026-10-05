@@ -48,6 +48,9 @@ import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
 import { distance, hasLineOfSight } from '../engine/collision.js';
 import { findCoverPoint } from './cover.js';
 import { isHidden } from '../entities/player.js';
+// Ciclo de imports a propósito (ai.js también importa de acá): sólo se usa
+// adentro de funciones, nunca al cargar el módulo.
+import { alertCombat } from './ai.js';
 
 /** El estado de las escuadras de un asalto. Va en `world.escuadra`. */
 export function crearEscuadra() {
@@ -118,6 +121,142 @@ export function jugadorEmpiezaRecarga(world) {
   }
 }
 
+// ------------------------------------------------- la salida y las puertas
+
+/**
+ * 🚪 EL QUE CUIDA LA SALIDA — etapa 3 *(Santi eligió la A: uno solo por
+ * asalto, en cuanto suena la alarma)*. El juego es una retirada, y hasta acá la
+ * vuelta al caballo estaba libre: los refuerzos salen de la locomotora y los de
+ * atrás te venían a buscar. Ahora, con la alarma sonando, UNO de los que están
+ * entre vos y el caballo no viene: se planta cubierto del lado de la salida de
+ * la puerta más cercana, apuntando a esa puerta, y grita "¡CUIDO LA SALIDA!".
+ *
+ * No se olvida de vos (está esperando, no buscando) y no avanza ni rodea
+ * (`defensivo`). Si lo pasás —quedás entre él y el caballo—, deja de cuidar
+ * y pelea como cualquiera.
+ */
+function actualizarTapon(world, E, dt) {
+  const p = world.player;
+  const t = E.tapon;
+  if (t) {
+    if (!t.alive || t.rendido || t.inconsciente > 0) { E.tapon = null; E.taponListo = true; return; }
+    const lado = Math.sign(salidaX(world) - p.x) || -1;
+    // Lo pasaste: ya no hay salida que cuidar, pelea como cualquiera.
+    if (t.cuidaSalida && (t.x - p.x) * lado < 0) {
+      t.cuidaSalida = null;
+      t.puestoSalida = null;
+      t.defensivo = false;
+    }
+    return;
+  }
+  if (E.taponListo || !world.alarmaActiva) return;
+  E.taponT = (E.taponT || 0) - dt;
+  if (E.taponT > 0) return;
+  E.taponT = 1;   // si no hay nadie que sirva, prueba de nuevo en un segundo
+  const elegido = elegirTapon(world);
+  if (elegido) { E.tapon = elegido; E.taponListo = true; }
+}
+
+/** La baldosa libre más cerca de un punto (o null si no hay ninguna cerca). */
+function pisoLibre(map, pt) {
+  const s = map.size, c0 = Math.floor(pt.x / s), r0 = Math.floor(pt.y / s);
+  let mejor = null, dm = Infinity;
+  for (let dc = -3; dc <= 3; dc++) {
+    for (let dr = -3; dr <= 3; dr++) {
+      if (map.isSolidTile(c0 + dc, r0 + dr)) continue;
+      const t = map.tileCenter(c0 + dc, r0 + dr);
+      const d = distance(t.x, t.y, pt.x, pt.y);
+      if (d < dm) { dm = d; mejor = t; }
+    }
+  }
+  return mejor;
+}
+
+function salidaX(world) {
+  const z = world.train.exitZone;
+  return z.x + z.width / 2;
+}
+
+function elegirTapon(world) {
+  const c = CONFIG.escuadra;
+  const p = world.player, map = world.map, train = world.train;
+  const sx = salidaX(world);
+  const lado = Math.sign(sx - p.x) || -1;           // para dónde queda el caballo
+  const vJugador = train.wagonAt(p.x);
+  let mejor = null;
+  for (const e of world.enemies) {
+    if (!e.alive || e.esJefe || e.esSheriff || e.escoltaDe || e.defensivo || e.rendido) continue;
+    if (e.inconsciente > 0 || e.confinado || e.retirandose || e.caido > 0) continue;
+    if (e.sinArmaDeFuego && !e.armaId) continue;
+    if ((e.x - p.x) * lado <= 0 || (e.x - sx) * lado >= 0) continue;   // entre vos y el caballo
+    if (train.wagonAt(e.x) === vJugador) continue;                    // en otro vagón
+    if (!mejor || Math.abs(e.x - p.x) < Math.abs(mejor.x - p.x)) mejor = e;
+  }
+  if (!mejor) return null;
+
+  // La puerta de su vagón que da hacia vos.
+  let puerta = null;
+  for (const d of world.doors || []) {
+    if ((d.x - mejor.x) * -lado <= 0) continue;
+    if (!puerta || Math.abs(d.x - mejor.x) < Math.abs(puerta.x - mejor.x)) puerta = d;
+  }
+  const mira = puerta ? { x: puerta.x, y: puerta.y } : { x: p.x, y: p.y };
+  // Una cobertura de su lado de la puerta (el del caballo), mirando a la puerta.
+  const w = train.wagonAt(mejor.x);
+  const taken = [];
+  for (const o of world.enemies) if (o !== mejor && o.alive && o.coverPoint) taken.push(o.coverPoint);
+  const base = { x: mira.x + lado * c.taponDistanciaPuerta, y: mira.y };
+  const spot = findCoverPoint(map, base.x, base.y, mira.x, mira.y, taken, c.taponDistanciaPuerta, 200,
+    (pt) => train.wagonAt(pt.x) === w && (pt.x - mira.x) * lado > 8);
+
+  mejor.state = 'combat';
+  mejor.suspicion = 1;
+  mejor.alertMark = 1;
+  mejor.lastSeen = { ...mira };
+  mejor.lostTimer = 5;            // no te vio: está esperando, no es el que mejor sabe dónde estás
+  mejor.defensivo = true;
+  mejor.cuidaSalida = mira;
+  // Sin cobertura que mire a la puerta (al lado de las puertas suele estar
+  // despejado): se para en el pasillo, a la misma distancia, apuntándola.
+  mejor.puestoSalida = spot ? { x: spot.x, y: spot.y } : pisoLibre(map, base);
+  mejor.coverPoint = null;
+  mejor.atCover = false;
+  mejor.peeking = false;
+  mejor.ruta = null;
+  gritar(mejor, world, 'cuidoSalida');
+  return mejor;
+}
+
+/**
+ * 📣 "¡SE FUE PARA ATRÁS!" — etapa 3 *(Santi eligió la B: los del vagón nuevo
+ * se ponen en rojo y se cubren apuntando a esa puerta)*. Si un guardia te vio
+ * cruzar (te estaba viendo hace menos de `vioCruzar` s), grita para dónde te
+ * fuiste, y los del vagón donde entraste se enteran: rojo, mirando la puerta,
+ * y `esperaPuerta` segundos cubiertos ahí, sin salir a buscarte. Si cruzaste
+ * sin que nadie te viera, no se entera nadie.
+ */
+export function jugadorCambiaDeVagon(world, desde, hacia) {
+  const c = CONFIG.escuadra;
+  const p = world.player;
+  if (desde == null || hacia == null || desde === hacia || p.enTecho) return;
+  let testigo = null;
+  for (const e of world.enemies) {
+    if (!e.alive || e.state !== 'combat' || e.rendido || e.inconsciente > 0 || e.esJefe) continue;
+    if (!(e.lostTimer < c.vioCruzar)) continue;
+    if (!testigo || distance(e.x, e.y, p.x, p.y) < distance(testigo.x, testigo.y, p.x, p.y)) testigo = e;
+  }
+  if (!testigo) return;
+  gritar(testigo, world, hacia < desde ? 'seFueAtras' : 'seFueAdelante');
+  for (const e of world.enemies) {
+    if (!e.alive || e === testigo || e.rendido || e.inconsciente > 0 || e.esJefe || e.confinado) continue;
+    if (world.train.wagonAt(e.x) !== hacia) continue;
+    if (e.state !== 'combat') alertCombat(e, p.x, p.y, world);
+    else e.lastSeen = { x: p.x, y: p.y };
+    e.esperaPuerta = c.esperaPuerta;
+  }
+  if (world.escuadra) world.escuadra.avisosDePuerta = (world.escuadra.avisosDePuerta || 0) + 1;
+}
+
 // ------------------------------------------------------------------ roles
 
 /** Cuanto más chico, más le toca avanzar. El Winchester no avanza nunca. */
@@ -138,7 +277,7 @@ function puedeAvanzar(e, world, blanco) {
   // Los que tienen una orden de quedarse (la escolta del Sheriff, el que cubre
   // a un herido, el que espera compañero) y el que no se cubre (el Pistolero:
   // ya está en el medio del pasillo) no entran en esto.
-  if (e.defensivo || e.cubriendoTimer > 0 || e.esperandoCompanero || e.esSheriff) return false;
+  if (e.defensivo || e.cubriendoTimer > 0 || e.esperandoCompanero || e.esSheriff || e.esperaPuerta > 0) return false;
   if (e.evitaCobertura || e.yaSeReplego || e.desenfundando > 0 || e.vaHaciaPuerta) return false;
   if (e.recargando > 0 || balas(e) <= 0 || e.rodeoPunto) return false;
   return distance(e.x, e.y, blanco.x, blanco.y) > arma(e).paradaAvance + CONFIG.escuadra.ganaMin;
@@ -214,6 +353,7 @@ export function actualizarEscuadras(world, dt) {
     if (e.cubriendo > 0) e.cubriendo -= dt;
     if (e.vioRecargar > 0) e.vioRecargar -= dt;
     e.sigueAhi = false;
+    if (e.esperaPuerta > 0) e.esperaPuerta -= dt;
     if (!activo(e)) continue;
     const w = vagonDe(e, world);
     if (!grupos.has(w)) grupos.set(w, []);
@@ -311,6 +451,9 @@ export function actualizarEscuadras(world, dt) {
     }
   }
 
+  // ---- EL QUE CUIDA LA SALIDA ----
+  actualizarTapon(world, E, dt);
+
   // Las escuadras de los vagones que quedaron vacíos se olvidan.
   for (const [w, st] of E.porVagon) {
     if (!grupos.has(w)) { terminarAvance(st); E.porVagon.delete(w); }
@@ -392,7 +535,7 @@ function empezarAvance(st, miembros, world, blanco, E) {
  * no hay de otro tipo en la escuadra. Entre iguales, el que está más cerca.
  */
 function quienRodea(miembros, world, blanco) {
-  const puede = (o) => !o.defensivo && !(o.cubriendoTimer > 0) && !o.esperandoCompanero &&
+  const puede = (o) => !o.defensivo && !(o.cubriendoTimer > 0) && !o.esperandoCompanero && !(o.esperaPuerta > 0) &&
     !o.esSheriff && !o.yaSeReplego && !(o.desenfundando > 0) && !o.vaHaciaPuerta &&
     !(o.recargando > 0) && balas(o) > 0 && !o.avanzando;
   const libres = miembros.filter(puede);

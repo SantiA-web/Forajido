@@ -1270,6 +1270,13 @@ export const CONFIG = {
      * systems/escuadra.js). Más lejos, te escabulliste y el olvido corre.
      */
     sigueAhiRadio: 48,
+
+    // 🚪 El que cuida la salida se cubre a esto de la puerta, de su lado.
+    taponDistanciaPuerta: 60,
+    // 📣 "¡SE FUE PARA ATRÁS!": te tienen que haber visto hace menos de esto.
+    vioCruzar: 0.6,
+    // Y los del vagón nuevo esperan cubiertos, apuntando a la puerta, esto.
+    esperaPuerta: 6,
   },
 
   /**

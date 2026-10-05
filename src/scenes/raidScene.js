@@ -40,7 +40,7 @@ import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
-import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga } from '../systems/escuadra.js';
+import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga, jugadorCambiaDeVagon } from '../systems/escuadra.js';
 import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
 import {
   updateSheriff, updateEscolta, actualizarAuraDelSheriff, apagarAura,
@@ -314,6 +314,8 @@ export function createRaidScene(services) {
       // 🤝 Las escuadras de guardias (systems/escuadra.js) y el "¡ALTO!".
       escuadra: crearEscuadra(),
       get alto() { return alto; },
+      // Para el que cuida la salida (systems/escuadra.js): sale con la alarma.
+      get alarmaActiva() { return alarm.active; },
       // El tren, para que `dispararACiegasPorTecho` (systems/ai.js) pueda
       // preguntar "¿este guardia está en el mismo vagón que el jugador?".
       train,
@@ -2703,6 +2705,8 @@ export function createRaidScene(services) {
   function updateWagon() {
     const ahora = train.wagonAt(player.x);
     if (ahora === wagonActual) return;
+    // 📣 Si alguien te vio cruzar, avisa (ver systems/escuadra.js).
+    jugadorCambiaDeVagon(world, wagonActual, ahora);
 
     wagonActual = ahora;
     if (ahora > wagonMasProfundo) wagonMasProfundo = ahora;

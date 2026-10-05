@@ -78,6 +78,11 @@ export const T = {
     avanzo: '¡AVANZO!',
     // El que sale a buscarte un ángulo (systems/escuadra.js, el rodeo).
     teRodeo: '¡TE RODEO!',
+    // Etapa 3 (systems/escuadra.js): el que cuida la vuelta al caballo, y el
+    // que te vio cruzar una puerta.
+    cuidoSalida: '¡CUIDO LA SALIDA!',
+    seFueAtras: '¡SE FUE PARA ATRÁS!',
+    seFueAdelante: '¡SE FUE PARA ADELANTE!',
     // El primer guardia que te ve, con poca recompensa (ver CONFIG.rendicion).
     alto: '¡ALTO! ¡MANOS ARRIBA!',
     rendirse: '[H] RENDIRTE',

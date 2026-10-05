@@ -152,10 +152,16 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   pose o arma nueva salga bien en las 8 direcciones. Conviene antes de la
   escopeta del jugador, los compañeros, los civiles que reaccionan y las
   habilidades (rodar). Trabajo mediano.
-- **Guardias, etapas 3 y 4** (las etapas 1 y 2 están hechas, y de la 3 ya está
-  "buscar ángulo", el "¡TE RODEO!" dentro del vagón): lo que falta de la **3**
-  es cortar la salida y pasarse tu posición entre vagones; la **4**, el jefe
-  del grupo.
+- **Guardias: las etapas 1, 2 y 3 están hechas.** La 4 (el jefe del grupo)
+  **se descartó** *(Santi: "ya lo hace el sheriff cuando está, y si siempre
+  hay uno entonces no tiene sentido el sheriff")*. En su lugar, la **etapa
+  final: la auditoría de 800 asaltos** (`banco-inspector.js`) para encontrar
+  todo lo que hace ver tontos o inexpertos a los guardias.
+- **El techo** *(Santi, 2026-10-05: "también hay que tener en cuenta lo del
+  techo: guardias disparando desde arriba, subiéndose al techo y entre otras
+  cosas, pero antes del techo me gustaría mejorar lo que se siente estar allá
+  arriba")*: primero mejorar cómo se siente estar en el techo; después, los
+  guardias en el techo.
 - **El bot asaltante** (`banco-asaltante.js`, hecho 2026-10-05): vuelve
   herido 9 de cada 10 veces y nunca pasa del vagón ~3, así que mide el
   principio del tren, no el blindado ni el fondo. Si hace falta medir más

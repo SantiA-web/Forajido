@@ -16518,6 +16518,36 @@ jugar la huida. No abre el blindado.
   llegaría más lejos. Y el tren de pasajeros no le dio mercadería en ningún
   asalto: lo que levanta es plata de bolsas, cajas y pasajeros.
 
+🚪 **GUARDIAS — ETAPA 3: la salida y las puertas** *(Santi eligió 1A y 2B; y
+descartó la etapa 4, el jefe del grupo: "ya lo hace el sheriff cuando está, y
+si siempre hay uno entonces no tiene sentido el sheriff")*. En
+`systems/escuadra.js`.
+
+- **"¡CUIDO LA SALIDA!"** (`actualizarTapon`, `elegirTapon`): al sonar la
+  alarma (`world.alarmaActiva`), uno solo por asalto: el guardia más cercano a
+  vos de los que están entre vos y el caballo, en otro vagón, que no sea jefe,
+  Sheriff, escolta, defensivo ni confinado. Va por la ruta a una cobertura de
+  su lado de la puerta que da hacia vos (`taponDistanciaPuerta`, 60 px),
+  apuntándola; si no hay cobertura —al lado de las puertas suele estar
+  despejado—, se para en el pasillo a esa distancia (`pisoLibre`). Queda
+  `defensivo` y con `cuidaSalida`: no avanza, no rodea y **no se olvida**. Si
+  lo pasás, lo suelta. Si no hay nadie que sirva, prueba cada segundo.
+  Medido armándolo a mano (vos en el vagón 4, alarma): 8 de 8 quedaron a
+  67-123 px de su puerta, del lado del caballo.
+- **"¡SE FUE PARA ATRÁS!" / "¡SE FUE PARA ADELANTE!"**
+  (`jugadorCambiaDeVagon`, llamado desde `updateWagon`): si un guardia que
+  pelea te vio hace menos de `vioCruzar` (0,6 s), grita para dónde te fuiste y
+  los del vagón donde entraste pasan a rojo con tu posición, y quedan
+  `esperaPuerta` (6 s) defensivos —cubiertos, apuntando a la puerta, sin
+  rodear ni avanzar—. Sin testigo, nadie se entera. Probado: visto, el vagón
+  nuevo en rojo esperando; sin ver, siguen patrullando.
+- **Con el bot asaltante** (80 asaltos): escapa 64% (antes 63%), muere 31%
+  (34%), plata al escapar $397 ($324), 94 s (87). Igual, dentro de la suerte.
+  60 avisos de puerta, **0 "¡CUIDO LA SALIDA!"**: el bot mata a los que
+  encuentra, y cuando suena la alarma atrás suyo ya no queda nadie. El tapón
+  aparece cuando pasaste a alguien sin matarlo, que es justo cuando la vuelta
+  tiene que costar.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

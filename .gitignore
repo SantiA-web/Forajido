@@ -21,6 +21,7 @@ src/Forajido/
 /banco-dibujo.js
 /banco-escuadra.js
 /banco-guardias.js
+/banco-asaltante.js
 /poses-*.png
 /proto-*.png
 /zoom-*.png

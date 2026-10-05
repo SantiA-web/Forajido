@@ -156,8 +156,10 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   "buscar ángulo", el "¡TE RODEO!" dentro del vagón): lo que falta de la **3**
   es cortar la salida y pasarse tu posición entre vagones; la **4**, el jefe
   del grupo.
-- **Un bot nuevo** que Santi pidió (2026-10-05) y va a confirmar antes de que
-  lo haga: esperar su descripción.
+- **El bot asaltante** (`banco-asaltante.js`, hecho 2026-10-05): vuelve
+  herido 9 de cada 10 veces y nunca pasa del vagón ~3, así que mide el
+  principio del tren, no el blindado ni el fondo. Si hace falta medir más
+  adentro, enseñarle a curarse o a retirarse a tiempo de una pelea.
 
 ## Cómo trabajar conmigo
 

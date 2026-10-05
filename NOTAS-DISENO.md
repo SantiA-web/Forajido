@@ -16481,6 +16481,43 @@ menos que no haya de otro tipo")*.
   más grande de toda la etapa: el bot se esconde a recargar o a curarse el
   susto, y antes eso lo dejaba olvidado; ahora lo rodean.
 
+🤖 **¿Se puede seguir robando y escapando con los guardias nuevos?** — el bot
+asaltante *(Santi eligió la B, "en el vagón de pasajeros y sin el escape en
+caballo")*. `banco-asaltante.js` (raíz, no se versiona), `jugarAsaltos({ n })`:
+asaltos enteros en el tren de pasajeros, robando como el bot ladrón y peleando
+como el bot agente, con sus errores. Llegar al caballo cuenta como escapar, sin
+jugar la huida. No abre el blindado.
+
+- **Dos fallas del bot** que salieron al armarlo: caminaba agachado todo el
+  asalto (agachado se camina muy lento: menos de 400 px en 18 s) y se iba a la
+  caja fuerte más lejana del tren (a 4.600 px), pasando de largo todo. Ahora
+  se agacha sólo con un guardia a menos de 170 px que no lo vio, y las cajas
+  fuertes las busca en su vagón y el siguiente.
+- **Medido: 80 asaltos con el juego de hoy contra 80 con el de antes de los
+  guardias nuevos** (el commit 6d9075b, antes de la etapa 1, en una copia
+  aparte):
+
+  | | Antes de la etapa 1 | Hoy |
+  |---|---|---|
+  | Escapa | 64% | 63% |
+  | Muere | 35% | 34% |
+  | Se le va el caballo | 1% | 4% |
+  | Plata al escapar | $439 | **$324** |
+  | Ganancia por asalto (contando el rescate) | $308 | **$250** |
+  | Dura | 75 s | 87 s |
+  | Guardias que voltea | 3,4 | 3,5 |
+  | Suena la alarma | 44% | 50% |
+
+  **Se sigue escapando igual (63-64%) y se muere igual: lo que bajó es la
+  plata, un 19%.** Las peleas duran más (ya no se olvidan de vos, te rodean,
+  se cubren entre ellos) y ese tiempo sale de robar: 12 s más por asalto con
+  menos botín.
+- **Lo que el bot no mide bien:** vuelve herido 46 de cada 50 veces que
+  escapa (con 23 de vida) y casi no pasa del vagón 3, así que mide el
+  principio del tren. Una persona que pelee mejor —o que evite peleas—
+  llegaría más lejos. Y el tren de pasajeros no le dio mercadería en ningún
+  asalto: lo que levanta es plata de bolsas, cajas y pasajeros.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

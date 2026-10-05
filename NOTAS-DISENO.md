@@ -17569,7 +17569,8 @@ están perfecto"*). Se acomodan dentro de algo más grande.
 
 | Etapa | Qué | Estado |
 |---|---|---|
-| **1. Sentirse arriba** | Cámara más alejada, sombra del tren, viento, humo, bamboleo, sonido. Ninguna regla cambia | ✅ hecha, **sin jugar** |
+| **1. Sentirse arriba** | Cámara más alejada, sombra del tren, viento, humo, bamboleo, sonido. Ninguna regla cambia | ✅ jugada y confirmada |
+| **1b. El techo entero se pisa** | Techo más angosto con la pared debajo, resbalar por la curva, colgarse del alero, caerse del tren | ✅ hecha, **sin jugar** |
 | 2. Subir y bajar en cualquier enganche | Escalerillas: `[E]` mantenido, en los dos sentidos, ~1 s expuesto a los jinetes | Falta |
 | 3. Algo que hacer arriba | **Arma arriba** (cara: cada tiro despierta el vagón de abajo, apuntar frena) y **espiar por la linterna** de los coches (agachado ves quién hay adentro) | Falta |
 | 4. Obstáculos que salen del mundo | Pórticos y tanques que se ven venir, **túneles** (cuerpo a tierra o bajarse), **curvas** que empujan | Falta |
@@ -17650,6 +17651,101 @@ enganche, la lupa vuelve a 4 y la cámara queda centrada.
 🔇 **Y el servidor de pruebas (puerto 8082) ya no suena** *(Santi: "pongo esto
 en segundo plano y se escuchan los disparos, músicas")*. Cualquier otro tampoco
 si la dirección lleva `?mudo`. El juego de verdad suena igual (`engine/audio.js`).
+
+**✅ JUGADO** *(Santi: "se ve y se siente muy bien")*.
+
+### ✅ ETAPA 1b HECHA: el techo entero se pisa, y se ve del tamaño justo
+
+*(Santi: "que haya más libertad de movimiento sobre el techo y que no esté
+limitado a una franja. Acercarte a los costados es peligroso porque resbalás
+por la curva y caés. A parte, creo que el techo hoy se ve más grande de lo que
+debería ser o el personaje más chico")*. No estaba en el plan; entró antes de
+las escalerillas.
+
+**El tamaño: tenía razón, y no era el personaje.** El vagón está dibujado 3-4
+veces más grande que lo real comparado con la gente, a propósito, para que
+adentro haya lugar para pelear. Arriba se notaba: el techo medía 180 de ancho
+contra una persona de 20 (nueve personas). Achicar el vagón rompe el combate de
+adentro; agrandar al personaje arriba lo haría crecer al subir y quedar más
+grande que los jinetes. Se eligió **dibujar el techo más angosto** y debajo la
+pared del costado, como desde el caballo:
+
+| Ancho del techo | Personas | Pared debajo | |
+|---|---|---|---|
+| 64 | 3 | 120 | Techo creíble, pared de edificio |
+| **88 (elegido)** | **4,5** | **116** | Techo y pared exagerados en la misma medida (×2,6), lo más parejo |
+| 120 | 6 | 84 | Tímido: sigue pareciendo grande |
+
+**LA CLAVE: POR DENTRO EL TECHO SIGUE TAPANDO EL VAGÓN ENTERO** (`world/techoGeometria.js`).
+Tu `y` arriba es la del vagón de abajo (0 a 160): para los guardias estás parado
+justo encima de donde estás, así que los tiros a ciegas, el ruido y todo lo de
+adentro funcionan sin tocar nada. Sólo el DIBUJO se comprime en 88 unidades
+(`yEnTecho`), y todo lo que se ve encima del techo pasa por la misma cuenta
+(`sobreElTecho`: vos, las balas que suben, las explosiones, los carteles). Para
+que de costado vayas igual de rápido que a lo largo, el paso en `y` se agranda
+en la misma proporción.
+
+**La forma: liso, a la misma altura** *(Santi: "la parte plana no tiene que ser
+algo que resalte hacia arriba, todo tiene que ser liso, a la misma altura, y la
+curva se nota por la perspectiva y sombras")*. En el medio el **lomo** (45% del
+ancho), plano y con la misma luz de punta a punta. A los costados las
+**curvas**, marcadas sólo por la luz (la de allá se va a la sombra; la de acá
+agarra un brillo y se oscurece en el filo) y por la **perspectiva**: las
+costuras se juntan hacia el filo (salen de repartir el arco en partes iguales y
+proyectarlo). **Se fueron** la linterna de los coches, el canto de la pasarela
+y la garita del cabús: lo que queda (pasarela, chapa estriada, escotilla, bocas
+del hielo) está pintado al ras.
+
+**La pared de debajo** es la misma del galope (`dibujarCostadoAlto`), sacada de la
+misma lámina en tres tajadas: la franja de las ventanillas casi a su tamaño
+(×1,4) y la pared de arriba y de abajo estiradas. Estirándola entera las
+ventanillas salían el doble de altas y parecía una cerca. Bastidor y ruedas a
+su tamaño, con el rayo girando. De noche, con las ventanillas prendidas.
+
+**Resbalar** (`techo.resbalar`). Pasado el lomo te vas para afuera cada vez más
+rápido cuanto más cerca del borde. Caminando hacia adentro salís siempre (vas
+más rápido que el resbalón más fuerte). Avisos: la curva en el dibujo, polvito
+en los pies hacia el lado del borde, y la suela raspando la chapa (`raspon`).
+
+| Medido | Elegido | Resultado |
+|---|---|---|
+| Quieto donde empieza la curva, hasta el borde | 1,5 s | **1,52 s** |
+| Lo mismo, agachado | ×0,5 de resbalón | **3,02 s** |
+
+**Caerse por el costado** (`techo.colgarse`). Con suerte te agarrás del alero
+*(Santi: "60% que sí, 40% no. En el de carga esa probabilidad aumenta porque el
+tren va más lento: 70%")*. Medido en 300 caídas: **61% en pasajeros, 75% en
+carga**. Colgado:
+
+- Del lado de acá quedás contra la pared, de espaldas, con las manos en el filo.
+  Del lado de allá sólo asoman las manos y la copa del sombrero.
+- Mantenés hacia el techo (`W` o `S`, según el lado) **1 segundo** y volvés al
+  borde del lomo. Si aflojás, lo trepado se pierde el doble de rápido.
+- **Los jinetes de ese lado te ven** (estás afuera, contra su pared); los del
+  otro no.
+- Si te pegan o pasan **4 segundos**, te soltás.
+
+**Si te caés del tren: perdés una vida y el asalto termina** —tu caballo te
+levanta y te vas con lo que llevás; si hay jinetes, a la huida—. Se reusa
+`endRaid('escaped')`. Verificado: sin tocar nada, a los 4,02 s te soltás, la vida
+baja de 100 a 75 y aparece la pantalla de resultados.
+
+**Los obstáculos ahora se leen por el ancho** *(elegido con Santi)*: el pórtico
+cruza el techo de punta a punta (no se rodea); **el cajón ocupa sólo el lomo**, y
+se puede rodear por la curva arriesgándote a resbalar. Medido quieto 20 veces:
+**60 golpes en el lomo, 35 en la curva** (ahí sólo te agarra el pórtico).
+
+**La góndola** se ve igual que los techos: la boca de carbón desde arriba y su
+pared baja (estirada, sin ventanillas). Arriba del carbón no se resbala: tiene
+paredes. 🔻 **Simplificación:** mientras estás arriba, lo que hay encima del
+carbón (un guardia cruzando, las reses) queda tapado. Y los vagones abiertos
+(ganado, plataforma) y los huecos entre vagones se siguen viendo a la escala
+de adentro.
+
+**Medido:** 5.400 cuadros con teclas al azar (pasajeros y carga, de día y de
+noche), colgándose, trepando y cayéndose del tren, **sin errores**. El cuadro
+arriba se dibuja en **2-4 ms**; los primeros cuadros tardan más porque arman
+una vez el dibujo de cada tipo de vagón.
 
 **⚠️ NO JUGADO.**
 

@@ -369,6 +369,17 @@ export function createAudio() {
       noise({ duration: 0.06, cutoff: 900, endCutoff: 200, gain: 0.14 });
     },
 
+    /** La suela raspando la chapa: estás resbalando por la curva del techo. */
+    raspon() {
+      noise({ duration: 0.18, cutoff: 2600, endCutoff: 1200, gain: 0.07, type: 'bandpass', q: 2.2 });
+    },
+
+    /** Te agarraste del alero: el golpe de las manos contra el borde. */
+    agarre() {
+      noise({ duration: 0.07, cutoff: 1400, endCutoff: 300, gain: 0.3 });
+      tone({ from: 180, to: 90, duration: 0.1, gain: 0.12, type: 'triangle' });
+    },
+
     /** El aire del golpe cuando no toca a nadie. */
     swing() {
       noise({ duration: 0.13, cutoff: 1800, endCutoff: 500, gain: 0.16, type: 'bandpass', q: 1.5 });

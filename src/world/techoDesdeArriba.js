@@ -31,7 +31,9 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { escalarColor, familiaDe } from './trenTresCuartos.js';
+import { escalarColor, familiaDe, dibujarCostadoAlto } from './trenTresCuartos.js';
+import { geoTecho, yEnTecho } from './techoGeometria.js';
+import { WAGONS } from '../data/wagons.js';
 
 const PASO = 0.5;
 const TRAMO = 32;
@@ -90,339 +92,312 @@ function variante(a, b) {
 // ------------------------------------------------------------ las partes
 
 /**
- * 🔻 EL TECHO EN TRES CUARTOS *(Santi: "la parte del techo también debería
- * verse en 3/4, porque ahora se ve como algo plano cuando no debería serlo")*.
+ * 🧗 EL TECHO NUEVO: ANGOSTO, LISO Y CURVO.
  *
- * La primera versión cubría sólo el piso del vagón (de 0 al alto del mapa), y
- * eso tenía tres consecuencias que lo aplastaban:
+ * *(Santi: "el techo hoy se ve más grande de lo que debería ser o el personaje
+ * más chico" — y "la parte plana no tiene que ser algo que resalte hacia
+ * arriba, todo tiene que ser liso, a la misma altura, y la curva se nota por
+ * la perspectiva y sombras")*.
  *
- *  1. POR ENCIMA ASOMABA LA PARED DE ADENTRO, con sus ventanillas vistas desde
- *     el pasillo: el techo parecía una lámina tirada en el piso del vagón y no
- *     una tapa arriba de las paredes. Ahora el techo SUBE `SOBRE` unidades —el
- *     alto de la pared del fondo (`CONFIG.tresCuartos.alturaPared`)— y la tapa.
- *  2. ERA DEL MISMO TONO DE PUNTA A PUNTA. Un techo de tren es curvo: la
- *     mitad de allá se aleja y queda en sombra, el lomo agarra la luz y la
- *     mitad de acá baja hacia vos (`arco`). Es lo que le da el volumen.
- *  3. LO DE ENCIMA NO TENÍA ALTO. La linterna, la pasarela y la garita eran
- *     casi planas; ahora cada una tiene su cara de acá, con su alto, y su
- *     sombra sobre el techo.
+ * Antes la tapa iba de −SOBRE al fondo del vagón (180 unidades: nueve
+ * personas de ancho) y encima tenía cosas con alto —la linterna con su cara de
+ * vidrios, la pasarela con su canto, la garita—. Ahora:
  *
- * Y el alero de acá SOBRESALE: tira sombra sobre la pared de afuera del vagón,
- * que en el asalto cuelga por debajo del piso.
- *
- * Nada de esto mueve la franja pisable: sigue en `CONFIG.techo.centroY`, que
- * cae casi justo en el lomo del techo nuevo. Ni el jugador, ni las balas, ni los
- * jinetes se corrieron un punto.
+ *  - LA TAPA MIDE `superficie.ancho` (88) desde `superficie.arriba` (−SOBRE),
+ *    y debajo va la pared del costado (`dibujarCostadoAlto`, la del galope).
+ *  - ES TODA LISA. En el medio, el LOMO, plano y con la misma luz de punta a
+ *    punta. A los costados, LAS CURVAS, que se notan por dos cosas: la luz (la
+ *    de allá se va a la sombra, la de acá agarra un brillo y se oscurece en el
+ *    filo) y la PERSPECTIVA: las costuras se van juntando a medida que la
+ *    chapa dobla hacia abajo.
+ *  - Lo que antes sobresalía queda AL RAS: la pasarela son tablas pintadas
+ *    sobre la chapa, la escotilla es una tapa sin canto. La linterna y la
+ *    garita se fueron.
  */
 const SOBRE = CONFIG.tresCuartos.alturaPared;
+const ANCHO = CONFIG.techo.superficie.ancho;
+const LOMO0 = (ANCHO * (1 - CONFIG.techo.superficie.lomo)) / 2;   // donde empieza el lomo
+const LOMO1 = ANCHO - LOMO0;                                         // donde termina
 
 /**
- * CUÁNTA LUZ AGARRA CADA FRANJA DEL TECHO CURVO. 1 en el lomo; bajando hacia
- * el alero de allá se oscurece más que hacia el de acá, porque la mitad de acá
- * mira a la cámara y al sol.
+ * CUÁNTA LUZ AGARRA LA TAPA A ESTA ALTURA (0 = el borde de allá, ANCHO = el de
+ * acá). El lomo es plano: la misma luz en todo su ancho, que es justamente lo
+ * que lo hace leerse plano.
  */
-function arco(y, alto, c) {
-  const cima = c.centroY;
-  if (y < cima) {
-    const d = (cima - y) / (cima + SOBRE);
-    return 1.14 - 0.52 * d ** 1.2;
+function luz(y) {
+  // La de allá se va a la sombra: le da la espalda a la cámara y al sol.
+  if (y < LOMO0) {
+    const t = (LOMO0 - y) / LOMO0;                  // 0 en el lomo, 1 en el filo
+    return 1.1 - 0.72 * t ** 1.3;
   }
-  const d = (y - cima) / (alto - cima);
-  return 1.14 - 0.3 * d ** 1.2;
-}
-
-/**
- * Pinta una franja horizontal del techo en coordenadas del MUNDO (de −SOBRE al
- * alto del mapa); la lámina empieza en −SOBRE, así que se corre sola.
- */
-function pincelMundo(p) {
-  return (x, y, w, h, color) => p(x, y + SOBRE, w, h, color);
-}
-
-/** El techo curvo de fondo: franjas de dos unidades, cada una con su luz. */
-function fondoCurvo(q, ancho, alto, c, base, variar) {
-  for (let y = -SOBRE, k = 0; y < alto; y += 2, k++) {
-    q(0, y, ancho, 2, tono(base, arco(y, alto, c) * (variar ? variar(y, k) : 1)));
+  // La de acá primero agarra un brillo (mira de frente al sol) y después se
+  // oscurece fuerte en el filo, donde dobla hacia abajo.
+  if (y > LOMO1) {
+    const t = (y - LOMO1) / (ANCHO - LOMO1);
+    return 1.1 + 0.2 * Math.sin(Math.min(1, t * 1.6) * Math.PI) - 0.62 * t ** 2.4;
   }
+  return 1.1;
 }
 
 /**
- * LOS DOS ALEROS. El de allá es un filo oscuro contra el afuera. El de acá
- * tiene su canto con luz y, abajo, el borde grueso de la tapa: es la cara que
- * sobresale sobre la pared.
+ * LAS COSTURAS, A LO LARGO. En el lomo van parejas; en las curvas se juntan
+ * hacia el filo (salen de repartir el ARCO en partes iguales y proyectarlo:
+ * `sin`), que es lo que hace que la curva se lea como curva sin dibujarle alto.
  */
-function aleros(q, ancho, alto, P) {
-  q(0, -SOBRE, ancho, 1.5, tono(P.techo, 0.55));
-  q(0, -SOBRE + 1.5, ancho, 0.5, tono(P.techoLuz, 0.9));
-  q(0, alto - 4, ancho, 1, P.tapaLuz);
-  q(0, alto - 3, ancho, 3, tono(P.techo, 0.8));
-  q(0, alto - 0.5, ancho, 0.5, tono(P.techo, 0.5));
+function costuras(paso) {
+  const ys = [];
+  for (let y = LOMO0 + paso; y < LOMO1 - 1; y += paso) ys.push(y);
+  const R = LOMO0;
+  const d = paso / R;
+  for (let a = d; a < Math.PI / 2 - 0.05; a += d) {
+    ys.push(LOMO0 - R * Math.sin(a));
+    ys.push(LOMO1 + R * Math.sin(a));
+  }
+  return ys;
+}
+
+/** El fondo: bandas de una unidad, cada una con su luz. */
+function fondo(p, ancho, base, variar) {
+  for (let y = 0; y < ANCHO; y += 1) p(0, y, ancho, 1, tono(base, luz(y + 0.5) * (variar ? variar(y) : 1)));
 }
 
 /**
- * EL COCHE DE GENTE: tela alquitranada en paños, curva, y en el lomo LA
- * LINTERNA — la sobreelevación con sus ventanitas, la misma que se ve desde el
- * caballo. Ahora tiene alto: su tapa arriba, su cara de acá con los vidrios y la
- * sombra que tira sobre el techo. Se camina por encima de su tapa.
+ * LOS DOS FILOS. El de allá, una raya oscura contra el desierto. El de acá, el
+ * canto del alero con su luz y debajo su sombra: ahí arranca la pared.
  */
-function tramoCoche(p, ancho, alto, v, P, c) {
-  const q = pincelMundo(p);
+function filos(p, ancho, P) {
+  p(0, 0, ancho, 1, tono(P.techo, 0.5));
+  p(0, 1, ancho, 0.5, tono(P.techoLuz, 0.8));
+  p(0, ANCHO - 2, ancho, 0.5, P.tapaLuz);
+  p(0, ANCHO - 1.5, ancho, 1.5, tono(P.techo, 0.6));
+}
+
+/** EL COCHE DE GENTE: tela alquitranada en paños, lisa de borde a borde. */
+function tramoCoche(p, ancho, v, P) {
   const base = tono(P.tapa, 0.98 + v * 0.008);
-  // Cada paño de tela con su tono: una tela del mismo gris de punta a punta se
-  // leía como una chapa lisa.
-  fondoCurvo(q, ancho, alto, c, base, (y) => 0.97 + ((Math.floor((y + SOBRE) / 9) * 5) % 4) * 0.02);
-  for (let y = -SOBRE + 9; y < alto - 6; y += 9) q(0, y, ancho, 0.5, tono(base, arco(y, alto, c) * 0.8));
-  for (let k = 0; k < 3; k++) {
-    const mx = (v * 11 + k * 13) % (ancho - 6), my = -SOBRE + 10 + ((v * 29 + k * 47) % (alto));
-    if (Math.abs(my - c.centroY) > c.ancho + 12) q(mx, my, 4 + k, 2, tono(base, arco(my, alto, c) * 0.86));
+  // Cada paño con su tono, apenas: de un solo gris se leía como chapa.
+  fondo(p, ancho, base, (y) => 0.97 + ((Math.floor(y / 11) * 5 + v) % 4) * 0.015);
+  for (const y of costuras(11)) p(0, y, ancho, 0.5, tono(base, luz(y) * 0.82));
+  // Alguna mancha de alquitrán, chata.
+  for (let k = 0; k < 2; k++) {
+    const mx = (v * 11 + k * 13) % (ancho - 6), my = 8 + ((v * 29 + k * 31) % (ANCHO - 16));
+    p(mx, my, 4 + k, 1.5, tono(base, luz(my) * 0.88));
   }
-  // La linterna: la tapa (donde se pisa), la cara de acá y su sombra.
-  const tapa0 = c.centroY - c.ancho - 6, tapa1 = c.centroY + c.ancho + 2;
-  const CARA = 10;
-  q(0, tapa0 - 1, ancho, 1, tono(P.techo, 0.6));
-  for (let y = tapa0; y < tapa1; y += 2) q(0, y, ancho, 2, tono(P.tapaLuz, 0.98 - (y - tapa0) * 0.002));
-  for (let y = tapa0 + 5; y < tapa1 - 1; y += 5) q(0, y, ancho, 0.5, tono(P.tapaLuz, 0.86));
-  q(0, tapa1, ancho, 0.5, tono(P.tapaLuz, 1.15));
-  q(0, tapa1 + 0.5, ancho, CARA, tono(P.techo, 1.05));
-  for (let x = 4; x < ancho - 4; x += 14) {
-    q(x, tapa1 + 1.5, 7, CARA - 3, P.marco);
-    q(x + 1, tapa1 + 2, 5, CARA - 4, tono(P.vidrioDia, 0.82));
-    q(x + 1, tapa1 + 2, 2, 1, tono(P.vidrioDia, 1.1));
-  }
-  q(0, tapa1 + CARA + 0.5, ancho, 2, tono(base, arco(tapa1 + CARA, alto, c) * 0.6));
-  // Un respiradero de hongo, con su sombra.
-  if (v % 2 === 0) {
-    const ry = tapa0 - 16;
-    q(ancho - 11, ry + 5, 6, 2, tono(base, arco(ry, alto, c) * 0.6));
-    q(ancho - 10, ry, 4, 5, tono(P.techo, 0.85));
-    q(ancho - 11, ry - 1, 6, 2, P.techoLuz);
-  }
-  aleros(q, ancho, alto, P);
+  filos(p, ancho, P);
 }
 
 /**
- * EL FURGÓN: chapa curva con sus costillas cruzadas y, en el lomo, LA PASARELA
- * de los guardafrenos levantada sobre sus largueros: tablones cruzados, el canto
- * de acá con alto y la sombra que tira sobre la chapa.
+ * EL FURGÓN: chapa con sus costillas cruzadas, que siguen la curva con su luz,
+ * y en el lomo LA PASARELA AL RAS: los tablones pintados sobre la chapa, sin
+ * canto ni sombra.
  */
-function tramoFurgon(p, ancho, alto, v, P, c) {
-  const q = pincelMundo(p);
+function tramoFurgon(p, ancho, v, P) {
   const base = tono(P.tapa, 0.97 + v * 0.008);
-  fondoCurvo(q, ancho, alto, c, base);
-  // Las costillas: cada una con su filo de luz y su sombra, siguiendo la curva.
+  fondo(p, ancho, base);
   for (let x = 0; x < ancho; x += 8) {
-    for (let y = -SOBRE + 2; y < alto - 4; y += 2) {
-      const a = arco(y, alto, c);
-      q(x, y, 1, 2, tono(base, a * 1.16));
-      q(x + 1, y, 0.5, 2, tono(base, a * 0.76));
+    for (let y = 0; y < ANCHO; y += 1) {
+      const a = luz(y + 0.5);
+      p(x, y, 1, 1, tono(base, a * 1.14));
+      p(x + 1, y, 0.5, 1, tono(base, a * 0.8));
     }
   }
-  const y0 = c.centroY - c.ancho - 1, y1 = c.centroY + c.ancho + 1;
-  // La sombra de la pasarela sobre la chapa, y el canto de los largueros.
-  q(0, y1 + 2, ancho, 3, tono(base, arco(y1, alto, c) * 0.55));
-  q(0, y1, ancho, 2, tono(P.pasarela, 0.55));
-  // Los tablones, cada uno con su tono y un clavo en cada punta.
+  const medio = ANCHO / 2, mitad = 8;
   for (let x = 0, i = 0; x < ancho; x += 3, i++) {
-    const t = tono(P.pasarela, 0.9 + ((i * 7 + v * 3) % 5) * 0.05);
-    q(x, y0, 2.5, y1 - y0, t);
-    q(x, y0, 2.5, 0.5, tono(t, 1.25));
-    q(x + 1, y0 + 1.5, 0.5, 0.5, P.remache);
-    q(x + 1, y1 - 2, 0.5, 0.5, P.remache);
-    q(x, y1, 2.5, 2, tono(t, 0.62));                  // el canto de cada tablón
+    const t = tono(P.pasarela, (0.9 + ((i * 7 + v * 3) % 5) * 0.05) * 1.05);
+    p(x, medio - mitad, 2.5, mitad * 2, t);
+    p(x + 2.5, medio - mitad, 0.5, mitad * 2, tono(P.pasarela, 0.7));
+    p(x + 1, medio - mitad + 1.5, 0.5, 0.5, P.remache);
+    p(x + 1, medio + mitad - 2, 0.5, 0.5, P.remache);
   }
-  aleros(q, ancho, alto, P);
+  filos(p, ancho, P);
 }
 
-/** EL BLINDADO: chapas remachadas y curvas, y la franja de chapa estriada. */
-function tramoBlindado(p, ancho, alto, v, P, c) {
-  const q = pincelMundo(p);
+/** EL BLINDADO: chapas remachadas, y en el lomo la chapa estriada, al ras. */
+function tramoBlindado(p, ancho, v, P) {
   const base = tono(P.blindado, 1.08 + v * 0.008);
-  fondoCurvo(q, ancho, alto, c, base);
-  // Las juntas de las chapas y sus remaches.
-  for (const y of [-SOBRE + 4, 30, 122, alto - 8]) {
-    q(0, y, ancho, 1, tono(base, arco(y, alto, c) * 0.7));
-    for (let x = 2; x < ancho; x += 4) q(x, y - 1.5, 0.5, 0.5, P.remache);
+  fondo(p, ancho, base);
+  for (const y of costuras(15)) {
+    p(0, y, ancho, 0.5, tono(base, luz(y) * 0.7));
+    for (let x = 2; x < ancho; x += 4) p(x, y + 1, 0.5, 0.5, P.remache);
   }
-  for (let y = -SOBRE + 4; y < alto - 4; y += 2) q(ancho - 1, y, 1, 2, tono(base, arco(y, alto, c) * 0.72));
-  const y0 = c.centroY - c.ancho - 1, y1 = c.centroY + c.ancho + 1;
-  q(0, y0, ancho, y1 - y0, tono(base, 0.92));
-  // La chapa estriada: rombitos en diagonal, que es lo que la hace antideslizante.
-  for (let y = y0 + 1.5, f = 0; y < y1 - 1; y += 2.5, f++) {
-    for (let x = (f % 2) * 2; x < ancho; x += 4) q(x, y, 1.5, 0.5, tono(base, 1.25));
+  for (let y = 0; y < ANCHO; y += 1) p(ancho - 1, y, 1, 1, tono(base, luz(y) * 0.72));
+  const medio = ANCHO / 2, mitad = 9;
+  for (let y = medio - mitad + 1, f = 0; y < medio + mitad - 1; y += 2.5, f++) {
+    for (let x = (f % 2) * 2; x < ancho; x += 4) p(x, y, 1.5, 0.5, tono(base, 1.22));
   }
-  q(0, y1, ancho, 1.5, tono(base, 0.6));                // el borde, un poco levantado
-  aleros(q, ancho, alto, P);
+  filos(p, ancho, P);
 }
 
 /**
- * La punta de un techo: la tabla del borde, que acá termina CURVA —su alto
- * sigue el lomo—, y los dos pasamanos de hierro para agarrarse al subir.
+ * La punta de un techo: la tabla del borde siguiendo la curva con su luz, y
+ * los pasamanos de hierro, chatos, para agarrarse al subir.
  */
-function punta(p, alto, P, izquierda, c) {
-  const q = pincelMundo(p);
+function punta(p, P, izquierda) {
   const x = izquierda ? 0 : PUNTA - 3;
-  for (let y = -SOBRE + 1; y < alto - 1; y += 2) q(x, y, 3, 2, tono(P.techo, 0.7 * arco(y, alto, c)));
-  for (let y = -SOBRE + 1; y < alto - 1; y += 2) q(izquierda ? 2.5 : x, y, 0.5, 2, tono(P.techoLuz, arco(y, alto, c)));
-  for (const y of [8, alto - 30]) {
-    q(izquierda ? 4 : PUNTA - 9, y, 5, 1, tono(P.remache, 1.5));
-    q(izquierda ? 4 : PUNTA - 9, y + 1, 5, 0.5, P.remache);
-    q(izquierda ? 4 : PUNTA - 9, y + 1.5, 5, 1, 'rgba(0,0,0,0.25)');
+  for (let y = 0; y < ANCHO; y += 1) p(x, y, 3, 1, tono(P.techo, 0.72 * luz(y + 0.5)));
+  for (let y = 0; y < ANCHO; y += 1) p(izquierda ? 2.5 : x, y, 0.5, 1, tono(P.techoLuz, luz(y + 0.5)));
+  for (const y of [LOMO0 - 6, LOMO1 + 4]) {
+    p(izquierda ? 4 : PUNTA - 9, y, 5, 1, tono(P.remache, 1.5));
+    p(izquierda ? 4 : PUNTA - 9, y + 1, 5, 0.5, P.remache);
   }
 }
 
 // ------------------------------------------------------------ lo que hay una vez
 
-/**
- * La garita del cabús, del lado de allá de la franja: su techito arriba, su
- * cara de acá con los dos vidrios —con alto, como una caja parada en el
- * techo— y la sombra que tira hacia vos.
- */
-function garita(r, x, P, c) {
-  const img = lamina('garita', 40, 58, (p) => {
-    p(0, 0, 40, 5, P.techo);
-    p(0, 0, 40, 1, P.techoLuz);
-    p(1, 5, 38, 12, tono(P.caboose, 0.9));           // su techito, visto de arriba
-    for (let y = 8; y < 17; y += 4) p(1, y, 38, 0.5, tono(P.caboose, 0.75));
-    p(1, 17, 38, 1, tono(P.caboose, 1.3));
-    p(1, 18, 38, 20, P.caboose);                     // la cara de acá, con su alto
-    for (let y = 22; y < 38; y += 4) p(1, y, 38, 0.5, tono(P.caboose, 0.82));
-    for (const vx of [6, 24]) { p(vx, 22, 10, 9, P.marco); p(vx + 1, 23, 8, 7, P.vidrioDia); p(vx + 1, 23, 3, 1, tono(P.vidrioDia, 1.2)); }
-    p(0, 38, 40, 2, tono(P.techo, 0.6));
-    p(2, 40, 36, 6, 'rgba(0,0,0,0.3)');              // su sombra sobre el techo
+/** La escotilla del blindado, AL RAS: la tapa con sus remaches, sin canto. */
+function escotilla(r, x) {
+  const P = CONFIG.colors.costado;
+  const img = lamina('escotilla2', 22, 14, (p) => {
+    p(0, 0, 22, 14, tono(P.blindado, 1.22));
+    p(0, 0, 22, 0.5, tono(P.blindado, 1.45));
+    p(0, 13.5, 22, 0.5, tono(P.blindado, 0.75));
+    for (let rx = 1; rx < 22; rx += 4) { p(rx, 1, 0.5, 0.5, P.remache); p(rx, 12.5, 0.5, 0.5, P.remache); }
+    p(9, 5.5, 4, 3, P.remache);
   });
-  estampar(r, img, x - 20, c.centroY - c.ancho - 58);
+  estampar(r, img, x - 11, -SOBRE + ANCHO / 2 - 7);
 }
 
-/** La escotilla del blindado: la tapa gruesa con remaches, con su canto de alto. */
-function escotilla(r, x, P, c) {
-  const img = lamina('escotilla', 26, 24, (p) => {
-    p(2, 2, 22, 14, tono(P.blindado, 1.25));
-    p(2, 2, 22, 1, tono(P.blindado, 1.5));
-    for (let rx = 3; rx < 24; rx += 4) { p(rx, 3, 0.5, 0.5, P.remache); p(rx, 14.5, 0.5, 0.5, P.remache); }
-    p(11, 7, 4, 3, P.remache);
-    p(2, 16, 22, 4, tono(P.blindado, 0.7));          // el canto, con alto
-    p(3, 20, 22, 3, 'rgba(0,0,0,0.3)');
+/** Las bocas del hielo del refrigerado, al ras: dos tapas en cada punta. */
+function bocasDeHielo(r, x) {
+  const P = CONFIG.colors.costado;
+  const img = lamina('hielo2', 12, 8, (p) => {
+    p(0, 0, 12, 8, P.refrigerado);
+    p(0, 0, 12, 0.5, tono(P.refrigerado, 1.1));
+    p(0, 7.5, 12, 0.5, tono(P.refrigerado, 0.7));
+    p(4, 3, 4, 2, P.remache);
   });
-  estampar(r, img, x - 13, c.centroY - c.ancho - 32);
-}
-
-/** Las bocas del hielo del refrigerado: dos tapas levantadas en cada punta. */
-function bocasDeHielo(r, x, P, c) {
-  const img = lamina('hielo', 14, 14, (p) => {
-    p(1, 1, 12, 7, P.refrigerado);
-    p(1, 1, 12, 1, tono(P.refrigerado, 1.1));
-    p(5, 3.5, 4, 2, P.remache);
-    p(1, 8, 12, 3, tono(P.refrigerado, 0.7));
-    p(2, 11, 12, 2, 'rgba(0,0,0,0.3)');
-  });
-  for (const y of [c.centroY - c.ancho - 24, c.centroY + c.ancho + 12]) estampar(r, img, x, y);
+  for (const y of [LOMO0 - 4, LOMO1 - 4]) estampar(r, img, x, -SOBRE + y);
 }
 
 // ------------------------------------------------------------ el techo entero
 
 /**
- * EL TECHO DE UN VAGÓN, en su lugar. `w` es el vagón armado (world/train.js);
- * `alto` es el fondo del vagón (el alto del mapa). Se dibuja de −SOBRE a
- * `alto`: sube hasta tapar la pared del fondo.
+ * EL TECHO DE UN VAGÓN, en su lugar: la tapa (de −SOBRE, `ANCHO` de alto) y
+ * debajo la pared del costado hasta la vía. `alto` es el alto del mapa.
  */
-export function dibujarTechoDesdeArriba(r, w, alto) {
+export function dibujarTechoDesdeArriba(r, w, alto, noche) {
   const P = CONFIG.colors.costado;
-  const c = CONFIG.techo;
   const familia = familiaDe({ id: w.id, carbon: w.carbon });
   const hacer = familia === 'coche' ? tramoCoche
     : familia === 'blindado' ? tramoBlindado
       : tramoFurgon;
-  const altoLamina = alto + SOBRE;
+  const y0 = -SOBRE;
 
-  // Los tramos, a lo largo, cada uno con su variante fija.
+  // La pared de abajo primero: el alero de la tapa le tira sombra encima.
+  const vagon = WAGONS[w.id] || { id: w.id, carbon: w.carbon, layout: [] };
+  dibujarCostadoAlto(r, vagon, w.x, w.width, y0 + ANCHO, alto + CONFIG.tresCuartos.alturaCaraAfuera, noche);
+  r.ctx.save();
+  r.ctx.globalAlpha = 0.45;
+  r.rect(w.x, y0 + ANCHO, w.width, 2, '#000');
+  r.ctx.globalAlpha = 0.2;
+  r.rect(w.x, y0 + ANCHO + 2, w.width, 4, '#000');
+  r.ctx.restore();
+
   const cuantos = Math.ceil((w.width - PUNTA * 2) / TRAMO);
   for (let i = 0; i < cuantos; i++) {
     const v = variante(w.index || 0, i);
-    const img = lamina(`${familia}|${v}|${alto}`, TRAMO, altoLamina, (p) => hacer(p, TRAMO, alto, v, P, c));
+    const img = lamina(`${familia}|${v}|${ANCHO}`, TRAMO, ANCHO, (p) => hacer(p, TRAMO, v, P));
     const x = w.x + PUNTA + i * TRAMO;
     const sobra = w.x + w.width - PUNTA - x;
-    if (sobra >= TRAMO) estampar(r, img, x, -SOBRE);
-    else r.ctx.drawImage(img, 0, 0, sobra / PASO, img.height, x, -SOBRE, sobra, altoLamina);
+    if (sobra >= TRAMO) estampar(r, img, x, y0);
+    else r.ctx.drawImage(img, 0, 0, sobra / PASO, img.height, x, y0, sobra, ANCHO);
   }
-  // Las puntas: el techo sigue hasta el borde, y ahí termina en su tabla.
-  const base = lamina(`${familia}|0|${alto}`, TRAMO, altoLamina, (p) => hacer(p, TRAMO, alto, 0, P, c));
+  const base = lamina(`${familia}|0|${ANCHO}`, TRAMO, ANCHO, (p) => hacer(p, TRAMO, 0, P));
   for (const izq of [true, false]) {
     const x = izq ? w.x : w.x + w.width - PUNTA;
-    r.ctx.drawImage(base, 0, 0, PUNTA / PASO, base.height, x, -SOBRE, PUNTA, altoLamina);
-    estampar(r, lamina(`punta|${izq}|${alto}`, PUNTA, altoLamina, (p) => punta(p, alto, P, izq, c)), x, -SOBRE);
+    r.ctx.drawImage(base, 0, 0, PUNTA / PASO, base.height, x, y0, PUNTA, ANCHO);
+    estampar(r, lamina(`punta2|${izq}`, PUNTA, ANCHO, (p) => punta(p, P, izq)), x, y0);
   }
 
-  /**
-   * LA SOMBRA DEL ALERO SOBRE LA PARED DE AFUERA. El alero de acá sobresale, y
-   * la pared que cuelga debajo del vagón queda a oscuras justo abajo de él. Es
-   * la raya que despega el techo de la pared: sin ella, las dos se leían como
-   * un mismo plano.
-   */
-  r.ctx.save();
-  r.ctx.globalAlpha = 0.4;
-  r.rect(w.x, alto, w.width, 2, '#000');
-  r.ctx.globalAlpha = 0.18;
-  r.rect(w.x, alto + 2, w.width, 3, '#000');
-  r.ctx.restore();
-
-  // Lo que hay una sola vez.
   const medio = w.x + w.width / 2;
-  if (familia === 'caboose') garita(r, medio, P, c);
-  else if (familia === 'blindado') escotilla(r, medio, P, c);
+  if (familia === 'blindado') escotilla(r, medio);
   else if (familia === 'refrigerado') {
-    bocasDeHielo(r, w.x + PUNTA + 4, P, c);
-    bocasDeHielo(r, w.x + w.width - PUNTA - 18, P, c);
+    bocasDeHielo(r, w.x + PUNTA + 4);
+    bocasDeHielo(r, w.x + w.width - PUNTA - 16);
   }
+}
+
+/**
+ * LA GÓNDOLA DESDE ARRIBA: la boca llena de carbón hasta el tope, entre sus
+ * dos bordes de chapa, y la pared baja del costado. Se camina por encima del
+ * carbón; los costados tienen pared, así que ahí no se resbala.
+ */
+export function dibujarGondolaDesdeArriba(r, w, alto, noche) {
+  const P = CONFIG.colors.costado;
+  const L = CONFIG.colors.locomotora;
+  const y0 = -SOBRE;
+  const vagon = WAGONS[w.id] || { id: w.id, carbon: true, layout: [] };
+  dibujarCostadoAlto(r, vagon, w.x, w.width, y0 + ANCHO, alto + CONFIG.tresCuartos.alturaCaraAfuera, noche);
+  r.rect(w.x, y0, w.width, ANCHO, L.carbon);
+  // El montón: terrones con luz, más apretados hacia los bordes (la pila baja).
+  for (let i = 0; i < w.width / 2; i++) {
+    const x = w.x + 3 + ((i * 37) % (w.width - 6));
+    const y = y0 + 3 + ((i * 53) % (ANCHO - 6));
+    r.rect(x, y, 2, 1, L.carbonLuz);
+  }
+  r.ctx.save();
+  r.ctx.globalAlpha = 0.35;
+  r.rect(w.x, y0, w.width, 6, '#000');
+  r.ctx.restore();
+  r.rect(w.x, y0, w.width, 2, P.gondola);
+  r.rect(w.x, y0 + ANCHO - 3, w.width, 3, escalarColor(P.gondola, 1.5));
+  r.rect(w.x, y0, 2, ANCHO, P.gondola);
+  r.rect(w.x + w.width - 2, y0, 2, ANCHO, P.gondola);
 }
 
 // ------------------------------------------------------------ los obstáculos
 
 /**
- * LOS OBSTÁCULOS, COMO COSAS. Eran un rectángulo gris con un ▲ o un ▼ encima.
- * El ▲▼ se queda —es lo que te dice a tiempo qué hacer—, pero ahora lo de
- * abajo se reconoce:
+ * LOS OBSTÁCULOS, COMO COSAS, en el techo nuevo.
  *
- *   agachar  una viga de madera que cruza POR ENCIMA, colgada de dos postes a
- *            los costados, y su SOMBRA atravesando la franja. La sombra es el
- *            aviso más claro de que algo te pasa por arriba de la cabeza.
- *   saltar   un cajón amarrado, bajo, que cruza la franja: con su tapa y su
- *            cara, como los del vagón de carga.
+ *   agachar  el pórtico: una viga que cruza POR ENCIMA de punta a punta del
+ *            techo —no hay por dónde rodearla—, colgada de un poste de cada
+ *            lado de la vía, y su SOMBRA atravesando la tapa entera.
+ *   saltar   un cajón amarrado que ocupa SÓLO EL LOMO *(elegido con Santi)*:
+ *            se puede saltar, o rodear por la curva arriesgándote a resbalar.
+ *
+ * `yDe` pasa de la `y` de adentro a la dibujada (world/techoGeometria.js).
  */
-export function dibujarObstaculoTecho(r, ob, colores) {
+export function dibujarObstaculoTecho(r, ob, colores, alto) {
   const P = CONFIG.colors.costado;
   const c = CONFIG.techo;
-  const y = c.centroY;
   const w = c.obstaculoAncho;
+  const y0 = -SOBRE;
 
   if (ob.tipo === 'agachar') {
-    const img = lamina('viga', w * 2 + 8, c.ancho * 2 + 26, (p, an) => {
-      const top = 0, franja = 14;
-      // La sombra de la viga sobre la franja, corrida por el sol.
-      p(6, franja + 2, an - 8, c.ancho * 2 - 4, 'rgba(0,0,0,0.3)');
-      // Los postes, afuera de la franja, y el travesaño arriba.
-      for (const px of [1, an - 4]) {
-        p(px, top + 6, 3, c.ancho * 2 + 16, tono(P.pasarela, 0.7));
-        p(px, top + 6, 1, c.ancho * 2 + 16, tono(P.pasarela, 1.1));
+    const img = lamina('portico2', w * 2 + 8, ANCHO + 60, (p, an) => {
+      const arriba = 26;                         // la viga, levantada sobre el techo
+      // Su sombra sobre la tapa, corrida por el sol.
+      p(7, arriba + 8, an - 9, ANCHO - 4, 'rgba(0,0,0,0.28)');
+      // Los postes: uno detrás del techo, el otro delante de la pared.
+      for (const [py, ph] of [[0, arriba + 4], [arriba + ANCHO - 2, 34]]) {
+        p(an / 2 - 2, py, 4, ph, tono(P.pasarela, 0.68));
+        p(an / 2 - 2, py, 1, ph, tono(P.pasarela, 1.1));
       }
-      p(0, top + 2, an, 5, P.pasarela);
-      p(0, top + 2, an, 1, tono(P.pasarela, 1.35));
-      p(0, top + 6, an, 1, tono(P.pasarela, 0.55));
-      for (let x = 3; x < an - 2; x += 5) p(x, top + 3.5, 0.5, 0.5, P.remache);
+      // La viga, cruzando de punta a punta.
+      p(0, arriba - 6, an, ANCHO + 10, tono(P.pasarela, 0.92));
+      p(0, arriba - 6, 1.5, ANCHO + 10, tono(P.pasarela, 1.35));
+      p(an - 1.5, arriba - 6, 1.5, ANCHO + 10, tono(P.pasarela, 0.55));
+      for (let y = arriba - 3; y < arriba + ANCHO; y += 6) p(an / 2 - 0.5, y, 1, 1, P.remache);
     });
-    estampar(r, img, ob.x - w - 4, y - c.ancho - 14);
-    if (!ob.resuelto) r.text('▼', ob.x, y - c.ancho - 18, colores.enemySus);
+    estampar(r, img, ob.x - w - 4, y0 - 26);
+    if (!ob.resuelto) r.text('▼', ob.x, y0 - 36, colores.enemySus);
   } else {
-    const img = lamina('bulto', w * 2, 14, (p, an) => {
-      p(1, 12, an - 2, 2, 'rgba(0,0,0,0.3)');       // su sombra en el techo
-      p(0, 0, an, 5, tono(P.pasarela, 1.2));        // la tapa
-      p(0, 0, an, 1, tono(P.pasarela, 1.45));
-      p(0, 5, an, 7, P.pasarela);                   // la cara de acá
-      for (let x = 4; x < an - 2; x += 5) p(x, 5, 0.5, 7, tono(P.pasarela, 0.7));
-      p(0, 11, an, 1, tono(P.pasarela, 0.5));
-      // La soga que lo amarra.
-      for (const x of [an * 0.3, an * 0.7]) p(x, 0, 1, 12, '#b89a64');
+    const g = geoTecho(alto);
+    const ya = yEnTecho(g.medio - g.lomo, alto);
+    const yb = yEnTecho(g.medio + g.lomo, alto);
+    const h = yb - ya;
+    const img = lamina(`bulto2|${Math.round(h)}`, w * 2 + 3, h + 10, (p, an) => {
+      const ancho = an - 3;
+      p(3, 5, ancho, h + 4, 'rgba(0,0,0,0.3)');         // su sombra en la tapa
+      p(0, 0, ancho, h, tono(P.pasarela, 1.2));          // la tapa, vista de arriba
+      p(0, 0, ancho, 1, tono(P.pasarela, 1.45));
+      for (let x = 4; x < ancho - 2; x += 5) p(x, 0, 0.5, h, tono(P.pasarela, 0.95));
+      p(0, h, ancho, 6, P.pasarela);                     // la cara de acá
+      p(0, h + 5.5, ancho, 0.5, tono(P.pasarela, 0.5));
+      for (const x of [ancho * 0.3, ancho * 0.7]) p(x, 0, 1, h + 6, '#b89a64');   // la soga
     });
-    estampar(r, img, ob.x - w, y - 8);
-    if (!ob.resuelto) r.text('▲', ob.x, y - 14, colores.bagLoot);
+    estampar(r, img, ob.x - w, ya - 2);
+    if (!ob.resuelto) r.text('▲', ob.x, ya - 8, colores.bagLoot);
   }
 }

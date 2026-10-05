@@ -294,6 +294,13 @@ function tieneTiro(rd, world) {
   if (Math.abs(p.x - rd.x) > rd.tipo.range) return false;
 
   /**
+   * 🧗 COLGADO DEL ALERO estás afuera, contra la pared de su lado: los
+   * jinetes de ese costado te ven sin nada en el medio. Los del otro lado,
+   * no: tienen el tren entero entre vos y ellos.
+   */
+  if (p.techoColgado) return Math.sign(rd.side) === Math.sign(p.techoColgado.lado);
+
+  /**
    * Parapetado no te ve. Es la misma regla que usan los guardias: si estás
    * pegado a la pared y no asomado, del otro lado no hay nada que ver.
    * Acá es lo que hace que meterse debajo de la ventanilla sirva.

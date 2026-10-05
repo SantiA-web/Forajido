@@ -21,6 +21,8 @@ import { moveAndCollide, overlapsSolid } from '../engine/collision.js';
 import { findCoverSurface, coverStillValid } from '../systems/cover.js';
 import { playerMelee } from '../systems/melee.js';
 import { throwTarget } from '../systems/explosives.js';
+import { geoTecho, enLaCurva } from '../world/techoGeometria.js';
+import { PIEL, PIEL_S } from './gente/dibujo.js';
 
 export function createPlayer(x, y, weaponId = DEFAULT_WEAPON, meleeId = DEFAULT_MELEE) {
   const c = CONFIG.player;
@@ -50,6 +52,10 @@ export function createPlayer(x, y, weaponId = DEFAULT_WEAPON, meleeId = DEFAULT_
     techoSalto: 0,
     techoCaido: 0,
     techoAgachado: false,
+    // 🧗 Resbalando por la curva: -1 hacia el borde de allá, +1 hacia el de
+    // acá, 0 en el lomo. Y colgado del alero: { lado, t, subir } o null.
+    techoResbalando: 0,
+    techoColgado: null,
 
     // Cobertura
     cover: null,       // { nx, ny, sx, sy } normal y eje de deslizamiento
@@ -330,7 +336,8 @@ function updateDynamite(p, dt, world) {
  * CAMINANDO POR EL TECHO.
  *
  * No usa `moveAndCollide` contra el tilemap: el techo no es un segundo mapa
- * de paredes, es una franja angosta con bordes físicos (`CONFIG.techo.ancho`).
+ * de paredes: es el ancho entero del vagón, con un lomo plano en el medio y
+ * una curva a cada lado que te hace resbalar (`CONFIG.techo.superficie`).
  * Por eso no choca con los asientos de adentro del vagón — ahí está la
  * respuesta a "arriba no chocás con las paredes de adentro" de las notas.
  *
@@ -350,6 +357,8 @@ function updateOnRoof(p, dt, world) {
   const input = world.input;
 
   p.aim = 0;
+  p.techoResbalando = 0;
+  if (p.techoColgado) { updateColgado(p, dt, world); return; }
   p.techoSalto = Math.max(0, p.techoSalto - dt);
 
   // En el piso después de un golpe: no se mueve ni se agacha, sólo se
@@ -404,7 +413,77 @@ function updateOnRoof(p, dt, world) {
   }
 
   p.x = Math.max(p.hw, Math.min(world.map.width - p.hw, p.x + dx * speed * dt));
-  p.y = Math.max(ct.centroY - ct.ancho, Math.min(ct.centroY + ct.ancho, p.y + dy * speed * dt));
+
+  /**
+   * 🧗 A LO ANCHO, POR TODO EL TECHO. Tu `y` arriba es la del vagón de abajo
+   * (0 a 160), pero el techo se DIBUJA más angosto (ver world/techoGeometria.js).
+   * Para que de costado se vea igual de rápido que a lo largo, el paso en `y`
+   * se agranda en la misma proporción.
+   */
+  const H = world.map.height;
+  const g = geoTecho(H);
+  let ny = p.y + (dy * speed * dt) / g.escala;
+
+  const sobreCarbon = tren && tren.tramoAt(p.x) === 'vagon' && (tren.wagons[tren.wagonAt(p.x)] || {}).carbon;
+  if (sobreCarbon) {
+    // La góndola tiene paredes a los costados: arriba del carbón no se resbala.
+    ny = Math.max(8, Math.min(H - 8, ny));
+  } else {
+    /**
+     * RESBALAR POR LA CURVA. Pasado el lomo, la curva te tira para afuera cada
+     * vez más rápido cuanto más cerca del borde (`a × (hondo + arranque)`).
+     * La cuenta sale de `tiempoAlBorde`: quieto donde empieza la curva,
+     * tardás exactamente eso en llegar al borde. Agachado te agarrás.
+     * En el aire no se resbala; si caés afuera, te caés.
+     */
+    const curva = enLaCurva(ny, H);
+    if (curva.lado && p.techoSalto <= 0) {
+      const R = ct.resbalar;
+      const b = g.curva * R.arranque;
+      const a = Math.log((g.curva + b) / b) / R.tiempoAlBorde;
+      let v = a * (curva.hondo * g.curva + b);
+      if (p.techoAgachado) v *= R.agachado;
+      ny += curva.lado * v * dt;
+      p.techoResbalando = curva.lado;
+    }
+    // Pasar el borde lo decide la escena (te agarrás o te caés): acá sólo se
+    // deja salir un poquito para que se note.
+    ny = Math.max(-2, Math.min(H + 2, ny));
+  }
+  p.y = ny;
+}
+
+/**
+ * 🧗 COLGADO DEL ALERO. No podés hacer nada salvo subir: mantenés hacia el
+ * techo (`W` si te colgaste del lado de acá, `S` del de allá) durante
+ * `colgarse.subir`. Si soltás, lo que llevabas se va perdiendo de a poco. Si
+ * pasan `colgarse.aguanta` segundos, te soltás (lo resuelve la escena).
+ */
+function updateColgado(p, dt, world) {
+  const C = CONFIG.techo.colgarse;
+  const col = p.techoColgado;
+  const input = world.input;
+  col.t += dt;
+  p.moving = false;
+  p.sneaking = false;
+  p.techoAgachado = false;
+  p.techoSalto = 0;
+
+  // Si aflojás, lo que ya habías trepado se va perdiendo (el doble de rápido).
+  const haciaElTecho = col.lado > 0
+    ? input.anyDown('KeyW', 'ArrowUp')
+    : input.anyDown('KeyS', 'ArrowDown');
+  col.subir = haciaElTecho ? col.subir + dt : Math.max(0, col.subir - dt * 2);
+
+  if (col.subir >= C.subir) {
+    // Arriba de nuevo, donde termina el lomo: a salvo, pero al lado de la curva.
+    const g = geoTecho(world.map.height);
+    p.y = g.medio + col.lado * (g.lomo - 2);
+    p.techoColgado = null;
+    world.audio.play('cover');
+    return;
+  }
+  if (col.t >= C.aguanta) col.suelta = true;
 }
 
 /**
@@ -1039,16 +1118,21 @@ function armaDibujada(p) {
  */
 function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   const ct = CONFIG.techo;
+  // 🧗 Dónde se te DIBUJA: el techo se ve más angosto que el vagón de abajo
+  // (world/techoGeometria.js). La escena lo pone en `yPantalla` cada cuadro.
+  const py = p.yPantalla ?? p.y;
+
+  if (p.techoColgado) { dibujarColgado(r, p, col); return; }
 
   if (p.techoCaido > 0) {
     r.ctx.globalAlpha = 0.3;
-    r.box(p.x, p.y + 5, 6, 2, '#000');
+    r.box(p.x, py + 5, 6, 2, '#000');
     r.ctx.globalAlpha = 1;
-    dibujarTendido(r, p.x, p.y + 2, {
+    dibujarTendido(r, p.x, py + 2, {
       tipo: "jugador", color: p.hitFlash > 0 ? "#fff" : undefined, cinta: CINTA_JUGADOR,
     });
     if (Math.floor(p.techoCaido * 10) % 2 === 0) {
-      r.text('!', p.x, p.y - 12, col.enemyAlert);
+      r.text('!', p.x, py - 12, col.enemyAlert);
     }
     return;
   }
@@ -1066,7 +1150,7 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   r.ctx.globalAlpha = 0.3 + (enElAire ? -0.12 * (alto / 9) : 0);
   r.ctx.fillStyle = '#000';
   r.ctx.beginPath();
-  r.ctx.ellipse(p.x, p.y + p.hh, 6 - (alto / 9) * 2, 2.4 - (alto / 9) * 0.8, 0, 0, Math.PI * 2);
+  r.ctx.ellipse(p.x, py + p.hh, 6 - (alto / 9) * 2, 2.4 - (alto / 9) * 0.8, 0, 0, Math.PI * 2);
   r.ctx.fill();
   r.ctx.restore();
 
@@ -1075,10 +1159,10 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   // El aro del ruido, igual que abajo: agachado no hacés ninguno.
   if (p.moving && !p.techoAgachado && !enElAire) {
     const pulso = (p.stepPhase % 0.75) / 0.75;
-    r.circle(p.x, p.y, hearStepRadius * (0.45 + pulso * 0.55), col.noiseRing, 0.28 * (1 - pulso));
+    r.circle(p.x, py, hearStepRadius * (0.45 + pulso * 0.55), col.noiseRing, 0.28 * (1 - pulso));
   }
 
-  const by = p.y - alto;
+  const by = py - alto;
 
   // Igual que abajo: agachado se dobla, saltando sube entero.
   dibujarPersona(r, {
@@ -1088,6 +1172,46 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     destello: p.hitFlash > 0,
     arma: armaDibujada(p),
   });
+}
+
+/**
+ * 🧗 COLGADO DEL ALERO.
+ *
+ * Del lado de ACÁ estás contra la pared que ves: de espaldas, con los brazos
+ * arriba agarrando el borde. Del lado de ALLÁ el cuerpo queda detrás del
+ * techo: sólo asoman las dos manos aferradas al filo. Y en los dos, las
+ * piernas pataleando, que es lo que dice "esto es urgente".
+ */
+function dibujarColgado(r, p, col) {
+  const g = geoTecho(160);
+  const c = p.techoColgado;
+  const t = c.t;
+  if (c.lado > 0) {
+    const borde = g.abajo;
+    // Un vaivén chiquito de lado a lado: estás colgado de los dedos.
+    const x = p.x + Math.sin(t * 5) * 0.8;
+    dibujarPersona(r, {
+      tipo: 'jugador', x, pies: borde + 19, angulo: -Math.PI / 2,
+      fase: Math.sin(t * 9) > 0 ? 0.25 : 0.75,
+      postura: 'pie', manosArriba: true, destello: p.hitFlash > 0,
+    });
+    // Las manos, aferradas al filo del alero (las de la figura quedan bajo el ala).
+    r.rect(x - 7, borde - 1, 3, 2.5, PIEL);
+    r.rect(x + 4, borde - 1, 3, 2.5, PIEL);
+    r.rect(x - 7, borde + 1, 3, 0.5, PIEL_S);
+    r.rect(x + 4, borde + 1, 3, 0.5, PIEL_S);
+  } else {
+    // Del lado de allá: la copa del sombrero asomando y las dos manos en el filo.
+    const borde = g.arriba;
+    const temblor = Math.sin(t * 14) > 0 ? 0.5 : 0;
+    r.rect(p.x - 3, borde - 2.5 + temblor, 6, 2, '#4a3426');
+    r.rect(p.x - 3, borde - 2.5 + temblor, 6, 0.5, '#6a4c36');
+    r.rect(p.x - 7, borde - 1 + temblor, 3, 2.5, PIEL);
+    r.rect(p.x - 7, borde + 1 + temblor, 3, 0.5, PIEL_S);
+    r.rect(p.x + 4, borde - 1, 3, 2.5, PIEL);
+    r.rect(p.x + 4, borde + 1, 3, 0.5, PIEL_S);
+  }
+  if (Math.floor(t * 4) % 2 === 0) r.text('!', p.x, (c.lado > 0 ? g.abajo : g.arriba) - 8, col.enemyAlert);
 }
 
 function drawKnifeArc(r, p) {

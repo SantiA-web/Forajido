@@ -204,7 +204,7 @@ export function sombraDelTren(r, train, despX, bordeY, { sol, hayLuz }) {
  * El viento y el humo, encima de todo y en coordenadas de PANTALLA (no del
  * mundo): es aire que te pasa por delante, no algo apoyado en el tren.
  */
-export function dibujarSensacionTecho(r, s, { dia }) {
+export function dibujarSensacionTecho(r, s, { dia, camY = 0 }) {
   const c = CONFIG.techo.sensacion;
   const peso = suave(s.peso);
   if (peso <= 0 && !s.humo.length) return;
@@ -225,13 +225,13 @@ export function dibujarSensacionTecho(r, s, { dia }) {
     // superponen y donde se pisan queda más denso, que es lo que le da cuerpo.
     ctx.globalAlpha = a * 0.6;
     for (const n of h.racimo) {
-      bocanada(r, h.x + n.dx * radio, h.y + n.dy * radio, radio * n.escala, colorHumo);
+      bocanada(r, h.x + n.dx * radio, h.y - camY + n.dy * radio, radio * n.escala, colorHumo);
     }
   }
   if (!dia) {
     for (const k of s.chispas) {
       ctx.globalAlpha = Math.min(1, k.vida * 2) * peso;
-      r.rect(k.x, k.y, punto * 2, punto * 2, H.chispa);
+      r.rect(k.x, k.y - camY, punto * 2, punto * 2, H.chispa);
     }
   }
 

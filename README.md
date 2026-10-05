@@ -469,6 +469,19 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
   detectan, te tiran a ciegas hacia arriba.
 - **Al vagón blindado no se baja desde el techo.** Se cruza por encima y nada
   más: la única llave sigue siendo la dinamita.
+- **Te movés por todo el ancho del techo.** En el medio está el lomo, plano. A
+  los costados, la curva: ahí **resbalás hacia afuera**, cada vez más rápido.
+  Quieto donde empieza la curva te caés en 1,5 s; agachado, en 3. Caminando
+  hacia adentro salís. Lo avisan la sombra de la curva, el polvito en los pies
+  y la suela raspando.
+- **Si pasás el borde, a veces te agarrás del alero** (6 de cada 10; en el tren
+  de carga, que va más lento, 7). Colgado, mantené `W` (del lado de acá) o `S`
+  (del de allá) un segundo para volver a subir. Los jinetes de ese lado te ven.
+  Si te pegan o pasan 4 segundos, te soltás.
+- **Caerte del tren termina el asalto**: perdés una vida, tu caballo te levanta
+  y te vas con lo que llevás.
+- **El pórtico cruza el techo entero; el cajón sólo ocupa el lomo**: lo podés
+  saltar o rodear por la curva, arriesgándote a resbalar.
 
 **Arriba se nota que estás arriba.** La cámara se aleja un poco al subir (ves un
 tercio más de desierto y los jinetes de los dos lados) y vuelve al bajar. El tren

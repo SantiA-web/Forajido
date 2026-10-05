@@ -17,7 +17,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarTechoDesdeArriba, dibujarObstaculoTecho as obstaculoTecho } from '../world/techoDesdeArriba.js';
+import { dibujarTechoDesdeArriba, dibujarGondolaDesdeArriba, dibujarObstaculoTecho as obstaculoTecho } from '../world/techoDesdeArriba.js';
+import { geoTecho, yEnTecho } from '../world/techoGeometria.js';
 import { T } from '../text/es.js';
 
 import { createCamera } from '../engine/camera.js';
@@ -33,7 +34,7 @@ import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
 
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import {
-  updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual,
+  updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual, damagePlayer,
 } from '../entities/player.js';
 import {
   createRodante, updateRodante, drawRodante, TIPOS_RODANTE,
@@ -99,6 +100,7 @@ export function createRaidScene(services) {
   let bullets, explosives, riders, particles, floaters;
   let riderWatch;
   let techObstacles, techoBajarProgress, techoSpawnTimer;
+  let rasponTimer = 0;
   // Cuánto llevás sosteniendo [E] para trepar o bajar del carbón (etapa 5).
   let carbonProgress = 0;
   let rodantes, rodanteTimer, rodanteRafaga, rodanteRafagaTimer;
@@ -1634,10 +1636,79 @@ export function createRaidScene(services) {
       if (ob.resuelto || Math.abs(ob.x - player.x) > ct.obstaculoAncho) continue;
 
       // Te alcanzó. ¿Estabas haciendo lo correcto?
-      const zafó = ob.tipo === 'agachar' ? player.techoAgachado : player.techoSalto > 0;
+      // 🧗 El cajón ocupa SÓLO EL LOMO: por la curva se lo rodea (y colgado
+      // del alero no te alcanza nada).
+      const g = geoTecho(map.height);
+      const loRodeaste = ob.tipo === 'saltar' && Math.abs(player.y - g.medio) > g.lomo + 4;
+      const zafó = player.techoColgado || loRodeaste ||
+        (ob.tipo === 'agachar' ? player.techoAgachado : player.techoSalto > 0);
       ob.resuelto = true;
       if (!zafó) chocarEnTecho(ob);
     }
+
+    actualizarBordeDelTecho();
+
+    // 🧗 La suela raspando la chapa mientras resbalás: es el aviso de oído.
+    if (player.techoResbalando && !player.techoColgado) {
+      rasponTimer -= dt;
+      if (rasponTimer <= 0) { audio.play('raspon'); rasponTimer = 0.22; }
+    } else {
+      rasponTimer = 0;
+    }
+  }
+
+  /**
+   * 🧗 EL BORDE DEL TECHO. Si la curva te llevó más allá del filo (o saltaste
+   * para afuera), con suerte te agarrás del alero (`colgarse.chance`, más en
+   * el tren de carga, que va más lento). Si no, o si colgado te pegan o se te
+   * acaba el aguante, te caés del tren.
+   */
+  function actualizarBordeDelTecho() {
+    const col = player.techoColgado;
+    if (col) {
+      if (col.suelta || player.health < col.vida) caerseDelTren();
+      return;
+    }
+    if (!player.alive || player.techoSalto > 0 || !hayTechoEn(player.x)) return;
+    if (player.y >= 0 && player.y <= map.height) return;
+
+    const lado = player.y < 0 ? -1 : 1;
+    const C = CONFIG.techo.colgarse;
+    const chance = (train.tipoTren && C.porTren[train.tipoTren.id]) ?? C.chance;
+    if (rng.range(0, 1) >= chance) { caerseDelTren(); return; }
+
+    player.techoColgado = { lado, t: 0, subir: 0, vida: player.health };
+    player.techoAgachado = false;
+    // Colgado estás AFUERA del vagón, contra la pared: los jinetes de ese lado
+    // te ven, y desde adentro la pared te tapa.
+    player.y = lado > 0 ? map.height + 6 : -6;
+    audio.play('agarre');
+    camera.shake(1.2, 0.15);
+    floaters.push({
+      // Del lado de allá va por encima del filo (afuera del techo, sin
+      // achicar), para no taparte las manos.
+      x: player.x, y: lado > 0 ? map.height - 60 : -36,
+      text: T.prompts.teAgarraste, life: 1.6, color: colors.enemySus,
+    });
+    // El golpe de las manos contra la chapa se oye, pero menos que caerse.
+    bus.emit('noise', { x: player.x, y: player.y, radius: CONFIG.techo.obstaculoRuido * 0.5 });
+  }
+
+  /**
+   * 🧗 TE CAÍSTE DEL TREN. Perdés una vida y el asalto termina: tu caballo te
+   * levanta del suelo y te vas con lo que llevabas encima (y si hay jinetes
+   * siguiéndote, a la huida). Es un final, no un tropezón.
+   */
+  function caerseDelTren() {
+    player.techoColgado = null;
+    floaters.push({
+      x: player.x, y: player.y < CONFIG.techo.centroY ? 10 : map.height - 30,
+      text: T.prompts.teCaisteDelTren, life: 2.4, color: colors.enemyAlert,
+    });
+    audio.play('hitWall');
+    camera.shake(CONFIG.feel.shakeHit, 0.35);
+    damagePlayer(player, CONFIG.techo.obstaculoDanio * CONFIG.golpe.danio.puntosPorTiro.jugador, player.x, player.y);
+    if (player.alive) endRaid('escaped');
   }
 
   /**
@@ -3007,6 +3078,7 @@ export function createRaidScene(services) {
    * otro lado exactamente igual que siempre.
    */
   function updateBajarTecho(dt) {
+    if (player.techoColgado) { techoBajarProgress = 0; return; }
     const holding = input.isDown('KeyE') && player.alive && !mochilaAbierta;
     const borde = bordeParaBajar();
 
@@ -3988,7 +4060,9 @@ export function createRaidScene(services) {
       velMult: traqueteoVelMult,
       ancho: renderer.canvas.width / lupaActual,
       alto: renderer.canvas.height / lupaActual,
-      centroY: CONFIG.techo.centroY - camera.y,
+      // En coordenadas del MUNDO: el humo se dibuja restando la cámara, así no
+      // queda corrido cuando la cámara se acomoda al cambiar la lupa.
+      centroY: yEnTecho(CONFIG.techo.centroY, map.height),
       rng,
     });
     lupaActual = lupaDelTecho(sensacion, DENSIDAD);
@@ -4113,14 +4187,20 @@ export function createRaidScene(services) {
     // El techo tapa lo de abajo (guardias, botín, puertas) igual que a vos
     // te tapa a vos de ellos. Por eso se dibuja DESPUÉS de todo lo de
     // adentro y ANTES del jugador: lo cubre a todo eso, pero no a vos.
+    // 🧗 Dónde se te dibuja arriba (ver `sobreElTecho`).
+    player.yPantalla = player.enTecho && !player.techoColgado ? yEnTecho(player.y, map.height) : undefined;
     drawTecho(r);
 
-    if (player.enTecho) drawPlayer(r, player, train.hearStepRadius);
-    for (const b of bullets) drawBullet(r, b);
-    for (const ex of explosives) drawExplosive(r, ex);
+    if (player.enTecho) {
+      drawPlayer(r, player, train.hearStepRadius);
+      if (player.techoResbalando && !player.techoColgado) polvoDeResbalar(r);
+    }
+    for (const b of bullets) drawBullet(r, sobreElTecho(b));
+    for (const ex of explosives) drawExplosive(r, sobreElTecho(ex));
 
     // La onda expansiva, un instante después del estruendo.
-    for (const m of blastMarks) {
+    for (const mb of blastMarks) {
+      const m = sobreElTecho(mb);
       const t = 1 - m.life / 0.35;
       r.circle(m.x, m.y, m.radius * (0.4 + t * 0.9), '#ffd08a', 1 - t);
     }
@@ -4130,7 +4210,8 @@ export function createRaidScene(services) {
     // Sin salirse de la pantalla: el aviso de entrada nace sobre el jugador, y
     // la plataforma de atrás está pegada al borde del mapa.
     const enPantalla = { dentroDe: [swayX + 2, swayX + r.width - 2] };
-    for (const f of floaters) {
+    for (const fl of floaters) {
+      const f = sobreElTecho(fl);
       r.ctx.globalAlpha = Math.min(1, f.life * 2);
       r.text(f.text, f.x, f.y, f.color, 'center', enPantalla);
     }
@@ -4148,7 +4229,7 @@ export function createRaidScene(services) {
      * está en el mundo. Se dibuja sobre coordenadas de pantalla, como el HUD.
      */
     // 🧗 El viento y el humo de arriba, en coordenadas de pantalla.
-    dibujarSensacionTecho(r, sensacion, { dia: gameState.esDeDia });
+    dibujarSensacionTecho(r, sensacion, { dia: gameState.esDeDia, camY: camera.renderY + vaivenTechoY });
 
     // La mochila y todo lo que se mide en update van con la lupa del mundo.
     r.nuevoCuadro();
@@ -4576,30 +4657,51 @@ export function createRaidScene(services) {
       if (w.x > camera.renderX + renderer.width + 20 || w.x + w.width < camera.renderX - 20) continue;
 
       /**
-       * LA GÓNDOLA NO SE TAPA: su "techo" es el mismo carbón que se ve desde
-       * abajo, y lo que hay encima (guardias cruzando, reses) está a tu altura.
-       * Sólo se marca la franja pisable.
+       * 🧗 EL TECHO NUEVO (world/techoDesdeArriba.js): la tapa angosta y lisa,
+       * con sus curvas marcadas por la luz, y debajo la pared del costado, la
+       * misma que se ve desde el caballo. La góndola, igual: la boca de carbón
+       * desde arriba y su pared baja. 🔻 Con eso, lo que hay ENCIMA del carbón
+       * (un guardia cruzando, las reses) queda tapado mientras estás arriba:
+       * simplificación anotada en NOTAS-DISENO.md.
        */
-      if (w.carbon) {
-        r.rect(w.x, ct.centroY - ct.ancho - 1, w.width, 1, colors.carbon.brillo);
-        r.rect(w.x, ct.centroY + ct.ancho, w.width, 1, colors.carbon.brillo);
-        continue;
-      }
-
-      /**
-       * 🔺 ETAPA 7: EL TECHO ES EL MISMO QUE SE VE DESDE EL CABALLO. Era un
-       * rectángulo marrón con dos rayas; ahora la linterna de los coches, la
-       * pasarela de los furgones, las chapas del blindado, la garita del cabús
-       * (ver world/techoDesdeArriba.js). La franja pisable queda marcada por
-       * lo que se pisa de verdad —la tapa de la linterna, los tablones de la
-       * pasarela, la chapa estriada—, no por dos rayas.
-       */
-      dibujarTechoDesdeArriba(r, w, map.height);
+      const noche = !gameState.esDeDia;
+      if (w.carbon) dibujarGondolaDesdeArriba(r, w, map.height, noche);
+      else dibujarTechoDesdeArriba(r, w, map.height, noche);
     }
 
     lunaSobreElTecho(r);
 
-    for (const ob of techObstacles) obstaculoTecho(r, ob, colors);
+    for (const ob of techObstacles) obstaculoTecho(r, ob, colors, map.height);
+  }
+
+  /**
+   * 🧗 LO QUE SE DIBUJA ENCIMA DEL TECHO, EN SU LUGAR DIBUJADO. Mientras estás
+   * arriba, el techo se ve más angosto que el vagón de abajo (ver
+   * world/techoGeometria.js): una bala que sube hacia vos, una explosión o un
+   * cartel que flota sobre el techo pasan por la misma cuenta que vos, así no
+   * quedan corridos. Lo de afuera del tren (los jinetes, sus balas) no.
+   */
+  /**
+   * 🧗 EL POLVITO DE LOS PIES MIENTRAS RESBALÁS: se va para el lado del borde.
+   * Es el aviso de ojo (el de oído es el `raspon`).
+   */
+  function polvoDeResbalar(r) {
+    const pies = (player.yPantalla ?? player.y) + player.hh;
+    const lado = player.techoResbalando;
+    r.ctx.save();
+    for (let i = 0; i < 5; i++) {
+      const t = (scroll * 3.2 + i * 0.2) % 1;
+      r.ctx.globalAlpha = 0.55 * (1 - t);
+      r.rect(player.x - 6 + i * 3, pies + lado * (t * 6) - 1, 1, 1, '#d9c6a2');
+    }
+    r.ctx.restore();
+  }
+
+  function sobreElTecho(o) {
+    if (!player.enTecho || o.y < 0 || o.y > map.height || !hayTechoEn(o.x)) return o;
+    const copia = { ...o, y: yEnTecho(o.y, map.height) };
+    if (o.trailY !== undefined) copia.trailY = yEnTecho(Math.max(0, Math.min(map.height, o.trailY)), map.height);
+    return copia;
   }
 
   /**
@@ -4620,11 +4722,13 @@ export function createRaidScene(services) {
     ctx.save();
     ctx.globalCompositeOperation = 'multiply';
     ctx.fillStyle = `rgb(${canal(0)},${canal(1)},${canal(2)})`;
-    const sobre = CONFIG.tresCuartos.alturaPared;
+    // Sólo la tapa: la pared de abajo ya viene dibujada de noche, con las
+    // ventanillas prendidas (la misma del galope).
+    const S = CONFIG.techo.superficie;
     for (const w of train.wagons) {
-      if (w.esCola || !w.tieneTecho || w.carbon) continue;
+      if (w.esCola || !w.tieneTecho) continue;
       if (w.x > camera.renderX + renderer.width + 20 || w.x + w.width < camera.renderX - 20) continue;
-      ctx.fillRect(w.x, -sobre, w.width, map.height + sobre);
+      ctx.fillRect(w.x, S.arriba, w.width, S.ancho);
     }
     ctx.restore();
   }
@@ -4891,19 +4995,32 @@ export function createRaidScene(services) {
     }
 
     if (player.enTecho) {
+      const col = player.techoColgado;
+      if (col) {
+        // Colgado: qué tecla te sube, y cuánto llevás trepado.
+        const S = CONFIG.techo.superficie;
+        // Del lado de acá, debajo tuyo sobre la pared; del de allá, sobre el techo.
+        const y = col.lado > 0 ? S.arriba + S.ancho + 30 : S.arriba + 14;
+        r.text(T.prompts.colgadoAyuda(col.lado > 0 ? 'W' : 'S'), player.x, y, colors.doorGlow, 'center', enPantalla);
+        const w = 26;
+        r.rect(player.x - w / 2, y + 4, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, y + 4, w * Math.min(1, col.subir / CONFIG.techo.colgarse.subir), 3, colors.doorGlow);
+        return;
+      }
+      const py = player.yPantalla ?? player.y;
       if (bordeParaBajar() !== null) {
-        r.text(T.prompts.bajar, player.x, player.y - 16, colors.doorGlow, 'center', enPantalla);
+        r.text(T.prompts.bajar, player.x, py - 16, colors.doorGlow, 'center', enPantalla);
         if (techoBajarProgress > 0) {
           const w = 22;
-          r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
-          r.rect(player.x - w / 2, player.y - 12,
+          r.rect(player.x - w / 2, py - 12, w, 3, '#1a1512');
+          r.rect(player.x - w / 2, py - 12,
             w * (techoBajarProgress / CONFIG.techo.bajarHold), 3, colors.doorGlow);
         }
       }
       // Las teclas cambian acá arriba, así que se recuerdan los primeros
       // segundos: nadie tiene por qué adivinar que Espacio dejó de agachar.
       if (scroll < 8) {
-        r.text(T.prompts.techoAyuda, player.x, player.y + 22, colors.textDim, 'center', enPantalla);
+        r.text(T.prompts.techoAyuda, player.x, py + 22, colors.textDim, 'center', enPantalla);
       }
       return;
     }

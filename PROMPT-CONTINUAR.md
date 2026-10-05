@@ -158,8 +158,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   final: la auditoría de 800 asaltos** (`banco-inspector.js`) para encontrar
   todo lo que hace ver tontos o inexpertos a los guardias.
 - **El techo nuevo** (plan en NOTAS-DISENO.md, "EL TECHO NUEVO"): cinco
-  etapas, de a una y jugando cada una. **La 1 (sentirse arriba) está hecha y
-  sin jugar.** Faltan: 2 subir/bajar en cualquier enganche, 3 arma arriba y
+  etapas, de a una y jugando cada una. **La 1 (sentirse arriba) está jugada y
+  confirmada; la 1b (el techo entero se pisa: más angosto, resbalar, colgarse,
+  caerse del tren) está hecha y sin jugar.** Faltan: 2 subir/bajar en cualquier enganche, 3 arma arriba y
   espiar por la linterna, 4 obstáculos que salen del mundo (túneles, curvas),
   5 medir con el bot. Después, los guardias en el techo. La cámara NO se
   inclina (decidido con Santi).

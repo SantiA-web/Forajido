@@ -1871,7 +1871,56 @@ export const CONFIG = {
    */
   techo: {
     centroY: 80,
-    ancho: 9,            // media anchura pisable: angosto a propósito
+    /**
+     * Media anchura de la franja vieja. 🔁 Ya NO es por dónde caminás en el
+     * techo (ver `superficie`): queda para el ancho de los obstáculos dibujados
+     * y como margen de algunas cuentas viejas.
+     */
+    ancho: 9,
+
+    /**
+     * 🧗 EL TECHO ENTERO SE PISA *(Santi: "que haya más libertad de movimiento
+     * sobre el techo y que no esté limitado a una franja. Acercarte a los
+     * costados es peligroso porque resbalás por la curva y caés")*.
+     *
+     * POR DENTRO EL TECHO SIGUE TAPANDO EL VAGÓN ENTERO (de 0 al alto del mapa,
+     * 160): tu `y` arriba es la del vagón de abajo, así que los tiros a ciegas,
+     * el ruido y todo lo que viene de adentro sigue igual. Lo que cambia es
+     * cómo se DIBUJA: comprimido en `ancho` unidades desde `arriba`, y debajo
+     * la pared del costado. *(Santi: "el techo hoy se ve más grande de lo que
+     * debería ser o el personaje más chico")* — el vagón está agrandado para
+     * pelear adentro; arriba se dibuja más angosto.
+     */
+    superficie: {
+      arriba: -20,       // el borde de allá (= -alturaPared)
+      ancho: 88,         // lo que mide dibujado: 4,5 personas (elegido por Santi)
+      lomo: 0.45,        // la parte plana del medio, como fracción del ancho
+    },
+
+    /**
+     * RESBALAR POR LA CURVA. Pasado el lomo, te vas para afuera cada vez más
+     * rápido cuanto más cerca del borde. Caminando hacia adentro salís.
+     */
+    resbalar: {
+      tiempoAlBorde: 1.5,  // quieto donde empieza la curva, tardás esto en caerte (elegido por Santi)
+      agachado: 0.5,       // agachado te agarrás: resbalás a la mitad (3 s)
+      arranque: 1 / 6,     // qué tan rápido arranca el resbalón, en fracción de la curva
+    },
+
+    /**
+     * CAERSE POR EL COSTADO. Con suerte te agarrás del alero *(Santi: "60% que
+     * sí, 40% no. En el de carga esa probabilidad aumenta porque el tren va
+     * más lento: 70%")*. Colgado, mantenés hacia el techo `subir` segundos para
+     * volver. Si te pegan o pasan `aguanta` segundos, te soltás: perdés una
+     * vida y el asalto termina (tu caballo te levanta y te vas con lo que
+     * llevás).
+     */
+    colgarse: {
+      chance: 0.6,
+      porTren: { carga: 0.7 },
+      subir: 1.0,
+      aguanta: 4,
+    },
 
     /**
      * LOS OBSTÁCULOS QUE VIENEN HACIA VOS.

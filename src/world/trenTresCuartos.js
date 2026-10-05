@@ -873,3 +873,56 @@ function dibujarLocomotora(k, x0) {
     r.ctx.restore();
   }
 }
+
+/**
+ * 🧗 LA PARED DEL COSTADO, VISTA DESDE EL TECHO.
+ *
+ * Arriba del tren el techo se dibuja más angosto que el vagón de abajo (ver
+ * world/techoGeometria.js), y lo que queda debajo de la tapa es ESTA pared: la
+ * misma que se ve desde el caballo, sacada de la misma lámina. Se estira sólo
+ * la caja (las tablas, las ventanillas, las puertas) hasta llenar el alto; el
+ * bastidor y las ruedas van a su tamaño, porque una rueda estirada deja de ser
+ * redonda. Encima, el rayo que gira, como en el galope.
+ *
+ * `yArriba` es donde termina la tapa del techo; `yAbajo`, la vía.
+ */
+export function dibujarCostadoAlto(r, p, x0, ancho, yArriba, yAbajo, noche) {
+  const P = CONFIG.colors.costado;
+  const k = {
+    r, base: yAbajo, P, noche,
+    t: (typeof performance !== 'undefined' ? performance.now() : 0) / 1000,
+    c: (hex) => (noche ? escalarColor(hex, 0.42) : hex),
+    vidrio: noche ? P.vidrioNoche : P.vidrioDia,
+  };
+  const pared = familiaDe(p) === 'gondola' ? LADO_GONDOLA : M.caja;
+  const { img, alto } = laminaDeVagon(k, p, ancho);
+  const abajoCaja = alto - M.bastidor;
+  const arribaCaja = abajoCaja - pared;
+  const ctx = r.ctx;
+  /**
+   * EN TRES TAJADAS, no estirada entera: estirando todo, las ventanillas
+   * salían el doble de altas y la pared parecía una cerca. La franja de las
+   * ventanillas va casi a su tamaño (×`VENT_ESCALA`), y lo que se estira es
+   * la pared de abajo y la de arriba, que son tablas lisas.
+   */
+  const destino = (yAbajo - M.bastidor) - yArriba;
+  const tajada = (desde, h, y, alto) => ctx.drawImage(img, 0, (abajoCaja - desde - h) / PASO, img.width, h / PASO, x0, y, ancho, alto);
+  const v0 = VENTANILLA.desde - 3, vh = VENTANILLA.alto + 6;
+  if (pared > v0 + vh + 2) {
+    const VENT_ESCALA = 1.4;
+    const ventDest = vh * VENT_ESCALA;
+    const resto = destino - ventDest;
+    const abajo = v0, arriba = pared - v0 - vh;
+    const abajoDest = resto * (abajo / (abajo + arriba));
+    const arribaDest = resto - abajoDest;
+    tajada(v0 + vh, arriba, yArriba, arribaDest);
+    tajada(v0, vh, yArriba + arribaDest, ventDest);
+    tajada(0, abajo, yArriba + arribaDest + ventDest, abajoDest);
+  } else {
+    tajada(0, pared, yArriba, destino);
+  }
+  ctx.drawImage(img, 0, abajoCaja / PASO, img.width, M.bastidor / PASO,
+    x0, yAbajo - M.bastidor, ancho, M.bastidor);
+  rayosDeBogie(k, x0 + 20);
+  rayosDeBogie(k, x0 + ancho - 20);
+}

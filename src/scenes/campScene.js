@@ -343,14 +343,16 @@ export function createCampScene(services) {
      *
      * ⚠️ SACARLO antes de mostrar el juego, con el de [1].
      */
-    if (input.wasPressed('Digit2')) {
-      if (gameState.weapon === 'escopeta') {
+    // 🧪 [3], lo mismo con el Winchester.
+    for (const [teclaAtajo, armaPrueba] of [['Digit2', 'escopeta'], ['Digit3', 'winchester']]) {
+      if (!input.wasPressed(teclaAtajo)) continue;
+      if (gameState.weapon === armaPrueba) {
         gameState.weapon = armaAntesDeLaPrueba || 'colt';
       } else {
-        armaAntesDeLaPrueba = gameState.weapon;
-        gameState.weapon = 'escopeta';
+        if (gameState.weapon !== 'escopeta' && gameState.weapon !== 'winchester') armaAntesDeLaPrueba = gameState.weapon;
+        gameState.weapon = armaPrueba;
       }
-      decir(gameState.weapon === 'escopeta' ? T.camp.atajoEscopetaSi : T.camp.atajoEscopetaNo, 2);
+      decir(gameState.weapon === armaPrueba ? T.camp.atajoArmaSi(WEAPONS[armaPrueba].short) : T.camp.atajoEscopetaNo, 2);
     }
 
     if (mensaje) {

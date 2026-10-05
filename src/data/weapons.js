@@ -250,4 +250,38 @@ WEAPONS.escopeta = {
   hint: 'Dos caños, seis perdigones. De cerca no perdona; de lejos, nada.',
 };
 
+/**
+ * 🎯 EL WINCHESTER *(Santi: "y si hacemos el rifle Winchester para ya terminar
+ * con las armas y poder ver cuál realmente es la mejor de las cuatro con un
+ * bot?"; eligió las recomendadas: ×1,4 de daño, cada 0,8 s, $2.000)*.
+ *
+ * El de los guardias: caja de bronce, se apunta con la cabeza sobre el arma.
+ * Su gracia es la DISTANCIA y la PRECISIÓN —llega a 400 px (el Colt a 240),
+ * se abre la mitad, pega completo hasta el 90% del alcance— y cada bala pesa
+ * ×1,4 (`factorBala`): ~70 al cuerpo, siempre dos tiros a un común, uno a la
+ * cabeza. Su contra, la palanca: 0,8 s entre tiros. Recarga bala por bala por
+ * el tubo, 0,4 s cada una; con una adentro ya podés tirar. Suena fuerte:
+ * despierta el vagón de al lado.
+ */
+WEAPONS.winchester = {
+  id: 'winchester',
+  name: 'Winchester',
+  short: 'WINCHESTER',
+  damage: 1,
+  factorBala: 1.4,
+  fireRate: 0.8,
+  magazine: 10,
+  reloadTime: 0.4,       // POR BALA
+  recargaPorBala: true,
+  bulletSpeed: 750,
+  spread: 0.0175,        // la mitad que el Colt
+  spreadApuntado: 0.007,
+  retroceso: 0.03,
+  range: 400,
+  caida: { plenoHasta: 0.9, alFinal: 0.8 },
+  noiseWagons: 1,
+  price: 2000,
+  hint: 'Palanca, bronce y diez balas. Lejos y preciso; lento si te apuran.',
+};
+
 export const DEFAULT_WEAPON = 'colt';

@@ -16700,6 +16700,56 @@ recarga "1,1 segundo por bala, es decir que puedes recargar una o las dos")*.
   otra vez [2] te devuelve tu arma. No la agrega a lo tuyo. Sacarlo con el de
   [1] antes de mostrar el juego.
 
+🎯 **EL WINCHESTER, PARA EL JUGADOR** *(Santi: "y si hacemos el rifle
+Winchester para ya terminar con las armas y poder ver cuál realmente es la
+mejor de las cuatro con un bot?"; eligió las recomendadas)*.
+
+- **Las opciones eran** — daño: igual que el Colt, **×1,4** (~70 al cuerpo:
+  dos tiros a un común, uno a la cabeza), ×2 (mata de un tiro al cuerpo);
+  cadencia: 0,6 s, **0,8 s**, 1 s; precio: $1.500, **$2.000**, $2.500. Además:
+  10 balas de a una (0,4 s cada una), la mitad de dispersión que el Colt,
+  alcance 400 px pegando completo hasta el 90%, ruido de un vagón.
+- **El daño** entra por `factorBala` (el mismo `factor` de los perdigones, ver
+  `danioDeBala` en systems/golpe.js); a caballo, `danio` × `factorBala`. Suena
+  el `rifleGuardia`. Se dibuja `winchesterListo`, revisado agrandado en las 8
+  direcciones; en la tienda, su silueta (`tambor: 'rifle'`): culata clara en
+  diagonal, caja de bronce, aro de la palanca, caño largo con el tubo debajo.
+- **Medido**, apuntando al cuerpo de un guardia quieto (8 tiros por distancia):
+  Winchester 65 / 70 / 63 a 60 / 150 / 220 px; Colt 39 / 31 / 34. Recarga: una
+  bala a los 0,4 s, las diez a los ~4 s. Cadencia: 5 tiros en 4 s.
+- ⚠️ **Lo que el alcance no puede dar**: en pantalla se ven ~250 px a cada
+  lado, y más lejos no se apunta. Los 400 px sirven a caballo y para que la
+  bala no se pierda; en el tren, el Winchester rinde por precisión y por daño,
+  no por alcance.
+- 🧪 **Atajo**: **[3]** en el campamento, como el [2] de la escopeta.
+
+🏆 **¿CUÁL DE LAS CUATRO ES LA MEJOR?** — el bot asaltante (tren de
+pasajeros, asaltos enteros, sin la huida), **200 asaltos por arma**. Se le
+enseñó a usar cada una a su distancia: con la escopeta se acerca (ideal 45 px)
+y no le escapa a las escopetas de los guardias; con el Winchester se queda
+lejos (170); los revólveres, como antes. Y no apunta más allá de lo que se ve
+en pantalla (~250 px).
+
+| Arma | Escapa | Muere | Ganancia por asalto | Asaltos para pagarla | Guardias por asalto | Vida que pierde por guardia |
+|---|---|---|---|---|---|---|
+| Colt (gratis) | 46% | 51% | $208 | — | 3,2 | 29,3 |
+| Smith ($600) | 45% | 54% | $206 | 2,9 | 3,4 | 28,4 |
+| Escopeta ($1.200) | **32%** | **66%** | $145 | 8,3 | 2,8 | 36,4 |
+| **Winchester ($2.000)** | **50%** | **44%** | **$285** | 7 | **4,4** | **20,5** |
+
+(Ganancia = plata al escapar + mercadería + el rescate cuando no escapa.)
+
+- **El Winchester es la mejor, y con distancia**: voltea más, pierde menos vida
+  por guardia y gana un 37% más por asalto que el Colt. Se paga en 7 asaltos.
+- **El Colt y el Smith quedaron parejos**: el Smith no rinde lo que cuesta
+  para este bot (cambia cadencia por puntería, y el bot pelea a media
+  distancia).
+- **La escopeta sale la peor, pero no del todo por ella**: el bot la usa
+  acercándose a 45 px a campo abierto, y en el camino se come los tiros.
+  Una persona la usaría emboscando —detrás de una puerta, en una esquina, por
+  la espalda—, que es justo lo que el bot no sabe hacer. Medida a quemarropa es
+  la que más pega del juego.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

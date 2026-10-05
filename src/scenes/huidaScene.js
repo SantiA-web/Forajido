@@ -973,13 +973,13 @@ export function createHuidaScene(services) {
         x: ox, y: oy,
         vx: Math.cos(angulo) * arma.bulletSpeed,
         vy: Math.sin(angulo) * arma.bulletSpeed * PROFUNDIDAD,
-        vida: 1.2, mia: true, danio: arma.damage,
+        vida: Math.max(1.2, arma.range / arma.bulletSpeed), mia: true, danio: arma.damage * (arma.factorBala ?? 1),
       });
     }
     yo.balas -= 1;
     yo.fireTimer = arma.fireRate;
     yo.fogonazo = 0.06;
-    audio.play(arma.perdigones ? 'escopetazo' : 'playerShot');
+    audio.play(arma.perdigones ? 'escopetazo' : arma.id === 'winchester' ? 'rifleGuardia' : 'playerShot');
   }
 
   /** De dónde sale tu tiro: a la altura del pecho del jinete. */

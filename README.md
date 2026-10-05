@@ -2465,6 +2465,14 @@ callado, van al lugar equivocado. Pero cada tiro tuyo vuelve a delatarte.
   (el gatillo corta la recarga). Cada escopetazo **despierta el vagón de al
   lado**. A caballo, en la huida, también sirve, pero los jinetes suelen andar
   lejos.
+- **🎯 El Winchester ($2.000, en la armería).** El de los guardias: caja de
+  bronce, apuntado con la cabeza sobre el arma. **Cada bala pesa ×1,4**:
+  apuntando al cuerpo saca ~65-70 a cualquier distancia que veas en pantalla
+  (el Colt, ~31-39): dos tiros a un común, uno a la cabeza. Es el más preciso
+  (se abre la mitad que el Colt) y llega a 400 px. Su contra es la palanca:
+  **un tiro cada 0,8 s**. Diez balas que se cargan **de a una, 0,4 s cada
+  una**, y con una adentro ya podés tirar. Suena fuerte: despierta el vagón de
+  al lado.
 - **Un tiro en la pierna lo puede tirar al piso** (la mitad de las veces).
   Tirado te sigue disparando; si tiene una cobertura cerca se levanta y va, y
   si no, se levanta solo a los 3 segundos. **El segundo tiro en las piernas lo

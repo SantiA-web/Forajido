@@ -787,6 +787,8 @@ function shoot(p, world) {
   );
 
   if (!w.perdigones) world.spawnBullet({
+    // El Winchester pesa más por bala (`factorBala`, data/weapons.js).
+    factor: w.factorBala,
     x: p.x + Math.cos(p.aim) * 8,
     y: p.y + Math.sin(p.aim) * 8,
     angle,
@@ -823,7 +825,7 @@ function shoot(p, world) {
   p.retroceso = Math.min(CONFIG.mira.retrocesoMax, (p.retroceso || 0) + kick);
 
   world.camera.shake(CONFIG.feel.shakeShoot * (w.perdigones ? 2 : 1), 0.1);
-  world.audio.play(w.perdigones ? 'escopetazo' : 'playerShot');
+  world.audio.play(w.perdigones ? 'escopetazo' : w.id === 'winchester' ? 'rifleGuardia' : 'playerShot');
 
   // El ruido va con DOS alcances y son cosas distintas: `radius` es en píxeles
   // y sirve para que los de alrededor vengan a mirar qué pasó; `wagons` es en
@@ -1014,6 +1016,7 @@ const ARMA_JUGADOR = '#8a8074';
  */
 function armaDibujada(p) {
   if (p.weapon && p.weapon.perdigones) return 'escopetaListo';
+  if (p.weapon && p.weapon.id === 'winchester') return 'winchesterListo';
   return { angulo: p.aim, largo: 7, color: ARMA_JUGADOR };
 }
 /**

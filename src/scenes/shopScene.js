@@ -602,6 +602,40 @@ export function createShopScene(services) {
      * 💥 LA ESCOPETA NO ES UN REVÓLVER: culata larga, la báscula, los dos caños
      * uno arriba del otro (vistos de costado) y el guardamanos de madera.
      */
+    /**
+     * 🎯 EL WINCHESTER: culata clara en diagonal, LA CAJA DE BRONCE con el aro
+     * de la palanca colgando abajo, el guardamanos fino y el caño largo con el
+     * tubo del cargador debajo. Lo que lo distingue de la escopeta de un
+     * vistazo es el bronce y lo largo y fino.
+     */
+    if (look.tambor === 'rifle') {
+      const x0 = cx - 6;
+      r.rect(cx - 32, cy - 3, 16, 9, look.madera);
+      r.rect(cx - 46, cy, 16, 10, look.madera);
+      r.rect(cx - 60, cy + 3, 16, 11, look.madera);
+      r.rect(cx - 32, cy - 3, 16, 2, '#b07a48');
+      r.rect(cx - 46, cy, 16, 2, '#b07a48');
+      r.rect(cx - 60, cy + 3, 16, 2, '#b07a48');
+      r.rect(cx - 63, cy + 3, 4, 11, '#2a1a10');
+      // La caja de bronce, con su brillo, y el martillo.
+      r.rect(cx - 18, cy - 5, 14, 11, '#b8923c');
+      r.rect(cx - 18, cy - 5, 14, 2, '#e8cc84');
+      r.rect(cx - 16, cy - 8, 3, 4, look.metal);
+      // El aro de la palanca, colgando abajo de la caja.
+      r.rect(cx - 16, cy + 6, 12, 2, '#b8923c');
+      r.rect(cx - 16, cy + 6, 2, 8, '#b8923c');
+      r.rect(cx - 6, cy + 6, 2, 8, '#b8923c');
+      r.rect(cx - 16, cy + 13, 12, 2, '#b8923c');
+      // El guardamanos y el caño largo, con el tubo del cargador debajo.
+      r.rect(x0, cy - 3, 30, 6, look.madera);
+      r.rect(x0, cy - 3, 30, 2, '#b07a48');
+      r.rect(x0, cy - 4, look.cano, 3, look.metal);
+      r.rect(x0, cy - 4, look.cano, 1, look.brillo);
+      r.rect(x0 + 30, cy, look.cano - 34, 2, '#4e4842');
+      r.rect(x0 + look.cano - 2, cy - 6, 2, 2, look.brillo);    // la mira
+      return;
+    }
+
     if (look.tambor === 'doble') {
       const x0 = cx - 8;                                         // donde empiezan los caños
       // La culata: baja en diagonal desde la báscula, en escalones, y termina

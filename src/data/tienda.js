@@ -40,7 +40,7 @@ export const TIENDAS = {
     escenario: 'mostrador',
 
     catalogo: WEAPONS,
-    items: ['colt', 'smith', 'escopeta'],
+    items: ['colt', 'smith', 'escopeta', 'winchester'],
 
     /** Cuál de todos es el que llevás puesto hoy. */
     tuyo: (st) => st.weapon || DEFAULT_WEAPON,
@@ -57,7 +57,7 @@ export const TIENDAS = {
 
     stats: [
       // La escopeta, por disparo: seis perdigones de medio tiro cada uno.
-      { etiqueta: 'DAÑO', valor: (a) => (a.perdigones ? a.perdigones * a.factorPerdigon : a.damage), max: 5 },
+      { etiqueta: 'DAÑO', valor: (a) => (a.perdigones ? a.perdigones * a.factorPerdigon : a.damage * (a.factorBala ?? 1)), max: 5 },
       { etiqueta: 'BALAS', valor: (a) => a.magazine, max: 8 },
       { etiqueta: 'CADENCIA', valor: (a) => 1 / a.fireRate, max: 5 },
       /**
@@ -80,6 +80,8 @@ export const TIENDAS = {
       smith: { metal: '#a3adb8', brillo: '#d2dae2', madera: '#5a4028', cano: 26, tambor: 'quiebre' },
       // Caños casi negros y madera rojiza oscura, como la de los guardias.
       escopeta: { metal: '#3a3c42', brillo: '#7c808a', madera: '#6e3e22', cano: 64, tambor: 'doble' },
+      // Madera clara, caja de bronce y un caño largo y fino con el tubo debajo.
+      winchester: { metal: '#5e5850', brillo: '#b4ac9e', madera: '#8a5a32', cano: 78, tambor: 'rifle' },
     },
   },
 

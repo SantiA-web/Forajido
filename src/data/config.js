@@ -760,6 +760,21 @@ export const CONFIG = {
     lineaLibreDistancia: 40,
 
     /**
+     * VIAJES LARGOS: a más de esto en x, el guardia va de puerta en puerta
+     * (ver `viajarHacia`). Y a más de `olvidoLejos` de donde te vio, todavía
+     * está yendo: se olvida con el triple de paciencia.
+     */
+    viajePorPuertas: 200,
+    olvidoLejos: 150,
+    // Mientras se acerque, no se olvida; si lleva esto sin ganar terreno (una
+    // puerta de chapa, un vagón cerrado), se rinde como siempre.
+    olvidoTrabado: 5,
+    // Corre en los viajes largos (× su paso).
+    viajeCorriendo: 1.5,
+    // Sin verte, sin moverse y sin tirar más que esto: busca un ángulo.
+    sinHacerMax: 1,
+
+    /**
      * LOS GUARDIAS DE FRANCO (vagón de guardias, etapa 4 de los trenes nuevos).
      *
      * Están sentados jugando a las cartas con el arma colgada. La PRIMERA vez
@@ -808,6 +823,8 @@ export const CONFIG = {
     // --- Convivencia entre guardias ---
     separation: 13,        // no se pueden pisar entre ellos
     allyBlockRadius: 9,    // no dispara si un compañero está en la línea de tiro
+    // Y el pasillo libre se abre con la dispersión del tiro (ver `allyInLine`).
+    aliadoMargenDispersion: 0.7,
     coverSpacing: 20,      // dos guardias no eligen la misma cobertura
 
     // --- Cobertura ---
@@ -1277,6 +1294,11 @@ export const CONFIG = {
     vioCruzar: 0.6,
     // Y los del vagón nuevo esperan cubiertos, apuntando a la puerta, esto.
     esperaPuerta: 6,
+
+    // Los gritos salen al hacerlo: "¡TE RODEO!"/"¡AVANZO!" a los tantos px de
+    // caminar, "¡TE CUBRO!" con el primer tiro; si en tantos s no lo hizo, nada.
+    gritoPaso: 10,
+    gritoEspera: 3,
   },
 
   /**

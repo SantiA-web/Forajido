@@ -301,9 +301,32 @@ function gritar(e, world, texto) {
   world.bus.emit('guardiaGrita', { guardia: e, texto });
 }
 
+/**
+ * 🐛 GRITA CUANDO ARRANCA DE VERDAD *(auditoría de 800 asaltos: 1,2 por asalto
+ * gritaban "¡TE RODEO!"/"¡AVANZO!" y no se movían, y 0,5 gritaban "¡TE
+ * CUBRO!" y no tiraban)*. El grito queda guardado: "¡TE RODEO!" y "¡AVANZO!"
+ * salen cuando ya caminó `gritoPaso` px; "¡TE CUBRO!", con el primer tiro (ver
+ * `fire` en systems/ai.js). Si en `gritoEspera` s no lo hizo, no grita: lo
+ * que no se ve hacer, no se dice.
+ */
+function gritarAlHacerlo(e, texto) {
+  e.gritoPendiente = { texto, x: e.x, y: e.y, t: CONFIG.escuadra.gritoEspera };
+}
+
+function actualizarGritoPendiente(e, world, dt) {
+  const g = e.gritoPendiente;
+  if (!g) return;
+  g.t -= dt;
+  if (!e.alive || g.t <= 0) { e.gritoPendiente = null; return; }
+  if (g.texto !== 'teCubro' && distance(e.x, e.y, g.x, g.y) > CONFIG.escuadra.gritoPaso) {
+    gritar(e, world, g.texto);
+    e.gritoPendiente = null;
+  }
+}
+
 /** Le da la orden de cubrir por `seg` segundos. Grita sólo si no estaba cubriendo ya. */
 function ponerACubrir(e, world, seg) {
-  if (!(e.cubriendo > 0)) gritar(e, world, 'teCubro');
+  if (!(e.cubriendo > 0)) gritarAlHacerlo(e, 'teCubro');
   e.cubriendo = Math.max(e.cubriendo || 0, seg);
 }
 
@@ -353,6 +376,7 @@ export function actualizarEscuadras(world, dt) {
     if (e.cubriendo > 0) e.cubriendo -= dt;
     if (e.vioRecargar > 0) e.vioRecargar -= dt;
     e.sigueAhi = false;
+    actualizarGritoPendiente(e, world, dt);
     if (e.esperaPuerta > 0) e.esperaPuerta -= dt;
     if (!activo(e)) continue;
     const w = vagonDe(e, world);
@@ -376,7 +400,22 @@ export function actualizarEscuadras(world, dt) {
     }
 
     // ---- REGLA 1: NUNCA TODOS RECARGANDO ----
-    const todos = miembros.length >= 2 && miembros.every((o) => o.recargando > 0);
+    // Todos los que pelean en el vagón, también el herido o el tirado (como cuenta `companeroRecargando`).
+    const enVagon = world.enemies.filter((o) => o.alive && o.state === 'combat' && !o.esJefe && !o.rendido && !(o.inconsciente > 0) && vagonDe(o, world) === w);
+    let todos = enVagon.length >= 2 && enVagon.every((o) => o.recargando > 0);
+    /**
+     * 🐛 EL QUE LLEGÓ CARGANDO A UN VAGÓN DONDE OTRO YA CARGABA *(auditoría: 2
+     * veces en 800 asaltos)*. La regla impide EMPEZAR a cargar si otro carga,
+     * pero no que uno que ya cargaba camine hasta donde está el otro. Si pasa,
+     * el que empezó último (le falta más) deja de cargar y espera su turno.
+     */
+    if (todos) {
+      let ultimo = null;
+      for (const o of enVagon) if (!ultimo || o.recargando > ultimo.recargando) ultimo = o;
+      ultimo.recargando = 0;
+      E.recargasCortadas = (E.recargasCortadas || 0) + 1;
+      todos = false;
+    }
     if (todos) {
       E.todosRecargando += dt;
       if (!st.todos) {
@@ -435,7 +474,7 @@ export function actualizarEscuadras(world, dt) {
         a.aimTimer = 0;
         a.repositionTimer = 0;
         a.avanzando = true;
-        gritar(a, world, 'avanzo');
+        gritarAlHacerlo(a, 'avanzo');
         st.fase = 'avanzando';
         st.timer = c.avanceMax;
       }
@@ -555,6 +594,12 @@ function quienRodea(miembros, world, blanco) {
  * (y no encima tuyo), con la vista Y el tiro libres hasta vos, y —si estás
  * agachado detrás de algo— del lado descubierto de tu cobertura.
  */
+/** Lo usa systems/ai.js para el que se queda sin hacer nada (ver `sinHacerT`). */
+export function buscarAngulo(e, world, blanco) {
+  if (!world.train) return null;
+  return puntoConAngulo(e, world, blanco);
+}
+
 function puntoConAngulo(e, world, blanco) {
   const c = CONFIG.escuadra;
   const map = world.map, size = map.size;
@@ -620,7 +665,7 @@ function actualizarRodeo(st, miembros, world, blanco, E, dt) {
   quien.peeking = false;
   quien.ruta = null;
   st.rodea = quien;
-  gritar(quien, world, 'teRodeo');
+  gritarAlHacerlo(quien, 'teRodeo');
   // Los demás lo cubren: te tiran a donde te vieron, para que no te muevas.
   // Grita uno solo: tres "¡TE CUBRO!" encimados no se leen.
   let primero = true;

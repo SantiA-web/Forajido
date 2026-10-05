@@ -16580,6 +16580,60 @@ fuego amigo, el aviso de impacto en un guardia ahora trae `victima` y
 
 Escape del bot en las 8 tandas de 100: 62, 49, 71, 66, 48, 70, 52 y 48%.
 
+**Los arreglos** *(Santi eligió los cinco recomendados, uno por vez, cada uno
+probado antes del siguiente; y del punto 6, sólo el de "todos recargando")*:
+
+1. **Los refuerzos llegan** (`viajarHacia`, `doCombat`). Viajan **de puerta en
+   puerta** cuando el destino está a más de `viajePorPuertas` (200 px): el
+   tramo es la próxima puerta, un poco pasada. **Corren** en esos viajes
+   (`viajeCorriendo` ×1,5): a paso de ronda, cruzar el tren desde la
+   locomotora llevaba 90 s. ⚠️ *Este número no se había hablado con Santi.* Y
+   **no se olvidan mientras se acerquen**: lejos de donde te vieron
+   (`olvidoLejos`, 150 px), el olvido sólo corre si llevan `olvidoTrabado`
+   (5 s) sin ganar 16 px. Probado: con el blindado atrás tuyo, los refuerzos
+   llegan a 170-220 px en 70 s (antes se olvidaban a mitad de camino y volvían
+   a patrullar). **Con el blindado en el medio no pasan** —sus puertas son de
+   chapa— y se quedan en su puerta: es así por diseño.
+2. **Gritan cuando lo hacen** (`gritarAlHacerlo`): "¡TE RODEO!" y "¡AVANZO!" a
+   los `gritoPaso` (10 px) de caminar; "¡TE CUBRO!" con el primer tiro; si en
+   `gritoEspera` (3 s) no lo hizo, no grita. El que rodea, avanza o va a cuidar
+   la salida **no hace la recarga tranquila** (pisaba el rodeo), y el que
+   avanza va **por la ruta**.
+3. **Los bordes del abanico**: `lineaLibre` mira también las dos puntas de la
+   escopeta, y los tiros a ciegas por puerta y techo también miran la línea.
+4. **Fuego amigo**: `allyInLine` ensancha el pasillo libre con la dispersión
+   del arma (`aliadoMargenDispersion` 0,7, más medio abanico) y se revisa
+   **antes de cada bala**. Trajo un bucle (se asomaba, no tenía tiro, buscaba
+   otra cobertura y elegía la misma): la cobertura desde la que no tuvo tiro
+   queda como `coberturaMala` y se busca otra.
+5. **El que se queda sin hacer nada** (sin verte, sin moverse ni tirar más de
+   `sinHacerMax`, 1 s) va a un lugar con ángulo (`buscarAngulo`, el mismo del
+   rodeo) sin gritar.
+6. **Nunca todos recargando, también caminando**: si en un vagón quedan todos
+   cargando (uno llegó cargando a donde otro cargaba), el que empezó último deja
+   de cargar y espera su turno (`recargasCortadas`).
+
+**Segunda pasada, 800 asaltos, con todo arreglado:**
+
+| Qué se vio | Antes (por asalto) | Después |
+|---|---|---|
+| Quieto peleando, lejos | 2,38 | 1,51 (el inspector ya no cuenta al que espera compañero 4 s: es a propósito) |
+| Grita y no se mueve | 1,20 | **0,49** — casi todo lo que queda es el que rodea, llega enseguida a su ángulo y se cubre: el inspector pide 16 px desde el grito |
+| Tira contra lo que tiene pegado | 0,66 | 0,51 — revólveres cuya dispersión roza un cajón cercano |
+| Grita "¡TE CUBRO!" y no tira | 0,48 | **0,03** |
+| Fuego amigo | 0,39 | **0,08** |
+| Quieto peleando, cerca | 0,35 | **0,19** — muchos son los del blindado, encerrados detrás de su puerta de chapa con vos afuera |
+| Amontonados, lejos | 0,32 | 0,31 — los que esperan en la puerta del blindado |
+| Recarga al descubierto, cerca | 0,13 | 0,13 |
+| Te ve y no tira | 0,10 | 0,11 |
+| Muere a manos de los suyos | 0,05 | **0,015** |
+| Todos recargando a la vez | 2 casos | 1 caso, de un cuadro (al cuadro siguiente se corta) |
+
+**El juego quedó más difícil para el bot**: escapa 51% (antes ~57% en la
+primera pasada), muere 45% (41%), voltea 4,1 guardias, plata al escapar $484.
+Es lo esperado: ahora los refuerzos llegan, y los guardias no se pierden tiros
+contra sus compañeros ni gritan de más.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

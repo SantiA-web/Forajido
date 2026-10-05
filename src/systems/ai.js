@@ -36,7 +36,7 @@ import {
 } from '../data/modifiers.js';
 import { T } from '../text/es.js';
 import { ARMAS_GUARDIA, ARMAS_DOBLES, armaDeGuardia } from '../data/armasGuardia.js';
-import { companeroRecargando } from './escuadra.js';
+import { companeroRecargando, buscarAngulo } from './escuadra.js';
 
 // ------------------------------------------------------------- las armas
 
@@ -171,7 +171,10 @@ function recargarSiPuede(e, world) {
   const a = armaDe(e);
   const balas = balasDe(e);
   if (balas <= 0) { empezarRecarga(e, world); return; }
-  const tranquilo = !(e.cubriendo > 0) && (e.state !== 'combat' || e.lostTimer > CONFIG.enemy.recargaTranquilo);
+  // 🐛 Ni en medio de una maniobra: el que salía a rodear se ponía a cargar
+  // "porque estaba tranquilo" (las dos reglas usaban 1,5 s) y abandonaba.
+  const maniobra = e.rodeoPunto || e.avanzando || e.puestoSalida;
+  const tranquilo = !(e.cubriendo > 0) && !maniobra && (e.state !== 'combat' || e.lostTimer > CONFIG.enemy.recargaTranquilo);
   if (tranquilo && balas < a.cargador) empezarRecarga(e, world, false);
 }
 
@@ -505,6 +508,15 @@ function allyInLine(e, world, targetX, targetY) {
 
   const ux = dx / length;
   const uy = dy / length;
+  /**
+   * 🐛 EL PASILLO QUE TIENE QUE ESTAR LIBRE SE ABRE CON EL TIRO: antes era un
+   * ancho fijo (`allyBlockRadius`), y la bala que se abría por la dispersión,
+   * o el perdigón del costado, le pegaba al compañero que estaba "al lado de la
+   * línea". Ahora, a cada distancia, el ancho suma lo que se abre su arma
+   * (`aliadoMargenDispersion` de la dispersión, más medio abanico).
+   */
+  const arma = e.armaId ? armaDe(e) : null;
+  const abre = spreadAt(e, length) * c.aliadoMargenDispersion + (arma && arma.perdigones ? arma.abanico / 2 : 0);
 
   for (const other of world.enemies) {
     if (other === e || !other.alive) continue;
@@ -512,7 +524,7 @@ function allyInLine(e, world, targetX, targetY) {
     const oy = other.y - e.y;
     const along = ox * ux + oy * uy;
     if (along <= 0 || along > length) continue;              // detrás o más lejos que el blanco
-    if (Math.abs(-ox * uy + oy * ux) < c.allyBlockRadius) return true;
+    if (Math.abs(-ox * uy + oy * ux) < c.allyBlockRadius + along * abre) return true;
   }
   return false;
 }
@@ -1312,6 +1324,29 @@ export function moveToward(e, targetX, targetY, speed, dt, map) {
  */
 export function viajarHacia(e, dt, world, targetX, targetY, speed) {
   const map = world.map;
+
+  /**
+   * 🐛 DE PUERTA EN PUERTA *(auditoría de 800 asaltos: el caso más común,
+   * 2,4 guardias clavados por asalto)*. El buscador de rutas corta a los
+   * 4.000 pasos y un viaje de la locomotora a la cola no le entra: los
+   * refuerzos avanzaban casi a ciegas y se trababan. Ahora, si el destino está
+   * lejos, el destino del tramo es la próxima puerta en esa dirección (un poco
+   * pasada, para cruzarla), y la ruta es corta.
+   */
+  const lejos = targetX - e.x;
+  if (Math.abs(lejos) > CONFIG.enemy.viajePorPuertas && world.doors) {
+    const dir = Math.sign(lejos);
+    let proxima = null;
+    for (const d of world.doors) {
+      const adelante = (d.x - e.x) * dir;
+      if (adelante <= 6 || (d.x - targetX) * dir >= 0) continue;
+      if (!proxima || adelante < (proxima.x - e.x) * dir) proxima = d;
+    }
+    if (proxima) { targetX = proxima.x + dir * 20; targetY = proxima.y; }
+    // Y en los viajes largos, corre: a paso de ronda, cruzar el tren desde la
+    // locomotora llevaba 90 s, más que una pelea entera.
+    speed *= CONFIG.enemy.viajeCorriendo;
+  }
 
   const destinoCambio = !e.rutaDestino ||
     distance(e.rutaDestino.x, e.rutaDestino.y, targetX, targetY) > 40;
@@ -2329,6 +2364,7 @@ export function doCombat(e, dt, world) {
 
   if (engaged) {
     e.lostTimer = 0;
+    e.mejorDLugar = null;
     e.lastSeen = { x: player.x, y: player.y };
     e.suppressionLeft = 1;   // se guarda una ráfaga para cuando te pierda
   } else {
@@ -2338,7 +2374,19 @@ export function doCombat(e, dt, world) {
     // 🤝 No se olvida si un compañero del vagón te vio hace poco, ni si
     // seguís donde te vieron (ver "se pasan tu posición" en systems/escuadra.js).
     // Y el que cuida la salida no se olvida nunca: está esperando, no buscando.
-    if (e.lostTimer > paciencia && !(e.escuadraVioHace < paciencia) && !e.sigueAhi && !e.cuidaSalida) {
+    /**
+     * 🐛 Y NO SE OLVIDA EN EL CAMINO: el reloj del olvido se pensó para "fui a
+     * donde te vi y no estabas". Un refuerzo que sale de la locomotora tarda
+     * más de 9 s en cruzar el tren, y se olvidaba de vos viajando (volvía a
+     * patrullar sin haber llegado). Lejos del lugar (`olvidoLejos`), la
+     * paciencia es el triple: si de verdad no puede llegar, igual se rinde.
+     */
+    const dLugar = e.lastSeen ? distance(e.x, e.y, e.lastSeen.x, e.lastSeen.y) : 0;
+    // ¿Se sigue acercando? Cada vez que gana 16 px, se anota.
+    if (e.mejorDLugar == null || dLugar < e.mejorDLugar - 16) { e.mejorDLugar = dLugar; e.avanceT = 0; }
+    else e.avanceT = (e.avanceT || 0) + dt;
+    const viniendo = dLugar > c.olvidoLejos && e.avanceT < c.olvidoTrabado;
+    if (e.lostTimer > paciencia && !viniendo && !(e.escuadraVioHace < paciencia) && !e.sigueAhi && !e.cuidaSalida) {
       e.state = 'suspicious';
       e.target = e.lastSeen ? { ...e.lastSeen } : { x: e.x, y: e.y };
       e.suspicion = 0.9;
@@ -2435,6 +2483,31 @@ export function doCombat(e, dt, world) {
    * lado del vagón) y ahí se cubre. Si te ve en el camino, pelea desde donde
    * esté: es `defensivo`, no avanza.
    */
+  /**
+   * 🐛 EL QUE SE QUEDA SIN HACER NADA BUSCA UN ÁNGULO *(auditoría de 800
+   * asaltos: 0,35 por asalto, cerca tuyo, peleando sin verte, sin moverse ni
+   * tirar por más de 3 s — detrás de una fila de asientos, o empujando uno)*.
+   * Si lleva `sinHacerMax` así, va a un lugar desde donde te vería: el mismo
+   * de "¡TE RODEO!", pero sin gritar (no es una jugada del grupo: es un tipo
+   * que da un paso para tener tiro). No aplica al que espera a propósito
+   * (`esDefensivo`, el que cuida la salida).
+   */
+  const movio = distance(e.x, e.y, e.ultPosX ?? e.x, e.ultPosY ?? e.y);
+  e.ultPosX = e.x; e.ultPosY = e.y;
+  const sinHacer = !engaged && !e.atCover && !e.rodeoPunto && !(e.aimTimer > 0) &&
+    !(e.burstLeft > 0) && !(e.recargando > 0) && movio < 0.2 && !esDefensivo(e) && !e.cuidaSalida;
+  e.sinHacerT = sinHacer ? (e.sinHacerT || 0) + dt : 0;
+  if (e.sinHacerT > c.sinHacerMax && e.lastSeen) {
+    e.sinHacerT = 0;
+    const pt = buscarAngulo(e, world, e.lastSeen);
+    if (pt) {
+      e.rodeoPunto = pt;
+      e.rodeoTimer = 3;
+      e.coverPoint = null;
+      e.atCover = false;
+    }
+  }
+
   if (e.puestoSalida && !engaged) {
     if (distance(e.x, e.y, e.puestoSalida.x, e.puestoSalida.y) > 8) {
       e.coverPoint = null;
@@ -2598,6 +2671,8 @@ export function doCombat(e, dt, world) {
     for (const other of world.enemies) {
       if (other !== e && other.alive && other.coverPoint) taken.push(other.coverPoint);
     }
+    // La cobertura desde la que no tuvo tiro (ver `tryFire`) no vale: otra.
+    if (e.coberturaMala) taken.push(e.coberturaMala);
     /**
      * EL QUE YA SE REPLEGÓ NO VUELVE A GANAR TERRENO, NI CAMBIANDO DE COBERTURA.
      *
@@ -2632,7 +2707,11 @@ export function doCombat(e, dt, world) {
   }
 
   if (e.coverPoint && !e.atCover && !cubreTapado) {
-    const moved = moveToward(e, e.coverPoint.x, e.coverPoint.y, c.speed, dt, world.map);
+    // 🐛 El que avanza va por la ruta: en línea recta se trababa contra un
+    // asiento y no llegaba nunca (gritaba "¡AVANZO!" y se quedaba ahí).
+    const moved = e.avanzando
+      ? viajarHacia(e, dt, world, e.coverPoint.x, e.coverPoint.y, c.speed)
+      : moveToward(e, e.coverPoint.x, e.coverPoint.y, c.speed, dt, world.map);
     e.stuckTimer = moved < 0.2 ? (e.stuckTimer || 0) + dt : 0;
 
     if (distance(e.x, e.y, e.coverPoint.x, e.coverPoint.y) < 6) {
@@ -2990,17 +3069,34 @@ function tryFire(e, dt, world, aimAt, enPanico) {
        * detrás del que estaba. Si lo que tiene adelante, pegado, frena balas,
        * espera un instante; si no se destapa, se acomoda (ver `doCombat`).
        */
-      if (!lineaLibre(e, world, aimAt)) {
+      /**
+       * 🐛 Y SIN UN COMPAÑERO EN LA LÍNEA, ANTES DE CADA BALA *(auditoría: 0,39
+       * por asalto le pegaban a un compañero; 40 muertos en 800 asaltos)*. Se
+       * miraba sólo al empezar la ráfaga, y en una ráfaga hay tiempo de sobra
+       * para que alguien se cruce.
+       */
+      const punto = e.aimPunto || aimAt;
+      if (!lineaLibre(e, world, aimAt) || allyInLine(e, world, punto.x, punto.y)) {
         e.aimTimer = 0.05;
         e.lineaTapada = (e.lineaTapada || 0) + dt;
         if (e.lineaTapada > 0.6) {
           e.burstLeft = 0;
           e.cooldown = Math.max(e.cooldown, 0.3);
-          if (e.atCover) e.repositionTimer = e.ai.repositionAfter + 0.01;
+          /**
+           * 🐛 Y ESA COBERTURA QUEDA MARCADA COMO MALA *(auditoría: se asomaba,
+           * tenía un compañero o un cajón en la línea, se escondía, buscaba
+           * otra cobertura... y elegía la misma: un bucle de asomarse sin
+           * tirar)*. Ver `coberturaMala` en `doCombat`.
+           */
+          if (e.atCover) {
+            e.repositionTimer = e.ai.repositionAfter + 0.01;
+            e.coberturaMala = e.coverPoint;
+          }
         }
         return;
       }
       e.lineaTapada = 0;
+      e.coberturaMala = null;
       // La última bala no sale si otro está recargando: corta la ráfaga ahí.
       if (!puedeGastar(e, world)) {
         e.burstLeft = 0;
@@ -3054,13 +3150,28 @@ function tryFire(e, dt, world, aimAt, enPanico) {
 function lineaLibre(e, world, aimAt) {
   const ang = Math.atan2(aimAt.y - e.y, aimAt.x - e.x);
   const hasta = Math.min(CONFIG.enemy.lineaLibreDistancia, distance(e.x, e.y, aimAt.x, aimAt.y) - 6);
-  for (let d = 9; d <= hasta; d += 4) {
-    if (world.map.blocksBulletsAt(e.x + Math.cos(ang) * d, e.y + Math.sin(ang) * d)) return false;
+  /**
+   * 🐛 Y LOS BORDES DEL ABANICO *(auditoría de 800 asaltos: 0,66 por asalto
+   * tiraban contra lo que tenían pegado)*: con la escopeta, los perdigones de
+   * los costados salen torcidos y pegaban en el cajón de al lado aunque el
+   * centro estuviera libre. Se miran también las dos puntas del abanico.
+   */
+  const a = e.armaId ? armaDe(e) : null;
+  const abre = a && a.perdigones ? a.abanico / 2 : 0;
+  for (const off of abre ? [0, -abre, abre] : [0]) {
+    for (let d = 9; d <= hasta; d += 4) {
+      if (world.map.blocksBulletsAt(e.x + Math.cos(ang + off) * d, e.y + Math.sin(ang + off) * d)) return false;
+    }
   }
   return true;
 }
 
 function fire(e, world, enPanico) {
+  // "¡TE CUBRO!" sale con el primer tiro (ver `gritarAlHacerlo` en systems/escuadra.js).
+  if (e.gritoPendiente && e.gritoPendiente.texto === 'teCubro') {
+    world.bus.emit('guardiaGrita', { guardia: e, texto: 'teCubro' });
+    e.gritoPendiente = null;
+  }
   const c = CONFIG.enemy;
   const dist = distance(e.x, e.y, world.player.x, world.player.y);
   /**
@@ -3201,6 +3312,8 @@ function pausaACiegas(e) {
 function fireDoorBlind(e, world, target) {
   const c = CONFIG.enemy;
   if (e.recargando > 0 || !puedeGastar(e, world)) return;
+  // Tampoco a ciegas contra lo que tiene pegado (la puerta de madera no cuenta).
+  if (!lineaLibre(e, world, target)) return;
   const angle = Math.atan2(target.y - e.y, target.x - e.x) + world.rng.spread(c.doorSpread);
   gastarBala(e, world);
 
@@ -3272,6 +3385,7 @@ function dispararACiegasPorTecho(e, dt, world) {
 function fireTechoBlind(e, world, target) {
   const c = CONFIG.enemy;
   if (e.recargando > 0 || !puedeGastar(e, world)) return;
+  if (!lineaLibre(e, world, target)) return;
   const angle = Math.atan2(target.y - e.y, target.x - e.x) + world.rng.spread(c.techoSpread);
   gastarBala(e, world);
 

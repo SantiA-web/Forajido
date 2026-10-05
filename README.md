@@ -772,6 +772,13 @@ arma que llevan:
   110 px y oyen el tambor): el de la escopeta o el revólver sale a acercarse
   ya, aunque esté solo. **Pero no saben cuándo terminaste**: el que salió llega
   hasta su cobertura aunque ya tengas el arma llena. Ahí lo esperás.
+- **"¡TE RODEO!": si te escondés, te buscan el ángulo.** Si nadie del vagón te
+  ve hace 1,5 s, uno sale a buscar un lugar desde donde te vería (dando la
+  vuelta a los cajones, del lado descubierto de lo que te tapa), mientras los
+  demás te tiran a donde te vieron para que no te muevas. **Uno por vez**, y es
+  el de la escopeta o el revólver: el del Winchester sólo si no hay otro. Si te
+  ve en el camino o llega, pelea como siempre; si en 5 s no lo logró, abandona,
+  y el próximo sale 3 s después.
 
 ### "¡Alto, manos arriba!" — rendirte con H
 

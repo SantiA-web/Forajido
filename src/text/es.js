@@ -76,6 +76,8 @@ export const T = {
     // La escuadra (ver systems/escuadra.js): uno tira para que el otro avance.
     teCubro: '¡TE CUBRO!',
     avanzo: '¡AVANZO!',
+    // El que sale a buscarte un ángulo (systems/escuadra.js, el rodeo).
+    teRodeo: '¡TE RODEO!',
     // El primer guardia que te ve, con poca recompensa (ver CONFIG.rendicion).
     alto: '¡ALTO! ¡MANOS ARRIBA!',
     rendirse: '[H] RENDIRTE',

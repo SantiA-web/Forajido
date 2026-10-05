@@ -16421,6 +16421,36 @@ tiempo quieto). Eligió las tres recomendadas.
   tirar: ya están a su distancia, no te ven y no buscan otro ángulo (el avance
   dice "ya estoy cerca"). Es la etapa 3 (rodearte); quedó propuesta.
 
+🔄 **Buscar ángulo: "¡TE RODEO!"** — un pedazo de la etapa 3, adelantado
+*(Santi eligió la B, uno por vez mientras los otros cubren, y agregó: "que el
+que sale a buscarte sea uno de escopeta o de revólver, uno de Winchester nunca a
+menos que no haya de otro tipo")*.
+
+- **Cuándo** (`CONFIG.escuadra`): nadie de la escuadra te ve hace
+  `rodeoSinVer` (1,5 s), no hay un avance en curso y pasaron
+  `pausaEntreRodeos` (3 s) desde el último.
+- **Quién**: escopeta o revólver (el más cerca tuyo); el Winchester sólo si la
+  escuadra es toda de Winchester. Uno solo también rodea.
+- **A dónde** (`puntoConAngulo`): la baldosa libre más cerca de él, a menos de
+  `rodeoRadio` (180 px), en tu vagón, a una distancia entre `rodeoMin` (36) y
+  lo que ve su arma, con la vista y el tiro libres hasta donde te vieron y, si
+  estás agachado, del lado descubierto de tu cobertura. Va por la ruta
+  (`viajarHacia`), dando la vuelta a los cajones.
+- **Mientras**: los demás te cubren (tiran a donde te vieron); grita uno solo,
+  "¡TE CUBRO!". El que rodea no cubre ni avanza.
+- **Termina** si te ve, si llega, si empieza a recargar o a los `rodeoMax` (5
+  s). Si te ve, pelea como siempre.
+- **Medido en la prueba del correo** (3 guardias, vos escondido a 200 px, 25
+  s, 8 veces): **1 a 3 rodeos** cada vez; el tiempo parado sin tirar bajó de
+  14-17 s a 0-12 la escopeta y 3-14 el revólver (el Winchester, que cubre de
+  lejos, sigue en 4-14); y esconderse dejó de ser gratis: te sacan 135-553
+  puntos de vida en 25 s (con vos inmortal y sin tirar).
+- **Con el bot agente** (40 asaltos): 2,1 rodeos por asalto; voltea 4,7
+  guardias (antes 4,2), dura 73 s (antes 61), pierde 22,6 por guardia (antes
+  26,5). La dificultad para él no cambia: casi no se queda escondido, y el que
+  sale a rodear también se le pone a tiro. El rodeo castiga quedarse tapado,
+  no pelear.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

@@ -152,12 +152,12 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   pose o arma nueva salga bien en las 8 direcciones. Conviene antes de la
   escopeta del jugador, los compañeros, los civiles que reaccionan y las
   habilidades (rodar). Trabajo mediano.
-- **Guardias, etapas 3 y 4** (las etapas 1 y 2 están hechas): **3** rodearte
-  (flanqueo, cortar la salida, pasarse tu posición entre vagones), **4** el jefe
-  del grupo. Visto armando la etapa 2: un guardia que llega al lado de tu
-  cobertura sin verte se queda parado a 30-40 px, del otro lado del asiento, y
-  a los ~9 s se olvida de vos. No es nuevo (ya pasaba), pero es justo lo que la
-  etapa 3 tiene que resolver: dar la vuelta al asiento.
+- **Guardias, etapas 3 y 4** (las etapas 1 y 2 están hechas, y de la 3 ya está
+  "buscar ángulo", el "¡TE RODEO!" dentro del vagón): lo que falta de la **3**
+  es cortar la salida y pasarse tu posición entre vagones; la **4**, el jefe
+  del grupo.
+- **Un bot nuevo** que Santi pidió (2026-10-05) y va a confirmar antes de que
+  lo haga: esperar su descripción.
 
 ## Cómo trabajar conmigo
 

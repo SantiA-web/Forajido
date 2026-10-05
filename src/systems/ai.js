@@ -2421,6 +2421,24 @@ export function doCombat(e, dt, world) {
     return;
   }
 
+  /**
+   * 🔄 RODEANDO (systems/escuadra.js): va por la ruta a un lugar desde donde
+   * te vería. Si te ve en el camino, o llega, vuelve al combate de siempre.
+   */
+  if (e.rodeoPunto) {
+    e.rodeoTimer = (e.rodeoTimer || 0) - dt;
+    if (engaged || e.rodeoTimer <= 0 || e.recargando > 0 ||
+        distance(e.x, e.y, e.rodeoPunto.x, e.rodeoPunto.y) < 6) {
+      e.rodeoPunto = null;
+    } else {
+      e.coverPoint = null;
+      e.atCover = false;
+      e.peeking = false;
+      viajarHacia(e, dt, world, e.rodeoPunto.x, e.rodeoPunto.y, c.speed);
+      return;
+    }
+  }
+
   // --- Buscar cobertura ---
   e.repositionTimer = (e.repositionTimer || 0) + dt;
   /**

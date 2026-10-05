@@ -45,7 +45,7 @@
 
 import { CONFIG } from '../data/config.js';
 import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
-import { distance } from '../engine/collision.js';
+import { distance, hasLineOfSight } from '../engine/collision.js';
 import { findCoverPoint } from './cover.js';
 import { isHidden } from '../entities/player.js';
 
@@ -140,12 +140,12 @@ function puedeAvanzar(e, world, blanco) {
   // ya está en el medio del pasillo) no entran en esto.
   if (e.defensivo || e.cubriendoTimer > 0 || e.esperandoCompanero || e.esSheriff) return false;
   if (e.evitaCobertura || e.yaSeReplego || e.desenfundando > 0 || e.vaHaciaPuerta) return false;
-  if (e.recargando > 0 || balas(e) <= 0) return false;
+  if (e.recargando > 0 || balas(e) <= 0 || e.rodeoPunto) return false;
   return distance(e.x, e.y, blanco.x, blanco.y) > arma(e).paradaAvance + CONFIG.escuadra.ganaMin;
 }
 
 function puedeCubrir(e) {
-  return !(e.recargando > 0) && balas(e) > 0 && !!e.lastSeen && !(e.desenfundando > 0);
+  return !(e.recargando > 0) && balas(e) > 0 && !!e.lastSeen && !(e.desenfundando > 0) && !e.rodeoPunto;
 }
 
 function elegirQuienCubre(miembros, menos) {
@@ -251,7 +251,9 @@ export function actualizarEscuadras(world, dt) {
     const blanco = blancoDe(miembros);
     if (!blanco) continue;
 
-    if (st.fase === 'quieto') empezarAvance(st, miembros, world, blanco, E);
+    actualizarRodeo(st, miembros, world, blanco, E, dt);
+    // Mientras uno rodea no arranca un avance: uno por vez.
+    if (st.fase === 'quieto' && !st.rodea) empezarAvance(st, miembros, world, blanco, E);
     else if (st.fase === 'cubriendo') {
       if (!st.avanza || !activo(st.avanza) || st.avanza.recargando > 0) { terminarAvance(st); continue; }
       st.timer -= dt;
@@ -352,6 +354,111 @@ function empezarAvance(st, miembros, world, blanco, E) {
   if (cubre) ponerACubrir(cubre, world, st.timer + c.avanceMax);
   E.avances++;
   if (porRecarga) E.avancesPorRecarga++;
+}
+
+// ----------------------------------------------------------- el rodeo
+
+/**
+ * 🔄 ¿QUIÉN SALE A BUSCARTE? La escopeta o el revólver; el Winchester sólo si
+ * no hay de otro tipo en la escuadra. Entre iguales, el que está más cerca.
+ */
+function quienRodea(miembros, world, blanco) {
+  const puede = (o) => !o.defensivo && !(o.cubriendoTimer > 0) && !o.esperandoCompanero &&
+    !o.esSheriff && !o.yaSeReplego && !(o.desenfundando > 0) && !o.vaHaciaPuerta &&
+    !(o.recargando > 0) && balas(o) > 0 && !o.avanzando;
+  const libres = miembros.filter(puede);
+  const noRifle = libres.filter((o) => arma(o).id !== 'winchester');
+  const hayOtroTipo = miembros.some((o) => arma(o).id !== 'winchester');
+  const pool = noRifle.length ? noRifle : (hayOtroTipo ? [] : libres);
+  let mejor = null;
+  for (const o of pool) {
+    if (!mejor || distance(o.x, o.y, blanco.x, blanco.y) < distance(mejor.x, mejor.y, blanco.x, blanco.y)) mejor = o;
+  }
+  return mejor;
+}
+
+/**
+ * ¿DESDE DÓNDE TE VERÍA? Recorre las baldosas libres cerca de él y se queda con
+ * la más cercana que: esté en tu vagón, a una distancia que su arma alcance
+ * (y no encima tuyo), con la vista Y el tiro libres hasta vos, y —si estás
+ * agachado detrás de algo— del lado descubierto de tu cobertura.
+ */
+function puntoConAngulo(e, world, blanco) {
+  const c = CONFIG.escuadra;
+  const map = world.map, size = map.size;
+  const p = world.player;
+  const a = arma(e);
+  const lejos = Math.min(a.vistaCombate, a.alcance) * 0.85;
+  const w = world.train.wagonAt(blanco.x);
+  const tapa = p.cover && distance(p.x, p.y, blanco.x, blanco.y) < 20 ? p.cover : null;
+  const taken = [];
+  for (const o of world.enemies) if (o !== e && o.alive && o.coverPoint) taken.push(o.coverPoint);
+  const r = Math.ceil(c.rodeoRadio / size);
+  const c0 = Math.floor(e.x / size), r0 = Math.floor(e.y / size);
+  let mejor = null, mejorD = Infinity;
+  for (let row = r0 - r; row <= r0 + r; row++) {
+    for (let col = c0 - r; col <= c0 + r; col++) {
+      if (map.isSolidTile(col, row)) continue;
+      const pt = map.tileCenter(col, row);
+      const dYo = distance(pt.x, pt.y, e.x, e.y);
+      if (dYo > c.rodeoRadio || dYo >= mejorD) continue;
+      const dVos = distance(pt.x, pt.y, blanco.x, blanco.y);
+      if (dVos < c.rodeoMin || dVos > lejos) continue;
+      if (world.train.wagonAt(pt.x) !== w) continue;
+      if (taken.some((o) => distance(o.x, o.y, pt.x, pt.y) < 12)) continue;
+      if (tapa) {
+        const dx = (pt.x - blanco.x) / dVos, dy = (pt.y - blanco.y) / dVos;
+        if (dx * tapa.nx + dy * tapa.ny < 0.15) continue;
+      }
+      if (!hasLineOfSight(pt.x, pt.y, blanco.x, blanco.y, map.blocksSightAt)) continue;
+      if (!hasLineOfSight(pt.x, pt.y, blanco.x, blanco.y, map.blocksBulletsAt)) continue;
+      mejor = pt; mejorD = dYo;
+    }
+  }
+  return mejor;
+}
+
+function actualizarRodeo(st, miembros, world, blanco, E, dt) {
+  const c = CONFIG.escuadra;
+  st.pausaRodeo = (st.pausaRodeo ?? 1) - dt;
+
+  // Uno rodeando: ¿terminó? (llegó, te vio, se le acabó el tiempo, cayó)
+  if (st.rodea) {
+    const r = st.rodea;
+    if (!activo(r) || !r.rodeoPunto) {
+      if (r.alive) r.rodeoPunto = null;
+      st.rodea = null;
+      st.pausaRodeo = c.pausaEntreRodeos;
+    }
+    return;
+  }
+  if (st.pausaRodeo > 0 || st.fase !== 'quieto') return;
+  // ¿Alguien te está viendo? Entonces no hace falta buscarte.
+  if (miembros.some((o) => o.lostTimer < c.rodeoSinVer)) return;
+
+  const quien = quienRodea(miembros, world, blanco);
+  if (!quien) { st.pausaRodeo = 0.5; return; }
+  const punto = puntoConAngulo(quien, world, blanco);
+  if (!punto) { (E.noRodea = E.noRodea || {}).sinLugar = (E.noRodea.sinLugar || 0) + 1; st.pausaRodeo = 1; return; }
+
+  quien.rodeoPunto = punto;
+  quien.rodeoTimer = c.rodeoMax;
+  quien.coverPoint = null;
+  quien.atCover = false;
+  quien.peeking = false;
+  quien.ruta = null;
+  st.rodea = quien;
+  gritar(quien, world, 'teRodeo');
+  // Los demás lo cubren: te tiran a donde te vieron, para que no te muevas.
+  // Grita uno solo: tres "¡TE CUBRO!" encimados no se leen.
+  let primero = true;
+  for (const o of miembros) {
+    if (o === quien || !puedeCubrir(o)) continue;
+    if (primero) ponerACubrir(o, world, c.rodeoMax);
+    else o.cubriendo = Math.max(o.cubriendo || 0, c.rodeoMax);
+    primero = false;
+  }
+  E.rodeos = (E.rodeos || 0) + 1;
 }
 
 function terminarAvance(st) {

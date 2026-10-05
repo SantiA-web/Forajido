@@ -1246,6 +1246,24 @@ export const CONFIG = {
      * se frena a mitad de camino si terminaste: no tiene cómo saberlo.
      */
     oyeRecargaRadio: 110,
+
+    /**
+     * 🔄 BUSCAR ÁNGULO — un pedazo de la etapa 3 *(Santi eligió la B: "uno por
+     * vez, mientras los otros te cubren"; "que el que sale a buscarte sea uno
+     * de escopeta o de revólver, uno de Winchester nunca a menos que no haya de
+     * otro tipo")*. Si NADIE de la escuadra te ve hace `rodeoSinVer` segundos,
+     * uno grita "¡TE RODEO!" y camina (por la ruta, rodeando los cajones) a un
+     * lugar desde donde te vería; los demás te cubren mientras tanto.
+     */
+    rodeoSinVer: 1.5,
+    // Si en este tiempo no llegó ni te vio, se da por terminado.
+    rodeoMax: 5,
+    // Cada cuánto puede salir otro, una vez que terminó el anterior.
+    pausaEntreRodeos: 3,
+    // Hasta dónde busca el lugar nuevo, desde donde está él.
+    rodeoRadio: 180,
+    // Y no se te para encima: por lo menos a esto de vos.
+    rodeoMin: 36,
   },
 
   /**

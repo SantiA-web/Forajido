@@ -16669,6 +16669,37 @@ quiero que pegue más")*.
   de ~43 a 53 por asalto (se acercan más rápido) y el del Winchester quedó en
   29.
 
+💥 **LA ESCOPETA DE DOBLE CAÑO, PARA EL JUGADOR** *(Santi: "poner en la tienda
+la escopeta de doble cañón para comprar y probarla ya que tenemos las bases con
+los guardias"; eligió 0,5 por perdigón, $1.200 y ruido de un vagón, y la
+recarga "1,1 segundo por bala, es decir que puedes recargar una o las dos")*.
+
+- **Las opciones eran** — daño por perdigón: 0,35 (como los guardias: hacen
+  falta los dos caños para un común), **0,5** (un caño mata a un común de
+  cerca), 0,65; precio: $900, **$1.200**, $1.500; recarga: 2,5 s, 2 s, **de a
+  un cartucho, 1,1 s cada uno**; ruido: ninguno, **un vagón**, dos.
+- **El arma** (`WEAPONS.escopeta`, data/weapons.js): 6 perdigones, `spread`
+  0,15 = medio abanico (0,10 apuntando), alcance 120, la caída de la de los
+  guardias, 0,3 s entre caños, `recargaPorBala`. El círculo de la mira es el
+  abanico.
+- **El disparo** (`shoot`, entities/player.js): los perdigones repartidos
+  parejo en el abanico, con un poco de temblor, con `factor` 0,5 y el mismo
+  número de disparo. Suena el `escopetazo` y sacude el doble.
+- **La recarga de a un cartucho**: cada uno tarda `reloadTime`; con uno adentro,
+  el gatillo corta la recarga y tira. Igual a caballo (huidaScene.js), donde
+  los perdigones tienen alcance corto.
+- **El dibujo**: la misma escopeta de los guardias, apuntando desde la cadera
+  (`escopetaListo`), revisada agrandada en las 8 direcciones. En la tienda, una
+  silueta propia (`tambor: 'doble'` en `dibujarArma`): la culata en diagonal,
+  la báscula con dos martillos, los dos caños y el guardamanos. La barra de
+  DAÑO cuenta el disparo entero (6 × 0,5).
+- **Medido** contra un guardia común quieto, 10 escopetazos por distancia
+  apuntándole: **a 30 px saca 100 y lo mata 10 de 10; a 60 px, 54; a 100 px,
+  18.** La recarga mete un cartucho a los 1,1 s y el segundo a los 2,2.
+- 🧪 **Atajo**: en el campamento, **[2]** te pone la escopeta sin comprarla, y
+  otra vez [2] te devuelve tu arma. No la agrega a lo tuyo. Sacarlo con el de
+  [1] antes de mostrar el juego.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

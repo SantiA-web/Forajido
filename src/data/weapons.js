@@ -213,4 +213,41 @@ export const WEAPONS = {
   },
 };
 
+/**
+ * 💥 LA ESCOPETA DE DOBLE CAÑO *(Santi: "poner en la tienda la escopeta de doble
+ * cañón para comprar y probarla ya que tenemos las bases con los guardias";
+ * eligió las recomendadas —0,5 por perdigón, $1.200, ruido de un vagón— y la
+ * recarga "1,1 segundo por bala, es decir que puedes recargar una o las dos")*.
+ *
+ * La misma de los guardias (data/armasGuardia.js): seis perdigones en abanico
+ * y el mismo dibujo, a la cadera. Lo que cambia es el daño de cada perdigón:
+ * 0,5 de un tiro (los de ellos, 0,35). A 30 px un caño saca ~105 —mata a un
+ * común, que tiene 100—; a 60 px ~40. Pasando los 60 px pierde contra el Colt.
+ *
+ * `spread` acá es MEDIO ABANICO: el círculo de la mira muestra hasta dónde
+ * llegan los perdigones de las puntas (ver `shoot`, entities/player.js).
+ * Apuntando (clic derecho) el abanico se cierra.
+ */
+WEAPONS.escopeta = {
+  id: 'escopeta',
+  name: 'Escopeta de doble caño',
+  short: 'ESCOPETA',
+  damage: 1,
+  perdigones: 6,
+  factorPerdigon: 0.5,
+  fireRate: 0.3,         // un caño y el otro
+  magazine: 2,
+  reloadTime: 1.1,       // POR CARTUCHO: podés tirar después de meter uno
+  recargaPorBala: true,
+  bulletSpeed: 550,
+  spread: 0.15,          // medio abanico (0,30 rad entero, el de los guardias)
+  spreadApuntado: 0.10,
+  retroceso: 0.06,
+  range: 120,
+  caida: { plenoHasta: 0.3, alFinal: 0.3 },
+  noiseWagons: 1,        // despierta el vagón de al lado: lo que paga por ser tan fuerte
+  price: 1200,
+  hint: 'Dos caños, seis perdigones. De cerca no perdona; de lejos, nada.',
+};
+
 export const DEFAULT_WEAPON = 'colt';

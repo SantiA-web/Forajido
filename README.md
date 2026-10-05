@@ -2456,6 +2456,15 @@ callado, van al lugar equivocado. Pero cada tiro tuyo vuelve a delatarte.
   alcance y en la punta saca el 70%: es el de media distancia. El **Smith**
   pega completo sólo hasta el 40% y en la punta saca la mitad: es el de pelear
   cerca. Las balas de los guardias pierden como el Colt.
+- **💥 La escopeta de doble caño ($1.200, en la armería).** La misma de los
+  guardias, desde la cadera: dos cartuchos y **seis perdigones en abanico**
+  por disparo, cada uno de medio tiro. A 30 px un caño saca ~100 —**mata a un
+  guardia común**—; a 60 px ~54; a 100 px ~18. El círculo de la mira muestra
+  hasta dónde se abre el abanico, y apuntando (clic derecho) se cierra.
+  **Recarga de a un cartucho, 1,1 s cada uno**: con uno adentro ya podés tirar
+  (el gatillo corta la recarga). Cada escopetazo **despierta el vagón de al
+  lado**. A caballo, en la huida, también sirve, pero los jinetes suelen andar
+  lejos.
 - **Un tiro en la pierna lo puede tirar al piso** (la mitad de las veces).
   Tirado te sigue disparando; si tiene una cobertura cerca se levanta y va, y
   si no, se levanta solo a los 3 segundos. **El segundo tiro en las piernas lo

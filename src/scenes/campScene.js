@@ -61,6 +61,8 @@ function revolver(n) {
 
 export function createCampScene(services) {
   const { input, scenes, hud, audio } = services;
+  // 🧪 El arma que tenías antes de ponerte la escopeta con [2] (ver `update`).
+  let armaAntesDeLaPrueba = null;
 
   const colors = CONFIG.colors;
 
@@ -333,6 +335,22 @@ export function createCampScene(services) {
     if (input.wasPressed('Digit1')) {
       scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaCorreo: true });
       return;
+    }
+    /**
+     * 🧪 [2] TE PONE LA ESCOPETA SIN COMPRARLA *(Santi: "dejame un atajo para
+     * equipármela sin tener que comprarla")*; otra vez [2], vuelve el arma que
+     * tenías. No la agrega a lo tuyo: en la tienda sigue costando $1.200.
+     *
+     * ⚠️ SACARLO antes de mostrar el juego, con el de [1].
+     */
+    if (input.wasPressed('Digit2')) {
+      if (gameState.weapon === 'escopeta') {
+        gameState.weapon = armaAntesDeLaPrueba || 'colt';
+      } else {
+        armaAntesDeLaPrueba = gameState.weapon;
+        gameState.weapon = 'escopeta';
+      }
+      decir(gameState.weapon === 'escopeta' ? T.camp.atajoEscopetaSi : T.camp.atajoEscopetaNo, 2);
     }
 
     if (mensaje) {

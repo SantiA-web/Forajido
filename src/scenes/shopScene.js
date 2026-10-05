@@ -598,6 +598,45 @@ export function createShopScene(services) {
     const cx = ESCENA.x + ESCENA.w / 2 - 24;
     const cy = ESCENA.y + ESCENA.h - 32;
 
+    /**
+     * 💥 LA ESCOPETA NO ES UN REVÓLVER: culata larga, la báscula, los dos caños
+     * uno arriba del otro (vistos de costado) y el guardamanos de madera.
+     */
+    if (look.tambor === 'doble') {
+      const x0 = cx - 8;                                         // donde empiezan los caños
+      // La culata: baja en diagonal desde la báscula, en escalones, y termina
+      // en la cantonera oscura.
+      r.rect(cx - 34, cy - 4, 16, 11, look.madera);
+      r.rect(cx - 48, cy - 1, 16, 12, look.madera);
+      r.rect(cx - 62, cy + 2, 16, 13, look.madera);
+      r.rect(cx - 34, cy - 4, 16, 2, '#94663f');
+      r.rect(cx - 48, cy - 1, 16, 2, '#94663f');
+      r.rect(cx - 62, cy + 2, 16, 2, '#94663f');
+      r.rect(cx - 65, cy + 2, 4, 13, '#2a1a10');
+      // La báscula y los dos martillos.
+      r.rect(cx - 20, cy - 6, 14, 13, look.metal);
+      r.rect(cx - 20, cy - 6, 14, 2, look.brillo);
+      r.rect(cx - 18, cy - 10, 3, 5, look.metal);
+      r.rect(cx - 12, cy - 10, 3, 5, look.metal);
+      // Los dos caños, uno arriba del otro (de costado), y la boca de cada uno.
+      r.rect(x0, cy - 6, look.cano, 6, look.metal);
+      r.rect(x0, cy - 6, look.cano, 2, look.brillo);
+      r.rect(x0, cy, look.cano, 6, '#2a2c32');
+      r.rect(x0, cy, look.cano, 1, '#55585f');
+      r.rect(x0 + look.cano - 3, cy - 6, 3, 12, look.brillo);
+      r.rect(x0 + look.cano - 2, cy - 4, 1, 2, '#111');
+      r.rect(x0 + look.cano - 2, cy + 2, 1, 2, '#111');
+      r.rect(x0 + look.cano - 8, cy - 8, 2, 2, look.brillo);     // la mira
+      // El guardamanos, abrazando los caños por abajo.
+      r.rect(x0 + 2, cy + 4, 26, 6, look.madera);
+      r.rect(x0 + 2, cy + 4, 26, 2, '#94663f');
+      // Los dos gatillos y el guardamonte.
+      r.rect(cx - 16, cy + 7, 2, 6, look.metal);
+      r.rect(cx - 11, cy + 7, 2, 6, look.metal);
+      r.rect(cx - 19, cy + 12, 13, 2, look.metal);
+      return;
+    }
+
     // La culata, hacia atrás y abajo.
     r.rect(cx - 36, cy + 2, 17, 11, look.madera);
     r.rect(cx - 40, cy + 11, 17, 11, look.madera);

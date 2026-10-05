@@ -694,9 +694,25 @@ function updateWeapon(p, dt, world) {
   const input = world.input;
 
   if (p.reloadTimer > 0) {
-    p.reloadTimer -= dt;
-    if (p.reloadTimer <= 0) p.ammo = p.weapon.magazine;
-    return;
+    /**
+     * 💥 LA ESCOPETA CARGA DE A UN CARTUCHO (`recargaPorBala`): cada uno tarda
+     * `reloadTime`, y si apretás el gatillo con uno adentro, cortás la
+     * recarga y tirás *(Santi: "puedes recargar una o las dos")*.
+     */
+    if (p.weapon.recargaPorBala && p.ammo > 0 && input.mouse.down) {
+      p.reloadTimer = 0;
+    } else {
+      p.reloadTimer -= dt;
+      if (p.reloadTimer <= 0) {
+        if (p.weapon.recargaPorBala) {
+          p.ammo = Math.min(p.weapon.magazine, p.ammo + 1);
+          if (p.ammo < p.weapon.magazine) p.reloadTimer = p.weapon.reloadTime;
+        } else {
+          p.ammo = p.weapon.magazine;
+        }
+      }
+      return;
+    }
   }
 
   if (input.wasPressed('KeyR') && p.ammo < p.weapon.magazine) {
@@ -737,11 +753,40 @@ function shoot(p, world) {
    * en cuando (`CONFIG.mira.fallaChance`) se te va el pulso de verdad. Ver
    * el porqué completo en CONFIG.mira y en `rng.spreadDeTiro`.
    */
+  /**
+   * 💥 LA ESCOPETA: seis perdigones repartidos parejo en el abanico que marca
+   * la mira (`dispersionActual` es medio abanico), cada uno con un poquito de
+   * temblor, todos con el mismo número de disparo (`perdigon`).
+   */
+  if (w.perdigones) {
+    const medio = dispersionActual(p, world);
+    const disparo = (world.perdigonesId = (world.perdigonesId || 0) + 1);
+    for (let i = 0; i < w.perdigones; i++) {
+      const a = p.aim + (i / (w.perdigones - 1) - 0.5) * 2 * medio + world.rng.spread(medio / w.perdigones);
+      world.spawnBullet({
+        x: p.x + Math.cos(p.aim) * 8,
+        y: p.y + Math.sin(p.aim) * 8,
+        angle: a,
+        speed: w.bulletSpeed,
+        damage: w.damage,
+        range: w.range,
+        owner: 'player',
+        alto: world.aimAlto ?? undefined,
+        distancia: world.aimAlto != null ? Math.hypot(world.aimX - p.x, world.aimY - p.y) : 0,
+        zona: world.aimZona || undefined,
+        apuntado: p.apuntado || 0,
+        caida: w.caida,
+        factor: w.factorPerdigon,
+        perdigon: disparo,
+      });
+    }
+  }
+
   const angle = p.aim + world.rng.spreadDeTiro(
     dispersionActual(p, world), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador
   );
 
-  world.spawnBullet({
+  if (!w.perdigones) world.spawnBullet({
     x: p.x + Math.cos(p.aim) * 8,
     y: p.y + Math.sin(p.aim) * 8,
     angle,
@@ -777,8 +822,8 @@ function shoot(p, world) {
   const kick = w.retroceso * (1 - 0.5 * (p.apuntado || 0));
   p.retroceso = Math.min(CONFIG.mira.retrocesoMax, (p.retroceso || 0) + kick);
 
-  world.camera.shake(CONFIG.feel.shakeShoot, 0.1);
-  world.audio.play('playerShot');
+  world.camera.shake(CONFIG.feel.shakeShoot * (w.perdigones ? 2 : 1), 0.1);
+  world.audio.play(w.perdigones ? 'escopetazo' : 'playerShot');
 
   // El ruido va con DOS alcances y son cosas distintas: `radius` es en píxeles
   // y sirve para que los de alrededor vengan a mirar qué pasó; `wagons` es en
@@ -899,7 +944,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     ancla: p.cover ? { x: p.coverX, pies: p.coverY + p.hh } : null,
     postura: agachado ? 'agachado' : 'pie',
     destello: p.hitFlash > 0,
-    arma: !p.cover || p.peek > 0.15 ? { angulo: p.aim, largo: 7, color: ARMA_JUGADOR } : null,
+    arma: !p.cover || p.peek > 0.15 ? armaDibujada(p) : null,
     mochila: bulto,
   });
   const manoY = fig.manoY;
@@ -961,6 +1006,16 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
 const CINTA_JUGADOR = '#c8342a';
 /** Gris y no negro: sobre la silueta negra un caño oscuro no se vería. */
 const ARMA_JUGADOR = '#8a8074';
+
+/**
+ * QUÉ ARMA SE TE VE EN LA MANO. El revólver, una rayita que apunta; la escopeta,
+ * la misma de los guardias, apuntando desde la cadera (`escopetaListo`, ver
+ * entities/gente/dibujo.js).
+ */
+function armaDibujada(p) {
+  if (p.weapon && p.weapon.perdigones) return 'escopetaListo';
+  return { angulo: p.aim, largo: 7, color: ARMA_JUGADOR };
+}
 /**
  * EL JUGADOR EN EL TECHO.
  *
@@ -1022,7 +1077,7 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     fase: enElAire ? null : faseDeAndar(p),
     postura: p.techoAgachado ? 'agachado' : 'pie',
     destello: p.hitFlash > 0,
-    arma: { angulo: p.aim, largo: 7, color: ARMA_JUGADOR },
+    arma: armaDibujada(p),
   });
 }
 

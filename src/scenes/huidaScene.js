@@ -929,9 +929,21 @@ export function createHuidaScene(services) {
      */
     if (yo.forcejeo) return;
     if (yo.recargando > 0) {
-      yo.recargando -= dt;
-      if (yo.recargando <= 0) yo.balas = arma.magazine;
-      return;
+      // 💥 La escopeta, de a un cartucho, y con uno adentro podés cortar y tirar.
+      if (arma.recargaPorBala && yo.balas > 0 && input.mouse.down) {
+        yo.recargando = 0;
+      } else {
+        yo.recargando -= dt;
+        if (yo.recargando <= 0) {
+          if (arma.recargaPorBala) {
+            yo.balas = Math.min(arma.magazine, yo.balas + 1);
+            if (yo.balas < arma.magazine) yo.recargando = arma.reloadTime * costoDeRecargar();
+          } else {
+            yo.balas = arma.magazine;
+          }
+        }
+        return;
+      }
     }
     if (input.wasPressed('KeyR') && yo.balas < arma.magazine) {
       yo.recargando = arma.reloadTime * costoDeRecargar();
@@ -940,19 +952,34 @@ export function createHuidaScene(services) {
     if (!input.mouse.down || yo.fireTimer > 0) return;
     if (yo.balas <= 0) { yo.recargando = arma.reloadTime * costoDeRecargar(); return; }
 
-    const angulo = haciaDondeApunto()
-      + rng.spreadDeTiro(dispersionAhora(), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
     const [ox, oy] = boca();
-    balas.push({
-      x: ox, y: oy,
-      vx: Math.cos(angulo) * arma.bulletSpeed,
-      vy: Math.sin(angulo) * arma.bulletSpeed * PROFUNDIDAD,
-      vida: 1.2, mia: true, danio: arma.damage,
-    });
+    if (arma.perdigones) {
+      // 💥 La escopeta a caballo: el mismo abanico, y un alcance corto (los
+      // jinetes suelen andar lejos: ésa es su contra acá).
+      const medio = dispersionAhora();
+      for (let i = 0; i < arma.perdigones; i++) {
+        const a = haciaDondeApunto() + (i / (arma.perdigones - 1) - 0.5) * 2 * medio + rng.spread(medio / arma.perdigones);
+        balas.push({
+          x: ox, y: oy,
+          vx: Math.cos(a) * arma.bulletSpeed,
+          vy: Math.sin(a) * arma.bulletSpeed * PROFUNDIDAD,
+          vida: arma.range / arma.bulletSpeed, mia: true, danio: arma.damage * arma.factorPerdigon,
+        });
+      }
+    } else {
+      const angulo = haciaDondeApunto()
+        + rng.spreadDeTiro(dispersionAhora(), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
+      balas.push({
+        x: ox, y: oy,
+        vx: Math.cos(angulo) * arma.bulletSpeed,
+        vy: Math.sin(angulo) * arma.bulletSpeed * PROFUNDIDAD,
+        vida: 1.2, mia: true, danio: arma.damage,
+      });
+    }
     yo.balas -= 1;
     yo.fireTimer = arma.fireRate;
     yo.fogonazo = 0.06;
-    audio.play('playerShot');
+    audio.play(arma.perdigones ? 'escopetazo' : 'playerShot');
   }
 
   /** De dónde sale tu tiro: a la altura del pecho del jinete. */

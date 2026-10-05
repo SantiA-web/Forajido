@@ -12,6 +12,15 @@
 
 import { CONFIG } from '../data/config.js';
 
+/**
+ * 🔇 MUDO EN LAS PRUEBAS *(Santi: "pongo esto en segundo plano y se escuchan
+ * los disparos, músicas y esas cosas")*. El servidor de pruebas (puerto 8082)
+ * no suena nunca, y cualquier otro tampoco si la dirección lleva `?mudo`. El
+ * juego de verdad (el 8080 o el archivo suelto) suena como siempre.
+ */
+const MUDO = typeof location !== 'undefined' &&
+  (location.port === '8082' || /[?&]mudo\b/.test(location.search || ''));
+
 export function createAudio() {
   let ctx = null;
   let master = null;
@@ -26,7 +35,7 @@ export function createAudio() {
 
     ctx = new AudioCtx();
     master = ctx.createGain();
-    master.gain.value = CONFIG.audio.master;
+    master.gain.value = MUDO ? 0 : CONFIG.audio.master;
     master.connect(ctx.destination);
 
     // Un segundo de ruido blanco reutilizado por todos los efectos.
@@ -723,6 +732,7 @@ export function createAudio() {
   let cancionSonando = false;
 
   function volumenDeLaCancion() {
+    if (MUDO) return 0;
     return (CONFIG.audio.master ?? 0.5) * (CONFIG.ambiente.cancionVolumen ?? 0.22);
   }
 

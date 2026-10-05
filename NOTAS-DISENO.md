@@ -16750,6 +16750,24 @@ en pantalla (~250 px).
   la espalda—, que es justo lo que el bot no sabe hacer. Medida a quemarropa es
   la que más pega del juego.
 
+⚖️ **El Winchester pesa** *(Santi: "para que no esté tan roto el rifle, que
+penalice un poco la velocidad del movimiento. Muy poquito pero que se note")*.
+`velocidadPortando` (data/weapons.js), que multiplica tu paso como los demás
+precios (agachado, apuntando, recargando), también en el techo. Medido con el
+bot, 200 asaltos por opción:
+
+| Freno | Tu paso | Cruzar un vagón | Ganancia | Se le va el caballo | Escapa |
+|---|---|---|---|---|---|
+| Sin freno | 78 | 8,2 s | $285 | 6% | 50% |
+| **×0,92 (elegida)** | **72** | **8,9 s** | **$255** | **9%** | **44%** |
+| ×0,88 | 69 | 9,3 s | $234 | 11% | 37% |
+| ×0,84 | 66 | 9,7 s | $250 | 14% | 44% |
+
+Lo más claro es el tiempo (más veces se te va el caballo); el escape se mueve
+±7 puntos con 200 asaltos. La razón de la ×0,92: **seguís siendo más rápido
+que todos los guardias** (los livianos corren a 70); con ×0,88 el del revólver
+ya te alcanzaba. Queda en $255 por asalto, todavía arriba del Colt ($208).
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

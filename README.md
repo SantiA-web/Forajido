@@ -2472,7 +2472,8 @@ callado, van al lugar equivocado. Pero cada tiro tuyo vuelve a delatarte.
   (se abre la mitad que el Colt) y llega a 400 px. Su contra es la palanca:
   **un tiro cada 0,8 s**. Diez balas que se cargan **de a una, 0,4 s cada
   una**, y con una adentro ya podés tirar. Suena fuerte: despierta el vagón de
-  al lado.
+  al lado. Y **pesa**: con él caminás un poco más lento (72 px/s en vez de 78),
+  aunque seguís siendo más rápido que todos los guardias.
 - **Un tiro en la pierna lo puede tirar al piso** (la mitad de las veces).
   Tirado te sigue disparando; si tiene una cobertura cerca se levanta y va, y
   si no, se levanta solo a los 3 segundos. **El segundo tiro en las piernas lo

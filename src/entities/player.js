@@ -385,6 +385,8 @@ function updateOnRoof(p, dt, world) {
   // cruce el hueco entre dos vagones y uno parado no.
   let speed = p.techoAgachado ? cp.sneakSpeed : cp.speed;
   if (p.techoSalto > 0) speed *= ct.saltoBoost;
+  // El arma pesada frena también en el techo (ver `velocidadPortando`).
+  speed *= (p.weapon && p.weapon.velocidadPortando) ?? 1;
 
   // Por arriba de la góndola se camina sobre el mismo carbón: frena igual.
   const tren = world.train;
@@ -517,6 +519,10 @@ function updateFree(p, dt, world, dx, dy, toggle) {
    * único que no podés es disparar, que ya era así.
    */
   if (p.reloadTimer > 0) base *= c.direccionCostado;
+
+  // 🎯 Un arma pesada frena un poco al que la lleva (`velocidadPortando`,
+  // data/weapons.js). Se multiplica como todos los demás precios.
+  base *= (p.weapon && p.weapon.velocidadPortando) ?? 1;
 
   if (dx !== 0 && dy !== 0) {
     const inv = 1 / Math.SQRT2;

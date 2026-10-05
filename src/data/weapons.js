@@ -281,6 +281,14 @@ WEAPONS.winchester = {
   caida: { plenoHasta: 0.9, alFinal: 0.8 },
   noiseWagons: 1,
   price: 2000,
+  /**
+   * Pesa: caminás a ×0,92 (72 px/s en vez de 78) *(Santi: "que no esté tan
+   * roto el rifle, que penalice un poco la velocidad del movimiento. Muy
+   * poquito pero que se note")*. Las opciones eran ×0,92, ×0,88 y ×0,84; con
+   * ×0,92 seguís siendo más rápido que todos los guardias (los livianos van a
+   * 70). Ver `velocidadPortando` en entities/player.js.
+   */
+  velocidadPortando: 0.92,
   hint: 'Palanca, bronce y diez balas. Lejos y preciso; lento si te apuran.',
 };
 

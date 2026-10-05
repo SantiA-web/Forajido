@@ -2333,7 +2333,9 @@ export function doCombat(e, dt, world) {
     e.lostTimer += dt;
     // El que vio un cadáver te busca el doble de tiempo antes de aflojar.
     const paciencia = c.loseTargetTime * (e.spooked ? c.spookedPatience : 1);
-    if (e.lostTimer > paciencia) {
+    // 🤝 No se olvida si un compañero del vagón te vio hace poco, ni si
+    // seguís donde te vieron (ver "se pasan tu posición" en systems/escuadra.js).
+    if (e.lostTimer > paciencia && !(e.escuadraVioHace < paciencia) && !e.sigueAhi) {
       e.state = 'suspicious';
       e.target = e.lastSeen ? { ...e.lastSeen } : { x: e.x, y: e.y };
       e.suspicion = 0.9;
@@ -2430,6 +2432,8 @@ export function doCombat(e, dt, world) {
     if (engaged || e.rodeoTimer <= 0 || e.recargando > 0 ||
         distance(e.x, e.y, e.rodeoPunto.x, e.rodeoPunto.y) < 6) {
       e.rodeoPunto = null;
+      // Te encontró: se queda en ese ángulo tirándote (ver `enAngulo`).
+      if (engaged) e.enAngulo = true;
     } else {
       e.coverPoint = null;
       e.atCover = false;
@@ -2558,7 +2562,14 @@ export function doCombat(e, dt, world) {
     e.repositionTimer = Math.max(e.repositionTimer, c.repositionAfter + 0.01);
   }
 
-  const needsCover = !alDescubierto && (
+  /**
+   * 🔄 EL QUE TE ENCONTRÓ RODEANDO SE QUEDA EN ESE ÁNGULO mientras te vea:
+   * antes se iba a buscar cobertura, muchas veces a un lugar desde donde ya
+   * no te veía, y te perdía otra vez. Si te pierde más de un segundo, vuelve a
+   * cubrirse como siempre.
+   */
+  if (e.enAngulo && e.lostTimer > 1) e.enAngulo = false;
+  const needsCover = !alDescubierto && !(e.enAngulo && engaged) && (
     !e.coverPoint ||
     (!e.yaSeReplego && e.atCover && e.repositionTimer > c.repositionAfter)
   );

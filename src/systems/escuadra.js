@@ -213,6 +213,7 @@ export function actualizarEscuadras(world, dt) {
   for (const e of world.enemies) {
     if (e.cubriendo > 0) e.cubriendo -= dt;
     if (e.vioRecargar > 0) e.vioRecargar -= dt;
+    e.sigueAhi = false;
     if (!activo(e)) continue;
     const w = vagonDe(e, world);
     if (!grupos.has(w)) grupos.set(w, []);
@@ -244,6 +245,34 @@ export function actualizarEscuadras(world, dt) {
       }
     }
     st.todos = todos;
+
+    /**
+     * ---- SE PASAN TU POSICIÓN ----
+     *
+     * 🐛 *(Santi: "me escondo, pasa 1,5, '¡TE RODEO!', sale a buscar, yo no me
+     * muevo de la cobertura, se olvidan de mí. Es patético")*. Medido: el que
+     * rodeaba te encontraba en 0,6 s y te tiraba, pero los otros dos nunca te
+     * habían visto y a los 9 s se olvidaban de vos, con su compañero a los
+     * tiros al lado. Ahora, si uno del vagón te ve, todos saben dónde estás.
+     *
+     * Y `sigueAhi`: si no te moviste de donde te vieron (`sigueAhiRadio`), no
+     * se olvidan — saben que estás detrás de ESE cajón. Si te escabullís en
+     * silencio, el olvido corre como siempre.
+     */
+    // También avisa el herido que se retira o el que está tirado: no pelean,
+    // pero ven y gritan.
+    let fresco = null;
+    for (const o of world.enemies) {
+      if (!o.alive || o.state !== 'combat' || o.esJefe || vagonDe(o, world) !== w) continue;
+      if (o.lastSeen && (!fresco || o.lostTimer < fresco.lostTimer)) fresco = o;
+    }
+    const sigueAhi = !!fresco && w === vagonJugador && p.alive &&
+      distance(p.x, p.y, fresco.lastSeen.x, fresco.lastSeen.y) < c.sigueAhiRadio;
+    for (const o of miembros) {
+      if (fresco && o !== fresco && o.lostTimer > fresco.lostTimer) o.lastSeen = { ...fresco.lastSeen };
+      o.escuadraVioHace = fresco ? fresco.lostTimer : Infinity;
+      o.sigueAhi = sigueAhi;
+    }
 
     // ---- EL AVANCE: sólo en el vagón donde estás ----
     if (w !== vagonJugador || !p.alive) { terminarAvance(st); continue; }

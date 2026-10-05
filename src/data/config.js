@@ -1264,6 +1264,12 @@ export const CONFIG = {
     rodeoRadio: 180,
     // Y no se te para encima: por lo menos a esto de vos.
     rodeoMin: 36,
+    /**
+     * SI NO TE MOVISTE, NO SE OLVIDAN: mientras sigas a menos de esto de donde
+     * te vieron, saben que estás ahí (ver "se pasan tu posición" en
+     * systems/escuadra.js). Más lejos, te escabulliste y el olvido corre.
+     */
+    sigueAhiRadio: 48,
   },
 
   /**

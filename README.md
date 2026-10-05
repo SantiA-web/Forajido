@@ -777,8 +777,12 @@ arma que llevan:
   vuelta a los cajones, del lado descubierto de lo que te tapa), mientras los
   demás te tiran a donde te vieron para que no te muevas. **Uno por vez**, y es
   el de la escopeta o el revólver: el del Winchester sólo si no hay otro. Si te
-  ve en el camino o llega, pelea como siempre; si en 5 s no lo logró, abandona,
-  y el próximo sale 3 s después.
+  ve en el camino o llega, se queda en ese ángulo tirándote; si en 5 s no lo
+  logró, abandona, y el próximo sale 3 s después.
+- **Se pasan tu posición y no se olvidan si no te moviste.** Si uno del vagón
+  te ve, todos saben dónde estás. Y mientras sigas donde te vieron, no se
+  olvidan de vos. Para que te pierdan tenés que **irte sin que te vean**: ahí
+  sí, a los ~9 s dejan de buscarte.
 
 ### "¡Alto, manos arriba!" — rendirte con H
 

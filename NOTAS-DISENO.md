@@ -16450,6 +16450,36 @@ menos que no haya de otro tipo")*.
   26,5). La dificultad para él no cambia: casi no se queda escondido, y el que
   sale a rodear también se le pone a tiro. El rodeo castiga quedarse tapado,
   no pelear.
+- 🐛 **"Se olvidan de mí"** *(Santi: "me escondo, pasa 1,5, '¡TE RODEO!', sale
+  a buscar, yo no me muevo de la cobertura, se olvidan de mí. Es patético")*.
+  Reproducido: el que rodeaba te encontraba en 0,6 s y te tiraba, pero no se
+  lo decía a nadie; los otros dos nunca te habían visto y a los 9 s se
+  olvidaban (`loseTargetTime`), con su compañero a los tiros al lado. Y el que
+  te encontró volvía a buscar cobertura, muchas veces desde donde ya no te
+  veía. Tres arreglos:
+  1. **Se pasan tu posición** dentro del vagón: el `lastSeen` más fresco (de
+     cualquiera que pelee ahí, también el herido que se retira) pasa a todos,
+     y nadie se olvida si un compañero te vio hace menos que su paciencia
+     (`escuadraVioHace`).
+  2. **Si no te moviste, no se olvidan** (`sigueAhi`: a menos de
+     `sigueAhiRadio`, 48 px, de donde te vieron). Si te escabullís, el olvido
+     corre como siempre.
+  3. **El que te encontró rodeando se queda en ese ángulo** (`enAngulo`) sin
+     buscar cobertura mientras te vea.
+
+  Medido en el correo, 20 veces de 25 s con vos clavado en tu cobertura: **0
+  olvidos** (antes, casi siempre a los 9 s); 36 rodeos, 26 te encontraron; al
+  final todos los vivos seguían peleando; te sacan ~300 de vida en 25 s si no
+  hacés nada. Y si te escabullís al vagón de atrás sin que te vean, 6 de 6 te
+  pierden a los 8 s.
+  *(En la primera medición parecía que igual se olvidaban: era la prueba. Con
+  el jugador inmortal, 10 s de escopetazos a las piernas lo tiraban y lo
+  empujaban ~225 px fuera de su cobertura.)*
+
+  **Con el bot agente** (40 asaltos): voltea 3,6 guardias (antes 4,7), dura
+  60 s (antes 73), pierde **31,3 de vida por guardia (antes 22,6)**. El salto
+  más grande de toda la etapa: el bot se esconde a recargar o a curarse el
+  susto, y antes eso lo dejaba olvidado; ahora lo rodean.
 
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 

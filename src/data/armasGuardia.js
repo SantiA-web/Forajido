@@ -33,6 +33,14 @@ export const ARMAS_GUARDIA = {
   revolver: {
     id: 'revolver',
     nombre: 'Revólver Colt',
+    /**
+     * 🏃 QUÉ TAN RÁPIDO SE MUEVE PELEANDO (× `CONFIG.enemy.speed`, 46 px/s):
+     * de cobertura en cobertura, persiguiéndote, cargándote, rodeándote. La
+     * ronda tranquila no cambia. *(Santi: "un poco más rápidos [...] la C para
+     * los de revólver y escopeta recortada, y B para los de armas pesadas")*:
+     * los livianos ×1,5 (70 px/s), los pesados ×1,35 (62). Vos vas a 78.
+     */
+    velocidadCombate: 1.5,
     cargador: 6,
     recarga: 3.0,
     // Todo lo demás, como siempre: el revólver ES el guardia de antes.
@@ -54,12 +62,20 @@ export const ARMAS_GUARDIA = {
   winchester: {
     id: 'winchester',
     nombre: 'Winchester',
+    velocidadCombate: 1.35,   // pesada (ver el revólver)
     cargador: 10,
     recarga: 4.0,
     // *(Santi: "el Winchester tampoco veo que tenga la precisión que
     // prometía")*: de 0,45 a 0,20. A 140 px la bala se abre ±8 px a cada lado
     // (antes ±18); tu cuerpo mide ~9. Tira lento: su peligro es que acierta.
-    punteria: 0.20,
+    //
+    // *(Y después: "quiero que sea más mortal cuando el jugador esté en
+    // movimiento, no sólo cuando está quieto. Podríamos hacer que 66% quieto y
+    // 21% en movimiento")*: 0,20 → 0,14 y la bala 330 → 520. Medido a 140 px,
+    // 54 duelos: 44% → 66% con vos quieto, 11% → 23% moviéndote al azar. Lo que
+    // lo hace pegarle al que se mueve es la bala: apunta a donde estabas cuando
+    // empezó a apuntar, y cuanto antes llegue, menos te corriste.
+    punteria: 0.14,
     apuntar: 1.5,
     cadencia: 1.3,
     rafaga: 1,
@@ -71,7 +87,7 @@ export const ARMAS_GUARDIA = {
      */
     rafagaPausa: 0.6,
     rafagaPanico: 3,
-    velocidadBala: 330,
+    velocidadBala: 520,
     alcance: 300,
     vistaCombate: 170,
     distanciaIdeal: 140,
@@ -95,6 +111,7 @@ export const ARMAS_GUARDIA = {
   escopeta: {
     id: 'escopeta',
     nombre: 'Escopeta de doble caño',
+    velocidadCombate: 1.35,   // pesada (ver el revólver)
     cargador: 2,
     recarga: 2.5,
     punteria: 1,
@@ -123,6 +140,7 @@ export const ARMAS_GUARDIA = {
   recortada: {
     id: 'recortada',
     nombre: 'Escopeta recortada',
+    velocidadCombate: 1.5,    // liviana (ver el revólver)
     cargador: 2,
     recarga: 2.0,
     punteria: 1,
@@ -150,6 +168,7 @@ export const ARMAS_GUARDIA = {
   dosRevolveres: {
     id: 'dosRevolveres',
     nombre: 'Dos revólveres',
+    velocidadCombate: 1.5,    // liviana (ver el revólver)
     cargador: 12,
     recarga: 4.5,
     punteria: 1,

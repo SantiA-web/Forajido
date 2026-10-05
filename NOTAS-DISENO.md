@@ -16634,6 +16634,41 @@ primera pasada), muere 45% (41%), voltea 4,1 guardias, plata al escapar $484.
 Es lo esperado: ahora los refuerzos llegan, y los guardias no se pierden tiros
 contra sus compañeros ni gritan de más.
 
+🏃 **Más rápidos peleando, y el Winchester más mortal** *(Santi: "quiero hacer
+que los guardias sean un poco más rápidos en general cuando les toca ir de
+cobertura en cobertura o cuando tienen que perseguirme o cargarme [...] me
+gustaría que el Winchester tenga más puntería o que su bala vaya más rápido,
+quiero que pegue más")*.
+
+- **Velocidad por arma** (`velocidadCombate` en data/armasGuardia.js, sobre
+  los 46 px/s de `CONFIG.enemy.speed`; la ronda tranquila no cambia). Las
+  opciones eran ×1,2 (55), ×1,35 (62) y ×1,5 (70); Santi eligió **×1,5 para
+  las livianas** (revólver, recortada; y dos revólveres, que se sumó por ser
+  de la familia) **y ×1,35 para las pesadas** (Winchester, escopeta de doble
+  caño). Se aplica en `armarGuardia` sobre una copia del perfil (el de la
+  dificultad es compartido), también sobre la copia del aura del Sheriff. Los
+  viajes largos bajaron de ×1,5 a **×1,1** (`viajeCorriendo`): 77 y 68 px/s,
+  un poco menos que vos (78).
+- **Winchester: puntería 0,20 → 0,14 y bala 330 → 520.** Medido a 140 px
+  (`duelo`, con un jugador que se mueve de costado y cambia de dirección al
+  azar cada 0,3-1 s — el primer zigzag, regular, engañaba la medición):
+
+  | Opción | Vos quieto | Vos moviéndote |
+  |---|---|---|
+  | Hoy (0,20 / 330) | 44% | 11% |
+  | Más puntería (0,12 / 330) | 61% | 9% |
+  | Bala más rápida (0,20 / 480) | 43% | 21% |
+  | Un poco de cada una (0,15 / 420) | 66% | 17% |
+  | **Lo pedido: "66% quieto y 21% en movimiento" → 0,14 / 520** (54 duelos) | **66%** | **23%** |
+
+  Contra el que se mueve, lo que pega es la bala: el guardia apunta a donde
+  estabas cuando empezó a apuntar (~0,45 s antes). La puntería sólo castiga
+  al que se queda quieto.
+- **Con el bot asaltante** (80 asaltos): escapa **43%** (antes 51%), muere
+  **55%** (antes 45%), plata al escapar $543. El daño de los revólveres subió
+  de ~43 a 53 por asalto (se acercan más rápido) y el del Winchester quedó en
+  29.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

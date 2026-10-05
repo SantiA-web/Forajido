@@ -709,10 +709,16 @@ con un arma, se le ve en las manos, y cuando la vacía tiene que recargar.**
 | Arma | Cómo pelea | Balas | Recarga |
 |---|---|---|---|
 | **Revólver Colt** | Media distancia, de a dos balas, como siempre | 6 | 3 s, bala por bala |
-| **Winchester** | **Se queda lejos** y tira de a una, apuntando más: avisa más, pero es **el más preciso** (a 140 px acierta la mitad de las veces), con una bala más rápida y que llega más lejos. Apurado (si lo encarás, o a ciegas por una puerta) tira hasta 3, con 0,6 s de palanca entre una y otra. Ve más lejos una vez que está peleando | 10 | 4 s |
+| **Winchester** | **Se queda lejos** y tira de a una, apuntando más: avisa más, pero es **el más preciso y el de la bala más rápida**: a 140 px te pega 2 de cada 3 tiros si estás quieto, y casi 1 de cada 4 aunque te muevas. Apurado (si lo encarás, o a ciegas por una puerta) tira hasta 3, con 0,6 s de palanca entre una y otra. Ve más lejos una vez que está peleando | 10 | 4 s |
 | **Escopeta de doble caño** | **Te viene a buscar**, de cobertura en cobertura. Larga seis perdigones en abanico: a 30 px te saca ~37 de vida por caño, a 60 px ~14, a 100 px casi nada | 2 | 2,5 s |
 | **Recortada** (el Dinamitero) | La escopeta serruchada: más abierta y más corta | 2 | 2 s |
 | **Dos revólveres** (el Pistolero) | Ráfagas de cuatro, rápido y sucio | 12 | 4,5 s |
+
+**Peleando, el arma también dice qué tan rápido se mueven** (de cobertura en
+cobertura, persiguiéndote, cargándote): los de armas livianas —revólver, dos
+revólveres, recortada— van a 70 px/s; los de armas pesadas —Winchester,
+escopeta de doble caño— a 62. Vos vas a 78. Patrullando tranquilos, todos
+igual de lentos que siempre.
 
 **Quién lleva qué:** el guardia común (también el Encargado y los de franco),
 6 de cada 10 revólver, 2 Winchester y 2 escopeta. El **blindado** (vagón

@@ -57,6 +57,17 @@ export function armarGuardia(e, rng) {
   const doble = ARMAS_DOBLES[e.type];
   if (doble) e.municion[doble.corta] = ARMAS_GUARDIA[doble.corta].cargador;
   e.recargando = 0;
+  /**
+   * 🏃 PELEANDO SE MUEVE SEGÚN SU ARMA (`velocidadCombate`, ver
+   * data/armasGuardia.js). Se toca una copia de su perfil: el de la dificultad
+   * es compartido por todo el tren. Y también la copia que guarda el aura del
+   * Sheriff, si ya la tenía: si no, al salir de su vagón volvería a 46.
+   */
+  const mult = ARMAS_GUARDIA[e.armaId].velocidadCombate ?? 1;
+  if (mult !== 1 && e.ai) {
+    e.ai = { ...e.ai, speed: e.ai.speed * mult };
+    if (e._aiSinAura) e._aiSinAura = { ...e._aiSinAura, speed: e._aiSinAura.speed * mult };
+  }
 }
 
 /** El arma que tiene en la mano ahora. */

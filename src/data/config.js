@@ -769,8 +769,10 @@ export const CONFIG = {
     // Mientras se acerque, no se olvida; si lleva esto sin ganar terreno (una
     // puerta de chapa, un vagón cerrado), se rinde como siempre.
     olvidoTrabado: 5,
-    // Corre en los viajes largos (× su paso).
-    viajeCorriendo: 1.5,
+    // Corre en los viajes largos (× su paso). Era 1,5 con todos a 46 px/s; con
+    // la velocidad por arma (70 los livianos, 62 los pesados) queda en 1,1:
+    // 77 y 68, un poco menos que vos (78).
+    viajeCorriendo: 1.1,
     // Sin verte, sin moverse y sin tirar más que esto: busca un ángulo.
     sinHacerMax: 1,
 

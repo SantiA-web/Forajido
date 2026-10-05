@@ -174,12 +174,16 @@ function ponerACubrir(e, world, seg) {
  * un tramo de donde está y que lo ACERQUE. Si no hay ninguna, no avanza: no se
  * larga a correr al descubierto.
  */
-function coberturaMasCerca(e, world, blanco) {
+function coberturaMasCerca(e, world, blanco, lado = 0) {
   const c = CONFIG.escuadra;
   const taken = [];
   for (const o of world.enemies) if (o !== e && o.alive && o.coverPoint) taken.push(o.coverPoint);
   const a = arma(e);
-  const spot = findCoverPoint(world.map, e.x, e.y, blanco.x, blanco.y, taken, a.distanciaIdeal, a.vistaCombate);
+  // `lado`: -1 arriba de donde estás, +1 abajo. Si por ese lado no hay nada,
+  // cualquiera: mejor avanzar por el mismo costado que no avanzar.
+  const porElLado = lado ? (pt) => Math.sign(pt.y - blanco.y) === lado : null;
+  const spot = (porElLado && findCoverPoint(world.map, e.x, e.y, blanco.x, blanco.y, taken, a.distanciaIdeal, a.vistaCombate, porElLado)) ||
+    findCoverPoint(world.map, e.x, e.y, blanco.x, blanco.y, taken, a.distanciaIdeal, a.vistaCombate);
   if (!spot) return null;
   if (distance(spot.x, spot.y, e.x, e.y) > c.tramoMax) return null;
   const antes = distance(e.x, e.y, blanco.x, blanco.y);
@@ -288,11 +292,21 @@ function empezarAvance(st, miembros, world, blanco, E) {
   const porRecarga = miembros.some((o) => o.vioRecargar > 0);
   if (!porRecarga && st.pausa > 0) return;
 
-  // ¿Quién avanza? La escopeta primero; entre iguales, el que está más lejos
-  // de donde le gusta pelear.
+  /**
+   * ¿Quién avanza? La escopeta primero; entre iguales, el que está más lejos
+   * de donde le gusta pelear.
+   *
+   * 🔁 PERO NO EL MISMO DOS VECES SEGUIDAS si hay otro que pueda *(Santi: "a
+   * veces el de revólver se queda sin saber qué hacer y estorba")*: con un
+   * Winchester cubriendo y una escopeta avanzando, al revólver no le quedaba
+   * papel. Ahora, cuando la escopeta llega, avanza él — y por el OTRO
+   * costado (ver `coberturaMasCerca`): se ve el salto de a dos.
+   */
+  const candidatos = miembros.filter((o) => puedeAvanzar(o, world, blanco));
+  const otros = candidatos.filter((o) => o !== st.ultimoAvanzo);
+  const pool = otros.length ? otros : candidatos;
   let avanza = null, falta = -Infinity;
-  for (const o of miembros) {
-    if (!puedeAvanzar(o, world, blanco)) continue;
+  for (const o of pool) {
     const exceso = distance(o.x, o.y, blanco.x, blanco.y) - arma(o).paradaAvance;
     if (!avanza || prioridadAvance(o) < prioridadAvance(avanza) ||
         (prioridadAvance(o) === prioridadAvance(avanza) && exceso > falta)) {
@@ -320,7 +334,9 @@ function empezarAvance(st, miembros, world, blanco, E) {
     if (teVe && !isHidden(p)) { no('teVe'); st.pausa = 0.3; return; }
   }
 
-  const spot = coberturaMasCerca(avanza, world, blanco);
+  // El segundo en avanzar va por el costado contrario al del primero.
+  const lado = st.ultimoAvanzo && st.ultimoAvanzo !== avanza && st.ladoUltimo ? -st.ladoUltimo : 0;
+  const spot = coberturaMasCerca(avanza, world, blanco, lado);
   if (!spot) { no('sinCobertura'); st.pausa = 1; return; }
 
   const cubre = elegirQuienCubre(miembros, avanza);
@@ -329,6 +345,8 @@ function empezarAvance(st, miembros, world, blanco, E) {
   st.avanza = avanza;
   st.cubre = cubre;
   st.spot = spot;
+  st.ultimoAvanzo = avanza;
+  st.ladoUltimo = Math.sign(spot.y - blanco.y) || 1;
   st.fase = 'cubriendo';
   st.timer = porRecarga ? 0.15 : c.preAviso;
   if (cubre) ponerACubrir(cubre, world, st.timer + c.avanceMax);

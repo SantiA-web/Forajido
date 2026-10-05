@@ -16363,6 +16363,64 @@ el rescate igual que al caer, y que aprovechen tu recarga. Y marcó dos reglas:
   que es lo que el bot no hace. Y el "¡ALTO!" no salió nunca con el bot porque
   siempre tira primero desde el sigilo; probado aparte, con H y la pantalla.
 
+🔧 **Guardias: lo que Santi vio jugando la etapa 2** *(Santi: "es muy fácil
+pasar, no se aprecian las funciones o roles, los guardias parecen tontos [...]
+el Winchester dispara rapidísimo, parece más una ametralladora que un rifle de
+palanca [...] a veces el de revólver se queda sin saber qué hacer y estorba
+[...] se encuentran muy solos y no recargan [...] se buguean y se quedan quietos
+y titilan [...] el Winchester tampoco veo que tenga la precisión que prometía
+[...] los guardias sólo deberían hacer el ataque cuerpo a cuerpo cuando ya no
+tienen balas cargadas")*. Medido con un banco nuevo (`banco-guardias.js`,
+raíz, no se versiona: `duelo()` arma la prueba del correo con los guardias
+que digas y mide balas por segundo, acierto, dónde mueren las balas, giros y
+tiempo quieto). Eligió las tres recomendadas.
+
+- 🐛 **La ametralladora**: en pánico (lo encarás de frente) la ráfaga pasaba
+  de 1 a 5 y el Winchester tenía 0 de pausa: **0,11 s entre balas**. A ciegas
+  por puerta o techo, 5 balas a 0,12 s con cualquier arma. Ahora cada arma
+  tiene su `rafagaPanico`: Winchester 3 con 0,6 s de palanca (elegida la B;
+  las otras eran 1 sola o 2 a 0,8), escopeta y recortada 2 (los dos caños), el
+  revólver 5 como antes. A ciegas, la misma cantidad con la pausa del arma.
+  Medido: 0,7 s entre balas.
+- 🐛 **La precisión**: el ángulo se fijaba al empezar a apuntar y el guardia
+  seguía caminando mientras se asomaba, así que la bala salía torcida. Ahora
+  apunta al mismo punto desde donde está al disparar (si te moviste mientras te
+  apuntaba, lo esquivás igual). Y la puntería del Winchester pasó de 0,45 a
+  **0,20** (±8 px a 140 px, antes ±18; elegida la B), y el error del pánico
+  también pasa por la puntería. Medido, 12 duelos por arma, vos quieto a la
+  vista: **Winchester a 140 px, 21% → 49% de acierto** (error 0,092 → 0,036
+  rad); revólver a 90 px, 48% → 46%; escopeta a 70 px, 24% → 20% por perdigón.
+  *(Lo que parecía "balas contra su propia cobertura" era una medida mal hecha:
+  todas las que terminaban en una pared habían pasado de largo.)*
+- 🐛 **El que titilaba con la dinamita**: huía hasta salir del radio, volvía a
+  su cobertura (adentro del radio) y huía otra vez: iba y venía entre 60 y 78
+  px de la mecha y se daba vuelta 8-13 veces en 3 s. Ahora se acuerda de la
+  dinamita (`huyeDe`) hasta que explota, se queda a `huidaMargen` (15 px) más
+  afuera del radio mirándote, y te tira si te ve; contra una pared se corre al
+  costado. Medido: se queda a ~90 px, 0-2 giros.
+- 🐛 **No recargaban solos**: si vaciaban justo cuando otro cargaba, la recarga
+  no arrancaba y no se volvía a intentar hasta que te vieran. Ahora se intenta
+  cada cuadro (`recargarSiPuede`), y si hace `recargaTranquilo` (1,5 s) que no
+  te ven, cargan lo que les falte sin gritar (salvo el que está cubriendo).
+- 🥊 **Cuerpo a cuerpo sólo sin balas cargadas**. A quemarropa con balas entra
+  en pánico, se planta y tira (antes caminaba a su cobertura apuntando, y al
+  llegar empezaba a apuntar de cero: un Winchester pegado a vos no tiraba en 2
+  s). Medido, 4 s pegado: revólver vacía los 6 y recién ahí pega; escopeta, los
+  dos caños y después golpes; Winchester, 4 balas y ningún golpe.
+- **El revólver ya no estorba**: cualquiera sin cobertura con un compañero en
+  la línea se corre al costado (antes sólo el Pistolero y el que cubría), y en
+  la escuadra **no avanza el mismo dos veces seguidas**: cuando llega la
+  escopeta, avanza el revólver, y **por el otro costado** (`findCoverPoint`
+  acepta un `filtro`; elegida la A).
+- **Medido con el bot agente** (40 asaltos, contra los 80 de la etapa 2):
+  voltea 4,2 guardias (antes 4,75), dura 61 s (antes ~75), pierde 26,5 de vida
+  por guardia (antes 23,5). Un poco más peligrosos. Nunca recargaron todos a la
+  vez.
+- ⚠️ **Lo que falta para que no parezcan tontos**: con vos escondido detrás de
+  un cajón cerca, en la prueba del correo pasan 14-17 de cada 25 s parados sin
+  tirar: ya están a su distancia, no te ven y no buscan otro ángulo (el avance
+  dice "ya estoy cerca"). Es la etapa 3 (rodearte); quedó propuesta.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

@@ -20,6 +20,7 @@ src/Forajido/
 /banco-agente.js
 /banco-dibujo.js
 /banco-escuadra.js
+/banco-guardias.js
 /poses-*.png
 /proto-*.png
 /zoom-*.png

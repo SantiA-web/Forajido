@@ -741,6 +741,25 @@ export const CONFIG = {
     recargaVelocidad: 0.6,
 
     /**
+     * RECARGA EN UN MOMENTO TRANQUILO: si hace esto que no te ve (o ni está
+     * peleando) y le faltan balas, carga sin gritar. Ver `recargarSiPuede`.
+     */
+    recargaTranquilo: 1.5,
+
+    /**
+     * LA DINAMITA: el que huye se queda esto MÁS AFUERA del radio de huida y
+     * espera ahí a que explote (ver `esperarLaExplosion`). Sin margen se
+     * quedaba en el borde, entrando y saliendo.
+     */
+    huidaMargen: 15,
+
+    /**
+     * NO TIRA CONTRA SU PROPIA COBERTURA: antes de cada bala mira que estos
+     * primeros px hacia donde apunta estén libres (ver `lineaLibre`).
+     */
+    lineaLibreDistancia: 40,
+
+    /**
      * LOS GUARDIAS DE FRANCO (vagón de guardias, etapa 4 de los trenes nuevos).
      *
      * Están sentados jugando a las cartas con el arma colgada. La PRIMERA vez

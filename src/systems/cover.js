@@ -194,7 +194,9 @@ export function findCoverAtras(map, fromX, fromY, targetX, targetY, occupied = [
  * Winchester 140, la escopeta 50, ver data/armasGuardia.js) y `lejosMax` hasta
  * dónde acepta una cobertura (la vista del guardia, o la del arma).
  */
-export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = [], ideal = 80, lejosMax = null) {
+// `filtro` (opcional): sólo acepta los puntos para los que devuelve true. Lo
+// usa la escuadra para que el segundo que avanza vaya por el otro costado.
+export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = [], ideal = 80, lejosMax = null, filtro = null) {
   const c = CONFIG.enemy;
   const size = map.size;
   const radiusInTiles = Math.ceil(c.coverSearchRadius / size);
@@ -221,6 +223,7 @@ export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = [
       // Si ya la eligió un compañero, que se busque otra: si no, terminan
       // los tres amontonados detrás del mismo asiento.
       if (occupied.some((o) => Math.hypot(o.x - point.x, o.y - point.y) < c.coverSpacing)) continue;
+      if (filtro && !filtro(point)) continue;
 
       // La clave: justo delante, en la dirección del objetivo, tiene que haber algo.
       const angle = Math.atan2(targetY - point.y, targetX - point.x);

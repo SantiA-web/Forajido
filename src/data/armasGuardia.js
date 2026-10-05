@@ -56,11 +56,21 @@ export const ARMAS_GUARDIA = {
     nombre: 'Winchester',
     cargador: 10,
     recarga: 4.0,
-    punteria: 0.45,
+    // *(Santi: "el Winchester tampoco veo que tenga la precisión que
+    // prometía")*: de 0,45 a 0,20. A 140 px la bala se abre ±8 px a cada lado
+    // (antes ±18); tu cuerpo mide ~9. Tira lento: su peligro es que acierta.
+    punteria: 0.20,
     apuntar: 1.5,
     cadencia: 1.3,
     rafaga: 1,
-    rafagaPausa: 0,
+    /**
+     * 🐛 ERA UNA AMETRALLADORA *(Santi: "dispara rapidísimo, literal parece
+     * más una ametralladora que un rifle de palanca")*: con 0 de pausa, en
+     * pánico tiraba 5 balas a 0,11 s. Ahora, apurado, hasta 3 con 0,6 s de
+     * palanca entre una y otra (eligió la B; las otras eran 1 sola o 2 a 0,8).
+     */
+    rafagaPausa: 0.6,
+    rafagaPanico: 3,
     velocidadBala: 330,
     alcance: 300,
     vistaCombate: 170,
@@ -92,6 +102,8 @@ export const ARMAS_GUARDIA = {
     cadencia: 1,
     rafaga: 2,
     rafagaPausa: 0.65,
+    // En pánico y a ciegas, los dos caños y nada más: no hay un tercero.
+    rafagaPanico: 2,
     velocidadBala: 210,
     alcance: 120,
     perdigones: 6,
@@ -118,6 +130,7 @@ export const ARMAS_GUARDIA = {
     cadencia: 1,
     rafaga: 2,
     rafagaPausa: 0.62,
+    rafagaPanico: 2,
     velocidadBala: 210,
     alcance: 90,
     perdigones: 6,

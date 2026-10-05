@@ -691,8 +691,13 @@ cuchillo. Lo que NO compra es tiempo.
 
 Y si te sobra un segundo, **al que noqueaste lo podés rematar**: un desmayado
 cuenta como alguien que no te ve.
-- **Los guardias también pegan.** Si los tenés encima dejan de disparar y te
-  muelen a golpes, así que pegarse a uno ya no es refugio.
+- **Los guardias también pegan, pero sólo con el arma vacía.** Si te les pegás
+  y tienen balas cargadas, se plantan y te tiran a quemarropa (la ráfaga, el
+  escopetazo); recién cuando se quedan sin balas te muelen a golpes. Pegarse a
+  uno no es refugio.
+- **Huyen de la dinamita y esperan afuera**: se alejan hasta un poco más allá
+  del radio de la explosión, se quedan ahí mirándote (y tirándote si te ven)
+  hasta que explota.
 - **Los cuerpos quedan tirados.** Un guardia que ve un cadáver da la alarma.
   Dónde matás importa tanto como a quién.
 
@@ -704,7 +709,7 @@ con un arma, se le ve en las manos, y cuando la vacía tiene que recargar.**
 | Arma | Cómo pelea | Balas | Recarga |
 |---|---|---|---|
 | **Revólver Colt** | Media distancia, de a dos balas, como siempre | 6 | 3 s, bala por bala |
-| **Winchester** | **Se queda lejos** y tira de a una, apuntando más: avisa más, pero el doble de preciso, con una bala más rápida y que llega más lejos. Ve más lejos una vez que está peleando | 10 | 4 s |
+| **Winchester** | **Se queda lejos** y tira de a una, apuntando más: avisa más, pero es **el más preciso** (a 140 px acierta la mitad de las veces), con una bala más rápida y que llega más lejos. Apurado (si lo encarás, o a ciegas por una puerta) tira hasta 3, con 0,6 s de palanca entre una y otra. Ve más lejos una vez que está peleando | 10 | 4 s |
 | **Escopeta de doble caño** | **Te viene a buscar**, de cobertura en cobertura. Larga seis perdigones en abanico: a 30 px te saca ~37 de vida por caño, a 60 px ~14, a 100 px casi nada | 2 | 2,5 s |
 | **Recortada** (el Dinamitero) | La escopeta serruchada: más abierta y más corta | 2 | 2 s |
 | **Dos revólveres** (el Pistolero) | Ráfagas de cuatro, rápido y sucio | 12 | 4,5 s |
@@ -748,7 +753,7 @@ arma que llevan:
 |---|---|
 | **Winchester** | **Cubre.** Se queda atrás y tira. Nunca es el que avanza |
 | **Escopeta** | **Avanza**, de cobertura en cobertura, cuando alguien la cubre |
-| **Revólver** | Lo que falte: cubre si no hay Winchester, avanza si no hay escopeta |
+| **Revólver** | Lo que falte: cubre si no hay Winchester, avanza si no hay escopeta. Si están los tres, **avanza segundo**: cuando llega la escopeta, sale él, por el otro costado |
 
 - **"¡TE CUBRO!" / "¡AVANZO!"**: si estás agachado detrás de algo (o el que
   quiere avanzar no te ve), uno empieza a tirar **a donde te vio** y el otro

@@ -75,7 +75,9 @@ function balasDe(e) {
  */
 function tiroDe(e, enPanico, world) {
   const c = e.ai, a = armaDe(e);
-  let rafaga = enPanico ? c.panicoBurstSize : (a.rafaga ?? c.burstSize);
+  // En pánico cada arma tira lo que su mecanismo da: el Winchester no es una
+  // ametralladora (ver `rafagaPanico` en data/armasGuardia.js).
+  let rafaga = enPanico ? (a.rafagaPanico ?? c.panicoBurstSize) : (a.rafaga ?? c.burstSize);
   // Si otro está recargando, la última bala no se tira (ver `puedeGastar`).
   if (world && e.municion && companeroRecargando(e, world)) rafaga = Math.min(rafaga, balasDe(e) - 1);
   return {
@@ -151,6 +153,28 @@ function elegirArma(e, dist) {
  * Dinamitero: si sólo corriera en combate, el que te pierde de vista con el
  * arma vacía quedaría vacío para siempre.
  */
+/**
+ * 🐛 RECARGA SIEMPRE QUE PUEDA *(Santi: "otras veces se encuentran muy solos
+ * y no recargan, se nota mucho más en el de la escopeta")*. Dos agujeros:
+ *
+ *  1. Si vaciaba el arma justo cuando otro de su vagón cargaba, la recarga no
+ *     arrancaba (la regla de no recargar todos juntos) y NO SE VOLVÍA A
+ *     INTENTAR hasta que te viera de nuevo: quedaba vacío. Ahora se intenta
+ *     cada cuadro.
+ *  2. Nadie aprovechaba un momento tranquilo: la escopeta quedaba con un
+ *     cartucho. Ahora, si hace `recargaTranquilo` segundos que no te ve (o ni
+ *     está peleando), carga lo que le falte — sin gritar: no lo agarraste vacío.
+ */
+function recargarSiPuede(e, world) {
+  if (!e.municion || e.recargando > 0 || e.inconsciente > 0 || e.rendido) return;
+  if (e.burstLeft > 0 || e.aimTimer > 0 || e.peeking) return;
+  const a = armaDe(e);
+  const balas = balasDe(e);
+  if (balas <= 0) { empezarRecarga(e, world); return; }
+  const tranquilo = !(e.cubriendo > 0) && (e.state !== 'combat' || e.lostTimer > CONFIG.enemy.recargaTranquilo);
+  if (tranquilo && balas < a.cargador) empezarRecarga(e, world, false);
+}
+
 function actualizarRecarga(e, dt) {
   if (!(e.recargando > 0)) return;
   e.recargando -= dt;
@@ -194,6 +218,7 @@ export function updateEnemy(e, dt, world) {
   if (!e.alive) return;
   armarGuardia(e, world.rng);
   actualizarRecarga(e, dt);
+  recargarSiPuede(e, world);
 
   e.alertMark = Math.max(0, e.alertMark - dt);
   e.cooldown = Math.max(0, e.cooldown - dt);
@@ -282,11 +307,25 @@ export function updateEnemy(e, dt, world) {
 
     // Antes que cualquier otra cosa: si hay una mecha encendida al lado,
     // correr. Ningún plan sobrevive a una dinamita a dos metros.
-    const peligro = explosivoPeligroso(e, world);
+    /**
+     * 🐛 EL QUE HUYE DE UNA DINAMITA SIGUE HUYENDO HASTA QUE EXPLOTA *(Santi:
+     * "otras veces se buguean y se quedan quietos y titilan, la primera vez lo
+     * vi cuando lancé una dinamita")*. Antes huía hasta salir del radio, al
+     * cuadro siguiente ya no estaba "en peligro" y volvía caminando a su
+     * cobertura —que quedaba adentro—, y huía otra vez: medido, iba y venía
+     * entre 60 y 78 px de la mecha y se daba vuelta 8 a 13 veces en 3 s.
+     * Ahora se acuerda de cuál es (`huyeDe`) y se queda afuera, mirándote.
+     */
+    if (!e.huyeDe || !e.huyeDe.alive) e.huyeDe = explosivoPeligroso(e, world);
+    const peligro = e.huyeDe;
     // Y justo después: un cajón de pólvora rodando por el pasillo hacia él.
     const cajonRodando = peligro ? null : cajonQueViene(e, world);
     if (peligro) {
-      huirDe(e, dt, world, peligro);
+      if (distance(e.x, e.y, peligro.x, peligro.y) < peligro.type.fleeRadius + CONFIG.enemy.huidaMargen) {
+        huirDe(e, dt, world, peligro);
+      } else {
+        esperarLaExplosion(e, dt, world);
+      }
     } else if (cajonRodando) {
       reaccionarAlCajon(e, dt, world, cajonRodando);
     } else {
@@ -841,6 +880,24 @@ function reaccionarAlCajon(e, dt, world, ro) {
 }
 
 /** Sale corriendo en dirección contraria. No busca cobertura: se va y ya. */
+/**
+ * YA ESTÁ AFUERA DEL RADIO Y LA MECHA SIGUE: se queda ahí, te mira y, si te ve,
+ * te tira. No vuelve a su cobertura hasta que explote.
+ */
+function esperarLaExplosion(e, dt, world) {
+  const p = world.player;
+  e.coverPoint = null;
+  e.atCover = false;
+  e.peeking = false;
+  const ve = e.state === 'combat' && p.alive &&
+    canSeeFrom(e.x, e.y, e.facing, p, world.map, false, armaDe(e).vistaCombate);
+  if (ve) e.lastSeen = { x: p.x, y: p.y };
+  const mira = e.lastSeen || p;
+  turnTowards(e, Math.atan2(mira.y - e.y, mira.x - e.x), dt, 9);
+  if (ve) tryFire(e, dt, world, p, false);
+  else { e.aimTimer = 0; e.burstLeft = 0; }
+}
+
 function huirDe(e, dt, world, ex) {
   const c = CONFIG.enemy;
 
@@ -856,12 +913,20 @@ function huirDe(e, dt, world, ex) {
 
   const ang = Math.atan2(e.y - ex.y, e.x - ex.x);
   const paso = c.speed * 1.25 * frenoEn(e, world.map) * dt;
+  const x0 = e.x, y0 = e.y;
   moveAndCollide(
     e,
     Math.cos(ang) * paso,
     Math.sin(ang) * paso,
     movSolidAt(world.map)
   );
+  // Contra una pared: se corre al costado (siempre el mismo) en vez de
+  // empujarla quieto.
+  if (Math.hypot(e.x - x0, e.y - y0) < paso * 0.3) {
+    if (!e.ladoHuida) e.ladoHuida = world.rng.chance(0.5) ? 1 : -1;
+    const lat = ang + e.ladoHuida * Math.PI / 2;
+    moveAndCollide(e, Math.cos(lat) * paso, Math.sin(lat) * paso, movSolidAt(world.map));
+  }
   turnTowards(e, ang, dt, 9);
 }
 
@@ -2289,8 +2354,18 @@ export function doCombat(e, dt, world) {
   // De cerca no dispara: te caga a golpes. En el techo esto no aplica: un
   // guardia adentro del vagón no te puede alcanzar a golpes ahí arriba.
   // Y el de franco no pega mientras descuelga el arma: tiene las manos ocupadas.
-  if (player.alive && !player.enTecho && !(e.desenfundando > 0) && !world.alto &&
-      distance(e.x, e.y, player.x, player.y) < c.meleeRange) {
+  /**
+   * 🥊 SÓLO SI NO TIENE BALAS CARGADAS *(Santi: "los guardias sólo deberían
+   * hacer el ataque cuerpo a cuerpo cuando ya no tienen balas cargadas. Si yo
+   * me pongo en rango del cuerpo a cuerpo, deberían priorizar una ráfaga o un
+   * escopetazo")*. Con balas, a quemarropa entra en pánico (más abajo): te
+   * tira enseguida, sin esconderse.
+   */
+  const sinBalas = (e.sinArmaDeFuego && !e.armaId) || e.recargando > 0 ||
+    (e.municion && balasDe(e) <= 0);
+  const aQuemarropa = player.alive && !player.enTecho &&
+    distance(e.x, e.y, player.x, player.y) < c.meleeRange;
+  if (aQuemarropa && sinBalas && !(e.desenfundando > 0) && !world.alto) {
     doEnemyMelee(e, dt, world);
     return;
   }
@@ -2316,8 +2391,9 @@ export function doCombat(e, dt, world) {
    * el porqué completo de las tres condiciones y la historia de las dos
    * versiones anteriores.
    */
-  let enPanico = false;
-  if (engaged && !isHidden(player)) {
+  // A quemarropa y con balas: pánico. Tira ya (ver el cuerpo a cuerpo, arriba).
+  let enPanico = engaged && aQuemarropa;
+  if (!enPanico && engaged && !isHidden(player)) {
     // 🐛 Iba al revés: "hacia el guardia" tiene que medirse DESDE el
     // jugador (e - player), no desde el guardia hacia el jugador
     // (player - e). Con el signo invertido, el coseno daba NEGATIVO justo
@@ -2330,6 +2406,19 @@ export function doCombat(e, dt, world) {
       const dot = (player.moveDirX / mag) * (dx / dist) + (player.moveDirY / mag) * (dy / dist);
       enPanico = dot > c.panicoCoseno;
     }
+  }
+
+  /**
+   * 🥊 A QUEMARROPA Y CON BALAS: SE PLANTA Y TIRA. No sigue camino a su
+   * cobertura ni se esconde: le estás encima. Antes caminaba hacia la
+   * cobertura apuntando y al llegar empezaba a apuntar de nuevo — medido, un
+   * Winchester pegado a vos no tiró ni una bala en 2 s.
+   */
+  if (enPanico && aQuemarropa) {
+    e.peeking = false;
+    turnTowards(e, Math.atan2(player.y - e.y, player.x - e.x), dt, 12);
+    tryFire(e, dt, world, player, true);
+    return;
   }
 
   // --- Buscar cobertura ---
@@ -2419,6 +2508,16 @@ export function doCombat(e, dt, world) {
   const cubreTapado = e.cubriendo > 0 && !!e.lastSeen && !e.atCover &&
     allyInLine(e, world, aimAt.x, aimAt.y);
   if (cubreTapado) tapadoPorCompanero = true;
+  /**
+   * 🐛 Y NO SÓLO EL QUE CUBRE: cualquiera que pelee sin cobertura y tenga a un
+   * compañero en la línea se corre al costado *(Santi: "a veces el de revólver
+   * se queda sin saber qué hacer y estorba")*. Medido con tres guardias: el
+   * del revólver pasaba ~4 s de cada 20 parado sin tirar, esperando que el
+   * otro se corriera. Lo mismo si lo que le tapa el tiro es una pared pegada
+   * (`lineaTapada`, ver `tryFire`).
+   */
+  if (!e.coverPoint && !e.atCover && (e.lineaTapada > 0 ||
+      (engaged && allyInLine(e, world, aimAt.x, aimAt.y)))) tapadoPorCompanero = true;
 
   /**
    * OJO QUE NADA DE ESTO LE SACA EL REPLIEGUE DEL HERIDO: `retirarseHerido`
@@ -2769,6 +2868,9 @@ function holdCoverAndFire(e, dt, world, engaged, aimAt, enPanico) {
     // que ya usa el disparo ciego por la puerta para decir "no apunta con
     // cuidado" — no hizo falta inventar uno nuevo. Topeada por las balas que
     // le quedan y por lo que tira su arma (ver `tiroDe`).
+    // Si ya venía apuntando (por ejemplo, caminando a la cobertura en
+    // pánico), sigue ese apuntado: no lo empieza de cero.
+    if (e.aimTimer > 0 && e.burstLeft > 0) return;
     e.burstLeft = tiroDe(e, enPanico, world).burstSize;
     startAim(e, world, aimAt);
   }
@@ -2778,6 +2880,8 @@ function startAim(e, world, aimAt) {
   // aimTime: cuánto avisa antes de disparar. El Winchester avisa más.
   e.aimTimer = tiroDe(e).aimTime;
   e.aimDir = Math.atan2(aimAt.y - e.y, aimAt.x - e.x);
+  // El PUNTO al que apunta, no sólo el ángulo (ver `fire`).
+  e.aimPunto = { x: aimAt.x, y: aimAt.y };
   world.audio.play('cock');
 }
 
@@ -2831,6 +2935,24 @@ function tryFire(e, dt, world, aimAt, enPanico) {
   if (e.aimTimer > 0) {
     e.aimTimer -= dt;
     if (e.aimTimer <= 0) {
+      /**
+       * 🐛 NO TIRA CONTRA SU PROPIA COBERTURA. Empezaba a apuntar al asomarse
+       * y disparaba antes de terminar de salir: medido, el 27% de las balas
+       * del revólver y el 11% de las del Winchester se las comía el cajón
+       * detrás del que estaba. Si lo que tiene adelante, pegado, frena balas,
+       * espera un instante; si no se destapa, se acomoda (ver `doCombat`).
+       */
+      if (!lineaLibre(e, world, aimAt)) {
+        e.aimTimer = 0.05;
+        e.lineaTapada = (e.lineaTapada || 0) + dt;
+        if (e.lineaTapada > 0.6) {
+          e.burstLeft = 0;
+          e.cooldown = Math.max(e.cooldown, 0.3);
+          if (e.atCover) e.repositionTimer = e.ai.repositionAfter + 0.01;
+        }
+        return;
+      }
+      e.lineaTapada = 0;
       // La última bala no sale si otro está recargando: corta la ráfaga ahí.
       if (!puedeGastar(e, world)) {
         e.burstLeft = 0;
@@ -2851,6 +2973,7 @@ function tryFire(e, dt, world, aimAt, enPanico) {
       // Los tiros siguientes de la ráfaga salen casi seguidos.
       e.aimTimer = 0.09;
       e.aimDir = Math.atan2(aimAt.y - e.y, aimAt.x - e.x);
+      e.aimPunto = { x: aimAt.x, y: aimAt.y };
     }
     return;
   }
@@ -2875,6 +2998,20 @@ function tryFire(e, dt, world, aimAt, enPanico) {
   }
 }
 
+/**
+ * ¿LOS PRIMEROS `lineaLibreDistancia` PX HACIA DONDE APUNTA ESTÁN LIBRES? Sólo
+ * mira lo que tiene pegado (su propia cobertura): más lejos, que la bala pegue
+ * en lo que te tapa a vos es justamente el tiro de cobertura.
+ */
+function lineaLibre(e, world, aimAt) {
+  const ang = Math.atan2(aimAt.y - e.y, aimAt.x - e.x);
+  const hasta = Math.min(CONFIG.enemy.lineaLibreDistancia, distance(e.x, e.y, aimAt.x, aimAt.y) - 6);
+  for (let d = 9; d <= hasta; d += 4) {
+    if (world.map.blocksBulletsAt(e.x + Math.cos(ang) * d, e.y + Math.sin(ang) * d)) return false;
+  }
+  return true;
+}
+
 function fire(e, world, enPanico) {
   const c = CONFIG.enemy;
   const dist = distance(e.x, e.y, world.player.x, world.player.y);
@@ -2883,10 +3020,23 @@ function fire(e, world, enPanico) {
    * sacudón del tren (`world.dispersionExtra`): está encañonando a alguien
    * que se le viene encima, no apuntando con pulso.
    */
-  const extra = (world.dispersionExtra || 0) + (enPanico ? c.panicoSpreadExtra : 0);
+  // El error del pánico también pasa por la puntería del arma: el Winchester
+  // apurado sigue siendo más fino que un revólver apurado.
+  const extra = (world.dispersionExtra || 0) +
+    (enPanico ? c.panicoSpreadExtra * (armaDe(e).punteria ?? 1) : 0);
   // `spreadDeTiro`, no `spread`: al guardia también se le puede ir el pulso
   // de vez en cuando — parejo con el jugador. Ver CONFIG.mira.fallaChance.
   const mira = CONFIG.mira;
+  /**
+   * 🐛 APUNTA AL PUNTO DESDE DONDE ESTÁ AL DISPARAR *(Santi: "el Winchester
+   * tampoco veo que tenga la precisión que prometía")*. El ángulo se fijaba al
+   * empezar a apuntar, pero el guardia seguía caminando mientras se asomaba:
+   * al disparar estaba 10-15 px más allá y la bala salía torcida (medido: error
+   * medio 0,09 rad en el Winchester, cuando su arma daba la mitad). Sigue
+   * apuntando al MISMO punto —si te moviste mientras te apuntaba, lo esquivaste
+   * igual que antes—, sólo que desde donde está parado de verdad.
+   */
+  if (e.aimPunto) e.aimDir = Math.atan2(e.aimPunto.y - e.y, e.aimPunto.x - e.x);
   const angle = e.aimDir + world.rng.spreadDeTiro(spreadAt(e, dist, extra), mira.fallaChance, mira.fallaMultiplicador);
   const arma = armaDe(e);
 
@@ -2975,7 +3125,7 @@ function dispararACiegasPorPuerta(e, dt, world) {
       // Aguanta ese tiro, pero la ráfaga sigue corriendo igual.
       if (!allyInLine(e, world, target.x, target.y)) fireDoorBlind(e, world, target);
       e.doorBurstLeft -= 1;
-      if (e.doorBurstLeft > 0) e.doorAimTimer = 0.12;
+      if (e.doorBurstLeft > 0) e.doorAimTimer = pausaACiegas(e);
       else e.doorFireCooldown = c.doorFireCooldown;
     }
     return;
@@ -2986,9 +3136,18 @@ function dispararACiegasPorPuerta(e, dt, world) {
   if (allyInLine(e, world, target.x, target.y)) return;
   if (!soloTapaLaVista(e, target, world)) return;
 
-  e.doorBurstLeft = c.doorBurstSize;
+  e.doorBurstLeft = armaDe(e).rafagaPanico ?? c.doorBurstSize;
   e.doorAimTimer = 0.4;
   world.audio.play('cock');
+}
+
+/**
+ * A CIEGAS, CADA ARMA CON SU RITMO: el revólver vacía el tambor (0,12 s), pero
+ * el Winchester tiene que accionar la palanca y la escopeta cambiar de caño
+ * (`rafagaPausa`). Antes eran cinco balas a 0,12 s con cualquier arma.
+ */
+function pausaACiegas(e) {
+  return Math.max(0.12, armaDe(e).rafagaPausa || 0);
 }
 
 function fireDoorBlind(e, world, target) {
@@ -3048,7 +3207,7 @@ function dispararACiegasPorTecho(e, dt, world) {
     if (e.techoAimTimer <= 0) {
       if (!allyInLine(e, world, target.x, target.y)) fireTechoBlind(e, world, target);
       e.techoBurstLeft -= 1;
-      if (e.techoBurstLeft > 0) e.techoAimTimer = 0.12;
+      if (e.techoBurstLeft > 0) e.techoAimTimer = pausaACiegas(e);
       else e.techoFireCooldown = c.techoFireCooldown;
     }
     return;
@@ -3057,7 +3216,7 @@ function dispararACiegasPorTecho(e, dt, world) {
   if (e.techoFireCooldown > 0) return;
   if (allyInLine(e, world, target.x, target.y)) return;
 
-  e.techoBurstLeft = c.techoBurstSize;
+  e.techoBurstLeft = armaDe(e).rafagaPanico ?? c.techoBurstSize;
   e.techoAimTimer = 0.4;
   world.audio.play('cock');
 }

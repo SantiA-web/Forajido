@@ -192,7 +192,7 @@ export function updateBullets(bullets, dt, world) {
         const { puntos, zona } = danioDeBala(b, e, 'guardia', world.rng);
         const died = damageEnemy(e, puntos, b.x - b.vx, b.y - b.vy);
         if (!died && zona === 'piernas') pegarEnLaPierna(e, world);
-        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona, puntos, queria: b.zonaElegida ? b.zona : null, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona, puntos, queria: b.zonaElegida ? b.zona : null, deJugador: b.owner === 'player', apuntada: b.zonaElegida, victima: e, porGuardia: b.owner === 'enemy' ? (b.tirador || null) : undefined });
         if (died) world.bus.emit('enemyKilled', { enemy: e, byPlayer: b.owner === 'player' });
         break;
       }

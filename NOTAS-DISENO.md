@@ -16548,6 +16548,38 @@ si siempre hay uno entonces no tiene sentido el sheriff")*. En
   aparece cuando pasaste a alguien sin matarlo, que es justo cuando la vuelta
   tiene que costar.
 
+🔍 **GUARDIAS — ETAPA FINAL: la auditoría de 800 asaltos** *(Santi: "ver cosas
+que hacen los guardias que parecen irrealistas, que los hace parecer tontos,
+que los hace ver inexperimentados, que los hace parecer como si tuvieran
+errores y hace que el juego se vea mediocre en el combate (la parte más
+sagrada del juego)")*. `banco-inspector.js` (raíz, no se versiona):
+`auditar({ n })` juega con el bot asaltante y vigila a cada guardia en cada
+cuadro. Cada caso es un episodio (se cuenta una vez hasta que termina), con
+ficha (estado del guardia, distancia, qué hacías vos) y foto de los primeros.
+"Lejos" = a más de 260 px tuyo (fuera de la pantalla). Para poder explicar el
+fuego amigo, el aviso de impacto en un guardia ahora trae `victima` y
+`porGuardia` (systems/combat.js); no cambia nada del juego.
+
+**Primera pasada, 800 asaltos** (antes de arreglar nada):
+
+| Qué se vio | Casos | Por asalto | Por qué pasa |
+|---|---|---|---|
+| Quieto peleando, lejos | 1907 | 2,38 | Los refuerzos de la locomotora no encuentran el camino (el buscador de rutas corta a los 4.000 pasos y el tren no le entra) y a los 9 s de viaje se olvidan de vos sin haber llegado: vuelven a patrullar |
+| Grita y no se mueve ("¡TE RODEO!", "¡AVANZO!") | 959 | 1,20 | El que rodea se pone a recargar "porque está tranquilo" (las dos reglas usan 1,5 s) y abandona; el que avanza camina en línea recta contra un asiento |
+| Tira contra lo que tiene pegado | 525 | 0,66 | Los perdigones de los costados del abanico pegan en el cajón de al lado; y los tiros a ciegas por la puerta no miran la línea |
+| Grita "¡TE CUBRO!" y no tira en 3 s | 384 | 0,48 | El que cubre tiene un compañero o un cajón en la línea, o recién va a su cobertura |
+| Fuego amigo | 314 | 0,39 | Le pegan a un compañero a 13-108 px; 40 muertos en 800 asaltos |
+| Quieto peleando, cerca | 280 | 0,35 | Detrás de una fila de asientos sin dar un paso al pasillo; o esperando en una puerta al descubierto |
+| Amontonados, lejos | 254 | 0,32 | Los mismos refuerzos trabados, encimados en la locomotora |
+| Recarga al descubierto, cerca | 101 | 0,13 | Casi siempre caminando a una cobertura |
+| Te ve y no tira por 3 s | 76 | 0,10 | — |
+| Muere a manos de los suyos | 40 | 0,05 | (del fuego amigo) |
+| Titila | 5 | 0,01 | — |
+| Todos recargando a la vez | 2 | 0,00 | Uno recargando que camina al vagón donde otro ya cargaba |
+| Se olvida teniéndote enfrente / te da la espalda | 3 | 0,00 | — |
+
+Escape del bot en las 8 tandas de 100: 62, 49, 71, 66, 48, 70, 52 y 48%.
+
 #### 🏔️ EL PAISAJE LO HACE EL SUELO (B): LOS MOJONES
 
 La parte A —las zonas de terreno— hizo que el suelo fuera un lugar. Ésta es la

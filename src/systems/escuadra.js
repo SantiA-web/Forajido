@@ -120,11 +120,31 @@ export function jugadorEmpiezaRecarga(world) {
 
 // ------------------------------------------------------------------ roles
 
-/** Cuanto más chico, más le toca avanzar. El Winchester no avanza nunca. */
+/**
+ * Cuanto más chico, más le toca avanzar. El Winchester no avanza nunca.
+ *
+ * LA ESCOPETA PRIMERO (0) Y EL REVÓLVER SEGUNDO (1) — y ese "segundo" recién
+ * ahora significa algo. Antes avanzaba uno por vez y después venía
+ * `pausaEntreAvances`, así que en la práctica el revólver casi nunca le
+ * tocaba: cuando la pausa terminaba, la escopeta ya estaba otra vez en
+ * condiciones de avanzar y volvía a ganar la prioridad. Ver `terminarAvance`,
+ * que ahora encadena el relevo sin pausa.
+ */
 function prioridadAvance(e) {
   const a = arma(e);
   if (a.id === 'winchester') return null;
   return a.perdigones ? 0 : 1;
+}
+
+/**
+ * EL EJE DEL PASILLO. El vagón tiene su centro de alto SIEMPRE en 80
+ * (5 baldosas de 16; ver `centroY` en data/config.js), así que el signo de
+ * `y - 80` dice por qué costado del pasillo va alguien. Es lo que deja mandar
+ * al segundo que avanza por el lado que no usó el primero.
+ */
+const EJE_PASILLO = 80;
+function ladoDe(punto) {
+  return Math.sign(punto.y - EJE_PASILLO) || 1;
 }
 
 /** Cuanto más chico, más le toca cubrir. */
@@ -174,12 +194,27 @@ function ponerACubrir(e, world, seg) {
  * un tramo de donde está y que lo ACERQUE. Si no hay ninguna, no avanza: no se
  * larga a correr al descubierto.
  */
-function coberturaMasCerca(e, world, blanco) {
+function coberturaMasCerca(e, world, blanco, evitarLado = 0) {
   const c = CONFIG.escuadra;
   const taken = [];
   for (const o of world.enemies) if (o !== e && o.alive && o.coverPoint) taken.push(o.coverPoint);
   const a = arma(e);
-  const spot = findCoverPoint(world.map, e.x, e.y, blanco.x, blanco.y, taken, a.distanciaIdeal, a.vistaCombate);
+  let spot = findCoverPoint(world.map, e.x, e.y, blanco.x, blanco.y, taken, a.distanciaIdeal, a.vistaCombate);
+  /**
+   * EL SEGUNDO QUE AVANZA VA POR EL OTRO COSTADO *(Santi: "avanza él por el
+   * otro costado del vagón")*. Si la cobertura que le salió está del mismo
+   * lado del pasillo que la del primero, se pide otra sumando esa al mapa de
+   * "ocupadas" — así `findCoverPoint` busca en otro lado. Si no hay ninguna
+   * del otro costado, se queda con la primera: avanzar por el mismo lado es
+   * peor que el ideal, pero mucho mejor que no avanzar.
+   */
+  if (spot && evitarLado && ladoDe(spot) === evitarLado) {
+    const otro = findCoverPoint(
+      world.map, e.x, e.y, blanco.x, blanco.y, taken.concat([spot]),
+      a.distanciaIdeal, a.vistaCombate
+    );
+    if (otro && ladoDe(otro) !== evitarLado) spot = otro;
+  }
   if (!spot) return null;
   if (distance(spot.x, spot.y, e.x, e.y) > c.tramoMax) return null;
   const antes = distance(e.x, e.y, blanco.x, blanco.y);
@@ -272,7 +307,13 @@ export function actualizarEscuadras(world, dt) {
         st.cubre = elegirQuienCubre(miembros, a);
         if (st.cubre) ponerACubrir(st.cubre, world, Math.max(0.5, st.timer));
       }
-      if (!a || !activo(a) || a.atCover || a.coverPoint !== st.spot || st.timer <= 0) terminarAvance(st);
+      if (!a || !activo(a) || a.atCover || a.coverPoint !== st.spot || st.timer <= 0) {
+        // ¿Llegó de verdad, y era el primero (la escopeta)? Entonces sale el
+        // segundo de una. `st.spot` se lee ACÁ: `terminarAvance` lo borra.
+        const llego = a && activo(a) && a.atCover && a.coverPoint === st.spot;
+        const encadena = !!(llego && !st.relevo && st.spot && prioridadAvance(a) === 0);
+        terminarAvance(st, encadena ? { lado: ladoDe(st.spot) } : null);
+      }
     }
   }
 
@@ -320,7 +361,7 @@ function empezarAvance(st, miembros, world, blanco, E) {
     if (teVe && !isHidden(p)) { no('teVe'); st.pausa = 0.3; return; }
   }
 
-  const spot = coberturaMasCerca(avanza, world, blanco);
+  const spot = coberturaMasCerca(avanza, world, blanco, st.evitarLado || 0);
   if (!spot) { no('sinCobertura'); st.pausa = 1; return; }
 
   const cubre = elegirQuienCubre(miembros, avanza);
@@ -336,10 +377,34 @@ function empezarAvance(st, miembros, world, blanco, E) {
   if (porRecarga) E.avancesPorRecarga++;
 }
 
-function terminarAvance(st) {
+function terminarAvance(st, relevo = null) {
   if (st.avanza) st.avanza.avanzando = false;
   if (st.cubre && st.cubre.cubriendo > 0.3) st.cubre.cubriendo = 0.3;
   if (st.fase !== 'quieto') st.pausa = CONFIG.escuadra.pausaEntreAvances;
+  /**
+   * EL RELEVO: EL SEGUNDO SALE SIN ESPERAR LA PAUSA.
+   *
+   * *(Santi, eligiendo el papel del revólver: "segundo en avanzar. Cuando la
+   * escopeta llega a su cobertura, avanza él por el otro costado del vagón.
+   * Así se ve el salto de a dos y deja de estar parado en el medio")*.
+   *
+   * `pausa` en 0 es todo el mecanismo: la escuadra vuelve a `quieto` y en el
+   * mismo cuadro `empezarAvance` elige al siguiente, que con la escopeta ya
+   * ubicada es el del revólver (prioridad 1). `evitarLado` le dice por dónde
+   * fue el primero para que vaya por el otro.
+   *
+   * ENCADENA UNA SOLA VEZ: el relevo se marca en `st.relevo`, y el avance del
+   * relevo no vuelve a encadenar. Dos saltos y la pausa de siempre — sin eso,
+   * tres guardias se pasarían el asalto avanzando en fila sin respirar.
+   */
+  if (relevo) {
+    st.pausa = 0;
+    st.evitarLado = relevo.lado;
+    st.relevo = true;
+  } else {
+    st.evitarLado = 0;
+    st.relevo = false;
+  }
   st.fase = 'quieto';
   st.avanza = null;
   st.cubre = null;

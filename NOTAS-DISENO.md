@@ -13,6 +13,88 @@ Tres estados:
 
 ---
 
+## 🔧 HECHA (SIN JUGAR) · Guardias etapa 2b: los ocho arreglos del diagnóstico
+
+*(Tanda pedida por Santi a partir de un diagnóstico medido en otra sesión. **Se
+puede borrar entera con un solo `git revert`**: todo vive en un único commit.)*
+
+### Lo que estaba mal, y de dónde salía cada cosa
+
+| Qué se veía | Dónde estaba | Por qué |
+|---|---|---|
+| El Winchester parecía una ametralladora | `tiroDe`, ai.js | El pánico pisaba `a.rafaga` con `panicoBurstSize` (5) y la pausa la sacaba de `rafagaPausa`, que en el Winchester es **0**. Cinco balas a 0,09 s |
+| Su precisión no se notaba | `armasGuardia.js` | `punteria: 0.45` da **±17,6 px** a 140 px contra un cuerpo de 9 px. Y el pánico le sumaba 0,08 derecho al ángulo: **±28,8 px** |
+| Tiraban a su propia cobertura | `holdCoverAndFire` | `moveToward(anchor)` arranca el viaje a la asomada y `tryFire` se llamaba en el mismo cuadro: elegía el ángulo desde donde se iba a asomar y soltaba la bala desde donde todavía estaba |
+| El tiro a ciegas ignoraba el arma | `fireDoorBlind`, `fireTechoBlind` | Armaban la bala a mano con `c.bulletSpeed`: la escopeta tiraba **una bala de rifle** en vez de sus seis perdigones. Se escribió antes de que las armas existieran |
+| El del revólver estorbaba | `tapadoPorCompanero`, ai.js | El paso al costado existía y estaba medido, pero sólo se le permitía al Pistolero y al que cubre. Cualquier otro esperaba quieto |
+| Se quedaban con el arma vacía | `gastarBala` → `empezarRecarga` | Se intentaba UNA vez; si justo ahí un compañero cargaba, la regla de "nunca todos a la vez" la rechazaba y **nadie la reintentaba** |
+| Nadie cargaba en un momento tranquilo | `holdCoverAndFire` | La recarga de oficio sólo corría estando parapetado: el que te perdió de vista llegaba al próximo cruce con un cartucho |
+| Titilaban con la dinamita | `explosivoPeligroso` | Empate entre "huí del radio" y "volvé a tu cobertura", con la cobertura **adentro** del radio |
+| Pegaban trompadas con el arma cargada | el portón del melee | `dist < meleeRange` y nada más |
+
+### Las tres decisiones que venían con opciones, y qué se eligió
+
+Las tres salieron con la **recomendada** del diagnóstico:
+
+- **Cadencia del Winchester en pánico: 3 balas a 0,6 s** (opción B). Con el
+  apuntado de ráfaga (0,09) quedan **0,69 s reales**, contra los 0,98 s de su
+  cadencia normal: se lee como apuro, no como automático.
+- **Precisión: ±8 px a 140 px** (opción B) → `punteria: 0.20`. Y el pánico ya no
+  le suma dispersión (`sinPanicoSpread`).
+- **El revólver, segundo en avanzar** (opción A). `terminarAvance` encadena el
+  relevo con `pausa` en 0 y le pasa `evitarLado`, así va por el otro costado del
+  pasillo. **Encadena una sola vez**: dos saltos y la pausa de siempre.
+
+### Lo medido, lo calculado y lo que NO se sabe
+
+Esta separación importa más que los números.
+
+**Medido** (Chromium sin ventana, bucle frenado, pisando cuadro a cuadro):
+
+- **Cuerpo a cuerpo:** pegado a 10 px, con la escopeta cargada → **0 golpes y 6
+  tiros**; con el arma vacía → **6 golpes y 0 tiros**.
+- **La mecha:** **0 cambios de dirección en 3 s** (el diagnóstico medía 8 a 13),
+  y la distancia a la mecha va de 11 a 63 px y se queda afuera.
+- **Aguante:** 10.000 cuadros, 4 asaltos, los dos tipos de tren, entradas al
+  azar por el sistema de input de verdad: **0 errores, 0 avisos de `[escuadra]`,
+  nunca se cayó del asalto**.
+- El Winchester dispara normal de 20 a 200 px (1-2 tiros cada 3 s).
+
+**Calculado** de los datos, no jugado: la ráfaga de pánico pasa de **11,1 a 1,4
+balas/s**, y la apertura a 140 px de **±17,6 (±28,8 en pánico) a ±7,8**. El
+revólver queda intacto en ±39,2 — que es, por fin, la diferencia que el arma de
+precisión tenía que tener.
+
+**Lo que NO se pudo verificar, y hay que mirar jugando:**
+
+1. **El pánico en vivo.** Se dispara según hacia dónde SE MUEVE el jugador, y un
+   arnés que teletransporta al jugador no tiene velocidad: la cadencia nueva
+   está calculada, no vista.
+2. **El 11-27% de balas a la propia cobertura no se reprodujo.** Con un
+   indicador propio (balas que mueren a menos de 20 px del que tiró) dio ~4% en
+   las DOS versiones, así que ese número no es mío y la mejora no está medida.
+   Lo que sí está es el portón en el código.
+3. **El relevo del revólver y el paso al costado**, sin ver.
+4. **Si la dificultad subió, y cuánto.** El control determinista falló: con el
+   mismo guion de teclas, en el código viejo los guardias **nunca entraron en
+   combate** (`cuadrosEnCombate: 0`), así que son dos trayectorias distintas y
+   no un antes/después. Un soak al azar dio 139 balas enemigas contra 25, pero
+   está confundido por lo mismo.
+
+> ⚠️ **El arreglo con más dientes es el del cuerpo a cuerpo.** Pegarte a un
+> guardia era la jugada segura del juego, porque lo bajaba de su arma a un
+> culatazo. Ahora pegarte a una escopeta cargada es meterte en los 40 px donde
+> entran casi todos los perdigones. Es exactamente lo pedido, y es lo primero
+> que hay que sentir.
+
+### Lo que quedó afuera a propósito
+
+El diagnóstico cierra con un ítem que **no entra en esta tanda**: que si te
+tapás a 30 px detrás de un asiento no te rodean y a los ~9 s se olvidan de vos.
+Eso es la etapa 3 (rodearte), y es otro trabajo.
+
+---
+
 ## ✅ HECHA · Las tres armas cuerpo a cuerpo: culata, cuchillo y hacha
 
 *(idea de Santi: "podés golpear cuerpo a cuerpo con tu arma, pero los dejás

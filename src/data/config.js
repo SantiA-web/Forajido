@@ -859,6 +859,66 @@ export const CONFIG = {
     panicoSpreadExtra: 0.08,
 
     /**
+     * CUÁNTO AGUANTA ASOMADO SIN TIRO, antes de soltar la asomada y buscarse
+     * otro ángulo. Ver `holdCoverAndFire`: el guardia ya no dispara hasta
+     * tener la línea libre desde donde está (antes le pegaba a su propia
+     * cobertura), y éste es el plazo para que esa espera no sea eterna.
+     *
+     * 0,8 s es un poco más que lo que tarda en ir de la cobertura a la
+     * asomada (`speed * 1.4` sobre un `peekOffset` de pocos píxeles): alcanza
+     * de sobra para el caso normal, y corta el caso en que algo fijo le tapa
+     * el tiro.
+     */
+    asomadaEspera: 0.8,
+
+    /**
+     * LA RECARGA DE OFICIO EN SILENCIO: si hace este tiempo que no te ve y le
+     * faltan balas, carga sin que haga falta que lo pillen vacío.
+     *
+     * *(Santi, del diagnóstico: "nadie aprovecha un momento tranquilo para
+     * recargar: la escopeta se queda con un cartucho")*. La recarga de oficio
+     * que ya existía sólo corría estando PARAPETADO y con menos de medio
+     * cargador (ver `holdCoverAndFire`); el que te perdió de vista y anda
+     * buscándote no entraba nunca, y llegaba al próximo cruce con lo que le
+     * hubiera quedado.
+     *
+     * 1,5 s es lo que pidió Santi, y es un número con sentido propio: menos
+     * que eso y recargaría en medio de un tiroteo con pausas; más, y no llega
+     * a aprovechar el hueco de un guardia que te está rodeando.
+     */
+    recargaOciosa: 1.5,
+
+    /**
+     * EL QUE TIENE UN COMPAÑERO EN LA LÍNEA SE CORRE AL COSTADO.
+     *
+     * *(Santi, del diagnóstico: "el del revólver estorba. Con tres guardias
+     * pasa ~4 s de cada 20 parado sin tirar. Tiene a un compañero en la línea
+     * de tiro y se queda esperando sin moverse")*.
+     *
+     * `apartarsePaso` es cuánto se corre de costado (perpendicular a su línea
+     * de tiro) y `apartarseCada` cada cuánto puede volver a intentarlo. 14 px
+     * es casi una baldosa: alcanza para salir de atrás de un cuerpo (un
+     * guardia mide 9 px de ancho) sin que parezca que se teletransporta.
+     */
+    apartarsePaso: 14,
+    apartarseCada: 0.5,
+
+    /**
+     * CUÁNTO MÁS ALLÁ DEL RADIO DE LA MECHA SE PLANTA EL QUE HUYE.
+     *
+     * *(Santi, del diagnóstico: "el que se congela y titila con la dinamita.
+     * Huye hasta salir del radio, al cuadro siguiente vuelve hacia su
+     * cobertura, que queda adentro del radio, y huye otra vez. Va y viene
+     * entre 60 y 78 px de la mecha, y en 3 s se da vuelta 8 a 13 veces")*.
+     *
+     * El titileo era un empate entre dos reglas: "huí del radio" y "volvé a
+     * tu cobertura", con la cobertura adentro del radio. Este margen es el
+     * colchón que rompe el empate — se va un poco MÁS LEJOS de lo que el
+     * miedo le exige, y desde ahí ya no lo vuelve a agarrar.
+     */
+    huidaMargen: 26,
+
+    /**
      * EL REPLIEGUE DEL HERIDO — un guardia al que le queda un tiro de vida, con
      * un compañero cerca, se saca del medio mientras el otro sostiene.
      *

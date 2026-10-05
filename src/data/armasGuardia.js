@@ -56,11 +56,49 @@ export const ARMAS_GUARDIA = {
     nombre: 'Winchester',
     cargador: 10,
     recarga: 4.0,
-    punteria: 0.45,
+    /**
+     * 🐛 LA PUNTERÍA ERA 0,45 Y NO SE NOTABA. A 140 px (su distancia de
+     * pelea) `spreadFar` 0,28 × 0,45 = 0,126 rad, o sea que la bala se abría
+     * **±17,6 px a cada costado** contra un jugador de ~9 px de ancho: casi
+     * el doble de tu cuerpo. El arma de precisión del juego erraba por dos
+     * cuerpos y pico, así que no se distinguía del revólver (±22 px).
+     *
+     * 0,20 la deja en **±7,8 px**: la bala entra en el ancho del cuerpo. Es
+     * el número que hace que su peligro sea ACERTAR, que es lo único que
+     * puede ser el peligro de un arma que tira una bala cada 1,4 s.
+     */
+    punteria: 0.20,
     apuntar: 1.5,
     cadencia: 1.3,
     rafaga: 1,
     rafagaPausa: 0,
+    /**
+     * 🐛 Y EN PÁNICO SE VOLVÍA UNA AMETRALLADORA. `rafaga: 1` vale para el
+     * tiro normal, pero el pánico lo pisaba con `panicoBurstSize` (5) y la
+     * pausa salía de `rafagaPausa` — que acá es CERO, porque un arma que
+     * tira de a una bala no necesita pausa entre tiros que no existen.
+     * Resultado medido: cinco balas con 0,11 s entre cada una, de un rifle
+     * de palanca. No hay mano que accione una palanca nueve veces por
+     * segundo.
+     *
+     * `rafagaPanico` le pone techo propio al pánico y `rafagaPanicoPausa` le
+     * devuelve el tiempo de la palanca. Tres balas a 0,6 s **se ven como
+     * apuro** (contra 1,4 s de su cadencia normal) sin parecer automático.
+     */
+    rafagaPanico: 3,
+    rafagaPanicoPausa: 0.6,
+    // Y a ciegas (puerta, techo) el mismo ritmo: la palanca no se apura
+    // porque haya una puerta en el medio.
+    rafagaCiega: 3,
+    rafagaCiegaPausa: 0.6,
+    /**
+     * EL PÁNICO NO LE SACA PUNTERÍA. `panicoSpreadExtra` (0,08) se suma
+     * DERECHO al ángulo, sin pasar por `punteria`: a 140 px son 11,2 px de
+     * más, o sea que el pánico le arruinaba la mira más de lo que la mira
+     * valía. Un tirador con un rifle al hombro no pierde el pulso porque lo
+     * encaren: se queda lejos justamente para eso.
+     */
+    sinPanicoSpread: true,
     velocidadBala: 330,
     alcance: 300,
     vistaCombate: 170,
@@ -92,6 +130,13 @@ export const ARMAS_GUARDIA = {
     cadencia: 1,
     rafaga: 2,
     rafagaPausa: 0.65,
+    // En pánico y a ciegas tira LO QUE TIENE: dos caños. No hay un tercero,
+    // así que `panicoBurstSize` (5) nunca significó nada acá — salvo que el
+    // tiro ciego, que no mira el arma, le inventaba cinco.
+    rafagaPanico: 2,
+    rafagaPanicoPausa: 0.65,
+    rafagaCiega: 2,
+    rafagaCiegaPausa: 0.65,
     velocidadBala: 210,
     alcance: 120,
     perdigones: 6,
@@ -118,6 +163,10 @@ export const ARMAS_GUARDIA = {
     cadencia: 1,
     rafaga: 2,
     rafagaPausa: 0.62,
+    rafagaPanico: 2,
+    rafagaPanicoPausa: 0.62,
+    rafagaCiega: 2,
+    rafagaCiegaPausa: 0.62,
     velocidadBala: 210,
     alcance: 90,
     perdigones: 6,

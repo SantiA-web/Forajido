@@ -1906,6 +1906,72 @@ export const CONFIG = {
      */
     bajarAlcance: 44,
     bajarHold: 0.4,
+
+    /**
+     * 🧗 CÓMO SE SIENTE ESTAR ARRIBA — etapa 1 del techo nuevo
+     * (world/sensacionTecho.js). Nada de esto cambia una regla: es lo que se
+     * ve y se oye. La cámara NO se inclina (decidido con Santi): la altura
+     * se cuenta con la lupa, la sombra del tren, el viento, el humo y el
+     * bamboleo.
+     */
+    sensacion: {
+      /**
+       * La lupa arriba. Adentro es 4 (la del mundo); con 3 entra un tercio
+       * más de campo y el dibujo sigue cayendo en puntos enteros. Es la misma
+       * que usa la huida.
+       */
+      lupa: 3,
+      transicion: 0.45,     // segundos para pasar de una lupa a la otra al subir o bajar
+
+      /** El tren se mece de costado contra el desierto quieto. */
+      bamboleo: { amplitud: 1.3, vel: 0.42 },
+
+      /** La sombra del tren sobre el desierto de allá. */
+      sombra: {
+        largo: 12,               // unidades, con el sol alto
+        estiraAlAtardecer: 1.2,  // al final del asalto mide 12 × (1 + 1,2 × lo que bajó el sol)
+        alfa: 0.4,
+        corrimiento: 3,          // cada banda se corre hacia la cola
+        color: '#2a1d12',
+      },
+
+      /** Rayas de aire y polvo que te cruzan hacia la cola. */
+      viento: {
+        rayaCada: 0.035, rayaLargo: [6, 20], rayaVel: [330, 470], rayaAlfa: 0.3,
+        rayaDia: '#f4ead6', rayaNoche: '#9aa0b4',
+        polvoCada: 0.06, polvoVel: [190, 280], polvoAlfa: 0.55,
+        polvoDia: '#c9a77a', polvoNoche: '#5d5446',
+      },
+
+      /**
+       * El humo de la locomotora, de a bancos. Tenue a propósito (`alfa`):
+       * tapa el paisaje, nunca un cartel ni un jinete.
+       */
+      humo: {
+        cada: [5, 9],           // segundos entre banco y banco
+        bocanadas: [8, 12],
+        separacion: [14, 26],   // unidades entre una bocanada y la siguiente
+        dispersionY: 30,        // cuánto se aparta el banco del lomo del techo
+        vel: 140,               // unidades por segundo hacia la cola
+        vida: [4, 5],           // lo que tarda en cruzar una pantalla con la lupa del techo
+        radio: [7, 18],         // al nacer y al deshacerse
+        alfa: 0.3,
+        colorDia: '#d9d2c6',
+        colorNoche: '#5a5450',
+        chispa: '#ffb347',
+      },
+
+      /**
+       * De noche el techo se oscurece con el mismo velo que el tren, pero un
+       * poco menos: arriba no hay faroles, pero le da la luna de lleno.
+       * 1,25 × el 55% de `faroles.brilloNoche` = 69%.
+       */
+      lunaTecho: 1.25,
+
+      /** El viento que se oye arriba (adentro no suena). */
+      vientoVolumen: 0.07,
+      vientoRampa: 0.5,
+    },
   },
 
   /**

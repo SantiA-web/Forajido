@@ -21,6 +21,11 @@ import { dibujarTechoDesdeArriba, dibujarObstaculoTecho as obstaculoTecho } from
 import { T } from '../text/es.js';
 
 import { createCamera } from '../engine/camera.js';
+import { DENSIDAD } from '../engine/renderer.js';
+import {
+  crearSensacionTecho, actualizarSensacionTecho, lupaDelTecho, bamboleoDelTecho,
+  sombraDelTren, dibujarSensacionTecho,
+} from '../world/sensacionTecho.js';
 import { distance, moveAndCollide } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor } from '../world/trenTresCuartos.js';
@@ -73,7 +78,22 @@ import { applyRaidResult, gameState, numero } from '../state/gameState.js';
 export function createRaidScene(services) {
   const { renderer, input, bus, rng, scenes, hud, audio } = services;
   const colors = CONFIG.colors;
-  const camera = createCamera(renderer);
+  /**
+   * 🧗 LA LUPA DEL ASALTO: 4 adentro, 3 arriba del techo, y el pasaje entre
+   * las dos (world/sensacionTecho.js). La cámara mide la pantalla con ESTA
+   * lupa y no con la que tenga puesta el renderer en ese momento: así sigue
+   * bien centrada aunque el dibujo cambie de lupa a mitad de cuadro.
+   */
+  let lupaActual = DENSIDAD;
+  /** Lo que se ve y se oye arriba del tren: viento, humo, bamboleo. */
+  let sensacion = crearSensacionTecho();
+  let vaivenTechoY = 0;
+  let vientoTechoAntes = null;
+  const vistaDelAsalto = {
+    get width() { return Math.floor(renderer.canvas.width / lupaActual); },
+    get height() { return Math.floor(renderer.canvas.height / lupaActual); },
+  };
+  const camera = createCamera(vistaDelAsalto);
 
   let train, player, enemies, passengers, loot, map, doors;
   let bullets, explosives, riders, particles, floaters;
@@ -239,6 +259,14 @@ export function createRaidScene(services) {
     traqueteoVelMult = 1;
     vaivenCamaraX = 0;
     vaivenPeso = 0;
+    sensacion = crearSensacionTecho();
+    lupaActual = DENSIDAD;
+    vaivenTechoY = 0;
+    vientoTechoAntes = null;
+    // El viento de arriba: una capa que arranca muda y sube al trepar.
+    // Silbido de banda media con ráfagas, distinto del viento grave de la tormenta.
+    audio.ambiente('vientoTecho', { cutoff: 760, q: 0.9, type: 'bandpass', gain: 0,
+      respira: { profundidad: CONFIG.ambiente.vientoProfundidad, cada: CONFIG.ambiente.vientoCada } });
 
     /**
      * Adelantar el caballo se paga en reloj, y el precio es LITERAL: los
@@ -853,6 +881,7 @@ export function createRaidScene(services) {
     audio.quitarAmbiente('chapa');
     audio.quitarAmbiente('agua');
     audio.quitarAmbiente('viento');
+    audio.quitarAmbiente('vientoTecho');
     mostrarCursorDelSistema(true);
   }
 
@@ -2461,6 +2490,7 @@ export function createRaidScene(services) {
     }
 
     actualizarVaivenCamara(dt);
+    actualizarArriba(dt);
 
     // El apuntado usa la cámara SIN la sacudida: si no, el temblor te haría fallar.
     //
@@ -2469,8 +2499,10 @@ export function createRaidScene(services) {
     // mira (que se dibuja en el mundo) se iría separando del mouse hasta 6
     // píxeles, ida y vuelta, todo el tiempo. Contándolo, la mira se queda
     // debajo del mouse y la bala va a lo que ves debajo de la mira.
-    world.miraX = input.mouse.x + camera.x + vaivenCamaraX;
-    world.miraY = input.mouse.y + camera.y;
+    // Con la lupa del asalto, no con la del renderer: arriba del techo es 3.
+    // Y con el bamboleo del techo, que corre el dibujo del tren en Y.
+    world.miraX = input.mouse.px / lupaActual + camera.x + vaivenCamaraX;
+    world.miraY = input.mouse.py / lupaActual + camera.y + vaivenTechoY;
     /**
      * 🎯 SI LA MIRA ESTÁ SOBRE EL CUERPO DE ALGUIEN, SE LE APUNTA A ÉL *(Santi:
      * "les disparo a la cabeza y no les hago daño")*. La mira se dibuja donde
@@ -3943,7 +3975,37 @@ export function createRaidScene(services) {
     return camera.renderX + Math.round(traqueteoSwayX) + vaivenCamaraX;
   }
 
+  /**
+   * 🧗 ESTAR ARRIBA: la lupa, el bamboleo, el viento, el humo y el sonido del
+   * viento (world/sensacionTecho.js). Corre siempre —también adentro— porque
+   * lo que ya está en el aire termina su viaje y la lupa vuelve de a poco.
+   */
+  function actualizarArriba(dt) {
+    const arriba = player.alive && player.enTecho;
+    lupaActual = lupaDelTecho(sensacion, DENSIDAD);
+    actualizarSensacionTecho(sensacion, dt, {
+      enTecho: arriba,
+      velMult: traqueteoVelMult,
+      ancho: renderer.canvas.width / lupaActual,
+      alto: renderer.canvas.height / lupaActual,
+      centroY: CONFIG.techo.centroY - camera.y,
+      rng,
+    });
+    lupaActual = lupaDelTecho(sensacion, DENSIDAD);
+    vaivenTechoY = bamboleoDelTecho(sensacion, scroll, lupaActual);
+
+    // El volumen sólo se toca cuando CAMBIA (ver `updateTormenta`): una rampa
+    // nueva cada cuadro cancela la anterior y el sonido no llega nunca.
+    if (arriba !== vientoTechoAntes) {
+      vientoTechoAntes = arriba;
+      const S = CONFIG.techo.sensacion;
+      audio.volumen('vientoTecho', arriba ? S.vientoVolumen : 0, S.vientoRampa);
+    }
+  }
+
   function render(r) {
+    // Arriba del techo se ve un tercio más de mundo (ver `lupaActual`).
+    if (lupaActual !== DENSIDAD) r.lupaLibre(lupaActual);
     drawOutside(r);
 
     r.ctx.save();
@@ -3952,7 +4014,9 @@ export function createRaidScene(services) {
     // (world.aimX/aimY siguen usando camera.x limpio, así que el balanceo no
     // te desvía la puntería — sólo se ve).
     const swayX = desplazamientoX();
-    r.ctx.translate(-swayX, -camera.renderY);
+    // 🧗 Y el bamboleo del techo, en Y: se mece el tren, no el desierto (que
+    // ya se dibujó en `drawOutside`, sin esto).
+    r.ctx.translate(-swayX, -camera.renderY - vaivenTechoY);
 
     /**
      * TRES CUARTOS, ETAPA A: TODO LO QUE ESTÁ PARADO SE DIBUJA POR DÓNDE TIENE
@@ -4083,6 +4147,11 @@ export function createRaidScene(services) {
      * LA MOCHILA VA FUERA DEL `translate`: es lo único de esta pantalla que no
      * está en el mundo. Se dibuja sobre coordenadas de pantalla, como el HUD.
      */
+    // 🧗 El viento y el humo de arriba, en coordenadas de pantalla.
+    dibujarSensacionTecho(r, sensacion, { dia: gameState.esDeDia });
+
+    // La mochila y todo lo que se mide en update van con la lupa del mundo.
+    r.nuevoCuadro();
     if (mochilaAbierta) drawMochila(r);
   }
 
@@ -4528,7 +4597,36 @@ export function createRaidScene(services) {
       dibujarTechoDesdeArriba(r, w, map.height);
     }
 
+    lunaSobreElTecho(r);
+
     for (const ob of techObstacles) obstaculoTecho(r, ob, colors);
+  }
+
+  /**
+   * 🌙 DE NOCHE, EL TECHO TAMBIÉN ES DE NOCHE. 🐛 Antes no lo era: el tren se
+   * oscurece con `oscuridadDeNoche` (world/train.js), pero el techo se pinta
+   * DESPUÉS, encima, y quedaba gris de día contra un desierto a oscuras. Ahora
+   * va con el mismo velo, un poco más claro (`sensacion.lunaTecho`): arriba
+   * no hay faroles, pero le da la luna de lleno.
+   *
+   * Los carteles y vos quedan sin velo, a propósito: son lo que hay que leer.
+   */
+  function lunaSobreElTecho(r) {
+    if (gameState.esDeDia) return;
+    const F = CONFIG.tresCuartos.faroles;
+    const brillo = Math.min(1, F.brilloNoche * CONFIG.techo.sensacion.lunaTecho);
+    const canal = (i) => Math.round(255 * Math.min(1, brillo * F.tinteNoche[i]));
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = `rgb(${canal(0)},${canal(1)},${canal(2)})`;
+    const sobre = CONFIG.tresCuartos.alturaPared;
+    for (const w of train.wagons) {
+      if (w.esCola || !w.tieneTecho || w.carbon) continue;
+      if (w.x > camera.renderX + renderer.width + 20 || w.x + w.width < camera.renderX - 20) continue;
+      ctx.fillRect(w.x, -sobre, w.width, map.height + sobre);
+    }
+    ctx.restore();
   }
 
   /** ¿Esto cae dentro de la pantalla? Con un tren de 4500px, casi nada lo hace. */
@@ -4589,6 +4687,17 @@ export function createRaidScene(services) {
 
     franjaDeDesierto(r, 0, arriba, false, vel, dia);
     franjaDeDesierto(r, abajo, r.height, true, vel, dia);
+
+    // 🌗 La sombra del tren sobre el desierto de allá (world/sensacionTecho.js).
+    // Se estira con el sol, que baja con el reloj del asalto.
+    const Lv = CONFIG.tresCuartos.luzVentanilla;
+    const pasado = duracionInicial > 0 ? Math.min(1, Math.max(0, 1 - timeLeft / duracionInicial)) : 0;
+    // La pared del fondo sube `alturaPared` por encima del mapa: la sombra
+    // nace donde termina ella, no en el borde del mapa (quedaría tapada).
+    sombraDelTren(r, train, desplazamientoX(), arriba - CONFIG.tresCuartos.alturaPared, {
+      sol: 1 - (1 - Lv.solAlFinal) * pasado,
+      hayLuz: dia && !hayTormenta,
+    });
     lechoDeLaVia(r, arriba, abajo, alturaMapa, vel, dia);
   }
 

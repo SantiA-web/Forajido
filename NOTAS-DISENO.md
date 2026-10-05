@@ -17551,6 +17551,110 @@ Sin errores en 3.440 cuadros, de día y de noche.
 
 ---
 
+## 🧗 EL TECHO NUEVO (2026-10-05)
+
+*(Santi: "traeme una propuesta para el techo. Quiero casi que rehacerlo al
+completo")*
+
+**El diagnóstico:** el techo funcionaba (carteles, huecos, tiros desde abajo,
+la barra de llegada: todo confirmado jugando), pero era un **minijuego suelto**.
+Arriba no había nada que hacer salvo esquivar, y no se sentía que estuvieras
+arriba de un tren en marcha: la cámara era la misma de adentro y el techo tapaba
+casi toda la pantalla.
+
+**Lo que NO se tira:** los carteles y la barra de llegada (*"los obstáculos
+están perfecto"*). Se acomodan dentro de algo más grande.
+
+**El plan, en cinco etapas, de a una y jugando cada una:**
+
+| Etapa | Qué | Estado |
+|---|---|---|
+| **1. Sentirse arriba** | Cámara más alejada, sombra del tren, viento, humo, bamboleo, sonido. Ninguna regla cambia | ✅ hecha, **sin jugar** |
+| 2. Subir y bajar en cualquier enganche | Escalerillas: `[E]` mantenido, en los dos sentidos, ~1 s expuesto a los jinetes | Falta |
+| 3. Algo que hacer arriba | **Arma arriba** (cara: cada tiro despierta el vagón de abajo, apuntar frena) y **espiar por la linterna** de los coches (agachado ves quién hay adentro) | Falta |
+| 4. Obstáculos que salen del mundo | Pórticos y tanques que se ven venir, **túneles** (cuerpo a tierra o bajarse), **curvas** que empujan | Falta |
+| 5. Medir con el bot | Techo contra pasillo: tiempo, vida, guardias despiertos | Falta |
+
+Después vienen **los guardias en el techo** (guardafrenos arriba de los
+furgones, guardias que suben cuando te oyen), como bloque aparte.
+
+**Decidido con Santi:** arma arriba **sí, pero cara**; subir desde cualquier
+enganche **sí**; espiar por la linterna **sí**; bajar directo adentro de un
+vagón por una escotilla **no** (le quitaría todo el valor a las puertas).
+
+### 🎥 La cámara NO se inclina: se queda desde arriba
+
+La propuesta original era inclinar la cámara al subir, para que el techo se
+viera como desde el caballo. Santi preguntó *"¿y si lo hacemos al techo visto
+desde arriba?"*, y tenía razón:
+
+- **Cambiar la cámara en medio del asalto marea**: cada subida y bajada
+  parecería otro juego.
+- **Con arma arriba (etapa 3), apuntar con la vista inclinada es incómodo**: lo
+  de arriba y abajo de la pantalla se achata, y los jinetes de los dos costados
+  quedarían a distancias raras.
+
+**La salvedad:** desde arriba, pero no del todo vertical. Mirando derecho para
+abajo, el pórtico y el cajón serían dos rectángulos iguales —hoy sabés cuál
+saltar y bajo cuál agacharte porque se ve la altura—, y rompería los tres
+cuartos del juego entero. Queda **la misma cámara de siempre**, y la altura se
+cuenta con otras señales.
+
+### ✅ ETAPA 1 HECHA: estar arriba (`world/sensacionTecho.js`)
+
+| Señal | Cómo es | Número (`CONFIG.techo.sensacion`) |
+|---|---|---|
+| **La lupa baja** | Arriba ves un tercio más de mundo: en 1920×1080, 640×360 en vez de 480×270. El desierto pasa de ~45 a ~90 unidades de cada lado | `lupa` 3 (adentro es 4, la misma de la huida); `transicion` 0,45 s |
+| **La sombra del tren** | Sobre el desierto de allá, pegada a cada vagón y cortada en los enganches. Tres bandas escalonadas, más oscura junto al tren. **Se estira a medida que el sol baja** con el reloj del asalto. De noche y con tormenta no hay | `sombra.largo` 12, ×2,2 al final; `alfa` 0,4 |
+| **El viento** | Rayas de aire y polvo que te cruzan hacia la cola, más rápido cuando el tren pega un tirón | `viento.*` |
+| **El humo de la locomotora** | Llega de a bancos cada 5-9 s, en racimos estirados por el viento. De noche, con chispas. Tenue a propósito: tapa el paisaje, nunca un cartel | `humo.alfa` 0,3 |
+| **El bamboleo** | El tren se mece de costado contra el desierto, que queda quieto. Dos ondas que no coinciden, para que no parezca un péndulo | `bamboleo` 1,3 unidades |
+| **El sonido** | Un viento silbado (banda media, con ráfagas) que sube al trepar y se apaga al bajar. Distinto del viento grave de la tormenta | `vientoVolumen` 0,07 |
+
+**Todo entra y sale de a poco** (`peso`, de 0 adentro a 1 arriba): subir y
+bajar no pegan un salto. Lo que ya está en el aire termina su viaje.
+
+**La sombra se dibuja siempre**, también adentro: la sombra del tren no
+desaparece porque entres a un vagón. Arriba simplemente se ve más.
+
+🐛 **ARREGLADO DE PASO: de noche el techo era de día.** El tren se oscurece con
+`oscuridadDeNoche`, pero el techo se pinta DESPUÉS, encima, y quedaba gris claro
+contra un desierto a oscuras (ya pasaba antes de esta etapa). Ahora lleva el
+mismo velo, un poco más claro (`lunaTecho` 1,25 → 69% de brillo): arriba no hay
+faroles, pero le da la luna de lleno. **Los carteles y vos quedan sin velo**, a
+propósito: son lo que hay que leer.
+
+**Cómo se hizo la lupa sin romper nada:**
+
+- La cámara del asalto mide la pantalla con **su propia lupa**
+  (`vistaDelAsalto`), no con la que tenga puesta el renderer en ese momento.
+- El dibujo pone la lupa al empezar (`renderer.lupaLibre`, nueva: la misma
+  `lupa` sin redondear, sólo para el medio segundo del pasaje) y **vuelve a la
+  del mundo antes de la mochila**. Así todo lo que se mide en `update` (la
+  mochila, el mouse) sigue con la lupa 4 de siempre.
+- **La mira sale de los puntos crudos del mouse** dividido por la lupa del
+  asalto, más el bamboleo. Adentro da exactamente lo mismo que antes; arriba
+  queda lista para el arma de la etapa 3.
+
+**Medido:** 3.600 cuadros con teclas al azar (pasajeros y carga, de día y de
+noche), sin errores. El cuadro arriba se dibuja en **~3,5 ms**. Cayéndose al
+enganche, la lupa vuelve a 4 y la cámara queda centrada.
+
+**Dos cosas que se ven y no son de esta etapa:**
+
+- **Un círculo de luz grande y tenue** sobre el desierto, en algunas fotos. Ya
+  estaba antes (se comparó con los cambios sacados): es de las luces del tren.
+- **Durante el medio segundo del pasaje de lupa**, los carteles de texto se ven
+  un poco desparejos. Quietos, nunca.
+
+🔇 **Y el servidor de pruebas (puerto 8082) ya no suena** *(Santi: "pongo esto
+en segundo plano y se escuchan los disparos, músicas")*. Cualquier otro tampoco
+si la dirección lleva `?mudo`. El juego de verdad suena igual (`engine/audio.js`).
+
+**⚠️ NO JUGADO.**
+
+---
+
 ### ✅ ETAPA 6 CERRADA
 
 *(Santi: "preferiría pasar a una siguiente etapa")*. Se cierra con el

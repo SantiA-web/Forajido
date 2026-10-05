@@ -470,6 +470,13 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 - **Al vagón blindado no se baja desde el techo.** Se cruza por encima y nada
   más: la única llave sigue siendo la dinamita.
 
+**Arriba se nota que estás arriba.** La cámara se aleja un poco al subir (ves un
+tercio más de desierto y los jinetes de los dos lados) y vuelve al bajar. El tren
+tira su sombra sobre el desierto, que se estira a medida que baja el sol. Te
+cruza el viento con polvo, el humo de la locomotora te pasa por encima de a
+bancos (de noche, con chispas), el tren se mece de costado y se oye el viento.
+De noche el techo queda a la luz de la luna. Nada de eso cambia las reglas.
+
 ### Adentro del tren
 
 **El vagón se está meciendo, y se nota en el piso.** El sol entra por los

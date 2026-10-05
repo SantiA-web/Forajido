@@ -157,11 +157,14 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hay uno entonces no tiene sentido el sheriff")*. En su lugar, la **etapa
   final: la auditoría de 800 asaltos** (`banco-inspector.js`) para encontrar
   todo lo que hace ver tontos o inexpertos a los guardias.
-- **El techo** *(Santi, 2026-10-05: "también hay que tener en cuenta lo del
-  techo: guardias disparando desde arriba, subiéndose al techo y entre otras
-  cosas, pero antes del techo me gustaría mejorar lo que se siente estar allá
-  arriba")*: primero mejorar cómo se siente estar en el techo; después, los
-  guardias en el techo.
+- **El techo nuevo** (plan en NOTAS-DISENO.md, "EL TECHO NUEVO"): cinco
+  etapas, de a una y jugando cada una. **La 1 (sentirse arriba) está hecha y
+  sin jugar.** Faltan: 2 subir/bajar en cualquier enganche, 3 arma arriba y
+  espiar por la linterna, 4 obstáculos que salen del mundo (túneles, curvas),
+  5 medir con el bot. Después, los guardias en el techo. La cámara NO se
+  inclina (decidido con Santi).
+- **El servidor de pruebas (8082) no suena**, ni nada con `?mudo` en la
+  dirección (`engine/audio.js`).
 - **El bot asaltante** (`banco-asaltante.js`, hecho 2026-10-05): vuelve
   herido 9 de cada 10 veces y nunca pasa del vagón ~3, así que mide el
   principio del tren, no el blindado ni el fondo. Si hace falta medir más

@@ -205,6 +205,13 @@ export function createRenderer(canvas, vista) {
     lupa(d) { usar(Math.max(1, Math.min(DENSIDAD, Math.round(d)))); },
 
     /**
+     * La misma lupa SIN redondear, para el pasaje de una a otra (subir al
+     * techo: de 4 a 3 en medio segundo). Esos pocos cuadros intermedios se
+     * dibujan con puntos desparejos; quietos, nunca.
+     */
+    lupaLibre(d) { usar(Math.max(1, Math.min(DENSIDAD, d))); },
+
+    /**
      * DÓNDE VA UNA ESCENA ARMADA PARA `CONFIG.view`, centrada en la pantalla de
      * hoy. El campamento, el mapa, los interiores y la tienda están pensados
      * para ese tamaño; se dibujan corridos por esto y su fondo llena lo que

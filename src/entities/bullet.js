@@ -2,7 +2,7 @@
 
 import { CONFIG } from '../data/config.js';
 
-export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon, tirador }) {
+export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon, tirador, alTecho }) {
   return {
     x, y,
     /**
@@ -31,6 +31,8 @@ export function createBullet({ x, y, angle, speed, damage, range, owner, fromRid
     // Un perdigón de escopeta pega una parte de una bala (`factor`), y los del
     // mismo disparo comparten número (`perdigon`): ver systems/combat.js.
     factor: factor ?? 1,
+    // 🧗 Un tiro a ciegas hacia el techo: en la vista lateral se ve como astillas.
+    alTecho: !!alTecho,
     perdigon: perdigon ?? null,
     // Quién la disparó: un guardia, un jefe o un jinete. Sólo para saber de
     // dónde vino cada herida (la lee el aviso de impacto).

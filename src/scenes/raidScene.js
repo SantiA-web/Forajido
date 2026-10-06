@@ -20,7 +20,7 @@ import { CONFIG } from '../data/config.js';
 import { dibujarTechoDesdeArriba, dibujarGondolaDesdeArriba, dibujarObstaculoTecho as obstaculoTecho } from '../world/techoDesdeArriba.js';
 import { geoTecho, yEnTecho } from '../world/techoGeometria.js';
 import {
-  superficieEn, profundidad, dibujarFondoDeCostado, dibujarTrenDeCostado,
+  superficieEn, piesEnTecho, dibujarFondoDeCostado, dibujarTrenDeCostado,
   dibujarPorticoDeCostado, dibujarCajonDeCostado,
 } from '../world/techoDeCostado.js';
 import { T } from '../text/es.js';
@@ -96,6 +96,8 @@ export function createRaidScene(services) {
   let vientoTechoAntes = null;
   /** La vista de costado del techo: de qué vista venías y el fundido al cambiar. */
   let vistaAntes = null, fundidoVista = 0, ultimaSuperficie = null;
+  /** Las astillas de los tiros desde abajo (C2): `{ x, vida, semilla }`. */
+  let astillas = [];
   const vistaDelAsalto = {
     get width() { return Math.floor(renderer.canvas.width / lupaActual); },
     get height() { return Math.floor(renderer.canvas.height / lupaActual); },
@@ -227,7 +229,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles });
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas });
     enemies = train.enemies;
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
@@ -274,6 +276,7 @@ export function createRaidScene(services) {
     vistaAntes = null;
     fundidoVista = 0;
     ultimaSuperficie = null;
+    astillas = [];
     // El viento de arriba: una capa que arranca muda y sube al trepar.
     // Silbido de banda media con ráfagas, distinto del viento grave de la tormenta.
     audio.ambiente('vientoTecho', { cutoff: 760, q: 0.9, type: 'bandpass', gain: 0,
@@ -344,6 +347,23 @@ export function createRaidScene(services) {
         // Disparaste durante el "¡ALTO!": se terminó la charla.
         if (alto && options.owner === 'player') alto = null;
         bullets.push(createBullet(options));
+        /**
+         * 🧗 C2 · UN TIRO HACIA EL TECHO DEJA ASTILLAS donde atraviesa la
+         * chapa. La bala viaja muy poco (del guardia a tu `y`) y suele llegar
+         * en el mismo cuadro, así que no se la puede dibujar viva: se anota
+         * dónde sale por el techo — su `x` cuando alcanza tu `y` — y ahí
+         * saltan las astillas un ratito.
+         */
+        // Cualquier tiro de un guardia de adentro mientras estás arriba va al
+        // techo: el tiro a ciegas (`alTecho`) y también el de contención, que
+        // le tira al lugar donde te sintió. Los de los jinetes no (`fromRider`).
+        if (player.enTecho && options.owner === 'enemy' && !options.fromRider) {
+          const dy = player.y - options.y;
+          const sen = Math.sin(options.angle);
+          const avance = Math.abs(sen) > 0.15 ? dy / sen : 60;
+          const corre = Math.max(-90, Math.min(90, Math.cos(options.angle) * avance));
+          astillas.push({ x: options.x + corre, vida: CONFIG.techo.costado.astillasVida, semilla: Math.random() });
+        }
       },
       spawnExplosive: (options) => {
         tiroteo = true;
@@ -3797,6 +3817,10 @@ export function createRaidScene(services) {
   }
 
   function updateEffects(dt) {
+    for (let i = astillas.length - 1; i >= 0; i--) {
+      astillas[i].vida -= dt;
+      if (astillas[i].vida <= 0) astillas.splice(i, 1);
+    }
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.life -= dt;
@@ -4271,7 +4295,8 @@ export function createRaidScene(services) {
    * 🧗 ARRIBA DEL TREN, LA VISTA DE COSTADO (world/techoDeCostado.js) — etapa
    * C1. Como el galope: el cielo, el campo, el tren de perfil con su tapa, y
    * vos corriendo por encima. Las `x` son las mismas que adentro; el ancho del
-   * techo (tu `y`) es profundidad dentro de la tapa.
+   * techo (tu `y`) se ve en el perfil: en el lomo, bajando por la curva de
+   * acá, o hundido detrás de la de allá.
    *
    * El orden, de atrás hacia adelante: el fondo, los jinetes de allá (detrás
    * del tren: se ven por los huecos), el tren, la sombra del pórtico y el
@@ -4292,37 +4317,44 @@ export function createRaidScene(services) {
     r.ctx.save();
     // El bamboleo mece el tren contra el campo, que ya quedó dibujado quieto.
     r.ctx.translate(-camX, vaivenTechoY);
-    for (const rd of riders) if (rd.alive && rd.side < 0) drawRider(r, { ...rd, y: base + C.carrilLejos });
-    dibujarTrenDeCostado(r, train, base, camX, r.width, !dia);
 
+    // Dónde van tus pies: en el lomo, bajando por la curva de acá, o hundido
+    // detrás de la de allá. Sobre un hueco (en el aire), el último techo.
     const sup = (x) => superficieEn(train, x, base);
-    for (const ob of techObstacles) {
-      const s = sup(ob.x);
-      if (!s) continue;
-      if (ob.tipo === 'agachar') dibujarPorticoDeCostado(r, ob, s, base, 'antes');
-      else {
-        const tope = dibujarCajonDeCostado(r, ob, s, map.height);
-        if (!ob.resuelto) r.text('▲', ob.x, tope - 4, colors.bagLoot);
-      }
-    }
-
-    // Vos: los pies a la profundidad que te toca dentro de la tapa. Sobre un
-    // hueco (en el aire) se usa el último techo que pisaste.
-    const s = sup(player.x) || ultimaSuperficie || { arriba: base - 87, abajo: base - 63 };
+    const s = sup(player.x) || ultimaSuperficie || { arriba: base - 71, abajo: base - 63 };
     ultimaSuperficie = s;
-    const pies = profundidad(s, player.y, map.height);
-    player.piesCostado = player.piesCostado == null ? pies : player.piesCostado + (pies - player.piesCostado) * 0.35;
+    const lugar = piesEnTecho(s, player.y, map.height);
+    player.piesCostado = player.piesCostado == null ? lugar.pies : player.piesCostado + (lugar.pies - player.piesCostado) * 0.35;
     player.yPantalla = player.piesCostado - player.hh;
     player.bordesTecho = { arriba: s.arriba, abajo: s.abajo };
     player.vistaCostado = true;
-    drawPlayer(r, player, train.hearStepRadius);
-    if (player.techoResbalando && !player.techoColgado) polvoDeResbalar(r);
+    // Del lado de allá estás DETRÁS del techo: se te dibuja antes que el tren y
+    // el perfil te tapa el cuerpo. Queda la cabeza.
+    const detras = lugar.detras && !player.techoColgado;
+
+    for (const rd of riders) if (rd.alive && rd.side < 0) drawRider(r, { ...rd, y: base + C.carrilLejos });
+    if (detras) drawPlayer(r, player, train.hearStepRadius);
+    dibujarTrenDeCostado(r, train, base, camX, r.width, !dia);
+
+    for (const ob of techObstacles) {
+      const so = sup(ob.x);
+      if (!so || ob.tipo !== 'saltar') continue;
+      const tope = dibujarCajonDeCostado(r, ob, so);
+      if (!ob.resuelto) r.text('▲', ob.x, tope - 4, colors.bagLoot);
+    }
+
+    if (!detras) {
+      drawPlayer(r, player, train.hearStepRadius);
+      if (player.techoResbalando && !player.techoColgado) polvoDeResbalar(r);
+    }
+    marcaDelFilo(r, s);
+    astillasDelTecho(r, sup);
 
     for (const ob of techObstacles) {
       const so = sup(ob.x);
       if (!so || ob.tipo !== 'agachar') continue;
-      dibujarPorticoDeCostado(r, ob, so, base, 'despues');
-      if (!ob.resuelto) r.text('▼', ob.x, so.arriba - C.alturaViga - 9, colors.enemySus);
+      dibujarPorticoDeCostado(r, ob, so, base);
+      if (!ob.resuelto) r.text('▼', ob.x, so.arriba - C.alturaViga - 14, colors.enemySus);
     }
     for (const rd of riders) if (!rd.alive || rd.side > 0) drawRider(r, { ...rd, y: base + C.carrilCerca });
 
@@ -4332,7 +4364,7 @@ export function createRaidScene(services) {
       // Los carteles flotan sobre el techo donde pasó la cosa.
       const so = sup(f.x) || s;
       r.ctx.globalAlpha = Math.min(1, f.life * 2);
-      r.text(f.text, f.x, so.arriba - 22 + (f.y - player.y) * 0.15, f.color, 'center', enPantalla);
+      r.text(f.text, f.x, so.arriba - 30 + (f.y - player.y) * 0.15, f.color, 'center', enPantalla);
     }
     r.ctx.globalAlpha = 1;
     r.ctx.restore();
@@ -4800,6 +4832,59 @@ export function createRaidScene(services) {
       r.rect(player.x - 6 + i * 3, pies + lado * (t * 6) - 1, 1, 1, '#d9c6a2');
     }
     r.ctx.restore();
+  }
+
+  /**
+   * 🧗 C2 · LA MARCA EN EL FILO. Mientras resbalás, el borde hacia el que vas
+   * se prende en naranja alrededor tuyo, cada vez más fuerte cuanto más cerca
+   * estás: el de acá es el alero (abajo), el de allá la línea de arriba del
+   * techo. Junto con el polvito y el raspón, es lo que te dice "te vas".
+   */
+  function marcaDelFilo(r, s) {
+    const lado = player.techoResbalando;
+    if (!lado || player.techoColgado) return;
+    const g = geoTecho(map.height);
+    const hondo = Math.min(1, Math.max(0, (Math.abs(player.y - g.medio) - g.lomo) / g.curva));
+    const pulso = 0.55 + 0.45 * Math.sin(scroll * 14);
+    const y = lado > 0 ? s.abajo - 1 : s.arriba;
+    const ancho = 22 + hondo * 18;
+    r.ctx.save();
+    r.ctx.globalAlpha = (0.25 + hondo * 0.6) * pulso;
+    r.rect(player.x - ancho / 2, y, ancho, 1, '#ff9a3c');
+    r.ctx.globalAlpha *= 0.5;
+    r.rect(player.x - ancho / 2 + 4, y + (lado > 0 ? 1 : -1), ancho - 8, 1, '#ff9a3c');
+    r.ctx.restore();
+  }
+
+  /**
+   * 🧗 C2 · LOS TIROS DESDE ABAJO, COMO ASTILLAS. Los guardias te tiran a
+   * ciegas hacia el techo (`fireTechoBlind`, systems/ai.js). Esas balas
+   * viajan por adentro del vagón y en esta vista no se ven; lo que se ve es
+   * dónde atraviesan la chapa: un chorro de astillas saltando del techo en su
+   * `x`. Si te ves astillas acercándose, te están buscando.
+   */
+  function astillasDelTecho(r, sup) {
+    const total = CONFIG.techo.costado.astillasVida;
+    for (const a of astillas) {
+      const so = sup(a.x);
+      if (!so) continue;
+      const t = 1 - a.vida / total;               // 0 al salir, 1 al apagarse
+      r.ctx.save();
+      // El agujero en la chapa, que queda un rato.
+      r.ctx.globalAlpha = 0.7 * (1 - t * 0.6);
+      r.rect(a.x - 1, so.arriba, 3, 1, '#1a1410');
+      // El chorro: un fogonazo corto hacia arriba y astillas que se abren y caen.
+      r.ctx.globalAlpha = Math.max(0, 1 - t * 1.4);
+      if (t < 0.35) r.rect(a.x, so.arriba - 10 * (t / 0.35), 1, 4, '#ffe2a8');
+      for (let k = 0; k < 4; k++) {
+        const dir = (k % 2 ? 1 : -1) * (1 + ((a.semilla * 10 + k * 3) % 3));
+        const sube = 9 + ((a.semilla * 17 + k * 5) % 6);
+        const x = a.x + dir * t * 6;
+        const y = so.arriba - sube * t + 14 * t * t;       // suben y caen
+        r.rect(x, y, 1, 1, k % 2 ? '#c49a62' : '#8a6440');
+      }
+      r.ctx.restore();
+    }
   }
 
   function sobreElTecho(o) {

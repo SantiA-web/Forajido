@@ -17571,8 +17571,8 @@ están perfecto"*). Se acomodan dentro de algo más grande.
 |---|---|---|
 | **1. Sentirse arriba** | Cámara más alejada, sombra del tren, viento, humo, bamboleo, sonido. Ninguna regla cambia | ✅ jugada y confirmada |
 | **1b. El techo entero se pisa** | Resbalar por la curva, colgarse del alero, caerse del tren (las reglas quedan); el dibujo angosto con la pared debajo **se descartó** | ✅ reglas; dibujo reemplazado por C1 |
-| **C1. La vista de costado** | Arriba, el asalto mira como el galope | ✅ hecha, **sin jugar** |
-| C2. Leer el ancho | Esconderse detrás de la curva, avisos de resbalar, astillas de los tiros desde abajo | Falta |
+| **C1. La vista lateral** | Arriba, el tren se ve de costado | ✅ hecha (corregida a lateral de verdad), **sin jugar** |
+| **C2. Leer el ancho** | Esconderse detrás de la curva, la marca en el filo, astillas de los tiros desde abajo | ✅ hecha, **sin jugar** |
 | C3. Tirarle a los jinetes | Apuntar hacia abajo y que los jinetes te tiren arriba (balas de esta vista, aparte) | Falta |
 | 2. Subir y bajar en cualquier enganche | Escalerillas: `[E]` mantenido, en los dos sentidos, ~1 s expuesto a los jinetes | Falta |
 | 3. Algo que hacer arriba | **Arma arriba** (cara: cada tiro despierta el vagón de abajo, apuntar frena) y **espiar por la linterna** de los coches (agachado ves quién hay adentro) | Falta |
@@ -17831,7 +17831,60 @@ de adentro no se dibujan en esta vista.
 `dibujarCostadoAlto` en trenTresCuartos.js; `yEnTecho`) quedó sin uso. Las
 láminas de la tapa (`tramoCoche` y compañía) sí se usan, achatadas.
 
-**⚠️ NO JUGADO.**
+### 🔁 C1 CORREGIDA: NO ERA LATERAL, ERA TRES CUARTOS
+
+*(Santi: "es vista lateral, no es tan difícil. No parece como la imagen que me
+diste. Se ve 3/4, es la verdad. Solucionalo")*. Tenía razón: al tren se le había
+puesto una tapa HONDA (24) vista desde arriba, con la curva sombreada, y el
+jugador subía y bajaba adentro de ella. Eso es mirar desde arriba. La imagen de
+prueba tenía la tapa finita, y al construirlo se agrandó.
+
+**Ahora es lateral de verdad:**
+
+- **El techo se ve sólo de perfil**: una franja redondeada de 8 (`costado.perfil`)
+  encima de la pared, con las puntas redondeadas y el alero que tira sombra.
+- **Se recorta** todo lo que el dibujo del galope mostraba desde arriba: la tapa,
+  la linterna, la garita. El tren se dibuja con un recorte (`clip` "evenodd")
+  que deja afuera lo que queda arriba de cada pared.
+- **El ancho del techo, como lo propuso Santi:** en el lomo caminás sobre la
+  línea de arriba. **Del lado de allá te hundís DETRÁS del techo** (hasta 15,
+  `hundeAlla`) y queda el torso o sólo la cabeza: se te dibuja antes que el tren
+  y el perfil te tapa. **Del lado de acá bajás por la curva que tenés
+  adelante**, hasta el alero. Uno se ve y el otro se percibe.
+- **El cajón y el cartel, de perfil puro.** El cajón (8) apoyado en el lomo; el
+  cartel colgado a la altura de la cabeza.
+- **El cielo baja hasta detrás de los techos** (`horizonte` 0,42), como en un
+  juego de costado.
+- **La góndola**: el montón de carbón asomando sobre su costado, irregular.
+
+La `tapa` de 24 se quitó de la configuración. `estamparTapa` (la tapa achatada)
+quedó sin uso: se suma a la lista de limpieza.
+
+## ✅ ETAPA C2 HECHA: leer el ancho
+
+*(Santi: "una vez terminada la vista lateral continúa con la etapa C2 sin
+preguntar, luego corrijo")*
+
+| Pieza | Cómo es |
+|---|---|
+| **Esconderse detrás de la curva** | Salió con la corrección de C1: del lado de allá te hundís detrás del perfil |
+| **La marca en el filo** | Mientras resbalás, el borde hacia el que vas se prende en naranja alrededor tuyo, latiendo, más ancha y fuerte cuanto más cerca estás. El de acá es el alero; el de allá, la línea de arriba (`marcaDelFilo`) |
+| **Las astillas** | Cada tiro de un guardia de adentro mientras estás arriba (el tiro a ciegas Y el de contención, que le tira al lugar donde te sintió) deja un agujero en la chapa y un chorro de astillas que suben y caen, 0,45 s, en la `x` donde la bala alcanza tu `y`. Si ves astillas acercándose, te están buscando (`astillasDelTecho`) |
+
+🐛 **Dos trampas que costaron mediciones:**
+
+1. **La bala no guardaba la marca nueva.** `createBullet` copia sólo los campos
+   que conoce; `alTecho` había que agregarlo ahí.
+2. **Las balas hacia el techo no se pueden dibujar vivas**: van del guardia a tu
+   `y` (unas 20 unidades) y llegan en el mismo cuadro. Por eso las astillas se
+   anotan al NACER la bala, calculando dónde atraviesa la chapa. Y casi todos los
+   tiros que te llegan arriba no son el tiro a ciegas sino el de contención: por
+   eso cuenta cualquier tiro de un guardia de adentro (no los de los jinetes,
+   `fromRider`).
+
+**Medido:** 2.700 cuadros con teclas al azar, pasajeros y carga, de día y de
+noche, **sin errores**; ~1 ms por cuadro. Probado a mano: un cartel que te pega
+despierta al guardia de abajo y aparecen hasta 6 astillas a la vez.
 
 ---
 

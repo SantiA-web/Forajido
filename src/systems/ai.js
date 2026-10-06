@@ -3409,6 +3409,9 @@ function fireTechoBlind(e, world, target) {
     range: c.viewDistance + 80,
     owner: 'enemy',
     tirador: e,
+    // 🧗 Va hacia el techo: en la vista lateral se dibuja como astillas
+    // saltando de la chapa (scenes/raidScene.js, `astillasDelTecho`).
+    alTecho: true,
   });
 
   world.audio.play('enemyShot');

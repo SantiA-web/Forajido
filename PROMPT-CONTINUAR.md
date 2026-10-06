@@ -161,9 +161,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   etapas, de a una y jugando cada una. **La 1 (sentirse arriba) está jugada y
   confirmada; la 1b dejó sus reglas (resbalar, colgarse, caerse del tren) pero
   su dibujo se descartó. Ahora arriba la vista es DE COSTADO, como el galope
-  (opción C, elegida por Santi): C1 hecha y sin jugar.** Faltan: C2 (leer el
-  ancho: esconderse tras la curva, astillas de los tiros de abajo), C3 (tirar
-  hacia abajo a los jinetes, con balas propias de esta vista), y después las
+  (opción C, elegida por Santi): C1 (corregida a lateral de verdad) y C2 (leer
+  el ancho) hechas y sin jugar.** Faltan: C3 (tirar hacia abajo a los jinetes,
+  con balas propias de esta vista), y después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
   los guardias en el techo. Hay código de la vista de arriba del techo sin uso
   para limpiar (ver NOTAS, etapa C1).

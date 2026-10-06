@@ -1903,17 +1903,24 @@ export const CONFIG = {
      * lateral, simple y fácil".)*
      */
     costado: {
-      tapa: 24,          // lo que mide la tapa de costado: cruzarla es un cuerpo (elegido por Santi)
+      /**
+       * 🔁 VISTA LATERAL DE VERDAD: el techo se ve sólo de perfil. La tapa honda
+       * (24) se quitó: era mirar desde arriba (Santi: "se ve 3/4").
+       */
+      perfil: 8,         // lo que mide el perfil redondeado del techo, del alero al lomo
+      carbon: 6,         // lo que asoma el carbón de la góndola sobre su costado
+      hundeAlla: 15,     // cuánto te hundís detrás del techo en el borde de allá: queda la cabeza
       via: 0.74,         // dónde va la vía, en fracción del alto de la pantalla
-      horizonte: 0.3,    // dónde termina el cielo
+      horizonte: 0.42,   // dónde termina el cielo: justo detrás de los techos, como un juego de costado
       alturaViga: 14,    // cuánto arriba del filo de allá cuelga el cartel: parado te pega, agachado no
       anchoCartel: 26,
       altoCartel: 11,
-      altoCajon: 7,
+      altoCajon: 8,
       saltoAlto: 15,     // cuánto subís al saltar, en el dibujo (de costado se ve el alto de verdad)
       carrilCerca: 26,   // los jinetes de acá, cuánto delante de la vía
       carrilLejos: -3,   // los de allá, detrás del tren: se ven por los huecos
       fundido: 0.35,     // el fundido al cambiar de vista
+      astillasVida: 0.45, // cuánto duran las astillas de un tiro desde abajo (C2)
     },
 
     /**

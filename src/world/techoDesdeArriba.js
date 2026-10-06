@@ -318,6 +318,35 @@ export function dibujarTechoDesdeArriba(r, w, alto, noche) {
 }
 
 /**
+ * 🧗 LA TAPA DEL TECHO VISTA DE COSTADO (la vista del techo de ahora, la del
+ * galope): la misma tapa lisa y curva, ACHATADA en `alto` unidades. Achatarla
+ * es justamente lo que hace la perspectiva: la curva de allá queda arriba y en
+ * sombra, la de acá abajo con su brillo, y las costuras se juntan solas.
+ */
+export function estamparTapa(r, w, yArriba, alto) {
+  const P = CONFIG.colors.costado;
+  const familia = familiaDe({ id: w.id, carbon: w.carbon });
+  const hacer = familia === 'coche' ? tramoCoche
+    : familia === 'blindado' ? tramoBlindado
+      : tramoFurgon;
+  const cuantos = Math.ceil((w.width - PUNTA * 2) / TRAMO);
+  for (let i = 0; i < cuantos; i++) {
+    const v = variante(w.index || 0, i);
+    const img = lamina(`${familia}|${v}|${ANCHO}`, TRAMO, ANCHO, (p) => hacer(p, TRAMO, v, P));
+    const x = w.x + PUNTA + i * TRAMO;
+    const ancho = Math.min(TRAMO, w.x + w.width - PUNTA - x);
+    r.ctx.drawImage(img, 0, 0, ancho / PASO, img.height, x, yArriba, ancho, alto);
+  }
+  const base = lamina(`${familia}|0|${ANCHO}`, TRAMO, ANCHO, (p) => hacer(p, TRAMO, 0, P));
+  for (const izq of [true, false]) {
+    const x = izq ? w.x : w.x + w.width - PUNTA;
+    r.ctx.drawImage(base, 0, 0, PUNTA / PASO, base.height, x, yArriba, PUNTA, alto);
+    const pt = lamina(`punta2|${izq}`, PUNTA, ANCHO, (p) => punta(p, P, izq));
+    r.ctx.drawImage(pt, 0, 0, pt.width, pt.height, x, yArriba, PUNTA, alto);
+  }
+}
+
+/**
  * LA GÓNDOLA DESDE ARRIBA: la boca llena de carbón hasta el tope, entre sus
  * dos bordes de chapa, y la pared baja del costado. Se camina por encima del
  * carbón; los costados tienen pared, así que ahí no se resbala.

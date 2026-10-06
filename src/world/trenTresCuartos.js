@@ -48,7 +48,7 @@ const M = MEDIDAS;
 const ARRIBA_DE_LA_CAJA = M.bastidor + M.caja;
 
 /** Los costados de la góndola: más bajos que un vagón, con el carbón asomando. */
-const LADO_GONDOLA = 28;
+export const LADO_GONDOLA = 28;
 
 /** La chapa de paso del enganche: su frente y su tapa. */
 const PLACA = { frente: 2, tapa: 8 };

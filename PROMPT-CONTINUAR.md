@@ -159,11 +159,14 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   todo lo que hace ver tontos o inexpertos a los guardias.
 - **El techo nuevo** (plan en NOTAS-DISENO.md, "EL TECHO NUEVO"): cinco
   etapas, de a una y jugando cada una. **La 1 (sentirse arriba) está jugada y
-  confirmada; la 1b (el techo entero se pisa: más angosto, resbalar, colgarse,
-  caerse del tren) está hecha y sin jugar.** Faltan: 2 subir/bajar en cualquier enganche, 3 arma arriba y
-  espiar por la linterna, 4 obstáculos que salen del mundo (túneles, curvas),
-  5 medir con el bot. Después, los guardias en el techo. La cámara NO se
-  inclina (decidido con Santi).
+  confirmada; la 1b dejó sus reglas (resbalar, colgarse, caerse del tren) pero
+  su dibujo se descartó. Ahora arriba la vista es DE COSTADO, como el galope
+  (opción C, elegida por Santi): C1 hecha y sin jugar.** Faltan: C2 (leer el
+  ancho: esconderse tras la curva, astillas de los tiros de abajo), C3 (tirar
+  hacia abajo a los jinetes, con balas propias de esta vista), y después las
+  escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
+  los guardias en el techo. Hay código de la vista de arriba del techo sin uso
+  para limpiar (ver NOTAS, etapa C1).
 - **El servidor de pruebas (8082) no suena**, ni nada con `?mudo` en la
   dirección (`engine/audio.js`).
 - **El bot asaltante** (`banco-asaltante.js`, hecho 2026-10-05): vuelve

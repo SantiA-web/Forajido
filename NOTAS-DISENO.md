@@ -17570,7 +17570,10 @@ están perfecto"*). Se acomodan dentro de algo más grande.
 | Etapa | Qué | Estado |
 |---|---|---|
 | **1. Sentirse arriba** | Cámara más alejada, sombra del tren, viento, humo, bamboleo, sonido. Ninguna regla cambia | ✅ jugada y confirmada |
-| **1b. El techo entero se pisa** | Techo más angosto con la pared debajo, resbalar por la curva, colgarse del alero, caerse del tren | ✅ hecha, **sin jugar** |
+| **1b. El techo entero se pisa** | Resbalar por la curva, colgarse del alero, caerse del tren (las reglas quedan); el dibujo angosto con la pared debajo **se descartó** | ✅ reglas; dibujo reemplazado por C1 |
+| **C1. La vista de costado** | Arriba, el asalto mira como el galope | ✅ hecha, **sin jugar** |
+| C2. Leer el ancho | Esconderse detrás de la curva, avisos de resbalar, astillas de los tiros desde abajo | Falta |
+| C3. Tirarle a los jinetes | Apuntar hacia abajo y que los jinetes te tiren arriba (balas de esta vista, aparte) | Falta |
 | 2. Subir y bajar en cualquier enganche | Escalerillas: `[E]` mantenido, en los dos sentidos, ~1 s expuesto a los jinetes | Falta |
 | 3. Algo que hacer arriba | **Arma arriba** (cara: cada tiro despierta el vagón de abajo, apuntar frena) y **espiar por la linterna** de los coches (agachado ves quién hay adentro) | Falta |
 | 4. Obstáculos que salen del mundo | Pórticos y tanques que se ven venir, **túneles** (cuerpo a tierra o bajarse), **curvas** que empujan | Falta |
@@ -17746,6 +17749,87 @@ de adentro.
 noche), colgándose, trepando y cayéndose del tren, **sin errores**. El cuadro
 arriba se dibuja en **2-4 ms**; los primeros cuadros tardan más porque arman
 una vez el dibujo de cada tipo de vagón.
+
+**⚠️ NO JUGADO.**
+
+### ❌ Y SE JUGÓ: EL DIBUJO ESTABA MAL
+
+*(Santi: "no se ve nada bien. Las paredes parecen de un juego lateral mientras
+que el techo parece visto desde arriba. Además, quedamos que no íbamos a usar
+la cámara de visión desde arriba para que los obstáculos puedan leerse bien
+si hay que saltar o agacharse. Hoy eso no pasa.")*
+
+Tenía razón en las dos cosas. **La lección:** una vista no se puede armar con
+pedazos de dos cámaras distintas; la pared de costado debajo de una tapa vista
+de arriba se lee como un error, por más que cada pieza esté bien dibujada. Y
+el techo nuevo había perdido justo lo que se había cuidado: ver el ALTO de los
+obstáculos.
+
+Se compararon tres vistas con imágenes armadas con los dibujos del juego
+(`auditoria-maqueta-A/B/C.png`, en la raíz, ignoradas por git):
+
+| | A · desde arriba, horizontal | **C · de costado (idea de Santi)** | B · desde atrás, vertical |
+|---|---|---|---|
+| Costo | ~1 etapa | **~2 etapas** | ~5-6 etapas |
+| Agacharse o saltar | Por la forma y el ancho | **Se ve el alto: perfecto** | Muy bien |
+| Moverte a lo ancho | Se ve perfecto | Poco: es profundidad | Bien |
+| Qué se aprovecha | Casi todo | **El tren, los caballos y el cielo del galope** | Poco |
+| Para mirar | *Hotline Miami* | ***Sunset Riders*** (Konami, 1991): western, nivel arriba de un tren, jinetes al costado | *Commando*, *Ikari Warriors* |
+
+**Se eligió C.** Es la que mejor resuelve lo más importante del techo —leer
+rápido si agacharte o saltar— y además es la misma vista del galope, así que
+subir al techo se siente como "salir afuera" y no como otro juego.
+
+**¿Están mal dibujados los personajes en tres cuartos, si de perfil se ven
+igual?** *(pregunta de Santi)* No: es la convención del pixel art en tres
+cuartos (*Zelda: A Link to the Past*, *Stardew Valley*). El cuerpo va casi
+derecho y lo que dice "te miro desde arriba" es poco: el ala del sombrero
+abierta en elipse. Y la vista C no es lateral pura, es la cámara baja del
+galope, que todavía ve un poco desde arriba (por eso se ve la tapa del techo):
+el mismo dibujo es el correcto.
+
+## ✅ ETAPA C1 HECHA: arriba, la vista de costado (`world/techoDeCostado.js`)
+
+Al subir, el asalto deja de mirar desde arriba y mira como el galope.
+
+**LO QUE LA HACE BARATA:** el tren sigue yendo de izquierda a derecha con las
+MISMAS medidas a lo largo: un vagón, un hueco o un cartel están en la misma
+`x` en las dos vistas. El ancho del techo (tu `y` de adentro, 0 a 160) pasa a
+ser PROFUNDIDAD dentro de la tapa: el lado de allá arriba, el de acá abajo.
+Para los guardias de abajo nada cambió: seguís parado justo encima de donde
+estás (los tiros a ciegas y el ruido son los de siempre).
+
+| Pieza | Cómo es |
+|---|---|
+| **El fondo** | El cielo con los cerros del galope (`dibujarHorizonte`), el campo en capas que vuelan hacia la cola, la vía con sus durmientes |
+| **El tren** | El del galope tal cual (`dibujarTrenTresCuartos`), y encima de cada vagón con techo **la tapa nuestra, más honda**: la tapa lisa de la etapa 1b, achatada a **24** (elegido por Santi: cruzarla es un cuerpo; en el galope mide 14). Achatarla es la perspectiva: la curva de allá arriba y en sombra, la de acá abajo con su brillo |
+| **La góndola** | Más baja que los coches (su costado mide 28 y no 48): al pisarla bajás un escalón. Arriba, el carbón |
+| **Vos** | De perfil, mirando para donde caminaste. Los pies a la profundidad que te toca; sobre un hueco, el último techo. **El salto sube 15** (de costado se ve el alto de verdad) |
+| **El cartel (agacharse)** | 🔁 El pórtico de costado se leía como un poste. Ahora es la idea original: **un cartel colgado de un brazo, a la altura de la cabeza**, que tapa la tapa entera. Parado te pega en la cara; agachado pasás por debajo. Se dibuja DELANTE tuyo |
+| **El cajón (saltar)** | Bajo (7), sobre el lomo, con su tapa y su cara |
+| **Colgado** | Del lado de acá, contra la pared que ves, agarrado del alero. Del lado de allá, sólo las manos y la copa del sombrero en el filo |
+| **Los jinetes** | Los de acá galopan delante del tren; los de allá, detrás (se ven por los huecos) — la opción elegida |
+| **Cambiar de vista** | Un fundido de 0,35 s al subir o bajar. Al llegar desde el caballo no, porque venías de la misma vista |
+| **La noche** | Cielo de noche con estrellas y luna, ventanillas prendidas, la tapa a la luz de la luna |
+
+🔁 **La lupa volvió a 4.** De costado sobra campo arriba y abajo del tren, y
+con 3 el personaje quedaba chiquito contra la pared: con 4 se ve del tamaño
+de adentro.
+
+**Medido:** 3.800 cuadros con teclas al azar (pasajeros y carga, de día y de
+noche), colgándose, cayéndose del tren y bajando al enganche, **sin errores**.
+El cuadro de costado se dibuja en **~1 ms** (más liviano que la vista de
+arriba: no dibuja el adentro).
+
+**Lo que todavía no está (C2 y C3):** esconderse detrás de la curva del lado
+de allá, las astillas de los tiros desde abajo, y tirar hacia abajo. Las balas
+de adentro no se dibujan en esta vista.
+
+🧹 **Para limpiar:** el dibujo de la vista de arriba del techo (`drawTecho`,
+`lunaSobreElTecho` y `sobreElTecho` en raidScene.js; `dibujarTechoDesdeArriba`,
+`dibujarGondolaDesdeArriba` y el cajón/pórtico de arriba en techoDesdeArriba.js;
+`dibujarCostadoAlto` en trenTresCuartos.js; `yEnTecho`) quedó sin uso. Las
+láminas de la tapa (`tramoCoche` y compañía) sí se usan, achatadas.
 
 **⚠️ NO JUGADO.**
 

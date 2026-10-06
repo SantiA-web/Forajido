@@ -483,12 +483,17 @@ respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
 - **El pórtico cruza el techo entero; el cajón sólo ocupa el lomo**: lo podés
   saltar o rodear por la curva, arriesgándote a resbalar.
 
-**Arriba se nota que estás arriba.** La cámara se aleja un poco al subir (ves un
-tercio más de desierto y los jinetes de los dos lados) y vuelve al bajar. El tren
-tira su sombra sobre el desierto, que se estira a medida que baja el sol. Te
-cruza el viento con polvo, el humo de la locomotora te pasa por encima de a
-bancos (de noche, con chispas), el tren se mece de costado y se oye el viento.
-De noche el techo queda a la luz de la luna. Nada de eso cambia las reglas.
+**Arriba, la vista cambia: el tren se ve de costado, como desde el caballo.**
+Corrés por el techo de perfil, el cartel cuelga a la altura de tu cabeza y el
+cajón está en el piso, así que se ve sin pensar si agacharte o saltar. Moverte
+a lo ancho del techo es acercarte o alejarte: el lado de allá queda arriba en
+la tapa, el de acá abajo. La góndola es más baja que los coches. Los jinetes
+de acá galopan delante del tren; los de allá, detrás. Al subir y al bajar hay
+un fundido corto.
+
+Te cruza el viento con polvo, el humo de la locomotora te pasa por encima de a
+bancos (de noche, con chispas), el tren se mece y se oye el viento. De noche
+se ven las ventanillas prendidas y el techo a la luz de la luna.
 
 ### Adentro del tren
 

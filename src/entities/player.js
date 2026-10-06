@@ -388,6 +388,8 @@ function updateOnRoof(p, dt, world) {
   if (input.anyDown('KeyS', 'ArrowDown')) dy += 1;
 
   p.moving = dx !== 0 || dy !== 0;
+  // 🧗 Para dónde mirás en la vista de costado: el último lado al que caminaste.
+  if (dx !== 0) p.techoMira = dx;
 
   // Agachado vas lento (y hacés menos ruido, igual que abajo). En el aire vas
   // MÁS rápido, y eso no es un adorno: es lo que hace que un salto corrido
@@ -1138,26 +1140,29 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   }
 
   const enElAire = p.techoSalto > 0;
-  // Una parábola: sube y baja a lo largo del salto.
+  // Una parábola: sube y baja a lo largo del salto. De costado se ve el alto
+  // de verdad, así que sube más (`costado.saltoAlto`).
   const t = enElAire ? 1 - p.techoSalto / ct.saltoDuracion : 0;
-  const alto = enElAire ? Math.sin(t * Math.PI) * 9 : 0;
+  const altoSalto = p.vistaCostado ? ct.costado.saltoAlto : 9;
+  const alto = enElAire ? Math.sin(t * Math.PI) * altoSalto : 0;
 
   // La sombra se queda en el techo y se achica: es el aviso de altura.
   // (Una elipse y no una caja: es la misma sombra que tenés en el campamento
   // y en el pueblo, y sobre las tablas del techo la caja se leía como un
   // agujero.)
   r.ctx.save();
-  r.ctx.globalAlpha = 0.3 + (enElAire ? -0.12 * (alto / 9) : 0);
+  r.ctx.globalAlpha = 0.3 + (enElAire ? -0.12 * Math.min(1, alto / altoSalto) : 0);
   r.ctx.fillStyle = '#000';
   r.ctx.beginPath();
-  r.ctx.ellipse(p.x, py + p.hh, 6 - (alto / 9) * 2, 2.4 - (alto / 9) * 0.8, 0, 0, Math.PI * 2);
+  const k = Math.min(1, alto / altoSalto);
+  r.ctx.ellipse(p.x, py + p.hh, 6 - k * 2, 2.4 - k * 0.8, 0, 0, Math.PI * 2);
   r.ctx.fill();
   r.ctx.restore();
 
   if (p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0) return;
 
   // El aro del ruido, igual que abajo: agachado no hacés ninguno.
-  if (p.moving && !p.techoAgachado && !enElAire) {
+  if (p.moving && !p.techoAgachado && !enElAire && !p.vistaCostado) {
     const pulso = (p.stepPhase % 0.75) / 0.75;
     r.circle(p.x, py, hearStepRadius * (0.45 + pulso * 0.55), col.noiseRing, 0.28 * (1 - pulso));
   }
@@ -1166,7 +1171,8 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
 
   // Igual que abajo: agachado se dobla, saltando sube entero.
   dibujarPersona(r, {
-    tipo: 'jugador', x: p.x, pies: by + p.hh, angulo: p.aim,
+    tipo: 'jugador', x: p.x, pies: by + p.hh,
+    angulo: p.vistaCostado ? (p.techoMira < 0 ? Math.PI : 0) : p.aim,
     fase: enElAire ? null : faseDeAndar(p),
     postura: p.techoAgachado ? 'agachado' : 'pie',
     destello: p.hitFlash > 0,
@@ -1183,7 +1189,9 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
  * piernas pataleando, que es lo que dice "esto es urgente".
  */
 function dibujarColgado(r, p, col) {
-  const g = geoTecho(160);
+  // Los filos del techo donde estás: los de la vista de costado si la escena
+  // los puso, si no los de la vista de arriba.
+  const g = p.bordesTecho || geoTecho(160);
   const c = p.techoColgado;
   const t = c.t;
   if (c.lado > 0) {

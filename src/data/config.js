@@ -1898,6 +1898,25 @@ export const CONFIG = {
     },
 
     /**
+     * 🧗 LA VISTA DE COSTADO (world/techoDeCostado.js) — etapa C1. Al subir,
+     * el asalto mira como el galope. *(Santi eligió esta opción: "vista
+     * lateral, simple y fácil".)*
+     */
+    costado: {
+      tapa: 24,          // lo que mide la tapa de costado: cruzarla es un cuerpo (elegido por Santi)
+      via: 0.74,         // dónde va la vía, en fracción del alto de la pantalla
+      horizonte: 0.3,    // dónde termina el cielo
+      alturaViga: 14,    // cuánto arriba del filo de allá cuelga el cartel: parado te pega, agachado no
+      anchoCartel: 26,
+      altoCartel: 11,
+      altoCajon: 7,
+      saltoAlto: 15,     // cuánto subís al saltar, en el dibujo (de costado se ve el alto de verdad)
+      carrilCerca: 26,   // los jinetes de acá, cuánto delante de la vía
+      carrilLejos: -3,   // los de allá, detrás del tren: se ven por los huecos
+      fundido: 0.35,     // el fundido al cambiar de vista
+    },
+
+    /**
      * RESBALAR POR LA CURVA. Pasado el lomo, te vas para afuera cada vez más
      * rápido cuanto más cerca del borde. Caminando hacia adentro salís.
      */
@@ -1969,7 +1988,12 @@ export const CONFIG = {
        * más de campo y el dibujo sigue cayendo en puntos enteros. Es la misma
        * que usa la huida.
        */
-      lupa: 3,
+      /**
+       * 🔁 VOLVIÓ A 4 con la vista de costado (etapa C1): de costado sobra
+       * campo arriba y abajo del tren, y con 3 el personaje quedaba chiquito
+       * contra la pared del vagón. Con 4 se ve del tamaño de adentro.
+       */
+      lupa: 4,
       transicion: 0.45,     // segundos para pasar de una lupa a la otra al subir o bajar
 
       /** El tren se mece de costado contra el desierto quieto. */

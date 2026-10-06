@@ -1921,6 +1921,29 @@ export const CONFIG = {
       carrilLejos: -3,   // los de allá, detrás del tren: se ven por los huecos
       fundido: 0.35,     // el fundido al cambiar de vista
       astillasVida: 0.45, // cuánto duran las astillas de un tiro desde abajo (C2)
+
+      /** Del lado de allá te achicás un poco: te alejás (elegido por Santi: 90% en el borde). */
+      achicaAlla: 0.1,
+
+      /**
+       * 🎢 ARRIBA SE SACUDE MÁS QUE ADENTRO *(Santi: "quiero que arriba
+       * también se sienta la sacudida de cámara que hay dentro, y la quiero
+       * hasta un poco más marcada")*. El vaivén de adentro y los tirones del
+       * traqueteo, multiplicados; y encima los golpes de las juntas de los
+       * rieles, chiquitos y seguidos, en vertical.
+       */
+      vaivenFuerza: 1.6,
+      traqueteoFuerza: 1.6,
+      rielCada: 0.42,      // segundos entre junta y junta, a marcha normal
+      rielGolpe: 0.8,      // cuánto salta la cámara en cada junta, en unidades
+
+      /**
+       * 💨 ARRIBA VA RAPIDÍSIMO *(Santi: "quiero que arriba se sienta que va
+       * rapidísimo, mucho más de lo que pasa hoy")*. El campo corre a más del
+       * doble que visto desde adentro, y encima pasan rayas de velocidad.
+       */
+      velocidadFondo: 2.4,
+      rayas: { cantidad: 11, velocidad: 2600, largo: 34, color: '#f0e2c4', alpha: 0.32 },
     },
 
     /**
@@ -2017,9 +2040,9 @@ export const CONFIG = {
 
       /** Rayas de aire y polvo que te cruzan hacia la cola. */
       viento: {
-        rayaCada: 0.035, rayaLargo: [6, 20], rayaVel: [330, 470], rayaAlfa: 0.3,
+        rayaCada: 0.022, rayaLargo: [8, 26], rayaVel: [600, 900], rayaAlfa: 0.3,
         rayaDia: '#f4ead6', rayaNoche: '#9aa0b4',
-        polvoCada: 0.06, polvoVel: [190, 280], polvoAlfa: 0.55,
+        polvoCada: 0.04, polvoVel: [380, 560], polvoAlfa: 0.55,
         polvoDia: '#c9a77a', polvoNoche: '#5d5446',
       },
 

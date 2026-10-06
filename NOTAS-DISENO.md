@@ -17886,6 +17886,25 @@ preguntar, luego corrijo")*
 noche, **sin errores**; ~1 ms por cuadro. Probado a mano: un cartel que te pega
 despierta al guardia de abajo y aparecen hasta 6 astillas a la vez.
 
+### 🎢 Después de mirarlo: alejarse, sacudirse y la velocidad
+
+*(Santi: "cuando va hacia el fondo debería achicarse un poco", "quiero que
+arriba también se sienta la sacudida de cámara que hay dentro, y hasta un poco
+más marcada", "quiero que arriba se sienta que va rapidísimo")*
+
+| Qué | Cómo | Número |
+|---|---|---|
+| **Alejarse** | En la curva de allá, además de hundirte, te achicás de a poco. Más no: el dibujo es pixel art y a un tamaño no entero los puntos se desparejan | 90% en el borde (elegido, opción B de 80/90/100) |
+| **El vaivén de adentro, también arriba** | El mismo meneo de la cámara, más fuerte | `vaivenFuerza` ×1,6 |
+| **Los tirones del traqueteo** | Más marcados arriba | `traqueteoFuerza` ×1,6 |
+| **Las juntas de los rieles** | Un golpecito seco hacia abajo cada ~0,4 s, que se apaga enseguida; más seguido cuando el tren tira | `rielCada` 0,42 s, `rielGolpe` 0,8 |
+| **Rapidísimo** | El campo corre ×2,4, pasan rayas de velocidad en el campo de atrás y en el de adelante, y el viento va casi al doble y más tupido | `velocidadFondo` 2,4, `costado.rayas` |
+
+**¿Es baja la altura del techo?** *(pregunta de Santi)* No: medido contra el
+personaje (1,75 m = 20), del riel al techo hay 71 unidades = **6,2 m**; un coche
+de la época medía **unos 4,2 m**. El vagón ya está más alto que lo real, y la
+comba (8 = 0,7 m) está bien (0,5 a 0,9 m).
+
 ---
 
 ### ✅ ETAPA 6 CERRADA

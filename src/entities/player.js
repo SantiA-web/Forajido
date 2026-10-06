@@ -1172,6 +1172,8 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   // Igual que abajo: agachado se dobla, saltando sube entero.
   dibujarPersona(r, {
     tipo: 'jugador', x: p.x, pies: by + p.hh,
+    // Del lado de allá del techo te achicás un poco: te alejás (vista lateral).
+    escala: p.vistaCostado ? (p.escalaTecho || 1) : 1,
     angulo: p.vistaCostado ? (p.techoMira < 0 ? Math.PI : 0) : p.aim,
     fase: enElAire ? null : faseDeAndar(p),
     postura: p.techoAgachado ? 'agachado' : 'pie',

@@ -96,6 +96,8 @@ export function createRaidScene(services) {
   let vientoTechoAntes = null;
   /** La vista de costado del techo: de qué vista venías y el fundido al cambiar. */
   let vistaAntes = null, fundidoVista = 0, ultimaSuperficie = null;
+  /** El golpe de la junta de los rieles en la cámara, arriba (ver `actualizarArriba`). */
+  let rielTimer = 0, rielY = 0;
   /** Las astillas de los tiros desde abajo (C2): `{ x, vida, semilla }`. */
   let astillas = [];
   const vistaDelAsalto = {
@@ -4052,7 +4054,9 @@ export function createRaidScene(services) {
     const V = CONFIG.tresCuartos.vaivenCamara;
     const L = CONFIG.tresCuartos.luzVentanilla;
     const tipo = train.tipoPorColumna[Math.floor(player.x / map.size)];
-    const adentro = player.alive && !player.enTecho && !!WAGONS[tipo];
+    // 🎢 Arriba también se mece, y más (`techo.costado.vaivenFuerza`).
+    const arriba = player.alive && player.enTecho;
+    const adentro = (player.alive && !player.enTecho && !!WAGONS[tipo]) || arriba;
     const paso = dt / Math.max(0.01, adentro ? V.entra : V.sale);
     vaivenPeso = adentro ? Math.min(1, vaivenPeso + paso) : Math.max(0, vaivenPeso - paso);
     // Suave al entrar y al salir, no en línea recta.
@@ -4066,7 +4070,8 @@ export function createRaidScene(services) {
      * mira. El vagón (la luz, los faroles) se sigue meciendo.
      */
     const firme = 1 - Math.min(1, Math.max(0, player.apuntado || 0));
-    const x = -Math.sin(scroll * L.velocidad * Math.PI * 2) * V.amplitud * suave * firme;
+    const fuerza = arriba ? CONFIG.techo.costado.vaivenFuerza : 1;
+    const x = -Math.sin(scroll * L.velocidad * Math.PI * 2) * V.amplitud * fuerza * suave * firme;
     const d = renderer.densidad || 1;
     vaivenCamaraX = Math.round(x * d) / d;
   }
@@ -4077,7 +4082,9 @@ export function createRaidScene(services) {
    * carteles), así no puede quedar uno corrido del otro.
    */
   function desplazamientoX() {
-    return camera.renderX + Math.round(traqueteoSwayX) + vaivenCamaraX;
+    // 🎢 Arriba los tirones del traqueteo se sienten más (`traqueteoFuerza`).
+    const tiron = player && player.enTecho ? CONFIG.techo.costado.traqueteoFuerza : 1;
+    return camera.renderX + Math.round(traqueteoSwayX * tiron) + vaivenCamaraX;
   }
 
   /**
@@ -4100,7 +4107,19 @@ export function createRaidScene(services) {
       rng,
     });
     lupaActual = lupaDelTecho(sensacion, DENSIDAD);
-    vaivenTechoY = bamboleoDelTecho(sensacion, scroll, lupaActual);
+    /**
+     * 🎢 LAS JUNTAS DE LOS RIELES: arriba, cada tanto un golpe seco hacia
+     * abajo que se apaga enseguida (`rielCada`, `rielGolpe`). Más seguido
+     * cuando el tren pega un tirón. Es el tucu-tún de las ruedas, en la cámara.
+     */
+    const Cc = CONFIG.techo.costado;
+    if (arriba) {
+      rielTimer -= dt * Math.max(0.3, traqueteoVelMult);
+      if (rielTimer <= 0) { rielTimer = Cc.rielCada * rng.range(0.8, 1.2); rielY = Cc.rielGolpe; }
+    }
+    rielY *= Math.exp(-dt * 18);
+    vaivenTechoY = bamboleoDelTecho(sensacion, scroll, lupaActual) +
+      Math.round(rielY * lupaActual) / lupaActual;
 
     // 🧗 Al cambiar de vista (subir o bajar del techo), un fundido corto. Al
     // empezar el asalto no: si llegaste al techo desde el caballo, venías de
@@ -4326,6 +4345,7 @@ export function createRaidScene(services) {
     const lugar = piesEnTecho(s, player.y, map.height);
     player.piesCostado = player.piesCostado == null ? lugar.pies : player.piesCostado + (lugar.pies - player.piesCostado) * 0.35;
     player.yPantalla = player.piesCostado - player.hh;
+    player.escalaTecho = lugar.escala;
     player.bordesTecho = { arriba: s.arriba, abajo: s.abajo };
     player.vistaCostado = true;
     // Del lado de allá estás DETRÁS del techo: se te dibuja antes que el tren y

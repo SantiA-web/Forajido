@@ -28,7 +28,7 @@
 import { CONFIG } from '../data/config.js';
 import { dibujarTrenTresCuartos, MEDIDAS, LADO_GONDOLA, escalarColor } from './trenTresCuartos.js';
 import { dibujarHorizonte } from './horizonte.js';
-import { drawParallax } from '../engine/parallax.js';
+import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { geoTecho } from './techoGeometria.js';
 
 const M = MEDIDAS;
@@ -60,11 +60,13 @@ export function superficieEn(train, x, base) {
 export function piesEnTecho(sup, y, altoMapa) {
   const g = geoTecho(altoMapa);
   const d = y - g.medio;
-  if (Math.abs(d) <= g.lomo) return { pies: sup.arriba, detras: false };
+  if (Math.abs(d) <= g.lomo) return { pies: sup.arriba, detras: false, escala: 1 };
   const f = Math.min(1, (Math.abs(d) - g.lomo) / g.curva);
   const curva = 1 - Math.cos((f * Math.PI) / 2);     // baja de a poco y después más
-  if (d < 0) return { pies: sup.arriba + curva * CONFIG.techo.costado.hundeAlla, detras: true };
-  return { pies: sup.arriba + curva * (sup.abajo - sup.arriba), detras: false };
+  const C = CONFIG.techo.costado;
+  // Del lado de allá, además, te achicás un poco: te estás alejando.
+  if (d < 0) return { pies: sup.arriba + curva * C.hundeAlla, detras: true, escala: 1 - C.achicaAlla * f };
+  return { pies: sup.arriba + curva * (sup.abajo - sup.arriba), detras: false, escala: 1 };
 }
 
 // ------------------------------------------------------------ el fondo
@@ -74,7 +76,9 @@ export function piesEnTecho(sup, y, altoMapa) {
  * huida, `dibujarHorizonte`), el campo que vuela hacia la cola y la vía. Va en
  * coordenadas de PANTALLA; `base` es la vía en pantalla.
  */
-export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel, dia, tormenta }) {
+export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel: velTren, dia, tormenta }) {
+  // 💨 Arriba va rapidísimo: el campo corre a más del doble (`velocidadFondo`).
+  const vel = velTren * CONFIG.techo.costado.velocidadFondo;
   const C = CONFIG.colors.cielo;
   const colors = CONFIG.colors;
   const tinte = (hex) => (dia ? hex : escalarColor(hex, 0.32));
@@ -104,6 +108,12 @@ export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel, dia, t
   r.rect(0, base - 2, r.width, 1, tono(balasto, 1.2));
   const corre = (scroll * P.suelo * vel) % 12;
   for (let x = -corre; x < r.width; x += 12) r.rect(x, base + 3, 6, 2, tono(balasto, 0.62));
+  // Las rayas de velocidad: en el campo de atrás y en el de adelante, nunca
+  // sobre el tren.
+  const R = CONFIG.techo.costado.rayas;
+  const color = dia ? R.color : escalarColor(R.color, 0.45);
+  drawSpeedLines(r, scroll, r.width, { ...R, color, velocidad: R.velocidad * velTren, desde: hy + 4, hasta: base - 90 });
+  drawSpeedLines(r, scroll * 1.3, r.width, { ...R, color, velocidad: R.velocidad * 1.4 * velTren, desde: base + 10, hasta: r.height - 2, semilla: 3.1 });
 }
 
 // ------------------------------------------------------------ el tren

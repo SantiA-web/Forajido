@@ -17574,7 +17574,8 @@ están perfecto"*). Se acomodan dentro de algo más grande.
 | **C1. La vista lateral** | Arriba, el tren se ve de costado | ✅ hecha (corregida a lateral de verdad), **sin jugar** |
 | **C2. Leer el ancho** | Esconderse detrás de la curva, la marca en el filo, astillas de los tiros desde abajo | ✅ hecha, **sin jugar** |
 | C3a. Los jinetes te tiran arriba | Cuánto te pueden pegar según la postura y dónde estás; sus tiros se ven de costado | ✅ hecha, **sin jugar** |
-| C3b. Vos les tirás | Apuntar hacia abajo con el mouse; cada tiro tuyo despierta el vagón de abajo | Falta |
+| C3b. Vos les tirás | Apuntar con el mouse en la vista de costado; la regla del espejo; cada tiro tuyo despierta el vagón de abajo | ✅ hecha, **sin jugar** |
+| C3c. Los jinetes en dos líneas | Pegados al tren o abiertos al costado de la vía, y se mueven entre las dos (idea de Santi) | Falta |
 | 2. Subir y bajar en cualquier enganche | Escalerillas: `[E]` mantenido, en los dos sentidos, ~1 s expuesto a los jinetes | Falta |
 | 3. Algo que hacer arriba | **Arma arriba** (cara: cada tiro despierta el vagón de abajo, apuntar frena) y **espiar por la linterna** de los coches (agachado ves quién hay adentro) | Falta |
 | 4. Obstáculos que salen del mundo | Pórticos y tanques que se ven venir, **túneles** (cuerpo a tierra o bajarse), **curvas** que empujan | Falta |
@@ -18047,6 +18048,46 @@ el dibujo de pie, inclinado.
 
 **Medido:** 4.200 cuadros con teclas al azar, con alarma, jinetes y tormenta,
 70 caídas al enganche y 43 tiros al techo, sin errores, 1 a 1,5 ms por cuadro.
+
+### 🎯 C3b · Vos les tirás a los jinetes desde el techo
+
+Lo que no cambia: **tu arma de siempre** (balas, recarga con `R`, el círculo de
+la mira que se cierra con el clic derecho), y a un jinete lo bajás con 2 tiros,
+como desde la ventanilla. Se le pega al jinete, no al caballo.
+
+Lo que eligió Santi:
+
+- **La regla del espejo:** le podés tirar a un jinete sólo si él te puede pegar
+  a vos (`puedeTirarDesdeElTecho` y `chanceContraElTecho`). *(Santi: "cuerpo a
+  tierra en el medio no podés dispararles, tenés que ponerte en la curva y eso
+  ya es peligroso (tiempo para caerte y sos vulnerable)")*. Agazapado o parado
+  en el medio, a los dos lados; en una curva, sólo a los de ese lado; colgado,
+  nada (las manos ocupadas). Donde no podés tirar, la mira se pone roja.
+  Recargar se puede siempre.
+- **Tirar no te expone de más** *(Santi: "tirar nunca te expone de más")*. Se
+  propuso que después de cada tiro contaras como parado 0,6 s y se descartó:
+  el riesgo ya lo pagaste al ponerte donde te pueden pegar.
+- **A los de allá les tirás cuando quieras**, no sólo cuando te apuntan
+  *(Santi: "ellos también pueden hacerlo así y para que no sea injusto me parece
+  lo mejor")*. Asoman cabeza, hombros y sombrero por encima del filo de allá
+  siempre que te pueden pegar (suben y bajan de a poco, `asomarJinetesDeAlla`),
+  y ahí es donde les apuntás. Cuando te apuntan, además asoman el caño. 🔁 En la
+  C3a sólo asomaban al apuntarte.
+
+**Cómo se resuelve:** arriba la bala no viaja por la grilla de adentro (le
+pegaría a los guardias de abajo). El tiro sale de tu arma hacia la mira, con la
+dispersión de siempre, y se cruza contra el cuerpo de cada jinete en la vista de
+costado (`tiroDesdeElTecho`). El ruido es el de siempre: **cada tiro despierta el
+vagón de abajo** (medido: 3 tiros, 4 guardias alertados). Se ve igual que los
+tiros de ellos: fogonazo, trazo y, si pegó, el chispazo y el jinete destella.
+
+**Medido:** la regla del espejo da lo que tiene que dar (cuerpo a tierra en el
+medio, 0 jinetes bajados en 60 s; en la curva de acá, sólo los de acá; agazapado
+en el medio, de los dos lados). 8.400 cuadros con teclas y clics al azar,
+adentro y arriba, sin errores; adentro tus balas siguen siendo las de siempre.
+
+**Pendiente de lo bonito:** tu personaje no levanta el brazo para apuntar, y el
+jinete muerto cae con el dibujo de siempre (visto desde arriba).
 
 ---
 

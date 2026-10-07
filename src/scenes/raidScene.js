@@ -66,7 +66,8 @@ import { createExplosive, drawExplosive } from '../entities/explosive.js';
 import { EXPLOSIVES } from '../data/explosives.js';
 import { crearGrilla, buscarLugar, guardar, sacarUltima, sacar, ocupadas, cabeEn, colocarEn } from '../engine/grilla.js';
 import { drawRider } from '../entities/rider.js';
-import { updateRiders, createRiderWatch } from '../systems/riders.js';
+import { updateRiders, createRiderWatch, chanceContraElTecho, damageRider } from '../systems/riders.js';
+import { puedeTirarDesdeElTecho } from '../entities/player.js';
 import { maxJinetesPara } from '../data/riders.js';
 import { createLootable, drawLootable, esCajaFuerte } from '../entities/lootable.js';
 import {
@@ -104,6 +105,8 @@ export function createRaidScene(services) {
   let tirosDeCostado = [];
   /** 🕳️ El polvo del golpe contra el enganche: `{ x, dy, vx, vy, vida }`, `dy` sobre la vía. */
   let polvoEnganche = [];
+  /** 🎯 C3b · La vía de la vista de costado, del último cuadro dibujado (para resolver tus tiros). */
+  let baseCostado = null;
   const vistaDelAsalto = {
     get width() { return Math.floor(renderer.canvas.width / lupaActual); },
     get height() { return Math.floor(renderer.canvas.height / lupaActual); },
@@ -351,6 +354,8 @@ export function createRaidScene(services) {
       map, player, enemies, passengers, bullets, explosives, riders, loot, doors,
       bus, rng, input, camera, audio,
       aimX: player.x, aimY: player.y,
+      // 🎯 C3b · Tu tiro desde el techo se resuelve en la vista de costado.
+      tiroDesdeElTecho: (options) => tiroDesdeElTecho(options),
       spawnBullet: (options) => {
         tiroteo = true;
         // Disparaste durante el "¡ALTO!": se terminó la charla.
@@ -2710,6 +2715,12 @@ export function createRaidScene(services) {
     // Y con el bamboleo del techo, que corre el dibujo del tren en Y.
     world.miraX = input.mouse.px / lupaActual + camera.x + vaivenCamaraX;
     world.miraY = input.mouse.py / lupaActual + camera.y + vaivenTechoY;
+    // 🎯 C3b · Arriba la mira vive en la vista de costado (ver `renderDeCostado`:
+    // el dibujo va corrido `-desplazamientoX()` en x y `vaivenTechoY` en y).
+    world.miraCostado = player.enTecho
+      ? { x: input.mouse.px / lupaActual + desplazamientoX(), y: input.mouse.py / lupaActual - vaivenTechoY }
+      : null;
+    asomarJinetesDeAlla(dt);
     /**
      * 🎯 SI LA MIRA ESTÁ SOBRE EL CUERPO DE ALGUIEN, SE LE APUNTA A ÉL *(Santi:
      * "les disparo a la cabeza y no les hago daño")*. La mira se dibuja donde
@@ -4441,6 +4452,7 @@ export function createRaidScene(services) {
   function renderDeCostado(r) {
     const C = CONFIG.techo.costado;
     const base = Math.round(r.height * C.via);
+    baseCostado = base;
     const hy = Math.round(r.height * C.horizonte);
     const camX = desplazamientoX();
     const dia = gameState.esDeDia;
@@ -4513,6 +4525,7 @@ export function createRaidScene(services) {
     for (const rd of riders) if (!rd.alive || rd.side > 0) drawRider(r, { ...rd, y: base + C.carrilCerca });
     jinetesDeAllaApuntando(r, sup);
     tirosAlTechoDeCostado(r, base, s, sup);
+    miraDeCostado(r);
 
     drawPrompts(r);
     const enPantalla = { dentroDe: [camX + 2, camX + r.width - 2] };
@@ -4999,18 +5012,106 @@ export function createRaidScene(services) {
    */
   function jinetesDeAllaApuntando(r, sup) {
     for (const rd of riders) {
-      // Mientras apunta, y un instante después del tiro (el fogonazo sale de ahí).
-      const tiro = tirosDeCostado.some((t) => t.tirador === rd);
-      if (!rd.alive || rd.side >= 0 || !(rd.aimTimer > 0 || tiro)) continue;
+      if (!rd.alive || rd.side >= 0 || !(rd.asoma > 0)) continue;
       const so = sup(rd.x);
       if (!so) continue;
-      const brillo = rd.aimTimer > 0 && Math.sin(rd.aimTimer * 40) > 0;
-      r.rect(rd.x - 3, so.arriba - 1, 7, 1, '#15110e');         // el ala
-      r.rect(rd.x - 1, so.arriba - 3, 3, 2, '#15110e');         // la copa
-      r.rect(rd.x - 1, so.arriba - 2.5, 3, 0.5, '#4a78b8');     // la cinta de la ley
-      r.rect(rd.x + 3, so.arriba - 2, 4, 1, '#2a2420');         // el caño
-      if (brillo) r.rect(rd.x + 6, so.arriba - 2.5, 1, 1, '#fff6d0');
+      // Sube de detrás del filo: lo que está debajo del filo no se ve.
+      const filo = so.arriba;
+      const y = filo + (1 - rd.asoma) * 8;
+      r.ctx.save();
+      r.ctx.beginPath();
+      r.ctx.rect(rd.x - 8, filo - 20, 18, 20);
+      r.ctx.clip();
+      const c = (hex) => (rd.hitFlash > 0 ? '#ffffff' : hex);
+      r.rect(rd.x - 3, y - 1, 7, 2, c('#15110e'));             // los hombros
+      r.rect(rd.x - 1, y - 4, 3, 3, c('#15110e'));             // la cabeza
+      r.rect(rd.x - 3, y - 5, 7, 1, c('#15110e'));             // el ala
+      r.rect(rd.x - 1, y - 7, 3, 2, c('#15110e'));             // la copa
+      r.rect(rd.x - 1, y - 6, 3, 0.5, '#4a78b8');              // la cinta de la ley
+      if (rd.aimTimer > 0 || tirosDeCostado.some((t) => t.tirador === rd)) {
+        r.rect(rd.x + 3, y - 2, 4, 1, c('#2a2420'));           // el caño
+        if (rd.aimTimer > 0 && Math.sin(rd.aimTimer * 40) > 0) r.rect(rd.x + 6, y - 2.5, 1, 1, '#fff6d0');
+      }
+      r.ctx.restore();
     }
+  }
+
+  /**
+   * 🎯 C3b · LOS DE ALLÁ ASOMAN SIEMPRE QUE TE PUEDEN PEGAR *(Santi: "podés
+   * dispararles a los de allá cuando quieras. Ellos también pueden hacerlo así
+   * y para que no sea injusto me parece lo mejor")*. Es la regla del espejo:
+   * si él te ve, vos lo ves. Cuando te apuntan, además, asoman el caño.
+   */
+  function asomarJinetesDeAlla(dt) {
+    for (const rd of riders) {
+      if (rd.side >= 0) continue;
+      const teVe = rd.alive && player.alive &&
+        (chanceContraElTecho(player, rd.side, map.height) > 0 || rd.aimTimer > 0);
+      const objetivo = teVe ? 1 : 0;
+      rd.asoma = (rd.asoma || 0) + Math.sign(objetivo - (rd.asoma || 0)) * Math.min(Math.abs(objetivo - (rd.asoma || 0)), dt * 6);
+    }
+  }
+
+  /**
+   * 🎯 C3b · TU TIRO DESDE EL TECHO, resuelto en la vista de costado. Sale de
+   * tu arma hacia la mira (con la dispersión de siempre, ya metida en el
+   * ángulo) y pega en el primer jinete que cruce, si es uno al que le podés
+   * tirar (la regla del espejo: sólo si él te puede pegar a vos). Al caballo
+   * no le pasa nada: el blanco es el jinete.
+   */
+  function tiroDesdeElTecho(o) {
+    const C = CONFIG.techo.costado;
+    const base = baseCostado ?? Math.round(vistaDelAsalto.height * C.via);
+    const x0 = player.x + Math.cos(o.angle) * 6;
+    const y0 = (player.piesCostado ?? base - 71) - 12 + Math.sin(o.angle) * 6;
+    const dx = Math.cos(o.angle), dy = Math.sin(o.angle);
+    let mejor = null;
+    for (const rd of riders) {
+      if (!rd.alive || chanceContraElTecho(player, rd.side, map.height) <= 0) continue;
+      let caja;
+      if (rd.side > 0) {
+        const pie = base + C.carrilCerca;
+        caja = { x1: rd.x - 5, x2: rd.x + 5, y1: pie - 25, y2: pie - 9 };
+      } else {
+        const so = superficieEn(train, rd.x, base);
+        if (!so || !(rd.asoma > 0.5)) continue;
+        caja = { x1: rd.x - 3, x2: rd.x + 4, y1: so.arriba - 8, y2: so.arriba };
+      }
+      // El rayo contra la caja (por tramos en x y en y).
+      let tMin = 0, tMax = o.range;
+      for (const [p0, d, a, b] of [[x0, dx, caja.x1, caja.x2], [y0, dy, caja.y1, caja.y2]]) {
+        if (Math.abs(d) < 1e-6) { if (p0 < a || p0 > b) { tMin = Infinity; break; } continue; }
+        let t1 = (a - p0) / d, t2 = (b - p0) / d;
+        if (t1 > t2) [t1, t2] = [t2, t1];
+        tMin = Math.max(tMin, t1); tMax = Math.min(tMax, t2);
+      }
+      if (tMin <= tMax && (!mejor || tMin < mejor.t)) mejor = { rd, t: tMin };
+    }
+    const largo = mejor ? mejor.t : Math.min(o.range, 400);
+    tirosDeCostado.push({
+      propio: true, pego: !!mejor,
+      x0, y0, x1: x0 + dx * largo, y1: y0 + dy * largo,
+      vida: CONFIG.techo.tiroJinetes.trazoVida, desvio: rng.range(-1, 1),
+    });
+    if (mejor) {
+      const murio = damageRider(mejor.rd, o.damage);
+      audio.play('hitFlesh');
+      if (murio) bus.emit('riderKilled', { rider: mejor.rd });
+    }
+  }
+
+  /** 🎯 C3b · La mira arriba: el mismo círculo de adentro, en la vista de costado. */
+  function miraDeCostado(r) {
+    const mira = world.miraCostado;
+    if (!player.alive || !mira || player.caidaEnganche) return;
+    const m = CONFIG.mira;
+    const radio = Math.max(m.radioMin,
+      Math.min(m.radioMax, Math.tan(dispersionActual(player, world)) * m.distanciaReferencia * m.escala));
+    // Roja cuando el gatillo no va a hacer nada: recargando, o donde no te pueden
+    // pegar (cuerpo a tierra en el medio, colgado): ahí tampoco podés tirar.
+    const puede = player.reloadTimer <= 0 && puedeTirarDesdeElTecho(player, world);
+    const color = !puede ? m.colorBloqueado : player.apuntado > 0.55 ? m.colorApuntando : m.color;
+    r.circle(mira.x, mira.y, radio, color, m.alpha);
   }
 
   /**
@@ -5025,6 +5126,7 @@ export function createRaidScene(services) {
     const J = CONFIG.techo.tiroJinetes;
     const ctx = r.ctx;
     for (const t of tirosDeCostado) {
+      if (t.propio) { tuTiroDeCostado(r, t, J); continue; }
       const rd = t.tirador;
       const k = Math.max(0, t.vida / J.trazoVida);       // 1 al salir, 0 al apagarse
       const cerca = t.lado > 0;
@@ -5072,6 +5174,34 @@ export function createRaidScene(services) {
       }
       ctx.restore();
     }
+  }
+
+  /** 🎯 C3b · Tu tiro, de costado: fogonazo en tu arma, el trazo y, si pegó, el chispazo. */
+  function tuTiroDeCostado(r, t, J) {
+    const ctx = r.ctx;
+    const k = Math.max(0, t.vida / J.trazoVida);
+    const cola = 1 - k;
+    ctx.save();
+    ctx.globalAlpha = 0.9 * k;
+    ctx.strokeStyle = '#fff6d8';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(t.x0 + (t.x1 - t.x0) * cola * 0.8, t.y0 + (t.y1 - t.y0) * cola * 0.8);
+    ctx.lineTo(t.x1, t.y1);
+    ctx.stroke();
+    if (k > 0.55) {
+      ctx.globalAlpha = 1;
+      r.rect(t.x0 - 1, t.y0 - 1, 3, 3, '#ffd27a');
+      r.rect(t.x0, t.y0, 1, 1, '#ffffff');
+    }
+    if (t.pego) {
+      ctx.globalAlpha = Math.min(1, k * 1.6);
+      for (let i = 0; i < 4; i++) {
+        const a = i * 1.7 + t.desvio;
+        r.rect(t.x1 + Math.cos(a) * 4 * cola, t.y1 + Math.sin(a) * 4 * cola, 1, 1, '#c8302a');
+      }
+    }
+    ctx.restore();
   }
 
   function polvoDeResbalar(r) {

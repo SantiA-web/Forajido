@@ -21,6 +21,7 @@ import { moveAndCollide, overlapsSolid } from '../engine/collision.js';
 import { findCoverSurface, coverStillValid } from '../systems/cover.js';
 import { playerMelee } from '../systems/melee.js';
 import { throwTarget } from '../systems/explosives.js';
+import { chanceContraElTecho } from '../systems/riders.js';
 import { geoTecho, enLaCurva } from '../world/techoGeometria.js';
 import { PIEL, PIEL_S, CHAL, CHAL_L, CHAL_S, CAM, CAM_S, PANT, BOTA, BARBA, PAN_R, tono } from './gente/dibujo.js';
 
@@ -450,6 +451,9 @@ function updateOnRoof(p, dt, world) {
     speed *= CONFIG.casillasQueFrenan.carbon;
   }
 
+  // 🎯 C3b · EL ARMA ARRIBA (ver `armaEnElTecho`).
+  armaEnElTecho(p, dt, world);
+
   // Agachado o cuerpo a tierra no hacés ruido de pisadas, igual que abajo
   // (systems/ai.js lo lee de `sneaking`). Corriendo, sí.
   p.sneaking = !corriendo && !p.techoSaltoLargo;
@@ -830,7 +834,7 @@ function updateInCover(p, dt, world, dx, dy, toggle) {
 
 // ------------------------------------------------------------------ el arma
 
-function updateWeapon(p, dt, world) {
+function updateWeapon(p, dt, world, puedeTirar = true) {
   const input = world.input;
 
   if (p.reloadTimer > 0) {
@@ -861,12 +865,41 @@ function updateWeapon(p, dt, world) {
   }
 
   // Escondido detrás de una pared no se puede disparar: primero hay que asomarse.
-  const canShoot = !p.cover || p.peek >= CONFIG.player.peekShootAt;
+  // 🎯 Arriba, además, sólo donde te pueden pegar (`puedeTirarDesdeElTecho`).
+  const canShoot = puedeTirar && (!p.cover || p.peek >= CONFIG.player.peekShootAt);
 
   if (input.mouse.down && p.fireTimer <= 0 && canShoot) {
     if (p.ammo > 0) shoot(p, world);
     else startReload(p, world);
   }
+}
+
+/**
+ * 🎯 C3b · EL ARMA ARRIBA. La misma de adentro (balas, recarga, la mira que se
+ * cierra con el clic derecho), apuntada en la vista de costado
+ * (`world.miraCostado`). Le tirás a un jinete sólo si él te puede pegar a vos
+ * *(la regla del espejo, elegida por Santi)*: cuerpo a tierra en el medio no le
+ * tirás a nadie, tenés que ir a la curva, que es peligrosa. Colgado tenés las
+ * manos ocupadas, y cayendo o perdiendo pie tampoco.
+ */
+export function puedeTirarDesdeElTecho(p, world) {
+  if (p.techoColgado || p.caidaEnganche || p.techoPerdio) return false;
+  const H = world.map.height;
+  return chanceContraElTecho(p, 1, H) > 0 || chanceContraElTecho(p, -1, H) > 0;
+}
+
+function armaEnElTecho(p, dt, world) {
+  actualizarApuntado(p, dt, world);
+  const mira = world.miraCostado;
+  if (mira && p.piesCostado != null) {
+    p.aim = Math.atan2(mira.y - (p.piesCostado - 12), mira.x - p.x);
+    // Apuntando o tirando, mirás hacia la mira.
+    if (world.input.mouse.right || p.fireTimer > 0) p.techoMira = Math.cos(p.aim) >= 0 ? 1 : -1;
+  }
+  // Tirar no te expone de más *(Santi: "tirar nunca te expone de más")*:
+  // ya pagaste el riesgo al ponerte donde te pueden pegar.
+  // Recargar se puede siempre; tirar, no.
+  updateWeapon(p, dt, world, puedeTirarDesdeElTecho(p, world));
 }
 
 function startReload(p, world) {
@@ -882,6 +915,9 @@ function startReload(p, world) {
 
 function shoot(p, world) {
   const w = p.weapon;
+  // 🎯 C3b · Arriba la bala no viaja por la grilla de adentro: la escena la
+  // resuelve en la vista de costado (`tiroDesdeElTecho`).
+  const soltarBala = p.enTecho && world.tiroDesdeElTecho ? world.tiroDesdeElTecho : world.spawnBullet;
   /**
    * La dispersión sale de `dispersionActual`, la MISMA función que le da el
    * radio al círculo de la mira — el arma, cuánto estás apuntando y el
@@ -903,7 +939,7 @@ function shoot(p, world) {
     const disparo = (world.perdigonesId = (world.perdigonesId || 0) + 1);
     for (let i = 0; i < w.perdigones; i++) {
       const a = p.aim + (i / (w.perdigones - 1) - 0.5) * 2 * medio + world.rng.spread(medio / w.perdigones);
-      world.spawnBullet({
+      soltarBala({
         x: p.x + Math.cos(p.aim) * 8,
         y: p.y + Math.sin(p.aim) * 8,
         angle: a,
@@ -926,7 +962,7 @@ function shoot(p, world) {
     dispersionActual(p, world), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador
   );
 
-  if (!w.perdigones) world.spawnBullet({
+  if (!w.perdigones) soltarBala({
     // El Winchester pesa más por bala (`factorBala`, data/weapons.js).
     factor: w.factorBala,
     x: p.x + Math.cos(p.aim) * 8,

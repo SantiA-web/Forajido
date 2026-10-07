@@ -475,6 +475,12 @@ del tren, les asoma el sombrero y el caño por encima del techo cuando te apunta
 **Si caés al hueco entre dos vagones**, te ves caer y golpear contra el
 enganche antes de pasar adentro.
 
+**Desde el techo también les tirás a los jinetes**, con tu arma de siempre y la
+mira del mouse. Les podés tirar sólo donde ellos te pueden pegar a vos: cuerpo a
+tierra en el medio no le tirás a nadie (la mira se pone roja), y en una curva,
+sólo a los de ese lado. A los del otro lado les apuntás cuando asoman la cabeza
+por encima del techo. Cada tiro despierta a los guardias del vagón de abajo.
+
 - **Los carteles vienen hacia vos**, no están quietos: el tren avanza y te los
   lleva por delante. No se pueden rodear — o te agachás, o saltás.
 - **Comerte uno cuesta caro**: perdés una vida, tardás en levantarte y, sobre

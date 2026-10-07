@@ -110,6 +110,15 @@ function piezaAdorno(tipo, C, noche) {
 }
 
 /**
+ * Una cosa del suelo ya dibujada ('pasto', 'piedrita', 'mata', 'cactus',
+ * 'mancha'), para quien la siembre a su manera: el fondo del techo
+ * (world/techoDeCostado.js) las pone por profundidad, cada una a su tamaño.
+ */
+export function adornoDelDesierto(tipo, colores, noche) {
+  return piezaAdorno(tipo, colores, noche);
+}
+
+/**
  * SIEMBRA EL DESIERTO sobre un rectángulo.
  *
  * `desplaza` es cuánto corrió el suelo: con eso las mismas celdas desfilan

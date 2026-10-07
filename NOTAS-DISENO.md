@@ -18141,6 +18141,58 @@ tormenta, sin errores, ~1 ms por cuadro.
 **La C3c cambia un poco:** del lado de acá siguen las dos líneas (pegados y
 abiertos); del lado de allá serían dos distancias, las dos a la vista.
 
+### 🏜️ El fondo nuevo del techo, y que los tiros se noten
+
+*(Santi: "los jinetes del otro lado parecen más chicos pero no por lejanía. Y
+creo que en parte es porque los pusiste muy chicos y porque el fondo es
+espantoso: hay líneas negras moviéndose con el tren, el piso no parece desierto
+sino una lámina beige. Además, creo que sería mejor que se note más el disparo
+de forma visual cuando pega en un jinete y cuando sale del cañón del arma")*
+
+**Por qué parecían chicos y no lejanos:** estaban al 60%, y no había nada en el
+fondo con qué compararlos. El ojo lee la distancia comparando (un cactus a su
+lado igual de chico) y por el aire (lo lejano se ve apagado). Eligió las
+recomendaciones:
+
+- **Los de allá al 75%** (`allaEscala`; se ofrecieron 70, 75 y 85) y **apagados
+  por la distancia**: menos color y contraste (un filtro al dibujarlos, menos de
+  1 ms).
+- **El suelo con profundidad** (`dibujarSuelo`, world/techoDeCostado.js): más
+  claro y lavado lejos, más cálido cerca; encima, pasto, piedras, matas y (del
+  lado de allá) cactus, **cada fila a su tamaño y su velocidad**
+  (`profundidadDelSuelo`): calibrado para que el suelo de los jinetes de allá
+  mida lo mismo que ellos. Cerca de la cámara, las motas de tierra se estiran
+  con la velocidad. Las piezas son las del galope (`adornoDelDesierto`).
+  🔁 Las matas agrandadas cerca de la cámara se veían como ladrillos verdes:
+  ahí sólo va pasto y piedritas, con tope de tamaño.
+- **Se sacaron las rayitas oscuras** (las capas del parallax de adentro), y las
+  rayas de velocidad quedaron sólo debajo de la vía, más suaves (0,16) y del
+  color del aire.
+- **Los postes del telégrafo** del lado de allá, con sus cables colgando
+  (`dibujarTelegrafo`): asoman por encima del techo y pasan rapidísimo.
+- **El horizonte subió** (`costado.horizonte` de 0,42 a 0,36): pegado al techo
+  no había campo donde se leyera la distancia.
+
+**Que los tiros se noten** (`tiroJinetes.congelado`, `sacudon`, `cruzVida`,
+`humoVida`):
+
+- **Al salir del caño** (tuyo y de ellos): fogonazo en estrella más grande, un
+  resplandor que ilumina alrededor y humo de pólvora que se lleva el viento. Tu
+  tiro, además, sacude un poco la cámara.
+- **Cuando le pegás a un jinete:** destella, se sacude en la montura, salta un
+  chorro rojo hacia donde iba la bala, aparece una cruz blanca en la mira y
+  **todo se congela 5 centésimas** (elegido por Santi): el golpe se siente en
+  la mano. **Si lo matás, se le vuela el sombrero**, girando.
+- **Cuando te pegan a vos:** el chorro rojo sale de vos, con el destello y el
+  sacudón de siempre.
+
+**Medido:** ~2 ms por cuadro arriba (era ~1); sin errores con teclas y clics al
+azar, de día, de noche y con tormenta.
+
+**Queda para lo bonito:** el fogonazo de los jinetes de acá sale de la punta de
+la rayita que levantan al apuntar, que queda arriba de la cabeza; el jinete
+muerto cae con el dibujo de siempre.
+
 ---
 
 ### ✅ ETAPA 6 CERRADA

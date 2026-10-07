@@ -108,6 +108,8 @@ export function createRaidScene(services) {
   let baseCostado = null, horizonteCostado = null;
   /** 🎯 El tiro de galería: los fogonazos `{ x, y, vida }` y dónde cayeron las balas `{ x, y, tipo, vida }`. */
   let fogonazosCostado = [], impactosCostado = [];
+  /** 💥 Gotas, humo y sombreros que vuelan; las cruces de acierto; el congelado. */
+  let particulasCostado = [], crucesDeAcierto = [], congelado = 0;
   const vistaDelAsalto = {
     get width() { return Math.floor(renderer.canvas.width / lupaActual); },
     get height() { return Math.floor(renderer.canvas.height / lupaActual); },
@@ -291,6 +293,9 @@ export function createRaidScene(services) {
     tirosDeCostado = [];
     fogonazosCostado = [];
     impactosCostado = [];
+    particulasCostado = [];
+    crucesDeAcierto = [];
+    congelado = 0;
     polvoEnganche = [];
     // El viento de arriba: una capa que arranca muda y sube al trepar.
     // Silbido de banda media con ráfagas, distinto del viento grave de la tormenta.
@@ -2661,6 +2666,13 @@ export function createRaidScene(services) {
   // -------------------------------------------------------------- actualizar
 
   function update(dt) {
+    /**
+     * 💥 EL CONGELADO: cuando le pegás a un jinete, todo se frena un instante
+     * (`tiroJinetes.congelado`). Es lo que hace sentir el golpe en la mano; lo
+     * usan casi todos los juegos de acción. El dibujo sigue: sólo se frena el
+     * mundo.
+     */
+    if (congelado > 0) { congelado -= dt; return; }
     scroll += dt;
 
     /**
@@ -3932,12 +3944,22 @@ export function createRaidScene(services) {
       tirosDeCostado[i].vida -= dt;
       if (tirosDeCostado[i].vida <= 0) tirosDeCostado.splice(i, 1);
     }
-    for (const lista of [fogonazosCostado, impactosCostado]) {
+    for (const lista of [fogonazosCostado, impactosCostado, crucesDeAcierto]) {
       for (let i = lista.length - 1; i >= 0; i--) {
         lista[i].vida -= dt;
         if (lista[i].vida <= 0) lista.splice(i, 1);
       }
     }
+    for (let i = particulasCostado.length - 1; i >= 0; i--) {
+      const q = particulasCostado[i];
+      q.vida -= dt;
+      q.x += q.vx * dt; q.y += q.vy * dt;
+      q.vy += (q.tipo === 'humo' ? -8 : 260) * dt;        // el humo sube; lo demás cae
+      if (q.tipo === 'humo') q.vx *= 1 - 1.5 * dt;
+      q.rot = (q.rot || 0) + (q.vrot || 0) * dt;
+      if (q.vida <= 0) particulasCostado.splice(i, 1);
+    }
+    for (const rd of riders) if (rd.sacudon > 0) rd.sacudon = Math.max(0, rd.sacudon - dt);
     for (let i = polvoEnganche.length - 1; i >= 0; i--) {
       const q = polvoEnganche[i];
       q.vida -= dt;
@@ -5043,9 +5065,53 @@ export function createRaidScene(services) {
       r.ctx.scale(escala, escala);
       r.ctx.translate(-rd.x, -cascos);
     }
+    // 💥 Herido, se sacude en la montura.
+    if (rd.sacudon > 0) {
+      const f = rd.sacudon / CONFIG.techo.tiroJinetes.sacudon;
+      r.ctx.translate(Math.sin(rd.sacudon * 90) * 1.6 * f, -f * 1.2);
+    }
+    // Los de allá, apagados por el aire: lo lejano pierde color y contraste.
+    // Es lo que hace que el ojo los lea lejos y no chicos.
+    if (escala !== 1) {
+      r.ctx.filter = gameState.esDeDia
+        ? 'saturate(0.65) contrast(0.78) brightness(1.1)'
+        : 'saturate(0.7) contrast(0.8) brightness(0.92)';
+    }
     // `side: 1`: de costado, el gesto de apuntar va siempre hacia arriba, hacia vos.
     drawRider(r, { ...rd, y, side: 1 });
+    r.ctx.filter = 'none';
     r.ctx.restore();
+  }
+
+  /**
+   * 💥 UN FOGONAZO: la estrella con su resplandor, y el humo de pólvora que
+   * queda flotando y se lo lleva el viento para atrás. `escala` achica el de
+   * los jinetes de allá.
+   */
+  function fogonazo(x, y, escala = 1) {
+    const J = CONFIG.techo.tiroJinetes;
+    fogonazosCostado.push({ x, y, escala, vida: J.fogonazoVida });
+    for (let k = 0; k < 3; k++) {
+      particulasCostado.push({
+        tipo: 'humo', x: x + rng.range(-1, 1), y: y + rng.range(-1, 1),
+        vx: -rng.range(25, 55), vy: -rng.range(2, 8),
+        vida: J.humoVida * rng.range(0.7, 1), total: J.humoVida, r: (1.5 + k * 0.6) * escala,
+      });
+    }
+  }
+
+  /** 💥 El chorro rojo de un tiro que entró: sale hacia donde iba la bala. */
+  function chorroDeSangre(x, y, dx, dy, escala = 1) {
+    const largo = Math.hypot(dx, dy) || 1;
+    const ux = dx / largo, uy = dy / largo;
+    for (let k = 0; k < 9; k++) {
+      const v = rng.range(40, 110) * escala;
+      particulasCostado.push({
+        tipo: 'gota', x, y,
+        vx: (ux + rng.range(-0.5, 0.5)) * v, vy: (uy + rng.range(-0.6, 0.3)) * v - 20,
+        vida: rng.range(0.25, 0.45), total: 0.45, r: rng.range(0.6, 1.3) * escala,
+      });
+    }
   }
 
   /** El radio del círculo de la mira: la misma cuenta que adentro (`drawMira`). */
@@ -5096,7 +5162,8 @@ export function createRaidScene(services) {
     const y = mira.y + Math.sin(a) * radioDeMira() * lejos;
 
     const arma = { x: player.x + Math.cos(player.aim) * 6, y: (player.piesCostado ?? base - 71) - 12 + Math.sin(player.aim) * 6 };
-    fogonazosCostado.push({ x: arma.x, y: arma.y, vida: J.fogonazoVida });
+    fogonazo(arma.x, arma.y);
+    camera.shake(0.5, 0.06);
 
     const rd = jineteEn(x, y, base);
     if (rd && chanceContraElTecho(player, rd.side, map.height) <= 0) {
@@ -5105,10 +5172,23 @@ export function createRaidScene(services) {
       return;
     }
     if (rd) {
+      const e = jineteDeCostado(rd, base).escala;
       impactosCostado.push({ x, y, tipo: 'sangre', vida: J.impactoVida, semilla: rng.range(0, 1) });
+      chorroDeSangre(x, y, x - arma.x, y - arma.y, e);
+      crucesDeAcierto.push({ x: mira.x, y: mira.y, vida: J.cruzVida });
+      rd.sacudon = J.sacudon;
+      congelado = J.congelado;
       const murio = damageRider(rd, o.damage);
       audio.play('hitFlesh');
-      if (murio) bus.emit('riderKilled', { rider: rd });
+      if (murio) {
+        // Se le vuela el sombrero, para atrás y girando.
+        const c = cuerpoDeJinete(rd, base);
+        particulasCostado.push({
+          tipo: 'sombrero', x: rd.x, y: c.y1 - 2 * e, vx: -rng.range(30, 60), vy: -rng.range(70, 100),
+          vida: 1.1, total: 1.1, rot: 0, vrot: rng.range(-14, -8), r: e,
+        });
+        bus.emit('riderKilled', { rider: rd });
+      }
       return;
     }
     impactosCostado.push({ x, y, tipo: dondeCae(x, y, base), vida: J.impactoVida, semilla: rng.range(0, 1) });
@@ -5135,11 +5215,13 @@ export function createRaidScene(services) {
       t.listo = true;
       const rd = t.tirador;
       const arma = armaDeJinete(rd, base);
-      fogonazosCostado.push({ x: arma.x, y: arma.y, vida: J.fogonazoVida });
+      fogonazo(arma.x, arma.y, jineteDeCostado(rd, base).escala);
       const semilla = rng.range(0, 1);
       if (t.pego) {
         const y = (player.piesCostado ?? s.arriba) - 10 + rng.range(-4, 4);
-        impactosCostado.push({ x: player.x + rng.range(-2, 2), y, tipo: 'sangre', vida: J.impactoVida, semilla });
+        const x = player.x + rng.range(-2, 2);
+        impactosCostado.push({ x, y, tipo: 'sangre', vida: J.impactoVida, semilla });
+        chorroDeSangre(x, y, x - arma.x, y - arma.y);
       } else if (t.tapado) {
         const chapa = chapaQueTapa(t.lado, base);
         if (chapa) impactosCostado.push({ ...chapa, tipo: 'chapa', vida: J.impactoVida, semilla });
@@ -5159,13 +5241,68 @@ export function createRaidScene(services) {
     const ctx = r.ctx;
     const dia = gameState.esDeDia;
     ctx.save();
+    // El humo, detrás de todo lo demás del tiro.
+    for (const q of particulasCostado) {
+      if (q.tipo !== 'humo') continue;
+      const t = 1 - q.vida / q.total;
+      ctx.globalAlpha = 0.45 * (1 - t);
+      ctx.fillStyle = dia ? '#d8d2c6' : '#8a857c';
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, q.r * (1 + t * 1.8), 0, Math.PI * 2);
+      ctx.fill();
+    }
     for (const fo of fogonazosCostado) {
       const k = fo.vida / J.fogonazoVida;
-      ctx.globalAlpha = Math.min(1, k * 1.5);
-      r.rect(fo.x - 2, fo.y - 0.5, 5, 1, '#ffd27a');
-      r.rect(fo.x - 0.5, fo.y - 2, 1, 5, '#ffd27a');
-      r.rect(fo.x - 1, fo.y - 1, 3, 3, '#ffe9b0');
-      r.rect(fo.x, fo.y, 1, 1, '#ffffff');
+      const e = fo.escala || 1;
+      // El resplandor: un instante de luz alrededor del caño.
+      ctx.globalAlpha = 0.45 * k;
+      const luz = ctx.createRadialGradient(fo.x, fo.y, 0, fo.x, fo.y, 12 * e);
+      luz.addColorStop(0, '#fff3c8');
+      luz.addColorStop(1, 'rgba(255, 210, 122, 0)');
+      ctx.fillStyle = luz;
+      ctx.fillRect(fo.x - 12 * e, fo.y - 12 * e, 24 * e, 24 * e);
+      // La estrella: rayos largos que se acortan.
+      ctx.globalAlpha = Math.min(1, k * 1.6);
+      const rayo = (2 + 4 * k) * e;
+      r.rect(fo.x - rayo, fo.y - 0.5, rayo * 2 + 1, 1, '#ffd27a');
+      r.rect(fo.x - 0.5, fo.y - rayo, 1, rayo * 2 + 1, '#ffd27a');
+      r.rect(fo.x - rayo * 0.6, fo.y - rayo * 0.6, 1, 1, '#ffd27a');
+      r.rect(fo.x + rayo * 0.6, fo.y - rayo * 0.6, 1, 1, '#ffd27a');
+      r.rect(fo.x - rayo * 0.6, fo.y + rayo * 0.6, 1, 1, '#ffd27a');
+      r.rect(fo.x + rayo * 0.6, fo.y + rayo * 0.6, 1, 1, '#ffd27a');
+      r.rect(fo.x - 1.5 * e, fo.y - 1.5 * e, 3 * e + 1, 3 * e + 1, '#ffe9b0');
+      r.rect(fo.x - 0.5, fo.y - 0.5, 1.5, 1.5, '#ffffff');
+    }
+    // Las gotas y los sombreros que vuelan.
+    for (const q of particulasCostado) {
+      if (q.tipo === 'gota') {
+        ctx.globalAlpha = Math.min(1, q.vida * 4);
+        r.rect(q.x, q.y, Math.max(0.6, q.r), Math.max(0.6, q.r), q.vida > 0.2 ? '#c8302a' : '#7a1a14');
+      } else if (q.tipo === 'sombrero') {
+        ctx.globalAlpha = Math.min(1, q.vida * 3);
+        ctx.save();
+        ctx.translate(q.x, q.y);
+        ctx.rotate(q.rot);
+        ctx.scale(q.r, q.r);
+        r.rect(-4, 0, 8, 1, '#15110e');
+        r.rect(-2, -2, 4, 2, '#15110e');
+        r.rect(-2, -1, 4, 0.5, '#4a78b8');
+        ctx.restore();
+      }
+    }
+    // La cruz de acierto en la mira: le diste, aunque no mires al jinete.
+    for (const cr of crucesDeAcierto) {
+      const k = cr.vida / J.cruzVida;
+      ctx.globalAlpha = Math.min(1, k * 2);
+      const a = 2 + (1 - k) * 2, b = a + 3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        ctx.moveTo(cr.x + sx * a, cr.y + sy * a);
+        ctx.lineTo(cr.x + sx * b, cr.y + sy * b);
+      }
+      ctx.stroke();
     }
     for (const im of impactosCostado) {
       if (!im.tipo) continue;

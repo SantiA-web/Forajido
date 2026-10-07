@@ -1911,7 +1911,9 @@ export const CONFIG = {
       carbon: 6,         // lo que asoma el carbón de la góndola sobre su costado
       hundeAlla: 15,     // cuánto te hundís detrás del techo en el borde de allá: queda la cabeza
       via: 0.74,         // dónde va la vía, en fracción del alto de la pantalla
-      horizonte: 0.42,   // dónde termina el cielo: justo detrás de los techos, como un juego de costado
+      // 🔁 Era 0,42: el horizonte quedaba pegado al techo y no había campo donde
+      // se leyera la distancia. Más arriba, se ve el suelo de los jinetes de allá.
+      horizonte: 0.36,   // dónde termina el cielo
       /**
        * 🔁 BAJÓ DE 14 A 9 con "arriba se va agachado": el cartel tiene que
        * pegarle al que va agachado. Cuerpo a tierra pasás por debajo.
@@ -1933,7 +1935,10 @@ export const CONFIG = {
        * coche, 71), `allaEscala` cuánto se achican.
        */
       allaSobreLaVia: 88,
-      allaEscala: 0.6,
+      allaEscala: 0.75,    // 🔁 era 0,6: se veían chicos, no lejanos (elegido por Santi: 75%)
+
+      /** 📡 Los postes del telégrafo, del lado de allá (ver `dibujarTelegrafo`). */
+      telegrafo: { profundidad: 0.9, separacion: 170, alto: 104, comba: 7, color: '#4a3a2c' },
       fundido: 0.35,     // el fundido al cambiar de vista
       astillasVida: 0.45, // cuánto duran las astillas de un tiro desde abajo (C2)
 
@@ -1958,7 +1963,8 @@ export const CONFIG = {
        * doble que visto desde adentro, y encima pasan rayas de velocidad.
        */
       velocidadFondo: 2.4,
-      rayas: { cantidad: 11, velocidad: 2600, largo: 34, color: '#f0e2c4', alpha: 0.32 },
+      // Más suaves y del color del aire (eran 0,32): la velocidad la venden el suelo y los postes.
+      rayas: { cantidad: 9, velocidad: 2600, largo: 34, color: '#fbf3e4', alpha: 0.16 },
     },
 
     /**
@@ -2057,8 +2063,19 @@ export const CONFIG = {
        * parecía un tiro al piso. Ahora, como en Wild Guns o Blood Bros.: el
        * fogonazo en el arma y el golpe donde cayó la bala, sin raya.
        */
-      fogonazoVida: 0.07,
+      fogonazoVida: 0.09,
       impactoVida: 0.45,
+      /**
+       * 💥 QUE EL TIRO SE NOTE *(Santi: "sería mejor que se note más el disparo
+       * de forma visual cuando pega en un jinete y cuando sale del cañón")*:
+       * el fogonazo con resplandor y humo, el jinete que se sacude y suelta un
+       * chorro rojo, la cruz en la mira y un congelado de un instante (elegido
+       * por Santi) que hace sentir el golpe en la mano.
+       */
+      congelado: 0.05,     // segundos que se frena todo cuando le pegás a un jinete
+      sacudon: 0.22,       // cuánto se sacude en la montura el jinete herido
+      cruzVida: 0.2,       // la cruz blanca de acierto en la mira
+      humoVida: 0.7,       // el humo de pólvora que queda flotando
       trazoVida: 0.14,     // cuánto se recuerda un tiro de jinete (para el caño a la vista)
     },
 

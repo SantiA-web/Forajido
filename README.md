@@ -482,7 +482,9 @@ sólo a los de ese lado. Los del otro lado cabalgan lejos y se ven por encima
 del techo, más chicos, sobre el campo. Cada tiro despierta a los guardias del
 vagón de abajo. Arriba los tiros son de galería, como en Wild Guns: ves el
 fogonazo y dónde cayó la bala (chispazo rojo en el jinete, chispas en el tren o
-una nube de tierra).
+una nube de tierra). Cuando le pegás a un jinete se sacude, salta un chorro
+rojo, aparece una cruz en la mira y todo se frena un instante; si lo matás, se
+le vuela el sombrero.
 
 - **Los carteles vienen hacia vos**, no están quietos: el tren avanza y te los
   lleva por delante. No se pueden rodear — o te agachás, o saltás.

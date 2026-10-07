@@ -28,7 +28,8 @@
 import { CONFIG } from '../data/config.js';
 import { dibujarTrenTresCuartos, MEDIDAS, LADO_GONDOLA, escalarColor } from './trenTresCuartos.js';
 import { dibujarHorizonte } from './horizonte.js';
-import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
+import { drawSpeedLines } from '../engine/parallax.js';
+import { adornoDelDesierto } from './desierto.js';
 import { geoTecho } from './techoGeometria.js';
 
 const M = MEDIDAS;
@@ -82,26 +83,20 @@ export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel: velTre
   const C = CONFIG.colors.cielo;
   const colors = CONFIG.colors;
   const tinte = (hex) => (dia ? hex : escalarColor(hex, 0.32));
-  r.clear(dia ? colors.desiertoDia : escalarColor(colors.desiertoDia, 0.34));
+  r.clear(tinte(colors.desiertoDia));
+  dibujarSuelo(r, { base, hy, scroll, vel, dia, tinte });
   dibujarHorizonte(r, {
     hy, avance, dia, C, tinte, altoMax: 44, tormenta,
     cielo: tormenta ? [C.tormentaArriba, C.tormentaHorizonte]
       : dia ? [colors.puebloCielo, colors.puebloCieloHorizonte]
         : [C.nocheArriba, C.nocheHorizonte],
   });
-  // El campo, de lejos (arriba, lento) a cerca (abajo, rápido): las mismas
-  // capas del asalto, repartidas entre el horizonte y la vía, y debajo de la
-  // vía las que vuelan.
+  // 🔁 Las capas de rayitas oscuras del asalto se sacaron de acá *(Santi: "hay
+  // líneas negras moviéndose con el tren, el piso no parece desierto sino una
+  // lámina beige")*: el suelo ahora lo hace `dibujarSuelo`, y los postes del
+  // telégrafo van detrás del tren.
   const P = CONFIG.parallax;
-  const capas = P.capas;
-  const lejos = capas.map((c, i) => ({
-    ...c, v: c.v * vel * (0.35 + i * 0.12), y: Math.round(hy + 6 + (i / capas.length) * (base - hy - 30)),
-  }));
-  drawParallax(r, lejos, scroll, r.width);
-  const cerca = capas.map((c, i) => ({
-    ...c, v: c.v * vel * (1.3 + i * 0.25), y: Math.round(base + 14 + i * ((r.height - base - 16) / capas.length)),
-  }));
-  drawParallax(r, cerca, scroll, r.width);
+  dibujarTelegrafo(r, { base, scroll, vel, dia });
   // La vía: el balasto y los durmientes asomando, corriendo a la velocidad del suelo.
   const balasto = dia ? colors.cielo.balasto : escalarColor(colors.cielo.balasto, 0.5);
   r.rect(0, base - 2, r.width, 7, balasto);
@@ -112,8 +107,150 @@ export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel: velTre
   // sobre el tren.
   const R = CONFIG.techo.costado.rayas;
   const color = dia ? R.color : escalarColor(R.color, 0.45);
-  drawSpeedLines(r, scroll, r.width, { ...R, color, velocidad: R.velocidad * velTren, desde: hy + 4, hasta: base - 90 });
   drawSpeedLines(r, scroll * 1.3, r.width, { ...R, color, velocidad: R.velocidad * 1.4 * velTren, desde: base + 10, hasta: r.height - 2, semilla: 3.1 });
+}
+
+/** Un número fijo para cada par (siempre el mismo): para sembrar sin azar. */
+function revolver(a, b) {
+  let h = (Math.imul(a | 0, 73856093) ^ Math.imul(b | 0, 19349663)) >>> 0;
+  h ^= h >>> 16; h = Math.imul(h, 2246822507);
+  h ^= h >>> 13; h = Math.imul(h, 3266489909);
+  return (h ^= h >>> 16) >>> 0;
+}
+
+/** Mezcla dos colores (#rrggbb): `t` 0 es el primero, 1 el segundo. */
+function mezclar(a, b, t) {
+  const n = (hex, i) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
+  const c = [0, 1, 2].map((i) => Math.round(n(a, i) + (n(b, i) - n(a, i)) * t));
+  return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * 🏜️ CUÁNTO MIDE Y A QUÉ VELOCIDAD PASA lo que está apoyado en el suelo a esta
+ * altura de la pantalla: 1 es junto a la vía; menos, más lejos; más, entre la
+ * vía y la cámara. Está calibrado para que **el suelo de los jinetes de allá
+ * mida lo mismo que ellos** (`allaEscala`): un cactus a su lado es tan chico
+ * como ellos, y por eso se leen lejos y no chiquitos. Entre el horizonte y
+ * ellos se achica rápido; debajo de la vía crece y vuela.
+ */
+export function profundidadDelSuelo(y, { base, hy, alto }) {
+  const C = CONFIG.techo.costado;
+  const yJ = base - C.allaSobreLaVia + 7;
+  const kJ = C.allaEscala;
+  if (y <= yJ) return 0.1 + (kJ - 0.1) * Math.max(0, (y - hy) / Math.max(1, yJ - hy));
+  if (y <= base) return kJ + (1 - kJ) * (y - yJ) / Math.max(1, base - yJ);
+  return 1 + 1.3 * (y - base) / Math.max(1, alto - base);
+}
+
+/**
+ * 🏜️ EL SUELO DEL DESIERTO, CON PROFUNDIDAD *(Santi: "el piso no parece
+ * desierto sino una lámina beige")*. Tres cosas lo hacen un lugar:
+ *
+ *  - LA LUZ: lejos es más claro y lavado (la bruma del aire), cerca más cálido.
+ *  - LO QUE HAY ENCIMA, A SU TAMAÑO: pasto, piedras, matas y, del lado de allá,
+ *    cactus; cada fila de suelo con el tamaño y la velocidad de su distancia
+ *    (`profundidadDelSuelo`). Lo de lejos pasa lento; lo de cerca, volando.
+ *  - LA TIERRA: motas de tierra que, cerca de la cámara, se estiran con la
+ *    velocidad. Del color del suelo, nunca negras.
+ *
+ * Sin azar: cada cosa sale de un número fijo por fila y por celda.
+ */
+function dibujarSuelo(r, { base, hy, scroll, vel, dia, tinte }) {
+  const colors = CONFIG.colors;
+  const C = colors.cielo;
+  const ctx = r.ctx;
+  const g = ctx.createLinearGradient(0, hy, 0, r.height);
+  g.addColorStop(0, tinte(mezclar(colors.desiertoDia, C.bruma, 0.6)));
+  g.addColorStop(0.3, tinte(mezclar(colors.desiertoDia, C.bruma, 0.15)));
+  g.addColorStop(0.55, tinte(colors.desiertoDia));
+  g.addColorStop(1, tinte(escalarColor(colors.desiertoDia, 0.8)));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, hy, r.width, r.height - hy);
+
+  const geo = { base, hy, alto: r.height };
+  const P = CONFIG.parallax;
+  const motaOscura = tinte(C.tierraOscura);
+  const motaClara = tinte(mezclar(colors.desiertoDia, C.bruma, 0.7));
+  let fila = 0;
+  for (let y = hy + 1; y < r.height; fila++) {
+    const k = profundidadDelSuelo(y, geo);
+    const corre = scroll * P.suelo * vel * k;
+    // Lejos (o debajo del tren, donde casi no se ve) va menos tierra: la bruma
+    // y la distancia la borran.
+    const celda = 9 * Math.max(0.5, k);
+    const i0 = Math.floor(corre / celda) - 1;
+    const i1 = Math.ceil((corre + r.width) / celda) + 1;
+    const estira = k > 1.15 ? Math.min(14, (k - 1) * 9) : 0;
+    for (let i = i0; i <= i1; i++) {
+      const h = revolver(i, fila * 31 + 7);
+      const x = i * celda + (h % 97) / 97 * celda - corre;
+      const que = (h >>> 8) % 100;
+      if (que < 22) {
+        // Una mota de tierra; cerca de la cámara, estirada por la velocidad.
+        ctx.globalAlpha = 0.35 + 0.35 * Math.min(1, k);
+        r.rect(x, y, Math.max(1, k) + estira, Math.max(0.5, k * 0.6), (h >>> 16) & 1 ? motaOscura : motaClara);
+        ctx.globalAlpha = 1;
+      } else if (que < 25 + (y < base ? 0 : 1)) {
+        // Una cosa del suelo, a su tamaño. Los cactus, sólo del lado de allá:
+        // de este lado tapan a los jinetes de acá.
+        // Cerca de la cámara, sólo pasto y piedritas: las matas agrandadas se
+        // veían como ladrillos verdes.
+        const tipos = y < base ? ['pasto', 'piedrita', 'mata', 'cactus', 'pasto'] : ['pasto', 'pasto', 'piedrita'];
+        const tipo = tipos[(h >>> 20) % tipos.length];
+        const img = adornoDelDesierto(tipo, C, !dia);
+        // Agrandadas de más se pixelan: tope un poco arriba del tamaño natural.
+        const e = 0.25 * Math.min(k, 1.15) * (tipo === 'cactus' ? 1.1 : 0.9);
+        const w = img.width * e, alto = img.height * e;
+        if (estira) {
+          // Lo que pasa volando se ve corrido: dos copias apagadas detrás.
+          ctx.globalAlpha = 0.25;
+          ctx.drawImage(img, x - w / 2 + estira * 0.6, y - alto, w, alto);
+          ctx.globalAlpha = 1;
+        }
+        ctx.drawImage(img, x - w / 2, y - alto, w, alto);
+      }
+    }
+    y += Math.max(1.5, 2.2 * k);
+  }
+}
+
+/**
+ * 📡 LOS POSTES DEL TELÉGRAFO, del lado de allá de la vía, con sus cables:
+ * pasan rapidísimo y asoman por encima del techo. Es de lo que más hace sentir
+ * la velocidad en las películas de trenes del oeste. Van detrás del tren (el
+ * tren los tapa de la mitad para abajo; en los huecos se ven enteros).
+ */
+function dibujarTelegrafo(r, { base, scroll, vel, dia }) {
+  const C = CONFIG.techo.costado.telegrafo;
+  const P = CONFIG.parallax;
+  const k = C.profundidad;
+  const sep = C.separacion * k;
+  const corre = (scroll * P.suelo * vel * k) % sep;
+  const pie = base - 4;
+  const tope = base - C.alto;
+  const madera = dia ? C.color : escalarColor(C.color, 0.45);
+  const ctx = r.ctx;
+  // Los cables: cuelgan entre poste y poste.
+  ctx.save();
+  ctx.strokeStyle = madera;
+  ctx.globalAlpha = 0.7;
+  ctx.lineWidth = 0.5;
+  for (let x = -corre - sep; x < r.width + sep; x += sep) {
+    for (const dy of [2, 5]) {
+      ctx.beginPath();
+      ctx.moveTo(x, tope + dy);
+      ctx.quadraticCurveTo(x + sep / 2, tope + dy + C.comba, x + sep, tope + dy);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+  for (let x = -corre - sep; x < r.width + sep; x += sep) {
+    r.rect(x - 1, tope, 2, pie - tope, madera);
+    r.rect(x - 5, tope + 1.5, 10, 1, madera);
+    r.rect(x - 4, tope + 4.5, 8, 1, madera);
+    // Los aisladores de vidrio, que agarran la luz.
+    for (const dx of [-4, -1.5, 1.5, 4]) r.rect(x + dx - 0.5, tope + 0.5, 1, 1, dia ? '#9fc4c8' : '#3a5254');
+  }
 }
 
 // ------------------------------------------------------------ el tren

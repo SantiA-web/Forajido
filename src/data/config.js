@@ -2017,6 +2017,45 @@ export const CONFIG = {
     },
 
     /**
+     * 🎯 C3a · LOS JINETES TE TIRAN ARRIBA *(Santi: "cuerpo a tierra y caminar
+     * por el medio no te pueden dar. Agazapado te pueden dar. Parado/corriendo
+     * las probabilidades aumentan. Te inclinás hacia una curva sos mucho más
+     * disparable que si vas por el medio. Agarrado del techo es donde más
+     * peligro de disparo corrés")*. Eligió los números B.
+     *
+     * Es la probabilidad de que te pegue CADA tiro, según dónde estás en el
+     * momento en que sale (no cuando empezó a apuntar: si en ese medio segundo
+     * te tirás cuerpo a tierra, el tiro pega en la chapa). Sumado y aceptado:
+     *  - en una curva, los del OTRO lado no te pueden pegar (el tren en el medio);
+     *  - cuerpo a tierra en la curva vale la mitad que la curva.
+     * Colgado, un solo tiro te suelta: te caés del tren.
+     */
+    tiroJinetes: {
+      tendidoMedio: 0,
+      agazapado: 0.15,     // te matan en ~45 s con un jinete solo
+      parado: 0.35,        // sprint o saltando: ~19 s
+      curva: 0.55,         // en la curva de su lado: ~12 s
+      tendidoCurva: 0.5,   // cuerpo a tierra en la curva: la mitad
+      colgado: 0.5,
+      separacion: 30,      // arriba cabalgan a tu altura, uno adelante y otro atrás
+      trazoVida: 0.14,     // cuánto dura el trazo de la bala en la vista de costado
+    },
+
+    /**
+     * 🕳️ LA CAÍDA AL ENGANCHE *(Santi: "al caer al enganche (salto fallido),
+     * no podés hacer una transición real en vez de cortar")*. Antes aparecías
+     * adentro de golpe. Ahora te ves caer por el hueco entre los dos vagones,
+     * golpeás la chapa del enganche (polvo, golpe, cámara) y recién ahí pasa
+     * a la vista de adentro, con el fundido de siempre.
+     */
+    caidaEnganche: {
+      saltito: -45,        // arranca con un tropezón hacia arriba (px/s)
+      gravedad: 700,       // px/s²: del techo del coche al enganche, ~0,4 s
+      giro: 0.35,          // cuánto se te va el cuerpo de cabeza mientras caés
+      aterrizado: 0.32,    // cuánto te quedás agachado del golpe antes del fundido
+    },
+
+    /**
      * LOS OBSTÁCULOS QUE VIENEN HACIA VOS.
      *
      * Aparecen adelante (del lado de la locomotora) y barren el techo hacia

@@ -164,8 +164,11 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   (opción C, elegida por Santi): C1 (corregida a lateral de verdad) y C2 (leer
   el ancho) hechas y sin jugar. Después: arriba se va agazapado (cuerpo a
   tierra con Shift, sprint con doble toque que te hace perder pie) y con
-  tormenta es más difícil (opción B). Sin jugar.** Faltan: C3 (tirar hacia abajo a los jinetes,
-  con balas propias de esta vista), y después las
+  tormenta es más difícil (opción B). C3a (los jinetes te tiran arriba según
+  tu postura, idea de Santi, números B) y la caída al enganche con transición:
+  hechas y sin jugar.** Faltan: C3b (vos les tirás hacia abajo), **lo bonito con
+  esqueletos** (cuerpo a tierra y agazapado se ven mal; ver NOTAS, "Lo bonito
+  queda para después"), y después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
   los guardias en el techo. Hay código de la vista de arriba del techo sin uso
   para limpiar (ver NOTAS, etapa C1).

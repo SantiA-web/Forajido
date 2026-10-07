@@ -17573,7 +17573,8 @@ están perfecto"*). Se acomodan dentro de algo más grande.
 | **1b. El techo entero se pisa** | Resbalar por la curva, colgarse del alero, caerse del tren (las reglas quedan); el dibujo angosto con la pared debajo **se descartó** | ✅ reglas; dibujo reemplazado por C1 |
 | **C1. La vista lateral** | Arriba, el tren se ve de costado | ✅ hecha (corregida a lateral de verdad), **sin jugar** |
 | **C2. Leer el ancho** | Esconderse detrás de la curva, la marca en el filo, astillas de los tiros desde abajo | ✅ hecha, **sin jugar** |
-| C3. Tirarle a los jinetes | Apuntar hacia abajo y que los jinetes te tiren arriba (balas de esta vista, aparte) | Falta |
+| C3a. Los jinetes te tiran arriba | Cuánto te pueden pegar según la postura y dónde estás; sus tiros se ven de costado | ✅ hecha, **sin jugar** |
+| C3b. Vos les tirás | Apuntar hacia abajo con el mouse; cada tiro tuyo despierta el vagón de abajo | Falta |
 | 2. Subir y bajar en cualquier enganche | Escalerillas: `[E]` mantenido, en los dos sentidos, ~1 s expuesto a los jinetes | Falta |
 | 3. Algo que hacer arriba | **Arma arriba** (cara: cada tiro despierta el vagón de abajo, apuntar frena) y **espiar por la linterna** de los coches (agachado ves quién hay adentro) | Falta |
 | 4. Obstáculos que salen del mundo | Pórticos y tanques que se ven venir, **túneles** (cuerpo a tierra o bajarse), **curvas** que empujan | Falta |
@@ -17974,6 +17975,78 @@ lento para no caerse")*. Se le dieron tres opciones y **eligió B**:
 - Medido también sin tormenta, para comparar: pasajeros 66% y carga 73%, perdés
   pie a los 2,5 s, agazapado a 50. 1.800 cuadros con tormenta y teclas al azar,
   sin errores.
+
+### 🎯 C3a · Los jinetes te tiran arriba (`CONFIG.techo.tiroJinetes`)
+
+**Cómo estaba:** arriba los jinetes usaban las cuentas de adentro (las paredes
+del vagón los tapaban) y el tiro salía casi al azar: medido, **un tiro en 30 s**
+con dos jinetes al lado. Sus balas no se veían de costado.
+
+🔁 **Mi propuesta era "te ven o no te ven"; Santi propuso algo mejor:** que
+cada postura tenga su precio *(Santi: "cuerpo a tierra y caminar por el medio
+no te pueden dar. Agazapado te pueden dar. Parado/corriendo las probabilidades
+de que te peguen aumentan. Te inclinás hacia una curva sos mucho más disparable
+que si vas por el medio. Agarrado del techo es dónde más peligro de disparo
+corrés")*. Le sumé dos cosas y las aceptó: en una curva los del otro lado no te
+pueden pegar (el tren en el medio), y cuerpo a tierra en la curva vale la mitad.
+**Eligió los números B:**
+
+| Dónde estás | Por tiro | Te matan en (un jinete) | Medido |
+|---|---|---|---|
+| Cuerpo a tierra por el medio | 0% | nunca | ni apuntan |
+| Agazapado por el medio | 15% | ~45 s | 15% (340 tiros) |
+| Parado, sprint o saltando | 35% | ~19 s | |
+| En la curva de su lado | 55% | ~12 s | 57% (88 tiros) |
+| Cuerpo a tierra en la curva | 27,5% | | |
+| Colgado (de su lado) | 50% | un tiro te suelta | |
+
+- **Se sortea cuando sale el tiro**, no cuando empieza a apuntar: si en ese
+  medio segundo te tirás cuerpo a tierra o te vas al medio, pega en la chapa.
+- **Arriba cabalgan a tu altura** (uno 30 adelante, otro 30 atrás), no buscan
+  ventanillas. No hay fuego de contención: a ciegas no le tiran al techo.
+- **Los de acá se ven** (levantan el arma, como siempre). **Los de allá se
+  perciben** *(la idea de Santi)*: cuando apuntan se paran en los estribos y
+  asoman el sombrero (con la cinta azul de la ley) y el caño por encima del filo
+  de allá, con un brillo. Además, el "clac".
+- **El tiro se dibuja de costado** (`tirosAlTechoDeCostado`): el fogonazo, el
+  trazo, y dónde terminó: un chispazo rojo si te pegó, chispas en el filo de la
+  chapa si el techo te tapaba, o de largo hacia el cielo si erró.
+- Es el sistema de siempre de los jinetes (systems/riders.js): sólo cambia qué
+  pasa cuando estás arriba (`chanceContraElTecho`, `dispararAlTecho`).
+- ⚠️ La escalada de jinetes sigue igual: con la alarma sonando mucho rato llegan
+  hasta 10. Arriba, con 10, aun agazapado te matan rápido.
+
+### 🕳️ La caída al enganche, con transición (`CONFIG.techo.caidaEnganche`)
+
+*(Santi: "al caer al enganche (salto fallido), no podés hacer una transición
+real en vez de cortar y hacer que el personaje aparezca automáticamente en el
+enganche")*. Antes aparecías adentro de golpe. Ahora, en la vista de costado:
+
+1. Un tropezón para arriba y caés por el hueco entre los dos vagones, yéndote de
+   cabeza (el cuerpo gira 0,35 hacia donde ibas), hacia el centro del hueco.
+2. Golpeás la chapa del enganche (~0,4 s de caída): polvo para los dos lados,
+   golpe y cámara. Quedás agachado del golpe 0,32 s.
+3. Recién ahí pasás adentro, con el fundido de siempre y el cartel de siempre.
+
+Mientras caés no manejás nada, los carteles no te pegan y los jinetes no te
+pueden dar.
+
+### 🦴 Lo bonito queda para después: esqueletos
+
+Santi marcó que **cuerpo a tierra se ve como manchas** y que **el agazapado se
+ve raro**, y preguntó si no convenía hacer esqueletos. **Sí:** el personaje
+tiene articulaciones en piernas y brazos, pero el torso y la cabeza son una
+pieza fija que sólo se inclina (se tuerce, no gira). Agazapado el torso se ve
+torcido; cuerpo a tierra tendría que ir acostado y no puede, por eso se dibujó
+aparte, a mano. Con un esqueleto donde el torso y la cabeza también giran,
+todas las posturas (agazapado, cuerpo a tierra, colgado, cayendo, trepando)
+salen de la misma ropa. Se haría primero sólo para tu personaje de costado
+arriba, sin tocar a nadie más. **Decidido con Santi: primero se prueban las
+mecánicas, después se vuelve a lo bonito.** La caída al enganche usa por ahora
+el dibujo de pie, inclinado.
+
+**Medido:** 4.200 cuadros con teclas al azar, con alarma, jinetes y tormenta,
+70 caídas al enganche y 43 tiros al techo, sin errores, 1 a 1,5 ms por cuadro.
 
 ---
 

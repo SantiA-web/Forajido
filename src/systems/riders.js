@@ -24,7 +24,28 @@ import { CONFIG } from '../data/config.js';
 import { RIDERS, RIDER_SPAWN, RIDER_SEPARACION_MINIMA } from '../data/riders.js';
 import { createRider } from '../entities/rider.js';
 import { distance, hasLineOfSight } from '../engine/collision.js';
-import { isHidden } from '../entities/player.js';
+import { isHidden, damagePlayer } from '../entities/player.js';
+import { danioDeBala } from './golpe.js';
+import { enLaCurva } from '../world/techoGeometria.js';
+
+/**
+ * 🎯 C3a · CUÁNTO TE PUEDE PEGAR UN JINETE DE ESTE LADO (`lado` -1 el de
+ * allá, +1 el de acá) estando vos arriba del tren. Ver CONFIG.techo.tiroJinetes.
+ */
+export function chanceContraElTecho(p, lado, altoMapa) {
+  const J = CONFIG.techo.tiroJinetes;
+  if (!p.enTecho || p.caidaEnganche) return 0;
+  if (p.techoColgado) return Math.sign(p.techoColgado.lado) === Math.sign(lado) ? J.colgado : 0;
+  const curva = enLaCurva(p.y, altoMapa);
+  if (curva.lado !== 0) {
+    // El tren en el medio: los del otro lado no te pueden pegar.
+    if (curva.lado !== Math.sign(lado)) return 0;
+    return p.techoTendido ? J.curva * J.tendidoCurva : J.curva;
+  }
+  if (p.techoTendido) return J.tendidoMedio;
+  if (p.techoAgachado) return J.agazapado;
+  return J.parado;
+}
 
 /**
  * Arriba del tren o abajo, en píxeles, según de qué lado cabalgue.
@@ -271,7 +292,10 @@ function seguirAlJugador(rd, dt, world) {
     rd.tramo = elegirTramo(tramos, p.x, rd.tramo, ocupados);
   }
 
-  const centro = rd.tramo ? puntoEn(rd.tramo, p.x) : (p.x + rd.slotDx);
+  // 🎯 Con vos arriba no buscan ventanillas: cabalgan a tu altura, uno un poco
+  // adelante y otro un poco atrás.
+  const centro = p.enTecho ? p.x + Math.sign(rd.slotDx) * CONFIG.techo.tiroJinetes.separacion
+    : rd.tramo ? puntoEn(rd.tramo, p.x) : (p.x + rd.slotDx);
 
   // Un hamacado chico para que no se vean clavados como estacas, sin salirse
   // del ancho de la ventana que eligieron.
@@ -298,7 +322,7 @@ function tieneTiro(rd, world) {
    * jinetes de ese costado te ven sin nada en el medio. Los del otro lado,
    * no: tienen el tren entero entre vos y ellos.
    */
-  if (p.techoColgado) return Math.sign(rd.side) === Math.sign(p.techoColgado.lado);
+  if (p.enTecho) return chanceContraElTecho(p, rd.side, world.map.height) > 0;
 
   /**
    * Parapetado no te ve. Es la misma regla que usan los guardias: si estás
@@ -347,6 +371,8 @@ function apuntarYDisparar(rd, dt, world) {
   }
 
   // --- Fuego de contención: no te ven, pero le tiran al lugar igual ---
+  // Arriba no: el tiro al techo va por probabilidad, y a ciegas no se tira.
+  if (p.enTecho) return;
   if (!rd.lastSeen || rd.memoria <= 0) return;
   if (Math.abs(rd.lastSeen.x - rd.x) > t.range) return;
 
@@ -379,7 +405,33 @@ function dispersionEfectiva(rd, world) {
   return base + (world.player.moving ? t.movingPenalty : 0);
 }
 
+/**
+ * 🎯 C3a · EL TIRO AL TECHO. Arriba no viaja una bala por la grilla de adentro
+ * (ahí las paredes del vagón lo tapaban todo y el tiro salía casi al azar): se
+ * sortea con la probabilidad del lugar donde estás CUANDO SALE el tiro. La
+ * escena lo dibuja de costado con `tiroAlTecho`: el trazo, el fogonazo y dónde
+ * pegó (en vos, en la chapa o de largo).
+ */
+function dispararAlTecho(rd, world) {
+  const p = world.player;
+  rd.cooldown = rd.tipo.fireCooldown;
+  const chance = chanceContraElTecho(p, rd.side, world.map.height);
+  let pego = false;
+  if (chance > 0 && world.rng.chance(chance)) {
+    const { puntos } = danioDeBala({ owner: 'enemy' }, p, 'jugador', world.rng);
+    pego = damagePlayer(p, puntos, rd.x, rd.y);
+  }
+  world.audio.play('enemyShot');
+  world.camera.shake(0.5, 0.08);
+  world.bus.emit('tiroAlTecho', { tirador: rd, pego, tapado: chance === 0 });
+  if (pego) {
+    world.bus.emit('playerHit', { x: p.x, y: p.y });
+    if (!p.alive) world.bus.emit('playerDown', {});
+  }
+}
+
 function disparar(rd, world) {
+  if (world.player.enTecho && !rd.suprimiendo) { dispararAlTecho(rd, world); return; }
   const t = rd.tipo;
   const dispersion = rd.suprimiendo ? t.suppressSpread : dispersionEfectiva(rd, world);
   rd.cooldown = rd.suprimiendo ? t.suppressCooldown : t.fireCooldown;

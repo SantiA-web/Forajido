@@ -354,6 +354,8 @@ function updateDynamite(p, dt, world) {
  * no sabe nada del tren.
  */
 function updateOnRoof(p, dt, world) {
+  // 🕳️ Cayendo al enganche no manejás nada: la caída la mueve la escena.
+  if (p.caidaEnganche) { p.moving = false; return; }
   const cp = CONFIG.player;
   const ct = CONFIG.techo;
   const input = world.input;

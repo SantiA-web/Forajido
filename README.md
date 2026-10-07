@@ -465,6 +465,16 @@ envión con el sprint.
 vez de 60%; en el de carga 50% en vez de 70%), perdés pie a 1,5 s de sprint en
 vez de 2,5, y agazapado vas más lento (42 en vez de 50).
 
+**Los jinetes también te tiran arriba**, y cuánto te pueden pegar depende de
+cómo vas: cuerpo a tierra por el medio, nunca; agazapado, poco (15% por tiro);
+parado o en sprint, más (35%); en la curva de su lado, mucho (55%), aunque los
+del otro lado no te pueden dar; y colgado del alero un solo tiro te suelta. A
+los de este lado los ves levantar el arma; a los del otro lado, que van detrás
+del tren, les asoma el sombrero y el caño por encima del techo cuando te apuntan.
+
+**Si caés al hueco entre dos vagones**, te ves caer y golpear contra el
+enganche antes de pasar adentro.
+
 - **Los carteles vienen hacia vos**, no están quietos: el tren avanza y te los
   lleva por delante. No se pueden rodear — o te agachás, o saltás.
 - **Comerte uno cuesta caro**: perdés una vida, tardás en levantarte y, sobre

@@ -478,8 +478,11 @@ enganche antes de pasar adentro.
 **Desde el techo también les tirás a los jinetes**, con tu arma de siempre y la
 mira del mouse. Les podés tirar sólo donde ellos te pueden pegar a vos: cuerpo a
 tierra en el medio no le tirás a nadie (la mira se pone roja), y en una curva,
-sólo a los de ese lado. A los del otro lado les apuntás cuando asoman la cabeza
-por encima del techo. Cada tiro despierta a los guardias del vagón de abajo.
+sólo a los de ese lado. Los del otro lado cabalgan lejos y se ven por encima
+del techo, más chicos, sobre el campo. Cada tiro despierta a los guardias del
+vagón de abajo. Arriba los tiros son de galería, como en Wild Guns: ves el
+fogonazo y dónde cayó la bala (chispazo rojo en el jinete, chispas en el tren o
+una nube de tierra).
 
 - **Los carteles vienen hacia vos**, no están quietos: el tren avanza y te los
   lleva por delante. No se pueden rodear — o te agachás, o saltás.

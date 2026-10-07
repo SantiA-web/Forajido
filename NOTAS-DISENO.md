@@ -18089,6 +18089,47 @@ adentro y arriba, sin errores; adentro tus balas siguen siendo las de siempre.
 **Pendiente de lo bonito:** tu personaje no levanta el brazo para apuntar, y el
 jinete muerto cae con el dibujo de siempre (visto desde arriba).
 
+### 🔁 Los de allá, lejos y a la vista; y el tiro de galería
+
+**Los de allá eran indisparables** *(Santi: "los caballos del otro lado son
+indisparables")*. Se veían en dos lugares a la vez: el caballo debajo del
+vagón, entre las ruedas (cabalgaban detrás del tren, pegados), y la cabecita
+que asomaba por encima del techo, que era el blanco de verdad. Jugando le
+apuntabas al caballo y no pasaba nada. Se le dieron tres salidas: sólo jinetes
+de este lado (se pierde la mitad del juego: la curva de allá queda siempre a
+salvo), la vista desde arriba (ya descartada: los carteles no se leen) o
+**verlos lejos, por encima del techo. Eligió ésta.** Ahora cabalgan un poco
+apartados y desde el techo se los ve enteros, al 60%, sobre el campo del fondo
+(`costado.allaSobreLaVia` 88, `allaEscala` 0,6), con su polvareda. Se acabó el
+asomar la cabeza. La regla del espejo no cambia, pero ahora se ve: si el tren
+está en el medio, la mira se pone roja sobre ellos y la bala pega en la chapa.
+
+**El tiro de galería** *(Santi: "no me gusta para nada el sistema de disparo,
+porque se ve que viaja hacia abajo y no hacia la cámara")*. Los de acá están
+entre el tren y la cámara: el tiro va hacia la pantalla, y la raya que se
+dibujaba cruzaba la pared del vagón como si le tiraras al piso. Una raya no
+puede mostrar un tiro hacia la cámara, así que se sacó. Ahora es como en
+**Wild Guns** o **Blood Bros.**: el fogonazo en el arma y el golpe donde cayó la
+bala (`tiroDesdeElTecho`, `tirosDeJinetesDeCostado`, `dibujarTiroDeGaleria`):
+
+- **Tu bala cae en algún lugar del círculo de la mira** (la dispersión de
+  siempre; si se te va el pulso, afuera). Si cae en un jinete al que le podés
+  tirar, destella y salta un chispazo rojo; si el tren te lo tapa, chispas en el
+  filo; si no, chispas en el tren o una nube de tierra (más grande cerca de la
+  cámara). Así ves si erraste por poco o por mucho.
+- **Sus tiros:** fogonazo en su arma; chispazo en vos si te pegó, chispas en la
+  chapa si el techo te tapó, y si erró levanta tierra detrás tuyo (el de acá
+  tira hacia el fondo) o delante, cerca de la cámara (el de allá tira hacia acá).
+
+**Medido:** la regla del espejo, apuntando un minuto en cada lugar: en el medio
+agazapado bajó a 3 de acá y 2 de allá; en la curva de acá, sólo a los de acá
+(3); en la curva de allá, sólo a los de allá (2); cuerpo a tierra en el medio, a
+nadie. 12.600 cuadros con teclas y clics al azar, de día, de noche y con
+tormenta, sin errores, ~1 ms por cuadro.
+
+**La C3c cambia un poco:** del lado de acá siguen las dos líneas (pegados y
+abiertos); del lado de allá serían dos distancias, las dos a la vista.
+
 ---
 
 ### ✅ ETAPA 6 CERRADA

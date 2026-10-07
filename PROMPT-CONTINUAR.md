@@ -166,7 +166,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   tierra con Shift, sprint con doble toque que te hace perder pie) y con
   tormenta es más difícil (opción B). C3a (los jinetes te tiran arriba según
   tu postura, idea de Santi, números B) y la caída al enganche con transición:
-  hechas y sin jugar.** C3b (vos les tirás, con la regla del espejo) hecha y sin jugar. Faltan: C3c
+  hechas y sin jugar.** C3b (vos les tirás, con la regla del espejo) hecha, y después los de allá
+  lejos y a la vista por encima del techo y el tiro de galería (sin raya), sin
+  jugar. Faltan: C3c
   (los jinetes en dos líneas, pegados o abiertos; idea de Santi), **lo bonito con
   esqueletos** (cuerpo a tierra y agazapado se ven mal; ver NOTAS, "Lo bonito
   queda para después"), y después las

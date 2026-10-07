@@ -1922,7 +1922,18 @@ export const CONFIG = {
       altoCajon: 8,
       saltoAlto: 15,     // cuánto subís al saltar, en el dibujo (de costado se ve el alto de verdad)
       carrilCerca: 26,   // los jinetes de acá, cuánto delante de la vía
-      carrilLejos: -3,   // los de allá, detrás del tren: se ven por los huecos
+      /**
+       * 🎯 LOS DE ALLÁ, LEJOS Y A LA VISTA *(Santi: "los caballos del otro lado
+       * son indisparables")*. 🔁 Antes cabalgaban detrás del tren, pegados: se
+       * les veía el caballo debajo del vagón y sólo asomaban la cabeza por el
+       * filo, y jugando le apuntabas al caballo que veías y no pasaba nada.
+       * Ahora van un poco apartados y desde el techo se los ve enteros, más
+       * chicos, sobre el campo del fondo: lo lejano se ve más arriba, cerca del
+       * horizonte. `allaSobreLaVia` es a qué altura van (más que el techo de un
+       * coche, 71), `allaEscala` cuánto se achican.
+       */
+      allaSobreLaVia: 88,
+      allaEscala: 0.6,
       fundido: 0.35,     // el fundido al cambiar de vista
       astillasVida: 0.45, // cuánto duran las astillas de un tiro desde abajo (C2)
 
@@ -2038,7 +2049,17 @@ export const CONFIG = {
       tendidoCurva: 0.5,   // cuerpo a tierra en la curva: la mitad
       colgado: 0.5,
       separacion: 30,      // arriba cabalgan a tu altura, uno adelante y otro atrás
-      trazoVida: 0.14,     // cuánto dura el trazo de la bala en la vista de costado
+      /**
+       * 🎯 EL TIRO DE GALERÍA *(Santi: "no me gusta para nada el sistema de
+       * disparo, porque se ve que viaja hacia abajo y no hacia la cámara")*.
+       * 🔁 Antes cada tiro era una raya del arma al blanco; con los jinetes de
+       * acá (entre el tren y la cámara) la raya cruzaba la pared del vagón y
+       * parecía un tiro al piso. Ahora, como en Wild Guns o Blood Bros.: el
+       * fogonazo en el arma y el golpe donde cayó la bala, sin raya.
+       */
+      fogonazoVida: 0.07,
+      impactoVida: 0.45,
+      trazoVida: 0.14,     // cuánto se recuerda un tiro de jinete (para el caño a la vista)
     },
 
     /**

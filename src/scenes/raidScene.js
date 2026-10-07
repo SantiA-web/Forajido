@@ -51,7 +51,6 @@ import { createEnemy, drawEnemy } from '../entities/enemy.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga, jugadorCambiaDeVagon } from '../systems/escuadra.js';
-import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
 import {
   updateSheriff, updateEscolta, actualizarAuraDelSheriff, apagarAura,
 } from '../systems/sheriff.js';
@@ -66,7 +65,7 @@ import { createExplosive, drawExplosive } from '../entities/explosive.js';
 import { EXPLOSIVES } from '../data/explosives.js';
 import { crearGrilla, buscarLugar, guardar, sacarUltima, sacar, ocupadas, cabeEn, colocarEn } from '../engine/grilla.js';
 import { drawRider } from '../entities/rider.js';
-import { updateRiders, createRiderWatch, chanceContraElTecho, damageRider } from '../systems/riders.js';
+import { updateRiders, createRiderWatch, chanceContraElTecho, damageRider, spawnRider } from '../systems/riders.js';
 import { puedeTirarDesdeElTecho } from '../entities/player.js';
 import { maxJinetesPara } from '../data/riders.js';
 import { createLootable, drawLootable, esCajaFuerte } from '../entities/lootable.js';
@@ -202,8 +201,8 @@ export function createRaidScene(services) {
    * pide que levantes las manos.
    */
   let alto, altoUsado, tiroteo;
-  // 🧪 El atajo de prueba de los guardias (ver `prepararPruebaCorreo`).
-  let pruebaCorreo = false;
+  // 🧪 El atajo de prueba del techo (ver `prepararPruebaTecho`).
+  let pruebaTecho = false;
   let wagonActual, wagonMasProfundo, ultimoVisto;
   let scroll = 0;
   let blastMarks = [];
@@ -246,8 +245,8 @@ export function createRaidScene(services) {
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
     for (const e of enemies) armarGuardia(e, rng);
-    pruebaCorreo = !!params.pruebaCorreo;
-    if (pruebaCorreo) prepararPruebaCorreo();
+    pruebaTecho = !!params.pruebaTecho;
+    if (pruebaTecho) prepararPruebaTecho(params);
     passengers = train.passengers;
     loot = train.loot;
     doors = train.doors;
@@ -641,6 +640,8 @@ export function createRaidScene(services) {
         life: 3.0, color: colors.enemyAlert,
       });
     }
+    // 🧪 La prueba del techo: dos jinetes de cada lado desde el primer cuadro.
+    if (pruebaTecho) for (const lado of [1, 1, -1, -1]) spawnRider(world, lado);
 
     /**
      * ENTRAR HERIDO. Si te agarraron a tiros mientras galopabas, la vida que
@@ -688,8 +689,8 @@ export function createRaidScene(services) {
     auraTimer = 0;
 
     // `train.tipoTren` es el OBJETO del catálogo (data/train.js), no el id.
-    // En la prueba de los guardias no sube ningún jefe: sólo la escuadra.
-    const elegido = params.pruebaCorreo ? null : params.jefeForzado
+    // En la prueba del techo no sube ningún jefe.
+    const elegido = params.pruebaTecho ? null : params.jefeForzado
       ? BOSSES[params.jefeForzado]
       : jefeParaEsteAsalto(gameState.bounty, train.tipoTren.id, rng);
 
@@ -1267,8 +1268,7 @@ export function createRaidScene(services) {
        */
       bus.on('guardiaTeVio', ({ guardia }) => {
         if (altoUsado || tiroteo || finished || !player.alive) return;
-        // En la prueba sale siempre, para poder probarlo con cualquier recompensa.
-        if (!pruebaCorreo && gameState.bounty >= CONFIG.rendicion.recompensaMax) return;
+        if (gameState.bounty >= CONFIG.rendicion.recompensaMax) return;
         if (guardia.esJefe || (guardia.sinArmaDeFuego && !guardia.armaId)) return;
         altoUsado = true;
         alto = { guardia, t: CONFIG.rendicion.ventana };
@@ -2783,7 +2783,8 @@ export function createRaidScene(services) {
     updateExplosives(explosives, dt, world);
     updateCajones(dt);
     updateRiders(riders, dt, world);
-    riderWatch.update(dt, world);
+    // 🧪 En la prueba del techo no llegan más jinetes que los cuatro del principio.
+    if (!pruebaTecho) riderWatch.update(dt, world);
     alarm.update(dt);
     updateWagon();
     updateInteraction(dt);
@@ -2849,36 +2850,20 @@ export function createRaidScene(services) {
   }
 
   /**
-   * 🧪 EL ATAJO DE PRUEBA DE LOS GUARDIAS ([1] en el campamento). Te para en
-   * la puerta del vagón de correo, con sus tres guardias armados uno de cada
-   * cosa —Winchester, escopeta, revólver—, y saca a todos los demás del tren,
-   * para que se vea sólo la escuadra (systems/escuadra.js). No cuenta para
-   * nada: ver `goToResults`.
+   * 🧪 EL ATAJO DE PRUEBA DEL TECHO ([1] en el campamento). Te sube arriba de
+   * un coche largo, con la alarma ya sonando (`alarmaInicial`); los cuatro
+   * jinetes, dos de cada lado, salen al final de `enter`, y no llegan más
+   * (ver `riderWatch.update`). No cuenta para nada: ver `goToResults`.
    *
    * ⚠️ SACARLO antes de mostrar el juego, con el atajo del campamento.
    */
-  function prepararPruebaCorreo() {
-    const k = train.wagons.findIndex((w) => w.short === 'CORREO');
-    if (k < 0) return;
-    const w = train.wagons[k];
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      if (train.wagonAt(enemies[i].x) !== k) enemies.splice(i, 1);
-    }
-    const armas = ['winchester', 'escopeta', 'revolver'];
-    enemies.slice(3).forEach((e) => enemies.splice(enemies.indexOf(e), 1));
-    enemies.forEach((e, i) => {
-      const a = armas[i % armas.length];
-      e.armaId = a;
-      e.armaEnMano = a;
-      e.municion = { [a]: ARMAS_GUARDIA[a].cargador };
-      e.recargando = 0;
-    });
-    // En la plataforma de antes del vagón, a la altura de la puerta. Y se
-    // cuenta como subido ahí, para que el cartel de entrada diga "CORREO".
-    // El caballo queda donde estaba: para escapar hay que volver caminando.
-    player.x = w.x - 24;
-    player.y = 72;
-    train.boardedAt = k;
+  function prepararPruebaTecho(params) {
+    const w = train.wagons.find((v) => !v.esCola && v.tieneTecho && !v.carbon && v.width >= 600) ||
+      train.wagons.find((v) => !v.esCola && v.tieneTecho && !v.carbon);
+    if (!w) return;
+    params.enTecho = true;
+    params.techoX = w.x + 160;
+    params.alarmaInicial = true;
   }
 
   /**
@@ -4150,9 +4135,9 @@ export function createRaidScene(services) {
      * Sin plata encima no hay persecución: lo único que se pierde en la huida
      * son bolsas, y sin nada que soltar serían 15 segundos sin nada en juego.
      */
-    // 🧪 La prueba de los guardias no suma nada ni pasa por la huida.
-    if (pruebaCorreo) {
-      summary.prueba = 'de los guardias en el vagón de correo';
+    // 🧪 La prueba del techo no suma nada ni pasa por la huida.
+    if (pruebaTecho) {
+      summary.prueba = 'del techo con jinetes';
       scenes.goTo('results', summary);
       return;
     }

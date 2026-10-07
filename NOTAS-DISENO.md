@@ -17409,6 +17409,17 @@ saltea `applyRaidResult`). El cartel está arriba a la izquierda.
 > `raidScene.js` (`pruebaCorreo`) y `text/es.js` (`atajoCorreo`): sacarlas antes
 > de mostrar el juego. La huida se sigue pudiendo probar desde la consola
 > (`prueba` en huidaScene.js sigue existiendo).
+>
+> **Borrado también** *(Santi, 2026-10-07: "borra el atajo para ir al vagón de
+> guardias y hace un atajo para que aparezca encima del techo de un tren de
+> pasajeros con dos jinetes por lado y la alarma sonando")*. Ahora **[1] te sube
+> arriba de un coche de pasajeros** con la alarma sonando ("TE VIERON SUBIR") y
+> cuatro jinetes, dos de cada lado, desde el primer cuadro. No llegan más (la
+> escalada de jinetes queda apagada en la prueba) ni sube jefe. Igual que antes,
+> no cuenta para nada. Marcas 🧪 en `campScene.js`, `raidScene.js`
+> (`pruebaTecho`, `prepararPruebaTecho`) y `text/es.js` (`atajoCorreo`, que
+> ahora dice "[1] TECHO CON 4 JINETES Y ALARMA"): sacarlas antes de mostrar el
+> juego.
 
 #### La mira: qué tan real es el círculo
 

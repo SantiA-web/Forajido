@@ -321,19 +321,19 @@ export function createCampScene(services) {
     if (menu.update(input)) return;
 
     /**
-     * 🧪 ATAJO DE PRUEBA DE LOS GUARDIAS *(Santi: "un atajo para mandarme
-     * directo a un vagón de correo por ejemplo con tres guardias para probar
-     * todo el mecanismo")*. [1] te larga en la puerta del vagón de correo, con
-     * tres guardias adentro —Winchester, escopeta y revólver— y nadie más en el
-     * tren. No cuenta para nada (ver `pruebaCorreo` en raidScene.js).
+     * 🧪 ATAJO DE PRUEBA DEL TECHO *(Santi: "hace un atajo para que aparezca
+     * encima del techo de un tren de pasajeros con dos jinetes por lado y la
+     * alarma sonando")*. [1] te larga arriba de un coche, con la alarma ya
+     * sonando y cuatro jinetes, dos de cada lado. No llegan más. No cuenta
+     * para nada (ver `pruebaTecho` en raidScene.js).
      *
-     * Reemplaza al de la huida ([1] Criollo, [2] Mustang, [3] arma), que Santi
-     * pidió borrar.
+     * 🔁 Reemplaza al del vagón de correo con tres guardias, que Santi pidió
+     * borrar.
      *
      * ⚠️ SACARLO antes de mostrar el juego: está anotado en NOTAS-DISENO.md.
      */
     if (input.wasPressed('Digit1')) {
-      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaCorreo: true });
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaTecho: true });
       return;
     }
     /**
@@ -1057,7 +1057,7 @@ export function createCampScene(services) {
 
   function dibujarInterfaz(r) {
     r.text(T.camp.title, r.width / 2, 12, colors.text);
-    // 🧪 El atajo de prueba de los guardias (ver `update`). Sacarlo con él.
+    // 🧪 El atajo de prueba del techo (ver `update`). Sacarlo con él.
     r.text(T.camp.atajoCorreo, 8, 26, colors.textDim, 'left');
     r.text(`$${gameState.money}`, r.width - 8, 12, colors.bagLoot, 'right');
     if (gameState.bounty > 0) {

@@ -17905,6 +17905,54 @@ personaje (1,75 m = 20), del riel al techo hay 71 unidades = **6,2 m**; un coche
 de la época medía **unos 4,2 m**. El vagón ya está más alto que lo real, y la
 comba (8 = 0,7 m) está bien (0,5 a 0,9 m).
 
+### 🦵 Arriba se va agachado: tres posturas (`CONFIG.techo.postura`)
+
+*(Santi: "el jugador debería ir agachado ya. Parado corriendo te deberías caer
+sí o sí. Lo que sí puede haber es un sprint rapidito que te ayude a saltar los
+enganches")*
+
+⚠️ **Se le marcó el choque antes de hacerlo:** si vas agachado siempre, el
+cartel (que se pasaba agachado) nunca te pega y el techo pierde la mitad de su
+juego. Se le dieron tres salidas y **eligió B: cuerpo a tierra** para el cartel.
+
+| Postura | Cómo | Velocidad | Ruido |
+|---|---|---|---|
+| **Agazapado** (lo normal) | Sin tocar nada | **50** (elegido: cruzar un coche lleva 12,8 s) | No |
+| **Cuerpo a tierra** | `Shift` | 15 | No |
+| **Sprint** | Doble toque de `A`/`D` y mantener | 78 | Sí |
+
+- **El cartel bajó** (`alturaViga` de 14 a 9): ahora le pega al agazapado. Sólo
+  se pasa cuerpo a tierra. El cajón se sigue saltando (o rodeando por la curva).
+- **El sprint dura lo que quieras, pero a los 2,5 s seguidos perdés pie**
+  *(Santi: "si el jugador quiere sprintear siempre puede, pero corre el riesgo
+  de caída")*: te vas al borde más cercano sin poder hacer nada ("¡PERDISTE
+  PIE!"), y en el borde te agarrás o te caés, como siempre. Al soltar, el
+  sprint acumulado se descuenta al doble de rápido. Medido: **perdió pie a los
+  2,52 s** y se cayó del tren.
+- **Sólo el salto desde el sprint tiene envión, y es el que cruza los huecos**:
+  medido **83** contra un hueco de 48. Agachado el salto no tiene envión (36): no
+  llega. El sprint para los enganches sale solo, como pidió Santi.
+- **Resbalar por la curva** depende de la postura: corriendo 1,5 s hasta el
+  borde, agazapado 3 s, cuerpo a tierra 6 s.
+- **¿Por qué doble toque y no otra tecla?** Para no sumar teclas, y porque
+  `Ctrl` en el navegador cierra la pestaña (`Ctrl+W`).
+
+**Dos dibujos nuevos del personaje, de perfil** (revisados agrandados, para los
+dos lados y en cada paso):
+
+- **Agazapado** (`agazapadoLado`, entities/gente/costado.js): el agachado de
+  siempre baja la cadera 5 puntos y de costado casi no se distingue de parado.
+  Éste baja 12, las rodillas asoman bien por delante del saco, los antebrazos
+  van adelante haciendo equilibrio y el torso se inclina más. La funda del
+  revólver va más corta para no pasar de los pies. De frente y de espaldas usa
+  el agachado de siempre (arriba sólo se ve de costado).
+- **Cuerpo a tierra** (`dibujarCuerpoATierra`, entities/player.js): boca abajo,
+  estirado, con los brazos adelante, la cabeza levantada y el sombrero. Se
+  arrastra al moverse. 🔁 Primero se usó el dibujo del caído, que es una vista
+  desde arriba con brazos y piernas abiertos: de costado parecía un muerto.
+
+**Medido:** 4.300 cuadros con teclas al azar, sin errores, ~1 ms por cuadro.
+
 ---
 
 ### ✅ ETAPA 6 CERRADA

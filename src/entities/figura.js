@@ -122,7 +122,7 @@ export function faseDeAndar(ent) {
  * caminando. A la velocidad del juego (78) eso son 3,9 pasos por segundo; con
  * el ritmo viejo (uno cada 5) eran 15,6 y parecía cámara rápida.
  */
-const RITMO = { trotar: 20, caminar: 14, agachado: 14 };
+const RITMO = { trotar: 20, caminar: 14, agachado: 14, agazapado: 10 };
 /**
  * Caminando, dos pasos son 8 cuadros con 5 dibujos: paso, a mitad, juntos, a
  * mitad del otro lado, el otro paso. Trotando son 8 dibujos seguidos.
@@ -232,6 +232,7 @@ export function dibujarPersona(r, f) {
   }
 
   const modo = postura === 'sentado' || postura === 'rendido' || postura === 'montado' ? postura
+    : postura === 'agazapado' ? 'agazapado'
     : postura !== 'pie' ? 'agachado'
       : f.fase != null ? (f.modo === 'caminar' ? 'caminar' : 'trotar')
         : 'quieto';
@@ -344,7 +345,7 @@ export function dibujarPersona(r, f) {
   // Al trotar y a caballo el torso se va para adelante; de frente casi no se
   // nota, y de espaldas tampoco: por eso `lateral` lo apaga.
   const lateral = fn === lado ? 1 : g ? 0.5 : 0;
-  const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12
+  const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12 : modo === 'agazapado' ? 0.26
     : modo === 'montado' ? ECHADO[echado] : 0) * lateral;
   const img = armar(clave, () => {
     const L = Lienzo(M.ancho, M.alto, OX, OY, M.s, deformar(inclina));
@@ -356,7 +357,13 @@ export function dibujarPersona(r, f) {
       asomado: asomadoDibujo, panuelo: !!f.panuelo, abre,
     };
     if (modo === 'trotar') datos.trote = cuadro;
-    else { datos.paso = cuadro; datos.agachado = modo === 'agachado'; }
+    else {
+      datos.paso = cuadro;
+      // Agazapado (arriba del tren) es un agachado más hondo: de costado tiene
+      // su propio dibujo; de frente y de espaldas usa el agachado de siempre.
+      datos.agachado = modo === 'agachado' || modo === 'agazapado';
+      datos.agazapado = modo === 'agazapado';
+    }
     if (modo === 'sentado' || modo === 'rendido' || modo === 'montado') datos.postura = modo;
     fn(L, datos);
     return L.canvas();

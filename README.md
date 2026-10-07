@@ -449,14 +449,17 @@ habilidad no tenía de dónde salir sola. El vagón de ganado va al aire libre y
 
 | Tecla | Acción |
 |---|---|
-| `A` `D` / flechas | Correr por el techo |
-| **`Shift`** | **Agacharse** (pasás por debajo de lo que viene alto) |
-| **`Espacio`** | **Saltar** (por encima de lo que viene bajo, y para cruzar entre vagones) |
+| `A` `D` / flechas | Avanzar, agazapado (es como se va arriba: lento y en silencio) |
+| **`A` `A` / `D` `D`** (doble toque y mantener) | **Sprint**: parado y rápido, con ruido. A los 2,5 s seguidos perdés pie y te vas al borde |
+| **`Shift`** | **Cuerpo a tierra** (pasás por debajo del cartel) |
+| **`Espacio`** | **Saltar** (el cajón; y desde el sprint, el hueco entre vagones) |
 | `E` (mantener, en el borde) | Descolgarte al enganche, en silencio |
 
 **Ojo que las teclas cambian acá arriba.** Adentro del vagón `Espacio` es
-agacharse; en el techo es saltar, y agacharse pasa a `Shift`. Son las dos
-respuestas posibles a lo que te viene de frente, así que hay una en cada mano.
+agacharse; en el techo es saltar, y `Shift` te tira cuerpo a tierra. Arriba ya
+vas agazapado: parado sólo se va en sprint, y se paga con el riesgo de caerte.
+Agazapado el salto no alcanza para cruzar de un techo al otro: hay que tomar
+envión con el sprint.
 
 - **Los carteles vienen hacia vos**, no están quietos: el tren avanza y te los
   lleva por delante. No se pueden rodear — o te agachás, o saltás.

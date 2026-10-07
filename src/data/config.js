@@ -1912,7 +1912,11 @@ export const CONFIG = {
       hundeAlla: 15,     // cuánto te hundís detrás del techo en el borde de allá: queda la cabeza
       via: 0.74,         // dónde va la vía, en fracción del alto de la pantalla
       horizonte: 0.42,   // dónde termina el cielo: justo detrás de los techos, como un juego de costado
-      alturaViga: 14,    // cuánto arriba del filo de allá cuelga el cartel: parado te pega, agachado no
+      /**
+       * 🔁 BAJÓ DE 14 A 9 con "arriba se va agachado": el cartel tiene que
+       * pegarle al que va agachado. Cuerpo a tierra pasás por debajo.
+       */
+      alturaViga: 9,
       anchoCartel: 26,
       altoCartel: 11,
       altoCajon: 8,
@@ -1950,9 +1954,36 @@ export const CONFIG = {
      * RESBALAR POR LA CURVA. Pasado el lomo, te vas para afuera cada vez más
      * rápido cuanto más cerca del borde. Caminando hacia adentro salís.
      */
+    /**
+     * 🦵 ARRIBA SE VA AGACHADO *(Santi: "el jugador debería ir agachado ya.
+     * Parado corriendo te deberías caer sí o sí. Lo que sí puede haber es un
+     * sprint rapidito que te ayude a saltar los enganches")* — opción B.
+     *
+     *   agachado     lo normal: lento y en silencio
+     *   cuerpo a tierra  [Shift]: casi no avanzás, pasás por debajo del cartel
+     *   sprint       doble toque de [A]/[D] y mantener: parado y rápido, con
+     *                ruido. Lo que dure; pero a los `sprintResbala` segundos
+     *                seguidos perdés pie y te vas al borde *(Santi: "si el
+     *                jugador quiere sprintear siempre puede, pero corre el
+     *                riesgo de caída: a los 2,5 s empieza a resbalar y cae")*.
+     *
+     * Saltar desde el sprint cruza el hueco entre vagones (78 × 1,45 × 0,72 =
+     * 81 contra un hueco de 48). Agachado el salto no tiene envión: 50 × 0,72
+     * = 36, no llega. El sprint para los enganches sale solo.
+     */
+    postura: {
+      velAgachado: 50,     // elegido por Santi: cruzar un coche lleva 12,8 s
+      velTendido: 15,
+      dobleToque: 0.28,    // segundos entre los dos toques para arrancar el sprint
+      sprintResbala: 2.5,  // segundos de sprint seguido hasta perder pie (elegido por Santi)
+      recupera: 2,         // el sprint acumulado se descuenta así de rápido al soltarlo
+      perdidaVel: 220,     // a qué velocidad te vas al borde cuando perdiste pie (de adentro, u/s)
+      resbalaTendido: 0.25, // cuerpo a tierra casi no resbalás por la curva
+    },
+
     resbalar: {
-      tiempoAlBorde: 1.5,  // quieto donde empieza la curva, tardás esto en caerte (elegido por Santi)
-      agachado: 0.5,       // agachado te agarrás: resbalás a la mitad (3 s)
+      tiempoAlBorde: 1.5,  // PARADO (sprintando), quieto donde empieza la curva, tardás esto en caerte
+      agachado: 0.5,       // agachado (lo normal arriba) te agarrás: resbalás a la mitad (3 s)
       arranque: 1 / 6,     // qué tan rápido arranca el resbalón, en fracción de la curva
     },
 

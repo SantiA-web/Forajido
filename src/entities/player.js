@@ -22,7 +22,7 @@ import { findCoverSurface, coverStillValid } from '../systems/cover.js';
 import { playerMelee } from '../systems/melee.js';
 import { throwTarget } from '../systems/explosives.js';
 import { geoTecho, enLaCurva } from '../world/techoGeometria.js';
-import { PIEL, PIEL_S } from './gente/dibujo.js';
+import { PIEL, PIEL_S, CHAL, CHAL_L, CHAL_S, CAM, CAM_S, PANT, BOTA, BARBA, PAN_R, tono } from './gente/dibujo.js';
 
 export function createPlayer(x, y, weaponId = DEFAULT_WEAPON, meleeId = DEFAULT_MELEE) {
   const c = CONFIG.player;
@@ -179,6 +179,8 @@ export function updatePlayer(p, dt, world) {
   // ahí no hay cobertura, ni arma, ni dinamita. Sólo caminar una franja
   // angosta esquivando obstáculos.
   if (p.enTecho) { updateOnRoof(p, dt, world); return; }
+  // Abajo no se corre ni se pierde pie del techo: se limpia para la próxima subida.
+  p.techoPerdio = 0; p.techoSprintT = 0; p.techoCorre = 0; p.techoTendido = false;
 
   // Te llevó puesto un barril: estás en el piso y no hacés nada hasta
   // levantarte. Va ANTES que todo lo demás justamente por eso.
@@ -371,31 +373,68 @@ function updateOnRoof(p, dt, world) {
     return;
   }
 
-  // Agacharse y saltar se excluyen: en el aire no te podés agachar.
-  p.techoAgachado = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
-  if (p.techoSalto > 0) p.techoAgachado = false;
+  /**
+   * 🦵 LAS TRES POSTURAS DE ARRIBA (`CONFIG.techo.postura`): agachado por
+   * defecto, cuerpo a tierra con [Shift], sprint con doble toque de [A]/[D].
+   */
+  const PO = ct.postura;
+  p.techoReloj = (p.techoReloj || 0) + dt;
+  const izq = input.anyDown('KeyA', 'ArrowLeft');
+  const der = input.anyDown('KeyD', 'ArrowRight');
+  for (const [lado, teclas, abajo] of [[-1, ['KeyA', 'ArrowLeft'], izq], [1, ['KeyD', 'ArrowRight'], der]]) {
+    if (teclas.some((t) => input.wasPressed(t))) {
+      const ultimo = lado < 0 ? p.toqueIzq : p.toqueDer;
+      if (ultimo !== undefined && p.techoReloj - ultimo < PO.dobleToque) p.techoCorre = lado;
+      if (lado < 0) p.toqueIzq = p.techoReloj; else p.toqueDer = p.techoReloj;
+    }
+    if (p.techoCorre === lado && !abajo) p.techoCorre = 0;
+  }
+  p.techoTendido = (input.isDown('ShiftLeft') || input.isDown('ShiftRight')) && p.techoSalto <= 0;
+  if (p.techoTendido) p.techoCorre = 0;
+  const corriendo = !!p.techoCorre && !p.techoPerdio;
 
-  if (input.wasPressed('Space') && p.techoSalto <= 0) {
+  // El sprint seguido se acumula; al soltarlo se descuenta. A los
+  // `sprintResbala` segundos perdés pie: te vas hacia el borde más cercano.
+  if (corriendo && p.techoSalto <= 0) p.techoSprintT = (p.techoSprintT || 0) + dt;
+  else if (!p.techoPerdio) p.techoSprintT = Math.max(0, (p.techoSprintT || 0) - dt * PO.recupera);
+  if (!p.techoPerdio && p.techoSprintT >= PO.sprintResbala) {
+    const g0 = geoTecho(world.map.height);
+    p.techoPerdio = p.y < g0.medio ? -1 : 1;
+    p.techoCorre = 0;
+    world.audio.play('raspon');
+  }
+
+  // Agachado es lo normal: parado sólo corriendo (o en el aire, saltando).
+  p.techoAgachado = !corriendo && !p.techoTendido && p.techoSalto <= 0 && !p.techoSaltoLargo;
+
+  if (input.wasPressed('Space') && p.techoSalto <= 0 && !p.techoTendido && !p.techoPerdio) {
     p.techoSalto = ct.saltoDuracion;
+    // Sólo el salto desde el sprint tiene envión: es el que cruza los huecos.
+    p.techoSaltoLargo = corriendo;
     p.techoAgachado = false;
     world.audio.play('swing');
   }
+  if (p.techoSalto <= 0) p.techoSaltoLargo = false;
 
   let dx = 0, dy = 0;
-  if (input.anyDown('KeyA', 'ArrowLeft')) dx -= 1;
-  if (input.anyDown('KeyD', 'ArrowRight')) dx += 1;
+  if (izq) dx -= 1;
+  if (der) dx += 1;
   if (input.anyDown('KeyW', 'ArrowUp')) dy -= 1;
   if (input.anyDown('KeyS', 'ArrowDown')) dy += 1;
+  // Perdiste pie: no manejás nada, te vas.
+  if (p.techoPerdio) { dx = 0; dy = 0; }
 
   p.moving = dx !== 0 || dy !== 0;
   // 🧗 Para dónde mirás en la vista de costado: el último lado al que caminaste.
   if (dx !== 0) p.techoMira = dx;
 
-  // Agachado vas lento (y hacés menos ruido, igual que abajo). En el aire vas
-  // MÁS rápido, y eso no es un adorno: es lo que hace que un salto corrido
-  // cruce el hueco entre dos vagones y uno parado no.
-  let speed = p.techoAgachado ? cp.sneakSpeed : cp.speed;
-  if (p.techoSalto > 0) speed *= ct.saltoBoost;
+  // Agachado vas lento y en silencio; cuerpo a tierra casi no avanzás;
+  // corriendo vas a la velocidad de siempre. En el aire, sólo el salto desde
+  // el sprint tiene envión: es lo que cruza el hueco entre dos vagones.
+  let speed = p.techoTendido ? PO.velTendido
+    : (corriendo || p.techoSaltoLargo) ? cp.speed
+      : PO.velAgachado;
+  if (p.techoSalto > 0 && p.techoSaltoLargo) speed *= ct.saltoBoost;
   // El arma pesada frena también en el techo (ver `velocidadPortando`).
   speed *= (p.weapon && p.weapon.velocidadPortando) ?? 1;
 
@@ -405,9 +444,9 @@ function updateOnRoof(p, dt, world) {
     speed *= CONFIG.casillasQueFrenan.carbon;
   }
 
-  // Agachado no hacés ruido de pisadas, igual que abajo (systems/ai.js lo lee
-  // de `sneaking`). Es lo que te deja cruzar un vagón sin que te oigan.
-  p.sneaking = p.techoAgachado;
+  // Agachado o cuerpo a tierra no hacés ruido de pisadas, igual que abajo
+  // (systems/ai.js lo lee de `sneaking`). Corriendo, sí.
+  p.sneaking = !corriendo && !p.techoSaltoLargo;
 
   if (dx !== 0 && dy !== 0) {
     const inv = 1 / Math.SQRT2;
@@ -444,12 +483,18 @@ function updateOnRoof(p, dt, world) {
       const b = g.curva * R.arranque;
       const a = Math.log((g.curva + b) / b) / R.tiempoAlBorde;
       let v = a * (curva.hondo * g.curva + b);
-      if (p.techoAgachado) v *= R.agachado;
+      if (p.techoTendido) v *= PO.resbalaTendido;
+      else if (p.techoAgachado) v *= R.agachado;
       ny += curva.lado * v * dt;
       p.techoResbalando = curva.lado;
     }
     // Pasar el borde lo decide la escena (te agarrás o te caés): acá sólo se
     // deja salir un poquito para que se note.
+    // Perdiste pie: te vas al borde, rápido, sin poder hacer nada.
+    if (p.techoPerdio) {
+      ny += p.techoPerdio * PO.perdidaVel * dt;
+      p.techoResbalando = p.techoPerdio;
+    }
     ny = Math.max(-2, Math.min(H + 2, ny));
   }
   p.y = ny;
@@ -482,6 +527,8 @@ function updateColgado(p, dt, world) {
     const g = geoTecho(world.map.height);
     p.y = g.medio + col.lado * (g.lomo - 2);
     p.techoColgado = null;
+    p.techoPerdio = 0;
+    p.techoSprintT = 0;
     world.audio.play('cover');
     return;
   }
@@ -1139,6 +1186,15 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     return;
   }
 
+  /**
+   * 🦵 CUERPO A TIERRA, en la vista lateral: el mismo dibujo del tendido,
+   * mirando para donde ibas. Pegado al techo: el cartel te pasa por arriba.
+   */
+  if (p.vistaCostado && p.techoTendido) {
+    dibujarCuerpoATierra(r, p.x, py + p.hh, p.techoMira < 0 ? -1 : 1, p.moving ? (p.techoReloj || 0) : 0, p.hitFlash > 0);
+    return;
+  }
+
   const enElAire = p.techoSalto > 0;
   // Una parábola: sube y baja a lo largo del salto. De costado se ve el alto
   // de verdad, así que sube más (`costado.saltoAlto`).
@@ -1176,10 +1232,56 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     escala: p.vistaCostado ? (p.escalaTecho || 1) : 1,
     angulo: p.vistaCostado ? (p.techoMira < 0 ? Math.PI : 0) : p.aim,
     fase: enElAire ? null : faseDeAndar(p),
-    postura: p.techoAgachado ? 'agachado' : 'pie',
+    // Arriba, de costado, el agachado es AGAZAPADO: tiene que leerse de un vistazo.
+    postura: p.techoAgachado ? (p.vistaCostado ? 'agazapado' : 'agachado') : 'pie',
     destello: p.hitFlash > 0,
     arma: armaDibujada(p),
   });
+}
+
+/**
+ * 🦵 CUERPO A TIERRA, DE PERFIL: boca abajo y estirado sobre el techo, con
+ * los brazos adelante, la cabeza levantada mirando lo que viene y el sombrero
+ * puesto. 🔁 Primero se usó el dibujo del caído (`dibujarTendido`), que es una
+ * vista desde arriba con brazos y piernas abiertos: de costado parecía un
+ * muerto, no alguien arrastrándose. Al moverse se arrastra: codos y rodillas
+ * se turnan.
+ *
+ * `pies` es la línea del techo; `mira` +1 a la derecha, -1 a la izquierda.
+ */
+function dibujarCuerpoATierra(r, x, pies, mira, reloj, destello) {
+  const c = (hex) => (destello ? '#ffffff' : hex);
+  const arrastre = reloj ? Math.sin(reloj * 10) : 0;
+  const a = arrastre > 0 ? 0.5 : 0, b = arrastre > 0 ? 0 : 0.5;
+  const px = (dx) => x + dx * mira;
+  // Un rectángulo en coordenadas "mirando a la derecha", espejado si hace falta.
+  const q = (dx, dy, w, h, color) => r.rect(mira > 0 ? px(dx) : px(dx + w), pies + dy, w, h, c(color));
+  r.ctx.save();
+  r.ctx.globalAlpha = 0.25;
+  r.rect(x - 11, pies - 0.5, 22, 1, '#000');
+  r.ctx.restore();
+  // Las piernas estiradas para atrás, las botas apoyadas de punta.
+  q(-12 + a, -2, 2.5, 2, BOTA);
+  q(-9.5 + a, -3, 8, 2.5, PANT);
+  q(-9.5 + b, -1.5, 7, 1.5, tono(PANT, 0.7));
+  // El chaleco, con la espalda que agarra la luz.
+  q(-2, -4.5, 7.5, 4, CHAL);
+  q(-2, -4.5, 7.5, 0.5, CHAL_L);
+  q(-2, -1, 7.5, 0.5, CHAL_S);
+  // El brazo de adelante estirado, con el codo apoyado; la mano adelante.
+  q(4 + b, -1.5, 4.5, 1.5, CAM);
+  q(4 + b, -0.5, 4.5, 0.5, CAM_S);
+  q(8.5 + b, -1.5, 1.5, 1.5, PIEL);
+  // El pañuelo y la cabeza levantada, mirando lo que viene.
+  q(5, -4, 2, 1, PAN_R);
+  q(6, -6.5, 3, 3, PIEL);
+  q(6, -4.5, 2.5, 1.5, BARBA);
+  q(8.5, -5.5, 0.5, 0.5, PIEL_S);
+  // El sombrero: el ala y la copa.
+  q(3.5, -7, 8.5, 1, '#5a4030');                 // el ala ancha del sombrero vaquero
+  q(5.5, -9, 4, 2, '#5a4030');
+  q(5.5, -9, 4, 0.5, '#76563e');
+  q(5.5, -7.5, 4, 0.5, '#2a1e16');
 }
 
 /**

@@ -93,6 +93,29 @@ function agachadoLado(paso) {
   return { ...c, cerca: baja(c.cerca), lejos: baja(c.lejos), y: c.y + 5, dx: 1 };
 }
 
+/**
+ * 🦵 AGAZAPADO: el que va arriba del tren *(Santi: "el jugador debería ir
+ * agachado ya. Parado corriendo te deberías caer sí o sí")*. El `agachado`
+ * de siempre baja la cadera 5 puntos y de costado casi no se distingue de
+ * parado; arriba tiene que leerse de un vistazo, porque el cartel le pega al
+ * agachado y sólo cuerpo a tierra se pasa. Acá la cadera baja 12, las rodillas
+ * van bien adelante (el muslo casi horizontal), las canillas vuelven a los
+ * pies, y los brazos van adelante y abajo, haciendo equilibrio. Camina en
+ * pasitos cortos.
+ */
+function agazapadoLado(paso) {
+  const s = [0, -3, 3, -1.5, 1.5][paso % 5];
+  const sube = [0, 1, 0, 0, 1][paso % 5];        // el pie que avanza se levanta un poco
+  return {
+    // Las rodillas asoman bien por delante del saco: es lo que dice "agachado".
+    cerca: [[24, 67], [37 + s, 62], [30 + s * 1.6, 71 - sube], 0],
+    lejos: [[22, 67], [34 - s, 62], [26 - s * 1.6, 71 - (1 - sube)], 0],
+    y: 12, dx: 1, f: [0, -1, 1, 0, 0][paso % 5],
+    // Los antebrazos adelante, a la altura de la cintura: haciendo equilibrio.
+    bC: [[31, 43], [37 + s * 0.3, 46]], bL: [[29, 43], [35 - s * 0.3, 46]],
+  };
+}
+
 /** SENTADO de costado: el muslo sale hacia adelante y la canilla baja. */
 function piernasSentadoLado(L, R) {
   const PT = R.pant;
@@ -149,7 +172,8 @@ export function lado(L, o = {}) {
   if (postura === 'rendido') o = { ...o, manosArriba: true };
   const P0 = postura ? caminataLado(0)
     : o.trote != null ? TROTE[o.trote % TROTE.length]
-      : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
+      : o.agazapado ? agazapadoLado(o.paso || 0)
+        : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
   // Asomado: los pies quedan clavados en el reparo y sale el cuerpo.
   const a = o.asomado || { dx: 0, dy: 0 };
   const baja = postura === 'rendido' ? 14 : postura ? 6 : P0.y;
@@ -226,7 +250,9 @@ export function lado(L, o = {}) {
     botaLado(LP, P.cerca[2], BOTA, P.cerca[3], R.espuela);
   }
   if (R.funda) {
-    U.poly([[21, 55], [26, 55], [25, 64], [22, 64]], FUNDA);
+    // Agazapado, la funda no puede pasar de los pies: va más corta.
+    if (o.agazapado) U.poly([[21, 55], [26, 55], [25, 58], [22, 58]], FUNDA);
+    else U.poly([[21, 55], [26, 55], [25, 64], [22, 64]], FUNDA);
     U.poly([[22, 49], [26, 48], [27, 55], [23, 55]], CULATA); U.rect(23, 50, 2, 1, CULATA_L);
   }
 

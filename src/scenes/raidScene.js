@@ -111,6 +111,7 @@ export function createRaidScene(services) {
   let riderWatch;
   let techObstacles, techoBajarProgress, techoSpawnTimer;
   let rasponTimer = 0;
+  let avisoPerdio = false;
   // Cuánto llevás sosteniendo [E] para trepar o bajar del carbón (etapa 5).
   let carbonProgress = 0;
   let rodantes, rodanteTimer, rodanteRafaga, rodanteRafagaTimer;
@@ -1671,13 +1672,20 @@ export function createRaidScene(services) {
       // del alero no te alcanza nada).
       const g = geoTecho(map.height);
       const loRodeaste = ob.tipo === 'saltar' && Math.abs(player.y - g.medio) > g.lomo + 4;
+      // 🦵 El cartel ahora pega a la altura del que va agachado: sólo se pasa
+      // cuerpo a tierra. El cajón, saltando.
       const zafó = player.techoColgado || loRodeaste ||
-        (ob.tipo === 'agachar' ? player.techoAgachado : player.techoSalto > 0);
+        (ob.tipo === 'agachar' ? player.techoTendido : player.techoSalto > 0);
       ob.resuelto = true;
       if (!zafó) chocarEnTecho(ob);
     }
 
     actualizarBordeDelTecho();
+    // 🦵 Corriste demasiado: perdiste pie. Se avisa una vez.
+    if (player.techoPerdio && !avisoPerdio) {
+      avisoPerdio = true;
+      floaters.push({ x: player.x, y: player.y - 20, text: T.prompts.perdistePie, life: 1.4, color: colors.enemyAlert });
+    } else if (!player.techoPerdio) avisoPerdio = false;
 
     // 🧗 La suela raspando la chapa mientras resbalás: es el aviso de oído.
     if (player.techoResbalando && !player.techoColgado) {
@@ -1709,6 +1717,9 @@ export function createRaidScene(services) {
     if (rng.range(0, 1) >= chance) { caerseDelTren(); return; }
 
     player.techoColgado = { lado, t: 0, subir: 0, vida: player.health };
+    player.techoPerdio = 0;
+    player.techoSprintT = 0;
+    player.techoCorre = 0;
     player.techoAgachado = false;
     // Colgado estás AFUERA del vagón, contra la pared: los jinetes de ese lado
     // te ven, y desde adentro la pared te tapa.

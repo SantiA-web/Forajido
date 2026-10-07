@@ -2003,6 +2003,20 @@ export const CONFIG = {
     },
 
     /**
+     * ⛈️ CON TORMENTA EL TECHO ES MÁS DIFÍCIL *(Santi: "en Tormenta sea más
+     * difícil el techo: menos probabilidad de agarrarse, el sprint dura menos
+     * antes de caerse y el personaje va un poco más lento para no caerse")*.
+     * Eligió la opción B. Reemplaza a los valores de arriba sólo si al tren
+     * le tocó tormenta (`train.clima.id`).
+     */
+    tormenta: {
+      colgarse: 0.4,           // en vez de 0,6
+      porTren: { carga: 0.5 }, // en vez de 0,7
+      sprintResbala: 1.5,      // en vez de 2,5: alcanza justo para tomar envión y saltar un hueco
+      velAgachado: 42,         // en vez de 50
+    },
+
+    /**
      * LOS OBSTÁCULOS QUE VIENEN HACIA VOS.
      *
      * Aparecen adelante (del lado de la locomotora) y barren el techo hacia

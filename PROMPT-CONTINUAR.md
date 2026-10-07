@@ -162,7 +162,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   confirmada; la 1b dejó sus reglas (resbalar, colgarse, caerse del tren) pero
   su dibujo se descartó. Ahora arriba la vista es DE COSTADO, como el galope
   (opción C, elegida por Santi): C1 (corregida a lateral de verdad) y C2 (leer
-  el ancho) hechas y sin jugar.** Faltan: C3 (tirar hacia abajo a los jinetes,
+  el ancho) hechas y sin jugar. Después: arriba se va agazapado (cuerpo a
+  tierra con Shift, sprint con doble toque que te hace perder pie) y con
+  tormenta es más difícil (opción B). Sin jugar.** Faltan: C3 (tirar hacia abajo a los jinetes,
   con balas propias de esta vista), y después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
   los guardias en el techo. Hay código de la vista de arriba del techo sin uso

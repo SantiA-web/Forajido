@@ -17953,6 +17953,28 @@ dos lados y en cada paso):
 
 **Medido:** 4.300 cuadros con teclas al azar, sin errores, ~1 ms por cuadro.
 
+### ⛈️ Con tormenta el techo es más difícil (`CONFIG.techo.tormenta`)
+
+*(Santi: "en Tormenta sea más difícil el techo: menos probabilidad de
+agarrarse, el sprint dura menos antes de caerse y el personaje va un poco más
+lento para no caerse")*. Se le dieron tres opciones y **eligió B**:
+
+| | Sin tormenta | Con tormenta (B) | Medido con tormenta |
+|---|---|---|---|
+| Agarrarte del alero, pasajeros | 60% | **40%** | 38% (300 caídas) |
+| Agarrarte del alero, carga | 70% | **50%** | 54% (300 caídas) |
+| Perdés pie con el sprint a los | 2,5 s | **1,5 s** | 1,50 s |
+| Velocidad agazapado | 50 | **42** | 42 |
+
+- 1,5 s de sprint todavía alcanza para tomar envión y saltar un hueco (se salta
+  en menos de un segundo). Con 1 s (la opción C) había que saltar casi sin correr.
+- Sólo cambia si al tren le tocó tormenta (`train.clima.id`). El sprint y la
+  velocidad los lee el jugador (`updateOnRoof`); el agarre, la escena
+  (`actualizarBordeDelTecho`).
+- Medido también sin tormenta, para comparar: pasajeros 66% y carga 73%, perdés
+  pie a los 2,5 s, agazapado a 50. 1.800 cuadros con tormenta y teclas al azar,
+  sin errores.
+
 ---
 
 ### ✅ ETAPA 6 CERRADA

@@ -461,6 +461,10 @@ vas agazapado: parado sólo se va en sprint, y se paga con el riesgo de caerte.
 Agazapado el salto no alcanza para cruzar de un techo al otro: hay que tomar
 envión con el sprint.
 
+**Con tormenta el techo es más difícil:** te agarrás menos del alero (40% en
+vez de 60%; en el de carga 50% en vez de 70%), perdés pie a 1,5 s de sprint en
+vez de 2,5, y agazapado vas más lento (42 en vez de 50).
+
 - **Los carteles vienen hacia vos**, no están quietos: el tren avanza y te los
   lleva por delante. No se pueden rodear — o te agachás, o saltás.
 - **Comerte uno cuesta caro**: perdés una vida, tardás en levantarte y, sobre

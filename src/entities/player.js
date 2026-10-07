@@ -378,6 +378,10 @@ function updateOnRoof(p, dt, world) {
    * defecto, cuerpo a tierra con [Shift], sprint con doble toque de [A]/[D].
    */
   const PO = ct.postura;
+  // ⛈️ Con tormenta el sprint te hace perder pie antes y agazapado vas más lento.
+  const tormenta = world.train && world.train.clima && world.train.clima.id === 'tormenta';
+  const sprintResbala = tormenta ? ct.tormenta.sprintResbala : PO.sprintResbala;
+  const velAgachado = tormenta ? ct.tormenta.velAgachado : PO.velAgachado;
   p.techoReloj = (p.techoReloj || 0) + dt;
   const izq = input.anyDown('KeyA', 'ArrowLeft');
   const der = input.anyDown('KeyD', 'ArrowRight');
@@ -397,7 +401,7 @@ function updateOnRoof(p, dt, world) {
   // `sprintResbala` segundos perdés pie: te vas hacia el borde más cercano.
   if (corriendo && p.techoSalto <= 0) p.techoSprintT = (p.techoSprintT || 0) + dt;
   else if (!p.techoPerdio) p.techoSprintT = Math.max(0, (p.techoSprintT || 0) - dt * PO.recupera);
-  if (!p.techoPerdio && p.techoSprintT >= PO.sprintResbala) {
+  if (!p.techoPerdio && p.techoSprintT >= sprintResbala) {
     const g0 = geoTecho(world.map.height);
     p.techoPerdio = p.y < g0.medio ? -1 : 1;
     p.techoCorre = 0;
@@ -433,7 +437,7 @@ function updateOnRoof(p, dt, world) {
   // el sprint tiene envión: es lo que cruza el hueco entre dos vagones.
   let speed = p.techoTendido ? PO.velTendido
     : (corriendo || p.techoSaltoLargo) ? cp.speed
-      : PO.velAgachado;
+      : velAgachado;
   if (p.techoSalto > 0 && p.techoSaltoLargo) speed *= ct.saltoBoost;
   // El arma pesada frena también en el techo (ver `velocidadPortando`).
   speed *= (p.weapon && p.weapon.velocidadPortando) ?? 1;

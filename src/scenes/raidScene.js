@@ -1712,8 +1712,12 @@ export function createRaidScene(services) {
     if (player.y >= 0 && player.y <= map.height) return;
 
     const lado = player.y < 0 ? -1 : 1;
+    // ⛈️ Con tormenta te agarrás menos (`CONFIG.techo.tormenta`).
     const C = CONFIG.techo.colgarse;
-    const chance = (train.tipoTren && C.porTren[train.tipoTren.id]) ?? C.chance;
+    const CT = hayTormenta ? CONFIG.techo.tormenta : null;
+    const chance = CT
+      ? ((train.tipoTren && CT.porTren[train.tipoTren.id]) ?? CT.colgarse)
+      : ((train.tipoTren && C.porTren[train.tipoTren.id]) ?? C.chance);
     if (rng.range(0, 1) >= chance) { caerseDelTren(); return; }
 
     player.techoColgado = { lado, t: 0, subir: 0, vida: player.health };

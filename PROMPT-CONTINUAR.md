@@ -177,11 +177,11 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   lejos y a la vista por encima del techo y el tiro de galería (sin raya), sin
   jugar. C3c (los
   jinetes en dos líneas, con la rotación que diseñó Santi) hecha y sin jugar.
-  Faltan: **lo bonito con el esqueleto** (ver NOTAS, "EL ESQUELETO": E1 la
-  base, E2 posturas del techo y E3 mirar con el mouse arriba, con el esqueleto
-  de tres cuartos, hechas; E2 jugada, E3 sin jugar; sigue E4 los jinetes;
-  después pasar el esqueleto a todo, adentro del vagón también, y el caballo,
-  el perro y los pájaros), y después las
+  E1, E2 y E3 del esqueleto hechas (E3 sin jugar). **El dibujo cambió de
+  rumbo: EL ESTILO NUEVO** (ver NOTAS, "EL ESTILO NUEVO"): pixel art en grilla
+  de 3×3, paleta de 48 y gente de 32 sin cara, dibujada a mano. P0 (la base,
+  con la prueba en F9) hecha; sigue **P1, el vagón de pasajeros**. La E4 (los
+  jinetes) se hace en P5, ya en el estilo nuevo. Después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
   los guardias en el techo. Hay código de la vista de arriba del techo sin uso
   para limpiar (ver NOTAS, etapa C1).

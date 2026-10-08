@@ -25,6 +25,17 @@ servidor ni internet, y que se puede copiar a otra compu o a un pendrive. No se
 actualiza solo: después de cambiar el juego, hay que volver a armarlo. No se sube
 a git (es un resultado, no código).
 
+## El estilo nuevo (en construcción, se prueba con `F9`)
+
+El juego se está pasando a **pixel art de verdad**: todo el cuadro en una
+grilla de puntos de 3×3 (640×360 en un monitor de 1080), una **paleta cerrada
+de 48 colores**, la gente de unos 32 puntos sin cara, dibujada a mano, y la
+**luz por escalones** (el día y la noche salen del mismo dibujo). Mientras se
+dibuja, el juego sigue con el dibujo de hoy: **`F9` prende y apaga la
+prueba** (o abrí el juego con `?nuevo` en la dirección). Hoy la prueba pasa el
+dibujo viejo por la grilla y la paleta, así que se ve tosco: es la base, y cada
+etapa lo va reemplazando. El plan está en NOTAS-DISENO.md, "EL ESTILO NUEVO".
+
 ## La vista: tres cuartos (en construcción)
 
 El juego **llena la pantalla en cualquier monitor**, sin bordes y sin perder

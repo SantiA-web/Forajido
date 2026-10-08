@@ -47,6 +47,14 @@ export const CONFIG = {
    */
   vistaAnchoMaximo: 2.4,
 
+  /**
+   * 🎨 EL ESTILO NUEVO, EN PRUEBA con [F9] (ver engine/estiloNuevo.js y
+   * NOTAS-DISENO.md, "EL ESTILO NUEVO"). `alto`: cuántas filas de puntos
+   * tiene la pantalla (360: puntos de 3×3 en 1080p). `paleta`: pasar todo
+   * por los 48 colores (engine/paleta.js).
+   */
+  estilo: { alto: 360, paleta: true },
+
   tileSize: 16,
 
   raid: {

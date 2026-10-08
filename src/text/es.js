@@ -4,6 +4,8 @@
  */
 
 export const T = {
+  /** El cartelito de la prueba del estilo nuevo (engine/estiloNuevo.js). */
+  estiloNuevo: 'ESTILO NUEVO, EN PRUEBA · [F9]',
   hud: {
     money: (n) => `$${n}`,
 

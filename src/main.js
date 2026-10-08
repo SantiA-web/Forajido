@@ -15,6 +15,7 @@ import { createRng } from './engine/rng.js';
 import { createLoop } from './engine/loop.js';
 import { createSceneManager } from './engine/scene.js';
 import { createAudio } from './engine/audio.js';
+import { estiloNuevo } from './engine/estiloNuevo.js';
 import { createHud } from './ui/hud.js';
 import { createCampScene } from './scenes/campScene.js';
 import { createTownScene } from './scenes/townScene.js';
@@ -71,6 +72,8 @@ scenes.goTo('camp');
 
 const loop = createLoop(
   (dt) => {
+    // [F9]: la prueba del estilo nuevo (ver engine/estiloNuevo.js).
+    estiloNuevo.revisar(input);
     scenes.update(dt);
     input.endFrame();
   },
@@ -81,6 +84,8 @@ const loop = createLoop(
     // La lupa del mundo, cada cuadro (ver DENSIDAD en engine/renderer.js).
     renderer.nuevoCuadro();
     scenes.render(renderer);
+    // Con la prueba prendida, el cuadro pasa por la grilla y la paleta nuevas.
+    estiloNuevo.pasar(renderer);
   }
 );
 
@@ -98,4 +103,4 @@ loop.start();
  * `services.scenes.render(services.renderer)` y sacar la foto sin que nada se
  * mueva en el medio. `FORAJIDO.loop.start()` lo devuelve a la vida.
  */
-window.FORAJIDO = { state: gameState, config: CONFIG, services, reset: resetGame, loop };
+window.FORAJIDO = { state: gameState, config: CONFIG, services, reset: resetGame, loop, estiloNuevo };

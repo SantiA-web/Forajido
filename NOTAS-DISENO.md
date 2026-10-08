@@ -18276,6 +18276,87 @@ galope (el prompt está en `prototipos/caballo/sprites/marron/metadata.json`).
 
 ---
 
+## 🎨 EL ESTILO NUEVO (2026-10-08)
+
+**Por qué.** Santi: *"hay detalles que le bajan al juego, cosas como posición
+de ojos, manos o el arma… estoy pensando en un futuro cuando el juego tenga que
+sentirse profesional y que no tenga que tener ni error en detalles"*. El dibujo
+de 80 puntos salía de fórmulas (rectángulos, óvalos, tramos girados), y lo
+chico —de 1 a 4 puntos: un ojo, una mano, un caño— se corría un punto con cada
+redondeo o cada hueso. Con ese método había un techo.
+
+**Cómo se eligió**, viendo hojas de comparación en el juego, al tamaño real:
+
+1. A (80 puntos, hoy), B (40 de 2×2) y C (28 de 3×3), dibujadas a mano.
+   Santi: *"la B se siente como que se quiso acercar al A pero no lo logró, en
+   cambio la C se siente hecho a posta esa simpleza"*; propuso la B **sin ojos
+   ni nariz**.
+2. Todo el cuadro en la misma grilla (fondo incluido): lo que más delataba que
+   no era "retro" era mezclar tamaños de punto (gente de 1×1, caballo de 2×2,
+   letras finas, humo y luces suaves).
+3. B sin cara contra **C de 32** (grilla de 3×3, gente de 32): tres direcciones,
+   las tres armas y una gabardina flameando. Elegida la **C de 32**: es el
+   tamaño que usan los juegos de pixel art de hoy (640×360 entra justo en 720p,
+   1080p y 4K), se lee mejor de lejos, y se puede terminar entero sin un
+   artista humano.
+4. Una maqueta del vagón de pasajeros con reglas de Enter the Gungeon
+   (contraste, tapas claras en paredes y objetos), de día y de noche. Santi:
+   *"uuuufffff. Espectacular. Me encantó"*. Pidió la luz bien pixel art, una
+   paleta cerrada, **48 colores**, el piso más marrón (*"parece un vagón de
+   oro"*), la luz de noche cálida y **el borde de las paredes de otro color que
+   la arena** (va verde de vagón, a confirmar).
+
+**Las reglas:**
+
+- **Una sola grilla:** todo se pinta en 640×360 (en 1080p) y se agranda entero
+  sin suavizar: ×2 en 720p, ×3 en 1080p, ×6 en 4K.
+- **Paleta de 48 colores en escalas** de oscuro a claro (engine/paleta.js).
+- **La luz mueve cada punto por su escala**, en escalones, con tramado de Bayer
+  en los bordes; sin degradés ni transparencias (engine/luz.js). La noche es el
+  mismo dibujo con el campo de luz más bajo y los faroles levantándolo.
+- **La gente recibe la luz pareja** (la del punto donde está parada): con
+  tramado se veía sucia.
+- **Gente y animales dibujados a mano**, cuadro por cuadro (mapas de puntos),
+  sin ojos ni nariz. Cada cuadro marca sus puntos clave (mano, boca del arma,
+  cabeza, pies). El cuerpo se dibuja una vez y cada tipo cambia colores y
+  sombrero.
+- **Se ve el mismo mundo que hoy** (elegido, A): la persona mide 32 puntos
+  aunque su caja mida un poco menos; puntería y cobertura no cambian.
+- **Se pasa con una tecla de prueba** (elegido, A): `F9` o `?nuevo`. El juego
+  normal sigue con el dibujo de hoy hasta que esté todo.
+
+| Etapa | Qué | Estado |
+|---|---|---|
+| **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
+| P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | Falta |
+| P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | Falta |
+| P3 · Guardias y pasajeros | Con colores por tipo, y los jefes | Falta |
+| P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
+| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
+| P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
+| P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
+| P8 · Limpieza | Borrar el dibujo viejo | Falta |
+
+**Lo que pasa con lo hecho:** la E3 (mirar con el mouse arriba) queda entera:
+es mecánica; el brazo con el arma pasa a ser una pieza dibujada en 16 ángulos
+enganchada al hombro. El esqueleto de código deja de dibujar gente (sirvió
+para encontrar las poses). La E4 se hace directamente en P5.
+
+### ✅ P0 · La base
+
+- **engine/paleta.js:** los 48 colores, las 11 escalas, `sombrear(color,
+  pasos)` y una tabla de 32.768 casillas para llevar cualquier color al más
+  parecido de la paleta (pasar una pantalla color por color costaba 20 ms).
+- **engine/luz.js:** `iluminar()` toma un dibujo en índices de la paleta, un
+  campo de luz y las marcas (emite luz / es de alguien) y devuelve los colores.
+  Comprobado: da la maqueta aprobada punto por punto. ⚠️ Cuesta 15 ms para
+  320×180; en P1 el fondo se ilumina una vez y se guarda (los faroles no se
+  mueven), y sólo se ilumina lo que se mueve.
+- **engine/estiloNuevo.js:** `F9` (o `?nuevo`) pasa el cuadro entero por la
+  grilla y la paleta. Hoy es el dibujo viejo achicado (se ve tosco a
+  propósito). Suma unos 5 ms por cuadro, sólo prendido.
+- `CONFIG.estilo` (`alto` 360, `paleta`) y el cartel en text/es.js.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

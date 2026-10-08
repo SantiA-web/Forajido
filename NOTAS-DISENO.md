@@ -18389,6 +18389,14 @@ para encontrar las poses). La E4 se hace directamente en P5.
   moverse; la grilla toma el punto del medio de cada cuadrado de 3×3.
 - Las luces viejas (el haz de los ventanales, la oscuridad de noche y los
   charcos de los faroles) no les caen encima a los vagones nuevos.
+- **Después de verla (Santi):** *"la pared del vagón cercana a la pantalla la veo
+  muy alta. La haría más chata"* → la pared de adelante termina en el borde del
+  mapa (antes colgaba 18 más abajo) y el desierto empieza ahí. *"Hay demasiado
+  detalle y cansa un poco la vista"* → tablas del piso de 8 y de un tono, una
+  junta cada 170 puntos, sin clavos ni gastado salteado; la pared de tablas
+  anchas y de un tono; los asientos sin botones; y la noche con la luz en
+  escalones enteros, así el tramado queda sólo en el borde de cada farol (con
+  -1,6 TODO el piso quedaba tramado).
 - 🔻 **Pendientes de esta etapa:** la luz no se hamaca con el meneo del tren (ya
   está guardada); y de noche la gente se ve más clara que el vagón, porque
   todavía es la de antes y no recibe la luz nueva: se arregla en P2.

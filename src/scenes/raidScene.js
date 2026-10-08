@@ -5605,7 +5605,9 @@ export function createRaidScene(services) {
     // La cara de afuera de la pared de adelante cuelga por debajo del vagón
     // (ver `drawPisoDelTren`): el desierto empieza donde termina ella.
     const arriba = -camera.renderY;
-    const abajo = alturaMapa - camera.renderY + CONFIG.tresCuartos.alturaCaraAfuera;
+    // 🎨 Con el estilo nuevo la pared de adelante es más chata: el desierto
+    // empieza en el borde del mapa (los vagones viejos tapan lo suyo igual).
+    const abajo = alturaMapa - camera.renderY + (estiloNuevo.activo ? 0 : CONFIG.tresCuartos.alturaCaraAfuera);
 
     franjaDeDesierto(r, 0, arriba, false, vel, dia);
     franjaDeDesierto(r, abajo, r.height, true, vel, dia);

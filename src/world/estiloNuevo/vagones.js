@@ -79,7 +79,10 @@ function vagon(train, w, dia) {
   // punto de todo lo demás y la grilla lo partiría.
   const x0 = Math.floor(w.x / PASO) * PASO;
   const yArriba = -tc.alturaPared;
-  const yAbajo = map.rows * S + tc.alturaCaraAfuera;
+  // 🔁 La pared de adelante llega sólo hasta el borde del mapa *(Santi: "la
+  // pared del vagón cercana a la pantalla la veo muy alta. La haría más
+  // chata")*: antes colgaba `alturaCaraAfuera` (18) más abajo.
+  const yAbajo = map.rows * S;
   const W = Math.ceil((w.x + w.width - x0) * PX);
   const H = Math.round((yAbajo - yArriba) * PX);
   const ax = (u) => Math.round((u - x0) * PX);
@@ -103,7 +106,6 @@ function vagon(train, w, dia) {
     c.i[y * W + x] = i; c.m[y * W + x] = emite ? 1 : 0;
   };
   const rect = (c) => { const p = pone(c); return (x, y, ww, hh, i, emite) => { for (let j = 0; j < hh; j++) for (let q = 0; q < ww; q++) p(x + q, y + j, i, emite); }; };
-  const hash = (x, y) => (((x * 73856093) ^ (y * 19349663)) >>> 0) % 100;
 
   // ---- dónde están las cosas
   const corridas = (fila) => {
@@ -139,13 +141,16 @@ function vagon(train, w, dia) {
     const r = rect(PISO), p = pone(PISO);
     const y0 = ay(yPisoArriba), y1 = ay(yPisoAbajo + 3);
     for (let y = y0; y < y1; y++) {
-      const tabla = Math.floor((y - y0) / 6), off = (tabla * 37 + w.colStart * 11) % 83;
+      /**
+       * 🔁 MENOS DETALLE *(Santi: "hay demasiado detalle y cansa un poco la
+       * vista")*: tablas de 8 en vez de 6, una junta cada 170 puntos en vez de
+       * 83, sin el gastado salteado y sin la raya clara de cada tabla. Todas
+       * del mismo tono: las separa sólo la junta.
+       */
+      const tabla = Math.floor((y - y0) / 8), off = (tabla * 61 + w.colStart * 11) % 170;
       for (let x = 0; x < W; x++) {
-        let i = (y - y0) % 6 === 5 ? 32 : (tabla % 2 ? 33 : 34);
-        if ((x + off) % 83 === 0) i = 32;
-        if ((y - y0) % 6 === 0 && i !== 32) i = 35;
-        if ((x + off) % 83 === 3 && (y - y0) % 6 === 2) i = 36;          // el clavo
-        if (i !== 32 && hash(x, y) < 3) i = 33;                           // el gastado
+        let i = (y - y0) % 8 === 7 ? 33 : 34;
+        if ((x + off) % 170 === 0) i = 33;
         p(x, y, i);
       }
     }
@@ -169,8 +174,7 @@ function vagon(train, w, dia) {
     const r = rect(FONDO), p = pone(FONDO);
     const yCara = 8, yPie = ay(yPisoArriba);
     filete(r, 0);
-    for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 8 === 0 ? 1 : (Math.floor(x / 8) % 2 ? 4 : 3));
-    for (let x = 4; x < W; x += 8) { p(x, yCara + 2, 5); p(x, yPie - 4, 5); }
+    for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 14 === 0 ? 1 : 3);
     r(0, yPie - 2, W, 2, 1);
     for (const [c0, c1] of ventanasFondo) {
       const vx = ax(w.x + c0 * S) + 3, vw = ax(w.x + (c1 + 1) * S) - 3 - vx;
@@ -216,7 +220,6 @@ function vagon(train, w, dia) {
       r(x + 1, y + 1, 5, 1, 10); r(x + 2, y + 2, 1, bh - 10, 9);
       r(x + 6, y + sube - 2, bw - 7, bh - sube - 6, 9);        // el almohadón
       r(x + 6, y + sube - 2, bw - 7, 1, 10);
-      for (let q = y + sube + 3; q < y + bh - 10; q += 7) r(x + 9 + (q % 2) * 4, q, 1, 1, 8);
       r(x + 1, y + bh - 8, bw - 2, 4, 39);                     // la cara de adelante
       r(x + 1, y + bh - 8, bw - 2, 1, 8);
       r(x + 2, y + bh - 4, 2, 3, 3); r(x + bw - 4, y + bh - 4, 2, 3, 3);   // las patas
@@ -227,9 +230,9 @@ function vagon(train, w, dia) {
   // ===== LA PARED DE ADELANTE: el borde y, debajo, su cara de afuera
   {
     const r = rect(FRENTE), p = pone(FRENTE);
-    const yTope = ay(yPisoAbajo - tc.alturaParedBaja), yCaraFin = ay(map.rows * S + tc.alturaCaraAfuera) - 1;
+    const yTope = ay(yPisoAbajo - tc.alturaParedBaja), yCaraFin = H - 1;
     filete(r, yTope);
-    for (let x = 0; x < W; x++) for (let y = yTope + 8; y < yCaraFin - 3; y++) p(x, y, x % 6 === 0 ? BORDE_SS : (Math.floor(x / 6) % 2 ? BORDE : BORDE_S));
+    for (let x = 0; x < W; x++) for (let y = yTope + 8; y < yCaraFin - 3; y++) p(x, y, x % 12 === 0 ? BORDE_SS : BORDE_S);
     r(0, yCaraFin - 3, W, 3, 31); r(0, yCaraFin, W, 1, 0);
     /**
      * Las ventanillas de afuera, más chicas y arriba, como las ve el galope.
@@ -238,7 +241,7 @@ function vagon(train, w, dia) {
      */
     for (const [c0, c1] of ventanasFrente) {
       const vx = ax(w.x + c0 * S) + 5, vw = ax(w.x + (c1 + 1) * S) - 5 - vx;
-      const vy = yTope + 14, vh = Math.max(6, Math.round((yCaraFin - yTope - 14) * 0.42));
+      const vy = yTope + 12, vh = Math.max(5, Math.round((yCaraFin - yTope - 12) * 0.45));
       r(vx - 1, vy - 1, vw + 2, vh + 2, 0);
       // De noche, desde afuera las ventanillas se ven prendidas (como en el galope).
       r(vx, vy, vw, vh, dia ? 19 : 44, !dia);
@@ -264,18 +267,22 @@ function vagon(train, w, dia) {
         if (y > y0 && y < tope) {
           const xs = vx + 4 - (y - y0) * 0.5;
           const dentro = Math.min(x - xs, xs + vw - 6 - x, y - y0, (tope - 8) - y);
-          f += Math.max(0, Math.min(1, dentro / 5));
+          f += Math.max(0, Math.min(1, dentro / 3));
         }
       }
       return f;
     }
     : (x, y) => {
       if (y >= ay(yPisoAbajo - tc.alturaParedBaja) + 8) return -2;
-      let f = -1.6;
+      // Un escalón entero: con -1,6 TODO el piso quedaba tramado (Santi: "cansa
+      // un poco la vista"). El tramado va sólo en el borde de la luz.
+      // La pared del fondo, un escalón menos oscura: con -2 quedaba negra y se
+      // perdían las tablas.
+      let f = y < ay(yPisoArriba) ? -1 : -2;
       const yCharco = ay(yPisoArriba) + Math.round((tope - ay(yPisoArriba)) * 0.32);
       for (const fx of faroles) {
-        f += 2.2 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
-        f += 2.0 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - 26) / 18));
+        f += 2.6 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
+        f += 2.4 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - 26) / 18));
       }
       return f;
     };

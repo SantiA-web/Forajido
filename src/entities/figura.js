@@ -27,7 +27,7 @@
 import { CONFIG } from '../data/config.js';
 import { ROPA, Lienzo, deformar, NEGRO, armaLarga } from './gente/dibujo.js';
 import { frente, espalda } from './gente/frente.js';
-import { lado } from './gente/costado.js';
+import { lado, ladoConHuesos, huesosDeLado } from './gente/costado.js';
 import { tendido, TENDIDO } from './gente/tendido.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
@@ -347,7 +347,35 @@ export function dibujarPersona(r, f) {
   const lateral = fn === lado ? 1 : g ? 0.5 : 0;
   const inclina = (modo === 'trotar' ? 0.1 : modo === 'agachado' ? 0.12 : modo === 'agazapado' ? 0.26
     : modo === 'montado' ? ECHADO[echado] : 0) * lateral;
-  const img = armar(clave, () => {
+  /**
+   * 🦴 EL JUGADOR DE COSTADO VA CON ESQUELETO (etapa E1, ver `ladoConHuesos`
+   * en gente/costado.js). Echarse adelante ya no corta el dibujo en diagonal:
+   * el torso GIRA desde la cadera. El resto de la gente sigue como estaba hasta
+   * que Santi lo apruebe en el jugador.
+   */
+  const conHuesos = tipo === 'jugador' && fn === lado;
+  const torsoGira = Math.atan(1.2 * inclina);
+  const img = armar(conHuesos ? clave + '|h' : clave, () => {
+    if (conHuesos) {
+      let cuenta = (x, y) => [x, y];
+      const LH = Lienzo(M.ancho, M.alto, OX, OY, M.s, (x, y) => cuenta(x, y));
+      const datosH = {
+        tipo, g, estado, arma, manosArriba: manos, mochila, cartuchos,
+        armaDir: armaDir == null ? null
+          : (espejo ? (8 - armaDir + 16) % 16 : armaDir) * (Math.PI * 2 / 16),
+        asomado: asomadoDibujo, panuelo: !!f.panuelo, abre,
+      };
+      if (modo === 'trotar') datosH.trote = cuadro;
+      else {
+        datosH.paso = cuadro;
+        datosH.agachado = modo === 'agachado' || modo === 'agazapado';
+        datosH.agazapado = modo === 'agazapado';
+      }
+      if (modo === 'sentado' || modo === 'rendido' || modo === 'montado') datosH.postura = modo;
+      // La cabeza no se inclina con el torso: mira adelante.
+      ladoConHuesos(LH, datosH, (c) => { cuenta = c; }, { torso: torsoGira, cabeza: -torsoGira });
+      return LH.canvas();
+    }
     const L = Lienzo(M.ancho, M.alto, OX, OY, M.s, deformar(inclina));
     const datos = {
       tipo, g, estado, arma, manosArriba: manos, mochila, cartuchos,
@@ -399,7 +427,9 @@ export function dibujarPersona(r, f) {
    */
   let mano = null;
   if (modo === 'montado') {
-    const [hx, hy] = deformar(inclina)(...(fn === lado ? [35, 47] : [30, 48]));
+    const [hx, hy] = conHuesos
+      ? huesosDeLado({ torso: torsoGira }).cuerpo(35, 47)
+      : deformar(inclina)(...(fn === lado ? [35, 47] : [30, 48]));
     mano = {
       x: anclaX + (espejo ? -1 : 1) * (hx - 24) * PUNTO,
       y: anclaPies + (hy - 74) * PUNTO,

@@ -7,7 +7,7 @@
  * una tabla.
  */
 import {
-  ROPA, tono, mover, tramo, apuntar, rifle, armaLarga, medidasLarga, sombreroLado,
+  ROPA, tono, mover, tramo, apuntar, rifle, armaLarga, medidasLarga, sombreroLado, deformar,
   OJO_B, PIEL, PIEL_O, PIEL_S, CAM, CAM_L, CAM_S, PAN_R, PAN_RL, PAN_RS,
   BOTA, BOTA_L, ESPUELA, CINTO, FUNDA, CULATA, CULATA_L, LATON, BLANCA, CORBATA,
 } from './dibujo.js';
@@ -315,4 +315,196 @@ export function lado(L, o = {}) {
   L.rigido(() => { cabezaLado(H, o); sombreroLado(H, R.sombrero); });
   // Ver la nota en `frente`: con ángulo, el brazo va por delante de la cabeza.
   if (o.arma === true && o.armaDir != null) apuntar(U, R, [24, 34], [37, 38], [1, 0], 9, o.armaDir);
+}
+
+// ------------------------------------------------------------ el esqueleto
+
+/**
+ * 🦴 EL ESQUELETO DE COSTADO — etapa E1 *(Santi: "el esqueleto lo quiero usar
+ * para todo: caminar, portar arma, disparar, correr, saltar, agachado,
+ * cubrirse, apuntar"; arranca sólo con el jugador)*.
+ *
+ * Por qué: el dibujo de costado tenía brazos y piernas articulados, pero el
+ * torso, la cabeza y la ropa eran piezas fijas, siempre derechas. Para echarse
+ * adelante se las EMPUJABA de costado (un corte en diagonal, "deformar"): de
+ * ahí el agazapado torcido. Y acostarlas no se podía, por eso el cuerpo a
+ * tierra se dibujó aparte, a mano, y quedó como manchas.
+ *
+ * Acá se suman tres huesos que GIRAN de verdad, y cada prenda va pegada al
+ * suyo:
+ *
+ *   raíz    todo el cuerpo, alrededor de un punto (para acostarse o caerse)
+ *   torso   desde la cadera: chaleco, camisa, cinto, funda, pañuelo, brazos
+ *   cabeza  desde el cuello: la cara y el sombrero
+ *
+ * Brazos y piernas ya eran huesos (hombro, codo, mano; cadera, rodilla,
+ * tobillo) y quedan colgados del torso y de la raíz.
+ *
+ * CÓMO SE DIBUJA GIRADO SIN QUE SE VEA BORROSO: no se gira una imagen. Cada
+ * pieza se vuelve a pintar punto por punto en su lugar nuevo (el lienzo pasa
+ * cada coordenada por la cuenta del hueso antes de pintar), así que sigue
+ * siendo pixel art limpio, con el mismo borde.
+ *
+ * Con los huesos derechos sale el mismo dibujo que "lado": así se comprobó
+ * que no se perdía nada antes de agregar posturas nuevas.
+ */
+
+/** Un giro de 'a' radianes alrededor de (cx, cy). */
+function girar(cx, cy, a) {
+  if (!a) return (p) => p;
+  const c = Math.cos(a), s = Math.sin(a);
+  return ([x, y]) => [cx + (x - cx) * c - (y - cy) * s, cy + (x - cx) * s + (y - cy) * c];
+}
+
+/**
+ * Las cuentas de cada hueso: de la coordenada del dibujo (la de "lado") a la
+ * del lienzo. 'huesos' = { torso, cabeza, raiz: { x, y, ang } }, en radianes;
+ * 'cuerpo' = { dx, baja } (lo que el cuerpo se corre y baja en esta pose).
+ */
+export function huesosDeLado(huesos = {}, cuerpo = { dx: 0, baja: 0 }, piernasDx = 0) {
+  const D = deformar(0);
+  const raiz = huesos.raiz ? girar(huesos.raiz.x, huesos.raiz.y, huesos.raiz.ang) : (p) => p;
+  const { dx, baja } = cuerpo;
+  const [hx, hy] = D(23 + dx, 56 + baja);
+  const torso = girar(hx, hy, huesos.torso || 0);
+  // La cabeza no se estira con las proporciones: sólo se corre (como "rigido").
+  // Gira desde el cuello, y con el torso.
+  const cabeza = girar(24 + dx, 29 + baja, huesos.cabeza || 0);
+  return {
+    cuerpo: (x, y) => raiz(torso(D(x + dx, y + baja))),
+    cabeza: (x, y, mx = 0, my = 0) => raiz(torso(cabeza([x + dx + mx, y + baja + my]))),
+    piernas: (x, y) => raiz(D(x + piernasDx, y)),
+  };
+}
+
+/**
+ * EL MISMO DIBUJO DE "lado", CON HUESOS. 'usar(cuenta)' cambia la cuenta con
+ * la que el lienzo pasa cada punto (ver figura.js), y antes de cada parte del
+ * cuerpo se elige la de su hueso.
+ */
+export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
+  o = { tipo: 'jugador', ...o };
+  const R = ROPA[o.tipo];
+  const [C0, CL, CS] = R.chal, [M0, ML, MS] = R.manga, PT = R.pant;
+  const postura = o.postura === 'sentado' || o.postura === 'rendido' || o.postura === 'montado'
+    ? o.postura : null;
+  if (postura === 'rendido') o = { ...o, manosArriba: true };
+  const P0 = postura ? caminataLado(0)
+    : o.trote != null ? TROTE[o.trote % TROTE.length]
+      : o.agazapado ? agazapadoLado(o.paso || 0)
+        : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
+  const a = o.asomado || { dx: 0, dy: 0 };
+  const baja = postura === 'rendido' ? 14 : postura ? 6 : P0.y;
+  const P = P0;
+  const H = huesosDeLado(huesos, { dx: (P0.dx || 0) + a.dx, baja: baja + a.dy }, a.dx ? Math.round(a.dx / 3) : 0);
+  const cuerpo = () => usar(H.cuerpo);
+  const piernas = () => usar(H.piernas);
+
+  const B = postura === 'montado'
+    ? { bC: [[27, 42], [33, 46]], bL: [[25, 42], [31, 47]] }
+    : P;
+
+  // Lo de atrás, en sombra: la pierna y el brazo lejanos.
+  piernas();
+  if (postura === 'rendido') piernasRendidoLado(L, R);
+  else if (postura === 'montado') piernasMontadoLado(L, R);
+  else if (postura === 'sentado') piernasSentadoLado(L, R);
+  else {
+    pierna(L, P.lejos[0], P.lejos[1], P.lejos[2], tono(PT, 0.7));
+    botaLado(L, P.lejos[2], '#22180f', P.lejos[3], false);
+  }
+  cuerpo();
+  if (o.manosArriba) { tramo(L, [21, 33], [19, 19], 2.6, MS); L.elipse(19, 17, 2.5, 2.5, PIEL_O); }
+  else brazoLado(L, [21, 34], B.bL[0], B.bL[1], MS, null, PIEL_O);
+  if (o.mochila) {
+    const h = 10 + o.mochila * 2;
+    L.rect(12, 36, 7, h, '#6a4a2a');
+    L.rect(12, 36, 7, 2, '#8a6440');
+    L.rect(18, 38, 2, h - 6, '#54381f');
+  }
+  if (R.capa) {
+    const v = Math.round(P.f * 2);
+    L.poly([[17, 33], [26, 33], [22 + v, 58], [14 + v, 60], [15, 45]], R.capa);
+    L.sobre(13, 33, 16, 28, [R.capa], tono(R.capa, 0.75), 30);
+  }
+
+  // El torso: pecho adelante, espalda un poco curva.
+  const largo = R.saco ? 58 : 55;
+  L.poly([[17, 32], [28, 32], [31, 36], [31, largo - 5], [30, largo], [16, largo], [15, 44], [16, 36]], C0);
+  L.sobre(15, 32, 17, 27, [C0], CS, 14);
+  L.rect(16, 34, 2, largo - 36, CS);
+  L.sobre(15, largo - 6, 17, 6, [C0], CS, 45);
+  if (R.saco) {
+    L.rect(29, 34, 1, largo - 35, CS); L.rect(26, 34, 1, largo - 40, CL);
+    if (R.cuello === 'corbata') { L.rect(29, 33, 2, 9, BLANCA); L.rect(30, 34, 1, 6, CORBATA); }
+    if (R.botones) for (const by of [40, 46, 52]) L.rect(30, by, 1, 2, R.botones);
+    if (R.cuello !== 'corbata') L.rect(15, 52, 17, 2, '#2a2018');
+  } else {
+    L.poly([[27, 33], [30, 35], [31, 50], [30, 53], [27, 53]], CAM);
+    L.rect(27, 34, 1, 19, CAM_S); L.rect(29, 36, 1, 12, CAM_L); L.rect(26, 33, 1, 19, CL);
+    L.rect(29, 38, 1, 1, OJO_B); L.rect(30, 45, 1, 1, OJO_B);
+    L.rect(16, 53, 15, 3, CINTO); L.rect(29, 53, 2, 3, LATON);
+  }
+  L.poly([[25, 32], [29, 32], [31, 35], [28, 37], [25, 35]], MS);
+  if (R.extras) R.extras(L, 'lado', o);
+
+  // La pierna cercana
+  if (!postura) {
+    piernas();
+    pierna(L, P.cerca[0], P.cerca[1], P.cerca[2], PT);
+    L.sobre(8, 52, 32, 23, [PT], tono(PT, 0.86), 12);
+    L.rect(P.cerca[1][0], P.cerca[1][1] - 2, 2, 2, tono(PT, 1.15));
+    botaLado(L, P.cerca[2], BOTA, P.cerca[3], R.espuela);
+  }
+  cuerpo();
+  if (R.funda) {
+    if (o.agazapado) L.poly([[21, 55], [26, 55], [25, 58], [22, 58]], FUNDA);
+    else L.poly([[21, 55], [26, 55], [25, 64], [22, 64]], FUNDA);
+    L.poly([[22, 49], [26, 48], [27, 55], [23, 55]], CULATA); L.rect(23, 50, 2, 1, CULATA_L);
+  }
+
+  // El cuello y lo que lleva
+  L.rect(21, 29, 6, 4, PIEL_S);
+  if (R.cuello === 'panuelo') {
+    const pr = R.panueloColor || PAN_R;
+    const ps = R.panueloColor ? tono(pr, 0.72) : PAN_RS;
+    const pl = R.panueloColor ? tono(pr, 1.2) : PAN_RL;
+    L.poly([[18, 31], [30, 31], [31, 34], [19, 34]], pr);
+    L.rect(19, 31, 8, 1, pl);
+    L.poly([[25, 33], [32, 33], [29, 40]], pr); L.rect(28, 35, 1, 3, ps);
+    const f = P.f;
+    L.rect(17, 31, 3, 3, ps);
+    L.poly([[18, 31], [11, 28 + f], [13, 31 + f], [18, 33]], pr);
+    L.poly([[18, 33], [10, 36 - f], [13, 34 - f], [18, 34]], ps);
+  } else if (R.cuello === 'corbata') L.rect(20, 30, 10, 2, BLANCA);
+  else L.rect(19, 30, 11, 3, CS);
+
+  // El brazo cercano, o el que apunta.
+  if (o.manosArriba) {
+    tramo(L, [24, 33], [22, 19], 2.6, M0);
+    L.elipse(22, 17, 2.5, 2.5, PIEL);
+  } else if (armaLarga(o.arma) && !armaLarga(o.arma).listo) {
+    rifle(L, R, [23, 35], [16, 49], [26, 35], [29, 46], [0.974, -0.225], ...medidasLarga(o.arma));
+  } else if ((armaLarga(o.arma) || {}).listo) {
+    const al = armaLarga(o.arma);
+    if (al.cadera) rifle(L, R, [24, 34], [23, 45], [25, 36], [33, 43], [0.97, -0.24], ...medidasLarga(o.arma));
+    else if (al.mira) rifle(L, R, [24, 34], [26, 30], [25, 35], [38, 30], [1, 0], ...medidasLarga(o.arma));
+    else rifle(L, R, [24, 34], [25, 33], [25, 35], [38, 33], [1, 0], ...medidasLarga(o.arma));
+  } else if (o.arma && o.armaDir == null) {
+    apuntar(L, R, [24, 34], [37, 38], [1, 0], 9);
+  } else {
+    L.elipse(23.5, 35, 3.5, 3, MS); L.elipse(24, 35, 3, 2.5, M0); L.rect(22, 33, 3, 1, ML);
+    brazoLado(L, [24, 34], B.bC[0], B.bC[1], M0, MS, PIEL);
+  }
+
+  if (o.panuelo) { L.rect(19, 14, 6, 5, '#e4ddcc'); L.rect(19, 14, 6, 1, '#f4f0e4'); }
+
+  // La cabeza y el sombrero, en su hueso: no se estiran, sólo se corren y giran.
+  const conMira = (armaLarga(o.arma) || {}).mira && armaLarga(o.arma).listo;
+  const [mx, my] = conMira ? [2, 3] : [0, 0];
+  usar((x, y) => H.cabeza(x, y, mx, my));
+  cabezaLado(L, o);
+  sombreroLado(L, R.sombrero);
+  cuerpo();
+  if (o.arma === true && o.armaDir != null) apuntar(L, R, [24, 34], [37, 38], [1, 0], 9, o.armaDir);
 }

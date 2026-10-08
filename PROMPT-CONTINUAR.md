@@ -177,9 +177,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   lejos y a la vista por encima del techo y el tiro de galería (sin raya), sin
   jugar. C3c (los
   jinetes en dos líneas, con la rotación que diseñó Santi) hecha y sin jugar.
-  Faltan: **lo bonito con
-  esqueletos** (cuerpo a tierra y agazapado se ven mal; ver NOTAS, "Lo bonito
-  queda para después"), y después las
+  Faltan: **lo bonito con el esqueleto** (ver NOTAS, "EL ESQUELETO": la E1, la
+  base, está hecha; siguen E2 posturas del techo, E3 mirar con el mouse arriba,
+  E4 los jinetes; después el caballo, el perro y los pájaros), y después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
   los guardias en el techo. Hay código de la vista de arriba del techo sin uso
   para limpiar (ver NOTAS, etapa C1).

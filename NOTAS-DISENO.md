@@ -18276,6 +18276,48 @@ galope (el prompt está en `prototipos/caballo/sprites/marron/metadata.json`).
 
 ---
 
+## 🦴 EL ESQUELETO (2026-10-08)
+
+*(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,
+disparar, correr, saltar, agachado, cubrirse, apuntar (click derecho), etc.,
+no solo en el techo")*. Arranca **sólo con el jugador** (eligió la A: si algo
+sale mal no rompe a nadie más; cuando lo apruebe, se pasa a todos). Después va
+el caballo, y después perro y pájaros *(Santi: "el borde y los píxeles [del
+caballo], parece sacado de otro juego e incrustado en este")*.
+
+**Por qué hacía falta:** de costado, brazos y piernas tenían articulaciones,
+pero el torso, la cabeza y la ropa eran piezas fijas, siempre derechas. Para
+echarse adelante se las cortaba en diagonal (`deformar`): de ahí el agazapado
+torcido. Y acostarlas no se podía: por eso el cuerpo a tierra se dibujó aparte
+y quedó como manchas.
+
+| Etapa | Qué | Estado |
+|---|---|---|
+| **E1 · La base** | Los huesos que faltaban (raíz, torso, cabeza) y la ropa pegada a cada uno; el jugador de costado ya se dibuja así | ✅ hecha |
+| E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, colgado del alero, la caída al enganche, el sprint | Falta |
+| E3 · Mirar con el mouse arriba | Te movés con las teclas y el cuerpo, el brazo y la cabeza miran a la mira | Falta |
+| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | Falta |
+
+### ✅ E1 · La base (`ladoConHuesos` y `huesosDeLado`, entities/gente/costado.js)
+
+- **Tres huesos nuevos que giran:** la raíz (todo el cuerpo, para acostarse o
+  caerse), el torso (desde la cadera: chaleco, camisa, cinto, funda, pañuelo y
+  los brazos) y la cabeza (desde el cuello: la cara y el sombrero). Brazos y
+  piernas ya eran huesos y quedan colgados de ellos.
+- **No se gira una imagen:** el lienzo pasa cada punto por la cuenta de su hueso
+  antes de pintarlo, así que lo girado sigue siendo pixel art limpio, con el
+  mismo borde (`Lienzo` ya aceptaba una cuenta; ahora la cambia cada hueso).
+- **Con los huesos derechos sale el mismo dibujo, punto por punto.** Medido: 0
+  puntos distintos en quieto, caminando, con revólver, apuntando para atrás, con
+  mochila, rendido y asomado.
+- **Lo que sí cambió, a propósito:** al trotar, agacharse, ir agazapado o
+  galopar, el torso ya no se corta en diagonal: **gira desde la cadera**
+  (`atan(1,2 × inclinación)`), y la cabeza gira al revés para seguir mirando
+  adelante. Revisado agrandado al lado del viejo.
+- Sólo el jugador (`conHuesos` en figura.js); el resto de la gente sigue con
+  `lado`. Sin errores adentro del vagón, en el techo, en el galope y en el
+  campamento.
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

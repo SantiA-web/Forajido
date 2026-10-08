@@ -2633,6 +2633,22 @@ export const CONFIG = {
    *
    * Si alguna vez el tren se siente lento, se toca acá y nada más.
    */
+  /**
+   * 🦴 EL ESQUELETO (entities/gente/costado.js, `ladoConHuesos`). Por ahora sólo
+   * el jugador de costado.
+   */
+  esqueleto: {
+    /**
+     * 🦵 El grosor de la canilla y el tamaño de la bota *(Santi: "hacer la zona
+     * de la pantorrilla y la canilla más chica al igual que las botas")*: 0 el
+     * de siempre, 1 más fino (canilla 2,2 de 2,7, bota al 86%), 2 todavía más
+     * (1,9 y 76%). Falta que Santi elija; va 1 mientras tanto.
+     */
+    piernas: 1,
+    /** 🏃 Cuánto se echa adelante el torso en el sprint del techo (radianes). */
+    sprint: 0.34,
+  },
+
   parallax: {
     /** Multiplicador general. Subilo y todo el mundo acelera. */
     velocidad: 1.0,

@@ -363,9 +363,12 @@ function girar(cx, cy, a) {
  */
 export function huesosDeLado(huesos = {}, cuerpo = { dx: 0, baja: 0 }, piernasDx = 0) {
   const D = deformar(0);
-  const raiz = huesos.raiz ? girar(huesos.raiz.x, huesos.raiz.y, huesos.raiz.ang) : (p) => p;
   const { dx, baja } = cuerpo;
   const [hx, hy] = D(23 + dx, 56 + baja);
+  // La raíz gira todo el cuerpo (por defecto desde la cadera) y después lo corre.
+  const R0 = huesos.raiz;
+  const giroRaiz = R0 ? girar(R0.x ?? hx, R0.y ?? hy, R0.ang || 0) : null;
+  const raiz = R0 ? (p) => { const [x, y] = giroRaiz(p); return [x + (R0.dx || 0), y + (R0.dy || 0)]; } : (p) => p;
   const torso = girar(hx, hy, huesos.torso || 0);
   // La cabeza no se estira con las proporciones: sólo se corre (como "rigido").
   // Gira desde el cuello, y con el torso.
@@ -374,6 +377,116 @@ export function huesosDeLado(huesos = {}, cuerpo = { dx: 0, baja: 0 }, piernasDx
     cuerpo: (x, y) => raiz(torso(D(x + dx, y + baja))),
     cabeza: (x, y, mx = 0, my = 0) => raiz(torso(cabeza([x + dx + mx, y + baja + my]))),
     piernas: (x, y) => raiz(D(x + piernasDx, y)),
+  };
+}
+
+/**
+ * 🦵 LAS PIERNAS MÁS FINAS *(Santi: "hacer la zona de la pantorrilla y la
+ * canilla más chica al igual que las botas, para que se vea más limpio el
+ * dibujo")*. Tres grosores para elegir (`CONFIG.esqueleto.piernas`): 0 el de
+ * siempre, 1 y 2 más finos. El muslo no cambia.
+ */
+const FINAS = [
+  { canilla: 2.7, rodilla: 3, bota: 1 },
+  { canilla: 2.2, rodilla: 2.6, bota: 0.86 },
+  { canilla: 1.9, rodilla: 2.3, bota: 0.76 },
+];
+
+function piernaFina(L, cad, rod, tob, c, F) {
+  tramo(L, cad, rod, 3.5, c);
+  L.elipse(rod[0], rod[1], F.rodilla, F.rodilla, c);
+  tramo(L, rod, tob, F.canilla, c);
+}
+
+/** La bota de siempre, achicada desde la suela (si no, quedaría flotando). */
+function botaFina(L, [x, y], c, talon, espuela, F) {
+  if (F.bota === 1) return botaLado(L, [x, y], c, talon, espuela);
+  const k = F.bota, sx = x, sy = y + 3;
+  const P = ([px, py]) => [sx + (px - sx) * k, sy + (py - sy) * k];
+  botaLado({
+    poly: (pts, col) => L.poly(pts.map(P), col),
+    rect: (rx, ry, w, h, col) => { const [qx, qy] = P([rx, ry]); L.rect(qx, qy, Math.max(1, w * k), Math.max(1, h * k), col); },
+  }, [x, y], c, talon, espuela);
+}
+
+/**
+ * 🦵 AGAZAPADO DE VERDAD (E2): las piernas del agazapado de siempre, pero el
+ * torso ahora se dobla desde la cadera (antes se cortaba en diagonal) y la
+ * cabeza vuelve a mirar adelante. Los brazos cuelgan hacia adelante, para el
+ * equilibrio.
+ */
+/**
+ * Un brazo pensado EN EL MUNDO (para dónde va el brazo y para dónde el
+ * antebrazo, como se ven en pantalla), pasado al marco del torso, que está
+ * girado 'th'. Así un brazo "adelante" sigue adelante aunque el torso se doble.
+ */
+function brazoEnElMundo(th, hombro, haciaCodo, largo1, haciaMano, largo2) {
+  const enTorso = ([x, y]) => [x * Math.cos(th) + y * Math.sin(th), -x * Math.sin(th) + y * Math.cos(th)];
+  const unidad = (v) => { const m = Math.hypot(v[0], v[1]) || 1; return [v[0] / m, v[1] / m]; };
+  const a = enTorso(unidad(haciaCodo)), b = enTorso(unidad(haciaMano));
+  const codo = [hombro[0] + a[0] * largo1, hombro[1] + a[1] * largo1];
+  return [codo, [codo[0] + b[0] * largo2, codo[1] + b[1] * largo2]];
+}
+
+function agazapadoHuesos(paso) {
+  const s = [0, -2.5, 2.5, -1.2, 1.2][paso % 5];
+  const sube = [0, 1, 0, 0, 1][paso % 5];
+  /**
+   * 🔁 TRES VUELTAS HASTA LEERSE AGAZAPADO, y las tres enseñan algo:
+   *  1. Con las piernas del agazapado viejo, las rodillas quedaban a la altura
+   *     del pecho y el torso doblado las tapaba.
+   *  2. Con una sentadilla de verdad seguía pareciendo "parado con piernas
+   *     cortas": el brazo colgaba derecho (por la gravedad) y tapaba el frente
+   *     del torso, así que el ojo veía una línea vertical.
+   *  3. Con los brazos ADELANTE y doblados, haciendo equilibrio, se ve el
+   *     torso doblado, y debajo los muslos y las rodillas. Ésa quedó.
+   */
+  const th = 0.68;
+  return {
+    cerca: [[21, 60], [37 + s, 62], [32 + s * 1.4, 71 - sube], 0],
+    lejos: [[19, 60], [34 - s, 62.5], [28 - s * 1.4, 71 - (1 - sube)], 0],
+    y: 4, dx: -3, f: [0, -1, 1, 0, 0][paso % 5],
+    bC: brazoEnElMundo(th, [24, 34], [0.5, 0.87], 9, [1, 0.2 + s * 0.04], 8),
+    bL: brazoEnElMundo(th, [21, 34], [0.45, 0.9], 9, [1, 0.3 - s * 0.04], 7),
+    huesos: { torso: th, cabeza: -0.55 },
+  };
+}
+
+/**
+ * 🦵 CUERPO A TIERRA (E2): el cuerpo entero acostado boca abajo (la raíz gira
+ * 87°: la cabeza queda adelante y los pies atrás), el pecho apenas levantado y
+ * la cabeza arriba, mirando lo que viene. Se arrastra: un codo adelante y la
+ * rodilla del otro lado encogida, y después al revés.
+ *
+ * Las poses se piensan con el cuerpo PARADO y después se acuestan: lo que en
+ * la pose va "para arriba" termina hacia adelante, y lo que va "hacia el
+ * frente" termina contra el piso.
+ */
+function tierraHuesos(paso) {
+  const s = [0, -1, 1, -0.5, 0.5][paso % 5];
+  const dobla = (b) => [[24, 56], [24 + 4 * b, 64 - 6 * b], [23 + 2 * b, 72 - 4 * b], 0];
+  return {
+    cerca: dobla(Math.max(0, s)), lejos: dobla(Math.max(0, -s)),
+    y: 0, f: 0,
+    // Los antebrazos apoyados en el piso, hacia adelante: el codo contra el
+    // piso y la mano adelante; el que avanza, más estirado.
+    bC: [[30, 37], [31, 27 - 4 * s]], bL: [[29, 38], [30, 29 + 4 * s]],
+    huesos: { raiz: { ang: 1.52, dx: 4, dy: 17 }, torso: -0.12, cabeza: -1.1 },
+  };
+}
+
+/**
+ * 🕳️ CAYENDO AL ENGANCHE (E2): los brazos arriba, agitándose, y las piernas
+ * encogidas. El cuerpo entero gira (`giro`, que manda la escena) punto por
+ * punto, en vez de girar la imagen (que la dejaba borrosa).
+ */
+function cayendoHuesos(paso, giro) {
+  const a = paso % 2 ? 1 : -1;
+  return {
+    cerca: [[24, 56], [30, 61], [27, 69], 0], lejos: [[22, 56], [18, 63], [16, 70], 1],
+    y: 0, f: a,
+    bC: [[29, 26 + a], [34, 18 - 2 * a]], bL: [[18, 27 - a], [14, 20 + 2 * a]],
+    huesos: { raiz: { ang: giro || 0 }, torso: 0.1 },
   };
 }
 
@@ -389,14 +502,21 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
   const postura = o.postura === 'sentado' || o.postura === 'rendido' || o.postura === 'montado'
     ? o.postura : null;
   if (postura === 'rendido') o = { ...o, manosArriba: true };
-  const P0 = postura ? caminataLado(0)
-    : o.trote != null ? TROTE[o.trote % TROTE.length]
-      : o.agazapado ? agazapadoLado(o.paso || 0)
-        : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
+  // 'o.pose' manda una pose armada a mano (sirve para probar variantes).
+  const P0 = o.pose ? o.pose
+    : o.postura === 'tierra' ? tierraHuesos(o.paso || 0)
+    : o.postura === 'cayendo' ? cayendoHuesos(o.paso || 0, o.giro)
+      : postura ? caminataLado(0)
+        : o.trote != null ? TROTE[o.trote % TROTE.length]
+          : o.agazapado ? agazapadoHuesos(o.paso || 0)
+            : o.agachado ? agachadoLado(o.paso || 0) : caminataLado(o.paso || 0);
   const a = o.asomado || { dx: 0, dy: 0 };
   const baja = postura === 'rendido' ? 14 : postura ? 6 : P0.y;
   const P = P0;
-  const H = huesosDeLado(huesos, { dx: (P0.dx || 0) + a.dx, baja: baja + a.dy }, a.dx ? Math.round(a.dx / 3) : 0);
+  // Las posturas que traen sus propios huesos mandan sobre la inclinación de afuera.
+  const H = huesosDeLado({ ...huesos, ...(P0.huesos || {}) },
+    { dx: (P0.dx || 0) + a.dx, baja: baja + a.dy }, a.dx ? Math.round(a.dx / 3) : 0);
+  const F = FINAS[o.finas ?? 0] || FINAS[0];
   const cuerpo = () => usar(H.cuerpo);
   const piernas = () => usar(H.piernas);
 
@@ -410,8 +530,8 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
   else if (postura === 'montado') piernasMontadoLado(L, R);
   else if (postura === 'sentado') piernasSentadoLado(L, R);
   else {
-    pierna(L, P.lejos[0], P.lejos[1], P.lejos[2], tono(PT, 0.7));
-    botaLado(L, P.lejos[2], '#22180f', P.lejos[3], false);
+    piernaFina(L, P.lejos[0], P.lejos[1], P.lejos[2], tono(PT, 0.7), F);
+    botaFina(L, P.lejos[2], '#22180f', P.lejos[3], false, F);
   }
   cuerpo();
   if (o.manosArriba) { tramo(L, [21, 33], [19, 19], 2.6, MS); L.elipse(19, 17, 2.5, 2.5, PIEL_O); }
@@ -451,10 +571,10 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
   // La pierna cercana
   if (!postura) {
     piernas();
-    pierna(L, P.cerca[0], P.cerca[1], P.cerca[2], PT);
+    piernaFina(L, P.cerca[0], P.cerca[1], P.cerca[2], PT, F);
     L.sobre(8, 52, 32, 23, [PT], tono(PT, 0.86), 12);
     L.rect(P.cerca[1][0], P.cerca[1][1] - 2, 2, 2, tono(PT, 1.15));
-    botaLado(L, P.cerca[2], BOTA, P.cerca[3], R.espuela);
+    botaFina(L, P.cerca[2], BOTA, P.cerca[3], R.espuela, F);
   }
   cuerpo();
   if (R.funda) {
@@ -490,7 +610,7 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
     if (al.cadera) rifle(L, R, [24, 34], [23, 45], [25, 36], [33, 43], [0.97, -0.24], ...medidasLarga(o.arma));
     else if (al.mira) rifle(L, R, [24, 34], [26, 30], [25, 35], [38, 30], [1, 0], ...medidasLarga(o.arma));
     else rifle(L, R, [24, 34], [25, 33], [25, 35], [38, 33], [1, 0], ...medidasLarga(o.arma));
-  } else if (o.arma && o.armaDir == null) {
+  } else if (o.arma && o.armaDir == null && o.postura !== 'tierra' && o.postura !== 'cayendo') {
     apuntar(L, R, [24, 34], [37, 38], [1, 0], 9);
   } else {
     L.elipse(23.5, 35, 3.5, 3, MS); L.elipse(24, 35, 3, 2.5, M0); L.rect(22, 33, 3, 1, ML);

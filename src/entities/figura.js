@@ -122,7 +122,7 @@ export function faseDeAndar(ent) {
  * caminando. A la velocidad del juego (78) eso son 3,9 pasos por segundo; con
  * el ritmo viejo (uno cada 5) eran 15,6 y parecía cámara rápida.
  */
-const RITMO = { trotar: 20, caminar: 14, agachado: 14, agazapado: 10 };
+const RITMO = { trotar: 20, caminar: 14, agachado: 14, agazapado: 10, tierra: 6 };
 /**
  * Caminando, dos pasos son 8 cuadros con 5 dibujos: paso, a mitad, juntos, a
  * mitad del otro lado, el otro paso. Trotando son 8 dibujos seguidos.
@@ -231,13 +231,22 @@ export function dibujarPersona(r, f) {
     return { x, top: arriba, arriba, manoY: pies - 9, pechoY: pies - 11, vista: nombre, espejo };
   }
 
+  // 🦴 Cuerpo a tierra y cayendo existen sólo con esqueleto (el jugador de
+  // costado); de frente o de espaldas, quedan como agachado.
+  const conEsqueleto = (f.tipo || 'guardia') === 'jugador' && VISTA[direccionDe(f.angulo ?? Math.PI / 2)][1] === lado;
   const modo = postura === 'sentado' || postura === 'rendido' || postura === 'montado' ? postura
+    : (postura === 'tierra' || postura === 'cayendo') && conEsqueleto ? postura
     : postura === 'agazapado' ? 'agazapado'
     : postura !== 'pie' ? 'agachado'
       : f.fase != null ? (f.modo === 'caminar' ? 'caminar' : 'trotar')
         : 'quieto';
   const sinPaso = modo === 'quieto' || modo === 'sentado' || modo === 'rendido' || modo === 'montado';
-  const cuadro = sinPaso ? 0 : cuadroDe(f.fase, modo);
+  const cuadro = modo === 'cayendo' ? Math.floor((f.reloj || 0) * 10) % 2
+    : modo === 'tierra' ? (f.fase == null ? 0 : CICLO_CAMINATA[Math.floor((((f.fase / RITMO.tierra) % 2) + 2) % 2 * 4) % 8])
+      : sinPaso ? 0 : cuadroDe(f.fase, modo);
+  // El giro de la caída, en pasos (cada figura se guarda dibujada).
+  const giro = modo === 'cayendo' ? Math.round((f.giro || 0) / 0.06) : 0;
+  const finas = CONFIG.esqueleto.piernas;
   // Sentado y de rodillas el cuerpo queda más abajo: la cabeza también.
   const baja = modo === 'rendido' ? 3.5 : modo === 'sentado' || modo === 'montado' ? 1.5 : 0;
 
@@ -341,7 +350,7 @@ export function dibujarPersona(r, f) {
     f.panuelo ? 'p' : '', asomadoDibujo ? asomadoDibujo.dx + ',' + asomadoDibujo.dy : '', esc,
     cartuchos == null ? '' : 'c' + cartuchos,
     armaDir == null ? '' : 'd' + armaDir,
-    modo === 'montado' ? 'e' + echado + 'a' + abre : ''].join('|');
+    modo === 'montado' ? 'e' + echado + 'a' + abre : '', giro ? 'g' + giro : '', f.sprint ? 's' : ''].join('|');
   // Al trotar y a caballo el torso se va para adelante; de frente casi no se
   // nota, y de espaldas tampoco: por eso `lateral` lo apaga.
   const lateral = fn === lado ? 1 : g ? 0.5 : 0;
@@ -354,8 +363,9 @@ export function dibujarPersona(r, f) {
    * que Santi lo apruebe en el jugador.
    */
   const conHuesos = tipo === 'jugador' && fn === lado;
-  const torsoGira = Math.atan(1.2 * inclina);
-  const img = armar(conHuesos ? clave + '|h' : clave, () => {
+  // 🏃 En el sprint del techo, el torso se echa más adelante.
+  const torsoGira = f.sprint && modo === 'trotar' ? CONFIG.esqueleto.sprint : Math.atan(1.2 * inclina);
+  const img = armar(conHuesos ? clave + '|h' + finas : clave, () => {
     if (conHuesos) {
       let cuenta = (x, y) => [x, y];
       const LH = Lienzo(M.ancho, M.alto, OX, OY, M.s, (x, y) => cuenta(x, y));
@@ -371,7 +381,9 @@ export function dibujarPersona(r, f) {
         datosH.agachado = modo === 'agachado' || modo === 'agazapado';
         datosH.agazapado = modo === 'agazapado';
       }
-      if (modo === 'sentado' || modo === 'rendido' || modo === 'montado') datosH.postura = modo;
+      if (modo === 'sentado' || modo === 'rendido' || modo === 'montado' || modo === 'tierra' || modo === 'cayendo') datosH.postura = modo;
+      datosH.giro = giro * 0.06;
+      datosH.finas = finas;
       // La cabeza no se inclina con el torso: mira adelante.
       ladoConHuesos(LH, datosH, (c) => { cuenta = c; }, { torso: torsoGira, cabeza: -torsoGira });
       return LH.canvas();

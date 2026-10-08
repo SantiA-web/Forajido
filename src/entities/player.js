@@ -23,7 +23,7 @@ import { playerMelee } from '../systems/melee.js';
 import { throwTarget } from '../systems/explosives.js';
 import { chanceContraElTecho } from '../systems/riders.js';
 import { geoTecho, enLaCurva } from '../world/techoGeometria.js';
-import { PIEL, PIEL_S, CHAL, CHAL_L, CHAL_S, CAM, CAM_S, PANT, BOTA, BARBA, PAN_R, tono } from './gente/dibujo.js';
+import { PIEL, PIEL_S } from './gente/dibujo.js';
 
 export function createPlayer(x, y, weaponId = DEFAULT_WEAPON, meleeId = DEFAULT_MELEE) {
   const c = CONFIG.player;
@@ -1229,11 +1229,31 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
   }
 
   /**
-   * 🦵 CUERPO A TIERRA, en la vista lateral: el mismo dibujo del tendido,
-   * mirando para donde ibas. Pegado al techo: el cartel te pasa por arriba.
+   * 🦴 CUERPO A TIERRA Y CAYENDO, con el esqueleto (gente/costado.js): acostado
+   * boca abajo, arrastrándose; o cayendo al enganche con los brazos arriba.
+   * 🔁 El cuerpo a tierra se había dibujado aparte, a mano, y quedaba como
+   * manchas: el torso no se podía acostar.
    */
-  if (p.vistaCostado && p.techoTendido) {
-    dibujarCuerpoATierra(r, p.x, py + p.hh, p.techoMira < 0 ? -1 : 1, p.moving ? (p.techoReloj || 0) : 0, p.hitFlash > 0);
+  if (p.vistaCostado && (p.techoTendido || (p.caidaEnganche && p.caidaEnganche.aterrizo < 0))) {
+    const cae = p.caidaEnganche && p.caidaEnganche.aterrizo < 0 ? p.caidaEnganche : null;
+    if (!cae) {
+      r.ctx.save();
+      r.ctx.globalAlpha = 0.25;
+      r.rect(p.x - 11, py + p.hh - 0.5, 22, 1, '#000');
+      r.ctx.restore();
+    }
+    if (p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0) return;
+    const mira = cae ? cae.mira : p.techoMira;
+    dibujarPersona(r, {
+      tipo: 'jugador', x: p.x, pies: py + p.hh,
+      escala: cae ? 1 : (p.escalaTecho || 1),
+      angulo: mira < 0 ? Math.PI : 0,
+      fase: cae ? null : faseDeAndar(p),
+      postura: cae ? 'cayendo' : 'tierra',
+      giro: cae ? Math.abs(cae.giro) : 0,
+      reloj: cae ? cae.t : 0,
+      destello: p.hitFlash > 0,
+    });
     return;
   }
 
@@ -1276,54 +1296,11 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     fase: enElAire ? null : faseDeAndar(p),
     // Arriba, de costado, el agachado es AGAZAPADO: tiene que leerse de un vistazo.
     postura: p.techoAgachado ? (p.vistaCostado ? 'agazapado' : 'agachado') : 'pie',
+    // 🏃 En el sprint el torso se echa más adelante (`CONFIG.esqueleto.sprint`).
+    sprint: p.vistaCostado && !!p.techoCorre && !p.techoPerdio,
     destello: p.hitFlash > 0,
     arma: armaDibujada(p),
   });
-}
-
-/**
- * 🦵 CUERPO A TIERRA, DE PERFIL: boca abajo y estirado sobre el techo, con
- * los brazos adelante, la cabeza levantada mirando lo que viene y el sombrero
- * puesto. 🔁 Primero se usó el dibujo del caído (`dibujarTendido`), que es una
- * vista desde arriba con brazos y piernas abiertos: de costado parecía un
- * muerto, no alguien arrastrándose. Al moverse se arrastra: codos y rodillas
- * se turnan.
- *
- * `pies` es la línea del techo; `mira` +1 a la derecha, -1 a la izquierda.
- */
-function dibujarCuerpoATierra(r, x, pies, mira, reloj, destello) {
-  const c = (hex) => (destello ? '#ffffff' : hex);
-  const arrastre = reloj ? Math.sin(reloj * 10) : 0;
-  const a = arrastre > 0 ? 0.5 : 0, b = arrastre > 0 ? 0 : 0.5;
-  const px = (dx) => x + dx * mira;
-  // Un rectángulo en coordenadas "mirando a la derecha", espejado si hace falta.
-  const q = (dx, dy, w, h, color) => r.rect(mira > 0 ? px(dx) : px(dx + w), pies + dy, w, h, c(color));
-  r.ctx.save();
-  r.ctx.globalAlpha = 0.25;
-  r.rect(x - 11, pies - 0.5, 22, 1, '#000');
-  r.ctx.restore();
-  // Las piernas estiradas para atrás, las botas apoyadas de punta.
-  q(-12 + a, -2, 2.5, 2, BOTA);
-  q(-9.5 + a, -3, 8, 2.5, PANT);
-  q(-9.5 + b, -1.5, 7, 1.5, tono(PANT, 0.7));
-  // El chaleco, con la espalda que agarra la luz.
-  q(-2, -4.5, 7.5, 4, CHAL);
-  q(-2, -4.5, 7.5, 0.5, CHAL_L);
-  q(-2, -1, 7.5, 0.5, CHAL_S);
-  // El brazo de adelante estirado, con el codo apoyado; la mano adelante.
-  q(4 + b, -1.5, 4.5, 1.5, CAM);
-  q(4 + b, -0.5, 4.5, 0.5, CAM_S);
-  q(8.5 + b, -1.5, 1.5, 1.5, PIEL);
-  // El pañuelo y la cabeza levantada, mirando lo que viene.
-  q(5, -4, 2, 1, PAN_R);
-  q(6, -6.5, 3, 3, PIEL);
-  q(6, -4.5, 2.5, 1.5, BARBA);
-  q(8.5, -5.5, 0.5, 0.5, PIEL_S);
-  // El sombrero: el ala y la copa.
-  q(3.5, -7, 8.5, 1, '#5a4030');                 // el ala ancha del sombrero vaquero
-  q(5.5, -9, 4, 2, '#5a4030');
-  q(5.5, -9, 4, 0.5, '#76563e');
-  q(5.5, -7.5, 4, 0.5, '#2a1e16');
 }
 
 /**

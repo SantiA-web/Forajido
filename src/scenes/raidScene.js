@@ -4524,13 +4524,9 @@ export function createRaidScene(services) {
     }
 
     if (caida) {
-      // Te vas de cabeza: el cuerpo gira sobre la cintura.
-      r.ctx.save();
-      r.ctx.translate(player.x, player.piesCostado - 8);
-      r.ctx.rotate(caida.giro);
-      r.ctx.translate(-player.x, -(player.piesCostado - 8));
+      // Te vas de cabeza: el giro ya no lo hace la escena (giraba la imagen y la
+      // dejaba borrosa); lo hace el esqueleto, punto por punto (`cayendo`).
       drawPlayer(r, player, train.hearStepRadius);
-      r.ctx.restore();
       polvoDelEnganche(r, base);
     } else if (!detras) {
       drawPlayer(r, player, train.hearStepRadius);

@@ -18294,7 +18294,7 @@ y quedó como manchas.
 | Etapa | Qué | Estado |
 |---|---|---|
 | **E1 · La base** | Los huesos que faltaban (raíz, torso, cabeza) y la ropa pegada a cada uno; el jugador de costado ya se dibuja así | ✅ hecha |
-| E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, colgado del alero, la caída al enganche, el sprint | Falta |
+| E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, la caída al enganche, el sprint; piernas más finas | ✅ hecha, **sin jugar** |
 | E3 · Mirar con el mouse arriba | Te movés con las teclas y el cuerpo, el brazo y la cabeza miran a la mira | Falta |
 | E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | Falta |
 
@@ -18317,6 +18317,36 @@ y quedó como manchas.
 - Sólo el jugador (`conHuesos` en figura.js); el resto de la gente sigue con
   `lado`. Sin errores adentro del vagón, en el techo, en el galope y en el
   campamento.
+
+### ✅ E2 · Las posturas del techo
+
+- **Agazapado de verdad** (`agazapadoHuesos`): el torso doblado 39° desde la
+  cadera, la cadera atrás, los muslos casi horizontales con la rodilla adelante,
+  y los brazos adelante y doblados, haciendo equilibrio. 🔁 Tres vueltas: con
+  las piernas viejas las rodillas quedaban a la altura del pecho y el torso las
+  tapaba; con una sentadilla de verdad seguía pareciendo "parado con piernas
+  cortas", porque el brazo colgaba derecho y tapaba el frente del torso; con
+  los brazos adelante se lee. Los brazos se piensan en el mundo y se pasan al
+  marco del torso (`brazoEnElMundo`).
+- **Cuerpo a tierra** (`tierraHuesos`, postura `tierra`): la raíz acuesta el
+  cuerpo entero boca abajo (87°), el pecho apenas levantado, la cabeza arriba
+  mirando adelante, los antebrazos apoyados; se arrastra alternando codo y
+  rodilla (6 unidades por paso). Reemplaza al dibujado a mano, que se veía como
+  manchas, y que se borró.
+- **Cayendo al enganche** (`cayendoHuesos`, postura `cayendo`): los brazos
+  arriba, agitándose, las piernas encogidas, y el cuerpo gira con la raíz punto
+  por punto (en pasos de 0,06). 🔁 Antes la escena giraba la imagen entera y la
+  dejaba borrosa.
+- **El sprint del techo**: el torso se echa 0,34 adelante (`esqueleto.sprint`).
+- **Colgado del alero queda como estaba**: del lado de acá mirás la pared, y la
+  cámara te ve de espaldas; el esqueleto de espaldas viene más adelante.
+- **Las piernas más finas** *(Santi: "hacer la zona de la pantorrilla y la
+  canilla más chica al igual que las botas, para que se vea más limpio")*: tres
+  grosores (`esqueleto.piernas`): A como estaba, B canilla 2,2 (de 2,7) y bota
+  al 86%, C canilla 1,9 y bota al 76%. El muslo no cambia. Va B hasta que Santi
+  elija.
+
+Sin errores en el techo (con tormenta), adentro y en el galope.
 
 ## Pendientes del concepto original (sin fase asignada todavía)
 

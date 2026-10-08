@@ -1248,7 +1248,14 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
       tipo: 'jugador', x: p.x, pies: py + p.hh,
       escala: cae ? 1 : (p.escalaTecho || 1),
       angulo: mira < 0 ? Math.PI : 0,
-      fase: cae ? null : faseDeAndar(p),
+      /**
+       * 🐛 EL ARRASTRE NO SE MOVÍA *(Santi: "cuando me muevo con D o con A
+       * estando en cuerpo a tierra el tipo no mueve las extremidades")*.
+       * `faseDeAndar` cuenta como parado a quien avanza menos de 3 unidades
+       * cada 10 cuadros, y cuerpo a tierra vas a 15 por segundo (2,5): nunca
+       * pasaba de la primera pose. Acá el paso sale directo de dónde estás.
+       */
+      fase: cae || !p.moving ? null : Math.abs(p.x),
       postura: cae ? 'cayendo' : 'tierra',
       giro: cae ? Math.abs(cae.giro) : 0,
       reloj: cae ? cae.t : 0,

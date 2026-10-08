@@ -18351,6 +18351,11 @@ y quedó como manchas.
   avanza por el piso y el pie se levanta detrás, alternando, y el brazo que
   avanza se estira entero. 🔁 La primera vuelta doblaba la pierna hacia el
   piso y la hundía: no se veía.
+  🐛 Y además **no avanzaba al moverte** *(Santi: "cuando me muevo con D o con A
+  estando en cuerpo a tierra el tipo no mueve las extremidades")*: `faseDeAndar`
+  toma como parado a quien avanza menos de 3 unidades cada 10 cuadros, y cuerpo
+  a tierra vas a 15 por segundo (2,5). Ahora el paso del arrastre sale directo
+  de dónde estás (`drawPlayerOnRoof`).
 - *"Cuando está agachado dentro del tren se ve un poco borroso"*: un giro chico
   vuelve a pintar cada línea con escalones irregulares. Las inclinaciones chicas
   (agacharse adentro, trotar, galopar) volvieron al corte en diagonal de

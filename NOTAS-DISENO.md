@@ -18249,6 +18249,18 @@ tormenta, sin errores, ~1,6 ms por cuadro.
 diferencia es chica; lo que más la marca es la altura y lo lavado. Si no se
 distingue, se baja la abierta a 70 o 65%.
 
+**Jugado por Santi (2026-10-08): "todo quedó excelente".** Lo único que pidió:
+*"añadiría unos arbustitos y cosas en la parte más cercana a la pantalla,
+porque hoy está vacío"*. Entre la vía y la cámara van ahora matas de jarilla,
+manojos de pasto seco y piedras **de costado** (`adornoDeCerca`,
+world/desierto.js), con el doble de puntos para que de cerca sigan finas. 🔁 Las
+piezas del galope agrandadas se veían como ladrillos verdes; éstas no.
+
+**Para cuando esté el esqueleto** *(Santi)*: arriba, como adentro, te movés con
+las teclas y **el mouse marca para dónde mirás** (adelante, atrás o hacia el
+desierto), para tirarle a los jinetes y a los guardias que algún día suban al
+techo.
+
 ---
 
 ### ✅ ETAPA 6 CERRADA

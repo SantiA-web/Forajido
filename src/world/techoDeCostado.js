@@ -29,7 +29,7 @@ import { CONFIG } from '../data/config.js';
 import { dibujarTrenTresCuartos, MEDIDAS, LADO_GONDOLA, escalarColor } from './trenTresCuartos.js';
 import { dibujarHorizonte } from './horizonte.js';
 import { drawSpeedLines } from '../engine/parallax.js';
-import { adornoDelDesierto } from './desierto.js';
+import { adornoDelDesierto, adornoDeCerca } from './desierto.js';
 import { geoTecho } from './techoGeometria.js';
 
 const M = MEDIDAS;
@@ -190,6 +190,21 @@ function dibujarSuelo(r, { base, hy, scroll, vel, dia, tinte }) {
         ctx.globalAlpha = 0.35 + 0.35 * Math.min(1, k);
         r.rect(x, y, Math.max(1, k) + estira, Math.max(0.5, k * 0.6), (h >>> 16) & 1 ? motaOscura : motaClara);
         ctx.globalAlpha = 1;
+      } else if (y > base + 4 && que < 27) {
+        // 🌾 Entre la vía y la cámara: matas, yuyos y piedras de costado, con
+        // el doble de puntos (van a la mitad) para que de cerca sigan finas.
+        const tipos = ['matita', 'yuyos', 'yuyos', 'piedra'];
+        const tipo = tipos[(h >>> 20) % tipos.length];
+        const img = adornoDeCerca(tipo, h >>> 26, C, !dia);
+        const e = 0.125 * Math.min(k, 2.3);
+        const w = img.width * e, alto = img.height * e;
+        if (estira) {
+          // Lo que pasa volando se ve corrido: una copia apagada detrás.
+          ctx.globalAlpha = 0.25;
+          ctx.drawImage(img, x - w / 2 + estira * 0.6, y - alto, w, alto);
+          ctx.globalAlpha = 1;
+        }
+        ctx.drawImage(img, x - w / 2, y - alto, w, alto);
       } else if (que < 25 + (y < base ? 0 : 1)) {
         // Una cosa del suelo, a su tamaño. Los cactus, sólo del lado de allá:
         // de este lado tapan a los jinetes de acá.

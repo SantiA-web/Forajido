@@ -110,6 +110,93 @@ function piezaAdorno(tipo, C, noche) {
 }
 
 /**
+ * 🌾 LAS COSAS DE CERCA, DE COSTADO, para la franja de suelo entre la vía y la
+ * cámara arriba del techo *(Santi: "añadiría unos arbustitos y cosas en la
+ * parte más cercana a la pantalla, porque hoy está vacío")*.
+ *
+ * 🔁 Ahí primero se pusieron las piezas del galope agrandadas, y las matas se
+ * veían como ladrillos verdes: son de tres cuartos y a ese tamaño cada punto
+ * era un bloque. Éstas son de COSTADO y van con el DOBLE de puntos (se dibujan
+ * a la mitad, ver `dibujarSuelo`), para que de cerca sigan finas.
+ *
+ *  - 'matita': una mata de jarilla, hecha de copas redondas con su luz arriba,
+ *    su sombra abajo y las ramitas que asoman.
+ *  - 'yuyos': un manojo de pasto seco, cada hoja inclinada para su lado.
+ *  - 'piedra': una piedra redondeada, con la luz arriba y una grieta.
+ *
+ * Cada una tiene cuatro variantes, sacadas de un número fijo.
+ */
+export function adornoDeCerca(tipo, variante, C, noche) {
+  const t = (hex, f) => tono(hex, noche ? f * 0.5 : f);
+  const v = variante % 4;
+  const clave = `cerca|${tipo}|${v}|${noche ? 'n' : 'd'}`;
+  const disco = (p, cx, cy, r, color) => {
+    for (let y = -r; y <= r; y++) {
+      const w = Math.round(Math.sqrt(Math.max(0, r * r - y * y)));
+      p(cx - w, cy + y, w * 2, 1, color);
+    }
+  };
+  switch (tipo) {
+    case 'matita':
+      return pieza(clave, 70, 40, (p) => {
+        const s = revolver(v * 977 + 13);
+        const copas = [[14, 26, 9], [27, 19, 12], [42, 22, 11], [55, 27, 8], [21, 29, 8]]
+          .map(([x, y, r], i) => [x + ((s >>> (i * 3)) % 5) - 2, y + ((s >>> (i * 2 + 9)) % 3) - 1, r - ((s >>> (i + 20)) % 2)]);
+        // Las ramitas que asoman por debajo, hasta el suelo.
+        for (const x of [18, 26, 35, 44, 51]) p(x, 31, 1, 8, t('#4a3a26', 1));
+        // La orilla oscura, después las copas, después la luz.
+        for (const [x, y, r] of copas) disco(p, x, y, r + 1, t(C.mata, 0.5));
+        for (const [x, y, r] of copas) disco(p, x, y, r, t(C.mata, 1));
+        for (const [x, y, r] of copas) disco(p, x - Math.round(r * 0.3), y - Math.round(r * 0.35), Math.round(r * 0.55), t(C.mataLuz, 1.1));
+        // Las hojitas: puntos claros y oscuros, siempre en el mismo lugar.
+        for (let k = 0; k < 40; k++) {
+          const h = revolver(v * 131 + k * 7919);
+          const [x, y, r] = copas[h % copas.length];
+          const dx = ((h >>> 8) % (r * 2)) - r, dy = ((h >>> 16) % (r * 2)) - r;
+          if (dx * dx + dy * dy > r * r) continue;
+          p(x + dx, y + dy, 2, 2, (h >>> 24) & 1 ? t(C.mataLuz, 1.35) : t(C.mata, 0.72));
+        }
+        // La sombra de abajo de la mata, contra el suelo.
+        p(10, 36, 50, 2, t(C.mata, 0.45));
+      });
+
+    case 'yuyos':
+      return pieza(clave, 44, 34, (p) => {
+        const seco = t(C.pasto, 1.55), claro = t(C.pasto, 1.95), oscuro = t(C.pasto, 0.9);
+        for (let k = 0; k < 13; k++) {
+          const h = revolver(v * 313 + k * 104729);
+          const x0 = 6 + Math.round(k * 2.5) + (h % 3);
+          const alto = 12 + (h >>> 4) % 18;
+          const inclina = (((h >>> 12) % 7) - 3) * 0.18;
+          for (let y = 0; y < alto; y++) {
+            const x = Math.round(x0 + inclina * y);
+            p(x, 33 - y, 2, 1, y > alto - 4 ? claro : k % 3 === 0 ? oscuro : seco);
+          }
+        }
+        p(5, 32, 36, 2, oscuro);
+      });
+
+    case 'piedra':
+    default:
+      return pieza(clave, 40, 22, (p) => {
+        const ancho = 15 + v * 1.5, alto = 9 + (v % 2) * 2;
+        const cx = 20, base = 20;
+        for (let y = 0; y <= alto; y++) {
+          const f = y / alto;                        // 0 abajo, 1 arriba
+          const w = Math.round(ancho * Math.sqrt(Math.max(0, 1 - f * f * 0.9)));
+          const yy = base - y;
+          p(cx - w - 1, yy, w * 2 + 2, 1, t(C.piedrita, 0.45));      // la orilla
+          const color = f > 0.62 ? t(C.piedritaLuz, 1.15) : f < 0.25 ? t(C.piedrita, 0.72) : t(C.piedrita, 1);
+          p(cx - w, yy, w * 2, 1, color);
+        }
+        // Una grieta y la sombra en el suelo.
+        for (let k = 0; k < 5; k++) p(cx - 3 + k, base - alto + 3 + k, 1, 1, t(C.piedrita, 0.55));
+        p(cx - ancho - 2, base + 1, ancho * 2 + 4, 1, t(C.piedrita, 0.4));
+      });
+  }
+}
+
+/**
  * Una cosa del suelo ya dibujada ('pasto', 'piedrita', 'mata', 'cactus',
  * 'mancha'), para quien la siembre a su manera: el fondo del techo
  * (world/techoDeCostado.js) las pone por profundidad, cada una a su tamaño.

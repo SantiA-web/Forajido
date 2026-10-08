@@ -46,7 +46,7 @@ export function vagonesNuevos(train, dia) {
   if (train._estiloNuevo && train._estiloNuevo.clave === clave) return train._estiloNuevo;
   const cols = new Set();
   const tramos = [];
-  const piso = [], altas = [];
+  const piso = [], altas = [], luces = [];
   for (const w of train.wagons) {
     if (!NUEVOS.has(w.id)) continue;
     const cuantas = Math.round(w.width / train.map.size);
@@ -55,8 +55,17 @@ export function vagonesNuevos(train, dia) {
     const v = vagon(train, w, dia);
     piso.push(...v.piso);
     altas.push(...v.altas);
+    luces.push({ x0: w.x, x1: w.x + w.width, luz: v.luz });
   }
-  train._estiloNuevo = { clave, cols, tramos, piso, altas };
+  /**
+   * LA LUZ EN UN PUNTO DEL MUNDO, en pasos (para la gente, que la recibe
+   * pareja): la del vagón nuevo donde esté; afuera de ellos, `null`.
+   */
+  const luzEn = (x, y) => {
+    const l = luces.find((q) => x >= q.x0 && x < q.x1);
+    return l ? l.luz(x, y) : null;
+  };
+  train._estiloNuevo = { clave, cols, tramos, piso, altas, luzEn };
   return train._estiloNuevo;
 }
 
@@ -295,7 +304,7 @@ function vagon(train, w, dia) {
   };
   const enMundo = (x, y) => [x0 + x * PASO, yArriba + y * PASO];
 
-  const resultado = { piso: [], altas: [] };
+  const resultado = { piso: [], altas: [], luz: (ux, uy) => Math.round(campo(ax(ux), ay(Math.min(uy, yPisoAbajo - 1)))) };
   resultado.piso.push(pieza(iluminado(PISO), W, H, x0, yArriba, 0));
   const yPie = ay(yPisoArriba);
   resultado.altas.push(pieza(recorte(iluminado(FONDO), 0, 0, W, yPie), W, yPie, x0, yArriba, yPisoArriba - 0.01));

@@ -4314,6 +4314,8 @@ export function createRaidScene(services) {
       camY = Math.round(camY / PASO) * PASO;
     }
     const saltear = nuevos && nuevos.cols.size ? (col) => nuevos.cols.has(col) : null;
+    // La luz de los vagones nuevos, para la gente nueva (figura.js).
+    estiloNuevo.luzEn = nuevos ? (x, y) => nuevos.luzEn(x, y) ?? 0 : null;
     const enVista = (p) => p.x < swayX + r.width + 4 && p.x + p.w > swayX - 4;
     /** Lo de siempre (luces, oscuridad), menos sobre los vagones nuevos, que ya traen su luz. */
     const fueraDeLosNuevos = (fn) => {

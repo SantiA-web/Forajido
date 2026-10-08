@@ -30,6 +30,8 @@ import { frente, espalda } from './gente/frente.js';
 import { lado, ladoConHuesos, huesosDeLado } from './gente/costado.js';
 import { tendido, TENDIDO } from './gente/tendido.js';
 import { tresCuartosConHuesos } from './gente/tresCuartos.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { lienzoJugador, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
 export { ROPA_DE_LOOK, ROPA_DE_JEFE } from './gente/dibujo.js';
@@ -217,6 +219,8 @@ function tenido(img, color, alpha) {
  * pecho, para colgarles cosas encima.
  */
 export function dibujarPersona(r, f) {
+  // 🎨 ESTILO NUEVO (P2): el jugador adentro del vagón, dibujado a mano.
+  if (estiloNuevo.activo && f.interior && f.tipo === 'jugador' && r.ctx) return jugadorNuevo(r, f);
   const tipo = ROPA[f.tipo] ? f.tipo : 'guardia';
   const [nombre, fn, g, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const postura = f.postura || 'pie';
@@ -504,6 +508,43 @@ export function dibujarPersona(r, f) {
     vista: nombre,
     espejo,
   };
+}
+
+/**
+ * 🎨 ESTILO NUEVO · P2: EL JUGADOR DIBUJADO A MANO (entities/estiloNuevo/jugador.js),
+ * con la prueba prendida ([F9]) y adentro del vagón. Se para en la grilla
+ * (cada 0,75 unidades) y recibe la luz pareja del lugar donde está parado.
+ * Devuelve lo mismo que `dibujarPersona`, más la boca del caño.
+ */
+const CAMINAR_NUEVO = { 0: 'B', 1: 'A', 2: 'C', 3: 'B', 4: 'D' };
+function jugadorNuevo(r, f) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const [vista, , , espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
+  const agachado = (f.postura || 'pie') !== 'pie';
+  let piernas = 'quieto';
+  if (agachado) piernas = f.fase != null && Math.floor(f.fase / RITMO.agachado) % 2 ? 'agachado2' : 'agachado';
+  else if (f.fase != null) {
+    if (f.modo === 'caminar') piernas = CAMINAR_NUEVO[cuadroDe(f.fase, 'caminar')];
+    else piernas = ['A', 'B', 'C', 'D'][cuadroDe(f.fase, 'trotar') >> 1];
+  }
+  const al = armaLarga(f.arma);
+  const arma = !f.arma ? null : al ? (al.cadera ? 'escopeta' : 'winchester') : 'revolver';
+  const a = f.angulo ?? 0;
+  const ang = espejo ? Math.PI - a : a;
+  const x = Math.round(f.x / PASO) * PASO, pies = Math.round(f.pies / PASO) * PASO;
+  // Nunca más oscuro que un escalón: a vos te tenés que ver siempre, aunque
+  // estés lejos de los faroles.
+  const luz = Math.max(-1, estiloNuevo.luzEn ? estiloNuevo.luzEn(f.x, f.pies) : 0);
+  const L = lienzoJugador({ vista, piernas, arma, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)) }, luz, !!f.destello);
+  const ctx = r.ctx;
+  ctx.save();
+  ctx.translate(x, pies);
+  if (espejo) ctx.scale(-1, 1);
+  ctx.drawImage(L.img, -PIES_NUEVO[0] * PASO, -PIES_NUEVO[1] * PASO, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
+  ctx.restore();
+  const aMundo = (p) => p && { x: x + (espejo ? -1 : 1) * (p[0] - PIES_NUEVO[0]) * PASO, y: pies + (p[1] - PIES_NUEVO[1]) * PASO };
+  const top = pies - 32 * PASO;
+  return { x, mano: null, boca: aMundo(L.boca), hombro: aMundo(L.hombro), top, arriba: top, manoY: pies - 9, pechoY: pies - 11, vista, espejo };
 }
 
 const SIGNO_ALERTA = ['xx', 'xx', 'xx', '..', 'xx'];

@@ -18329,7 +18329,7 @@ redondeo o cada hueso. Con ese método había un techo.
 |---|---|---|
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
-| P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | Falta |
+| P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
 | P3 · Guardias y pasajeros | Con colores por tipo, y los jefes | Falta |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
@@ -18400,6 +18400,39 @@ para encontrar las poses). La E4 se hace directamente en P5.
 - 🔻 **Pendientes de esta etapa:** la luz no se hamaca con el meneo del tren (ya
   está guardada); y de noche la gente se ve más clara que el vagón, porque
   todavía es la de antes y no recibe la luz nueva: se arregla en P2.
+
+### ✅ P2 · El jugador (entities/estiloNuevo/jugador.js)
+
+- **Dibujado a mano, como un muñeco de papel:** por vista, la cabeza
+  (sombrero, cara sin ojos ni nariz, barba y pañuelo), el torso (chaleco,
+  camisa, cinto, funda y el brazo libre) y las piernas, en mapas de puntos
+  escritos a mano. Las piezas sólo se apilan en puntos enteros: nada se gira ni
+  se estira, así no hay ojo, mano ni caño que quede corrido.
+- **Cinco vistas** (costado, tres cuartos de frente, de frente, tres cuartos de
+  espaldas, de espaldas); las otras tres son espejos. **Piernas:** quieto,
+  cuatro cuadros de correr (paso, pasa, el otro paso, pasa; al pasar el cuerpo
+  sube un punto), y agachado en dos cuadros (el cuerpo baja 3). Caminar usa los
+  mismos cuadros.
+- **El brazo del arma es lo único que se calcula:** una línea de puntos enteros
+  (Bresenham) desde el hombro hacia la mira, en 32 ángulos, con la mano y el
+  arma en la punta: el revólver (corto, con la boca clara), el Winchester
+  (largo, con el bronce) y la escopeta (corta y gruesa). Siempre del lado
+  derecho del dibujo; apuntando para el fondo va detrás del cuerpo. **El
+  fogonazo sale de la boca del caño dibujado.**
+- **La mochila** se ve en la espalda (de costado y de espaldas) y como dos
+  correas de frente, y crece con lo que llevás.
+- **La luz llega pareja**, la del lugar donde estás parado: en el sol de un
+  ventanal te aclarás, bajo un farol también. **Nunca más oscuro que un
+  escalón**: a vos te tenés que ver siempre. Fuera de los vagones nuevos manda
+  la oscuridad de siempre.
+- Mide 32 puntos (24 unidades), un poco más que su caja de 20: se ve el mismo
+  mundo que hoy (elegido). Se para en la grilla, como el vagón.
+- Sólo adentro del vagón y con la prueba prendida ([F9]). Medido: el cuadro
+  sigue en 0,6 ms (mediana), sin errores en 20 s moviéndose, agachándose y
+  tirando, de día y de noche.
+- 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
+  agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el
+  piso, y el jugador arriba del techo (va en P5, con la E3).
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

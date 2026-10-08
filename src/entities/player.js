@@ -1129,6 +1129,8 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const bulto = llenado > 0 ? 1 + Math.round(llenado * 3) : 0;
   const fig = dibujarPersona(r, {
     tipo: 'jugador', x: bx, pies, angulo: p.aim,
+    // 🎨 Adentro del vagón: con la prueba del estilo nuevo ([F9]) va el dibujo nuevo.
+    interior: true,
     // A cubierto no caminás: los pies se quedan pegados a la pared y lo que
     // sale a asomarse es el cuerpo (ver `ancla` en figura.js).
     fase: p.cover ? null : faseDeAndar(p),
@@ -1159,7 +1161,9 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
      */
     // El caño va 2,5 unidades más arriba que `manoY` (medido): sin esa cuenta
     // el fuego sale de abajo del arma, no de la boca.
-    dibujarFogonazo(r, bx + Math.cos(p.aim) * 6.5, manoY - 2.5 + Math.sin(p.aim) * 6.5,
+    // 🎨 Con el dibujo nuevo, el dibujo sabe dónde está la boca del caño.
+    if (fig.boca) dibujarFogonazo(r, fig.boca.x, fig.boca.y, p.aim, p.muzzle / CONFIG.feel.muzzleTime);
+    else dibujarFogonazo(r, bx + Math.cos(p.aim) * 6.5, manoY - 2.5 + Math.sin(p.aim) * 6.5,
       p.aim, p.muzzle / CONFIG.feel.muzzleTime);
   }
 

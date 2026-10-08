@@ -28,6 +28,12 @@ let chico = null, chicoCtx = null;
 
 export const estiloNuevo = {
   get activo() { return activo; },
+  /**
+   * La luz del lugar, en pasos, para la gente del estilo nuevo: la pone la
+   * escena antes de dibujar (ver raidScene.js) y la lee figura.js. Fuera de
+   * los vagones nuevos no hay (`null`): ahí manda la oscuridad de siempre.
+   */
+  luzEn: null,
   /** [F9]: prender o apagar la prueba. */
   revisar(input) {
     if (input.wasPressed('F9')) activo = !activo;

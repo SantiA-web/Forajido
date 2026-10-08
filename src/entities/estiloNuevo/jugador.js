@@ -17,8 +17,9 @@
  * dibujo y nunca cruza el cuerpo. La boca del caño se devuelve para el
  * fogonazo.
  *
- * Mide 32 puntos de alto (24 unidades del mundo), un poco más que su caja de
- * 20: *"se ve lo mismo que hoy"* (elegido por Santi). Los colores son
+ * Mide 27 puntos de alto (20 unidades del mundo), justo su caja: la cabeza
+ * con el sombrero 8, el torso 9 y las piernas 10 *(Santi: "el personaje se ve
+ * muy grande"; eligió esas medidas)*. 🔁 Antes medía 32 (24 unidades). Los colores son
  * índices de la paleta (engine/paleta.js) y la luz llega pareja, la del punto
  * donde está parado (engine/luz.js).
  */
@@ -53,18 +54,15 @@ const VISTAS = {
   lado: {
     cabeza: mapa(0, [
       '.......HHHH',
-      '......kHhhHH',
       '......kbbbbbY',
-      '..kHHHHHHHHHHHHHk',
-      '...kkkkkkkkkkkkk',
-      '......BBPPPP',
-      '......BPPPPPP',
+      '...kHHHHHHHHHHHk',
+      '....kkkkkkkkkkk',
+      '......BPPPPP',
       '......BBPPPPP',
-      '.......BBBBBB',
-      '........BBBB',
-      '.....rRRRRRRR',
+      '.......BBBBB',
+      '.....rRRRRRR',
     ]),
-    torso: mapa(11, [
+    torso: mapa(8, [
       '......VVVVCCC',
       '......VVVVCCL',
       '......wVVVCCL',
@@ -75,15 +73,13 @@ const VISTAS = {
       '......wVVVCCC',
       '......WWWWWWY',
     ]),
-    hombro: [10, 12],
-    mochila: [[3, 12, 4, 8]],
+    hombro: [10, 9],
+    mochila: [[3, 9, 4, 8]],
     piernas: {
-      quieto: mapa(20, [
+      quieto: mapa(17, [
         '......tFFTTT',
         '......tFFTTT',
         '......ttTTTT',
-        '......ttTTTT',
-        '.......tTTT',
         '.......tTTT',
         '.......tTTT',
         '.......tTTT',
@@ -92,26 +88,22 @@ const VISTAS = {
         '.....OOOOOOOO',
         '.....OQOOOOOO',
       ]),
-      A: mapa(20, [
+      A: mapa(17, [
         '......tFFTTT',
         '......tFFTTT',
-        '......ttTTTT',
         '......ttTTTT',
         '......tt.TTT',
         '.....ttt..TTT',
         '.....tt...TTT',
         '....ttt...TTT',
         '....tt.....TTT',
-        '....tt.....TTT',
         '..OOOO.....OOOOO',
         '..OOOO.....OQOOO',
       ]),
-      B: mapa(20, [
+      B: mapa(17, [
         '......tFFTTT',
         '......tFFTTT',
         '......ttTTTTT',
-        '......ttTTTTT',
-        '......tt..TTT',
         '......tt..TTT',
         '......tt.TTT',
         '......tt.TTT',
@@ -120,27 +112,23 @@ const VISTAS = {
         '.....OOOOO',
         '.....OOOOO',
       ]),
-      C: mapa(20, [
+      C: mapa(17, [
         '......tFFTTT',
         '......tFFTTT',
-        '......TTTTtt',
         '......TTTTtt',
         '.....TTT..ttt',
         '.....TTT...tt',
         '....TTT....ttt',
         '....TTT.....tt',
         '...TTT......tt',
-        '...TTT......tt',
         '.OOOOO......OOOO',
         '.OQOOO......OOOO',
       ]),
-      D: mapa(20, [
+      D: mapa(17, [
         '......tFFTTT',
         '......tFFTTT',
-        '......tttTTT',
         '......tttTTT',
         '.......ttTTT',
-        '........tTTT',
         '........tTTT',
         '.......ttTTT',
         '.....OOOtTTT',
@@ -148,24 +136,20 @@ const VISTAS = {
         '........OOOOOO',
         '........OQOOOO',
       ]),
-      agachado: mapa(23, [
+      agachado: mapa(20, [
         '......tFFTTTTT',
         '......ttTTTTTTT',
         '......tt...TTTT',
-        '......tt....TTT',
         '.....ttt....TTT',
         '.....tt.....TTT',
-        '.....tt.....TT',
         '...OOOOO..OOOOOO',
         '...OOOOO..OQOOOO',
       ]),
-      agachado2: mapa(23, [
+      agachado2: mapa(20, [
         '......tFFTTTTT',
         '......ttTTTTTTT',
         '.....ttt...TTTT',
-        '.....tt.....TTT',
         '....ttt.....TTT',
-        '....tt......TTT',
         '....tt.....TTT',
         '..OOOOO...OOOOOO',
         '..OOOOO...OQOOOO',
@@ -176,18 +160,15 @@ const VISTAS = {
   frente: {
     cabeza: mapa(0, [
       '.......HHHHH',
-      '......kHhhHHk',
       '......kbbYbbk',
-      '..kHHHHHHHHHHHHHk',
-      '...kkkkkkkkkkkkk',
-      '.......PPPPPP',
+      '...kHHHHHHHHHHHk',
+      '....kkkkkkkkkkk',
       '.......PPPPPP',
       '.......pPPPPp',
       '.......BBBBBB',
-      '........BBBB',
       '......RRRRRRRR',
     ]),
-    torso: mapa(11, [
+    torso: mapa(8, [
       '.....CVVRRRRVVC',
       '.....CVVVRRVVVC',
       '.....CVVCLLCVVC',
@@ -198,15 +179,13 @@ const VISTAS = {
       '.....PVVCCCCVV',
       '......WWWYYWWW',
     ]),
-    hombro: [14, 12],
-    mochila: [[6, 11, 1, 8], [13, 11, 1, 8]],
+    hombro: [14, 9],
+    mochila: [[6, 8, 1, 8], [13, 8, 1, 8]],
     piernas: {
-      quieto: mapa(20, [
+      quieto: mapa(17, [
         '......TTTTTTTT',
         '......TTTTTTTT',
         '......TTTT.TTT',
-        '......TTT..TTT',
-        '......TTT..TTT',
         '......TTT..TTT',
         '......TTT..TTT',
         '......TTT..TTT',
@@ -215,12 +194,10 @@ const VISTAS = {
         '.....OOOO..OOOO',
         '.....OOOO..OOOO',
       ]),
-      A: mapa(20, [
+      A: mapa(17, [
         '......TTTTTTTT',
         '......TTTTTTTT',
         '......TTTT.TTT',
-        '......TTT..TTT',
-        '......TTT..TTT',
         '......TTT..TTT',
         '......TTT..TTT',
         '......OOOO.TTT',
@@ -229,12 +206,10 @@ const VISTAS = {
         '..........OOOO',
         '..........OOOO',
       ]),
-      B: mapa(20, [
+      B: mapa(17, [
         '......TTTTTTTT',
         '......TTTTTTTT',
         '......TTTT.TTT',
-        '......TTT..TTT',
-        '......TTT..TTT',
         '......TTT..TTT',
         '......TTT..TTT',
         '......TTT..TTT',
@@ -243,12 +218,10 @@ const VISTAS = {
         '.....OOOO..OOOO',
         '...........OOOO',
       ]),
-      C: mapa(20, [
+      C: mapa(17, [
         '......TTTTTTTT',
         '......TTTTTTTT',
         '......TTTT.TTT',
-        '......TTT..TTT',
-        '......TTT..TTT',
         '......TTT..TTT',
         '......TTT..TTT',
         '......TTT.OOOO',
@@ -257,12 +230,10 @@ const VISTAS = {
         '.....OOOO',
         '.....OOOO',
       ]),
-      D: mapa(20, [
+      D: mapa(17, [
         '......TTTTTTTT',
         '......TTTTTTTT',
         '......TTTT.TTT',
-        '......TTT..TTT',
-        '......TTT..TTT',
         '......TTT..TTT',
         '......TTT..TTT',
         '......TTT..TTT',
@@ -271,24 +242,20 @@ const VISTAS = {
         '.....OOOO..OOOO',
         '.....OOOO',
       ]),
-      agachado: mapa(23, [
+      agachado: mapa(20, [
         '.....TTTTTTTTTT',
         '.....TTTT..TTTT',
         '....TTTT....TTTT',
         '....TTT......TTT',
-        '....TTT......TTT',
-        '.....TTT....TTT',
         '.....TTT....TTT',
         '....OOOO....OOOO',
         '....OOOO....OOOO',
       ]),
-      agachado2: mapa(23, [
+      agachado2: mapa(20, [
         '.....TTTTTTTTTT',
         '.....TTTT..TTTT',
         '....TTTT....TTTT',
         '....TTT......TTT',
-        '....TTT......TTT',
-        '.....TTT....TTT',
         '....OOOO....TTT',
         '....OOOO....OOOO',
         '............OOOO',
@@ -299,18 +266,15 @@ const VISTAS = {
   espalda: {
     cabeza: mapa(0, [
       '.......HHHHH',
-      '......kHhhHHk',
       '......kbbbbbk',
-      '..kHHHHHHHHHHHHHk',
-      '...kkkkkkkkkkkkk',
-      '.......BBBBBB',
-      '.......BBBBBB',
+      '...kHHHHHHHHHHHk',
+      '....kkkkkkkkkkk',
       '.......BBBBBB',
       '.......BBBBBB',
       '........pppp',
       '......RRRRRRRR',
     ]),
-    torso: mapa(11, [
+    torso: mapa(8, [
       '.....CVVVVrrVVVC',
       '.....CVVVVrVVVVC',
       '.....CVVVVwVVVVC',
@@ -321,26 +285,23 @@ const VISTAS = {
       '.....PVVVVwVVVV',
       '......WWWWWWWWW',
     ]),
-    hombro: [15, 12],
-    mochila: [[7, 12, 7, 8]],
+    hombro: [15, 9],
+    mochila: [[7, 9, 7, 8]],
     piernas: null,   // las mismas de frente (ver abajo)
   },
 
   diagF: {
     cabeza: mapa(0, [
       '.......HHHHH',
-      '......kHhhHHH',
       '......kbbbbbbY',
-      '.kHHHHHHHHHHHHHHHk',
-      '..kkkkkkkkkkkkkkk',
+      '...kHHHHHHHHHHHHk',
+      '....kkkkkkkkkkkk',
       '......BPPPPPP',
       '......BpPPPPP',
-      '......BPPPPPP',
       '.......BBBBBB',
-      '........BBBB',
       '......RRRRRRRR',
     ]),
-    torso: mapa(11, [
+    torso: mapa(8, [
       '.....CVVVRRRVVV',
       '.....CVVVCRCVVV',
       '.....CVVVCLCVVV',
@@ -351,14 +312,12 @@ const VISTAS = {
       '.....PVVVCLCVVV',
       '.....WWWWWYWWWW',
     ]),
-    hombro: [14, 12],
-    mochila: [[7, 11, 1, 8], [12, 11, 1, 8]],
+    hombro: [14, 9],
+    mochila: [[7, 8, 1, 8], [12, 8, 1, 8]],
     piernas: {
-      quieto: mapa(20, [
+      quieto: mapa(17, [
         '......TTTT..ttt',
         '......TTTT..ttt',
-        '......TTT...ttt',
-        '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
@@ -368,11 +327,9 @@ const VISTAS = {
         '.....OOOOO..OOOO',
         '.....OQOOOO',
       ]),
-      A: mapa(20, [
+      A: mapa(17, [
         '......TTTT..ttt',
         '......TTTT..ttt',
-        '......TTT...ttt',
-        '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
@@ -382,11 +339,9 @@ const VISTAS = {
         '............OOOO',
         '............OOOO',
       ]),
-      B: mapa(20, [
+      B: mapa(17, [
         '......TTTT..ttt',
         '......TTTT..ttt',
-        '......TTT...ttt',
-        '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
@@ -396,11 +351,9 @@ const VISTAS = {
         '.....OQOOOO.OOOO',
         '............OOOO',
       ]),
-      C: mapa(20, [
+      C: mapa(17, [
         '......TTTT..ttt',
         '......TTTT..ttt',
-        '......TTT...ttt',
-        '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
         '......TTT..OOOO',
@@ -410,11 +363,9 @@ const VISTAS = {
         '.....OOOOO',
         '.....OQOOOO',
       ]),
-      D: mapa(20, [
+      D: mapa(17, [
         '......TTTT..ttt',
         '......TTTT..ttt',
-        '......TTT...ttt',
-        '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
         '......TTT...ttt',
@@ -424,24 +375,20 @@ const VISTAS = {
         '.....OOOOO',
         '.....OQOOOO',
       ]),
-      agachado: mapa(23, [
+      agachado: mapa(20, [
         '.....TTTTTTttttt',
         '.....TTTT...tttt',
         '....TTTT.....ttt',
         '....TTT......ttt',
-        '....TTT......ttt',
-        '.....TTT....ttt',
         '.....TTT....ttt',
         '....OOOOO..OOOO',
         '....OQOOOO.OOOO',
       ]),
-      agachado2: mapa(23, [
+      agachado2: mapa(20, [
         '.....TTTTTTttttt',
         '.....TTTT...tttt',
         '....TTTT.....ttt',
         '....TTT......ttt',
-        '....TTT......ttt',
-        '....TTT.....ttt',
         '...OOOOO....ttt',
         '...OQOOOO..OOOO',
         '...........OOOO',
@@ -452,18 +399,15 @@ const VISTAS = {
   diagE: {
     cabeza: mapa(0, [
       '.......HHHHH',
-      '......HhhHHHk',
       '......bbbbbbk',
-      '.kHHHHHHHHHHHHHHHk',
-      '..kkkkkkkkkkkkkkk',
+      '...kHHHHHHHHHHHHk',
+      '....kkkkkkkkkkkk',
       '......BBBBBBP',
       '......BBBBBBP',
-      '......BBBBBBP',
-      '.......BBBBB',
       '........ppp',
       '......RRRRRRR',
     ]),
-    torso: mapa(11, [
+    torso: mapa(8, [
       '.....VVVVVRVVVC',
       '.....VVVVrrrVVv',
       '.....VVVVVrVVVv',
@@ -474,8 +418,8 @@ const VISTAS = {
       '.....VVVVVwVVVV',
       '.....WWWWWWWWWW',
     ]),
-    hombro: [14, 12],
-    mochila: [[6, 12, 7, 8]],
+    hombro: [14, 9],
+    mochila: [[6, 9, 7, 8]],
     piernas: null,   // las mismas de tres cuartos de frente, de atrás (ver abajo)
   },
 };
@@ -487,7 +431,7 @@ VISTAS.diagE.piernas = VISTAS.diagF.piernas;
 // ------------------------------------------------------- armar un cuadro
 const ANCHO = 44, ALTO = 40, OX = 12, OY = 6;   // el lienzo, con lugar para el arma
 /** Dónde quedan los pies en el lienzo (el medio de las dos botas, abajo). */
-export const PIES = [OX + 10, OY + 32];
+export const PIES = [OX + 10, OY + 27];
 export { ANCHO, ALTO };
 
 /** Una línea de puntos enteros, de a a b (Bresenham). */
@@ -558,7 +502,11 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
   if (mochila && (vista === 'espalda' || vista === 'diagE' || vista === 'lado')) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h + mochila; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, j === 0 ? C.m : C.M);
   }
-  dibujarMapa(V.piernas[piernas] || V.piernas.quieto);
+  const P = V.piernas[piernas] || V.piernas.quieto;
+  dibujarMapa(P);
+  // Pasando un paso el cuerpo sube 1: la cadera se estira un punto para que no
+  // quede un hueco entre el cinto y el pantalón.
+  if (baja < 0) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
   dibujarMapa(V.torso, baja);
   dibujarMapa(V.cabeza, baja);
   if (mochila && (vista === 'frente' || vista === 'diagF')) {

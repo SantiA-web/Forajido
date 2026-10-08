@@ -543,7 +543,7 @@ function jugadorNuevo(r, f) {
   ctx.drawImage(L.img, -PIES_NUEVO[0] * PASO, -PIES_NUEVO[1] * PASO, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
   ctx.restore();
   const aMundo = (p) => p && { x: x + (espejo ? -1 : 1) * (p[0] - PIES_NUEVO[0]) * PASO, y: pies + (p[1] - PIES_NUEVO[1]) * PASO };
-  const top = pies - 32 * PASO;
+  const top = pies - 27 * PASO;
   return { x, mano: null, boca: aMundo(L.boca), hombro: aMundo(L.hombro), top, arriba: top, manoY: pies - 9, pechoY: pies - 11, vista, espejo };
 }
 

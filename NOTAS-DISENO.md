@@ -18320,8 +18320,9 @@ redondeo o cada hueso. Con ese método había un techo.
   sin ojos ni nariz. Cada cuadro marca sus puntos clave (mano, boca del arma,
   cabeza, pies). El cuerpo se dibuja una vez y cada tipo cambia colores y
   sombrero.
-- **Se ve el mismo mundo que hoy** (elegido, A): la persona mide 32 puntos
-  aunque su caja mida un poco menos; puntería y cobertura no cambian.
+- **Se ve el mismo mundo que hoy** (elegido, A): la persona mide 27 puntos
+  (20 unidades), justo su caja; puntería y cobertura no cambian. 🔁 Era de 32
+  *(Santi: "el personaje se ve muy grande")*.
 - **Se pasa con una tecla de prueba** (elegido, A): `F9` o `?nuevo`. El juego
   normal sigue con el dibujo de hoy hasta que esté todo.
 
@@ -18425,8 +18426,9 @@ para encontrar las poses). La E4 se hace directamente en P5.
   ventanal te aclarás, bajo un farol también. **Nunca más oscuro que un
   escalón**: a vos te tenés que ver siempre. Fuera de los vagones nuevos manda
   la oscuridad de siempre.
-- Mide 32 puntos (24 unidades), un poco más que su caja de 20: se ve el mismo
-  mundo que hoy (elegido). Se para en la grilla, como el vagón.
+- Mide 27 puntos (20 unidades), justo su caja: cabeza con sombrero 8,
+  torso 9 y piernas 10 (medidas de Santi). 🔁 Medía 32 (24 unidades) y al lado
+  de los guardias y los asientos se veía muy grande. Se para en la grilla.
 - Sólo adentro del vagón y con la prueba prendida ([F9]). Medido: el cuadro
   sigue en 0,6 ms (mediana), sin errores en 20 s moviéndose, agachándose y
   tirando, de día y de noche.

@@ -29,7 +29,7 @@ a git (es un resultado, no código).
 
 El juego se está pasando a **pixel art de verdad**: todo el cuadro en una
 grilla de puntos de 3×3 (640×360 en un monitor de 1080), una **paleta cerrada
-de 48 colores**, la gente de unos 32 puntos sin cara, dibujada a mano, y la
+de 48 colores**, la gente de 27 puntos sin cara, dibujada a mano, y la
 **luz por escalones** (el día y la noche salen del mismo dibujo). Mientras se
 dibuja, el juego sigue con el dibujo de hoy: **`F9` prende y apaga la
 prueba** (o abrí el juego con `?nuevo` en la dirección). **Ya están dibujados el

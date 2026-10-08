@@ -138,8 +138,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   2026-10-08: "los jinetes más alejados deberían tener menos puntería, pero eso
   lo vemos después")*. Arriba, los de allá van lejos y hoy pegan igual que los
   de acá (`CONFIG.techo.tiroJinetes`). Se ve junto con la C3c (las dos líneas).
-- **Los jinetes de allá van al 80%** (elegido por Santi, `costado.allaEscala`).
-  En la C3c, los de allá en la segunda línea, más lejos, al 75%.
+- **Los jinetes de allá van al 80%** (elegido por Santi, `costado.allaEscala`),
+  y en la línea abierta (C3c) al 75%. Si jugando no se distinguen, bajar la
+  abierta a 70 o 65% (`carriles.escalaAllaAbierta`).
 - El **`$NaN` en el HUD del campamento**: ya no puede quedar pegado (ver
   `numero()` en `state/gameState.js`). **Si vuelve a aparecer, la consola (F12)
   dice qué campo llegó mal** — esa línea es lo que falta para cerrarlo del todo.
@@ -174,8 +175,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   tu postura, idea de Santi, números B) y la caída al enganche con transición:
   hechas y sin jugar.** C3b (vos les tirás, con la regla del espejo) hecha, y después los de allá
   lejos y a la vista por encima del techo y el tiro de galería (sin raya), sin
-  jugar. Faltan: C3c
-  (los jinetes en dos líneas, pegados o abiertos; idea de Santi), **lo bonito con
+  jugar. C3c (los
+  jinetes en dos líneas, con la rotación que diseñó Santi) hecha y sin jugar.
+  Faltan: **lo bonito con
   esqueletos** (cuerpo a tierra y agazapado se ven mal; ver NOTAS, "Lo bonito
   queda para después"), y después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y

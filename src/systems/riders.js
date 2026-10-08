@@ -186,12 +186,80 @@ export function spawnRider(world, side, opts = {}) {
     rd.x = rd.tramo ? puntoEn(rd.tramo, objetivo) : objetivo;
   }
 
+  // 🐎 Arranca en la línea pegada (`equilibrarCarriles` abre a los que sobran)
+  // y con el arma a destiempo: que no tiren todos a la vez.
+  rd.carril = 0;
+  rd.carrilT = 0;
+  rd.cooldown = world.rng.range(0, rd.tipo.fireCooldown);
+
   world.riders.push(rd);
   world.bus.emit('riderArrived', { x: rd.x, y: rd.y, side });
   return rd;
 }
 
+/**
+ * 🐎 C3c · CUÁNTO SE PEGA DESDE LA LÍNEA EN LA QUE ESTÁ (`carriles.punteriaAbierto`):
+ * 1 pegado, 0,65 abierto, y en el medio mientras viaja. Vale para los dos
+ * lados: lo que él te pega y lo que vos le pegás.
+ */
+export function punteriaPorCarril(rd) {
+  const K = CONFIG.techo.carriles;
+  return 1 - (1 - K.punteriaAbierto) * (rd.carrilT || 0);
+}
+
+/**
+ * 🐎 C3c · SE ABRE (lo heriste o le apuntaste un segundo). Si estaba apuntando,
+ * se le corta el tiro: se va. Y uno de los abiertos de su lado ENTRA A TIRAR:
+ * el aviso arranca ya, todavía abierto, y dispara apenas llega a la pegada
+ * (ver `apuntarYDisparar`).
+ */
+export function abrirJinete(rd, world) {
+  if (!rd.alive || rd.carril === 1) return;
+  const K = CONFIG.techo.carriles;
+  rd.carril = 1;
+  rd.huye = K.huye;
+  rd.apuntadoT = 0;
+  rd.aimTimer = 0;
+  rd.entraATirar = false;
+  let mejor = null;
+  for (const r of world.riders) {
+    if (r === rd || !r.alive || r.side !== rd.side || r.carril !== 1 || r.entraATirar || r.huye > 0) continue;
+    if (!mejor || (r.carrilT || 0) > (mejor.carrilT || 0)) mejor = r;
+  }
+  if (!mejor) return;
+  mejor.carril = 0;
+  mejor.entraATirar = true;
+  mejor.suprimiendo = false;
+  mejor.aimTimer = 0.1;
+  world.audio.play('cock');
+}
+
+/**
+ * 🐎 C3c · MITAD Y MITAD POR LADO, y si son impares, uno más pegado *(Santi:
+ * "si son 7 caballos, 4 irán cerrados y 3 irán abiertos")*. Corre siempre:
+ * cuando llega uno nuevo o muere uno, se acomodan solos, sin tirar (entrar a
+ * tirar es sólo cuando uno de los pegados se abre). Al que se abrió herido o
+ * apuntado no se lo vuelve a pegar hasta que pasa `carriles.huye`.
+ */
+function equilibrarCarriles(riders) {
+  for (const lado of [1, -1]) {
+    const vivos = riders.filter((r) => r.alive && r.side === lado);
+    const objetivo = Math.ceil(vivos.length / 2);
+    const pegados = vivos.filter((r) => r.carril === 0);
+    if (pegados.length > objetivo) {
+      const r = pegados.find((x) => !x.entraATirar && !(x.aimTimer > 0));
+      if (r) r.carril = 1;
+    } else if (pegados.length < objetivo) {
+      const r = vivos.find((x) => x.carril === 1 && !(x.huye > 0) && !(x.aimTimer > 0));
+      if (r) r.carril = 0;
+    }
+  }
+}
+
 export function updateRiders(riders, dt, world) {
+  // 🐎 Arriba, entre el aviso de un jinete y el del siguiente pasa un rato:
+  // que no tiren todos juntos (`carriles.entreAvisos`).
+  world.esperaAviso = Math.max(0, (world.esperaAviso || 0) - dt);
   for (const rd of riders) {
     if (!rd.alive) {
       // El caballo sigue de largo con el cuerpo encima y sale de escena.
@@ -206,10 +274,21 @@ export function updateRiders(riders, dt, world) {
     rd.cooldown = Math.max(0, rd.cooldown - dt);
     if (rd.settle > 0) rd.settle -= dt;
 
+    // 🐎 Las dos líneas sólo existen con vos arriba; adentro, todos pegados.
+    if (world.player.enTecho) {
+      if (rd.huye > 0) rd.huye -= dt;
+      const meta = rd.carril || 0;
+      const paso = dt / CONFIG.techo.carriles.cambio;
+      rd.carrilT = (rd.carrilT || 0) + Math.sign(meta - (rd.carrilT || 0)) * Math.min(paso, Math.abs(meta - (rd.carrilT || 0)));
+    } else {
+      rd.carril = 0; rd.carrilT = 0; rd.entraATirar = false; rd.huye = 0;
+    }
+
     seguirAlJugador(rd, dt, world);
     apuntarYDisparar(rd, dt, world);
   }
 
+  if (world.player.enTecho) equilibrarCarriles(riders);
   separarJinetes(riders);
 
   for (let i = riders.length - 1; i >= 0; i--) {
@@ -231,6 +310,8 @@ function separarJinetes(riders) {
     for (let j = i + 1; j < riders.length; j++) {
       const b = riders[j];
       if (!b.alive || b.side !== a.side) continue;
+      // 🐎 De distinta línea se pueden superponer: el de más lejos pasa por detrás.
+      if ((a.carril || 0) !== (b.carril || 0)) continue;
 
       let d = b.x - a.x;
       const dist = Math.abs(d);
@@ -350,6 +431,21 @@ function apuntarYDisparar(rd, dt, world) {
     rd.memoria = t.suppressMemory;
   }
 
+  /**
+   * 🐎 ENTRA A TIRAR: el aviso ya está (desde que arrancó, todavía abierto) y
+   * dispara apenas llega a la línea pegada.
+   */
+  if (rd.entraATirar) {
+    if ((rd.carrilT || 0) <= 0.02) {
+      rd.entraATirar = false;
+      rd.aimTimer = 0;
+      disparar(rd, world);
+    } else {
+      rd.aimTimer = Math.max(rd.aimTimer, 0.1);
+    }
+    return;
+  }
+
   // Ya está apuntando: termina el gesto aunque te hayas escondido. Si te
   // metiste a tiempo, el tiro sale igual y pasa de largo. Esa es la ventana
   // que te da el aviso, y es lo que hace que valga la pena mirarlos.
@@ -360,10 +456,14 @@ function apuntarYDisparar(rd, dt, world) {
   }
 
   if (rd.settle > 0 || rd.cooldown > 0) return;
+  // 🐎 Cambiando de línea no empiezan a apuntar; y si otro acaba de avisar, esperan.
+  if (p.enTecho && Math.abs((rd.carrilT || 0) - (rd.carril || 0)) > 0.02) return;
+  if (p.enTecho && world.esperaAviso > 0) return;
 
   // --- Tiro apuntado: te ven ---
   if (aTiro) {
     rd.aimTimer = t.aimTime;
+    if (p.enTecho) world.esperaAviso = CONFIG.techo.carriles.entreAvisos;
     rd.aimDir = Math.atan2(p.y - rd.y, p.x - rd.x);
     rd.suprimiendo = false;
     world.audio.play('cock');
@@ -414,8 +514,10 @@ function dispersionEfectiva(rd, world) {
  */
 function dispararAlTecho(rd, world) {
   const p = world.player;
-  rd.cooldown = rd.tipo.fireCooldown;
-  const chance = chanceContraElTecho(p, rd.side, world.map.height);
+  // A destiempo: cada uno con su ritmo, que no tiren todos juntos.
+  rd.cooldown = rd.tipo.fireCooldown * world.rng.range(0.75, 1.4);
+  // 🐎 Desde la línea abierta se pega menos (`punteriaPorCarril`).
+  const chance = chanceContraElTecho(p, rd.side, world.map.height) * punteriaPorCarril(rd);
   let pego = false;
   if (chance > 0 && world.rng.chance(chance)) {
     const { puntos } = danioDeBala({ owner: 'enemy' }, p, 'jugador', world.rng);

@@ -486,6 +486,12 @@ una nube de tierra). Cuando le pegás a un jinete se sacude, salta un chorro
 rojo, aparece una cruz en la mira y todo se frena un instante; si lo matás, se
 le vuela el sombrero.
 
+**Los jinetes van en dos líneas de cada lado**: la mitad pegados al tren y la
+mitad abiertos, al costado de la vía (desde ahí pegan menos, y vos a ellos
+también). Si herís a uno pegado, o le apuntás con el clic derecho un segundo,
+se abre, y entra otro de los abiertos a tirarte: lo ves avisar mientras se
+acerca, y dispara apenas llega.
+
 - **Los carteles vienen hacia vos**, no están quietos: el tren avanza y te los
   lleva por delante. No se pueden rodear — o te agachás, o saltás.
 - **Comerte uno cuesta caro**: perdés una vida, tardás en levantarte y, sobre

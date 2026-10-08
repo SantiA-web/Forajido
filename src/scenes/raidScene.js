@@ -65,7 +65,9 @@ import { createExplosive, drawExplosive } from '../entities/explosive.js';
 import { EXPLOSIVES } from '../data/explosives.js';
 import { crearGrilla, buscarLugar, guardar, sacarUltima, sacar, ocupadas, cabeEn, colocarEn } from '../engine/grilla.js';
 import { drawRider } from '../entities/rider.js';
-import { updateRiders, createRiderWatch, chanceContraElTecho, damageRider, spawnRider } from '../systems/riders.js';
+import {
+  updateRiders, createRiderWatch, chanceContraElTecho, damageRider, spawnRider, abrirJinete, punteriaPorCarril,
+} from '../systems/riders.js';
 import { puedeTirarDesdeElTecho } from '../entities/player.js';
 import { maxJinetesPara } from '../data/riders.js';
 import { createLootable, drawLootable, esCajaFuerte } from '../entities/lootable.js';
@@ -2736,6 +2738,7 @@ export function createRaidScene(services) {
     world.miraCostado = player.enTecho
       ? { x: input.mouse.px / lupaActual + desplazamientoX(), y: input.mouse.py / lupaActual - vaivenTechoY }
       : null;
+    apuntandoAJinetes(dt);
     /**
      * 🎯 SI LA MIRA ESTÁ SOBRE EL CUERPO DE ALGUIEN, SE LE APUNTA A ÉL *(Santi:
      * "les disparo a la cabeza y no les hago daño")*. La mira se dibuja donde
@@ -4507,7 +4510,9 @@ export function createRaidScene(services) {
     const detras = lugar.detras && !player.techoColgado && !caida;
 
     // Los de allá, lejos, sobre el campo: por encima del techo, nada los tapa.
-    for (const rd of riders) if (rd.side < 0) dibujarJineteDeCostado(r, rd, base);
+    // 🐎 Del más lejos al más cerca: el de la línea de atrás pasa por detrás.
+    const porCercania = [...riders].sort((a, b) => cercaniaDeJinete(a) - cercaniaDeJinete(b));
+    for (const rd of porCercania) if (rd.side < 0) dibujarJineteDeCostado(r, rd, base);
     if (detras) drawPlayer(r, player, train.hearStepRadius);
     dibujarTrenDeCostado(r, train, base, camX, r.width, !dia);
 
@@ -4540,7 +4545,7 @@ export function createRaidScene(services) {
       dibujarPorticoDeCostado(r, ob, so, base);
       if (!ob.resuelto) r.text('▼', ob.x, so.arriba - C.alturaViga - 14, colors.enemySus);
     }
-    for (const rd of riders) if (rd.side > 0) dibujarJineteDeCostado(r, rd, base);
+    for (const rd of porCercania) if (rd.side > 0) dibujarJineteDeCostado(r, rd, base);
     tirosDeJinetesDeCostado(base, s, sup);
     dibujarTiroDeGaleria(r, base);
     miraDeCostado(r, base);
@@ -5027,8 +5032,18 @@ export function createRaidScene(services) {
    */
   function jineteDeCostado(rd, base) {
     const C = CONFIG.techo.costado;
-    if (rd.side > 0) return { y: base + C.carrilCerca, escala: 1 };
-    return { y: base - C.allaSobreLaVia, escala: C.allaEscala };
+    const K = CONFIG.techo.carriles;
+    // 🐎 C3c · Entre la línea pegada y la abierta, de a poco (`carrilT` 0 a 1).
+    const t = rd.carrilT || 0;
+    const entre = (a, b) => a + (b - a) * t;
+    if (rd.side > 0) return { y: base + entre(C.carrilCerca, K.acaAbierta), escala: entre(1, K.escalaAcaAbierta) };
+    return { y: base - entre(C.allaSobreLaVia, K.allaAbiertaSobreLaVia), escala: entre(C.allaEscala, K.escalaAllaAbierta) };
+  }
+
+  /** 🐎 Qué tan cerca de la cámara está: para dibujar primero al de más lejos. */
+  function cercaniaDeJinete(rd) {
+    const t = rd.carrilT || 0;
+    return rd.side > 0 ? 1 + t : -t;
   }
 
   /** El cuerpo del jinete (sin el caballo): ahí le pega tu bala. */
@@ -5072,10 +5087,12 @@ export function createRaidScene(services) {
     }
     // Los de allá, apagados por el aire: lo lejano pierde color y contraste.
     // Es lo que hace que el ojo los lea lejos y no chicos.
-    if (escala !== 1) {
+    if (rd.side < 0) {
+      // Más lejos (la línea abierta), un poco más lavados todavía.
+      const t = rd.carrilT || 0;
       r.ctx.filter = gameState.esDeDia
-        ? 'saturate(0.65) contrast(0.78) brightness(1.1)'
-        : 'saturate(0.7) contrast(0.8) brightness(0.92)';
+        ? `saturate(${0.65 - 0.1 * t}) contrast(${0.78 - 0.08 * t}) brightness(${1.1 + 0.04 * t})`
+        : `saturate(${0.7 - 0.1 * t}) contrast(${0.8 - 0.08 * t}) brightness(${0.92 - 0.04 * t})`;
     }
     // `side: 1`: de costado, el gesto de apuntar va siempre hacia arriba, hacia vos.
     drawRider(r, { ...rd, y, side: 1 });
@@ -5128,7 +5145,7 @@ export function createRaidScene(services) {
       if (!rd.alive) continue;
       const c = cuerpoDeJinete(rd, base);
       if (x < c.x1 || x > c.x2 || y < c.y1 || y > c.y2) continue;
-      if (!mejor || rd.side > mejor.side) mejor = rd;
+      if (!mejor || cercaniaDeJinete(rd) > cercaniaDeJinete(mejor)) mejor = rd;
     }
     return mejor;
   }
@@ -5171,6 +5188,13 @@ export function createRaidScene(services) {
       if (chapa) impactosCostado.push({ ...chapa, tipo: 'chapa', vida: J.impactoVida, semilla: rng.range(0, 1) });
       return;
     }
+    // 🐎 A uno de la línea abierta le pegás menos (`punteriaPorCarril`): la bala
+    // le pasa cerca y levanta tierra a sus pies.
+    if (rd && !rng.chance(punteriaPorCarril(rd))) {
+      const { y: yJ } = jineteDeCostado(rd, base);
+      impactosCostado.push({ x: x + rng.range(-8, 8), y: yJ + 7, tipo: 'tierra', vida: J.impactoVida, semilla: rng.range(0, 1) });
+      return;
+    }
     if (rd) {
       const e = jineteDeCostado(rd, base).escala;
       impactosCostado.push({ x, y, tipo: 'sangre', vida: J.impactoVida, semilla: rng.range(0, 1) });
@@ -5188,6 +5212,9 @@ export function createRaidScene(services) {
           vida: 1.1, total: 1.1, rot: 0, vrot: rng.range(-14, -8), r: e,
         });
         bus.emit('riderKilled', { rider: rd });
+      } else if ((rd.carril || 0) === 0) {
+        // 🐎 Herido, se abre; y entra otro a tirar.
+        abrirJinete(rd, world);
       }
       return;
     }
@@ -5332,6 +5359,23 @@ export function createRaidScene(services) {
       }
     }
     ctx.restore();
+  }
+
+  /**
+   * 🐎 C3c · LE APUNTÁS Y SE VA, PERO NO AL INSTANTE *(Santi: "si les apuntas
+   * para disparar con click derecho se abren, pero no al instante")*: con el
+   * clic derecho y la mira sobre uno pegado durante `carriles.apuntarParaAbrir`
+   * (1 s), se abre. Te da tiempo de apuntar con calma y tirarle una vez.
+   */
+  function apuntandoAJinetes(dt) {
+    const mira = world.miraCostado;
+    const apuntado = mira && input.mouse.right && baseCostado != null && player.alive
+      ? jineteEn(mira.x, mira.y, baseCostado) : null;
+    for (const rd of riders) {
+      if (rd !== apuntado) { rd.apuntadoT = 0; continue; }
+      rd.apuntadoT = (rd.apuntadoT || 0) + dt;
+      if (rd.apuntadoT >= CONFIG.techo.carriles.apuntarParaAbrir && (rd.carril || 0) === 0) abrirJinete(rd, world);
+    }
   }
 
   /** 🎯 C3b · La mira arriba: el mismo círculo de adentro, en la vista de costado. */

@@ -2049,6 +2049,40 @@ export const CONFIG = {
      *  - cuerpo a tierra en la curva vale la mitad que la curva.
      * Colgado, un solo tiro te suelta: te caés del tren.
      */
+    /**
+     * 🐎 C3c · LOS JINETES EN DOS LÍNEAS (sólo arriba) *(idea de Santi: "que
+     * los jinetes no vayan en un solo carril, sino que puedan ir al costado")*.
+     * Cada lado tiene la línea PEGADA al tren y la ABIERTA, al costado de la
+     * vía. Lo que decidió Santi:
+     *
+     *  - Tamaños: los de allá 80% pegados y 75% abiertos (más cerca del
+     *    horizonte); los de acá 100% pegados y 105% abiertos (más cerca de la
+     *    cámara). El cambio es de a poco, durante el viaje (`cambio`).
+     *  - Mitad y mitad por lado; si son impares, uno más pegado.
+     *  - Todos tiran, desde la línea en la que estén, y no todos a la vez.
+     *  - Si herís a uno pegado, o le apuntás con el clic derecho `apuntarParaAbrir`
+     *    segundos, se abre. Y para que siga la mitad, uno de los abiertos ENTRA A
+     *    TIRAR: hace el aviso todavía abierto, galopa a la pegada y dispara
+     *    apenas llega. Es la única vez que un abierto se acerca para tirar.
+     *  - Desde la abierta se pegan menos, para los dos lados (`punteriaAbierto`,
+     *    la opción B: un tercio menos).
+     *  - Las dos líneas se pueden superponer en la vista: el de más lejos pasa
+     *    por detrás.
+     */
+    carriles: {
+      escalaAllaAbierta: 0.75,
+      escalaAcaAbierta: 1.05,
+      allaAbiertaSobreLaVia: 96,   // los de allá abiertos: más arriba, cerca del horizonte (pegados: 88)
+      acaAbierta: 44,              // los de acá abiertos: más abajo, cerca de la cámara (pegados: 26)
+      cambio: 1.0,                 // segundos para pasar de una línea a la otra
+      apuntarParaAbrir: 1.0,       // elegido por Santi
+      huye: 3,                     // el que se abrió herido o apuntado no vuelve antes de esto
+      punteriaAbierto: 0.65,       // ×: desde la abierta se pega un tercio menos (elegido por Santi)
+      // "Los disparos no tienen que ser todos al mismo tiempo" (Santi): entre un
+      // aviso y el siguiente de cualquier jinete pasa por lo menos esto.
+      entreAvisos: 0.4,
+    },
+
     tiroJinetes: {
       tendidoMedio: 0,
       agazapado: 0.15,     // te matan en ~45 s con un jinete solo

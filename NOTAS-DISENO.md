@@ -17597,7 +17597,7 @@ están perfecto"*). Se acomodan dentro de algo más grande.
 | **C2. Leer el ancho** | Esconderse detrás de la curva, la marca en el filo, astillas de los tiros desde abajo | ✅ hecha, **sin jugar** |
 | C3a. Los jinetes te tiran arriba | Cuánto te pueden pegar según la postura y dónde estás; sus tiros se ven de costado | ✅ hecha, **sin jugar** |
 | C3b. Vos les tirás | Apuntar con el mouse en la vista de costado; la regla del espejo; cada tiro tuyo despierta el vagón de abajo | ✅ hecha, **sin jugar** |
-| C3c. Los jinetes en dos líneas | Pegados al tren o abiertos al costado de la vía, y se mueven entre las dos (idea de Santi) | Falta |
+| C3c. Los jinetes en dos líneas | Pegados al tren o abiertos al costado de la vía, y se mueven entre las dos (idea de Santi) | ✅ hecha, **sin jugar** |
 | 2. Subir y bajar en cualquier enganche | Escalerillas: `[E]` mantenido, en los dos sentidos, ~1 s expuesto a los jinetes | Falta |
 | 3. Algo que hacer arriba | **Arma arriba** (cara: cada tiro despierta el vagón de abajo, apuntar frena) y **espiar por la linterna** de los coches (agachado ves quién hay adentro) | Falta |
 | 4. Obstáculos que salen del mundo | Pórticos y tanques que se ven venir, **túneles** (cuerpo a tierra o bajarse), **curvas** que empujan | Falta |
@@ -18203,6 +18203,51 @@ azar, de día, de noche y con tormenta.
 **Queda para lo bonito:** el fogonazo de los jinetes de acá sale de la punta de
 la rayita que levantan al apuntar, que queda arriba de la cabeza; el jinete
 muerto cae con el dibujo de siempre.
+
+### 🐎 C3c · Los jinetes en dos líneas (`CONFIG.techo.carriles`)
+
+Idea de Santi, y el comportamiento también es suyo. Sólo arriba: adentro todos
+van pegados (no hay lugar en la pantalla para otra línea).
+
+| | Línea pegada | Línea abierta |
+|---|---|---|
+| Los de allá | 80% (`allaEscala`), a 88 sobre la vía | **75%**, a 96: más cerca del horizonte, y más lavados |
+| Los de acá | 100%, a 26 delante de la vía | **105%**, a 44: más cerca de la cámara |
+
+- **El cambio de línea es de a poco** *(Santi: "que no esté a 80 y de repente
+  en 75")*: un segundo (`cambio`), y el tamaño, la altura y lo lavado van
+  cambiando durante el viaje (`carrilT` de 0 a 1).
+- **Se pueden superponer** *(Santi: "en la vista pueden pasarse por detrás")*:
+  sólo se separan los de la misma línea, y se dibujan del más lejos al más cerca.
+- **Mitad y mitad por lado; si son impares, uno más pegado** *(Santi: "si son 7
+  caballos, 4 irán cerrados y 3 irán abiertos")* (`equilibrarCarriles`).
+  Medido: con 5 de un lado, 3 y 2; con 3, 2 y 1.
+- **Todos tiran, desde la línea en la que estén**, y desde la abierta se pegan
+  un tercio menos, para los dos lados (`punteriaAbierto` 0,65, la opción B).
+  Tus tiros a uno abierto que no cuentan levantan tierra a sus pies.
+- **No tiran todos juntos** *(Santi: "los disparos no tienen que ser todos al
+  mismo tiempo")*: cada uno con su ritmo (la espera entre tiros varía de 0,75 a
+  1,4 veces) y entre el aviso de uno y el del siguiente pasa por lo menos 0,4 s
+  (`entreAvisos`). Medido: el tiro más pegado a otro, a 0,41 s.
+- **Herido o apuntado, se abre** (`abrirJinete`): si le pegás a uno pegado, o le
+  apuntás con el clic derecho 1 segundo (`apuntarParaAbrir`, elegido por Santi:
+  te deja tirarle una vez con calma), se va a la abierta y no vuelve antes de 3
+  s. Si estaba apuntando, se le corta el tiro.
+- **Y entra otro a tirar** *(Santi: "el aviso del disparo lo hace en el carril
+  abierto y apenas se establece en el carril cerrado, dispara")*: uno de los
+  abiertos de ese lado hace el aviso todavía abierto, galopa a la pegada y
+  dispara apenas llega. Es la única vez que un abierto se acerca para tirar
+  *(Santi: "solo se acercan a disparar al cerrado cuando uno de los que estaba
+  en el cerrado se abre")*. Medido: se abrió a 1,00 s de apuntarle, y el que
+  entró disparó al llegar.
+- Si muere uno, se reacomodan solos, sin tirar.
+
+**Medido:** 7.200 cuadros con teclas y clics al azar, de día, de noche y con
+tormenta, sin errores, ~1,6 ms por cuadro.
+
+**Para ver jugando:** entre la línea pegada de allá (80%) y la abierta (75%) la
+diferencia es chica; lo que más la marca es la altura y lo lavado. Si no se
+distingue, se baja la abierta a 70 o 65%.
 
 ---
 

@@ -2738,6 +2738,8 @@ export function createRaidScene(services) {
     world.miraCostado = player.enTecho
       ? { x: input.mouse.px / lupaActual + desplazamientoX(), y: input.mouse.py / lupaActual - vaivenTechoY }
       : null;
+    // 🎯 E3 · Y para dónde mirás: sur, norte o de costado (`miradaDelTecho`).
+    if (world.miraCostado) Object.assign(world.miraCostado, miradaDelTecho(world.miraCostado.y));
     apuntandoAJinetes(dt);
     /**
      * 🎯 SI LA MIRA ESTÁ SOBRE EL CUERPO DE ALGUIEN, SE LE APUNTA A ÉL *(Santi:
@@ -5134,6 +5136,29 @@ export function createRaidScene(services) {
       Math.min(m.radioMax, Math.tan(dispersionActual(player, world)) * m.distanciaReferencia * m.escala));
   }
 
+  /**
+   * 🎯 E3 · PARA DÓNDE MIRÁS ARRIBA según la altura de la mira (ver
+   * `CONFIG.techo.mirada`): debajo del alero, al sur (los jinetes de acá);
+   * por encima de tu cabeza, al norte (los de allá); en el medio, de costado.
+   * `abierto`: la mira está sobre la línea abierta de ese lado (la submirada).
+   * Las rayas son fijas (el techo y las líneas de los jinetes), no dependen de
+   * dónde haya un jinete: así la vista no salta cuando uno pasa.
+   */
+  function miradaDelTecho(y) {
+    const s = ultimaSuperficie, base = baseCostado;
+    if (!s || base == null) return { hacia: 'lado', abierto: false };
+    const M = CONFIG.techo.mirada;
+    if (y > s.abajo + M.margenSur) return { hacia: 'sur', abierto: y > pechoEntreLineas(1, base) };
+    if (y < s.arriba - M.alturaNorte) return { hacia: 'norte', abierto: y < pechoEntreLineas(-1, base) };
+    return { hacia: 'lado', abierto: false };
+  }
+
+  /** El pecho de un jinete a mitad de camino entre la línea pegada y la abierta. */
+  function pechoEntreLineas(side, base) {
+    const c = cuerpoDeJinete({ side, carrilT: 0.5, x: 0 }, base);
+    return (c.y1 + c.y2) / 2;
+  }
+
   /** El jinete vivo cuyo cuerpo está en este punto (los de acá primero: están más cerca). */
   function jineteEn(x, y, base) {
     let mejor = null;
@@ -5174,7 +5199,10 @@ export function createRaidScene(services) {
     const x = mira.x + Math.cos(a) * radioDeMira() * lejos;
     const y = mira.y + Math.sin(a) * radioDeMira() * lejos;
 
-    const arma = { x: player.x + Math.cos(player.aim) * 6, y: (player.piesCostado ?? base - 71) - 12 + Math.sin(player.aim) * 6 };
+    // 🎯 E3 · El fogonazo sale de la boca del caño dibujado (la sabe el esqueleto).
+    const b = player.bocaCostado;
+    const arma = b && Math.abs(b.x - player.x) < 14 ? b
+      : { x: player.x + Math.cos(player.aim) * 6, y: (player.piesCostado ?? base - 71) - 12 + Math.sin(player.aim) * 6 };
     fogonazo(arma.x, arma.y);
     camera.shake(0.5, 0.06);
 

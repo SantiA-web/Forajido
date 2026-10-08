@@ -2083,6 +2083,31 @@ export const CONFIG = {
       entreAvisos: 0.4,
     },
 
+    /**
+     * 🎯 E3 · PARA DÓNDE MIRÁS ARRIBA, CON EL MOUSE *(Santi: "al igual que
+     * dentro del tren, el movimiento debería ser por las teclas, pero el cursor
+     * marcar hacia dónde mira el jugador" y "debería mirar a cuatro lugares:
+     * este, oeste, abajo sur (hacia la pantalla) y abajo norte (a los jinetes
+     * más alejados)")*. Este u oeste: de qué lado tuyo está la mira. Sur o
+     * norte: a qué altura.
+     *  - Más abajo que el alero de acá (+ `margenSur`): SUR, tres cuartos de
+     *    frente, a los jinetes de acá.
+     *  - Más arriba que `alturaNorte` sobre el lomo (por encima de tu cabeza):
+     *    NORTE, tres cuartos de espaldas, a los de allá.
+     *  - En el medio: de costado, a lo largo del techo.
+     * La SUBMIRADA, sobre la línea abierta de cada lado: acá girás un poco más
+     * hacia la cámara (`subGiro`: 1 es tres cuartos, 0 sería de frente) y allá
+     * levantás la vista a la altura de la cámara (`subBaja`: 1 la vista baja
+     * de siempre, 0 derecha).
+     */
+    mirada: {
+      margenSur: 0,
+      alturaNorte: 16,
+      zonaMuerta: 1.5,     // con la mira justo arriba tuyo no cambiás de lado a cada temblor
+      subGiro: 0.6,
+      subBaja: 0,
+    },
+
     tiroJinetes: {
       tendidoMedio: 0,
       agazapado: 0.15,     // te matan en ~45 s con un jinete solo

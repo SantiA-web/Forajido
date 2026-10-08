@@ -486,6 +486,22 @@ una nube de tierra). Cuando le pegás a un jinete se sacude, salta un chorro
 rojo, aparece una cruz en la mira y todo se frena un instante; si lo matás, se
 le vuela el sombrero.
 
+**Arriba mirás con el mouse, como adentro:** te movés con las teclas y el
+cuerpo mira a la mira. Según dónde la pongas, mirás a cuatro lugares:
+
+| La mira está… | Mirás… | Cómo se ve |
+|---|---|---|
+| A la altura del techo, adelante o atrás | Al **este** o al **oeste**, a lo largo del techo | De costado |
+| Más abajo que el alero de acá | Al **sur**, a los jinetes de acá | De tres cuartos de frente, agazapado, apuntando con las dos manos y la vista baja |
+| Más arriba que tu cabeza | Al **norte**, a los jinetes de allá | De tres cuartos de espaldas, echado hacia ellos |
+
+Sobre la línea abierta de cada lado hay una **submirada**: con los de acá girás
+un poco más hacia la pantalla, y con los de allá levantás la vista a la altura
+de la cámara. Si caminás para un lado mirando para el otro, retrocedés
+caminando de espaldas. En sprint el cuerpo va para donde corrés y sólo el brazo
+apunta. Cuerpo a tierra y quieto, estirás el brazo con el arma hacia la mira. El
+fogonazo sale de la boca del arma dibujada.
+
 **Los jinetes van en dos líneas de cada lado**: la mitad pegados al tren y la
 mitad abiertos, al costado de la vía (desde ahí pegan menos, y vos a ellos
 también). Si herís a uno pegado, o le apuntás con el clic derecho un segundo,

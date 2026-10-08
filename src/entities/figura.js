@@ -29,6 +29,7 @@ import { ROPA, Lienzo, deformar, NEGRO, armaLarga } from './gente/dibujo.js';
 import { frente, espalda } from './gente/frente.js';
 import { lado, ladoConHuesos, huesosDeLado } from './gente/costado.js';
 import { tendido, TENDIDO } from './gente/tendido.js';
+import { tresCuartosConHuesos } from './gente/tresCuartos.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
 export { ROPA_DE_LOOK, ROPA_DE_JEFE } from './gente/dibujo.js';
@@ -329,11 +330,16 @@ export function dibujarPersona(r, f) {
    * sí, entonces se ve raro")*. Por eso la vista del jinete la sigue mandando
    * el caballo: acá sólo se mueve el brazo del arma.
    *
-   * Va en 16 pasos porque cada figura se guarda dibujada: con el ángulo libre
-   * habría una figura nueva por cuadro.
+   * Va en 32 pasos porque cada figura se guarda dibujada: con el ángulo libre
+   * habría una figura nueva por cuadro. 🔁 Eran 16 (de a 22,5°): arriba del
+   * tren, con la mira moviéndose despacio sobre un jinete, el brazo saltaba
+   * de golpe. De a 11° acompaña.
    */
   const armaDir = f.armaDir == null ? null
-    : Math.round((f.armaDir / (Math.PI * 2)) * 16 + 32) % 16;
+    : Math.round((f.armaDir / (Math.PI * 2)) * 32 + 64) % 32;
+  // El ángulo del arma en el dibujo (que se arma mirando a la derecha).
+  const armaDirDibujo = armaDir == null ? null
+    : (espejo ? (16 - armaDir + 32) % 32 : armaDir) * (Math.PI * 2 / 32);
 
   // El dibujo se arma mirando a la derecha: si va en espejo, asomarse para la
   // derecha del mundo es asomarse para la izquierda del dibujo.
@@ -363,16 +369,40 @@ export function dibujarPersona(r, f) {
    * que Santi lo apruebe en el jugador.
    */
   const conHuesos = tipo === 'jugador' && fn === lado;
+  /**
+   * 🦴 E3 · TRES CUARTOS CON ESQUELETO (gente/tresCuartos.js): por ahora sólo
+   * arriba del tren, donde mirás a los jinetes (`f.tresCuartos`). `g` es
+   * cuánto gira (1 tres cuartos; menos, más hacia la cámara) y `baja` cuánto
+   * baja la vista. Adentro del vagón las diagonales siguen con el dibujo de
+   * siempre hasta pasar el esqueleto a todo.
+   */
+  const tres = tipo === 'jugador' && !!f.tresCuartos && (nombre === 'diagF' || nombre === 'diagE')
+    && (modo === 'quieto' || modo === 'agazapado' || modo === 'agachado' || modo === 'caminar' || modo === 'trotar');
+  const giro3 = tres ? Math.round((f.tresCuartos.g ?? 1) * 10) / 10 : 1;
+  const baja3 = tres ? Math.round((f.tresCuartos.baja ?? 1) * 2) / 2 : 1;
   // 🏃 En el sprint del techo, el torso se echa más adelante.
   const torsoGira = f.sprint && modo === 'trotar' ? CONFIG.esqueleto.sprint : 0;
-  const img = armar(conHuesos ? clave + '|h' + finas : clave, () => {
+  const img = armar(tres ? clave + '|t' + giro3 + ',' + baja3 + ',' + finas : conHuesos ? clave + '|h' + finas : clave, () => {
+    if (tres) {
+      let cuenta = (x, y) => [x, y];
+      const LT = Lienzo(M.ancho, M.alto, OX, OY, M.s, (x, y) => cuenta(x, y));
+      // El trote no tiene cuadros propios girado: usa los pasos de la caminata.
+      const paso = modo === 'trotar' ? CICLO_CAMINATA[cuadro] : cuadro;
+      const info = tresCuartosConHuesos(LT, {
+        tipo, vista: nombre, g: giro3, vistaBaja: baja3, estado, arma, mochila, finas,
+        armaDir: armaDirDibujo, panuelo: !!f.panuelo,
+        agazapado: modo === 'agazapado' || modo === 'agachado', paso: modo === 'quieto' ? 0 : paso,
+      }, (c) => { cuenta = c; });
+      const cv = LT.canvas();
+      cv.info = info;
+      return cv;
+    }
     if (conHuesos) {
       let cuenta = (x, y) => [x, y];
       const LH = Lienzo(M.ancho, M.alto, OX, OY, M.s, (x, y) => cuenta(x, y));
       const datosH = {
         tipo, g, estado, arma, manosArriba: manos, mochila, cartuchos,
-        armaDir: armaDir == null ? null
-          : (espejo ? (8 - armaDir + 16) % 16 : armaDir) * (Math.PI * 2 / 16),
+        armaDir: armaDirDibujo,
         asomado: asomadoDibujo, panuelo: !!f.panuelo, abre,
       };
       if (modo === 'trotar') datosH.trote = cuadro;
@@ -386,16 +416,17 @@ export function dibujarPersona(r, f) {
       datosH.finas = finas;
       // La cabeza no se inclina con el torso: mira adelante.
       // Las inclinaciones chicas, cortadas en diagonal (`inclina`); el sprint, girado.
-      ladoConHuesos(LH, datosH, (c) => { cuenta = c; }, torsoGira
+      const info = ladoConHuesos(LH, datosH, (c) => { cuenta = c; }, torsoGira
         ? { torso: torsoGira, cabeza: -torsoGira } : { inclina });
-      return LH.canvas();
+      const cv = LH.canvas();
+      cv.info = info;
+      return cv;
     }
     const L = Lienzo(M.ancho, M.alto, OX, OY, M.s, deformar(inclina));
     const datos = {
       tipo, g, estado, arma, manosArriba: manos, mochila, cartuchos,
-      // En pasos de 16, y espejado si la figura se dibuja al revés.
-      armaDir: armaDir == null ? null
-        : (espejo ? (8 - armaDir + 16) % 16 : armaDir) * (Math.PI * 2 / 16),
+      // En pasos de 32, y espejado si la figura se dibuja al revés.
+      armaDir: armaDirDibujo,
       asomado: asomadoDibujo, panuelo: !!f.panuelo, abre,
     };
     if (modo === 'trotar') datos.trote = cuadro;
@@ -450,9 +481,22 @@ export function dibujarPersona(r, f) {
     };
   }
 
+  /**
+   * 🎯 DÓNDE QUEDARON LA BOCA DEL CAÑO Y EL HOMBRO DEL ARMA, en el mundo (sólo
+   * el esqueleto los sabe). De la boca sale el fogonazo; desde el hombro se
+   * apunta, para que el arma dibujada caiga sobre la mira.
+   */
+  const aMundo = (p) => p && {
+    x: anclaX + (espejo ? -1 : 1) * (p[0] * M.s + OX - M.cx) * PUNTO,
+    y: anclaPies + (p[1] * M.s + OY - M.pie) * PUNTO,
+  };
+  const info = img.info || {};
+
   return {
     x,
     mano,
+    boca: aMundo(info.boca),
+    hombro: aMundo(info.hombro),
     top: cabeza,
     arriba: manos || postura === 'rendido' ? cabeza - 3 : cabeza,
     manoY: pies - 9 + baja,

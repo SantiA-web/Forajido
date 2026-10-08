@@ -7,7 +7,7 @@
  * una tabla.
  */
 import {
-  ROPA, tono, mover, tramo, apuntar, rifle, armaLarga, medidasLarga, sombreroLado, deformar,
+  ROPA, tono, mover, tramo, apuntar, rifle, armaLarga, medidasLarga, sombreroLado, deformar, armaApuntada,
   OJO_B, PIEL, PIEL_O, PIEL_S, CAM, CAM_L, CAM_S, PAN_R, PAN_RL, PAN_RS,
   BOTA, BOTA_L, ESPUELA, CINTO, FUNDA, CULATA, CULATA_L, LATON, BLANCA, CORBATA,
 } from './dibujo.js';
@@ -396,13 +396,13 @@ export function huesosDeLado(huesos = {}, cuerpo = { dx: 0, baja: 0 }, piernasDx
  * dibujo")*. Tres grosores para elegir (`CONFIG.esqueleto.piernas`): 0 el de
  * siempre, 1 y 2 más finos. El muslo no cambia.
  */
-const FINAS = [
+export const FINAS = [
   { canilla: 2.7, rodilla: 3, bota: 1 },
   { canilla: 2.2, rodilla: 2.6, bota: 0.86 },
   { canilla: 1.9, rodilla: 2.3, bota: 0.76 },
 ];
 
-function piernaFina(L, cad, rod, tob, c, F) {
+export function piernaFina(L, cad, rod, tob, c, F) {
   tramo(L, cad, rod, 3.5, c);
   L.elipse(rod[0], rod[1], F.rodilla, F.rodilla, c);
   tramo(L, rod, tob, F.canilla, c);
@@ -532,6 +532,16 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
   const F = FINAS[o.finas ?? 0] || FINAS[0];
   const cuerpo = () => usar(H.cuerpo);
   const piernas = () => usar(H.piernas);
+  /**
+   * 🎯 E3 · APUNTANDO A UN ÁNGULO (`o.armaDir`, de pantalla): el brazo del
+   * arma va al final, en un marco que sólo corre hasta el hombro. Si se
+   * dibujara en el del torso, agazapado (torso girado 0,68) el arma apuntaría
+   * 39° más abajo que la mira.
+   */
+  const apunta = o.armaDir != null && (o.arma === true || !!armaLarga(o.arma)) && o.postura !== 'cayendo';
+  // Con el revólver hacia adelante (no para atrás, corriendo), sin estar acostado
+  // y sin caballo (a caballo esa mano lleva las riendas).
+  const dosManos = apunta && o.arma === true && Math.cos(o.armaDir) > 0.2 && o.postura !== 'tierra' && o.postura !== 'montado';
 
   const B = postura === 'montado'
     ? { bC: [[27, 42], [33, 46]], bL: [[25, 42], [31, 47]] }
@@ -548,7 +558,24 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
   }
   cuerpo();
   if (o.manosArriba) { tramo(L, [21, 33], [19, 19], 2.6, MS); L.elipse(19, 17, 2.5, 2.5, PIEL_O); }
-  else brazoLado(L, [21, 34], B.bL[0], B.bL[1], MS, null, PIEL_O);
+  // Con un arma larga apuntada, el brazo de allá va a la caña (lo pone `armaApuntada`).
+  else if (apunta && armaLarga(o.arma)) { /* nada */ }
+  else if (dosManos) {
+    /**
+     * 🎯 E3 · EL REVÓLVER CON LAS DOS MANOS, como de tres cuartos: la mano de
+     * allá va debajo de la del arma. El brazo pasa por detrás del torso (se
+     * dibuja antes) y asoma la mano. Se piensa en la pantalla, colgado del hombro.
+     */
+    const SL = H.cuerpo(21, 34), SA = H.cuerpo(24, 34);
+    const M = [SA[0] + Math.cos(o.armaDir) * 14.5, SA[1] + Math.sin(o.armaDir) * 14.5 + 1];
+    const C = [(SL[0] + M[0]) / 2, (SL[1] + M[1]) / 2 + 4];
+    usar((x, y) => [x, y]);
+    tramo(L, SL, C, 2.8, MS);
+    L.elipse(C[0], C[1], 2.2, 2.2, MS);
+    tramo(L, C, M, 2.4, MS);
+    L.elipse(M[0], M[1] + 0.5, 2, 2.5, PIEL_O);
+    cuerpo();
+  } else brazoLado(L, [21, 34], B.bL[0], B.bL[1], MS, null, PIEL_O);
   if (o.mochila) {
     const h = 10 + o.mochila * 2;
     L.rect(12, 36, 7, h, '#6a4a2a');
@@ -616,6 +643,9 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
   if (o.manosArriba) {
     tramo(L, [24, 33], [22, 19], 2.6, M0);
     L.elipse(22, 17, 2.5, 2.5, PIEL);
+  } else if (apunta) {
+    // El hombro, y el brazo va al final (`armaApuntada`).
+    L.elipse(23.5, 35, 3.5, 3, MS); L.elipse(24, 35, 3, 2.5, M0); L.rect(22, 33, 3, 1, ML);
   } else if (armaLarga(o.arma) && !armaLarga(o.arma).listo) {
     rifle(L, R, [23, 35], [16, 49], [26, 35], [29, 46], [0.974, -0.225], ...medidasLarga(o.arma));
   } else if ((armaLarga(o.arma) || {}).listo) {
@@ -634,10 +664,34 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
 
   // La cabeza y el sombrero, en su hueso: no se estiran, sólo se corren y giran.
   const conMira = (armaLarga(o.arma) || {}).mira && armaLarga(o.arma).listo;
-  const [mx, my] = conMira ? [2, 3] : [0, 0];
+  let [mx, my] = conMira ? [2, 3] : [0, 0];
+  /**
+   * 🎯 LA VISTA VA CON EL ARMA *(Santi: "que baje un poco la postura y la
+   * vista para apuntar")*: apuntando abajo la cabeza se va un punto adelante y
+   * abajo; apuntando arriba, sube. Se corre, no se gira: girada se veía borrosa.
+   */
+  if (apunta && o.postura !== 'montado' && Math.cos(o.armaDir) > 0) {
+    const s = Math.sin(o.armaDir);
+    if (s > 0.3) { mx += 1; my += s > 0.6 ? 2 : 1; } else if (s < -0.3) my -= 1;
+  }
+  const S = H.cuerpo(24, 34);
+  let boca = null;
+  const arma = () => {
+    const ancla = (x, y) => [S[0] + x - 24, S[1] + y - 34];
+    const enMarco = (c) => [24 + c[0] - S[0], 34 + c[1] - S[1]];
+    usar(ancla);
+    const b = armaApuntada(L, R, o.armaDir, {
+      hombroT: [24, 34], hombroF: enMarco(H.cuerpo(22, 35)), cadera: enMarco(H.cuerpo(25, 46)), arma: o.arma,
+    });
+    boca = ancla(...b);
+  };
+  // Un arma larga va DEBAJO de la cabeza (la cara apoyada en la culata, como
+  // en la pose de siempre); el revólver, encima (el brazo pasa por delante).
+  if (apunta && armaLarga(o.arma)) arma();
   usar((x, y) => H.cabeza(x, y, mx, my));
   cabezaLado(L, o);
   sombreroLado(L, R.sombrero);
   cuerpo();
-  if (o.arma === true && o.armaDir != null) apuntar(L, R, [24, 34], [37, 38], [1, 0], 9, o.armaDir);
+  if (apunta && !armaLarga(o.arma)) arma();
+  return { boca, hombro: S };
 }

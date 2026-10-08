@@ -432,8 +432,8 @@ function updateOnRoof(p, dt, world) {
   if (p.techoPerdio) { dx = 0; dy = 0; }
 
   p.moving = dx !== 0 || dy !== 0;
-  // 🧗 Para dónde mirás en la vista de costado: el último lado al que caminaste.
-  if (dx !== 0) p.techoMira = dx;
+  // 🧗 Para dónde mirás en la vista de costado: lo dice la mira (`armaEnElTecho`).
+  // 🔁 Antes era el último lado al que caminaste.
 
   // Agachado vas lento y en silencio; cuerpo a tierra casi no avanzás;
   // corriendo vas a la velocidad de siempre. En el aire, sólo el salto desde
@@ -892,9 +892,22 @@ function armaEnElTecho(p, dt, world) {
   actualizarApuntado(p, dt, world);
   const mira = world.miraCostado;
   if (mira && p.piesCostado != null) {
-    p.aim = Math.atan2(mira.y - (p.piesCostado - 12), mira.x - p.x);
-    // Apuntando o tirando, mirás hacia la mira.
-    if (world.input.mouse.right || p.fireTimer > 0) p.techoMira = Math.cos(p.aim) >= 0 ? 1 : -1;
+    /**
+     * 🎯 E3 · MIRÁS HACIA LA MIRA, SIEMPRE, como adentro del vagón: te movés
+     * con las teclas y el cuerpo mira al cursor (este u oeste por el lado,
+     * sur o norte por la altura: ver `CONFIG.techo.mirada`).
+     * Se apunta DESDE EL HOMBRO DEL ARMA (el del cuadro anterior, que lo sabe
+     * el esqueleto): así el brazo dibujado cae justo sobre la mira.
+     * 🔁 Antes mirabas para donde caminabas, y sólo apuntando te dabas vuelta.
+     */
+    // (Si quedó de otro lado, de antes de bajar al vagón, no sirve.)
+    const h = p.hombroCostado && Math.abs(p.hombroCostado.x - p.x) < 12
+      ? p.hombroCostado : { x: p.x, y: p.piesCostado - 12 };
+    p.aim = Math.atan2(mira.y - h.y, mira.x - h.x);
+    const lado = mira.x - p.x;
+    if (Math.abs(lado) > CONFIG.techo.mirada.zonaMuerta) p.techoMira = lado > 0 ? 1 : -1;
+    p.techoHacia = mira.hacia || 'lado';
+    p.techoAbierto = !!mira.abierto;
   }
   // Tirar no te expone de más *(Santi: "tirar nunca te expone de más")*:
   // ya pagaste el riesgo al ponerte donde te pueden pegar.
@@ -1244,7 +1257,7 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     }
     if (p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0) return;
     const mira = cae ? cae.mira : p.techoMira;
-    dibujarPersona(r, {
+    const tierra = dibujarPersona(r, {
       tipo: 'jugador', x: p.x, pies: py + p.hh,
       escala: cae ? 1 : (p.escalaTecho || 1),
       angulo: mira < 0 ? Math.PI : 0,
@@ -1260,7 +1273,13 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
       giro: cae ? Math.abs(cae.giro) : 0,
       reloj: cae ? cae.t : 0,
       destello: p.hitFlash > 0,
+      // 🎯 E3 · Quieto en la curva podés tirar: el brazo estira el arma a la mira.
+      // Arrastrándote, los dos brazos van al piso.
+      arma: !cae && !p.moving ? armaDibujada(p) : null,
+      armaDir: !cae && !p.moving ? brazoAcostado(p.aim, mira < 0 ? -1 : 1) : null,
     });
+    p.hombroCostado = tierra.hombro;
+    p.bocaCostado = tierra.boca;
     return;
   }
 
@@ -1294,20 +1313,72 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
 
   const by = py - alto;
 
+  /**
+   * 🎯 E3 · PARA DÓNDE MIRA EL CUERPO (ver `armaEnElTecho`): este u oeste, o
+   * tres cuartos hacia los jinetes de acá (sur) o de allá (norte). Corriendo
+   * (el sprint) el cuerpo va para donde corrés y sólo el brazo apunta: correr
+   * de espaldas se veía ridículo.
+   */
+  const corre = p.vistaCostado && !!p.techoCorre && !p.techoPerdio;
+  const frente = corre ? p.techoCorre : (p.techoMira || 1);
+  const hacia = p.vistaCostado && !corre ? (p.techoHacia || 'lado') : 'lado';
+  const angulo = !p.vistaCostado ? p.aim
+    : hacia === 'sur' ? (frente > 0 ? Math.PI / 4 : (3 * Math.PI) / 4)
+      : hacia === 'norte' ? (frente > 0 ? -Math.PI / 4 : (-3 * Math.PI) / 4)
+        : (frente > 0 ? 0 : Math.PI);
+  const M = CONFIG.techo.mirada;
+
   // Igual que abajo: agachado se dobla, saltando sube entero.
-  dibujarPersona(r, {
+  const fig = dibujarPersona(r, {
     tipo: 'jugador', x: p.x, pies: by + p.hh,
     // Del lado de allá del techo te achicás un poco: te alejás (vista lateral).
     escala: p.vistaCostado ? (p.escalaTecho || 1) : 1,
-    angulo: p.vistaCostado ? (p.techoMira < 0 ? Math.PI : 0) : p.aim,
-    fase: enElAire ? null : faseDeAndar(p),
+    angulo,
+    fase: enElAire ? null : p.vistaCostado ? pasoEnElTecho(p, frente, hacia) : faseDeAndar(p),
+    armaDir: p.vistaCostado ? p.aim : null,
+    // La submirada, sobre la línea abierta: acá girás más hacia la cámara;
+    // allá levantás la vista.
+    tresCuartos: hacia === 'lado' ? null : {
+      g: hacia === 'sur' && p.techoAbierto ? M.subGiro : 1,
+      baja: hacia === 'norte' && p.techoAbierto ? M.subBaja : 1,
+    },
     // Arriba, de costado, el agachado es AGAZAPADO: tiene que leerse de un vistazo.
     postura: p.techoAgachado ? (p.vistaCostado ? 'agazapado' : 'agachado') : 'pie',
     // 🏃 En el sprint el torso se echa más adelante (`CONFIG.esqueleto.sprint`).
-    sprint: p.vistaCostado && !!p.techoCorre && !p.techoPerdio,
+    sprint: corre,
     destello: p.hitFlash > 0,
     arma: armaDibujada(p),
   });
+  if (p.vistaCostado) {
+    p.hombroCostado = fig.hombro;
+    p.bocaCostado = fig.boca;
+  }
+}
+
+/**
+ * 🎯 ACOSTADO, EL BRAZO NO ATRAVIESA EL TECHO: apuntando a los jinetes de acá
+ * desde el lomo, el brazo se iba derecho para abajo, adentro de la chapa. Como
+ * mucho baja 0,9 (unos 50°): sobre la curva de acá eso ya cae sobre ellos, y la
+ * bala igual va a la mira (es tiro de galería).
+ */
+function brazoAcostado(a, lado) {
+  let d = lado > 0 ? a : Math.PI - a;
+  d = Math.max(-1.4, Math.min(0.9, Math.atan2(Math.sin(d), Math.cos(d))));
+  return lado > 0 ? d : Math.PI - d;
+}
+
+/**
+ * 🦵 EL PASO ARRIBA: avanza cuando vas para donde mirás y va PARA ATRÁS cuando
+ * retrocedés (las piernas caminan de espaldas, como adentro). Mirando al sur o
+ * al norte, acercarte a la cámara o alejarte también cuenta. Es sólo dibujo.
+ */
+function pasoEnElTecho(p, frente, hacia) {
+  let dx = p.x - (p._pasoTechoX ?? p.x), dy = p.y - (p._pasoTechoY ?? p.y);
+  p._pasoTechoX = p.x; p._pasoTechoY = p.y;
+  if (Math.abs(dx) > 12 || Math.abs(dy) > 12) dx = dy = 0;   // un salto, no un paso
+  const hondo = hacia === 'sur' ? dy : hacia === 'norte' ? -dy : Math.abs(dy);
+  p._pasoTecho = (p._pasoTecho || 0) + dx * frente + hondo;
+  return p.moving ? p._pasoTecho : null;
 }
 
 /**

@@ -18294,8 +18294,8 @@ y quedó como manchas.
 | Etapa | Qué | Estado |
 |---|---|---|
 | **E1 · La base** | Los huesos que faltaban (raíz, torso, cabeza) y la ropa pegada a cada uno; el jugador de costado ya se dibuja así | ✅ hecha |
-| E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, la caída al enganche, el sprint; piernas más finas | ✅ hecha, **sin jugar** |
-| E3 · Mirar con el mouse arriba | Te movés con las teclas y el cuerpo, el brazo y la cabeza miran a la mira | Falta |
+| E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, la caída al enganche, el sprint; piernas más finas | ✅ hecha y jugada |
+| E3 · Mirar con el mouse arriba | Te movés con las teclas y el cuerpo, el brazo y la cabeza miran a la mira; esqueleto de tres cuartos de frente y de espaldas | ✅ hecha, **sin jugar** |
 | E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | Falta |
 
 ### ✅ E1 · La base (`ladoConHuesos` y `huesosDeLado`, entities/gente/costado.js)
@@ -18368,6 +18368,88 @@ y quedó como manchas.
   se veía borroso y el borde negro alcanza. Se sacó para **toda la gente**.
 
 Sin errores en el techo (con tormenta), adentro y en el galope.
+
+### ✅ E3 · Mirar con el mouse arriba, y el esqueleto de tres cuartos
+
+*(Santi: "debería mirar a cuatro lugares: este, oeste, abajo sur (que sería
+hacia la pantalla), y abajo norte (que sería a los jinetes más alejados). No
+quiero que mire directo a la pantalla o directo a los montes, sino que baje un
+poco la postura y la vista para apuntar a los jinetes. Y aparte tiene una
+submirada (al carril de los jinetes de lejos, ahí mira un poco más a la altura
+de la cámara, pero sin mirarla al 100%)")*. La submirada quedó para las dos
+líneas abiertas: confirmado por Santi. Y para el dibujo pidió *"hacé el
+esqueleto (algo importante es la forma de los pies y piernas, que no parezca un
+pingüino)"*, sin consultarle el esqueleto.
+
+**La mecánica** (`armaEnElTecho` en player.js, `miradaDelTecho` en
+raidScene.js, `CONFIG.techo.mirada`):
+
+- **El cuerpo mira a la mira, siempre, como adentro**; las teclas sólo te
+  mueven. 🔁 Antes mirabas para donde caminabas y sólo apuntando te dabas vuelta.
+- **Este u oeste** lo dice de qué lado tuyo está la mira (con `zonaMuerta`
+  1,5 para que no tiemble con la mira justo arriba). **Sur o norte**, la altura:
+  más abajo que el alero de acá (`margenSur` 0) es sur; más arriba que 16 sobre
+  el lomo (`alturaNorte`, por encima de tu cabeza agazapado) es norte; en el
+  medio, de costado. Las rayas son fijas (el techo y las líneas de los
+  jinetes), no dependen de que haya un jinete: así la vista no salta cuando uno
+  pasa.
+- **La submirada**, sobre la línea abierta (la raya va en el pecho de un jinete
+  a mitad de camino entre las dos líneas): al sur girás más hacia la cámara
+  (`subGiro` 0,6; 1 es tres cuartos y 0 sería de frente); al norte levantás la
+  vista a la altura de la cámara (`subBaja` 0).
+- **Se apunta desde el hombro del arma** que dibujó el esqueleto (el del cuadro
+  anterior): así el arma dibujada cae sobre la mira. Y **el fogonazo sale de la
+  boca del caño dibujado** (`bocaCostado`), no de un punto fijo.
+- **Caminando para atrás**, las piernas caminan de espaldas: el paso arriba
+  avanza o retrocede según vayas para donde mirás o al revés
+  (`pasoEnElTecho`); mirando al sur o al norte cuenta también acercarte o
+  alejarte de la cámara.
+- **En sprint** el cuerpo va para donde corrés y sólo el brazo apunta (correr
+  de espaldas se veía ridículo). **Cuerpo a tierra y quieto** estirás el arma a
+  la mira; arrastrándote, los dos brazos van al piso. Acostado el brazo baja
+  como mucho 0,9 (unos 50°): si no, apuntando a los de acá desde el lomo
+  atravesaba la chapa.
+- El ángulo del brazo pasó de **16 a 32 pasos** (de a 11° en vez de 22°): con
+  la mira moviéndose despacio el brazo saltaba. Medido: el cuadro sigue en
+  1,5 ms (mediana), con y sin mover la mira.
+
+**El dibujo:**
+
+- **Tres cuartos con esqueleto** (`tresCuartosConHuesos`, gente/tresCuartos.js),
+  de frente (sur) y de espaldas (norte). Por ahora sólo arriba del tren; adentro
+  las diagonales siguen con el dibujo de siempre hasta pasar el esqueleto a todo.
+- **Las piernas, en 3D, sin pingüino.** Lo que había eran dos columnas derechas
+  y dos botas mirando a la cámara. Ahora cada pierna es cadera, rodilla y
+  tobillo en 3D, vistos desde la cámara; **la bota apunta para donde mira el
+  cuerpo** (la misma bota de costado, con su ancho, girada: la punta sale
+  adelante y se acorta) con luz en la caña y el empeine; la pierna de allá queda
+  más arriba y más oscura, y una raya oscura las separa (el contorno negro sólo
+  va por afuera de la figura).
+- **El torso se echa hacia el blanco desde la cadera** (hacia la cámara al sur,
+  hacia el fondo al norte), corriendo cada fila sin girarla: las rayas finas
+  siguen derechas. La cabeza va con el cuello y **baja la vista**: un punto
+  adelante y abajo, y el ala del sombrero un poco más, sobre los ojos.
+- 🔁 **El agazapado de tres cuartos llevó tres vueltas.** Con las piernas del
+  agazapado de costado, giradas, los dos muslos quedaban uno encima del otro y
+  parecía sentado. Con las piernas abiertas y la mano apoyada en la rodilla se
+  leía **parado** en el juego. Quedó más bajo (la cadera 8 abajo, las rodillas
+  adelante y afuera), echado 0,65, y **apuntando con las dos manos**: es lo que
+  dice "plantado a tirar". De espaldas el cuerpo tapa ese brazo y asoma la mano.
+- **De costado también se apunta a cualquier ángulo** (`armaApuntada`, en
+  gente/dibujo.js): el brazo va en un marco que sólo corre hasta el hombro. 🐛
+  Antes, agazapado, se dibujaba en el marco del torso girado (0,68) y el
+  revólver apuntaba 39° más abajo que la mira. Con el revólver hacia adelante,
+  también con las dos manos (no a caballo: esa mano lleva las riendas). La
+  cabeza acompaña: apuntando abajo se corre un punto adelante y abajo.
+- **El Winchester a la mejilla y la escopeta a la cadera** siguen al ángulo en
+  las tres vistas; van **debajo de la cabeza**, para que la cara apoyada en la
+  culata se siga viendo (encima, el brazo la tapaba).
+- En tres cuartos la funda va en la cadera del arma: en la otra, agazapado de
+  espaldas, asomaba como una cola.
+
+Revisado agrandado en las tres vistas, para los dos lados, caminando y con las
+tres armas, y en el juego. Sin errores arriba (20 s con la mira y las teclas
+moviéndose), adentro del vagón y en la huida a caballo.
 
 ## Pendientes del concepto original (sin fase asignada todavía)
 

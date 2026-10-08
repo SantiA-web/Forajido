@@ -513,6 +513,44 @@ export function apuntar(L, R, hombro, mano, dir, largo, haciaDonde = null) {
 }
 
 /**
+ * 🎯 EL ARMA APUNTADA A UN ÁNGULO DE PANTALLA, para el esqueleto (etapa E3):
+ * el revólver con el brazo estirado, el Winchester a la mejilla y la escopeta
+ * a la cadera, todos hacia `ang`. Devuelve la BOCA DEL CAÑO: de ahí sale el
+ * fogonazo, y no de un punto inventado.
+ *
+ * Los puntos van en el marco de quien llama: `hombroT` es el hombro del brazo
+ * del arma, `hombroF` el del otro brazo (el que agarra la caña de un arma
+ * larga) y `cadera` de dónde se tira la escopeta. `cano` es el largo del caño
+ * del revólver: mirando hacia la cámara o hacia el fondo se ve más corto.
+ */
+export function armaApuntada(L, R, ang, { hombroT, hombroF, cadera, arma = true, brazo = 17, cano = 10 }) {
+  const dir = [Math.cos(ang), Math.sin(ang)];
+  const mas = (p, d, k) => [p[0] + d[0] * k, p[1] + d[1] * k];
+  const al = armaLarga(arma);
+  if (!al) {
+    const [M0, ML, MS] = R.manga;
+    const mano = mas(hombroT, dir, brazo);
+    tramo(L, [hombroT[0], hombroT[1] + 1], [mano[0], mano[1] + 1], 3, MS);
+    tramo(L, hombroT, mano, 2.6, M0);
+    L.rect(Math.round((hombroT[0] + mano[0]) / 2), Math.round((hombroT[1] + mano[1]) / 2) - 1, 2, 1, ML);
+    L.rect(mano[0] - 1, mano[1] + 1, 2, 3, CULATA);
+    L.elipse(mano[0], mano[1], 2, 2, PIEL);
+    const tambor = mas(mano, dir, 2), fin = mas(mano, dir, cano);
+    L.elipse(tambor[0], tambor[1], 2, 2, '#3a342e');
+    tramo(L, tambor, fin, 1.2, '#4a443e');
+    L.rect(fin[0], fin[1], 1, 1, '#8a8278');
+    return fin;
+  }
+  const [largo, culata, doble, estilo] = medidasLarga(arma);
+  // "Arriba" del arma, para subirla a la mejilla.
+  const arriba = [dir[1], -dir[0]];
+  const manoT = al.cadera ? cadera : mas(mas(hombroT, dir, 2), arriba, 4);
+  const manoF = mas(manoT, dir, al.cadera ? 10 : 12);
+  rifle(L, R, hombroT, manoT, hombroF, manoF, dir, largo, culata, doble, estilo);
+  return mas(manoF, dir, largo);
+}
+
+/**
  * 🔫 EL RIFLE, AGARRADO CON LAS DOS MANOS. Es `apuntar` pero para un arma
  * larga: la mano de atrás en el gatillo, la de adelante en la caña, y un brazo
  * saliendo del hombro hacia cada una.

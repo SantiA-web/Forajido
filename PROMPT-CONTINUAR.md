@@ -134,6 +134,11 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
 
 ## Pendientes sueltos
 
+- **Los atajos de prueba del campamento** (marcados 🧪 en scenes/campScene.js):
+  [1] el techo con jinetes, [2] la escopeta, [3] el Winchester y [4] directo a
+  un vagón de pasajeros (pedido por Santi el 2026-10-08, para ver el estilo nuevo
+  con [F9]). **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
+  cuando el estilo nuevo esté terminado.
 - **Los jinetes más alejados deberían tener menos puntería** *(Santi,
   2026-10-08: "los jinetes más alejados deberían tener menos puntería, pero eso
   lo vemos después")*. Arriba, los de allá van lejos y hoy pegan igual que los

@@ -337,6 +337,17 @@ export function createCampScene(services) {
       return;
     }
     /**
+     * 🧪 [4] TE LARGA ADENTRO DE UN VAGÓN DE PASAJEROS *(Santi: "construí un
+     * atajo para ir directo a un vagón de pasajeros")*, para ver el estilo nuevo
+     * ([F9]) sin cruzar el tren. Es un asalto normal: cuenta como cualquiera.
+     *
+     * ⚠️ SACARLO antes de mostrar el juego, con los otros.
+     */
+    if (input.wasPressed('Digit4')) {
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'pasajeros' });
+      return;
+    }
+    /**
      * 🧪 [2] TE PONE LA ESCOPETA SIN COMPRARLA *(Santi: "dejame un atajo para
      * equipármela sin tener que comprarla")*; otra vez [2], vuelve el arma que
      * tenías. No la agrega a lo tuyo: en la tienda sigue costando $1.200.

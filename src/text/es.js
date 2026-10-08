@@ -338,7 +338,7 @@ export const T = {
     keys: '[W A S D] MOVERSE     [E] USAR     [ALT+ENTER] PANTALLA COMPLETA',
     lejos: 'MEJOR NO ALEJARSE DE LA FOGATA',
     // 🧪 El atajo de prueba de los guardias (ver campScene.js). Sacarlo con él.
-    atajoCorreo: 'PRUEBA · [1] TECHO CON 4 JINETES Y ALARMA · [2] ESCOPETA · [3] WINCHESTER',
+    atajoCorreo: 'PRUEBA · [1] TECHO CON 4 JINETES Y ALARMA · [2] ESCOPETA · [3] WINCHESTER · [4] VAGÓN DE PASAJEROS',
     atajoArmaSi: (arma) => `PRUEBA: TENÉS ${arma}`,
     atajoEscopetaSi: 'PRUEBA: TENÉS LA ESCOPETA',
     atajoEscopetaNo: 'PRUEBA: VOLVISTE A TU ARMA',

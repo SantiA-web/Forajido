@@ -609,6 +609,16 @@ export function createRaidScene(services) {
       // enganche en el primer cuadro, que es exactamente lo que corresponde.
     }
 
+    /**
+     * 🧪 EL ATAJO [4] DEL CAMPAMENTO: arrancás en el pasillo del primer vagón
+     * de ese tipo, a tres columnas de su puerta de atrás. Si el tren que salió
+     * no tiene ninguno, arrancás donde siempre.
+     */
+    if (params.pruebaVagon) {
+      const v = train.wagons.find((w) => w.id === params.pruebaVagon);
+      if (v) { player.x = v.x + 3.5 * map.size; player.y = 4.5 * map.size; }
+    }
+
     camera.snap(player.x, player.y, map.bounds);
     listen();
     hud.show();

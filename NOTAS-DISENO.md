@@ -17426,6 +17426,11 @@ saltea `applyRaidResult`). El cartel está arriba a la izquierda.
 > atajo que indique caballos de aquel lado en 75%, 80% y 85%")*. El suelo de su
 > distancia se agranda con ellos. Sólo vale en la prueba (`escalaAllaPrueba` en
 > raidScene.js, `pruebaTamanoAlla` en text/es.js); afuera sigue `allaEscala`.
+>
+> **Decidido y borrado** *(Santi, 2026-10-08: "me quedo con el 80% y cuando
+> hagamos el segundo carril los pondría a 75%")*: `allaEscala` queda en **0,8**
+> y las teclas [7] [8] [9] se sacaron. Cuando haya segunda línea (C3c), los de
+> allá más lejos irán al 75%.
 
 #### La mira: qué tan real es el círculo
 

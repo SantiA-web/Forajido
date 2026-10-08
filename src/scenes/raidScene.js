@@ -205,15 +205,6 @@ export function createRaidScene(services) {
   let alto, altoUsado, tiroteo;
   // 🧪 El atajo de prueba del techo (ver `prepararPruebaTecho`).
   let pruebaTecho = false;
-  /**
-   * 🧪 EL TAMAÑO DE LOS JINETES DE ALLÁ, A ELECCIÓN, sólo en la prueba del techo
-   * *(Santi: "quiero comprobar cómo se vería a los jinetes del otro lado en
-   * tamaño 80% que en 75%. O sea, haz un atajo que indique caballos de aquel
-   * lado en 75%, 80% y 85%")*: [7] 75%, [8] 80%, [9] 85%. El suelo de su
-   * distancia se agranda con ellos (`profundidadDelSuelo`). Fuera de la prueba
-   * vale `costado.allaEscala`.
-   */
-  let escalaAllaPrueba = null;
   let wagonActual, wagonMasProfundo, ultimoVisto;
   let scroll = 0;
   let blastMarks = [];
@@ -257,7 +248,6 @@ export function createRaidScene(services) {
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
     for (const e of enemies) armarGuardia(e, rng);
     pruebaTecho = !!params.pruebaTecho;
-    escalaAllaPrueba = null;
     if (pruebaTecho) prepararPruebaTecho(params);
     passengers = train.passengers;
     loot = train.loot;
@@ -2684,12 +2674,6 @@ export function createRaidScene(services) {
      */
     if (congelado > 0) { congelado -= dt; return; }
     scroll += dt;
-    // 🧪 [7] [8] [9]: el tamaño de los jinetes de allá, en la prueba del techo.
-    if (pruebaTecho) {
-      for (const [tecla, escala] of [['Digit7', 0.75], ['Digit8', 0.8], ['Digit9', 0.85]]) {
-        if (input.wasPressed(tecla)) escalaAllaPrueba = escala;
-      }
-    }
 
     /**
      * [TAB] ABRE Y CIERRA LA MOCHILA, y **el mundo sigue andando**.
@@ -4492,7 +4476,6 @@ export function createRaidScene(services) {
     dibujarFondoDeCostado(r, {
       base, hy, avance: camX + scroll * 60, scroll,
       vel: CONFIG.parallax.velocidad * traqueteoVelMult, dia, tormenta: hayTormenta,
-      escalaAlla: escalaAllaPrueba ?? undefined,
     });
 
     r.ctx.save();
@@ -4574,11 +4557,6 @@ export function createRaidScene(services) {
     r.ctx.restore();
 
     dibujarSensacionTecho(r, sensacion, { dia, camY: -vaivenTechoY });
-    // 🧪 El cartel de la prueba del techo: qué tamaño tienen los de allá.
-    if (pruebaTecho) {
-      const pct = Math.round((escalaAllaPrueba ?? C.allaEscala) * 100);
-      r.text(T.prompts.pruebaTamanoAlla(pct), r.width / 2, r.height - 10, colors.text, 'center');
-    }
     terminarCuadro(r);
   }
 
@@ -5050,7 +5028,7 @@ export function createRaidScene(services) {
   function jineteDeCostado(rd, base) {
     const C = CONFIG.techo.costado;
     if (rd.side > 0) return { y: base + C.carrilCerca, escala: 1 };
-    return { y: base - C.allaSobreLaVia, escala: escalaAllaPrueba ?? C.allaEscala };
+    return { y: base - C.allaSobreLaVia, escala: C.allaEscala };
   }
 
   /** El cuerpo del jinete (sin el caballo): ahí le pega tu bala. */

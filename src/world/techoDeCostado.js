@@ -77,14 +77,14 @@ export function piesEnTecho(sup, y, altoMapa) {
  * huida, `dibujarHorizonte`), el campo que vuela hacia la cola y la vía. Va en
  * coordenadas de PANTALLA; `base` es la vía en pantalla.
  */
-export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel: velTren, dia, tormenta, escalaAlla }) {
+export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel: velTren, dia, tormenta }) {
   // 💨 Arriba va rapidísimo: el campo corre a más del doble (`velocidadFondo`).
   const vel = velTren * CONFIG.techo.costado.velocidadFondo;
   const C = CONFIG.colors.cielo;
   const colors = CONFIG.colors;
   const tinte = (hex) => (dia ? hex : escalarColor(hex, 0.32));
   r.clear(tinte(colors.desiertoDia));
-  dibujarSuelo(r, { base, hy, scroll, vel, dia, tinte, escalaAlla });
+  dibujarSuelo(r, { base, hy, scroll, vel, dia, tinte });
   dibujarHorizonte(r, {
     hy, avance, dia, C, tinte, altoMax: 44, tormenta,
     cielo: tormenta ? [C.tormentaArriba, C.tormentaHorizonte]
@@ -133,11 +133,10 @@ function mezclar(a, b, t) {
  * como ellos, y por eso se leen lejos y no chiquitos. Entre el horizonte y
  * ellos se achica rápido; debajo de la vía crece y vuela.
  */
-export function profundidadDelSuelo(y, { base, hy, alto, escalaAlla }) {
+export function profundidadDelSuelo(y, { base, hy, alto }) {
   const C = CONFIG.techo.costado;
   const yJ = base - C.allaSobreLaVia + 7;
-  // `escalaAlla`: sólo la prueba del techo lo cambia, para comparar tamaños.
-  const kJ = escalaAlla ?? C.allaEscala;
+  const kJ = C.allaEscala;
   if (y <= yJ) return 0.1 + (kJ - 0.1) * Math.max(0, (y - hy) / Math.max(1, yJ - hy));
   if (y <= base) return kJ + (1 - kJ) * (y - yJ) / Math.max(1, base - yJ);
   return 1 + 1.3 * (y - base) / Math.max(1, alto - base);
@@ -156,7 +155,7 @@ export function profundidadDelSuelo(y, { base, hy, alto, escalaAlla }) {
  *
  * Sin azar: cada cosa sale de un número fijo por fila y por celda.
  */
-function dibujarSuelo(r, { base, hy, scroll, vel, dia, tinte, escalaAlla }) {
+function dibujarSuelo(r, { base, hy, scroll, vel, dia, tinte }) {
   const colors = CONFIG.colors;
   const C = colors.cielo;
   const ctx = r.ctx;
@@ -168,7 +167,7 @@ function dibujarSuelo(r, { base, hy, scroll, vel, dia, tinte, escalaAlla }) {
   ctx.fillStyle = g;
   ctx.fillRect(0, hy, r.width, r.height - hy);
 
-  const geo = { base, hy, alto: r.height, escalaAlla };
+  const geo = { base, hy, alto: r.height };
   const P = CONFIG.parallax;
   const motaOscura = tinte(C.tierraOscura);
   const motaClara = tinte(mezclar(colors.desiertoDia, C.bruma, 0.7));

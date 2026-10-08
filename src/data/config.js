@@ -1935,7 +1935,9 @@ export const CONFIG = {
        * coche, 71), `allaEscala` cuánto se achican.
        */
       allaSobreLaVia: 88,
-      allaEscala: 0.75,    // 🔁 era 0,6: se veían chicos, no lejanos (elegido por Santi: 75%)
+      // 🔁 Era 0,6: se veían chicos, no lejanos. Santi probó 75, 80 y 85% y eligió
+      // 80. Cuando haya segunda línea (C3c), los de allá más lejos irán al 75%.
+      allaEscala: 0.8,
 
       /** 📡 Los postes del telégrafo, del lado de allá (ver `dibujarTelegrafo`). */
       telegrafo: { profundidad: 0.9, separacion: 170, alto: 104, comba: 7, color: '#4a3a2c' },

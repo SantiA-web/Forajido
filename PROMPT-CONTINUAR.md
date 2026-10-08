@@ -138,9 +138,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   2026-10-08: "los jinetes más alejados deberían tener menos puntería, pero eso
   lo vemos después")*. Arriba, los de allá van lejos y hoy pegan igual que los
   de acá (`CONFIG.techo.tiroJinetes`). Se ve junto con la C3c (las dos líneas).
-- **El tamaño de los jinetes de allá está en prueba:** en la prueba del techo
-  ([1] en el campamento), [7] 75%, [8] 80% y [9] 85%. Falta que Santi elija; hoy
-  vale `costado.allaEscala` 0,75.
+- **Los jinetes de allá van al 80%** (elegido por Santi, `costado.allaEscala`).
+  En la C3c, los de allá en la segunda línea, más lejos, al 75%.
 - El **`$NaN` en el HUD del campamento**: ya no puede quedar pegado (ver
   `numero()` en `state/gameState.js`). **Si vuelve a aparecer, la consola (F12)
   dice qué campo llegó mal** — esa línea es lo que falta para cerrarlo del todo.

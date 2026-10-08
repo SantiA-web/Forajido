@@ -18343,8 +18343,24 @@ y quedó como manchas.
 - **Las piernas más finas** *(Santi: "hacer la zona de la pantorrilla y la
   canilla más chica al igual que las botas, para que se vea más limpio")*: tres
   grosores (`esqueleto.piernas`): A como estaba, B canilla 2,2 (de 2,7) y bota
-  al 86%, C canilla 1,9 y bota al 76%. El muslo no cambia. Va B hasta que Santi
-  elija.
+  al 86%, C canilla 1,9 y bota al 76%. El muslo no cambia. **Santi eligió la B.**
+
+**Después de verla (Santi):**
+
+- *"Cuando está arrastrándose debería mover sus brazos y piernas"*: la rodilla
+  avanza por el piso y el pie se levanta detrás, alternando, y el brazo que
+  avanza se estira entero. 🔁 La primera vuelta doblaba la pierna hacia el
+  piso y la hundía: no se veía.
+- *"Cuando está agachado dentro del tren se ve un poco borroso"*: un giro chico
+  vuelve a pintar cada línea con escalones irregulares. Las inclinaciones chicas
+  (agacharse adentro, trotar, galopar) volvieron al corte en diagonal de
+  siempre (`inclina` en `huesosDeLado`), que deja las filas derechas; girar
+  queda para las posturas grandes y el sprint. Comprobado: agachado, trote y a
+  caballo dan el mismo dibujo que antes del esqueleto, punto por punto.
+- *"Hay una especie de sombra al contorno del personaje, luego de los píxeles
+  negros, ¿no sería mejor sacarlos?"*: sí. Era un segundo borde a media sombra
+  (en `Lienzo.canvas`, para despegar a la gente del piso del vagón); de cerca
+  se veía borroso y el borde negro alcanza. Se sacó para **toda la gente**.
 
 Sin errores en el techo (con tormenta), adentro y en el galope.
 

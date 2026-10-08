@@ -364,7 +364,7 @@ export function dibujarPersona(r, f) {
    */
   const conHuesos = tipo === 'jugador' && fn === lado;
   // 🏃 En el sprint del techo, el torso se echa más adelante.
-  const torsoGira = f.sprint && modo === 'trotar' ? CONFIG.esqueleto.sprint : Math.atan(1.2 * inclina);
+  const torsoGira = f.sprint && modo === 'trotar' ? CONFIG.esqueleto.sprint : 0;
   const img = armar(conHuesos ? clave + '|h' + finas : clave, () => {
     if (conHuesos) {
       let cuenta = (x, y) => [x, y];
@@ -385,7 +385,9 @@ export function dibujarPersona(r, f) {
       datosH.giro = giro * 0.06;
       datosH.finas = finas;
       // La cabeza no se inclina con el torso: mira adelante.
-      ladoConHuesos(LH, datosH, (c) => { cuenta = c; }, { torso: torsoGira, cabeza: -torsoGira });
+      // Las inclinaciones chicas, cortadas en diagonal (`inclina`); el sprint, girado.
+      ladoConHuesos(LH, datosH, (c) => { cuenta = c; }, torsoGira
+        ? { torso: torsoGira, cabeza: -torsoGira } : { inclina });
       return LH.canvas();
     }
     const L = Lienzo(M.ancho, M.alto, OX, OY, M.s, deformar(inclina));
@@ -440,7 +442,7 @@ export function dibujarPersona(r, f) {
   let mano = null;
   if (modo === 'montado') {
     const [hx, hy] = conHuesos
-      ? huesosDeLado({ torso: torsoGira }).cuerpo(35, 47)
+      ? huesosDeLado({ inclina }).cuerpo(35, 47)
       : deformar(inclina)(...(fn === lado ? [35, 47] : [30, 48]));
     mano = {
       x: anclaX + (espejo ? -1 : 1) * (hx - 24) * PUNTO,

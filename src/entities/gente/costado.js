@@ -362,7 +362,16 @@ function girar(cx, cy, a) {
  * 'cuerpo' = { dx, baja } (lo que el cuerpo se corre y baja en esta pose).
  */
 export function huesosDeLado(huesos = {}, cuerpo = { dx: 0, baja: 0 }, piernasDx = 0) {
-  const D = deformar(0);
+  /**
+   * 🔁 LAS INCLINACIONES CHICAS VAN CORTADAS EN DIAGONAL, NO GIRADAS *(Santi:
+   * "cuando está agachado dentro del tren se ve un poco borroso")*. Un giro
+   * chico vuelve a pintar cada línea con escalones irregulares, y de lejos se
+   * lee como borroso. El corte en diagonal de siempre (`deformar`) deja las
+   * filas derechas. Para agacharse, trotar y galopar va 'inclina'; girar
+   * (`torso`) queda para las posturas grandes.
+   */
+  const D = deformar(huesos.inclina || 0);
+  const corteCabeza = D(24, 20)[0] - 24;
   const { dx, baja } = cuerpo;
   const [hx, hy] = D(23 + dx, 56 + baja);
   // La raíz gira todo el cuerpo (por defecto desde la cadera) y después lo corre.
@@ -375,7 +384,8 @@ export function huesosDeLado(huesos = {}, cuerpo = { dx: 0, baja: 0 }, piernasDx
   const cabeza = girar(24 + dx, 29 + baja, huesos.cabeza || 0);
   return {
     cuerpo: (x, y) => raiz(torso(D(x + dx, y + baja))),
-    cabeza: (x, y, mx = 0, my = 0) => raiz(torso(cabeza([x + dx + mx, y + baja + my]))),
+    cabeza: (x, y, mx = 0, my = 0) => raiz(torso(cabeza([x + dx + mx + corteCabeza, y + baja + my]))),
+    // Las piernas no se cortan: la diagonal empieza en la cadera.
     piernas: (x, y) => raiz(D(x + piernasDx, y)),
   };
 }
@@ -464,13 +474,16 @@ function agazapadoHuesos(paso) {
  */
 function tierraHuesos(paso) {
   const s = [0, -1, 1, -0.5, 0.5][paso % 5];
-  const dobla = (b) => [[24, 56], [24 + 4 * b, 64 - 6 * b], [23 + 2 * b, 72 - 4 * b], 0];
+  // 🔁 Más grande *(Santi: "cuando está arrastrándose debería mover sus brazos
+  // y piernas")*: la rodilla sube hasta la cintura y el pie se levanta atrás;
+  // el brazo que avanza se estira entero y el otro tira, con el codo atrás.
+  // (Pose parada que después se acuesta: "arriba" es adelante y "atrás" es
+  // arriba. La rodilla avanza por el piso y el pie se levanta detrás.)
+  const dobla = (b) => [[24, 56], [25 + 1.5 * b, 64 - 7 * b], [24 - 8 * b, 71 - 4 * b], 0];
   return {
     cerca: dobla(Math.max(0, s)), lejos: dobla(Math.max(0, -s)),
     y: 0, f: 0,
-    // Los antebrazos apoyados en el piso, hacia adelante: el codo contra el
-    // piso y la mano adelante; el que avanza, más estirado.
-    bC: [[30, 37], [31, 27 - 4 * s]], bL: [[29, 38], [30, 29 + 4 * s]],
+    bC: [[30, 37 + 3 * s], [31, 27 - 7 * s]], bL: [[29, 38 - 3 * s], [30, 29 + 7 * s]],
     huesos: { raiz: { ang: 1.52, dx: 4, dy: 17 }, torso: -0.12, cabeza: -1.1 },
   };
 }
@@ -514,7 +527,7 @@ export function ladoConHuesos(L, o = {}, usar, huesos = {}) {
   const baja = postura === 'rendido' ? 14 : postura ? 6 : P0.y;
   const P = P0;
   // Las posturas que traen sus propios huesos mandan sobre la inclinación de afuera.
-  const H = huesosDeLado({ ...huesos, ...(P0.huesos || {}) },
+  const H = huesosDeLado(P0.huesos ? { ...huesos, inclina: 0, ...P0.huesos } : huesos,
     { dx: (P0.dx || 0) + a.dx, baja: baja + a.dy }, a.dx ? Math.round(a.dx / 3) : 0);
   const F = FINAS[o.finas ?? 0] || FINAS[0];
   const cuerpo = () => usar(H.cuerpo);

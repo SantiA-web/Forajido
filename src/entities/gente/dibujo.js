@@ -282,8 +282,13 @@ export function Lienzo(W, H, ox = 1, oy = 1, s = 1, warp = null) {
       actual = antes;
     },
     /**
-     * Sale un canvas con la figura y su borde de 2 puntos: el de adentro negro
-     * y el de afuera a media sombra. Es lo que la despega del piso del vagón.
+     * Sale un canvas con la figura y su borde negro de un punto.
+     *
+     * 🔁 Había un segundo borde, a media sombra, por fuera del negro, para
+     * despegar a la gente del piso del vagón. Se sacó *(Santi: "hay una especie
+     * de sombra al contorno del personaje, luego de los píxeles negros, ¿no
+     * sería mejor sacarlos?")*: de cerca se veía como algo borroso, y el borde
+     * negro alcanza para que se lea contra el piso.
      */
     canvas(despues) {
       const anillo = (lleno) => {
@@ -299,11 +304,8 @@ export function Lienzo(W, H, ox = 1, oy = 1, s = 1, warp = null) {
       };
       const cuerpo = new Set(mapa.keys());
       const borde = anillo(cuerpo);
-      const borde2 = anillo(new Set([...cuerpo, ...borde]));
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
       const ctx = cv.getContext('2d');
-      ctx.fillStyle = 'rgba(12,8,6,0.5)';
-      for (const k of borde2) { const [x, y] = k.split(',').map(Number); ctx.fillRect(x, y, 1, 1); }
       ctx.fillStyle = NEGRO;
       for (const k of borde) { const [x, y] = k.split(',').map(Number); ctx.fillRect(x, y, 1, 1); }
       for (const [, [x, y, c]] of mapa) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }

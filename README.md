@@ -32,9 +32,10 @@ grilla de puntos de 3×3 (640×360 en un monitor de 1080), una **paleta cerrada
 de 48 colores**, la gente de unos 32 puntos sin cara, dibujada a mano, y la
 **luz por escalones** (el día y la noche salen del mismo dibujo). Mientras se
 dibuja, el juego sigue con el dibujo de hoy: **`F9` prende y apaga la
-prueba** (o abrí el juego con `?nuevo` en la dirección). Hoy la prueba pasa el
-dibujo viejo por la grilla y la paleta, así que se ve tosco: es la base, y cada
-etapa lo va reemplazando. El plan está en NOTAS-DISENO.md, "EL ESTILO NUEVO".
+prueba** (o abrí el juego con `?nuevo` en la dirección). **Ya está dibujado el
+vagón de pasajeros por dentro**, de día (el sol entra por los ventanales) y de
+noche (los faroles de la pared); lo demás todavía es el dibujo viejo pasado por
+la grilla y la paleta, y se ve tosco: cada etapa lo va reemplazando. El plan está en NOTAS-DISENO.md, "EL ESTILO NUEVO".
 
 ## La vista: tres cuartos (en construcción)
 

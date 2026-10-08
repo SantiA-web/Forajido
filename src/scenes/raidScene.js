@@ -37,6 +37,8 @@ import { escalarColor, ALTO_DEL_ENGANCHE, MEDIDAS } from '../world/trenTresCuart
 import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
 
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
 import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual, damagePlayer,
 } from '../entities/player.js';
@@ -4298,10 +4300,35 @@ export function createRaidScene(services) {
     // efecto visual encima de la cámara, no un movimiento real de la cámara
     // (world.aimX/aimY siguen usando camera.x limpio, así que el balanceo no
     // te desvía la puntería — sólo se ve).
-    const swayX = desplazamientoX();
+    let swayX = desplazamientoX();
+    let camY = camera.renderY + vaivenTechoY;
+    /**
+     * 🎨 ESTILO NUEVO ([F9], ver engine/estiloNuevo.js): la cámara se para en
+     * la grilla (cada 0,75 unidades), así el dibujo nuevo cae justo en sus
+     * puntos y no se parte al moverse. Y los vagones que ya están dibujados en
+     * el estilo nuevo (world/estiloNuevo/vagones.js) reemplazan al dibujo viejo.
+     */
+    const nuevos = estiloNuevo.activo ? vagonesNuevos(train, gameState.esDeDia) : null;
+    if (nuevos) {
+      swayX = Math.round(swayX / PASO) * PASO;
+      camY = Math.round(camY / PASO) * PASO;
+    }
+    const saltear = nuevos && nuevos.cols.size ? (col) => nuevos.cols.has(col) : null;
+    const enVista = (p) => p.x < swayX + r.width + 4 && p.x + p.w > swayX - 4;
+    /** Lo de siempre (luces, oscuridad), menos sobre los vagones nuevos, que ya traen su luz. */
+    const fueraDeLosNuevos = (fn) => {
+      if (!saltear) { fn(); return; }
+      r.ctx.save();
+      r.ctx.beginPath();
+      r.ctx.rect(swayX - 50, camY - 200, r.width + 100, r.height + 400);
+      for (const [a, b] of nuevos.tramos) r.ctx.rect(a, camY - 200, b - a, r.height + 400);
+      r.ctx.clip('evenodd');
+      fn();
+      r.ctx.restore();
+    };
     // 🧗 Y el bamboleo del techo, en Y: se mece el tren, no el desierto (que
     // ya se dibujó en `drawOutside`, sin esto).
-    r.ctx.translate(-swayX, -camera.renderY - vaivenTechoY);
+    r.ctx.translate(-swayX, -camY);
 
     /**
      * TRES CUARTOS, ETAPA A: TODO LO QUE ESTÁ PARADO SE DIBUJA POR DÓNDE TIENE
@@ -4317,7 +4344,8 @@ export function createRaidScene(services) {
      * `base` es `y + hh`: el borde de abajo de la caja con la que cada uno choca.
      * La caja no cambió; sólo se usa para saber quién está adelante.
      */
-    drawPisoDelTren(r, train, colors, swayX, camera.renderY);
+    drawPisoDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, saltear);
+    if (nuevos) for (const p of nuevos.piso) if (enVista(p)) estamparPieza(r, p);
 
     // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
     // la lista `enemies` es un guardia común.
@@ -4329,7 +4357,8 @@ export function createRaidScene(services) {
     for (const e of enemies) if (!e.alive && visible(e)) pintar(e);
 
     const pies = (o, alto) => o.y + (alto ?? o.hh ?? 4);
-    const cosas = cosasAltasDelTren(r, train, colors, swayX, camera.renderY);
+    const cosas = cosasAltasDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, saltear);
+    if (nuevos) for (const p of nuevos.altas) if (enVista(p)) cosas.push({ base: p.base, draw: () => estamparPieza(r, p) });
     for (const d of doors) if (visible(d)) cosas.push({ base: pies(d), draw: () => drawDoor(r, d, colors) });
     for (const tr of tranqueras) if (visible(tr)) cosas.push({ base: pies(tr, 8), draw: () => dibujarTranquera(r, tr) });
     for (const c of cajones) if (visible(c)) cosas.push({ base: pies(c), draw: () => drawCajon(r, c) });
@@ -4368,7 +4397,7 @@ export function createRaidScene(services) {
       dia: gameState.esDeDia,
       sol: 1 - (1 - L.solAlFinal) * pasado,
     };
-    luzDeLosVentanales(r, train, swayX, undefined, luz);
+    fueraDeLosNuevos(() => luzDeLosVentanales(r, train, swayX, undefined, luz));
 
     /**
      * 🌙 DE NOCHE, EL TREN SE APAGA Y LO PRENDEN LOS FAROLES (world/train.js).
@@ -4380,10 +4409,10 @@ export function createRaidScene(services) {
      * falta: la pared del fondo ya los tapa en esa franja.
      */
     if (!luz.dia) {
-      oscuridadDeNoche(r, train, swayX);
+      fueraDeLosNuevos(() => oscuridadDeNoche(r, train, swayX));
       for (const rd of riders) if (rd.y > map.height) drawRider(r, rd);
     }
-    farolesDelTren(r, train, swayX, undefined, luz);
+    fueraDeLosNuevos(() => farolesDelTren(r, train, swayX, undefined, luz));
 
     // Los jinetes de arriba del tren quedan detrás de la pared del fondo: se
     // los sigue viendo en silueta, encima de ella.

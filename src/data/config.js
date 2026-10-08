@@ -49,11 +49,13 @@ export const CONFIG = {
 
   /**
    * 🎨 EL ESTILO NUEVO, EN PRUEBA con [F9] (ver engine/estiloNuevo.js y
-   * NOTAS-DISENO.md, "EL ESTILO NUEVO"). `alto`: cuántas filas de puntos
-   * tiene la pantalla (360: puntos de 3×3 en 1080p). `paleta`: pasar todo
-   * por los 48 colores (engine/paleta.js).
+   * NOTAS-DISENO.md, "EL ESTILO NUEVO"). `punto`: cuántos puntos del lienzo
+   * mide un punto de la grilla. El lienzo tiene 4 por unidad del mundo
+   * (DENSIDAD), así que con 3 cada punto es 0,75 unidades: en 1080p la
+   * pantalla queda en 640×360 puntos y SE VE EL MISMO MUNDO QUE HOY (elegido
+   * por Santi). `paleta`: pasar lo viejo por los 48 colores (engine/paleta.js).
    */
-  estilo: { alto: 360, paleta: true },
+  estilo: { punto: 3, paleta: true },
 
   tileSize: 16,
 

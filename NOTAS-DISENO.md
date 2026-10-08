@@ -18328,7 +18328,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | Etapa | Qué | Estado |
 |---|---|---|
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
-| P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | Falta |
+| P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | Falta |
 | P3 · Guardias y pasajeros | Con colores por tipo, y los jefes | Falta |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
@@ -18355,7 +18355,43 @@ para encontrar las poses). La E4 se hace directamente en P5.
 - **engine/estiloNuevo.js:** `F9` (o `?nuevo`) pasa el cuadro entero por la
   grilla y la paleta. Hoy es el dibujo viejo achicado (se ve tosco a
   propósito). Suma unos 5 ms por cuadro, sólo prendido.
-- `CONFIG.estilo` (`alto` 360, `paleta`) y el cartel en text/es.js.
+- `CONFIG.estilo` (`punto` 3, `paleta`) y el cartel en text/es.js. 🔁 Era
+  `alto: 360` (filas de pantalla); pasó a `punto: 3` (puntos del lienzo por
+  punto de la grilla), porque el lienzo siempre tiene 4 por unidad: así la
+  grilla mide siempre 0,75 unidades y el dibujo nuevo vale igual en cualquier
+  monitor.
+
+### ✅ P1 · El vagón de pasajeros (world/estiloNuevo/vagones.js)
+
+- **La maqueta, de verdad**, en el vagón del juego: el piso de madera gastada
+  (tablas a lo largo, con juntas, clavos y gastado), la pared del fondo con sus
+  ventanales partidos en cuatro y los faroles de pared, los asientos de cuero
+  (respaldo, almohadón con botones, cara y patas) y la pared de adelante.
+- **El borde de las paredes es del color del vagón en el galope** *(Santi: "si
+  el vagón se ve morado, el borde es morado. Y así con cualquier vagón")*: sale
+  de `CONFIG.colors.costado.coche`, llevado al más parecido de la paleta.
+- **La cara de afuera de la pared de adelante** se ve como el vagón desde el
+  galope (las tablas del color del vagón y las ventanillas, prendidas de
+  noche). 🔁 Primero tenía las ventanillas enormes y le ganaba al adentro; ahora
+  van chicas y arriba, y la cara queda en sombra (está de espaldas al sol).
+- **De día** el sol entra por los ventanales del fondo y cae en diagonal sobre
+  el piso y los asientos; **de noche** se prenden los faroles: la pared brilla
+  alrededor de cada uno y en el piso queda el charco, por escalones.
+- **Los faroles van en la pared del fondo**, como en la maqueta, uno cada 8
+  columnas y corridos a la tabla de al lado si les toca un ventanal. (Los de
+  siempre colgaban sobre el pasillo y sólo se veía la luz.)
+- **Cada vagón se dibuja e ilumina una sola vez** (32 ms por vagón, al empezar
+  el asalto o al apretar F9) y se guarda en piezas: el piso, la pared del
+  fondo, cada asiento y la pared de adelante. Las altas se ordenan con la
+  gente por `base`, como siempre. Después, el cuadro cuesta lo mismo.
+- **La cámara se para en la grilla** (cada 0,75 unidades) con la prueba
+  prendida, así el dibujo nuevo cae justo en sus puntos y no se parte al
+  moverse; la grilla toma el punto del medio de cada cuadrado de 3×3.
+- Las luces viejas (el haz de los ventanales, la oscuridad de noche y los
+  charcos de los faroles) no les caen encima a los vagones nuevos.
+- 🔻 **Pendientes de esta etapa:** la luz no se hamaca con el meneo del tren (ya
+  está guardada); y de noche la gente se ve más clara que el vagón, porque
+  todavía es la de antes y no recibe la luz nueva: se arregla en P2.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

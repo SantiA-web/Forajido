@@ -9,9 +9,10 @@
  * se apaga.
  *
  * LA GRILLA: el cuadro entero (gente, tren, desierto, efectos) termina en una
- * imagen chica, de `CONFIG.estilo.alto` filas (360), y se agranda sin
- * suavizar. Así es IMPOSIBLE que algo quede con otro tamaño de punto: en
- * 1080p cada punto son 3×3 de pantalla, en 720p 2×2, en 4K 6×6.
+ * imagen chica —un punto cada `CONFIG.estilo.punto` (3) del lienzo— y se
+ * agranda sin suavizar. Así es IMPOSIBLE que algo quede con otro tamaño de
+ * punto. El lienzo siempre tiene 4 puntos por unidad del mundo, así que la
+ * grilla siempre es de 0,75 unidades: en 1080p son 640×360 puntos.
  *
  * Por ahora lo único que hace es eso: pasar el dibujo de HOY por la grilla y
  * por la paleta. Se ve tosco a propósito —es el dibujo viejo achicado—; a
@@ -36,17 +37,16 @@ export const estiloNuevo = {
   pasar(renderer) {
     if (!activo) return;
     const cv = renderer.canvas, ctx = renderer.ctx;
-    // Cuántos puntos de pantalla mide un punto de la grilla: el entero que
-    // deja más cerca de `alto` filas (1080 → 3, 720 → 2, 2160 → 6).
-    const k = Math.max(1, Math.round(cv.height / CONFIG.estilo.alto));
+    const k = CONFIG.estilo.punto;
     const w = Math.ceil(cv.width / k), h = Math.ceil(cv.height / k);
     if (!chico || chico.width !== w || chico.height !== h) {
       chico = document.createElement('canvas');
       chico.width = w; chico.height = h;
       chicoCtx = chico.getContext('2d', { willReadFrequently: true });
     }
-    chicoCtx.imageSmoothingEnabled = true;
-    chicoCtx.imageSmoothingQuality = 'medium';
+    // Sin suavizar: toma el punto del medio de cada cuadrado de 3×3. Lo nuevo
+    // ya está dibujado en la grilla y sale exacto; lo viejo pierde detalle.
+    chicoCtx.imageSmoothingEnabled = false;
     chicoCtx.clearRect(0, 0, w, h);
     chicoCtx.drawImage(cv, 0, 0, w, h);
     if (CONFIG.estilo.paleta) {

@@ -1924,7 +1924,7 @@ export function isInsideZone(entity, zone) {
  * NADA DE ESTO TOCA EL JUEGO: la grilla, los choques, la vista y las balas
  * siguen igual. Sólo cambia dónde se pinta.
  */
-export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
+export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, saltear = null) {
   const map = train.map;
   const size = map.size;
   const anchoVista = vistaW || r.width;
@@ -1963,6 +1963,8 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
 
   for (let row = filaDesde; row <= filaHasta; row++) {
     for (let col = colDesde; col <= colHasta; col++) {
+      // 🎨 Los vagones que ya se dibujan en el estilo nuevo (world/estiloNuevo/).
+      if (saltear && saltear(col)) continue;
       const tile = map.grid[row][col];
       const x = col * size;
       const y = row * size;
@@ -2080,6 +2082,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
   const tc = CONFIG.tresCuartos;
 
   for (let col = colDesde; col <= colHasta; col++) {
+    if (saltear && saltear(col)) continue;
     const x = col * size;
     const casilla = (f) => (map.grid[f] || [])[col];
 
@@ -2549,7 +2552,7 @@ const esHueco = (ch) => ch === 'X' || ch === 'O';
  *
  * Las alturas viven en `CONFIG.tresCuartos`.
  */
-export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) {
+export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, saltear = null) {
   const map = train.map;
   const size = map.size;
   const tc = CONFIG.tresCuartos;
@@ -2613,6 +2616,7 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH) 
 
   for (let row = filaDesde; row <= filaHasta; row++) {
     for (let col = colDesde; col <= colHasta; col++) {
+      if (saltear && saltear(col)) continue;
       const tile = map.grid[row][col];
       const x = col * size;
       const y = row * size;

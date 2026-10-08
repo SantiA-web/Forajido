@@ -17420,6 +17420,12 @@ saltea `applyRaidResult`). El cartel está arriba a la izquierda.
 > (`pruebaTecho`, `prepararPruebaTecho`) y `text/es.js` (`atajoCorreo`, que
 > ahora dice "[1] TECHO CON 4 JINETES Y ALARMA"): sacarlas antes de mostrar el
 > juego.
+>
+> **Y en esa prueba, [7] [8] [9] cambian el tamaño de los jinetes de allá**
+> (75%, 80% y 85%), con un cartel abajo que dice cuál está *(Santi: "haz un
+> atajo que indique caballos de aquel lado en 75%, 80% y 85%")*. El suelo de su
+> distancia se agranda con ellos. Sólo vale en la prueba (`escalaAllaPrueba` en
+> raidScene.js, `pruebaTamanoAlla` en text/es.js); afuera sigue `allaEscala`.
 
 #### La mira: qué tan real es el círculo
 

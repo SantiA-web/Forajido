@@ -118,6 +118,8 @@ export const T = {
     caisteAlEnganche: 'NO LLEGASTE AL OTRO TECHO',
     techoAyuda: '[SHIFT] CUERPO A TIERRA   [ESPACIO] SALTAR   [D][D] CORRER',
     perdistePie: '¡PERDISTE PIE!',
+    // 🧪 La prueba del techo: el tamaño de los jinetes de allá.
+    pruebaTamanoAlla: (pct) => `PRUEBA · JINETES DE ALLÁ AL ${pct}%   [7] 75%   [8] 80%   [9] 85%`,
     teAgarraste: '¡TE AGARRASTE DEL ALERO!',
     colgadoAyuda: (tecla) => `MANTENÉ [${tecla}] PARA SUBIR`,
     teCaisteDelTren: '¡TE CAÍSTE DEL TREN!',

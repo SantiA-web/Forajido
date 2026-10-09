@@ -18402,6 +18402,14 @@ para encontrar las poses). La E4 se hace directamente en P5.
   está guardada); y de noche la gente se ve más clara que el vagón, porque
   todavía es la de antes y no recibe la luz nueva: se arregla en P2.
 
+- 🔁 **El detalle vuelve, más tupido donde hay luz** *(Santi: "cuando dije
+  que no tenga tanto detalle no me refería a eliminarlo por completo… que haya
+  más en las zonas iluminadas")*: la veta y los clavos del piso (juntas cada
+  110 puntos), los clavos y la veta de la pared y los botones de los asientos.
+  Cada detalle se dibuja o no según la luz que le cae: en lo oscuro uno de cada
+  tres (la veta de la pared, casi ninguno), en el sol o bajo un farol todos.
+  Sin la raya clara de cada tabla ni los tonos alternados de antes.
+
 ### ✅ P2 · El jugador (entities/estiloNuevo/jugador.js)
 
 - **Dibujado a mano, como un muñeco de papel:** por vista, la cabeza
@@ -18432,6 +18440,14 @@ para encontrar las poses). La E4 se hace directamente en P5.
 - Sólo adentro del vagón y con la prueba prendida ([F9]). Medido: el cuadro
   sigue en 0,6 ms (mediana), sin errores en 20 s moviéndose, agachándose y
   tirando, de día y de noche.
+- 🔁 **Redibujado** *(Santi: "tiene la espalda y las piernas demasiado
+  anchas, el sombrero es muy pequeño y no se entiende cuando está en las
+  direcciones diagonales… ese pie oscuro también queda muy feo")*: el cuerpo
+  de 7 puntos de ancho (antes 10-11) y cada pierna de 2 (antes 3); el sombrero
+  con copa de 3 filas y ala de 15; en las diagonales la cabeza, la cara, el
+  chaleco y los pies se corren hacia donde mira; pantalón de lona azul (la
+  pierna de allá un escalón más oscura, no casi negra) y botas marrones.
+
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el
   piso, y el jugador arriba del techo (va en P5, con la E3).

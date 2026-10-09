@@ -20,6 +20,9 @@
  * ordenadas por `base`, igual que el dibujo de siempre. Iluminar cuesta (15 ms
  * cada 60.000 puntos); estampar lo ya iluminado, nada.
  *
+ * EL DETALLE (la veta, los clavos, los botones) es más tupido donde hay luz:
+ * ver `deja` más abajo.
+ *
  * 🔻 Simplificaciones de esta etapa: la luz no se hamaca con el meneo del tren
  * (ya está iluminada y guardada) y la gente todavía es la de antes, sin la luz
  * nueva (eso es P2).
@@ -145,6 +148,60 @@ function vagon(train, w, dia) {
     faroles.push(ax(w.x + (c + 0.5) * S));
   }
 
+  // ===== LA LUZ, por escalones
+  const tope = ay(yPisoAbajo);
+  const campo = dia
+    ? (x, y) => {
+      if (y < 8) return 0;
+      let f = y < ay(yPisoArriba) ? -1 : 0;
+      // La cara de afuera de la pared de adelante da la espalda al sol.
+      if (y >= ay(yPisoAbajo - tc.alturaParedBaja) + 8) return -1;
+      if (y >= ay(yPisoAbajo - tc.alturaParedBaja)) return 0;
+      // El sol que entra por cada ventanal del fondo y cae en diagonal al piso.
+      const y0 = ay(yPisoArriba);
+      for (const [c0, c1] of ventanasFondo) {
+        const vx = ax(w.x + c0 * S) + 3, vw = ax(w.x + (c1 + 1) * S) - 3 - vx;
+        if (y > y0 && y < tope) {
+          const xs = vx + 4 - (y - y0) * 0.5;
+          const dentro = Math.min(x - xs, xs + vw - 6 - x, y - y0, (tope - 8) - y);
+          f += Math.max(0, Math.min(1, dentro / 3));
+        }
+      }
+      return f;
+    }
+    : (x, y) => {
+      if (y >= ay(yPisoAbajo - tc.alturaParedBaja) + 8) return -2;
+      // Un escalón entero: con -1,6 TODO el piso quedaba tramado (Santi: "cansa
+      // un poco la vista"). El tramado va sólo en el borde de la luz.
+      // La pared del fondo, un escalón menos oscura: con -2 quedaba negra y se
+      // perdían las tablas.
+      let f = y < ay(yPisoArriba) ? -1 : -2;
+      const yCharco = ay(yPisoArriba) + Math.round((tope - ay(yPisoArriba)) * 0.32);
+      for (const fx of faroles) {
+        f += 2.6 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
+        f += 2.4 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - 26) / 18));
+      }
+      return f;
+    };
+
+  /**
+   * 🔁 EL DETALLE VUELVE, MÁS TUPIDO DONDE HAY LUZ *(Santi: "cuando dije que no
+   * tenga tanto detalle no me refería a eliminarlo por completo… agregá detalle
+   * a todo el vagón pero que haya más en las zonas iluminadas")*. Cada detalle
+   * chico (la veta, un clavo, un botón del asiento) se dibuja o no según la luz
+   * que le cae: en lo oscuro queda uno de cada tres; bajo el sol de un ventanal
+   * o en el charco de un farol, todos. Así el ojo descansa en la penumbra y
+   * encuentra la textura donde mira, que es donde hay luz.
+   */
+  const hash = (x, y) => ((((x * 73856093) ^ (y * 19349663)) >>> 0) % 1000) / 1000;
+  const yPisoA = ay(yPisoArriba);
+  const luzSola = (y) => {
+    if (dia) return y < yPisoA ? -1 : 0;
+    return y < yPisoA ? -1 : -2;
+  };
+  const realce = (x, y) => Math.max(0, Math.min(1, (campo(x, y) - luzSola(y)) / 1.2));
+  const deja = (x, y, semilla = 0, oscuro = 0.33) => hash(x + semilla * 7919, y) < oscuro + (1 - oscuro) * realce(x, y);
+
   // ===== EL PISO: tablas a lo largo del vagón, de madera gastada
   {
     const r = rect(PISO), p = pone(PISO);
@@ -156,11 +213,27 @@ function vagon(train, w, dia) {
        * 83, sin el gastado salteado y sin la raya clara de cada tabla. Todas
        * del mismo tono: las separa sólo la junta.
        */
-      const tabla = Math.floor((y - y0) / 8), off = (tabla * 61 + w.colStart * 11) % 170;
+      const tabla = Math.floor((y - y0) / 8), off = (tabla * 61 + w.colStart * 11) % 110;
       for (let x = 0; x < W; x++) {
         let i = (y - y0) % 8 === 7 ? 33 : 34;
-        if ((x + off) % 170 === 0) i = 33;
+        if ((x + off) % 110 === 0) i = 33;
         p(x, y, i);
+      }
+    }
+    // El detalle del piso: la veta (rayitas claras u oscuras a lo largo de la
+    // tabla) y los dos clavos de cada punta de tabla, junto a la junta.
+    for (let y = y0; y < y1 - 8; y += 8) {
+      const tabla = Math.floor((y - y0) / 8), off = (tabla * 61 + w.colStart * 11) % 110;
+      for (let x = 0; x < W; x++) {
+        if ((x + off) % 110 === 0) {
+          for (const dx of [-2, 2]) if (deja(x + dx, y + 2, 1)) { p(x + dx, y + 2, 32); p(x + dx, y + 5, 32); }
+          continue;
+        }
+        const h = hash(x, tabla * 13 + 5);
+        if (h > 0.035 || !deja(x, y + 3, 2)) continue;
+        const largo = 3 + Math.floor(hash(x, tabla) * 5), fila = 1 + Math.floor(h * 1000) % 5;
+        const color = hash(tabla, x) < 0.55 ? 35 : 33;
+        for (let q = 0; q < largo; q++) if ((x + q + off) % 110 !== 0) p(x + q, y + fila, color);
       }
     }
     r(0, y0, W, 2, 32);                                                   // la sombra de la pared del fondo
@@ -184,6 +257,18 @@ function vagon(train, w, dia) {
     const yCara = 8, yPie = ay(yPisoArriba);
     filete(r, 0);
     for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 14 === 0 ? 1 : 3);
+    for (let x = 7; x < W; x += 14) {
+      if (deja(x, yCara + 2, 3)) p(x, yCara + 2, 5);
+      if (deja(x, yPie - 5, 4)) p(x, yPie - 5, 5);
+      // La veta de cada tabla: una o dos rayitas a lo alto.
+      for (let k = 0; k < 2; k++) {
+        const vx = x - 5 + Math.floor(hash(x, k + 9) * 11), vy = yCara + 4 + Math.floor(hash(k, x) * (yPie - yCara - 14));
+        // En la pared, la veta casi sólo donde llega la luz: en lo oscuro parecían manchitas sueltas.
+        if (vx % 14 === 0 || !deja(vx, vy, 5 + k, 0.08)) continue;
+        const largo = 3 + Math.floor(hash(vx, vy) * 4);
+        for (let q = 0; q < largo; q++) p(vx, vy + q, 4);
+      }
+    }
     r(0, yPie - 2, W, 2, 1);
     for (const [c0, c1] of ventanasFondo) {
       const vx = ax(w.x + c0 * S) + 3, vw = ax(w.x + (c1 + 1) * S) - 3 - vx;
@@ -229,6 +314,10 @@ function vagon(train, w, dia) {
       r(x + 1, y + 1, 5, 1, 10); r(x + 2, y + 2, 1, bh - 10, 9);
       r(x + 6, y + sube - 2, bw - 7, bh - sube - 6, 9);        // el almohadón
       r(x + 6, y + sube - 2, bw - 7, 1, 10);
+      for (let q = y + sube + 2; q < y + bh - 10; q += 6) {
+        for (const bx of [x + 9, x + bw - 5]) if (bx < x + bw - 2 && deja(bx, q, 6)) r(bx, q, 1, 1, 8);
+      }
+      for (let q = y + 4; q < y + bh - 10; q += 6) if (deja(x + 3, q, 7)) r(x + 3, q, 1, 1, 39);
       r(x + 1, y + bh - 8, bw - 2, 4, 39);                     // la cara de adelante
       r(x + 1, y + bh - 8, bw - 2, 1, 8);
       r(x + 2, y + bh - 4, 2, 3, 3); r(x + bw - 4, y + bh - 4, 2, 3, 3);   // las patas
@@ -259,42 +348,6 @@ function vagon(train, w, dia) {
       if (dia) for (let q = 0; q < 3; q++) p(vx + 2 + q, vy + 1 + q, 20);
     }
   }
-
-  // ===== LA LUZ, por escalones
-  const tope = ay(yPisoAbajo);
-  const campo = dia
-    ? (x, y) => {
-      if (y < 8) return 0;
-      let f = y < ay(yPisoArriba) ? -1 : 0;
-      // La cara de afuera de la pared de adelante da la espalda al sol.
-      if (y >= ay(yPisoAbajo - tc.alturaParedBaja) + 8) return -1;
-      if (y >= ay(yPisoAbajo - tc.alturaParedBaja)) return 0;
-      // El sol que entra por cada ventanal del fondo y cae en diagonal al piso.
-      const y0 = ay(yPisoArriba);
-      for (const [c0, c1] of ventanasFondo) {
-        const vx = ax(w.x + c0 * S) + 3, vw = ax(w.x + (c1 + 1) * S) - 3 - vx;
-        if (y > y0 && y < tope) {
-          const xs = vx + 4 - (y - y0) * 0.5;
-          const dentro = Math.min(x - xs, xs + vw - 6 - x, y - y0, (tope - 8) - y);
-          f += Math.max(0, Math.min(1, dentro / 3));
-        }
-      }
-      return f;
-    }
-    : (x, y) => {
-      if (y >= ay(yPisoAbajo - tc.alturaParedBaja) + 8) return -2;
-      // Un escalón entero: con -1,6 TODO el piso quedaba tramado (Santi: "cansa
-      // un poco la vista"). El tramado va sólo en el borde de la luz.
-      // La pared del fondo, un escalón menos oscura: con -2 quedaba negra y se
-      // perdían las tablas.
-      let f = y < ay(yPisoArriba) ? -1 : -2;
-      const yCharco = ay(yPisoArriba) + Math.round((tope - ay(yPisoArriba)) * 0.32);
-      for (const fx of faroles) {
-        f += 2.6 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
-        f += 2.4 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - 26) / 18));
-      }
-      return f;
-    };
 
   const iluminado = (c) => iluminar({ ancho: W, alto: H, indices: c.i, marcas: c.m, campo });
   const recorte = (datos, x, y, ww, hh) => {

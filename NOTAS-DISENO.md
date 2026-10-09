@@ -18447,6 +18447,11 @@ para encontrar las poses). La E4 se hace directamente en P5.
   con copa de 3 filas y ala de 15; en las diagonales la cabeza, la cara, el
   chaleco y los pies se corren hacia donde mira; pantalón de lona azul (la
   pierna de allá un escalón más oscura, no casi negra) y botas marrones.
+- 🔁 **El ala del sombrero** *(Santi: "hay que arreglar el ala del sombrero en
+  casi todas las direcciones")*: como la cámara mira desde arriba, el ala es
+  un óvalo en todas las vistas (11 puntos detrás de la copa, 15 en el medio,
+  11 en el borde de adelante, que va oscuro). Antes era una tabla recta con
+  las puntas oscuras y se leía como un escalón.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

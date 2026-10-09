@@ -28,7 +28,14 @@
  * sombrero tiene la copa de 3 filas y el ala de 15; en las diagonales la cara,
  * el pelo, el chaleco y los pies se corren hacia donde mira; y la pierna de
  * allá es un escalón más oscura que la de acá, no casi negra, con botas
- * marrones. Los colores son
+ * marrones.
+ *
+ * 🔁 EL ALA DEL SOMBRERO *(Santi: "hay que arreglar el ala del sombrero en casi
+ * todas las direcciones")*: la cámara mira desde arriba, así que el ala se ve
+ * como un óvalo en todas las vistas: 11 puntos detrás de la copa, 15 en el
+ * medio y 11 en el borde de adelante (oscuro, la sombra del ala). Antes era
+ * una tabla recta de 13-15-13 con las puntas oscuras y se leía como un
+ * escalón. Los colores son
  * índices de la paleta (engine/paleta.js) y la luz llega pareja, la del punto
  * donde está parado (engine/luz.js).
  */
@@ -64,9 +71,9 @@ const VISTAS = {
     cabeza: mapa(0, [
       '........HhhH',
       '.......HHHHHH',
-      '.......bbbbbb',
-      '...kHHHHHHHHHHHk',
-      '.....kkkkkkkkkk',
+      '.....HHbbbbbbHH',
+      '...HHHHHHHHHHHHHHH',
+      '.....kkkkkkkkkkk',
       '.......BPPPP',
       '........BBBp',
       '.......rRRRR',
@@ -170,9 +177,9 @@ const VISTAS = {
     cabeza: mapa(0, [
       '........HhhHH',
       '.......HHHHHHH',
-      '....kHHbbbYbbbHHk',
-      '...kHHHHHHHHHHHHHk',
-      '....kkkkkkkkkkkkk',
+      '.....HHbbbYbbbHH',
+      '...HHHHHHHHHHHHHHH',
+      '.....kkkkkkkkkkk',
       '........PPPPP',
       '........pBBBp',
       '.......RRRRRRR',
@@ -276,9 +283,9 @@ const VISTAS = {
     cabeza: mapa(0, [
       '........HHhhH',
       '.......HHHHHHH',
-      '....kHHbbbbbbbHHk',
-      '...kHHHHHHHHHHHHHk',
-      '....kkkkkkkkkkkkk',
+      '.....HHbbbbbbbHH',
+      '...HHHHHHHHHHHHHHH',
+      '.....kkkkkkkkkkk',
       '........BBBBB',
       '........ppppp',
       '.......RRRRRRR',
@@ -303,9 +310,9 @@ const VISTAS = {
     cabeza: mapa(0, [
       '.........HhhHH',
       '........HHHHHHH',
-      '.....kHHbbbbbYbHHk',
-      '.....kHHHHHHHHHHHHHk',
-      '......kkkkkkkkkkkkk',
+      '......HHbbbbbYbHH',
+      '....HHHHHHHHHHHHHHH',
+      '......kkkkkkkkkkkk',
       '........BPPPPP',
       '.........pBBBP',
       '........RRRRRRR',
@@ -409,9 +416,9 @@ const VISTAS = {
     cabeza: mapa(0, [
       '.........HHhhH',
       '........HHHHHHH',
-      '.....kHHbbbbbbbHHk',
-      '.....kHHHHHHHHHHHHHk',
-      '......kkkkkkkkkkkkk',
+      '......HHbbbbbbbHH',
+      '....HHHHHHHHHHHHHHH',
+      '......kkkkkkkkkkkk',
       '.........BBBBP',
       '.........ppppP',
       '........RRRRRRR',

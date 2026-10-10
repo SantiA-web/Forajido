@@ -18531,6 +18531,17 @@ para encontrar las poses). La E4 se hace directamente en P5.
   igual**, de costado y un poco desde arriba (la fila de arriba de cada parte es
   su cara de arriba). Cada arma es UN dibujo de costado puesto en cada
   dirección de a 22,5° escalón por escalón, sin girar ni estirar (`armaEn`).
+- 🔁 **Cada dirección de cada arma, dibujada a mano** *(Santi preguntó si las
+  había dibujado a mano: no, las armaba el código desde el dibujo de costado, y
+  hacia arriba y abajo "el arma se acuesta de costado"; desde ahí: "cada
+  dirección de cada cosa se dibujará a mano")*: un mapa por dirección (de a
+  22,5°, la izquierda en espejo) más la pose cruzada de las largas, con la mano
+  del gatillo (A), la de apoyo (S) y la boca (M) marcadas a mano. Hacia abajo el
+  arma apunta a la cámara: se ve desde arriba y corta, la mano a la altura del
+  pecho. Hacia arriba se aleja: desde arriba y desde atrás. Delante o detrás del
+  cuerpo se decide por vista (de espaldas y de tres cuartos de espaldas con
+  arma larga, detrás: se ve la espalda limpia). La **escopeta, de un solo caño a
+  la vista** *("prefiero que se vea un solo cañón")*.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

@@ -452,120 +452,137 @@ const VER_BRAZO = {
 };
 
 /**
- * 🔁 LAS ARMAS, DIBUJADAS DE COSTADO Y PUESTAS EN CADA DIRECCIÓN *(Santi, con
- * fotos de referencia: el Smith & Wesson es un Schofield, el Colt de caño
- * largo; la escopeta de dos caños con culata; el Winchester 1873 "muy ancho
- * para lo largo", "la culata del Winchester" le gustó; "la palanca… un poco
- * más larga y fina"; "la escopeta quedó del mismo largo que el rifle? eso no
- * debería suceder")*.
+ * 🔁 LAS ARMAS, CADA DIRECCIÓN DIBUJADA A MANO *(Santi: "quiero saber si
+ * copiaste y pegaste los dibujos de las armas para cada dirección o si en
+ * verdad dibujaste a mano a cada una" — no: las armaba el código a partir del
+ * dibujo de costado, y hacia arriba y abajo el arma "se acuesta de costado";
+ * "a partir de ahora cada dirección de cada cosa se dibujará a mano")*.
  *
- * Cada arma es UN dibujo de costado, mirando a la derecha, con la mano del
- * gatillo en (0, 0): cada punto es [u, v, color], `u` a lo largo del arma y
- * `v` hacia abajo. Todas vistas igual: de costado y un poco desde arriba (la
- * fila de arriba de cada parte es su cara de arriba, con luz).
+ * Cada arma tiene un mapa escrito a mano por dirección, de a 22,5° (de -4,
+ * derecho para arriba, a 4, derecho para abajo; 0 es al frente). Hacia la
+ * izquierda es el mismo mapa en espejo. Las armas largas tienen además su
+ * pose CRUZADA delante del pecho. En cada mapa:
+ *   A  la mano del gatillo (el agarre; el punto (0, 0))
+ *   S  la mano de apoyo, en el guardamanos (armas largas)
+ *   M  la boca del caño (de ahí sale el fogonazo)
+ *   1 2 3 d n  el metal, de la luz a lo más oscuro (n: la boca por dentro)
+ *   W w v      la madera clara, media y oscura
+ *   r s        la madera rojiza de la culata del Colt
+ *   b o q      el bronce del Winchester
+ *   o          (en la escopeta) la mira de bronce
  *
- * Largos (de la culata a la boca): Winchester 17, escopeta 14 (un 20% más
- * corta, como una de dos caños de la época al lado del rifle), Colt 14 y
- * Schofield 11 (con la culata del revólver).
+ * Todas vistas igual: un poco desde arriba. Al frente y en diagonal, de costado
+ * (la fila de arriba de cada parte es su cara de arriba). Hacia abajo, el arma
+ * apunta a la cámara: se ve desde arriba y acortada (la culata contra el
+ * pecho, los caños hacia nosotros, la mano a la altura del pecho). Hacia arriba se aleja: se ve desde arriba
+ * y desde atrás (la cantonera hacia nosotros).
+ *
+ * Largos al frente: Winchester 17, escopeta 14 (un 20% más corta que el
+ * rifle), Colt 14, Schofield 11.
  */
-const CULATA_LARGA = [
-  [-2, 0, 6], [-1, 0, 6],
-  [-4, 1, 6], [-3, 1, 6], [-2, 1, 5], [-1, 1, 5],
-  [-4, 2, 4], [-3, 2, 5], [-2, 2, 4],
-  [-4, 3, 4],
-  [-5, 1, 31], [-5, 2, 31], [-5, 3, 31],
-];
-const tira = (v, u0, u1, c) => Array.from({ length: u1 - u0 + 1 }, (_, k) => [u0 + k, v, c]);
-const ARMAS = {
-  // Smith & Wesson Schofield: la traba arriba atrás, el tambor (más alto que el caño), el caño de 5
-  // con la mira, el extractor debajo, el guardamonte y la culata de madera.
-  smith: [
-    [0, -2, 24], [0, -1, 31],
-    [1, -1, 25], [2, -1, 24], [1, 0, 24], [2, 0, 23], [1, 1, 23], [2, 1, 31],
-    ...tira(0, 3, 7, 25), ...tira(1, 3, 7, 23), [7, -1, 24],
-    [3, 2, 31], [4, 2, 31],
-    [1, 2, 31], [2, 2, 31],
-    [0, 2, 6], [-1, 2, 5], [-1, 3, 5], [-2, 3, 4], [-2, 4, 4],
-  ],
-  // Colt de caño largo: la espuela del martillo, caño de 8 con la varilla debajo, culata rojiza.
-  colt: [
-    [-1, -2, 31], [0, -1, 31],
-    [1, -1, 25], [2, -1, 24], [1, 0, 24], [2, 0, 23], [1, 1, 23], [2, 1, 31],
-    ...tira(0, 3, 10, 25), ...tira(1, 3, 10, 23), [10, -1, 24],
-    ...tira(2, 3, 6, 31),
-    [1, 2, 31], [2, 2, 31],
-    [0, 2, 11], [-1, 2, 47], [-1, 3, 47], [-2, 3, 47], [-2, 4, 47],
-  ],
-  // Winchester 1873: la culata larga, el cajón de bronce, la palanca larga y fina (un anillo que va
-  // por debajo de la muñeca de la culata), el caño pavonado con su mira, el guardamanos y el tubo.
-  winchester: [
-    ...CULATA_LARGA,
-    [1, 0, 45], [2, 0, 45], [1, 1, 28], [2, 1, 44],
-    [1, 2, 31], [0, 3, 31], [-1, 3, 31], [-2, 3, 31],
-    ...tira(0, 3, 11, 24), [11, -1, 24],
-    ...tira(1, 3, 7, 5), ...tira(1, 8, 11, 31),
-  ],
-  // Escopeta de dos caños con culata: los dos martillos uno al lado del otro, los caños (el de allá
-  // arriba con luz, la canal, el de acá), la mira de bronce en la canal, las dos bocas, el guardamanos.
-  escopeta: [
-    ...CULATA_LARGA,
-    [0, -2, 31], [1, -1, 31], [0, -1, 23], [1, 0, 31],
-    [2, 0, 24], [1, 1, 23], [2, 1, 23], [1, 2, 31], [2, 2, 31],
-    [1, 3, 31],
-    ...tira(0, 3, 7, 25), ...tira(1, 3, 7, 23), ...tira(2, 3, 5, 5), ...tira(2, 6, 7, 24),
-    [7, 1, 28],
-    [8, 0, 31], [8, 1, 23], [8, 2, 31],
-  ],
+const COLOR_ARMA = { 1: 25, 2: 24, 3: 23, d: 31, n: 0, W: 6, w: 5, v: 4, r: 11, s: 47, b: 45, o: 28, q: 44, M: 24 };
+const DIBUJOS_ARMAS = {
+  // EL COLT de caño largo: martillo con espuela, tambor más alto que el caño, varilla debajo.
+  colt: {
+    '-4': ['.M.', '.13', '.13', '.13', '.13', '213', '32d', '.d.', '.A.', '...', '.r.', '.s.'],
+    '-3': ['...M.', '...13', '..13.', '..13.', '.13..', '.13..', '213..', '.d...', '.A...', '.....', '.r...', '.s...'],
+    '-2': ['..........M.', '.........13.', '........13..', '.......13...', '......13....', '.....13d....', '....13d.....', 'dd.12d......', '..A23.......', '...d........', '..r.........', '.ss.........'],
+    '-1': ['............2', '...........1M', '.d.......1133', '..d12..1133..', '..A231133....', '...3d33dd....', '.srdddd......', 'ss...........', 's............'],
+    0: ['.d...........', '..d12.......2', '..A231111111M', '...3d33333333', '.srdddddd....', 'ss...........', 's............'],
+    1: ['.d...........', '..d12........', '..A2311......', '...3d3311....', '.srdddd3311.2', 'ss.....dd331M', 's..........33'],
+    2: ['.d.........', '..d1.......', '..A21......', 'sr.321.....', 's..d31.....', '....d31....', '.....d31...', '......d31..', '........31.', '.........3M'],
+    3: ['.d...', '.A...', 'r....', '213..', '.13..', '..13.', '..M3.'],
+    4: ['.d.', '.A.', '...', '213', '.13', '.13', '.M3'],
+  },
+  // EL SMITH & WESSON SCHOFIELD: la traba arriba atrás, el caño más corto, culata de madera.
+  smith: {
+    '-4': ['.M.', '.13', '.13', '213', '.d2', '.A.', '...', '.W.', '.w.'],
+    '-3': ['..M.', '..13', '.13.', '.13.', '213.', '.d2.', '.A..', '....', '.W..', '.w..'],
+    '-2': ['........M.', '.......13.', '......13..', '.....13...', '.2..13d...', '.d.12d....', '..A23.....', '...d......', '..W.......', '.vw.......'],
+    '-1': ['..........2', '..2......1M', '..d12..1133', '..A231133..', '...3d33....', '.wWdddd....', 'vw.........', 'v..........'],
+    0: ['..2.......', '..d12....2', '..A231111M', '...3d33333', '.wWdddd...', 'vw........', 'v.........'],
+    1: ['..2........', '..d12......', '..A2311....', '...3d3311.2', '.wWdddd331M', 'vw.......33', 'v..........'],
+    2: ['...2......', '...d1.....', '...A21....', '.wW.321...', 'vw..d31...', '.....d31..', '.......31.', '........3M'],
+    3: ['.2..', '.d..', '.A..', 'W...', '213.', '.13.', '.M3.'],
+    4: ['.2.', '.d.', '.A.', '...', '213', '.13', '.M3'],
+  },
+  // EL WINCHESTER 1873: culata larga con cantonera, cajón de bronce, palanca en anillo larga y
+  // fina, guardamanos de madera, caño pavonado con su mira y el tubo del cargador.
+  winchester: {
+    '-4': ['M.', '2d', '2d', 'Sv', 'Ww', 'bo', 'Aq', '.w', 'Ww', 'wv', 'dd'],
+    '-3': ['...M.', '...2.', '..2d.', '..Sv.', '.Ww..', '.bo..', '.Aq..', 'W....', 'Ww...', 'wv...', 'dd...'],
+    '-2': ['.............M', '............2d', '...........2d.', '..........2d..', '.........2w...', '........Sw....', '.......2w.....', '......bq......', '.....Aod......', '....Wwd.......', '...Wwd........', '..Ww..........', '.Wvv..........', 'ddv...........', '.d............'],
+    '-1': ['................2', '................M', '..............22d', '............22dd.', '..........22wd...', '........2Sww.....', '......bbww.......', '.....Aoq.........', '...WW.d..........', '...wwd...........', '.WWvd............', 'dvw..............', 'dv...............', 'd................'],
+    0: ['................2', '...WWAbb2S222222M', 'dWWww.oqwwwwwdddd', 'dvwv..d..........', 'dv.ddd...........'],
+    1: ['d................', 'dWWWW............', 'dvwwwA...........', '.v.v..bb.........', '...dd.oq2S.......', '.....dd.ww22.....', '..........ww22...', '............wd222', '..............ddM', '................d'],
+    2: ['dd............', 'dwW...........', '.vwW..........', '.vvwW.........', '...vAb........', '...d.ob.......', '....ddw2......', '.......S2.....', '........w2....', '.........d2...', '..........d2..', '...........d2.', '............dM'],
+    3: ['dd....', '.Ww...', '..Av..', '.d.b..', '..bo..', '...Sw.', '....2d', '.....M'],
+    4: ['dd', 'Ww', 'Av', '.v', 'bo', 'Sv', '2d', 'M.'],
+    // Cruzada delante del pecho: la mano del gatillo en la cadera, el caño arriba a la izquierda.
+    cruzada: ['M......', '2d.....', '.2d....', '.2d....', '..2d...', '..Sw...', '...wv..', '...od..', '...bd..', '...A...', '....w..', '....Ww.', '.....v.', '.....dd'],
+  },
+  // LA ESCOPETA con culata, de un solo caño a la vista *(Santi: "mejor no haz la escopeta así,
+  // prefiero que se vea un solo cañón que vista desde arriba")*: el caño grueso (dos de alto: la
+  // cara de arriba con luz y el costado), el martillo, la mira de bronce, el guardamanos y la
+  // culata, la misma del Winchester. Más corta que el rifle (14 contra 17).
+  escopeta: {
+    '-4': ['M.', '13', 'S3', 'w3', 'd2', 'A3', '.w', 'Ww', 'wv', 'dd'],
+    '-3': ['...M.', '..13.', '..S3.', '.w3..', '.d2..', '.A3..', 'W....', 'Ww...', 'wv...', 'dd...'],
+    '-2': ['...........oM3', '...........13.', '..........13..', '.........13...', '........1S....', '.......1w.....', '.....d23......', '.....A3d......', '....Ww........', '...Ww.........', '..Ww..........', '.Wvv..........', 'ddv...........', '.d............'],
+    '-1': ['............o.', '............1M', '..........1133', '......d.1S33..', '......2233w...', '.....A33ww....', '...WW.d.......', '...ww.........', '.WWv..........', 'dvw...........', 'dv............', 'd.............'],
+    0: ['.....d........', '......d.....o.', '...WWA221S111M', 'dWWww.33333333', 'dvwv..ddwww...', 'dv....d.......'],
+    1: ['d.............', 'dWWWWd........', 'dvwwwAd.......', '.v.v..22......', '......331S....', '......d.3311o.', '........ww331M', '..........w.33'],
+    2: ['dd..........', 'dwW.........', '.vwW........', '.vvwWd......', '...vA2......', '.....32.....', '.....dw1....', '.......S1...', '........31o.', '.........31.', '..........3M'],
+    3: ['dd....', '.Ww...', '..Ad..', '...2..', '..23..', '...S3.', '....13', '.....M'],
+    4: ['dd', 'Ww', 'Ad', '.2', '23', 'S3', '13', 'M.'],
+    cruzada: ['M......', '13.....', '.13....', '.S3....', '..w3...', '..d2...', '...3d..', '...A...', '....w..', '....Ww.', '.....v.', '.....dd'],
+  },
 };
-// Dónde va la mano de apoyo (la izquierda) en las armas largas, y dónde está la boca.
-const APOYO = { winchester: 4, escopeta: 4 };
-const BOCA = { smith: 7, colt: 10, winchester: 11, escopeta: 8 };
+
+/** Lee un mapa: los puntos con su color, y dónde quedan la mano de apoyo y la boca (respecto de la A). */
+function leerArma(filas, espejo) {
+  let ax = 0, ay = 0;
+  filas.forEach((f, y) => { const x = f.indexOf('A'); if (x >= 0) { ax = x; ay = y; } });
+  const puntos = [];
+  let apoyo = null, boca = null;
+  filas.forEach((f, y) => {
+    for (let x = 0; x < f.length; x++) {
+      const ch = f[x];
+      if (ch === '.' || ch === 'A') continue;
+      const px = (x - ax) * (espejo ? -1 : 1), py = y - ay;
+      if (ch === 'S') { apoyo = [px, py]; continue; }
+      if (ch === 'M') boca = [px, py];
+      puntos.push([px, py, COLOR_ARMA[ch]]);
+    }
+  });
+  return { puntos, apoyo, boca };
+}
 
 /**
- * EL ARMA EN UNA DIRECCIÓN (de a 22,5°), punto por punto. El arma se recorre a
- * lo largo de su eje dominante de a un punto entero (como una línea de pixel
- * art: en diagonal, un escalón por punto) y en cada paso se pone la columna del
- * dibujo de costado que cae ahí; en diagonal se saltean columnas para que el
- * arma no quede más larga. Las columnas van hacia abajo del arma: en las
- * direcciones tendidas, hacia abajo de la pantalla; en las empinadas, de
- * costado. Hacia la izquierda es la misma, en espejo. Se guarda.
+ * EL ARMA APUNTANDO EN UNA DIRECCIÓN: el mapa de la dirección más cercana (de
+ * a 22,5°); hacia la izquierda, en espejo. Devuelve los puntos, la mano de
+ * apoyo, la boca y el ángulo de verdad de ese dibujo. Se guarda.
  */
 const armasGuardadas = new Map();
 export function armaEn(id, angulo) {
-  const r = Math.round(angulo / (Math.PI / 8));
-  const clave = id + r;
+  let r = Math.round(angulo / (Math.PI / 8));
+  r = ((r % 16) + 16) % 16;
+  if (r > 8) r -= 16;                       // de -7 a 8
+  const espejo = r > 4 || r < -4;
+  const rd = espejo ? (r > 0 ? 8 - r : -8 - r) : r;   // la dirección del lado derecho
+  const clave = id + '|' + r;
   let g = armasGuardadas.get(clave);
   if (g) return g;
-  let a = r * Math.PI / 8;
-  let c = Math.cos(a), s = Math.sin(a);
-  const espejo = c < -1e-6;
-  if (espejo) { a = Math.PI - a; c = Math.cos(a); s = Math.sin(a); }
-  const tendida = Math.abs(c) >= Math.abs(s) - 1e-6;
-  const m = Math.max(Math.abs(c), Math.abs(s));
-  const columnas = new Map();
-  for (const [u, v, col] of ARMAS[id]) {
-    if (!columnas.has(u)) columnas.set(u, []);
-    columnas.get(u).push([v, col]);
-  }
-  /** Dónde cae el punto `u` del eje, y hacia dónde va "abajo del arma". */
-  const sobreEje = (u) => {
-    const k = Math.round(u * m);
-    return tendida ? [k, Math.round(k * s / c)] : [Math.round(k * c / Math.abs(s)), k * Math.sign(s)];
-  };
-  const abajo = tendida ? [0, 1] : [-Math.sign(s), 0];
-  const puntos = [];
-  const us = [...columnas.keys()];
-  const kMin = Math.round(Math.min(...us) * m), kMax = Math.round(Math.max(...us) * m);
-  for (let k = kMin; k <= kMax; k++) {
-    const u = Math.round(k / m);
-    const col = columnas.get(u);
-    if (!col) continue;
-    const [x, y] = sobreEje(u);
-    for (const [v, color] of col) puntos.push([x + abajo[0] * v, y + abajo[1] * v, color]);
-  }
-  const voltear = ([x, y, col]) => [espejo ? -x : x, y, col];
-  const en = (u) => { const [x, y] = sobreEje(u); return [espejo ? -x : x, y]; };
-  g = { puntos: puntos.map(voltear), en, angulo: r * Math.PI / 8 };
+  g = { ...leerArma(DIBUJOS_ARMAS[id][rd], espejo), angulo: r * Math.PI / 8, r: rd };
+  armasGuardadas.set(clave, g);
+  return g;
+}
+/** El arma larga cruzada delante del pecho (de costado, en espejo). */
+export function armaCruzada(id, espejo) {
+  const clave = id + '|cruzada|' + (espejo ? 1 : 0);
+  let g = armasGuardadas.get(clave);
+  if (g) return g;
+  g = { ...leerArma(DIBUJOS_ARMAS[id].cruzada, espejo), angulo: espejo ? -1.3 : -2.15, r: -3 };
   armasGuardadas.set(clave, g);
   return g;
 }
@@ -672,18 +689,35 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     let da = ang - P.ang;
     while (da > Math.PI) da -= 2 * Math.PI;
     while (da < -Math.PI) da += 2 * Math.PI;
-    const A = armaEn(arma, P.ang + da * t);
+    // Del todo cruzada, su propio dibujo (de costado, en espejo); si no, el de la dirección.
+    const A = t === 0 ? armaCruzada(arma, vista === 'lado') : armaEn(arma, P.ang + da * t);
     const d = [Math.cos(A.angulo), Math.sin(A.angulo)];
     const mano = [Math.round(cadera[0] + (hombro[0] - cadera[0]) * t), Math.round(cadera[1] + (hombro[1] - cadera[1]) * t)];
-    const en = (u) => { const [x, y] = A.en(u); return [mano[0] + x, mano[1] + y]; };
-    larga = { t, d, mano, A, apoyo: en(APOYO[arma]), en, boca: en(BOCA[arma]) };
+    const en = (p) => [mano[0] + p[0], mano[1] + p[1]];
+    larga = { t, d, mano, A, apoyo: en(A.apoyo), boca: en(A.boca) };
   }
   // Apuntando para arriba (hacia el fondo), el brazo va detrás del cuerpo.
   // (En el culatazo nunca: el brazo levantado tiene que verse.) El arma larga
   // cruzada, de espaldas, va delante del pecho: o sea, detrás para nosotros.
-  const detras = larga
-    ? (larga.t > 0.5 ? dir[1] < -0.35 && golpe == null : vista === 'espalda' || vista === 'diagE')
-    : arma && dir[1] < -0.35 && golpe == null;
+  /**
+   * 🔁 DELANTE O DETRÁS DEL CUERPO, por vista *(Santi: "se superponen a los
+   * pixeles del personaje (cuando está de espaldas)")*. De espaldas, apuntando
+   * hacia arriba, el arma está delante del pecho: para nosotros, detrás. En
+   * tres cuartos de espaldas el brazo del arma es el de acá: va delante, salvo
+   * apuntando casi derecho para arriba. De costado, siempre delante (es el
+   * brazo de acá). La cruzada, de espaldas, detrás. En el culatazo, nunca.
+   */
+  const rArma = Math.round(Math.atan2(dir[1], dir[0]) / (Math.PI / 8));
+  const detras = !arma || golpe != null ? false
+    : larga && larga.t < 0.5 ? vista === 'espalda' || vista === 'diagE'
+      : vista === 'espalda' ? rArma < 0
+        : vista === 'lado' ? false
+          // 🔁 De tres cuartos de espaldas, el arma larga va entera detrás del
+          // cuerpo *(Santi: "el brazo izquierdo se ve, cuando debería estar
+          // hacia adelante… la culata… también quedó como el brazo")*: se ve
+          // la espalda limpia y asoma el caño por encima del hombro.
+          : vista === 'diagE' && larga ? true
+            : rArma <= -3;
 
   let boca = null;
   /** Una manga de dos de alto, de `a` a `b` (el último punto es el puño). */
@@ -716,7 +750,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     if (larga) { dibujarLarga(); return; }
     // Sin arma cuelga como el otro: dos puntos de ancho y la mano de 2×2.
     if (!arma) { colgado([hx, hy], 0, 0.1, false); return; }
-    const largo = 6;
+    // Apuntando hacia nosotros o lejos, el brazo se ve más corto (en escorzo).
+    const largo = [6, 6, 6, 3, 2][Math.min(4, Math.abs(rArma))];
     const mano = [hx + dir[0] * largo, hy + dir[1] * largo];
     // La manga, de dos de alto; el último punto antes de la mano es el puño (al sol).
     const pts = [];
@@ -729,11 +764,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     poner(Math.round(mano[0]), Math.round(mano[1]), C.P);
     poner(Math.round(mano[0]), Math.round(mano[1]) + 1, C.p);
     // El revólver (Colt o Schofield), en la dirección del brazo.
-    const A = armaEn(ARMAS[arma] ? arma : 'colt', Math.atan2(dir[1], dir[0]));
+    const A = armaEn(DIBUJOS_ARMAS[arma] ? arma : 'colt', Math.atan2(dir[1], dir[0]));
     const mx = Math.round(mano[0]), my = Math.round(mano[1]);
     for (const [x, y, c] of A.puntos) poner(mx + x, my + y, c);
-    const [bx, by] = A.en(BOCA[ARMAS[arma] ? arma : 'colt']);
-    boca = [mx + bx, my + by];
+    boca = [mx + A.boca[0], my + A.boca[1]];
     poner(mx, my, C.P);
   };
 

@@ -656,7 +656,7 @@ const GOLPE = {
  *  se tira adelante, y en vez de estela, líneas rectas de velocidad.
  */
 /**
- * 🆕 EL TAJO DEL CUCHILLO, en 8 cuadros (`tajo` 0-7, en 0,26 s; el impacto
+ * 🆕 EL TAJO DEL CUCHILLO, en 8 cuadros (`tajo` 0-7, en 0,34 s; el impacto
  * es el 3) *(Santi aprobó el plan: "sí, vamos con la B y quiero la vaina")*.
  * Con la MANO LIBRE, sin soltar el arma de fuego: la saca de la vaina, la
  * lleva atrás a la altura del hombro, corta cruzando por delante a la altura

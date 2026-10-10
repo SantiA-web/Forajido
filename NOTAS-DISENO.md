@@ -18627,6 +18627,10 @@ para encontrar las poses). La E4 se hace directamente en P5.
   izquierdo de la cintura: de frente queda al lado de la hebilla, del otro lado
   de la mano libre, así que la mano cruza por delante para sacarlo y para
   guardarlo (en el cuadro 7 ya va camino de la vaina).
+- 🔁 **El tajo, más lento y parejo** *(Santi: "debería ser un poco más lento el
+  movimiento"; eligió la B entre tres)*: pega a los 0,13 s (antes 0,10) y termina a
+  los 0,34 (antes 0,26). Más lento que el culatazo del revólver (0,07) y apenas
+  más que el de las armas largas (0,10). La espera entre golpes sigue en 0,55.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

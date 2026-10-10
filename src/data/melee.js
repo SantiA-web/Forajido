@@ -115,12 +115,14 @@ export const MELEE = {
      * que apretabas y sólo se dibujaba una línea. Ahora la mano libre saca el
      * cuchillo del cinto, lo lleva atrás y corta de un tajo (8 cuadros en
      * `golpeDura`, ver jugador.js), y el golpe cuenta a los `impacto`
-     * segundos: apenas más lento que el culatazo del revólver (0,07), *"un
-     * poco más lento que pegar con la culata"*. Entre golpe y golpe sigue
-     * `cooldown` 0,55.
+     * segundos. 🔁 Más lento, parejo *(Santi: "debería ser un poco más lento el
+     * movimiento"; eligió la B)*: pega a los 0,13 s (antes 0,10) y termina a los
+     * 0,34 (antes 0,26). Claramente más lento que el culatazo del revólver
+     * (0,07) y apenas más que el de las armas largas (0,10), *"un poco más
+     * lento que pegar con la culata"*. Entre golpe y golpe sigue `cooldown` 0,55.
      */
-    impacto: 0.10,
-    golpeDura: 0.26,
+    impacto: 0.13,
+    golpeDura: 0.34,
 
     price: 450,
   },

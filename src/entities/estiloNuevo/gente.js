@@ -19,6 +19,7 @@
  * en null no se dibuja (así el pasajero no lleva funda).
  */
 import { iluminar } from '../../engine/luz.js';
+import { sombrear } from '../../engine/paleta.js';
 import { VISTAS, C, linea, OX, OY, ANCHO, ALTO } from './jugador.js';
 
 const mapa = (y, filas) => ({ y, filas });
@@ -143,10 +144,12 @@ export const BARBAS_FINAS = {
       diagF: ['.BB............', '.BBB...........', '.BBB...........', '.BbBB..........', '.BbBB..........', '.BbBBB.........', '.BBbBB.........', '..BBB..........'],
     },
     completa: {
-      // 🔁 Tupida, sin piel en la barbilla ni en las comisuras *(Santi: "debería
-      // verse más contundente porque queda piel… se nota mucho más en diagonal")*.
-      frente: ['BB...........BB', 'BB...........BB', 'BBB.........BBB', 'BbBB.......BBbB', 'BbBBBBBBBBBBBbB', 'BbBBbbbbbbbBBbB', 'BBbBBbbbbbBBbBB', '.BBbBBBBBBBbBB.', '..BBBBBBBBBBB..'],
-      diagF: ['.BB............', '.BB............', '.BBB...........', '.BbBB..........', '.BbBBBBBBBBBB..', '.BbBBBbbbbbBB..', '.BBbBBBbbbBBB..', '..BBbBBBBBBBB..', '...BBBBBBBBB...'],
+      // 🔁 De pocos días: una sombra en la mandíbula un poco más oscura que la
+      // piel (`X`, y `x` más oscura en la boca), no un bloque del color del pelo
+      // *(Santi: "la barba de pocos días negra es tan contundente que parece que
+      // tiene mucha barba")*. Cubre la barbilla y las comisuras.
+      frente: ['...............', '...............', 'X.............X', 'X.............X', 'XX...........XX', 'XX..XXXXXXX..XX', 'XXX.XxxxxxX.XXX', '.XXXXXXXXXXXXX.', '..XXXXXXXXXXX..'],
+      diagF: ['...............', '...............', '.X.............', '.X.............', '.XX............', '.XX...XXXXXX...', '.XXX..XxxxxX...', '..XXXXXXXXXXX..', '...XXXXXXXXX...'],
     },
   },
   // De a 2×2: la cara de frente mide 7 × 4 cuadrados (y medio).
@@ -192,11 +195,11 @@ const SOMBREROS = {
   // alta con el pliegue arriba, ala más ancha que sube en las puntas pegada al
   // ala (no sueltas, que parecían cuernos). De costado el ala cae adelante y atrás.
   curvo: {
-    frente: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '....xhhhHHHHHkkkx']),
-    diagF: mapa(0, ['..........hkH', '.........hhkHk', '......hhhHHHHkkk', '.....xhhhHHHHHkkkx']),
-    lado: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '.....x.........x']),
-    diagE: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '....xhhhHHHHHkkkx']),
-    espalda: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '....xhhhHHHHHkkkx']),
+    frente: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '.......xkkkkkx']),
+    diagF: mapa(0, ['..........hkH', '.........hhkHk', '......hhhHHHHkkk', '........xkkkkkx']),
+    lado: mapa(0, ['.........hkH', '........hhkHk', '......hhhHHHkkk']),
+    diagE: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '.......xkkkkkx']),
+    espalda: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '.......xkkkkkx']),
   },
   // El de paja del civil: ala ancha que cae un poco en las puntas.
   paja: {
@@ -278,9 +281,25 @@ const PIELES = {
  * ⚠️ REGLA PARA EL SORTEO DE VARIANTES *(Santi: "el rubio nunca debe ir con piel
  * negra")*: estas combinaciones no salen nunca.
  */
+/**
+ * EL COLOR DE LA BARBA DE POCOS DÍAS: la piel en sombra (un paso más oscura
+ * que su sombra), y en los rubios y canosos, el pelo en sombra.
+ */
+const BARBA_CORTA = {
+  // [la sombra de la barba, la boca] según la piel; rubio y canas, más suaves.
+  clara: { oscuro: [11, 47], rubio: [12, 11], canas: [15, 14] },
+  media: { oscuro: [47, 1], rubio: [11, 47], canas: [15, 14] },
+  oscura: { oscuro: [1, 0], rubio: [47, 1], canas: [14, 2] },
+};
+export function colorBarbaCorta(piel, pelo) {
+  const t = BARBA_CORTA[piel];
+  return pelo === 'rubio' ? t.rubio : pelo === 'canas' ? t.canas : t.oscuro;
+}
 export const NUNCA = [{ pelo: 'rubio', piel: 'oscura' }];
 const PELOS = {
-  negro: { A: 31, a: 0, B: 31 },        // 🔁 neutro: con los negros de la paleta parecía morado
+  negro: { A: 23, a: 31, B: 31 },       // 🧪 prueba 1: gris oscuro con brillo
+  negro2: { A: 32, a: 0, B: 32 },       // 🧪 prueba 2: negro cálido (marrón casi negro)
+  negro3: { A: 41, a: 40, B: 40 },      // 🧪 prueba 3: negro azulado
   castano: { A: 4, a: 3, B: 3 },
   rubio: { A: 6, a: 5, B: 5 },
   canas: { A: 15, a: 14, B: 14 },

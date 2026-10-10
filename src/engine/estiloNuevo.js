@@ -26,6 +26,24 @@ import { T } from '../text/es.js';
 let activo = /[?&]nuevo\b/.test(location.search);
 let chico = null, chicoCtx = null;
 
+/**
+ * EL BORDE FINO DE LA GENTE (`CONFIG.estilo.bordeFino`). La grilla se come
+ * cualquier cosa más fina que un punto, así que el borde se dibuja DESPUÉS de
+ * pasar el cuadro por la grilla: mientras se dibuja el mundo, la gente se
+ * marca en una máscara (con la misma cámara) y lo que se dibuja delante de
+ * ella la tapa; al final, en cada punto que no es gente y toca uno que sí, se
+ * traza una línea de un píxel de pantalla del lado que lo toca.
+ */
+let mascara = null, mascaraCtx = null, chicaM = null, chicaMCtx = null, hayGente = false;
+function laMascara(cv) {
+  if (!mascara || mascara.width !== cv.width || mascara.height !== cv.height) {
+    mascara = document.createElement('canvas');
+    mascara.width = cv.width; mascara.height = cv.height;
+    mascaraCtx = mascara.getContext('2d');
+  }
+  return mascaraCtx;
+}
+
 export const estiloNuevo = {
   get activo() { return activo; },
   /**
@@ -34,6 +52,25 @@ export const estiloNuevo = {
    * los vagones nuevos no hay (`null`): ahí manda la oscuridad de siempre.
    */
   luzEn: null,
+  /** Marca una persona en la máscara del borde fino, donde se acaba de dibujar con `ctx`. */
+  marcarGente(ctx, img, x, y, w, h) {
+    if (!activo || !CONFIG.estilo.bordeFino) return;
+    const m = laMascara(ctx.canvas);
+    m.setTransform(ctx.getTransform());
+    m.imageSmoothingEnabled = false;
+    m.globalCompositeOperation = 'source-over';
+    m.drawImage(img, x, y, w, h);
+    hayGente = true;
+  },
+  /** Lo que se dibuja delante de la gente le tapa el borde. */
+  taparGente(ctx, img, x, y, w, h) {
+    if (!activo || !CONFIG.estilo.bordeFino || !hayGente) return;
+    const m = laMascara(ctx.canvas);
+    m.setTransform(ctx.getTransform());
+    m.globalCompositeOperation = 'destination-out';
+    m.drawImage(img, x, y, w, h);
+    m.globalCompositeOperation = 'source-over';
+  },
   /** [F9]: prender o apagar la prueba. */
   revisar(input) {
     if (input.wasPressed('F9')) activo = !activo;
@@ -63,8 +100,34 @@ export const estiloNuevo = {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(chico, 0, 0, w * k, h * k);
+    if (hayGente) this.bordeFino(ctx, w, h, k);
     ctx.restore();
     renderer.nuevoCuadro();
     renderer.text(T.estiloNuevo, 4, renderer.height - 6, '#e8b84a', 'left');
+  },
+
+  /** Traza el borde fino alrededor de lo marcado en la máscara, y la limpia. */
+  bordeFino(ctx, w, h, k) {
+    if (!chicaM || chicaM.width !== w || chicaM.height !== h) {
+      chicaM = document.createElement('canvas');
+      chicaM.width = w; chicaM.height = h;
+      chicaMCtx = chicaM.getContext('2d', { willReadFrequently: true });
+    }
+    chicaMCtx.imageSmoothingEnabled = false;
+    chicaMCtx.clearRect(0, 0, w, h);
+    chicaMCtx.drawImage(mascara, 0, 0, w, h);
+    const a = chicaMCtx.getImageData(0, 0, w, h).data;
+    const es = (x, y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 128;
+    ctx.fillStyle = '#140c1c';
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (es(x, y)) continue;
+      if (es(x - 1, y)) ctx.fillRect(x * k, y * k, 1, k);
+      if (es(x + 1, y)) ctx.fillRect(x * k + k - 1, y * k, 1, k);
+      if (es(x, y - 1)) ctx.fillRect(x * k, y * k, k, 1);
+      if (es(x, y + 1)) ctx.fillRect(x * k, y * k + k - 1, k, 1);
+    }
+    mascaraCtx.setTransform(1, 0, 0, 1, 0, 0);
+    mascaraCtx.clearRect(0, 0, mascara.width, mascara.height);
+    hayGente = false;
   },
 };

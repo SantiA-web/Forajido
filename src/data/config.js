@@ -55,7 +55,13 @@ export const CONFIG = {
    * pantalla queda en 640×360 puntos y SE VE EL MISMO MUNDO QUE HOY (elegido
    * por Santi). `paleta`: pasar lo viejo por los 48 colores (engine/paleta.js).
    */
-  estilo: { punto: 3, paleta: true },
+  /**
+   * `bordeFino`: el contorno de la gente nueva es de UN PÍXEL DE PANTALLA, no
+   * de un punto de la grilla *(Santi lo eligió viendo la hoja: "el fino,
+   * probalo en el vagón")*. Rompe a propósito la regla de la grilla, sólo para
+   * el borde (ver engine/estiloNuevo.js). En `false` vuelve el de un punto.
+   */
+  estilo: { punto: 3, paleta: true, bordeFino: true },
 
   tileSize: 16,
 

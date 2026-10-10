@@ -449,7 +449,7 @@ function linea([x0, y0], [x1, y1], poner) {
  * 'revolver', 'winchester', 'escopeta'), `ang` el ángulo del arma en el dibujo
  * (ya espejado) y `mochila` (0-4). Devuelve los índices y la boca del caño.
  */
-export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino }) {
   const V = VISTAS[vista];
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
@@ -550,8 +550,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
   }
   if (!detras) brazo();
 
-  // El contorno de un punto, por afuera de todo.
+  // El contorno de un punto, por afuera de todo (con el borde fino, lo traza
+  // engine/estiloNuevo.js después de la grilla).
   const lleno = idx.slice();
+  if (!fino)
   for (let y = 0; y < ALTO; y++) for (let x = 0; x < ANCHO; x++) {
     if (lleno[y * ANCHO + x] >= 0) continue;
     const vecino = (a, b) => a >= 0 && b >= 0 && a < ANCHO && b < ALTO && lleno[b * ANCHO + a] >= 0;
@@ -568,7 +570,7 @@ const guardados = new Map();
  * balazo que recibiste).
  */
 export function lienzoJugador(o, luz = 0, destello = false) {
-  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0].join('|');
+  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0].join('|');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 900) guardados.clear();

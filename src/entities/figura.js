@@ -543,12 +543,14 @@ function jugadorNuevo(r, f) {
   // Nunca más oscuro que un escalón: a vos te tenés que ver siempre, aunque
   // estés lejos de los faroles.
   const luz = Math.max(-1, estiloNuevo.luzEn ? estiloNuevo.luzEn(f.x, f.pies) : 0);
-  const L = lienzoJugador({ vista, piernas, arma, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)) }, luz, !!f.destello);
+  const fino = !!CONFIG.estilo.bordeFino;
+  const L = lienzoJugador({ vista, piernas, arma, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)), fino }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
   ctx.translate(x, pies);
   if (espejo) ctx.scale(-1, 1);
   ctx.drawImage(L.img, -PIES_NUEVO[0] * PASO, -PIES_NUEVO[1] * PASO, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
+  if (fino) estiloNuevo.marcarGente(ctx, L.img, -PIES_NUEVO[0] * PASO, -PIES_NUEVO[1] * PASO, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
   ctx.restore();
   const aMundo = (p) => p && { x: x + (espejo ? -1 : 1) * (p[0] - PIES_NUEVO[0]) * PASO, y: pies + (p[1] - PIES_NUEVO[1]) * PASO };
   const top = pies - 27 * PASO;

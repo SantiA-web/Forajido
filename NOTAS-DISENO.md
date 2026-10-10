@@ -18479,6 +18479,12 @@ para encontrar las poses). La E4 se hace directamente en P5.
   inclinarse un poco hacia adelante y quedar apenas encorvado")*: la cabeza se
   hunde un punto; de costado va dos adelante y la mitad de arriba del torso
   uno; en las diagonales la cabeza uno.
+- 🔁 **Borde fino** *(Santi lo eligió viendo la hoja de los tres bordes: "el fino,
+  probalo en el vagón")*: el contorno de la gente nueva es de un píxel de
+  pantalla, no de un punto. La grilla se come lo fino, así que se traza después
+  de pasar el cuadro por la grilla: la gente se marca en una máscara mientras
+  se dibuja el mundo, lo que va delante (asientos, pared) la tapa, y al final
+  se traza la línea. `CONFIG.estilo.bordeFino` en false vuelve al de un punto.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

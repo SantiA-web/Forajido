@@ -31,6 +31,7 @@ import { CONFIG } from '../../data/config.js';
 import { DENSIDAD } from '../../engine/renderer.js';
 import { iluminar } from '../../engine/luz.js';
 import { masCercano, sombrear } from '../../engine/paleta.js';
+import { estiloNuevo } from '../../engine/estiloNuevo.js';
 
 /** Cuántas unidades del mundo mide un punto de la grilla (0,75 con puntos de 3). */
 export const PASO = CONFIG.estilo.punto / DENSIDAD;
@@ -83,6 +84,8 @@ function pieza(datos, ancho, alto, x, y, base) {
 /** Estampa una pieza en el mundo (la cámara ya está puesta y alineada). */
 export function estamparPieza(r, p) {
   r.ctx.drawImage(p.img, p.x, p.y, p.w, p.h);
+  // Si está delante de alguien, le tapa el borde fino.
+  estiloNuevo.taparGente(r.ctx, p.img, p.x, p.y, p.w, p.h);
 }
 
 function vagon(train, w, dia) {

@@ -18497,6 +18497,15 @@ para encontrar las poses). La E4 se hace directamente en P5.
   puño claro de la camisa; cinto con balas y funda en la cadera; pantalón con
   luz y sombra que se ensancha sobre la bota; botas con suela; parado, el peso
   en una pierna.
+- 🆕 **El culatazo, con animación** *(Santi: "debería poder pegarle a un guardia
+  en la cabeza con el mango del arma"; eligió la opción B)*: 8 cuadros en 0,20 s.
+  El brazo del arma sube al costado de la cabeza (por delante, para que se vea)
+  y el cuerpo se echa atrás; baja de golpe con una estela y un destello en la
+  punta, el cuerpo se tira adelante; vuelve a apuntar. **El golpe cuenta en el
+  cuadro del impacto**, a los 0,07 s de apretar (`impacto` en data/melee.js),
+  no al apretar: lo que ves es lo que pasa. Sigue siendo el golpe más rápido
+  (cada 0,30 s). La reacción del guardia (la cabeza para atrás, desplomarse)
+  va con los guardias nuevos, en la P3.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

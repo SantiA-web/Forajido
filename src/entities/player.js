@@ -24,6 +24,7 @@ import { throwTarget } from '../systems/explosives.js';
 import { chanceContraElTecho } from '../systems/riders.js';
 import { geoTecho, enLaCurva } from '../world/techoGeometria.js';
 import { PIEL, PIEL_S } from './gente/dibujo.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 
 export function createPlayer(x, y, weaponId = DEFAULT_WEAPON, meleeId = DEFAULT_MELEE) {
   const c = CONFIG.player;
@@ -172,6 +173,22 @@ export function updatePlayer(p, dt, world) {
     dt * (p.weapon.retroceso / CONFIG.mira.retrocesoDecayTiempo));
   p.meleeTimer = Math.max(0, p.meleeTimer - dt);
   p.meleeSwing = Math.max(0, p.meleeSwing - dt);
+  /**
+   * EL CULATAZO EN CURSO (`p.culatazo`, segundos desde que apretaste): a los
+   * `impacto` segundos pega de verdad; a los `golpeDura` termina el dibujo.
+   * Si te tiran al piso o morís en el medio, se corta sin pegar.
+   */
+  if (p.culatazo != null) {
+    p.culatazo += dt;
+    if (!p.alive || p.tumbado > 0) p.culatazo = null;
+    else {
+      if (p.culatazoPendiente && p.culatazo >= p.melee.impacto) {
+        p.culatazoPendiente = false;
+        playerMelee(p, world, true);
+      }
+      if (p.culatazo >= p.melee.golpeDura) p.culatazo = null;
+    }
+  }
   p.stepPhase = (p.stepPhase || 0) + dt;
 
   if (!p.alive) return;
@@ -262,13 +279,25 @@ export function updatePlayer(p, dt, world) {
   const quiereCuchillo = input.wheelMoved() || input.wasPressed('KeyF');
   if (quiereCuchillo && p.meleeTimer <= 0) {
     const empujó = input.wasPressed('KeyF') && world.empujarCajon && world.empujarCajon();
-    if (!empujó) playerMelee(p, world);
+    if (!empujó) {
+      if (p.melee.impacto) empezarCulatazo(p, world);
+      else playerMelee(p, world);
+    }
   }
 
   // La dinamita va ANTES que el arma y puede quedarse con el clic: si tenés una
   // encendida en la mano, el clic izquierdo la lanza en vez de disparar.
   const lanzó = updateDynamite(p, dt, world);
   if (!lanzó) updateWeapon(p, dt, world);
+}
+
+/** Arranca el culatazo: los tiempos y el ruido del brazo ya; el golpe, en el impacto. */
+function empezarCulatazo(p, world) {
+  p.meleeTimer = p.melee.cooldown;
+  p.meleeSwing = p.melee.swingTime;
+  world.audio.play('swing');
+  p.culatazo = 0;
+  p.culatazoPendiente = true;
 }
 
 // ---------------------------------------------------------------- dinamita
@@ -1139,6 +1168,8 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     destello: p.hitFlash > 0,
     arma: !p.cover || p.peek > 0.15 ? armaDibujada(p) : null,
     mochila: bulto,
+    // El culatazo en curso, de 0 a 1 (sólo lo usa el dibujo nuevo).
+    golpe: p.culatazo != null ? p.culatazo / p.melee.golpeDura : null,
   });
   const manoY = fig.manoY;
 
@@ -1428,7 +1459,8 @@ function dibujarColgado(r, p, col) {
 }
 
 function drawKnifeArc(r, p) {
-  // Arco del cuchillo.
+  // Arco del cuchillo. (El culatazo del dibujo nuevo tiene su animación: sin arco.)
+  if (p.culatazo != null && estiloNuevo.activo) return;
   if (p.meleeSwing > 0) {
     const m = CONFIG.melee;
     const progress = 1 - p.meleeSwing / m.swingTime;

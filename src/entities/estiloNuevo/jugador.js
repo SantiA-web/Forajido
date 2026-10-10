@@ -500,7 +500,22 @@ function linea([x0, y0], [x1, y1], poner) {
  * 'revolver', 'winchester', 'escopeta'), `ang` el ángulo del arma en el dibujo
  * (ya espejado) y `mochila` (0-4). Devuelve los índices y la boca del caño.
  */
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino }) {
+/**
+ * EL CULATAZO, en 8 cuadros (`golpe` 0-7, en 0,20 s): el brazo del arma sube
+ * al costado de la cabeza, por delante para que se vea (0-2, el cuerpo se echa atrás),
+ * baja de golpe hacia adelante (3, el impacto: el cuerpo se tira adelante y
+ * baja un punto, con un destello y la estela del brazo) y vuelve a apuntar
+ * (4-7). El impacto cae a los 0,075 s, justo cuando el golpe cuenta
+ * (`impacto` en data/melee.js). Ángulos en el dibujo: 0 es hacia adelante.
+ */
+const GOLPE = {
+  brazo: [-1.0, -1.3, -1.5, 0.35, 0.6, 0.45, 0.25, 0.1],
+  inclina: [0, -1, -1, 1, 1, 1, 0, 0],
+  baja: [0, 0, 0, 1, 1, 0, 0, 0],
+};
+
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe }) {
+  if (golpe != null) ang = GOLPE.brazo[golpe];
   const V = VISTAS[vista];
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
@@ -517,8 +532,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino }) {
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0;
-  const inclina = vista === 'lado' && tipo === 'R' ? 1 : 0;
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0) + (golpe != null ? GOLPE.baja[golpe] : 0);
+  const deCostado = vista === 'lado' || vista.startsWith('diag');
+  const inclina = golpe != null ? (deCostado ? GOLPE.inclina[golpe] : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
   /**
    * 🔁 AGACHADO, ENCORVADO *(Santi: "el cuerpo, torso y cabeza, debería
    * inclinarse un poco hacia adelante y quedar apenas encorvado")*: la cabeza
@@ -534,7 +550,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino }) {
   const [hx, hy] = [V.hombro[0] + inclina + lomo, V.hombro[1] + baja];
   const dir = [Math.cos(ang), Math.sin(ang)];
   // Apuntando para arriba (hacia el fondo), el brazo va detrás del cuerpo.
-  const detras = arma && dir[1] < -0.35;
+  // (En el culatazo nunca: el brazo levantado tiene que verse.)
+  const detras = arma && dir[1] < -0.35 && golpe == null;
 
   let boca = null;
   const brazo = () => {
@@ -614,6 +631,12 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino }) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, C.M);
   }
   if (!detras) brazo();
+  // El impacto: la estela del brazo (de arriba atrás hacia adelante) y un destello en la punta.
+  if (golpe === 3) {
+    for (let a = -1.4; a < 0.2; a += 0.16) poner(Math.round(hx + Math.cos(a) * 8), Math.round(hy + Math.sin(a) * 8), 25);
+    const px = Math.round(hx + Math.cos(ang) * 9), py = Math.round(hy + Math.sin(ang) * 9);
+    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) poner(px + dx, py + dy, dx || dy ? 29 : 30);
+  }
 
   // El contorno de un punto, por afuera de todo (con el borde fino, lo traza
   // engine/estiloNuevo.js después de la grilla).
@@ -635,7 +658,7 @@ const guardados = new Map();
  * balazo que recibiste).
  */
 export function lienzoJugador(o, luz = 0, destello = false) {
-  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0].join('|');
+  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? ''].join('|');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 900) guardados.clear();

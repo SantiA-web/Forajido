@@ -53,6 +53,18 @@ export const MELEE = {
     swingTime: 0.12,
 
     /**
+     * 🔁 EL CULATAZO TIENE ANIMACIÓN Y PEGA EN EL CUADRO DEL IMPACTO *(Santi
+     * eligió la opción B: "sí, vamos con la B")*. Antes pegaba en el instante
+     * en que apretabas y se dibujaba sólo un arco. Ahora el brazo sube por
+     * encima del hombro y baja de golpe (`golpeDura`, 8 cuadros), y el golpe
+     * cuenta a los `impacto` segundos, justo cuando el dibujo pega: lo que ves
+     * es lo que pasa. 0,07 s no te quita reflejos: sigue siendo el golpe más
+     * rápido del juego.
+     */
+    impacto: 0.07,
+    golpeDura: 0.20,
+
+    /**
      * LA LÍNEA QUE SEPARA A ESTA DE LAS OTRAS DOS: por la espalda deja
      * inconsciente en vez de matar. Ver `noqueoDuracion` en CONFIG.melee para
      * qué significa exactamente estar inconsciente.

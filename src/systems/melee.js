@@ -32,13 +32,16 @@ import { damageEnemy } from '../entities/enemy.js';
  * empujón y cuánto ruido hace cada situación. Un cuchillo y un hacha no
  * cambian a qué distancia podés alcanzar a alguien de un manotazo.
  */
-export function playerMelee(p, world) {
+export function playerMelee(p, world, yaEmpezado = false) {
   const m = CONFIG.melee;
   const arma = p.melee || { damage: m.damage, cooldown: m.cooldown, swingTime: m.swingTime, noquea: false };
 
-  p.meleeTimer = arma.cooldown;
-  p.meleeSwing = arma.swingTime;
-  world.audio.play('swing');
+  // `yaEmpezado`: el culatazo arrancó antes (player.js) y esto es el impacto.
+  if (!yaEmpezado) {
+    p.meleeTimer = arma.cooldown;
+    p.meleeSwing = arma.swingTime;
+    world.audio.play('swing');
+  }
 
   const target = findTarget(p, world, m);
 

@@ -187,6 +187,14 @@ export const CONFIG = {
 
   player: {
     speed: 78,           // px por segundo
+    /**
+     * EL ARMA LARGA, SÓLO EL DIBUJO (ver `p.empuna` en entities/player.js):
+     * cuánto tarda en pasar de cruzada a apuntando y de vuelta, y cuánto queda
+     * apuntando después de un tiro antes de volver a cruzarse *(Santi: "pasa
+     * apenas un momento y el arma vuelve a estar frente del personaje")*.
+     */
+    empunaCambio: 0.15,
+    empunaTrasTiro: 0.35,
     sneakSpeed: 40,      // agachado (Ctrl): mitad de velocidad, mitad de sospecha
     coverSpeed: 40,      // pegado a una pared te movés más lento
 

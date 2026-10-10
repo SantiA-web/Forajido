@@ -514,7 +514,26 @@ const GOLPE = {
   baja: [0, 0, 0, 1, 1, 0, 0, 0],
 };
 
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe }) {
+/**
+ * 🆕 EL WINCHESTER Y LA ESCOPETA, CON LAS DOS MANOS *(Santi: "la escopeta no
+ * puede ir en un solo brazo al igual que el Winchester… al moverse, el
+ * personaje corra con el arma delante de su cuerpo llevándolo con las dos
+ * manos. Si se queda quieto o se cubre con shift lo apunta hacia adelante…
+ * Esto no debería condicionar el como se juega, sino simplemente animaciones
+ * realistas")*.
+ *
+ * `empuna` va de 0 a 1 (lo calcula player.js): 0 es CRUZADA delante del
+ * pecho (la mano del gatillo en la cadera, el caño arriba y al costado), 1 es
+ * APUNTANDO (la culata al hombro, el caño hacia la mira). En el medio, el arma
+ * pasa de una a otra (se dibuja en 4 pasos). La mano izquierda sostiene el
+ * guardamanos: el brazo libre deja de hamacarse.
+ */
+// Largo desde la mano del gatillo hasta la boca, más 2 (la culata son 3 más atrás):
+// el Winchester mide 15 puntos en total, como un rifle al lado de una persona; la escopeta, 11.
+const LARGO_ARMA = { winchester: 14, escopeta: 10 };
+const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], ang: -2.15 } };
+
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna }) {
   if (golpe != null) ang = GOLPE.brazo[golpe];
   const V = VISTAS[vista];
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
@@ -549,12 +568,68 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe 
   const cabezaY = encorva ? 1 : 0;
   const [hx, hy] = [V.hombro[0] + inclina + lomo, V.hombro[1] + baja];
   const dir = [Math.cos(ang), Math.sin(ang)];
+  // El arma larga, con las dos manos: dónde va cada mano, la culata y la boca.
+  let larga = null;
+  if (arma === 'winchester' || arma === 'escopeta') {
+    const t = golpe != null ? 1 : Math.max(0, Math.min(1, empuna ?? 1));
+    const P = vista === 'lado' ? CRUZADA.lado : CRUZADA.otra;
+    const cadera = [P.mano[0] + inclina + lomo, P.mano[1] + baja];
+    const hombro = [hx + dir[0] * 2, hy + dir[1] * 2];
+    let da = ang - P.ang;
+    while (da > Math.PI) da -= 2 * Math.PI;
+    while (da < -Math.PI) da += 2 * Math.PI;
+    const a = P.ang + da * t;
+    const d = [Math.cos(a), Math.sin(a)];
+    const mano = [cadera[0] + (hombro[0] - cadera[0]) * t, cadera[1] + (hombro[1] - cadera[1]) * t];
+    const en = (k) => [mano[0] + d[0] * k, mano[1] + d[1] * k];
+    larga = { t, d, mano, apoyo: en(4), culata: en(-3), en, boca: en(LARGO_ARMA[arma] - 2) };
+  }
   // Apuntando para arriba (hacia el fondo), el brazo va detrás del cuerpo.
-  // (En el culatazo nunca: el brazo levantado tiene que verse.)
-  const detras = arma && dir[1] < -0.35 && golpe == null;
+  // (En el culatazo nunca: el brazo levantado tiene que verse.) El arma larga
+  // cruzada, de espaldas, va delante del pecho: o sea, detrás para nosotros.
+  const detras = larga
+    ? (larga.t > 0.5 ? dir[1] < -0.35 && golpe == null : vista === 'espalda' || vista === 'diagE')
+    : arma && dir[1] < -0.35 && golpe == null;
 
   let boca = null;
+  /** Una manga de dos de alto, de `a` a `b` (el último punto es el puño). */
+  const manga = (a, b, lejos) => {
+    const pts = [];
+    linea(a, b, (x, y) => pts.push([x, y]));
+    pts.forEach(([x, y], i) => {
+      const puno = i === pts.length - 2 && !lejos;
+      poner(x, y, lejos ? C.c : puno ? C.L : C.C);
+      poner(x, y + 1, lejos ? C.c : puno ? C.C : C.c);
+    });
+  };
+  const mano = ([x, y], lejos) => { poner(Math.round(x), Math.round(y), lejos ? C.p : C.P); poner(Math.round(x), Math.round(y) + 1, C.p); };
+  /** El brazo izquierdo, del hombro al guardamanos. */
+  const brazoIzqLarga = () => {
+    const S = [VER_BRAZO[vista].hombro[0] + inclina + lomo, VER_BRAZO[vista].hombro[1] + baja];
+    manga(S, larga.apoyo, vista === 'lado');
+  };
+  /** El arma larga y las dos manos. */
+  const dibujarLarga = () => {
+    if (vista !== 'lado') brazoIzqLarga();
+    const { en } = larga;
+    const L2 = LARGO_ARMA[arma] - 2;
+    if (arma === 'winchester') {
+      linea(larga.culata, en(0), (x, y) => poner(x, y, 5));
+      linea(en(1), en(L2), (x, y) => poner(x, y, 25));
+      const [bx, by] = en(1); poner(Math.round(bx), Math.round(by), 28);
+      linea(en(3), en(5), (x, y) => poner(x, y, 5));           // el guardamanos de madera
+    } else {
+      linea(larga.culata, en(0), (x, y) => poner(x, y, 5));
+      linea(en(1), en(L2), (x, y) => { poner(x, y, 24); poner(x, y + 1, 23); });
+    }
+    manga([hx, hy], larga.mano, false);
+    mano(larga.mano, false);
+    mano(larga.apoyo, vista === 'lado');
+    boca = larga.boca;
+  };
+
   const brazo = () => {
+    if (larga) { dibujarLarga(); return; }
     // Sin arma cuelga como el otro: dos puntos de ancho y la mano de 2×2.
     if (!arma) { colgado([hx, hy], 0, 0.1, false); return; }
     const largo = 6;
@@ -614,7 +689,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe 
     colgado([VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja], ida * 0.9, B ? B.codo : 0.1, vista === 'lado');
   };
 
-  if (vista === 'lado') brazoLibre();
+  if (vista === 'lado') { if (larga) brazoIzqLarga(); else brazoLibre(); }
   if (detras) brazo();
   if (mochila && (vista === 'espalda' || vista === 'diagE' || vista === 'lado')) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h + mochila; j++) for (let q = 0; q < w; q++) poner(x + q + inclina + lomo, y + j + baja, j === 0 ? C.m : C.M);
@@ -626,7 +701,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe 
   if (baja < 0 || baja === 2) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
   dibujarMapa(V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
   dibujarMapa(V.cabeza, baja + cabezaY, inclina + cabezaX);
-  if (vista !== 'lado') brazoLibre();
+  if (vista !== 'lado' && !larga) brazoLibre();
   if (mochila && (vista === 'frente' || vista === 'diagF')) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, C.M);
   }
@@ -658,7 +733,7 @@ const guardados = new Map();
  * balazo que recibiste).
  */
 export function lienzoJugador(o, luz = 0, destello = false) {
-  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? ''].join('|');
+  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1].join('|');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 900) guardados.clear();

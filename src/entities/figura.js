@@ -546,7 +546,9 @@ function jugadorNuevo(r, f) {
   const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
   // El culatazo: de los 8 cuadros, cuál toca.
   const golpe = f.golpe != null ? Math.min(7, Math.floor(f.golpe * 8)) : null;
-  const L = lienzoJugador({ vista, piernas, arma, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe }, luz, !!f.destello);
+  // El arma larga, de cruzada (0) a apuntando (1), en 4 pasos (ver jugador.js).
+  const empuna = arma === 'winchester' || arma === 'escopeta' ? Math.round((f.empuna ?? 1) * 3) / 3 : 1;
+  const L = lienzoJugador({ vista, piernas, arma, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
   ctx.translate(x, pies);

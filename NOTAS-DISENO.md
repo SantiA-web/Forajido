@@ -18506,6 +18506,18 @@ para encontrar las poses). La E4 se hace directamente en P5.
   no al apretar: lo que ves es lo que pasa. Sigue siendo el golpe más rápido
   (cada 0,30 s). La reacción del guardia (la cabeza para atrás, desplomarse)
   va con los guardias nuevos, en la P3.
+- 🆕 **El Winchester y la escopeta, con las dos manos** *(Santi: "la escopeta no
+  puede ir en un solo brazo al igual que el Winchester… Esto no debería
+  condicionar el como se juega, sino simplemente animaciones realistas")*:
+  moviéndote o agachado, el arma va **cruzada** delante del pecho (la mano del
+  gatillo en la cadera, el caño arriba al costado de la cabeza); quieto de pie,
+  a cubierto o con clic derecho, **apuntando** (la culata al hombro). Si
+  disparás llevándola cruzada, salta al frente en el mismo cuadro, sale el tiro
+  y a los 0,35 s vuelve (`empunaTrasTiro`); el cambio dura 0,15 s
+  (`empunaCambio`). La mano izquierda va en el guardamanos. Es sólo el
+  dibujo: la bala sale igual que antes. El Winchester pasó a medir 15 puntos y
+  la escopeta 11, más fieles al lado de una persona. El revólver sigue a una
+  mano.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

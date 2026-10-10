@@ -178,6 +178,24 @@ export function updatePlayer(p, dt, world) {
    * `impacto` segundos pega de verdad; a los `golpeDura` termina el dibujo.
    * Si te tiran al piso o morís en el medio, se corta sin pegar.
    */
+  /**
+   * CÓMO LLEVÁS EL ARMA LARGA (`p.empuna`, sólo para el dibujo: no toca cómo
+   * se juega). 1 es apuntando: quieto de pie, a cubierto, con clic derecho, o
+   * recién disparaste (`p.tiroLargo`). 0 es cruzada delante del pecho:
+   * moviéndote o agachado. Pasa de una a otra en `CONFIG.player.empunaCambio`
+   * segundos; al disparar salta a apuntar en el mismo cuadro.
+   */
+  {
+    const c = CONFIG.player;
+    p.tiroLargo = Math.max(0, (p.tiroLargo || 0) - dt);
+    const movio = Math.hypot(p.x - (p._empX ?? p.x), p.y - (p._empY ?? p.y)) > 0.2;
+    p._empX = p.x; p._empY = p.y;
+    p._quieto = movio ? 0 : (p._quieto || 0) + dt;
+    const apunta = p.cover || (p.apuntado || 0) > 0.5 || p.tiroLargo > 0 || (!p.sneaking && p._quieto > 0.1);
+    const paso = dt / c.empunaCambio;
+    p.empuna = p.empuna ?? 1;
+    p.empuna = apunta ? Math.min(1, p.empuna + paso) : Math.max(0, p.empuna - paso);
+  }
   if (p.culatazo != null) {
     p.culatazo += dt;
     if (!p.alive || p.tumbado > 0) p.culatazo = null;
@@ -1029,6 +1047,9 @@ function shoot(p, world) {
   p.ammo -= 1;
   p.fireTimer = w.fireRate;
   p.muzzle = CONFIG.feel.muzzleTime;
+  // El arma larga salta al frente para el tiro y después vuelve (sólo el dibujo).
+  p.empuna = 1;
+  p.tiroLargo = CONFIG.player.empunaTrasTiro;
   p.recoil = 1;
 
   /**
@@ -1170,6 +1191,8 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     mochila: bulto,
     // El culatazo en curso, de 0 a 1 (sólo lo usa el dibujo nuevo).
     golpe: p.culatazo != null ? p.culatazo / p.melee.golpeDura : null,
+    // Cómo llevás el arma larga: 0 cruzada, 1 apuntando (sólo el dibujo nuevo).
+    empuna: p.empuna ?? 1,
   });
   const manoY = fig.manoY;
 

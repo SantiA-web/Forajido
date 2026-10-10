@@ -202,11 +202,12 @@ const SOMBREROS = {
    * (desde la fila -2) para que la caída del ala no tape la cara.
    */
   curvo: {
-    frente: mapa(-2, ['........hhkHk', '........hHkHk', '....hh..hHHHk..kk', '....hhhhbbbbbkkkk', '.....hhHHHHHHHkk', '.......xkkkkkx']),
-    diagF: mapa(-2, ['.........hhkHk', '.........hHkHk', '....hh...hHHHk..kk', '....hhhhhbbbbbkkkk', '.....hhhHHHHHHkk', '.......xxkkkkx']),
-    lado: mapa(-2, ['........hhkHk', '........hHkHk', '...h....hHHHk....k', '...hh...bbbbb...kk', '....hhhhHHHHHkkkk', '......xxkkkkkx']),
-    diagE: mapa(-2, ['........hhkHk', '........hHkHk', '....hh..hHHHk..kk', '....hhhhbbbbbkkkk', '.....hhHHHHHHHkk', '.......xkkkkkx']),
-    espalda: mapa(-2, ['........hhkHk', '........hHkHk', '....hh..hHHHk..kk', '....hhhhbbbbbkkkk', '.....hhHHHHHHHkk', '.......xkkkkkx']),
+    // 🔁 Dos puntos más angosto *(Santi: "reduce el tamaño unos 2 o 3 pixeles")*.
+    frente: mapa(-2, ['........hhkHk', '........hHkHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
+    diagF: mapa(-2, ['.........hhkHk', '.........hHkHk', '.....hh..hHHHk.kk', '.....hhhhbbbbbkkk', '......hhHHHHHHk', '.......xkkkkkx']),
+    lado: mapa(-2, ['........hhkHk', '........hHkHk', '....h...hHHHk...k', '....hh..bbbbb..kk', '.....hhhHHHHHkkk', '......xkkkkkx']),
+    diagE: mapa(-2, ['........hhkHk', '........hHkHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
+    espalda: mapa(-2, ['........hhkHk', '........hHkHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
   },
   // El de paja del civil: ala ancha que cae un poco en las puntas.
   paja: {

@@ -18331,7 +18331,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
-| P3 · Guardias y pasajeros | Con colores por tipo, y los jefes | Falta |
+| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
@@ -18665,6 +18665,45 @@ para encontrar las poses). La E4 se hace directamente en P5.
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el
   piso, y el jugador arriba del techo (va en P5, con la E3).
+
+### 🎨 P3 · LA GENTE DEL TREN (2026-10-10)
+
+*(Santi: "variables que harían que los personajes sean más únicos: barba,
+sombrero, ropa, color de cabello y formas mínimas de cuerpo… para añadir más
+realismo y humanidad al juego")*. El mismo cuerpo que el jugador (27 puntos,
+sus piernas y su paso) y encima lo suyo, en mapas apilados que se combinan
+(). Cuatro pasos: **1** diseño (hoja de prueba),
+**P3a** poses y animaciones base, **P3b** variantes, **P3c** guardias especiales.
+Primera clase y las mujeres quedan para después.
+
+**✅ Paso 1 cerrado** *("esto está excelente, justo como quería")*. Lo decidido:
+- **Los guardias comparten el uniforme de la compañía ferroviaria**: chaleco
+  **bordó** (eligió entre gris, verde y bordó) con la **estrella** dorada en el
+  pecho, pantalón gris, y **siempre con sombrero**; varían dentro de eso. Los
+  civiles varían en todo (el civil encubierto sale de sus variantes).
+- **Sombreros** negros neutros (los negros de la paleta tiran a violeta) o
+  **marrón oscuro con la cinta crema**: el **plano** (copa baja, ala ancha) y el
+  **curvo** (el de Arthur Morgan sin la soga: chico, ala que sube en las puntas
+  con el borde de abajo en U, copa chata y pareja) para los guardias; **bombín**
+  y **paja** (o nada) para los civiles. Costó cinco vueltas el curvo: las puntas
+  sueltas parecían cuernos; la curva sale del borde de abajo del ala.
+- **Pañuelo al cuello** de colores apagados (rojo, azul, ocre, verde, pardo) para
+  los civiles; la corbata queda para los ricos de primera clase.
+- **Pelo**: negro **cálido** (marrón casi negro; eligió entre tres), castaño,
+  rubio, canas. **Peinados** que se distinguen por la silueta: corto (pegado,
+  se ven las sienes), al costado (alto, con volumen y la raya), pelado.
+- **Barbas con puntos finos de 1×1** (eligió entre 3×3, 2×2 y 1×1), encima de la
+  cara después de la grilla como el borde fino: **de pocos días** (una sombra en
+  la mandíbula según la piel, en el tono cálido con pelo oscuro), **bigote**,
+  **candado**, **patillas grandes** (como las de San Martín) y afeitado.
+- **Piel** clara, media y oscura, con **más media y oscura** por ser frontera
+  (propuesta 20/40/40, ). **El rubio nunca con piel oscura** ().
+- **Camisa** larga o arremangada. El blindado: placa de acero en el torso (sin
+  casco: no existía en el Oeste y no le dice nada al jugador).
+- **Falta para P3b**: las barbas finas en las otras tres vistas y la capa del
+  motor que las pinta; el chaleco o los tiradores o la chaqueta de cuero, la
+  maleta, el bolso, el diario, el bastón y soltar la maleta; los cuerpos
+  (gordito, flaco, hombros anchos); el sorteo.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

@@ -186,7 +186,10 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   rumbo: EL ESTILO NUEVO** (ver NOTAS, "EL ESTILO NUEVO"): pixel art en grilla
   de 3×3, paleta de 48 y gente de 32 sin cara, dibujada a mano. P0 (la base,
   con la prueba en F9), P1 (el vagón de pasajeros) y P2 (el jugador, adentro)
-  hechas; sigue **P3, los guardias y los pasajeros**. La E4 (los
+  hechas; sigue **P3, los guardias y los pasajeros**: el paso 1 (el diseño de la
+  gente y sus variantes, entities/estiloNuevo/gente.js, todavía sin usar en el
+  juego) está cerrado; sigue P3a, las poses y animaciones (ver NOTAS, "P3 · LA
+  GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
   los guardias en el techo. Hay código de la vista de arriba del techo sin uso

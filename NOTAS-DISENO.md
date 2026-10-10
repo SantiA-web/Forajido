@@ -18518,6 +18518,19 @@ para encontrar las poses). La E4 se hace directamente en P5.
   dibujo: la bala sale igual que antes. El Winchester pasó a medir 15 puntos y
   la escopeta 11, más fieles al lado de una persona. El revólver sigue a una
   mano.
+- 🔁 **Las armas, redibujadas con fotos de referencia de Santi** (3 vueltas de
+  maqueta): el Smith & Wesson es un **Schofield** (la traba arriba atrás) y el
+  **Colt, de caño largo** (la varilla debajo, culata rojiza); los dos con el
+  tambor más alto que el caño. **Winchester 1873**: culata larga que cae hacia
+  atrás con la cantonera (le gustó), cajón de bronce, palanca larga y fina en
+  anillo, guardamanos de madera y caño pavonado; fino, 2 puntos de alto
+  adelante ("muy ancho para lo largo"). **Escopeta de dos caños con culata**,
+  14 de largo contra 17 del rifle ("la escopeta quedó del mismo largo que el
+  rifle? eso no debería suceder"): los dos caños con la canal en el medio y la
+  mira de bronce EN la canal, los dos martillos, las dos bocas. **Todas vistas
+  igual**, de costado y un poco desde arriba (la fila de arriba de cada parte es
+  su cara de arriba). Cada arma es UN dibujo de costado puesto en cada
+  dirección de a 22,5° escalón por escalón, sin girar ni estirar (`armaEn`).
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

@@ -537,6 +537,8 @@ function jugadorNuevo(r, f) {
   }
   const al = armaLarga(f.arma);
   const arma = !f.arma ? null : al ? (al.cadera ? 'escopeta' : 'winchester') : 'revolver';
+  // Para el dibujo nuevo, cuál revólver: el Smith & Wesson es un Schofield; el resto, el Colt.
+  const armaNueva = arma === 'revolver' ? (f.armaId === 'smith' ? 'smith' : 'colt') : arma;
   const a = f.angulo ?? 0;
   const ang = espejo ? Math.PI - a : a;
   const x = Math.round(f.x / PASO) * PASO, pies = Math.round(f.pies / PASO) * PASO;
@@ -548,7 +550,7 @@ function jugadorNuevo(r, f) {
   const golpe = f.golpe != null ? Math.min(7, Math.floor(f.golpe * 8)) : null;
   // El arma larga, de cruzada (0) a apuntando (1), en 4 pasos (ver jugador.js).
   const empuna = arma === 'winchester' || arma === 'escopeta' ? Math.round((f.empuna ?? 1) * 3) / 3 : 1;
-  const L = lienzoJugador({ vista, piernas, arma, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna }, luz, !!f.destello);
+  const L = lienzoJugador({ vista, piernas, arma: armaNueva, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
   ctx.translate(x, pies);

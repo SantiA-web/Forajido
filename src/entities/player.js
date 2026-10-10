@@ -1188,6 +1188,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     postura: agachado ? 'agachado' : 'pie',
     destello: p.hitFlash > 0,
     arma: !p.cover || p.peek > 0.15 ? armaDibujada(p) : null,
+    armaId: p.weapon && p.weapon.id,
     mochila: bulto,
     // El culatazo en curso, de 0 a 1 (sólo lo usa el dibujo nuevo).
     golpe: p.culatazo != null ? p.culatazo / p.melee.golpeDura : null,

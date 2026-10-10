@@ -18459,6 +18459,22 @@ para encontrar las poses). La E4 se hace directamente en P5.
   levantado y, de costado, el cuerpo inclinado un punto hacia adelante.
   Agachado alternaba dos dibujos casi iguales; ahora avanza en cuatro (paso,
   pasa con el pie levantado, el otro paso, pasa) y el cuerpo se hamaca un punto.
+- 🔁 **Ocho cuadros por ciclo, para todo lo que se mueve** *(Santi: del trote de
+  cuatro, "quedó espantoso… solo se mueve la pierna de adelante y no flexiona
+  las rodillas"; "a partir de ahora creo que todo debería ser 8 fotogramas")*:
+  trotar, caminar y avanzar agachado tienen 8 cuadros. La rodilla y el tobillo
+  de cada cuadro están puestos a mano, de costado; cada pierna es una línea de
+  puntos enteros de dos de ancho con la bota en la punta, y las otras vistas
+  salen de los mismos puntos (lo que va adelante, de frente baja en la
+  pantalla). El trote da un paso cada 16 unidades en vez de 20 (elegido): con
+  20 los pies patinaban. **No era el tamaño:** el personaje mide lo mismo que
+  al principio (20 unidades) y la velocidad es la de siempre.
+- 🔁 **El brazo libre** mide 8 puntos (antes 6, *"parece un brazito de T-Rex"*),
+  le llega a medio muslo y se hamaca al revés de la pierna; trotando, con el
+  codo doblado.
+- 🔁 **El revólver**, dibujado a mano en 9 direcciones (de a 22,5°): tambor con
+  martillo, caño de 5 con la boca clara y culata de madera. No se gira ni se
+  estira, así no se deforma *(Santi: "parece un objeto sin forma")*.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

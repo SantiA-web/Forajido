@@ -516,20 +516,24 @@ export function dibujarPersona(r, f) {
  * (cada 0,75 unidades) y recibe la luz pareja del lugar donde está parado.
  * Devuelve lo mismo que `dibujarPersona`, más la boca del caño.
  */
-const CAMINAR_NUEVO = { 0: 'B', 1: 'A', 2: 'C', 3: 'B', 4: 'D' };
-// 🔁 Agachado avanza con cuatro cuadros, como caminar *(Santi: "cuando está
-// agachado se ve mal el avance, debería mover mejor las piernas")*: antes
-// alternaba dos dibujos casi iguales.
-const AGACHADO_NUEVO = { 0: 'agB', 1: 'agA', 2: 'agC', 3: 'agB', 4: 'agD' };
+/**
+ * 🔁 OCHO CUADROS POR CICLO (dos pasos) para todo lo que se mueve *(Santi: "a
+ * partir de ahora creo que todo debería ser 8 fotogramas")*. Y el trote da un
+ * paso cada 16 unidades, no cada 20 *(elegido por Santi)*: con 20, entre los
+ * pies dibujados había 10 y el resto lo patinaba. La velocidad no cambia: son
+ * 4,9 pasos por segundo en vez de 3,9.
+ */
+const PASO_NUEVO = { trotar: 16, caminar: 14, agachado: 14 };
+const cuadro8 = (recorrido, modo) => Math.floor((((recorrido / PASO_NUEVO[modo]) % 2) + 2) % 2 * 4) % 8;
 function jugadorNuevo(r, f) {
   const PASO = CONFIG.estilo.punto / 4;
   const [vista, , , espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const agachado = (f.postura || 'pie') !== 'pie';
   let piernas = 'quieto';
-  if (agachado) piernas = f.fase != null ? AGACHADO_NUEVO[cuadroDe(f.fase, 'agachado')] : 'agachado';
+  if (agachado) piernas = f.fase != null ? 'G' + cuadro8(f.fase, 'agachado') : 'agachado';
   else if (f.fase != null) {
-    if (f.modo === 'caminar') piernas = CAMINAR_NUEVO[cuadroDe(f.fase, 'caminar')];
-    else piernas = ['RA', 'RB', 'RC', 'RD'][cuadroDe(f.fase, 'trotar') >> 1];
+    if (f.modo === 'caminar') piernas = 'W' + cuadro8(f.fase, 'caminar');
+    else piernas = 'R' + cuadro8(f.fase, 'trotar');
   }
   const al = armaLarga(f.arma);
   const arma = !f.arma ? null : al ? (al.cadera ? 'escopeta' : 'winchester') : 'revolver';

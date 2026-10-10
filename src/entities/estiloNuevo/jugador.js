@@ -104,54 +104,6 @@ const VISTAS = {
         '........OOOO',
         '.......OOOOQ',
       ]),
-      A: mapa(17, [
-        '.......TFFTT',
-        '.......ttTTT',
-        '......tt.TTT',
-        '......tt..TT',
-        '.....tt...TTT',
-        '.....tt....TT',
-        '....tt.....TT',
-        '....tt.....TT',
-        '...OOO.....OOOO',
-        '...OOO.....OOOQ',
-      ]),
-      B: mapa(17, [
-        '.......TFFTT',
-        '........TTTt',
-        '........TTTt',
-        '........TTTt',
-        '.......tTTT',
-        '......ttTTT',
-        '....OOO.TTT',
-        '........TTT',
-        '........OOOO',
-        '.......OOOOQ',
-      ]),
-      C: mapa(17, [
-        '.......TFFTT',
-        '.......TTTtt',
-        '......TTT.tt',
-        '......TT...tt',
-        '.....TTT...tt',
-        '.....TT.....tt',
-        '....TTT.....tt',
-        '....TT......tt',
-        '..OOOO......OOO',
-        '..OOOO......OOO',
-      ]),
-      D: mapa(17, [
-        '.......TFFTT',
-        '........tttT',
-        '........tttT',
-        '........tttT',
-        '.......TttT',
-        '......TTttt',
-        '....OOOOttt',
-        '........ttt',
-        '........OOOO',
-        '.......OOOOO',
-      ]),
       agachado: mapa(20, [
         '.......TFFTTT',
         '.......tTTTTTT',
@@ -160,90 +112,6 @@ const VISTAS = {
         '.....tt.....TT',
         '...OOOO....OOOO',
         '...OOOO....OOOQ',
-      ]),
-      RA: mapa(17, [
-        '.......TFFTT',
-        '.......ttTTT',
-        '......tt..TTT',
-        '......tt...TTT',
-        '.....tt.....TT',
-        '.....tt.....TT',
-        '....tt......TT',
-        '...tt.......TT',
-        '..OO........OOOO',
-        '..OO........OOOQ',
-      ]),
-      RB: mapa(17, [
-        '.......TFFTT',
-        '.......TTTtt',
-        '......TTT.ttt',
-        '..OO.TTT...tt',
-        '..OOTTT....tt',
-        '...........tt',
-        '...........tt',
-        '...........OOOO',
-        '...........OOOQ',
-        '',
-      ]),
-      RC: mapa(17, [
-        '.......TFFTT',
-        '.......TTTtt',
-        '......TTT..tt',
-        '......TT....tt',
-        '.....TTT....tt',
-        '.....TT......tt',
-        '....TTT......tt',
-        '...TTT.......tt',
-        '..OOO........OOO',
-        '..OOOQ.......OOO',
-      ]),
-      RD: mapa(17, [
-        '.......TFFTT',
-        '.......ttTTT',
-        '......ttt.TTT',
-        '..OO.ttt...TTT',
-        '..OOttt.....TT',
-        '...........TT',
-        '...........TT',
-        '...........OOOO',
-        '...........OOOQ',
-        '',
-      ]),
-      agA: mapa(20, [
-        '.......TFFTTT',
-        '......ttTTTTTT',
-        '.....tt.....TTT',
-        '....tt.......TT',
-        '...tt........TT',
-        '..OOO.......OOOO',
-        '..OOO.......OOOQ',
-      ]),
-      agB: mapa(20, [
-        '.......TFFTTT',
-        '.......tTTTTTT',
-        '.......tt..TTT',
-        '.......ttt.TT',
-        '.....OOOO..TT',
-        '..........OOOO',
-        '..........OOOQ',
-      ]),
-      agC: mapa(20, [
-        '.......TFFTTT',
-        '......TTTttttt',
-        '.....TTT....ttt',
-        '....TTT......tt',
-        '...TTT.......tt',
-        '..OOOO......OOO',
-        '..OOOQ......OOO',
-      ]),
-      agD: mapa(20, [
-        '.......TFFTTT',
-        '.......TTTTttt',
-        '.......TTT..tt',
-        '......TTT...tt',
-        '....OOOO...tt',
-        '..........OOOO',
-        '..........OOOO',
       ]),
     },
   },
@@ -261,12 +129,12 @@ const VISTAS = {
     ]),
     torso: mapa(8, [
       '.......VVRRRVV',
-      '......CVVCRCVV',
-      '......CVVCLCVV',
-      '......CVVCLCVV',
-      '......CVVCLCVV',
-      '......cVVCLCVV',
-      '......PVVCLCVV',
+      '.......VVCRCVV',
+      '.......VVCLCVV',
+      '.......VVCLCVV',
+      '.......VVCLCVV',
+      '.......VVCLCVV',
+      '.......VVCLCVV',
       '.......VVCCCVV',
       '.......WWWYWWW',
     ]),
@@ -285,54 +153,6 @@ const VISTAS = {
         '.......OOO.OOO',
         '.......OQO.OQO',
       ]),
-      A: mapa(17, [
-        '.......TTTTTTF',
-        '........TTTTTF',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '.......OOO.TT',
-        '.......OQO.TT',
-        '...........TT',
-        '..........OOO',
-        '..........OQO',
-      ]),
-      B: mapa(17, [
-        '.......TTTTTTF',
-        '........TTTTTF',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '.......OOO.TT',
-        '.......OQO.OOO',
-        '..........OQO',
-      ]),
-      C: mapa(17, [
-        '.......TTTTTTF',
-        '........TTTTTF',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.OOO',
-        '........TT.OQO',
-        '........TT',
-        '.......OOO',
-        '.......OQO',
-      ]),
-      D: mapa(17, [
-        '.......TTTTTTF',
-        '........TTTTTF',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.OOO',
-        '.......OOO.OQO',
-        '.......OQO',
-      ]),
       agachado: mapa(20, [
         '.......TTTTTTT',
         '......TTT...TTT',
@@ -341,90 +161,6 @@ const VISTAS = {
         '.......TT...TT',
         '......OOO...OOO',
         '......OQO...OQO',
-      ]),
-      RA: mapa(17, [
-        '.......TTTTTTF',
-        '........TTTTTF',
-        '........TT.TT',
-        '........TT.OOO',
-        '........TT.OQO',
-        '........TT',
-        '........TT',
-        '........TT',
-        '.......OOO',
-        '.......OQO',
-      ]),
-      RB: mapa(17, [
-        '.......TTTTTTF',
-        '........TTTTTF',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.OOO',
-        '........TT.OQO',
-        '.......OOO',
-        '.......OQO',
-        '',
-      ]),
-      RC: mapa(17, [
-        '.......TTTTTTF',
-        '........TTTTTF',
-        '........TT.TT',
-        '.......OOO.TT',
-        '.......OQO.TT',
-        '...........TT',
-        '...........TT',
-        '...........TT',
-        '..........OOO',
-        '..........OQO',
-      ]),
-      RD: mapa(17, [
-        '.......TTTTTTF',
-        '........TTTTTF',
-        '........TT.TT',
-        '........TT.TT',
-        '........TT.TT',
-        '.......OOO.TT',
-        '.......OQO.TT',
-        '..........OOO',
-        '..........OQO',
-        '',
-      ]),
-      agA: mapa(20, [
-        '.......TTTTTTT',
-        '......TTT...TTT',
-        '......TT.....TT',
-        '......OOO....TT',
-        '......OQO...TT',
-        '............OOO',
-        '............OQO',
-      ]),
-      agB: mapa(20, [
-        '.......TTTTTTT',
-        '......TTT...TTT',
-        '......TT.....TT',
-        '......TT.....TT',
-        '.......TT...OOO',
-        '......OOO...OQO',
-        '......OQO',
-      ]),
-      agC: mapa(20, [
-        '.......TTTTTTT',
-        '......TTT...TTT',
-        '......TT.....TT',
-        '......TT....OOO',
-        '.......TT...OQO',
-        '......OOO',
-        '......OQO',
-      ]),
-      agD: mapa(20, [
-        '.......TTTTTTT',
-        '......TTT...TTT',
-        '......TT.....TT',
-        '......TT.....TT',
-        '......OOO...TT',
-        '......OQO...OOO',
-        '............OQO',
       ]),
     },
   },
@@ -442,12 +178,12 @@ const VISTAS = {
     ]),
     torso: mapa(8, [
       '.......VVVRVVV',
-      '......CVVVrVVV',
-      '......CVVVwVVV',
-      '......CVVVwVVV',
-      '......CVVVwVVV',
-      '......cVVVwVVV',
-      '......PVVVwVVV',
+      '.......VVVrVVV',
+      '.......VVVwVVV',
+      '.......VVVwVVV',
+      '.......VVVwVVV',
+      '.......VVVwVVV',
+      '.......VVVwVVV',
       '.......VVVwVVV',
       '.......WWWWWWW',
     ]),
@@ -469,12 +205,12 @@ const VISTAS = {
     ]),
     torso: mapa(8, [
       '.......VVVRRRV',
-      '......CVVVCRCv',
-      '......CVVVCLCv',
-      '......CVVVCLCv',
-      '......CVVVCLCv',
-      '......cVVVCLCv',
-      '......PVVVCLCv',
+      '.......VVVCRCv',
+      '.......VVVCLCv',
+      '.......VVVCLCv',
+      '.......VVVCLCv',
+      '.......VVVCLCv',
+      '.......VVVCLCv',
       '.......VVVCCCv',
       '.......WWWWYWW',
     ]),
@@ -493,54 +229,6 @@ const VISTAS = {
         '.......OOO.OOO',
         '.......OOOQ',
       ]),
-      A: mapa(17, [
-        '.......TTTTttF',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......OOO.tt',
-        '.......OOOQtt',
-        '...........tt',
-        '...........tt',
-        '...........OOO',
-        '...........OOO',
-        '',
-      ]),
-      B: mapa(17, [
-        '.......TTTTttF',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......OOO.tt',
-        '.......OOOQOOO',
-        '...........OOO',
-        '',
-      ]),
-      C: mapa(17, [
-        '.......TTTTttF',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......TTT.OOO',
-        '.......TTT.OOO',
-        '.......TTT',
-        '.......TTT',
-        '.......TTT',
-        '.......OOO',
-        '.......OOOQ',
-      ]),
-      D: mapa(17, [
-        '.......TTTTttF',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......TTT.OOO',
-        '.......TTT.OOO',
-        '.......TTT',
-        '.......OOO',
-        '.......OOOQ',
-      ]),
       agachado: mapa(20, [
         '.......TTTTttt',
         '......TTTT.ttt',
@@ -549,90 +237,6 @@ const VISTAS = {
         '......TT...OOO',
         '.....OOOO..OOO',
         '.....OOOQ',
-      ]),
-      RA: mapa(17, [
-        '.......TTTTttF',
-        '.......TTT.ttt',
-        '.......TTT..ttt',
-        '.......TTT...OOO',
-        '.......TTT...OOO',
-        '.......TTT',
-        '.......TTT',
-        '.......TTT',
-        '.......OOO',
-        '.......OOOQ',
-      ]),
-      RB: mapa(17, [
-        '.......TTTTttF',
-        '.......TTT.tt',
-        '......TTT..tt',
-        '....OOTT...tt',
-        '....OOO....tt',
-        '...........tt',
-        '...........OOO',
-        '...........OOO',
-        '',
-        '',
-      ]),
-      RC: mapa(17, [
-        '.......TTTTttF',
-        '.......TTTTtt',
-        '........TTTTtt',
-        '........OOOOtt',
-        '........OOOQtt',
-        '...........tt',
-        '...........tt',
-        '...........tt',
-        '...........OOO',
-        '...........OOO',
-      ]),
-      RD: mapa(17, [
-        '.......TTTTttF',
-        '.......TTT.tt',
-        '.......TTT.tt',
-        '.......TTT.OOO',
-        '.......TTT.OOO',
-        '.......TTT',
-        '.......TTT',
-        '.......OOO',
-        '.......OOOQ',
-        '',
-      ]),
-      agA: mapa(20, [
-        '.......TTTTttt',
-        '......TTTT.ttt',
-        '......TTT...tt',
-        '......TT...OOO',
-        '......TT...OOO',
-        '.....OOOO',
-        '.....OOOQ',
-      ]),
-      agB: mapa(20, [
-        '.......TTTTttt',
-        '......TTTT.ttt',
-        '......TTT..OOO',
-        '......TT...OOO',
-        '......TT',
-        '.....OOOO',
-        '.....OOOQ',
-      ]),
-      agC: mapa(20, [
-        '.......TTTTttt',
-        '......TTTT.ttt',
-        '......TTT...tt',
-        '.....OOOO...tt',
-        '.....OOOQ...tt',
-        '...........OOO',
-        '...........OOO',
-      ]),
-      agD: mapa(20, [
-        '.......TTTTttt',
-        '......TTTT.ttt',
-        '......OOOO..tt',
-        '......OOOQ..tt',
-        '...........tt',
-        '...........OOO',
-        '...........OOO',
       ]),
     },
   },
@@ -650,12 +254,12 @@ const VISTAS = {
     ]),
     torso: mapa(8, [
       '.......VVVVRVv',
-      '......cVVVVrVv',
-      '......cVVVVwVv',
-      '......cVVVVwVv',
-      '......cVVVVwVv',
-      '......cVVVVwVv',
-      '......PVVVVwVv',
+      '.......VVVVrVv',
+      '.......VVVVwVv',
+      '.......VVVVwVv',
+      '.......VVVVwVv',
+      '.......VVVVwVv',
+      '.......VVVVwVv',
       '.......VVVVwVv',
       '.......WWWWWWW',
     ]),
@@ -664,10 +268,159 @@ const VISTAS = {
     piernas: null,   // las mismas de tres cuartos de frente, de atrás (ver abajo)
   },
 };
-// De espaldas, las piernas son las de frente; en tres cuartos de espaldas, las
-// de tres cuartos de frente (de atrás no se distingue punta de talón a esta escala).
-VISTAS.espalda.piernas = VISTAS.frente.piernas;
-VISTAS.diagE.piernas = VISTAS.diagF.piernas;
+// De espaldas, quieto y agachado son los de frente; en tres cuartos de
+// espaldas, los de tres cuartos de frente (de atrás no se distingue punta de
+// talón a esta escala). Lo que se mueve tiene sus propios cuadros (abajo).
+VISTAS.espalda.piernas = { ...VISTAS.frente.piernas };
+VISTAS.diagE.piernas = { ...VISTAS.diagF.piernas };
+
+// ------------------------------------------------- las piernas que se mueven
+/**
+ * 🔁 OCHO CUADROS POR CICLO *(Santi: "a partir de ahora creo que todo debería
+ * ser 8 fotogramas"; del trote: "solo se mueve la pierna de adelante y no
+ * flexiona las rodillas")*: trotar (R0-R7), caminar (W0-W7) y avanzar
+ * agachado (G0-G7). Las rodillas y los tobillos de cada cuadro están puestos a
+ * mano, en puntos enteros, vistos de costado mirando a la derecha; cada pierna
+ * es una línea de puntos enteros de dos de ancho (como el brazo del arma),
+ * cadera → rodilla → tobillo, con la bota dibujada en la punta. Los cuadros
+ * 4 a 7 son los 0 a 3 con las piernas cambiadas.
+ *
+ * El trote: apoya (la de adelante estirada, la de atrás empujando en punta),
+ * amortigua (el cuerpo baja, la de atrás empieza a subir doblada), pasa (el
+ * pie de atrás bien alto, cerca de la cola) y vuela (una empuja, la otra se
+ * estira adelante, los dos pies en el aire y el cuerpo arriba).
+ *
+ * Las otras vistas salen de los mismos puntos: lo que va hacia adelante, de
+ * frente baja en la pantalla (se acerca a la cámara) y de espaldas sube.
+ */
+const PASOS = {
+  // [rodilla, tobillo] de la pierna de acá y [rodilla, tobillo] de la de allá
+  R: { cadera: 17, baja: [0, 1, 0, -1, 0, 1, 0, -1], cuadros: [
+    [[11, 20], [13, 24], [7, 21], [5, 23]],
+    [[11, 21], [10, 24], [7, 21], [4, 21]],
+    [[10, 21], [9, 24], [10, 20], [6, 21]],
+    [[8, 21], [5, 23], [12, 19], [13, 22]],
+  ] },
+  W: { cadera: 17, baja: [0, 0, -1, 0, 0, 0, -1, 0], cuadros: [
+    [[10, 21], [12, 24], [8, 21], [6, 24]],
+    [[10, 21], [11, 24], [8, 21], [6, 23]],
+    [[9, 21], [9, 24], [10, 21], [8, 23]],
+    [[9, 21], [8, 24], [11, 21], [11, 23]],
+  ] },
+  G: { cadera: 20, baja: [3, 3, 2, 3, 3, 3, 2, 3], cuadros: [
+    [[12, 21], [13, 24], [8, 22], [5, 24]],
+    [[12, 21], [12, 24], [8, 22], [6, 23]],
+    [[11, 21], [11, 24], [10, 21], [9, 23]],
+    [[11, 21], [10, 24], [12, 21], [12, 23]],
+  ] },
+};
+/** Cómo se ve desde cada vista lo que de costado va hacia adelante (x) y dónde está cada cadera. */
+const VER = {
+  lado: { aca: 9, alla: 8, kx: 1, ky: 0 },
+  diagF: { aca: 8, alla: 11, kx: 0.5, ky: 0.3 },
+  frente: { aca: 8, alla: 11, kx: 0, ky: 0.5 },
+  espalda: { aca: 11, alla: 8, kx: 0, ky: -0.5 },
+  diagE: { aca: 11, alla: 8, kx: 0.5, ky: -0.3 },
+};
+const CADERAS = {
+  lado: ['.......TFFTT'],
+  frente: ['.......TTTTTTF', '........TTTTTF'],
+  espalda: ['.......TTTTTTF', '........TTTTTF'],
+  diagF: ['.......TTTTttF'],
+  diagE: ['.......tttTTTF'],
+};
+const CADERAS_AG = { lado: '.......TFFTTT', frente: '.......TTTTTTT', espalda: '.......TTTTTTT', diagF: '.......TTTTttt', diagE: '.......tttTTTT' };
+
+/** La bota, con el tobillo en (ax, ay): cada vista y cada pierna tiene la suya. */
+function bota(vista, aca, ax, ay, pon) {
+  const fila = (y, x0, n, punta) => { for (let q = 0; q < n; q++) pon(x0 + q, y, punta && q === n - 1 ? 'Q' : 'O'); };
+  if (vista === 'lado') { fila(ay + 1, ax - 1, 4); fila(ay + 2, ax - 1, 4, true); return; }
+  if (vista === 'frente' || vista === 'espalda') {
+    const izq = vista === 'frente' ? aca : !aca;
+    const x0 = izq ? ax - 1 : ax;
+    fila(ay + 1, x0, 3);
+    fila(ay + 2, x0, 3);
+    if (vista === 'frente') pon(x0 + 1, ay + 2, 'Q');
+    return;
+  }
+  const izq = vista === 'diagF' ? aca : !aca;
+  if (izq) { fila(ay + 1, ax - 1, 3); fila(ay + 2, ax - 1, 4, true); }
+  else { fila(ay + 1, ax, 3); fila(ay + 2, ax, 3 + (vista === 'diagE' ? 1 : 0), vista === 'diagE'); }
+}
+
+/** Arma el mapa de un cuadro que se mueve, para una vista. */
+function piernasQueSeMueven(vista, tipo, k) {
+  const P = PASOS[tipo], V = VER[vista];
+  const [rA, tA, rB, tB] = P.cuadros[k % 4];
+  const [kAca, aAca, kAlla, aAlla] = k < 4 ? [rA, tA, rB, tB] : [rB, tB, rA, tA];
+  const filas = [];
+  const pon = (x, y, ch) => {
+    const j = y - P.cadera;
+    if (j < 0 || x < 0) return;
+    while (filas.length <= j) filas.push([]);
+    filas[j][x] = ch;
+  };
+  const pierna = (aca, rod, tob) => {
+    const base = aca ? V.aca : V.alla;
+    // Agachado, de frente las rodillas se abren.
+    const abre = tipo === 'G' && vista !== 'lado' ? (base < 10 ? -1 : 1) : 0;
+    const ver = ([x, y], abrir) => [base + Math.round((x - 9) * V.kx) + abrir, y + Math.round((x - 9) * V.ky)];
+    const H = [base, P.cadera], K = ver(rod, abre * (vista.startsWith('diag') ? 1 : 2)), A = ver(tob, abre);
+    A[1] = Math.min(A[1], 25);
+    const color = aca || vista === 'frente' || vista === 'espalda' ? 'T' : 't';
+    const trazo = (x, y) => { pon(x, y, color); pon(x + 1, y, color); };
+    linea(H, K, trazo);
+    linea(K, A, trazo);
+    bota(vista, aca, A[0], A[1], pon);
+  };
+  pierna(false, kAlla, aAlla);
+  pierna(true, kAca, aAca);
+  const caderas = tipo === 'G' ? [CADERAS_AG[vista]] : CADERAS[vista];
+  caderas.forEach((f, j) => { for (let x = 0; x < f.length; x++) if (f[x] !== '.') pon(x, P.cadera + j, f[x]); });
+  return mapa(P.cadera, filas.map((f) => Array.from(f, (ch) => ch || '.').join('')));
+}
+for (const vista of Object.keys(VER)) {
+  for (const tipo of Object.keys(PASOS)) for (let k = 0; k < 8; k++) VISTAS[vista].piernas[tipo + k] = piernasQueSeMueven(vista, tipo, k);
+}
+
+/**
+ * EL BRAZO LIBRE (el izquierdo), dibujado aparte para que se hamaque.
+ * 🔁 *(Santi: "agrandale un poco el brazo que no está utilizando, porque parece
+ * un brazito de T-Rex")*: mide 8 puntos (hombro, codo a los 4, mano a los 8),
+ * la mano le llega a la mitad del muslo; antes eran 6 y terminaba en el cinto.
+ * Se hamaca al revés de la pierna de su lado; trotando el codo va doblado.
+ * `ida` es cuánto va hacia adelante (de -1 a 1), `codo` cuánto se dobla (en radianes).
+ */
+const BRAZO_LIBRE = { R: { ida: 0.75, codo: 1.2 }, W: { ida: 0.35, codo: 0.25 }, G: { ida: 0.25, codo: 0.6 } };
+const VER_BRAZO = {
+  lado: { hombro: [9, 9], kx: 1, ky: 0 },
+  frente: { hombro: [6, 9], kx: -0.15, ky: 0.35 },
+  espalda: { hombro: [6, 9], kx: -0.15, ky: -0.35 },
+  diagF: { hombro: [6, 9], kx: 0.5, ky: 0.3 },
+  diagE: { hombro: [6, 9], kx: 0.5, ky: -0.3 },
+};
+
+/**
+ * 🔁 EL REVÓLVER DIBUJADO A MANO EN 9 DIRECCIONES *(Santi: "el revólver parece
+ * un objeto sin forma… un poco más largo y que tenga más forma de revólver y
+ * que no se deforme cuando apunte a otras direcciones")*: el tambor con el
+ * martillo arriba (oscuro), el caño de 5 (antes 4) con la boca clara y la
+ * culata de madera hacia abajo de la mano. Cada dirección (de a 22,5°, de
+ * arriba a abajo) está puesta punto por punto: no se gira ni se estira. La mano
+ * está en (0, 0).
+ */
+const D = 31, G = 23, T = 24, L = 25, Wd = 5;
+const REVOLVER = {
+  '-4': [[-1, -1, D], [-1, -2, D], [0, -1, T], [0, -2, G], [0, -3, G], [0, -4, G], [0, -5, L], [1, 0, Wd], [1, 1, Wd]],
+  '-3': [[-1, -1, D], [0, -2, D], [0, -1, T], [1, -2, G], [1, -3, G], [2, -4, G], [2, -5, L], [1, 0, Wd], [1, 1, Wd]],
+  '-2': [[0, -1, D], [1, -2, D], [1, -1, T], [2, -2, G], [3, -3, G], [4, -4, L], [0, 1, Wd], [1, 1, Wd]],
+  '-1': [[1, -1, D], [2, -2, D], [1, 0, T], [2, -1, G], [3, -1, G], [4, -2, G], [5, -2, L], [0, 1, Wd], [-1, 1, Wd]],
+  0: [[1, -1, D], [2, -1, D], [1, 0, T], [2, 0, G], [3, 0, G], [4, 0, G], [5, 0, L], [0, 1, Wd], [-1, 1, Wd]],
+  1: [[1, -1, D], [2, 0, D], [1, 0, T], [2, 1, G], [3, 1, G], [4, 2, G], [5, 2, L], [0, 1, Wd], [-1, 1, Wd]],
+  2: [[1, 0, D], [2, 1, D], [1, 1, T], [2, 2, G], [3, 3, G], [4, 4, L], [-1, 1, Wd], [0, 1, Wd]],
+  3: [[1, 1, D], [0, 1, T], [1, 2, G], [1, 3, G], [2, 4, G], [2, 5, L], [-1, 0, Wd], [-1, 1, Wd]],
+  4: [[1, 1, D], [1, 2, D], [0, 1, T], [0, 2, G], [0, 3, G], [0, 4, G], [0, 5, L], [-1, 0, Wd], [-1, 1, Wd]],
+};
 
 // ------------------------------------------------------- armar un cuadro
 const ANCHO = 44, ALTO = 40, OX = 12, OY = 6;   // el lienzo, con lugar para el arma
@@ -691,8 +444,8 @@ function linea([x0, y0], [x1, y1], poner) {
 
 /**
  * UN CUADRO, en índices de la paleta. `vista` (lado, frente, espalda, diagF,
- * diagE), `piernas` (quieto; caminar A-D; trotar RA-RD; agachado y avanzar
- * agachado agA-agD), `arma` (null,
+ * diagE), `piernas` (quieto; caminar W0-W7; trotar R0-R7; agachado y avanzar
+ * agachado G0-G7), `arma` (null,
  * 'revolver', 'winchester', 'escopeta'), `ang` el ángulo del arma en el dibujo
  * (ya espejado) y `mochila` (0-4). Devuelve los índices y la boca del caño.
  */
@@ -707,18 +460,13 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
     for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + dx, m.y + j + dy, C[fila[x]]);
   });
   /**
-   * Agachado, el cuerpo baja 3 (pasando un paso agachado, 2: el cuerpo se
-   * hamaca un poco). Caminando, al pasar un paso sube 1; trotando, en el aire
-   * (RB, RD) también. 🔁 TROTAR TIENE SUS CUADROS *(Santi: "parece que está
-   * caminando rápido en vez de trotar")*: antes usaba los de caminar, con los
-   * dos pies siempre en el piso. Ahora hay un momento en el aire (los dos pies
-   * levantados) y el pie de atrás sube bien alto; de costado, además, el
-   * cuerpo va inclinado un punto hacia adelante.
+   * Cuánto baja el cuerpo: lo dice cada cuadro (PASOS). Agachado y quieto, 3.
+   * Trotando, de costado el cuerpo va inclinado un punto hacia adelante.
    */
-  const ag = piernas.startsWith('ag');
-  const baja = ag ? ((piernas === 'agB' || piernas === 'agD') ? 2 : 3)
-    : (piernas === 'B' || piernas === 'D' || piernas === 'RB' || piernas === 'RD') ? -1 : 0;
-  const inclina = vista === 'lado' && piernas.startsWith('R') ? 1 : 0;
+  const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
+  const k = tipo ? +piernas[1] : 0;
+  const baja = tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0;
+  const inclina = vista === 'lado' && tipo === 'R' ? 1 : 0;
   const [hx, hy] = [V.hombro[0] + inclina, V.hombro[1] + baja];
   const dir = [Math.cos(ang), Math.sin(ang)];
   // Apuntando para arriba (hacia el fondo), el brazo va detrás del cuerpo.
@@ -726,7 +474,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
 
   let boca = null;
   const brazo = () => {
-    const largo = arma ? 6 : 5;
+    const largo = arma ? 6 : 8;
     const d = arma ? dir : [0.15, 1];
     const mano = [hx + d[0] * largo, hy + d[1] * largo];
     linea([hx, hy], mano, (x, y) => { poner(x, y, C.C); poner(x, y + 1, C.c); });
@@ -744,13 +492,34 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
       linea(en(1), en(6), (x, y) => { poner(x, y, 31); poner(x, y + 1, 23); });
       boca = en(6);
     } else {
-      linea(en(1), en(4), (x, y) => poner(x, y, 23));
-      boca = en(4);
-      const [bx, by] = boca; poner(Math.round(bx), Math.round(by), 25);
+      const r = String(Math.max(-4, Math.min(4, Math.round(Math.atan2(dir[1], dir[0]) / (Math.PI / 8)))));
+      const mx = Math.round(mano[0]), my = Math.round(mano[1]);
+      for (const [x, y, c] of REVOLVER[r]) poner(mx + x, my + y, c);
+      const [bx, by] = REVOLVER[r].find((p) => p[2] === L);
+      boca = [mx + bx, my + by];
     }
     poner(Math.round(mano[0]), Math.round(mano[1]), C.P);
   };
 
+  /** El brazo libre: de costado va detrás del cuerpo (es el de allá); en las otras vistas, al lado. */
+  const brazoLibre = () => {
+    const B = tipo ? BRAZO_LIBRE[tipo] : null;
+    const ida = B ? B.ida * Math.cos(k * Math.PI / 4) : 0;
+    const a = ida * 0.9, b = B ? B.codo : 0.1;
+    const VB = VER_BRAZO[vista];
+    const S = [VB.hombro[0] + inclina, VB.hombro[1] + baja];
+    const ver = (fx, fy) => [S[0] + Math.round(fx * VB.kx), S[1] + Math.round(fy + fx * VB.ky)];
+    const codo = [4 * Math.sin(a), 4 * Math.cos(a)];
+    const mano = [codo[0] + 4 * Math.sin(a + b), codo[1] + 4 * Math.cos(a + b)];
+    const atras = vista === 'lado';
+    const manga = atras ? C.c : C.C;
+    linea(S, ver(...codo), (x, y) => poner(x, y, manga));
+    linea(ver(...codo), ver(...mano), (x, y) => poner(x, y, manga));
+    const [mx, my] = ver(...mano);
+    poner(mx, my, atras ? C.p : C.P);
+  };
+
+  if (vista === 'lado') brazoLibre();
   if (detras) brazo();
   if (mochila && (vista === 'espalda' || vista === 'diagE' || vista === 'lado')) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h + mochila; j++) for (let q = 0; q < w; q++) poner(x + q + inclina, y + j + baja, j === 0 ? C.m : C.M);
@@ -762,6 +531,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
   if (baja < 0 || baja === 2) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
   dibujarMapa(V.torso, baja, inclina);
   dibujarMapa(V.cabeza, baja, inclina);
+  if (vista !== 'lado') brazoLibre();
   if (mochila && (vista === 'frente' || vista === 'diagF')) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, C.M);
   }

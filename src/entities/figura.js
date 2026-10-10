@@ -32,6 +32,7 @@ import { tendido, TENDIDO } from './gente/tendido.js';
 import { tresCuartosConHuesos } from './gente/tresCuartos.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { lienzoJugador, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
+import { lienzoGente } from './estiloNuevo/gente.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
 export { ROPA_DE_LOOK, ROPA_DE_JEFE } from './gente/dibujo.js';
@@ -221,6 +222,14 @@ function tenido(img, color, alpha) {
 export function dibujarPersona(r, f) {
   // 🎨 ESTILO NUEVO (P2): el jugador adentro del vagón, dibujado a mano.
   if (estiloNuevo.activo && f.interior && f.tipo === 'jugador' && r.ctx) return jugadorNuevo(r, f);
+  /**
+   * 🎨 ESTILO NUEVO (P3a): el guardia común, de pie, con el dibujo nuevo (`f.nuevo`
+   * dice qué arma lleva y cómo). Lo que todavía no está dibujado —sentado de
+   * franco, rendido, con las manos arriba, los guardias especiales— sigue con
+   * el dibujo viejo hasta que llegue su paso *(Santi eligió meterlo al juego
+   * antes de terminar las poses, para ir probando)*.
+   */
+  if (estiloNuevo.activo && f.interior && f.nuevo && f.tipo === 'guardia' && (f.postura || 'pie') === 'pie' && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
   const tipo = ROPA[f.tipo] ? f.tipo : 'guardia';
   const [nombre, fn, g, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const postura = f.postura || 'pie';
@@ -535,16 +544,20 @@ function jugadorNuevo(r, f) {
     if (f.modo === 'caminar') piernas = 'W' + cuadro8(f.fase, 'caminar');
     else piernas = 'R' + cuadro8(f.fase, 'trotar');
   }
-  const al = armaLarga(f.arma);
-  const arma = !f.arma ? null : al ? (al.cadera ? 'escopeta' : 'winchester') : 'revolver';
+  // La gente del tren (P3a): el arma ya viene dicha en `f.nuevo`.
+  const gente = f.tipo !== 'jugador' ? f.nuevo : null;
+  const al = gente ? null : armaLarga(f.arma);
+  const arma = gente ? gente.arma : !f.arma ? null : al ? (al.cadera ? 'escopeta' : 'winchester') : 'revolver';
   // Para el dibujo nuevo, cuál revólver: el Smith & Wesson es un Schofield; el resto, el Colt.
-  const armaNueva = arma === 'revolver' ? (f.armaId === 'smith' ? 'smith' : 'colt') : arma;
+  const armaNueva = gente ? arma : arma === 'revolver' ? (f.armaId === 'smith' ? 'smith' : 'colt') : arma;
   const a = f.angulo ?? 0;
   const ang = espejo ? Math.PI - a : a;
   const x = Math.round(f.x / PASO) * PASO, pies = Math.round(f.pies / PASO) * PASO;
   // Nunca más oscuro que un escalón: a vos te tenés que ver siempre, aunque
   // estés lejos de los faroles.
-  const luz = Math.max(-1, estiloNuevo.luzEn ? estiloNuevo.luzEn(f.x, f.pies) : 0);
+  // (A los demás, no: un guardia en la penumbra se ve en la penumbra.)
+  const luzLugar = estiloNuevo.luzEn ? estiloNuevo.luzEn(f.x, f.pies) : 0;
+  const luz = gente ? luzLugar : Math.max(-1, luzLugar);
   const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
   // El culatazo: de los 8 cuadros, cuál toca.
   const golpe = f.golpe != null ? Math.min(7, Math.floor(f.golpe * 8)) : null;
@@ -552,13 +565,17 @@ function jugadorNuevo(r, f) {
   const tajo = f.tajo != null ? Math.min(7, Math.floor(f.tajo * 8)) : null;
   // El arma larga, de cruzada (0) a apuntando (1), en 4 pasos (ver jugador.js).
   // El revólver usa el mismo dato para el brazo: 0 con el codo doblado, 1 recto, en 3 pasos.
-  const empuna = arma === 'winchester' || arma === 'escopeta' ? Math.round((f.empuna ?? 1) * 3) / 3
-    : Math.round((f.alza ?? 0) * 2) / 2;
+  const empuna = gente ? gente.empuna ?? 0
+    : arma === 'winchester' || arma === 'escopeta' ? Math.round((f.empuna ?? 1) * 3) / 3
+      : Math.round((f.alza ?? 0) * 2) / 2;
   // 🔁 El brazo apunta en el mismo paso de 22,5° que el dibujo del arma: con el
   // ángulo exacto, el brazo y el arma se doblaban entre sí *(Santi: "el revolver
   // colt se ve raro al mirar diagonal hacia arriba… parece una banana")*. Es sólo
   // el dibujo: la bala sale hacia donde apuntás, como siempre.
-  const L = lienzoJugador({ vista, piernas, arma: armaNueva, ang: Math.round(ang * 8 / Math.PI) * Math.PI / 8, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina }, luz, !!f.destello);
+  const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
+  const L = gente
+    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, fino }, luz, !!f.destello)
+    : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
   ctx.translate(x, pies);

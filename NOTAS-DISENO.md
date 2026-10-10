@@ -18731,6 +18731,10 @@ Primera clase y las mujeres quedan para después.
 - **La recortada no va en P3a** *(Santi: "la recortada no es solo para el
   dinamitero?")*: es su arma fija, como los dos revólveres del pistolero; las dos
   van en P3c con su guardia.
+- **Ya en el juego** *(Santi eligió la A: meterlo antes de terminar las poses, para ir
+  probando)*: con [F9] adentro del vagón, el guardia común de pie sale con el dibujo
+  nuevo (el revólver enfundado patrullando, en la mano peleando y recto apuntando;
+  el arma larga cruzada o apuntando). Lo que falta dibujar sigue con el dibujo viejo.
 - Siguen: desenfundar, asomarse, el golpe del guardia, aturdido y
   recibir el culatazo; sentado de franco, rendido y traición, caído apuntando,
   desmayado y muerto; el pasajero; meterlo en el juego.

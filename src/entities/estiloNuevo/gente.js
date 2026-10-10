@@ -388,14 +388,15 @@ export function cuadroGente(o) {
 
 const guardados = new Map();
 const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
-/** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). */
-export function lienzoGente(o, luz = 0) {
-  const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz;
+/** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
+export function lienzoGente(o, luz = 0, destello = false) {
+  const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 1500) guardados.clear();
   const q = cuadroGente(o);
-  const datos = iluminar({ ancho: ANCHO, alto: ALTO, indices: q.idx, campo: () => luz });
+  const indices = destello ? q.idx.map((i) => (i > 0 ? sombrear(i, 4) : i)) : q.idx;
+  const datos = iluminar({ ancho: ANCHO, alto: ALTO, indices, campo: () => luz });
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);

@@ -508,8 +508,24 @@ export function drawEnemy(r, e) {
   const defArma = ARMAS_GUARDIA[e.armaEnMano || e.armaId];
   const larga = defArma && typeof defArma.dibujo === 'string' ? defArma.dibujo : null;
   const poseLarga = larga && (e.state === 'combat' || e.aimTimer > 0 ? larga + 'Listo' : larga);
+  /**
+   * 🎨 PARA EL DIBUJO NUEVO (P3a, con [F9] adentro del vagón): el revólver va
+   * ENFUNDADO mientras patrulla *(Santi: "el revólver va enfundado")* y en la
+   * mano cuando pelea, con el codo doblado; apuntando (`aimTimer`), el brazo
+   * recto. Es sólo el dibujo: no cambia cuándo puede tirar. El arma larga,
+   * cruzada patrullando y apuntando cuando pelea, como el jugador.
+   */
+  const peleando = e.state === 'combat' || e.aimTimer > 0;
+  const nuevo = {
+    arma: !conArma ? null : larga || (peleando ? 'colt' : null),
+    empuna: larga ? (poseLarga !== larga ? 1 : 0) : e.aimTimer > 0 ? 1 : 0,
+    enfundado: !larga && (!conArma || !peleando),
+    funda: !larga,
+  };
   const fig = dibujarPersona(r, {
     tipo, x: e.x, pies, angulo: e.facing,
+    interior: true,
+    nuevo,
     // Patrullando caminan; cuando te vieron, trotan. A cubierto, asomarse y
     // esconderse son pasos cortos: caminata, nunca trote.
     modo: e.state === 'patrol' || e.atCover ? 'caminar' : 'trotar',

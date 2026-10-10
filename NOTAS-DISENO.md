@@ -18619,6 +18619,14 @@ para encontrar las poses). La E4 se hace directamente en P5.
   el mango asomando, si compraste el cuchillo (`VAINA`); de costado queda del lado
   de allá, tapada. Pendientes: el degüello por la espalda con su propia animación
   (con los guardias, P3) y el hachazo (cuando se desbloquee el hacha).
+- 🔁 **El tajo vuelve a tener su línea de arco y la vaina va a la izquierda** *(Santi:
+  "me gustaba la línea del arco que hacía"; "debería buscar el cuchillo en la
+  izquierda de su cintura y guardarlo allí también, no en el lado derecho")*. La
+  línea blanca de antes barre ahora del cuadro 2 al 5 del tajo, junto con el
+  brazo. La vaina, de cuero claro para que se lea sobre el pantalón, va del lado
+  izquierdo de la cintura: de frente queda al lado de la hebilla, del otro lado
+  de la mano libre, así que la mano cruza por delante para sacarlo y para
+  guardarlo (en el cuadro 7 ya va camino de la vaina).
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

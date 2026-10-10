@@ -675,21 +675,23 @@ const TAJO = [
     estela: [[5, -4], [7, -4], [9, -3], [11, -2], [13, -1]] },
   { mano: [6, 3], r: 2, inclina: 1, baja: 0, delante: true },
   { mano: [4, 5], r: 3, inclina: 0, baja: 0, delante: true },
-  { mano: [1, 5], r: 4, inclina: 0, baja: 0, delante: true },
+  { mano: [1, 5], r: 4, inclina: 0, baja: 0, delante: true, haciaVaina: true },
   { vaina: true, r: 4, inclina: 0, baja: 0 },
 ];
 /**
- * 🆕 LA VAINA DEL CUCHILLO, colgada del cinto del lado de la mano libre, con el
- * mango asomando arriba *(Santi: "quiero la vaina")*: si compraste el
- * cuchillo, se ve que lo llevás. Puesta a mano por vista; de costado queda del
- * lado de allá, tapada por el cuerpo. `mano` es dónde la agarra la mano. Las
+ * 🆕 LA VAINA DEL CUCHILLO, colgada del lado IZQUIERDO de la cintura, con el
+ * mango asomando arriba *(Santi: "quiero la vaina"; "debería buscar el cuchillo
+ * en la izquierda de su cintura y guardarlo allí también")*: si compraste el
+ * cuchillo, se ve que lo llevás. De frente queda del otro lado de la mano
+ * libre, así que la mano cruza por delante del cuerpo para sacarlo. Puesta a
+ * mano por vista; de costado queda del lado de allá, tapada por el cuerpo. `mano` es dónde la agarra la mano. Las
  * dos primeras filas son el mango: mientras cortás, no están.
  */
 const VAINA = {
-  frente: { mapa: mapa(14, ['........y', '........Y', '........m', '........g', '........m', '........g']), mano: [8, 14] },
-  diagF: { mapa: mapa(14, ['........y', '........Y', '........m', '........g', '........m', '........g']), mano: [8, 14] },
-  espalda: { mapa: mapa(14, ['........y', '........Y', '........m', '........g', '........m', '........g']), mano: [8, 14] },
-  diagE: { mapa: mapa(14, ['........y', '........Y', '........m', '........g', '........m', '........g']), mano: [8, 14] },
+  frente: { mapa: mapa(14, ['...........y', '...........Y', '...........J', '...........M', '...........M', '...........m']), mano: [11, 14] },
+  diagF: { mapa: mapa(14, ['...........y', '...........Y', '...........J', '...........M', '...........M', '...........m']), mano: [11, 14] },
+  espalda: { mapa: mapa(14, ['........y', '........Y', '........J', '........M', '........M', '........m']), mano: [8, 14] },
+  diagE: { mapa: mapa(14, ['........y', '........Y', '........J', '........M', '........M', '........m']), mano: [8, 14] },
   lado: { mapa: null, mano: [8, 15] },
 };
 const GOLPE_LARGA = {
@@ -1006,7 +1008,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   /** El brazo del cuchillo (ver TAJO): del hombro libre a la mano, y el cuchillo en la mano. */
   const brazoCuchillo = () => {
     const S = [VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja];
-    const M = TJ.vaina ? [VAINA[vista].mano[0] + inclina + lomo, VAINA[vista].mano[1] + baja] : [S[0] + TJ.mano[0], S[1] + TJ.mano[1]];
+    const V2 = [VAINA[vista].mano[0] + inclina + lomo, VAINA[vista].mano[1] + baja];
+    let M = TJ.vaina ? V2 : [S[0] + TJ.mano[0], S[1] + TJ.mano[1]];
+    // Volviendo a guardarlo, la mano ya va camino de la vaina (de frente queda del otro lado).
+    if (TJ.haciaVaina && VAINA[vista].mapa) M = [Math.round((M[0] + V2[0]) / 2), Math.round((M[1] + V2[1]) / 2)];
     manga(S, M, vista === 'lado' && !TJ.delante);
     const K = armaEn('cuchillo', TJ.r * Math.PI / 8);
     // En la vaina, la mano agarra el mango que ya dibuja la vaina.

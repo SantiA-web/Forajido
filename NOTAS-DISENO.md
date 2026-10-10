@@ -18582,6 +18582,14 @@ para encontrar las poses). La E4 se hace directamente en P5.
   morral, un punto más angosto que la espalda, con solapa y hebilla y **una
   sombra a la derecha y abajo sobre el cuerpo**, que es lo que lo despega: un
   borde oscuro alrededor se confundía con el chaleco. Crece sólo para abajo.
+- 🔁 **Me fui de mambo achicándola** *(Santi: "ya no se entiende que es un morral
+  con una manta: es muy chico, la mochila se va más para el lado izquierdo y
+  borraste las esquinas de la manta y las rayas claras que le quedaban bien")*.
+  Volvió a la 2b tal cual la eligió: de espaldas la manta de 7 con las esquinas
+  y las dos rayas claras; en tres cuartos, la misma manta en 5, justo entre los
+  brazos, con la punta del espiral. El morral del ancho de la espalda, centrado,
+  con los bordes más claros que el chaleco, la luz a la izquierda, el fondo
+  redondeado y la sombra debajo.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

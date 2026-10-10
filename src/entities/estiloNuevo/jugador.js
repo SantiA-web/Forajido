@@ -688,31 +688,32 @@ const MOCHILA = {
   espalda: {
     punta: [10, 8],
     manta: mapa(9, [
-      '.........NNN',
-      '........ZZZZZ',
-      '.........XXX',
+      '.......XeNNNeX',
+      '.......NEZZZEN',
+      '.......XiXXXiX',
     ]),
     morral: [null,
-      mapa(12, ['........JJJMw', '........MYMmw', '........mmmmw', '.........www']),
-      mapa(12, ['........JJJMw', '........MYMmw', '........mmmmw', '........MMMmw', '.........www']),
-      mapa(12, ['........JJJMw', '........MYMmw', '........mmmmw', '........MMMmw', '........MMMmw', '.........www']),
-      mapa(12, ['........JJJMw', '........MYMmw', '........mmmmw', '........MMMmw', '........MMMmw', '........MMMmw', '.........www']),
+      mapa(12, ['........MJJJM', '........MMYMM', '........mmmmm', '.........mmm', '.........www']),
+      mapa(12, ['........MJJJM', '........MMYMM', '........mmmmm', '........JMMMm', '.........mmm', '.........www']),
+      mapa(12, ['........MJJJM', '........MMYMM', '........mmmmm', '........JMMMm', '........JMMMm', '.........mmm', '.........www']),
+      mapa(12, ['........MJJJM', '........MMYMM', '........mmmmm', '........JMMMm', '........JMMMm', '........JMMMm', '.........mmm', '.........www']),
     ],
   },
-  // Tres cuartos de espaldas: la punta de acá de la manta se ve de frente (a
-  // la derecha, con el centro del espiral); el morral muestra el costado, en sombra.
+  // Tres cuartos de espaldas: la manta, justo entre los brazos (no los pisa),
+  // con la punta de acá vista de frente (el espiral, a la derecha); el morral
+  // muestra el costado, en sombra.
   diagE: {
     punta: [11, 8],
     manta: mapa(9, [
-      '.........NNNZ',
-      '........ZZZZN',
-      '.........XXXZ',
+      '........XeNeZ',
+      '........NEZEN',
+      '........XiXiZ',
     ]),
     morral: [null,
-      mapa(12, ['........JJJgw', '........MYmgw', '........mmmgw', '.........www']),
-      mapa(12, ['........JJJgw', '........MYmgw', '........mmmgw', '........MMmgw', '.........www']),
-      mapa(12, ['........JJJgw', '........MYmgw', '........mmmgw', '........MMmgw', '........MMmgw', '.........www']),
-      mapa(12, ['........JJJgw', '........MYmgw', '........mmmgw', '........MMmgw', '........MMmgw', '........MMmgw', '.........www']),
+      mapa(12, ['........MJJJg', '........MMYMg', '........mmmmg', '.........mmg', '.........www']),
+      mapa(12, ['........MJJJg', '........MMYMg', '........mmmmg', '........JMMmg', '.........mmg', '.........www']),
+      mapa(12, ['........MJJJg', '........MMYMg', '........mmmmg', '........JMMmg', '........JMMmg', '.........mmg', '.........www']),
+      mapa(12, ['........MJJJg', '........MMYMg', '........mmmmg', '........JMMmg', '........JMMmg', '........JMMmg', '.........mmg', '.........www']),
     ],
   },
   // De costado, detrás de la espalda: la punta roja de la manta con su espiral, arriba del morral.

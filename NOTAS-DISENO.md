@@ -18466,8 +18466,8 @@ para encontrar las poses). La E4 se hace directamente en P5.
   de cada cuadro están puestos a mano, de costado; cada pierna es una línea de
   puntos enteros de dos de ancho con la bota en la punta, y las otras vistas
   salen de los mismos puntos (lo que va adelante, de frente baja en la
-  pantalla). El trote da un paso cada 16 unidades en vez de 20 (elegido): con
-  20 los pies patinaban. **No era el tamaño:** el personaje mide lo mismo que
+  pantalla). El trote da un paso cada 19 unidades (elegido): con 20 los pies
+  patinaban y con 16 "las piernas avanzan demasiado rápido". **No era el tamaño:** el personaje mide lo mismo que
   al principio (20 unidades) y la velocidad es la de siempre.
 - 🔁 **El brazo libre** mide 8 puntos (antes 6, *"parece un brazito de T-Rex"*),
   le llega a medio muslo y se hamaca al revés de la pierna; trotando, con el

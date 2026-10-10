@@ -519,11 +519,11 @@ export function dibujarPersona(r, f) {
 /**
  * 🔁 OCHO CUADROS POR CICLO (dos pasos) para todo lo que se mueve *(Santi: "a
  * partir de ahora creo que todo debería ser 8 fotogramas")*. Y el trote da un
- * paso cada 16 unidades, no cada 20 *(elegido por Santi)*: con 20, entre los
- * pies dibujados había 10 y el resto lo patinaba. La velocidad no cambia: son
- * 4,9 pasos por segundo en vez de 3,9.
+ * paso cada 19 unidades *(elegido por Santi)*: con 20 los pies patinaban (entre
+ * los pies dibujados había 10) y con 16 las piernas iban apuradas ("las piernas
+ * avanzan demasiado rápido"). La velocidad no cambia: son 4,1 pasos por segundo.
  */
-const PASO_NUEVO = { trotar: 16, caminar: 14, agachado: 14 };
+const PASO_NUEVO = { trotar: 19, caminar: 14, agachado: 14 };
 const cuadro8 = (recorrido, modo) => Math.floor((((recorrido / PASO_NUEVO[modo]) % 2) + 2) % 2 * 4) % 8;
 function jugadorNuevo(r, f) {
   const PASO = CONFIG.estilo.punto / 4;

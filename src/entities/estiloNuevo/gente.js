@@ -372,8 +372,9 @@ export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'ca
   if (tipo === 'pasajero') cabeza.push(PANUELO[vista]);
   if (PEINADOS[peinado] && PEINADOS[peinado][vista]) cabeza.push(PEINADOS[peinado][vista]);
   if (barba && BARBAS[barba] && BARBAS[barba][vista]) cabeza.push(BARBAS[barba][vista]);
-  if (s && SOMBREROS[s] && SOMBREROS[s][vista]) cabeza.push(SOMBREROS[s][vista]);
-  return { colores, cabeza, torso: TORSOS[tipo][vista] };
+  // El sombrero va aparte: con la cabeza gacha baja más que la cara y la tapa (ver `gacha` en jugador.js).
+  const sombreroMapa = s && SOMBREROS[s] && SOMBREROS[s][vista] ? SOMBREROS[s][vista] : null;
+  return { colores, cabeza, sombrero: sombreroMapa, torso: TORSOS[tipo][vista] };
 }
 
 /**
@@ -482,11 +483,14 @@ const POSES_SENTADO = {
   // sobre el pecho (dos puntos abajo; de costado, hacia adelante, y en las otras
   // vistas, ladeada) y los brazos cruzados.
   dormido: {
-    lado: { lista: [b([[10, 9], [11, 12], [12, 13]]), b([[9, 9], [10, 12], [12, 12]], true)], cabeza: 2, cabezaX: 2, inclina: -1 },
-    frente: { lista: [b([[7, 9], [7, 12], [10, 13]]), b([[13, 9], [13, 12], [9, 14]])], cabeza: 2, cabezaX: 1 },
-    espalda: { lista: [b([[13, 9], [14, 12], [12, 13]]), b([[6, 9], [5, 12], [7, 13]])], cabeza: 2, cabezaX: -1 },
-    diagF: { lista: [b([[7, 9], [8, 13], [10, 14]]), b([[13, 9], [13, 12], [12, 13]], true)], cabeza: 2, cabezaX: 1, inclina: -1 },
-    diagE: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [7, 13]], true)], cabeza: 2, cabezaX: 1, inclina: -1 },
+    // 🔁 Mirando para abajo, a las rodillas *(Santi: "que sus ojos apunten a sus
+    // rodillas")*: el sombrero baja más que la cabeza (`gacha`, [abajo, adelante])
+    // y el ala le tapa la cara; de costado se va además para adelante.
+    lado: { lista: [b([[10, 9], [11, 12], [12, 13]]), b([[9, 9], [10, 12], [12, 12]], true)], cabeza: 2, cabezaX: 2, inclina: -1, gacha: [2, 1] },
+    frente: { lista: [b([[7, 9], [7, 12], [10, 13]]), b([[13, 9], [13, 12], [9, 14]])], cabeza: 2, cabezaX: 1, gacha: [2, 0] },
+    espalda: { lista: [b([[13, 9], [14, 12], [12, 13]]), b([[6, 9], [5, 12], [7, 13]])], cabeza: 2, cabezaX: -1, gacha: [1, 0] },
+    diagF: { lista: [b([[7, 9], [8, 13], [10, 14]]), b([[13, 9], [13, 12], [12, 13]], true)], cabeza: 2, cabezaX: 1, inclina: -1, gacha: [2, 1] },
+    diagE: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [7, 13]], true)], cabeza: 2, cabezaX: 1, inclina: -1, gacha: [1, 1] },
   },
 };
 /** La maleta y el bolso, en el piso al lado (`[cerrada, abierta]`), por vista. */
@@ -520,7 +524,7 @@ export function poseSentado(accion, vista, k = 0, lleva = 'maleta') {
   // Dormido, los brazos cruzados y la cabeza caída; sin hacer nada, las manos en la falda.
   // Dormido respira: cada tanto la cabeza sube un punto (`k` impar).
   if (accion === 'dormido') { const D = POSES_SENTADO.dormido[vista]; return { ...D, cabeza: D.cabeza - (k % 2) }; }
-  if (accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0 };
+  if (accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
   if (!V || !POSES_SENTADO[accion]) return null;
   let nombre = CUADROS_SENTADO[accion][k % 8];
   const baja1 = nombre.endsWith('+');

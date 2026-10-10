@@ -1275,6 +1275,12 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   const bi = BRo ? (vista === 'lado' || vista.startsWith('diag') ? BRo.inclina || 0 : 0) : 0;
   const bc = BRo ? BRo.cabeza || 0 : 0;
   const bx = BRo ? BRo.cabezaX || 0 : 0;
+  /** La cabeza de la persona: la cara y el pelo, y el sombrero (que con la cabeza gacha baja más, `BRo.gacha`). */
+  const ga = BRo && BRo.gacha ? BRo.gacha : [0, 0];
+  const dibujarCabeza = (dy, dx, conGacha) => {
+    for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, dy, dx);
+    if (persona && persona.sombrero) dibujarMapa(persona.sombrero, dy + (conGacha ? ga[0] : 0), dx + (conGacha ? ga[1] : 0));
+  };
   const props = (capa) => (BRo && BRo.props || []).forEach((p) => {
     if ((p.capa || 'frente') === capa) dibujarMapa(p.m, p.piso ? 0 : baja, p.piso ? 0 : inclina + lomo + bi, p.tabla);
   });
@@ -1298,11 +1304,11 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0));
     if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo + bi, COLOR_ARMA);
     const cartasAntes = brazos === 'cartas';
-    if (!cartasAntes) for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY + bc, inclina + cabezaX + bi + bx);
+    if (!cartasAntes) dibujarCabeza(baja + cabezaY + bc, inclina + cabezaX + bi + bx, true);
     if (vaina) dibujarVaina();
     BR.forEach((b, i) => { if (!b.atras) brazoPose(b, i); });
     if (cartasAntes && CARTAS[vista]) dibujarMapa(CARTAS[vista], baja, inclina + lomo, { L: 30, k: 9 });
-    if (cartasAntes) for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY + bc, inclina + cabezaX + bi);
+    if (cartasAntes) dibujarCabeza(baja + cabezaY + bc, inclina + cabezaX + bi, false);
     props('frente');
   } else {
   if (vista === 'lado') { if (TJ) { if (!TJ.delante) brazoCuchillo(); } else if (larga) brazoIzqLarga(); else brazoLibre(); }
@@ -1326,7 +1332,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const bajoLaCabeza = larga && larga.t < 0.5 && !detras;
   if (bajoLaCabeza) brazo();
-  for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY, inclina + cabezaX);
+  dibujarCabeza(baja + cabezaY, inclina + cabezaX, false);
   if (vaina) dibujarVaina();
   if (vista !== 'lado' && TJ && !TJ.delante && !(libreDetras && !TJ.vaina)) brazoCuchillo();
   else if (vista !== 'lado' && !libreDetras && !larga && !TJ) brazoLibre();

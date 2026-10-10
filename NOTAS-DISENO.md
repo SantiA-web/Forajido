@@ -18555,6 +18555,21 @@ para encontrar las poses). La E4 se hace directamente en P5.
   antes (en diagonal hacia arriba, corrido para no comerse el ala del sombrero).
   `p.alza` pasa de una a otra en 0,15 s con un paso en el medio; al disparar
   salta arriba en el mismo cuadro. Sólo el dibujo: no cambia cómo se juega.
+- 🔁 **La mochila: una manta enrollada y un morral de cuero** *(Santi: "la mochila
+  es un cuadrado marrón sin textura… no se parece a un personaje de Among Us")*.
+  De espaldas ni se veía: se dibujaba antes que el torso y el chaleco la tapaba;
+  de costado era una caja oscura. Le propuse tres (lona, saco de botín, manta y
+  morral); eligió la manta, pero de espaldas la manta del ancho de los hombros
+  con rayas "tiene unas hombreras rojas y blancas". Quedó la **C2**: un rollo de
+  lana clara (luz arriba, sombra abajo) con el borde rojo sólo en las puntas,
+  atado con dos tiras de cuero, que sobresale más allá de los brazos; abajo el
+  morral con su hebilla, que **crece con lo que llevás** (4 tamaños, más alto y
+  con panza). Dibujada a mano de espaldas, en tres cuartos de espaldas y de
+  costado, cada tamaño (la izquierda en espejo; `MOCHILA` en jugador.js). **De
+  frente no se ve nada** *("prefiero que no se vean las correas por sobre el
+  chaleco")*: las puntas de la manta asomando a los costados también parecían
+  hombreras. De espaldas va delante de todo; en tres cuartos, delante del cuerpo
+  y del brazo libre; de costado, detrás de la espalda.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

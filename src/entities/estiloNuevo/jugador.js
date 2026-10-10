@@ -59,7 +59,8 @@ const C = {
   I: 20, T: 19, t: 41,                               // el pantalón de lona: luz, base, sombra
   Q: 6, O: 5, o: 4,                                  // las botas (Q la luz); la suela es `K`
   F: 4, f: 3,                                        // la funda
-  M: 3, m: 4,                                        // la mochila
+  e: 17, E: 16, i: 15, N: 10, Z: 9, X: 8,            // la manta enrollada: la lana (luz, base, sombra) y su borde rojo
+  J: 6, M: 5, m: 4, g: 3, Y: 45,                     // el morral de cuero: luz, base, sombra, la tira y la hebilla
 };
 
 // ------------------------------------------------------------------ mapas
@@ -96,7 +97,6 @@ const VISTAS = {
       '.......WWyWG',
     ]),
     hombro: [10, 9],
-    mochila: [[4, 9, 3, 7]],
     piernas: {
       quieto: mapa(17, [
         '.......IFFTT',
@@ -144,7 +144,6 @@ const VISTAS = {
       '........WyGyW',
     ]),
     hombro: [13, 9],
-    mochila: [[8, 8, 1, 8], [12, 8, 1, 8]],
     piernas: {
       quieto: mapa(17, [
         '.......IITTTttF',
@@ -192,7 +191,6 @@ const VISTAS = {
       '........WWWWW',
     ]),
     hombro: [13, 9],
-    mochila: [[8, 9, 5, 6]],
     piernas: {
       quieto: mapa(17, [
         '.......IITTTttF',
@@ -240,7 +238,6 @@ const VISTAS = {
       '........WyWGy',
     ]),
     hombro: [13, 9],
-    mochila: [[8, 8, 1, 8], [12, 8, 1, 8]],
     piernas: {
       quieto: mapa(17, [
         '.......IITTtttF',
@@ -288,7 +285,6 @@ const VISTAS = {
       '........WWWWW',
     ]),
     hombro: [13, 9],
-    mochila: [[8, 9, 4, 6]],
     piernas: {
       quieto: mapa(17, [
         '.......tttTTTF',
@@ -668,6 +664,65 @@ const BRAZO_REVOLVER = {
     { mano: [6, 4] }, { mano: [3, 4] }, { mano: [2, 2] }, { mano: [0, 1] },
   ],
 };
+/**
+ * 🔁 LA MOCHILA: UNA MANTA ENROLLADA ARRIBA Y UN MORRAL DE CUERO *(Santi: "la
+ * mochila es un cuadrado marrón sin textura… no se parece a un personaje de
+ * Among Us"; eligió la C2, "la manta larga", y "prefiero que no se vean las
+ * correas por sobre el chaleco")*. Antes, de espaldas ni se veía: se dibujaba
+ * antes que el torso y el chaleco la tapaba.
+ *
+ * La manta es un rollo de lana clara (luz arriba, sombra abajo) con el borde
+ * rojo en las puntas, atado con dos tiras de cuero; sobresale de los hombros
+ * más allá de los brazos, para que no se lea como hombreras. El morral va
+ * debajo, con su hebilla, y CRECE con lo que llevás (`mochila` de 1 a 4):
+ * más alto y, lleno, con panza. Cada vista y cada tamaño, dibujado a mano;
+ * hacia la izquierda, en espejo. De frente no se ve: las puntas de la manta
+ * asomando a los costados también parecían hombreras.
+ */
+const MOCHILA = {
+  espalda: {
+    manta: mapa(8, [
+      '....XNeJeeeeeJeNX',
+      '....EZEmEEEEEmEZE',
+      '....XXimiiiiimiXX',
+    ]),
+    morral: [null,
+      mapa(11, ['.......mJJJJJm', '.......mMMYMMm', '.......mMMgMMm', '........mmmmm']),
+      mapa(11, ['.......mJJJJJm', '.......mMMYMMm', '.......mMMgMMm', '.......mMMMMMm', '........mmmmm']),
+      mapa(11, ['.......mJJJJJm', '.......mMMYMMm', '.......mMMgMMm', '......mJMMgMMMm', '......mMMMMMMMm', '.......mmmmmmm']),
+      mapa(11, ['.......mJJJJJm', '.......mMMYMMm', '......mJMMgMMMm', '......mJMMgMMMm', '......mJMMMMMMm', '......mMMMMMMmm', '.......mmmmmmm']),
+    ],
+  },
+  // Tres cuartos de espaldas: la punta de acá de la manta se ve de frente (el
+  // espiral), la de allá más corta; el morral muestra el costado, en sombra.
+  diagE: {
+    manta: mapa(8, [
+      '.....NeJeeeeeJeNZ',
+      '.....ZEmEEEEEmEZe',
+      '.....XimiiiiimiXZ',
+    ]),
+    morral: [null,
+      mapa(11, ['.......JJJJJJm', '.......mMMYMMg', '.......mMMgMMg', '........mmmmg']),
+      mapa(11, ['.......JJJJJJm', '.......mMMYMMg', '.......mMMgMMg', '.......mMMMMMg', '........mmmmg']),
+      mapa(11, ['.......JJJJJJm', '.......mMMYMMg', '.......mMMgMMg', '......mJMMgMMMg', '......mMMMMMMMg', '.......mmmmmmg']),
+      mapa(11, ['.......JJJJJJm', '.......mMMYMMg', '......mJMMgMMMg', '......mJMMgMMMg', '......mJMMMMMMg', '......mMMMMMMgg', '.......mmmmmmg']),
+    ],
+  },
+  // De costado, detrás de la espalda: la punta de la manta con su espiral, arriba del morral.
+  lado: {
+    manta: mapa(7, [
+      '...NZNX',
+      '...ZeZX',
+      '...XZXX',
+    ]),
+    morral: [null,
+      mapa(10, ['...JJJJ', '...mMMM', '...mMYM', '....mmm']),
+      mapa(10, ['...JJJJ', '...mMMM', '...mMYM', '...mMMM', '....mmm']),
+      mapa(10, ['...JJJJ', '..mMMMM', '..mMMYM', '..mMMMM', '..mMMMM', '...mmmm']),
+      mapa(10, ['...JJJJ', '..mMMMM', '..mMMYM', '.mJMMMM', '.mJMMMM', '.mMMMMM', '..mmmmm']),
+    ],
+  },
+};
 const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], ang: -2.15 } };
 
 export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna }) {
@@ -850,11 +905,21 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     colgado([VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja], ida * 0.9, B ? B.codo : 0.1, vista === 'lado');
   };
 
+  /**
+   * La mochila (ver MOCHILA), en su lugar del orden (de frente no se ve): de
+   * costado, detrás de la espalda; de tres
+   * cuartos de espaldas, delante del cuerpo y del brazo libre; de espaldas,
+   * delante de todo (es lo más cerca de la cámara).
+   */
+  const dibujarMochila = () => {
+    const Mo = MOCHILA[vista];
+    const corre = inclina + lomo;
+    dibujarMapa(Mo.manta, baja, corre);
+    if (Mo.morral) dibujarMapa(Mo.morral[Math.max(1, Math.min(4, mochila))], baja, corre);
+  };
   if (vista === 'lado') { if (larga) brazoIzqLarga(); else brazoLibre(); }
   if (detras) brazo();
-  if (mochila && (vista === 'espalda' || vista === 'diagE' || vista === 'lado')) {
-    for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h + mochila; j++) for (let q = 0; q < w; q++) poner(x + q + inclina + lomo, y + j + baja, j === 0 ? C.m : C.M);
-  }
+  if (mochila && vista === 'lado') dibujarMochila();
   const P = V.piernas[piernas] || V.piernas.quieto;
   dibujarMapa(P);
   // Cuando el cuerpo sube 1 (pasando un paso, en el aire o agachado), la cadera se estira un punto para que no
@@ -871,10 +936,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   if (bajoLaCabeza) brazo();
   dibujarMapa(V.cabeza, baja + cabezaY, inclina + cabezaX);
   if (vista !== 'lado' && !larga) brazoLibre();
-  if (mochila && (vista === 'frente' || vista === 'diagF')) {
-    for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, C.M);
-  }
+  if (mochila && vista === 'diagE') dibujarMochila();
   if (!detras && !bajoLaCabeza) brazo();
+  if (mochila && vista === 'espalda') dibujarMochila();
   // El impacto: la estela del brazo (de arriba atrás hacia adelante) y un destello en la punta.
   if (golpe === 3) {
     for (let a = -1.4; a < 0.2; a += 0.16) poner(Math.round(hx + Math.cos(a) * 8), Math.round(hy + Math.sin(a) * 8), 25);

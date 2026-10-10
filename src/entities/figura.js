@@ -543,7 +543,7 @@ function jugadorNuevo(r, f) {
   // Nunca más oscuro que un escalón: a vos te tenés que ver siempre, aunque
   // estés lejos de los faroles.
   const luz = Math.max(-1, estiloNuevo.luzEn ? estiloNuevo.luzEn(f.x, f.pies) : 0);
-  const fino = !!CONFIG.estilo.bordeFino;
+  const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
   const L = lienzoJugador({ vista, piernas, arma, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)), fino }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();

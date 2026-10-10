@@ -27,7 +27,7 @@ let activo = /[?&]nuevo\b/.test(location.search);
 let chico = null, chicoCtx = null;
 
 /**
- * EL BORDE FINO DE LA GENTE (`CONFIG.estilo.bordeFino`). La grilla se come
+ * EL BORDE FINO DE LA GENTE (`CONFIG.estilo.bordeGente` de 1 o 2 píxeles). La grilla se come
  * cualquier cosa más fina que un punto, así que el borde se dibuja DESPUÉS de
  * pasar el cuadro por la grilla: mientras se dibuja el mundo, la gente se
  * marca en una máscara (con la misma cámara) y lo que se dibuja delante de
@@ -54,7 +54,7 @@ export const estiloNuevo = {
   luzEn: null,
   /** Marca una persona en la máscara del borde fino, donde se acaba de dibujar con `ctx`. */
   marcarGente(ctx, img, x, y, w, h) {
-    if (!activo || !CONFIG.estilo.bordeFino) return;
+    if (!activo || CONFIG.estilo.bordeGente >= CONFIG.estilo.punto) return;
     const m = laMascara(ctx.canvas);
     m.setTransform(ctx.getTransform());
     m.imageSmoothingEnabled = false;
@@ -64,7 +64,7 @@ export const estiloNuevo = {
   },
   /** Lo que se dibuja delante de la gente le tapa el borde. */
   taparGente(ctx, img, x, y, w, h) {
-    if (!activo || !CONFIG.estilo.bordeFino || !hayGente) return;
+    if (!activo || CONFIG.estilo.bordeGente >= CONFIG.estilo.punto || !hayGente) return;
     const m = laMascara(ctx.canvas);
     m.setTransform(ctx.getTransform());
     m.globalCompositeOperation = 'destination-out';
@@ -119,12 +119,13 @@ export const estiloNuevo = {
     const a = chicaMCtx.getImageData(0, 0, w, h).data;
     const es = (x, y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 128;
     ctx.fillStyle = '#140c1c';
+    const t = Math.max(1, Math.min(k, CONFIG.estilo.bordeGente));
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       if (es(x, y)) continue;
-      if (es(x - 1, y)) ctx.fillRect(x * k, y * k, 1, k);
-      if (es(x + 1, y)) ctx.fillRect(x * k + k - 1, y * k, 1, k);
-      if (es(x, y - 1)) ctx.fillRect(x * k, y * k, k, 1);
-      if (es(x, y + 1)) ctx.fillRect(x * k, y * k + k - 1, k, 1);
+      if (es(x - 1, y)) ctx.fillRect(x * k, y * k, t, k);
+      if (es(x + 1, y)) ctx.fillRect(x * k + k - t, y * k, t, k);
+      if (es(x, y - 1)) ctx.fillRect(x * k, y * k, k, t);
+      if (es(x, y + 1)) ctx.fillRect(x * k, y * k + k - t, k, t);
     }
     mascaraCtx.setTransform(1, 0, 0, 1, 0, 0);
     mascaraCtx.clearRect(0, 0, mascara.width, mascara.height);

@@ -56,12 +56,13 @@ export const CONFIG = {
    * por Santi). `paleta`: pasar lo viejo por los 48 colores (engine/paleta.js).
    */
   /**
-   * `bordeFino`: el contorno de la gente nueva es de UN PÍXEL DE PANTALLA, no
-   * de un punto de la grilla *(Santi lo eligió viendo la hoja: "el fino,
-   * probalo en el vagón")*. Rompe a propósito la regla de la grilla, sólo para
-   * el borde (ver engine/estiloNuevo.js). En `false` vuelve el de un punto.
+   * `bordeGente`: de cuántos píxeles de pantalla es el contorno de la gente
+   * nueva. 3 es un punto entero de la grilla (el de siempre); 1 y 2 rompen a
+   * propósito la grilla, sólo para el borde (ver engine/estiloNuevo.js).
+   * *(Santi eligió el fino viendo la hoja: "el fino, probalo en el vagón"; y
+   * pidió probar el de 2.)*
    */
-  estilo: { punto: 3, paleta: true, bordeFino: true },
+  estilo: { punto: 3, paleta: true, bordeGente: 1 },
 
   tileSize: 16,
 

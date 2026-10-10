@@ -700,12 +700,20 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   // quede un hueco entre el cinto y el pantalón.
   if (baja < 0 || baja === 2) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
   dibujarMapa(V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
+  /**
+   * 🔁 El arma larga cruzada va DEBAJO de la cabeza *(Santi: "hay unos pixeles
+   * que se comen el sombrero y no queda bien la perspectiva")*: el caño sube
+   * al costado de la cara, y el ala del sombrero, que está más arriba y más
+   * cerca de la cámara, lo tapa.
+   */
+  const bajoLaCabeza = larga && larga.t < 0.5 && !detras;
+  if (bajoLaCabeza) brazo();
   dibujarMapa(V.cabeza, baja + cabezaY, inclina + cabezaX);
   if (vista !== 'lado' && !larga) brazoLibre();
   if (mochila && (vista === 'frente' || vista === 'diagF')) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, C.M);
   }
-  if (!detras) brazo();
+  if (!detras && !bajoLaCabeza) brazo();
   // El impacto: la estela del brazo (de arriba atrás hacia adelante) y un destello en la punta.
   if (golpe === 3) {
     for (let a = -1.4; a < 0.2; a += 0.16) poner(Math.round(hx + Math.cos(a) * 8), Math.round(hy + Math.sin(a) * 8), 25);

@@ -18640,6 +18640,27 @@ para encontrar las poses). La E4 se hace directamente en P5.
   cuadro se ven los dos últimos tramos, blancos con la cola gris, sólo en el aire.
 - 🗑️ **Borrado el atajo [1] al techo con jinetes** *(Santi: "quiero que borres el
   atajo al techo")*, con todo lo que tenía en el asalto (`pruebaTecho`).
+- 🔁 **Diestro en todas las vistas** *(Santi: "la vaina está del lado izquierdo de la
+  cintura y el personaje debería buscar el cuchillo justamente con su mano
+  izquierda"; eligió la A: "al redibujar revisa todos los dibujos y que no haya
+  ningún error de perspectiva, superposición de pixeles, movimientos")*. Error mío:
+  de frente y en diagonal de frente el arma estaba en la mano IZQUIERDA (de espaldas
+  y de costado, en la derecha). Ahora en esas dos vistas el brazo del arma sale del
+  hombro derecho (a la izquierda de la pantalla, `hombro: [7, 9]`) y el libre del
+  izquierdo (`VER_BRAZO`, con la sombra del lado de afuera); la funda del revólver
+  pasó a la cadera derecha; el arma larga cruzada lleva el agarre en la cadera
+  derecha y el caño al hombro izquierdo (`CRUZADA.frontal`, el dibujo en espejo); y
+  apuntando, la mano va más adelante para que la culata quede en el hombro y no
+  asome al lado de la cara. En diagonal de frente el brazo izquierdo es el de allá:
+  va detrás del cuerpo, en sombra. De frente los golpes (culatazos y tajo) salen
+  hacia afuera, del lado de la mano que pega (`sx`): hacia adentro el brazo tapaba
+  la cara. El tajo de frente cruza a la altura del pecho y en diagonal levanta el
+  cuchillo sobre su hombro. Revisado agrandado: quieto, apuntando, cruzada, el paso
+  intermedio, trote, agachado, sin arma, los tres culatazos y el tajo, con las
+  cuatro armas; de espaldas y de costado quedó igual.
+  ⚠️ **Límite que queda:** las vistas hacia la izquierda son las de la derecha en
+  espejo (de costado, en diagonal de frente y de espaldas), así que mirando a la
+  izquierda el arma queda en la otra mano. Arreglarlo es dibujar esas vistas aparte.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

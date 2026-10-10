@@ -18475,6 +18475,10 @@ para encontrar las poses). La E4 se hace directamente en P5.
 - 🔁 **El revólver**, dibujado a mano en 9 direcciones (de a 22,5°): tambor con
   martillo, caño de 5 con la boca clara y culata de madera. No se gira ni se
   estira, así no se deforma *(Santi: "parece un objeto sin forma")*.
+- 🔁 **Agachado, encorvado** *(Santi: "el cuerpo, torso y cabeza, debería
+  inclinarse un poco hacia adelante y quedar apenas encorvado")*: la cabeza se
+  hunde un punto; de costado va dos adelante y la mitad de arriba del torso
+  uno; en las diagonales la cabeza uno.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

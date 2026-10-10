@@ -457,7 +457,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
     if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) idx[y * ANCHO + x] = i;
   };
   const dibujarMapa = (m, dy = 0, dx = 0) => m.filas.forEach((fila, j) => {
-    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + dx, m.y + j + dy, C[fila[x]]);
+    const corre = typeof dx === 'function' ? dx(j) : dx;
+    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + corre, m.y + j + dy, C[fila[x]]);
   });
   /**
    * Cuánto baja el cuerpo: lo dice cada cuadro (PASOS). Agachado y quieto, 3.
@@ -467,7 +468,19 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
   const k = tipo ? +piernas[1] : 0;
   const baja = tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0;
   const inclina = vista === 'lado' && tipo === 'R' ? 1 : 0;
-  const [hx, hy] = [V.hombro[0] + inclina, V.hombro[1] + baja];
+  /**
+   * 🔁 AGACHADO, ENCORVADO *(Santi: "el cuerpo, torso y cabeza, debería
+   * inclinarse un poco hacia adelante y quedar apenas encorvado")*: la cabeza
+   * se hunde un punto entre los hombros y, de costado, va dos puntos adelante
+   * y la mitad de arriba del torso uno (en las diagonales, la cabeza uno). De
+   * frente y de espaldas sólo se hunde: hacia la cámara no hay adelante que
+   * mostrar.
+   */
+  const encorva = piernas === 'agachado' || tipo === 'G';
+  const lomo = encorva && vista === 'lado' ? 1 : 0;
+  const cabezaX = encorva ? (vista === 'lado' ? 2 : vista.startsWith('diag') ? 1 : 0) : 0;
+  const cabezaY = encorva ? 1 : 0;
+  const [hx, hy] = [V.hombro[0] + inclina + lomo, V.hombro[1] + baja];
   const dir = [Math.cos(ang), Math.sin(ang)];
   // Apuntando para arriba (hacia el fondo), el brazo va detrás del cuerpo.
   const detras = arma && dir[1] < -0.35;
@@ -507,7 +520,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
     const ida = B ? B.ida * Math.cos(k * Math.PI / 4) : 0;
     const a = ida * 0.9, b = B ? B.codo : 0.1;
     const VB = VER_BRAZO[vista];
-    const S = [VB.hombro[0] + inclina, VB.hombro[1] + baja];
+    const S = [VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja];
     const ver = (fx, fy) => [S[0] + Math.round(fx * VB.kx), S[1] + Math.round(fy + fx * VB.ky)];
     const codo = [4 * Math.sin(a), 4 * Math.cos(a)];
     const mano = [codo[0] + 4 * Math.sin(a + b), codo[1] + 4 * Math.cos(a + b)];
@@ -522,15 +535,15 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
   if (vista === 'lado') brazoLibre();
   if (detras) brazo();
   if (mochila && (vista === 'espalda' || vista === 'diagE' || vista === 'lado')) {
-    for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h + mochila; j++) for (let q = 0; q < w; q++) poner(x + q + inclina, y + j + baja, j === 0 ? C.m : C.M);
+    for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h + mochila; j++) for (let q = 0; q < w; q++) poner(x + q + inclina + lomo, y + j + baja, j === 0 ? C.m : C.M);
   }
   const P = V.piernas[piernas] || V.piernas.quieto;
   dibujarMapa(P);
   // Cuando el cuerpo sube 1 (pasando un paso, en el aire o agachado), la cadera se estira un punto para que no
   // quede un hueco entre el cinto y el pantalón.
   if (baja < 0 || baja === 2) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
-  dibujarMapa(V.torso, baja, inclina);
-  dibujarMapa(V.cabeza, baja, inclina);
+  dibujarMapa(V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
+  dibujarMapa(V.cabeza, baja + cabezaY, inclina + cabezaX);
   if (vista !== 'lado') brazoLibre();
   if (mochila && (vista === 'frente' || vista === 'diagF')) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, C.M);

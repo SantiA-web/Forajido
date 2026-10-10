@@ -60,7 +60,7 @@ import { jefeParaEsteAsalto, BOSSES } from '../data/bosses.js';
 import { guardHealth } from '../data/guards.js';
 import { robTimeDe } from '../data/paquetes.js';
 import {
-  updatePassenger, drawPassenger, panic, amenazado, sePuedeAmenazar,
+  updatePassenger, drawPassenger, panic, amenazado, sePuedeAmenazar, baseDeDibujo,
 } from '../entities/passenger.js';
 import { createBullet, drawBullet } from '../entities/bullet.js';
 import { createExplosive, drawExplosive } from '../entities/explosive.js';
@@ -4354,7 +4354,8 @@ export function createRaidScene(services) {
     for (const tr of tranqueras) if (visible(tr)) cosas.push({ base: pies(tr, 8), draw: () => dibujarTranquera(r, tr) });
     for (const c of cajones) if (visible(c)) cosas.push({ base: pies(c), draw: () => drawCajon(r, c) });
     for (const l of loot) if (visible(l)) cosas.push({ base: pies(l), draw: () => drawLootable(r, l) });
-    for (const pa of passengers) if (pa.alive && visible(pa)) cosas.push({ base: pies(pa), draw: () => drawPassenger(r, pa) });
+    // 🎨 El sentado y el que duerme en la litera van encima de su mueble (ver `baseDeDibujo`).
+    for (const pa of passengers) if (pa.alive && visible(pa)) cosas.push({ base: baseDeDibujo(pa, pies(pa)), draw: () => drawPassenger(r, pa) });
     for (const e of enemies) if (e.alive && visible(e)) cosas.push({ base: pies(e), draw: () => pintar(e) });
     for (const ro of rodantes) if (visible(ro)) cosas.push({ base: pies(ro), draw: () => drawRodante(r, ro) });
     // Los jinetes van afuera: los de arriba del tren quedan detrás de la pared

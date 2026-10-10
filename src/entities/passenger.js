@@ -357,6 +357,19 @@ function accionDeDia(pa, ahora) {
   return { accion: s.accion, k, girando: t < 0.3 || queda < 0.3 };
 }
 
+/**
+ * DESDE DÓNDE SE ORDENA AL DIBUJARLO: el que está sentado (con el dibujo nuevo)
+ * va delante de su asiento, y el que duerme en la litera, delante de la cama.
+ * Si no, el mueble —que se dibuja por su borde de abajo— lo tapaba entero.
+ */
+export function baseDeDibujo(pa, base) {
+  if (!estiloNuevo.activo) return base;
+  if (pa.dormido && pa.cama && pa.cama.base) return Math.max(base, pa.cama.base + 0.02);
+  const sentado = pa.sentado && (pa.state === 'idle' || pa.state === 'amenazado' || pa.state === 'panic') && !pa.revelando;
+  if (sentado && pa.asientoBase) return Math.max(base, pa.asientoBase + 0.02);
+  return base;
+}
+
 /** La "z" del que duerme, encima de la cabeza; sube despacio. */
 function dibujarZ(r, x, arriba) {
   const sube = Math.floor((performance.now() / 600) % 3);
@@ -366,12 +379,16 @@ function dibujarZ(r, x, arriba) {
   });
 }
 
+/** Dónde se dibuja el sentado respecto del medio de su asiento (en unidades del mundo). */
+const AJUSTE_ASIENTO = { x: 1.5, y: 0 };
+
 /** 🎨 EL PASAJERO CON EL DIBUJO NUEVO (P3a). */
 function pasajeroNuevo(r, pa, pies) {
   const espejoTirado = (Math.floor(pa.x / 3) & 1) === 1;
   if (!pa.alive) { tendidoNuevo(r, pa.x, pa.y, { tipo: 'pasajero', modo: 'muerto', sangre: true, espejo: espejoTirado }); return; }
   // Durmiendo en la litera del dormitorio.
-  if (pa.dormido && pa.cama) { tendidoNuevo(r, pa.cama.x, pa.cama.y, { tipo: 'pasajero', modo: 'cama', espejo: pa.cama.x > pa.x }); return; }
+  // (La almohada de la litera está a la izquierda: la cabeza va ahí.)
+  if (pa.dormido && pa.cama) { tendidoNuevo(r, pa.cama.x - 6, pa.cama.y, { tipo: 'pasajero', modo: 'cama' }); return; }
 
   const fase = faseDeAndar(pa);
   r.ctx.globalAlpha = 0.25;
@@ -407,10 +424,11 @@ function pasajeroNuevo(r, pa, pies) {
   if (pa.state === 'idle' && !pa.dormido) {
     r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
   }
-  // Sentado, apoyado contra el respaldo: corrido 3 hacia el asiento (encima del asiento, el respaldo lo tapaba entero).
-  const xDibujo = sentado && pa.asientoX != null ? pa.x + Math.sign(pa.asientoX - pa.x) * 3 : pa.x;
+  // Sentado en el almohadón, la espalda contra el respaldo (que está a la izquierda del asiento).
+  const xDibujo = sentado && pa.asientoX != null ? pa.asientoX + AJUSTE_ASIENTO.x : pa.x;
+  const piesDibujo = sentado && pa.asientoX != null ? pies + AJUSTE_ASIENTO.y : pies;
   const fig = dibujarPersona(r, {
-    tipo: 'pasajero', x: xDibujo, pies, angulo, fase: sentado ? null : fase,
+    tipo: 'pasajero', x: xDibujo, pies: piesDibujo, angulo, fase: sentado ? null : fase,
     modo: pa.state === 'fleeing' ? 'trotar' : 'caminar',
     interior: true, nuevo,
     sacudida: shake,

@@ -423,8 +423,16 @@ export function drawEnemy(r, e) {
    * que leer de un vistazo: el de la "z" no es un problema; éste, sí.
    */
   if (e.caido > 0 && nuevo) {
-    tendidoNuevo(r, e.x, e.y, { modo: 'caido', ang: e.facing, espejo: Math.cos(e.facing) < 0 });
-    if (e.state === 'combat') dibujarAviso(r, e.x, e.y - 6, 'alerta');
+    // 🔁 Sentado en el piso con las piernas estiradas y el cuerpo echado adelante, apuntando.
+    const defC = ARMAS_GUARDIA[e.armaEnMano || e.armaId];
+    const largaC = defC && typeof defC.dibujo === 'string' ? defC.dibujo : null;
+    const figC = dibujarPersona(r, {
+      tipo, x: e.x, pies, angulo: e.facing, interior: true,
+      nuevo: { piernas: 'piso', arma: largaC || 'colt', empuna: largaC || e.aimTimer > 0 ? 1 : 0, funda: !largaC },
+      destello: e.hitFlash > 0,
+    });
+    anotarBoca(e, figC);
+    if (e.state === 'combat') dibujarAviso(r, e.x, figC.arriba, 'alerta');
     return;
   }
   if (e.caido > 0) {
@@ -580,6 +588,7 @@ export function drawEnemy(r, e) {
     } : null,
   });
 
+  if (nuevo) anotarBoca(e, fig);
   if ((sentado || e.desenfundando > 0) && !nuevo) {
     // El arma colgada al costado, en gris: sobre el negro, oscura no se vería.
     r.rect(fig.x + 6, fig.manoY - 2, 1, 4, '#8a8074');
@@ -671,6 +680,11 @@ function poseNueva(e, conRevolver) {
   // A cubierto.
   if (e.atCover && !e.peeking && !(e.aimTimer > 0)) p.agachado = true;
   return p;
+}
+
+/** Dónde quedó la boca del caño dibujado, para que la bala salga de ahí (ver `origenDeTiro` en systems/ai.js). */
+function anotarBoca(e, fig) {
+  e._p3Boca = fig && fig.boca ? { dx: fig.boca.x - e.x, dy: fig.boca.y - e.y, t: performance.now() } : null;
 }
 
 function drawVisionCone(r, e) {

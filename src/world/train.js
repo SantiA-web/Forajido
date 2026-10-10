@@ -1137,10 +1137,27 @@ export function buildTrain(
        */
       const fila = (p.layout || [])[def.row] || '';
       const esCama = p.mueble === 'cama';
-      // El asiento más cercano de su fila: ahí se lo dibuja sentado (la caja con la que choca no se mueve).
-      const dAsiento = [-1, 1, -2, 2].find((d) => fila[def.col + d] === 'S');
+      /**
+       * 🔁 SENTADO DE VERDAD, SOBRE EL ASIENTO *(Santi: "los civiles están
+       * sentados pésimos: o en el aire y/o enfrentados contra el respaldo del
+       * otro asiento")*. En el vagón de pasajeros todos los asientos tienen el
+       * respaldo a la izquierda y el almohadón a la derecha (ver
+       * world/estiloNuevo/vagones.js): el pasajero se sienta en el de su
+       * izquierda y MIRA PARA DONDE MIRA EL ASIENTO, a la derecha. Antes la
+       * mitad miraba a la izquierda: de cara al respaldo del de adelante.
+       * Sólo en ese vagón (los otros siguen con los muebles viejos, y ahí van
+       * de pie, como antes). La caja con la que choca no se mueve; `asientoBase`
+       * es el borde de abajo del asiento, para dibujarlo encima.
+       */
+      const dAsiento = p.id === 'pasajeros' ? [-1, -2].find((d) => fila[def.col + d] === 'S') : undefined;
       pa.sentado = !esCama && dAsiento !== undefined;
-      if (pa.sentado) pa.asientoX = enTiles([def.col + dAsiento, def.row]).x;
+      if (pa.sentado) {
+        pa.asientoX = enTiles([def.col + dAsiento, def.row]).x;
+        let fin = def.row;
+        while (((p.layout[fin + 1] || '')[def.col + dAsiento]) === 'S') fin++;
+        pa.asientoBase = (fin + 1) * map.size;
+        pa.facing = 0;
+      }
       let h = ((def.col * 73856093) ^ (def.row * 19349663) ^ (t.wagon * 83492791)) >>> 0;
       h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
       h = (h ^ (h >>> 13)) >>> 0;
@@ -1162,7 +1179,7 @@ export function buildTrain(
           const c0 = L[mejor.r][mejor.c - 1] === 'S' ? mejor.c - 1 : mejor.c;
           const r0 = (L[mejor.r - 1] || '')[mejor.c] === 'S' ? mejor.r - 1 : mejor.r;
           const a = enTiles([c0, r0]), z = enTiles([c0 + 1, r0 + 1]);
-          pa.cama = { x: (a.x + z.x) / 2, y: (a.y + z.y) / 2 };
+          pa.cama = { x: (a.x + z.x) / 2, y: (a.y + z.y) / 2, base: (r0 + 2) * map.size };
         }
       }
       /**

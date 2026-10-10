@@ -327,6 +327,19 @@ VISTAS.frente.piernas.sentado = mapa(21, ['......FIITTTtt', '......FIITTTtt', '.
 VISTAS.diagF.piernas.sentado = mapa(21, ['......FIITTttt', '......FIITTtttt', '......fIITT.ttt', '........IIT..tt', '........QOO..OOo', '........KKKK.KKKK']);
 VISTAS.espalda.piernas.sentado = mapa(21, ['.......IITTTttF', '.......IITTTttF', '........IT..Ttf', '........IT..Tt', '.......OOO..OOO', '.......KKK..KKK']);
 VISTAS.diagE.piernas.sentado = mapa(21, ['.......tttTTTF', '.......tttTTTTF', '.......tt..IITf', '.......tt...IT', '.......OOo..QOOO', '.......KKK..KKKK']);
+/**
+ * 🆕 EN EL PISO, APUNTANDO (el guardia tumbado por un tiro en la pierna) *(Santi:
+ * "debería tener las piernas estiradas, pero su cuerpo inclinado hacia arriba
+ * y adelante para disparar")*: sentado en el piso, la cadera 8 puntos más
+ * abajo, las piernas estiradas hacia adelante (de costado, derechas en el piso
+ * con las botas de punta para arriba; de frente vienen hacia nosotros y se ven
+ * las suelas; de espaldas el cuerpo las tapa), y el torso echado adelante.
+ */
+VISTAS.lado.piernas.piso = mapa(23, ['..................OOK', '..................QOK', '.......IIIIIIIIIIIOOK', '.......tTTTTTTTTTTTt']);
+VISTAS.frente.piernas.piso = mapa(25, ['.......IITTTtt', '......IIT..Ttt', '......IIT..Ttt', '.....IIT....Ttt', '.....IIT....Ttt', '....KKKK....KKKK', '....KOOK....KOOK']);   // las piernas abiertas en V, hacia nosotros
+VISTAS.diagF.piernas.piso = mapa(25, ['.......IITTttt', '........IITtttt', '.........IITttt', '..........IITtt', '..........KKKKK', '..........KOOKK']);
+VISTAS.espalda.piernas.piso = mapa(25, ['.......IITTTtt', '.......tttttt']);
+VISTAS.diagE.piernas.piso = mapa(25, ['.......tttTTII', '........tttTT']);
 VISTAS.frente.piernas.rodillas = mapa(22, ['......FIITTTtt', '......FIIT.Ttt', '......fIIT.TTt', '.......III.TTt', '.......ttt.ttt']);
 
 // ------------------------------------------------- las piernas que se mueven
@@ -972,9 +985,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'sentado' ? 4 : piernas === 'rodillas' ? 5 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'sentado' ? 4 : piernas === 'rodillas' ? 5 : piernas === 'piso' ? 8 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
   const deCostado = vista === 'lado' || vista.startsWith('diag');
-  const inclina = AT ? (deCostado ? AT.inclina : 0) : TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
+  const inclina = AT ? (deCostado ? AT.inclina : 0) : TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : piernas === 'piso' && deCostado ? 1 : 0;
   /**
    * 🔁 AGACHADO, ENCORVADO *(Santi: "el cuerpo, torso y cabeza, debería
    * inclinarse un poco hacia adelante y quedar apenas encorvado")*: la cabeza

@@ -2840,6 +2840,22 @@ export function doCombat(e, dt, world) {
   else e.aimTimer = 0;
 }
 
+/**
+ * 🔁 DE DÓNDE SALE LA BALA *(Santi: "la bala no sale de la punta del arma sino
+ * que de cualquier lado")*. Con el dibujo nuevo, el dibujo anota dónde quedó la
+ * boca del caño (`_p3Boca`, ver drawEnemy): la bala sale justo debajo de ella
+ * —la bala viaja por el piso, así la frenan las paredes— y a su altura, que es
+ * sólo cómo se la ve (`altoSalida`, ver entities/bullet.js). Sin dibujo
+ * reciente (el dibujo viejo, o fuera de la pantalla), como siempre: 9 unidades
+ * hacia donde apunta.
+ */
+function origenDeTiro(e, angulo) {
+  const x = e.x + Math.cos(angulo) * 9, y = e.y + Math.sin(angulo) * 9;
+  const b = e._p3Boca;
+  if (!b || performance.now() - b.t > 500) return { x, y };
+  return { x: e.x + b.dx, y, altoSalida: y + 3.5 - (e.y + b.dy) };
+}
+
 /** Golpe cuerpo a cuerpo del guardia: levanta el brazo y después pega. */
 function doEnemyMelee(e, dt, world) {
   const c = CONFIG.enemy;
@@ -3222,8 +3238,7 @@ function fire(e, world, enPanico) {
     const abre = n > 1 ? (i / (n - 1) - 0.5) * arma.abanico + world.rng.spread(arma.abanico / (n * 2)) : 0;
     const a = angle + abre;
     world.spawnBullet({
-      x: e.x + Math.cos(a) * 9,
-      y: e.y + Math.sin(a) * 9,
+      ...origenDeTiro(e, a),
       angle: a,
       speed: arma.velocidadBala ?? c.bulletSpeed,
       damage: 1,
@@ -3329,8 +3344,7 @@ function fireDoorBlind(e, world, target) {
   gastarBala(e, world);
 
   world.spawnBullet({
-    x: e.x + Math.cos(angle) * 9,
-    y: e.y + Math.sin(angle) * 9,
+    ...origenDeTiro(e, angle),
     angle,
     speed: c.bulletSpeed,
     damage: 1,
@@ -3401,8 +3415,7 @@ function fireTechoBlind(e, world, target) {
   gastarBala(e, world);
 
   world.spawnBullet({
-    x: e.x + Math.cos(angle) * 9,
-    y: e.y + Math.sin(angle) * 9,
+    ...origenDeTiro(e, angle),
     angle,
     speed: c.bulletSpeed,
     damage: 1,

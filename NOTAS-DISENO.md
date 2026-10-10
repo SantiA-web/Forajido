@@ -18768,6 +18768,20 @@ Primera clase y las mujeres quedan para después.
   larga del guardia de franco, colgada, no se ve; el rico de primera clase sigue con
   el dibujo viejo; asomarse desde el reparo hace que el cuerpo se deslice de costado
   (el guardia se corre de verdad para tirar).
+- **🔁 Arreglos después de jugarla** *(Santi: "la bala no sale de la punta del arma"; "cuando
+  está tendido en el piso disparando, debería tener las piernas estiradas, pero su
+  cuerpo inclinado hacia arriba y adelante"; "los civiles están sentados pésimos: o
+  en el aire y/o enfrentados contra el respaldo del otro asiento"; "cuando duermen en
+  la cama prácticamente no se ve")*: **la bala sale de la boca dibujada** (el dibujo la
+  anota en `_p3Boca` y `origenDeTiro` la usa; la bala sigue viajando por el piso, la
+  altura es sólo cómo se la ve; medido: misma x y la altura del arma al tirar); **el
+  caído, sentado en el piso** con las piernas estiradas y el torso echado adelante
+  (piernas `piso` en las 5 vistas); **los sentados, sobre el almohadón** del asiento de
+  su izquierda y **mirando a la derecha, como el asiento** (cambia adónde miran dos de
+  los cuatro pasajeros del vagón: antes miraban al respaldo de enfrente), y dibujados
+  después del asiento (`baseDeDibujo`); sólo en el vagón de pasajeros, en los otros
+  van de pie; **el de la litera**, dibujado después de la cama, con la cabeza en la
+  almohada de la litera y la cara entera.
 - Sigue **P3b**: las variantes (barbas finas en las otras vistas y su capa del
   motor, chaleco, tiradores, la chaqueta corta, cuerpos, el sorteo).
 

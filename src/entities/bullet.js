@@ -2,7 +2,7 @@
 
 import { CONFIG } from '../data/config.js';
 
-export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon, tirador, alTecho }) {
+export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon, tirador, alTecho, altoSalida }) {
   return {
     x, y,
     /**
@@ -12,7 +12,8 @@ export function createBullet({ x, y, angle, speed, damage, range, owner, fromRid
      * que le apuntaste. Sin esto, el tiro a la cabeza se veía ir a los pies.
      */
     x0: x, y0: y,
-    altoSalida: CONFIG.golpe.alturaArma,
+    // (Quien sabe dónde está la boca del caño dibujado la manda: `altoSalida`.)
+    altoSalida: altoSalida ?? CONFIG.golpe.alturaArma,
     altoFinal: alto ?? null,
     distancia: distancia ?? 0,
     /**

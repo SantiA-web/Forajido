@@ -585,9 +585,10 @@ export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang
     for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + dx, m.y + k + dy, col[fila[x]]);
   });
   if (modo === 'cama') {
-    // La almohada, la cabeza encima y la frazada de lana (con el borde de la sábana doblado arriba).
-    dibujar(mapa(0, ['.DDDDDDD', 'DDDDDDDDd', 'DDDDDDDDd', 'DDDDDDDDd', 'DDDDDDDDd', 'DDDDDDDDd', '.ddddddd']), 2, 0);
-    dibujar(TENDIDO.cabeza, 5, 0);
+    // 🔁 La cabeza sobre la almohada de la litera (la cama ya tiene la suya *(Santi:
+    // "debería estar sin sombrero y con la cara descubierta")*): la cara entera,
+    // el pelo sólo en la coronilla. Y la frazada de lana con el borde de la sábana doblado.
+    dibujar(mapa(1, ['aPPPq', 'aPPPp', 'aPPPp', 'aPPpp', 'aPpqq']), 5, 0);
     dibujar(mapa(-1, [
       '..........SSNNNNNNNNNNNNNNNNNNN',
       '..........SSNNNNNNNNNNNNNNNNNNNN',

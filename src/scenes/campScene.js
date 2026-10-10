@@ -63,6 +63,8 @@ export function createCampScene(services) {
   const { input, scenes, hud, audio } = services;
   // 🧪 El arma que tenías antes de ponerte la escopeta con [2] (ver `update`).
   let armaAntesDeLaPrueba = null;
+  // 🧪 Lo que tenías para pegar antes de ponerte el cuchillo con [5].
+  let meleeAntesDeLaPrueba = null;
 
   const colors = CONFIG.colors;
 
@@ -364,6 +366,23 @@ export function createCampScene(services) {
         gameState.weapon = armaPrueba;
       }
       decir(gameState.weapon === armaPrueba ? T.camp.atajoArmaSi(WEAPONS[armaPrueba].short) : T.camp.atajoEscopetaNo, 2);
+    }
+    /**
+     * 🧪 [5] TE PONE EL CUCHILLO SIN COMPRARLO *(Santi: "hacé un atajo para
+     * equipar el cuchillo")*, para probar el tajo y la vaina; otra vez [5],
+     * vuelve lo que tenías para pegar. No lo agrega a lo tuyo: en la tienda
+     * sigue costando $450.
+     *
+     * ⚠️ SACARLO antes de mostrar el juego, con los otros.
+     */
+    if (input.wasPressed('Digit5')) {
+      if (gameState.melee === 'cuchillo') {
+        gameState.melee = meleeAntesDeLaPrueba || 'culata';
+      } else {
+        meleeAntesDeLaPrueba = gameState.melee || 'culata';
+        gameState.melee = 'cuchillo';
+      }
+      decir(gameState.melee === 'cuchillo' ? T.camp.atajoCuchilloSi : T.camp.atajoCuchilloNo(MELEE[gameState.melee].short), 2);
     }
 
     if (mensaje) {

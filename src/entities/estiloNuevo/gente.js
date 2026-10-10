@@ -99,6 +99,56 @@ const BARBAS = {
   completa: { frente: mapa(4, ['........B...B', '........BBBBB', '.........BBB']), diagF: mapa(4, ['.........B', '.........BBBB', '..........BBB']) },
 };
 
+/**
+ * 🧪 LAS BARBAS CON PUNTOS MÁS CHICOS (prueba) *(Santi: "las barbas no se
+ * distinguen casi nada y pensé que para los detalles de la cara podrías usar
+ * pixeles de 2x2 o 1x1")*. Van encima de la cara después de la grilla, como el
+ * borde fino. `origen` es el punto de arriba a la izquierda de la cara (de
+ * frente, la columna 8 de la fila 4); cada letra es un punto de pantalla (1×1)
+ * o un cuadrado de 2×2. `B` la barba, `b` su sombra (más oscura).
+ */
+export const BARBAS_FINAS = {
+  origen: { frente: [8, 4], diagF: [9, 4] },
+  // De a 1×1: la cara de frente mide 15 × 9.
+  1: {
+    bigote: {
+      frente: ['...............', '...............', '...............', '...............', '.....BBBBB.....', '....BBbbbBB....', '....B.....B....'],
+      diagF: ['...............', '...............', '...............', '...............', '........BBBBB..', '.......BBbbbB..', '.......B....B..'],
+    },
+    candado: {
+      frente: ['...............', '...............', '...............', '...............', '.....BBBBB.....', '....BBbbbBB....', '....B.....B....', '......BbB......', '.......B.......'],
+      diagF: ['...............', '...............', '...............', '...............', '........BBBBB..', '.......BBbbbB..', '.......B....B..', '.........BbB...', '..........B....'],
+    },
+    patillas: {
+      frente: ['B.............B', 'BB...........BB', 'BB...........BB', 'Bb...........bB', 'Bb...........bB', '.B...........B.'],
+      diagF: ['.B.............', '.BB............', '.BB............', '.Bb............', '.Bb............', '..B............'],
+    },
+    completa: {
+      frente: ['B.............B', 'B.............B', 'BB...........BB', 'Bb...........bB', 'BbB..BBBBB..BbB', 'BbBBBbbbbbBBBbB', '.BbB.......BbB.', '..BBBbBbBbBBB..', '....BBBBBBB....'],
+      diagF: ['.B.............', '.B.............', '.BB............', '.Bb............', '.BbB...BBBBB...', '.BbBBBBbbbbB...', '..BbB......BB..', '...BBBbBbBbB...', '.....BBBBBB....'],
+    },
+  },
+  // De a 2×2: la cara de frente mide 7 × 4 cuadrados (y medio).
+  2: {
+    bigote: {
+      frente: ['.......', '.......', '..BbB..', '.B...B.'],
+      diagF: ['.......', '.......', '....BbB', '...B..B'],
+    },
+    candado: {
+      frente: ['.......', '.......', '..BbB..', '.B...B.', '...B...'],
+      diagF: ['.......', '.......', '....BbB', '...B..B', '.....B.'],
+    },
+    patillas: {
+      frente: ['B.....B', 'B.....B', 'b.....b'],
+      diagF: ['B......', 'B......', 'b......'],
+    },
+    completa: {
+      frente: ['B.....B', 'B.....B', 'BbBbBbB', '.BbbbB.', '..BBB..'],
+      diagF: ['B......', 'B......', 'BbBBbBb', '.BbbbB.', '..BBBB.'],
+    },
+  },
+};
+
 // ------------------------------------------------------------------ sombreros
 /**
  * LOS SOMBREROS, de la fila 0 a la 3 (tapan el pelo de arriba). `h H k` el
@@ -111,7 +161,7 @@ const SOMBREROS = {
   plano: {
     frente: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
     diagF: mapa(0, ['.........hHHHk', '.........bbbbb', '....hhhhHHHHHHHkkkk', '.....xkkkkkkkkkkkx']),
-    lado: mapa(0, ['.........hHHk', '.........bbbb', '...hhhhHHHHHHHkkk', '....xkkkkkkkkkkx']),
+    lado: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
     diagE: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
     espalda: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
   },
@@ -119,19 +169,45 @@ const SOMBREROS = {
   curvo: {
     frente: mapa(0, ['.........hHk', '......h.hHHHk.k', '......hhbbbbbkk']),
     diagF: mapa(0, ['..........hHk', '.......h.hHHHk.k', '.......hhbbbbbkk']),
+    lado: mapa(0, ['.........hHk', '......h.hHHHk.k', '......hhbbbbbkk']),
+    diagE: mapa(0, ['.........hHk', '......h.hHHHk.k', '......hhbbbbbkk']),
+    espalda: mapa(0, ['.........hHk', '......h.hHHHk.k', '......hhbbbbbkk']),
   },
   // El de paja del civil: ala ancha que cae un poco en las puntas.
   paja: {
     frente: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '..xkkkkkkkkkkkkkkx']),
     diagF: mapa(0, ['.........hHHHk', '.........bbbbb', '....hhhhHHHHHHHkkkk', '...xkkkkkkkkkkkkkkx']),
+    lado: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '..xkkkkkkkkkkkkkkx']),
+    diagE: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '..xkkkkkkkkkkkkkkx']),
+    espalda: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '..xkkkkkkkkkkkkkkx']),
   },
   bombin: {
     frente: mapa(0, ['.........hHk', '........hHHHk', '........bbbbb', '.......hHHHHHk']),
     diagF: mapa(0, ['..........hHk', '.........hHHHk', '.........bbbbb', '........hHHHHHk']),
-    lado: mapa(0, ['.........hHk', '........hHHHk', '........bbbbb', '.......hHHHHHkk']),
+    lado: mapa(0, ['.........hHk', '........hHHHk', '........bbbbb', '.......hHHHHHk']),
     diagE: mapa(0, ['.........hHk', '........hHHHk', '........bbbbb', '.......hHHHHHk']),
     espalda: mapa(0, ['.........hHk', '........hHHHk', '........bbbbb', '.......hHHHHHk']),
   },
+};
+
+/**
+ * EL PAÑUELO AL CUELLO de los civiles *(Santi: "la corbata debería quedar para
+ * los civiles ricos. En cambio debería estar los pañuelos")*: anudado al
+ * cuello (fila 7), con la punta del nudo sobre el pecho (en el torso). `S R r z`
+ * de la luz a la sombra; el color lo pone cada uno.
+ */
+const PANUELO = {
+  frente: mapa(7, ['.......zRRSRRr']),
+  diagF: mapa(7, ['........zRRSRRr']),
+  lado: mapa(7, ['.........rRRS']),
+  diagE: mapa(7, ['........rRRSRRr']),
+  espalda: mapa(7, ['.......rRRSRRr']),
+};
+export const COLORES_PANUELO = {
+  rojo: { S: 10, R: 9, r: 8, z: 39 },
+  azul: { S: 20, R: 19, r: 41, z: 18 },
+  amarillo: { S: 29, R: 28, r: 44, z: 5 },
+  verde: { S: 43, R: 27, r: 26, z: 42 },
 };
 
 // ------------------------------------------------------------------ torsos
@@ -152,9 +228,9 @@ const TORSOS = {
     espalda: mapa(8, ['.......CVVCVVc', '........UVcVv', '........UVVVv', '........UVVvv', '........UVVvv', '........VVVvv', '........VVVvw', '........VVVvw', '........WWWWW']),
   },
   pasajero: {
-    frente: mapa(8, ['.......CUCRCVc', '........UCRCv', '........UVRVv', '........UVyvv', '........UVVvv', '........UVyvv', '........VVVvw', '........VVyvw', '........WyGyW']),
-    diagF: mapa(8, ['.......CUVCRvc', '........UUCRv', '........UVVRv', '........UVVyv', '........UVVvv', '........UVVyv', '........VVVvw', '........VVVvw', '........WyWGy']),
-    lado: mapa(8, ['.......UVVvC', '.......UVVvR', '.......UVVvR', '.......UVVvv', '.......UVVvy', '.......UVVvv', '.......VVVvw', '.......VVVvw', '.......WWyWG']),
+    frente: mapa(8, ['.......CURSrVc', '........UCRCv', '........UVyVv', '........UVVvv', '........UVyvv', '........VVVvv', '........VVyvw', '........VVVvw', '........WyGyW']),
+    diagF: mapa(8, ['.......CUVRSrc', '........UUCRv', '........UVVyv', '........UVVvv', '........UVVyv', '........UVVvw', '........VVVyw', '........VVVvw', '........WyWGy']),
+    lado: mapa(8, ['.......UVVvR', '.......UVVvr', '.......UVVvy', '.......UVVvv', '.......UVVvy', '.......UVVvv', '.......VVVvw', '.......VVVvw', '.......WWyWG']),
     diagE: mapa(8, ['.......CVVVCvc', '........UVVcv', '........UVVVv', '........UVVvv', '........UVVvv', '........UVVvv', '........VVVvw', '........VVVvw', '........WWWWW']),
     espalda: mapa(8, ['.......CVVCVVc', '........UVcVv', '........UVVVv', '........UVVvv', '........UVVvv', '........VVVvv', '........VVVvw', '........VVVvw', '........WWWWW']),
   },
@@ -171,6 +247,11 @@ const PIELES = {
   media: { P: 12, p: 11, q: 47, n: 13 },
   oscura: { P: 11, p: 47, q: 1, n: 12 },
 };
+/**
+ * ⚠️ REGLA PARA EL SORTEO DE VARIANTES *(Santi: "el rubio nunca debe ir con piel
+ * negra")*: estas combinaciones no salen nunca.
+ */
+export const NUNCA = [{ pelo: 'rubio', piel: 'oscura' }];
 const PELOS = {
   negro: { A: 2, a: 1, B: 1 },
   castano: { A: 4, a: 3, B: 3 },
@@ -185,9 +266,10 @@ export const UNIFORMES = {
 };
 /** El color de cada sombrero (el del guardia y el bombín, negros; el de paja, claro con cinta). */
 const COLOR_SOMBRERO = {
-  plano: { h: 46, H: 2, k: 1, x: 1, b: 31 },
-  curvo: { h: 46, H: 2, k: 1, x: 1, b: 31 },
-  bombin: { h: 46, H: 2, k: 1, x: 1, b: 31 },
+  // 🔁 Negros neutros, de la escala de los grises *(Santi: "los sombreros parecen morados y no negros")*.
+  plano: { h: 23, H: 31, k: 0, x: 0, b: 32 },
+  curvo: { h: 23, H: 31, k: 0, x: 0, b: 32 },
+  bombin: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   paja: { h: 38, H: 37, k: 6, x: 5, b: 33 },
 };
 const BASE = {
@@ -198,7 +280,7 @@ const BASE = {
   pasajero: {
     L: 17, C: 16, c: 15,                     // camisa clara
     U: 35, V: 34, v: 33, w: 32, y: 1,        // chaleco marrón
-    R: 9, W: 1, G: 25,                       // corbata roja, cinto
+    W: 1, G: 25,                             // cinto
     I: 24, T: 23, t: 31,                     // pantalón gris
     F: null, f: null,                        // sin funda
   },
@@ -210,10 +292,10 @@ const BASE = {
  * (las del jugador: 'quieto', 'W0'…), y sus variantes: `sombrero`, `piel`,
  * `pelo`, `uniforme`. Devuelve los índices de color.
  */
-export function cuadroGente({ tipo, vista, piernas = 'quieto', sombrero, piel = 'media', pelo = 'castano', uniforme = 'gris', barba = null, peinado = 'corto', mangas = 'largas', fino = false }) {
+export function cuadroGente({ tipo, vista, piernas = 'quieto', sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', mangas = 'largas', panuelo = 'azul', fino = false }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
   const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero;
-  const col = { ...C, ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? COLOR_SOMBRERO[s] : {}) };
+  const col = { ...C, ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? COLOR_SOMBRERO[s] : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
     if (i == null) return;
@@ -242,6 +324,7 @@ export function cuadroGente({ tipo, vista, piernas = 'quieto', sombrero, piel = 
   dibujarMapa(P);
   dibujarMapa(TORSOS[tipo][vista]);
   dibujarMapa(CABEZA[vista]);
+  if (tipo === 'pasajero') dibujarMapa(PANUELO[vista]);
   if (PEINADOS[peinado] && PEINADOS[peinado][vista]) dibujarMapa(PEINADOS[peinado][vista]);
   if (barba && BARBAS[barba] && BARBAS[barba][vista]) dibujarMapa(BARBAS[barba][vista]);
   if (s && SOMBREROS[s] && SOMBREROS[s][vista]) dibujarMapa(SOMBREROS[s][vista]);

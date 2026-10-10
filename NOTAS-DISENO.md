@@ -18672,7 +18672,7 @@ para encontrar las poses). La E4 se hace directamente en P5.
 sombrero, ropa, color de cabello y formas mínimas de cuerpo… para añadir más
 realismo y humanidad al juego")*. El mismo cuerpo que el jugador (27 puntos,
 sus piernas y su paso) y encima lo suyo, en mapas apilados que se combinan
-(). Cuatro pasos: **1** diseño (hoja de prueba),
+(`entities/estiloNuevo/gente.js`). Cuatro pasos: **1** diseño (hoja de prueba),
 **P3a** poses y animaciones base, **P3b** variantes, **P3c** guardias especiales.
 Primera clase y las mujeres quedan para después.
 
@@ -18697,7 +18697,7 @@ Primera clase y las mujeres quedan para después.
   la mandíbula según la piel, en el tono cálido con pelo oscuro), **bigote**,
   **candado**, **patillas grandes** (como las de San Martín) y afeitado.
 - **Piel** clara, media y oscura, con **más media y oscura** por ser frontera
-  (propuesta 20/40/40, ). **El rubio nunca con piel oscura** ().
+  (propuesta 20/40/40, `PESO_PIEL`). **El rubio nunca con piel oscura** (`NUNCA`).
 - **Camisa** larga o arremangada. El blindado: placa de acero en el torso (sin
   casco: no existía en el Oeste y no le dice nada al jugador).
 - **Falta para P3b**: las barbas finas en las otras tres vistas y la capa del

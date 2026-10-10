@@ -5,7 +5,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_LOOK } from './figura.js';
+import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_LOOK, tendidoNuevo } from './figura.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { dibujarHeridas } from './danio.js';
 import { GUARD_TYPES, DEFAULT_GUARD_TYPE, guardHealth } from '../data/guards.js';
 import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
@@ -384,7 +385,16 @@ export function drawEnemy(r, e) {
   const tipo = ROPA_DE_LOOK[e.look] || 'guardia';
   const cinta = CINTA_DE[tipo];
 
+  /**
+   * 🎨 CON EL DIBUJO NUEVO (P3a, [F9]): el guardia común tirado, rendido y de
+   * franco, dibujado a mano. La cabeza de cada uno cae siempre para el mismo
+   * lado (sale de dónde quedó tirado); el caído, con la cabeza del lado contrario a
+   * donde apunta.
+   */
+  const nuevo = estiloNuevo.activo && tipo === 'guardia' && r.ctx;
+  const espejoTirado = (Math.floor(e.x / 3) & 1) === 1;
   if (!e.alive) {
+    if (nuevo) { tendidoNuevo(r, e.x, e.y, { modo: 'muerto', sangre: true, espejo: espejoTirado }); return; }
     dibujarTendido(r, e.x, e.y, { tipo, sangre: true, cinta });
     return;
   }
@@ -400,6 +410,7 @@ export function drawEnemy(r, e) {
    * por al lado, que ese sigue siendo un problema que se va a levantar.
    */
   if (e.inconsciente > 0) {
+    if (nuevo) { tendidoNuevo(r, e.x, e.y, { modo: 'desmayado', late: Math.sin(e.inconsciente * 3) > 0 ? 1 : 0, espejo: espejoTirado }); return; }
     dibujarTendido(r, e.x, e.y, {
       tipo, cinta, dormido: true, respira: Math.sin(e.inconsciente * 3) * 0.5,
     });
@@ -411,6 +422,11 @@ export function drawEnemy(r, e) {
    * despierto y con el arma en la mano apuntándote. Es la diferencia que hay
    * que leer de un vistazo: el de la "z" no es un problema; éste, sí.
    */
+  if (e.caido > 0 && nuevo) {
+    tendidoNuevo(r, e.x, e.y, { modo: 'caido', ang: e.facing, espejo: Math.cos(e.facing) < 0 });
+    if (e.state === 'combat') dibujarAviso(r, e.x, e.y - 6, 'alerta');
+    return;
+  }
   if (e.caido > 0) {
     dibujarTendido(r, e.x, e.y, { tipo, cinta });
     const ang = e.facing;
@@ -440,7 +456,19 @@ export function drawEnemy(r, e) {
       ? Math.min(1, e.traicionProgreso / CONFIG.enemy.traicionDuracion)
       : 0;
     const levantado = t > 0.5;
+    /**
+     * 🎨 El dibujo nuevo: de rodillas con las manos arriba y el pañuelo; al
+     * traicionar, suelta el pañuelo, se levanta a medias llevando la mano a la
+     * funda y se para con el arma en la mano (4 cuadros).
+     */
+    const defR = ARMAS_GUARDIA[e.armaEnMano || e.armaId];
+    const largaR = defR && typeof defR.dibujo === 'string' ? defR.dibujo : null;
+    const cuadroR = t < 0.25 ? 0 : t < 0.5 ? 1 : t < 0.75 ? 2 : 3;
+    const nuevoR = cuadroR < 2 ? { piernas: 'rodillas', brazos: 'arriba', bandera: cuadroR === 0, enfundado: !largaR, funda: !largaR }
+      : cuadroR === 2 ? { piernas: 'agachado', arma: largaR ? null : 'colt', desenfunda: largaR ? null : 1, funda: !largaR }
+        : { piernas: 'quieto', arma: largaR || 'colt', empuna: 0, funda: !largaR };
     const fig = dibujarPersona(r, {
+      interior: true, nuevo: nuevoR,
       tipo, x: e.x, pies, angulo: Math.PI / 2,
       postura: levantado ? 'pie' : 'rendido',
       panuelo: t < 0.25,
@@ -516,17 +544,20 @@ export function drawEnemy(r, e) {
    * cruzada patrullando y apuntando cuando pelea, como el jugador.
    */
   const peleando = e.state === 'combat' || e.aimTimer > 0;
-  const nuevo = {
+  // De franco: sentado con las cartas; el revólver en la funda (el arma larga, colgada, no se ve todavía).
+  const franco = sentado ? { piernas: 'sentado', brazos: 'cartas', arma: null, enfundado: !larga } : null;
+  const poseN = {
     arma: !conArma ? null : larga || (peleando ? 'colt' : null),
     empuna: larga ? (poseLarga !== larga ? 1 : 0) : e.aimTimer > 0 ? 1 : 0,
     enfundado: !larga && (!conArma || !peleando),
     funda: !larga,
     ...poseNueva(e, peleando && conArma && !larga),
+    ...franco,
   };
   const fig = dibujarPersona(r, {
     tipo, x: e.x, pies, angulo: e.facing,
     interior: true,
-    nuevo,
+    nuevo: poseN,
     // Patrullando caminan; cuando te vieron, trotan. A cubierto, asomarse y
     // esconderse son pasos cortos: caminata, nunca trote.
     modo: e.state === 'patrol' || e.atCover ? 'caminar' : 'trotar',
@@ -549,11 +580,11 @@ export function drawEnemy(r, e) {
     } : null,
   });
 
-  if (sentado || e.desenfundando > 0) {
+  if ((sentado || e.desenfundando > 0) && !nuevo) {
     // El arma colgada al costado, en gris: sobre el negro, oscura no se vería.
     r.rect(fig.x + 6, fig.manoY - 2, 1, 4, '#8a8074');
   }
-  if (sentado) {
+  if (sentado && !nuevo) {
     // Las cartas en la mano, hacia su compañero.
     r.rect(fig.x + Math.round(Math.cos(e.facing) * 5) - 1, fig.manoY - 1, 3, 2, '#efe6d2');
   }

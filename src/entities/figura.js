@@ -32,7 +32,7 @@ import { tendido, TENDIDO } from './gente/tendido.js';
 import { tresCuartosConHuesos } from './gente/tresCuartos.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { lienzoJugador, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
-import { lienzoGente } from './estiloNuevo/gente.js';
+import { lienzoGente, lienzoTendido, PIES_TENDIDO, ANCHO_TENDIDO, ALTO_TENDIDO } from './estiloNuevo/gente.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
 export { ROPA_DE_LOOK, ROPA_DE_JEFE } from './gente/dibujo.js';
@@ -229,7 +229,7 @@ export function dibujarPersona(r, f) {
    * el dibujo viejo hasta que llegue su paso *(Santi eligió meterlo al juego
    * antes de terminar las poses, para ir probando)*.
    */
-  if (estiloNuevo.activo && f.interior && f.nuevo && f.tipo === 'guardia' && (f.postura || 'pie') === 'pie' && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
+  if (estiloNuevo.activo && f.interior && f.nuevo && f.tipo === 'guardia' && ((f.postura || 'pie') === 'pie' || f.nuevo.piernas) && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
   const tipo = ROPA[f.tipo] ? f.tipo : 'guardia';
   const [nombre, fn, g, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const postura = f.postura || 'pie';
@@ -541,7 +541,8 @@ function jugadorNuevo(r, f) {
   const gente = f.tipo !== 'jugador' ? f.nuevo : null;
   const agachado = (f.postura || 'pie') !== 'pie' || !!(gente && gente.agachado);
   let piernas = 'quieto';
-  if (agachado) piernas = f.fase != null ? 'G' + cuadro8(f.fase, 'agachado') : 'agachado';
+  if (gente && gente.piernas) piernas = gente.piernas;
+  else if (agachado) piernas = f.fase != null ? 'G' + cuadro8(f.fase, 'agachado') : 'agachado';
   else if (f.fase != null) {
     if (f.modo === 'caminar') piernas = 'W' + cuadro8(f.fase, 'caminar');
     else piernas = 'R' + cuadro8(f.fase, 'trotar');
@@ -574,7 +575,7 @@ function jugadorNuevo(r, f) {
   // el dibujo: la bala sale hacia donde apuntás, como siempre.
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
-    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, fino }, luz, !!f.destello)
+    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, bandera: !!gente.bandera, fino }, luz, !!f.destello)
     : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
@@ -586,6 +587,42 @@ function jugadorNuevo(r, f) {
   const aMundo = (p) => p && { x: x + (espejo ? -1 : 1) * (p[0] - PIES_NUEVO[0]) * PASO, y: pies + (p[1] - PIES_NUEVO[1]) * PASO };
   const top = pies - 27 * PASO;
   return { x, mano: null, boca: aMundo(L.boca), hombro: aMundo(L.hombro), top, arriba: top, manoY: pies - 9, pechoY: pies - 11, vista, espejo };
+}
+
+/**
+ * 🎨 ESTILO NUEVO (P3a): ALGUIEN TIRADO EN EL PISO, con el dibujo nuevo
+ * (`lienzoTendido` en estiloNuevo/gente.js). `modo` 'muerto' (con el charco),
+ * 'desmayado' (respira y lleva la "z") o 'caido' (apunta con el arma en `ang`).
+ * `espejo`: la cabeza a la derecha. Devuelve la boca del caño, en el mundo.
+ */
+export function tendidoNuevo(r, x, y, o = {}) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const cx = Math.round(x / PASO) * PASO, cy = Math.round(y / PASO) * PASO;
+  if (o.sangre) {
+    r.rect(cx - 12, cy - 1, 24, 6, CONFIG.colors.blood);
+    r.rect(cx - 8, cy + 5, 16, 2, tono(CONFIG.colors.blood, 0.8));
+  }
+  const espejo = !!o.espejo;
+  const a = o.ang || 0;
+  const ang = Math.round((espejo ? Math.PI - a : a) * 8 / Math.PI) * Math.PI / 8;
+  const luz = estiloNuevo.luzEn ? estiloNuevo.luzEn(x, y) : 0;
+  const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
+  const L = lienzoTendido({ tipo: o.tipo || 'guardia', modo: o.modo || 'muerto', late: o.late || 0, ang, fino }, luz);
+  const ctx = r.ctx;
+  const [ox, oy, w, h] = [-PIES_TENDIDO[0] * PASO, -PIES_TENDIDO[1] * PASO, ANCHO_TENDIDO * PASO, ALTO_TENDIDO * PASO];
+  ctx.save();
+  ctx.translate(cx, cy);
+  if (espejo) ctx.scale(-1, 1);
+  ctx.drawImage(L.img, ox, oy, w, h);
+  if (fino) estiloNuevo.marcarGente(ctx, L.img, ox, oy, w, h);
+  ctx.restore();
+  if (o.modo === 'desmayado') {
+    const z = ['xxx', '..x', '.x.', 'xxx'];
+    z.forEach((fila, i) => {
+      for (let j = 0; j < 3; j++) if (fila[j] !== '.') r.rect(cx - 8 + j, cy - 12 + i, 1, 1, '#c8d8f0');
+    });
+  }
+  return L.boca && { x: cx + (espejo ? -1 : 1) * (L.boca[0] - PIES_TENDIDO[0]) * PASO, y: cy + (L.boca[1] - PIES_TENDIDO[1]) * PASO };
 }
 
 const SIGNO_ALERTA = ['xx', 'xx', 'xx', '..', 'xx'];

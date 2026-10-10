@@ -20,7 +20,7 @@
  */
 import { iluminar } from '../../engine/luz.js';
 import { sombrear } from '../../engine/paleta.js';
-import { C, ANCHO, ALTO, cuadroJugador } from './jugador.js';
+import { C, ANCHO, ALTO, cuadroJugador, armaEn, linea } from './jugador.js';
 
 const mapa = (y, filas) => ({ y, filas });
 
@@ -386,8 +386,122 @@ export function cuadroGente(o) {
   return cuadroJugador({ piernas: 'quieto', ang: 0, ...o, persona: capasPersona(o) });
 }
 
+// ------------------------------------------------------------- en el piso
+/**
+ * 🆕 TIRADO EN EL PISO (P3a): muerto, desmayado o caído apuntando. Visto desde
+ * arriba, boca arriba, con la cabeza a la izquierda (a la derecha es el mismo
+ * dibujo en espejo): el sombrero volado al lado de la cabeza, la cara mirando
+ * para arriba, el chaleco abierto con la estrella, los brazos a los costados,
+ * las piernas y las botas con la punta para arriba. Mide 30 puntos de largo.
+ *  muerto     un brazo y una pierna abiertos (el charco lo pone el juego).
+ *  desmayado  derecho, entero; respira (`late`: el pecho sube un punto).
+ *  caido      (un tiro en la pierna) el sombrero puesto, se apoya y apunta: el
+ *             brazo de acá sale del hombro hacia donde apunta, con el arma
+ *             dibujada a mano en esa dirección.
+ */
+/**
+ * Las piezas (fila 0 = arriba del torso). La cabeza: el pelo del lado de la
+ * coronilla (izquierda), la cara mirando para arriba y la pera hacia el
+ * cuerpo. El torso: el chaleco abierto con la estrella y la camisa al medio.
+ * Los brazos y las piernas se trazan (ver `cuadroTendido`).
+ */
+const TENDIDO = {
+  cabeza: mapa(1, ['aaPPq', 'aaPPp', 'aAPPp', 'aaPpp', 'aapqq']),          // desde x 5
+  cuello: mapa(2, ['p', 'p', 'p']),                                        // en x 10
+  torso: mapa(0, ['CUUUEUUUv', 'CUUEeEUVv', 'CVVVEVVVv', 'LCCyCCyCC', 'CVVVVVVVv', 'CVVVVVVVv', 'CvvvvvvVw']),   // desde x 11
+  cinto: mapa(0, ['W', 'W', 'W', 'G', 'W', 'W', 'W']),                    // en x 20
+  sombrero: mapa(-4, ['.kkk.', 'kHhHk', 'kbbbk', '.kkk.']),                // volado, desde x 0
+  puesto: mapa(0, ['.kkk.', 'kHHhk', 'kHhhk', 'kbbbk', 'kHHHk', 'kHHHk', '.kkk.']),   // puesto, desde x 2
+};
+/** Brazos (hombro → mano) y la pierna de acá (cadera → tobillo), por modo. */
+const POSE_TENDIDO = {
+  muerto: { alla: [[12, -2], [17, -5]], aca: [[12, 7], [18, 10]], pierna: [21, 7] },
+  desmayado: { alla: [[12, -2], [18, -3]], aca: [[12, 7], [18, 8]], pierna: [21, 5] },
+  caido: { alla: [[12, -2], [18, -3]], aca: null, pierna: [21, 5] },
+};
+const TA = 44, TL = 30, TX = 6, TY = 11;   // el lienzo del tirado, con lugar para el arma
+export const PIES_TENDIDO = [TX + 16, TY + 3];
+export { TA as ANCHO_TENDIDO, TL as ALTO_TENDIDO };
+export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang = 0, arma = 'colt', fino = false, ...o }) {
+  const col = { ...C, ...capasPersona({ tipo, vista: 'frente', ...o }).colores };
+  const idx = new Int16Array(TA * TL).fill(-1);
+  const poner = (x, y, i) => {
+    if (i == null) return;
+    x += TX; y += TY;
+    if (x >= 0 && y >= 0 && x < TA && y < TL) idx[y * TA + x] = i;
+  };
+  const dibujar = (m, dx = 0, dy = 0) => m.filas.forEach((fila, k) => {
+    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + dx, m.y + k + dy, col[fila[x]]);
+  });
+  const P = POSE_TENDIDO[modo];
+  // Una pierna: tres de ancho (luz, base, sombra) y la bota con la punta para arriba.
+  const pierna = (y0, y1) => {
+    linea([21, y0], [29, y1], (x, y) => { poner(x, y - 1, col.I); poner(x, y, col.T); poner(x, y + 1, col.t); });
+    poner(30, y1 - 1, col.O); poner(30, y1, col.Q); poner(30, y1 + 1, col.O);
+    poner(31, y1 - 1, col.K); poner(31, y1, col.K); poner(31, y1 + 1, col.K);
+  };
+  // Un brazo: dos de alto (la manga, con luz arriba) y la mano de 2×2.
+  const brazo = ([a, b], lejos) => {
+    linea(a, b, (x, y) => { poner(x, y, lejos ? col.C : col.L); poner(x, y + 1, lejos ? col.c : col.C); });
+    poner(b[0] + 1, b[1], col.P); poner(b[0] + 2, b[1], col.p);
+    poner(b[0] + 1, b[1] + 1, col.p); poner(b[0] + 2, b[1] + 1, col.q);
+  };
+  const late1 = late && modo === 'desmayado' ? -1 : 0;
+  pierna(1, 1);
+  pierna(5, P.pierna[1]);
+  brazo(P.alla, true);
+  dibujar(TENDIDO.torso, 11, 0);
+  // Respira: el pecho se levanta (un punto más de chaleco arriba).
+  if (late1) dibujar(mapa(-1, ['.UUUUUU']), 11, 0);
+  dibujar(TENDIDO.cinto, 20, 0);
+  dibujar(TENDIDO.cuello, 10, 0);
+  dibujar(TENDIDO.cabeza, 5, 0);
+  if (modo === 'caido') dibujar(TENDIDO.puesto, 2, 0);
+  else dibujar(TENDIDO.sombrero, 0, 0);
+  if (P.aca) brazo(P.aca, false);
+  let boca = null;
+  if (modo === 'caido') {
+    // Se apoya y apunta: el brazo de acá sale del hombro hacia donde apunta (en
+    // el mismo paso de 22,5° que el dibujo del arma).
+    const S = [12, 6];
+    const A = armaEn(arma, ang);
+    const d = [Math.cos(A.angulo), Math.sin(A.angulo)];
+    const M = [Math.round(S[0] + d[0] * 6), Math.round(S[1] + d[1] * 5)];
+    linea(S, M, (x, y) => { poner(x, y, col.L); poner(x, y + 1, col.C); });
+    for (const [x, y, c] of A.puntos) poner(M[0] + x, M[1] + y, c);
+    poner(M[0], M[1], col.P); poner(M[0] - Math.sign(d[0] || 1), M[1], col.P);
+    poner(M[0], M[1] + 1, col.p); poner(M[0] - Math.sign(d[0] || 1), M[1] + 1, col.p);
+    boca = [M[0] + A.boca[0] + TX, M[1] + A.boca[1] + TY];
+  }
+  if (!fino) {
+    const lleno = idx.slice();
+    for (let y = 0; y < TL; y++) for (let x = 0; x < TA; x++) {
+      if (lleno[y * TA + x] >= 0) continue;
+      const v = (a, b) => a >= 0 && b >= 0 && a < TA && b < TL && lleno[b * TA + a] >= 0;
+      if (v(x - 1, y) || v(x + 1, y) || v(x, y - 1) || v(x, y + 1)) idx[y * TA + x] = 0;
+    }
+  }
+  return { idx, boca };
+}
+const tendidos = new Map();
+/** El tirado iluminado, como canvas (se guarda). */
+export function lienzoTendido(o, luz = 0) {
+  const clave = ['tipo', 'modo', 'late', 'ang', 'arma', 'fino', 'piel', 'pelo', 'sombrero', 'uniforme', 'panuelo'].map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz;
+  let g = tendidos.get(clave);
+  if (g) return g;
+  if (tendidos.size > 300) tendidos.clear();
+  const q = cuadroTendido(o);
+  const datos = iluminar({ ancho: TA, alto: TL, indices: q.idx, campo: () => luz });
+  const cv = document.createElement('canvas');
+  cv.width = TA; cv.height = TL;
+  cv.getContext('2d').putImageData(new ImageData(datos, TA, TL), 0, 0);
+  g = { img: cv, boca: q.boca };
+  tendidos.set(clave, g);
+  return g;
+}
+
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'bandera', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

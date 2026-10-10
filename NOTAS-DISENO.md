@@ -18741,8 +18741,15 @@ Primera clase y las mujeres quedan para después.
   carga, 0,26 s, y pega en 0,2 s); **aturdido** al recibir un golpe (lo echa atrás,
   se le aflojan las piernas, se tambalea; el arma apunta al piso); **a cubierto**,
   agachado detrás del reparo y de pie al asomarse.
-- Siguen: sentado de franco, rendido y traición, caído apuntando,
-  desmayado y muerto; el pasajero; meterlo en el juego.
+- **✅ Paso 3**: **sentado** (cada vista a mano, la cadera 4 puntos más abajo) con
+  **las cartas** en las dos manos; **de rodillas** con **las manos arriba** y el
+  **pañuelo blanco**, y la **traición** en 4 cuadros (suelta el pañuelo, se levanta a
+  medias llevando la mano a la funda, se para con el arma); **tirado en el piso**
+  visto desde arriba (30 puntos, la cabeza a la izquierda o en espejo): **muerto**
+  con un brazo y una pierna abiertos, **desmayado** derecho que respira, **caído**
+  con el sombrero puesto apuntando con el arma dibujada en esa dirección. El arma
+  larga del de franco, colgada, todavía no se ve.
+- Siguen: el pasajero (paso 5 del plan).
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

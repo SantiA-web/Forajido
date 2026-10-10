@@ -312,6 +312,23 @@ const VISTAS = {
 };
 // Cada vista tiene sus propios quieto y agachado (vuelta 7).
 
+/**
+ * 🆕 SENTADO (P3a: el guardia de franco, el pasajero en su asiento), cada vista
+ * a mano: la cadera 4 puntos más abajo (`baja`), los pies en el piso. De
+ * costado el muslo va derecho hacia adelante y la pierna baja al piso; de
+ * frente y en diagonal de frente el muslo viene hacia nosotros (se ve corto)
+ * y asoman las rodillas; de espaldas el asiento tapa los muslos y se ven las
+ * botas abajo.
+ * 🆕 DE RODILLAS (el guardia rendido, siempre de frente): 5 puntos más abajo,
+ * los muslos derechos hasta las rodillas en el piso; los pies quedan atrás.
+ */
+VISTAS.lado.piernas.sentado = mapa(21, ['.......IFFTTTTT', '.......tFfTTTTTt', '.............ITt', '.............IT', '............QOOOO', '............KKKKK']);
+VISTAS.frente.piernas.sentado = mapa(21, ['......FIITTTtt', '......FIITTTtt', '......fIIT.Ttt', '.......IIT.TTt', '.......QOO.OOo', '.......KKK.KKK']);
+VISTAS.diagF.piernas.sentado = mapa(21, ['......FIITTttt', '......FIITTtttt', '......fIITT.ttt', '........IIT..tt', '........QOO..OOo', '........KKKK.KKKK']);
+VISTAS.espalda.piernas.sentado = mapa(21, ['.......IITTTttF', '.......IITTTttF', '........IT..Ttf', '........IT..Tt', '.......OOO..OOO', '.......KKK..KKK']);
+VISTAS.diagE.piernas.sentado = mapa(21, ['.......tttTTTF', '.......tttTTTTF', '.......tt..IITf', '.......tt...IT', '.......OOo..QOOO', '.......KKK..KKKK']);
+VISTAS.frente.piernas.rodillas = mapa(22, ['......FIITTTtt', '......FIIT.Ttt', '......fIIT.TTt', '.......III.TTt', '.......ttt.ttt']);
+
 // ------------------------------------------------- las piernas que se mueven
 /**
  * 🔁 OCHO CUADROS POR CICLO *(Santi: "a partir de ahora creo que todo debería
@@ -874,6 +891,40 @@ const ATURDIDO = [
   { inclina: 0, baja: 1, cabeza: -1, r: 3, ida: 0.2 },
   { inclina: 0, baja: 1, cabeza: 1, r: 3, ida: -0.2 },
 ];
+/**
+ * 🆕 LOS BRAZOS EN OTRAS POSES (P3a), puestos a mano por vista: cada brazo es
+ * hombro → codo → mano, en puntos del dibujo; `atras` si va detrás del cuerpo
+ * (el de allá). El primero es siempre el derecho.
+ *  arriba  las manos arriba (el rendido, el pasajero asaltado): los codos
+ *          afuera y las manos a los costados del ala; el derecho puede llevar
+ *          el pañuelo blanco (`bandera`).
+ *  cartas  sentado jugando: las dos manos juntas delante de la panza con las
+ *          cartas (de espaldas no se ven: el cuerpo las tapa).
+ */
+const BRAZOS = {
+  arriba: {
+    lado: [{ p: [[10, 9], [12, 7], [12, 3]] }, { p: [[9, 9], [10, 7], [10, 3]], atras: true }],
+    frente: [{ p: [[7, 9], [4, 7], [4, 3]] }, { p: [[13, 9], [16, 7], [16, 3]] }],
+    diagF: [{ p: [[7, 9], [4, 7], [5, 3]] }, { p: [[13, 9], [16, 7], [15, 3]], atras: true }],
+    espalda: [{ p: [[13, 9], [16, 7], [16, 3]] }, { p: [[6, 9], [3, 7], [3, 3]] }],
+    diagE: [{ p: [[13, 9], [16, 7], [16, 3]] }, { p: [[6, 9], [3, 7], [4, 3]], atras: true }],
+  },
+  cartas: {
+    lado: [{ p: [[10, 9], [11, 13], [13, 13]] }, { p: [[9, 9], [10, 13], [12, 12]], atras: true }],
+    frente: [{ p: [[7, 9], [7, 12], [8, 14]] }, { p: [[13, 9], [13, 12], [11, 14]] }],
+    diagF: [{ p: [[7, 9], [8, 13], [10, 14]] }, { p: [[13, 9], [13, 12], [12, 13]], atras: true }],
+    espalda: [{ p: [[13, 9], [14, 12], [13, 14]] }, { p: [[6, 9], [5, 12], [6, 14]] }],
+    diagE: [{ p: [[13, 9], [14, 12], [14, 14]] }, { p: [[6, 9], [5, 12], [6, 14]] }],
+  },
+};
+/** Las cartas en la mano (blancas con un punto rojo: crema se perdían contra la camisa), por vista; de espaldas no se ven. */
+const CARTAS = {
+  lado: mapa(11, ['.............Lk', '.............LL']),
+  frente: mapa(12, ['.........LkL', '.........LLL']),
+  diagF: mapa(12, ['..........LkL', '..........LLL']),
+};
+/** El pañuelo blanco del rendido, arriba de la mano derecha (desde la mano). */
+const PANUELO_BLANCO = [[-1, -3, 30], [0, -3, 30], [1, -3, 29], [-1, -2, 30], [0, -2, 30], [1, -2, 25], [0, -1, 25]];
 const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], ang: -2.15 }, frontal: { mano: [8, 16], ang: -0.99 } };
 
 /**
@@ -883,7 +934,7 @@ const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], a
  * (cara, pelo, barba, sombrero…) y `torso` el torso. `enfundado`: el
  * revólver en la funda (ver CULATA_ENFUNDADA).
  */
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido }) {
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera }) {
   const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
   const TJ = tajo != null ? TAJO[tajo] : null;
   /**
@@ -921,7 +972,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'sentado' ? 4 : piernas === 'rodillas' ? 5 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
   const deCostado = vista === 'lado' || vista.startsWith('diag');
   const inclina = AT ? (deCostado ? AT.inclina : 0) : TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
   /**
@@ -1192,6 +1243,36 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     dibujarMapa(Mo.manta, baja, corre);
     if (Mo.morral) dibujarMapa(Mo.morral[Math.max(1, Math.min(4, mochila))], baja, corre);
   };
+  /**
+   * Los brazos en otra pose (ver BRAZOS): reemplazan a los de siempre. Dos de
+   * ancho (el de afuera al sol, el de allá en sombra) y la mano de 2×2.
+   */
+  const BR = brazos ? BRAZOS[brazos][vista] : null;
+  const brazoPose = (b, i) => {
+    const pts = b.p.map(([x, y]) => [x + inclina + lomo, y + baja]);
+    const trazo = (x, y) => { poner(x, y, b.atras ? C.c : C.L); poner(x + 1, y, b.atras ? C.c : C.C); };
+    linea(pts[0], pts[1], trazo);
+    linea(pts[1], pts[2], trazo);
+    const [mx, my] = pts[2];
+    poner(mx, my, b.atras ? C.p : C.P); poner(mx + 1, my, C.p);
+    poner(mx, my + 1, C.p); poner(mx + 1, my + 1, C.q);
+    if (bandera && i === 0) for (const [dx, dy, c] of PANUELO_BLANCO) poner(mx + dx, my + dy, c);
+  };
+  if (BR) {
+    BR.forEach((b, i) => { if (b.atras) brazoPose(b, i); });
+    if (vista === 'lado' && mochila) dibujarMochila();
+    const PB = V.piernas[piernas] || V.piernas.quieto;
+    dibujarMapa(PB);
+    if (baja < 0 || baja === 2) dibujarMapa({ y: PB.y - 1, filas: [PB.filas[0]] });
+    dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
+    if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo, COLOR_ARMA);
+    const cartasAntes = brazos === 'cartas';
+    if (!cartasAntes) for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY, inclina + cabezaX);
+    if (vaina) dibujarVaina();
+    BR.forEach((b, i) => { if (!b.atras) brazoPose(b, i); });
+    if (cartasAntes && CARTAS[vista]) dibujarMapa(CARTAS[vista], baja, inclina + lomo, { L: 30, k: 9 });
+    if (cartasAntes) for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY, inclina + cabezaX);
+  } else {
   if (vista === 'lado') { if (TJ) { if (!TJ.delante) brazoCuchillo(); } else if (larga) brazoIzqLarga(); else brazoLibre(); }
   // En diagonal de frente, el brazo libre (el izquierdo) es el de allá: detrás del cuerpo.
   const libreDetras = vista === 'diagF';
@@ -1221,6 +1302,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   if (!detras && !bajoLaCabeza) brazo();
   if (TJ && TJ.delante) brazoCuchillo();
   if (mochila && vista === 'espalda') dibujarMochila();
+  }
   // El impacto: la estela del brazo (de arriba atrás hacia adelante) y un destello en la punta.
   if (GL && GL.estela) {
     // El impacto del arma larga: su estela (el arco del Winchester, las líneas

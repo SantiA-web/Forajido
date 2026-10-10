@@ -549,7 +549,9 @@ function jugadorNuevo(r, f) {
   // El culatazo: de los 8 cuadros, cuál toca.
   const golpe = f.golpe != null ? Math.min(7, Math.floor(f.golpe * 8)) : null;
   // El arma larga, de cruzada (0) a apuntando (1), en 4 pasos (ver jugador.js).
-  const empuna = arma === 'winchester' || arma === 'escopeta' ? Math.round((f.empuna ?? 1) * 3) / 3 : 1;
+  // El revólver usa el mismo dato para el brazo: 0 con el codo doblado, 1 recto, en 3 pasos.
+  const empuna = arma === 'winchester' || arma === 'escopeta' ? Math.round((f.empuna ?? 1) * 3) / 3
+    : Math.round((f.alza ?? 0) * 2) / 2;
   // 🔁 El brazo apunta en el mismo paso de 22,5° que el dibujo del arma: con el
   // ángulo exacto, el brazo y el arma se doblaban entre sí *(Santi: "el revolver
   // colt se ve raro al mirar diagonal hacia arriba… parece una banana")*. Es sólo

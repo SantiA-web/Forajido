@@ -18542,6 +18542,19 @@ para encontrar las poses). La E4 se hace directamente en P5.
   cuerpo se decide por vista (de espaldas y de tres cuartos de espaldas con
   arma larga, detrás: se ve la espalda limpia). La **escopeta, de un solo caño a
   la vista** *("prefiero que se vea un solo cañón")*.
+- 🔁 **El revólver se agarra de la culata, con el codo doblado** *(Santi: "lo
+  agarra desde más arriba de la empuñadura… sobra toda la madera por debajo de la
+  mano… el brazo más abajo, como si estuviera flexionando el codo y cuando apunta
+  (click derecho), que ahí ponga recto el brazo y se levante apenas" — eligió
+  bajarlo 3 puntos, opción B, y que suba también al disparar)*: en los mapas del
+  Colt y del Schofield la mano (A) bajó a la culata, con un puño de 2×2 que la
+  tapa y deja asomar la punta de abajo. Dos poses puestas a mano por dirección
+  (`BRAZO_REVOLVER`): **bajo**, el codo doblado y el revólver a la altura del
+  pecho (3 puntos más abajo que antes); **recto**, apuntando con clic derecho o
+  recién disparaste, el brazo estirado y el revólver un punto más arriba que
+  antes (en diagonal hacia arriba, corrido para no comerse el ala del sombrero).
+  `p.alza` pasa de una a otra en 0,15 s con un paso en el medio; al disparar
+  salta arriba en el mismo cuadro. Sólo el dibujo: no cambia cómo se juega.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

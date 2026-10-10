@@ -195,6 +195,16 @@ export function updatePlayer(p, dt, world) {
     const paso = dt / c.empunaCambio;
     p.empuna = p.empuna ?? 1;
     p.empuna = apunta ? Math.min(1, p.empuna + paso) : Math.max(0, p.empuna - paso);
+    /**
+     * 🆕 EL BRAZO DEL REVÓLVER (`p.alza`, sólo el dibujo) *(Santi: "el personaje
+     * podría tener un poco el brazo más abajo, como si estuviera flexionando el
+     * codo y cuando apunta (click derecho), que ahí ponga recto el brazo y se
+     * levante apenas")*. 0 es con el codo doblado y el revólver a la altura del
+     * pecho; 1 es el brazo recto: con clic derecho o recién disparaste.
+     */
+    const alza = (p.apuntado || 0) > 0.5 || p.tiroLargo > 0;
+    p.alza = p.alza ?? 0;
+    p.alza = alza ? Math.min(1, p.alza + paso) : Math.max(0, p.alza - paso);
   }
   if (p.culatazo != null) {
     p.culatazo += dt;
@@ -1047,8 +1057,10 @@ function shoot(p, world) {
   p.ammo -= 1;
   p.fireTimer = w.fireRate;
   p.muzzle = CONFIG.feel.muzzleTime;
-  // El arma larga salta al frente para el tiro y después vuelve (sólo el dibujo).
+  // El arma larga salta al frente para el tiro y después vuelve; el revólver
+  // estira el brazo (sólo el dibujo).
   p.empuna = 1;
+  p.alza = 1;
   p.tiroLargo = CONFIG.player.empunaTrasTiro;
   p.recoil = 1;
 
@@ -1194,6 +1206,8 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     golpe: p.culatazo != null ? p.culatazo / p.melee.golpeDura : null,
     // Cómo llevás el arma larga: 0 cruzada, 1 apuntando (sólo el dibujo nuevo).
     empuna: p.empuna ?? 1,
+    // El brazo del revólver: 0 con el codo doblado, 1 recto apuntando.
+    alza: p.alza ?? 0,
   });
   const manoY = fig.manoY;
 

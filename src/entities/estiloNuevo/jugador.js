@@ -483,25 +483,25 @@ const COLOR_ARMA = { 1: 25, 2: 24, 3: 23, d: 31, n: 0, W: 6, w: 5, v: 4, r: 11, 
 const DIBUJOS_ARMAS = {
   // EL COLT de caño largo: martillo con espuela, tambor más alto que el caño, varilla debajo.
   colt: {
-    '-4': ['.M.', '.13', '.13', '.13', '.13', '213', '32d', '.d.', '.A.', '...', '.r.', '.s.'],
-    '-3': ['...M.', '...13', '..13.', '..13.', '.13..', '.13..', '213..', '.d...', '.A...', '.....', '.r...', '.s...'],
-    '-2': ['..........M.', '.........13.', '........13..', '.......13...', '......13....', '.....13d....', '....13d.....', 'dd.12d......', '..A23.......', '...d........', '..r.........', '.ss.........'],
-    '-1': ['...........1M', '.........1133', '.......1133..', '...121133....', '.dd2333dd....', '..A3ddd......', '...dd........', '.sr..........', '.s...........', 's............'],
-    0: ['.d...........', '..d12.......2', '..A231111111M', '...3d33333333', '.srdddddd....', 'ss...........', 's............'],
-    1: ['.d...........', '..d..........', '..A12........', '...23........', '.sr3d11......', 'ss.dd3311....', 's....dd3311..', '.......dd331M', '...........33'],
-    2: ['.d.........', '..d1.......', '..A21......', 'sr.321.....', 's..d31.....', '....d31....', '.....d31...', '......d31..', '........31.', '.........3M'],
+    '-4': ['.M.', '.13', '.13', '.13', '.13', '213', '32d', '.d.', '.r.', '.A.', '...', '.s.'],
+    '-3': ['...M.', '...13', '..13.', '..13.', '.13..', '.13..', '213..', '.d...', '.r...', '.A...', '.....', '.s...'],
+    '-2': ['..........M.', '.........13.', '........13..', '.......13...', '......13....', '.....13d....', '....13d.....', 'dd.12d......', '..r23.......', '..rd........', '..A.........', 'ss..........'],
+    '-1': ['...........1M', '.........1133', '.......1133..', '...121133....', '.dd2333dd....', '..r3ddd......', '..rdd........', '.sA..........', '.s...........', 's............'],
+    0: ['.d...........', '..d12.......2', '..r231111111M', '..r3d33333333', '.sAdddddd....', 'ss...........', 's............'],
+    1: ['.d...........', '..d12........', '..r12........', '..r23........', '.sA3d11......', 'ss.dd3311....', 's....dd3311..', '.......dd331M', '...........33'],
+    2: ['.d.........', '..d1.......', '..r21......', 'sA.321.....', 's..d31.....', 's...d31....', '.....d31...', '......d31..', '........31.', '.........3M'],
     3: ['.d...', '.A...', 'r....', '213..', '.13..', '..13.', '..M3.'],
     4: ['.d.', '.A.', '...', '213', '.13', '.13', '.M3'],
   },
   // EL SMITH & WESSON SCHOFIELD: la traba arriba atrás, el caño más corto, culata de madera.
   smith: {
-    '-4': ['.M.', '.13', '.13', '213', '.d2', '.A.', '...', '.W.', '.w.'],
-    '-3': ['..M.', '..13', '.13.', '.13.', '213.', '.d2.', '.A..', '....', '.W..', '.w..'],
-    '-2': ['........M.', '.......13.', '......13..', '.....13...', '.2..13d...', '.d.12d....', '..A23.....', '...d......', '..W.......', '.vw.......'],
-    '-1': ['.........M', '.......113', '..2121133.', '..d2333...', '..A3ddd...', '...dd.....', '.wW.......', '.w........', 'v.........'],
-    0: ['..2.......', '..d12....2', '..A231111M', '...3d33333', '.wWdddd...', 'vw........', 'v.........'],
-    1: ['..2.......', '..d.......', '..A12.....', '...23.....', '.wW3d11...', 'vw.dd3311.', 'v....dd33M', '.........3'],
-    2: ['...2......', '...d1.....', '...A21....', '.wW.321...', 'vw..d31...', '.....d31..', '.......31.', '........3M'],
+    '-4': ['.M.', '.13', '.13', '213', '.d2', '.W.', '.A.', '...', '.w.'],
+    '-3': ['..M.', '..13', '.13.', '.13.', '213.', '.d2.', '.W..', '.A..', '....', '.w..'],
+    '-2': ['........M.', '.......13.', '......13..', '.....13...', '.2..13d...', '.d.12d....', '..W23.....', '..Wd......', '..A.......', 'vv........'],
+    '-1': ['.........M', '.......113', '..2121133.', '..d2333...', '..W3ddd...', '..Wdd.....', '.wA.......', '.w........', 'v.........'],
+    0: ['..2.......', '..d12....2', '..W231111M', '..W3d33333', '.wAdddd...', 'vw........', 'v.........'],
+    1: ['..2.......', '..d.......', '..W12.....', '..W23.....', '.wA3d11...', 'vw.dd3311.', 'v....dd33M', '.........3'],
+    2: ['...2......', '...d1.....', '...W21....', '.wA.321...', 'vw..d31...', '.....d31..', '.......31.', '........3M'],
     3: ['.2..', '.d..', '.A..', 'W...', '213.', '.13.', '.M3.'],
     4: ['.2.', '.d.', '.A.', '...', '213', '.13', '.M3'],
   },
@@ -642,6 +642,32 @@ const GOLPE = {
  * pasa de una a otra (se dibuja en 4 pasos). La mano izquierda sostiene el
  * guardamanos: el brazo libre deja de hamacarse.
  */
+/**
+ * 🆕 EL BRAZO DEL REVÓLVER, puesto a mano por dirección (de -4, derecho para
+ * arriba, a 4, derecho para abajo; hacia la izquierda en espejo): dónde van el
+ * codo y la mano, en puntos desde el hombro, mirando a la derecha. BAJO: el
+ * codo doblado y el revólver tres puntos más abajo que con el brazo recto de
+ * antes, a la altura del pecho. RECTO (apuntando o recién disparaste): el
+ * brazo estirado y el revólver un punto más arriba que antes.
+ */
+const BRAZO_REVOLVER = {
+  bajo: [
+    { codo: [1, 4], mano: [0, 2] },   // -4 derecho para arriba
+    { codo: [1, 4], mano: [2, 1] },   // -3
+    { codo: [2, 4], mano: [4, 1] },   // -2
+    { codo: [2, 4], mano: [6, 2] },   // -1
+    { codo: [1, 4], mano: [6, 5] },   //  0 al frente
+    { codo: [1, 5], mano: [6, 7] },   //  1
+    { codo: [0, 5], mano: [3, 7] },   //  2
+    { codo: [0, 4], mano: [2, 6] },   //  3
+    { codo: [0, 4], mano: [0, 6] },   //  4 derecho para abajo
+  ],
+  recto: [
+    { mano: [0, -2] }, { mano: [2, -3] }, { mano: [5, -2] }, { mano: [7, -2] },
+    { mano: [6, 1] },
+    { mano: [6, 4] }, { mano: [3, 4] }, { mano: [2, 2] }, { mano: [0, 1] },
+  ],
+};
 const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], ang: -2.15 } };
 
 export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna }) {
@@ -757,27 +783,46 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
      * forman una sola línea. Apuntando hacia nosotros o lejos, más corto (en
      * escorzo). En el culatazo el brazo sigue su ángulo.
      */
-    const MANO = [[6, 0], [6, 3], [4, 4], [2, 3], [0, 2]];
-    const [mdx, mdy] = MANO[Math.min(4, Math.abs(rArma))];
-    const mano = golpe != null
-      ? [hx + dir[0] * 6, hy + dir[1] * 6]
-      : [hx + mdx * (dir[0] < -0.01 ? -1 : 1), hy + mdy * Math.sign(rArma)];
-    // La manga, de dos de alto; el último punto antes de la mano es el puño (al sol).
+    /**
+     * 🔁 EL BRAZO DEL REVÓLVER, en dos poses puestas a mano para cada dirección
+     * (ver BRAZO_REVOLVER) *(Santi: "lo agarra desde más arriba de la
+     * empuñadura… que lo lleve desde la empuñadura… el brazo más abajo, como
+     * si estuviera flexionando el codo y cuando apunta (click derecho), que
+     * ahí ponga recto el brazo y se levante apenas")*. La mano agarra la
+     * culata (la A de cada mapa). `empuna` va de 0 (codo doblado) a 1 (recto),
+     * con un paso en el medio. En el culatazo el brazo sigue su ángulo.
+     */
+    const ri = Math.max(-4, Math.min(4, rArma)) + 4;
+    const B = BRAZO_REVOLVER.bajo[ri], R = BRAZO_REVOLVER.recto[ri];
+    const t = Math.max(0, Math.min(1, empuna ?? 0));
+    const lx = dir[0] < -0.01 ? -1 : 1;
+    const desde = (p) => [hx + p[0] * lx, hy + p[1]];
+    let mano, codo = null;
+    if (golpe != null) mano = [hx + dir[0] * 6, hy + dir[1] * 6];
+    else {
+      mano = desde([B.mano[0] + (R.mano[0] - B.mano[0]) * t, B.mano[1] + (R.mano[1] - B.mano[1]) * t]);
+      // El codo va de doblado a quedar en la línea del brazo recto.
+      const medio = [R.mano[0] / 2, R.mano[1] / 2];
+      if (t < 1) codo = desde([B.codo[0] + (medio[0] - B.codo[0]) * t, B.codo[1] + (medio[1] - B.codo[1]) * t]);
+    }
+    mano = [Math.round(mano[0]), Math.round(mano[1])];
+    if (codo) codo = [Math.round(codo[0]), Math.round(codo[1])];
+    // La manga, de dos de alto, en uno o dos tramos; el último punto antes de la mano es el puño (al sol).
     const pts = [];
-    linea([hx, hy], mano, (x, y) => pts.push([x, y]));
+    if (codo) { linea([hx, hy], codo, (x, y) => pts.push([x, y])); pts.pop(); }
+    linea(codo || [hx, hy], mano, (x, y) => pts.push([x, y]));
     pts.forEach(([x, y], i) => {
       const puno = i === pts.length - 2;
       poner(x, y, puno ? C.L : C.C);
       poner(x, y + 1, puno ? C.C : C.c);
     });
-    poner(Math.round(mano[0]), Math.round(mano[1]), C.P);
-    poner(Math.round(mano[0]), Math.round(mano[1]) + 1, C.p);
-    // El revólver (Colt o Schofield), en la dirección del brazo.
+    // El revólver (Colt o Schofield), en la dirección del brazo, y encima el puño de 2×2 en la culata.
     const A = armaEn(DIBUJOS_ARMAS[arma] ? arma : 'colt', Math.atan2(dir[1], dir[0]));
-    const mx = Math.round(mano[0]), my = Math.round(mano[1]);
+    const [mx, my] = mano;
     for (const [x, y, c] of A.puntos) poner(mx + x, my + y, c);
     boca = [mx + A.boca[0], my + A.boca[1]];
-    poner(mx, my, C.P);
+    poner(mx, my, C.P); poner(mx - lx, my, C.P);
+    poner(mx, my + 1, C.p); poner(mx - lx, my + 1, C.p);
   };
 
   /**

@@ -35,7 +35,7 @@ dibuja, el juego sigue con el dibujo de hoy: **`F9` prende y apaga la
 prueba** (o abrí el juego con `?nuevo` en la dirección). **Ya están dibujados el
 vagón de pasajeros por dentro**, de día (el sol entra por los ventanales) y de
 noche (los faroles de la pared), **y vos adentro del vagón**, en las 8
-direcciones, corriendo, agachado y con las tres armas; lo demás todavía es el dibujo viejo pasado por
+direcciones, corriendo, agachado y con las tres armas (el revólver con el codo doblado, y el brazo recto cuando apuntás con clic derecho o disparás); lo demás todavía es el dibujo viejo pasado por
 la grilla y la paleta, y se ve tosco: cada etapa lo va reemplazando. El plan está en NOTAS-DISENO.md, "EL ESTILO NUEVO".
 
 ## La vista: tres cuartos (en construcción)

@@ -18484,7 +18484,19 @@ para encontrar las poses). La E4 se hace directamente en P5.
   pantalla, no de un punto. La grilla se come lo fino, así que se traza después
   de pasar el cuadro por la grilla: la gente se marca en una máscara mientras
   se dibuja el mundo, lo que va delante (asientos, pared) la tapa, y al final
-  se traza la línea. `CONFIG.estilo.bordeFino` en false vuelve al de un punto.
+  se traza la línea. `CONFIG.estilo.bordeGente` elige el ancho (1, 2 o 3 píxeles);
+  probados los tres en el vagón, queda el de 1 (elegido).
+- 🔁 **Vuelta 7, en el juego** *(Santi, de la maqueta: "me encantan los detalles,
+  quedan fantásticos")*: pulida en maquetas en 7 vueltas y pasada a las 5
+  vistas y a todas las animaciones de adentro del tren. La luz viene siempre de
+  arriba a la izquierda y cada material tiene luz, base y sombra. Sombrero de
+  vaquero con las puntas del ala levantadas y un adorno de plata en la cinta;
+  la cara en sombra bajo el ala; el pañuelo cae en triángulo; chaleco cerrado
+  con botones (antes chaleco, camisa y mangas hacían rayas de un punto, "código
+  de barras"); brazos de 2 puntos con manos de 2×2; el brazo que apunta con el
+  puño claro de la camisa; cinto con balas y funda en la cadera; pantalón con
+  luz y sombra que se ensancha sobre la bota; botas con suela; parado, el peso
+  en una pierna.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

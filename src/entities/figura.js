@@ -537,15 +537,15 @@ const cuadro8 = (recorrido, modo) => Math.floor((((recorrido / PASO_NUEVO[modo])
 function jugadorNuevo(r, f) {
   const PASO = CONFIG.estilo.punto / 4;
   const [vista, , , espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
-  const agachado = (f.postura || 'pie') !== 'pie';
+  // La gente del tren (P3a): el arma y la pose ya vienen dichas en `f.nuevo`.
+  const gente = f.tipo !== 'jugador' ? f.nuevo : null;
+  const agachado = (f.postura || 'pie') !== 'pie' || !!(gente && gente.agachado);
   let piernas = 'quieto';
   if (agachado) piernas = f.fase != null ? 'G' + cuadro8(f.fase, 'agachado') : 'agachado';
   else if (f.fase != null) {
     if (f.modo === 'caminar') piernas = 'W' + cuadro8(f.fase, 'caminar');
     else piernas = 'R' + cuadro8(f.fase, 'trotar');
   }
-  // La gente del tren (P3a): el arma ya viene dicha en `f.nuevo`.
-  const gente = f.tipo !== 'jugador' ? f.nuevo : null;
   const al = gente ? null : armaLarga(f.arma);
   const arma = gente ? gente.arma : !f.arma ? null : al ? (al.cadera ? 'escopeta' : 'winchester') : 'revolver';
   // Para el dibujo nuevo, cuál revólver: el Smith & Wesson es un Schofield; el resto, el Colt.
@@ -560,7 +560,7 @@ function jugadorNuevo(r, f) {
   const luz = gente ? luzLugar : Math.max(-1, luzLugar);
   const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
   // El culatazo: de los 8 cuadros, cuál toca.
-  const golpe = f.golpe != null ? Math.min(7, Math.floor(f.golpe * 8)) : null;
+  const golpe = gente ? gente.golpe ?? null : f.golpe != null ? Math.min(7, Math.floor(f.golpe * 8)) : null;
   // El tajo del cuchillo: de los 8 cuadros, cuál toca.
   const tajo = f.tajo != null ? Math.min(7, Math.floor(f.tajo * 8)) : null;
   // El arma larga, de cruzada (0) a apuntando (1), en 4 pasos (ver jugador.js).
@@ -574,7 +574,7 @@ function jugadorNuevo(r, f) {
   // el dibujo: la bala sale hacia donde apuntás, como siempre.
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
-    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, fino }, luz, !!f.destello)
+    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, fino }, luz, !!f.destello)
     : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();

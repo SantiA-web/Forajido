@@ -853,6 +853,27 @@ const CULATA_ENFUNDADA = {
   espalda: mapa(14, ['...............W', '..............ww', '..............d']),
   diagE: mapa(14, ['..............W', '.............ww', '.............d']),
 };
+/**
+ * 🆕 DESENFUNDAR (P3a, el guardia la primera vez que pelea): `desenfunda` 0-2,
+ * y después la pose de siempre. 0 la mano agarra la culata (todavía en la
+ * funda); 1 lo saca para arriba, el caño apuntando al piso; 2 lo trae hacia
+ * adelante, a mitad de camino de la pose. `culata` es dónde está la culata
+ * enfundada, en puntos desde el hombro del arma, por vista.
+ */
+const DESENFUNDE = { culata: { lado: [-2, 6], frente: [-1, 6], diagF: [-1, 6], espalda: [1, 6], diagE: [0, 6] } };
+/**
+ * 🆕 ATURDIDO (P3a: el guardia que recibe un golpe), 4 cuadros: 0 el golpe lo
+ * echa atrás (el cuerpo y la cabeza para atrás, los brazos sueltos), 1 se le
+ * aflojan las piernas (baja un punto), 2 y 3 se tambalea (la cabeza de un lado
+ * al otro) hasta que se repone. El arma cae: el revólver apunta al piso
+ * (`r`, de a 22,5°) y el arma larga queda cruzada. `ida` es el brazo libre.
+ */
+const ATURDIDO = [
+  { inclina: -1, baja: 0, cabeza: -1, r: 3, ida: -0.6 },
+  { inclina: -1, baja: 1, cabeza: -1, r: 3, ida: -0.4 },
+  { inclina: 0, baja: 1, cabeza: -1, r: 3, ida: 0.2 },
+  { inclina: 0, baja: 1, cabeza: 1, r: 3, ida: -0.2 },
+];
 const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], ang: -2.15 }, frontal: { mano: [8, 16], ang: -0.99 } };
 
 /**
@@ -862,7 +883,7 @@ const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], a
  * (cara, pelo, barba, sombrero…) y `torso` el torso. `enfundado`: el
  * revólver en la funda (ver CULATA_ENFUNDADA).
  */
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado }) {
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido }) {
   const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
   const TJ = tajo != null ? TAJO[tajo] : null;
   /**
@@ -881,6 +902,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   // El culatazo: con el arma larga, su cuadro (GOLPE_LARGA); si no, el del revólver.
   const GL = golpe != null && GOLPE_LARGA[arma] ? GOLPE_LARGA[arma][golpe] : null;
   if (golpe != null) ang = GL ? (GL.cruzada ? -1.3 : espejoAng(GL.r * Math.PI / 8)) : espejoAng(GOLPE.brazo[golpe]);
+  const AT = aturdido != null ? ATURDIDO[aturdido] : null;
+  if (AT) { ang = espejoAng(AT.r * Math.PI / 8); empuna = 0; }
   const V = VISTAS[vista];
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
@@ -898,9 +921,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : 0);
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
   const deCostado = vista === 'lado' || vista.startsWith('diag');
-  const inclina = TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
+  const inclina = AT ? (deCostado ? AT.inclina : 0) : TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
   /**
    * 🔁 AGACHADO, ENCORVADO *(Santi: "el cuerpo, torso y cabeza, debería
    * inclinarse un poco hacia adelante y quedar apenas encorvado")*: la cabeza
@@ -911,14 +934,14 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const encorva = piernas === 'agachado' || tipo === 'G';
   const lomo = encorva && vista === 'lado' ? 1 : 0;
-  const cabezaX = encorva ? (vista === 'lado' ? 2 : vista.startsWith('diag') ? 1 : 0) : 0;
+  const cabezaX = (encorva ? (vista === 'lado' ? 2 : vista.startsWith('diag') ? 1 : 0) : 0) + (AT ? AT.cabeza : 0);
   const cabezaY = encorva ? 1 : 0;
   const [hx, hy] = [V.hombro[0] + inclina + lomo, V.hombro[1] + baja];
   const dir = [Math.cos(ang), Math.sin(ang)];
   // El arma larga, con las dos manos: dónde va cada mano, la culata y la boca.
   let larga = null;
   if (arma === 'winchester' || arma === 'escopeta') {
-    const t = GL ? (GL.cruzada ? 0 : 1) : golpe != null ? 1 : TJ ? 0 : Math.max(0, Math.min(1, empuna ?? 1));
+    const t = AT ? 0 : GL ? (GL.cruzada ? 0 : 1) : golpe != null ? 1 : TJ ? 0 : Math.max(0, Math.min(1, empuna ?? 1));
     const P = vista === 'lado' ? CRUZADA.lado : frontal ? CRUZADA.frontal : CRUZADA.otra;
     const cadera = [P.mano[0] + inclina + lomo, P.mano[1] + baja];
     // Apuntando, la mano adelante del hombro; de frente un poco más, así la culata
@@ -948,7 +971,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    * brazo de acá). La cruzada, de espaldas, detrás. En el culatazo, nunca.
    */
   const rArma = Math.round(Math.atan2(dir[1], dir[0]) / (Math.PI / 8));
-  const detras = !arma || golpe != null ? false
+  const detras = !arma || golpe != null || desenfunda != null ? false
     : larga && larga.t < 0.5 ? vista === 'espalda' || vista === 'diagE'
       : vista === 'espalda' ? rArma < 0
         : vista === 'lado' ? false
@@ -1010,6 +1033,30 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
      */
     const ri = Math.max(-4, Math.min(4, rArma)) + 4;
     const B = BRAZO_REVOLVER.bajo[ri], R = BRAZO_REVOLVER.recto[ri];
+    // Desenfundando (ver DESENFUNDE): de la funda a la pose, la mano y el revólver.
+    if (desenfunda != null) {
+      const cu = DESENFUNDE.culata[vista];
+      const base = [hx + cu[0], hy + cu[1]];
+      const lx = dir[0] < -0.01 ? -1 : 1;
+      let m = base, a = null;
+      // De costado, un punto adelante: sobre el chaleco se ve; sobre el pantalón gris, no.
+      if (desenfunda === 1) { m = [base[0] + (vista === 'lado' ? 1 : 0), base[1] - 3]; a = Math.PI / 2; }
+      else if (desenfunda === 2) {
+        m = [Math.round((base[0] + hx + B.mano[0] * lx) / 2), Math.round((base[1] - 2 + hy + B.mano[1]) / 2)];
+        // A mitad de camino entre el piso y adonde apunta.
+        // (Apuntando hacia el fondo, todavía hacia el piso: a mitad de camino quedaba de costado.)
+        a = dir[1] < -0.5 ? Math.PI / 2 : Math.atan2(1 + dir[1], dir[0] + 0.001 * lx);
+      }
+      manga([hx, hy], m, false);
+      if (a != null) {
+        const A = armaEn(DIBUJOS_ARMAS[arma] ? arma : 'colt', a);
+        for (const [x, y, c] of A.puntos) poner(m[0] + x, m[1] + y, c);
+        boca = [m[0] + A.boca[0], m[1] + A.boca[1]];
+      }
+      poner(m[0], m[1], C.P); poner(m[0] + 1, m[1], C.p);
+      poner(m[0], m[1] + 1, C.p); poner(m[0] + 1, m[1] + 1, C.q);
+      return;
+    }
     const t = Math.max(0, Math.min(1, empuna ?? 0));
     const lx = dir[0] < -0.01 ? -1 : 1;
     const desde = (p) => [hx + p[0] * lx, hy + p[1]];
@@ -1124,7 +1171,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     dibujarMapa(sinMango ? { y: Va.y + 2, filas: Va.filas.slice(2) } : Va, baja, inclina + lomo);
   };
   /** El brazo libre: de costado va detrás del cuerpo (es el de allá); en las otras vistas, al lado. */
-  function idaLibre() { return tipo ? BRAZO_LIBRE[tipo].ida * Math.cos(k * Math.PI / 4) * 0.9 : 0; }
+  function idaLibre() { if (AT) return AT.ida; return tipo ? BRAZO_LIBRE[tipo].ida * Math.cos(k * Math.PI / 4) * 0.9 : 0; }
   const brazoLibre = () => {
     const B = tipo ? BRAZO_LIBRE[tipo] : null;
     colgado([VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja], idaLibre(), B ? B.codo : 0.1, vista === 'lado' || vista === 'diagF');

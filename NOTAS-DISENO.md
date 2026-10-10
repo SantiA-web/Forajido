@@ -18735,8 +18735,13 @@ Primera clase y las mujeres quedan para después.
   probando)*: con [F9] adentro del vagón, el guardia común de pie sale con el dibujo
   nuevo (el revólver enfundado patrullando, en la mano peleando y recto apuntando;
   el arma larga cruzada o apuntando). Lo que falta dibujar sigue con el dibujo viejo.
-- Siguen: desenfundar, asomarse, el golpe del guardia, aturdido y
-  recibir el culatazo; sentado de franco, rendido y traición, caído apuntando,
+- **✅ Paso 2** (sólo dibujo, no cambia el juego): **desenfundar** al empezar a pelear
+  (0,3 s: la mano a la culata, lo saca apuntando al piso, lo trae adelante);
+  **el golpe** con los cuadros del culatazo del jugador (levanta el brazo mientras
+  carga, 0,26 s, y pega en 0,2 s); **aturdido** al recibir un golpe (lo echa atrás,
+  se le aflojan las piernas, se tambalea; el arma apunta al piso); **a cubierto**,
+  agachado detrás del reparo y de pie al asomarse.
+- Siguen: sentado de franco, rendido y traición, caído apuntando,
   desmayado y muerto; el pasajero; meterlo en el juego.
 
 ## 🦴 EL ESQUELETO (2026-10-08)

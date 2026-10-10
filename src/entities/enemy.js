@@ -521,6 +521,7 @@ export function drawEnemy(r, e) {
     empuna: larga ? (poseLarga !== larga ? 1 : 0) : e.aimTimer > 0 ? 1 : 0,
     enfundado: !larga && (!conArma || !peleando),
     funda: !larga,
+    ...poseNueva(e, peleando && conArma && !larga),
   };
   const fig = dibujarPersona(r, {
     tipo, x: e.x, pies, angulo: e.facing,
@@ -599,6 +600,46 @@ export function drawEnemy(r, e) {
     // LA CHARLA: una frase suelta que aparece y se corta (ver `actualizarCharla`).
     r.text(e.charlaTexto, e.x, arriba - 5, col.enemy);
   }
+}
+
+/**
+ * 🎨 LAS POSES QUE DURAN UN RATO, para el dibujo nuevo (P3a). Son sólo dibujo:
+ * no cambian nada del juego. Se cuentan con el reloj de la pantalla y se
+ * guardan en campos que empiezan con `_p3`, que nada del juego lee.
+ *  - DESENFUNDAR: cuando el del revólver empieza a pelear, 0,3 s (3 cuadros
+ *    de 0,1) de la funda a la mano.
+ *  - EL GOLPE: mientras levanta el brazo (`meleeWindup`, 0,26 s) los cuadros
+ *    0-2 del culatazo; cuando pega, los 3-7 en 0,2 s.
+ *  - ATURDIDO (`stagger`): el golpe lo echa atrás (0-1) y se tambalea (2-3)
+ *    hasta reponerse.
+ *  - A CUBIERTO: agachado detrás del reparo; asomado (o apuntando), de pie.
+ */
+function poseNueva(e, conRevolver) {
+  const ahora = performance.now() / 1000;
+  const p = {};
+  // Desenfundar.
+  if (conRevolver && !e._p3Peleaba) e._p3Desenfunde = ahora;
+  e._p3Peleaba = conRevolver;
+  const d = conRevolver && e._p3Desenfunde != null ? Math.floor((ahora - e._p3Desenfunde) / 0.1) : 3;
+  if (d < 3) { p.desenfunda = d; if (d === 0) p.enfundado = true; }
+  // El golpe.
+  const W = CONFIG.enemy.meleeWindup;
+  if (e.meleeWindup > 0) {
+    p.golpe = Math.max(0, Math.min(2, Math.floor((1 - e.meleeWindup / W) * 3)));
+    e._p3Golpe = ahora;
+  } else if (e._p3Golpe != null && ahora - e._p3Golpe < 0.2) {
+    p.golpe = 3 + Math.min(4, Math.floor((ahora - e._p3Golpe) / 0.04));
+  }
+  // Aturdido.
+  if (e.stagger > 0) {
+    if (e._p3Aturdido == null) e._p3Aturdido = ahora;
+    const t = ahora - e._p3Aturdido;
+    p.aturdido = t < 0.08 ? 0 : t < 0.18 ? 1 : 2 + (Math.floor((t - 0.18) / 0.12) % 2);
+    delete p.golpe;
+  } else e._p3Aturdido = null;
+  // A cubierto.
+  if (e.atCover && !e.peeking && !(e.aimTimer > 0)) p.agachado = true;
+  return p;
 }
 
 function drawVisionCone(r, e) {

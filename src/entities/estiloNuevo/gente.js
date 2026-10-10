@@ -192,11 +192,11 @@ const SOMBREROS = {
   // alta con el pliegue arriba, ala más ancha que sube en las puntas pegada al
   // ala (no sueltas, que parecían cuernos). De costado el ala cae adelante y atrás.
   curvo: {
-    frente: mapa(0, ['.........hkH', '........hhkHk', '....hh.hhHHHkk.kk', '....hhhhHHHHHkkkk']),
-    diagF: mapa(0, ['..........hkH', '.........hhkHk', '.....hh.hhHHHkk.kk', '.....hhhhHHHHHkkkk']),
-    lado: mapa(0, ['.........hkH', '........hhkHk', '....hhhhHHHHHkkkk', '...x...........x']),
-    diagE: mapa(0, ['.........hkH', '........hhkHk', '....hh.hhHHHkk.kk', '....hhhhHHHHHkkkk']),
-    espalda: mapa(0, ['.........hkH', '........hhkHk', '....hh.hhHHHkk.kk', '....hhhhHHHHHkkkk']),
+    frente: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '....xhhhHHHHHkkkx']),
+    diagF: mapa(0, ['..........hkH', '.........hhkHk', '......hhhHHHHkkk', '.....xhhhHHHHHkkkx']),
+    lado: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '.....x.........x']),
+    diagE: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '....xhhhHHHHHkkkx']),
+    espalda: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '....xhhhHHHHHkkkx']),
   },
   // El de paja del civil: ala ancha que cae un poco en las puntas.
   paja: {

@@ -516,6 +516,19 @@ const DIBUJOS_ARMAS = {
     // Cruzada delante del pecho: la mano del gatillo en la cadera, el caño arriba a la izquierda.
     cruzada: ['M......', '2d.....', '.2d....', '.2d....', '..2d...', '..Sw...', '...wv..', '...od..', '...bd..', '...A...', '....w..', '....Ww.', '.....v.', '.....dd'],
   },
+  // EL CUCHILLO DE MONTE: la hoja de acero (1 la luz, 3 la sombra, M la punta), la guarda de
+  // bronce (o) y el mango de madera (w). La A es la mano en el mango.
+  cuchillo: {
+    '-4': ['.M.', '31.', '31.', '31.', 'ooo', '.A.', '.w.'],
+    '-3': ['...M', '..13', '..1.', '.13.', 'oo..', '.A..', 'w...'],
+    '-2': ['.....M', '....13', '...13.', '..o3..', '.Ao...', 'w.....'],
+    '-1': ['......1M', '..o.113.', 'wAo13...', '..o.....'],
+    0: ['..o.....', 'wAo1111M', '..o333..'],
+    1: ['..o.....', 'wAo13...', '..o.113.', '......1M'],
+    2: ['w.....', '.Ao...', '..o1..', '...13.', '....13', '.....M'],
+    3: ['w...', '.A..', 'oo..', '.13.', '..1.', '..13', '...M'],
+    4: ['.w.', '.A.', 'ooo', '.13', '.13', '.13', '.M.'],
+  },
   // LA ESCOPETA con culata, de un solo caño a la vista *(Santi: "mejor no haz la escopeta así,
   // prefiero que se vea un solo cañón que vista desde arriba")*: el caño grueso (dos de alto: la
   // cara de arriba con luz y el costado), el martillo, la mira de bronce, el guardamanos y la
@@ -642,6 +655,43 @@ const GOLPE = {
  *  adelante y la empuja derecho con los dos brazos, como un ariete; el cuerpo
  *  se tira adelante, y en vez de estela, líneas rectas de velocidad.
  */
+/**
+ * 🆕 EL TAJO DEL CUCHILLO, en 8 cuadros (`tajo` 0-7, en 0,26 s; el impacto
+ * es el 3) *(Santi aprobó el plan: "sí, vamos con la B y quiero la vaina")*.
+ * Con la MANO LIBRE, sin soltar el arma de fuego: la saca de la vaina, la
+ * lleva atrás a la altura del hombro, corta cruzando por delante a la altura
+ * del cuello del otro (estela finita y un brillo en la punta), frena y la
+ * guarda. Con el arma larga, la mano izquierda suelta el guardamanos y el
+ * arma queda cruzada en la otra. Cada cuadro, puesto a mano: `mano` desde el
+ * hombro del brazo libre (mirando a la derecha), `r` hacia dónde apunta la
+ * hoja (de a 22,5°; pasado 4 o -4, el dibujo en espejo), `delante` si el
+ * brazo va por delante del cuerpo, `vaina` si la mano está en la vaina.
+ */
+const TAJO = [
+  { vaina: true, r: 4, inclina: 0, baja: 0 },
+  { mano: [-3, 0], r: -6, inclina: -1, baja: 0 },
+  { mano: [3, -1], r: -1, inclina: 0, baja: 0, delante: true },
+  { mano: [7, -1], r: 0, inclina: 1, baja: 1, delante: true,
+    estela: [[5, -4], [7, -4], [9, -3], [11, -2], [13, -1]] },
+  { mano: [6, 3], r: 2, inclina: 1, baja: 0, delante: true },
+  { mano: [4, 5], r: 3, inclina: 0, baja: 0, delante: true },
+  { mano: [1, 5], r: 4, inclina: 0, baja: 0, delante: true },
+  { vaina: true, r: 4, inclina: 0, baja: 0 },
+];
+/**
+ * 🆕 LA VAINA DEL CUCHILLO, colgada del cinto del lado de la mano libre, con el
+ * mango asomando arriba *(Santi: "quiero la vaina")*: si compraste el
+ * cuchillo, se ve que lo llevás. Puesta a mano por vista; de costado queda del
+ * lado de allá, tapada por el cuerpo. `mano` es dónde la agarra la mano. Las
+ * dos primeras filas son el mango: mientras cortás, no están.
+ */
+const VAINA = {
+  frente: { mapa: mapa(14, ['........y', '........Y', '........m', '........g', '........m', '........g']), mano: [8, 14] },
+  diagF: { mapa: mapa(14, ['........y', '........Y', '........m', '........g', '........m', '........g']), mano: [8, 14] },
+  espalda: { mapa: mapa(14, ['........y', '........Y', '........m', '........g', '........m', '........g']), mano: [8, 14] },
+  diagE: { mapa: mapa(14, ['........y', '........Y', '........m', '........g', '........m', '........g']), mano: [8, 14] },
+  lado: { mapa: null, mano: [8, 15] },
+};
 const GOLPE_LARGA = {
   winchester: [
     { r: -2, mano: [-1, 3], inclina: -1, baja: 0 },
@@ -776,7 +826,8 @@ const MOCHILA = {
 };
 const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], ang: -2.15 } };
 
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna }) {
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina }) {
+  const TJ = tajo != null ? TAJO[tajo] : null;
   // El culatazo: con el arma larga, su cuadro (GOLPE_LARGA); si no, el del revólver.
   const GL = golpe != null && GOLPE_LARGA[arma] ? GOLPE_LARGA[arma][golpe] : null;
   if (golpe != null) ang = GL ? (GL.cruzada ? -1.3 : GL.r * Math.PI / 8) : GOLPE.brazo[golpe];
@@ -796,9 +847,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : 0);
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : 0);
   const deCostado = vista === 'lado' || vista.startsWith('diag');
-  const inclina = golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
+  const inclina = TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
   /**
    * 🔁 AGACHADO, ENCORVADO *(Santi: "el cuerpo, torso y cabeza, debería
    * inclinarse un poco hacia adelante y quedar apenas encorvado")*: la cabeza
@@ -816,7 +867,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   // El arma larga, con las dos manos: dónde va cada mano, la culata y la boca.
   let larga = null;
   if (arma === 'winchester' || arma === 'escopeta') {
-    const t = GL ? (GL.cruzada ? 0 : 1) : golpe != null ? 1 : Math.max(0, Math.min(1, empuna ?? 1));
+    const t = GL ? (GL.cruzada ? 0 : 1) : golpe != null ? 1 : TJ ? 0 : Math.max(0, Math.min(1, empuna ?? 1));
     const P = vista === 'lado' ? CRUZADA.lado : CRUZADA.otra;
     const cadera = [P.mano[0] + inclina + lomo, P.mano[1] + baja];
     const hombro = [hx + dir[0] * 2, hy + dir[1] * 2];
@@ -873,11 +924,11 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   };
   /** El arma larga y las dos manos. */
   const dibujarLarga = () => {
-    if (vista !== 'lado') brazoIzqLarga();
+    if (vista !== 'lado' && !TJ) brazoIzqLarga();
     for (const [x, y, c] of larga.A.puntos) poner(larga.mano[0] + x, larga.mano[1] + y, c);
     manga([hx, hy], larga.mano, false);
     mano(larga.mano, false);
-    mano(larga.apoyo, vista === 'lado');
+    if (!TJ) mano(larga.apoyo, vista === 'lado');
     boca = larga.boca;
   };
 
@@ -952,6 +1003,32 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     poner(mx, my, atras ? C.p : C.P); poner(mx + 1, my, C.p);
     poner(mx, my + 1, C.p); poner(mx + 1, my + 1, C.q);
   }
+  /** El brazo del cuchillo (ver TAJO): del hombro libre a la mano, y el cuchillo en la mano. */
+  const brazoCuchillo = () => {
+    const S = [VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja];
+    const M = TJ.vaina ? [VAINA[vista].mano[0] + inclina + lomo, VAINA[vista].mano[1] + baja] : [S[0] + TJ.mano[0], S[1] + TJ.mano[1]];
+    manga(S, M, vista === 'lado' && !TJ.delante);
+    const K = armaEn('cuchillo', TJ.r * Math.PI / 8);
+    // En la vaina, la mano agarra el mango que ya dibuja la vaina.
+    if (!(TJ.vaina && VAINA[vista].mapa)) for (const [x, y, c] of K.puntos) poner(M[0] + x, M[1] + y, c);
+    mano(M, vista === 'lado' && !TJ.delante);
+    if (TJ.estela) {
+      // La estela sólo en el aire: por encima de la cara o del cuerpo no se dibuja.
+      for (const [x, y] of TJ.estela) {
+        const [ex, ey] = [S[0] + x + OX, S[1] + y + OY];
+        if (ex >= 0 && ey >= 0 && ex < ANCHO && ey < ALTO && idx[ey * ANCHO + ex] < 0) poner(S[0] + x, S[1] + y, 25);
+      }
+      const [px, py] = [M[0] + K.boca[0], M[1] + K.boca[1]];
+      for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0]]) poner(px + dx, py + dy, dx ? 29 : 30);
+    }
+  };
+  /** La vaina en el cinto (ver VAINA); mientras cortás, sin el mango. */
+  const dibujarVaina = () => {
+    const Va = VAINA[vista].mapa;
+    if (!Va) return;
+    const sinMango = TJ && !TJ.vaina;
+    dibujarMapa(sinMango ? { y: Va.y + 2, filas: Va.filas.slice(2) } : Va, baja, inclina + lomo);
+  };
   /** El brazo libre: de costado va detrás del cuerpo (es el de allá); en las otras vistas, al lado. */
   const brazoLibre = () => {
     const B = tipo ? BRAZO_LIBRE[tipo] : null;
@@ -974,7 +1051,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     dibujarMapa(Mo.manta, baja, corre);
     if (Mo.morral) dibujarMapa(Mo.morral[Math.max(1, Math.min(4, mochila))], baja, corre);
   };
-  if (vista === 'lado') { if (larga) brazoIzqLarga(); else brazoLibre(); }
+  if (vista === 'lado') { if (TJ) { if (!TJ.delante) brazoCuchillo(); } else if (larga) brazoIzqLarga(); else brazoLibre(); }
   if (detras) brazo();
   if (mochila && vista === 'lado') dibujarMochila();
   const P = V.piernas[piernas] || V.piernas.quieto;
@@ -992,9 +1069,12 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   const bajoLaCabeza = larga && larga.t < 0.5 && !detras;
   if (bajoLaCabeza) brazo();
   dibujarMapa(V.cabeza, baja + cabezaY, inclina + cabezaX);
-  if (vista !== 'lado' && !larga) brazoLibre();
+  if (vaina) dibujarVaina();
+  if (vista !== 'lado' && TJ && !TJ.delante) brazoCuchillo();
+  else if (vista !== 'lado' && !larga && !TJ) brazoLibre();
   if (mochila && vista === 'diagE') dibujarMochila();
   if (!detras && !bajoLaCabeza) brazo();
+  if (TJ && TJ.delante) brazoCuchillo();
   if (mochila && vista === 'espalda') dibujarMochila();
   // El impacto: la estela del brazo (de arriba atrás hacia adelante) y un destello en la punta.
   if (GL && GL.estela) {
@@ -1029,7 +1109,7 @@ const guardados = new Map();
  * balazo que recibiste).
  */
 export function lienzoJugador(o, luz = 0, destello = false) {
-  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1].join('|');
+  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0].join('|');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 900) guardados.clear();

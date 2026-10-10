@@ -773,6 +773,8 @@ cuchillo. Lo que NO compra es tiempo.
 Con el revólver es el golpe más rápido del juego; **con el Winchester o la
 escopeta pega más lento pero aturde más** (0,60 s de frente en vez de 0,45), y
 cada arma tiene su golpe: el rifle en arco, la escopeta de un empujón.
+El cuchillo lo saca la mano libre sin soltar el arma, corta de un tajo y lo
+guarda; si lo compraste, se ve su vaina en el cinto.
 
 > **Un desmayado se levanta a los 25 segundos**, y mientras tanto está tirado en
 > el piso delatándote igual que un cadáver: de lejos nadie distingue. Y cuando se

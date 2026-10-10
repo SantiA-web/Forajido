@@ -18604,6 +18604,21 @@ para encontrar las poses). La E4 se hace directamente en P5.
   *"para añadir un poco más de virtud a los revolveres"*. Los tiempos se fijan
   al empezar el golpe (`p.culatazoTiempos`). Como el del revólver, el golpe sale
   siempre hacia el costado al que mirás, también de frente y de espaldas.
+- 🆕 **El tajo del cuchillo y su vaina** *(Santi aprobó el plan: "sí, vamos con la B y
+  quiero la vaina")*. Antes el cuchillo pegaba en el instante en que apretabas y
+  sólo se veía la línea blanca vieja. Ahora (`TAJO` en jugador.js, 8 cuadros puestos
+  a mano) lo saca la **mano libre** sin soltar el arma de fuego: lo saca de la
+  vaina, lo lleva atrás a la altura del hombro, corta cruzando por delante a la
+  altura del cuello del otro (estela finita, sólo en el aire, y un brillo en la
+  punta), frena y lo guarda. Con el arma larga, la mano izquierda suelta el
+  guardamanos y el arma queda cruzada en la otra. El cuchillo, dibujado a mano en
+  9 ángulos (hoja de acero, guarda de bronce, mango de madera). **Opción B:** pega a
+  los 0,10 s y termina a los 0,26 (`impacto`, `golpeDura` del cuchillo en
+  data/melee.js), apenas más lento que el culatazo del revólver; la espera entre
+  golpes sigue en 0,55. **La vaina** cuelga del cinto del lado de la mano libre con
+  el mango asomando, si compraste el cuchillo (`VAINA`); de costado queda del lado
+  de allá, tapada. Pendientes: el degüello por la espalda con su propia animación
+  (con los guardias, P3) y el hachazo (cuando se desbloquee el hacha).
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

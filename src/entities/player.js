@@ -1207,7 +1207,10 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     armaId: p.weapon && p.weapon.id,
     mochila: bulto,
     // El culatazo en curso, de 0 a 1 (sólo lo usa el dibujo nuevo).
-    golpe: p.culatazo != null ? p.culatazo / p.culatazoTiempos.golpeDura : null,
+    golpe: p.culatazo != null && p.melee.id !== 'cuchillo' ? p.culatazo / p.culatazoTiempos.golpeDura : null,
+    // El tajo del cuchillo en curso, de 0 a 1, y si lo llevás en la vaina (sólo el dibujo nuevo).
+    tajo: p.culatazo != null && p.melee.id === 'cuchillo' ? p.culatazo / p.culatazoTiempos.golpeDura : null,
+    vaina: p.melee.id === 'cuchillo',
     // Cómo llevás el arma larga: 0 cruzada, 1 apuntando (sólo el dibujo nuevo).
     empuna: p.empuna ?? 1,
     // El brazo del revólver: 0 con el codo doblado, 1 recto apuntando.

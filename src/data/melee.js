@@ -109,6 +109,19 @@ export const MELEE = {
     swingTime: 0.16,
     noquea: false,
 
+    /**
+     * 🆕 EL TAJO TIENE ANIMACIÓN Y PEGA EN EL CUADRO DEL IMPACTO, como el
+     * culatazo *(Santi eligió la opción B)*. Antes contaba en el instante en
+     * que apretabas y sólo se dibujaba una línea. Ahora la mano libre saca el
+     * cuchillo del cinto, lo lleva atrás y corta de un tajo (8 cuadros en
+     * `golpeDura`, ver jugador.js), y el golpe cuenta a los `impacto`
+     * segundos: apenas más lento que el culatazo del revólver (0,07), *"un
+     * poco más lento que pegar con la culata"*. Entre golpe y golpe sigue
+     * `cooldown` 0,55.
+     */
+    impacto: 0.10,
+    golpeDura: 0.26,
+
     price: 450,
   },
 

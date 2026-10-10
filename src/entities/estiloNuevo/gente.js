@@ -20,7 +20,7 @@
  */
 import { iluminar } from '../../engine/luz.js';
 import { sombrear } from '../../engine/paleta.js';
-import { VISTAS, C, linea, OX, OY, ANCHO, ALTO } from './jugador.js';
+import { C, ANCHO, ALTO, cuadroJugador } from './jugador.js';
 
 const mapa = (y, filas) => ({ y, filas });
 
@@ -347,74 +347,59 @@ const BASE = {
     U: 35, V: 34, v: 33, w: 32, y: 1,        // chaleco marrón
     W: 1, G: 25,                             // cinto
     I: 24, T: 23, t: 31,                     // pantalón gris
-    F: null, f: null,                        // sin funda
   },
 };
 
 // ------------------------------------------------------------------ dibujo
 /**
- * UN CUADRO DE ALGUIEN: `tipo` ('guardia' | 'pasajero'), `vista`, `piernas`
- * (las del jugador: 'quieto', 'W0'…), y sus variantes: `sombrero`, `piel`,
- * `pelo`, `uniforme`. Devuelve los índices de color.
+ * 🔁 P3a: LO DE CADA PERSONA, PARA PONER SOBRE EL ESQUELETO DEL JUGADOR. El
+ * guardia y el pasajero usan el mismo cuerpo que el jugador (cuadroJugador en
+ * jugador.js): los brazos, las armas dibujadas a mano en cada dirección, las
+ * poses del revólver, la cruzada del rifle, los golpes y las piernas de 8
+ * cuadros. Acá sólo se arma lo que va encima: los colores de cada letra, la
+ * cabeza (cara, pañuelo, peinado, barba y sombrero, en ese orden) y el torso.
+ *
+ * `funda`: si lleva funda en la cadera (el guardia sí, el pasajero no). Sin
+ * funda, de costado la funda está encima del pantalón: ahí se pinta pantalón;
+ * en las otras vistas cuelga al costado y no se dibuja.
  */
-export function cuadroGente({ tipo, vista, piernas = 'quieto', sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', mangas = 'largas', panuelo = 'azul', colorSombrero = 'negro', fino = false }) {
+export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
   const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero;
-  const col = { ...C, ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
-  const idx = new Int16Array(ANCHO * ALTO).fill(-1);
-  const poner = (x, y, i) => {
-    if (i == null) return;
-    x += OX; y += OY;
-    if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) idx[y * ANCHO + x] = i;
-  };
-  const dibujarMapa = (m) => m.filas.forEach((fila, j) => {
-    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x, m.y + j, col[fila[x]]);
-  });
-  /** Un brazo colgando: dos de ancho (el de afuera al sol si da a la izquierda) y la mano de 2×2. */
-  const brazo = ([sx, sy], izquierda, atras) => {
-    const [afuera, adentro] = atras ? [col.c, col.c] : izquierda ? [col.L, col.C] : [col.c, col.C];
-    // Arremangada, del codo para abajo se ve el antebrazo.
-    const piel = (y) => mangas === 'arremangadas' && y >= sy + 4;
-    linea([sx, sy], [sx, sy + 6], (x, y) => {
-      const [a, b] = piel(y) ? [atras ? col.p : izquierda ? col.P : col.p, col.p] : [afuera, adentro];
-      poner(x, y, izquierda ? a : b); poner(x + 1, y, izquierda ? b : a);
-    });
-    poner(sx, sy + 7, atras ? col.p : col.P); poner(sx + 1, sy + 7, col.p);
-    poner(sx, sy + 8, col.p); poner(sx + 1, sy + 8, col.q);
-  };
-  const P = VISTAS[vista].piernas[piernas] || VISTAS[vista].piernas.quieto;
-  // Los brazos de allá, detrás del cuerpo.
-  if (vista === 'lado') brazo([9, 9], false, true);
-  if (vista === 'diagF') brazo([13, 9], false, true);
-  dibujarMapa(P);
-  dibujarMapa(TORSOS[tipo][vista]);
-  dibujarMapa(CABEZA[vista]);
-  if (tipo === 'pasajero') dibujarMapa(PANUELO[vista]);
-  if (PEINADOS[peinado] && PEINADOS[peinado][vista]) dibujarMapa(PEINADOS[peinado][vista]);
-  if (barba && BARBAS[barba] && BARBAS[barba][vista]) dibujarMapa(BARBAS[barba][vista]);
-  if (s && SOMBREROS[s] && SOMBREROS[s][vista]) dibujarMapa(SOMBREROS[s][vista]);
-  // Los brazos de acá.
-  if (vista === 'lado') brazo([10, 9], true, false);
-  else if (vista === 'diagF') brazo([6, 9], true, false);
-  else { brazo([6, 9], true, false); brazo([13, 9], false, false); }
-
-  if (!fino) {
-    const lleno = idx.slice();
-    for (let y = 0; y < ALTO; y++) for (let x = 0; x < ANCHO; x++) {
-      if (lleno[y * ANCHO + x] >= 0) continue;
-      const v = (a, b) => a >= 0 && b >= 0 && a < ANCHO && b < ALTO && lleno[b * ANCHO + a] >= 0;
-      if (v(x - 1, y) || v(x + 1, y) || v(x, y - 1) || v(x, y + 1)) idx[y * ANCHO + x] = 0;
-    }
-  }
-  return idx;
+  const colores = { ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
+  if (!funda) Object.assign(colores, vista === 'lado' ? { F: colores.I ?? C.I, f: colores.T ?? C.T } : { F: null, f: null });
+  const cabeza = [CABEZA[vista]];
+  if (tipo === 'pasajero') cabeza.push(PANUELO[vista]);
+  if (PEINADOS[peinado] && PEINADOS[peinado][vista]) cabeza.push(PEINADOS[peinado][vista]);
+  if (barba && BARBAS[barba] && BARBAS[barba][vista]) cabeza.push(BARBAS[barba][vista]);
+  if (s && SOMBREROS[s] && SOMBREROS[s][vista]) cabeza.push(SOMBREROS[s][vista]);
+  return { colores, cabeza, torso: TORSOS[tipo][vista] };
 }
 
-/** El cuadro iluminado, como canvas. */
+/**
+ * UN CUADRO DE ALGUIEN: lo de la persona (ver capasPersona) y la pose, con los
+ * mismos nombres que el jugador: `vista`, `piernas` ('quieto', 'W0'…),
+ * `arma`, `ang`, `empuna`, `golpe`, `enfundado`. Devuelve los índices,
+ * la boca del caño y el hombro.
+ */
+export function cuadroGente(o) {
+  return cuadroJugador({ piernas: 'quieto', ang: 0, ...o, persona: capasPersona(o) });
+}
+
+const guardados = new Map();
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
+/** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). */
 export function lienzoGente(o, luz = 0) {
-  const indices = cuadroGente(o);
-  const datos = iluminar({ ancho: ANCHO, alto: ALTO, indices, campo: () => luz });
+  const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz;
+  let g = guardados.get(clave);
+  if (g) return g;
+  if (guardados.size > 1500) guardados.clear();
+  const q = cuadroGente(o);
+  const datos = iluminar({ ancho: ANCHO, alto: ALTO, indices: q.idx, campo: () => luz });
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
-  return cv;
+  g = { img: cv, boca: q.boca, hombro: q.hombro };
+  guardados.set(clave, g);
+  return g;
 }

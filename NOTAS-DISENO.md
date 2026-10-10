@@ -18331,7 +18331,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
-| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ |
+| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a 🔨 (paso 1 ✅) |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
@@ -18704,6 +18704,33 @@ Primera clase y las mujeres quedan para después.
   motor que las pinta; el chaleco o los tiradores o la chaqueta de cuero, la
   maleta, el bolso, el diario, el bastón y soltar la maleta; los cuerpos
   (gordito, flaco, hombros anchos); el sorteo.
+- **La chaqueta corta del guardia (P3b)**, con la foto de la de Arthur Morgan
+  *(Santi: "cuando la agregues, se tiene que ver más ancho el personaje")*: de
+  lona marrón con el cuello oscuro, abierta sobre la camisa, botones y bolsillos
+  con solapa. Más ancha que el chaleco: el torso y los hombros un punto más a
+  cada lado, y las mangas del color de la chaqueta.
+
+**🔨 P3a — poses y animaciones** *(Santi aprobó el plan)*. Lo decidido:
+- **El revólver va enfundado** mientras patrulla y lo saca al entrar en combate;
+  los de rifle o escopeta lo llevan cruzado, como el jugador.
+- **De noche, el 75 % de los pasajeros duerme** (eligió la B de 60/75/90): sentados
+  con la cabeza caída y el sombrero sobre los ojos, o en la litera del
+  dormitorio. **Dormido no ve nada**; se despierta con un tiro, una explosión o
+  un grito cerca, y si le robás se despierta con las manos arriba (la B: la
+  noche es el momento del sigilo, pero un tiro despierta a todos).
+- **De día, los sentados hacen algo cada 6 a 12 s, durante 3 a 6 s** (la B):
+  mirar por la ventana, revisar el equipaje, leer el diario, barajar. Sólo lo
+  que tiene que ver con lo que lleva cada uno. No cambia lo que ven. El diario,
+  el mazo, la maleta y el bolso se adelantan de P3b al paso 5.
+- **✅ Paso 1**: el guardia sobre el **esqueleto del jugador** (`persona` en
+  `cuadroJugador`: los colores de cada letra, la cabeza y el torso; `capasPersona`
+  en gente.js), con todas sus poses de armas y piernas de 8 cuadros. El revólver
+  enfundado asoma la culata de madera clara (`CULATA_ENFUNDADA`); sin arma en la
+  mano, el brazo derecho se hamaca al caminar al revés del otro *("quedó bien")*.
+  El pantalón gris queda como está *("no aclares el pantalón")*.
+- Siguen: la recortada; desenfundar, asomarse, el golpe del guardia, aturdido y
+  recibir el culatazo; sentado de franco, rendido y traición, caído apuntando,
+  desmayado y muerto; el pasajero; meterlo en el juego.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

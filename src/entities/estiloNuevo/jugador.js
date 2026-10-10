@@ -49,7 +49,7 @@ import { sombrear } from '../../engine/paleta.js';
  * fantásticos")*: la luz viene siempre de arriba a la izquierda y cada
  * material tiene su luz, su base y su sombra.
  */
-const C = {
+const COLORES = {
   h: 6, H: 5, k: 4, K: 3, x: 1, b: 32, l: 25,       // el sombrero: luz, base, sombra, honda; la cinta y su adorno de plata
   P: 12, p: 11, q: 47, B: 47, n: 13,                 // la piel (bajo el ala, en sombra), la barba
   S: 10, R: 9, r: 8, z: 39,                          // el pañuelo
@@ -602,7 +602,7 @@ const ANCHO = 44, ALTO = 40, OX = 12, OY = 6;   // el lienzo, con lugar para el 
 export const PIES = [OX + 10, OY + 27];
 export { ANCHO, ALTO };
 // Para la gente del tren (gente.js): el mismo cuerpo, las mismas piernas y los mismos colores.
-export { VISTAS, C, VER_BRAZO, linea, OX, OY };
+export { VISTAS, COLORES as C, VER_BRAZO, linea, OX, OY };
 
 /** Una línea de puntos enteros, de a a b (Bresenham). */
 function linea([x0, y0], [x1, y1], poner) {
@@ -838,9 +838,32 @@ const MOCHILA = {
     ],
   },
 };
+/**
+ * 🆕 EL REVÓLVER ENFUNDADO (P3a: el guardia patrulla con el revólver en la
+ * funda y lo saca al entrar en combate *(Santi: "el revólver va enfundado")*):
+ * la culata asoma de la funda, por encima del cinto, inclinada hacia atrás.
+ * Puesta a mano por vista, en los colores del arma (W w la madera clara, d el
+ * metal). De costado la funda está en la cadera de acá; de frente y en
+ * diagonal de frente, a la izquierda de la pantalla (la cadera derecha).
+ */
+const CULATA_ENFUNDADA = {
+  lado: mapa(15, ['......Ww', '.......wd']),
+  frente: mapa(14, ['.....W', '.....ww', '......d']),
+  diagF: mapa(14, ['.....W', '.....ww', '......d']),
+  espalda: mapa(14, ['...............W', '..............ww', '..............d']),
+  diagE: mapa(14, ['..............W', '.............ww', '.............d']),
+};
 const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], ang: -2.15 }, frontal: { mano: [8, 16], ang: -0.99 } };
 
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina }) {
+/**
+ * `persona` (P3a, la gente del tren): otro personaje sobre el mismo esqueleto.
+ * `colores` cambia qué color es cada letra (una letra en null no se dibuja),
+ * `cabeza` es la lista de mapas que va en lugar de la cabeza del jugador
+ * (cara, pelo, barba, sombrero…) y `torso` el torso. `enfundado`: el
+ * revólver en la funda (ver CULATA_ENFUNDADA).
+ */
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado }) {
+  const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
   const TJ = tajo != null ? TAJO[tajo] : null;
   /**
    * 🔁 DIESTRO EN TODAS LAS VISTAS *(Santi: "la vaina está del lado izquierdo de
@@ -861,12 +884,13 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   const V = VISTAS[vista];
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
+    if (i == null) return;
     x += OX; y += OY;
     if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) idx[y * ANCHO + x] = i;
   };
-  const dibujarMapa = (m, dy = 0, dx = 0) => m.filas.forEach((fila, j) => {
+  const dibujarMapa = (m, dy = 0, dx = 0, tabla = C) => m.filas.forEach((fila, j) => {
     const corre = typeof dx === 'function' ? dx(j) : dx;
-    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + corre, m.y + j + dy, C[fila[x]]);
+    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + corre, m.y + j + dy, tabla[fila[x]]);
   });
   /**
    * Cuánto baja el cuerpo: lo dice cada cuadro (PASOS). Agachado y quieto, 3.
@@ -966,7 +990,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     if (larga) { dibujarLarga(); return; }
     // Sin arma cuelga como el otro: dos puntos de ancho y la mano de 2×2.
     // (De frente, el derecho cuelga por fuera del cuerpo, del lado izquierdo de la pantalla.)
-    if (!arma) { colgado(frontal ? [hx - 1, hy] : [hx, hy], 0, 0.1, false, frontal ? 'izq' : null); return; }
+    // Caminando, se hamaca al revés del brazo libre (el guardia con el revólver enfundado).
+    if (!arma) { colgado(frontal ? [hx - 1, hy] : [hx, hy], -idaLibre(), tipo ? BRAZO_LIBRE[tipo].codo : 0.1, false, frontal ? 'izq' : null); return; }
     // Apuntando hacia nosotros o lejos, el brazo se ve más corto (en escorzo).
     /**
      * Dónde cae la mano, puesto a mano para cada dirección: en el mismo
@@ -1099,10 +1124,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     dibujarMapa(sinMango ? { y: Va.y + 2, filas: Va.filas.slice(2) } : Va, baja, inclina + lomo);
   };
   /** El brazo libre: de costado va detrás del cuerpo (es el de allá); en las otras vistas, al lado. */
+  function idaLibre() { return tipo ? BRAZO_LIBRE[tipo].ida * Math.cos(k * Math.PI / 4) * 0.9 : 0; }
   const brazoLibre = () => {
     const B = tipo ? BRAZO_LIBRE[tipo] : null;
-    const ida = B ? B.ida * Math.cos(k * Math.PI / 4) : 0;
-    colgado([VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja], ida * 0.9, B ? B.codo : 0.1, vista === 'lado' || vista === 'diagF');
+    colgado([VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja], idaLibre(), B ? B.codo : 0.1, vista === 'lado' || vista === 'diagF');
   };
 
   /**
@@ -1131,7 +1156,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   // Cuando el cuerpo sube 1 (pasando un paso, en el aire o agachado), la cadera se estira un punto para que no
   // quede un hueco entre el cinto y el pantalón.
   if (baja < 0 || baja === 2) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
-  dibujarMapa(V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
+  dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
+  if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo, COLOR_ARMA);
   /**
    * 🔁 El arma larga cruzada va DEBAJO de la cabeza *(Santi: "hay unos pixeles
    * que se comen el sombrero y no queda bien la perspectiva")*: el caño sube
@@ -1140,7 +1166,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const bajoLaCabeza = larga && larga.t < 0.5 && !detras;
   if (bajoLaCabeza) brazo();
-  dibujarMapa(V.cabeza, baja + cabezaY, inclina + cabezaX);
+  for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY, inclina + cabezaX);
   if (vaina) dibujarVaina();
   if (vista !== 'lado' && TJ && !TJ.delante && !(libreDetras && !TJ.vaina)) brazoCuchillo();
   else if (vista !== 'lado' && !libreDetras && !larga && !TJ) brazoLibre();

@@ -469,7 +469,6 @@ const VER_BRAZO = {
  *   W w v      la madera clara, media y oscura
  *   r s        la madera rojiza de la culata del Colt
  *   b o q      el bronce del Winchester
- *   o          (en la escopeta) la mira de bronce
  *
  * Todas vistas igual: un poco desde arriba. Al frente y en diagonal, de costado
  * (la fila de arriba de cada parte es su cara de arriba). Hacia abajo, el arma
@@ -524,15 +523,16 @@ const DIBUJOS_ARMAS = {
   // LA ESCOPETA con culata, de un solo caño a la vista *(Santi: "mejor no haz la escopeta así,
   // prefiero que se vea un solo cañón que vista desde arriba")*: el caño grueso (dos de alto: la
   // cara de arriba con luz y el costado), el martillo, la mira de bronce, el guardamanos y la
-  // culata, la misma del Winchester. Más corta que el rifle (14 contra 17).
+  // culata, la misma del Winchester. Más corta que el rifle (14 contra 17). La mira, oscura
+  // *(Santi: "la mira de la escopeta la quiero color negro/gris, no naranja")*.
   escopeta: {
     '-4': ['M.', '13', 'S3', 'w3', 'd2', 'A3', '.w', 'Ww', 'wv', 'dd'],
     '-3': ['...M.', '..13.', '..S3.', '.w3..', '.d2..', '.A3..', 'W....', 'Ww...', 'wv...', 'dd...'],
-    '-2': ['...........oM3', '...........13.', '..........13..', '.........13...', '........1S....', '.......1w.....', '.....d23......', '.....A3d......', '....Ww........', '...Ww.........', '..Ww..........', '.Wvv..........', 'ddv...........', '.d............'],
-    '-1': ['............o.', '............1M', '..........1133', '......d.1S33..', '......2233w...', '.....A33ww....', '...WW.d.......', '...ww.........', '.WWv..........', 'dvw...........', 'dv............', 'd.............'],
-    0: ['.....d........', '......d.....o.', '...WWA221S111M', 'dWWww.33333333', 'dvwv..ddwww...', 'dv....d.......'],
-    1: ['d.............', 'dWWWWd........', 'dvwwwAd.......', '.v.v..22......', '......331S....', '......d.3311o.', '........ww331M', '..........w.33'],
-    2: ['dd..........', 'dwW.........', '.vwW........', '.vvwWd......', '...vA2......', '.....32.....', '.....dw1....', '.......S1...', '........31o.', '.........31.', '..........3M'],
+    '-2': ['...........dM3', '...........13.', '..........13..', '.........13...', '........1S....', '.......1w.....', '.....d23......', '.....A3d......', '....Ww........', '...Ww.........', '..Ww..........', '.Wvv..........', 'ddv...........', '.d............'],
+    '-1': ['............d.', '............1M', '..........1133', '......d.1S33..', '......2233w...', '.....A33ww....', '...WW.d.......', '...ww.........', '.WWv..........', 'dvw...........', 'dv............', 'd.............'],
+    0: ['.....d........', '......d.....d.', '...WWA221S111M', 'dWWww.33333333', 'dvwv..ddwww...', 'dv....d.......'],
+    1: ['d.............', 'dWWWWd........', 'dvwwwAd.......', '.v.v..22......', '......331S....', '......d.3311d.', '........ww331M', '..........w.33'],
+    2: ['dd..........', 'dwW.........', '.vwW........', '.vvwWd......', '...vA2......', '.....32.....', '.....dw1....', '.......S1...', '........31d.', '.........31.', '..........3M'],
     3: ['dd....', '.Ww...', '..Ad..', '...2..', '..23..', '...S3.', '....13', '.....M'],
     4: ['dd', 'Ww', 'Ad', '.2', '23', 'S3', '13', 'M.'],
     cruzada: ['M......', '13.....', '.13....', '.S3....', '..w3...', '..d2...', '...3d..', '...A...', '....w..', '....Ww.', '.....v.', '.....dd'],

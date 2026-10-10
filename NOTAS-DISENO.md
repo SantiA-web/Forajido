@@ -18782,6 +18782,15 @@ Primera clase y las mujeres quedan para después.
   después del asiento (`baseDeDibujo`); sólo en el vagón de pasajeros, en los otros
   van de pie; **el de la litera**, dibujado después de la cama, con la cabeza en la
   almohada de la litera y la cara entera.
+- **🔁 Segunda vuelta** *(Santi: "el signo de la Z de dormido no está sobre el personaje… al
+  despertarse aparecen tan lejos que llegan a aparecer en otra habitación… cuando
+  duermen sentados no tienen una pose clara")*: la "z" va sobre el dibujo (el sentado
+  se dibuja sobre el asiento, no donde está su caja; el de la litera, sobre la
+  almohada); la litera es siempre la de su camarote (al empatar en distancia elegía a
+  veces la del de al lado, cruzando la pared); al levantarse camina en 0,4 s del
+  mueble a su lugar en vez de aparecer ahí; el que estaba a dos casillas de su asiento
+  queda a una. **Dormido sentado**: echado contra el respaldo, la cabeza caída sobre
+  el pecho (dos puntos) y respira (sube un punto cada 1,4 s).
 - Sigue **P3b**: las variantes (barbas finas en las otras vistas y su capa del
   motor, chaleco, tiradores, la chaqueta corta, cuerpos, el sorteo).
 

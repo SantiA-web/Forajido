@@ -388,7 +388,12 @@ function pasajeroNuevo(r, pa, pies) {
   if (!pa.alive) { tendidoNuevo(r, pa.x, pa.y, { tipo: 'pasajero', modo: 'muerto', sangre: true, espejo: espejoTirado }); return; }
   // Durmiendo en la litera del dormitorio.
   // (La almohada de la litera está a la izquierda: la cabeza va ahí.)
-  if (pa.dormido && pa.cama) { tendidoNuevo(r, pa.cama.x - 6, pa.cama.y, { tipo: 'pasajero', modo: 'cama' }); return; }
+  const ahora = performance.now() / 1000;
+  if (pa.dormido && pa.cama) {
+    tendidoNuevo(r, pa.cama.x - 6, pa.cama.y, { tipo: 'pasajero', modo: 'cama' });
+    pa._p3Desde = { x: pa.cama.x - 6, t: ahora };
+    return;
+  }
 
   const fase = faseDeAndar(pa);
   r.ctx.globalAlpha = 0.25;
@@ -402,14 +407,14 @@ function pasajeroNuevo(r, pa, pies) {
   let angulo = pa.facing;
   if (sentado) nuevo.piernas = 'sentado';
   if (pa.state === 'cowering') { nuevo.piernas = 'agachado'; nuevo.accion = 'quieto'; }
-  if (pa.dormido) nuevo.accion = 'dormido';
+  if (pa.dormido) { nuevo.accion = 'dormido'; nuevo.k = Math.floor(ahora / 1.4) % 2; }
   else if (pa.state === 'amenazado') nuevo.brazos = 'arriba';
   else if (pa.revelando) {
     // Saca el revólver de adentro del saco (los cuadros del desenfundar) y te apunta.
     const d = Math.floor(revelaT / 0.2);
     if (d < 3) { nuevo.arma = 'colt'; nuevo.desenfunda = d; } else { nuevo.arma = 'colt'; nuevo.empuna = revelaT > 0.8 ? 1 : 0; }
   } else if (sentado && pa.state === 'idle' && !(pa.robProgress > 0)) {
-    const A = accionDeDia(pa, performance.now() / 1000);
+    const A = accionDeDia(pa, ahora);
     if (!A) nuevo.accion = 'quieto';
     else if (A.accion === 'ventana') {
       // Mira por la ventana: se da vuelta hacia el vidrio (arriba o abajo del vagón).
@@ -425,7 +430,17 @@ function pasajeroNuevo(r, pa, pies) {
     r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
   }
   // Sentado en el almohadón, la espalda contra el respaldo (que está a la izquierda del asiento).
-  const xDibujo = sentado && pa.asientoX != null ? pa.asientoX + AJUSTE_ASIENTO.x : pa.x;
+  let xDibujo = sentado && pa.asientoX != null ? pa.asientoX + AJUSTE_ASIENTO.x : pa.x;
+  /**
+   * 🐛 AL LEVANTARSE NO SALTA *(Santi: "al despertarse aparecen tan lejos")*: el
+   * que estaba sentado o en la litera (que se dibujan sobre el mueble, no donde
+   * está su caja) camina hasta su lugar en 0,4 s en vez de aparecer ahí.
+   */
+  if (sentado) pa._p3Desde = { x: xDibujo, t: ahora };
+  else if (pa._p3Desde && ahora - pa._p3Desde.t < 0.4) {
+    const t = (ahora - pa._p3Desde.t) / 0.4;
+    xDibujo = pa._p3Desde.x + (pa.x - pa._p3Desde.x) * t;
+  }
   const piesDibujo = sentado && pa.asientoX != null ? pies + AJUSTE_ASIENTO.y : pies;
   const fig = dibujarPersona(r, {
     tipo: 'pasajero', x: xDibujo, pies: piesDibujo, angulo, fase: sentado ? null : fase,
@@ -434,7 +449,7 @@ function pasajeroNuevo(r, pa, pies) {
     sacudida: shake,
     destello: pa.hitFlash > 0,
   });
-  if (pa.dormido) dibujarZ(r, pa.x, fig.arriba);
+  if (pa.dormido) dibujarZ(r, fig.x, fig.arriba);
   if (pa.state === 'amenazado') {
     const c = CONFIG.passenger;
     const queda = Math.max(0, pa.panicTimer / c.robPanicDelay);

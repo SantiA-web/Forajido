@@ -619,9 +619,11 @@ export function tendidoNuevo(r, x, y, o = {}) {
   if (fino) estiloNuevo.marcarGente(ctx, L.img, ox, oy, w, h);
   ctx.restore();
   if (o.modo === 'desmayado' || o.modo === 'cama') {
+    // Arriba de la cabeza (a la izquierda del cuerpo, o a la derecha si está en espejo).
+    const zx = cx + (espejo ? 1 : -1) * 9 - 1;
     const z = ['xxx', '..x', '.x.', 'xxx'];
     z.forEach((fila, i) => {
-      for (let j = 0; j < 3; j++) if (fila[j] !== '.') r.rect(cx - 8 + j, cy - 12 + i, 1, 1, '#c8d8f0');
+      for (let j = 0; j < 3; j++) if (fila[j] !== '.') r.rect(zx + j, cy - 9 + i, 1, 1, '#c8d8f0');
     });
   }
   return L.boca && { x: cx + (espejo ? -1 : 1) * (L.boca[0] - PIES_TENDIDO[0]) * PASO, y: cy + (L.boca[1] - PIES_TENDIDO[1]) * PASO };

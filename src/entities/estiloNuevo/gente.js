@@ -477,12 +477,16 @@ const POSES_SENTADO = {
       adentro2: { lista: [b([[13, 9], [16, 13], [18, 17]]), b([[6, 9], [5, 12], [6, 14]])], cabeza: 1 },
     },
   },
+  // 🔁 Dormido *(Santi: "cuando duermen sentados no tienen una pose clara")*: echado
+  // contra el respaldo (de costado el torso un punto para atrás), la cabeza caída
+  // sobre el pecho (dos puntos abajo; de costado, hacia adelante, y en las otras
+  // vistas, ladeada) y los brazos cruzados.
   dormido: {
-    lado: { lista: [b([[10, 9], [11, 12], [12, 13]]), b([[9, 9], [10, 12], [12, 12]], true)], cabeza: 1 },
-    frente: { lista: [b([[7, 9], [7, 12], [10, 13]]), b([[13, 9], [13, 12], [9, 14]])], cabeza: 1 },
-    espalda: { lista: [b([[13, 9], [14, 12], [12, 13]]), b([[6, 9], [5, 12], [7, 13]])], cabeza: 1 },
-    diagF: { lista: [b([[7, 9], [8, 13], [10, 14]]), b([[13, 9], [13, 12], [12, 13]], true)], cabeza: 1 },
-    diagE: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [7, 13]], true)], cabeza: 1 },
+    lado: { lista: [b([[10, 9], [11, 12], [12, 13]]), b([[9, 9], [10, 12], [12, 12]], true)], cabeza: 2, cabezaX: 2, inclina: -1 },
+    frente: { lista: [b([[7, 9], [7, 12], [10, 13]]), b([[13, 9], [13, 12], [9, 14]])], cabeza: 2, cabezaX: 1 },
+    espalda: { lista: [b([[13, 9], [14, 12], [12, 13]]), b([[6, 9], [5, 12], [7, 13]])], cabeza: 2, cabezaX: -1 },
+    diagF: { lista: [b([[7, 9], [8, 13], [10, 14]]), b([[13, 9], [13, 12], [12, 13]], true)], cabeza: 2, cabezaX: 1, inclina: -1 },
+    diagE: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [7, 13]], true)], cabeza: 2, cabezaX: 1, inclina: -1 },
   },
 };
 /** La maleta y el bolso, en el piso al lado (`[cerrada, abierta]`), por vista. */
@@ -514,7 +518,9 @@ const CUADROS_SENTADO = {
 export function poseSentado(accion, vista, k = 0, lleva = 'maleta') {
   const V = vista === 'lado' || vista === 'frente' || vista === 'espalda' ? vista : null;
   // Dormido, los brazos cruzados y la cabeza caída; sin hacer nada, las manos en la falda.
-  if (accion === 'dormido' || accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: accion === 'dormido' ? 1 : 0 };
+  // Dormido respira: cada tanto la cabeza sube un punto (`k` impar).
+  if (accion === 'dormido') { const D = POSES_SENTADO.dormido[vista]; return { ...D, cabeza: D.cabeza - (k % 2) }; }
+  if (accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0 };
   if (!V || !POSES_SENTADO[accion]) return null;
   let nombre = CUADROS_SENTADO[accion][k % 8];
   const baja1 = nombre.endsWith('+');

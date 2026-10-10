@@ -1157,6 +1157,9 @@ export function buildTrain(
         while (((p.layout[fin + 1] || '')[def.col + dAsiento]) === 'S') fin++;
         pa.asientoBase = (fin + 1) * map.size;
         pa.facing = 0;
+        // Pegado a su asiento (en la casilla de al lado): si estaba a dos, al
+        // pararse aparecía lejos de donde se lo veía sentado.
+        if (dAsiento === -2 && fila[def.col - 1] === '.') pa.x = enTiles([def.col - 1, def.row]).x;
       }
       let h = ((def.col * 73856093) ^ (def.row * 19349663) ^ (t.wagon * 83492791)) >>> 0;
       h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
@@ -1169,6 +1172,12 @@ export function buildTrain(
         for (let r = 0; r < (p.layout || []).length; r++) {
           for (let c = 0; c < p.layout[r].length; c++) {
             if (p.layout[r][c] !== 'S') continue;
+            // 🐛 La de su camarote: sin una pared en el medio (en la fila de él).
+            // Antes, al empatar en distancia, a veces era la del camarote de al
+            // lado, y al despertarse "aparecía" en otra habitación *(Santi)*.
+            const fila0 = p.layout[def.row] || '';
+            const [c1, c2] = c < def.col ? [c, def.col] : [def.col, c];
+            if (fila0.slice(c1, c2 + 1).includes('#')) continue;
             const d = Math.abs(c - def.col) + Math.abs(r - def.row);
             if (!mejor || d < mejor.d) mejor = { c, r, d };
           }

@@ -78,13 +78,30 @@ const CABEZA = {
  * en diagonal de frente (hoja de prueba).
  */
 const PEINADOS = {
+  // 🔁 Al costado: más alto y con volumen hacia un lado, la raya marcada (se
+  // distingue por la silueta) *(Santi: "los cortes de pelo no se distinguen")*.
   costado: {
-    frente: mapa(2, ['........aAAAa', '........AaAAA']),
-    diagF: mapa(2, ['.........aAAAa', '.........AaAAA']),
+    frente: mapa(1, ['..........AAa', '........aAAAAA', '.......aAAaAAAa', '.......a.....a']),
+    diagF: mapa(1, ['...........AAa', '.........aAAAAA', '........aAAaAAAa', '........a......']),
+    lado: mapa(1, ['.........AAa', '.......aAAAAA', '.......aAAAAAA', '.......aa']),
+    diagE: mapa(1, ['.........aAA', '.......aAAAAA', '.......aAAAAAa', '.......aa....a']),
+    espalda: mapa(1, ['.........aAA', '.......aAAAAAa', '.......aAAAAAa', '.......aa...aa']),
   },
+  // Corto: pegado a la cabeza, se ven las sienes.
+  corto: {
+    frente: mapa(2, ['.........aAa', '........aAAAa', '........ppppp']),
+    diagF: mapa(2, ['..........aAa', '.........aAAAa', '........apppp']),
+    lado: mapa(2, ['.........aAa', '........aAAAa', '........appp']),
+    diagE: mapa(2, ['.........aAa', '........aAAAa', '........aAAAp']),
+    espalda: mapa(2, ['.........aAa', '........aAAAa', '........aAAAa']),
+  },
+  // Pelado: arriba la piel, el pelo sólo en las sienes y la nuca.
   pelado: {
     frente: mapa(2, ['.........pPp', '........pPPPp']),
     diagF: mapa(2, ['..........pPp', '.........pPPPp']),
+    lado: mapa(2, ['.........pPp', '........aPPPp']),
+    diagE: mapa(2, ['.........pPp', '........pPPPp', '........aAAAp']),
+    espalda: mapa(2, ['.........pPp', '........pPPPp', '........aAAAa']),
   },
 };
 /**
@@ -120,12 +137,16 @@ export const BARBAS_FINAS = {
       diagF: ['...............', '...............', '...............', '...............', '........BBBBB..', '.......BBbbbB..', '.......B....B..', '.........BbB...', '..........B....'],
     },
     patillas: {
-      frente: ['B.............B', 'BB...........BB', 'BB...........BB', 'Bb...........bB', 'Bb...........bB', '.B...........B.'],
-      diagF: ['.B.............', '.BB............', '.BB............', '.Bb............', '.Bb............', '..B............'],
+      // 🔁 Grandes, como las de San Martín *(Santi)*: anchas, de la sien hasta la
+      // línea de la boca, más gruesas abajo y redondeadas, sin barbilla.
+      frente: ['BB...........BB', 'BBB.........BBB', 'BBB.........BBB', 'BbBB.......BBbB', 'BbBB.......BBbB', 'BbBBB.....BBBbB', 'BBbBB.....BBbBB', '.BBB.......BBB.'],
+      diagF: ['.BB............', '.BBB...........', '.BBB...........', '.BbBB..........', '.BbBB..........', '.BbBBB.........', '.BBbBB.........', '..BBB..........'],
     },
     completa: {
-      frente: ['B.............B', 'B.............B', 'BB...........BB', 'Bb...........bB', 'BbB..BBBBB..BbB', 'BbBBBbbbbbBBBbB', '.BbB.......BbB.', '..BBBbBbBbBBB..', '....BBBBBBB....'],
-      diagF: ['.B.............', '.B.............', '.BB............', '.Bb............', '.BbB...BBBBB...', '.BbBBBBbbbbB...', '..BbB......BB..', '...BBBbBbBbB...', '.....BBBBBB....'],
+      // 🔁 Tupida, sin piel en la barbilla ni en las comisuras *(Santi: "debería
+      // verse más contundente porque queda piel… se nota mucho más en diagonal")*.
+      frente: ['BB...........BB', 'BB...........BB', 'BBB.........BBB', 'BbBB.......BBbB', 'BbBBBBBBBBBBBbB', 'BbBBbbbbbbbBBbB', 'BBbBBbbbbbBBbBB', '.BBbBBBBBBBbBB.', '..BBBBBBBBBBB..'],
+      diagF: ['.BB............', '.BB............', '.BBB...........', '.BbBB..........', '.BbBBBBBBBBBB..', '.BbBBBbbbbbBB..', '.BBbBBBbbbBBB..', '..BBbBBBBBBBB..', '...BBBBBBBBB...'],
     },
   },
   // De a 2×2: la cara de frente mide 7 × 4 cuadrados (y medio).
@@ -165,13 +186,17 @@ const SOMBREROS = {
     diagE: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
     espalda: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
   },
-  // El otro del guardia: chico, con el ala curvada para arriba y echado atrás (se ve el pelo y más cara).
+  // 🔁 El otro del guardia, el de Arthur Morgan sin la soga *(Santi: "la foto de
+  // Arthur Morgan es el sombrero que quiero para los guardias (el curvo), pero
+  // sin la piola. Hoy el sombrero parece más unos cuernitos de toro")*: copa más
+  // alta con el pliegue arriba, ala más ancha que sube en las puntas pegada al
+  // ala (no sueltas, que parecían cuernos). De costado el ala cae adelante y atrás.
   curvo: {
-    frente: mapa(0, ['.........hHk', '......h.hHHHk.k', '......hhbbbbbkk']),
-    diagF: mapa(0, ['..........hHk', '.......h.hHHHk.k', '.......hhbbbbbkk']),
-    lado: mapa(0, ['.........hHk', '......h.hHHHk.k', '......hhbbbbbkk']),
-    diagE: mapa(0, ['.........hHk', '......h.hHHHk.k', '......hhbbbbbkk']),
-    espalda: mapa(0, ['.........hHk', '......h.hHHHk.k', '......hhbbbbbkk']),
+    frente: mapa(0, ['.........hkH', '........hhkHk', '....hh.hhHHHkk.kk', '....hhhhHHHHHkkkk']),
+    diagF: mapa(0, ['..........hkH', '.........hhkHk', '.....hh.hhHHHkk.kk', '.....hhhhHHHHHkkkk']),
+    lado: mapa(0, ['.........hkH', '........hhkHk', '....hhhhHHHHHkkkk', '...x...........x']),
+    diagE: mapa(0, ['.........hkH', '........hhkHk', '....hh.hhHHHkk.kk', '....hhhhHHHHHkkkk']),
+    espalda: mapa(0, ['.........hkH', '........hhkHk', '....hh.hhHHHkk.kk', '....hhhhHHHHHkkkk']),
   },
   // El de paja del civil: ala ancha que cae un poco en las puntas.
   paja: {
@@ -203,11 +228,13 @@ const PANUELO = {
   diagE: mapa(7, ['........rRRSRRr']),
   espalda: mapa(7, ['.......rRRSRRr']),
 };
+// 🔁 Apagados *(Santi: "el amarillo del pañuelo de los civiles parece dorado. Los colores de los pañuelos deberían ser más apagados")*.
 export const COLORES_PANUELO = {
-  rojo: { S: 10, R: 9, r: 8, z: 39 },
-  azul: { S: 20, R: 19, r: 41, z: 18 },
-  amarillo: { S: 29, R: 28, r: 44, z: 5 },
-  verde: { S: 43, R: 27, r: 26, z: 42 },
+  rojo: { S: 9, R: 8, r: 39, z: 0 },
+  azul: { S: 19, R: 41, r: 18, z: 40 },
+  ocre: { S: 6, R: 5, r: 4, z: 3 },
+  verde: { S: 27, R: 26, r: 42, z: 0 },
+  pardo: { S: 15, R: 14, r: 2, z: 1 },
 };
 
 // ------------------------------------------------------------------ torsos
@@ -253,7 +280,7 @@ const PIELES = {
  */
 export const NUNCA = [{ pelo: 'rubio', piel: 'oscura' }];
 const PELOS = {
-  negro: { A: 2, a: 1, B: 1 },
+  negro: { A: 31, a: 0, B: 31 },        // 🔁 neutro: con los negros de la paleta parecía morado
   castano: { A: 4, a: 3, B: 3 },
   rubio: { A: 6, a: 5, B: 5 },
   canas: { A: 15, a: 14, B: 14 },

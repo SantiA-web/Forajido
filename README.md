@@ -35,7 +35,7 @@ dibuja, el juego sigue con el dibujo de hoy: **`F9` prende y apaga la
 prueba** (o abrí el juego con `?nuevo` en la dirección). **Ya están dibujados el
 vagón de pasajeros por dentro**, de día (el sol entra por los ventanales) y de
 noche (los faroles de la pared), **y vos adentro del vagón**, en las 8
-direcciones, corriendo, agachado y con las tres armas (el revólver con el codo doblado, y el brazo recto cuando apuntás con clic derecho o disparás); lo demás todavía es el dibujo viejo pasado por
+direcciones, corriendo, agachado y con las tres armas (el revólver con el codo doblado, y el brazo recto cuando apuntás con clic derecho o disparás); **los guardias comunes** (con el uniforme bordó y la estrella: el revólver en la funda mientras patrullan, lo sacan al pelear; sentados de franco con las cartas, rendidos de rodillas, tirados en el piso) **y los pasajeros** (sentados leyendo el diario, barajando, mirando por la ventana o revisando la maleta; de noche, dormidos); lo demás todavía es el dibujo viejo pasado por
 la grilla y la paleta, y se ve tosco: cada etapa lo va reemplazando. El plan está en NOTAS-DISENO.md, "EL ESTILO NUEVO".
 
 ## La vista: tres cuartos (en construcción)
@@ -267,6 +267,12 @@ mostrar no se escribe, igual que el aro del ruido o la marca del salto.
 > paisaje — se roba igual. El asalto no cambia nunca, y tiene sentido: adentro
 > de un vagón la hora no se ve. Los trenes nocturnos de verdad, con la escolta
 > dormida y todo lo demás, son una vuelta aparte.
+
+**De noche, la mayoría de los pasajeros duerme** (tres de cada cuatro): sentados
+o en la litera del dormitorio, con una "z" encima. **El que duerme no te ve**, así
+que de noche se puede cruzar un vagón entero y robarlo sin que nadie grite. Pero
+**un tiro o una explosión los despiertan a todos, asustados**, un grito cerca los
+despierta, y el que estás robando abre los ojos con el revólver en la cara.
 
 **Y el pueblo tiene cielo.** De día es un azul polvoriento que se va aclarando
 hacia el horizonte, con una loma detrás de las fachadas; de noche el mismo cielo

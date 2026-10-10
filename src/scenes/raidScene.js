@@ -239,6 +239,13 @@ export function createRaidScene(services) {
     map = train.map;
     player = train.player;
 
+    // 🆕 De noche, la mayoría de los pasajeros duerme (ver CONFIG.passenger.dormidos).
+    if (!gameState.esDeDia) {
+      for (const pa of train.passengers) {
+        if (!pa.encubierto && rng.next() < CONFIG.passenger.dormidos) pa.dormido = true;
+      }
+    }
+
     /**
      * 🔬 EL BANCO DE PRUEBAS, igual que el de la huida: sólo con `prueba`, y
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
@@ -1398,6 +1405,10 @@ export function createRaidScene(services) {
       bus.on('scream', ({ x, y, radius }) => {
         for (const e of enemies) {
           if (distance(e.x, e.y, x, y) <= radius) alertTo(e, x, y);
+        }
+        // El grito despierta a los que duermen cerca (sin asustarlos: si no te ven, se quedan sentados).
+        for (const pa of passengers) {
+          if (pa.dormido && distance(pa.x, pa.y, x, y) <= CONFIG.passenger.despiertaGrito) pa.dormido = false;
         }
       }),
 

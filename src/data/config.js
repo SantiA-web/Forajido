@@ -1422,6 +1422,18 @@ export const CONFIG = {
     robTime: 1.4,          // lo que tarda en aflojar la plata
     robMin: 25, robMax: 70,
     robPanicDelay: 4.0,    // y después de soltarlo, cuánto tarda en gritar
+
+    /**
+     * 🆕 DE NOCHE DUERMEN (P3a) *(Santi: "cuando es de noche la mayoría de los
+     * civiles van durmiendo sentados o en el dormitorio"; eligió 75% de
+     * 60/75/90 y la B)*: el dormido no ve nada; un tiro o una explosión
+     * (`noise`) lo despiertan asustado, como a los despiertos; un grito a menos
+     * de `despiertaGrito` lo despierta sin asustarlo (si no te ve, sigue
+     * sentado); y si le robás, se despierta con las manos arriba. El civil
+     * encubierto no duerme: finge.
+     */
+    dormidos: 0.75,
+    despiertaGrito: 120,
   },
 
   /**

@@ -229,7 +229,7 @@ export function dibujarPersona(r, f) {
    * el dibujo viejo hasta que llegue su paso *(Santi eligió meterlo al juego
    * antes de terminar las poses, para ir probando)*.
    */
-  if (estiloNuevo.activo && f.interior && f.nuevo && f.tipo === 'guardia' && ((f.postura || 'pie') === 'pie' || f.nuevo.piernas) && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
+  if (estiloNuevo.activo && f.interior && f.nuevo && (f.tipo === 'guardia' || f.tipo === 'pasajero') && ((f.postura || 'pie') === 'pie' || f.nuevo.piernas) && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
   const tipo = ROPA[f.tipo] ? f.tipo : 'guardia';
   const [nombre, fn, g, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const postura = f.postura || 'pie';
@@ -553,7 +553,9 @@ function jugadorNuevo(r, f) {
   const armaNueva = gente ? arma : arma === 'revolver' ? (f.armaId === 'smith' ? 'smith' : 'colt') : arma;
   const a = f.angulo ?? 0;
   const ang = espejo ? Math.PI - a : a;
-  const x = Math.round(f.x / PASO) * PASO, pies = Math.round(f.pies / PASO) * PASO;
+  // La sacudida (el que tiembla de miedo), de a un punto.
+  const x = Math.round((f.x + (gente ? Math.sign(f.sacudida || 0) * PASO * (Math.abs(f.sacudida || 0) > 0.3 ? 1 : 0) : 0)) / PASO) * PASO;
+  const pies = Math.round(f.pies / PASO) * PASO;
   // Nunca más oscuro que un escalón: a vos te tenés que ver siempre, aunque
   // estés lejos de los faroles.
   // (A los demás, no: un guardia en la penumbra se ve en la penumbra.)
@@ -575,7 +577,7 @@ function jugadorNuevo(r, f) {
   // el dibujo: la bala sale hacia donde apuntás, como siempre.
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
-    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, bandera: !!gente.bandera, fino }, luz, !!f.destello)
+    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fino }, luz, !!f.destello)
     : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
@@ -616,7 +618,7 @@ export function tendidoNuevo(r, x, y, o = {}) {
   ctx.drawImage(L.img, ox, oy, w, h);
   if (fino) estiloNuevo.marcarGente(ctx, L.img, ox, oy, w, h);
   ctx.restore();
-  if (o.modo === 'desmayado') {
+  if (o.modo === 'desmayado' || o.modo === 'cama') {
     const z = ['xxx', '..x', '.x.', 'xxx'];
     z.forEach((fila, i) => {
       for (let j = 0; j < 3; j++) if (fila[j] !== '.') r.rect(cx - 8 + j, cy - 12 + i, 1, 1, '#c8d8f0');

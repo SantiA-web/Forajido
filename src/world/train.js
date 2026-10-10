@@ -1130,6 +1130,42 @@ export function buildTrain(
       const pa = createPassenger(pos.x, pos.y, FACINGS[def.facing] ?? Math.PI);
       pa.wagon = t.wagon;
       /**
+       * 🎨 PARA EL DIBUJO NUEVO (P3a), sin tocar el sorteo del tren: si está en
+       * un asiento (hay un respaldo 'S' a dos casillas en su fila), qué lleva
+       * (la maleta, el bolso, el diario, el mazo: sale de dónde está sentado,
+       * siempre igual) y, en el dormitorio, dónde está su litera.
+       */
+      const fila = (p.layout || [])[def.row] || '';
+      const esCama = p.mueble === 'cama';
+      // El asiento más cercano de su fila: ahí se lo dibuja sentado (la caja con la que choca no se mueve).
+      const dAsiento = [-1, 1, -2, 2].find((d) => fila[def.col + d] === 'S');
+      pa.sentado = !esCama && dAsiento !== undefined;
+      if (pa.sentado) pa.asientoX = enTiles([def.col + dAsiento, def.row]).x;
+      let h = ((def.col * 73856093) ^ (def.row * 19349663) ^ (t.wagon * 83492791)) >>> 0;
+      h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+      h = (h ^ (h >>> 13)) >>> 0;
+      pa.lleva = ['maleta', 'bolso', null][h % 3];
+      pa.diario = (h >> 3) % 2 === 0;
+      pa.mazo = (h >> 5) % 3 === 0;
+      if (esCama) {
+        let mejor = null;
+        for (let r = 0; r < (p.layout || []).length; r++) {
+          for (let c = 0; c < p.layout[r].length; c++) {
+            if (p.layout[r][c] !== 'S') continue;
+            const d = Math.abs(c - def.col) + Math.abs(r - def.row);
+            if (!mejor || d < mejor.d) mejor = { c, r, d };
+          }
+        }
+        if (mejor) {
+          // El medio de la litera de 2×2 que empieza en esa casilla.
+          const L = p.layout;
+          const c0 = L[mejor.r][mejor.c - 1] === 'S' ? mejor.c - 1 : mejor.c;
+          const r0 = (L[mejor.r - 1] || '')[mejor.c] === 'S' ? mejor.r - 1 : mejor.r;
+          const a = enTiles([c0, r0]), z = enTiles([c0 + 1, r0 + 1]);
+          pa.cama = { x: (a.x + z.x) / 2, y: (a.y + z.y) / 2 };
+        }
+      }
+      /**
        * UN RICO DE PRIMERA CLASE (`rico: true` en la plantilla). Lleva los
        * números del paquete de siempre (`PAQUETES.pasajeroRico`), que quedó
        * apagado cuando los ricos se mudaron a su vagón: una sola fuente para

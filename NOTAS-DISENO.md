@@ -18331,7 +18331,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
-| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a 🔨 (paso 1 ✅) |
+| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ (sin jugar) · sigue P3b |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
@@ -18749,7 +18749,27 @@ Primera clase y las mujeres quedan para después.
   con un brazo y una pierna abiertos, **desmayado** derecho que respira, **caído**
   con el sombrero puesto apuntando con el arma dibujada en esa dirección. El arma
   larga del de franco, colgada, todavía no se ve.
-- Siguen: el pasajero (paso 5 del plan).
+- **✅ Paso 5, el pasajero** (bombín y pañuelo azul, sin funda): **sentado** contra el
+  respaldo (de costado en el vagón de pasajeros, de frente o de espaldas en el
+  comedor), y **de día hace algo** con lo que lleva (sale de dónde está sentado,
+  siempre igual, sin tocar el sorteo del tren): **mirar por la ventana** (se da
+  vuelta hacia el vidrio), **leer el diario**, **barajar** y **revisar la maleta o el
+  bolso** en el piso, cada una en 8 cuadros puestos a mano en las tres vistas en que
+  se sienta. **De noche duerme** sentado (brazos cruzados, la cabeza caída y la "z")
+  o **en la litera** del dormitorio, tapado con la frazada; el despierto del
+  dormitorio queda de pie, como antes. Manos arriba cuando lo asaltás (sentado o de
+  pie), tiembla en el pánico, corre al huir, se agacha acurrucado, tirado muerto
+  como el guardia, y el **encubierto** saca el revólver con los cuadros del
+  desenfundar. **El dormido, en el juego** (vale también sin [F9]: con el dibujo
+  viejo lleva la "z"): no ve nada; lo despiertan un tiro o una explosión (asustado),
+  un grito a menos de 120 (sin asustarlo) o que le empieces a robar; el encubierto
+  no duerme. Probado: el dormido no te ve a 32; despierto, te ve y huye.
+- **✅ P3a cerrada en el juego** (falta que Santi la juegue). Pendiente chico: el arma
+  larga del guardia de franco, colgada, no se ve; el rico de primera clase sigue con
+  el dibujo viejo; asomarse desde el reparo hace que el cuerpo se deslice de costado
+  (el guardia se corre de verdad para tirar).
+- Sigue **P3b**: las variantes (barbas finas en las otras vistas y su capa del
+  motor, chaleco, tiradores, la chaqueta corta, cuerpos, el sorteo).
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

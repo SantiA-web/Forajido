@@ -1247,9 +1247,23 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    * Los brazos en otra pose (ver BRAZOS): reemplazan a los de siempre. Dos de
    * ancho (el de afuera al sol, el de allá en sombra) y la mano de 2×2.
    */
-  const BR = brazos ? BRAZOS[brazos][vista] : null;
+  /**
+   * `brazos` puede ser el nombre de una pose (BRAZOS) o una pose armada por
+   * quien dibuja (las cosas que hacen los pasajeros, ver gente.js): `lista`
+   * los brazos, `props` lo que tiene en la mano o al lado (`m` el mapa,
+   * `tabla` sus colores, `capa` 'fondo' detrás del cuerpo o 'frente' delante
+   * de todo, `piso` si está en el piso y no se mueve con el cuerpo),
+   * `inclina` cuánto se echa adelante y `cabeza` cuánto baja la cabeza.
+   */
+  const BRo = brazos ? (typeof brazos === 'string' ? { lista: BRAZOS[brazos][vista] } : brazos) : null;
+  const BR = BRo && BRo.lista;
+  const bi = BRo ? (vista === 'lado' || vista.startsWith('diag') ? BRo.inclina || 0 : 0) : 0;
+  const bc = BRo ? BRo.cabeza || 0 : 0;
+  const props = (capa) => (BRo && BRo.props || []).forEach((p) => {
+    if ((p.capa || 'frente') === capa) dibujarMapa(p.m, p.piso ? 0 : baja, p.piso ? 0 : inclina + lomo + bi, p.tabla);
+  });
   const brazoPose = (b, i) => {
-    const pts = b.p.map(([x, y]) => [x + inclina + lomo, y + baja]);
+    const pts = b.p.map(([x, y]) => [x + inclina + lomo + bi, y + baja]);
     const trazo = (x, y) => { poner(x, y, b.atras ? C.c : C.L); poner(x + 1, y, b.atras ? C.c : C.C); };
     linea(pts[0], pts[1], trazo);
     linea(pts[1], pts[2], trazo);
@@ -1260,18 +1274,20 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   };
   if (BR) {
     BR.forEach((b, i) => { if (b.atras) brazoPose(b, i); });
+    props('fondo');
     if (vista === 'lado' && mochila) dibujarMochila();
     const PB = V.piernas[piernas] || V.piernas.quieto;
     dibujarMapa(PB);
     if (baja < 0 || baja === 2) dibujarMapa({ y: PB.y - 1, filas: [PB.filas[0]] });
-    dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
-    if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo, COLOR_ARMA);
+    dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0));
+    if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo + bi, COLOR_ARMA);
     const cartasAntes = brazos === 'cartas';
-    if (!cartasAntes) for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY, inclina + cabezaX);
+    if (!cartasAntes) for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY + bc, inclina + cabezaX + bi);
     if (vaina) dibujarVaina();
     BR.forEach((b, i) => { if (!b.atras) brazoPose(b, i); });
     if (cartasAntes && CARTAS[vista]) dibujarMapa(CARTAS[vista], baja, inclina + lomo, { L: 30, k: 9 });
-    if (cartasAntes) for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY, inclina + cabezaX);
+    if (cartasAntes) for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, baja + cabezaY + bc, inclina + cabezaX + bi);
+    props('frente');
   } else {
   if (vista === 'lado') { if (TJ) { if (!TJ.delante) brazoCuchillo(); } else if (larga) brazoIzqLarga(); else brazoLibre(); }
   // En diagonal de frente, el brazo libre (el izquierdo) es el de allá: detrás del cuerpo.

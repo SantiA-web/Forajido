@@ -10,7 +10,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar } from './figura.js';
+import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, tendidoNuevo } from './figura.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { moveAndCollide, distance, hasLineOfSight, angleDifference } from '../engine/collision.js';
 import { isHidden } from './player.js';
 import {
@@ -143,6 +144,8 @@ function actualizarEncubierto(pa, dt, world) {
 /** Lo llama la escena cuando pasa algo que asusta (un disparo cerca). */
 export function panic(pa) {
   if (!pa.alive) return;
+  // Un tiro o una explosión despiertan al que dormía, asustado (ver CONFIG.passenger.dormidos).
+  pa.dormido = false;
   // Al que ya asaltaste también lo puede sobresaltar un tiro: deja de estar
   // paralizado y arranca a gritar antes de tiempo.
   if (pa.state !== 'idle' && pa.state !== 'amenazado') return;
@@ -197,6 +200,16 @@ export function updatePassenger(pa, dt, world) {
    * encañonás).
    */
   if (pa.encubierto && actualizarEncubierto(pa, dt, world)) return;
+
+  /**
+   * 🆕 DORMIDO (de noche, ver CONFIG.passenger.dormidos): no ve nada. Lo
+   * despiertan un tiro o una explosión (`panic`), un grito cerca (la escena) o
+   * que le empieces a robar: ahí abre los ojos con el revólver en la cara.
+   */
+  if (pa.dormido) {
+    if (pa.robProgress > 0) pa.dormido = false;
+    else return;
+  }
 
   /**
    * MIENTRAS LE ESTÁS APUNTANDO NO SE MUEVE, esté haciendo lo que esté haciendo.
@@ -315,6 +328,106 @@ function seesBody(pa, world, c) {
   return world.enemies.some(check) || world.passengers.some(check);
 }
 
+/**
+ * 🆕 QUÉ ESTÁ HACIENDO SENTADO, DE DÍA (P3a) *(Santi eligió la B: cada 6 a 12 s
+ * hace algo durante 3 a 6 s)*: mirar por la ventana, leer el diario, barajar o
+ * revisar el equipaje, sólo lo que tiene que ver con lo que lleva. Es sólo
+ * dibujo (no cambia lo que ve), así que corre con el reloj de la pantalla y se
+ * guarda en `_p3`, que nada del juego lee. Los 8 cuadros: dos para empezar
+ * (0,15 s cada uno), del 2 al 6 en vuelta mientras dura (0,35 s cada uno) y dos
+ * para terminar.
+ */
+function accionDeDia(pa, ahora) {
+  const s = pa._p3 || (pa._p3 = { accion: null, hasta: ahora + 1 + Math.random() * 10 });
+  if (ahora >= s.hasta) {
+    if (s.accion) { s.accion = null; s.hasta = ahora + 6 + Math.random() * 6; }
+    else {
+      const hay = ['ventana'];
+      if (pa.diario) hay.push('diario');
+      if (pa.mazo) hay.push('barajar');
+      if (pa.lleva) hay.push('equipaje');
+      s.accion = hay[Math.floor(Math.random() * hay.length)];
+      s.desde = ahora;
+      s.hasta = ahora + 3 + Math.random() * 3;
+    }
+  }
+  if (!s.accion) return null;
+  const t = ahora - s.desde, queda = s.hasta - ahora;
+  const k = t < 0.15 ? 0 : t < 0.3 ? 1 : queda < 0.15 ? 0 : queda < 0.3 ? 7 : 2 + (Math.floor((t - 0.3) / 0.35) % 5);
+  return { accion: s.accion, k, girando: t < 0.3 || queda < 0.3 };
+}
+
+/** La "z" del que duerme, encima de la cabeza; sube despacio. */
+function dibujarZ(r, x, arriba) {
+  const sube = Math.floor((performance.now() / 600) % 3);
+  const z = ['xxx', '..x', '.x.', 'xxx'];
+  z.forEach((filaZ, i) => {
+    for (let j = 0; j < 3; j++) if (filaZ[j] !== '.') r.rect(x + 4 + j, arriba - 4 - sube + i, 1, 1, '#c8d8f0');
+  });
+}
+
+/** 🎨 EL PASAJERO CON EL DIBUJO NUEVO (P3a). */
+function pasajeroNuevo(r, pa, pies) {
+  const espejoTirado = (Math.floor(pa.x / 3) & 1) === 1;
+  if (!pa.alive) { tendidoNuevo(r, pa.x, pa.y, { tipo: 'pasajero', modo: 'muerto', sangre: true, espejo: espejoTirado }); return; }
+  // Durmiendo en la litera del dormitorio.
+  if (pa.dormido && pa.cama) { tendidoNuevo(r, pa.cama.x, pa.cama.y, { tipo: 'pasajero', modo: 'cama', espejo: pa.cama.x > pa.x }); return; }
+
+  const fase = faseDeAndar(pa);
+  r.ctx.globalAlpha = 0.25;
+  r.box(pa.x, pies, 4, 2, '#000');
+  r.ctx.globalAlpha = 1;
+  const tiembla = pa.state === 'panic' || pa.state === 'amenazado';
+  const shake = tiembla ? Math.sin(pa.shakeTimer * 40) * 1 : 0;
+  const revelaT = pa.revelando ? Math.min(1, pa.revelaProgreso / ENCUBIERTO_DURACION) : 0;
+  const sentado = pa.sentado && (pa.state === 'idle' || pa.state === 'amenazado' || pa.state === 'panic') && !pa.revelando;
+  const nuevo = { arma: null, funda: false };
+  let angulo = pa.facing;
+  if (sentado) nuevo.piernas = 'sentado';
+  if (pa.state === 'cowering') { nuevo.piernas = 'agachado'; nuevo.accion = 'quieto'; }
+  if (pa.dormido) nuevo.accion = 'dormido';
+  else if (pa.state === 'amenazado') nuevo.brazos = 'arriba';
+  else if (pa.revelando) {
+    // Saca el revólver de adentro del saco (los cuadros del desenfundar) y te apunta.
+    const d = Math.floor(revelaT / 0.2);
+    if (d < 3) { nuevo.arma = 'colt'; nuevo.desenfunda = d; } else { nuevo.arma = 'colt'; nuevo.empuna = revelaT > 0.8 ? 1 : 0; }
+  } else if (sentado && pa.state === 'idle' && !(pa.robProgress > 0)) {
+    const A = accionDeDia(pa, performance.now() / 1000);
+    if (!A) nuevo.accion = 'quieto';
+    else if (A.accion === 'ventana') {
+      // Mira por la ventana: se da vuelta hacia el vidrio (arriba o abajo del vagón).
+      const arriba = pa.y < 5 * CONFIG.tileSize;
+      const vidrio = arriba ? -Math.PI / 2 : Math.PI / 2;
+      angulo = A.girando ? Math.atan2(Math.sin(vidrio), Math.cos(pa.facing) >= 0 ? 1 : -1) : vidrio;
+      nuevo.accion = 'quieto';
+    } else { nuevo.accion = A.accion; nuevo.k = A.k; nuevo.lleva = pa.lleva; }
+  } else if (sentado) nuevo.accion = 'quieto';
+
+  // Hacia dónde mira, en el piso (sólo el despierto y tranquilo: el que duerme no ve).
+  if (pa.state === 'idle' && !pa.dormido) {
+    r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
+  }
+  // Sentado, apoyado contra el respaldo: corrido 3 hacia el asiento (encima del asiento, el respaldo lo tapaba entero).
+  const xDibujo = sentado && pa.asientoX != null ? pa.x + Math.sign(pa.asientoX - pa.x) * 3 : pa.x;
+  const fig = dibujarPersona(r, {
+    tipo: 'pasajero', x: xDibujo, pies, angulo, fase: sentado ? null : fase,
+    modo: pa.state === 'fleeing' ? 'trotar' : 'caminar',
+    interior: true, nuevo,
+    sacudida: shake,
+    destello: pa.hitFlash > 0,
+  });
+  if (pa.dormido) dibujarZ(r, pa.x, fig.arriba);
+  if (pa.state === 'amenazado') {
+    const c = CONFIG.passenger;
+    const queda = Math.max(0, pa.panicTimer / c.robPanicDelay);
+    r.rect(pa.x - 5, fig.arriba - 4, 10, 2, '#241c18');
+    r.rect(pa.x - 5, fig.arriba - 4, 10 * queda, 2, queda > 0.4 ? CONFIG.colors.bagLoot : CONFIG.colors.enemyAlert);
+  }
+  if (revelaT > 0.5) dibujarAviso(r, pa.x, fig.arriba, 'alerta');
+  else if (pa.state === 'panic') r.text('!', pa.x, fig.arriba - 5, '#ff8a5c');
+  else if (pa.state === 'fleeing') r.text('!', pa.x, fig.arriba - 5, '#ffd0b0');
+}
+
 export function drawPassenger(r, pa) {
   const col = CONFIG.colors;
   /**
@@ -328,6 +441,9 @@ export function drawPassenger(r, pa) {
    */
   const pies = pa.y + pa.hh;
   const tipo = pa.botin ? 'rico' : 'pasajero';
+
+  // 🎨 Con el dibujo nuevo (P3a, [F9]): el pasajero común (el rico sigue con el viejo hasta primera clase).
+  if (estiloNuevo.activo && tipo === 'pasajero' && r.ctx) { pasajeroNuevo(r, pa, pies); return; }
 
   if (!pa.alive) {
     dibujarTendido(r, pa.x, pa.y, { tipo, sangre: true, cinta: pa.botin ? '#a050c0' : '#3fa870' });
@@ -360,7 +476,7 @@ export function drawPassenger(r, pa) {
   // Hacia dónde mira, en el piso: hay que poder leerlo para rodearlo por atrás.
   // El cuerpo ya mira hacia un lado, pero ocho direcciones siguen siendo
   // gruesas para saber si te ve o no; la raya dice el ángulo exacto.
-  if (pa.state === 'idle') {
+  if (pa.state === 'idle' && !pa.dormido) {
     r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
   }
 
@@ -395,4 +511,6 @@ export function drawPassenger(r, pa) {
   if (revelaT > 0.5) dibujarAviso(r, pa.x, fig.arriba, 'alerta');
   else if (pa.state === 'panic') r.text('!', pa.x, fig.arriba - 5, '#ff8a5c');
   else if (pa.state === 'fleeing') r.text('!', pa.x, fig.arriba - 5, '#ffd0b0');
+  // Con el dibujo viejo no se lo ve dormido: la "z" lo dice.
+  if (pa.dormido) dibujarZ(r, pa.x, fig.arriba);
 }

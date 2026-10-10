@@ -383,7 +383,153 @@ export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'ca
  * la boca del caño y el hombro.
  */
 export function cuadroGente(o) {
-  return cuadroJugador({ piernas: 'quieto', ang: 0, ...o, persona: capasPersona(o) });
+  // Lo que hace sentado (`accion`, ver poseSentado) se arma acá: así se guarda por nombre.
+  const brazos = o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva) : o.brazos;
+  return cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona: capasPersona(o) });
+}
+
+// ------------------------------------------------- lo que hacen sentados
+/**
+ * 🆕 LO QUE HACEN LOS PASAJEROS SENTADOS (P3a) *(Santi: "cuando sea de día y
+ * vayan sentados tengan algunos movimientos como mirar por la ventana,
+ * revisar su equipaje (bolso, maleta), leer el diario, barajar un mazo de
+ * cartas para cortar el aburrimiento")*. Cada una en 8 cuadros, puestos a mano
+ * en las tres vistas en que se sientan (de costado en el vagón de pasajeros;
+ * de frente y de espaldas en el dormitorio): dónde van los brazos (hombro →
+ * codo → mano) y la cosa que tienen (el diario, el mazo, la maleta o el bolso).
+ * Mirar por la ventana no tiene dibujo propio: se dan vuelta hacia el vidrio
+ * (ver drawPassenger).
+ *
+ *  diario   0 en la falda, 1 lo levanta, 2-4 lee (sube y baja apenas), 5 da
+ *           vuelta la hoja, 6 lee, 7 lo baja.
+ *  barajar  0 el mazo junto, 1 lo abre en dos, 2 las cartas caen de una mano a
+ *           la otra; y otra vez (3-5); 6-7 lo junta.
+ *  equipaje la maleta o el bolso en el piso, al lado: 0 sentado, 1 se agacha,
+ *           2 la abre, 3-5 revuelve adentro (la mano va y viene), 6 la cierra,
+ *           7 vuelve.
+ *  dormido  sentado, los brazos cruzados y la cabeza caída (no se mueve: el
+ *           que duerme lleva la "z" encima). `quieto`: igual pero despierto.
+ */
+const PAPEL = { P: 17, p: 16, l: 24 };
+const NAIPES = { L: 30, k: 9 };
+const CUERO_MALETA = { J: 35, M: 34, m: 33, h: 32, n: 31, y: 28 };
+const CUERO_BOLSO = { J: 5, M: 4, m: 3, h: 32, n: 31, y: 28 };
+const b = (p, atras) => ({ p, atras });
+const POSES_SENTADO = {
+  diario: {
+    lado: {
+      regazo: { lista: [b([[10, 9], [11, 12], [12, 14]]), b([[9, 9], [10, 12], [13, 14]], true)], papel: mapa(14, ['............pPPPp']) },
+      medio: { lista: [b([[10, 9], [11, 12], [12, 11]]), b([[9, 9], [10, 12], [13, 11]], true)], papel: mapa(9, ['.............PP', '.............Pl', '.............PP', '.............Pl', '.............pp']) },
+      arriba: { lista: [b([[10, 9], [11, 12], [12, 9]]), b([[9, 9], [10, 11], [13, 8]], true)], papel: mapa(4, ['.............PP', '.............Pl', '.............PP', '.............Pl', '.............PP', '.............Pl', '.............PP', '.............pp']) },
+      hoja: { lista: [b([[10, 9], [11, 12], [12, 9]]), b([[9, 9], [10, 11], [14, 7]], true)], papel: mapa(4, ['.............PPPP', '.............PlPl', '.............PPPP', '.............PlPl', '.............PPPP', '.............PlPl', '.............PPpp', '.............pp']) },
+    },
+    frente: {
+      regazo: { lista: [b([[7, 9], [7, 12], [8, 15]]), b([[13, 9], [13, 12], [11, 15]])], papel: mapa(16, ['........PPPP']) },
+      medio: { lista: [b([[7, 9], [5, 12], [5, 11]]), b([[13, 9], [15, 12], [14, 11]])], papel: mapa(10, ['.......PPPPPPP', '.......PlllllP', '.......PPPPPPP', '.......PlllllP', '.......ppppppp']) },
+      arriba: { lista: [b([[7, 9], [4, 11], [4, 8]]), b([[13, 9], [16, 11], [15, 8]])], papel: mapa(5, ['......PPPPPPPPP', '......PlllPlllP', '......PPPPPPPPP', '......PlllPlllP', '......PPPPPPPPP', '......PlllPlllP', '......PPPPPPPPP', '......PlllPlllP', '......ppppppppp']) },
+      hoja: { lista: [b([[7, 9], [4, 11], [4, 8]]), b([[13, 9], [16, 11], [15, 7]])], papel: mapa(5, ['......PPPPPPPpp', '......PlllPlppP', '......PPPPPPpPP', '......PlllPlplP', '......PPPPPPpPP', '......PlllPlplP', '......PPPPPPpPP', '......PlllPlplP', '......ppppppppp']) },
+    },
+    espalda: {
+      regazo: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [6, 14]])] },
+      medio: { lista: [b([[13, 9], [15, 12], [14, 11]]), b([[6, 9], [4, 12], [5, 11]])] },
+      // De espaldas, el diario abierto delante de la cara asoma a los dos lados de la cabeza y por encima de los hombros.
+      arriba: { lista: [b([[13, 9], [16, 10], [17, 7]]), b([[6, 9], [3, 10], [2, 7]])], papel: mapa(3, ['..pPPPPPPPPPPPPPPp', '..pPlllPPPPPPlllPp', '..pPPPPPPPPPPPPPPp', '..pPlllPPPPPPlllPp', '..pPPPPPPPPPPPPPPp', '..pPlllPPPPPPlllPp', '..pppppppppppppppp']), fondo: true },
+      hoja: { lista: [b([[13, 9], [16, 10], [17, 6]]), b([[6, 9], [3, 10], [2, 7]])], papel: mapa(3, ['..pPPPPPPPPPPPPPpp', '..pPlllPPPPPPllppP', '..pPPPPPPPPPPPPpPP', '..pPlllPPPPPPllpPP', '..pPPPPPPPPPPPPpPP', '..pPlllPPPPPPllpPP', '..pppppppppppppppp']), fondo: true },
+    },
+  },
+  barajar: {
+    lado: {
+      junto: { lista: [b([[10, 9], [11, 12], [13, 13]]), b([[9, 9], [10, 12], [12, 12]], true)], cartas: mapa(11, ['.............Lk', '.............LL']) },
+      abierto: { lista: [b([[10, 9], [12, 12], [15, 13]]), b([[9, 9], [10, 12], [11, 12]], true)], cartas: mapa(11, ['...........LL..Lk', '...........LL..LL']) },
+      cayendo: { lista: [b([[10, 9], [12, 12], [15, 13]]), b([[9, 9], [10, 12], [11, 12]], true)], cartas: mapa(10, ['.............L', '...........LL..Lk', '...........LL..LL']) },
+    },
+    frente: {
+      junto: { lista: [b([[7, 9], [7, 12], [8, 14]]), b([[13, 9], [13, 12], [11, 14]])], cartas: mapa(12, ['.........LkL', '.........LLL']) },
+      abierto: { lista: [b([[7, 9], [6, 12], [6, 14]]), b([[13, 9], [14, 12], [13, 14]])], cartas: mapa(12, ['......LL.....LL', '......Lk.....LL']) },
+      cayendo: { lista: [b([[7, 9], [6, 12], [6, 14]]), b([[13, 9], [14, 12], [13, 14]])], cartas: mapa(11, ['.........LL', '......LL.....LL', '......Lk.....LL']) },
+    },
+    espalda: {
+      junto: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [6, 14]])] },
+      abierto: { lista: [b([[13, 9], [15, 12], [14, 14]]), b([[6, 9], [4, 12], [5, 14]])] },
+      cayendo: { lista: [b([[13, 9], [15, 12], [14, 14]]), b([[6, 9], [4, 12], [5, 14]])] },
+    },
+  },
+  equipaje: {
+    lado: {
+      quieto: { lista: [b([[10, 9], [11, 12], [13, 14]]), b([[9, 9], [10, 12], [12, 13]], true)] },
+      baja: { lista: [b([[10, 9], [13, 13], [16, 16]]), b([[9, 9], [10, 12], [12, 13]], true)], inclina: 1, cabeza: 1 },
+      abre: { lista: [b([[10, 9], [13, 13], [17, 17]]), b([[9, 9], [10, 12], [12, 13]], true)], inclina: 1, cabeza: 1 },
+      adentro: { lista: [b([[10, 9], [14, 14], [18, 18]]), b([[9, 9], [10, 12], [12, 13]], true)], inclina: 1, cabeza: 1 },
+      adentro2: { lista: [b([[10, 9], [14, 14], [19, 18]]), b([[9, 9], [10, 12], [12, 13]], true)], inclina: 1, cabeza: 1 },
+    },
+    frente: {
+      quieto: { lista: [b([[7, 9], [7, 12], [8, 15]]), b([[13, 9], [13, 12], [11, 15]])] },
+      baja: { lista: [b([[7, 9], [7, 12], [8, 15]]), b([[13, 9], [15, 12], [16, 15]])], cabeza: 1 },
+      abre: { lista: [b([[7, 9], [7, 12], [8, 15]]), b([[13, 9], [15, 12], [16, 16]])], cabeza: 1 },
+      adentro: { lista: [b([[7, 9], [7, 12], [8, 15]]), b([[13, 9], [16, 13], [16, 17]])], cabeza: 1 },
+      adentro2: { lista: [b([[7, 9], [7, 12], [8, 15]]), b([[13, 9], [16, 13], [18, 17]])], cabeza: 1 },
+    },
+    espalda: {
+      quieto: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [6, 14]])] },
+      baja: { lista: [b([[13, 9], [15, 12], [16, 15]]), b([[6, 9], [5, 12], [6, 14]])], cabeza: 1 },
+      abre: { lista: [b([[13, 9], [15, 12], [16, 16]]), b([[6, 9], [5, 12], [6, 14]])], cabeza: 1 },
+      adentro: { lista: [b([[13, 9], [16, 13], [16, 17]]), b([[6, 9], [5, 12], [6, 14]])], cabeza: 1 },
+      adentro2: { lista: [b([[13, 9], [16, 13], [18, 17]]), b([[6, 9], [5, 12], [6, 14]])], cabeza: 1 },
+    },
+  },
+  dormido: {
+    lado: { lista: [b([[10, 9], [11, 12], [12, 13]]), b([[9, 9], [10, 12], [12, 12]], true)], cabeza: 1 },
+    frente: { lista: [b([[7, 9], [7, 12], [10, 13]]), b([[13, 9], [13, 12], [9, 14]])], cabeza: 1 },
+    espalda: { lista: [b([[13, 9], [14, 12], [12, 13]]), b([[6, 9], [5, 12], [7, 13]])], cabeza: 1 },
+    diagF: { lista: [b([[7, 9], [8, 13], [10, 14]]), b([[13, 9], [13, 12], [12, 13]], true)], cabeza: 1 },
+    diagE: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [7, 13]], true)], cabeza: 1 },
+  },
+};
+/** La maleta y el bolso, en el piso al lado (`[cerrada, abierta]`), por vista. */
+const EQUIPAJE = {
+  maleta: {
+    lado: [mapa(21, ['...................hh', '.................MMMMMM', '.................JJyJJJ', '.................MMMMMM', '.................MMMMMM', '.................mmmmmm']),
+      mapa(18, ['.................J', '.................JM', '.................JM', '.................JM', '.................nnnnnn', '.................MMMMMM', '.................MMyMMM', '.................MMMMMM', '.................mmmmmm'])],
+    frente: [mapa(21, ['................hh', '...............MMMMMM', '...............JJyJJJ', '...............MMMMMM', '...............MMMMMM', '...............mmmmmm']),
+      mapa(19, ['...............JJJJJJ', '...............JMMMMJ', '...............JJJJJJ', '...............nnnnnn', '...............MMMMMM', '...............MMyMMM', '...............MMMMMM', '...............mmmmmm'])],
+  },
+  bolso: {
+    lado: [mapa(22, ['..................hh', '.................MMMM', '.................JyJJ', '.................MMMM', '.................mmmm']),
+      mapa(21, ['.................J..J', '.................JnnJ', '.................MMMM', '.................MyMM', '.................MMMM', '.................mmmm'])],
+    frente: [mapa(22, ['................hh', '...............MMMM', '...............JyJJ', '...............MMMM', '...............mmmm']),
+      mapa(21, ['...............J..J', '...............JnnJ', '...............MMMM', '...............MyMM', '...............MMMM', '...............mmmm'])],
+  },
+};
+const CUADROS_SENTADO = {
+  diario: ['regazo', 'medio', 'arriba', 'arriba+', 'arriba', 'hoja', 'arriba+', 'medio'],
+  barajar: ['junto', 'abierto', 'cayendo', 'junto', 'abierto', 'cayendo', 'junto', 'junto'],
+  equipaje: ['quieto', 'baja', 'abre', 'adentro', 'adentro2', 'adentro', 'abre', 'baja'],
+};
+/**
+ * LA POSE DE UN PASAJERO SENTADO para `cuadroJugador` (`brazos`): `accion`
+ * ('diario', 'barajar', 'equipaje', 'dormido'), `k` el cuadro (0-7) y `lleva`
+ * ('maleta' o 'bolso', para el equipaje). En las diagonales (se dio vuelta
+ * hacia vos) no hace nada: las manos en la falda.
+ */
+export function poseSentado(accion, vista, k = 0, lleva = 'maleta') {
+  const V = vista === 'lado' || vista === 'frente' || vista === 'espalda' ? vista : null;
+  // Dormido, los brazos cruzados y la cabeza caída; sin hacer nada, las manos en la falda.
+  if (accion === 'dormido' || accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: accion === 'dormido' ? 1 : 0 };
+  if (!V || !POSES_SENTADO[accion]) return null;
+  let nombre = CUADROS_SENTADO[accion][k % 8];
+  const baja1 = nombre.endsWith('+');
+  if (baja1) nombre = nombre.slice(0, -1);
+  const P = POSES_SENTADO[accion][V][nombre];
+  const lista = baja1 ? P.lista.map((x) => ({ ...x, p: x.p.map(([a, c], i) => (i === 2 ? [a, c + 1] : [a, c])) })) : P.lista;
+  const props = [];
+  if (P.papel) props.push({ m: baja1 ? mapa(P.papel.y + 1, P.papel.filas) : P.papel, tabla: PAPEL, capa: P.fondo ? 'fondo' : 'frente' });
+  if (P.cartas) props.push({ m: P.cartas, tabla: NAIPES });
+  if (accion === 'equipaje') {
+    const E = EQUIPAJE[lleva] || EQUIPAJE.maleta;
+    const abierta = nombre === 'adentro' || nombre === 'adentro2';
+    props.push({ m: (E[V] || E.frente)[abierta ? 1 : 0], tabla: lleva === 'bolso' ? CUERO_BOLSO : CUERO_MALETA, piso: true, capa: V === 'espalda' ? 'fondo' : 'frente' });
+  }
+  return { lista, props, inclina: P.inclina || 0, cabeza: P.cabeza || 0 };
 }
 
 // ------------------------------------------------------------- en el piso
@@ -395,6 +541,9 @@ export function cuadroGente(o) {
  * las piernas y las botas con la punta para arriba. Mide 30 puntos de largo.
  *  muerto     un brazo y una pierna abiertos (el charco lo pone el juego).
  *  desmayado  derecho, entero; respira (`late`: el pecho sube un punto).
+ *  cama       (el pasajero que duerme en el dormitorio) sin sombrero, la cabeza
+ *             en la almohada y tapado con la frazada hasta el cuello; sólo se
+ *             ven la cabeza y el bulto de los pies.
  *  caido      (un tiro en la pierna) el sombrero puesto, se apoya y apunta: el
  *             brazo de acá sale del hombro hacia donde apunta, con el arma
  *             dibujada a mano en esa dirección.
@@ -423,7 +572,9 @@ const TA = 44, TL = 30, TX = 6, TY = 11;   // el lienzo del tirado, con lugar pa
 export const PIES_TENDIDO = [TX + 16, TY + 3];
 export { TA as ANCHO_TENDIDO, TL as ALTO_TENDIDO };
 export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang = 0, arma = 'colt', fino = false, ...o }) {
-  const col = { ...C, ...capasPersona({ tipo, vista: 'frente', ...o }).colores };
+  // La almohada (D d) y la frazada (N Z X, lana azul; S s la sábana) de la litera.
+  const col = { ...C, ...capasPersona({ tipo, vista: 'frente', ...o }).colores, D: 17, d: 15, N: 20, Z: 19, X: 41, S: 17 };
+  if (modo === 'cama') col.s = 16;
   const idx = new Int16Array(TA * TL).fill(-1);
   const poner = (x, y, i) => {
     if (i == null) return;
@@ -433,6 +584,22 @@ export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang
   const dibujar = (m, dx = 0, dy = 0) => m.filas.forEach((fila, k) => {
     for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + dx, m.y + k + dy, col[fila[x]]);
   });
+  if (modo === 'cama') {
+    // La almohada, la cabeza encima y la frazada de lana (con el borde de la sábana doblado arriba).
+    dibujar(mapa(0, ['.DDDDDDD', 'DDDDDDDDd', 'DDDDDDDDd', 'DDDDDDDDd', 'DDDDDDDDd', 'DDDDDDDDd', '.ddddddd']), 2, 0);
+    dibujar(TENDIDO.cabeza, 5, 0);
+    dibujar(mapa(-1, [
+      '..........SSNNNNNNNNNNNNNNNNNNN',
+      '..........SSNNNNNNNNNNNNNNNNNNNN',
+      '..........SsZNNNNNNNNNNNNNNNNNNN',
+      '..........SsZZNNNNNNNNNNNNNNNNNN',
+      '..........SsZZZNNNNNNNNNNNNNNNNN',
+      '..........SsZZZZZZZZZZZZZZZZZZZN',
+      '..........SsZZZZZZZZZZZZZZZZZZZZ',
+      '..........SsZZZZZZZZZZZZZZZZZZZZ',
+      '..........SsXXXXXXXXXXXXXXXXXXXX',
+    ]), 0, 0);
+  } else {
   const P = POSE_TENDIDO[modo];
   // Una pierna: tres de ancho (luz, base, sombra) y la bota con la punta para arriba.
   const pierna = (y0, y1) => {
@@ -459,6 +626,7 @@ export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang
   if (modo === 'caido') dibujar(TENDIDO.puesto, 2, 0);
   else dibujar(TENDIDO.sombrero, 0, 0);
   if (P.aca) brazo(P.aca, false);
+  }
   let boca = null;
   if (modo === 'caido') {
     // Se apoya y apunta: el brazo de acá sale del hombro hacia donde apunta (en
@@ -501,7 +669,7 @@ export function lienzoTendido(o, luz = 0) {
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'bandera', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

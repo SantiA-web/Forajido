@@ -202,12 +202,14 @@ const SOMBREROS = {
    * (desde la fila -2) para que la caída del ala no tape la cara.
    */
   curvo: {
-    // 🔁 Dos puntos más angosto *(Santi: "reduce el tamaño unos 2 o 3 pixeles")*.
-    frente: mapa(-2, ['........hhkHk', '........hHkHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
-    diagF: mapa(-2, ['.........hhkHk', '.........hHkHk', '.....hh..hHHHk.kk', '.....hhhhbbbbbkkk', '......hhHHHHHHk', '.......xkkkkkx']),
-    lado: mapa(-2, ['........hhkHk', '........hHkHk', '....h...hHHHk...k', '....hh..bbbbb..kk', '.....hhhHHHHHkkk', '......xkkkkkx']),
-    diagE: mapa(-2, ['........hhkHk', '........hHkHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
-    espalda: mapa(-2, ['........hhkHk', '........hHkHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
+    // 🔁 Dos puntos más angosto *(Santi: "reduce el tamaño unos 2 o 3 pixeles")*,
+    // y la copa un punto más chata y pareja arriba, sin las dos montañitas del
+    // pliegue *("elimina unos 2 o 3 pixeles de la copa para que quede más chata")*.
+    frente: mapa(-1, ['........hHHHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
+    diagF: mapa(-1, ['.........hHHHk', '.....hh..hHHHk.kk', '.....hhhhbbbbbkkk', '......hhHHHHHHk', '.......xkkkkkx']),
+    lado: mapa(-1, ['........hHHHk', '....h...hHHHk...k', '....hh..bbbbb..kk', '.....hhhHHHHHkkk', '......xkkkkkx']),
+    diagE: mapa(-1, ['........hHHHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
+    espalda: mapa(-1, ['........hHHHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
   },
   // El de paja del civil: ala ancha que cae un poco en las puntas.
   paja: {
@@ -327,11 +329,14 @@ export const UNIFORMES = {
 /** El color de cada sombrero (el del guardia y el bombín, negros; el de paja, claro con cinta). */
 const COLOR_SOMBRERO = {
   // 🔁 Negros neutros, de la escala de los grises *(Santi: "los sombreros parecen morados y no negros")*.
+  // Con `colorSombrero: 'marron'`, marrón oscuro con la cinta crema (ver COLOR_MARRON).
   plano: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   curvo: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   bombin: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   paja: { h: 38, H: 37, k: 6, x: 5, b: 33 },
 };
+/** 🆕 La otra variante de los sombreros de fieltro: marrón oscuro con la cinta crema *(Santi)*. */
+const COLOR_MARRON = { h: 4, H: 3, k: 32, x: 0, b: 16 };
 const BASE = {
   guardia: {
     L: 17, C: 16, c: 15,                     // camisa clara
@@ -352,10 +357,10 @@ const BASE = {
  * (las del jugador: 'quieto', 'W0'…), y sus variantes: `sombrero`, `piel`,
  * `pelo`, `uniforme`. Devuelve los índices de color.
  */
-export function cuadroGente({ tipo, vista, piernas = 'quieto', sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', mangas = 'largas', panuelo = 'azul', fino = false }) {
+export function cuadroGente({ tipo, vista, piernas = 'quieto', sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', mangas = 'largas', panuelo = 'azul', colorSombrero = 'negro', fino = false }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
   const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero;
-  const col = { ...C, ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? COLOR_SOMBRERO[s] : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
+  const col = { ...C, ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
     if (i == null) return;

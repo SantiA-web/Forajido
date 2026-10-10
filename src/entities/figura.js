@@ -550,7 +550,11 @@ function jugadorNuevo(r, f) {
   const golpe = f.golpe != null ? Math.min(7, Math.floor(f.golpe * 8)) : null;
   // El arma larga, de cruzada (0) a apuntando (1), en 4 pasos (ver jugador.js).
   const empuna = arma === 'winchester' || arma === 'escopeta' ? Math.round((f.empuna ?? 1) * 3) / 3 : 1;
-  const L = lienzoJugador({ vista, piernas, arma: armaNueva, ang: Math.round(ang * 16 / Math.PI) * Math.PI / 16, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna }, luz, !!f.destello);
+  // 🔁 El brazo apunta en el mismo paso de 22,5° que el dibujo del arma: con el
+  // ángulo exacto, el brazo y el arma se doblaban entre sí *(Santi: "el revolver
+  // colt se ve raro al mirar diagonal hacia arriba… parece una banana")*. Es sólo
+  // el dibujo: la bala sale hacia donde apuntás, como siempre.
+  const L = lienzoJugador({ vista, piernas, arma: armaNueva, ang: Math.round(ang * 8 / Math.PI) * Math.PI / 8, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
   ctx.translate(x, pies);

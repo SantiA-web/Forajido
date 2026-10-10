@@ -770,6 +770,9 @@ la espalda mata o sólo lo deja inconsciente**:
 **La culata es gratis: es lo que ya tenés en la mano.** No es el arma mala que
 vas a reemplazar — es la más rápida de las tres y sirve para lo mismo que el
 cuchillo. Lo que NO compra es tiempo.
+Con el revólver es el golpe más rápido del juego; **con el Winchester o la
+escopeta pega más lento pero aturde más** (0,60 s de frente en vez de 0,45), y
+cada arma tiene su golpe: el rifle en arco, la escopeta de un empujón.
 
 > **Un desmayado se levanta a los 25 segundos**, y mientras tanto está tirado en
 > el piso delatándote igual que un cadáver: de lejos nadie distingue. Y cuando se

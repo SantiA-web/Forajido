@@ -138,7 +138,8 @@ export function playerMelee(p, world, yaEmpezado = false) {
   // Golpe de frente: hace daño y lo aturde, pero es un escándalo.
   // `damage` está en tiros de los de antes (ver `golpe.danio.puntosPorTiro`).
   const died = damageEnemy(e, arma.damage * CONFIG.golpe.danio.puntosPorTiro.guardia, p.x, p.y);
-  e.stagger = m.stagger;
+  // El culatazo con arma larga aturde más (ver `armaLarga` en data/melee.js).
+  e.stagger = (yaEmpezado && p.culatazoTiempos && p.culatazoTiempos.stagger) || m.stagger;
   e.aimTimer = 0;
   e.peeking = false;
   e.cooldown = Math.max(e.cooldown, 0.5);

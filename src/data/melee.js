@@ -65,6 +65,18 @@ export const MELEE = {
     golpeDura: 0.20,
 
     /**
+     * 🆕 CON EL WINCHESTER O LA ESCOPETA EL CULATAZO ES MÁS LENTO Y PEGA MÁS
+     * *(Santi eligió la opción B: "para añadir un poco más de virtud a los
+     * revolveres")*. Con el arma larga en las dos manos el golpe es otro (el
+     * Winchester en arco, la escopeta de un empujón; ver jugador.js): pega a
+     * los 0,10 s en vez de 0,07, termina a los 0,28 en vez de 0,20, y de
+     * frente aturde 0,60 s en vez de 0,45 (`CONFIG.melee.stagger`). El
+     * revólver queda como el golpe más rápido del juego. Entre golpe y golpe
+     * sigue habiendo `cooldown` 0,30 para las tres.
+     */
+    armaLarga: { impacto: 0.10, golpeDura: 0.28, stagger: 0.60 },
+
+    /**
      * LA LÍNEA QUE SEPARA A ESTA DE LAS OTRAS DOS: por la espalda deja
      * inconsciente en vez de matar. Ver `noqueoDuracion` en CONFIG.melee para
      * qué significa exactamente estar inconsciente.

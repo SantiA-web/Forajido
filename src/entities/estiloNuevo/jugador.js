@@ -625,6 +625,49 @@ const GOLPE = {
 };
 
 /**
+ * 🆕 EL CULATAZO CON EL ARMA LARGA, distinto para cada una *(Santi: "estas
+ * dos armas pegarían distinto con la culata"; aprobó los cuadros)*. 8 cuadros
+ * en 0,28 s (`armaLarga` en data/melee.js); el impacto es el cuadro 3.
+ * Cada cuadro, puesto a mano: `r` hacia dónde apunta el CAÑO (de a 22,5°,
+ * mirando a la derecha: 0 adelante, -4 arriba, 8 atrás; pasado 4 o -4 es el
+ * dibujo del arma en espejo, con la culata adelante), `mano` dónde va la mano
+ * del gatillo desde el hombro, y el cuerpo (`inclina`, `baja`). `cruzada`
+ * es volver a llevarla cruzada. En el impacto, `estela` (puntos desde el
+ * hombro) y `destello` (desde la mano, en la culata).
+ *
+ *  EL WINCHESTER, EN ARCO: lo lleva atrás (la culata detrás de la cadera),
+ *  la culata viene por abajo y sube hasta la cabeza del otro con el caño
+ *  apuntando atrás y abajo; sigue un poco y vuelve a cruzarlo.
+ *  LA ESCOPETA, DE UN EMPUJÓN: la recoge contra el pecho con la culata
+ *  adelante y la empuja derecho con los dos brazos, como un ariete; el cuerpo
+ *  se tira adelante, y en vez de estela, líneas rectas de velocidad.
+ */
+const GOLPE_LARGA = {
+  winchester: [
+    { r: -2, mano: [-1, 3], inclina: -1, baja: 0 },
+    { r: -4, mano: [2, 3], inclina: -1, baja: 0 },
+    { r: -6, mano: [1, 2], inclina: 0, baja: 0 },
+    { r: 7, mano: [3, -1], inclina: 1, baja: 1,
+      estela: [[4, 7], [6, 7], [8, 6], [9, 5], [10, 3], [11, 1], [11, -1]], destello: [6, -2] },
+    { r: 7, mano: [3, -2], inclina: 1, baja: 1 },
+    { r: 8, mano: [2, 0], inclina: 1, baja: 0 },
+    { r: -3, mano: [2, 3], inclina: 0, baja: 0 },
+    { cruzada: true, inclina: 0, baja: 0 },
+  ],
+  escopeta: [
+    { r: 8, mano: [0, 2], inclina: 0, baja: 0 },
+    { r: 8, mano: [-2, 2], inclina: -1, baja: 0 },
+    { r: 7, mano: [2, 1], inclina: 0, baja: 0 },
+    { r: 7, mano: [6, 0], inclina: 1, baja: 1,
+      estela: [[-4, -3], [-5, -3], [-6, -3], [-3, 0], [-4, 0], [-5, 0], [-6, 0], [-7, 0], [-4, 3], [-5, 3], [-6, 3]], destello: [6, -2] },
+    { r: 7, mano: [5, 0], inclina: 1, baja: 1 },
+    { r: 8, mano: [4, 1], inclina: 1, baja: 0 },
+    { r: 8, mano: [1, 2], inclina: 0, baja: 0 },
+    { cruzada: true, inclina: 0, baja: 0 },
+  ],
+};
+
+/**
  * 🆕 EL WINCHESTER Y LA ESCOPETA, CON LAS DOS MANOS *(Santi: "la escopeta no
  * puede ir en un solo brazo al igual que el Winchester… al moverse, el
  * personaje corra con el arma delante de su cuerpo llevándolo con las dos
@@ -734,7 +777,9 @@ const MOCHILA = {
 const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], ang: -2.15 } };
 
 export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna }) {
-  if (golpe != null) ang = GOLPE.brazo[golpe];
+  // El culatazo: con el arma larga, su cuadro (GOLPE_LARGA); si no, el del revólver.
+  const GL = golpe != null && GOLPE_LARGA[arma] ? GOLPE_LARGA[arma][golpe] : null;
+  if (golpe != null) ang = GL ? (GL.cruzada ? -1.3 : GL.r * Math.PI / 8) : GOLPE.brazo[golpe];
   const V = VISTAS[vista];
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
@@ -751,9 +796,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0) + (golpe != null ? GOLPE.baja[golpe] : 0);
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : 0);
   const deCostado = vista === 'lado' || vista.startsWith('diag');
-  const inclina = golpe != null ? (deCostado ? GOLPE.inclina[golpe] : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
+  const inclina = golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : 0;
   /**
    * 🔁 AGACHADO, ENCORVADO *(Santi: "el cuerpo, torso y cabeza, debería
    * inclinarse un poco hacia adelante y quedar apenas encorvado")*: la cabeza
@@ -771,7 +816,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   // El arma larga, con las dos manos: dónde va cada mano, la culata y la boca.
   let larga = null;
   if (arma === 'winchester' || arma === 'escopeta') {
-    const t = golpe != null ? 1 : Math.max(0, Math.min(1, empuna ?? 1));
+    const t = GL ? (GL.cruzada ? 0 : 1) : golpe != null ? 1 : Math.max(0, Math.min(1, empuna ?? 1));
     const P = vista === 'lado' ? CRUZADA.lado : CRUZADA.otra;
     const cadera = [P.mano[0] + inclina + lomo, P.mano[1] + baja];
     const hombro = [hx + dir[0] * 2, hy + dir[1] * 2];
@@ -779,9 +824,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     while (da > Math.PI) da -= 2 * Math.PI;
     while (da < -Math.PI) da += 2 * Math.PI;
     // Del todo cruzada, su propio dibujo (de costado, en espejo); si no, el de la dirección.
-    const A = t === 0 ? armaCruzada(arma, vista === 'lado') : armaEn(arma, P.ang + da * t);
+    const A = t === 0 ? armaCruzada(arma, vista === 'lado') : GL ? armaEn(arma, GL.r * Math.PI / 8) : armaEn(arma, P.ang + da * t);
     const d = [Math.cos(A.angulo), Math.sin(A.angulo)];
-    const mano = [Math.round(cadera[0] + (hombro[0] - cadera[0]) * t), Math.round(cadera[1] + (hombro[1] - cadera[1]) * t)];
+    const mano = GL && !GL.cruzada ? [hx + GL.mano[0], hy + GL.mano[1]]
+      : [Math.round(cadera[0] + (hombro[0] - cadera[0]) * t), Math.round(cadera[1] + (hombro[1] - cadera[1]) * t)];
     const en = (p) => [mano[0] + p[0], mano[1] + p[1]];
     larga = { t, d, mano, A, apoyo: en(A.apoyo), boca: en(A.boca) };
   }
@@ -951,7 +997,13 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   if (!detras && !bajoLaCabeza) brazo();
   if (mochila && vista === 'espalda') dibujarMochila();
   // El impacto: la estela del brazo (de arriba atrás hacia adelante) y un destello en la punta.
-  if (golpe === 3) {
+  if (GL && GL.estela) {
+    // El impacto del arma larga: su estela (el arco del Winchester, las líneas
+    // rectas de la escopeta) y el destello en la culata.
+    for (const [x, y] of GL.estela) poner(hx + x, hy + y, 25);
+    const [px, py] = [larga.mano[0] + GL.destello[0], larga.mano[1] + GL.destello[1]];
+    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) poner(px + dx, py + dy, dx || dy ? 29 : 30);
+  } else if (golpe === 3 && !GL) {
     for (let a = -1.4; a < 0.2; a += 0.16) poner(Math.round(hx + Math.cos(a) * 8), Math.round(hy + Math.sin(a) * 8), 25);
     const px = Math.round(hx + Math.cos(ang) * 9), py = Math.round(hy + Math.sin(ang) * 9);
     for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) poner(px + dx, py + dy, dx || dy ? 29 : 30);

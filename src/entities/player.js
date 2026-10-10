@@ -210,11 +210,11 @@ export function updatePlayer(p, dt, world) {
     p.culatazo += dt;
     if (!p.alive || p.tumbado > 0) p.culatazo = null;
     else {
-      if (p.culatazoPendiente && p.culatazo >= p.melee.impacto) {
+      if (p.culatazoPendiente && p.culatazo >= p.culatazoTiempos.impacto) {
         p.culatazoPendiente = false;
         playerMelee(p, world, true);
       }
-      if (p.culatazo >= p.melee.golpeDura) p.culatazo = null;
+      if (p.culatazo >= p.culatazoTiempos.golpeDura) p.culatazo = null;
     }
   }
   p.stepPhase = (p.stepPhase || 0) + dt;
@@ -326,6 +326,10 @@ function empezarCulatazo(p, world) {
   world.audio.play('swing');
   p.culatazo = 0;
   p.culatazoPendiente = true;
+  // Con el arma larga, sus tiempos (ver `armaLarga` en data/melee.js); se
+  // fijan al empezar, así cambiar de arma en el medio no corta el golpe.
+  const larga = p.weapon && (p.weapon.id === 'winchester' || p.weapon.id === 'escopeta');
+  p.culatazoTiempos = larga && p.melee.armaLarga ? { ...p.melee, ...p.melee.armaLarga } : p.melee;
 }
 
 // ---------------------------------------------------------------- dinamita
@@ -1203,7 +1207,7 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     armaId: p.weapon && p.weapon.id,
     mochila: bulto,
     // El culatazo en curso, de 0 a 1 (sólo lo usa el dibujo nuevo).
-    golpe: p.culatazo != null ? p.culatazo / p.melee.golpeDura : null,
+    golpe: p.culatazo != null ? p.culatazo / p.culatazoTiempos.golpeDura : null,
     // Cómo llevás el arma larga: 0 cruzada, 1 apuntando (sólo el dibujo nuevo).
     empuna: p.empuna ?? 1,
     // El brazo del revólver: 0 con el codo doblado, 1 recto apuntando.

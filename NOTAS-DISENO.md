@@ -18590,6 +18590,20 @@ para encontrar las poses). La E4 se hace directamente en P5.
   brazos, con la punta del espiral. El morral del ancho de la espalda, centrado,
   con los bordes más claros que el chaleco, la luz a la izquierda, el fondo
   redondeado y la sombra debajo.
+- 🆕 **El culatazo del Winchester y de la escopeta, cada uno con su golpe** *(Santi:
+  "estas dos armas pegarían distinto con la culata"; aprobó los cuadros)*. Antes
+  las largas hacían el del revólver: subían por encima de la cabeza y pegaban
+  con el caño. Ahora (`GOLPE_LARGA` en jugador.js, 8 cuadros puestos a mano, el
+  arma con los dibujos de cada ángulo, dada vuelta con la culata adelante):
+  **el Winchester en arco** (lo lleva atrás, la culata viene por abajo y sube a
+  la cabeza del otro con el caño atrás y abajo, con estela curva) y **la escopeta
+  de un empujón** (la recoge contra el pecho y la empuja derecho, el cuerpo
+  adelante, con líneas rectas de velocidad). Y **eligió la B: son más lentos y
+  pegan más** (`armaLarga` en data/melee.js): pegan a los 0,10 s en vez de 0,07,
+  terminan a los 0,28 en vez de 0,20 y de frente aturden 0,60 s en vez de 0,45,
+  *"para añadir un poco más de virtud a los revolveres"*. Los tiempos se fijan
+  al empezar el golpe (`p.culatazoTiempos`). Como el del revólver, el golpe sale
+  siempre hacia el costado al que mirás, también de frente y de espaldas.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

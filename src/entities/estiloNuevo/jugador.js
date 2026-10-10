@@ -601,6 +601,8 @@ const ANCHO = 44, ALTO = 40, OX = 12, OY = 6;   // el lienzo, con lugar para el 
 /** Dónde quedan los pies en el lienzo (el medio de las dos botas, abajo). */
 export const PIES = [OX + 10, OY + 27];
 export { ANCHO, ALTO };
+// Para la gente del tren (gente.js): el mismo cuerpo, las mismas piernas y los mismos colores.
+export { VISTAS, C, VER_BRAZO, linea, OX, OY };
 
 /** Una línea de puntos enteros, de a a b (Bresenham). */
 function linea([x0, y0], [x1, y1], poner) {

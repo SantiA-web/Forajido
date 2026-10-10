@@ -194,12 +194,19 @@ const SOMBREROS = {
   // sin la piola. Hoy el sombrero parece más unos cuernitos de toro")*: copa más
   // alta con el pliegue arriba, ala más ancha que sube en las puntas pegada al
   // ala (no sueltas, que parecían cuernos). De costado el ala cae adelante y atrás.
+  /**
+   * 🔁 Con las fotos de referencia de Santi *("el sombrero no tiene curva hacia
+   * arriba, es un desastre")*: la copa con el pliegue de dos bultos y la cinta;
+   * el ala con las dos puntas bien arriba a los costados y el centro de
+   * adelante más abajo (el borde de abajo hace una U). Va dos puntos más arriba
+   * (desde la fila -2) para que la caída del ala no tape la cara.
+   */
   curvo: {
-    frente: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '.......xkkkkkx']),
-    diagF: mapa(0, ['..........hkH', '.........hhkHk', '......hhhHHHHkkk', '........xkkkkkx']),
-    lado: mapa(0, ['.........hkH', '........hhkHk', '......hhhHHHkkk']),
-    diagE: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '.......xkkkkkx']),
-    espalda: mapa(0, ['.........hkH', '........hhkHk', '.....hhhHHHHkkk', '.......xkkkkkx']),
+    frente: mapa(-2, ['........hhkHk', '........hHkHk', '....hh..hHHHk..kk', '....hhhhbbbbbkkkk', '.....hhHHHHHHHkk', '.......xkkkkkx']),
+    diagF: mapa(-2, ['.........hhkHk', '.........hHkHk', '....hh...hHHHk..kk', '....hhhhhbbbbbkkkk', '.....hhhHHHHHHkk', '.......xxkkkkx']),
+    lado: mapa(-2, ['........hhkHk', '........hHkHk', '...h....hHHHk....k', '...hh...bbbbb...kk', '....hhhhHHHHHkkkk', '......xxkkkkkx']),
+    diagE: mapa(-2, ['........hhkHk', '........hHkHk', '....hh..hHHHk..kk', '....hhhhbbbbbkkkk', '.....hhHHHHHHHkk', '.......xkkkkkx']),
+    espalda: mapa(-2, ['........hhkHk', '........hHkHk', '....hh..hHHHk..kk', '....hhhhbbbbbkkkk', '.....hhHHHHHHHkk', '.......xkkkkkx']),
   },
   // El de paja del civil: ala ancha que cae un poco en las puntas.
   paja: {
@@ -288,18 +295,24 @@ const PIELES = {
 const BARBA_CORTA = {
   // [la sombra de la barba, la boca] según la piel; rubio y canas, más suaves.
   clara: { oscuro: [11, 47], rubio: [12, 11], canas: [15, 14] },
-  media: { oscuro: [47, 1], rubio: [11, 47], canas: [15, 14] },
-  oscura: { oscuro: [1, 0], rubio: [47, 1], canas: [14, 2] },
+  media: { oscuro: [47, 32], rubio: [11, 47], canas: [15, 14] },
+  oscura: { oscuro: [32, 0], rubio: [47, 32], canas: [14, 32] },   // 🔁 del negro cálido, no azulada
 };
 export function colorBarbaCorta(piel, pelo) {
   const t = BARBA_CORTA[piel];
   return pelo === 'rubio' ? t.rubio : pelo === 'canas' ? t.canas : t.oscuro;
 }
 export const NUNCA = [{ pelo: 'rubio', piel: 'oscura' }];
+/**
+ * CUÁNTO SALE CADA PIEL en el sorteo (P3b) *(Santi: "al ser una zona de
+ * frontera (Texas o Arizona), debería haber más probabilidad de piel media y
+ * oscura que piel clara")*. Propuesta de arranque, a confirmar.
+ */
+export const PESO_PIEL = { clara: 0.2, media: 0.4, oscura: 0.4 };
 const PELOS = {
-  negro: { A: 23, a: 31, B: 31 },       // 🧪 prueba 1: gris oscuro con brillo
-  negro2: { A: 32, a: 0, B: 32 },       // 🧪 prueba 2: negro cálido (marrón casi negro)
-  negro3: { A: 41, a: 40, B: 40 },      // 🧪 prueba 3: negro azulado
+  // 🔁 El negro cálido, marrón casi negro *(Santi eligió el 2 de tres; los negros
+  // de la paleta tiran a violeta)*.
+  negro: { A: 32, a: 0, B: 32 },
   castano: { A: 4, a: 3, B: 3 },
   rubio: { A: 6, a: 5, B: 5 },
   canas: { A: 15, a: 14, B: 14 },

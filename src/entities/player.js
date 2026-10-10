@@ -1506,18 +1506,9 @@ function dibujarColgado(r, p, col) {
 function drawKnifeArc(r, p) {
   // Arco del cuchillo. (El culatazo del dibujo nuevo tiene su animación: sin arco.)
   if (p.culatazo != null && estiloNuevo.activo) {
-    /**
-     * 🔁 EL TAJO CONSERVA SU LÍNEA DE ARCO *(Santi: "me gustaba la línea del arco
-     * que hacía")*, pero ahora acompaña al dibujo: barre del cuadro 2 al 5 del
-     * tajo (cuando el brazo va de atrás hacia adelante), con el impacto en el medio.
-     */
-    if (p.melee.id !== 'cuchillo') return;
-    const m = CONFIG.melee;
-    const dura = p.culatazoTiempos.golpeDura;
-    const progress = (p.culatazo - dura * 2 / 8) / (dura * 3 / 8);
-    if (progress < 0 || progress > 1) return;
-    const angle = p.aim - m.arc * 0.7 + m.arc * 1.4 * progress;
-    r.line(p.x, p.y, p.x + Math.cos(angle) * m.range, p.y + Math.sin(angle) * m.range, '#fff6d0', 0.9);
+    // 🔁 El tajo del cuchillo tampoco: su curva blanca va en el dibujo (ver
+    // TAJO en estiloNuevo/jugador.js) *(Santi: "no quiero que esté esa línea
+    // abajo blanca, sino una curva blanca que indique el movimiento del cuchillo")*.
     return;
   }
   if (p.meleeSwing > 0) {

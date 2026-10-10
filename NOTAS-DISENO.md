@@ -18631,6 +18631,15 @@ para encontrar las poses). La E4 se hace directamente en P5.
   movimiento"; eligió la B entre tres)*: pega a los 0,13 s (antes 0,10) y termina a
   los 0,34 (antes 0,26). Más lento que el culatazo del revólver (0,07) y apenas
   más que el de las armas largas (0,10). La espera entre golpes sigue en 0,55.
+- 🔁 **El tajo deja una curva blanca, no la línea del piso** *(Santi: "no quiero que
+  esté esa línea abajo blanca, sino una curva blanca que indique el movimiento del
+  cuchillo")*. La línea vieja (que salía de los pies) ya no se dibuja con el estilo
+  nuevo. En su lugar, el rastro de la punta: una curva suave que arranca arriba y
+  adelante del sombrero y pasa por la punta del cuchillo de cada cuadro (del 3 al
+  6), con un punto más afuera después del impacto para que doble redonda. En cada
+  cuadro se ven los dos últimos tramos, blancos con la cola gris, sólo en el aire.
+- 🗑️ **Borrado el atajo [1] al techo con jinetes** *(Santi: "quiero que borres el
+  atajo al techo")*, con todo lo que tenía en el asalto (`pruebaTecho`).
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

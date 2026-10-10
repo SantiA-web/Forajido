@@ -68,7 +68,7 @@ import { EXPLOSIVES } from '../data/explosives.js';
 import { crearGrilla, buscarLugar, guardar, sacarUltima, sacar, ocupadas, cabeEn, colocarEn } from '../engine/grilla.js';
 import { drawRider } from '../entities/rider.js';
 import {
-  updateRiders, createRiderWatch, chanceContraElTecho, damageRider, spawnRider, abrirJinete, punteriaPorCarril,
+  updateRiders, createRiderWatch, chanceContraElTecho, damageRider, abrirJinete, punteriaPorCarril,
 } from '../systems/riders.js';
 import { puedeTirarDesdeElTecho } from '../entities/player.js';
 import { maxJinetesPara } from '../data/riders.js';
@@ -207,8 +207,6 @@ export function createRaidScene(services) {
    * pide que levantes las manos.
    */
   let alto, altoUsado, tiroteo;
-  // 🧪 El atajo de prueba del techo (ver `prepararPruebaTecho`).
-  let pruebaTecho = false;
   let wagonActual, wagonMasProfundo, ultimoVisto;
   let scroll = 0;
   let blastMarks = [];
@@ -251,8 +249,6 @@ export function createRaidScene(services) {
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
     for (const e of enemies) armarGuardia(e, rng);
-    pruebaTecho = !!params.pruebaTecho;
-    if (pruebaTecho) prepararPruebaTecho(params);
     passengers = train.passengers;
     loot = train.loot;
     doors = train.doors;
@@ -659,8 +655,6 @@ export function createRaidScene(services) {
         life: 3.0, color: colors.enemyAlert,
       });
     }
-    // 🧪 La prueba del techo: dos jinetes de cada lado desde el primer cuadro.
-    if (pruebaTecho) for (const lado of [1, 1, -1, -1]) spawnRider(world, lado);
 
     /**
      * ENTRAR HERIDO. Si te agarraron a tiros mientras galopabas, la vida que
@@ -708,8 +702,7 @@ export function createRaidScene(services) {
     auraTimer = 0;
 
     // `train.tipoTren` es el OBJETO del catálogo (data/train.js), no el id.
-    // En la prueba del techo no sube ningún jefe.
-    const elegido = params.pruebaTecho ? null : params.jefeForzado
+    const elegido = params.jefeForzado
       ? BOSSES[params.jefeForzado]
       : jefeParaEsteAsalto(gameState.bounty, train.tipoTren.id, rng);
 
@@ -2812,8 +2805,7 @@ export function createRaidScene(services) {
     updateExplosives(explosives, dt, world);
     updateCajones(dt);
     updateRiders(riders, dt, world);
-    // 🧪 En la prueba del techo no llegan más jinetes que los cuatro del principio.
-    if (!pruebaTecho) riderWatch.update(dt, world);
+    riderWatch.update(dt, world);
     alarm.update(dt);
     updateWagon();
     updateInteraction(dt);
@@ -2876,23 +2868,6 @@ export function createRaidScene(services) {
     const tipo = jefePendiente;
     jefePendiente = null;
     spawnJefe(tipo);
-  }
-
-  /**
-   * 🧪 EL ATAJO DE PRUEBA DEL TECHO ([1] en el campamento). Te sube arriba de
-   * un coche largo, con la alarma ya sonando (`alarmaInicial`); los cuatro
-   * jinetes, dos de cada lado, salen al final de `enter`, y no llegan más
-   * (ver `riderWatch.update`). No cuenta para nada: ver `goToResults`.
-   *
-   * ⚠️ SACARLO antes de mostrar el juego, con el atajo del campamento.
-   */
-  function prepararPruebaTecho(params) {
-    const w = train.wagons.find((v) => !v.esCola && v.tieneTecho && !v.carbon && v.width >= 600) ||
-      train.wagons.find((v) => !v.esCola && v.tieneTecho && !v.carbon);
-    if (!w) return;
-    params.enTecho = true;
-    params.techoX = w.x + 160;
-    params.alarmaInicial = true;
   }
 
   /**
@@ -4174,13 +4149,6 @@ export function createRaidScene(services) {
      * Sin plata encima no hay persecución: lo único que se pierde en la huida
      * son bolsas, y sin nada que soltar serían 15 segundos sin nada en juego.
      */
-    // 🧪 La prueba del techo no suma nada ni pasa por la huida.
-    if (pruebaTecho) {
-      summary.prueba = 'del techo con jinetes';
-      scenes.goTo('results', summary);
-      return;
-    }
-
     const jinetesVivos = riders.filter((rd) => rd.alive).length;
     if (escaped && alarm.active && jinetesVivos > 0 && summary.money > 0) {
       scenes.goTo('huida', {

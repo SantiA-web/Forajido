@@ -666,15 +666,22 @@ const GOLPE = {
  * hombro del brazo libre (mirando a la derecha), `r` hacia dónde apunta la
  * hoja (de a 22,5°; pasado 4 o -4, el dibujo en espejo), `delante` si el
  * brazo va por delante del cuerpo, `vaina` si la mano está en la vaina.
+ *
+ * 🔁 LA CURVA BLANCA DEL TAJO *(Santi: "no quiero que esté esa línea abajo
+ * blanca, sino una curva blanca que indique el movimiento del cuchillo")*: el
+ * rastro de la PUNTA del cuchillo, una curva que pasa por donde estuvo la
+ * punta en los dos cuadros anteriores y llega a donde está ahora (`curva`,
+ * del cuadro 2 al 5). Blanca, con la cola gris; sólo en el aire, nunca por
+ * encima del cuerpo, la cara o el arma (por detrás de la cabeza se corta,
+ * como el cuchillo).
  */
 const TAJO = [
   { vaina: true, r: 4, inclina: 0, baja: 0 },
   { mano: [-3, 0], r: -6, inclina: -1, baja: 0 },
-  { mano: [3, -1], r: -1, inclina: 0, baja: 0, delante: true },
-  { mano: [7, -1], r: 0, inclina: 1, baja: 1, delante: true,
-    estela: [[5, -4], [7, -4], [9, -3], [11, -2], [13, -1]] },
-  { mano: [6, 3], r: 2, inclina: 1, baja: 0, delante: true },
-  { mano: [4, 5], r: 3, inclina: 0, baja: 0, delante: true },
+  { mano: [3, -1], r: -1, inclina: 0, baja: 0, delante: true, curva: true },
+  { mano: [7, -1], r: 0, inclina: 1, baja: 1, delante: true, curva: true, brillo: true },
+  { mano: [6, 3], r: 2, inclina: 1, baja: 0, delante: true, curva: true },
+  { mano: [4, 5], r: 3, inclina: 0, baja: 0, delante: true, curva: true },
   { mano: [1, 5], r: 4, inclina: 0, baja: 0, delante: true, haciaVaina: true },
   { vaina: true, r: 4, inclina: 0, baja: 0 },
 ];
@@ -1017,12 +1024,39 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     // En la vaina, la mano agarra el mango que ya dibuja la vaina.
     if (!(TJ.vaina && VAINA[vista].mapa)) for (const [x, y, c] of K.puntos) poner(M[0] + x, M[1] + y, c);
     mano(M, vista === 'lado' && !TJ.delante);
-    if (TJ.estela) {
-      // La estela sólo en el aire: por encima de la cara o del cuerpo no se dibuja.
-      for (const [x, y] of TJ.estela) {
-        const [ex, ey] = [S[0] + x + OX, S[1] + y + OY];
-        if (ex >= 0 && ey >= 0 && ex < ANCHO && ey < ALTO && idx[ey * ANCHO + ex] < 0) poner(S[0] + x, S[1] + y, 25);
+    if (TJ.curva) {
+      // Dónde está la punta en cada cuadro del tajo.
+      const punta = (i) => {
+        const T = TAJO[i], Q = armaEn('cuchillo', T.r * Math.PI / 8);
+        return [S[0] + T.mano[0] + Q.boca[0], S[1] + T.mano[1] + Q.boca[1]];
+      };
+      // El recorrido: arranca arriba y adelante del sombrero (por detrás de la
+      // cabeza no se vería) y pasa por la punta de cada cuadro, del 3 al 6. En
+      // cada cuadro se dibujan los dos últimos tramos, hasta donde está la punta.
+      // Entre el impacto y el cuadro siguiente la punta baja de golpe: un punto
+      // más afuera, en el medio, para que la curva doble redonda.
+      const [p3, p4] = [punta(3), punta(4)];
+      const camino = [[S[0] + 5, S[1] - 10], punta(2), p3, [Math.round((p3[0] + p4[0]) / 2) + 2, Math.round((p3[1] + p4[1]) / 2)], p4, punta(5)];
+      const hasta = { 2: 1, 3: 2, 4: 4, 5: 5 }[tajo], desde = Math.max(0, hasta - 2);
+      const en = (i) => camino[Math.max(0, Math.min(camino.length - 1, i))];
+      const pts = [];
+      for (let i = desde; i < hasta; i++) {
+        const [p0, p1, p2, p3] = [en(i - 1), en(i), en(i + 1), en(i + 2)];
+        for (let k = 0; k <= 8; k++) {
+          const t = k / 8, t2 = t * t, t3 = t2 * t;
+          const q = [0, 1].map((c) => Math.round(0.5 * (2 * p1[c] + (p2[c] - p0[c]) * t + (2 * p0[c] - 5 * p1[c] + 4 * p2[c] - p3[c]) * t2 + (3 * p1[c] - p0[c] - 3 * p2[c] + p3[c]) * t3)));
+          const ult = pts[pts.length - 1];
+          if (ult) linea(ult, q, (x, y) => { if (x !== ult[0] || y !== ult[1]) pts.push([x, y]); });
+          else pts.push(q);
+        }
       }
+      // La cola (gris) y el resto (blanco), sólo en el aire.
+      pts.forEach(([x, y], i) => {
+        const [ex, ey] = [x + OX, y + OY];
+        if (ex >= 0 && ey >= 0 && ex < ANCHO && ey < ALTO && idx[ey * ANCHO + ex] < 0) poner(x, y, i < pts.length / 3 ? 25 : 30);
+      });
+    }
+    if (TJ.brillo) {
       const [px, py] = [M[0] + K.boca[0], M[1] + K.boca[1]];
       for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0]]) poner(px + dx, py + dy, dx ? 29 : 30);
     }

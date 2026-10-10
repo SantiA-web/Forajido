@@ -322,22 +322,8 @@ export function createCampScene(services) {
     // Con el cajón abierto no caminás: tenés las dos manos adentro.
     if (menu.update(input)) return;
 
-    /**
-     * 🧪 ATAJO DE PRUEBA DEL TECHO *(Santi: "hace un atajo para que aparezca
-     * encima del techo de un tren de pasajeros con dos jinetes por lado y la
-     * alarma sonando")*. [1] te larga arriba de un coche, con la alarma ya
-     * sonando y cuatro jinetes, dos de cada lado. No llegan más. No cuenta
-     * para nada (ver `pruebaTecho` en raidScene.js).
-     *
-     * 🔁 Reemplaza al del vagón de correo con tres guardias, que Santi pidió
-     * borrar.
-     *
-     * ⚠️ SACARLO antes de mostrar el juego: está anotado en NOTAS-DISENO.md.
-     */
-    if (input.wasPressed('Digit1')) {
-      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaTecho: true });
-      return;
-    }
+    // 🗑️ El atajo [1] al techo con jinetes ya no existe *(Santi: "quiero que
+    // borres el atajo al techo")*.
     /**
      * 🧪 [4] TE LARGA ADENTRO DE UN VAGÓN DE PASAJEROS *(Santi: "construí un
      * atajo para ir directo a un vagón de pasajeros")*, para ver el estilo nuevo
@@ -354,7 +340,7 @@ export function createCampScene(services) {
      * equipármela sin tener que comprarla")*; otra vez [2], vuelve el arma que
      * tenías. No la agrega a lo tuyo: en la tienda sigue costando $1.200.
      *
-     * ⚠️ SACARLO antes de mostrar el juego, con el de [1].
+     * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     // 🧪 [3], lo mismo con el Winchester.
     for (const [teclaAtajo, armaPrueba] of [['Digit2', 'escopeta'], ['Digit3', 'winchester']]) {

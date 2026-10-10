@@ -18452,6 +18452,13 @@ para encontrar las poses). La E4 se hace directamente en P5.
   un óvalo en todas las vistas (11 puntos detrás de la copa, 15 en el medio,
   11 en el borde de adelante, que va oscuro). Antes era una tabla recta con
   las puntas oscuras y se leía como un escalón.
+- 🔁 **Trotar y avanzar agachado tienen sus cuadros** *(Santi: "parece que está
+  caminando rápido en vez de trotar… cuando está agachado se ve mal el avance")*:
+  trotar usaba los cuadros de caminar (los dos pies siempre en el piso); ahora
+  son cuatro propios, dos apoyando y dos en el aire, con el pie de atrás bien
+  levantado y, de costado, el cuerpo inclinado un punto hacia adelante.
+  Agachado alternaba dos dibujos casi iguales; ahora avanza en cuatro (paso,
+  pasa con el pie levantado, el otro paso, pasa) y el cuerpo se hamaca un punto.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

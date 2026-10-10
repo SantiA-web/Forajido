@@ -161,14 +161,89 @@ const VISTAS = {
         '...OOOO....OOOO',
         '...OOOO....OOOQ',
       ]),
-      agachado2: mapa(20, [
-        '.......TFFTTT',
-        '.......ttTTTTT',
-        '......ttt..TTT',
+      RA: mapa(17, [
+        '.......TFFTT',
+        '.......ttTTT',
+        '......tt..TTT',
+        '......tt...TTT',
+        '.....tt.....TT',
         '.....tt.....TT',
         '....tt......TT',
-        '..OOOO.....OOOO',
-        '..OOOO.....OOOQ',
+        '...tt.......TT',
+        '..OO........OOOO',
+        '..OO........OOOQ',
+      ]),
+      RB: mapa(17, [
+        '.......TFFTT',
+        '.......TTTtt',
+        '......TTT.ttt',
+        '..OO.TTT...tt',
+        '..OOTTT....tt',
+        '...........tt',
+        '...........tt',
+        '...........OOOO',
+        '...........OOOQ',
+        '',
+      ]),
+      RC: mapa(17, [
+        '.......TFFTT',
+        '.......TTTtt',
+        '......TTT..tt',
+        '......TT....tt',
+        '.....TTT....tt',
+        '.....TT......tt',
+        '....TTT......tt',
+        '...TTT.......tt',
+        '..OOO........OOO',
+        '..OOOQ.......OOO',
+      ]),
+      RD: mapa(17, [
+        '.......TFFTT',
+        '.......ttTTT',
+        '......ttt.TTT',
+        '..OO.ttt...TTT',
+        '..OOttt.....TT',
+        '...........TT',
+        '...........TT',
+        '...........OOOO',
+        '...........OOOQ',
+        '',
+      ]),
+      agA: mapa(20, [
+        '.......TFFTTT',
+        '......ttTTTTTT',
+        '.....tt.....TTT',
+        '....tt.......TT',
+        '...tt........TT',
+        '..OOO.......OOOO',
+        '..OOO.......OOOQ',
+      ]),
+      agB: mapa(20, [
+        '.......TFFTTT',
+        '.......tTTTTTT',
+        '.......tt..TTT',
+        '.......ttt.TT',
+        '.....OOOO..TT',
+        '..........OOOO',
+        '..........OOOQ',
+      ]),
+      agC: mapa(20, [
+        '.......TFFTTT',
+        '......TTTttttt',
+        '.....TTT....ttt',
+        '....TTT......tt',
+        '...TTT.......tt',
+        '..OOOO......OOO',
+        '..OOOQ......OOO',
+      ]),
+      agD: mapa(20, [
+        '.......TFFTTT',
+        '.......TTTTttt',
+        '.......TTT..tt',
+        '......TTT...tt',
+        '....OOOO...tt',
+        '..........OOOO',
+        '..........OOOO',
       ]),
     },
   },
@@ -267,7 +342,82 @@ const VISTAS = {
         '......OOO...OOO',
         '......OQO...OQO',
       ]),
-      agachado2: mapa(20, [
+      RA: mapa(17, [
+        '.......TTTTTTF',
+        '........TTTTTF',
+        '........TT.TT',
+        '........TT.OOO',
+        '........TT.OQO',
+        '........TT',
+        '........TT',
+        '........TT',
+        '.......OOO',
+        '.......OQO',
+      ]),
+      RB: mapa(17, [
+        '.......TTTTTTF',
+        '........TTTTTF',
+        '........TT.TT',
+        '........TT.TT',
+        '........TT.TT',
+        '........TT.OOO',
+        '........TT.OQO',
+        '.......OOO',
+        '.......OQO',
+        '',
+      ]),
+      RC: mapa(17, [
+        '.......TTTTTTF',
+        '........TTTTTF',
+        '........TT.TT',
+        '.......OOO.TT',
+        '.......OQO.TT',
+        '...........TT',
+        '...........TT',
+        '...........TT',
+        '..........OOO',
+        '..........OQO',
+      ]),
+      RD: mapa(17, [
+        '.......TTTTTTF',
+        '........TTTTTF',
+        '........TT.TT',
+        '........TT.TT',
+        '........TT.TT',
+        '.......OOO.TT',
+        '.......OQO.TT',
+        '..........OOO',
+        '..........OQO',
+        '',
+      ]),
+      agA: mapa(20, [
+        '.......TTTTTTT',
+        '......TTT...TTT',
+        '......TT.....TT',
+        '......OOO....TT',
+        '......OQO...TT',
+        '............OOO',
+        '............OQO',
+      ]),
+      agB: mapa(20, [
+        '.......TTTTTTT',
+        '......TTT...TTT',
+        '......TT.....TT',
+        '......TT.....TT',
+        '.......TT...OOO',
+        '......OOO...OQO',
+        '......OQO',
+      ]),
+      agC: mapa(20, [
+        '.......TTTTTTT',
+        '......TTT...TTT',
+        '......TT.....TT',
+        '......TT....OOO',
+        '.......TT...OQO',
+        '......OOO',
+        '......OQO',
+      ]),
+      agD: mapa(20, [
         '.......TTTTTTT',
         '......TTT...TTT',
         '......TT.....TT',
@@ -400,14 +550,89 @@ const VISTAS = {
         '.....OOOO..OOO',
         '.....OOOQ',
       ]),
-      agachado2: mapa(20, [
+      RA: mapa(17, [
+        '.......TTTTttF',
+        '.......TTT.ttt',
+        '.......TTT..ttt',
+        '.......TTT...OOO',
+        '.......TTT...OOO',
+        '.......TTT',
+        '.......TTT',
+        '.......TTT',
+        '.......OOO',
+        '.......OOOQ',
+      ]),
+      RB: mapa(17, [
+        '.......TTTTttF',
+        '.......TTT.tt',
+        '......TTT..tt',
+        '....OOTT...tt',
+        '....OOO....tt',
+        '...........tt',
+        '...........OOO',
+        '...........OOO',
+        '',
+        '',
+      ]),
+      RC: mapa(17, [
+        '.......TTTTttF',
+        '.......TTTTtt',
+        '........TTTTtt',
+        '........OOOOtt',
+        '........OOOQtt',
+        '...........tt',
+        '...........tt',
+        '...........tt',
+        '...........OOO',
+        '...........OOO',
+      ]),
+      RD: mapa(17, [
+        '.......TTTTttF',
+        '.......TTT.tt',
+        '.......TTT.tt',
+        '.......TTT.OOO',
+        '.......TTT.OOO',
+        '.......TTT',
+        '.......TTT',
+        '.......OOO',
+        '.......OOOQ',
+        '',
+      ]),
+      agA: mapa(20, [
+        '.......TTTTttt',
+        '......TTTT.ttt',
+        '......TTT...tt',
+        '......TT...OOO',
+        '......TT...OOO',
+        '.....OOOO',
+        '.....OOOQ',
+      ]),
+      agB: mapa(20, [
+        '.......TTTTttt',
+        '......TTTT.ttt',
+        '......TTT..OOO',
+        '......TT...OOO',
+        '......TT',
+        '.....OOOO',
+        '.....OOOQ',
+      ]),
+      agC: mapa(20, [
         '.......TTTTttt',
         '......TTTT.ttt',
         '......TTT...tt',
         '.....OOOO...tt',
-        '.....OOOQ..OOO',
+        '.....OOOQ...tt',
         '...........OOO',
-        '',
+        '...........OOO',
+      ]),
+      agD: mapa(20, [
+        '.......TTTTttt',
+        '......TTTT.ttt',
+        '......OOOO..tt',
+        '......OOOQ..tt',
+        '...........tt',
+        '...........OOO',
+        '...........OOO',
       ]),
     },
   },
@@ -466,7 +691,8 @@ function linea([x0, y0], [x1, y1], poner) {
 
 /**
  * UN CUADRO, en índices de la paleta. `vista` (lado, frente, espalda, diagF,
- * diagE), `piernas` (quieto, A, B, C, D, agachado, agachado2), `arma` (null,
+ * diagE), `piernas` (quieto; caminar A-D; trotar RA-RD; agachado y avanzar
+ * agachado agA-agD), `arma` (null,
  * 'revolver', 'winchester', 'escopeta'), `ang` el ángulo del arma en el dibujo
  * (ya espejado) y `mochila` (0-4). Devuelve los índices y la boca del caño.
  */
@@ -477,12 +703,23 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
     x += OX; y += OY;
     if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) idx[y * ANCHO + x] = i;
   };
-  const dibujarMapa = (m, dy = 0) => m.filas.forEach((fila, j) => {
-    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x, m.y + j + dy, C[fila[x]]);
+  const dibujarMapa = (m, dy = 0, dx = 0) => m.filas.forEach((fila, j) => {
+    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + dx, m.y + j + dy, C[fila[x]]);
   });
-  // Agachado, el cuerpo baja 3; pasando un paso, sube 1.
-  const baja = piernas.startsWith('agachado') ? 3 : (piernas === 'B' || piernas === 'D') ? -1 : 0;
-  const [hx, hy] = [V.hombro[0], V.hombro[1] + baja];
+  /**
+   * Agachado, el cuerpo baja 3 (pasando un paso agachado, 2: el cuerpo se
+   * hamaca un poco). Caminando, al pasar un paso sube 1; trotando, en el aire
+   * (RB, RD) también. 🔁 TROTAR TIENE SUS CUADROS *(Santi: "parece que está
+   * caminando rápido en vez de trotar")*: antes usaba los de caminar, con los
+   * dos pies siempre en el piso. Ahora hay un momento en el aire (los dos pies
+   * levantados) y el pie de atrás sube bien alto; de costado, además, el
+   * cuerpo va inclinado un punto hacia adelante.
+   */
+  const ag = piernas.startsWith('ag');
+  const baja = ag ? ((piernas === 'agB' || piernas === 'agD') ? 2 : 3)
+    : (piernas === 'B' || piernas === 'D' || piernas === 'RB' || piernas === 'RD') ? -1 : 0;
+  const inclina = vista === 'lado' && piernas.startsWith('R') ? 1 : 0;
+  const [hx, hy] = [V.hombro[0] + inclina, V.hombro[1] + baja];
   const dir = [Math.cos(ang), Math.sin(ang)];
   // Apuntando para arriba (hacia el fondo), el brazo va detrás del cuerpo.
   const detras = arma && dir[1] < -0.35;
@@ -516,15 +753,15 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila }) {
 
   if (detras) brazo();
   if (mochila && (vista === 'espalda' || vista === 'diagE' || vista === 'lado')) {
-    for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h + mochila; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, j === 0 ? C.m : C.M);
+    for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h + mochila; j++) for (let q = 0; q < w; q++) poner(x + q + inclina, y + j + baja, j === 0 ? C.m : C.M);
   }
   const P = V.piernas[piernas] || V.piernas.quieto;
   dibujarMapa(P);
-  // Pasando un paso el cuerpo sube 1: la cadera se estira un punto para que no
+  // Cuando el cuerpo sube 1 (pasando un paso, en el aire o agachado), la cadera se estira un punto para que no
   // quede un hueco entre el cinto y el pantalón.
-  if (baja < 0) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
-  dibujarMapa(V.torso, baja);
-  dibujarMapa(V.cabeza, baja);
+  if (baja < 0 || baja === 2) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
+  dibujarMapa(V.torso, baja, inclina);
+  dibujarMapa(V.cabeza, baja, inclina);
   if (mochila && (vista === 'frente' || vista === 'diagF')) {
     for (const [x, y, w, h] of V.mochila) for (let j = 0; j < h; j++) for (let q = 0; q < w; q++) poner(x + q, y + j + baja, C.M);
   }

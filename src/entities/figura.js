@@ -517,15 +517,19 @@ export function dibujarPersona(r, f) {
  * Devuelve lo mismo que `dibujarPersona`, más la boca del caño.
  */
 const CAMINAR_NUEVO = { 0: 'B', 1: 'A', 2: 'C', 3: 'B', 4: 'D' };
+// 🔁 Agachado avanza con cuatro cuadros, como caminar *(Santi: "cuando está
+// agachado se ve mal el avance, debería mover mejor las piernas")*: antes
+// alternaba dos dibujos casi iguales.
+const AGACHADO_NUEVO = { 0: 'agB', 1: 'agA', 2: 'agC', 3: 'agB', 4: 'agD' };
 function jugadorNuevo(r, f) {
   const PASO = CONFIG.estilo.punto / 4;
   const [vista, , , espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const agachado = (f.postura || 'pie') !== 'pie';
   let piernas = 'quieto';
-  if (agachado) piernas = f.fase != null && Math.floor(f.fase / RITMO.agachado) % 2 ? 'agachado2' : 'agachado';
+  if (agachado) piernas = f.fase != null ? AGACHADO_NUEVO[cuadroDe(f.fase, 'agachado')] : 'agachado';
   else if (f.fase != null) {
     if (f.modo === 'caminar') piernas = CAMINAR_NUEVO[cuadroDe(f.fase, 'caminar')];
-    else piernas = ['A', 'B', 'C', 'D'][cuadroDe(f.fase, 'trotar') >> 1];
+    else piernas = ['RA', 'RB', 'RC', 'RD'][cuadroDe(f.fase, 'trotar') >> 1];
   }
   const al = armaLarga(f.arma);
   const arma = !f.arma ? null : al ? (al.cadera ? 'escopeta' : 'winchester') : 'revolver';

@@ -59,7 +59,7 @@ const C = {
   I: 20, T: 19, t: 41,                               // el pantalón de lona: luz, base, sombra
   Q: 6, O: 5, o: 4,                                  // las botas (Q la luz); la suela es `K`
   F: 4, f: 3,                                        // la funda
-  e: 17, E: 16, i: 15, N: 10, Z: 9, X: 8,            // la manta enrollada: la lana (luz, base, sombra) y su borde rojo
+  N: 10, Z: 9, X: 8, e: 17, E: 16, i: 15,            // la manta enrollada: la lana roja (luz, base, sombra) y sus rayas claras
   J: 6, M: 5, m: 4, g: 3, Y: 45,                     // el morral de cuero: luz, base, sombra, la tira y la hebilla
 };
 
@@ -667,52 +667,59 @@ const BRAZO_REVOLVER = {
 /**
  * 🔁 LA MOCHILA: UNA MANTA ENROLLADA ARRIBA Y UN MORRAL DE CUERO *(Santi: "la
  * mochila es un cuadrado marrón sin textura… no se parece a un personaje de
- * Among Us"; eligió la C2, "la manta larga", y "prefiero que no se vean las
- * correas por sobre el chaleco")*. Antes, de espaldas ni se veía: se dibujaba
- * antes que el torso y el chaleco la tapaba.
+ * Among Us"; "prefiero que no se vean las correas por sobre el chaleco")*.
+ * Antes, de espaldas ni se veía: se dibujaba antes que el torso y el chaleco
+ * la tapaba.
  *
- * La manta es un rollo de lana clara (luz arriba, sombra abajo) con el borde
- * rojo en las puntas, atado con dos tiras de cuero; sobresale de los hombros
- * más allá de los brazos, para que no se lea como hombreras. El morral va
- * debajo, con su hebilla, y CRECE con lo que llevás (`mochila` de 1 a 4):
- * más alto y, lleno, con panza. Cada vista y cada tamaño, dibujado a mano;
- * hacia la izquierda, en espejo. De frente no se ve: las puntas de la manta
- * asomando a los costados también parecían hombreras.
+ * 🔁 Entre los brazos, sin pisarlos *(Santi: la manta larga y clara "se
+ * confunde con el brazo y el brazo con la manta, haciendo parecer otra vez que
+ * tiene una espalda ancha"; eligió la 2b y pidió que "los brazos no se
+ * superpongan a la manta en las diagonales" y que el morral "se sienta como
+ * que está separado del cuerpo")*. La manta es un rollo corto de lana roja
+ * (luz arriba, sombra abajo) con dos rayas claras y las puntas oscuras, un
+ * punto más abajo que el pañuelo, así entre los dos asoma el chaleco y no se
+ * leen como un cuello. El morral va debajo, con solapa y hebilla, y un borde
+ * oscuro a los costados y abajo que lo despega del chaleco. CRECE para abajo
+ * con lo que llevás (`mochila` de 1 a 4), nunca a los costados, que es donde
+ * están los brazos. Cada vista y cada tamaño, dibujado a mano; hacia la
+ * izquierda, en espejo. De frente no se ve.
  */
 const MOCHILA = {
   espalda: {
-    manta: mapa(8, [
-      '....XNeJeeeeeJeNX',
-      '....EZEmEEEEEmEZE',
-      '....XXimiiiiimiXX',
+    punta: [10, 8],
+    manta: mapa(9, [
+      '.........NNN',
+      '........ZZZZZ',
+      '.........XXX',
     ]),
     morral: [null,
-      mapa(11, ['.......mJJJJJm', '.......mMMYMMm', '.......mMMgMMm', '........mmmmm']),
-      mapa(11, ['.......mJJJJJm', '.......mMMYMMm', '.......mMMgMMm', '.......mMMMMMm', '........mmmmm']),
-      mapa(11, ['.......mJJJJJm', '.......mMMYMMm', '.......mMMgMMm', '......mJMMgMMMm', '......mMMMMMMMm', '.......mmmmmmm']),
-      mapa(11, ['.......mJJJJJm', '.......mMMYMMm', '......mJMMgMMMm', '......mJMMgMMMm', '......mJMMMMMMm', '......mMMMMMMmm', '.......mmmmmmm']),
+      mapa(12, ['........JJJMw', '........MYMmw', '........mmmmw', '.........www']),
+      mapa(12, ['........JJJMw', '........MYMmw', '........mmmmw', '........MMMmw', '.........www']),
+      mapa(12, ['........JJJMw', '........MYMmw', '........mmmmw', '........MMMmw', '........MMMmw', '.........www']),
+      mapa(12, ['........JJJMw', '........MYMmw', '........mmmmw', '........MMMmw', '........MMMmw', '........MMMmw', '.........www']),
     ],
   },
-  // Tres cuartos de espaldas: la punta de acá de la manta se ve de frente (el
-  // espiral), la de allá más corta; el morral muestra el costado, en sombra.
+  // Tres cuartos de espaldas: la punta de acá de la manta se ve de frente (a
+  // la derecha, con el centro del espiral); el morral muestra el costado, en sombra.
   diagE: {
-    manta: mapa(8, [
-      '.....NeJeeeeeJeNZ',
-      '.....ZEmEEEEEmEZe',
-      '.....XimiiiiimiXZ',
+    punta: [11, 8],
+    manta: mapa(9, [
+      '.........NNNZ',
+      '........ZZZZN',
+      '.........XXXZ',
     ]),
     morral: [null,
-      mapa(11, ['.......JJJJJJm', '.......mMMYMMg', '.......mMMgMMg', '........mmmmg']),
-      mapa(11, ['.......JJJJJJm', '.......mMMYMMg', '.......mMMgMMg', '.......mMMMMMg', '........mmmmg']),
-      mapa(11, ['.......JJJJJJm', '.......mMMYMMg', '.......mMMgMMg', '......mJMMgMMMg', '......mMMMMMMMg', '.......mmmmmmg']),
-      mapa(11, ['.......JJJJJJm', '.......mMMYMMg', '......mJMMgMMMg', '......mJMMgMMMg', '......mJMMMMMMg', '......mMMMMMMgg', '.......mmmmmmg']),
+      mapa(12, ['........JJJgw', '........MYmgw', '........mmmgw', '.........www']),
+      mapa(12, ['........JJJgw', '........MYmgw', '........mmmgw', '........MMmgw', '.........www']),
+      mapa(12, ['........JJJgw', '........MYmgw', '........mmmgw', '........MMmgw', '........MMmgw', '.........www']),
+      mapa(12, ['........JJJgw', '........MYmgw', '........mmmgw', '........MMmgw', '........MMmgw', '........MMmgw', '.........www']),
     ],
   },
-  // De costado, detrás de la espalda: la punta de la manta con su espiral, arriba del morral.
+  // De costado, detrás de la espalda: la punta roja de la manta con su espiral, arriba del morral.
   lado: {
     manta: mapa(7, [
       '...NZNX',
-      '...ZeZX',
+      '...ZXZX',
       '...XZXX',
     ]),
     morral: [null,
@@ -914,6 +921,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   const dibujarMochila = () => {
     const Mo = MOCHILA[vista];
     const corre = inclina + lomo;
+    // De espaldas, la punta del pañuelo que cuelga queda tapada por la manta
+    // (si se ve, pañuelo y manta forman una cruz roja).
+    if (Mo.punta) poner(Mo.punta[0] + corre, Mo.punta[1] + baja, C.V);
     dibujarMapa(Mo.manta, baja, corre);
     if (Mo.morral) dibujarMapa(Mo.morral[Math.max(1, Math.min(4, mochila))], baja, corre);
   };

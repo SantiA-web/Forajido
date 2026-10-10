@@ -18570,6 +18570,18 @@ para encontrar las poses). La E4 se hace directamente en P5.
   chaleco")*: las puntas de la manta asomando a los costados también parecían
   hombreras. De espaldas va delante de todo; en tres cuartos, delante del cuerpo
   y del brazo libre; de costado, detrás de la espalda.
+- 🔁 **La mochila, entre los brazos** *(Santi: la manta larga y clara "se
+  confunde con el brazo y el brazo con la manta, haciendo parecer otra vez que
+  tiene una espalda ancha")*. Probé cuatro (roja larga, roja corta, corta más
+  abajo, gris larga); eligió la **2b** y pidió que los brazos no pisen la manta
+  en las diagonales y que el morral "se sienta como que está separado del
+  cuerpo". Quedó: la manta es un rollo corto de lana roja lisa con las puntas
+  redondeadas, del ancho de la espalda y un punto más abajo que el pañuelo (la
+  punta del pañuelo que cuelga queda tapada: si no, formaban una cruz roja; las
+  rayas claras la hacían parecer a cuadros y una tira al medio, un moño). El
+  morral, un punto más angosto que la espalda, con solapa y hebilla y **una
+  sombra a la derecha y abajo sobre el cuerpo**, que es lo que lo despega: un
+  borde oscuro alrededor se confundía con el chaleco. Crece sólo para abajo.
 
 - 🔻 **Quedan para después:** asomarse desde la cobertura (hoy se dibuja
   agachado donde estás, sin el cuerpo que sale del reparo), el tirado en el

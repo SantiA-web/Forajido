@@ -189,8 +189,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hechas; sigue **P3, los guardias y los pasajeros**: el paso 1 (el diseño de la
   gente y sus variantes, entities/estiloNuevo/gente.js, todavía sin usar en el
   juego) está cerrado; en P3a (las poses y animaciones) el paso 1 está hecho:
-  el guardia sobre el esqueleto del jugador con el revólver enfundado; sigue la
-  recortada (ver NOTAS, "P3 · LA GENTE DEL TREN"). La E4 (los
+  el guardia sobre el esqueleto del jugador con el revólver enfundado; sigue
+  desenfundar, asomarse y el golpe del guardia (ver NOTAS, "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
   los guardias en el techo. Hay código de la vista de arriba del techo sin uso

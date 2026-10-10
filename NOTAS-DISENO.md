@@ -18728,7 +18728,10 @@ Primera clase y las mujeres quedan para después.
   enfundado asoma la culata de madera clara (`CULATA_ENFUNDADA`); sin arma en la
   mano, el brazo derecho se hamaca al caminar al revés del otro *("quedó bien")*.
   El pantalón gris queda como está *("no aclares el pantalón")*.
-- Siguen: la recortada; desenfundar, asomarse, el golpe del guardia, aturdido y
+- **La recortada no va en P3a** *(Santi: "la recortada no es solo para el
+  dinamitero?")*: es su arma fija, como los dos revólveres del pistolero; las dos
+  van en P3c con su guardia.
+- Siguen: desenfundar, asomarse, el golpe del guardia, aturdido y
   recibir el culatazo; sentado de franco, rendido y traición, caído apuntando,
   desmayado y muerto; el pasajero; meterlo en el juego.
 

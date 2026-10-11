@@ -408,12 +408,37 @@ function cuadroDormidoLado(o) {
 
 export function cuadroGente(o) {
   if (o.accion === 'dormido' && o.vista === 'lado') return cuadroDormidoLado(o);
+  /**
+   * FUMANDO (ver FUMAR): `fuma` el cuadro (0-7) y `fumaModo` 'mano' o 'boca'
+   * (con el arma larga). El pasajero sentado lo pide como acción ('fumar', `k`).
+   * Si en esa vista no fuma con la mano (el de franco de espaldas), sigue con lo suyo.
+   */
+  const sentado = o.piernas === 'sentado';
+  const fk = o.accion === 'fumar' ? o.k ?? 0 : o.fuma ?? null;
+  const modo = o.accion === 'fumar' ? 'mano' : o.fumaModo || 'mano';
+  const PF = fk != null && modo === 'mano' ? poseFumar(o.vista, fk, { sentado, cartas: !!o.cartas }) : null;
+  const FB = fk != null && modo === 'boca' ? FUMAR_BOCA[o.vista] : null;
   // Lo que hace sentado (`accion`, ver poseSentado) se arma acá: así se guarda por nombre.
-  let brazos = o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva) : o.brazos;
+  let brazos = PF || (o.accion === 'fumar' ? poseSentado('quieto', o.vista)
+    : o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva)
+      : fk != null && o.cartas ? 'cartas' : o.brazos);
   const persona = capasPersona(o);
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
-  return cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona });
+  const q = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona });
+  const F = PF || FB;
+  if (!F) return q;
+  // El cigarrillo, encima de todo (el papel crema y la brasa); el humo y el brillo, en el mundo.
+  const baja = sentado ? 4 : 0;
+  const cig = PF ? PF.cig : FB.c;
+  const pita = fk === 3;
+  const en = ([x, y]) => [x + OX, y + OY + baja];
+  if (cig) {
+    const [p, a] = cig.map(en);
+    q.idx[p[1] * ANCHO + p[0]] = 17;
+    q.idx[a[1] * ANCHO + a[0]] = pita ? 45 : 44;
+  }
+  return { ...q, brasa: cig ? en(cig[1]) : null, humo: en(F.humo), fumaK: fk, pita };
 }
 
 // ------------------------------------------------- lo que hacen sentados
@@ -761,6 +786,74 @@ export function lienzoTendido(o, luz = 0) {
   return g;
 }
 
+// ------------------------------------------------- fumar
+/**
+ * 🆕 FUMAR (P3a) *(Santi: "que los guardias vigilando, jugando cartas y los
+ * civiles despiertos tengan la animación más frecuente del juego: fumar
+ * cigarrillo")*, sobre las siluetas que aprobó. 8 cuadros: 0 el brazo abajo
+ * con el cigarrillo entre los dedos, 1 lo sube, 2 en la boca, 3 pita (la brasa
+ * se enciende), 4 lo baja, 5-7 abajo otra vez mientras suelta el humo (el humo
+ * y el brillo de la brasa no van en el dibujo: los pone figura.js encima, sin
+ * la luz del lugar, para que la brasa se vea en lo oscuro).
+ *
+ * Por vista: los tres lugares de la mano que fuma (hombro → codo → mano;
+ * `atras` si va detrás del cuerpo), el cigarrillo en cada uno ([papel,
+ * brasa]; de espaldas, en la boca, no se ve), de dónde sale el humo y el otro
+ * brazo. Las vistas de la izquierda son el espejo de las de la derecha, como
+ * el resto de las poses de la gente.
+ */
+const FUMAR = {
+  lado: { abajo: [[10, 9], [11, 13], [12, 15]], sube: [[10, 9], [14, 12], [14, 9]], boca: [[10, 9], [14, 12], [13, 6]],
+    c: { abajo: [[14, 15], [15, 15]], sube: [[16, 9], [17, 8]], boca: [[15, 6], [16, 6]] }, humo: [16, 6], otra: b([[9, 9], [9, 13], [9, 16]], true) },
+  frente: { abajo: [[7, 9], [6, 13], [6, 16]], sube: [[7, 9], [5, 13], [8, 10]], boca: [[7, 9], [4, 11], [9, 6]],
+    c: { abajo: [[6, 18], [6, 19]], sube: [[7, 10], [6, 10]], boca: [[8, 5], [7, 4]] }, humo: [14, 7], otra: b([[13, 9], [14, 13], [14, 16]]) },
+  diagF: { abajo: [[7, 9], [6, 13], [7, 16]], sube: [[7, 9], [8, 13], [10, 10]], boca: [[7, 9], [6, 12], [10, 6]],
+    c: { abajo: [[9, 17], [10, 17]], sube: [[12, 10], [13, 9]], boca: [[12, 7], [13, 7]] }, humo: [15, 6], otra: b([[13, 9], [13, 13], [13, 16]], true) },
+  diagE: { abajo: [[13, 9], [14, 13], [14, 16]], sube: [[13, 9], [16, 12], [15, 9]], boca: [[13, 9], [16, 11], [13, 6]],
+    c: { abajo: [[16, 17], [17, 17]], sube: [[17, 9], [18, 8]], boca: [[15, 5], [16, 5]] }, humo: [17, 5], otra: b([[6, 9], [6, 13], [6, 16]], true) },
+  espalda: { abajo: [[13, 9], [14, 13], [14, 16]], sube: [[13, 9], [16, 12], [15, 9]], boca: [[13, 9], [16, 11], [13, 6]], bocaAtras: true,
+    c: { abajo: [[14, 18], [14, 19]], sube: [[16, 8], [16, 7]], boca: null }, humo: [15, 5], otra: b([[6, 9], [5, 13], [5, 16]]) },
+};
+/** Sentado (el cuerpo 4 más abajo): la mano descansa en el muslo y no cuelga; el otro brazo, en la falda. */
+const FUMAR_SENTADO = {
+  lado: { otra: b([[9, 9], [10, 12], [12, 13]], true) },
+  frente: { abajo: [[7, 9], [6, 12], [8, 14]], c: { abajo: [[8, 16], [8, 17]] }, otra: b([[13, 9], [13, 12], [11, 15]]) },
+  espalda: { abajo: [[13, 9], [14, 12], [13, 14]], c: { abajo: null }, otra: b([[6, 9], [5, 12], [6, 14]]) },
+};
+/** El de franco: las cartas en la otra mano (sólo de costado y de frente; si no, juega sin fumar). */
+const FUMAR_CARTAS = {
+  lado: { otra: b([[9, 9], [10, 13], [12, 12]], true), cartas: mapa(11, ['.............LL', '..............L']) },
+  frente: { otra: b([[13, 9], [13, 12], [11, 14]]), cartas: mapa(13, ['..........LL', '..........L']) },
+};
+/** Con el arma larga en las manos: el cigarrillo queda en la boca todo el tiempo ([papel, brasa]) *(Santi: de acuerdo)*. */
+const FUMAR_BOCA = {
+  lado: { c: [[13, 6], [14, 6]], humo: [15, 6] },
+  diagF: { c: [[13, 6], [14, 6]], humo: [15, 6] },
+  frente: { c: [[12, 6], [13, 6]], humo: [14, 7] },
+  diagE: { c: [[13, 6], [14, 6]], humo: [16, 5] },
+  espalda: { c: null, humo: [15, 5] },
+};
+/** Qué cuadro de fumar toca, `t` segundos después de empezar: una pitada cada `cada` segundos (8 cuadros), y entre pitadas el brazo abajo. */
+export function cuadroDeFumar(t, cada = 6, cuadro = 0.3) {
+  const k = Math.floor((t % cada) / cuadro);
+  return k > 7 ? 0 : k;
+}
+/** La pose de fumar con la mano (los brazos y el cigarrillo); null si en esa vista no fuma así. */
+function poseFumar(vista, k, { sentado = false, cartas = false } = {}) {
+  const base = FUMAR[vista];
+  const S = sentado ? FUMAR_SENTADO[vista] : null;
+  const CA = cartas ? FUMAR_CARTAS[vista] : null;
+  if (!base || (sentado && !S) || (cartas && !CA)) return null;
+  const v = S ? { ...base, ...S, c: { ...base.c, ...(S.c || {}) } } : base;
+  const lugar = k === 0 || k >= 5 ? 'abajo' : k === 2 || k === 3 ? 'boca' : 'sube';
+  const otra = CA ? CA.otra : v.otra;
+  return {
+    lista: [b(v[lugar], lugar === 'boca' && !!v.bocaAtras), otra],
+    props: CA ? [{ m: CA.cartas, tabla: NAIPES }] : [],
+    cig: v.c[lugar], humo: v.humo,
+  };
+}
+
 const sueltos = new Map();
 /** El sombrero suelto, iluminado (con su borde); `base` es dónde apoya, en puntos del lienzo. */
 export function lienzoSombreroSuelto(o, luz = 0) {
@@ -788,7 +881,7 @@ export function lienzoSombreroSuelto(o, luz = 0) {
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');
@@ -801,7 +894,7 @@ export function lienzoGente(o, luz = 0, destello = false) {
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
-  g = { img: cv, boca: q.boca, hombro: q.hombro };
+  g = { img: cv, boca: q.boca, hombro: q.hombro, brasa: q.brasa || null, humo: q.humo || null, fumaK: q.fumaK ?? null, pita: !!q.pita };
   guardados.set(clave, g);
   return g;
 }

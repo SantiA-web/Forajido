@@ -31,6 +31,7 @@ import { lado, ladoConHuesos, huesosDeLado } from './gente/costado.js';
 import { tendido, TENDIDO } from './gente/tendido.js';
 import { tresCuartosConHuesos } from './gente/tresCuartos.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { PALETA } from '../engine/paleta.js';
 import { lienzoJugador, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
 import { lienzoGente, lienzoTendido, PIES_TENDIDO, ANCHO_TENDIDO, ALTO_TENDIDO } from './estiloNuevo/gente.js';
 
@@ -534,6 +535,28 @@ export function dibujarPersona(r, f) {
  */
 const PASO_NUEVO = { trotar: 19, caminar: 14, agachado: 14 };
 const cuadro8 = (recorrido, modo) => Math.floor((((recorrido / PASO_NUEVO[modo]) % 2) + 2) % 2 * 4) % 8;
+/**
+ * 🆕 EL HUMO Y LA BRASA DEL QUE FUMA (ver FUMAR en estiloNuevo/gente.js), encima
+ * del dibujo y sin la luz del lugar: la brasa es un punto naranja que se ve en
+ * lo oscuro (amarillo cuando pita) *(Santi: de noche, sólo de adorno)*; el humo
+ * sale en los cuadros 5-7, sube hacia adelante y se borra.
+ */
+const HUMO = [null, null, null, null, null,
+  [[0, 0, 0], [1, 0, 0], [1, -1, 0]],
+  [[2, -2, 0], [3, -3, 0], [2, -3, 1], [3, -4, 1]],
+  [[4, -6, 1], [3, -7, 1]]];
+function dibujarHumo(ctx, L, aMundo, espejo, PASO) {
+  const punto = (p, color, alfa) => {
+    const m = aMundo(p);
+    ctx.globalAlpha = alfa;
+    ctx.fillStyle = color;
+    ctx.fillRect(m.x - (espejo ? PASO : 0), m.y, PASO, PASO);
+  };
+  if (L.brasa) punto(L.brasa, L.pita ? PALETA[29] : PALETA[45], 1);
+  for (const [dx, dy, claro] of HUMO[L.fumaK] || []) punto([L.humo[0] + dx, L.humo[1] + dy], claro ? PALETA[25] : PALETA[24], claro ? 0.55 : 0.8);
+  ctx.globalAlpha = 1;
+}
+
 function jugadorNuevo(r, f) {
   const PASO = CONFIG.estilo.punto / 4;
   const [vista, , , espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
@@ -577,7 +600,7 @@ function jugadorNuevo(r, f) {
   // el dibujo: la bala sale hacia donde apuntás, como siempre.
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
-    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fino }, luz, !!f.destello)
+    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, fino }, luz, !!f.destello)
     : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
@@ -587,6 +610,7 @@ function jugadorNuevo(r, f) {
   if (fino) estiloNuevo.marcarGente(ctx, L.img, -PIES_NUEVO[0] * PASO, -PIES_NUEVO[1] * PASO, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
   ctx.restore();
   const aMundo = (p) => p && { x: x + (espejo ? -1 : 1) * (p[0] - PIES_NUEVO[0]) * PASO, y: pies + (p[1] - PIES_NUEVO[1]) * PASO };
+  if (L.fumaK != null) dibujarHumo(ctx, L, aMundo, espejo, PASO);
   const top = pies - 27 * PASO;
   return { x, mano: null, boca: aMundo(L.boca), hombro: aMundo(L.hombro), top, arriba: top, manoY: pies - 9, pechoY: pies - 11, vista, espejo };
 }

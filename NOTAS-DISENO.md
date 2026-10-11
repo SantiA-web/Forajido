@@ -18809,6 +18809,25 @@ Primera clase y las mujeres quedan para después.
   habría que rehacer el vagón, y no se hizo. **Los despiertos se sientan en el borde**;
   el dormido, echado contra el respaldo. **Su sombrero va en el almohadón del otro
   lugar del banco** (arriba o abajo de él), y al despertarse estira la mano hacia ahí.
+  🔁 Después, **pegado a él** (a 9 unidades en vez de 16) *(Santi: "más cerca del civil
+  dormido")*.
+- **🆕 FUMAR** *(Santi: "que los guardias vigilando, jugando cartas y los civiles
+  despiertos tengan la animación más frecuente del juego: fumar cigarrillo")*, sobre
+  siluetas que aprobó. 8 cuadros: el brazo abajo con el cigarrillo, lo sube, en la boca,
+  pita (la brasa se enciende), lo baja, y suelta el humo (sube por delante de la cara y
+  se borra). La brasa y el humo van encima del dibujo, sin la luz del lugar: de noche la
+  brasa es un punto naranja en lo oscuro, **sólo de adorno** (eligió A; B, que sirva para
+  ubicar guardias, cambia lo difícil de la noche: quedó para probar más adelante).
+  - **Quiénes:** 6 de cada 10 guardias y pasajeros (eligió B de 40/60/todos), una pitada
+    cada 6 s (`CONFIG.fumar`). El guardia fuma **sólo parado** (cuando para en la ronda,
+    o el que vigila una puerta) *(Santi)*; el de franco, mientras juega (las cartas en la
+    otra mano; de costado y de frente: en las otras vistas juega sin fumar). El pasajero
+    sentado de día, más que cualquier otra cosa: 6 de cada 10 acciones, de 12-20 s.
+  - **Con el arma larga** en las manos, el cigarrillo queda en la boca y sólo pita
+    *(Santi: de acuerdo)*.
+  - **Si se alarma, lo tira**: la colilla queda en el piso y se apaga en 3 s.
+  - Vistas: el guardia parado en las 5 (la izquierda, espejo); el pasajero sentado de
+    costado, de frente y de espaldas. No saca el cigarrillo al empezar: aparece con él.
 - Sigue **P3b**: las variantes (barbas finas en las otras vistas y su capa del
   motor, chaleco, tiradores, la chaqueta corta, cuerpos, el sorteo).
 

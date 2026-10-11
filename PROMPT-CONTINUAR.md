@@ -189,7 +189,7 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hechas; sigue **P3, los guardias y los pasajeros**: el paso 1 (el diseño de la
   gente y sus variantes, entities/estiloNuevo/gente.js, todavía sin usar en el
   juego) está cerrado; P3a (las poses y animaciones del guardia común y del
-  pasajero, ya en el juego con [F9], y los pasajeros que duermen de noche) está
+  pasajero, ya en el juego con [F9], los pasajeros que duermen de noche y la gente que fuma) está
   hecha y falta que Santi la juegue; sigue P3b, las variantes (ver NOTAS, "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y

@@ -7,6 +7,8 @@
 import { CONFIG } from '../data/config.js';
 import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_LOOK, tendidoNuevo } from './figura.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { PALETA } from '../engine/paleta.js';
+import { cuadroDeFumar } from './estiloNuevo/gente.js';
 import { dibujarHeridas } from './danio.js';
 import { GUARD_TYPES, DEFAULT_GUARD_TYPE, guardHealth } from '../data/guards.js';
 import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
@@ -562,6 +564,41 @@ export function drawEnemy(r, e) {
     ...poseNueva(e, peleando && conArma && !larga),
     ...franco,
   };
+  /**
+   * 🆕 FUMA (ver CONFIG.fumar) *(Santi: "solo cuando paran o los que vigilan
+   * puertas")*: el fumador, parado y tranquilo patrullando (el que vigila una
+   * puerta está siempre parado), o el de franco mientras juega. Con el arma
+   * larga en las manos, el cigarrillo en la boca. Si se alarma, lo tira: la
+   * colilla queda en el piso y se apaga sola.
+   */
+  if (nuevo) {
+    const ahora = performance.now() / 1000;
+    if (e._p3Fuma === undefined) e._p3Fuma = Math.random() < CONFIG.fumar.fumadores;
+    const parado = e.state === 'patrol' && !e.atCover && !(e.aimTimer > 0) && fase == null && !(e.stagger > 0) && !(e.desenfundando > 0);
+    if (e._p3Fuma && (sentado || parado)) {
+      if (e._p3FumaDesde == null) e._p3FumaDesde = ahora;
+      const k = cuadroDeFumar(ahora - e._p3FumaDesde, CONFIG.fumar.cada, CONFIG.fumar.cuadro);
+      Object.assign(poseN, sentado ? { fuma: k, fumaModo: 'mano', cartas: true, brazos: null } : { fuma: k, fumaModo: larga ? 'boca' : 'mano' });
+      e._p3Fumaba = true;
+    } else {
+      e._p3FumaDesde = null;
+      if (e._p3Fumaba && e.state !== 'patrol') e._p3Colilla = { x: e.x + Math.cos(e.facing) * 4, y: pies - 1, t: ahora };
+      e._p3Fumaba = false;
+    }
+    // La colilla tirada: el papel y la brasa, que se apaga.
+    const co = e._p3Colilla;
+    if (co) {
+      const t = (ahora - co.t) / CONFIG.fumar.colilla;
+      if (t >= 1) e._p3Colilla = null;
+      else {
+        const P = CONFIG.estilo.punto / 4;
+        r.rect(co.x, co.y, P, P, PALETA[17]);
+        r.ctx.globalAlpha = 1 - t;
+        r.rect(co.x + P, co.y, P, P, PALETA[45]);
+        r.ctx.globalAlpha = 1;
+      }
+    }
+  }
   const fig = dibujarPersona(r, {
     tipo, x: e.x, pies, angulo: e.facing,
     interior: true,

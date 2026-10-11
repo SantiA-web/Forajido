@@ -1437,6 +1437,25 @@ export const CONFIG = {
   },
 
   /**
+   * 🆕 FUMAR (P3a, sólo el dibujo) *(Santi: "la animación más frecuente del
+   * juego: fumar cigarrillo"; eligió la B de 40/60/todos, y la brasa de noche
+   * sólo de adorno)*: `fumadores` de cada 10 guardias y pasajeros fuman; una
+   * pitada cada `cada` segundos (8 cuadros de `cuadro` s). El guardia fuma
+   * cuando está parado patrullando (o vigilando una puerta) y el de franco
+   * mientras juega; el pasajero sentado de día, más que cualquier otra cosa
+   * (`pesoPasajero` de sus acciones, de `duracion` segundos). Si un guardia
+   * que fuma se alarma, tira el cigarrillo (la colilla se apaga en `colilla` s).
+   */
+  fumar: {
+    fumadores: 0.6,
+    cada: 6,
+    cuadro: 0.3,
+    pesoPasajero: 0.6,
+    duracion: [12, 20],
+    colilla: 3,
+  },
+
+  /**
    * LA ALARMA.
    *
    * Antes los refuerzos aparecían de la nada en un enganche. Ahora la presión

@@ -12,7 +12,7 @@
 import { CONFIG } from '../data/config.js';
 import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, tendidoNuevo } from './figura.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { lienzoSombreroSuelto } from './estiloNuevo/gente.js';
+import { lienzoSombreroSuelto, cuadroDeFumar } from './estiloNuevo/gente.js';
 import { moveAndCollide, distance, hasLineOfSight, angleDifference } from '../engine/collision.js';
 import { isHidden } from './player.js';
 import {
@@ -343,17 +343,31 @@ function accionDeDia(pa, ahora) {
   if (ahora >= s.hasta) {
     if (s.accion) { s.accion = null; s.hasta = ahora + 6 + Math.random() * 6; }
     else {
-      const hay = ['ventana'];
-      if (pa.diario) hay.push('diario');
-      if (pa.mazo) hay.push('barajar');
-      if (pa.lleva) hay.push('equipaje');
-      s.accion = hay[Math.floor(Math.random() * hay.length)];
-      s.desde = ahora;
-      s.hasta = ahora + 3 + Math.random() * 3;
+      /**
+       * 🆕 EL QUE FUMA, FUMA MÁS QUE CUALQUIER OTRA COSA (ver CONFIG.fumar):
+       * de cada 10 veces, 6 prende un cigarrillo, que le dura 12-20 s (lo
+       * demás, 3-6 s).
+       */
+      const F = CONFIG.fumar;
+      if (pa._p3Fuma === undefined) pa._p3Fuma = Math.random() < F.fumadores;
+      if (pa._p3Fuma && Math.random() < F.pesoPasajero) {
+        s.accion = 'fumar';
+        s.desde = ahora;
+        s.hasta = ahora + F.duracion[0] + Math.random() * (F.duracion[1] - F.duracion[0]);
+      } else {
+        const hay = ['ventana'];
+        if (pa.diario) hay.push('diario');
+        if (pa.mazo) hay.push('barajar');
+        if (pa.lleva) hay.push('equipaje');
+        s.accion = hay[Math.floor(Math.random() * hay.length)];
+        s.desde = ahora;
+        s.hasta = ahora + 3 + Math.random() * 3;
+      }
     }
   }
   if (!s.accion) return null;
   const t = ahora - s.desde, queda = s.hasta - ahora;
+  if (s.accion === 'fumar') return { accion: 'fumar', k: cuadroDeFumar(t, CONFIG.fumar.cada, CONFIG.fumar.cuadro), girando: false };
   const k = t < 0.15 ? 0 : t < 0.3 ? 1 : queda < 0.15 ? 0 : queda < 0.3 ? 7 : 2 + (Math.floor((t - 0.3) / 0.35) % 5);
   return { accion: s.accion, k, girando: t < 0.3 || queda < 0.3 };
 }

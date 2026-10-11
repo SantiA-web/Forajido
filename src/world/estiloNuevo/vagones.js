@@ -299,6 +299,7 @@ function vagon(train, w, dia) {
   }
 
   // ===== LOS ASIENTOS: respaldo a la izquierda, almohadón de cuero y patas
+  const ANCHO_ASIENTO = 15;
   const asientos = [];
   {
     const r = rect(ASIENTOS);
@@ -308,7 +309,14 @@ function vagon(train, w, dia) {
       let fin = f; while (casilla(c, fin + 1) === 'S') fin++;
       const x = ax(w.x + c * S), x2 = ax(w.x + (c + 1) * S);
       const y = ay(f * S) - sube, y2 = ay((fin + 1) * S);
-      const bw = x2 - x, bh = y2 - y;
+      /**
+       * 🔁 15 PUNTOS DE FONDO, no la casilla entera (21) *(Santi: "achicar apenas el
+       * sillón para que queden con los pies sobre el piso"; eligió 15 de 21/15/13)*:
+       * el almohadón termina antes y los pies del que está sentado quedan en el
+       * piso. La casilla sigue entera en el juego (delante queda una franja de unas
+       * 4 unidades donde van los pies).
+       */
+      const bw = Math.min(x2 - x, ANCHO_ASIENTO), bh = y2 - y;
       // El contorno va por pieza (respaldo y almohadón): con uno solo para la
       // caja entera, arriba del almohadón quedaba un bloque negro.
       r(x, y, 7, bh - 3, 0);

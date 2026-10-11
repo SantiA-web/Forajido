@@ -392,7 +392,7 @@ function cuadroDormidoLado(o) {
     x += OX; y += OY;
     if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) idx[y * ANCHO + x] = i;
   };
-  for (const m of [SOMBRERO_AL_LADO, DORMIDO_LADO]) m.filas.forEach((f, j) => {
+  for (const m of [DORMIDO_LADO]) m.filas.forEach((f, j) => {
     for (let x = 0; x < f.length; x++) if (f[x] !== '.') poner(x, m.y + j, col[f[x]]);
   });
   if (!o.fino) {
@@ -411,11 +411,8 @@ export function cuadroGente(o) {
   // Lo que hace sentado (`accion`, ver poseSentado) se arma acá: así se guarda por nombre.
   let brazos = o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva) : o.brazos;
   const persona = capasPersona(o);
-  // Agarrando el sombrero del banco: todavía no lo tiene puesto; está al lado.
-  if (brazos && brazos.sinSombrero) {
-    persona.sombrero = null;
-    brazos = { ...brazos, props: [...(brazos.props || []), { m: SOMBRERO_AL_LADO, piso: true, capa: 'fondo' }] };
-  }
+  // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
+  if (brazos && brazos.sinSombrero) persona.sombrero = null;
   return cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona });
 }
 
@@ -514,9 +511,10 @@ const POSES_SENTADO = {
   // vistas, ladeada) y los brazos cruzados.
   /**
    * 🆕 AL DESPERTARSE (de costado, 0,6 s): agarra el sombrero del banco (la mano
-   * de acá estirada hacia él) y se lo pone (la mano en el ala).
+   * de acá, hacia el almohadón donde está) y se lo pone (la mano en el ala).
    */
-  agarraSombrero: { lado: { lista: [b([[10, 9], [8, 13], [5, 15]]), b([[9, 9], [10, 12], [12, 13]], true)], sinSombrero: true, sombreroAlLado: true } },
+  agarraSombrero: { lado: { lista: [b([[10, 9], [12, 12], [13, 15]]), b([[9, 9], [10, 12], [12, 13]], true)], sinSombrero: true } },
+  agarraSombreroArriba: { lado: { lista: [b([[10, 9], [12, 7], [13, 4]]), b([[9, 9], [10, 12], [12, 13]], true)], sinSombrero: true } },
   poneSombrero: { lado: { lista: [b([[10, 9], [13, 6], [12, 2]]), b([[9, 9], [10, 12], [12, 13]], true)] } },
   dormido: {
     // 🔁 Mirando para abajo, a las rodillas *(Santi: "que sus ojos apunten a sus
@@ -566,8 +564,14 @@ const DORMIDO_LADO = mapa(6, [
   '.............KKKKK',
 ]);
 /** Su sombrero, apoyado en el banco al lado (el bombín de costado). */
-// En el banco, en el hueco entre la espalda y el respaldo (al lado de la cadera).
-const SOMBRERO_AL_LADO = mapa(18, ['...hHk', '..hHHHk', '..bbbbb', '.hHHHHHk']);
+/**
+ * 🔁 SU SOMBRERO, APOYADO EN EL OTRO LUGAR DEL BANCO *(Santi: "que no quede encima
+ * del respaldo y que parezca que está junto al personaje")*: cada banco tiene dos
+ * lugares (uno arriba y otro abajo) y él ocupa uno; el sombrero va en el
+ * almohadón del otro. Es un dibujo suelto (ver `lienzoSombreroSuelto`): el
+ * bombín de costado, con la base en (3, 3).
+ */
+const SOMBRERO_SUELTO = mapa(0, ['..hHk', '.hHHHk', '.bbbbb', 'hHHHHHk']);
 
 /** La maleta y el bolso, en el piso al lado (`[cerrada, abierta]`), por vista. */
 const EQUIPAJE = {
@@ -600,7 +604,7 @@ export function poseSentado(accion, vista, k = 0, lleva = 'maleta') {
   // Dormido, los brazos cruzados y la cabeza caída; sin hacer nada, las manos en la falda.
   // Dormido respira: cada tanto la cabeza sube un punto (`k` impar).
   // Al despertarse: en las otras vistas (no se sientan así), quieto.
-  if (accion === 'agarraSombrero' || accion === 'poneSombrero') return POSES_SENTADO[accion][vista] || { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
+  if (accion === 'agarraSombrero' || accion === 'agarraSombreroArriba' || accion === 'poneSombrero') return POSES_SENTADO[accion][vista] || { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
   if (accion === 'dormido') { const D = POSES_SENTADO.dormido[vista]; return { ...D, cabeza: D.cabeza - (k % 2) }; }
   if (accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
   if (!V || !POSES_SENTADO[accion]) return null;
@@ -754,6 +758,32 @@ export function lienzoTendido(o, luz = 0) {
   cv.getContext('2d').putImageData(new ImageData(datos, TA, TL), 0, 0);
   g = { img: cv, boca: q.boca };
   tendidos.set(clave, g);
+  return g;
+}
+
+const sueltos = new Map();
+/** El sombrero suelto, iluminado (con su borde); `base` es dónde apoya, en puntos del lienzo. */
+export function lienzoSombreroSuelto(o, luz = 0) {
+  const clave = [o.tipo, o.sombrero ?? '', o.colorSombrero ?? '', o.fino ? 1 : 0, luz].join('|');
+  let g = sueltos.get(clave);
+  if (g) return g;
+  const col = { ...C, ...capasPersona({ vista: 'lado', ...o }).colores };
+  const W = 9, H = 6, idx = new Int16Array(W * H).fill(-1);
+  SOMBRERO_SUELTO.filas.forEach((f, j) => { for (let x = 0; x < f.length; x++) if (f[x] !== '.') idx[(j + 1) * W + x + 1] = col[f[x]]; });
+  if (!o.fino) {
+    const lleno = idx.slice();
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (lleno[y * W + x] >= 0) continue;
+      const v = (a, b) => a >= 0 && b >= 0 && a < W && b < H && lleno[b * W + a] >= 0;
+      if (v(x - 1, y) || v(x + 1, y) || v(x, y - 1) || v(x, y + 1)) idx[y * W + x] = 0;
+    }
+  }
+  const datos = iluminar({ ancho: W, alto: H, indices: idx, campo: () => luz });
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  cv.getContext('2d').putImageData(new ImageData(datos, W, H), 0, 0);
+  g = { img: cv, base: [4, 5] };
+  sueltos.set(clave, g);
   return g;
 }
 

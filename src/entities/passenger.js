@@ -12,6 +12,7 @@
 import { CONFIG } from '../data/config.js';
 import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, tendidoNuevo } from './figura.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { lienzoSombreroSuelto } from './estiloNuevo/gente.js';
 import { moveAndCollide, distance, hasLineOfSight, angleDifference } from '../engine/collision.js';
 import { isHidden } from './player.js';
 import {
@@ -379,8 +380,37 @@ function dibujarZ(r, x, arriba) {
   });
 }
 
-/** Dónde se dibuja el sentado respecto del medio de su asiento (en unidades del mundo). */
-const AJUSTE_ASIENTO = { x: 1.5, y: 0 };
+/**
+ * Dónde se dibuja el sentado respecto del medio de su asiento (en unidades del
+ * mundo). 🔁 Despierto, en el borde del almohadón *(Santi: "que los despiertos
+ * estén sentados más en el borde del asiento")*; dormido, echado atrás con la
+ * cabeza contra el respaldo.
+ */
+const AJUSTE_ASIENTO = { x: 2.25, y: 0, dormido: -0.5 };
+
+/**
+ * Dónde está su sombrero en el banco: en el otro lugar (cada banco tiene dos,
+ * uno arriba y otro abajo; `asientoBase` es el borde de abajo del banco). Sobre
+ * el almohadón, a la altura de la cadera.
+ */
+function sombreroEnElBanco(r, pa) {
+  const S = CONFIG.tileSize, PASO = CONFIG.estilo.punto / 4;
+  const abajoLibre = pa.y + S < pa.asientoBase;           // ¿hay lugar abajo de él en el banco?
+  pa.sombreroArriba = !abajoLibre;
+  const y = (abajoLibre ? pa.y + S : pa.y - S) + pa.hh - 5;
+  const x = pa.asientoX + 1;
+  return {
+    antes: !abajoLibre,
+    dibujar: () => {
+      const luz = estiloNuevo.luzEn ? estiloNuevo.luzEn(x, y) : 0;
+      const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
+      const L = lienzoSombreroSuelto({ tipo: 'pasajero', fino }, luz);
+      const ox = Math.round(x / PASO) * PASO - L.base[0] * PASO, oy = Math.round(y / PASO) * PASO - L.base[1] * PASO;
+      r.ctx.drawImage(L.img, ox, oy, L.img.width * PASO, L.img.height * PASO);
+      if (fino) estiloNuevo.marcarGente(r.ctx, L.img, ox, oy, L.img.width * PASO, L.img.height * PASO);
+    },
+  };
+}
 
 /** 🎨 EL PASAJERO CON EL DIBUJO NUEVO (P3a). */
 function pasajeroNuevo(r, pa, pies) {
@@ -416,7 +446,7 @@ function pasajeroNuevo(r, pa, pies) {
   const despertando = sentado && pa._p3Desperto != null && ahora - pa._p3Desperto < 0.6;
   if (pa.dormido) { nuevo.accion = 'dormido'; nuevo.k = Math.floor(ahora / 1.4) % 2; }
   else if (pa.state === 'amenazado') nuevo.brazos = 'arriba';
-  else if (despertando) nuevo.accion = ahora - pa._p3Desperto < 0.3 ? 'agarraSombrero' : 'poneSombrero';
+  else if (despertando) nuevo.accion = ahora - pa._p3Desperto < 0.3 ? (pa.sombreroArriba ? 'agarraSombreroArriba' : 'agarraSombrero') : 'poneSombrero';
   else if (pa.revelando) {
     // Saca el revólver de adentro del saco (los cuadros del desenfundar) y te apunta.
     const d = Math.floor(revelaT / 0.2);
@@ -438,7 +468,7 @@ function pasajeroNuevo(r, pa, pies) {
     r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
   }
   // Sentado en el almohadón, la espalda contra el respaldo (que está a la izquierda del asiento).
-  let xDibujo = sentado && pa.asientoX != null ? pa.asientoX + AJUSTE_ASIENTO.x : pa.x;
+  let xDibujo = sentado && pa.asientoX != null ? pa.asientoX + (pa.dormido ? AJUSTE_ASIENTO.dormido : AJUSTE_ASIENTO.x) : pa.x;
   /**
    * 🐛 AL LEVANTARSE NO SALTA *(Santi: "al despertarse aparecen tan lejos")*: el
    * que estaba sentado o en la litera (que se dibujan sobre el mueble, no donde
@@ -450,6 +480,14 @@ function pasajeroNuevo(r, pa, pies) {
     xDibujo = pa._p3Desde.x + (pa.x - pa._p3Desde.x) * t;
   }
   const piesDibujo = sentado && pa.asientoX != null ? pies + AJUSTE_ASIENTO.y : pies;
+  /**
+   * SU SOMBRERO EN EL BANCO (dormido, o recién despierto agarrándolo): en el
+   * almohadón del otro lugar del banco. Si está más allá (arriba), va antes que
+   * él; si está más acá (abajo), después.
+   */
+  const sinSombrero = pa.dormido || (despertando && ahora - pa._p3Desperto < 0.3);
+  const sombrero = sentado && sinSombrero && pa.asientoX != null ? sombreroEnElBanco(r, pa) : null;
+  if (sombrero && sombrero.antes) sombrero.dibujar();
   const fig = dibujarPersona(r, {
     tipo: 'pasajero', x: xDibujo, pies: piesDibujo, angulo, fase: sentado ? null : fase,
     modo: pa.state === 'fleeing' ? 'trotar' : 'caminar',
@@ -457,7 +495,9 @@ function pasajeroNuevo(r, pa, pies) {
     sacudida: shake,
     destello: pa.hitFlash > 0,
   });
-  if (pa.dormido) dibujarZ(r, fig.x, fig.arriba);
+  if (sombrero && !sombrero.antes) sombrero.dibujar();
+  // (Corrida a la derecha: arriba de la cabeza del que duerme sentado puede estar su sombrero.)
+  if (pa.dormido) dibujarZ(r, fig.x + (sentado ? 4 : 0), fig.arriba);
   if (pa.state === 'amenazado') {
     const c = CONFIG.passenger;
     const queda = Math.max(0, pa.panicTimer / c.robPanicDelay);

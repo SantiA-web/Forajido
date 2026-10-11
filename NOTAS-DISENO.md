@@ -18802,6 +18802,13 @@ Primera clase y las mujeres quedan para después.
   **Los bancos quedan como estaban** *(Santi: "mejor dejemos como el actual")*: se
   probaron de costado, a medio camino, como su ícono y como caja a 60° y 75°, y no
   convenció ninguno.
+- **🔁 Los bancos, 15 puntos de fondo en vez de 21** *(Santi: "achicar apenas el sillón
+  para que queden con los pies sobre el piso"; eligió 15 de 21/15/13)*: el almohadón
+  termina antes y los pies del sentado quedan en el piso; la casilla sigue entera en el
+  juego (delante queda una franja de ~4 unidades). No libera casillas: para más bancos
+  habría que rehacer el vagón, y no se hizo. **Los despiertos se sientan en el borde**;
+  el dormido, echado contra el respaldo. **Su sombrero va en el almohadón del otro
+  lugar del banco** (arriba o abajo de él), y al despertarse estira la mano hacia ahí.
 - Sigue **P3b**: las variantes (barbas finas en las otras vistas y su capa del
   motor, chaleco, tiradores, la chaqueta corta, cuerpos, el sorteo).
 

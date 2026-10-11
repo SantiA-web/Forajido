@@ -956,7 +956,52 @@ const CRUZADA = { lado: { mano: [11, 15], ang: -1.3 }, otra: { mano: [12, 16], a
  * (cara, pelo, barba, sombrero…) y `torso` el torso. `enfundado`: el
  * revólver en la funda (ver CULATA_ENFUNDADA).
  */
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera }) {
+/**
+ * 🆕 EL PAÑUELO SUBIDO EN LOS ASALTOS (`mascara`) *(Santi: "en el campamento y pueblo
+ * está así normal, pero en los asaltos se sube el pañuelo")*: tapa de la nariz a la
+ * barbilla y cuelga en punta debajo del mentón; de espaldas se ve la tira con el nudo
+ * atrás. Reemplaza las cuatro filas de abajo de la cabeza (la cara y el pañuelo), y
+ * en el torso se saca la punta que colgaba del cuello (las dos filas de arriba).
+ */
+const CARA_ASALTO = {
+  lado: ['........qpPPp', '........rRRRRS', '.........rRRS', '..........rS'],
+  frente: ['........qpppq', '........RRRRR', '........rRRRr', '.........rRr'],
+  diagF: ['........qpppp', '........rRRRRS', '.........rRRRS', '..........rRS'],
+  diagE: ['.........qBBBP', '.........rRSRr', '.........qBSBP', '..........ppp'],
+  espalda: ['........qBBBq', '........rRSRr', '........qBSBq', '.........ppp'],
+};
+const conMascara = {};
+function partesConMascara(vista) {
+  if (conMascara[vista]) return conMascara[vista];
+  const V = VISTAS[vista];
+  return (conMascara[vista] = {
+    cabeza: { y: V.cabeza.y, filas: [...V.cabeza.filas.slice(0, 5), ...CARA_ASALTO[vista]] },
+    torso: { y: V.torso.y, filas: V.torso.filas.map((f, j) => (j < 2 ? f.replace(/[RSrz]/g, 'V') : f)) },
+  });
+}
+/**
+ * 🆕 EL CUERVO DEL PAÑUELO *(Santi: "El Cuervo asaltó el de las 6:00. Solo dejó un
+ * sobreviviente"; eligió el 5 de seis, con la cabeza un punto más corta y las alas
+ * sin llegar al borde)*: negro, en puntos finos (1×1, un tercio de punto), encima
+ * del dibujo. Las alas abiertas con las puntas para arriba, el cuerpo, la cabeza y
+ * la cola abierta en la punta del pañuelo. Sólo de frente y en diagonal de frente
+ * (de costado y de espaldas el pañuelo queda de perfil o atrás). `desde` es el
+ * punto de arriba a la izquierda del pañuelo, antes de mover la cabeza.
+ */
+const CUERVO = {
+  filas: [
+    '.##.........##.',
+    '..###.....###..',
+    '...###.#.###...',
+    '...#########...',
+    '.....#####.....',
+    '......###......',
+    '.....#####.....',
+    '....#.#.#.#....',
+  ],
+  desde: { frente: [8, 5], diagF: [9, 5] },
+};
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara }) {
   const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
   const TJ = tajo != null ? TAJO[tajo] : null;
   /**
@@ -977,7 +1022,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   if (golpe != null) ang = GL ? (GL.cruzada ? -1.3 : espejoAng(GL.r * Math.PI / 8)) : espejoAng(GOLPE.brazo[golpe]);
   const AT = aturdido != null ? ATURDIDO[aturdido] : null;
   if (AT) { ang = espejoAng(AT.r * Math.PI / 8); empuna = 0; }
-  const V = VISTAS[vista];
+  const V0 = VISTAS[vista];
+  const V = mascara && !persona ? { ...V0, ...partesConMascara(vista) } : V0;
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
     if (i == null) return;
@@ -1284,11 +1330,13 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   const bx = BRo ? BRo.cabezaX || 0 : 0;
   /** La cabeza de la persona: la cara y el pelo, y el sombrero (que con la cabeza gacha baja más, `BRo.gacha`). */
   const ga = BRo && BRo.gacha ? BRo.gacha : [0, 0];
+  let cabezaEn = [0, 0];   // dónde quedó la cabeza (para el cuervo del pañuelo)
   const dibujarCabeza = (dy, dx, conGacha) => {
     // 🔁 El jugador de costado, con la cabeza un punto más atrás, centrada sobre el torso, como toda la
     // gente *(Santi: "revisá al jugador")*; la gente ya la trae corrida (capasPersona en gente.js).
     const atras = !persona && vista === 'lado' ? 1 : 0;
     for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, dy, dx - atras);
+    cabezaEn = [dx - atras, dy];
     if (persona && persona.sombrero) dibujarMapa(persona.sombrero, dy + (conGacha ? ga[0] : 0), dx + (conGacha ? ga[1] : 0));
   };
   const props = (capa) => (BRo && BRo.props || []).forEach((p) => {
@@ -1373,7 +1421,21 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     const vecino = (a, b) => a >= 0 && b >= 0 && a < ANCHO && b < ALTO && lleno[b * ANCHO + a] >= 0;
     if (vecino(x - 1, y) || vecino(x + 1, y) || vecino(x, y - 1) || vecino(x, y + 1)) idx[y * ANCHO + x] = 0;
   }
-  return { idx, boca: boca && [boca[0] + OX, boca[1] + OY], hombro: [hx + OX, hy + OY] };
+  // El cuervo, en puntos finos: sólo donde se ve el pañuelo (no debajo de un brazo o del arma).
+  let finos = null;
+  if (mascara && !persona && CUERVO.desde[vista]) {
+    finos = [];
+    const pano = new Set([C.R, C.r, C.S, C.z]);
+    const [px0, py0] = CUERVO.desde[vista];
+    CUERVO.filas.forEach((f, j) => {
+      for (let i = 0; i < f.length; i++) {
+        if (f[i] !== '#') continue;
+        const fx = (px0 + cabezaEn[0] + OX) * 3 + i, fy = (py0 + cabezaEn[1] + OY) * 3 + j;
+        if (pano.has(idx[Math.floor(fy / 3) * ANCHO + Math.floor(fx / 3)])) finos.push(fx, fy);
+      }
+    });
+  }
+  return { idx, boca: boca && [boca[0] + OX, boca[1] + OY], hombro: [hx + OX, hy + OY], finos };
 }
 
 const guardados = new Map();
@@ -1384,7 +1446,7 @@ const guardados = new Map();
  * balazo que recibiste).
  */
 export function lienzoJugador(o, luz = 0, destello = false) {
-  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0].join('|');
+  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0].join('|');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 900) guardados.clear();
@@ -1394,7 +1456,7 @@ export function lienzoJugador(o, luz = 0, destello = false) {
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
-  g = { img: cv, boca: q.boca, hombro: q.hombro };
+  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: q.finos };
   guardados.set(clave, g);
   return g;
 }

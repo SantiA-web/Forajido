@@ -1194,7 +1194,8 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const llenado = p.mochila || 0;
   const bulto = llenado > 0 ? 1 + Math.round(llenado * 3) : 0;
   const fig = dibujarPersona(r, {
-    tipo: 'jugador', x: bx, pies, angulo: p.aim,
+    // En el asalto, con el pañuelo subido (ver CARA_ASALTO en estiloNuevo/jugador.js).
+    tipo: 'jugador', mascara: true, x: bx, pies, angulo: p.aim,
     // 🎨 Adentro del vagón: con la prueba del estilo nuevo ([F9]) va el dibujo nuevo.
     interior: true,
     // A cubierto no caminás: los pies se quedan pegados a la pared y lo que
@@ -1338,7 +1339,7 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
     if (p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0) return;
     const mira = cae ? cae.mira : p.techoMira;
     const tierra = dibujarPersona(r, {
-      tipo: 'jugador', x: p.x, pies: py + p.hh,
+      tipo: 'jugador', mascara: true, x: p.x, pies: py + p.hh,
       escala: cae ? 1 : (p.escalaTecho || 1),
       angulo: mira < 0 ? Math.PI : 0,
       /**
@@ -1410,7 +1411,7 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
 
   // Igual que abajo: agachado se dobla, saltando sube entero.
   const fig = dibujarPersona(r, {
-    tipo: 'jugador', x: p.x, pies: by + p.hh,
+    tipo: 'jugador', mascara: true, x: p.x, pies: by + p.hh,
     // Del lado de allá del techo te achicás un poco: te alejás (vista lateral).
     escala: p.vistaCostado ? (p.escalaTecho || 1) : 1,
     angulo,
@@ -1480,7 +1481,7 @@ function dibujarColgado(r, p, col) {
     // Un vaivén chiquito de lado a lado: estás colgado de los dedos.
     const x = p.x + Math.sin(t * 5) * 0.8;
     dibujarPersona(r, {
-      tipo: 'jugador', x, pies: borde + 19, angulo: -Math.PI / 2,
+      tipo: 'jugador', mascara: true, x, pies: borde + 19, angulo: -Math.PI / 2,
       fase: Math.sin(t * 9) > 0 ? 0.25 : 0.75,
       postura: 'pie', manosArriba: true, destello: p.hitFlash > 0,
     });

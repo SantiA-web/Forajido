@@ -18870,6 +18870,15 @@ con silueta primero.
   gente, en las 5 vistas; de costado, las filas de piel como el guardia (5, 6 con la nariz que
   sobresale, 4) y el pañuelo angosto atrás, como el del pasajero. La cabeza, un punto atrás
   de costado, como todos. El jugador queda un punto más alto.
+- **✅ En los asaltos, el pañuelo subido, con el cuervo** *(Santi: "en el campamento y pueblo
+  está así normal, pero en los asaltos se sube el pañuelo"; "El Cuervo asaltó el de las 6:00.
+  Solo dejó un sobreviviente")*: tapa de la nariz a la barbilla y cuelga en punta; de espaldas,
+  la tira con el nudo atrás (y en el torso se saca la punta que colgaba). En el pañuelo, **el
+  cuervo**: negro, en puntos finos de 1×1, con las alas abiertas (el 5 de seis adaptados de sus
+  referencias, la cabeza un punto más corta y las alas sin llegar al borde); se ve de frente y
+  en diagonal de frente. Sólo el dibujo (`mascara` en cuadroJugador; los puntos finos, `finos`,
+  los pone figura.js encima: es la primera capa de puntos finos del juego, la que van a usar
+  las barbas de B2).
 - **✅ Las formas de los cuerpos y la chaqueta, aprobadas en prototipo** (tmp-ref/cuerpos.js,
   estirando el dibujo de hoy; no están en el juego: en B3 y B4 se dibujan en cada vista):
   - **Los brazos van rectos** y se corren lo que se corre el hombro *(Santi: "el brazo no

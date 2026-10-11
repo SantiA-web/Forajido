@@ -608,7 +608,7 @@ function jugadorNuevo(r, f) {
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
     ? lienzoGente({ ...(gente.aspecto || {}), tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, fino }, luz, !!f.destello)
-    : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina }, luz, !!f.destello);
+    : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina, mascara: !!f.mascara }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
   ctx.translate(x, pies);
@@ -618,6 +618,15 @@ function jugadorNuevo(r, f) {
   ctx.restore();
   const aMundo = (p) => p && { x: x + (espejo ? -1 : 1) * (p[0] - PIES_NUEVO[0]) * PASO, y: pies + (p[1] - PIES_NUEVO[1]) * PASO };
   if (L.fumaK != null) dibujarHumo(ctx, L, aMundo, espejo, PASO);
+  // El cuervo del pañuelo (puntos finos, un tercio de punto), encima del dibujo.
+  if (L.finos && L.finos.length) {
+    ctx.fillStyle = PALETA[0];
+    const t = PASO / 3;
+    for (let i = 0; i < L.finos.length; i += 2) {
+      const fx = L.finos[i] / 3, fy = L.finos[i + 1] / 3;
+      ctx.fillRect(x + (espejo ? -1 : 1) * (fx - PIES_NUEVO[0]) * PASO - (espejo ? t : 0), pies + (fy - PIES_NUEVO[1]) * PASO, t, t);
+    }
+  }
   const top = pies - 27 * PASO;
   return { x, mano: null, boca: aMundo(L.boca), hombro: aMundo(L.hombro), top, arriba: top, manoY: pies - 9, pechoY: pies - 11, vista, espejo };
 }

@@ -401,8 +401,8 @@ const BASE = {
  */
 /** Un mapa corrido un punto a la izquierda (atrás, mirando a la derecha). */
 const atrasUno = (m) => m && { y: m.y, filas: m.filas.map((f) => (f.startsWith('.') ? f.slice(1) : f)) };
-/** Cuánto más atrás va la cabeza de costado, por personaje (lo usa fumar: la boca se corre con ella). */
-const CABEZA_ATRAS = { guardia: 1 };
+/** Cuánto más atrás va la cabeza de costado, en toda la gente (lo usa lo que va a la boca o al sombrero: se corre con ella). */
+const CABEZA_ATRAS = 1;
 export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
   const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
@@ -415,12 +415,13 @@ export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'ca
   // El sombrero va aparte: con la cabeza gacha baja más que la cara y la tapa (ver `gacha` en jugador.js).
   const sombreroMapa = s && SOMBREROS[s] && SOMBREROS[s][vista] ? SOMBREROS[s][vista] : null;
   /**
-   * 🔁 EL GUARDIA DE COSTADO, CON LA CABEZA UN PUNTO MÁS ATRÁS (P3b) *(Santi: "quiero
-   * ver si la cabeza se puede centrar más en el torso para que no parezca
-   * encorvado"; "pasá un punto hacia atrás la cabeza")*: la cara, el pelo y el
-   * sombrero, centrados sobre el torso. Ver CABEZA_ATRAS.
+   * 🔁 DE COSTADO, LA CABEZA UN PUNTO MÁS ATRÁS (P3b) *(Santi: "quiero ver si la
+   * cabeza se puede centrar más en el torso para que no parezca encorvado";
+   * "pasá un punto hacia atrás la cabeza"; "cambiáselo al pasajero también y a
+   * partir de ahora todas las personas que dibujemos serán así")*: la cara, el
+   * pelo, el pañuelo y el sombrero, centrados sobre el torso. Ver CABEZA_ATRAS.
    */
-  if (tipo === 'guardia' && vista === 'lado') return { colores, cabeza: cabeza.map(atrasUno), sombrero: atrasUno(sombreroMapa), torso: TORSOS[tipo][vista] };
+  if (vista === 'lado') return { colores, cabeza: cabeza.map(atrasUno), sombrero: atrasUno(sombreroMapa), torso: TORSOS[tipo][vista] };
   return { colores, cabeza, sombrero: sombreroMapa, torso: TORSOS[tipo][vista] };
 }
 
@@ -463,7 +464,7 @@ export function cuadroGente(o) {
   const sentado = o.piernas === 'sentado';
   const fk = o.accion === 'fumar' ? o.k ?? 0 : o.fuma ?? null;
   const modo = o.accion === 'fumar' ? 'mano' : o.fumaModo || 'mano';
-  const atras = o.vista === 'lado' ? CABEZA_ATRAS[o.tipo] || 0 : 0;
+  const atras = o.vista === 'lado' ? CABEZA_ATRAS : 0;
   const PF = fk != null && modo === 'mano' ? poseFumar(o.vista, fk, { sentado, cartas: !!o.cartas, atras }) : null;
   const FB0 = fk != null && modo === 'boca' ? FUMAR_BOCA[o.vista] : null;
   const FB = FB0 && atras ? { c: FB0.c && FB0.c.map(([x, y]) => [x - atras, y]), humo: [FB0.humo[0] - atras, FB0.humo[1]] } : FB0;
@@ -589,7 +590,7 @@ const POSES_SENTADO = {
    */
   agarraSombrero: { lado: { lista: [b([[10, 9], [12, 12], [13, 15]]), b([[9, 9], [10, 12], [12, 13]], true)], sinSombrero: true } },
   agarraSombreroArriba: { lado: { lista: [b([[10, 9], [12, 7], [13, 4]]), b([[9, 9], [10, 12], [12, 13]], true)], sinSombrero: true } },
-  poneSombrero: { lado: { lista: [b([[10, 9], [13, 6], [12, 2]]), b([[9, 9], [10, 12], [12, 13]], true)] } },
+  poneSombrero: { lado: { lista: [b([[10, 9], [12, 6], [11, 2]]), b([[9, 9], [10, 12], [12, 13]], true)] } },
   dormido: {
     // 🔁 Mirando para abajo, a las rodillas *(Santi: "que sus ojos apunten a sus
     // rodillas")*: el sombrero baja más que la cabeza (`gacha`, [abajo, adelante])

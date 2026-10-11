@@ -18861,7 +18861,9 @@ con silueta primero.
 - **✅ La cabeza del guardia, de costado, un punto más atrás** *(Santi: "que no parezca
   encorvado")*: estaba adelantada respecto del torso. Se corren la cara, el pelo y el
   sombrero (`atrasUno` en capasPersona); fumando, la mano, el cigarrillo y el humo
-  se corren con ella (`CABEZA_ATRAS`). Sólo el guardia: el pasajero quedó como estaba.
+  se corren con ella (`CABEZA_ATRAS`). 🔁 También el pasajero (la mano que se pone el
+  sombrero, un punto más atrás) y **toda la gente que se dibuje de ahora en adelante**
+  *(Santi: "a partir de ahora todas las personas que dibujemos serán así")*.
 - **✅ Las formas de los cuerpos y la chaqueta, aprobadas en prototipo** (tmp-ref/cuerpos.js,
   estirando el dibujo de hoy; no están en el juego: en B3 y B4 se dibujan en cada vista):
   - **Los brazos van rectos** y se corren lo que se corre el hombro *(Santi: "el brazo no

@@ -35,6 +35,22 @@ let chico = null, chicoCtx = null;
  * traza una línea de un píxel de pantalla del lado que lo toca.
  */
 let mascara = null, mascaraCtx = null, chicaM = null, chicaMCtx = null, hayGente = false;
+/**
+ * 🆕 LOS PUNTOS FINOS (1×1, un tercio de punto): el cuervo del pañuelo, las barbas.
+ * Como el borde fino, la grilla se los comería (de cada 3×3 se queda con uno), así
+ * que se pintan en una capa aparte, del tamaño del lienzo, y se ponen encima
+ * DESPUÉS de pasar el cuadro por la grilla. Lo que se dibuja delante de la gente
+ * también los tapa (ver `taparGente`).
+ */
+let finos = null, finosCtx = null, hayFinos = false;
+function laCapaFina(cv) {
+  if (!finos || finos.width !== cv.width || finos.height !== cv.height) {
+    finos = document.createElement('canvas');
+    finos.width = cv.width; finos.height = cv.height;
+    finosCtx = finos.getContext('2d');
+  }
+  return finosCtx;
+}
 function laMascara(cv) {
   if (!mascara || mascara.width !== cv.width || mascara.height !== cv.height) {
     mascara = document.createElement('canvas');
@@ -62,8 +78,36 @@ export const estiloNuevo = {
     m.drawImage(img, x, y, w, h);
     hayGente = true;
   },
-  /** Lo que se dibuja delante de la gente le tapa el borde. */
+  /**
+   * Pinta puntos finos (`puntos`: x, y, x, y… en el mundo, cada uno de `lado`
+   * unidades) de `color` en la capa fina, con la cámara de `ctx`. Cada punto
+   * cae en píxeles enteros del lienzo. Sin el estilo nuevo, se pintan directo.
+   */
+  pintarFinos(ctx, puntos, lado, color) {
+    const m = ctx.getTransform();
+    const destino = activo ? laCapaFina(ctx.canvas) : ctx;
+    destino.save();
+    destino.setTransform(1, 0, 0, 1, 0, 0);
+    destino.fillStyle = color;
+    const t = Math.max(1, Math.round(lado * m.a));
+    for (let i = 0; i < puntos.length; i += 2) {
+      const px = Math.round(m.a * puntos[i] + m.c * puntos[i + 1] + m.e);
+      const py = Math.round(m.b * puntos[i] + m.d * puntos[i + 1] + m.f);
+      destino.fillRect(px, py, t, t);
+    }
+    destino.restore();
+    if (activo) hayFinos = true;
+  },
+  /** Lo que se dibuja delante de la gente le tapa el borde (y los puntos finos). */
   taparGente(ctx, img, x, y, w, h) {
+    if (activo && hayFinos) {
+      const f = laCapaFina(ctx.canvas);
+      f.setTransform(ctx.getTransform());
+      f.globalCompositeOperation = 'destination-out';
+      f.drawImage(img, x, y, w, h);
+      f.globalCompositeOperation = 'source-over';
+      f.setTransform(1, 0, 0, 1, 0, 0);
+    }
     if (!activo || CONFIG.estilo.bordeGente >= CONFIG.estilo.punto || !hayGente) return;
     const m = laMascara(ctx.canvas);
     m.setTransform(ctx.getTransform());
@@ -101,6 +145,11 @@ export const estiloNuevo = {
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(chico, 0, 0, w * k, h * k);
     if (hayGente) this.bordeFino(ctx, w, h, k);
+    if (hayFinos) {
+      ctx.drawImage(finos, 0, 0);
+      finosCtx.clearRect(0, 0, finos.width, finos.height);
+      hayFinos = false;
+    }
     ctx.restore();
     renderer.nuevoCuadro();
     renderer.text(T.estiloNuevo, 4, renderer.height - 6, '#e8b84a', 'left');

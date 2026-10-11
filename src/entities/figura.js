@@ -619,13 +619,14 @@ function jugadorNuevo(r, f) {
   const aMundo = (p) => p && { x: x + (espejo ? -1 : 1) * (p[0] - PIES_NUEVO[0]) * PASO, y: pies + (p[1] - PIES_NUEVO[1]) * PASO };
   if (L.fumaK != null) dibujarHumo(ctx, L, aMundo, espejo, PASO);
   // El cuervo del pañuelo (puntos finos, un tercio de punto), encima del dibujo.
+  // (En la capa fina, que va encima de la grilla: si no, la grilla se los come.)
   if (L.finos && L.finos.length) {
-    ctx.fillStyle = PALETA[L.colorFinos ?? 0];
-    const t = PASO / 3;
+    const t = PASO / 3, puntos = [];
     for (let i = 0; i < L.finos.length; i += 2) {
       const fx = L.finos[i] / 3, fy = L.finos[i + 1] / 3;
-      ctx.fillRect(x + (espejo ? -1 : 1) * (fx - PIES_NUEVO[0]) * PASO - (espejo ? t : 0), pies + (fy - PIES_NUEVO[1]) * PASO, t, t);
+      puntos.push(x + (espejo ? -1 : 1) * (fx - PIES_NUEVO[0]) * PASO - (espejo ? t : 0), pies + (fy - PIES_NUEVO[1]) * PASO);
     }
+    estiloNuevo.pintarFinos(ctx, puntos, t, PALETA[L.colorFinos ?? 0]);
   }
   const top = pies - 27 * PASO;
   return { x, mano: null, boca: aMundo(L.boca), hombro: aMundo(L.hombro), top, arriba: top, manoY: pies - 9, pechoY: pies - 11, vista, espejo };

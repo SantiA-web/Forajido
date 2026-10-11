@@ -393,11 +393,13 @@ const AJUSTE_ASIENTO = { x: 2.25, y: 0, dormido: -0.5 };
  * uno arriba y otro abajo; `asientoBase` es el borde de abajo del banco). Sobre
  * el almohadón, a la altura de la cadera.
  */
+const SEPARA_SOMBRERO = 9; // unidades del mundo entre él y su sombrero (el otro lugar está a 16)
 function sombreroEnElBanco(r, pa) {
   const S = CONFIG.tileSize, PASO = CONFIG.estilo.punto / 4;
   const abajoLibre = pa.y + S < pa.asientoBase;           // ¿hay lugar abajo de él en el banco?
   pa.sombreroArriba = !abajoLibre;
-  const y = (abajoLibre ? pa.y + S : pa.y - S) + pa.hh - 5;
+  // 🔁 Pegado a él, no en el medio del otro lugar *(Santi: "más cerca del civil dormido")*.
+  const y = (abajoLibre ? pa.y + SEPARA_SOMBRERO : pa.y - SEPARA_SOMBRERO) + pa.hh - 5;
   const x = pa.asientoX + 1;
   return {
     antes: !abajoLibre,

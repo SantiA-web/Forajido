@@ -1276,7 +1276,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   /** La cabeza de la persona: la cara y el pelo, y el sombrero (que con la cabeza gacha baja más, `BRo.gacha`). */
   const ga = BRo && BRo.gacha ? BRo.gacha : [0, 0];
   const dibujarCabeza = (dy, dx, conGacha) => {
-    for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, dy, dx);
+    // 🔁 El jugador de costado, con la cabeza un punto más atrás, centrada sobre el torso, como toda la
+    // gente *(Santi: "revisá al jugador")*; la gente ya la trae corrida (capasPersona en gente.js).
+    const atras = !persona && vista === 'lado' ? 1 : 0;
+    for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, dy, dx - atras);
     if (persona && persona.sombrero) dibujarMapa(persona.sombrero, dy + (conGacha ? ga[0] : 0), dx + (conGacha ? ga[1] : 0));
   };
   const props = (capa) => (BRo && BRo.props || []).forEach((p) => {

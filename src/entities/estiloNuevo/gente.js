@@ -399,6 +399,10 @@ const BASE = {
  * funda, de costado la funda está encima del pantalón: ahí se pinta pantalón;
  * en las otras vistas cuelga al costado y no se dibuja.
  */
+/** Un mapa corrido un punto a la izquierda (atrás, mirando a la derecha). */
+const atrasUno = (m) => m && { y: m.y, filas: m.filas.map((f) => (f.startsWith('.') ? f.slice(1) : f)) };
+/** Cuánto más atrás va la cabeza de costado, por personaje (lo usa fumar: la boca se corre con ella). */
+const CABEZA_ATRAS = { guardia: 1 };
 export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
   const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
@@ -410,6 +414,13 @@ export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'ca
   if (barba && BARBAS[barba] && BARBAS[barba][vista]) cabeza.push(BARBAS[barba][vista]);
   // El sombrero va aparte: con la cabeza gacha baja más que la cara y la tapa (ver `gacha` en jugador.js).
   const sombreroMapa = s && SOMBREROS[s] && SOMBREROS[s][vista] ? SOMBREROS[s][vista] : null;
+  /**
+   * 🔁 EL GUARDIA DE COSTADO, CON LA CABEZA UN PUNTO MÁS ATRÁS (P3b) *(Santi: "quiero
+   * ver si la cabeza se puede centrar más en el torso para que no parezca
+   * encorvado"; "pasá un punto hacia atrás la cabeza")*: la cara, el pelo y el
+   * sombrero, centrados sobre el torso. Ver CABEZA_ATRAS.
+   */
+  if (tipo === 'guardia' && vista === 'lado') return { colores, cabeza: cabeza.map(atrasUno), sombrero: atrasUno(sombreroMapa), torso: TORSOS[tipo][vista] };
   return { colores, cabeza, sombrero: sombreroMapa, torso: TORSOS[tipo][vista] };
 }
 
@@ -452,8 +463,10 @@ export function cuadroGente(o) {
   const sentado = o.piernas === 'sentado';
   const fk = o.accion === 'fumar' ? o.k ?? 0 : o.fuma ?? null;
   const modo = o.accion === 'fumar' ? 'mano' : o.fumaModo || 'mano';
-  const PF = fk != null && modo === 'mano' ? poseFumar(o.vista, fk, { sentado, cartas: !!o.cartas }) : null;
-  const FB = fk != null && modo === 'boca' ? FUMAR_BOCA[o.vista] : null;
+  const atras = o.vista === 'lado' ? CABEZA_ATRAS[o.tipo] || 0 : 0;
+  const PF = fk != null && modo === 'mano' ? poseFumar(o.vista, fk, { sentado, cartas: !!o.cartas, atras }) : null;
+  const FB0 = fk != null && modo === 'boca' ? FUMAR_BOCA[o.vista] : null;
+  const FB = FB0 && atras ? { c: FB0.c && FB0.c.map(([x, y]) => [x - atras, y]), humo: [FB0.humo[0] - atras, FB0.humo[1]] } : FB0;
   // Lo que hace sentado (`accion`, ver poseSentado) se arma acá: así se guarda por nombre.
   let brazos = PF || (o.accion === 'fumar' ? poseSentado('quieto', o.vista)
     : o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva)
@@ -900,8 +913,8 @@ function lugarDeFumar(v, k) {
   return { pts, c, atras: !!v.bocaAtras && (a === 'boca' || b === 'boca') };
 }
 /** La pose de fumar con la mano (los brazos y el cigarrillo); null si en esa vista no fuma así. */
-function poseFumar(vista, k, { sentado = false, cartas = false } = {}) {
-  const base = FUMAR[vista];
+function poseFumar(vista, k, { sentado = false, cartas = false, atras = 0 } = {}) {
+  const base = atras && FUMAR[vista] ? bocaAtras(FUMAR[vista], atras) : FUMAR[vista];
   const S = sentado ? FUMAR_SENTADO[vista] : null;
   const CA = cartas ? FUMAR_CARTAS[vista] : null;
   if (!base || (sentado && !S) || (cartas && !CA)) return null;
@@ -912,6 +925,16 @@ function poseFumar(vista, k, { sentado = false, cartas = false } = {}) {
     lista: [b(L.pts, L.atras), otra],
     props: CA ? [{ m: CA.cartas, tabla: NAIPES }] : [],
     cig: L.c, humo: v.humo,
+  };
+}
+
+/** La pose de fumar con la boca `d` puntos más atrás: la mano en la boca, el cigarrillo y el humo. */
+function bocaAtras(v, d) {
+  return {
+    ...v,
+    boca: v.boca.map((p, i) => (i === 2 ? [p[0] - d, p[1]] : p)),
+    c: { ...v.c, boca: v.c.boca && v.c.boca.map(([x, y]) => [x - d, y]) },
+    humo: [v.humo[0] - d, v.humo[1]],
   };
 }
 

@@ -18858,6 +18858,28 @@ con silueta primero.
   el de fieltro, negro o marrón mitad y mitad; el pañuelo, cualquiera de los 5. Hasta
   B6, sólo el bombín tiene dibujo suelto en el banco: el de paja dormido no lo tiene al
   lado y al despertarse aparece con él puesto.
+- **✅ La cabeza del guardia, de costado, un punto más atrás** *(Santi: "que no parezca
+  encorvado")*: estaba adelantada respecto del torso. Se corren la cara, el pelo y el
+  sombrero (`atrasUno` en capasPersona); fumando, la mano, el cigarrillo y el humo
+  se corren con ella (`CABEZA_ATRAS`). Sólo el guardia: el pasajero quedó como estaba.
+- **✅ Las formas de los cuerpos y la chaqueta, aprobadas en prototipo** (tmp-ref/cuerpos.js,
+  estirando el dibujo de hoy; no están en el juego: en B3 y B4 se dibujan en cada vista):
+  - **Los brazos van rectos** y se corren lo que se corre el hombro *(Santi: "el brazo no
+    se adapta al cuerpo")*; **salvo el gordito**, cuyos brazos acompañan el torso.
+  - **Gordito:** un punto más ancho en el pecho y dos desde la panza hasta la cadera
+    (angosto arriba, ancho abajo). Siempre con el chaleco desprendido: dos columnas rojas
+    derechas por lado (la izquierda a la luz, la derecha en sombra), la camisa blanca al
+    medio con la panza redonda (luz arriba a la izquierda, sombra a la derecha y abajo,
+    cortada por el cinto) y la estrella chica en la solapa. De costado, la panza sale dos
+    puntos y es de camisa.
+  - **Flaco:** un punto menos por lado y piernas más finas; de costado, un punto menos en
+    la espalda y las piernas un punto más finas.
+  - **Hombros anchos:** dos puntos más en los hombros, que se angostan hasta la cintura;
+    entre el brazo recto y las costillas queda aire.
+  - **Chaqueta corta** (lona marrón, cuello oscuro): abierta de arriba abajo, adentro el
+    chaleco rojo con la estrella; sigue la forma del cuerpo un punto más por lado (el
+    gordito, recta desde los hombros); las mangas del grosor normal; corta un punto debajo
+    del cinto. **De costado no ensancha nada: sólo cambia el color** *(Santi)*.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

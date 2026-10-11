@@ -126,22 +126,32 @@ const BARBAS = {
  * o un cuadrado de 2×2. `B` la barba, `b` su sombra (más oscura).
  */
 export const BARBAS_FINAS = {
-  origen: { frente: [8, 4], diagF: [9, 4] },
+  // 🆕 P3b · B2: de costado (con la cabeza ya corrida un punto atrás: la oreja y el
+  // pelo en 7-8, la cara en 9-11, la nariz en 12) y en diagonal de espaldas (sólo
+  // asoma el borde de la mejilla). De espaldas no se ven.
+  origen: { frente: [8, 4], diagF: [9, 4], lado: [7, 4], diagE: [11, 4] },
   // De a 1×1: la cara de frente mide 15 × 9.
   1: {
     bigote: {
       frente: ['...............', '...............', '...............', '...............', '.....BBBBB.....', '....BBbbbBB....', '....B.....B....'],
       diagF: ['...............', '...............', '...............', '...............', '........BBBBB..', '.......BBbbbB..', '.......B....B..'],
+      lado: ['..................', '..................', '..................', '..................', '..................', '..................', '...........BBBB...', '...........BbB....', '...........B......'],
+      diagE: ['......', '......', '......', '......', '......', '.....B', '....BB', '....B.'],
     },
     candado: {
       frente: ['...............', '...............', '...............', '...............', '.....BBBBB.....', '....BBbbbBB....', '....B.....B....', '......BbB......', '.......B.......'],
       diagF: ['...............', '...............', '...............', '...............', '........BBBBB..', '.......BBbbbB..', '.......B....B..', '.........BbB...', '..........B....'],
+      lado: ['..................', '..................', '..................', '..................', '..................', '..................', '...........BBBB...', '...........BbB.B..', '............BBB...'],
+      diagE: ['......', '......', '......', '......', '......', '.....B', '....BB', '....B.', '.....B'],
     },
     patillas: {
       // 🔁 Grandes, como las de San Martín *(Santi)*: anchas, de la sien hasta la
       // línea de la boca, más gruesas abajo y redondeadas, sin barbilla.
       frente: ['BB...........BB', 'BBB.........BBB', 'BBB.........BBB', 'BbBB.......BBbB', 'BbBB.......BBbB', 'BbBBB.....BBBbB', 'BBbBB.....BBbBB', '.BBB.......BBB.'],
       diagF: ['.BB............', '.BBB...........', '.BBB...........', '.BbBB..........', '.BbBB..........', '.BbBBB.........', '.BBbBB.........', '..BBB..........'],
+      // De costado, delante de la oreja, de la sien a la línea de la boca.
+      lado: ['.....BB...........', '.....BBB..........', '.....BBB..........', '.....BbBB.........', '.....BbBB.........', '.....BbBBB........', '.....BBbBB........', '......BBB.........'],
+      diagE: ['...BB.', '...BBB', '...BBB', '...BbB', '...BbB', '...BBB', '....BB'],
     },
     completa: {
       // 🔁 De pocos días: una sombra en la mandíbula un poco más oscura que la
@@ -150,6 +160,9 @@ export const BARBAS_FINAS = {
       // tiene mucha barba")*. Cubre la barbilla y las comisuras.
       frente: ['...............', '...............', 'X.............X', 'X.............X', 'XX...........XX', 'XX..XXXXXXX..XX', 'XXX.XxxxxxX.XXX', '.XXXXXXXXXXXXX.', '..XXXXXXXXXXX..'],
       diagF: ['...............', '...............', '.X.............', '.X.............', '.XX............', '.XX...XXXXXX...', '.XXX..XxxxxX...', '..XXXXXXXXXXX..', '...XXXXXXXXX...'],
+      // De costado, la mandíbula de la oreja a la barbilla, y la boca.
+      lado: ['..................', '..................', '..................', '......X...........', '......XX..........', '......XXX.........', '......XXXX.XXXX...', '.......XXXXXxxX...', '........XXXXXXX...'],
+      diagE: ['......', '......', '.....X', '....XX', '....XX', '...XXX', '..XXX.', '.XXX..'],
     },
   },
   // De a 2×2: la cara de frente mide 7 × 4 cuadrados (y medio).
@@ -411,7 +424,7 @@ export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'ca
   const cabeza = [CABEZA[vista]];
   if (tipo === 'pasajero') cabeza.push(PANUELO[vista]);
   if (PEINADOS[peinado] && PEINADOS[peinado][vista]) cabeza.push(PEINADOS[peinado][vista]);
-  if (barba && BARBAS[barba] && BARBAS[barba][vista]) cabeza.push(BARBAS[barba][vista]);
+  // (La barba va en puntos finos, encima: ver barbaFina.)
   // El sombrero va aparte: con la cabeza gacha baja más que la cara y la tapa (ver `gacha` en jugador.js).
   const sombreroMapa = s && SOMBREROS[s] && SOMBREROS[s][vista] ? SOMBREROS[s][vista] : null;
   /**
@@ -454,6 +467,34 @@ function cuadroDormidoLado(o) {
   return { idx, boca: null, hombro: null };
 }
 
+/**
+ * 🆕 LA BARBA EN PUNTOS FINOS (P3b · B2) *(Santi eligió 1×1)*: `B` del color de la
+ * barba (el pelo), `b` un tono más oscura; `X` la sombra de la de pocos días y `x`
+ * la boca (ver colorBarbaCorta). Se pinta en la capa fina, encima de la grilla,
+ * sólo sobre la cabeza (la cara o el pelo: no sobre un brazo o el arma). Devuelve
+ * grupos { color, puntos } en puntos finos del lienzo (×3).
+ */
+function barbaFina(o, q) {
+  const M = o.barba && BARBAS_FINAS[1][o.barba] && BARBAS_FINAS[1][o.barba][o.vista];
+  if (!M || !q.cabeza) return null;
+  const pelo = PELOS[o.pelo || 'castano'], piel = PIELES[o.piel || 'media'];
+  const [sombra, boca] = colorBarbaCorta(o.piel || 'media', o.pelo || 'castano');
+  const colores = { B: pelo.B, b: sombrear(pelo.B, -1), X: sombra, x: boca };
+  const cara = new Set([piel.P, piel.p, piel.q, piel.n, pelo.A, pelo.a, pelo.B]);
+  const [ox, oy] = BARBAS_FINAS.origen[o.vista];
+  const grupos = {};
+  M.forEach((f, j) => {
+    for (let i = 0; i < f.length; i++) {
+      const c = colores[f[i]];
+      if (c == null) continue;
+      const fx = (ox + q.cabeza[0] + OX) * 3 + i, fy = (oy + q.cabeza[1] + OY) * 3 + j;
+      if (!cara.has(q.idx[Math.floor(fy / 3) * ANCHO + Math.floor(fx / 3)])) continue;
+      (grupos[c] || (grupos[c] = [])).push(fx, fy);
+    }
+  });
+  return Object.entries(grupos).map(([c, puntos]) => ({ color: +c, puntos }));
+}
+
 export function cuadroGente(o) {
   if (o.accion === 'dormido' && o.vista === 'lado') return cuadroDormidoLado(o);
   /**
@@ -475,7 +516,8 @@ export function cuadroGente(o) {
   const persona = capasPersona(o);
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
-  const q = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona });
+  const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona });
+  const q = { ...q0, finos: barbaFina(o, q0) };
   const F = PF || FB;
   if (!F) return q;
   // El cigarrillo, encima de todo (el papel crema y la brasa); el humo y el brillo, en el mundo.
@@ -979,7 +1021,8 @@ export function lienzoGente(o, luz = 0, destello = false) {
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
-  g = { img: cv, boca: q.boca, hombro: q.hombro, brasa: q.brasa || null, humo: q.humo || null, fumaK: q.fumaK ?? null, pita: !!q.pita };
+  g = { img: cv, boca: q.boca, hombro: q.hombro, brasa: q.brasa || null, humo: q.humo || null, fumaK: q.fumaK ?? null, pita: !!q.pita,
+    finos: q.finos && q.finos.map((f) => ({ color: sombrear(f.color, luz), puntos: f.puntos })) };
   guardados.set(clave, g);
   return g;
 }

@@ -1438,7 +1438,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       }
     });
   }
-  return { idx, boca: boca && [boca[0] + OX, boca[1] + OY], hombro: [hx + OX, hy + OY], finos };
+  return { idx, boca: boca && [boca[0] + OX, boca[1] + OY], hombro: [hx + OX, hy + OY], finos, cabeza: cabezaEn };
 }
 
 const guardados = new Map();
@@ -1459,7 +1459,7 @@ export function lienzoJugador(o, luz = 0, destello = false) {
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
-  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: q.finos, colorFinos: q.finos ? sombrear(CUERVO.color, luz) : null };
+  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: q.finos && [{ color: sombrear(CUERVO.color, luz), puntos: q.finos }] };
   guardados.set(clave, g);
   return g;
 }

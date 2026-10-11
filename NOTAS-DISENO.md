@@ -18864,6 +18864,12 @@ con silueta primero.
   se corren con ella (`CABEZA_ATRAS`). 🔁 También el pasajero (la mano que se pone el
   sombrero, un punto más atrás) y **toda la gente que se dibuje de ahora en adelante**
   *(Santi: "a partir de ahora todas las personas que dibujemos serán así")*.
+- **✅ El jugador, con cuello** *(Santi: "se ve mucho peor que un guardia o un pasajero porque
+  no tiene cuello"; eligió la C de tres)*: el ala le dejaba dos filas de cara y el pañuelo
+  apoyaba en los hombros. El sombrero sube un punto y quedan tres filas de cara, como la
+  gente, en las 5 vistas; de costado, las filas de piel como el guardia (5, 6 con la nariz que
+  sobresale, 4) y el pañuelo angosto atrás, como el del pasajero. La cabeza, un punto atrás
+  de costado, como todos. El jugador queda un punto más alto.
 - **✅ Las formas de los cuerpos y la chaqueta, aprobadas en prototipo** (tmp-ref/cuerpos.js,
   estirando el dibujo de hoy; no están en el juego: en B3 y B4 se dibujan en cada vista):
   - **Los brazos van rectos** y se corren lo que se corre el hombro *(Santi: "el brazo no

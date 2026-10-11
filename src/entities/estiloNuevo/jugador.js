@@ -75,15 +75,20 @@ const mapa = (y, filas) => ({ y, filas });
  */
 const VISTAS = {
   lado: {
-    cabeza: mapa(0, [
+    // 🔁 Con cuello *(Santi: "se ve mucho peor que un guardia o un pasajero porque no tiene
+    // cuello"; eligió la C y "revisá las otras vistas")*: el sombrero un punto más arriba
+    // (el mapa empieza en la fila -1) y tres filas de cara, como la gente; de costado,
+    // la nariz que sobresale, la barbilla de 4 y el pañuelo angosto atrás (el cuello).
+    cabeza: mapa(-1, [
       '.........hkH',
       '........hhkHk',
       '...hh..hbbbbbk..kk',
       '....hhHHHHHHHHHkk',
       '.....xkkkkkkkkkx',
-      '........qpPPn',
-      '........qqBBp',
-      '........rRRRS',
+      '........qpPPp',
+      '........qpPPPn',
+      '.........qBBp',
+      '.........rRRS',
     ]),
     torso: mapa(8, [
       '.......UVVvR',
@@ -122,13 +127,14 @@ const VISTAS = {
     },
   },
   frente: {
-    cabeza: mapa(0, [
+    cabeza: mapa(-1, [
       '.........hkH',
       '........hhkHk',
       '...hh..hbblbbk..kk',
       '....hhHHHHHHHHHkk',
       '.....xkkkkkkkkkx',
-      '........ppPPp',
+      '........qpppq',
+      '........pPPPp',
       '........qBBBq',
       '.......zRRSRRr',
     ]),
@@ -169,12 +175,13 @@ const VISTAS = {
     },
   },
   espalda: {
-    cabeza: mapa(0, [
+    cabeza: mapa(-1, [
       '.........hkH',
       '........hhkHk',
       '...hh..hbbbbbk..kk',
       '....hhHHHHHHHHHkk',
       '.....xkkkkkkkkkx',
+      '........qBBBq',
       '........qBBBq',
       '........ppppp',
       '.......rRRSRRr',
@@ -216,12 +223,13 @@ const VISTAS = {
     },
   },
   diagF: {
-    cabeza: mapa(0, [
+    cabeza: mapa(-1, [
       '..........hkH',
       '.........hhkHk',
       '....hh..hbblbk..kk',
       '.....hhHHHHHHHHHkk',
       '......xkkkkkkkkkx',
+      '........qpppp',
       '........qppPPn',
       '.........qBBBp',
       '........zRRSRRr',
@@ -263,12 +271,13 @@ const VISTAS = {
     },
   },
   diagE: {
-    cabeza: mapa(0, [
+    cabeza: mapa(-1, [
       '..........hkH',
       '.........hhkHk',
       '....hh..hbbbbk..kk',
       '.....hhHHHHHHHHHkk',
       '......xkkkkkkkkkx',
+      '.........qBBBP',
       '.........qBBBP',
       '.........ppppP',
       '........rRRSRRr',

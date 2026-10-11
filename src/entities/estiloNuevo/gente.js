@@ -172,8 +172,8 @@ export const BARBAS_FINAS = {
      * camisa). Las `b`, mechones más oscuros.
      */
     larga: {
-      frente: ['BB...........BB', 'BB...........BB', 'BBB.........BBB', 'BBB.........BBB', 'BBBB.BBBBB.BBBB', 'BBBBBBbbbBBBBBB', 'BBBBBB...BBBBBB', '.BBBBBBbBBBBBB.', '.BBBBBBBBBBBBB.', '..BBBBBbBBBBB..', '..BBBBBBBBBBB..', '...BBBBbBBBB...', '....BBBBBBB....', '.....BBbBB.....', '......BBB......'],
-      diagF: ['.BB............', '.BB............', '.BBB...........', '.BBB...........', '.BBBB..BBBBB...', '.BBBBBBBbbbBB..', '.BBBBBBB...BB..', '..BBBBBBBbBBB..', '..BBBBBBBBBBB..', '...BBBBBbBBB...', '...BBBBBBBBB...', '....BBBBbBB....', '.....BBBBB.....', '......BbB......', '.......B.......'],
+      frente: ['BB...........BB', 'BB...........BB', 'BBB.........BBB', 'BBB.........BBB', 'BBBB.BBBBB.BBBB', 'BBBBBBbbbBBBBBB', 'BBBBBB...BBBBBB', '.BBBBBBBBBBBBB.', '.BBBBBBBBBBBBB.', '..BBBBBBBBBBB..', '..BBBBBBBBBBB..', '...BBBBBBBBB...', '....BBBBBBB....', '.....BBBBB.....', '......BBB......'],
+      diagF: ['.BB............', '.BB............', '.BBB...........', '.BBB...........', '.BBBB..BBBBB...', '.BBBBBBBbbbBB..', '.BBBBBBB...BB..', '..BBBBBBBBBBB..', '..BBBBBBBBBBB..', '...BBBBBBBBB...', '...BBBBBBBBB...', '....BBBBBBB....', '.....BBBBB.....', '......BBB......', '.......B.......'],
       lado: ['.....BB...........', '.....BBB..........', '.....BBB..........', '.....BBBB.........', '.....BBBBB........', '.....BBBBBB.......', '.....BBBBBBBBBBB..', '......BBBBBBBbB...', '......BBBBBBBBBB..', '.......BBBBBBBBB..', '.......BBBBBBBB...', '........BBBBBBB...', '.........BBBBB....', '..........BBB.....', '...........B......'],
       diagE: ['...BB.', '...BBB', '...BBB', '...BBB', '..BBBB', '..BBBB', '.BBBBB', '.BBBB.', '.BBBB.', '..BBB.', '..BB..', '..B...'],
     },
@@ -510,16 +510,22 @@ function barbaFina(o, q) {
     for (const k of 'SRrzLCcUVvwy') if (col[k] != null) cara.add(col[k]);
   }
   const [ox, oy] = BARBAS_FINAS.origen[o.vista];
-  const grupos = {};
+  const grupos = {}, vacios = {};
   M.forEach((f, j) => {
     for (let i = 0; i < f.length; i++) {
       const c = colores[f[i]];
       if (c == null) continue;
       const fx = (ox + q.cabeza[0] + OX) * 3 + i, fy = (oy + q.cabeza[1] + OY) * 3 + j;
-      if (!cara.has(q.idx[Math.floor(fy / 3) * ANCHO + Math.floor(fx / 3)])) continue;
+      const k = Math.floor(fy / 3) * ANCHO + Math.floor(fx / 3);
+      // 🔁 La larga también donde no hay nada (debajo del mentón, delante del cuello angosto):
+      // si no, quedaba un hueco *(Santi: "un hueco de un pixel entre el mentón y el hombro")*.
+      if (!cara.has(q.idx[k]) && !(o.barba === 'larga' && q.idx[k] < 0)) continue;
+      if (q.idx[k] < 0) vacios[k] = (vacios[k] || 0) + 1;
       (grupos[c] || (grupos[c] = [])).push(fx, fy);
     }
   });
+  // Los puntos vacíos que la barba cubre casi enteros pasan a ser barba en el dibujo (así el borde la rodea).
+  for (const [k, n] of Object.entries(vacios)) if (n >= 5) q.idx[k] = colores.B;
   return Object.entries(grupos).map(([c, puntos]) => ({ color: +c, puntos }));
 }
 

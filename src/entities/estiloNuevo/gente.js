@@ -431,7 +431,7 @@ export function cuadroGente(o) {
   // El cigarrillo, encima de todo (el papel crema y la brasa); el humo y el brillo, en el mundo.
   const baja = sentado ? 4 : 0;
   const cig = PF ? PF.cig : FB.c;
-  const pita = fk === 3;
+  const pita = fk === 5 || fk === 6;
   const en = ([x, y]) => [x + OX, y + OY + baja];
   if (cig) {
     const [p, a] = cig.map(en);
@@ -790,9 +790,9 @@ export function lienzoTendido(o, luz = 0) {
 /**
  * 🆕 FUMAR (P3a) *(Santi: "que los guardias vigilando, jugando cartas y los
  * civiles despiertos tengan la animación más frecuente del juego: fumar
- * cigarrillo")*, sobre las siluetas que aprobó. 8 cuadros: 0 el brazo abajo
- * con el cigarrillo entre los dedos, 1 lo sube, 2 en la boca, 3 pita (la brasa
- * se enciende), 4 lo baja, 5-7 abajo otra vez mientras suelta el humo (el humo
+ * cigarrillo")*, sobre las siluetas que aprobó: el brazo abajo
+ * con el cigarrillo entre los dedos, lo sube, en la boca pita (la brasa se
+ * enciende), lo baja y suelta el humo (16 cuadros, ver LUGARES; el humo
  * y el brillo de la brasa no van en el dibujo: los pone figura.js encima, sin
  * la luz del lugar, para que la brasa se vea en lo oscuro).
  *
@@ -834,9 +834,34 @@ const FUMAR_BOCA = {
   espalda: { c: null, humo: [15, 5] },
 };
 /** Qué cuadro de fumar toca, `t` segundos después de empezar: una pitada cada `cada` segundos (8 cuadros), y entre pitadas el brazo abajo. */
-export function cuadroDeFumar(t, cada = 6, cuadro = 0.3) {
+export function cuadroDeFumar(t, cada = 6, cuadro = 0.15) {
   const k = Math.floor((t % cada) / cuadro);
-  return k > 7 ? 0 : k;
+  return k > 15 ? 0 : k;
+}
+/**
+ * 🔁 16 CUADROS, NO 8 *(Santi: "lo veo muy tildado, no sé por qué si en teoría
+ * son 8")*: con 8, el brazo tenía sólo 3 lugares (había cuadros repetidos) y
+ * cada uno duraba 0,3 s, así que saltaba. Ahora pasa por la mitad del camino
+ * entre cada lugar puesto a mano (`a` → `b`; el punto del medio se redondea),
+ * cada cuadro dura 0,15 s y la pitada sigue durando 2,4 s:
+ *   0 abajo · 1 subiendo · 2 a mitad · 3 llegando · 4-6 en la boca (5 y 6 pita,
+ *   la brasa se enciende) · 7 dejando la boca · 8 a mitad · 9 bajando ·
+ *   10-15 abajo, mientras suelta la bocanada (ver HUMO en figura.js).
+ */
+const LUGARES = ['abajo', ['abajo', 'sube'], 'sube', ['sube', 'boca'], 'boca', 'boca', 'boca', ['boca', 'sube'], 'sube', ['sube', 'abajo']];
+const medio = (p, q) => [Math.round((p[0] + q[0]) / 2), Math.round((p[1] + q[1]) / 2)];
+function lugarDeFumar(v, k) {
+  const L = LUGARES[k] || 'abajo';
+  if (typeof L === 'string') return { pts: v[L], c: v.c[L], atras: L === 'boca' && !!v.bocaAtras };
+  const [a, b] = L;
+  const pts = v[a].map((p, i) => medio(p, v[b][i]));
+  // El cigarrillo a mitad de camino: el papel en el medio y la brasa hacia donde apuntaba en `a`.
+  let c = null;
+  if (v.c[a] && v.c[b]) {
+    const papel = medio(v.c[a][0], v.c[b][0]);
+    c = [papel, [papel[0] + v.c[a][1][0] - v.c[a][0][0], papel[1] + v.c[a][1][1] - v.c[a][0][1]]];
+  }
+  return { pts, c, atras: !!v.bocaAtras && (a === 'boca' || b === 'boca') };
 }
 /** La pose de fumar con la mano (los brazos y el cigarrillo); null si en esa vista no fuma así. */
 function poseFumar(vista, k, { sentado = false, cartas = false } = {}) {
@@ -845,12 +870,12 @@ function poseFumar(vista, k, { sentado = false, cartas = false } = {}) {
   const CA = cartas ? FUMAR_CARTAS[vista] : null;
   if (!base || (sentado && !S) || (cartas && !CA)) return null;
   const v = S ? { ...base, ...S, c: { ...base.c, ...(S.c || {}) } } : base;
-  const lugar = k === 0 || k >= 5 ? 'abajo' : k === 2 || k === 3 ? 'boca' : 'sube';
+  const L = lugarDeFumar(v, k);
   const otra = CA ? CA.otra : v.otra;
   return {
-    lista: [b(v[lugar], lugar === 'boca' && !!v.bocaAtras), otra],
+    lista: [b(L.pts, L.atras), otra],
     props: CA ? [{ m: CA.cartas, tabla: NAIPES }] : [],
-    cig: v.c[lugar], humo: v.humo,
+    cig: L.c, humo: v.humo,
   };
 }
 

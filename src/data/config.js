@@ -1445,13 +1445,19 @@ export const CONFIG = {
    * mientras juega; el pasajero sentado de día, más que cualquier otra cosa
    * (`pesoPasajero` de sus acciones, de `duracion` segundos). Si un guardia
    * que fuma se alarma, tira el cigarrillo (la colilla se apaga en `colilla` s).
+   * 🔁 16 cuadros de 0,15 s (eran 8 de 0,3 y se veía tildado).
+   * 🔁 `duracionOtras`: lo demás que hace sentado (diario, cartas, equipaje,
+   * ventana) dura lo mismo que un cigarrillo, y entre una cosa y otra no se
+   * queda quieto *(Santi: "que el resto de acciones también duren más y que
+   * nunca estén sin hacer alguna"; eligió B de 8-12/12-20/20-30)*.
    */
   fumar: {
     fumadores: 0.6,
     cada: 6,
-    cuadro: 0.3,
+    cuadro: 0.15,
     pesoPasajero: 0.6,
     duracion: [12, 20],
+    duracionOtras: [12, 20],
     colilla: 3,
   },
 

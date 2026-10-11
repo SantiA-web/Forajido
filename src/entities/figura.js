@@ -539,12 +539,19 @@ const cuadro8 = (recorrido, modo) => Math.floor((((recorrido / PASO_NUEVO[modo])
  * 🆕 EL HUMO Y LA BRASA DEL QUE FUMA (ver FUMAR en estiloNuevo/gente.js), encima
  * del dibujo y sin la luz del lugar: la brasa es un punto naranja que se ve en
  * lo oscuro (amarillo cuando pita) *(Santi: de noche, sólo de adorno)*; el humo
- * sale en los cuadros 5-7, sube hacia adelante y se borra.
+ * sale en los cuadros 10-15, sube hacia adelante y se borra.
  */
-const HUMO = [null, null, null, null, null,
-  [[0, 0, 0], [1, 0, 0], [1, -1, 0]],
-  [[2, -2, 0], [3, -3, 0], [2, -3, 1], [3, -4, 1]],
-  [[4, -6, 1], [3, -7, 1]]];
+// 🔁 Una bocanada más grande *(Santi: "un poco más de humo cuando pitan")*: sale
+// en el cuadro 10, se abre, sube hacia adelante y se borra en 6 cuadros (0,9 s).
+// [adelante, arriba, 0 gris · 1 claro · 2 casi transparente], desde la boca.
+const HUMO = [];
+HUMO[10] = [[0, 0, 0], [1, 0, 0], [1, -1, 0], [2, 0, 1]];
+HUMO[11] = [[1, -1, 0], [2, -1, 0], [2, -2, 0], [3, -1, 1], [1, -2, 1], [3, -2, 1]];
+HUMO[12] = [[2, -3, 0], [3, -3, 0], [3, -4, 0], [2, -4, 1], [4, -3, 1], [4, -4, 1], [1, -3, 1]];
+HUMO[13] = [[4, -6, 0], [3, -5, 1], [4, -5, 1], [3, -6, 1], [5, -5, 2], [2, -5, 2], [5, -6, 2]];
+HUMO[14] = [[4, -7, 1], [5, -7, 2], [4, -8, 2], [3, -7, 2], [5, -8, 2]];
+HUMO[15] = [[5, -9, 2], [4, -9, 2], [5, -10, 2]];
+const ALFA_HUMO = [0.8, 0.55, 0.3];
 function dibujarHumo(ctx, L, aMundo, espejo, PASO) {
   const punto = (p, color, alfa) => {
     const m = aMundo(p);
@@ -553,7 +560,7 @@ function dibujarHumo(ctx, L, aMundo, espejo, PASO) {
     ctx.fillRect(m.x - (espejo ? PASO : 0), m.y, PASO, PASO);
   };
   if (L.brasa) punto(L.brasa, L.pita ? PALETA[29] : PALETA[45], 1);
-  for (const [dx, dy, claro] of HUMO[L.fumaK] || []) punto([L.humo[0] + dx, L.humo[1] + dy], claro ? PALETA[25] : PALETA[24], claro ? 0.55 : 0.8);
+  for (const [dx, dy, claro] of HUMO[L.fumaK] || []) punto([L.humo[0] + dx, L.humo[1] + dy], claro ? PALETA[25] : PALETA[24], ALFA_HUMO[claro]);
   ctx.globalAlpha = 1;
 }
 

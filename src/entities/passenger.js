@@ -339,14 +339,14 @@ function seesBody(pa, world, c) {
  * para terminar.
  */
 function accionDeDia(pa, ahora) {
-  const s = pa._p3 || (pa._p3 = { accion: null, hasta: ahora + 1 + Math.random() * 10 });
+  // 🔁 Nunca se queda sin hacer nada: termina una cosa y empieza otra (ver CONFIG.fumar.duracionOtras).
+  const s = pa._p3 || (pa._p3 = { accion: null, hasta: ahora });
   if (ahora >= s.hasta) {
-    if (s.accion) { s.accion = null; s.hasta = ahora + 6 + Math.random() * 6; }
-    else {
+    {
       /**
        * 🆕 EL QUE FUMA, FUMA MÁS QUE CUALQUIER OTRA COSA (ver CONFIG.fumar):
        * de cada 10 veces, 6 prende un cigarrillo, que le dura 12-20 s (lo
-       * demás, 3-6 s).
+       * demás, también).
        */
       const F = CONFIG.fumar;
       if (pa._p3Fuma === undefined) pa._p3Fuma = Math.random() < F.fumadores;
@@ -355,13 +355,15 @@ function accionDeDia(pa, ahora) {
         s.desde = ahora;
         s.hasta = ahora + F.duracion[0] + Math.random() * (F.duracion[1] - F.duracion[0]);
       } else {
-        const hay = ['ventana'];
+        let hay = ['ventana'];
         if (pa.diario) hay.push('diario');
         if (pa.mazo) hay.push('barajar');
         if (pa.lleva) hay.push('equipaje');
+        // No repite la misma dos veces seguidas si tiene otra.
+        if (hay.length > 1) hay = hay.filter((a) => a !== s.accion);
         s.accion = hay[Math.floor(Math.random() * hay.length)];
         s.desde = ahora;
-        s.hasta = ahora + 3 + Math.random() * 3;
+        s.hasta = ahora + F.duracionOtras[0] + Math.random() * (F.duracionOtras[1] - F.duracionOtras[0]);
       }
     }
   }

@@ -18828,6 +18828,16 @@ Primera clase y las mujeres quedan para después.
   - **Si se alarma, lo tira**: la colilla queda en el piso y se apaga en 3 s.
   - Vistas: el guardia parado en las 5 (la izquierda, espejo); el pasajero sentado de
     costado, de frente y de espaldas. No saca el cigarrillo al empezar: aparece con él.
+  - 🔁 **16 cuadros de 0,15 s** *(Santi: "lo veo muy tildado")*: con 8, el brazo tenía sólo
+    3 lugares (cuadros repetidos) y saltaba. Ahora pasa por la mitad del camino entre cada
+    lugar puesto a mano; la pitada sigue durando 2,4 s. **Bocanada más grande** *(Santi:
+    "un poco más de humo cuando pitan")*: se abre, sube y se borra en 6 cuadros.
+- **🔁 Las otras acciones del pasajero duran 12-20 s, como un cigarrillo, y nunca se queda
+  sin hacer nada** *(Santi; eligió B de 8-12/12-20/20-30)*: termina una y empieza otra
+  (sin repetir la misma si tiene otra).
+- **Para P3b:** hacer las acciones mientras fuma (leer el diario o barajar con el
+  cigarrillo en la boca, pitando cada tanto) *(Santi: "en futuro que puedan hacer la acción
+  mientras fuman")*.
 - Sigue **P3b**: las variantes (barbas finas en las otras vistas y su capa del
   motor, chaleco, tiradores, la chaqueta corta, cuerpos, el sorteo).
 

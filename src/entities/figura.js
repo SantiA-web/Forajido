@@ -607,7 +607,7 @@ function jugadorNuevo(r, f) {
   // el dibujo: la bala sale hacia donde apuntás, como siempre.
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
-    ? lienzoGente({ tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, fino }, luz, !!f.destello)
+    ? lienzoGente({ ...(gente.aspecto || {}), tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, fino }, luz, !!f.destello)
     : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
@@ -640,7 +640,7 @@ export function tendidoNuevo(r, x, y, o = {}) {
   const ang = Math.round((espejo ? Math.PI - a : a) * 8 / Math.PI) * Math.PI / 8;
   const luz = estiloNuevo.luzEn ? estiloNuevo.luzEn(x, y) : 0;
   const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
-  const L = lienzoTendido({ tipo: o.tipo || 'guardia', modo: o.modo || 'muerto', late: o.late || 0, ang, fino }, luz);
+  const L = lienzoTendido({ ...(o.aspecto || {}), tipo: o.tipo || 'guardia', modo: o.modo || 'muerto', late: o.late || 0, ang, fino }, luz);
   const ctx = r.ctx;
   const [ox, oy, w, h] = [-PIES_TENDIDO[0] * PASO, -PIES_TENDIDO[1] * PASO, ANCHO_TENDIDO * PASO, ALTO_TENDIDO * PASO];
   ctx.save();

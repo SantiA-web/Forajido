@@ -12,7 +12,7 @@
 import { CONFIG } from '../data/config.js';
 import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, tendidoNuevo } from './figura.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { lienzoSombreroSuelto, cuadroDeFumar } from './estiloNuevo/gente.js';
+import { lienzoSombreroSuelto, cuadroDeFumar, aspectoDe } from './estiloNuevo/gente.js';
 import { moveAndCollide, distance, hasLineOfSight, angleDifference } from '../engine/collision.js';
 import { isHidden } from './player.js';
 import {
@@ -422,7 +422,7 @@ function sombreroEnElBanco(r, pa) {
     dibujar: () => {
       const luz = estiloNuevo.luzEn ? estiloNuevo.luzEn(x, y) : 0;
       const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
-      const L = lienzoSombreroSuelto({ tipo: 'pasajero', fino }, luz);
+      const L = lienzoSombreroSuelto({ ...pa._aspecto, tipo: 'pasajero', fino }, luz);
       const ox = Math.round(x / PASO) * PASO - L.base[0] * PASO, oy = Math.round(y / PASO) * PASO - L.base[1] * PASO;
       r.ctx.drawImage(L.img, ox, oy, L.img.width * PASO, L.img.height * PASO);
       if (fino) estiloNuevo.marcarGente(r.ctx, L.img, ox, oy, L.img.width * PASO, L.img.height * PASO);
@@ -433,12 +433,13 @@ function sombreroEnElBanco(r, pa) {
 /** 🎨 EL PASAJERO CON EL DIBUJO NUEVO (P3a). */
 function pasajeroNuevo(r, pa, pies) {
   const espejoTirado = (Math.floor(pa.x / 3) & 1) === 1;
-  if (!pa.alive) { tendidoNuevo(r, pa.x, pa.y, { tipo: 'pasajero', modo: 'muerto', sangre: true, espejo: espejoTirado }); return; }
+  const aspecto = aspectoDe(pa, 'pasajero');
+  if (!pa.alive) { tendidoNuevo(r, pa.x, pa.y, { tipo: 'pasajero', modo: 'muerto', sangre: true, espejo: espejoTirado, aspecto }); return; }
   // Durmiendo en la litera del dormitorio.
   // (La almohada de la litera está a la izquierda: la cabeza va ahí.)
   const ahora = performance.now() / 1000;
   if (pa.dormido && pa.cama) {
-    tendidoNuevo(r, pa.cama.x - 6, pa.cama.y, { tipo: 'pasajero', modo: 'cama' });
+    tendidoNuevo(r, pa.cama.x - 6, pa.cama.y, { tipo: 'pasajero', modo: 'cama', aspecto });
     pa._p3Desde = { x: pa.cama.x - 6, t: ahora };
     return;
   }
@@ -451,7 +452,7 @@ function pasajeroNuevo(r, pa, pies) {
   const shake = tiembla ? Math.sin(pa.shakeTimer * 40) * 1 : 0;
   const revelaT = pa.revelando ? Math.min(1, pa.revelaProgreso / ENCUBIERTO_DURACION) : 0;
   const sentado = pa.sentado && (pa.state === 'idle' || pa.state === 'amenazado' || pa.state === 'panic') && !pa.revelando;
-  const nuevo = { arma: null, funda: false };
+  const nuevo = { arma: null, funda: false, aspecto };
   let angulo = pa.facing;
   if (sentado) nuevo.piernas = 'sentado';
   if (pa.state === 'cowering') { nuevo.piernas = 'agachado'; nuevo.accion = 'quieto'; }
@@ -461,7 +462,12 @@ function pasajeroNuevo(r, pa, pies) {
    */
   if (pa.dormido) pa._p3Dormia = true;
   else if (pa._p3Dormia) { pa._p3Dormia = false; pa._p3Desperto = ahora; }
-  const despertando = sentado && pa._p3Desperto != null && ahora - pa._p3Desperto < 0.6;
+  /**
+   * Sólo el bombín tiene su dibujo suelto en el banco: el de paja y el que no usa
+   * sombrero se despiertan sin buscarlo (el de paja, hasta B6, aparece puesto).
+   */
+  const sombreroSuelto = aspecto.sombrero === 'bombin';
+  const despertando = sombreroSuelto && sentado && pa._p3Desperto != null && ahora - pa._p3Desperto < 0.6;
   if (pa.dormido) { nuevo.accion = 'dormido'; nuevo.k = Math.floor(ahora / 1.4) % 2; }
   else if (pa.state === 'amenazado') nuevo.brazos = 'arriba';
   else if (despertando) nuevo.accion = ahora - pa._p3Desperto < 0.3 ? (pa.sombreroArriba ? 'agarraSombreroArriba' : 'agarraSombrero') : 'poneSombrero';
@@ -504,7 +510,7 @@ function pasajeroNuevo(r, pa, pies) {
    * él; si está más acá (abajo), después.
    */
   const sinSombrero = pa.dormido || (despertando && ahora - pa._p3Desperto < 0.3);
-  const sombrero = sentado && sinSombrero && pa.asientoX != null ? sombreroEnElBanco(r, pa) : null;
+  const sombrero = sombreroSuelto && sentado && sinSombrero && pa.asientoX != null ? sombreroEnElBanco(r, pa) : null;
   if (sombrero && sombrero.antes) sombrero.dibujar();
   const fig = dibujarPersona(r, {
     tipo: 'pasajero', x: xDibujo, pies: piesDibujo, angulo, fase: sentado ? null : fase,

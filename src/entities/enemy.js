@@ -8,7 +8,7 @@ import { CONFIG } from '../data/config.js';
 import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_LOOK, tendidoNuevo } from './figura.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { PALETA } from '../engine/paleta.js';
-import { cuadroDeFumar } from './estiloNuevo/gente.js';
+import { cuadroDeFumar, aspectoDe } from './estiloNuevo/gente.js';
 import { dibujarHeridas } from './danio.js';
 import { GUARD_TYPES, DEFAULT_GUARD_TYPE, guardHealth } from '../data/guards.js';
 import { ARMAS_GUARDIA } from '../data/armasGuardia.js';
@@ -396,7 +396,7 @@ export function drawEnemy(r, e) {
   const nuevo = estiloNuevo.activo && tipo === 'guardia' && r.ctx;
   const espejoTirado = (Math.floor(e.x / 3) & 1) === 1;
   if (!e.alive) {
-    if (nuevo) { tendidoNuevo(r, e.x, e.y, { modo: 'muerto', sangre: true, espejo: espejoTirado }); return; }
+    if (nuevo) { tendidoNuevo(r, e.x, e.y, { modo: 'muerto', sangre: true, espejo: espejoTirado, aspecto: aspectoDe(e, 'guardia') }); return; }
     dibujarTendido(r, e.x, e.y, { tipo, sangre: true, cinta });
     return;
   }
@@ -412,7 +412,7 @@ export function drawEnemy(r, e) {
    * por al lado, que ese sigue siendo un problema que se va a levantar.
    */
   if (e.inconsciente > 0) {
-    if (nuevo) { tendidoNuevo(r, e.x, e.y, { modo: 'desmayado', late: Math.sin(e.inconsciente * 3) > 0 ? 1 : 0, espejo: espejoTirado }); return; }
+    if (nuevo) { tendidoNuevo(r, e.x, e.y, { modo: 'desmayado', late: Math.sin(e.inconsciente * 3) > 0 ? 1 : 0, espejo: espejoTirado, aspecto: aspectoDe(e, 'guardia') }); return; }
     dibujarTendido(r, e.x, e.y, {
       tipo, cinta, dormido: true, respira: Math.sin(e.inconsciente * 3) * 0.5,
     });
@@ -563,6 +563,7 @@ export function drawEnemy(r, e) {
     funda: !larga,
     ...poseNueva(e, peleando && conArma && !larga),
     ...franco,
+    aspecto: aspectoDe(e, 'guardia'),
   };
   /**
    * 🆕 FUMA (ver CONFIG.fumar) *(Santi: "solo cuando paran o los que vigilan

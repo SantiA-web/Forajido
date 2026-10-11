@@ -18331,7 +18331,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
-| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ (sin jugar) · sigue P3b |
+| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ · P3b: B1 ✅, sigue B2 |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
@@ -18840,6 +18840,24 @@ Primera clase y las mujeres quedan para después.
   mientras fuman")*.
 - Sigue **P3b**: las variantes (barbas finas en las otras vistas y su capa del
   motor, chaleco, tiradores, la chaqueta corta, cuerpos, el sorteo).
+
+**🔨 P3b — las variantes** *(Santi aprobó el plan: "vamos con todo lo recomendado")*.
+Seis pasos: **B1** el sorteo con lo ya dibujado · **B2** barbas finas en las 5 vistas ·
+**B3** ropa (el guardia con chaleco o chaqueta corta, 1 de cada 2; el civil con chaleco,
+tiradores o camisa sola, larga o arremangada) · **B4** cuerpos (normal 55, gordito 15,
+flaco 15, hombros anchos 15) · **B5** las acciones mientras fuma · **B6** detalles (el
+sombrero suelto según el suyo, el bastón, soltar la maleta). Lo que lleva dibujo nuevo,
+con silueta primero.
+- **✅ B1, el sorteo** *(Santi: "primero quiero que metas las variantes con las que no
+  tienes que dibujar… y pone la probabilidad de las pieles")*: cada uno sale con su
+  aspecto y lo guarda todo el asalto (`sortearAspecto` / `aspectoDe` en gente.js),
+  también tirado y en la litera. **Piel 20/40/40** (clara/media/oscura, la A). Los demás
+  pesos los puse yo, sin votación: pelo negro 35, castaño 35, rubio 15, canas 15 (el
+  rubio nunca con piel oscura); peinado corto 45, al costado 35, pelado 20; el guardia,
+  sombrero plano o curvo mitad y mitad; el civil, bombín 50, paja 30, sin sombrero 20;
+  el de fieltro, negro o marrón mitad y mitad; el pañuelo, cualquiera de los 5. Hasta
+  B6, sólo el bombín tiene dibujo suelto en el banco: el de paja dormido no lo tiene al
+  lado y al despertarse aparece con él puesto.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

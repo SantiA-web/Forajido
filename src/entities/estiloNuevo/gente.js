@@ -312,6 +312,42 @@ export const NUNCA = [{ pelo: 'rubio', piel: 'oscura' }];
  * oscura que piel clara")*. Propuesta de arranque, a confirmar.
  */
 export const PESO_PIEL = { clara: 0.2, media: 0.4, oscura: 0.4 };
+/**
+ * 🆕 P3b · B1, EL SORTEO *(Santi: "primero quiero que metas las variantes con las
+ * que no tienes que dibujar… y pone la probabilidad de las pieles"; la piel,
+ * 20/40/40)*: cada guardia y cada pasajero sale con su aspecto, que no cambia en
+ * todo el asalto. Sólo lo que ya está dibujado en las 5 vistas: piel, pelo,
+ * peinado (se ve sin sombrero), sombrero y su color, y el pañuelo del civil.
+ * Las barbas, la ropa y los cuerpos vienen después (B2-B4). Los guardias,
+ * siempre con sombrero y el uniforme bordó.
+ */
+const PESO = {
+  pelo: { negro: 0.35, castano: 0.35, rubio: 0.15, canas: 0.15 },
+  peinado: { corto: 0.45, costado: 0.35, pelado: 0.2 },
+  sombreroGuardia: { plano: 0.5, curvo: 0.5 },
+  // 'ninguno': sin sombrero (no puede ser null: en la clave del dibujo guardado, null y "el de siempre" son lo mismo).
+  sombreroPasajero: { bombin: 0.5, paja: 0.3, ninguno: 0.2 },
+  colorSombrero: { negro: 0.5, marron: 0.5 },
+  panuelo: { rojo: 0.2, azul: 0.2, ocre: 0.2, verde: 0.2, pardo: 0.2 },
+};
+function elegir(pesos, azar) {
+  let r = azar(), ultimo = null;
+  for (const [k, p] of Object.entries(pesos)) { ultimo = k; if ((r -= p) < 0) return k; }
+  return ultimo;
+}
+export function sortearAspecto(tipo, azar = Math.random) {
+  const a = { piel: elegir(PESO_PIEL, azar), peinado: elegir(PESO.peinado, azar) };
+  do a.pelo = elegir(PESO.pelo, azar);
+  while (NUNCA.some((n) => n.pelo === a.pelo && n.piel === a.piel));
+  if (tipo === 'guardia') a.sombrero = elegir(PESO.sombreroGuardia, azar);
+  else { a.sombrero = elegir(PESO.sombreroPasajero, azar); a.panuelo = elegir(PESO.panuelo, azar); }
+  if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno') a.colorSombrero = elegir(PESO.colorSombrero, azar);
+  return a;
+}
+/** El aspecto de alguien: se sortea la primera vez que se lo dibuja y queda guardado. */
+export function aspectoDe(ent, tipo) {
+  return ent._aspecto || (ent._aspecto = sortearAspecto(tipo));
+}
 const PELOS = {
   // 🔁 El negro cálido, marrón casi negro *(Santi eligió el 2 de tres; los negros
   // de la paleta tiran a violeta)*.
@@ -365,7 +401,7 @@ const BASE = {
  */
 export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
-  const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero;
+  const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
   const colores = { ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
   if (!funda) Object.assign(colores, vista === 'lado' ? { F: colores.I ?? C.I, f: colores.T ?? C.T } : { F: null, f: null });
   const cabeza = [CABEZA[vista]];
@@ -772,7 +808,7 @@ export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang
 const tendidos = new Map();
 /** El tirado iluminado, como canvas (se guarda). */
 export function lienzoTendido(o, luz = 0) {
-  const clave = ['tipo', 'modo', 'late', 'ang', 'arma', 'fino', 'piel', 'pelo', 'sombrero', 'uniforme', 'panuelo'].map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz;
+  const clave = ['tipo', 'modo', 'late', 'ang', 'arma', 'fino', 'piel', 'pelo', 'sombrero', 'uniforme', 'panuelo', 'peinado', 'colorSombrero'].map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz;
   let g = tendidos.get(clave);
   if (g) return g;
   if (tendidos.size > 300) tendidos.clear();

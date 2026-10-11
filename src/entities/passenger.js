@@ -407,8 +407,16 @@ function pasajeroNuevo(r, pa, pies) {
   let angulo = pa.facing;
   if (sentado) nuevo.piernas = 'sentado';
   if (pa.state === 'cowering') { nuevo.piernas = 'agachado'; nuevo.accion = 'quieto'; }
+  /**
+   * 🆕 AL DESPERTARSE SE PONE EL SOMBRERO *(Santi)*: dormido lo tiene en el banco
+   * al lado; en 0,6 s lo agarra (0,3) y se lo pone (0,3).
+   */
+  if (pa.dormido) pa._p3Dormia = true;
+  else if (pa._p3Dormia) { pa._p3Dormia = false; pa._p3Desperto = ahora; }
+  const despertando = sentado && pa._p3Desperto != null && ahora - pa._p3Desperto < 0.6;
   if (pa.dormido) { nuevo.accion = 'dormido'; nuevo.k = Math.floor(ahora / 1.4) % 2; }
   else if (pa.state === 'amenazado') nuevo.brazos = 'arriba';
+  else if (despertando) nuevo.accion = ahora - pa._p3Desperto < 0.3 ? 'agarraSombrero' : 'poneSombrero';
   else if (pa.revelando) {
     // Saca el revólver de adentro del saco (los cuadros del desenfundar) y te apunta.
     const d = Math.floor(revelaT / 0.2);

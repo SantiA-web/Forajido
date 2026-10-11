@@ -20,7 +20,7 @@
  */
 import { iluminar } from '../../engine/luz.js';
 import { sombrear } from '../../engine/paleta.js';
-import { C, ANCHO, ALTO, cuadroJugador, armaEn, linea } from './jugador.js';
+import { C, ANCHO, ALTO, OX, OY, cuadroJugador, armaEn, linea } from './jugador.js';
 
 const mapa = (y, filas) => ({ y, filas });
 
@@ -383,10 +383,40 @@ export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'ca
  * `arma`, `ang`, `empuna`, `golpe`, `enfundado`. Devuelve los índices,
  * la boca del caño y el hombro.
  */
+/** El dormido de perfil (ver DORMIDO_LADO), con su sombrero en el banco al lado. */
+function cuadroDormidoLado(o) {
+  const col = { ...C, ...capasPersona(o).colores };
+  const idx = new Int16Array(ANCHO * ALTO).fill(-1);
+  const poner = (x, y, i) => {
+    if (i == null) return;
+    x += OX; y += OY;
+    if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) idx[y * ANCHO + x] = i;
+  };
+  for (const m of [SOMBRERO_AL_LADO, DORMIDO_LADO]) m.filas.forEach((f, j) => {
+    for (let x = 0; x < f.length; x++) if (f[x] !== '.') poner(x, m.y + j, col[f[x]]);
+  });
+  if (!o.fino) {
+    const lleno = idx.slice();
+    for (let y = 0; y < ALTO; y++) for (let x = 0; x < ANCHO; x++) {
+      if (lleno[y * ANCHO + x] >= 0) continue;
+      const v = (a, b) => a >= 0 && b >= 0 && a < ANCHO && b < ALTO && lleno[b * ANCHO + a] >= 0;
+      if (v(x - 1, y) || v(x + 1, y) || v(x, y - 1) || v(x, y + 1)) idx[y * ANCHO + x] = 0;
+    }
+  }
+  return { idx, boca: null, hombro: null };
+}
+
 export function cuadroGente(o) {
+  if (o.accion === 'dormido' && o.vista === 'lado') return cuadroDormidoLado(o);
   // Lo que hace sentado (`accion`, ver poseSentado) se arma acá: así se guarda por nombre.
-  const brazos = o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva) : o.brazos;
-  return cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona: capasPersona(o) });
+  let brazos = o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva) : o.brazos;
+  const persona = capasPersona(o);
+  // Agarrando el sombrero del banco: todavía no lo tiene puesto; está al lado.
+  if (brazos && brazos.sinSombrero) {
+    persona.sombrero = null;
+    brazos = { ...brazos, props: [...(brazos.props || []), { m: SOMBRERO_AL_LADO, piso: true, capa: 'fondo' }] };
+  }
+  return cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona });
 }
 
 // ------------------------------------------------- lo que hacen sentados
@@ -482,6 +512,12 @@ const POSES_SENTADO = {
   // contra el respaldo (de costado el torso un punto para atrás), la cabeza caída
   // sobre el pecho (dos puntos abajo; de costado, hacia adelante, y en las otras
   // vistas, ladeada) y los brazos cruzados.
+  /**
+   * 🆕 AL DESPERTARSE (de costado, 0,6 s): agarra el sombrero del banco (la mano
+   * de acá estirada hacia él) y se lo pone (la mano en el ala).
+   */
+  agarraSombrero: { lado: { lista: [b([[10, 9], [8, 13], [5, 15]]), b([[9, 9], [10, 12], [12, 13]], true)], sinSombrero: true, sombreroAlLado: true } },
+  poneSombrero: { lado: { lista: [b([[10, 9], [13, 6], [12, 2]]), b([[9, 9], [10, 12], [12, 13]], true)] } },
   dormido: {
     // 🔁 Mirando para abajo, a las rodillas *(Santi: "que sus ojos apunten a sus
     // rodillas")*: el sombrero baja más que la cabeza (`gacha`, [abajo, adelante])
@@ -493,6 +529,46 @@ const POSES_SENTADO = {
     diagE: { lista: [b([[13, 9], [14, 12], [13, 14]]), b([[6, 9], [5, 12], [7, 13]], true)], cabeza: 2, cabezaX: 1, inclina: -1, gacha: [1, 1] },
   },
 };
+/**
+ * 🔁 DORMIDO SENTADO, DE PERFIL, dibujado entero a mano sobre la silueta que
+ * aprobó Santi *(Santi: "piernas normales, pero el torso y la cabeza tirados
+ * hacia atrás para apoyarse en el respaldo, dejando un hueco de aire entre la
+ * espalda del personaje y el asiento"; "que el sombrero esté ahí a su lado y que
+ * no lo tenga puesto… cuando se levanta, se lo pone")*: la cadera un poco
+ * adelante, el torso echado atrás en diagonal (la espalda apoya sólo arriba y
+ * queda la cuña de aire), la cabeza apoyada atrás con la cara mirando para
+ * arriba y la nariz que sobresale, los brazos cruzados, las piernas de sentado.
+ * El sombrero, apoyado en el banco al lado, en el hueco de la espalda. Los sentados
+ * sólo miran a la derecha (los asientos del vagón de pasajeros): no hacen falta
+ * otras vistas.
+ */
+const DORMIDO_LADO = mapa(6, [
+  '..................',
+  '...aAAa',
+  '..aAAAPp',
+  '..aAAPPPn',
+  '...aPPPq',
+  '...qpPq',
+  '....pRRS',
+  '....UVVVv',
+  '....UVVVVv',
+  '.....UVVVVv',
+  '.....ULCCCcP',
+  '......UCCCcPp',
+  '......VVVvw',
+  '.......VVVvw',
+  '.......WWyWG',
+  '........IIIIIIIIT',
+  '........tTTTTTTTT',
+  '..............ITt',
+  '..............ITt',
+  '.............QOOOO',
+  '.............KKKKK',
+]);
+/** Su sombrero, apoyado en el banco al lado (el bombín de costado). */
+// En el banco, en el hueco entre la espalda y el respaldo (al lado de la cadera).
+const SOMBRERO_AL_LADO = mapa(18, ['...hHk', '..hHHHk', '..bbbbb', '.hHHHHHk']);
+
 /** La maleta y el bolso, en el piso al lado (`[cerrada, abierta]`), por vista. */
 const EQUIPAJE = {
   maleta: {
@@ -523,6 +599,8 @@ export function poseSentado(accion, vista, k = 0, lleva = 'maleta') {
   const V = vista === 'lado' || vista === 'frente' || vista === 'espalda' ? vista : null;
   // Dormido, los brazos cruzados y la cabeza caída; sin hacer nada, las manos en la falda.
   // Dormido respira: cada tanto la cabeza sube un punto (`k` impar).
+  // Al despertarse: en las otras vistas (no se sientan así), quieto.
+  if (accion === 'agarraSombrero' || accion === 'poneSombrero') return POSES_SENTADO[accion][vista] || { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
   if (accion === 'dormido') { const D = POSES_SENTADO.dormido[vista]; return { ...D, cabeza: D.cabeza - (k % 2) }; }
   if (accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
   if (!V || !POSES_SENTADO[accion]) return null;

@@ -340,8 +340,6 @@ VISTAS.frente.piernas.piso = mapa(25, ['.......IITTTtt', '......IIT..Ttt', '....
 VISTAS.diagF.piernas.piso = mapa(25, ['.......IITTttt', '........IITtttt', '.........IITttt', '..........IITtt', '..........KKKKK', '..........KOOKK']);
 VISTAS.espalda.piernas.piso = mapa(25, ['.......IITTTtt', '.......tttttt']);
 VISTAS.diagE.piernas.piso = mapa(25, ['.......tttTTII', '........tttTT']);
-// 🧪 PRUEBA: sentado en el borde del asiento, las piernas colgando hasta el piso (cadera 7 puntos arriba de los pies).
-VISTAS.lado.piernas.asiento = mapa(19, ['.......IFFTTTT', '.......tFfTTTTt', '...........ITt', '...........IT', '...........IT', '...........IT', '..........QOOOO', '..........KKKKK']);
 VISTAS.frente.piernas.rodillas = mapa(22, ['......FIITTTtt', '......FIIT.Ttt', '......fIIT.TTt', '.......III.TTt', '.......ttt.ttt']);
 
 // ------------------------------------------------- las piernas que se mueven
@@ -987,7 +985,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'asiento' ? 2 : piernas === 'sentado' ? 4 : piernas === 'rodillas' ? 5 : piernas === 'piso' ? 8 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'sentado' ? 4 : piernas === 'rodillas' ? 5 : piernas === 'piso' ? 8 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
   const deCostado = vista === 'lado' || vista.startsWith('diag');
   const inclina = AT ? (deCostado ? AT.inclina : 0) : TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : piernas === 'piso' && deCostado ? 1 : 0;
   /**

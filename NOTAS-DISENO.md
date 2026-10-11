@@ -18791,6 +18791,17 @@ Primera clase y las mujeres quedan para después.
   mueble a su lugar en vez de aparecer ahí; el que estaba a dos casillas de su asiento
   queda a una. **Dormido sentado**: echado contra el respaldo, la cabeza caída sobre
   el pecho (dos puntos) y respira (sube un punto cada 1,4 s).
+- **🔁 El dormido sentado y los bancos** (varias vueltas que no salían: dibujaba a ciegas,
+  sin decidir la forma antes, y en los bancos cambiaba números sin cambiar el dibujo).
+  Lo que funcionó: **primero la silueta, de un color y grande**, y recién cuando Santi
+  la aprueba, el color. **Dormido**: echado atrás contra el respaldo, la cuña de aire
+  entre la espalda y el banco, los brazos cruzados, la cara para arriba con la nariz,
+  **sin sombrero: lo tiene en el banco al lado** y al despertarse lo agarra y se lo
+  pone (0,6 s) *(Santi: "que el sombrero esté ahí a su lado y que no lo tenga puesto…
+  cuando se levanta, se lo pone")*; sólo de costado (los sentados miran a la derecha).
+  **Los bancos quedan como estaban** *(Santi: "mejor dejemos como el actual")*: se
+  probaron de costado, a medio camino, como su ícono y como caja a 60° y 75°, y no
+  convenció ninguno.
 - Sigue **P3b**: las variantes (barbas finas en las otras vistas y su capa del
   motor, chaleco, tiradores, la chaqueta corta, cuerpos, el sorteo).
 

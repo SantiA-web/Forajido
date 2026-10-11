@@ -620,7 +620,7 @@ function jugadorNuevo(r, f) {
   if (L.fumaK != null) dibujarHumo(ctx, L, aMundo, espejo, PASO);
   // El cuervo del pañuelo (puntos finos, un tercio de punto), encima del dibujo.
   if (L.finos && L.finos.length) {
-    ctx.fillStyle = PALETA[0];
+    ctx.fillStyle = PALETA[L.colorFinos ?? 0];
     const t = PASO / 3;
     for (let i = 0; i < L.finos.length; i += 2) {
       const fx = L.finos[i] / 3, fy = L.finos[i + 1] / 3;

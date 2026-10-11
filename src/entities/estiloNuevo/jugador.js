@@ -1000,6 +1000,9 @@ const CUERVO = {
     '....#.#.#.#....',
   ],
   desde: { frente: [8, 5], diagF: [9, 5] },
+  // 🔁 Negro rojizo, como teñido en el pañuelo *(Santi: "que no resalte tanto")*, y con la luz del
+  // lugar: de noche pasa a negro y se sigue viendo sobre el pañuelo oscurecido (sin luz, desaparecía).
+  color: 39,
 };
 export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara }) {
   const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
@@ -1456,7 +1459,7 @@ export function lienzoJugador(o, luz = 0, destello = false) {
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
-  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: q.finos };
+  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: q.finos, colorFinos: q.finos ? sombrear(CUERVO.color, luz) : null };
   guardados.set(clave, g);
   return g;
 }

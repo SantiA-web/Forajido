@@ -323,8 +323,10 @@ const PIELES = {
  */
 const BARBA_CORTA = {
   // [la sombra de la barba, la boca] según la piel; rubio y canas, más suaves.
-  clara: { oscuro: [11, 47], rubio: [12, 11], canas: [15, 14] },
-  media: { oscuro: [47, 32], rubio: [11, 47], canas: [15, 14] },
+  // 🔁 El rubio, dorado: con la sombra de la piel se fundía con la cara sin sombrero y sólo
+  // resaltaba la boca, como un bigote clarito *(Santi; eligió dorado en clara y dorado oscuro en media)*.
+  clara: { oscuro: [11, 47], rubio: [6, 5], canas: [15, 14] },
+  media: { oscuro: [47, 32], rubio: [5, 4], canas: [15, 14] },
   oscura: { oscuro: [32, 0], rubio: [47, 32], canas: [14, 32] },   // 🔁 del negro cálido, no azulada
 };
 export function colorBarbaCorta(piel, pelo) {
@@ -500,11 +502,7 @@ function barbaFina(o, q) {
   if (!M || !q.cabeza) return null;
   const pelo = PELOS[o.pelo || 'castano'], piel = PIELES[o.piel || 'media'];
   const [sombra, boca] = colorBarbaCorta(o.piel || 'media', o.pelo || 'castano');
-  // 🔁 El rubio y el canoso, del tono del pelo (más claro): con el más oscuro el bigote
-  // rubio se leía como una línea sucia *(Santi: "en el rubio noto que queda raro el bigote")*.
-  const claro = o.pelo === 'rubio' || o.pelo === 'canas';
-  const B = claro ? pelo.A : pelo.B, b = claro ? pelo.B : sombrear(pelo.B, -1);
-  const colores = { B, b, X: sombra, x: boca };
+  const colores = { B: pelo.B, b: sombrear(pelo.B, -1), X: sombra, x: boca };
   const cara = new Set([piel.P, piel.p, piel.q, piel.n, pelo.A, pelo.a, pelo.B]);
   // La larga cae sobre el cuello y el pecho: también el pañuelo, la camisa y el chaleco.
   if (o.barba === 'larga') {

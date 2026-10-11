@@ -18887,7 +18887,8 @@ con silueta primero.
   grandes, de pocos días y 🆕 **larga, que tapa el cuello** *(Santi)*: de las patillas a la
   barbilla y cae en punta sobre el cuello y el pecho. Dibujadas de costado y en diagonal de
   espaldas (las de frente y diagonal de frente eran del paso 1); de espaldas no se ven. El
-  rubio y el canoso, del tono del pelo *(Santi: "en el rubio noto que queda raro el bigote")*.
+  🔁 La de pocos días del rubio, dorada (en piel media, dorado oscuro): con la sombra de la piel
+  se fundía con la cara sin sombrero y sólo resaltaba la boca, como un bigote clarito *(Santi)*.
   **El sorteo, la B, igual para guardias y pasajeros:** afeitado 20, pocos días 30, bigote 25,
   candado 10, patillas 10, larga 5 (la larga, 5 que salieron del afeitado). **Con canas, la
   larga es más común:** afeitado 15, pocos días 25, bigote 20, candado 5, patillas 10, larga 25

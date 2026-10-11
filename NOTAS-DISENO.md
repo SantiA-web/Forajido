@@ -18893,6 +18893,14 @@ con silueta primero.
   candado 10, patillas 10, larga 5 (la larga, 5 que salieron del afeitado). **Con canas, la
   larga es más común:** afeitado 15, pocos días 25, bigote 20, candado 5, patillas 10, larga 25
   (estos números los puse yo). El dormido echado (DORMIDO_LADO) y los tirados no llevan barba.
+- **✅ B3, la ropa del civil y la manga arremangada** (sobre prototipos que aprobó): **chaleco 40,
+  tiradores 30, camisa sola 30** *(Santi)*. La camisa sola, del mismo tono claro que las mangas (si
+  no, parecía un chaleco color hueso); los tiradores, dos tiras de cuero oscuro de los hombros al
+  cinto (de costado una, de espaldas en Y); el cinto sigue en todos. **Manga: de día larga 40 y
+  arremangada 60, de noche al revés** *(Santi)*; también los guardias de chaleco. La arremangada
+  se dibuja en el brazo mismo (`ponerManga` en jugador.js), así sirve en todas las poses: hasta el
+  codo camisa, en el codo el puño doblado (claro y un punto más ancho, el pliegue) y de ahí a la
+  mano el antebrazo en piel. Sigue la chaqueta del guardia (1 de cada 2, con manga larga).
 - **✅ Las formas de los cuerpos y la chaqueta, aprobadas en prototipo** (tmp-ref/cuerpos.js,
   estirando el dibujo de hoy; no están en el juego: en B3 y B4 se dibujan en cada vista):
   - **Los brazos van rectos** y se corren lo que se corre el hombro *(Santi: "el brazo no

@@ -39,6 +39,7 @@ import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
+import { fijarHoraDelSorteo } from '../entities/estiloNuevo/gente.js';
 import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual, damagePlayer,
 } from '../entities/player.js';
@@ -239,6 +240,8 @@ export function createRaidScene(services) {
     map = train.map;
     player = train.player;
 
+    // 🆕 La ropa de la gente se sortea según la hora (de noche, más mangas largas).
+    fijarHoraDelSorteo(gameState.esDeDia);
     // 🆕 De noche, la mayoría de los pasajeros duerme (ver CONFIG.passenger.dormidos).
     if (!gameState.esDeDia) {
       for (const pa of train.passengers) {

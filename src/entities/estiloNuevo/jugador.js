@@ -1004,7 +1004,7 @@ const CUERVO = {
   // lugar: de noche pasa a negro y se sigue viendo sobre el pañuelo oscurecido (sin luz, desaparecía).
   color: 39,
 };
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara }) {
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara, arremangada }) {
   const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
   const TJ = tajo != null ? TAJO[tajo] : null;
   /**
@@ -1105,14 +1105,42 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
             : rArma <= -3;
 
   let boca = null;
+  /**
+   * 🆕 LA MANGA ARREMANGADA (P3b · B3) *(Santi: "para que la camisa arremangada no se
+   * vea como una camiseta apretada, debería dar la sensación de que hay un pliegue";
+   * "que se vea un poquito más de camisa")*: se dibuja en el brazo mismo, así sirve en
+   * todas las poses. El punto `i` de la manga (desde el hombro; `codo` es dónde dobla):
+   * hasta el codo, camisa; en el codo el puño doblado (claro y un punto más ancho hacia
+   * afuera) y de ahí a la mano, el antebrazo en piel.
+   */
+  const ponerManga = (x, y, i, codo, color) => {
+    if (!arremangada || i < codo) { poner(x, y, color); return; }
+    if (i === codo) {
+      poner(x, y, C.L);
+      const fuera = x < 10.5 + inclina ? -1 : 1;
+      const k = (y + OY) * ANCHO + x + fuera + OX;
+      if (k >= 0 && k < idx.length && idx[k] < 0) poner(x + fuera, y, C.C);
+      return;
+    }
+    poner(x, y, color === C.L ? C.P : color === C.C ? C.p : C.q);
+  };
+  /** Los puntos de un brazo de dos tramos (hombro → codo → mano), en orden, y dónde está el codo. */
+  const tramos = (a, b, c) => {
+    const pts = [];
+    linea(a, b, (x, y) => pts.push([x, y]));
+    const codo = pts.length - 1;
+    linea(b, c, (x, y) => { if (x !== b[0] || y !== b[1]) pts.push([x, y]); });
+    return { pts, codo };
+  };
   /** Una manga de dos de alto, de `a` a `b` (el último punto es el puño). */
   const manga = (a, b, lejos) => {
     const pts = [];
     linea(a, b, (x, y) => pts.push([x, y]));
+    const codo = Math.floor(pts.length / 2);
     pts.forEach(([x, y], i) => {
       const puno = i === pts.length - 2 && !lejos;
-      poner(x, y, lejos ? C.c : puno ? C.L : C.C);
-      poner(x, y + 1, lejos ? C.c : puno ? C.C : C.c);
+      ponerManga(x, y, i, codo, lejos ? C.c : puno ? C.L : C.C);
+      ponerManga(x, y + 1, i, codo, lejos ? C.c : puno ? C.C : C.c);
     });
   };
   const mano = ([x, y], lejos) => { poner(Math.round(x), Math.round(y), lejos ? C.p : C.P); poner(Math.round(x), Math.round(y) + 1, C.p); };
@@ -1195,11 +1223,13 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     // La manga, de dos de alto, en uno o dos tramos; el último punto antes de la mano es el puño (al sol).
     const pts = [];
     if (codo) { linea([hx, hy], codo, (x, y) => pts.push([x, y])); pts.pop(); }
+    const iCodo = pts.length;
     linea(codo || [hx, hy], mano, (x, y) => pts.push([x, y]));
+    const enCodo = codo ? iCodo : Math.floor(pts.length / 2);
     pts.forEach(([x, y], i) => {
       const puno = i === pts.length - 2;
-      poner(x, y, puno ? C.L : C.C);
-      poner(x, y + 1, puno ? C.C : C.c);
+      ponerManga(x, y, i, enCodo, puno ? C.L : C.C);
+      ponerManga(x, y + 1, i, enCodo, puno ? C.C : C.c);
     });
     // El revólver (Colt o Schofield), en la dirección del brazo, y encima el puño de 2×2 en la culata.
     const A = armaEn(DIBUJOS_ARMAS[arma] ? arma : 'colt', Math.atan2(dir[1], dir[0]));
@@ -1224,11 +1254,11 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     const codo = [3 * Math.sin(a), 3 * Math.cos(a)];
     const mano = [codo[0] + 3 * Math.sin(a + b), codo[1] + 3 * Math.cos(a + b)];
     const [afuera, adentro] = atras ? [C.c, C.c] : [C.L, C.C];
-    const trazo = der
-      ? (x, y) => { poner(x, y, atras ? C.c : C.C); poner(x + 1, y, C.c); }
-      : (x, y) => { poner(x, y, afuera); poner(x + 1, y, adentro); };
-    linea(S, ver(...codo), trazo);
-    linea(ver(...codo), ver(...mano), trazo);
+    const T = tramos(S, ver(...codo), ver(...mano));
+    T.pts.forEach(([x, y], i) => {
+      if (der) { ponerManga(x, y, i, T.codo, atras ? C.c : C.C); ponerManga(x + 1, y, i, T.codo, C.c); }
+      else { ponerManga(x, y, i, T.codo, afuera); ponerManga(x + 1, y, i, T.codo, adentro); }
+    });
     const [mx, my] = ver(...mano);
     poner(mx, my, atras ? C.p : C.P); poner(mx + 1, my, C.p);
     poner(mx, my + 1, C.p); poner(mx + 1, my + 1, C.q);
@@ -1347,9 +1377,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   });
   const brazoPose = (b, i) => {
     const pts = b.p.map(([x, y]) => [x + inclina + lomo + bi, y + baja]);
-    const trazo = (x, y) => { poner(x, y, b.atras ? C.c : C.L); poner(x + 1, y, b.atras ? C.c : C.C); };
-    linea(pts[0], pts[1], trazo);
-    linea(pts[1], pts[2], trazo);
+    const T = tramos(pts[0], pts[1], pts[2]);
+    T.pts.forEach(([x, y], i) => { ponerManga(x, y, i, T.codo, b.atras ? C.c : C.L); ponerManga(x + 1, y, i, T.codo, b.atras ? C.c : C.C); });
     const [mx, my] = pts[2];
     poner(mx, my, b.atras ? C.p : C.P); poner(mx + 1, my, C.p);
     poner(mx, my + 1, C.p); poner(mx + 1, my + 1, C.q);

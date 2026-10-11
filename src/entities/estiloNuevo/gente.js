@@ -362,6 +362,15 @@ const PESO = {
    * sumó la larga con 5)*: la larga sale del afeitado (25 → 20). Con canas, la larga
    * es más común: 25 (sale del afeitado, la de pocos días, el bigote y el candado).
    */
+  /**
+   * 🆕 B3, LA ROPA *(Santi: "Chaleco: 40, Tiradores: 30, Camisa: 30. Larga: 40.
+   * Arremangada: 60. Si es de noche es al revés"; "los de chaleco también pueden tener
+   * la camisa arremangada")*: la ropa, sólo el civil (el guardia, el chaleco de la
+   * compañía); la manga, los dos, según la hora del asalto (ver fijarHoraDelSorteo).
+   */
+  ropa: { chaleco: 0.4, tiradores: 0.3, camisa: 0.3 },
+  mangaDia: { larga: 0.4, arremangada: 0.6 },
+  mangaNoche: { larga: 0.6, arremangada: 0.4 },
   barba: { afeitado: 0.2, completa: 0.3, bigote: 0.25, candado: 0.1, patillas: 0.1, larga: 0.05 },
   barbaCanas: { afeitado: 0.15, completa: 0.25, bigote: 0.2, candado: 0.05, patillas: 0.1, larga: 0.25 },
 };
@@ -378,8 +387,13 @@ export function sortearAspecto(tipo, azar = Math.random) {
   else { a.sombrero = elegir(PESO.sombreroPasajero, azar); a.panuelo = elegir(PESO.panuelo, azar); }
   if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno') a.colorSombrero = elegir(PESO.colorSombrero, azar);
   a.barba = elegir(a.pelo === 'canas' ? PESO.barbaCanas : PESO.barba, azar);
+  if (tipo !== 'guardia') a.ropa = elegir(PESO.ropa, azar);
+  a.arremangada = elegir(horaDelSorteo.dia ? PESO.mangaDia : PESO.mangaNoche, azar) === 'arremangada';
   return a;
 }
+/** De día o de noche: la pone el asalto al empezar (de noche, más mangas largas). */
+const horaDelSorteo = { dia: true };
+export function fijarHoraDelSorteo(dia) { horaDelSorteo.dia = !!dia; }
 /** El aspecto de alguien: se sortea la primera vez que se lo dibuja y queda guardado. */
 export function aspectoDe(ent, tipo) {
   return ent._aspecto || (ent._aspecto = sortearAspecto(tipo));
@@ -439,7 +453,35 @@ const BASE = {
 const atrasUno = (m) => m && { y: m.y, filas: m.filas.map((f) => (f.startsWith('.') ? f.slice(1) : f)) };
 /** Cuánto más atrás va la cabeza de costado, en toda la gente (lo usa lo que va a la boca o al sombrero: se corre con ella). */
 const CABEZA_ATRAS = 1;
-export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' }) {
+/**
+ * 🆕 B3: LA ROPA DEL CIVIL. `camisa`: el chaleco pasa a camisa, del mismo tono claro
+ * que las mangas (si no, parecía un chaleco color hueso) y la línea de botones suave;
+ * el cinto (la última fila) queda. `tiradores`: la camisa y dos tiras de cuero oscuro
+ * de los hombros al cinto ([columna, de la fila, a la fila] por vista; de costado se
+ * ve una; de espaldas se juntan en Y) *(Santi: "el otro debería ir un pixel más
+ * abierto"; "el cinturón tiene que seguir estando")*.
+ */
+const A_CAMISA = { U: 'L', V: 'L', v: 'C', w: 'c', y: 'C' };
+const TIRADORES = {
+  frente: [[8, 8, 15], [12, 8, 15]],
+  diagF: [[9, 8, 15], [12, 8, 15]],
+  lado: [[9, 8, 15]],
+  diagE: [[10, 8, 15], [12, 8, 15]],
+  espalda: [[9, 8, 10], [12, 8, 10], [10, 11, 11], [11, 11, 11], [10, 12, 15]],
+};
+const torsosDeRopa = {};
+function torsoConRopa(torso, vista, ropa) {
+  const clave = vista + ropa;
+  if (torsosDeRopa[clave]) return torsosDeRopa[clave];
+  const ultima = torso.filas.length - 1;
+  const filas = torso.filas.map((f, j) => (j === ultima ? f : f.replace(/[UVvwy]/g, (c) => A_CAMISA[c])).split(''));
+  if (ropa === 'tiradores') for (const [x, y1, y2] of TIRADORES[vista]) for (let y = y1; y <= y2; y++) {
+    const r = filas[y - torso.y];
+    if (r && r[x] && r[x] !== '.') r[x] = y === y2 ? 'j' : 'J';
+  }
+  return (torsosDeRopa[clave] = { y: torso.y, filas: filas.map((r) => r.join('')) });
+}
+export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia', ropa = 'chaleco' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
   const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
   const colores = { ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
@@ -457,8 +499,11 @@ export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'ca
    * partir de ahora todas las personas que dibujemos serán así")*: la cara, el
    * pelo, el pañuelo y el sombrero, centrados sobre el torso. Ver CABEZA_ATRAS.
    */
-  if (vista === 'lado') return { colores, cabeza: cabeza.map(atrasUno), sombrero: atrasUno(sombreroMapa), torso: TORSOS[tipo][vista] };
-  return { colores, cabeza, sombrero: sombreroMapa, torso: TORSOS[tipo][vista] };
+  const conRopa = tipo === 'pasajero' && ropa !== 'chaleco';
+  const torso = conRopa ? torsoConRopa(TORSOS[tipo][vista], vista, ropa) : TORSOS[tipo][vista];
+  if (ropa === 'tiradores') Object.assign(colores, { J: 32, j: 0 });
+  if (vista === 'lado') return { colores, cabeza: cabeza.map(atrasUno), sombrero: atrasUno(sombreroMapa), torso };
+  return { colores, cabeza, sombrero: sombreroMapa, torso };
 }
 
 /**
@@ -1042,7 +1087,7 @@ export function lienzoSombreroSuelto(o, luz = 0) {
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

@@ -369,6 +369,9 @@ const PESO = {
    * compañía); la manga, los dos, según la hora del asalto (ver fijarHoraDelSorteo).
    */
   ropa: { chaleco: 0.4, tiradores: 0.3, camisa: 0.3 },
+  /** 🆕 B4: los cuerpos (la B: normal 55, gordito, flaco y hombros anchos 15 cada uno) y la chaqueta del guardia (1 de cada 2). */
+  cuerpo: { normal: 0.55, gordito: 0.15, flaco: 0.15, anchos: 0.15 },
+  chaqueta: 0.5,
   mangaDia: { larga: 0.4, arremangada: 0.6 },
   mangaNoche: { larga: 0.6, arremangada: 0.4 },
   barba: { afeitado: 0.2, completa: 0.3, bigote: 0.25, candado: 0.1, patillas: 0.1, larga: 0.05 },
@@ -388,7 +391,10 @@ export function sortearAspecto(tipo, azar = Math.random) {
   if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno') a.colorSombrero = elegir(PESO.colorSombrero, azar);
   a.barba = elegir(a.pelo === 'canas' ? PESO.barbaCanas : PESO.barba, azar);
   if (tipo !== 'guardia') a.ropa = elegir(PESO.ropa, azar);
-  a.arremangada = elegir(horaDelSorteo.dia ? PESO.mangaDia : PESO.mangaNoche, azar) === 'arremangada';
+  a.cuerpo = elegir(PESO.cuerpo, azar);
+  a.chaqueta = tipo === 'guardia' && azar() < PESO.chaqueta;
+  // Con la chaqueta, la manga larga (la chaqueta tapa la camisa).
+  a.arremangada = !a.chaqueta && elegir(horaDelSorteo.dia ? PESO.mangaDia : PESO.mangaNoche, azar) === 'arremangada';
   return a;
 }
 /** De día o de noche: la pone el asalto al empezar (de noche, más mangas largas). */
@@ -595,7 +601,8 @@ export function cuadroGente(o) {
   const persona = capasPersona(o);
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
-  const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona });
+  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco' };
+  const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
   const q = { ...q0, finos: barbaFina(o, q0) };
   const F = PF || FB;
   if (!F) return q;
@@ -1087,7 +1094,7 @@ export function lienzoSombreroSuelto(o, luz = 0) {
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

@@ -1004,7 +1004,41 @@ const CUERVO = {
   // lugar: de noche pasa a negro y se sigue viendo sobre el pañuelo oscurecido (sin luz, desaparecía).
   color: 39,
 };
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara, arremangada }) {
+// ------------------------------------------------------------------ cuerpos y chaqueta
+/**
+ * 🆕 P3b · B3-B4: LOS CUERPOS Y LA CHAQUETA, sobre las formas que aprobó Santi en los
+ * prototipos (ver NOTAS, "P3b"). Cada punto se marca con la parte que lo pintó
+ * (`PARTE`); al final el torso se ensancha fila por fila (de la 8, los hombros, a la
+ * 17, la cadera) y los brazos se corren enteros, con la mano y el arma, así sirve en
+ * todas las poses *(Santi: "los brazos siempre van rectos, el brazo no se adapta al
+ * cuerpo"; el gordito es el único cuyos brazos acompañan el torso)*.
+ *  filas    cuánto se ensancha cada fila del torso, por lado
+ *  brazos   cuánto se corren los brazos (el gordito: lo de cada fila)
+ *  lado     de costado: [fila, puntos] adelante (negativo: se saca); `espalda` y
+ *           `piernas`, un punto menos atrás y en las piernas (el flaco)
+ */
+const PARTE = { cuerpo: 1, brazo: 2, cabeza: 3, piernas: 4, brazoAtras: 5, brazoBajoCabeza: 6 };
+export const CUERPOS = {
+  normal: { filas: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], brazos: 0, lado: [] },
+  // Un punto más en el pecho y dos desde la panza: angosto arriba, ancho abajo.
+  gordito: { filas: [1, 1, 1, 1, 2, 2, 2, 2, 2, 2], brazosPorFila: true, lado: [[10, 1], [11, 2], [12, 2], [13, 2], [14, 2], [15, 2], [16, 2], [17, 1]] },
+  flaco: { filas: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1], brazos: -1, lado: [[9, -1], [10, -1], [11, -1], [12, -1], [13, -1], [14, -1], [15, -1], [16, -1]], espalda: true, piernas: true },
+  // Dos más en los hombros, que se angostan hasta la cintura; entre el brazo y las costillas, aire.
+  anchos: { filas: [2, 2, 2, 1, 1, 1, 0, 0, 0, 0], brazos: 2, lado: [[9, 1], [10, 1], [11, 1], [12, 1]] },
+};
+/**
+ * La panza del gordito, de frente: las solapas del chaleco desprendido, dos columnas por
+ * lado (la de la izquierda a la luz, la de la derecha en sombra), y la camisa redonda al
+ * medio *(Santi: "dos hileras de dos pixeles de ancho rojos por lado y una blanca al
+ * medio"; "que parezca que tiene un círculo en la panza")*. Fila por fila (de la 8 a la
+ * 15), de izquierda a derecha: 0 luz, 1 medio, 2 sombra, 3 más sombra.
+ */
+const PANZA_REDONDA = [
+  [1, 1, 1, 1, 1], [1, 1, 1, 1, 2], [2, 1, 1, 1, 2], [1, 0, 0, 1, 2],
+  [1, 0, 0, 1, 3], [1, 1, 1, 2, 3], [2, 1, 2, 2, 3], [3, 2, 3, 3, 3],
+];
+
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara, arremangada, forma }) {
   const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
   const TJ = tajo != null ? TAJO[tajo] : null;
   /**
@@ -1028,10 +1062,14 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   const V0 = VISTAS[vista];
   const V = mascara && !persona ? { ...V0, ...partesConMascara(vista) } : V0;
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
+  // De qué parte es cada punto (ver PARTE): lo usan los cuerpos y la chaqueta.
+  const duenio = new Uint8Array(ANCHO * ALTO);
+  let parte = PARTE.cuerpo;
+  const con = (p, f) => { const antes = parte; parte = p; f(); parte = antes; };
   const poner = (x, y, i) => {
     if (i == null) return;
     x += OX; y += OY;
-    if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) idx[y * ANCHO + x] = i;
+    if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) { idx[y * ANCHO + x] = i; duenio[y * ANCHO + x] = parte; }
   };
   const dibujarMapa = (m, dy = 0, dx = 0, tabla = C) => m.filas.forEach((fila, j) => {
     const corre = typeof dx === 'function' ? dx(j) : dx;
@@ -1368,12 +1406,15 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     // 🔁 El jugador de costado, con la cabeza un punto más atrás, centrada sobre el torso, como toda la
     // gente *(Santi: "revisá al jugador")*; la gente ya la trae corrida (capasPersona en gente.js).
     const atras = !persona && vista === 'lado' ? 1 : 0;
-    for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, dy, dx - atras);
+    con(PARTE.cabeza, () => {
+      for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, dy, dx - atras);
+      if (persona && persona.sombrero) dibujarMapa(persona.sombrero, dy + (conGacha ? ga[0] : 0), dx + (conGacha ? ga[1] : 0));
+    });
     cabezaEn = [dx - atras, dy];
-    if (persona && persona.sombrero) dibujarMapa(persona.sombrero, dy + (conGacha ? ga[0] : 0), dx + (conGacha ? ga[1] : 0));
   };
   const props = (capa) => (BRo && BRo.props || []).forEach((p) => {
-    if ((p.capa || 'frente') === capa) dibujarMapa(p.m, p.piso ? 0 : baja, p.piso ? 0 : inclina + lomo + bi, p.tabla);
+    // Lo que tiene en la mano va con el brazo; lo que está en el piso, quieto.
+    if ((p.capa || 'frente') === capa) con(p.piso ? PARTE.cuerpo : capa === 'fondo' ? PARTE.brazoAtras : PARTE.brazo, () => dibujarMapa(p.m, p.piso ? 0 : baja, p.piso ? 0 : inclina + lomo + bi, p.tabla));
   });
   const brazoPose = (b, i) => {
     const pts = b.p.map(([x, y]) => [x + inclina + lomo + bi, y + baja]);
@@ -1385,30 +1426,32 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     if (bandera && i === 0) for (const [dx, dy, c] of PANUELO_BLANCO) poner(mx + dx, my + dy, c);
   };
   if (BR) {
-    BR.forEach((b, i) => { if (b.atras) brazoPose(b, i); });
+    con(PARTE.brazoAtras, () => BR.forEach((b, i) => { if (b.atras) brazoPose(b, i); }));
     props('fondo');
     if (vista === 'lado' && mochila) dibujarMochila();
     const PB = V.piernas[piernas] || V.piernas.quieto;
-    dibujarMapa(PB);
+    con(PARTE.piernas, () => dibujarMapa(PB));
     if (baja < 0 || baja === 2) dibujarMapa({ y: PB.y - 1, filas: [PB.filas[0]] });
     dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0));
     if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo + bi, COLOR_ARMA);
     const cartasAntes = brazos === 'cartas';
     if (!cartasAntes) dibujarCabeza(baja + cabezaY + bc, inclina + cabezaX + bi + bx, true);
     if (vaina) dibujarVaina();
-    BR.forEach((b, i) => { if (!b.atras) brazoPose(b, i); });
-    if (cartasAntes && CARTAS[vista]) dibujarMapa(CARTAS[vista], baja, inclina + lomo, { L: 30, k: 9 });
+    con(cartasAntes ? PARTE.brazoBajoCabeza : PARTE.brazo, () => {
+      BR.forEach((b, i) => { if (!b.atras) brazoPose(b, i); });
+      if (cartasAntes && CARTAS[vista]) dibujarMapa(CARTAS[vista], baja, inclina + lomo, { L: 30, k: 9 });
+    });
     if (cartasAntes) dibujarCabeza(baja + cabezaY + bc, inclina + cabezaX + bi, false);
     props('frente');
   } else {
-  if (vista === 'lado') { if (TJ) { if (!TJ.delante) brazoCuchillo(); } else if (larga) brazoIzqLarga(); else brazoLibre(); }
+  con(PARTE.brazoAtras, () => { if (vista === 'lado') { if (TJ) { if (!TJ.delante) brazoCuchillo(); } else if (larga) brazoIzqLarga(); else brazoLibre(); } });
   // En diagonal de frente, el brazo libre (el izquierdo) es el de allá: detrás del cuerpo.
   const libreDetras = vista === 'diagF';
-  if (libreDetras) { if (TJ) { if (!TJ.delante && !TJ.vaina) brazoCuchillo(); } else if (!larga) brazoLibre(); }
-  if (detras) brazo();
+  con(PARTE.brazoAtras, () => { if (libreDetras) { if (TJ) { if (!TJ.delante && !TJ.vaina) brazoCuchillo(); } else if (!larga) brazoLibre(); } });
+  if (detras) con(PARTE.brazoAtras, brazo);
   if (mochila && vista === 'lado') dibujarMochila();
   const P = V.piernas[piernas] || V.piernas.quieto;
-  dibujarMapa(P);
+  con(PARTE.piernas, () => dibujarMapa(P));
   // Cuando el cuerpo sube 1 (pasando un paso, en el aire o agachado), la cadera se estira un punto para que no
   // quede un hueco entre el cinto y el pantalón.
   if (baja < 0 || baja === 2) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
@@ -1421,14 +1464,16 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    * cerca de la cámara, lo tapa.
    */
   const bajoLaCabeza = larga && larga.t < 0.5 && !detras;
-  if (bajoLaCabeza) brazo();
+  if (bajoLaCabeza) con(PARTE.brazoBajoCabeza, brazo);
   dibujarCabeza(baja + cabezaY, inclina + cabezaX, false);
   if (vaina) dibujarVaina();
-  if (vista !== 'lado' && TJ && !TJ.delante && !(libreDetras && !TJ.vaina)) brazoCuchillo();
-  else if (vista !== 'lado' && !libreDetras && !larga && !TJ) brazoLibre();
+  con(PARTE.brazo, () => {
+    if (vista !== 'lado' && TJ && !TJ.delante && !(libreDetras && !TJ.vaina)) brazoCuchillo();
+    else if (vista !== 'lado' && !libreDetras && !larga && !TJ) brazoLibre();
+  });
   if (mochila && vista === 'diagE') dibujarMochila();
-  if (!detras && !bajoLaCabeza) brazo();
-  if (TJ && TJ.delante) brazoCuchillo();
+  if (!detras && !bajoLaCabeza) con(PARTE.brazo, brazo);
+  if (TJ && TJ.delante) con(PARTE.brazo, brazoCuchillo);
   if (mochila && vista === 'espalda') dibujarMochila();
   }
   // El impacto: la estela del brazo (de arriba atrás hacia adelante) y un destello en la punta.
@@ -1442,6 +1487,197 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     for (let a = -1.4; a < 0.2; a += 0.16) poner(Math.round(hx + Math.cos(a) * 8 * sx), Math.round(hy + Math.sin(a) * 8), 25);
     const px = Math.round(hx + Math.cos(ang) * 9), py = Math.round(hy + Math.sin(ang) * 9);
     for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) poner(px + dx, py + dy, dx || dy ? 29 : 30);
+  }
+
+  if (forma && ((forma.cuerpo && forma.cuerpo !== 'normal') || forma.chaqueta)) darForma(forma);
+
+  /** El cuerpo y la chaqueta (ver CUERPOS): ensancha el torso, corre los brazos, pinta la panza y la chaqueta. */
+  function darForma({ cuerpo = 'normal', chaqueta = false, conChaleco = true }) {
+    const K = CUERPOS[cuerpo] || CUERPOS.normal;
+    const yHombro = 8 + baja + OY;                 // la fila 8 del dibujo, en el lienzo
+    const ancho = (r) => K.filas[Math.max(0, Math.min(9, r))];
+    const enTorso = (y) => y >= yHombro && y <= yHombro + 9;
+    const cx = 10.5 + inclina + lomo + OX;         // el medio del cuerpo, en el lienzo
+    const i0 = Math.floor(cx), i1 = Math.ceil(cx);
+    const ver = idx.slice(), de = duenio.slice();
+    const nuevo = new Int16Array(ANCHO * ALTO).fill(-1), dn = new Uint8Array(ANCHO * ALTO);
+    const tela = new Set([C.U, C.V, C.v, C.w, C.L, C.C, C.c].filter((c) => c != null));
+    const detalle = new Set([C.y, C.E, C.e, C.R, C.r, C.S, C.z, C.G, C.J, C.j].filter((c) => c != null));
+    const chaleco = new Set([C.U, C.V, C.v, C.w].filter((c) => c != null));
+    const estrella = new Set([C.E, C.e].filter((c) => c != null));
+    const esCuerpo = (k) => de[k] === PARTE.cuerpo;
+    // 1. El cuerpo (torso, cabeza, piernas), con el torso ensanchado fila por fila.
+    const estrellas = [];
+    for (let y = 0; y < ALTO; y++) {
+      const fila = y * ANCHO;
+      const d = enTorso(y) && vista !== 'lado' ? ancho(y - yHombro) : 0;
+      for (let x = 0; x < ANCHO; x++) {
+        const k = fila + x;
+        if (ver[k] < 0 || !(de[k] === PARTE.cuerpo || de[k] === PARTE.cabeza || de[k] === PARTE.piernas || de[k] === 0)) continue;
+        let nx = x;
+        if (d && esCuerpo(k)) nx = x <= i0 ? x - d : x + d;
+        if (nx < 0 || nx >= ANCHO) continue;
+        if (d < 0 && nuevo[fila + nx] >= 0 && dn[fila + nx] === PARTE.cuerpo) continue;
+        // La estrella se pone después, entera (si no, cada fila se corre distinto y se estira): acá, tela.
+        let c = ver[k];
+        if (estrella.has(c)) { estrellas.push([x, y, c]); c = C.V ?? c; }
+        nuevo[fila + nx] = c; dn[fila + nx] = de[k];
+      }
+      // El hueco que se abrió en el medio: la tela de al lado (no los botones ni la estrella).
+      if (d > 0 && esCuerpo(fila + i0) && esCuerpo(fila + i1)) {
+        const telaDesde = (x0, paso) => {
+          let otra = null;
+          for (let x = x0; x >= 0 && x < ANCHO && ver[fila + x] >= 0 && esCuerpo(fila + x); x += paso) {
+            const c = ver[fila + x];
+            if (chaleco.has(c)) return c;
+            if (otra == null && !detalle.has(c)) otra = c;
+          }
+          return otra ?? ver[fila + x0];
+        };
+        const ci = telaDesde(i0, -1), cd = telaDesde(i1, 1);
+        for (let x = i0 - d + 1; x <= i0; x++) { nuevo[fila + x] = ci; dn[fila + x] = PARTE.cuerpo; }
+        for (let x = i1; x <= i1 + d - 1; x++) { nuevo[fila + x] = cd; dn[fila + x] = PARTE.cuerpo; }
+      }
+    }
+    // La estrella, entera, corrida lo que se corrió el lado derecho en su primera fila.
+    if (estrellas.length && vista !== 'lado') {
+      const dE = ancho(Math.min(...estrellas.map(([, y]) => y)) - yHombro);
+      for (const [x, y, c] of estrellas) { nuevo[y * ANCHO + x + dE] = c; dn[y * ANCHO + x + dE] = PARTE.cuerpo; }
+    } else for (const [x, y, c] of estrellas) { nuevo[y * ANCHO + x] = c; dn[y * ANCHO + x] = PARTE.cuerpo; }
+    // El tramo del torso que pasa por el medio de una fila (sin la culata enfundada, que está aparte).
+    const tramo = (y) => {
+      const f = y * ANCHO; let i = i0, j = i0;
+      if (nuevo[f + i0] < 0 || dn[f + i0] !== PARTE.cuerpo) return null;
+      while (i - 1 >= 0 && nuevo[f + i - 1] >= 0 && dn[f + i - 1] === PARTE.cuerpo) i--;
+      while (j + 1 < ANCHO && nuevo[f + j + 1] >= 0 && dn[f + j + 1] === PARTE.cuerpo) j++;
+      return [i, j];
+    };
+    const pinta = (y, x, c, p = PARTE.cuerpo) => { if (x >= 0 && x < ANCHO) { nuevo[y * ANCHO + x] = c; dn[y * ANCHO + x] = p; } };
+    // 2. De costado: la panza o el pecho para adelante, la espalda y las piernas del flaco.
+    if (vista === 'lado') {
+      // (Por delante del brazo que cuelga: si no, el brazo la tapaba.)
+      const frente = (y) => { let b = -1; for (let x = 0; x < ANCHO; x++) { const p = de[y * ANCHO + x]; if (ver[y * ANCHO + x] >= 0 && (p === PARTE.cuerpo || p === PARTE.brazo || p === PARTE.brazoAtras)) b = x; } return b; };
+      for (const [r, d] of K.lado) {
+        const y = yHombro + r - 8, b = frente(y);
+        if (b < 0) continue;
+        if (d > 0) for (let n = 1; n <= d; n++) pinta(y, b + n, cuerpo === 'gordito' && r >= 10 ? (r >= 16 ? C.c : C.C) : C.V ?? C.C);
+        else for (let n = 0; n < -d; n++) { nuevo[y * ANCHO + b - n] = -1; dn[y * ANCHO + b - n] = 0; }
+      }
+      const atrasMenos = (y, p) => { for (let x = 0; x < ANCHO; x++) if (nuevo[y * ANCHO + x] >= 0 && dn[y * ANCHO + x] === p) { nuevo[y * ANCHO + x] = -1; dn[y * ANCHO + x] = 0; return; } };
+      if (K.espalda) for (let r = 0; r <= 8; r++) atrasMenos(yHombro + r, PARTE.cuerpo);
+      // Las piernas, quieto: el punto de atrás de cada una, si tiene tres o más. (Caminando, de costado
+      // las piernas se cruzan y sacar un punto las cortaba: quedan como las de todos.)
+      if (K.piernas && (piernas === 'quieto' || piernas === 'agachado')) for (let r = 9; r <= 16; r++) {
+        const f = (yHombro + r) * ANCHO;
+        for (let x = 0; x < ANCHO; x++) {
+          if (!(nuevo[f + x] >= 0 && dn[f + x] === PARTE.piernas) || (x > 0 && nuevo[f + x - 1] >= 0 && dn[f + x - 1] === PARTE.piernas)) continue;
+          let n = 0; while (x + n < ANCHO && nuevo[f + x + n] >= 0 && dn[f + x + n] === PARTE.piernas) n++;
+          if (n >= 3) { nuevo[f + x] = -1; dn[f + x] = 0; }
+        }
+      }
+    } else if (K.piernas && !/^(sentado|piso|rodillas)/.test(piernas)) {
+      // De frente: a cada pierna se le saca el punto de afuera.
+      for (let r = 10; r <= 16; r++) {
+        const f = (yHombro + r) * ANCHO;
+        let i = -1, j = -1;
+        for (let x = 0; x < ANCHO; x++) if (nuevo[f + x] >= 0 && dn[f + x] === PARTE.piernas) { if (i < 0) i = x; j = x; }
+        if (i >= 0 && j - i >= 5) { nuevo[f + i] = -1; nuevo[f + j] = -1; }
+      }
+    }
+    // 3. La panza del gordito, de frente y en diagonal de frente.
+    if (cuerpo === 'gordito' && (vista === 'frente' || vista === 'diagF')) {
+      const camisa = [C.L, C.C, C.c, sombrear(C.c, -1)];
+      const t9 = tramo(yHombro + 1);
+      for (let r = 0; r <= 7; r++) {
+        const y = yHombro + r;
+        let T = tramo(y);
+        if (r === 0 && t9) T = t9;     // los hombros, con las solapas en las mismas columnas que el pecho
+        if (!T) continue;
+        const [i, j] = T;
+        if (r === 0) for (let x = 0; x < ANCHO; x++) if (nuevo[y * ANCHO + x] >= 0 && dn[y * ANCHO + x] === PARTE.cuerpo && (x < i || x > j)) nuevo[y * ANCHO + x] = x < i ? C.L : C.c;
+        const abajo = r === 7;
+        if (conChaleco) {
+          pinta(y, i, abajo ? C.V : C.U); pinta(y, i + 1, abajo ? C.v : C.V);
+          pinta(y, j - 1, abajo ? C.v : C.V); pinta(y, j, abajo ? C.w : C.v);
+        }
+        const desde = conChaleco ? i + 2 : i, hasta = conChaleco ? j - 2 : j, w = Math.max(1, hasta - desde);
+        for (let x = desde; x <= hasta; x++) pinta(y, x, camisa[PANZA_REDONDA[r][Math.round(((x - desde) / w) * 4)]]);
+      }
+      // La estrella, chica, en la solapa de la derecha (el guardia).
+      if (C.E != null && conChaleco && t9) { const y = yHombro + 1, j = t9[1]; pinta(y, j - 1, C.E); pinta(y, j, C.e); pinta(y + 1, j - 1, C.E); pinta(y + 1, j, C.E); }
+    }
+    // 4. La chaqueta: un punto más por lado (el gordito, recta desde los hombros), abierta.
+    const LONA = new Map([[C.L, 37], [C.C, 36], [C.c, 35], [C.U, 36], [C.V, 35], [C.v, 34], [C.w, 33], [C.y, 34]]);
+    if (chaqueta && vista !== 'lado') {
+      const h = tramo(yHombro + 1);
+      for (let r = 0; r <= 9; r++) {
+        const y = yHombro + r, T = tramo(y);
+        if (!T) continue;
+        const [i, j] = T;
+        const recta = K.brazosPorFila && h && r >= 1;
+        const desde = recta ? Math.min(i, h[0] - 1) : i - 1, hasta = recta ? Math.max(j, h[1] + 1) : j + 1;
+        for (let x = desde; x <= hasta; x++) if (x < i || x > j || nuevo[y * ANCHO + x] < 0) pinta(y, x, 35);
+      }
+    }
+    // 5. Los brazos: se corren enteros (con la mano y el arma), cada uno hacia su lado.
+    const corrida = (y) => {
+      const r = Math.max(0, Math.min(9, y - yHombro));
+      return (K.brazosPorFila ? K.filas[r] : K.brazos || 0) + (chaqueta && !K.brazosPorFila && vista !== 'lado' ? 1 : 0);
+    };
+    const visto = new Uint8Array(ANCHO * ALTO);
+    const brazosEn = (p) => {
+      for (let k0 = 0; k0 < ANCHO * ALTO; k0++) {
+        if (de[k0] !== p || ver[k0] < 0 || visto[k0]) continue;
+        // Un brazo entero (los puntos juntos): su lado es el del medio de sus puntos.
+        const pila = [k0], suyos = []; visto[k0] = 1;
+        while (pila.length) {
+          const k = pila.pop(); suyos.push(k);
+          const x = k % ANCHO, y = (k - x) / ANCHO;
+          for (const [a, b] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+            if (a < 0 || b < 0 || a >= ANCHO || b >= ALTO) continue;
+            const kk = b * ANCHO + a;
+            if (!visto[kk] && de[kk] === p && ver[kk] >= 0) { visto[kk] = 1; pila.push(kk); }
+          }
+        }
+        const medio = suyos.reduce((s, k) => s + (k % ANCHO), 0) / suyos.length;
+        const sentido = vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
+        for (const k of suyos) {
+          const x = k % ANCHO, y = (k - x) / ANCHO, nx = x + sentido * (vista === 'lado' ? 1 : corrida(y));
+          if (nx < 0 || nx >= ANCHO) continue;
+          let c = ver[k];
+          if (chaqueta && LONA.has(c) && (c === C.L || c === C.C || c === C.c)) c = LONA.get(c);   // las mangas de lona
+          pinta(y, nx, c, p);
+        }
+      }
+    };
+    // El orden: el brazo de atrás detrás del cuerpo; el de adelante, encima.
+    const cuerpoListo = nuevo.slice(), dnListo = dn.slice();
+    nuevo.fill(-1); dn.fill(0);
+    brazosEn(PARTE.brazoAtras);
+    for (let k = 0; k < ANCHO * ALTO; k++) if (cuerpoListo[k] >= 0 && dnListo[k] !== PARTE.cabeza) { nuevo[k] = cuerpoListo[k]; dn[k] = dnListo[k]; }
+    brazosEn(PARTE.brazoBajoCabeza);
+    for (let k = 0; k < ANCHO * ALTO; k++) if (cuerpoListo[k] >= 0 && dnListo[k] === PARTE.cabeza) { nuevo[k] = cuerpoListo[k]; dn[k] = dnListo[k]; }
+    brazosEn(PARTE.brazo);
+    // 6. El color de la chaqueta: lona marrón y el cuello oscuro; adentro, abierta, el chaleco y la camisa.
+    if (chaqueta) {
+      const centro = vista === 'diagF' ? 11 + OX : 10.5 + OX;
+      for (let r = 0; r <= 9; r++) {
+        const y = yHombro + r;
+        for (let x = 0; x < ANCHO; x++) {
+          const k = y * ANCHO + x;
+          if (nuevo[k] < 0 || dn[k] !== PARTE.cuerpo) continue;
+          const abierta = (vista === 'frente' || vista === 'diagF') && Math.abs(x - centro) < 1.6 + Math.max(0, ancho(r));
+          const deCostado = vista === 'lado' && x - OX >= 11 + inclina + lomo;
+          if (abierta || deCostado) continue;
+          const c = nuevo[k];
+          if (c === C.E || c === C.e) { nuevo[k] = 35; continue; }
+          if (LONA.has(c)) nuevo[k] = LONA.get(c);
+          if (r === 9 && (c === C.W || c === C.G || c === C.I || c === C.T || c === C.t)) nuevo[k] = 33;   // el faldón, un punto debajo del cinto
+          if (r === 0 && [37, 36, 35, 34, 33].includes(nuevo[k])) nuevo[k] = 32;                     // el cuello
+        }
+      }
+    }
+    idx.set(nuevo); duenio.set(dn);
   }
 
   // El contorno de un punto, por afuera de todo (con el borde fino, lo traza

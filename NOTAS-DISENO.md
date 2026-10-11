@@ -18331,7 +18331,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
-| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ · P3b: B1 ✅ B2 ✅, sigue B3 |
+| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ · P3b: B1-B4 ✅, sigue B5 |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
@@ -18900,7 +18900,17 @@ con silueta primero.
   arremangada 60, de noche al revés** *(Santi)*; también los guardias de chaleco. La arremangada
   se dibuja en el brazo mismo (`ponerManga` en jugador.js), así sirve en todas las poses: hasta el
   codo camisa, en el codo el puño doblado (claro y un punto más ancho, el pliegue) y de ahí a la
-  mano el antebrazo en piel. Sigue la chaqueta del guardia (1 de cada 2, con manga larga).
+  mano el antebrazo en piel.
+- **✅ B3-B4, la chaqueta del guardia y los cuerpos, en el juego** (las formas de los prototipos):
+  **normal 55, gordito 15, flaco 15, hombros anchos 15** (guardias y pasajeros) y **la chaqueta, 1
+  de cada 2 guardias** (con la manga larga). Cómo: cada punto se marca con la parte que lo pintó
+  (cuerpo, brazo de adelante, de atrás, bajo la cabeza, cabeza, piernas; `PARTE` en jugador.js) y
+  al final `darForma` ensancha el torso fila por fila, corre los brazos enteros (con la mano y el
+  arma) y pinta la panza y la chaqueta; así sirve en todas las poses. La estrella se corre entera
+  (si no, se estiraba). De costado, la panza y el pecho salen por delante del brazo que cuelga.
+  **Lo que no cambia:** el tirado y el dormido echado (dibujos aparte) tienen el cuerpo de siempre;
+  el flaco de costado caminando tiene las piernas de siempre (sacarles un punto las cortaba al
+  cruzarse).
 - **✅ Las formas de los cuerpos y la chaqueta, aprobadas en prototipo** (tmp-ref/cuerpos.js,
   estirando el dibujo de hoy; no están en el juego: en B3 y B4 se dibujan en cada vista):
   - **Los brazos van rectos** y se corren lo que se corre el hombro *(Santi: "el brazo no

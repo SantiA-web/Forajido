@@ -18331,7 +18331,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
-| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ · P3b: B1 ✅, sigue B2 |
+| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ · P3b: B1 ✅ B2 ✅, sigue B3 |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
@@ -18879,6 +18879,19 @@ con silueta primero.
   en diagonal de frente. Sólo el dibujo (`mascara` en cuadroJugador; los puntos finos, `finos`,
   los pone figura.js encima: es la primera capa de puntos finos del juego, la que van a usar
   las barbas de B2).
+- **🔁 La capa fina va encima de la grilla** *(Santi: "en el juego se ve mal. ¿Es porque no está
+  puesto el filtro ese para el 1×1?")*: el cuadro pasa por la grilla (de cada 3×3 queda uno) y se
+  comía el cuervo. Ahora los puntos finos se pintan en una capa aparte (`pintarFinos` en
+  engine/estiloNuevo.js) y se ponen después, como el borde fino; lo que pasa delante los tapa.
+- **✅ B2, las barbas** (en puntos finos de 1×1, en la capa fina): bigote, candado, patillas
+  grandes, de pocos días y 🆕 **larga, que tapa el cuello** *(Santi)*: de las patillas a la
+  barbilla y cae en punta sobre el cuello y el pecho. Dibujadas de costado y en diagonal de
+  espaldas (las de frente y diagonal de frente eran del paso 1); de espaldas no se ven. El
+  rubio y el canoso, del tono del pelo *(Santi: "en el rubio noto que queda raro el bigote")*.
+  **El sorteo, la B, igual para guardias y pasajeros:** afeitado 20, pocos días 30, bigote 25,
+  candado 10, patillas 10, larga 5 (la larga, 5 que salieron del afeitado). **Con canas, la
+  larga es más común:** afeitado 15, pocos días 25, bigote 20, candado 5, patillas 10, larga 25
+  (estos números los puse yo). El dormido echado (DORMIDO_LADO) y los tirados no llevan barba.
 - **✅ Las formas de los cuerpos y la chaqueta, aprobadas en prototipo** (tmp-ref/cuerpos.js,
   estirando el dibujo de hoy; no están en el juego: en B3 y B4 se dibujan en cada vista):
   - **Los brazos van rectos** y se corren lo que se corre el hombro *(Santi: "el brazo no

@@ -164,6 +164,19 @@ export const BARBAS_FINAS = {
       lado: ['..................', '..................', '..................', '......X...........', '......XX..........', '......XXX.........', '......XXXX.XXXX...', '.......XXXXXxxX...', '........XXXXXXX...'],
       diagE: ['......', '......', '.....X', '....XX', '....XX', '...XXX', '..XXX.', '.XXX..'],
     },
+    /**
+     * 🆕 LARGA, QUE TAPA EL CUELLO *(Santi: "con una probabilidad de 5: barba larga, que
+     * tapa el cuello. Más común en gente con canas")*: de las patillas a la barbilla,
+     * con el bigote y la boca adentro, y cae en punta sobre el cuello y el pecho
+     * (6 puntos finos más abajo que la cara: pasa por encima del pañuelo y de la
+     * camisa). Las `b`, mechones más oscuros.
+     */
+    larga: {
+      frente: ['BB...........BB', 'BB...........BB', 'BBB.........BBB', 'BBB.........BBB', 'BBBB.BBBBB.BBBB', 'BBBBBBbbbBBBBBB', 'BBBBBB...BBBBBB', '.BBBBBBbBBBBBB.', '.BBBBBBBBBBBBB.', '..BBBBBbBBBBB..', '..BBBBBBBBBBB..', '...BBBBbBBBB...', '....BBBBBBB....', '.....BBbBB.....', '......BBB......'],
+      diagF: ['.BB............', '.BB............', '.BBB...........', '.BBB...........', '.BBBB..BBBBB...', '.BBBBBBBbbbBB..', '.BBBBBBB...BB..', '..BBBBBBBbBBB..', '..BBBBBBBBBBB..', '...BBBBBbBBB...', '...BBBBBBBBB...', '....BBBBbBB....', '.....BBBBB.....', '......BbB......', '.......B.......'],
+      lado: ['.....BB...........', '.....BBB..........', '.....BBB..........', '.....BBBB.........', '.....BBBBB........', '.....BBBBBB.......', '.....BBBBBBBBBBB..', '......BBBBBBBbB...', '......BBBBBBBBBB..', '.......BBBBBBBBB..', '.......BBBBBBBB...', '........BBBBBBB...', '.........BBBBB....', '..........BBB.....', '...........B......'],
+      diagE: ['...BB.', '...BBB', '...BBB', '...BBB', '..BBBB', '..BBBB', '.BBBBB', '.BBBB.', '.BBBB.', '..BBB.', '..BB..', '..B...'],
+    },
   },
   // De a 2×2: la cara de frente mide 7 × 4 cuadrados (y medio).
   2: {
@@ -342,6 +355,13 @@ const PESO = {
   sombreroPasajero: { bombin: 0.5, paja: 0.3, ninguno: 0.2 },
   colorSombrero: { negro: 0.5, marron: 0.5 },
   panuelo: { rojo: 0.2, azul: 0.2, ocre: 0.2, verde: 0.2, pardo: 0.2 },
+  /**
+   * 🆕 B2, LAS BARBAS *(Santi eligió la B de tres, igual para guardias y pasajeros, y
+   * sumó la larga con 5)*: la larga sale del afeitado (25 → 20). Con canas, la larga
+   * es más común: 25 (sale del afeitado, la de pocos días, el bigote y el candado).
+   */
+  barba: { afeitado: 0.2, completa: 0.3, bigote: 0.25, candado: 0.1, patillas: 0.1, larga: 0.05 },
+  barbaCanas: { afeitado: 0.15, completa: 0.25, bigote: 0.2, candado: 0.05, patillas: 0.1, larga: 0.25 },
 };
 function elegir(pesos, azar) {
   let r = azar(), ultimo = null;
@@ -355,6 +375,7 @@ export function sortearAspecto(tipo, azar = Math.random) {
   if (tipo === 'guardia') a.sombrero = elegir(PESO.sombreroGuardia, azar);
   else { a.sombrero = elegir(PESO.sombreroPasajero, azar); a.panuelo = elegir(PESO.panuelo, azar); }
   if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno') a.colorSombrero = elegir(PESO.colorSombrero, azar);
+  a.barba = elegir(a.pelo === 'canas' ? PESO.barbaCanas : PESO.barba, azar);
   return a;
 }
 /** El aspecto de alguien: se sortea la primera vez que se lo dibuja y queda guardado. */
@@ -479,8 +500,17 @@ function barbaFina(o, q) {
   if (!M || !q.cabeza) return null;
   const pelo = PELOS[o.pelo || 'castano'], piel = PIELES[o.piel || 'media'];
   const [sombra, boca] = colorBarbaCorta(o.piel || 'media', o.pelo || 'castano');
-  const colores = { B: pelo.B, b: sombrear(pelo.B, -1), X: sombra, x: boca };
+  // 🔁 El rubio y el canoso, del tono del pelo (más claro): con el más oscuro el bigote
+  // rubio se leía como una línea sucia *(Santi: "en el rubio noto que queda raro el bigote")*.
+  const claro = o.pelo === 'rubio' || o.pelo === 'canas';
+  const B = claro ? pelo.A : pelo.B, b = claro ? pelo.B : sombrear(pelo.B, -1);
+  const colores = { B, b, X: sombra, x: boca };
   const cara = new Set([piel.P, piel.p, piel.q, piel.n, pelo.A, pelo.a, pelo.B]);
+  // La larga cae sobre el cuello y el pecho: también el pañuelo, la camisa y el chaleco.
+  if (o.barba === 'larga') {
+    const col = capasPersona(o).colores;
+    for (const k of 'SRrzLCcUVvwy') if (col[k] != null) cara.add(col[k]);
+  }
   const [ox, oy] = BARBAS_FINAS.origen[o.vista];
   const grupos = {};
   M.forEach((f, j) => {

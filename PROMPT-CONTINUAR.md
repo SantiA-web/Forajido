@@ -190,7 +190,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   gente y sus variantes, entities/estiloNuevo/gente.js, todavía sin usar en el
   juego) está cerrado; P3a (las poses y animaciones del guardia común y del
   pasajero, ya en el juego con [F9], los pasajeros que duermen de noche y la gente que fuma) está
-  hecha y falta que Santi la juegue; sigue P3b, las variantes (ver NOTAS, "P3 · LA GENTE DEL TREN"). La E4 (los
+  hecha y falta que Santi la juegue; P3b, las variantes: B1-B4 hechas (pelo, piel, barbas, ropa, cuerpos
+  y chaqueta) y las poses revisadas por tres subagentes jueces (tmp-ref/jueces.js); sigue B5 (ver NOTAS,
+  "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y
   los guardias en el techo. Hay código de la vista de arriba del techo sin uso

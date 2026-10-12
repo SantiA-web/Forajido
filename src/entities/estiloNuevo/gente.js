@@ -601,7 +601,7 @@ export function cuadroGente(o) {
   const persona = capasPersona(o);
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
-  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco' };
+  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia' };
   const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
   const q = { ...q0, finos: barbaFina(o, q0) };
   const F = PF || FB;
@@ -859,11 +859,13 @@ const TENDIDO = {
 };
 /** Brazos (hombro → mano) y la pierna de acá (cadera → tobillo), por modo. */
 const POSE_TENDIDO = {
-  muerto: { alla: [[12, -2], [17, -5]], aca: [[12, 7], [18, 10]], pierna: [21, 7] },
+  // 🔁 El muerto, los brazos con codo (dos tramos rectos): en uno solo, en diagonal, parecían fideos *(los jueces)*.
+  muerto: { alla: [[12, -2], [14, -5], [18, -6]], aca: [[12, 7], [14, 10], [18, 11]], pierna: [21, 7] },
   desmayado: { alla: [[12, -2], [18, -3]], aca: [[12, 7], [18, 8]], pierna: [21, 5] },
   caido: { alla: [[12, -2], [18, -3]], aca: null, pierna: [21, 5] },
 };
-const TA = 44, TL = 30, TX = 6, TY = 11;   // el lienzo del tirado, con lugar para el arma
+// (🔁 Más alto: el caído apuntando para arriba o para abajo se cortaba en el borde.)
+const TA = 44, TL = 42, TX = 6, TY = 18;   // el lienzo del tirado, con lugar para el arma
 export const PIES_TENDIDO = [TX + 16, TY + 3];
 export { TA as ANCHO_TENDIDO, TL as ALTO_TENDIDO };
 export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang = 0, arma = 'colt', fino = false, ...o }) {
@@ -904,8 +906,9 @@ export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang
     poner(31, y1 - 1, col.K); poner(31, y1, col.K); poner(31, y1 + 1, col.K);
   };
   // Un brazo: dos de alto (la manga, con luz arriba) y la mano de 2×2.
-  const brazo = ([a, b], lejos) => {
-    linea(a, b, (x, y) => { poner(x, y, lejos ? col.C : col.L); poner(x, y + 1, lejos ? col.c : col.C); });
+  const brazo = (puntos, lejos) => {
+    const b = puntos[puntos.length - 1];
+    for (let i = 1; i < puntos.length; i++) linea(puntos[i - 1], puntos[i], (x, y) => { poner(x, y, lejos ? col.C : col.L); poner(x, y + 1, lejos ? col.c : col.C); });
     poner(b[0] + 1, b[1], col.P); poner(b[0] + 2, b[1], col.p);
     poner(b[0] + 1, b[1] + 1, col.p); poner(b[0] + 2, b[1] + 1, col.q);
   };
@@ -927,10 +930,14 @@ export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang
   if (modo === 'caido') {
     // Se apoya y apunta: el brazo de acá sale del hombro hacia donde apunta (en
     // el mismo paso de 22,5° que el dibujo del arma).
-    const S = [12, 6];
+    // 🔁 El brazo sale por FUERA del cuerpo (por abajo, o por arriba si apunta hacia arriba): a lo
+    // largo del cuerpo el revólver quedaba gris sobre el pantalón y no se veía que apuntaba *(los jueces)*.
     const A = armaEn(arma, ang);
     const d = [Math.cos(A.angulo), Math.sin(A.angulo)];
-    const M = [Math.round(S[0] + d[0] * 6), Math.round(S[1] + d[1] * 5)];
+    const arriba = d[1] < -0.3;
+    const S = arriba ? [12, -3] : [12, 7];
+    const afuera = Math.abs(d[0]) > 0.9 ? (arriba ? -3 : 4) : 0;
+    const M = [Math.round(S[0] + d[0] * 6), Math.round(S[1] + d[1] * 5 + afuera)];
     linea(S, M, (x, y) => { poner(x, y, col.L); poner(x, y + 1, col.C); });
     for (const [x, y, c] of A.puntos) poner(M[0] + x, M[1] + y, c);
     poner(M[0], M[1], col.P); poner(M[0] - Math.sign(d[0] || 1), M[1], col.P);
@@ -983,7 +990,9 @@ export function lienzoTendido(o, luz = 0) {
 const FUMAR = {
   lado: { abajo: [[10, 9], [11, 13], [12, 15]], sube: [[10, 9], [14, 12], [14, 9]], boca: [[10, 9], [14, 12], [13, 6]],
     c: { abajo: [[14, 15], [15, 15]], sube: [[16, 9], [17, 8]], boca: [[15, 6], [16, 6]] }, humo: [16, 6], otra: b([[9, 9], [9, 13], [9, 16]], true) },
-  frente: { abajo: [[7, 9], [6, 13], [6, 16]], sube: [[7, 9], [5, 13], [8, 10]], boca: [[7, 9], [4, 11], [9, 6]],
+  // 🔁 De frente, el codo abajo y delante del pecho, el antebrazo casi vertical hasta la boca: con el
+  // codo afuera a la altura del hombro parecía un ala *(los jueces)*.
+  frente: { abajo: [[7, 9], [6, 13], [6, 16]], sube: [[7, 9], [6, 12], [8, 10]], boca: [[7, 9], [8, 11], [9, 6]],
     c: { abajo: [[6, 18], [6, 19]], sube: [[7, 10], [6, 10]], boca: [[8, 5], [7, 4]] }, humo: [14, 7], otra: b([[13, 9], [14, 13], [14, 16]]) },
   diagF: { abajo: [[7, 9], [6, 13], [7, 16]], sube: [[7, 9], [8, 13], [10, 10]], boca: [[7, 9], [6, 12], [10, 6]],
     c: { abajo: [[9, 17], [10, 17]], sube: [[12, 10], [13, 9]], boca: [[12, 7], [13, 7]] }, humo: [15, 6], otra: b([[13, 9], [13, 13], [13, 16]], true) },

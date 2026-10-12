@@ -18929,6 +18929,39 @@ con silueta primero.
     chaleco rojo con la estrella; sigue la forma del cuerpo un punto más por lado (el
     gordito, recta desde los hombros); las mangas del grosor normal; corta un punto debajo
     del cinto. **De costado no ensancha nada: sólo cambia el color** *(Santi)*.
+- **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
+  poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
+  (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del
+  estilo y de lo ya aprobado (no podían pedir caras, vistas, cuadros nuevos ni rediseños), miraron
+  hojas de todas las poses en color (tmp-ref/jueces.js). Tres vueltas hasta que los tres dijeron
+  "satisfecho". Lo arreglado:
+  - 🐛 **Errores:** el agujero en la panza del gordito caminando en diagonal (debajo del brazo que
+    cruza no había cuerpo; ahora la fila toma el ancho de la de arriba); la panza o el pecho de
+    costado pintados delante del caño (se medía desde la punta del arma); la barra gris en la
+    cadera de los cuerpos anchos (la fila de cadera que se agrega al subir el cuerpo era torso); la
+    camisa del pasajero gordito manchada de marrón (sus letras se tomaban como estrella); los
+    agujeritos de 1-2 puntos que cierra el brazo corrido.
+  - **Manos arriba:** con su largo y por encima del ala (con el ala ancha del pasajero se leía "se
+    agarra el sombrero").
+  - **Rendido:** la funda más corta (parecía un tercer pie). Sólo existe de frente.
+  - **Culatazo con revólver, al cargar:** la mano sube por delante de la cara (de costado caía
+    sobre la cara, piel sobre piel) y el arma ya no se corta arriba. **Con el Winchester**, el cuadro
+    4 con el caño derecho atrás (en diagonal se veía partido).
+  - **Apuntando de frente**, dibujos nuevos: el rifle y la escopeta con la culata al hombro y la
+    boca como un punto negro con su anillo delante del pecho; el Colt, un bloque de 3×3 con la boca
+    negra, en el medio del pecho (de frente parecían una bandolera o no se veían).
+  - **El arma larga en diagonal de frente:** la mano junto al hombro y la culata afuera, de madera
+    más oscura (encima del chaleco se mezclaba con la estrella).
+  - **El revólver:** bajo en diagonal, al costado de la cadera (salía de la entrepierna); de
+    espaldas, afuera de la cabeza; sobre el pantalón, un punto oscuro que lo separa de la pierna.
+  - **Fumar de frente:** el codo abajo delante del pecho (parecía un ala).
+  - **El gordito:** el brazo que cruza la panza, en su tono de sombra, con la panza más oscura debajo.
+  - **Tirados:** el caído saca el brazo y el arma fuera del cuerpo (y el lienzo es más alto); los
+    brazos del muerto con codo.
+  - 🔻 **Consultas para Santi** (fuera del juicio de los jueces): el **revólver bajo** se ve casi
+    igual que apuntando de costado y en diagE (¿que el caño apunte al piso?), y el **Colt en
+    diagonal** mide casi lo que el Winchester. Quedan menores sin tocar (tajo 3, la maleta, el
+    aturdido, el diario en diagonal, codos de los sentados de espaldas).
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

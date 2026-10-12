@@ -349,7 +349,8 @@ VISTAS.frente.piernas.piso = mapa(25, ['.......IITTTtt', '......IIT..Ttt', '....
 VISTAS.diagF.piernas.piso = mapa(25, ['.......IITTttt', '........IITtttt', '.........IITttt', '..........IITtt', '..........KKKKK', '..........KOOKK']);
 VISTAS.espalda.piernas.piso = mapa(25, ['.......IITTTtt', '.......tttttt']);
 VISTAS.diagE.piernas.piso = mapa(25, ['.......tttTTII', '........tttTT']);
-VISTAS.frente.piernas.rodillas = mapa(22, ['......FIITTTtt', '......FIIT.Ttt', '......fIIT.TTt', '.......III.TTt', '.......ttt.ttt']);
+// 🔁 La funda, más corta: de rodillas llegaba al piso y parecía un tercer pie (los jueces).
+VISTAS.frente.piernas.rodillas = mapa(22, ['......FIITTTtt', '......fIIT.Ttt', '.......IIT.TTt', '.......III.TTt', '.......ttt.ttt']);
 
 // ------------------------------------------------- las piernas que se mueven
 /**
@@ -514,7 +515,8 @@ const VER_BRAZO = {
  * Largos al frente: Winchester 17, escopeta 14 (un 20% más corta que el
  * rifle), Colt 14, Schofield 11.
  */
-const COLOR_ARMA = { 1: 25, 2: 24, 3: 23, d: 31, n: 0, W: 6, w: 5, v: 4, r: 11, s: 47, b: 45, o: 28, q: 44, M: 24 };
+// (N: la boca vista de frente, un punto negro; es la boca, como la M.)
+const COLOR_ARMA = { 1: 25, 2: 24, 3: 23, d: 31, n: 0, W: 6, w: 5, v: 4, r: 11, s: 47, b: 45, o: 28, q: 44, M: 24, N: 0 };
 const DIBUJOS_ARMAS = {
   // EL COLT de caño largo: martillo con espuela, tambor más alto que el caño, varilla debajo.
   colt: {
@@ -527,6 +529,9 @@ const DIBUJOS_ARMAS = {
     2: ['.d.........', '..d1.......', '..r21......', 'sA.321.....', 's..d31.....', 's...d31....', '.....d31...', '......d31..', '........31.', '.........3M'],
     3: ['.d...', '.A...', 'r....', '213..', '.13..', '..13.', '..M3.'],
     4: ['.d.', '.A.', '...', '213', '.13', '.13', '.M3'],
+    // 🆕 De frente, apuntándonos *(los jueces: "no se lee que te está apuntando")*: el martillo
+    // arriba, la mano, y la boca negra con su anillo, acortado (el de 4 es el que apunta al piso).
+    frente: ['.d.', '.A.', '122', '2N3', '233'],
   },
   // EL SMITH & WESSON SCHOFIELD: la traba arriba atrás, el caño más corto, culata de madera.
   smith: {
@@ -539,6 +544,7 @@ const DIBUJOS_ARMAS = {
     2: ['...2......', '...d1.....', '...W21....', '.wA.321...', 'vw..d31...', '.....d31..', '.......31.', '........3M'],
     3: ['.2..', '.d..', '.A..', 'W...', '213.', '.13.', '.M3.'],
     4: ['.2.', '.d.', '.A.', '...', '213', '.13', '.M3'],
+    frente: ['.2.', '.A.', '122', '2N3', '233'],
   },
   // EL WINCHESTER 1873: culata larga con cantonera, cajón de bronce, palanca en anillo larga y
   // fina, guardamanos de madera, caño pavonado con su mira y el tubo del cargador.
@@ -548,10 +554,15 @@ const DIBUJOS_ARMAS = {
     '-2': ['.............M', '............2d', '...........2d.', '..........2d..', '.........2w...', '........Sw....', '.......2w.....', '......bq......', '.....Aod......', '....Wwd.......', '...Wwd........', '..Ww..........', '.Wvv..........', 'ddv...........', '.d............'],
     '-1': ['................2', '................M', '..............22d', '............22dd.', '..........22wd...', '........2Sww.....', '......bbww.......', '.....Aoq.........', '...WW.d..........', '...wwd...........', '.WWvd............', 'dvw..............', 'dv...............', 'd................'],
     0: ['................2', '...WWAbb2S222222M', 'dWWww.oqwwwwwdddd', 'dvwv..d..........', 'dv.ddd...........'],
-    1: ['d................', 'dWWWW............', 'dvwwwA...........', '.v.v..bb.........', '...dd.oq2S.......', '.....dd.ww22.....', '..........ww22...', '............wd222', '..............ddM', '................d'],
-    2: ['dd............', 'dwW...........', '.vwW..........', '.vvwW.........', '...vAb........', '...d.ob.......', '....ddw2......', '.......S2.....', '........w2....', '.........d2...', '..........d2..', '...........d2.', '............dM'],
+    // 🔁 Hacia abajo en diagonal, la culata de madera más oscura: de frente pasa sobre el chaleco y
+    // se confundía con la estrella *(los jueces)*.
+    1: ['d................', 'dwwww............', 'dvwwwA...........', '.v.v..bb.........', '...dd.oq2S.......', '.....dd.ww22.....', '..........ww22...', '............wd222', '..............ddM', '................d'],
+    2: ['dd............', 'dww...........', '.vww..........', '.vvww.........', '...vAb........', '...d.ob.......', '....ddw2......', '.......S2.....', '........w2....', '.........d2...', '..........d2..', '...........d2.', '............dM'],
     3: ['dd....', '.Ww...', '..Av..', '.d.b..', '..bo..', '...Sw.', '....2d', '.....M'],
-    4: ['dd', 'Ww', 'Av', '.v', 'bo', 'Sv', '2d', 'M.'],
+    // 🔁 Derecho hacia nosotros *(los jueces: "de frente parece una bandolera, no un arma que
+    // apunta")*: la culata en el hombro, el cajón de bronce y la boca del caño como un punto
+    // negro con su anillo gris, delante del pecho; la mano de apoyo debajo.
+    4: ['wv....', '.vd...', '.Ad212', '..d2N3', '...33d', '....S.'],
     // Cruzada delante del pecho: la mano del gatillo en la cadera, el caño arriba a la izquierda.
     cruzada: ['M......', '2d.....', '.2d....', '.2d....', '..2d...', '..Sw...', '...wv..', '...od..', '...bd..', '...A...', '....w..', '....Ww.', '.....v.', '.....dd'],
   },
@@ -579,10 +590,11 @@ const DIBUJOS_ARMAS = {
     '-2': ['...........dM3', '...........13.', '..........13..', '.........13...', '........1S....', '.......1w.....', '.....d23......', '.....A3d......', '....Ww........', '...Ww.........', '..Ww..........', '.Wvv..........', 'ddv...........', '.d............'],
     '-1': ['............d.', '............1M', '..........1133', '......d.1S33..', '......2233w...', '.....A33ww....', '...WW.d.......', '...ww.........', '.WWv..........', 'dvw...........', 'dv............', 'd.............'],
     0: ['.....d........', '......d.....d.', '...WWA221S111M', 'dWWww.33333333', 'dvwv..ddwww...', 'dv....d.......'],
-    1: ['d.............', 'dWWWWd........', 'dvwwwAd.......', '.v.v..22......', '......331S....', '......d.3311d.', '........ww331M', '..........w.33'],
-    2: ['dd..........', 'dwW.........', '.vwW........', '.vvwWd......', '...vA2......', '.....32.....', '.....dw1....', '.......S1...', '........31d.', '.........31.', '..........3M'],
+    // 🔁 La culata más oscura en diagonal hacia abajo (igual que el Winchester).
+    1: ['d.............', 'dwwwwd........', 'dvwwwAd.......', '.v.v..22......', '......331S....', '......d.3311d.', '........ww331M', '..........w.33'],
+    2: ['dd..........', 'dww.........', '.vww........', '.vvwwd......', '...vA2......', '.....32.....', '.....dw1....', '.......S1...', '........31d.', '.........31.', '..........3M'],
     3: ['dd....', '.Ww...', '..Ad..', '...2..', '..23..', '...S3.', '....13', '.....M'],
-    4: ['dd', 'Ww', 'Ad', '.2', '23', 'S3', '13', 'M.'],
+    4: ['wv....', '.vd...', '.Ad212', '..d2N3', '...33d', '....S.'],
     cruzada: ['M......', '13.....', '.13....', '.S3....', '..w3...', '..d2...', '...3d..', '...A...', '....w..', '....Ww.', '.....v.', '.....dd'],
   },
 };
@@ -599,7 +611,7 @@ function leerArma(filas, espejo) {
       if (ch === '.' || ch === 'A') continue;
       const px = (x - ax) * (espejo ? -1 : 1), py = y - ay;
       if (ch === 'S') { apoyo = [px, py]; continue; }
-      if (ch === 'M') boca = [px, py];
+      if (ch === 'M' || ch === 'N') boca = [px, py];
       puntos.push([px, py, COLOR_ARMA[ch]]);
     }
   });
@@ -623,6 +635,13 @@ export function armaEn(id, angulo) {
   if (g) return g;
   g = { ...leerArma(DIBUJOS_ARMAS[id][rd], espejo), angulo: r * Math.PI / 8, r: rd };
   armasGuardadas.set(clave, g);
+  return g;
+}
+/** El revólver de frente, apuntándonos (ver `frente` en DIBUJOS_ARMAS). */
+function armaDeFrente(id) {
+  const clave = id + '|frente';
+  let g = armasGuardadas.get(clave);
+  if (!g) armasGuardadas.set(clave, (g = { ...leerArma(DIBUJOS_ARMAS[id].frente, false), angulo: Math.PI / 2, r: 4 }));
   return g;
 }
 /** El arma larga cruzada delante del pecho (de costado, en espejo). */
@@ -673,7 +692,10 @@ function linea([x0, y0], [x1, y1], poner) {
  * (`impacto` en data/melee.js). Ángulos en el dibujo: 0 es hacia adelante.
  */
 const GOLPE = {
-  brazo: [-1.0, -1.3, -1.5, 0.35, 0.6, 0.45, 0.25, 0.1],
+  // 🔁 Al cargar (0-2), la mano un poco más baja y adelante: el revólver tocaba el borde de
+  // arriba del cuadro, y de costado la mano caía sobre la cara (piel sobre piel) *(los jueces)*:
+  // ahora sube por delante de la cara.
+  brazo: [-0.7, -0.8, -0.9, 0.35, 0.6, 0.45, 0.25, 0.1],
   inclina: [0, -1, -1, 1, 1, 1, 0, 0],
   baja: [0, 0, 0, 1, 1, 0, 0, 0],
 };
@@ -752,7 +774,9 @@ const GOLPE_LARGA = {
     { r: -6, mano: [1, 2], inclina: 0, baja: 0 },
     { r: 7, mano: [3, -1], inclina: 1, baja: 1,
       estela: [[4, 7], [6, 7], [8, 6], [9, 5], [10, 3], [11, 1], [11, -1]], destello: [6, -2] },
-    { r: 7, mano: [3, -2], inclina: 1, baja: 1 },
+    // 🔁 Después del impacto, el caño derecho hacia atrás: en diagonal, con el cuerpo tapando el
+    // medio, el rifle se veía partido en dos *(los jueces)*.
+    { r: 8, mano: [3, -1], inclina: 1, baja: 1 },
     { r: 8, mano: [2, 0], inclina: 1, baja: 0 },
     { r: -3, mano: [2, 3], inclina: 0, baja: 0 },
     { cruzada: true, inclina: 0, baja: 0 },
@@ -807,7 +831,8 @@ const BRAZO_REVOLVER = {
   recto: [
     { mano: [0, -2] }, { mano: [2, -3] }, { mano: [5, -2] }, { mano: [7, -2] },
     { mano: [6, 1] },
-    { mano: [6, 4] }, { mano: [3, 4] }, { mano: [2, 2] }, { mano: [0, 1] },
+    // (Derecho para abajo es de frente: la mano hacia el medio del pecho, apuntándonos.)
+    { mano: [6, 4] }, { mano: [3, 4] }, { mano: [2, 2] }, { mano: [3, 1] },
   ],
 };
 /**
@@ -924,12 +949,14 @@ const ATURDIDO = [
  *          cartas (de espaldas no se ven: el cuerpo las tapa).
  */
 const BRAZOS = {
+  // 🔁 Las manos POR ENCIMA del ala, con el brazo de su largo *(los jueces: con el ala ancha del
+  // pasajero las manos quedaban debajo y se leía "se agarra el sombrero", no "me rindo")*.
   arriba: {
-    lado: [{ p: [[10, 9], [12, 7], [12, 3]] }, { p: [[9, 9], [10, 7], [10, 3]], atras: true }],
-    frente: [{ p: [[7, 9], [4, 7], [4, 3]] }, { p: [[13, 9], [16, 7], [16, 3]] }],
-    diagF: [{ p: [[7, 9], [4, 7], [5, 3]] }, { p: [[13, 9], [16, 7], [15, 3]], atras: true }],
-    espalda: [{ p: [[13, 9], [16, 7], [16, 3]] }, { p: [[6, 9], [3, 7], [3, 3]] }],
-    diagE: [{ p: [[13, 9], [16, 7], [16, 3]] }, { p: [[6, 9], [3, 7], [4, 3]], atras: true }],
+    lado: [{ p: [[10, 9], [13, 5], [14, 0]] }, { p: [[9, 9], [10, 5], [10, 0]], atras: true }],
+    frente: [{ p: [[7, 9], [4, 5], [4, 0]] }, { p: [[13, 9], [16, 5], [16, 0]] }],
+    diagF: [{ p: [[7, 9], [4, 5], [4, 0]] }, { p: [[13, 9], [16, 5], [16, 0]], atras: true }],
+    espalda: [{ p: [[13, 9], [16, 5], [16, 0]] }, { p: [[6, 9], [3, 5], [3, 0]] }],
+    diagE: [{ p: [[13, 9], [16, 5], [16, 0]] }, { p: [[6, 9], [3, 5], [3, 0]], atras: true }],
   },
   cartas: {
     lado: [{ p: [[10, 9], [11, 13], [13, 13]] }, { p: [[9, 9], [10, 13], [12, 12]], atras: true }],
@@ -1106,8 +1133,11 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     const cadera = [P.mano[0] + inclina + lomo, P.mano[1] + baja];
     // Apuntando, la mano adelante del hombro; de frente un poco más, así la culata
     // queda apoyada en el hombro y no asoma al lado de la cara.
-    const adelante = frontal ? 4 : 2;
-    const hombro = [hx + dir[0] * adelante, hy + dir[1] * adelante];
+    // (🔁 En diagonal de frente, 2: con 4 la culata quedaba encima del pecho, mezclada con el chaleco.)
+    const adelante = vista === 'frente' ? 4 : 2;
+    // 🔁 Derecho hacia nosotros, la mano del gatillo junto al hombro (el arma viene hacia la cámara).
+    const haciaNos = frontal && Math.round(ang / (Math.PI / 8)) === 4;
+    const hombro = haciaNos ? [hx + 1, hy + 2] : [hx + dir[0] * adelante, hy + dir[1] * adelante];
     let da = ang - P.ang;
     while (da > Math.PI) da -= 2 * Math.PI;
     while (da < -Math.PI) da += 2 * Math.PI;
@@ -1249,15 +1279,19 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     const lx = dir[0] < -0.01 ? -1 : 1;
     const desde = (p) => [hx + p[0] * lx, hy + p[1]];
     let mano, codo = null;
-    if (golpe != null) mano = [hx + dir[0] * 6, hy + dir[1] * 6];
+    if (golpe != null) mano = [hx + dir[0] * (golpe < 3 ? 5 : 6), hy + dir[1] * (golpe < 3 ? 5 : 6)];
     else {
       mano = desde([B.mano[0] + (R.mano[0] - B.mano[0]) * t, B.mano[1] + (R.mano[1] - B.mano[1]) * t]);
       // El codo va de doblado a quedar en la línea del brazo recto.
       const medio = [R.mano[0] / 2, R.mano[1] / 2];
       if (t < 1) codo = desde([B.codo[0] + (medio[0] - B.codo[0]) * t, B.codo[1] + (medio[1] - B.codo[1]) * t]);
     }
-    mano = [Math.round(mano[0]), Math.round(mano[1])];
-    if (codo) codo = [Math.round(codo[0]), Math.round(codo[1])];
+    // 🔁 En diagonal de frente, bajo, la mano al costado de la cadera: en el medio el caño salía
+    // de la entrepierna y se fundía con el pantalón *(los jueces)*.
+    // De espaldas, la mano afuera del ancho de la cabeza: el caño subía atravesando el sombrero.
+    const alCostado = golpe != null ? (vista === 'diagF' && golpe < 3 ? 3 : 0) : vista === 'diagF' ? Math.round(2 * (1 - t)) : vista === 'espalda' && rArma <= -3 ? 2 : 0;
+    mano = [Math.round(mano[0]) + alCostado, Math.round(mano[1])];
+    if (codo) codo = [Math.round(codo[0]) + alCostado, Math.round(codo[1])];
     // La manga, de dos de alto, en uno o dos tramos; el último punto antes de la mano es el puño (al sol).
     const pts = [];
     if (codo) { linea([hx, hy], codo, (x, y) => pts.push([x, y])); pts.pop(); }
@@ -1270,9 +1304,18 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       ponerManga(x, y + 1, i, enCodo, puno ? C.C : C.c);
     });
     // El revólver (Colt o Schofield), en la dirección del brazo, y encima el puño de 2×2 en la culata.
-    const A = armaEn(DIBUJOS_ARMAS[arma] ? arma : 'colt', Math.atan2(dir[1], dir[0]));
+    const id = DIBUJOS_ARMAS[arma] ? arma : 'colt';
+    const A = vista === 'frente' && golpe == null && rArma === 4 && t >= 0.5 && DIBUJOS_ARMAS[id].frente ? armaDeFrente(id) : armaEn(id, Math.atan2(dir[1], dir[0]));
     const [mx, my] = mano;
     for (const [x, y, c] of A.puntos) poner(mx + x, my + y, c);
+    /**
+     * 🔁 Sobre el pantalón, un punto oscuro entre el arma y la pierna *(los jueces: "gris del arma
+     * sobre gris del pantalón: no se ve que tiene el arma")*.
+     */
+    for (const [x, y] of A.puntos) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const k = (my + y + dy + OY) * ANCHO + mx + x + dx + OX;
+      if (k >= 0 && k < idx.length && duenio[k] === PARTE.piernas && idx[k] > 0 && !A.puntos.some(([a, b]) => a === x + dx && b === y + dy)) idx[k] = 0;
+    }
     boca = [mx + A.boca[0], my + A.boca[1]];
     poner(mx, my, C.P); poner(mx - lx, my, C.P);
     poner(mx, my + 1, C.p); poner(mx - lx, my + 1, C.p);
@@ -1431,7 +1474,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     if (vista === 'lado' && mochila) dibujarMochila();
     const PB = V.piernas[piernas] || V.piernas.quieto;
     con(PARTE.piernas, () => dibujarMapa(PB));
-    if (baja < 0 || baja === 2) dibujarMapa({ y: PB.y - 1, filas: [PB.filas[0]] });
+    if (baja < 0 || baja === 2) con(PARTE.piernas, () => dibujarMapa({ y: PB.y - 1, filas: [PB.filas[0]] }));
     dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0));
     if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo + bi, COLOR_ARMA);
     const cartasAntes = brazos === 'cartas';
@@ -1454,7 +1497,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   con(PARTE.piernas, () => dibujarMapa(P));
   // Cuando el cuerpo sube 1 (pasando un paso, en el aire o agachado), la cadera se estira un punto para que no
   // quede un hueco entre el cinto y el pantalón.
-  if (baja < 0 || baja === 2) dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] });
+  // (🐛 Es pierna: como torso, los cuerpos anchos la ensanchaban y quedaba una barra en la cadera.)
+  if (baja < 0 || baja === 2) con(PARTE.piernas, () => dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] }));
   dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
   if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo, COLOR_ARMA);
   /**
@@ -1492,7 +1536,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   if (forma && ((forma.cuerpo && forma.cuerpo !== 'normal') || forma.chaqueta)) darForma(forma);
 
   /** El cuerpo y la chaqueta (ver CUERPOS): ensancha el torso, corre los brazos, pinta la panza y la chaqueta. */
-  function darForma({ cuerpo = 'normal', chaqueta = false, conChaleco = true }) {
+  function darForma({ cuerpo = 'normal', chaqueta = false, conChaleco = true, estrella: conEstrella = true }) {
     const K = CUERPOS[cuerpo] || CUERPOS.normal;
     const yHombro = 8 + baja + OY;                 // la fila 8 del dibujo, en el lienzo
     const ancho = (r) => K.filas[Math.max(0, Math.min(9, r))];
@@ -1504,7 +1548,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     const tela = new Set([C.U, C.V, C.v, C.w, C.L, C.C, C.c].filter((c) => c != null));
     const detalle = new Set([C.y, C.E, C.e, C.R, C.r, C.S, C.z, C.G, C.J, C.j].filter((c) => c != null));
     const chaleco = new Set([C.U, C.V, C.v, C.w].filter((c) => c != null));
-    const estrella = new Set([C.E, C.e].filter((c) => c != null));
+    // (Sólo el que lleva estrella: el pasajero tiene esas letras con otros colores, y su camisa se manchaba.)
+    const estrella = new Set(conEstrella ? [C.E, C.e].filter((c) => c != null) : []);
     const esCuerpo = (k) => de[k] === PARTE.cuerpo;
     // 1. El cuerpo (torso, cabeza, piernas), con el torso ensanchado fila por fila.
     const estrellas = [];
@@ -1544,6 +1589,40 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       const dE = ancho(Math.min(...estrellas.map(([, y]) => y)) - yHombro);
       for (const [x, y, c] of estrellas) { nuevo[y * ANCHO + x + dE] = c; dn[y * ANCHO + x + dE] = PARTE.cuerpo; }
     } else for (const [x, y, c] of estrellas) { nuevo[y * ANCHO + x] = c; dn[y * ANCHO + x] = PARTE.cuerpo; }
+    /**
+     * 🐛 EL HUECO DEL BRAZO *(los jueces: "un agujero en el medio del cuerpo" del gordito
+     * caminando en diagonal)*: debajo de un brazo que cruza el torso no hay cuerpo
+     * dibujado; al correr el brazo hacia afuera quedaba el agujero. Se rellena con la
+     * tela de al lado: la fila que no pasa entera por el medio toma el ancho de la de
+     * arriba (las de los costados, el hueco entre el brazo y las costillas, no se tocan).
+     */
+    if (K !== CUERPOS.normal || chaqueta) {
+      let antes = null;
+      for (let y = yHombro; y <= yHombro + 8; y++) {
+        const f = y * ANCHO;
+        // El torso de esta fila: si pasa entero por el medio, el suyo; si no (lo tapaba un
+        // brazo), el de la fila de arriba con lo que ensancha esta fila de más.
+        let i = i0, j = i0, entero = nuevo[f + i0] >= 0 && dn[f + i0] === PARTE.cuerpo && nuevo[f + i1] >= 0 && dn[f + i1] === PARTE.cuerpo;
+        if (entero) {
+          while (i - 1 >= 0 && nuevo[f + i - 1] >= 0 && dn[f + i - 1] === PARTE.cuerpo) i--;
+          while (j + 1 < ANCHO && nuevo[f + j + 1] >= 0 && dn[f + j + 1] === PARTE.cuerpo) j++;
+        } else if (antes) {
+          const mas = vista !== 'lado' ? Math.max(0, ancho(y - yHombro) - ancho(y - 1 - yHombro)) : 0;
+          [i, j] = [antes[0] - mas, antes[1] + mas];
+        } else continue;
+        antes = [i, j];
+        if (entero) continue;
+        let ultimo = null;
+        for (let x = i; x <= j; x++) {
+          const k = f + x;
+          if (nuevo[k] >= 0) { if (dn[k] === PARTE.cuerpo && !detalle.has(nuevo[k])) ultimo = nuevo[k]; continue; }
+          let c = ultimo;
+          if (c == null) for (let a = x + 1; a <= j; a++) if (nuevo[f + a] >= 0 && dn[f + a] === PARTE.cuerpo && !detalle.has(nuevo[f + a])) { c = nuevo[f + a]; break; }
+          if (c == null) c = C.V ?? C.C;
+          nuevo[k] = c; dn[k] = PARTE.cuerpo;
+        }
+      }
+    }
     // El tramo del torso que pasa por el medio de una fila (sin la culata enfundada, que está aparte).
     const tramo = (y) => {
       const f = y * ANCHO; let i = i0, j = i0;
@@ -1556,7 +1635,15 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     // 2. De costado: la panza o el pecho para adelante, la espalda y las piernas del flaco.
     if (vista === 'lado') {
       // (Por delante del brazo que cuelga: si no, el brazo la tapaba.)
-      const frente = (y) => { let b = -1; for (let x = 0; x < ANCHO; x++) { const p = de[y * ANCHO + x]; if (ver[y * ANCHO + x] >= 0 && (p === PARTE.cuerpo || p === PARTE.brazo || p === PARTE.brazoAtras)) b = x; } return b; };
+      // 🐛 Sólo el brazo que cuelga pegado al cuerpo (2 o 3 de ancho): con el brazo estirado
+      // la panza salía delante del caño *(los jueces: "un trapo en el caño")*; ahí el brazo va encima.
+      const frente = (y) => {
+        const f = y * ANCHO; let b = -1;
+        for (let x = 0; x < ANCHO; x++) if (ver[f + x] >= 0 && de[f + x] === PARTE.cuerpo) b = x;
+        if (b < 0) return b;
+        let n = 0; while (b + n + 1 < ANCHO && ver[f + b + n + 1] >= 0 && (de[f + b + n + 1] === PARTE.brazo || de[f + b + n + 1] === PARTE.brazoAtras)) n++;
+        return n <= 3 ? b + n : b;
+      };
       for (const [r, d] of K.lado) {
         const y = yHombro + r - 8, b = frente(y);
         if (b < 0) continue;
@@ -1604,7 +1691,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         for (let x = desde; x <= hasta; x++) pinta(y, x, camisa[PANZA_REDONDA[r][Math.round(((x - desde) / w) * 4)]]);
       }
       // La estrella, chica, en la solapa de la derecha (el guardia).
-      if (C.E != null && conChaleco && t9) { const y = yHombro + 1, j = t9[1]; pinta(y, j - 1, C.E); pinta(y, j, C.e); pinta(y + 1, j - 1, C.E); pinta(y + 1, j, C.E); }
+      if (C.E != null && conEstrella && conChaleco && t9) { const y = yHombro + 1, j = t9[1]; pinta(y, j - 1, C.E); pinta(y, j, C.e); pinta(y + 1, j - 1, C.E); pinta(y + 1, j, C.E); }
     }
     // 4. La chaqueta: un punto más por lado (el gordito, recta desde los hombros), abierta.
     const LONA = new Map([[C.L, 37], [C.C, 36], [C.c, 35], [C.U, 36], [C.V, 35], [C.v, 34], [C.w, 33], [C.y, 34]]);
@@ -1658,6 +1745,22 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     brazosEn(PARTE.brazoBajoCabeza);
     for (let k = 0; k < ANCHO * ALTO; k++) if (cuerpoListo[k] >= 0 && dnListo[k] === PARTE.cabeza) { nuevo[k] = cuerpoListo[k]; dn[k] = dnListo[k]; }
     brazosEn(PARTE.brazo);
+    /**
+     * 🔁 EL BRAZO SOBRE LA PANZA DEL GORDITO *(los jueces: "el antebrazo crema sobre una panza
+     * crema; no se ve dónde está el brazo")*: donde el brazo de adelante pasa sobre el torso, la
+     * manga va en su sombra y debajo queda un punto más oscuro de la panza.
+     */
+    if (cuerpo === 'gordito' && (vista === 'frente' || vista === 'diagF' || vista === 'lado')) {
+      const sobre = (k) => cuerpoListo[k] >= 0 && dnListo[k] === PARTE.cuerpo;
+      for (let y = yHombro + 1; y <= yHombro + 8; y++) for (let x = 0; x < ANCHO; x++) {
+        const k = y * ANCHO + x;
+        // (De costado, sólo donde pasa delante de la panza: la camisa.)
+        if (dn[k] !== PARTE.brazo || !sobre(k) || (vista === 'lado' && ![C.L, C.C, C.c].includes(cuerpoListo[k]))) continue;
+        if (nuevo[k] === C.L || nuevo[k] === C.C) nuevo[k] = C.c;
+        const kb = k + ANCHO;
+        if (kb < nuevo.length && dn[kb] === PARTE.cuerpo && nuevo[kb] > 0) nuevo[kb] = sombrear(nuevo[kb], -1);
+      }
+    }
     // 6. El color de la chaqueta: lona marrón y el cuello oscuro; adentro, abierta, el chaleco y la camisa.
     if (chaqueta) {
       const centro = vista === 'diagF' ? 11 + OX : 10.5 + OX;
@@ -1675,6 +1778,31 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
           if (r === 9 && (c === C.W || c === C.G || c === C.I || c === C.T || c === C.t)) nuevo[k] = 33;   // el faldón, un punto debajo del cinto
           if (r === 0 && [37, 36, 35, 34, 33].includes(nuevo[k])) nuevo[k] = 32;                     // el cuello
         }
+      }
+    }
+    /**
+     * 🐛 LOS AGUJERITOS *(los jueces: "motas negras" en el de hombros anchos caminando)*: el brazo
+     * corrido cierra a veces un hueco de 1 o 2 puntos contra el torso; se rellena con el color de
+     * al lado. Los huecos más grandes (entre el brazo y las costillas) quedan como están.
+     */
+    const visto2 = new Uint8Array(ANCHO * ALTO);
+    for (let k0 = 0; k0 < ANCHO * ALTO; k0++) {
+      if (nuevo[k0] >= 0 || visto2[k0]) continue;
+      const pila = [k0], isla = []; let abierta = false; visto2[k0] = 1;
+      while (pila.length) {
+        const k = pila.pop(); isla.push(k);
+        const x = k % ANCHO, y = (k - x) / ANCHO;
+        for (const [a2, b2] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+          if (a2 < 0 || b2 < 0 || a2 >= ANCHO || b2 >= ALTO) { abierta = true; continue; }
+          const kk = b2 * ANCHO + a2;
+          if (nuevo[kk] < 0 && !visto2[kk]) { visto2[kk] = 1; pila.push(kk); }
+        }
+      }
+      if (abierta || isla.length > 2) continue;
+      for (const k of isla) {
+        const x = k % ANCHO;
+        const v = [k - 1, k + 1, k - ANCHO, k + ANCHO].find((kk) => kk >= 0 && kk < nuevo.length && nuevo[kk] > 0 && (kk !== k - 1 || x > 0));
+        if (v != null) { nuevo[k] = nuevo[v]; dn[k] = dn[v]; }
       }
     }
     idx.set(nuevo); duenio.set(dn);

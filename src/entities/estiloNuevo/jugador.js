@@ -922,6 +922,18 @@ const CULATA_ENFUNDADA = {
   diagE: mapa(14, ['..............W', '.............ww', '.............d']),
 };
 /**
+ * 🆕 P3c · LA SEGUNDA FUNDA (el Pistolero, `doble`): del otro lado de la cadera, a mano por vista
+ * (de costado queda del lado de allá y no se ve). `culata`, la del revólver enfundado; `funda`, el
+ * cuero, que queda aunque lo haya sacado.
+ */
+const SEGUNDA_FUNDA = {
+  frente: { culata: mapa(14, ['................W', '...............ww', '...............d']), funda: mapa(17, ['...............F', '...............F', '...............F', '..............f']) },
+  diagF: { culata: mapa(14, ['................W', '...............ww', '...............d']), funda: mapa(17, ['...............F', '...............F', '...............F', '..............f']) },
+  espalda: { culata: mapa(14, ['......W', '......ww', '.......d']), funda: mapa(17, ['......F', '......F', '......F', '......f']) },
+  diagE: { culata: mapa(14, ['......W', '......ww', '.......d']), funda: mapa(17, ['......F', '......F', '......F', '......f']) },
+};
+
+/**
  * 🆕 DESENFUNDAR (P3a, el guardia la primera vez que pelea): `desenfunda` 0-2,
  * y después la pose de siempre. 0 la mano agarra la culata (todavía en la
  * funda); 1 lo saca para arriba, el caño apuntando al piso; 2 lo trae hacia
@@ -1077,7 +1089,7 @@ const PANZA_REDONDA = [
   [1, 0, 0, 1, 3], [1, 1, 1, 2, 3], [2, 1, 2, 2, 3], [3, 2, 3, 3, 3],
 ];
 
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara, arremangada, forma }) {
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara, arremangada, forma, doble, dobleModo = null }) {
   const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
   const TJ = tajo != null ? TAJO[tajo] : null;
   /**
@@ -1239,7 +1251,18 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     boca = larga.boca;
   };
 
-  const brazo = () => {
+  /**
+   * 🆕 P3c · DOS REVÓLVERES (el Pistolero, `doble`): el brazo izquierdo lleva el suyo, con la misma
+   * pose por dirección que el derecho (BRAZO_REVOLVER), desde su hombro. `dobleModo` 'par': los dos
+   * apuntan igual; 'bajo': el segundo, siempre con el codo doblado. Desenfundando o en el culatazo, el
+   * segundo cuelga. `S`: el hombro del segundo.
+   */
+  const hombroArma = [hx, hy];
+  let boca2 = null;
+  const brazo = (S = null) => {
+    const segundo = !!S;
+    const [hx, hy] = S || hombroArma;
+    if (segundo && (desenfunda != null || golpe != null)) { colgado([hx, hy], idaLibre(), 0.1, vista === 'lado' || vista === 'diagF'); return; }
     if (larga) { dibujarLarga(); return; }
     // Sin arma cuelga como el otro: dos puntos de ancho y la mano de 2×2.
     // (De frente, el derecho cuelga por fuera del cuerpo, del lado izquierdo de la pantalla.)
@@ -1287,7 +1310,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       poner(m[0], m[1] + 1, C.p); poner(m[0] + 1, m[1] + 1, C.q);
       return;
     }
-    const t = Math.max(0, Math.min(1, empuna ?? 0));
+    // (Sin decir: de costado el segundo bajo, así se ven los dos caños; en las otras vistas, los dos apuntan *(Santi)*.)
+    const t = segundo && (dobleModo || (vista === 'lado' ? 'bajo' : 'par')) === 'bajo' ? 0 : Math.max(0, Math.min(1, empuna ?? 0));
     const lx = dir[0] < -0.01 ? -1 : 1;
     const desde = (p) => [hx + p[0] * lx, hy + p[1]];
     let mano, codo = null;
@@ -1301,7 +1325,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     // 🔁 En diagonal de frente, bajo, la mano al costado de la cadera: en el medio el caño salía
     // de la entrepierna y se fundía con el pantalón *(los jueces)*.
     // De espaldas, la mano afuera del ancho de la cabeza: el caño subía atravesando el sombrero.
-    const alCostado = golpe != null ? (vista === 'diagF' && golpe < 3 ? 3 : 0) : vista === 'diagF' ? Math.round(2 * (1 - t)) : vista === 'espalda' && rArma <= -3 ? 2 : 0;
+    const alCostado = segundo ? 0 : golpe != null ? (vista === 'diagF' && golpe < 3 ? 3 : 0) : vista === 'diagF' ? Math.round(2 * (1 - t)) : vista === 'espalda' && rArma <= -3 ? 2 : 0;
     mano = [Math.round(mano[0]) + alCostado, Math.round(mano[1])];
     if (codo) codo = [Math.round(codo[0]) + alCostado, Math.round(codo[1])];
     // La manga, de dos de alto, en uno o dos tramos; el último punto antes de la mano es el puño (al sol).
@@ -1328,7 +1352,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       const k = (my + y + dy + OY) * ANCHO + mx + x + dx + OX;
       if (k >= 0 && k < idx.length && duenio[k] === PARTE.piernas && idx[k] > 0 && !A.puntos.some(([a, b]) => a === x + dx && b === y + dy)) idx[k] = 0;
     }
-    boca = [mx + A.boca[0], my + A.boca[1]];
+    if (segundo) boca2 = [mx + A.boca[0], my + A.boca[1]];
+    else boca = [mx + A.boca[0], my + A.boca[1]];
     poner(mx, my, C.P); poner(mx - lx, my, C.P);
     poner(mx, my + 1, C.p); poner(mx - lx, my + 1, C.p);
   };
@@ -1418,6 +1443,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   /** El brazo libre: de costado va detrás del cuerpo (es el de allá); en las otras vistas, al lado. */
   function idaLibre() { if (AT) return AT.ida; return tipo ? BRAZO_LIBRE[tipo].ida * Math.cos(k * Math.PI / 4) * 0.9 : 0; }
   const brazoLibre = () => {
+    // (Con dos revólveres, el libre lleva el segundo.)
+    if (doble && arma && !larga && !TJ) { brazo([VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja]); return; }
     const B = tipo ? BRAZO_LIBRE[tipo] : null;
     colgado([VB.hombro[0] + inclina + lomo, VB.hombro[1] + baja], idaLibre(), B ? B.codo : 0.1, vista === 'lado' || vista === 'diagF');
   };
@@ -1489,6 +1516,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     if (baja < 0 || baja === 2) con(PARTE.piernas, () => dibujarMapa({ y: PB.y - 1, filas: [PB.filas[0]] }));
     dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0));
     if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo + bi, COLOR_ARMA);
+    if (doble && SEGUNDA_FUNDA[vista]) {
+      con(PARTE.piernas, () => dibujarMapa(SEGUNDA_FUNDA[vista].funda, 0, 0));
+      if (enfundado) dibujarMapa(SEGUNDA_FUNDA[vista].culata, baja, inclina + lomo + bi, COLOR_ARMA);
+    }
     const cartasAntes = brazos === 'cartas';
     // (Los brazos con `bajo`: las manos detrás de la cabeza, que las tapa.)
     con(PARTE.brazoBajoCabeza, () => BR.forEach((b, i) => { if (b.bajo && !b.atras) brazoPose(b, i); }));
@@ -1515,6 +1546,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   if (baja < 0 || baja === 2) con(PARTE.piernas, () => dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] }));
   dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
   if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo, COLOR_ARMA);
+  if (doble && SEGUNDA_FUNDA[vista]) {
+    con(PARTE.piernas, () => dibujarMapa(SEGUNDA_FUNDA[vista].funda, 0, 0));
+    if (enfundado) dibujarMapa(SEGUNDA_FUNDA[vista].culata, baja, inclina + lomo, COLOR_ARMA);
+  }
   /**
    * 🔁 El arma larga cruzada va DEBAJO de la cabeza *(Santi: "hay unos pixeles
    * que se comen el sombrero y no queda bien la perspectiva")*: el caño sube
@@ -1892,7 +1927,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       }
     });
   }
-  return { idx, boca: boca && [boca[0] + OX, boca[1] + OY], hombro: [hx + OX, hy + OY], finos, cabeza: cabezaEn };
+  return { idx, boca: boca && [boca[0] + OX, boca[1] + OY], boca2: boca2 && [boca2[0] + OX, boca2[1] + OY], hombro: [hx + OX, hy + OY], finos, cabeza: cabezaEn };
 }
 
 const guardados = new Map();

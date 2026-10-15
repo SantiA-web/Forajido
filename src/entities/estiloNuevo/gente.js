@@ -361,6 +361,12 @@ function torsoBlindado(vista) {
   });
   return { y: t.y, filas: g.map((f) => f.join('').replace(/\.+$/, '')) };
 }
+/**
+ * 🆕 P3c · EL PISTOLERO: un pistolero a sueldo, no de la compañía: el cuerpo del civil (chaleco,
+ * camisa y el pañuelo anudado), dos fundas (ver SEGUNDA_FUNDA en jugador.js) y sus colores
+ * (BASE.pistolero, de negro).
+ */
+TORSOS.pistolero = TORSOS.pasajero;
 TORSOS.blindado = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espalda'].map((v) => [v, torsoBlindado(v)]));
 
 /** De dónde a dónde va la correa (la vuelve a trazar `darForma` en jugador.js con el cuerpo ensanchado). */
@@ -453,6 +459,7 @@ export function sortearAspecto(tipo, azar = Math.random) {
   do a.pelo = elegir(PESO.pelo, azar);
   while (NUNCA.some((n) => n.pelo === a.pelo && n.piel === a.piel));
   if (tipo === 'guardia' || tipo === 'blindado') a.sombrero = elegir(PESO.sombreroGuardia, azar);
+  else if (tipo === 'pistolero') a.sombrero = 'plano';   // 🆕 P3c: el sombrero plano del pistolero
   else if (tipo === 'encargado') a.sombrero = 'gorra';   // 🆕 P3c: siempre con su gorra
   else { a.sombrero = elegir(PESO.sombreroPasajero, azar); a.panuelo = elegir(PESO.panuelo, azar); }
   if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno' && a.sombrero !== 'gorra') a.colorSombrero = elegir(PESO.colorSombrero, azar);
@@ -503,6 +510,10 @@ const BASE = {
     L: 17, C: 16, c: 15,                     // camisa clara
     y: 1, E: 45, e: 29, W: 1, G: 28,         // botones oscuros, la estrella de bronce con su brillo, cinto
   },
+  // 🆕 P3c: el Pistolero.
+  // De negro *(Santi eligió el negro de tres)*: chaleco gris oscuro de botones plateados, camisa rojo
+  // vino, pañuelo negro y pantalón marrón: no se confunde con el guardia (bordó) ni con el civil (marrón).
+  pistolero: { U: 24, V: 23, v: 31, w: 0, y: 25, L: 10, C: 9, c: 8, S: 31, R: 0, r: 0, z: 0, I: 34, T: 33, t: 32, W: 32, G: 25 },
   // 🆕 P3c: el blindado, el guardia con la placa de acero (ver PLACA_BLINDADO).
   blindado: {
     L: 17, C: 16, c: 15, y: 1, E: 45, e: 29, W: 1, G: 28,
@@ -567,14 +578,14 @@ function torsoConRopa(torso, vista, ropa) {
   }
   return (torsosDeRopa[clave] = { y: torso.y, filas: filas.map((r) => r.join('')) });
 }
-export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado', ropa = 'chaleco' }) {
+export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero', ropa = 'chaleco' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
-  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' ? 'plano' : tipo === 'encargado' ? 'gorra' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
+  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' || tipo === 'pistolero' ? 'plano' : tipo === 'encargado' ? 'gorra' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
   // (El Encargado: el pantalón de la compañía y encima su saco.)
   const colores = { ...(tipo === 'encargado' ? UNIFORMES[uniforme] : {}), ...BASE[tipo], ...(tipo === 'guardia' || tipo === 'blindado' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
   if (!funda) Object.assign(colores, vista === 'lado' ? { F: colores.I ?? C.I, f: colores.T ?? C.T } : { F: null, f: null });
   const cabeza = [CABEZA[vista]];
-  if (tipo === 'pasajero') cabeza.push(PANUELO[vista]);
+  if (tipo === 'pasajero' || tipo === 'pistolero') cabeza.push(PANUELO[vista]);
   if (PEINADOS[peinado] && PEINADOS[peinado][vista]) cabeza.push(PEINADOS[peinado][vista]);
   // (La barba va en puntos finos, encima: ver barbaFina.)
   // El sombrero va aparte: con la cabeza gacha baja más que la cara y la tapa (ver `gacha` en jugador.js).
@@ -1197,7 +1208,7 @@ export function lienzoSombreroSuelto(o, luz = 0) {
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

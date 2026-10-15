@@ -18975,6 +18975,15 @@ y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo d
   la compañía encima. De costado, las dos placas con el chaleco bordó asomando entre ellas; tirado,
   el pecho de acero. **Cuerpo: mitad normal, mitad hombros anchos** (la B de 75/25, 50/50 y 25/75).
   (Las letras de la placa son números: con letras se mezclaba con el pelo y salía negra.)
+- **✅ El Pistolero** (tipo `pistolero` en gente.js; look `dosRevolveres`): **un revólver en cada
+  mano** (`doble` en jugador.js: el brazo izquierdo lleva el suyo con la misma pose por dirección que
+  el derecho, desde su hombro). **De costado, uno apunta y el otro queda bajo** (así se ven los dos
+  caños); en las otras vistas los dos apuntan juntos *(Santi: "de perfil como en la B pero en todas
+  las otras direcciones como en la A")*. Desenfundando o en el culatazo, el segundo cuelga. **Dos
+  fundas**, una en cada cadera (`SEGUNDA_FUNDA`; de costado la segunda no se ve). La ropa, de
+  pistolero a sueldo y **de negro** (eligió entre tostado, negro y cuero): sombrero plano, chaleco
+  gris oscuro de botones plateados, camisa rojo vino, pañuelo negro, pantalón marrón. Sorteado en
+  cara, pelo, barba y cuerpo. ⚠️ En la sombra del vagón se ve muy oscuro: casi una silueta.
 - **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
   poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
   (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del

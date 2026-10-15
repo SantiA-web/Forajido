@@ -138,7 +138,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   [2] la escopeta, [3] el Winchester, [4] directo a
   un vagón de pasajeros (pedido por Santi el 2026-10-08, para ver el estilo nuevo
   con [F9]), [5] el cuchillo sin comprarlo (2026-10-10, para probar el tajo) y [6] el tren de
-  pasajeros con el Sheriff en tu vagón (2026-10-15). **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
+  pasajeros con el Sheriff en tu vagón (2026-10-15) y [7] 950 de recompensa, para que suba el
+  Cazarrecompensas (2026-10-15). **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
   cuando el estilo nuevo esté terminado.
 - **Los jinetes más alejados deberían tener menos puntería** *(Santi,
   2026-10-08: "los jinetes más alejados deberían tener menos puntería, pero eso
@@ -194,8 +195,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hecha y falta que Santi la juegue; P3b, las variantes: B1-B4 hechas (pelo, piel, barbas, ropa, cuerpos
   y chaqueta), las poses revisadas por tres subagentes jueces (tmp-ref/jueces.js) y B6 sólo el
   sombrero de paja suelto (B5 y lo demás de B6, afuera); P3b cerrada; P3c: el Encargado, el
-  blindado, el Pistolero y el Sheriff hechos; el Cazarrecompensas dibujado (falta conectarlo en
-  drawBoss, ver NOTAS,
+  blindado, el Pistolero, el Sheriff y el Cazarrecompensas hechos; queda el Dinamitero, que espera a
+  que exista su vagón (ver NOTAS,
   "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y

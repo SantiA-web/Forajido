@@ -19005,7 +19005,7 @@ y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo d
   cuerpo** (la mano se veía pegada en la espalda, en todos los personajes). Atajo 🧪 [6] del
   campamento: el tren de pasajeros con el Sheriff y sus tres en tu vagón. Pendiente: el borde de color
   del estado era para el jefe viejo; este Sheriff es un guardia y avisa como ellos (ojos y el "!").
-- **🔨 El Cazarrecompensas: el dibujo hecho, falta conectarlo al juego** (tipo `cazarrecompensas` en
+- **✅ El Cazarrecompensas** (tipo `cazarrecompensas` en
   gente.js; es el único jefe de verdad, `createBoss`). Siempre el mismo: **hombros anchos**, pelo
   negro y barba completa negra, pañuelo rojo, chaleco de cuero negro con botones de plata, camisa
   clara, pantalón gris oscuro. **Sombrero A** de tres siluetas: el ala plana más ancha del juego (21
@@ -19026,8 +19026,15 @@ y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo d
     el de abajo baja mostrando el forro. Se pega un punto detrás de la espalda y una fila arriba del
     chaleco: lo toca con 3 puntos en los ocho cuadros. 🐛 De costado se mide desde el chaleco (el cinto
     lo tapa el brazo) y el chaleco se busca debajo del pañuelo (el sombrero tiene sus colores).
-  - **Falta:** conectarlo en `drawBoss` (las armas según su equipo, acechando el arma baja, la
-    embestida corriendo, el borde de color del estado sólo del lado de la luz, tirado).
+  - **En el juego** (`dibujarNuevo` en entities/boss.js), del tamaño de un guardia: el arma de su
+    equipo (Winchester, escopeta, revólver o uno en cada mano); **acechando, el arma baja** y
+    caminando; peleando, la larga encarada y el revólver recto sólo al apuntar; **en la embestida, sin
+    arma y corriendo** (la capa vuela); avisando, plantado; aturdido, el tambaleo; tirado, con su
+    ropa. **El estado en la orilla, sólo del lado de la luz** (`orilla` en lienzoGente: el último
+    punto de la figura de ese lado, sin oscurecerse): gris aturdido, dorado invulnerable, naranja
+    enfurecido; el lado sale de comparar la luz del vagón a su izquierda y a su derecha. Atajo 🧪 [7]
+    del campamento: 950 de recompensa (desde 900 sube en el tren de pasajeros); otra vez [7], vuelve
+    la que tenías.
 - **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
   poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
   (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del

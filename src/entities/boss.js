@@ -19,7 +19,9 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_JEFE } from './figura.js';
+import { dibujarPersona, dibujarTendido, dibujarAviso, faseDeAndar, ROPA_DE_JEFE, tendidoNuevo } from './figura.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { aspectoCazador } from './estiloNuevo/gente.js';
 import { dibujarHeridas } from './danio.js';
 
 export function createBoss(x, y, tipo, options = {}) {
@@ -171,7 +173,10 @@ export function drawBoss(r, bo) {
   const tipo = ROPA_DE_JEFE[bo.id] || 'cazarrecompensas';
   const cinta = tipo === 'sheriffJefe' ? '#e8c34a' : '#c8302a';
 
+  // 🆕 P3c: el Cazarrecompensas con el dibujo nuevo (ver capaCazador en estiloNuevo/gente.js).
+  const nuevo = estiloNuevo.activo && r.ctx && tipo === 'cazarrecompensas';
   if (!bo.alive) {
+    if (nuevo) { tendidoNuevo(r, bo.x, bo.y, { tipo, modo: 'muerto', sangre: true, espejo: (Math.floor(bo.x / 3) & 1) === 1, aspecto: aspectoCazador() }); return; }
     // Un cuerpo más grande que el de un guardia, y con el sombrero al lado:
     // tiene que poder leerse desde el otro lado del vagón que ESE lo mataste.
     dibujarTendido(r, bo.x, bo.y, { tipo, sangre: true, grande: true, cinta });
@@ -245,7 +250,7 @@ export function drawBoss(r, bo) {
     : (conRifle ? 10 : conEscopeta ? 8 : 7);
   const angulo = cargando ? Math.atan2(bo.cargaDir.y, bo.cargaDir.x) : bo.facing;
 
-  const fig = dibujarPersona(r, {
+  const fig = nuevo ? dibujarNuevo(r, bo, pies, angulo, fase) : dibujarPersona(r, {
     tipo, x: bo.x, pies, angulo,
     // El jefe es más grande, y su caja también: no es un guardia con otra ropa.
     escala: 1.15,
@@ -263,13 +268,14 @@ export function drawBoss(r, bo) {
   // El arma larga cruzada a la espalda cuando está con el revólver: es lo que
   // dice "este tipo tiene otra arma" antes de que la saque. El de los dos
   // revólveres no tiene: no lleva nada a la espalda.
+  // (🆕 Con el dibujo nuevo, no: Santi eligió no dibujarla.)
   const larga = bo.equipo ? bo.equipo.id : 'rifle';
-  if (bo.armaActual === 'revolver' && !cargando && larga !== 'dosRevolveres') {
+  if (!nuevo && bo.armaActual === 'revolver' && !cargando && larga !== 'dosRevolveres') {
     r.line(bo.x - 6, fig.pechoY + 4, bo.x + 5, fig.pechoY - 5, '#8a6a4a');
     if (larga === 'escopeta') r.line(bo.x - 5, fig.pechoY + 5, bo.x + 3, fig.pechoY - 3, '#6a5240');
   }
   // La escopeta en la mano: el segundo caño, al lado del primero.
-  if (conEscopeta && !cargando && !acechando) {
+  if (!nuevo && conEscopeta && !cargando && !acechando) {
     const ox = -Math.sin(bo.facing), oy = Math.cos(bo.facing);
     r.line(fig.x + ox, fig.manoY + oy, fig.x + ox + Math.cos(bo.facing) * gunLength, fig.manoY + oy + Math.sin(bo.facing) * gunLength, '#9a9288');
   }
@@ -297,4 +303,44 @@ export function drawBoss(r, bo) {
       r.box(bo.x + Math.cos(a) * 8, arriba - 10 + Math.sin(a) * 3, 1, 1, '#ffe066');
     }
   }
+}
+
+/**
+ * 🆕 P3c · EL CAZARRECOMPENSAS CON EL DIBUJO NUEVO (con [F9] adentro del vagón): el mismo tamaño que
+ * un guardia *(Santi eligió la 1-A: sin agrandarlo)*, con la capa (ver `capaCazador`).
+ *  - El arma, la de su equipo: el Winchester, la escopeta, el revólver o uno en cada mano.
+ *  - **Acechando, el arma baja** (la larga cruzada, el revólver con el codo doblado) y camina.
+ *  - Peleando, la larga encarada; el revólver, con el brazo recto sólo al apuntar (`aimTimer`).
+ *  - **En la embestida, sin arma y corriendo** (la capa vuela); avisando, plantado.
+ *  - Aturdido, el tambaleo de los guardias.
+ *  - **Su estado en la orilla, sólo del lado de la luz** *(Santi: "pondría que la luz solo aparezca
+ *    del lado dónde está la luz")*: gris aturdido, dorado invulnerable, naranja enfurecido. El lado
+ *    sale de comparar la luz del vagón a su izquierda y a su derecha (pareja, la de arriba a la izquierda).
+ */
+const ORILLA_NUEVA = { aturdido: 25, invulnerable: 29, furia: 45 };
+function dibujarNuevo(r, bo, pies, angulo, fase) {
+  const cargando = bo.fase === 'carga', acechando = bo.fase === 'acecho', avisando = bo.fase === 'aviso';
+  const a = bo.armaActual;
+  const larga = a === 'rifle' ? 'winchester' : a === 'escopeta' ? 'escopeta' : null;
+  const apunta = bo.aimTimer > 0;
+  const arma = cargando ? null : larga || 'colt';
+  const empuna = larga ? (acechando ? 0 : 1) : apunta ? 1 : 0;
+  const aturdido = bo.fase === 'aturdido' ? 2 + (Math.floor(bo.faseTimer / 0.12) % 2) : null;
+  const estado = bo.fase === 'aturdido' ? 'aturdido' : bo.invulnerable > 0 ? 'invulnerable' : bo.enFuria ? 'furia' : null;
+  let orillaLado = 0;
+  if (estado) {
+    const iz = estiloNuevo.luzEn ? estiloNuevo.luzEn(bo.x - 10, pies) ?? 0 : 0;
+    const de = estiloNuevo.luzEn ? estiloNuevo.luzEn(bo.x + 10, pies) ?? 0 : 0;
+    orillaLado = de > iz ? 1 : -1;
+  }
+  return dibujarPersona(r, {
+    tipo: 'cazarrecompensas', x: bo.x, pies, angulo, interior: true,
+    nuevo: {
+      arma, empuna, enfundado: !arma, funda: true, doble: a === 'dosRevolveres' && !cargando, aturdido,
+      aspecto: aspectoCazador(), orilla: estado ? ORILLA_NUEVA[estado] : null, orillaLado,
+    },
+    modo: acechando ? 'caminar' : 'trotar',
+    fase: avisando || apunta || bo.atCover ? null : fase,
+    destello: bo.hitFlash > 0,
+  });
 }

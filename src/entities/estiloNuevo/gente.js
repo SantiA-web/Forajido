@@ -19,7 +19,7 @@
  * en null no se dibuja (así el pasajero no lleva funda).
  */
 import { iluminar } from '../../engine/luz.js';
-import { sombrear } from '../../engine/paleta.js';
+import { sombrear, RGB } from '../../engine/paleta.js';
 import { C, ANCHO, ALTO, OX, OY, cuadroJugador, armaEn, linea } from './jugador.js';
 
 const mapa = (y, filas) => ({ y, filas });
@@ -1465,7 +1465,7 @@ export function lienzoSombreroSuelto(o, luz = 0) {
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');
@@ -1475,6 +1475,20 @@ export function lienzoGente(o, luz = 0, destello = false) {
   const q = cuadroGente(o);
   const indices = destello ? q.idx.map((i) => (i > 0 ? sombrear(i, 4) : i)) : q.idx;
   const datos = iluminar({ ancho: ANCHO, alto: ALTO, indices, campo: () => luz });
+  /**
+   * 🆕 P3c · EL ESTADO DEL JEFE EN LA ORILLA (`orilla`, un color de la paleta) *(Santi eligió la A:
+   * "pondría que la luz solo aparezca del lado dónde está la luz")*: el último punto de la figura del
+   * lado de la luz (`orillaLado` 1 a la derecha, -1 a la izquierda) se pinta de ese color, sin
+   * oscurecerse con la luz del lugar.
+   */
+  if (o.orilla != null && o.orillaLado) {
+    const [cr, cg, cb] = RGB[o.orilla], L = o.orillaLado;
+    for (let y = 0; y < ALTO; y++) for (let x = 0; x < ANCHO; x++) {
+      const k = y * ANCHO + x, xv = x + L;
+      if (indices[k] < 0 || (xv >= 0 && xv < ANCHO && indices[k + L] >= 0)) continue;
+      datos[k * 4] = cr; datos[k * 4 + 1] = cg; datos[k * 4 + 2] = cb;
+    }
+  }
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);

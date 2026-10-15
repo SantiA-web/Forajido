@@ -65,6 +65,7 @@ export function createCampScene(services) {
   let armaAntesDeLaPrueba = null;
   // 🧪 Lo que tenías para pegar antes de ponerte el cuchillo con [5].
   let meleeAntesDeLaPrueba = null;
+  let recompensaAntesDeLaPrueba = null;
 
   const colors = CONFIG.colors;
 
@@ -342,6 +343,23 @@ export function createCampScene(services) {
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
+    /**
+     * 🧪 [7] TE PONE 950 DE RECOMPENSA *(Santi: "un atajo que me pone más de 900 de recompensa
+     * para que en el asalto me aparezca el cazarrecompensas")*: desde 900, en el tren de pasajeros,
+     * sube siempre (ver `bountyMinimo` en data/bosses.js). Otra vez [7], vuelve la que tenías.
+     *
+     * ⚠️ SACARLO antes de mostrar el juego, con los otros.
+     */
+    if (input.wasPressed('Digit7')) {
+      if (recompensaAntesDeLaPrueba != null) {
+        gameState.bounty = recompensaAntesDeLaPrueba;
+        recompensaAntesDeLaPrueba = null;
+      } else {
+        recompensaAntesDeLaPrueba = gameState.bounty;
+        gameState.bounty = Math.max(950, gameState.bounty);
+      }
+      decir(T.camp.atajoRecompensa(gameState.bounty), 2);
+    }
     if (input.wasPressed('Digit6')) {
       scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'pasajeros', jefeForzado: 'sheriff', pruebaSheriff: true });
       return;

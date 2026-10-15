@@ -38,7 +38,8 @@ export const PASO = CONFIG.estilo.punto / DENSIDAD;
 const PX = 1 / PASO;
 
 /** Qué vagones ya se dibujan en el estilo nuevo. */
-const NUEVOS = new Set(['pasajeros']);
+// 🆕 P4: el comedor (el de la gente común: ver `comedor` más abajo).
+const NUEVOS = new Set(['pasajeros', 'comedor']);
 
 /**
  * LOS VAGONES DEL ESTILO NUEVO de este tren: sus columnas (para que el dibujo
@@ -93,11 +94,21 @@ function vagon(train, w, dia) {
   // El origen, alineado a la grilla: si no, el vagón quedaría corrido medio
   // punto de todo lo demás y la grilla lo partiría.
   const x0 = Math.floor(w.x / PASO) * PASO;
+  /**
+   * 🔁 LA PARED DE ADELANTE, SIEMPRE DEL MISMO GRUESO *(Santi: "lo siento más chico de lo normal…
+   * por la pared de más acá")*: el comedor tiene una sola fila de pared abajo (el de pasajeros, dos), y
+   * dibujada en su lugar quedaba finita y el vagón se veía chico. Ahora crece para abajo lo que le
+   * falta: se ve como la del de pasajeros y no tapa a nadie de adentro. (La del fondo no: para arriba
+   * la cámara no llega, y quedaba cortada.)
+   */
+  const medioW = w.colStart + Math.floor(Math.round(w.width / S) / 2);
+  const paredW = (f) => { const t = (map.grid[f] || [])[medioW]; return t === '#' || t === 'W'; };
+  let fb = 0; while (fb < map.rows && paredW(map.rows - 1 - fb)) fb++;
   const yArriba = -tc.alturaPared;
   // 🔁 La pared de adelante llega sólo hasta el borde del mapa *(Santi: "la
   // pared del vagón cercana a la pantalla la veo muy alta. La haría más
   // chata")*: antes colgaba `alturaCaraAfuera` (18) más abajo.
-  const yAbajo = map.rows * S;
+  const yAbajo = map.rows * S + Math.max(0, 2 - fb) * S;
   const W = Math.ceil((w.x + w.width - x0) * PX);
   const H = Math.round((yAbajo - yArriba) * PX);
   const ax = (u) => Math.round((u - x0) * PX);
@@ -133,7 +144,13 @@ function vagon(train, w, dia) {
     return out;
   };
   const ventanasFondo = corridas(0), ventanasFrente = corridas(map.rows - 1);
-  const yPisoArriba = 2 * S, yPisoAbajo = (map.rows - 2) * S;   // 32 y 128: el adentro
+  // Cuántas filas de pared tiene arriba y abajo (el de pasajeros, dos; el comedor, una): el
+  // adentro empieza en la primera fila que no es pared, a la mitad del vagón.
+  const medio = Math.floor(cols / 2);
+  const esPared = (f) => { const t = casilla(medio, f); return t === '#' || t === 'W'; };
+  let filasArriba = 0; while (filasArriba < map.rows && esPared(filasArriba)) filasArriba++;
+  let filasAbajo = 0; while (filasAbajo < map.rows && esPared(map.rows - 1 - filasAbajo)) filasAbajo++;
+  const yPisoArriba = filasArriba * S, yPisoAbajo = (map.rows - filasAbajo) * S;   // el adentro (32 y 128 en el de pasajeros)
 
   /**
    * LOS FAROLES, EN LA PARED DEL FONDO, uno cada `faroles.cadaColumnas`
@@ -180,8 +197,10 @@ function vagon(train, w, dia) {
       // perdían las tablas.
       let f = y < ay(yPisoArriba) ? -1 : -2;
       const yCharco = ay(yPisoArriba) + Math.round((tope - ay(yPisoArriba)) * 0.32);
+      // (🆕 En el comedor, más tenues: la luz de querosén de la gente común.)
+      const tenue = w.id === 'comedor' ? 0.8 : 1;
       for (const fx of faroles) {
-        f += 2.6 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
+        f += tenue * 2.6 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
         f += 2.4 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - 26) / 18));
       }
       return f;
@@ -241,7 +260,7 @@ function vagon(train, w, dia) {
     }
     r(0, y0, W, 2, 32);                                                   // la sombra de la pared del fondo
     // Las puntas del vagón (las paredes de los costados, vistas desde arriba).
-    for (let c = 0; c < cols; c++) for (let f = 2; f < map.rows - 2; f++) {
+    for (let c = 0; c < cols; c++) for (let f = filasArriba; f < map.rows - filasAbajo; f++) {
       if (casilla(c, f) !== '#') continue;
       const x = ax(w.x + c * S), x2 = ax(w.x + (c + 1) * S), y = ay(f * S), y2 = ay((f + 1) * S);
       r(x, y, x2 - x, y2 - y, 0);
@@ -298,6 +317,75 @@ function vagon(train, w, dia) {
     }
   }
 
+
+  /**
+   * 🆕 P4 · EL COMEDOR, EL DE LA GENTE COMÚN *(Santi: "este comedor sea 'pobre'… clase baja, la
+   * madera de las mesas y/o sillas podrían estar astilladas, las cortinas sucias y algunas apenas un
+   * poco rotas")*. Gastado, no destruido: lo que se usa mucho y se arregla como se puede.
+   *
+   * LAS CORTINAS, de tela cruda desteñida, en cada ventanal del fondo *(Santi eligió mezclarlas)*: casi
+   * todas anudadas a un costado (1) o corridas a medias (2), alguna con una mancha o un agujerito, y
+   * una sola por vagón caída y rasgada abajo (3). **De día así; de noche, cerradas** *(Santi)*.
+   */
+  if (w.id === 'comedor') {
+    const r = rect(FONDO), p = pone(FONDO);
+    const yCara = 8, yPie = ay(yPisoArriba);
+    const rota = Math.floor(hash(w.colStart, 3) * ventanasFondo.length);
+    const TELA = 15, LUZ_T = 16, PLIEGUE = 14, MANCHA = 4;
+    // Un paño: el borde oscuro, los pliegues que bajan y el ruedo. `roto`: el ruedo rasgado.
+    const panio = (x, ancho, desde, largo, roto = false) => {
+      for (let q = 0; q < ancho; q++) {
+        const baja = roto ? Math.floor(hash(x + q, desde) * 4) : 0;
+        const fin = desde + largo - baja;
+        p(x + q, fin, 0);
+        for (let y = desde; y < fin; y++) {
+          const borde = q === 0 || q === ancho - 1;
+          // (Los pliegues, cada cuatro y de a uno, oscuros; la luz sólo en el lomo de cada uno, arriba:
+          // con un pliegue claro y uno oscuro cada tres parecía una persiana.)
+          const lomo = q % 4 === 2 && y < desde + 4;
+          p(x + q, y, borde ? 0 : y === fin - 1 ? PLIEGUE : q % 4 === 0 ? PLIEGUE : lomo ? LUZ_T : TELA);
+        }
+      }
+    };
+    const mancha = (x, y) => { r(x, y, 2, 2, MANCHA); p(x + 2, y + 1, MANCHA); };
+    ventanasFondo.forEach(([c0, c1], k) => {
+      const vx = ax(w.x + c0 * S) + 3, vw = ax(w.x + (c1 + 1) * S) - 3 - vx;
+      const vy = yCara + 10, vh = Math.round((yPie - yCara) * 0.55);
+      const tipo = k === rota ? 3 : hash(k + 1, w.colStart) < 0.5 ? 1 : 2;
+      const sucia = hash(k, w.colStart + 7) < 0.4;
+      // La barra de fierro.
+      r(vx - 3, vy - 4, vw + 6, 1, 0); r(vx - 3, vy - 3, vw + 6, 1, 31);
+      const desde = vy - 2, largo = vh + 4;
+      const mitad = Math.ceil(vw / 2) + 2;
+      if (!dia) {
+        // De noche, cerradas: los dos paños se juntan en el medio (la rasgada, uno solo de punta a punta).
+        if (tipo === 3) panio(vx - 2, vw + 4, desde, largo - 2, true);
+        else { panio(vx - 2, mitad, desde, largo); panio(vx + vw + 2 - mitad, mitad, desde, largo); }
+        if (tipo === 2) p(vx + 3, vy + 9, 18);                          // el agujerito
+        if (sucia) mancha(vx + vw - 8, vy + vh - 6);
+        return;
+      }
+      if (tipo === 1) {
+        // Recogida y anudada a un costado (la barra no corre); el otro paño, caído.
+        const nudo = vy + Math.round(vh * 0.45);
+        panio(vx - 2, 6, desde, nudo - desde);
+        r(vx - 2, nudo, 6, 3, 0); r(vx - 1, nudo, 4, 2, PLIEGUE);
+        panio(vx - 3, 8, nudo + 3, desde + largo - nudo - 3);
+        panio(vx + vw - 4, 6, desde, largo);
+        if (sucia) mancha(vx - 1, nudo + 7);
+      } else if (tipo === 2) {
+        const a = Math.round(vw * 0.38) + 2;
+        panio(vx - 2, a, desde, largo); panio(vx + vw + 2 - a, a, desde, largo);
+        r(vx + 3, vy + 9, 2, 1, 21);                                     // el agujerito, con el cielo atrás
+        if (sucia) mancha(vx + vw - a + 3, vy + vh - 5);
+      } else {
+        // Una sola, caída y rasgada abajo: la otra no está.
+        panio(vx - 2, Math.round(vw * 0.55) + 2, desde, largo - 4, true);
+        if (sucia) mancha(vx + 2, vy + 6);
+      }
+    });
+  }
+
   // ===== LOS ASIENTOS: respaldo a la izquierda, almohadón de cuero y patas
   const ANCHO_ASIENTO = 15;
   const asientos = [];
@@ -333,6 +421,88 @@ function vagon(train, w, dia) {
       r(x + 1, y + bh - 8, bw - 2, 1, 8);
       r(x + 2, y + bh - 4, 2, 3, 3); r(x + bw - 4, y + bh - 4, 2, 3, 3);   // las patas
       asientos.push({ x, y, w: bw, h: bh, base: (fin + 1) * S - 0.01 });
+    }
+  }
+
+  /**
+   * 🆕 P4 · LAS MESAS DEL COMEDOR, de madera pelada (sin barniz), con un banco sin respaldo a cada
+   * lado *(Santi eligió la B)*. La tapa con la orilla gastada, las tablas, las marcas de los jarros y
+   * alguna astilla; encima, la vajilla de lata esmaltada (blanca con el borde azul): unas servidas,
+   * otras a medio comer, otras ya vacías. Cada mesa y cada banco es una pieza (se mezclan con la gente).
+   */
+  const MESAS = capa();
+  const muebles = [];
+  if (w.id === 'comedor') {
+    const r = rect(MESAS), p = pone(MESAS);
+    const MAD = 5, MAD_L = 6, MAD_S = 4, MAD_SS = 3;
+    // Un mapa chico de colores: cada letra, un color (`.` vacío).
+    const dibujo = (x, y, filas, col) => filas.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') p(x + q, y + j, col[fila[q]]); });
+    const LATA = { o: 0, b: 20, w: 17, s: 16, c: 3, h: 4, g: 24, G: 25, d: 23, p: 6, P: 7 };
+    const PLATO = ['.bbbbb.', 'bwwwwwb', 'bwwwwwb', '.bbbbb.'];
+    const PLATO_LLENO = ['.bbbbb.', 'bwchcwb', 'bwhchwb', '.bbbbb.'];
+    const PLATO_MEDIO = ['.bbbbb.', 'bwwchwb', 'bwwwwwb', '.bbbbb.'];
+    const JARRO = ['bbb.', 'wwwb', 'swwb', 'sww.'];
+    const CAFETERA = ['.dd..', 'gGgg.', 'gGggd', 'gggg.', 'dddd.'];
+    const PAN = ['.pPp.', 'ppppp', '.hhh.'];
+    for (let c = 0; c < cols; c++) for (let f = filasArriba; f < map.rows - filasAbajo; f++) {
+      if (casilla(c, f) !== 'C' || casilla(c - 1, f) === 'C' || casilla(c, f - 1) === 'C') continue;
+      let c2 = c; while (casilla(c2 + 1, f) === 'C') c2++;
+      let f2 = f; while (casilla(c, f2 + 1) === 'C') f2++;
+      const x = ax(w.x + c * S), x2 = ax(w.x + (c2 + 1) * S), y = ay(f * S), y2 = ay((f2 + 1) * S);
+      const base = (f2 + 1) * S - 0.01;
+      // --- los bancos, uno a cada lado (sin respaldo): el asiento de tablas, su canto y las patas
+      for (const bc of [c - 1, c2 + 1]) {
+        if (casilla(bc, f) === '#' || casilla(bc, f) === undefined) continue;
+        const bx = ax(w.x + bc * S) + 3, bw = ax(w.x + (bc + 1) * S) - 3 - bx;
+        // 🔁 Más bajos *(Santi: "las mesas quedaron muy altas al igual que los bancos")*: el asiento a
+        // 7 puntos del piso (unos 45 cm, con la gente de 27 puntos).
+        const ALTO_BANCO = 7, by = y - ALTO_BANCO + 3, bh = y2 - ALTO_BANCO - by;
+        r(bx - 1, by - 1, bw + 2, bh + 4, 0);
+        r(bx, by, bw, bh, MAD);
+        r(bx, by, 1, bh, MAD_L);                                       // la orilla a la luz
+        r(bx + Math.floor(bw / 2), by, 1, bh, MAD_S);                  // la junta de las dos tablas
+        for (let q = by + 4; q < by + bh - 2; q += 5) if (deja(bx + 3, q, 11)) p(bx + 3 + (q % 3), q, MAD_S);
+        r(bx, by + bh, bw, 2, MAD_SS); r(bx, by + bh, bw, 1, MAD_S);    // el canto
+        const pata = y2 - (by + bh + 2);
+        for (const px of [bx + 1, bx + bw - 3]) { r(px - 1, by + bh + 2, 4, pata, 0); r(px, by + bh + 2, 2, pata - 1, MAD_SS); }
+        muebles.push({ x: bx - 1, y: by - 1, w: bw + 2, h: y2 - by + 1, base });
+      }
+      // --- la mesa: la tapa de tablas, su canto y las patas
+      // 🔁 La tapa a 11 puntos del piso (unos 75 cm): el canto de 3 y las patas de 8.
+      const ALTO_MESA = 11, ancho = x2 - x - 4, ty = y - ALTO_MESA + 2, hondo = y2 - ALTO_MESA - ty;
+      r(x + 1, ty - 1, ancho + 2, hondo + 5, 0);
+      r(x + 2, ty, ancho, hondo, MAD);
+      r(x + 2, ty, ancho, 1, MAD_L);
+      for (let q = ty + 7; q < ty + hondo - 2; q += 7) r(x + 2, q, ancho, 1, MAD_S);   // las juntas de las tablas
+      // La orilla de adelante, gastada de tanto apoyar los codos (clara, salteada).
+      for (let q = 0; q < ancho; q++) if (hash(x + q, ty) < 0.55) p(x + 2 + q, ty + hondo - 1, MAD_L);
+      // La veta y las marcas de los jarros (anillos oscuros), más donde hay luz.
+      for (let k = 0; k < 6; k++) {
+        const vx = x + 4 + Math.floor(hash(c * 7 + k, f) * (ancho - 8)), vy = ty + 2 + Math.floor(hash(k, c * 5 + f) * (hondo - 5));
+        if (!deja(vx, vy, 12 + k)) continue;
+        if (k < 2) { p(vx, vy, MAD_S); p(vx + 2, vy, MAD_S); p(vx + 1, vy - 1, MAD_S); p(vx + 1, vy + 1, MAD_S); }
+        else for (let q = 0; q < 3 + k % 3; q++) p(vx + q, vy, k % 2 ? MAD_S : MAD_L);
+      }
+      // Una astilla: un pedazo que falta en una esquina de adelante.
+      const astilla = hash(c, f + 31) < 0.5 ? x + 3 : x + ancho - 1;
+      p(astilla, ty + hondo - 1, 0); p(astilla + 1, ty + hondo - 1, 0); p(astilla, ty + hondo - 2, MAD_S);
+      r(x + 2, ty + hondo, ancho, 3, MAD_SS); r(x + 2, ty + hondo, ancho, 1, MAD_S);   // el canto
+      const pata = y2 - (ty + hondo + 3);
+      for (const px of [x + 4, x2 - 6]) { r(px - 1, ty + hondo + 3, 4, pata, 0); r(px, ty + hondo + 3, 2, pata - 1, MAD_SS); }
+      // --- lo de encima: 0 servida, 1 a medio comer, 2 vacía
+      const estado = Math.floor(hash(c * 3 + 1, f * 5 + w.colStart) * 3);
+      const filasPlato = [ty + Math.round(hondo * 0.22), ty + Math.round(hondo * 0.62)];
+      const lados = [x + 4, x2 - 13];
+      lados.forEach((lx, li) => filasPlato.forEach((py, pi) => {
+        const k = li * 2 + pi, h = hash(c + k, f + 17);
+        if (estado === 2 && h < 0.6) return;
+        dibujo(lx + (li ? 0 : 1), py, estado === 0 ? PLATO_LLENO : estado === 1 && h < 0.5 ? PLATO_MEDIO : PLATO, LATA);
+        if (h > 0.35) dibujo(li ? lx - 5 : lx + 8, py - 1, JARRO, LATA);
+      }));
+      const cx = x + Math.floor(ancho / 2);
+      if (estado < 2) dibujo(cx - 2, ty + Math.round(hondo * 0.3), CAFETERA, LATA);
+      if (estado === 0) dibujo(cx - 3, ty + Math.round(hondo * 0.62), PAN, LATA);
+      muebles.push({ x: x + 1, y: ty - 1, w: ancho + 2, h: y2 - ty + 1, base });
     }
   }
 
@@ -376,6 +546,13 @@ function vagon(train, w, dia) {
   for (const a of asientos) {
     const [mx, my] = enMundo(a.x, a.y);
     resultado.altas.push(pieza(recorte(asi, a.x, a.y, a.w, a.h), a.w, a.h, mx, my, a.base));
+  }
+  if (muebles.length) {
+    const me = iluminado(MESAS);
+    for (const m of muebles) {
+      const [mx, my] = enMundo(m.x, m.y);
+      resultado.altas.push(pieza(recorte(me, m.x, m.y, m.w, m.h), m.w, m.h, mx, my, m.base));
+    }
   }
   const yF = ay(yPisoAbajo - tc.alturaParedBaja);
   const [, myF] = enMundo(0, yF);

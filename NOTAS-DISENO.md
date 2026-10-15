@@ -18226,7 +18226,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
 | P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
-| P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
+| P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | 🔨 el comedor ✅ (falta su gente) |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
 | P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
@@ -18962,6 +18962,43 @@ y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo d
     igual que apuntando de costado y en diagE (¿que el caño apunte al piso?), y el **Colt en
     diagonal** mide casi lo que el Winchester. Quedan menores sin tocar (tajo 3, la maleta, el
     aturdido, el diario en diagonal, codos de los sentados de espaldas).
+
+### 🔨 P4 · LOS OTROS VAGONES — primero el tren de pasajeros entero
+
+*(Santi: "quiero primero terminar el tren de pasajeros")*. El orden: comedor → dormitorio → primera
+clase / guardias → correo → blindado → caboose. (El tren veloz se borró de todos lados, 2026-10-15:
+quedan sus mecánicas, que usa el de carga.)
+
+**El contraste entre la gente común y los ricos** (charlado con Santi antes del comedor), sin clichés:
+- **Lo pobre es gastado, no destruido:** lo que se usa mucho y se arregla como se puede (la madera sin
+  barniz con la orilla gastada, una astilla, la cortina anudada porque la barra no corre, una mancha,
+  un agujerito). Nada de ruina, ratas ni mugre.
+- **Lo rico se nota en el cuidado y el espacio, no en el oro:** todo hace juego, alineado, con lugar
+  libre; las superficies brillan (un punto de luz en la madera lustrada o en la copa); el bronce,
+  poco. El pobre está lleno y apretado; el rico tiene aire.
+- **La luz y la gente también:** en el comedor, faroles más tenues y gente apretada compartiendo mesa;
+  en primera clase, más luz pareja y uno o dos por mesa. (La vela en cada mesa, para primera clase.)
+
+**✅ El comedor, el de la gente común** (`comedor` en world/estiloNuevo/vagones.js; sin mozo, Santi:
+"en la primer clase sí que pueden haber estas cosas"):
+- **Las paredes del de pasajeros con cortinas** de tela cruda desteñida en los ventanales del fondo
+  *(Santi eligió mezclarlas)*: casi todas anudadas a un costado o corridas a medias, alguna con una
+  mancha o un agujerito, y una sola por vagón caída y rasgada abajo. **De día abiertas, de noche
+  cerradas** *(Santi)*. Los faroles, un 20% más tenues.
+- **Las mesas de madera pelada** con las juntas, la orilla gastada, marcas de jarros y una astilla; la
+  tapa a 11 puntos del piso (unos 75 cm). Encima, la vajilla de lata esmaltada blanca con el borde
+  azul: platos en las puntas (donde se sienta la gente), jarros, la cafetera y el pan en el medio;
+  unas servidas, otras a medio comer, otras vacías.
+- **Bancos sin respaldo** *(Santi eligió la B de dos siluetas)*, uno a cada lado, a 7 puntos (unos 45
+  cm) *(Santi: "las mesas quedaron muy altas al igual que los bancos")*.
+- **La pared de adelante, del grueso de la del de pasajeros** *(Santi: "lo siento más chico… por la
+  pared de más acá")*: el comedor tiene una sola fila de pared y se dibujaba finita; ahora crece para
+  afuera (no tapa a nadie). La del fondo no (la cámara no llega y quedaba cortada). **Cada vagón con
+  su color** en la cara de afuera, como en el galope *(Santi eligió la B: "cada vagón debería tener su
+  color para poder distinguirlo")*.
+- 🧪 El atajo [4] del campamento ahora va al comedor.
+- **Falta su gente:** sentada en los bancos, con dos poses nuevas (comer y tomar del jarro) más las que
+  ya hay (el diario, fumar, de noche dormido sobre la mesa). Silueta primero.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

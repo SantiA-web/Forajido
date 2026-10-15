@@ -18937,6 +18937,16 @@ el sombrero: el bastón y la maleta, como están *(Santi: "vamos solo con el som
   (`SOMBRERO_SUELTO.paja` en gente.js). Sobresale un poco del almohadón hacia el pasillo. Cuando
   va arriba de él (sentado del lado de la ventana), dos puntos más allá: le tapaba la cabeza
   *(Santi: "córrelo un par de pixeles más allá")*. **Con esto P3b queda cerrada.**
+- **✅ El pasajero se cubre en el piso en el pánico** *(Santi: "una pose que es como que se cubren
+  en el piso… mirando hacia el pasillo"; eligió la B de tres siluetas)*: en vez de temblar sentado,
+  se arrodilla junto a su asiento con las manos en la cabeza y los codos afuera, hasta que grita y
+  huye. Sólo de frente (los de los asientos de arriba) y de espaldas (los de abajo): mira al
+  pasillo. De frente las manos van detrás de la cabeza y no se ven; de espaldas, las pantorrillas
+  apoyadas en el piso se abren en V con las suelas y el taco a la vista (*"parece que tiene pies
+  cortitos"* con las suelas solas). De rodillas, el flaco tiene los muslos un punto más finos por
+  lado y el gordito uno más gruesos (y la funda del guardia rendido se corre con el muslo).
+  🐛 De paso: el brazo que llega a la cabeza (manos en la cabeza o arriba) ya no se corre con los
+  cuerpos anchos; la mano se despegaba y el ala quedaba agujereada.
 - **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
   poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
   (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del

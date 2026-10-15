@@ -453,11 +453,19 @@ function pasajeroNuevo(r, pa, pies) {
   const tiembla = pa.state === 'panic' || pa.state === 'amenazado';
   const shake = tiembla ? Math.sin(pa.shakeTimer * 40) * 1 : 0;
   const revelaT = pa.revelando ? Math.min(1, pa.revelaProgreso / ENCUBIERTO_DURACION) : 0;
-  const sentado = pa.sentado && (pa.state === 'idle' || pa.state === 'amenazado' || pa.state === 'panic') && !pa.revelando;
+  /**
+   * 🆕 EN EL PÁNICO SE TIRA AL PISO *(Santi: "una pose que es como que se cubren en el piso…
+   * mirando hacia el pasillo"; eligió la B)*: de rodillas junto a su asiento, las manos en la
+   * cabeza, hasta que grita y huye. Los de arriba (contra la pared del fondo) miran de frente;
+   * los de abajo, de espaldas. (Se ordena como el sentado, delante de su asiento.)
+   */
+  const cubierto = pa.state === 'panic' && pa.sentado && !pa.revelando && !pa.dormido;
+  const sentado = pa.sentado && (pa.state === 'idle' || pa.state === 'amenazado' || pa.state === 'panic') && !pa.revelando && !cubierto;
   const nuevo = { arma: null, funda: false, aspecto };
   let angulo = pa.facing;
   if (sentado) nuevo.piernas = 'sentado';
   if (pa.state === 'cowering') { nuevo.piernas = 'agachado'; nuevo.accion = 'quieto'; }
+  if (cubierto) { nuevo.piernas = 'rodillas'; nuevo.brazos = 'cubrirse'; angulo = pa.y < 5 * CONFIG.tileSize ? Math.PI / 2 : -Math.PI / 2; }
   /**
    * 🆕 AL DESPERTARSE SE PONE EL SOMBRERO *(Santi)*: dormido lo tiene en el banco
    * al lado; en 0,6 s lo agarra (0,3) y se lo pone (0,3).

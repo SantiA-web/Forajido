@@ -350,6 +350,10 @@ VISTAS.diagF.piernas.piso = mapa(25, ['.......IITTttt', '........IITtttt', '....
 VISTAS.espalda.piernas.piso = mapa(25, ['.......IITTTtt', '.......tttttt']);
 VISTAS.diagE.piernas.piso = mapa(25, ['.......tttTTII', '........tttTT']);
 // 🔁 La funda, más corta: de rodillas llegaba al piso y parecía un tercer pie (los jueces).
+// 🆕 De espaldas, de rodillas (el pasajero que se cubre en el pánico): los muslos derechos y las
+// pantorrillas apoyadas en el piso, abiertas en V hacia nosotros, con las suelas y el taco a la vista
+// *(Santi: "parece que tiene pies cortitos en vez de estar arrodillado")*.
+VISTAS.espalda.piernas.rodillas = mapa(22, ['.......IITTTtt', '.......IIT.Ttt', '.......IIT.TTt', '......ItT...tTt', '.....KOOK...KOOK', '.....KKKK...KKKK']);
 VISTAS.frente.piernas.rodillas = mapa(22, ['......FIITTTtt', '......fIIT.Ttt', '.......IIT.TTt', '.......III.TTt', '.......ttt.ttt']);
 
 // ------------------------------------------------- las piernas que se mueven
@@ -958,6 +962,14 @@ const BRAZOS = {
     espalda: [{ p: [[13, 9], [16, 5], [16, 0]] }, { p: [[6, 9], [3, 5], [3, 0]] }],
     diagE: [{ p: [[13, 9], [16, 5], [16, 0]] }, { p: [[6, 9], [3, 5], [3, 0]], atras: true }],
   },
+  // 🆕 CUBRIÉNDOSE (el pasajero en el pánico, de rodillas en el piso) *(Santi eligió la B)*: las
+  // manos en la cabeza y los codos afuera. Sólo de frente y de espaldas: mira al pasillo.
+  cubrirse: {
+    // 🔁 De frente las manos van detrás de la cabeza y no se ven: sólo los codos *(Santi)*.
+    // (La derecha en la columna 11: en la 12 asomaba al costado del bombín, que es angosto.)
+    frente: [{ p: [[7, 9], [4, 6], [8, 2]], bajo: true }, { p: [[13, 9], [16, 6], [11, 2]], bajo: true }],
+    espalda: [{ p: [[13, 9], [16, 6], [12, 2]] }, { p: [[6, 9], [3, 6], [7, 2]] }],
+  },
   cartas: {
     lado: [{ p: [[10, 9], [11, 13], [13, 13]] }, { p: [[9, 9], [10, 13], [12, 12]], atras: true }],
     frente: [{ p: [[7, 9], [7, 12], [8, 14]] }, { p: [[13, 9], [13, 12], [11, 14]] }],
@@ -1478,10 +1490,12 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0));
     if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo + bi, COLOR_ARMA);
     const cartasAntes = brazos === 'cartas';
+    // (Los brazos con `bajo`: las manos detrás de la cabeza, que las tapa.)
+    con(PARTE.brazoBajoCabeza, () => BR.forEach((b, i) => { if (b.bajo && !b.atras) brazoPose(b, i); }));
     if (!cartasAntes) dibujarCabeza(baja + cabezaY + bc, inclina + cabezaX + bi + bx, true);
     if (vaina) dibujarVaina();
     con(cartasAntes ? PARTE.brazoBajoCabeza : PARTE.brazo, () => {
-      BR.forEach((b, i) => { if (!b.atras) brazoPose(b, i); });
+      BR.forEach((b, i) => { if (!b.atras && !b.bajo) brazoPose(b, i); });
       if (cartasAntes && CARTAS[vista]) dibujarMapa(CARTAS[vista], baja, inclina + lomo, { L: 30, k: 9 });
     });
     if (cartasAntes) dibujarCabeza(baja + cabezaY + bc, inclina + cabezaX + bi, false);
@@ -1671,6 +1685,27 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         if (i >= 0 && j - i >= 5) { nuevo[f + i] = -1; nuevo[f + j] = -1; }
       }
     }
+    /**
+     * 🆕 DE RODILLAS, LOS MUSLOS SEGÚN EL CUERPO *(Santi: "achicar los muslos del flaco y aumentar un
+     * poco el del gordito")*: de frente y de espaldas, en las filas de los muslos (de frente también
+     * las rodillas), el flaco pierde el punto de afuera de cada pierna y el gordito suma uno.
+     */
+    if (piernas === 'rodillas' && (vista === 'frente' || vista === 'espalda') && (cuerpo === 'flaco' || cuerpo === 'gordito')) {
+      for (let j = 0; j < (vista === 'frente' ? 5 : 3); j++) {
+        const f = (22 + j + OY) * ANCHO;
+        let i = -1, d = -1;
+        // (Sin la funda del guardia, que cuelga al costado del muslo.)
+        const esFunda = (c) => c === C.F || c === C.f;
+        for (let x = 0; x < ANCHO; x++) if (nuevo[f + x] >= 0 && dn[f + x] === PARTE.piernas && !esFunda(nuevo[f + x])) { if (i < 0) i = x; d = x; }
+        if (i < 0 || d - i < 4) continue;
+        // La funda (si la hay, pegada al muslo de la izquierda) se corre con el muslo.
+        const funda = esFunda(nuevo[f + i - 1]) ? nuevo[f + i - 1] : null;
+        if (funda != null) { nuevo[f + i - 1] = -1; dn[f + i - 1] = 0; }
+        if (cuerpo === 'flaco') { nuevo[f + i] = -1; nuevo[f + d] = -1; dn[f + i] = 0; dn[f + d] = 0; }
+        else { nuevo[f + i - 1] = nuevo[f + i]; dn[f + i - 1] = PARTE.piernas; nuevo[f + d + 1] = nuevo[f + d]; dn[f + d + 1] = PARTE.piernas; }
+        if (funda != null) { const fx = cuerpo === 'flaco' ? i : i - 2; nuevo[f + fx] = funda; dn[f + fx] = PARTE.piernas; }
+      }
+    }
     // 3. La panza del gordito, de frente y en diagonal de frente.
     if (cuerpo === 'gordito' && (vista === 'frente' || vista === 'diagF')) {
       const camisa = [C.L, C.C, C.c, sombrear(C.c, -1)];
@@ -1727,7 +1762,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
           }
         }
         const medio = suyos.reduce((s, k) => s + (k % ANCHO), 0) / suyos.length;
-        const sentido = vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
+        // 🐛 El brazo que llega a la cabeza (las manos en la cabeza o arriba) no se corre: si no, la mano
+        // se despegaba de la cabeza y el ala del sombrero quedaba con el agujero donde estaba el brazo.
+        const aLaCabeza = suyos.some((k) => Math.floor(k / ANCHO) < yHombro - 1);
+        const sentido = aLaCabeza ? 0 : vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
         for (const k of suyos) {
           const x = k % ANCHO, y = (k - x) / ANCHO, nx = x + sentido * (vista === 'lado' ? 1 : corrida(y));
           if (nx < 0 || nx >= ANCHO) continue;

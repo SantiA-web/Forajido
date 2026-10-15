@@ -415,7 +415,9 @@ function sombreroEnElBanco(r, pa) {
   const abajoLibre = pa.y + S < pa.asientoBase;           // ¿hay lugar abajo de él en el banco?
   pa.sombreroArriba = !abajoLibre;
   // 🔁 Pegado a él, no en el medio del otro lugar *(Santi: "más cerca del civil dormido")*.
-  const y = (abajoLibre ? pa.y + SEPARA_SOMBRERO : pa.y - SEPARA_SOMBRERO) + pa.hh - 5;
+  // 🔁 Arriba de él (sentado del lado de la ventana), dos puntos más allá: el de paja, ancho, le tapaba
+  // la cabeza *(Santi: "córrelo un par de pixeles más allá")*.
+  const y = (abajoLibre ? pa.y + SEPARA_SOMBRERO : pa.y - SEPARA_SOMBRERO - 2 * PASO) + pa.hh - 5;
   const x = pa.asientoX + 1;
   return {
     antes: !abajoLibre,
@@ -463,10 +465,10 @@ function pasajeroNuevo(r, pa, pies) {
   if (pa.dormido) pa._p3Dormia = true;
   else if (pa._p3Dormia) { pa._p3Dormia = false; pa._p3Desperto = ahora; }
   /**
-   * Sólo el bombín tiene su dibujo suelto en el banco: el de paja y el que no usa
-   * sombrero se despiertan sin buscarlo (el de paja, hasta B6, aparece puesto).
+   * El bombín y el de paja tienen su dibujo suelto en el banco (🆕 B6, el de paja); el
+   * que no usa sombrero se despierta sin buscarlo.
    */
-  const sombreroSuelto = aspecto.sombrero === 'bombin';
+  const sombreroSuelto = aspecto.sombrero === 'bombin' || aspecto.sombrero === 'paja';
   const despertando = sombreroSuelto && sentado && pa._p3Desperto != null && ahora - pa._p3Desperto < 0.6;
   if (pa.dormido) { nuevo.accion = 'dormido'; nuevo.k = Math.floor(ahora / 1.4) % 2; }
   else if (pa.state === 'amenazado') nuevo.brazos = 'arriba';

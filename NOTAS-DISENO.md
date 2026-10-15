@@ -18331,7 +18331,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
-| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ · P3b: B1-B4 ✅, sigue B5 |
+| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ · P3b ✅ · sigue P3c |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
@@ -18845,9 +18845,10 @@ Primera clase y las mujeres quedan para después.
 Seis pasos: **B1** el sorteo con lo ya dibujado · **B2** barbas finas en las 5 vistas ·
 **B3** ropa (el guardia con chaleco o chaqueta corta, 1 de cada 2; el civil con chaleco,
 tiradores o camisa sola, larga o arremangada) · **B4** cuerpos (normal 55, gordito 15,
-flaco 15, hombros anchos 15) · **B5** las acciones mientras fuma · **B6** detalles (el
+flaco 15, hombros anchos 15) · ~~**B5** las acciones mientras fuma~~ · **B6** detalles (el
 sombrero suelto según el suyo, el bastón, soltar la maleta). Lo que lleva dibujo nuevo,
-con silueta primero.
+con silueta primero. 🔁 **B5 afuera** *(Santi: "es más dibujo que no aporta nada")*; de **B6** sólo
+el sombrero: el bastón y la maleta, como están *(Santi: "vamos solo con el sombrero")*.
 - **✅ B1, el sorteo** *(Santi: "primero quiero que metas las variantes con las que no
   tienes que dibujar… y pone la probabilidad de las pieles")*: cada uno sale con su
   aspecto y lo guarda todo el asalto (`sortearAspecto` / `aspectoDe` en gente.js),
@@ -18929,6 +18930,13 @@ con silueta primero.
     chaleco rojo con la estrella; sigue la forma del cuerpo un punto más por lado (el
     gordito, recta desde los hombros); las mangas del grosor normal; corta un punto debajo
     del cinto. **De costado no ensancha nada: sólo cambia el color** *(Santi)*.
+- **✅ B6, el sombrero de paja suelto** *(Santi eligió la B de tres siluetas)*: el de paja que se
+  duerme también lo deja en el otro lugar del banco y al despertarse lo agarra y se lo pone (antes
+  sólo el bombín; el de paja se quedaba sin sombrero). En tres cuartos, un poco desde arriba: la
+  copa, el ala de atrás asomando, la cinta y el ala de adelante a la luz; 14 puntos de ancho
+  (`SOMBRERO_SUELTO.paja` en gente.js). Sobresale un poco del almohadón hacia el pasillo. Cuando
+  va arriba de él (sentado del lado de la ventana), dos puntos más allá: le tapaba la cabeza
+  *(Santi: "córrelo un par de pixeles más allá")*. **Con esto P3b queda cerrada.**
 - **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
   poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
   (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del

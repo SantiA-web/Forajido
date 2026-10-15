@@ -774,7 +774,15 @@ const DORMIDO_LADO = mapa(6, [
  * almohadón del otro. Es un dibujo suelto (ver `lienzoSombreroSuelto`): el
  * bombín de costado, con la base en (3, 3).
  */
-const SOMBRERO_SUELTO = mapa(0, ['..hHk', '.hHHHk', '.bbbbb', 'hHHHHHk']);
+/**
+ * 🆕 B6 · EL DE PAJA TAMBIÉN *(Santi eligió la B)*: visto en tres cuartos, un poco desde
+ * arriba: la copa, el ala de atrás asomando a los costados, la cinta y el ala de adelante
+ * (su cara de arriba, a la luz). La luz, arriba a la izquierda.
+ */
+const SOMBRERO_SUELTO = {
+  bombin: mapa(0, ['..hHk', '.hHHHk', '.bbbbb', 'hHHHHHk']),
+  paja: mapa(0, ['.....hHHk.....', '..hhhHHHHkkk..', 'hhhhbbbbbbkkkk', '.hhHHHHHHHkkk.']),
+};
 
 /** La maleta y el bolso, en el piso al lado (`[cerrada, abierta]`), por vista. */
 const EQUIPAJE = {
@@ -1083,8 +1091,9 @@ export function lienzoSombreroSuelto(o, luz = 0) {
   let g = sueltos.get(clave);
   if (g) return g;
   const col = { ...C, ...capasPersona({ vista: 'lado', ...o }).colores };
-  const W = 9, H = 6, idx = new Int16Array(W * H).fill(-1);
-  SOMBRERO_SUELTO.filas.forEach((f, j) => { for (let x = 0; x < f.length; x++) if (f[x] !== '.') idx[(j + 1) * W + x + 1] = col[f[x]]; });
+  const M = SOMBRERO_SUELTO[o.sombrero] || SOMBRERO_SUELTO.bombin;
+  const W = Math.max(...M.filas.map((f) => f.length)) + 2, H = M.filas.length + 2, idx = new Int16Array(W * H).fill(-1);
+  M.filas.forEach((f, j) => { for (let x = 0; x < f.length; x++) if (f[x] !== '.') idx[(j + 1) * W + x + 1] = col[f[x]]; });
   if (!o.fino) {
     const lleno = idx.slice();
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -1097,7 +1106,7 @@ export function lienzoSombreroSuelto(o, luz = 0) {
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   cv.getContext('2d').putImageData(new ImageData(datos, W, H), 0, 0);
-  g = { img: cv, base: [4, 5] };
+  g = { img: cv, base: [Math.floor(W / 2), H - 1] };
   sueltos.set(clave, g);
   return g;
 }

@@ -29,8 +29,6 @@ nada. Lo que sí le pasa a los dos es la capa de variedad (clima, redada, puerta
 trabada, comportamientos) — antes era exclusiva del estándar, o sea que la mitad
 de los asaltos no la veía nunca.
 
-**El tren veloz quedó en reserva** (`peso: 0`), con sus seis vagones cortos
-intactos. Lo único que se pierde de verdad es su reloj de 90 s.
 
 ### 2. El vagón almacén, y el tren de carga sin blindado
 
@@ -325,7 +323,7 @@ la sesión pasada le cambió el eje: ya no es sólo *qué te encontrás adentro*
 
 ### En reserva (construidos, medidos, apagados)
 
-El **tren veloz** (`peso: 0`), la dificultad **Alta vigilancia** (`peso: 0`), y en
+La dificultad **Alta vigilancia** (`peso: 0`), y en
 `src/data/modifiers.js` el **Pistolero** (ojo: se apagó ANTES de que se arreglaran
 sus dos bugs, así que nunca se lo vio funcionando bien) y el **civil encubierto**.
 Son llaves, no amputaciones.
@@ -337,5 +335,5 @@ src/data/objetos.js     el catálogo de mercadería: niveles, formas, valores
 src/data/perista.js     las reglas de precio (limpio + escalones de honor)
 src/engine/grilla.js    la grilla que acomoda bultos (no sabe nada de western)
 src/data/wagons.js      el vagón `almacen`, y las siluetas del botín físico
-src/data/train.js       los dos tipos de tren, y el veloz en reserva
+src/data/train.js       los dos tipos de tren
 ```

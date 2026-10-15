@@ -69,8 +69,7 @@ export const PAQUETES = {
      * NOTAS-DISENO.md: era el ÚNICO paquete, así que la capa entera queda vacía,
      * y con ella "cualquier vagón común puede ser el que más plata lleva".
      *
-     * Es una llave, no una amputación — la misma decisión que el tren veloz y
-     * Alta vigilancia. Subir el peso lo devuelve al sorteo.
+     * Es una llave, no una amputación — la misma decisión que Alta vigilancia. Subir el peso lo devuelve al sorteo.
      */
     peso: 0,
     /** Necesita gente a bordo: sin pasajeros no hay a quién hacer rico. */
@@ -153,14 +152,10 @@ export const PAPELES_QUE_DICEN = 3;
  */
 export const ESCONDITES = {
   pasajeros: ['ventana', 'asiento'],
-  pasajeros_corto: ['ventana', 'asiento'],
   comedor: ['mesa'],
-  comedor_corto: ['mesa'],
   correo: ['mesa'],
-  correo_corto: ['mesa'],
   correo_liviano: ['mesa'],
   ganado: ['corral'],
-  ganado_corto: ['corral'],
   /**
    * EL VAGÓN DE ARMAS (Fase 6a). Entra en la lista aunque no lleve caja fuerte
    * propia, y no es una contradicción: las cajas del catálogo de un vagón son

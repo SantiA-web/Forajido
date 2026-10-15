@@ -340,7 +340,7 @@ export const CONFIG = {
    * EL RADIO ES LA DISPERSIÓN DE VERDAD, no un símbolo de ella:
    * `tan(spread) × distancia al punto donde apuntás`. Por eso el círculo se
    * abre solo cuando apuntás lejos (que es exactamente lo que le pasa a la
-   * bala) y por eso **el balanceo del tren veloz se ve**: `dispersionExtra` ya
+   * bala) y por eso **el balanceo del traqueteo se ve**: `dispersionExtra` ya
    * se sumaba al disparo desde que existe el traqueteo, y ahora esa suma tiene
    * dónde mostrarse. No hubo que inventar una señal nueva para un sistema
    * viejo: alcanzó con dibujar el número que ya estaba.
@@ -1120,7 +1120,7 @@ export const CONFIG = {
      * ninguna conducta de grupo que pueda aparecer.
      *
      * Y EL TREN NO TENÍA LA CULPA: con el jugador plantado, la alarma sonando y
-     * sin disparar un tiro, sí se juntan (hasta 4 en el veloz). Lo que rompía
+     * sin disparar un tiro, sí se juntan (hasta 4). Lo que rompía
      * los grupos era la velocidad a la que el jugador mata: dos tiros de Colt
      * son 0,42 s, así que cada guardia moría antes de que llegara el siguiente.
      * Medido, las llegadas se parten en dos poblaciones: los del vagón propio o
@@ -1361,8 +1361,7 @@ export const CONFIG = {
     /**
      * CUÁNTO DURA UN DESMAYO (culata por la espalda, ver data/melee.js).
      *
-     * 25 s es más de la mitad del asalto más corto (el tren veloz, 90 s) y casi
-     * un sexto del estándar (145 s): alcanza de sobra para cruzar el vagón,
+     * 25 s es casi un sexto de un asalto (145 s cuando se decidió): alcanza de sobra para cruzar el vagón,
      * abrir lo que haya y salir. O sea que noquear SÍ resuelve el problema — lo
      * que no hace es resolverlo para siempre, y ésa es toda la diferencia con
      * el cuchillo.
@@ -2356,13 +2355,12 @@ export const CONFIG = {
      *
      * `adelanto` es a qué distancia del jugador se suelta; `pistaMinima` es lo
      * que no se negocia: si en el vagón no entra ese tramo entre el barril y
-     * vos, NO aparece. Sin eso, en un vagón corto (el tren veloz los tiene de
-     * 224px) podría nacer prácticamente encima tuyo, y este juego no tiene un
+     * vos, NO aparece. Sin eso, en un vagón corto (de 224px) podría nacer
+     * prácticamente encima tuyo, y este juego no tiene un
      * solo peligro que no se pueda ver venir.
      *
      * `pistaMinima` BAJÓ de 170 a 150 cuando la velocidad subió, y parece al
-     * revés pero no lo es: con 170 y los vagones cortos del tren veloz, el
-     * barril sólo podía nacer si estabas en el primer cuarto del vagón, así
+     * revés pero no lo es: con 170, en un vagón corto el barril sólo podía nacer si estabas en el primer cuarto del vagón, así
      * que casi nunca aparecía. 150px a 135 px/s siguen siendo 1,1 segundos de
      * aviso quieto (0,7 si vas corriendo de frente contra él), que alcanza
      * para leerlo y correrte — el hueco entre asientos más cercano está
@@ -2407,8 +2405,8 @@ export const CONFIG = {
    *
    * Hasta acá el tren era el escenario, o a lo sumo (con `rodante`) algo que
    * te tira cosas encima. Esto es un paso más: EL PROPIO PISO deja de ser
-   * confiable un rato. Sólo el tren veloz lo tiene (`TRAIN_TYPES.veloz.
-   * traqueteoCada`); el estándar y el de carga quedan intactos.
+   * confiable un rato. Sólo lo tiene el tren que trae `traqueteoCada` (hoy,
+   * el de carga); el de pasajeros queda intacto.
    *
    * TRES TIEMPOS, siempre los mismos, y es la regla que sostiene todo el
    * sistema: nada te agarra de sorpresa.

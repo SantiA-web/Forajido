@@ -86,16 +86,9 @@
  * ---------------------------------------------------------------------------
  * DOS TRENES, Y SE DISTINGUEN POR SU CONTENIDO — no por su reloj.
  *
- * *(Santi: "que a partir de ahora no haya más tren veloz, sino tren de
- * pasajeros y el de carga. Ya no sería este es el rápido, este el lento y este
- * el punto medio, sino que su contenido sería diferente")*
- *
- * ANTES ERAN TRES Y EL EJE ERA LA VELOCIDAD: rápido (veloz, 90 s), lento
- * (carga, 165 s) y punto medio (estándar, 145 s). Eso es un eje de DIFICULTAD
- * disfrazado de variedad — un tren que se distingue por su reloj es el mismo
- * tren con otro cronómetro. La prueba está en el historial del veloz, tres
- * vueltas de calibración discutiendo un único número (ver `raidDuration` en la
- * entrada de abajo, que quedó en reserva).
+ * *(Santi: "su contenido sería diferente")*. Un tren que se distingue por su
+ * reloj es el mismo tren con otro cronómetro: es un eje de DIFICULTAD
+ * disfrazado de variedad.
  *
  * Y HABÍA UN PROBLEMA MÁS GRANDE, MEDIBLE: `modificadores: true` lo tenía sólo
  * el estándar. O sea que el clima, la redada, la puerta trabada, los
@@ -116,9 +109,8 @@
  *     Rodantes, traqueteo, estampida, el vagón de armas con su pólvora y su
  *     Dinamitero, y el botín que pesa. Ningún mini jefe.
  *
- * LOS RODANTES Y EL TRAQUETEO SE MUDARON AL DE CARGA POR LA FICCIÓN, y no por
- * conveniencia: un barril que se suelta en el pasillo ES carga suelta. Nunca
- * pertenecieron a "el tren rápido" — pertenecen al tren que lleva carga.
+ * LOS RODANTES Y EL TRAQUETEO SON DEL DE CARGA POR LA FICCIÓN, y no por
+ * conveniencia: un barril que se suelta en el pasillo ES carga suelta.
  *
  * Y DEJAN A LA ETAPA 2 DE LA PÓLVORA A UN PASO, pero **todavía no la
  * resuelven**: el sacudón "acelera" suelta barriles y cajones de utilería
@@ -210,102 +202,6 @@ export const TRAIN_TYPES = {
     gente: true,
 
     color: '#c9b68d',
-  },
-
-  /**
-   * ⚠️ EN RESERVA (`peso: 0`) — YA NO SALE SORTEADO.
-   *
-   * *(Santi: "que a partir de ahora no haya más tren veloz")*. Su eje era la
-   * velocidad, que es el eje que se descartó (ver la nota grande de arriba), y
-   * sus dos mecánicas —rodantes y traqueteo— se mudaron al de carga, que es
-   * donde pertenecían por ficción.
-   *
-   * ES UNA LLAVE, NO UNA AMPUTACIÓN, igual que "Alta vigilancia" acá abajo y
-   * que el Pistolero en data/modifiers.js. Queda entero: sus seis vagones
-   * cortos siguen escritos a mano en data/wagons.js (`pasajeros_corto` y
-   * compañía) y nadie más los nombra. Subirle el peso lo devuelve al juego sin
-   * tocar una línea.
-   *
-   * LO ÚNICO QUE SE PIERDE DE VERDAD ES EL RELOJ DE 90 s, y vale anotarlo: "¿un
-   * vagón más o me bajo?" a 90 s es una pregunta distinta que a 145. Si alguna
-   * vez se lo quiere de vuelta, la forma correcta ya no es un tipo de tren sino
-   * un ESTADO más en data/modifiers.js ("tren expreso: llega antes"), que se lo
-   * puede tocar a cualquiera de los dos.
-   *
-   * ---------------------------------------------------------------------------
-   * EL VELOZ — frenético, sin sigilo. Una apuesta distinta, no una versión
-   * más difícil del estándar: los vagones son mucho más cortos (variantes
-   * escritas a mano en `data/wagons.js`, no recortadas por código — la
-   * geometría de cada vagón está afinada a mano y se rompe si se recorta
-   * sola), así que el tren entero se cruza rápido... pero corre en tu contra.
-   *
-   * LO QUE CAMBIA respecto del estándar — y nada más: no mejora las armas de
-   * los guardias ni les agrega dinamita fuera del blindado.
-   *
-   *   1. `ruidoExtra: 1` — un disparo se oye un vagón más lejos de lo que ya
-   *      dice el arma (el Colt pasa de despertar 1 vagón a 2).
-   *   2. `sospechaMult: 1.5` — sospechan y gritan un 50% más rápido.
-   *   3. `raidDuration: 90` — ver la cuenta abajo, no es "menos tiempo" nomás.
-   *   4. `rodantesCada: 3.8` — EL TREN COMO ENEMIGO. Cada tanto se suelta una
-   *      TANDA de barriles y cajones que ruedan hacia la cola, y hay que
-   *      leerlos y elegir: salirte del pasillo o gastarles balas (aguantan 3
-   *      cada uno). Es lo que hace que este tren se sienta frenético de
-   *      verdad, y no sólo apurado — apretar el reloj solo, probado jugando,
-   *      daba tensión pero no vértigo. Vienen de a 2 o 3 y escalonados (ver
-   *      `rafagaGap` en CONFIG.rodante): de a uno se esquivaban demasiado
-   *      fácil, y con la tanda ya no alcanza con correrse y volver.
-   *   5. `traqueteoCada: 10` — EL PISO TAMBIÉN. Cada tanto el vagón se
-   *      bambolea (más dispersión, para todos) o el tren tironea (te empuja,
-   *      y si acelera te sacude encima una tanda extra de barriles). Ver
-   *      CONFIG.traqueteo para el porqué de cada número.
-   *
-   * Y el blindado va SIEMPRE al último vagón, pegado a la locomotora — no
-   * "vagón 3 o más adelante" como el estándar, sino una posición FIJA. Por
-   * eso usa `posicionFija` y no `posicionMinima`.
-   *
-   * SOBRE `raidDuration`: TRES VUELTAS, Y LAS TRES POR MEDIR ALGO DISTINTO.
-   *
-   * 1ª vuelta: 100s (-31% contra el estándar). Jugado, no se sintió
-   * frenético — Santi: "no me pasa eso al jugarlo". La causa apareció
-   * midiendo: el tren veloz mide un 55% de lo que mide el estándar (vagones
-   * a la mitad), pero el reloj sólo había bajado a un 69%. Sobraba MÁS
-   * tiempo por baldosa que en el estándar, no menos.
-   *
-   * 2ª vuelta: 70s, calculado para que el veloz exigiera más por píxel que
-   * el estándar (0,040 s/px contra 0,045). Jugado, esto sí apretaba — pero
-   * apretar el reloj solo, aislado, sólo da TENSIÓN. El vértigo de verdad
-   * (`rodantesCada`, `traqueteoCada`, ver arriba) se construyó DESPUÉS de
-   * fijar este número, y las dos cosas juntas comían más reloj del que 70s
-   * tenía pensado — Santi, jugándolo esta vez: sólo pudo sacar $200 de un
-   * tren que promedia ~$1400.
-   *
-   * 3ª vuelta: 90s. Y acá midió algo que vale la pena dejar anotado, porque
-   * corrige una suposición: un piloto que junta TODO lo que puede sin pelear
-   * (sortea barriles, roba, pero no hay un solo guardia armado) ya sacaba
-   * ~50% del tren CON LOS 70s VIEJOS. O sea que el reloj solo no era el
-   * cuello de botella — la plata que faltaba se fue peleando, no caminando.
-   * Subir a 90s no arregla eso (nada de lo que hay en `raidDuration` puede);
-   * lo que hace es dar colchón para que un combate que salió mal no te deje
-   * sin nada, que es lo que se sentía jugando con 70.
-   */
-  veloz: {
-    id: 'veloz',
-    name: 'Tren veloz',
-    short: 'VELOZ',
-    hint: 'Corto y nervioso. Todo pasa rápido — vos y ellos.',
-    pista: 'Poca carga, mucho apuro',
-    composition: [
-      'pasajeros_corto', 'pasajeros_corto', 'comedor_corto',
-      'correo_corto', 'ganado_corto', 'blindado_corto',
-    ],
-    posicionFija: { blindado_corto: 'ultima' },
-    peso: 0,
-    raidDuration: 90,
-    ruidoExtra: 1,
-    sospechaMult: 1.5,
-    rodantesCada: 3.8,
-    traqueteoCada: 10,
-    color: '#e0a13a',
   },
 
   /**
@@ -498,23 +394,17 @@ export const TRAIN_TYPES = {
     botinEnObjetos: true,
 
     /**
-     * LA CARGA SE SUELTA — mudado del tren veloz.
+     * LA CARGA SE SUELTA.
      *
-     * ⚠️ EL NÚMERO NO ES EL DEL VELOZ (3,8) Y NO PODÍA SERLO. Los rodantes
-     * estaban calibrados para vagones CORTOS: `CONFIG.rodante.pistaMinima` (150)
-     * exige que entre el barril y vos quepa ese tramo, y en los vagones de 224 px
-     * del veloz eso suprimía un montón de tandas antes de nacer (ver la nota de
-     * `pistaMinima` en config.js). En los vagones de este tren —de 384 a 640 px—
-     * no se suprime casi ninguna.
+     * `CONFIG.rodante.pistaMinima` (150) exige que entre el barril y vos quepa
+     * ese tramo; en los vagones de este tren —de 384 a 640 px— no se suprime casi
+     * ninguna tanda.
      *
-     * LA CUENTA: con 3,8 en un asalto de 165 s salían ~43 tandas de 2 o 3
-     * barriles, más de 100 barriles, prácticamente ninguna suprimida. Eso no es
-     * un tren traicionero: es una cinta transportadora. Con 14 salen ~12 tandas,
-     * o sea una cada catorce segundos — aproximadamente la MITAD del ritmo real
-     * que tenía el veloz una vez descontadas las suprimidas.
-     *
-     * Y tiene que ser la mitad y no el mismo, porque acá los rodantes no son la
-     * identidad del tren sino una traición ocasional: el que manda es el sigilo.
+     * LA CUENTA: con 3,8 en un asalto de 165 s saldrían ~43 tandas de 2 o 3
+     * barriles, más de 100 barriles. Eso no es un tren traicionero: es una cinta
+     * transportadora. Con 14 salen ~12 tandas, una cada catorce segundos: acá los
+     * rodantes no son la identidad del tren sino una traición ocasional, el que
+     * manda es el sigilo.
      *
      * ES UN NÚMERO CALCULADO, NO JUGADO. Es la primera perilla a mover si el
      * tren se siente atiborrado.
@@ -522,18 +412,14 @@ export const TRAIN_TYPES = {
     rodantesCada: 14,
 
     /**
-     * EL PISO TAMBIÉN — mudado del tren veloz, y también con otro número.
-     *
-     * El veloz tenía 10, que en un asalto de 90 s son ~9 sacudones. Acá 24 da
-     * ~7 en 165 s: el mismo orden de magnitud por asalto, repartido en un tren
-     * mucho más largo.
+     * EL PISO TAMBIÉN. 24 da ~7 sacudones en 165 s, repartidos en un tren largo.
      *
      * PERO EL 24 ESTÁ ELEGIDO PENSANDO EN LA ETAPA 2 DE LA PÓLVORA, que todavía
      * NO está construida: el día que la variante "acelera" tumbe un barril de
      * pólvora al pasillo (hoy suelta utilería, ver la nota de arriba), con 24
      * serían ~7 sacudones por asalto, la mitad "acelera" → unos **3 barriles
-     * tumbados** en un tren que trae 9-14. Con el 10 del veloz serían ~8: el
-     * tren se desarmaría solo y empujar barriles dejaría de ser tu jugada.
+     * tumbados** en un tren que trae 9-14. Con 10 serían ~8: el tren se
+     * desarmaría solo y empujar barriles dejaría de ser tu jugada.
      *
      * Salió de una tabla de tres (10 / 24 / 40) calculada contra cuántos
      * barriles tumba cada uno. Tampoco está jugado todavía.
@@ -588,8 +474,8 @@ export const TIPO_TREN_POR_DEFECTO = 'pasajeros';
  * DIFICULTAD DEL TREN.
  *
  * No es un nivel que sube solo con las partidas jugadas: es una propiedad DEL
- * TREN, independiente del tipo de tren (un Veloz puede viajar en Fácil o en
- * Alta, igual que el estándar). Cuando elegís qué vía asaltar en el mapa,
+ * TREN, independiente del tipo de tren (uno de carga puede viajar en Fácil o
+ * en Alta, igual que el de pasajeros). Cuando elegís qué vía asaltar en el mapa,
  * elegís esto también.
  *
  * `vidaExtra` se suma a la vida del tipo de guardia, con tope 4 (ver
@@ -674,7 +560,7 @@ export const DIFICULTAD_POR_DEFECTO = 'tranquilo';
  * sumen 100 —el total se calcula solo— pero están escritos como porcentajes
  * porque así se leen de un vistazo:
  *
- *   Tipo de tren:  50% pasajeros · 50% carga  (el veloz está en 0: no sale)
+ *   Tipo de tren:  50% pasajeros · 50% carga
  *   Dificultad:    65% fácil · 35% media  (alta está en 0: no sale)
  *
  * EL 50/50 NO ES PEREZA, es lo que hace que el vagón de armas siga apareciendo

@@ -137,7 +137,7 @@ export function createMapScene(services) {
 
   /**
    * Otro tren. El tipo trae consigo su formación de vagones: cambiar de tipo
-   * sin recomponer el tren dejaría un veloz hecho de vagones largos.
+   * sin recomponer el tren dejaría un tren con los vagones del otro.
    *
    * Clima, estado y comportamientos se sortean en el mismo momento: son
    * parte de qué SERVICIO es este tren, no de la escolta (que cambia en

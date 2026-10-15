@@ -743,7 +743,7 @@ function atropellar(bo, world) {
 
   /**
    * TE TIRA AL PISO. Se reusa `tumbar()`, el mismo estado que ya te deja un
-   * barril del tren veloz (entities/player.js): te suelta de la cobertura, te
+   * barril suelto (entities/player.js): te suelta de la cobertura, te
    * manda despedido y te deja sin poder disparar, moverte ni cubrirte. No hizo
    * falta inventar nada — y significa que el jugador ya sabe leer lo que le
    * pasó, porque es exactamente el mismo porrazo que ya conoce.

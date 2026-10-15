@@ -706,7 +706,7 @@ armas y el jugador nunca vio ninguno de esos números.
 El radio del círculo puede ser **la dispersión misma**, no un símbolo de ella:
 `tan(spread) × distancia al punto donde apuntás`. Y en cuanto se hace así,
 **un sistema viejo que era invisible pasa a verse gratis**: `dispersionExtra`
-—el sacudón del tren veloz, construido hace varias vueltas— ya se sumaba al
+—el sacudón del traqueteo, construido hace varias vueltas— ya se sumaba al
 disparo, y ahora esa suma tiene dónde mostrarse. El círculo se abre en tu cara
 durante un traqueteo. No hubo que inventar una señal nueva para un sistema
 viejo: alcanzó con dibujar el número que ya estaba.
@@ -779,7 +779,7 @@ vender **que se ve**: no un número en una ficha, un círculo que cierra distint
 *"Al estar con el shift contra una pared y tocás clic derecho, el círculo ya
 está cerradito"* — y esto encaja con una regla que el juego ya tenía escrita en
 otro lado: **estar pegado a una pared es estar afianzado**. Es exactamente el
-mismo motivo por el que el sacudón del tren veloz no te arrastra si estás
+mismo motivo por el que el sacudón del traqueteo no te arrastra si estás
 cubierto (CONFIG.traqueteo). Un tipo apoyado contra un marco no necesita ese
 tercio de segundo: ya tiene dónde apoyar el brazo.
 
@@ -1432,7 +1432,7 @@ reparten el tren sin pisarse, y eso no se sabía hasta medirlo.
 - **Sin compañero cerca: no se repliega** (confirmado con el compañero movido a
   400px).
 - **Una sola vez por guardia:** segundo golpe con 1 de vida → no se repite.
-- **Corridas completas** en estándar/carga/veloz, dificultades fácil y media:
+- **Corridas completas** en estándar/carga, dificultades fácil y media:
   sin errores de JS, sin guardias trabados, sin estados imposibles.
 - **Tiroteo contra un grupo** (el caso donde el sistema tiene que aparecer): se
   activó en las 3 corridas, y en una salió **el intercambio completo** — uno se
@@ -1586,8 +1586,7 @@ SOLO**. Nunca dos a la vez.
 
 **El juego no tiene la culpa, y se probó:** con el jugador plantado, la alarma
 sonando y **sin disparar un solo tiro**, sí se juntan — hasta 4 guardias en
-combate simultáneo en el tren veloz, 2 en el estándar y en el de carga, con
-pares a menos de 90px. El tren SABE juntar gente.
+combate simultáneo, con pares a menos de 90px. El tren SABE juntar gente.
 
 **Lo que rompe los grupos es la velocidad a la que el jugador mata.** Dos tiros
 de Colt son 0,42 s: cada guardia muere antes de que el siguiente llegue a
@@ -1753,7 +1752,7 @@ preciso es este revólver", y la decisión incorrecta si se quiere seguir
 leyendo "esta bala en particular va a pegar o no" — Santi eligió lo primero,
 con el argumento explícito de que el círculo mide al arma, no al tiro.
 
-**Lo que NO cambió, y sigue funcionando igual:** el balanceo del tren veloz
+**Lo que NO cambió, y sigue funcionando igual:** el balanceo del traqueteo
 (`traqueteo.dispersionExtra`) sigue abriendo el círculo en tu cara —eso
 describe el arma EN ESE INSTANTE, que es justo lo que el círculo ahora
 representa— medido: 4,2px en calma → 11,4px durante el sacudón.
@@ -2203,8 +2202,8 @@ más largo, ¿cómo podríamos cambiar la experiencia que obtiene el jugador?")*
 
 **El diagnóstico era correcto y vale anotarlo:** el de carga era una variación
 CUANTITATIVA (más vagones, menos guardias, más reloj) sin una decisión NUEVA.
-El estándar ya tenía su identidad —caminos y opciones— y el veloz la suya
-—reflejos y caos—. Al de carga le faltaba el polo opuesto del veloz.
+El estándar ya tenía su identidad —caminos y opciones—. Al de carga le
+faltaba la suya.
 
 **Se evaluaron cuatro opciones antes de elegir**, y conviene dejar las
 descartadas anotadas porque alguna puede volver:
@@ -2338,8 +2337,8 @@ cadáveres que existe desde la fase 2.
 se miden por `alcance` y no por el borde del vagón— pero entraban también al
 blindado, y eso rompía la regla más vieja del tren: **al blindado no se entra
 sin volar la puerta**. Ahora se frenan en su puerta. Se pregunta por
-`guardType === 'blindado'` y no por el nombre del vagón, así vale igual para el
-blindado largo y para el corto del tren veloz. Medido: la res se detiene
+`guardType === 'blindado'` y no por el nombre del vagón, así vale igual para
+cualquier vagón blindado. Medido: la res se detiene
 exactamente en el borde (x del blindado), sin entrar nunca.
 
 **2. Lo mata la segunda ESTAMPIDA, no la segunda res.** Yo lo había hecho al
@@ -2353,10 +2352,10 @@ tranquera y llegar antes de que se levante** — los 3 segundos del aturdimiento
 son el reloj de esa jugada.
 
 **3. El peso del botín es sólo del tren de carga.** Estaba aplicándose a los
-tres, y eso le borraba la identidad a los otros dos: el estándar tiene su
-decisión en los caminos y el veloz en el reflejo. Pasó a ser un campo del tipo
+trenes, y eso le borraba la identidad al estándar, que tiene su decisión en
+los caminos. Pasó a ser un campo del tipo
 de tren (`pesaElBotin`), como todo lo demás en este archivo. Medido: con $828 y
-$918 encima y la alarma sonando, estándar y veloz siguen a 78 px/s; el de carga
+$918 encima y la alarma sonando, el estándar sigue a 78 px/s; el de carga
 con $1053 baja a 62.
 
 **La regla de fondo, otra vez la misma:** cada cosa nueva es una propiedad del
@@ -2401,22 +2400,13 @@ barril lado a lado — ahora se distinguen de un vistazo.
 
 ## ✅ HECHA · Tipos de tren y niveles de dificultad — la primera respuesta al botín concentrado
 
-*(pedido de Santi: tres tipos de tren y tres niveles de dificultad, como
+*(pedido de Santi: tipos de tren y tres niveles de dificultad, como
 catálogos — mismo patrón que `WEAPONS`, `HORSES` y `DIFICULTADES`)*
 
-**Tres tipos de tren, en `data/train.js` (`TRAIN_TYPES`):**
+**Los tipos de tren, en `data/train.js` (`TRAIN_TYPES`):**
 
 - **Estándar** — el de siempre, sin tocar.
-- **Veloz** — frenético, sin sigilo, y una apuesta EXPLÍCITAMENTE distinta a
-  las otras dos, no una versión "más difícil" del estándar. Sólo tres cosas
-  cambian, y nada más (ni armas de los guardias, ni dinamita fuera del
-  blindado): los disparos se oyen un vagón más lejos (`ruidoExtra: 1`, se
-  suma al `noiseWagons` del arma sin tocarlo), la sospecha y el grito van
-  ×1.5 (`sospechaMult`), y el asalto dura 100s en vez de 145. Y el blindado va
-  SIEMPRE al último vagón, pegado a la locomotora — una regla de composición
-  nueva, `posicionFija`, separada de `posicionMinima` que sigue usando el
-  estándar.
-- **De carga** — el opuesto: 8 vagones, mayoría mercancía (`correo_liviano`,
+- **De carga** — el otro: 8 vagones, mayoría mercancía (`correo_liviano`,
   `ganado`), casi sin pasajeros, MENOS guardias en total pese a tener más
   vagones (11 contra los ~12 del estándar de 6), y el asalto dura un poco más
   (165s). Es la primera respuesta real a la nota de acá abajo.
@@ -2433,17 +2423,17 @@ línea de base.
 juego. Ahora cada guardia nace con `e.ai` (`entities/enemy.js`), una copia de
 `CONFIG.enemy` con lo que le toque encima — mismo patrón que ya usan con la
 vida vía `guardHealth()`. Un guardia sin overrides se comporta exactamente
-igual que antes; uno de un tren "dura" trae los overrides de dificultad, y uno
-de un tren "veloz" además multiplica la sospecha encima de eso (las dos cosas
-se combinan si coinciden: medido, sospecha `2.75 × 1.5 = 4.125`).
+igual que antes; uno de un tren "dura" trae los overrides de dificultad, y un
+tipo de tren con `sospechaMult` multiplica la sospecha encima de eso (las dos
+cosas se combinan si coinciden: medido, sospecha `2.75 × 1.5 = 4.125`).
 
 **El mapa sortea, no fija.** `data/region.js` tenía `composicion`/`dificultad`
 reservados en `null`, pensados como "el tren fijo de esa vía". Se sacaron: en
 vez de eso, `scenes/mapScene.js` sortea tipo de tren + dificultad + composición
 CADA VEZ que el cursor entra en una vía con servicio (no una vez por ruta, no
 un timer — un sorteo por cada vez que volvés a mirar), y el cartucho de abajo
-lo muestra. Medido por consola, la misma vía dio `carga/dura`, `veloz/
-escoltado`, `veloz/tranquilo`, `carga/dura` en cuatro entradas seguidas.
+lo muestra. Medido por consola, la misma vía dio combinaciones distintas en
+cuatro entradas seguidas.
 
 **Un bug real que apareció construyendo esto, y no tenía que ver con lo
 nuevo:** `raidScene.js` tenía `TRAIN.length` (6, fijo) hardcodeado para saber
@@ -2455,43 +2445,10 @@ siempre con `CONFIG.enemy` puro, sin importar la dificultad).
 
 **Verificado por consola** (motor manejado a mano, sin poder ver la pantalla
 componiendo cuadros): las 9 combinaciones de tipo×dificultad construyen sin
-avisos de colocación (apareció uno real —un centinela del blindado corto
-sobre un pilar— y se corrigió); el blindado corto siempre sale último en el
-veloz; la duración y el bono de ruido llegan correctos al asalto; un disparo
-de Colt en un tren veloz emite `wagons: 2` (1 del arma + 1 del tren); y el
+avisos de colocación; la duración y el bono de ruido llegan correctos al
+asalto; y el
 cartucho del mapa se vio con `foto.ps1`, las cinco líneas legibles dentro del
 recuadro.
-
-### TERCERA VUELTA · El tren veloz no se sentía frenético, y el reloj no alcanzaba
-
-*(Santi, jugándolo: "el tren veloz no solo quería que fuera más rápido, sino
-más frenético, que el jugador no tenga tiempo ni de pensar. Por qué no me pasa
-eso al jugarlo?")*
-
-**La causa apareció midiendo, no jugando, y era una cuenta de proporciones.**
-El tren veloz mide un **55%** de lo que mide el estándar (los vagones son la
-mitad de largos), pero el reloj sólo había bajado a un **69%** (100s contra
-145s). O sea que, por baldosa de tren, **sobraba MÁS tiempo que en el
-estándar**. Nada te obligaba a apurarte, así que se jugaba con la misma cautela
-de siempre y el vértigo no aparecía nunca.
-
-**Primer arreglo: `raidDuration` de 100 a 70.** El criterio no fue el gusto: el
-estándar exige ~0,045 segundos por píxel de tren, y 70s le da al veloz 0,040 —
-más ajustado que el estándar, que era lo que faltaba. Medido con el bot torpe
-de siempre (camina derecho, no se cubre, no pelea): cruzar el tren entero ida y
-vuelta son ~52s, así que quedan ~17s de verdad para hacer algo. Y el bot muere
-casi siempre en el veloz... pero **también muere casi siempre en el estándar**,
-o sea que el reloj más corto no lo volvió más letal, sólo más exigente.
-
-**Y jugado, eso tampoco era lo que buscaba.** Santi: *"ahora sí se siente más
-que el tiempo es ajustado y te aprieta. Pero no es lo que buscaba. Yo pensaba
-en cosas como que el tren sea el enemigo a vencer."*
-
-**Ahí está la lección que vale más que el número:** *apretar el reloj produce
-TENSIÓN, no VÉRTIGO.* Son cosas distintas y se construyen distinto. La tensión
-sale de un recurso que se agota mientras decidís; el vértigo sale de que te
-pasen cosas encima que te obliguen a reaccionar sin pensar. El reloj no podía
-dar lo segundo por más que se lo bajara.
 
 ### ✅ HECHA · El tren como enemigo — barriles y cajones sueltos
 
@@ -2527,9 +2484,8 @@ castigo por el error más fácil de cometer.
 proyecto:**
 
 1. **Nunca aparece sin `pistaMinima` (170px) de pista entre el barril y vos.**
-   Si el vagón no da para eso, ese turno no se suelta nada. Los vagones del
-   tren veloz miden 224px, así que sin esta regla podía nacer prácticamente
-   encima — y en este juego no hay un solo peligro que no se pueda ver venir
+   Si el vagón no da para eso, ese turno no se suelta nada. En un vagón corto
+   (224px), sin esta regla podía nacer prácticamente encima — y en este juego no hay un solo peligro que no se pueda ver venir
    (el guardia levanta el arma, la mecha parpadea, el cartel entra en pantalla).
 2. **Se caen del tren en el enganche.** El barril que llega al borde del vagón
    se va al vacío. Eso le da al enganche —que no tiene cobertura y te deja
@@ -2546,9 +2502,7 @@ volviendo te alcanzan por la espalda.** La misma cosa se lee distinto según
 para dónde vayas.
 
 **Y es una propiedad del TIPO DE TREN** (`rodantesCada` en `data/train.js`), no
-una regla del juego: hoy sólo el veloz suelta carga. Un tipo de tren sin ese
-campo se comporta como siempre. Verificado que el estándar y el de carga no
-sueltan nada en 15 segundos.
+una regla del juego. Un tipo de tren sin ese campo se comporta como siempre.
 
 #### Dos cosas que hubo que arreglar mirándolas, no midiéndolas
 
@@ -2594,8 +2548,7 @@ avanza por el pasillo sin esquivar nunca:
 | Aviso mínimo (corriendo de frente) | 1,16 s | **0,78 s** |
 
 **Y `pistaMinima` BAJÓ de 170 a 150 al mismo tiempo que la velocidad subía, que
-parece al revés y no lo es.** Con 170px y los vagones cortos del veloz (224px
-el de ganado), el barril sólo podía nacer si estabas en el primer cuarto del
+parece al revés y no lo es.** Con 170px, en un vagón corto (224px), el barril sólo podía nacer si estabas en el primer cuarto del
 vagón — o sea que casi nunca aparecía, que es justamente lo que Santi estaba
 notando. El aviso real sigue siendo de 1,1s quieto y 0,7s en el peor caso
 (corriendo de frente), y el hueco entre asientos más cercano está siempre a
@@ -2758,39 +2711,6 @@ efecto"* — y con eso construido (ver la vuelta de arriba), la razón para
 dejarla afuera desapareció. Quedó como el sistema del "tren traicionero",
 completo.
 
-#### CUARTA VUELTA · El reloj de 70s no era el problema, pero igual hacía falta más
-
-*(Santi, después de jugarlo con barriles y traqueteo juntos: "se siente muy
-bien... pero le añadiría que el jugador tenga más segundos para hacer el
-asalto. Sólo pude sacar $200 al probarlo")*
-
-**Antes de tocar el número, medí qué lo estaba comiendo de verdad.** Armé un
-piloto que junta TODO lo que puede sin pelear —sortea barriles, va derecho a
-cada botín, nunca se cubre porque no hay de qué cubrirse— con los guardias
-neutralizados. Con los 70s viejos, ese piloto ya sacaba **~50% del tren**
-($700-900 de un total que promedia ~$1400).
-
-**Eso corrige una suposición, no confirma la queja tal cual.** El reloj SOLO
-no era el cuello de botella — con margen de sobra y sin pelear, alcanza. La
-plata que le faltó a Santi jugando de verdad se le fue **peleando**, no
-caminando: cada guardia que hay que resolver, cada vez que te cubrís a
-esperar que baje la sospecha, cada tiro que falla por el balanceo, come
-segundos que mi piloto sin combate nunca gasta.
-
-**Y aun así, subir el reloj es la decisión correcta — por un motivo distinto
-al que parecía.** No es que 70s "no alcance para robar": es que 70s no
-perdona un combate que sale mal. Con el margen tan finito, una pelea de más
-te puede dejar sin nada aunque hayas jugado bien el resto. `raidDuration`
-subió a **90s** (+29%): sigue siendo bastante más ajustado que el estándar
-(145s, y el veloz mide 55% de esa distancia), pero deja colchón para el
-combate real, que es donde de verdad se está yendo el tiempo.
-
-**Lo que no se tocó, a propósito:** ni `rodantesCada` ni `traqueteoCada`. La
-medición no encontró nada mal en esos dos sistemas — el problema nunca fue
-"vienen demasiado seguido", fue que el reloj alrededor de ellos (y del
-combate) era demasiado corto. Tocar el síntoma correcto es tan importante
-como no tocar los que están bien.
-
 ### SEGUNDA VUELTA · Los trenes dejaron de ser un sorteo y pasaron a ser trenes
 
 *(idea de Santi, y arregla algo que la primera versión había hecho mal: "un
@@ -2839,8 +2759,7 @@ paradas para que se sorteen, y un salto de un minuto se las saltearía todas.
 
 ### Las probabilidades, y una llave que queda puesta
 
-Tipo de tren **50% estándar · 30% veloz · 20% carga**. Escolta **65% fácil ·
-35% media**. Medido sobre 20.000 tiradas: 50,2 / 29,5 / 20,3 y 64,7 / 35,3.
+Escolta **65% fácil · 35% media**. Medido sobre 20.000 tiradas: 64,7 / 35,3.
 
 **Alta vigilancia queda con `peso: 0`, o sea construida y apagada.** Todo el
 sistema de perfil de IA por guardia existe justamente para ella y sigue
@@ -5009,10 +4928,9 @@ juego cobra todo desde la fase 2.
 | **Revólver** (≤90px) | Sucio y rápido: lo que saca cuando le quedaste encima |
 | **Activo desde** | El segundo 0. No espera la alarma ni que hagas ruido |
 
-**Por qué sólo en el estándar, y no es una limitación técnica:** el veloz ya
-tiene su enemigo propio (el tren mismo: barriles y traqueteo) y el de carga
-tiene el suyo (la pregunta del sigilo). Meterle un cazador encima a esos dos
-les taparía la identidad que costó construirles. El estándar es el que tiene
+**Por qué sólo en el estándar, y no es una limitación técnica:** el de carga
+tiene su enemigo propio (la pregunta del sigilo). Meterle un cazador encima le
+taparía la identidad que costó construirles. El estándar es el que tiene
 lugar libre — su decisión son los caminos, y un cazador que te corta el camino
 JUEGA con eso en vez de pisarlo.
 
@@ -5024,7 +4942,7 @@ vagón sí funciona — lo que no funciona nunca es que se olvide de vos.**
 
 ### La embestida, y por qué la ventana de castigo es el corazón de todo
 
-Tres tiempos, el mismo lenguaje que el traqueteo del tren veloz y la mecha de
+Tres tiempos, el mismo lenguaje que el traqueteo y la mecha de
 la dinamita: **avisa, pega, y se recupera.**
 
 1. **AVISO** (0,55 s) — se planta en seco y encara. Una línea gruesa parpadeante
@@ -5468,7 +5386,7 @@ ganarse asalto a asalto, como corresponde.
 
 Tres movimientos más quedaron **diseñados y sin construir**, a propósito: uno
 solo, jugarlo, y recién después los otros — la misma disciplina que se usó con
-los barriles del tren veloz.
+los barriles sueltos.
 
 | Idea | Qué haría |
 |---|---|
@@ -5504,12 +5422,9 @@ fase 2 — por eso no necesita ni vida extra ni movimientos de firma.
 
 ### Cómo aparece — y la idea de Santi que mejoró la propuesta
 
-Yo había propuesto un umbral duro ("a partir de 600 aparece") y en el tren
-VELOZ. Santi corrigió las dos cosas:
+Yo había propuesto un umbral duro ("a partir de 600 aparece"). Santi lo corrigió,
+y va al estándar:
 
-- *"En el veloz ya es sumamente complicado"* — y tenía razón: ese tren ya tiene
-  su propio enemigo (barriles y traqueteo). Meterle un jefe encima era **apilar
-  dos sistemas de presión que no se hablan entre sí**. Va al estándar.
 - *"No pondría una condición tan marcada. Más bien: cuando tenés entre 599 y
   899 hay una probabilidad de que aparezca"* — y esto es mejor diseño que lo
   que propuse. **Un umbral fijo se aprende una vez y después es un trámite**
@@ -5524,8 +5439,8 @@ VELOZ. Santi corrigió las dos cosas:
 
 **Las bandas NO se superponen a propósito:** nunca hay ambigüedad sobre cuál de
 los dos te tocó, ni riesgo de comerte los dos juntos. Verificado: 599 → nada,
-600-899 → sólo Sheriff, 900+ → sólo Cazarrecompensas, y nunca aparece en veloz
-ni en carga. La probabilidad medida sobre 4000 tiradas dio **39,7%** contra el
+600-899 → sólo Sheriff, 900+ → sólo Cazarrecompensas, y nunca aparece en el de
+carga. La probabilidad medida sobre 4000 tiradas dio **39,7%** contra el
 40% esperado.
 
 Y **ya viaja en el tren** cuando subís — no aparece tarde como el
@@ -7119,10 +7034,10 @@ después de que esto ya estaba armado. `TRAIN_TYPES` suma un campo opcional,
 `sortearClima`/`sortearEstadoTren` si el tipo de tren que salió lo tiene; si
 no, el tren queda fijo en despejado y sin ningún estado — mismo patrón que
 ya usan `rodantesCada`, `traqueteoCada`, `estampida` y `pesaElBotin`: un
-campo que decide si un sistema aplica, no el sistema en sí. La razón: el
-veloz y el de carga ya tienen su propia identidad muy afinada (traqueteo,
-rodantes, estampida, el botín que pesa), y sumarles capas encima todavía no
-se probó. Abrirles el sorteo más adelante es sólo agregarles el campo — no
+campo que decide si un sistema aplica, no el sistema en sí. La razón: el de
+carga ya tiene su propia identidad muy afinada (traqueteo,
+rodantes, estampida, el botín que pesa), y sumarle capas encima todavía no
+se probó. Abrirle el sorteo más adelante es sólo agregarles el campo — no
 hace falta tocar la arquitectura.
 
 **DÓNDE SE SORTEAN Y CÓMO VIAJAN:** en `mapScene.js`, junto con el tipo de
@@ -7154,8 +7069,8 @@ durante el galope) → `raidScene`, que es donde de verdad hacen algo.
   guardias del tren vivos y reaccionando. Confirma lo que pedía probar esta
   fase — que la arquitectura combina antes de apilarle contenido.
 - Después de agregar `modificadores: true` sólo al estándar: adelantando el
-  mapa 24.000 segundos simulados, **veloz (616 muestras) y carga (405
-  muestras) salieron el 100% de las veces despejado y sin ningún estado**;
+  mapa 24.000 segundos simulados, **carga (405 muestras) salió el 100% de
+  las veces despejado y sin ningún estado**;
   el estándar (1043 muestras) siguió sorteando normal — tormenta 18,8% (vs
   20%), algún estado 7,2% (vs 8%).
 
@@ -8345,7 +8260,7 @@ decirte qué.
   no hacen nada** (progreso 0, sigue invisible); al robar al pasajero que
   sabe, se revela; recién ahí se abre, y tarda 8,02 s.
 - Camino real desde el mapa: 55% de los trenes estándar traen paquete y
-  **0 fugas** a los tipos veloz y de carga.
+  **0 fugas** al de carga.
 - Corrida completa de 60 s con todo encendido: sin errores ni avisos.
 
 **NO JUGADO POR SANTI TODAVÍA.**
@@ -8527,7 +8442,7 @@ de una.
 
 - Chance por tren: **25,0%** sobre 100.000 tiradas. Camino real desde el mapa
   (15 minutos de simulación, 70 trenes estándar sorteados de verdad): **29%**
-  con caja, y **0 fugas** al veloz y al de carga.
+  con caja, y **0 fugas** al de carga.
 - Jugado por consola de punta a punta: amenazás al que sabe → sale la pista y
   **la caja sigue oculta** → vas al lugar → aparece → se abre en 8,02 s.
 - Corrida completa de 60 s con todo encendido: sin errores ni avisos.
@@ -8910,7 +8825,7 @@ rojos gordos asomando por arriba con su banda clara.
 
 - **Sorteo, 20.000 tiradas:** 49,0% de los trenes estándar traen el vagón (50%
   configurado), nunca junto al ganado (lo reemplaza), **nunca en el vagón 1**,
-  y 0 apariciones en el veloz y en el de carga.
+  y 0 apariciones en el de carga.
 - **Geometría:** 30 columnas parejas, filas 4-5 con `+` en los bordes,
   ventanillas alineadas con los huecos entre estanterías, y **cero avisos** de
   cosas colocadas sobre tiles sólidos.
@@ -9227,14 +9142,14 @@ cuestión de físicas")*.
 
 Por eso `F` no es tanto "empujar" como **destrabar**: lo soltás y el tren hace el
 resto, estés parado donde estés. Es la misma física que el juego ya tenía escrita
-desde el tren veloz. Y tiene un costo que no hay que explicar: si estás del lado
+en el traqueteo. Y tiene un costo que no hay que explicar: si estás del lado
 de la cola, sale hacia vos.
 
 `F` era el cuerpo a cuerpo alternativo y ahora es contextual, como `[E]`: si hay
 un cajón al alcance lo empuja, si no golpea. **La ruedita del mouse sigue siendo
 siempre el cuchillo**, así que ninguna de las dos formas de pegar se pierde.
 
-Reusa entero el sistema `rodante` del tren veloz (rodar, tumbar al jugador,
+Reusa entero el sistema `rodante` (rodar, tumbar al jugador,
 caerse en el enganche, reventarse a tiros) y le agrega tres reglas propias:
 
 - **Rompe la puerta que se le cruce**, de un golpe. Salvo la de chapa del
@@ -9725,9 +9640,7 @@ geométrico: **no lo despega, sólo le va sacando vecinos**. En los vagones 3, 4
 5 tiene dos; recién en el 6 tiene uno solo, y por eso ahí cae a la mitad. Y la
 regla literal de Santi falla por lo mismo — "después" incluye "justo después".
 
-También se descartó **"blindado siempre último"** (que sí bajaba a 24%) por dos
-costos: le copia al **tren veloz** la regla que lo distinguía del estándar
-(`posicionFija: 'ultima'`, puesta a propósito para que no se parezcan), y aleja
+También se descartó **"blindado siempre último"** (que sí bajaba a 24%) porque aleja
 el premio más grande de una posición media de 4,5 a 6,0, encareciendo la
 pregunta que sostiene la fase 2.
 
@@ -9760,8 +9673,8 @@ Queda repartido entre el 2 (50%), el 3 (33%) y el 4 (17%).
 - **Cuesta 1,18 barajadas** de más en promedio y **nunca falló** en 30.000
   intentos (el sorteo reintenta hasta 50 veces).
 - Las cuatro escenas, un mapa corriendo 90 s (que sortea trenes de verdad), un
-  asalto de 90 s con todo encendido, y 500 sorteos del **tren veloz** y del **de
-  carga** —que no llevan la regla nueva— sin un error.
+  asalto de 90 s con todo encendido, y 500 sorteos del **de carga** —que no
+  lleva la regla nueva— sin un error.
 
 ---
 
@@ -9846,8 +9759,8 @@ alcanza**; si lo que medís es un ciclo, muestreá por cuadro.
   perilla de 25%. Las siete combinaciones válidas aparecen todas.
 - El vagón de armas queda en el 2 (38%), 3 (24%), 4 (12%) y 5 (25%).
 - Las cuatro escenas, un mapa corriendo 90 s (que sortea trenes de verdad), un
-  asalto de 90 s con todo encendido, y 2.000 sorteos del **tren veloz** y del
-  **de carga** —que no llevan ninguna de estas reglas— sin un error.
+  asalto de 90 s con todo encendido, y 2.000 sorteos del **de carga** —que no
+  lleva ninguna de estas reglas— sin un error.
 
 ---
 
@@ -10267,20 +10180,16 @@ no una decisión, y las notas que salen de un accidente se convierten en deuda.
 
 ---
 
-## ✅ HECHA · Se acabó el "rápido / lento / punto medio": dos trenes que se distinguen por su contenido
+## ✅ HECHA · Dos trenes que se distinguen por su contenido
 
-*(Santi: "quiero hacer algo que tal vez sea catastrófico [...] que a partir de
-ahora no haya más tren veloz, sino tren de pasajeros (el estándar) y el de carga
-[...] Ya no sería este es el rápido, este el lento y este el punto medio, sino
-que su contenido sería diferente. ¿Qué piensas honestamente?")*
+*(Santi: "tren de pasajeros (el estándar) y el de carga [...] su contenido sería
+diferente. ¿Qué piensas honestamente?")*
 
-### Por qué el eje viejo estaba mal
+### Por qué el reloj no alcanza para distinguirlos
 
-Los tres tipos se distinguían por **la velocidad**: veloz 90 s, estándar 145 s,
-carga 165 s. Eso es un eje de DIFICULTAD disfrazado de variedad — un tren que se
-distingue por su reloj es el mismo tren con otro cronómetro. La prueba está en
-el historial del propio veloz: **tres vueltas de calibración discutiendo un solo
-número** (100 → 70 → 90).
+Si los trenes se distinguen por **la velocidad** (estándar 145 s, carga 165 s),
+es un eje de DIFICULTAD disfrazado de variedad: un tren que se distingue por su
+reloj es el mismo tren con otro cronómetro.
 
 Y había un problema más grande, y medible: **`modificadores: true` lo tenía sólo
 el estándar**. O sea que el clima, la redada, la puerta trabada, los
@@ -10302,9 +10211,8 @@ mecánicas"*; se convirtió en regla dura:
 | Mecánicas | paquete, caja oculta, testigos, encubierto, Cazarrecompensas, Sheriff | rodantes, traqueteo, estampida, vagón de armas + pólvora, el botín que pesa |
 | Capa de variedad | clima, estado, comportamientos, tipos de guardia | **lo mismo** |
 
-**Los rodantes y el traqueteo se mudaron al de carga por la ficción, no por
-conveniencia**: un barril que se suelta en el pasillo ES carga suelta. Nunca
-pertenecieron a "el tren rápido".
+**Los rodantes y el traqueteo son del de carga por la ficción, no por
+conveniencia**: un barril que se suelta en el pasillo ES carga suelta.
 
 Y apareció sola una lectura que nadie buscó: en el tren del sigilo, un rodante
 no es un peligro de combate —no saca vida— pero **el porrazo se oye**
@@ -10335,16 +10243,6 @@ tren distinto de punta a punta" habría pasado a ser "un tren con pólvora en do
 lugares". Se le agregaron a `correo_liviano`, que además es donde más sentido
 tiene (un furgón de correo liviano es carga estibada).
 
-### Qué se perdió, dicho claro
-
-**El reloj de 90 s.** Es lo único real que se va con el veloz: "¿un vagón más o
-me bajo?" a 90 s es una pregunta distinta que a 145. El tren quedó **en reserva
-con `peso: 0`** (llave, no amputación — igual que Alta vigilancia y el
-Pistolero) y sus seis vagones cortos siguen escritos en `data/wagons.js`. Si
-alguna vez se lo quiere de vuelta, el lugar correcto ya no es un tipo de tren
-sino **un estado más** ("tren expreso"), que se le puede tocar a cualquiera de
-los dos.
-
 ### El riesgo que queda vivo
 
 **El de carga pasó del 20% al 50% del sorteo**: es el tren MENOS jugado de los
@@ -10355,8 +10253,7 @@ menos es su `peso`.
 
 ### VERIFICADO POR CONSOLA
 
-- **120.000 trenes sorteados**: 50/50 exacto entre los dos tipos, el veloz nunca
-  sale. **El vagón de armas aparece en el 12,5% de TODOS los asaltos** — el
+- **120.000 trenes sorteados**: 50/50 exacto entre los dos tipos. **El vagón de armas aparece en el 12,5% de TODOS los asaltos** — el
   mismo número que antes de la reestructuración, sin haber tocado su `chance`
   (0,25 sobre un tren que pasó de ser el 50% a ser el 50%).
 - **Las reglas de posición del vagón de armas sobreviven a los ocho vagones**:
@@ -10655,10 +10552,8 @@ Las puertas de chapa se decidían buscando el vagón **por id**:
 const blindadoWagon = wagons.find((w) => w.id === 'blindado');
 ```
 
-O sea que **el blindado corto del tren veloz nunca tuvo puertas de chapa**: eran
-de madera y se abrían empujando. En ese tren, al blindado se entraba caminando.
-Nadie lo vio nunca porque el veloz quedó en reserva antes de que alguien probara
-esa puerta. Con la marca en la plantilla, queda arreglado de paso.
+O sea que **un blindado con otro id no tenía puertas de chapa**: eran de madera y
+se abrían empujando. Con la marca en la plantilla, queda arreglado de paso.
 
 ### VERIFICADO POR CONSOLA
 
@@ -11269,7 +11164,7 @@ dormitorio 40, especial 32, plataforma 24, góndola 28, refrigerado 32, cerrado
 | Carga | 4.256 px, 165 s | **4.528 px (+6%)** |
 
 **Los dos trenes quedan del mismo largo, y los dos duran ~180 s.** Encaja con lo
-que se dijo al sacar el tren veloz: un tren que se distingue por su reloj es
+que se dijo al separar los dos trenes: un tren que se distingue por su reloj es
 dificultad disfrazada. Ahora sólo los separa lo que traen adentro. La góndola le
 suma al de carga +5,7 s por pasada sin sumarle largo.
 
@@ -15499,8 +15394,7 @@ puntos al lado de una persona de 80) se veían como una manchita en la veta.
 Quedaron en 7×16 la botella y 7×8 la lata, con el borde oscuro de los demás
 objetos. Siguen siendo discretas, que para un adorno está bien.
 
-⚠️ **Los vagones van por su `id` exacto.** Las variantes cortas del tren veloz
-(`pasajeros_corto`...) no cuentan; ese tren ya no sale sorteado. Con el reparto
+⚠️ **Los vagones van por su `id` exacto.** Con el reparto
 actual salen **unas 12 por tren de pasajeros y unas 2 por tren de carga**: en
 el de carga sólo viaja gente en el caboose.
 

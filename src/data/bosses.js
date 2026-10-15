@@ -394,7 +394,7 @@ export const BOSSES = {
      * LA EMBESTIDA — su movimiento de firma, y la única cosa del juego que
      * hace un enemigo y que no es "dispararte" ni "pegarte".
      *
-     * TRES TIEMPOS, igual que el traqueteo del tren veloz (CONFIG.traqueteo) y
+     * TRES TIEMPOS, igual que el traqueteo (CONFIG.traqueteo) y
      * que la mecha de la dinamita: **avisa, pega, y se recupera**. Ningún
      * peligro de este juego aparece sin telegrafiarse, y un jefe no es la
      * excepción — al contrario, es donde más importa.
@@ -605,9 +605,7 @@ export const BOSSES = {
      *
      * Y va al de PASAJEROS, no al de carga: el de carga ya es caos con los
      * barriles y el traqueteo, y meterle un jefe encima es apilar dos sistemas
-     * de presión que no se hablan entre sí. (Cuando esto se escribió, el que
-     * llevaba los barriles era el tren veloz; la razón no cambió, cambió de
-     * tren.)
+     * de presión que no se hablan entre sí.
      */
     bountyMinimo: 600,
     bountyMaximo: 899,

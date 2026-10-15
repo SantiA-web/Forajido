@@ -80,7 +80,7 @@ export function updateBullets(bullets, dt, world) {
        * una cobertura que aguanta tres tiros y después te mata.
        *
        * Y LOS PRENDE CUALQUIER BALA, NO SÓLO LA TUYA. Es lo contrario de la
-       * regla de los barriles del tren veloz (justo acá abajo), y es a
+       * regla de los barriles sueltos (justo acá abajo), y es a
        * propósito: aquel es un problema que el juego te pone a VOS para que
        * elijas cómo resolverlo, y éste es un lugar donde **nadie** quiere
        * tirotear. Un guardia que te tira y falla también puede volar el
@@ -139,7 +139,7 @@ export function updateBullets(bullets, dt, world) {
           // se revientan. Dispararle a tu propia manada no la frena.
           if (!ro.balea || !ro.alive || !pointInBody(b.x, b.y, ro)) continue;
           /**
-           * LOS BARRILES DEL TREN VELOZ SÓLO LOS REVIENTAN TUS BALAS: que un
+           * LOS BARRILES SUELTOS SÓLO LOS REVIENTAN TUS BALAS: que un
            * guardia te resolviera el problema de casualidad sería sacarte una
            * decisión que el juego te puso a vos.
            *

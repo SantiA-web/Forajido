@@ -1819,8 +1819,8 @@ export function createRaidScene(services) {
    *
    * NACEN EN TU MISMO VAGÓN, hacia el lado de la locomotora, y NUNCA sin
    * `pistaMinima` píxeles de pista entre el barril y vos. Ese es el
-   * compromiso que hace justo al sistema: en un vagón corto del tren veloz
-   * (224px) un barril podría nacer prácticamente encima, y en este juego no
+   * compromiso que hace justo al sistema: en un vagón corto (224px) un barril
+   * podría nacer prácticamente encima, y en este juego no
    * hay un solo peligro que no se pueda ver venir.
    */
   function updateRodantes(dt) {
@@ -1964,7 +1964,7 @@ export function createRaidScene(services) {
    * regla más vieja del tren: **al blindado no se entra sin volar la puerta**.
    *
    * Se pregunta por `guardType` y no por el nombre del vagón para que valga
-   * igual en el blindado largo y en el corto del tren veloz.
+   * igual en cualquier vagón blindado.
    */
   function chocaConElBlindado(ro) {
     const vagon = train.wagons[train.wagonAt(ro.x)];
@@ -1974,7 +1974,7 @@ export function createRaidScene(services) {
   /**
    * EL CAJÓN DE PÓLVORA EMPUJADO, cuadro a cuadro. Devuelve true si se terminó.
    *
-   * Tiene tres reglas propias que un barril del tren veloz no tiene, y las
+   * Tiene tres reglas propias que un barril suelto no tiene, y las
    * tres salen de que **esto es un arma tuya y no una molestia del tren**.
    */
   function actualizarPolvora(ro) {
@@ -2283,8 +2283,8 @@ export function createRaidScene(services) {
    * hora del asalto")*
    *
    * SIEMPRE HACIA LA COLA, NUNCA HACIA LA LOCOMOTORA, y no es una limitación
-   * de comodidad: es la física que este juego ya tiene escrita desde el tren
-   * veloz — el tren acelera, y lo que está suelto adentro se va para atrás. Por
+   * de comodidad: es la física que este juego ya tiene escrita en el
+   * traqueteo — el tren acelera, y lo que está suelto adentro se va para atrás. Por
    * eso `F` no es tanto "empujar" como **destrabar**: lo soltás y el tren hace
    * el resto, estés parado donde estés.
    *
@@ -4903,7 +4903,7 @@ export function createRaidScene(services) {
    * La cuenta sigue siendo la del cono de tiro (`tan(dispersión) ×
    * distancia`), pero la distancia ya NO es "hasta donde señala el mouse":
    * es siempre `m.distanciaReferencia` (120px), fija. Por eso el balanceo del
-   * tren veloz sigue abriendo el círculo en tu cara —eso describe el arma en
+   * traqueteo sigue abriendo el círculo en tu cara —eso describe el arma en
    * ESE instante, no cambió— pero apuntar lejos o cerca ya no lo hace, porque
    * el círculo dejó de ser una proyección del tiro puntual.
    *

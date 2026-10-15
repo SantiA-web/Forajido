@@ -1289,10 +1289,8 @@ dos trenes, no distingue nada.
 | **Suyo, y de nadie más** | **Primera clase** con sus ricos y guardaespaldas, el vagón de guardias, los pasajeros que delatan la caja fuerte oculta, los testigos, el civil encubierto, y los dos que suben por vos (**el Cazarrecompensas y el Sheriff**) | **La carga que se suelta** y **el piso que traiciona**, el ganado que se puede soltar, **el vagón de armas** con su pólvora y su Dinamitero, y **el vagón almacén** con la mercadería que después hay que vender |
 | **La pregunta** | ¿podés robarles sin que ninguno grite? | ¿podés cruzarlo sin que el tren te mate? |
 
-**Los barriles que ruedan y el piso traicionero eran del tren veloz y se mudaron
-al de carga**, y no por conveniencia: un barril que se suelta en el pasillo **es
-carga suelta**. Nunca pertenecieron a "el tren rápido" — pertenecen al tren que
-lleva carga.
+**Los barriles que ruedan y el piso traicionero son del de carga**, y no por
+conveniencia: un barril que se suelta en el pasillo **es carga suelta**.
 
 Y ahí apareció algo que no se buscaba: en el tren del sigilo, un barril no es un
 peligro de combate —no te saca vida— pero **el porrazo se oye**. O sea que en el
@@ -1487,13 +1485,6 @@ no viaja el oro del banco, viaja mercadería.
 **El de carga es además la primera respuesta real** al botín demasiado
 concentrado que anotan las notas de diseño (ver NOTAS-DISENO.md): en vez de una
 caja fuerte grande en un vagón, varias bolsas chicas repartidas en varios.
-
-> **El tren veloz no se borró: quedó apagado** (`peso: 0`), igual que "Alta
-> vigilancia" y el Pistolero. Sus seis vagones cortos siguen escritos en
-> `data/wagons.js`. Lo único que se pierde de verdad es su reloj de 90 s — y si
-> alguna vez se lo quiere de vuelta, el lugar correcto ya no es un tipo de tren
-> sino un estado más ("tren expreso"), que se le puede tocar a cualquiera de los
-> dos.
 
 ### En el tren de carga, la pregunta es: ¿podés llevártelo entero sin que nadie grite?
 
@@ -2761,7 +2752,7 @@ Cambiá algo, guardá, recargá el navegador (`F5`). No hay que compilar nada.
 | `enemy.dinamiteroAlcance` / `dinamiteroRangoMax` | Cuánto vuela su cartucho y hasta dónde decide tirar. **Van atados**: el alcance tiene que ser el rango más la separación, o la tanda deja de caer separada |
 | `enemy.dinamiteroMargen` | Hasta dónde retrocede cuando lo tenés encima, por encima de `throwMinRange` |
 | `TRAIN_TYPES.<id>.sustituciones` (`data/train.js`) | Cada cuánto ese tren cambia un vagón por otro. Hoy: **el de carga** cambia ganado por armas una de cada cuatro veces |
-| `TRAIN_TYPES.<id>.peso` (`data/train.js`) | **Cada cuánto sale ese tipo de tren.** Hoy 50/50 entre pasajeros y carga; el veloz está en 0. Si se mueve, hay que mover `sustituciones` en sentido contrario o el vagón de armas cambia de frecuencia sin que nadie lo pida |
+| `TRAIN_TYPES.<id>.peso` (`data/train.js`) | **Cada cuánto sale ese tipo de tren.** Hoy 50/50 entre pasajeros y carga. Si se mueve, hay que mover `sustituciones` en sentido contrario o el vagón de armas cambia de frecuencia sin que nadie lo pida |
 | `TRAIN_TYPES.<id>.modificadores` (`data/train.js`) | Si ese tren entra en el sorteo de **clima, estado, comportamientos y tipos de guardia**. Hoy: los dos |
 | `TRAIN_TYPES.<id>.gente` (`data/train.js`) | Si ese tren sortea **paquete y civil encubierto**. Hoy: sólo el de pasajeros — los dos necesitan pasajeros a quienes amenazar. La caja fuerte oculta sale en los dos trenes |
 | `loot.strongboxTime` | Cuánto tardás en abrir una caja fuerte |

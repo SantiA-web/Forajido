@@ -63,7 +63,7 @@ const FACINGS = {
  * Dos cosas la pueden tocar, y se combinan si coinciden en el mismo tren:
  *   - la DIFICULTAD (`dificultad.aiOverrides`, sólo la tiene "dura"): mejora
  *     puntería, tiempo de reacción, sospecha y frecuencia de asomada.
- *   - el TIPO DE TREN (`tipoTren.sospechaMult`, sólo lo tiene "veloz"):
+ *   - el TIPO DE TREN (`tipoTren.sospechaMult`, hoy no lo tiene ninguno):
  *     multiplica la velocidad de sospecha encima de lo que ya haya puesto
  *     la dificultad.
  *   - el ESTADO DEL TREN (`redada`, data/modifiers.js): suma el mismo
@@ -137,10 +137,7 @@ function aplicarSustituciones(rng, tipoTren) {
  *                                    resto y se reintenta si no cumple.
  *   `posicionFija: { id: 'ultima' }` — ese vagón NUNCA se mezcla: se saca
  *                                    del mazo antes de barajar y se pone
- *                                    directamente en su lugar. (El tren
- *                                    veloz lo usa para el blindado: siempre
- *                                    pegado a la locomotora, no "3 o más
- *                                    adelante" como el estándar.)
+ *                                    directamente en su lugar.
  *   `posicionMaxima: { id: N }`     — ese vagón nunca más adentro que N. Hoy
  *                                    lo usa el de armas: **nunca el último**,
  *                                    porque el Dinamitero necesita un vecino
@@ -572,8 +569,8 @@ export function buildTrain(
 
   // El perfil de IA de CADA guardia de este tren. Por defecto es una copia
   // llana de CONFIG.enemy; una dificultad "dura" le suma sus overrides, una
-  // redada le suma lo mismo por otra puerta, y un tren "veloz" además apura
-  // la sospecha (sospechaMult) — las tres se combinan si coinciden. El clima
+  // redada le suma lo mismo por otra puerta, y un tren con `sospechaMult`
+  // además apura la sospecha — las tres se combinan si coinciden. El clima
   // NO entra acá: ver la nota completa en `construirPerfilIA`.
   const perfilIA = construirPerfilIA(dificultad, tipoTren, estado);
 
@@ -697,11 +694,8 @@ export function buildTrain(
   for (const t of tramos) {
     if (t.tipo !== 'vagon') continue;
     /**
-     * 🐛 SE BUSCABA EL VAGÓN POR ID (`w.id === 'blindado'`), ASÍ QUE EL
-     * BLINDADO CORTO DEL TREN VELOZ NUNCA TUVO PUERTAS DE CHAPA: eran de
-     * madera y se abrían empujando, o sea que en ese tren al blindado se
-     * entraba caminando. Nadie lo vio porque el veloz quedó en reserva antes
-     * de que alguien probara esa puerta.
+     * 🐛 SE BUSCABA EL VAGÓN POR ID (`w.id === 'blindado'`): un blindado con
+     * otro id tenía puertas de madera que se abrían empujando.
      *
      * Ahora lo dice la plantilla (`puertasBlindadas`), que es la misma marca
      * que usa la ronda del Dinamitero para saber dónde no puede entrar.

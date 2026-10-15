@@ -165,7 +165,7 @@ export const EXPLOSIVES = {
     // --- Lo que es del CAJÓN y no de la explosión ---
 
     /**
-     * CUÁNTO AGUANTA A TIROS. 3, el mismo número que un barril del tren veloz
+     * CUÁNTO AGUANTA A TIROS. 3, el mismo número que un barril suelto
      * (`CONFIG.rodante.vida`), y por el mismo motivo: ya está probado que se
      * lee bien. Es la perilla que decide si el vagón es una lotería o una
      * decisión — con 1, cualquier bala perdida de un tiroteo lo prende y no
@@ -212,8 +212,8 @@ export const EXPLOSIVES = {
      * pueda pasar por un enganche y terminar en el vagón vecino")*
      *
      * Un barril suelto normalmente se cae al vacío en la pasarela — es la regla
-     * que hace del enganche el único lugar del tren veloz donde los rodantes no
-     * te alcanzan, y no se toca. Pero un cajón bien lanzado a veces salta, y
+     * que hace del enganche el único lugar del tren donde los rodantes no te
+     * alcanzan, y no se toca. Pero un cajón bien lanzado a veces salta, y
      * eso es lo que convierte al empujón en una jugada de dos vagones: mandarle
      * la bomba al de al lado sin entrar vos.
      *
@@ -225,7 +225,7 @@ export const EXPLOSIVES = {
     /**
      * CUÁNTO DEJA EN EL PISO A UN GUARDIA ATROPELLADO. Es
      * `CONFIG.rodante.levantarse`, o sea **exactamente lo que te deja a vos**
-     * un barril del tren veloz.
+     * un barril suelto.
      *
      * *(Santi: "si un barril rodando toca a un guardia no explota, sino que lo
      * tumba unos segundos, tal cual pasa con el jugador")*

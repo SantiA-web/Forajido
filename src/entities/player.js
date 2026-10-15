@@ -140,7 +140,7 @@ export function isHidden(p) {
  * proyecto ya se comió dos veces (el comentario decía una cosa y el código
  * hacía otra).
  *
- * `dispersionExtra` es el sacudón del tren veloz (CONFIG.traqueteo) y `p.
+ * `dispersionExtra` es el sacudón del traqueteo (CONFIG.traqueteo) y `p.
  * retroceso` es el kick que dejaron tus últimos disparos (ver CONFIG.mira,
  * `weapons.js` y `shoot()` más abajo) — los dos se SUMAN al final, después de
  * interpolar: te ensucian el tiro apuntes o no. Por eso el círculo se abre en
@@ -810,7 +810,7 @@ function leaveCover(p, world) {
  * A CUBIERTO, EN CAMBIO, LA MIRA YA ESTÁ CERRADA — pedido de Santi, y encaja
  * con una regla que este juego ya tenía escrita en otro lado: *estar pegado a
  * una pared es estar afianzado*. Es exactamente el mismo motivo por el que el
- * sacudón del tren veloz no te arrastra si estás cubierto (CONFIG.traqueteo).
+ * sacudón del traqueteo no te arrastra si estás cubierto (CONFIG.traqueteo).
  * Un tipo apoyado contra un marco no necesita ese tercio de segundo: ya tiene
  * dónde apoyar el brazo.
  *
@@ -1086,8 +1086,8 @@ function shoot(p, world) {
   // y sirve para que los de alrededor vengan a mirar qué pasó; `wagons` es en
   // vagones y es el que despierta el tren cuando la alarma ya está sonando.
   // El segundo sale del arma, no de una constante — y el tren le puede sumar
-  // algo encima: el veloz retumba un vagón más lejos que lo que ya dice el
-  // arma (`ruidoExtra`, ver data/train.js), sin tocar el número del arma.
+  // algo encima: con `ruidoExtra` (data/train.js) retumba más vagones que lo
+  // que ya dice el arma, sin tocar el número del arma.
   world.bus.emit('noise', {
     x: p.x, y: p.y,
     radius: world.train ? world.train.hearRadius : CONFIG.enemy.hearRadius,

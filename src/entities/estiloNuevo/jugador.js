@@ -1550,7 +1550,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   if (forma && ((forma.cuerpo && forma.cuerpo !== 'normal') || forma.chaqueta)) darForma(forma);
 
   /** El cuerpo y la chaqueta (ver CUERPOS): ensancha el torso, corre los brazos, pinta la panza y la chaqueta. */
-  function darForma({ cuerpo = 'normal', chaqueta = false, conChaleco = true, estrella: conEstrella = true }) {
+  function darForma({ cuerpo = 'normal', chaqueta = false, conChaleco = true, estrella: conEstrella = true, panza = true, correa = null }) {
     const K = CUERPOS[cuerpo] || CUERPOS.normal;
     const yHombro = 8 + baja + OY;                 // la fila 8 del dibujo, en el lienzo
     const ancho = (r) => K.filas[Math.max(0, Math.min(9, r))];
@@ -1706,8 +1706,31 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         if (funda != null) { const fx = cuerpo === 'flaco' ? i : i - 2; nuevo[f + fx] = funda; dn[f + fx] = PARTE.piernas; }
       }
     }
-    // 3. La panza del gordito, de frente y en diagonal de frente.
-    if (cuerpo === 'gordito' && (vista === 'frente' || vista === 'diagF')) {
+    /**
+     * 🆕 LA CORREA CRUZADA (el Encargado, P3c): con el torso ensanchado distinto en cada fila, la
+     * correa del dibujo quedaba cortada en pedazos. Se borra (la tela de al lado) y se vuelve a trazar
+     * del hombro a la cartera, con sus dos puntas corridas como su fila. `correa`: [[x, y], [x, y]].
+     */
+    if (correa) {
+      for (let y = yHombro; y <= yHombro + 10; y++) {
+        let ultimo = null;
+        for (let x = 0; x < ANCHO; x++) {
+          const k = y * ANCHO + x;
+          if (nuevo[k] < 0 || dn[k] !== PARTE.cuerpo) { ultimo = null; continue; }
+          if (nuevo[k] === C.g) { if (ultimo != null) nuevo[k] = ultimo; }
+          else if (!detalle.has(nuevo[k])) ultimo = nuevo[k];
+        }
+      }
+      const correr = ([x, y]) => {
+        const px = x + OX, py = y + baja + OY;
+        const d = vista !== 'lado' && enTorso(py) ? ancho(py - yHombro) : 0;
+        return [px <= i0 ? px - d : px + d, py];
+      };
+      const [a, b] = correa.map(correr);
+      linea(a, b, (x, y) => { const k = y * ANCHO + x; if (nuevo[k] >= 0 && dn[k] === PARTE.cuerpo) nuevo[k] = C.g; });
+    }
+    // 3. La panza del gordito, de frente y en diagonal de frente (no con el saco cerrado del Encargado).
+    if (cuerpo === 'gordito' && panza && (vista === 'frente' || vista === 'diagF')) {
       const camisa = [C.L, C.C, C.c, sombrear(C.c, -1)];
       const t9 = tramo(yHombro + 1);
       for (let r = 0; r <= 7; r++) {

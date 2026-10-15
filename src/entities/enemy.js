@@ -393,10 +393,12 @@ export function drawEnemy(r, e) {
    * lado (sale de dónde quedó tirado); el caído, con la cabeza del lado contrario a
    * donde apunta.
    */
-  const nuevo = estiloNuevo.activo && tipo === 'guardia' && r.ctx;
+  // 🆕 P3c: también el Encargado del tren (su gorra, su saco y su cartera, ver gente.js).
+  const tipoN = tipo === 'encargado' ? 'encargado' : 'guardia';
+  const nuevo = estiloNuevo.activo && (tipo === 'guardia' || tipo === 'encargado') && r.ctx;
   const espejoTirado = (Math.floor(e.x / 3) & 1) === 1;
   if (!e.alive) {
-    if (nuevo) { tendidoNuevo(r, e.x, e.y, { modo: 'muerto', sangre: true, espejo: espejoTirado, aspecto: aspectoDe(e, 'guardia') }); return; }
+    if (nuevo) { tendidoNuevo(r, e.x, e.y, { tipo: tipoN, modo: 'muerto', sangre: true, espejo: espejoTirado, aspecto: aspectoDe(e, tipoN) }); return; }
     dibujarTendido(r, e.x, e.y, { tipo, sangre: true, cinta });
     return;
   }
@@ -412,7 +414,7 @@ export function drawEnemy(r, e) {
    * por al lado, que ese sigue siendo un problema que se va a levantar.
    */
   if (e.inconsciente > 0) {
-    if (nuevo) { tendidoNuevo(r, e.x, e.y, { modo: 'desmayado', late: Math.sin(e.inconsciente * 3) > 0 ? 1 : 0, espejo: espejoTirado, aspecto: aspectoDe(e, 'guardia') }); return; }
+    if (nuevo) { tendidoNuevo(r, e.x, e.y, { tipo: tipoN, modo: 'desmayado', late: Math.sin(e.inconsciente * 3) > 0 ? 1 : 0, espejo: espejoTirado, aspecto: aspectoDe(e, tipoN) }); return; }
     dibujarTendido(r, e.x, e.y, {
       tipo, cinta, dormido: true, respira: Math.sin(e.inconsciente * 3) * 0.5,
     });
@@ -430,7 +432,8 @@ export function drawEnemy(r, e) {
     const largaC = defC && typeof defC.dibujo === 'string' ? defC.dibujo : null;
     const figC = dibujarPersona(r, {
       tipo, x: e.x, pies, angulo: e.facing, interior: true,
-      nuevo: { piernas: 'piso', arma: largaC || 'colt', empuna: largaC || e.aimTimer > 0 ? 1 : 0, funda: !largaC },
+      // (🐛 Con su aspecto: el caído y el rendido salían con la cara y el cuerpo de fábrica.)
+      nuevo: { piernas: 'piso', arma: largaC || 'colt', empuna: largaC || e.aimTimer > 0 ? 1 : 0, funda: !largaC, aspecto: aspectoDe(e, tipoN) },
       destello: e.hitFlash > 0,
     });
     anotarBoca(e, figC);
@@ -478,7 +481,7 @@ export function drawEnemy(r, e) {
       : cuadroR === 2 ? { piernas: 'agachado', arma: largaR ? null : 'colt', desenfunda: largaR ? null : 1, funda: !largaR }
         : { piernas: 'quieto', arma: largaR || 'colt', empuna: 0, funda: !largaR };
     const fig = dibujarPersona(r, {
-      interior: true, nuevo: nuevoR,
+      interior: true, nuevo: { ...nuevoR, aspecto: aspectoDe(e, tipoN) },
       tipo, x: e.x, pies, angulo: Math.PI / 2,
       postura: levantado ? 'pie' : 'rendido',
       panuelo: t < 0.25,
@@ -563,7 +566,7 @@ export function drawEnemy(r, e) {
     funda: !larga,
     ...poseNueva(e, peleando && conArma && !larga),
     ...franco,
-    aspecto: aspectoDe(e, 'guardia'),
+    aspecto: aspectoDe(e, tipoN),
   };
   /**
    * 🆕 FUMA (ver CONFIG.fumar) *(Santi: "solo cuando paran o los que vigilan

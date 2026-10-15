@@ -18947,6 +18947,28 @@ el sombrero: el bastón y la maleta, como están *(Santi: "vamos solo con el som
   lado y el gordito uno más gruesos (y la funda del guardia rendido se corre con el muslo).
   🐛 De paso: el brazo que llega a la cabeza (manos en la cabeza o arriba) ya no se corre con los
   cuerpos anchos; la mano se despegaba y el ala quedaba agujereada.
+
+**🔨 P3c — los guardias especiales** *(Santi aprobó el plan)*. Hoy, con [F9], sólo el guardia común
+y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo decidido:
+- **El orden, por lo que se ven en el juego:** el Encargado del tren (uno por tren: gorra, saco
+  oscuro de botones dorados, la cartera) → el blindado (la placa de acero sobre el uniforme) → el
+  Pistolero (un revólver en cada mano) → el Sheriff → el Cazarrecompensas. **El Dinamitero queda
+  para cuando exista su vagón** (hoy nunca aparece). El civil encubierto ya está (P3a).
+- **El sorteo (la C):** los especiales anónimos salen sorteados como los comunes (piel, pelo,
+  barba, cuerpo); el blindado, sólo normal u hombros anchos; los jefes (Sheriff y Cazarrecompensas)
+  son siempre el mismo personaje.
+- **La estrella del Sheriff** *(Santi: "misma estrella que los guardias, pero más grande y en el
+  sombrero también lleva una estrella")*.
+- Cada uno: silueta primero, después color, las cinco vistas y las poses.
+- **✅ El Encargado del tren** (tipo \`encargado\` en gente.js; look \`cartera\`): la **gorra de plato**
+  azul marino (eligió la B de dos siluetas: la copa más ancha arriba), con la chapa dorada y la
+  visera; el **saco azul marino cerrado** (también las mangas) con botones dorados, sin estrella; el
+  pantalón gris de la compañía; la **cartera de cuero** colgando del lado contrario a la funda, con
+  la correa cruzada (de costado, detrás de la cadera). Sorteado como un guardia (cara, pelo, barba,
+  cuerpo), siempre con la gorra y nunca arremangado. Con los cuerpos anchos la correa se vuelve a
+  trazar entera después de dar forma (se cortaba en pedazos) y el gordito va con el saco cerrado (sin
+  la panza del chaleco abierto). Tirado, el saco con sus botones (sin la cartera: *"así está bien"*).
+  🐛 De paso: el guardia caído y el rendido no recibían su aspecto (salían de fábrica).
 - **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
   poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
   (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del

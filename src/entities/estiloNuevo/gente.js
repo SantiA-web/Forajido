@@ -260,6 +260,19 @@ const SOMBREROS = {
  * cuello (fila 7), con la punta del nudo sobre el pecho (en el torso). `S R r z`
  * de la luz a la sombra; el color lo pone cada uno.
  */
+/**
+ * 🆕 P3c · LA GORRA DEL ENCARGADO, la de plato *(Santi eligió la B)*: la copa un poco más ancha
+ * arriba que abajo, la cinta con la chapa dorada adelante (`G`) y la visera (`x k`), que de
+ * costado sale para adelante y de espaldas no se ve.
+ */
+SOMBREROS.gorra = {
+  frente: mapa(-1, ['......hhhHHHkk', '......hhHHHHHk', '.......hHHHHk', '.......bbbGbb', '........xkkkx']),
+  diagF: mapa(-1, ['.......hhhHHHkk', '.......hhHHHHHk', '........hHHHHk', '........bbbbGb', '..........xkkkk']),
+  lado: mapa(-1, ['.......hhHHHHkk', '.......hhHHHHHk', '........hHHHHk', '........bbbbbG', '.............kkk']),
+  diagE: mapa(-1, ['......hhhHHHkk', '......hhHHHHHk', '.......hHHHHk', '.......bbbbbb']),
+  espalda: mapa(-1, ['......hhhHHHkk', '......hhHHHHHk', '.......hHHHHk', '.......bbbbbb']),
+};
+
 const PANUELO = {
   frente: mapa(7, ['.......zRRSRRr']),
   diagF: mapa(7, ['........zRRSRRr']),
@@ -301,6 +314,32 @@ const TORSOS = {
     espalda: mapa(8, ['.......CVVCVVc', '........UVcVv', '........UVVVv', '........UVVvv', '........UVVvv', '........VVVvv', '........VVVvw', '........VVVvw', '........WWWWW']),
   },
 };
+
+/**
+ * 🆕 P3c · EL ENCARGADO DEL TREN: el torso del guardia, sin la estrella, con la correa de cuero
+ * cruzada (`g`) y la cartera colgando de la cadera del lado contrario a la funda (`J M m Y`: la
+ * tapa a la luz, el cuero, la sombra y la hebilla). De costado la cartera queda detrás de la cadera;
+ * de espaldas, del otro lado. Los colores (el saco azul marino de botones dorados) en BASE.
+ */
+const CARTERA_ENCARGADO = {
+  frente: { correa: [[8, 9], [9, 10], [10, 11], [11, 12], [12, 13], [12, 14]], x: 13, y: 15, filas: ['JJJM', 'MYMm', 'MMMm', 'mmmm'] },
+  diagF: { correa: [[9, 9], [10, 10], [11, 11], [12, 12], [12, 13], [13, 14]], x: 13, y: 15, filas: ['JJJM', 'MYMm', 'MMMm', 'mmmm'] },
+  lado: { correa: [[10, 8], [9, 9], [9, 10], [8, 11], [8, 12], [7, 13]], x: 5, y: 14, filas: ['JJM', 'MYm', 'MMm', 'mmm'] },
+  diagE: { correa: [[12, 9], [11, 10], [10, 11], [9, 12], [9, 13], [8, 14]], x: 4, y: 15, filas: ['JJJM', 'MYMm', 'MMMm', 'mmmm'] },
+  espalda: { correa: [[12, 9], [11, 10], [10, 11], [9, 12], [9, 13], [8, 14]], x: 4, y: 15, filas: ['JJJM', 'MYMm', 'MMMm', 'mmmm'] },
+};
+function torsoEncargado(vista) {
+  const t = TORSOS.guardia[vista], K = CARTERA_ENCARGADO[vista];
+  const alto = Math.max(t.filas.length, K.y + K.filas.length - t.y);
+  // (El cinto, la última fila del torso, con los remaches oscuros: con los botones dorados era un bloque dorado.)
+  const g = Array.from({ length: alto }, (_, j) => (t.filas[j] || '').replace(/[Ee]/g, 'V').replace(/y/g, (c) => (j === t.filas.length - 1 ? 'W' : c)).padEnd(18, '.').split(''));
+  for (const [x, y] of K.correa) if (g[y - t.y] && g[y - t.y][x] !== '.') g[y - t.y][x] = 'g';
+  K.filas.forEach((fila, j) => { for (let x = 0; x < fila.length; x++) g[K.y + j - t.y][K.x + x] = fila[x]; });
+  return { y: t.y, filas: g.map((f) => f.join('').replace(/\.+$/, '')) };
+}
+/** De dónde a dónde va la correa (la vuelve a trazar `darForma` en jugador.js con el cuerpo ensanchado). */
+function correaEncargado(vista) { const c = CARTERA_ENCARGADO[vista] && CARTERA_ENCARGADO[vista].correa; return c ? [c[0], c[c.length - 1]] : null; }
+TORSOS.encargado = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espalda'].map((v) => [v, torsoEncargado(v)]));
 
 // ------------------------------------------------------------------ colores
 /**
@@ -387,14 +426,15 @@ export function sortearAspecto(tipo, azar = Math.random) {
   do a.pelo = elegir(PESO.pelo, azar);
   while (NUNCA.some((n) => n.pelo === a.pelo && n.piel === a.piel));
   if (tipo === 'guardia') a.sombrero = elegir(PESO.sombreroGuardia, azar);
+  else if (tipo === 'encargado') a.sombrero = 'gorra';   // 🆕 P3c: siempre con su gorra
   else { a.sombrero = elegir(PESO.sombreroPasajero, azar); a.panuelo = elegir(PESO.panuelo, azar); }
-  if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno') a.colorSombrero = elegir(PESO.colorSombrero, azar);
+  if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno' && a.sombrero !== 'gorra') a.colorSombrero = elegir(PESO.colorSombrero, azar);
   a.barba = elegir(a.pelo === 'canas' ? PESO.barbaCanas : PESO.barba, azar);
-  if (tipo !== 'guardia') a.ropa = elegir(PESO.ropa, azar);
+  if (tipo === 'pasajero') a.ropa = elegir(PESO.ropa, azar);
   a.cuerpo = elegir(PESO.cuerpo, azar);
   a.chaqueta = tipo === 'guardia' && azar() < PESO.chaqueta;
   // Con la chaqueta, la manga larga (la chaqueta tapa la camisa).
-  a.arremangada = !a.chaqueta && elegir(horaDelSorteo.dia ? PESO.mangaDia : PESO.mangaNoche, azar) === 'arremangada';
+  a.arremangada = !a.chaqueta && tipo !== 'encargado' && elegir(horaDelSorteo.dia ? PESO.mangaDia : PESO.mangaNoche, azar) === 'arremangada';
   return a;
 }
 /** De día o de noche: la pone el asalto al empezar (de noche, más mangas largas). */
@@ -426,6 +466,7 @@ const COLOR_SOMBRERO = {
   curvo: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   bombin: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   paja: { h: 38, H: 37, k: 6, x: 5, b: 33 },
+  gorra: { h: 41, H: 18, k: 40, x: 0, b: 40 },   // 🆕 la del Encargado: azul marino, cinta y visera oscuras
 };
 /** 🆕 La otra variante de los sombreros de fieltro: marrón oscuro con la cinta crema *(Santi)*. */
 const COLOR_MARRON = { h: 4, H: 3, k: 32, x: 0, b: 16 };
@@ -433,6 +474,12 @@ const BASE = {
   guardia: {
     L: 17, C: 16, c: 15,                     // camisa clara
     y: 1, E: 45, e: 29, W: 1, G: 28,         // botones oscuros, la estrella de bronce con su brillo, cinto
+  },
+  // 🆕 P3c: el Encargado, de saco azul marino cerrado (también las mangas) con botones dorados; sin estrella.
+  encargado: {
+    U: 19, V: 41, v: 18, w: 40, y: 28,       // el saco y sus botones
+    L: 19, C: 41, c: 18,                     // las mangas del saco
+    E: 41, e: 41, W: 1, G: 28,               // (la estrella del tirado, tapada) el cinto
   },
   pasajero: {
     L: 17, C: 16, c: 15,                     // camisa clara
@@ -487,10 +534,11 @@ function torsoConRopa(torso, vista, ropa) {
   }
   return (torsosDeRopa[clave] = { y: torso.y, filas: filas.map((r) => r.join('')) });
 }
-export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia', ropa = 'chaleco' }) {
+export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado', ropa = 'chaleco' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
-  const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
-  const colores = { ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
+  const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : tipo === 'encargado' ? 'gorra' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
+  // (El Encargado: el pantalón de la compañía y encima su saco.)
+  const colores = { ...(tipo === 'encargado' ? UNIFORMES[uniforme] : {}), ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
   if (!funda) Object.assign(colores, vista === 'lado' ? { F: colores.I ?? C.I, f: colores.T ?? C.T } : { F: null, f: null });
   const cabeza = [CABEZA[vista]];
   if (tipo === 'pasajero') cabeza.push(PANUELO[vista]);
@@ -601,7 +649,9 @@ export function cuadroGente(o) {
   const persona = capasPersona(o);
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
-  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia' };
+  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia',
+    // 🆕 P3c: el Encargado, con el saco cerrado (sin la panza del chaleco abierto) y la correa cruzada.
+    panza: o.tipo !== 'encargado', correa: o.tipo === 'encargado' ? correaEncargado(o.vista) : null };
   const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
   const q = { ...q0, finos: barbaFina(o, q0) };
   const F = PF || FB;

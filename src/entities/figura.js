@@ -230,7 +230,7 @@ export function dibujarPersona(r, f) {
    * el dibujo viejo hasta que llegue su paso *(Santi eligió meterlo al juego
    * antes de terminar las poses, para ir probando)*.
    */
-  if (estiloNuevo.activo && f.interior && f.nuevo && (f.tipo === 'guardia' || f.tipo === 'pasajero' || f.tipo === 'encargado' || f.tipo === 'blindado' || f.tipo === 'pistolero') && ((f.postura || 'pie') === 'pie' || f.nuevo.piernas) && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
+  if (estiloNuevo.activo && f.interior && f.nuevo && (f.tipo === 'guardia' || f.tipo === 'pasajero' || f.tipo === 'encargado' || f.tipo === 'blindado' || f.tipo === 'pistolero' || f.tipo === 'sheriff') && ((f.postura || 'pie') === 'pie' || f.nuevo.piernas) && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
   const tipo = ROPA[f.tipo] ? f.tipo : 'guardia';
   const [nombre, fn, g, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const postura = f.postura || 'pie';

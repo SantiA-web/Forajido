@@ -1535,8 +1535,17 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   con(PARTE.brazoAtras, () => { if (vista === 'lado') { if (TJ) { if (!TJ.delante) brazoCuchillo(); } else if (larga) brazoIzqLarga(); else brazoLibre(); } });
   // En diagonal de frente, el brazo libre (el izquierdo) es el de allá: detrás del cuerpo.
   const libreDetras = vista === 'diagF';
-  con(PARTE.brazoAtras, () => { if (libreDetras) { if (TJ) { if (!TJ.delante && !TJ.vaina) brazoCuchillo(); } else if (!larga) brazoLibre(); } });
-  if (detras) con(PARTE.brazoAtras, brazo);
+  /**
+   * 🔁 De espaldas y de tres cuartos de espaldas, el brazo que se hamaca hacia adelante se
+   * aleja de la cámara: queda detrás del cuerpo *(Santi: "cuando está de espaldas en diagonal
+   * corriendo, se ve los pixeles de la mano pegados en la espalda, dónde no debería verse porque
+   * ese brazo lo tapa la espalda")*. El libre, y el del arma cuando no tiene nada en la mano.
+   */
+  const deEspaldas = vista === 'diagE' || vista === 'espalda';
+  const libreLejos = deEspaldas && !TJ && !larga && !(doble && arma) && idaLibre() > 0.2;
+  const armaLejos = deEspaldas && !arma && golpe == null && desenfunda == null && -idaLibre() > 0.2;
+  con(PARTE.brazoAtras, () => { if (libreDetras) { if (TJ) { if (!TJ.delante && !TJ.vaina) brazoCuchillo(); } else if (!larga) brazoLibre(); } else if (libreLejos) brazoLibre(); });
+  if (detras || armaLejos) con(PARTE.brazoAtras, brazo);
   if (mochila && vista === 'lado') dibujarMochila();
   const P = V.piernas[piernas] || V.piernas.quieto;
   con(PARTE.piernas, () => dibujarMapa(P));
@@ -1562,10 +1571,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   if (vaina) dibujarVaina();
   con(PARTE.brazo, () => {
     if (vista !== 'lado' && TJ && !TJ.delante && !(libreDetras && !TJ.vaina)) brazoCuchillo();
-    else if (vista !== 'lado' && !libreDetras && !larga && !TJ) brazoLibre();
+    else if (vista !== 'lado' && !libreDetras && !libreLejos && !larga && !TJ) brazoLibre();
   });
   if (mochila && vista === 'diagE') dibujarMochila();
-  if (!detras && !bajoLaCabeza) con(PARTE.brazo, brazo);
+  if (!detras && !armaLejos && !bajoLaCabeza) con(PARTE.brazo, brazo);
   if (TJ && TJ.delante) con(PARTE.brazo, brazoCuchillo);
   if (mochila && vista === 'espalda') dibujarMochila();
   }
@@ -1614,7 +1623,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         if (d < 0 && nuevo[fila + nx] >= 0 && dn[fila + nx] === PARTE.cuerpo) continue;
         // La estrella se pone después, entera (si no, cada fila se corre distinto y se estira): acá, tela.
         let c = ver[k];
-        if (estrella.has(c)) { estrellas.push([x, y, c]); c = C.V ?? c; }
+        // (Sólo la del cuerpo: la del sombrero del Sheriff no se corre.)
+        if (estrella.has(c) && esCuerpo(k)) { estrellas.push([x, y, c]); c = C.V ?? c; }
         nuevo[fila + nx] = c; dn[fila + nx] = de[k];
       }
       // El hueco que se abrió en el medio: la tela de al lado (no los botones ni la estrella).

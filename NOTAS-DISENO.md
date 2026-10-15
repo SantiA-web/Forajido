@@ -18984,6 +18984,27 @@ y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo d
   pistolero a sueldo y **de negro** (eligió entre tostado, negro y cuero): sombrero plano, chaleco
   gris oscuro de botones plateados, camisa rojo vino, pañuelo negro, pantalón marrón. Sorteado en
   cara, pelo, barba y cuerpo. ⚠️ En la sombra del vagón se ve muy oscuro: casi una silueta.
+- **✅ El Sheriff** (tipo `sheriff` en gente.js; look `estrella`; es un guardia del tren, ver
+  `spawnComo` en data/bosses.js): siempre el mismo, **canoso y de cuerpo normal**; la barba se
+  sortea entre todas (con los pesos de los canosos) *(Santi: "lo único que queda es el color del
+  pelo")*. **Sombrero alto de copa abollada** (la D de cuatro siluetas), sin cinta, con la estrella de
+  los guardias **en el medio de la copa** *(Santi: "elimina la cuerda del sombrero para dejar más
+  espacio para la estrella")*. **El guardapolvo de cuero marrón** de la foto que pasó Santi, cerrado y
+  **continuo hasta la rodilla, del ancho del cuerpo**: nada de aire entre el brazo y las costillas, y
+  con los brazos levantados el torso sigue del ancho del faldón (si no, quedaba un escalón). Los
+  hombros anchos se probaron y se descartaron *(Santi: "parece una heladera… quiero que tenga cuerpo
+  normal")*. **La estrella del pecho, de cinco puntas de 5×4** (la cruz agrandada quedaba fea; se
+  probó la de los guardias al lado y la grande se lee mejor), sin los botones que la tocaban.
+  Pañuelo gris, botones dorados, el cinto encima del saco. **El faldón se abre con el paso**
+  (`faldonSigueLasPiernas`): si la pierna sale más allá del borde, el borde de abajo se corre hacia
+  ese lado, hasta 2 puntos caminando; **corriendo, hasta 4, desde el cinto, y de costado la cola
+  vuela siempre para atrás** *(Santi: "al correr… es dónde más se debería marcar")*. Todo se mide desde
+  el cinto de cada cuadro (corriendo el cuerpo sube y baja). Tirado, el guardapolvo con la estrella.
+  🐛 De paso: `darForma` también corría la estrella del sombrero (sólo la del cuerpo se corre); y de
+  espaldas o de tres cuartos de espaldas **el brazo que se hamaca hacia adelante va detrás del
+  cuerpo** (la mano se veía pegada en la espalda, en todos los personajes). Atajo 🧪 [6] del
+  campamento: el tren de pasajeros con el Sheriff y sus tres en tu vagón. Pendiente: el borde de color
+  del estado era para el jefe viejo; este Sheriff es un guardia y avisa como ellos (ojos y el "!").
 - **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
   poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
   (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del

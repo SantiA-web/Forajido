@@ -724,7 +724,9 @@ export function createRaidScene(services) {
        * la seguridad del tren y ya estaba ahí cuando subiste. Buscarlo desde
        * el minuto cero es parte del asalto.
        */
-      spawnSheriff(elegido);
+      // 🧪 El atajo [6] del campamento: el Sheriff en el vagón donde arrancás.
+      const vagonPrueba = params.pruebaSheriff ? train.wagons.findIndex((w) => player.x >= w.x && player.x < w.x + w.width) : -1;
+      spawnSheriff(elegido, vagonPrueba >= 0 ? vagonPrueba : null);
     } else if (elegido) {
       jefePendiente = elegido;
       /**
@@ -780,9 +782,9 @@ export function createRaidScene(services) {
    * fondo, cuando arranca a replegarse ya tiene poco terreno por delante —
    * lo alcanzás, pero para eso ya te metiste hasta ahí.
    */
-  function spawnSheriff(tipo) {
+  function spawnSheriff(tipo, enVagon = null) {
     const primerVagon = Math.min(3, train.wagons.length - 1);
-    const idx = rng.int(primerVagon, train.wagons.length - 1);
+    const idx = enVagon ?? rng.int(primerVagon, train.wagons.length - 1);
     const v = train.wagons[idx];
     if (!v) return;
 

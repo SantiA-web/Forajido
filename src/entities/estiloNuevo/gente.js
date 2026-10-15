@@ -273,6 +273,21 @@ SOMBREROS.gorra = {
   espalda: mapa(-1, ['......hhhHHHkk', '......hhHHHHHk', '.......hHHHHk', '.......bbbbbb']),
 };
 
+/**
+ * 🆕 P3c · EL SOMBRERO DEL SHERIFF: la copa alta abollada arriba *(Santi eligió la D)* con su
+ * estrella adelante (`E e`, la misma de la placa) *(Santi: "en el sombrero también lleva una
+ * estrella")*, la cinta y el ala ancha. De espaldas, sin estrella.
+ */
+SOMBREROS.alto = {
+  // 🔁 Sin la cinta y la estrella en el medio de la copa *(Santi: "la estrella del sombrero debería
+  // estar en el medio del sombrero ... elimina la cuerda del sombrero")*: la cruz de los guardias.
+  frente: mapa(-3, ['.........hHk', '........hHkHk', '........hHEHk', '........hEeEk', '........hHEHk', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
+  diagF: mapa(-3, ['..........hHk', '.........hHkHk', '.........hHHEk', '.........hHEeE', '.........hHHEk', '....hhhhHHHHHHHkkkk', '.....xkkkkkkkkkkkx']),
+  lado: mapa(-3, ['.........hHk', '........hHkHk', '........hHHHE', '........hHHEe', '........hHHHE', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
+  diagE: mapa(-3, ['.........hHk', '........hHkHk', '........hHHHk', '........hHHHk', '........hHHHk', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
+  espalda: mapa(-3, ['.........hHk', '........hHkHk', '........hHHHk', '........hHHHk', '........hHHHk', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
+};
+
 const PANUELO = {
   frente: mapa(7, ['.......zRRSRRr']),
   diagF: mapa(7, ['........zRRSRRr']),
@@ -367,6 +382,113 @@ function torsoBlindado(vista) {
  * (BASE.pistolero, de negro).
  */
 TORSOS.pistolero = TORSOS.pasajero;
+/**
+ * 🆕 P3c · EL SHERIFF (jefe, siempre el mismo): el cuerpo del civil con el pañuelo, el saco largo
+ * cerrado y la **estrella grande** en el pecho *(Santi: "misma estrella que los guardias, pero más
+ * grande")*. El saco es continuo, cerrado hasta la rodilla y del ancho del cuerpo, que es el normal
+ * *(Santi: "el Sheriff quiero que tenga cuerpo normal, olvidate del cuerpo de hombros anchos")*.
+ * [columna, filas desde la 17] por vista.
+ */
+const ESTRELLA_SHERIFF = {
+  // 🔁 Una estrella de cinco puntas de verdad (5×4): la cruz agrandada quedaba fea *(Santi)*.
+  frente: [8, 9, ['..E..', 'EEeEE', '.EeE.', '.E.E.']],
+  diagF: [9, 9, ['..E..', 'EEeEE', '.EeE.', '.E.E.']],
+  lado: [10, 10, ['.E', 'Ee', '.E']],
+};
+// 🔁 Continuo *(Santi: "parece que tiene unos muslos enormes. El saco debería ser continuo")*: cerrado
+// hasta abajo, con la raya oscura donde se juntan los dos lados.
+const FALDON_SHERIFF = {
+  // 🔁 Cerrado y del ancho del cuerpo, entre las manos *(Santi: "debería ser más angosto el saco,
+  // ahora parece una heladera. El Sheriff quiero que tenga cuerpo normal")*.
+  frente: [7, ['UVVVwvw', 'UVVVwvw', 'UVVVwvw', 'vvvvwww']],
+  diagF: [7, ['UVVVwvw', 'UVVVwvw', 'UVVVwvw', 'vvvvwww']],
+  lado: [7, ['UVVvw', 'UVVvw', 'UVVvw', 'vvvww']],   // (alineado con la espalda: un punto más atrás parecían glúteos)
+  diagE: [7, ['UVVVVvw', 'UVVVVvw', 'UVVwVvw', 'vvvwvww']],
+  espalda: [7, ['UVVVVvw', 'UVVVVvw', 'UVVwVvw', 'vvvwvww']],
+};
+/**
+ * 🔁 El saco cuelga recto *(Santi: "no se tiene que ver ni un solo pixel de espacio entre las
+ * costillas y el brazo")*: del pecho al cinto, el torso va siempre del ancho del faldón, esté donde
+ * esté el brazo (apuntando, el faldón quedaba como un escalón). Va sobre el cuadro terminado porque
+ * los brazos se acomodan recién en `darForma`. (Con el cuerpo normal ya no queda aire entre el
+ * brazo y las costillas; el relleno de huecos chicos que había para los hombros anchos llenaba de
+ * saco el lugar entre el cuerpo y el rifle: *(Santi: "hay un cuadrado ... que no pinta nada")*.)
+ */
+function sacoSinHuecos(idx, vista, corre = false) {
+  const out = idx.slice(), A = 44, B = BASE.sheriff;
+  // (Todo se mide desde el cinto de cada cuadro: corriendo, el cuerpo sube y baja hasta 2 puntos.)
+  let cinto = 16 + 6;
+  for (let y = 12 + 6; y <= 20 + 6; y++) { let n = 0; for (let x = 0; x < A; x++) if (out[y * A + x] === B.W) n++; if (n >= 2) { cinto = y; break; } }
+  const tela = new Set([B.U, B.V, B.v, B.w]), yF = cinto + 1;
+  let a = A, b = -1;
+  for (let x = 0; x < A; x++) if (tela.has(out[yF * A + x])) { a = Math.min(a, x); b = Math.max(b, x); }
+  if (vista !== 'lado') for (let y = cinto - 5; y < yF; y++) for (let x = a; x <= b; x++) if (out[y * A + x] < 0) out[y * A + x] = x < (a + b) / 2 ? B.U : B.v;
+  faldonSigueLasPiernas(out, tela, corre, vista, cinto);
+  // (Un punto vacío encerrado entre la mano y el saco salía como un agujero negro: se tapa con lo de al lado.)
+  for (let y = cinto - 8; y <= cinto + 4; y++) for (let x = 1; x < A - 1; x++) {
+    const k = y * A + x;
+    if (out[k] >= 0) continue;
+    const v = [out[k - 1], out[k + 1], out[k - A], out[k + A]].filter((c) => c >= 0);
+    if (v.length >= 3) out[k] = v.find((c) => tela.has(c)) ?? v[0];
+  }
+  return out;
+}
+/**
+ * 🆕 El faldón se abre con el paso *(Santi: "cuando la pierna va hacia atrás, podrías hacer que se
+ * mueva la parte baja del saco?")*: si debajo del saco una pierna sale más allá del borde (atrás o
+ * adelante), el borde de abajo se corre hacia ese lado, hasta 2 puntos, más abajo que arriba (la tela
+ * se abre desde la cadera). Vale para todas las vistas y todos los pasos.
+ */
+function faldonSigueLasPiernas(out, tela, corre, vista, cinto) {
+  // 🔁 Corriendo, mucho más *(Santi: "al correr, que es dónde más se debería marcar el movimiento de
+  // la gabardina, no lo marca")*: hasta 4 puntos, la pierna más abajo (la zancada ya se abrió) y, de
+  // costado, la cola vuela siempre para atrás aunque la pierna esté adelante.
+  const tope = corre ? 4 : 2;
+  // (Corriendo se abre desde el cinto: la diagonal es pareja, sin escalones.)
+  const A = 44, y0 = corre ? cinto : cinto + 1, yAbajo = cinto + 4, yPierna = yAbajo + (corre ? 3 : 2);
+  let a = A, b = -1;
+  for (let x = 0; x < A; x++) if (tela.has(out[yAbajo * A + x])) { a = Math.min(a, x); b = Math.max(b, x); }
+  if (b < 0) return;
+  // La pierna un punto debajo del saco (justo debajo todavía no se separó): lo que sigue pegado a lo que está debajo.
+  let la = A, lb = -1;
+  for (let x = a; x <= b; x++) if (out[yPierna * A + x] >= 0) { la = Math.min(la, x); lb = Math.max(lb, x); }
+  if (lb < 0) { la = a; lb = b; }   // (con las piernas muy abiertas no hay nada justo debajo: igual vuela la cola)
+  while (la > 0 && out[yPierna * A + la - 1] >= 0) la--;
+  while (lb < A - 1 && out[yPierna * A + lb + 1] >= 0) lb++;
+  let izq = Math.min(tope, Math.max(0, a - la));
+  const der = Math.min(tope, Math.max(0, lb - b));
+  if (corre && vista === 'lado') izq = Math.max(izq, 3);
+  const filas = yAbajo - y0;
+  for (let k = 1; k <= filas; k++) {
+    const y = y0 + k, r = y * A;
+    let ra = A, rb = -1;
+    for (let x = 0; x < A; x++) if (tela.has(out[r + x])) { ra = Math.min(ra, x); rb = Math.max(rb, x); }
+    if (rb < 0) continue;
+    const di = Math.round(izq * k / filas), dd = Math.round(der * k / filas);
+    for (let x = ra - di; x < ra; x++) if (x >= 0) out[r + x] = out[r + ra];
+    for (let x = rb + 1; x <= rb + dd; x++) if (x < A) out[r + x] = out[r + rb];
+  }
+}
+function torsoSheriff(vista) {
+  const t = TORSOS.pasajero[vista];
+  // (El cinto con los remaches oscuros, como el Encargado: con los botones dorados era un bloque dorado.)
+  const g = Array.from({ length: 13 }, (_, j) => (t.filas[j] || '').replace(/y/g, (c) => (j === t.filas.length - 1 ? 'W' : c)).padEnd(18, '.').split(''));
+  const E = ESTRELLA_SHERIFF[vista];
+  // (Sin los botones al lado de la estrella: se mezclaban con ella.)
+  if (E) E[2].forEach((fila, j) => { const r = g[E[1] + j - t.y]; r.forEach((c, x) => { if (c === 'y') r[x] = 'V'; }); for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') r[E[0] + x] = fila[x]; });
+  const [x0, filas] = FALDON_SHERIFF[vista];
+  filas.forEach((fila, j) => { for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') g[17 + j - t.y][x0 + x] = fila[x]; });
+  return { y: t.y, filas: g.map((f) => f.join('').replace(/\.+$/, '')) };
+}
+TORSOS.sheriff = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espalda'].map((v) => [v, torsoSheriff(v)]));
+/**
+ * El Sheriff es siempre el mismo (Santi, la C del sorteo): canoso y de cuerpo normal. 🔁 La barba,
+ * cualquiera *(Santi: "que la barba pueda ser de cualquier tipo, lo único que queda es el color del
+ * pelo")*: se sortea con los pesos de los canosos.
+ */
+export function aspectoSheriff(azar = Math.random) {
+  return { piel: 'media', pelo: 'canas', peinado: 'corto', barba: elegir(PESO.barbaCanas, azar), sombrero: 'alto', cuerpo: 'normal', chaqueta: false, arremangada: false };
+}
 TORSOS.blindado = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espalda'].map((v) => [v, torsoBlindado(v)]));
 
 /** De dónde a dónde va la correa (la vuelve a trazar `darForma` en jugador.js con el cuerpo ensanchado). */
@@ -477,7 +599,8 @@ const horaDelSorteo = { dia: true };
 export function fijarHoraDelSorteo(dia) { horaDelSorteo.dia = !!dia; }
 /** El aspecto de alguien: se sortea la primera vez que se lo dibuja y queda guardado. */
 export function aspectoDe(ent, tipo) {
-  return ent._aspecto || (ent._aspecto = sortearAspecto(tipo));
+  // 🆕 P3c: el Sheriff es siempre el mismo (sólo la barba se sortea, ver aspectoSheriff).
+  return ent._aspecto || (ent._aspecto = tipo === 'sheriff' ? aspectoSheriff() : sortearAspecto(tipo));
 }
 const PELOS = {
   // 🔁 El negro cálido, marrón casi negro *(Santi eligió el 2 de tres; los negros
@@ -501,7 +624,8 @@ const COLOR_SOMBRERO = {
   curvo: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   bombin: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   paja: { h: 38, H: 37, k: 6, x: 5, b: 33 },
-  gorra: { h: 41, H: 18, k: 40, x: 0, b: 40 },   // 🆕 la del Encargado: azul marino, cinta y visera oscuras
+  gorra: { h: 41, H: 18, k: 40, x: 0, b: 40 },
+  alto: { h: 4, H: 3, k: 32, x: 0, b: 16 },     // 🆕 el del Sheriff: marrón oscuro con la cinta crema   // 🆕 la del Encargado: azul marino, cinta y visera oscuras
 };
 /** 🆕 La otra variante de los sombreros de fieltro: marrón oscuro con la cinta crema *(Santi)*. */
 const COLOR_MARRON = { h: 4, H: 3, k: 32, x: 0, b: 16 };
@@ -510,6 +634,8 @@ const BASE = {
     L: 17, C: 16, c: 15,                     // camisa clara
     y: 1, E: 45, e: 29, W: 1, G: 28,         // botones oscuros, la estrella de bronce con su brillo, cinto
   },
+  // 🆕 P3c: el Sheriff: el guardapolvo de cuero marrón (Santi pasó la foto), el pañuelo gris, la estrella grande.
+  sheriff: { U: 35, V: 34, v: 33, w: 32, y: 28, L: 35, C: 34, c: 33, S: 25, R: 24, r: 23, z: 31, E: 45, e: 29, W: 1, G: 28, I: 24, T: 23, t: 31 },
   // 🆕 P3c: el Pistolero.
   // De negro *(Santi eligió el negro de tres)*: chaleco gris oscuro de botones plateados, camisa rojo
   // vino, pañuelo negro y pantalón marrón: no se confunde con el guardia (bordó) ni con el civil (marrón).
@@ -578,14 +704,14 @@ function torsoConRopa(torso, vista, ropa) {
   }
   return (torsosDeRopa[clave] = { y: torso.y, filas: filas.map((r) => r.join('')) });
 }
-export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero', ropa = 'chaleco' }) {
+export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff', ropa = 'chaleco' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
-  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' || tipo === 'pistolero' ? 'plano' : tipo === 'encargado' ? 'gorra' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
+  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' || tipo === 'pistolero' ? 'plano' : tipo === 'encargado' ? 'gorra' : tipo === 'sheriff' ? 'alto' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
   // (El Encargado: el pantalón de la compañía y encima su saco.)
   const colores = { ...(tipo === 'encargado' ? UNIFORMES[uniforme] : {}), ...BASE[tipo], ...(tipo === 'guardia' || tipo === 'blindado' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
   if (!funda) Object.assign(colores, vista === 'lado' ? { F: colores.I ?? C.I, f: colores.T ?? C.T } : { F: null, f: null });
   const cabeza = [CABEZA[vista]];
-  if (tipo === 'pasajero' || tipo === 'pistolero') cabeza.push(PANUELO[vista]);
+  if (tipo === 'pasajero' || tipo === 'pistolero' || tipo === 'sheriff') cabeza.push(PANUELO[vista]);
   if (PEINADOS[peinado] && PEINADOS[peinado][vista]) cabeza.push(PEINADOS[peinado][vista]);
   // (La barba va en puntos finos, encima: ver barbaFina.)
   // El sombrero va aparte: con la cabeza gacha baja más que la cara y la tapa (ver `gacha` en jugador.js).
@@ -693,10 +819,11 @@ export function cuadroGente(o) {
   const persona = capasPersona(o);
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
-  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia' || o.tipo === 'blindado',
+  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia' || o.tipo === 'blindado' || o.tipo === 'sheriff',
     // 🆕 P3c: el Encargado, con el saco cerrado (sin la panza del chaleco abierto) y la correa cruzada.
     panza: o.tipo !== 'encargado', correa: o.tipo === 'encargado' ? correaEncargado(o.vista) : null };
   const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
+  if (o.tipo === 'sheriff') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''));
   const q = { ...q0, finos: barbaFina(o, q0) };
   const F = PF || FB;
   if (!F) return q;

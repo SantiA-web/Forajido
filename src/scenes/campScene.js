@@ -336,6 +336,17 @@ export function createCampScene(services) {
       return;
     }
     /**
+     * 🧪 [6] LO MISMO, PERO CON EL SHERIFF EN TU VAGÓN *(Santi: "hacé un atajo para
+     * aparecer con el sheriff en el tren de pasajeros así veo bien como quedó")*:
+     * el Sheriff y sus tres viajan en el vagón donde arrancás.
+     *
+     * ⚠️ SACARLO antes de mostrar el juego, con los otros.
+     */
+    if (input.wasPressed('Digit6')) {
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'pasajeros', jefeForzado: 'sheriff', pruebaSheriff: true });
+      return;
+    }
+    /**
      * 🧪 [2] TE PONE LA ESCOPETA SIN COMPRARLA *(Santi: "dejame un atajo para
      * equipármela sin tener que comprarla")*; otra vez [2], vuelve el arma que
      * tenías. No la agrega a lo tuyo: en la tienda sigue costando $1.200.

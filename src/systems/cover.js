@@ -41,8 +41,10 @@ export function findCoverSurface(x, y, hw, hh, map, reach) {
       const row = Math.floor(probeY / size);
 
       let flushX = x, flushY = y;
-      if (dir.dx === 1) flushX = col * size - hw - 0.5;
-      else if (dir.dx === -1) flushX = (col + 1) * size + hw + 0.5;
+      // (Contra el banco, pegado a su tabla: es más angosto que la casilla.)
+      const [mIzq, mDer] = map.margenes ? map.margenes(col, row) : [0, 0];
+      if (dir.dx === 1) flushX = col * size + mIzq - hw - 0.5;
+      else if (dir.dx === -1) flushX = (col + 1) * size - mDer + hw + 0.5;
       else if (dir.dy === 1) flushY = row * size - hh - 0.5;
       else flushY = (row + 1) * size + hh + 0.5;
 

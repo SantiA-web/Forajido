@@ -29,6 +29,19 @@ const TILE_RULES = {
   'C': { solid: true,  blocksSight: true,  blocksBullets: true },   // carga, cajones, mesas
   'W': { solid: true,  blocksSight: false, blocksBullets: false },  // VENTANILLA
   'H': { solid: true,  blocksSight: false, blocksBullets: false },  // media pared / baranda
+  /**
+   * 🆕 EL BANCO DEL COMEDOR *(Santi: "haría que los bancos sean obstáculos… el shift se podría usar
+   * contra el banco pero haría que se pueda disparar por encima del banco… lo que haría de cobertura
+   * es la mesa en realidad: el cuerpo llega hasta el banco, pero la mesa para las balas")*: como la
+   * baranda, frena el paso y te podés pegar con Shift, pero es bajo: pasan la vista y las balas. La
+   * bala la frena la mesa de al lado.
+   *
+   * `margenX`: más angosto que la casilla (11 unidades, la tabla dibujada) y **pegado a su mesa**, con
+   * una unidad para las piernas: así entre dos bancos vecinos queda más lugar, 24 unidades en vez de
+   * 20 *(Santi: "lo que quería es que el espacio entre dos bancos sea un poco más grande")*. Sin mesa
+   * al lado, centrado.
+   */
+  'B': { solid: true,  blocksSight: false, blocksBullets: false, margenX: 2.5 },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones
@@ -131,6 +144,29 @@ export function createTilemap(layout) {
     return enLaMisma(ax, ay) || enLaMisma(bx, by);
   };
 
+  /**
+   * Cuánto de cada costado de esta casilla es pasillo: [izquierda, derecha]. El banco va pegado a la
+   * mesa que tenga al lado (una unidad para las piernas) y deja el resto del lado de afuera.
+   */
+  function margenes(col, row) {
+    const regla = TILE_RULES[tileAt(col, row)];
+    if (!regla.margenX) return [0, 0];
+    const libre = 2 * regla.margenX;
+    const mesaIzq = tileAt(col - 1, row) === 'C', mesaDer = tileAt(col + 1, row) === 'C';
+    if (mesaDer && !mesaIzq) return [libre - 1, 1];
+    if (mesaIzq && !mesaDer) return [1, libre - 1];
+    return [regla.margenX, regla.margenX];
+  }
+  /** Sólido en este punto: la casilla, menos los costados de los que son más angostos (el banco). */
+  function solidoEn(px, py) {
+    const regla = TILE_RULES[tileAtPixel(px, py)];
+    if (!regla.solid) return false;
+    if (!regla.margenX) return true;
+    const col = Math.floor(px / size), [izq, der] = margenes(col, Math.floor(py / size));
+    const dx = px - col * size;
+    return dx >= izq && dx <= size - der;
+  }
+
   return {
     grid, rows, cols, size,
     width: cols * size,
@@ -153,12 +189,11 @@ export function createTilemap(layout) {
      * No afecta a nada de adentro: entre dos puntos del vagón, la recta que los
      * une nunca se sale del rectángulo del mapa.
      */
-    isSolidAt: (px, py) => TILE_RULES[tileAtPixel(px, py)].solid,
+    isSolidAt: (px, py) => solidoEn(px, py),
     /** ¿Hay acá algo contra lo que pegarse? Lo sólido, menos el aire del enganche. */
-    daCoberturaAt: (px, py) => {
-      const regla = TILE_RULES[tileAtPixel(px, py)];
-      return regla.solid && !regla.sinCobertura;
-    },
+    daCoberturaAt: (px, py) => solidoEn(px, py) && !TILE_RULES[tileAtPixel(px, py)].sinCobertura,
+    /** Cuánto de cada costado de esta casilla es pasillo, [izquierda, derecha] (el banco). */
+    margenes,
     blocksSightAt,
     blocksBulletsAt: (px, py) =>
       dentro(px, py) && TILE_RULES[tileAtPixel(px, py)].blocksBullets,

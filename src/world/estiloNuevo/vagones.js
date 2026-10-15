@@ -452,8 +452,9 @@ function vagon(train, w, dia) {
       const base = (f2 + 1) * S - 0.01;
       // --- los bancos, uno a cada lado (sin respaldo): el asiento de tablas, su canto y las patas
       for (const bc of [c - 1, c2 + 1]) {
-        if (casilla(bc, f) === '#' || casilla(bc, f) === undefined) continue;
-        const bx = ax(w.x + bc * S) + 3, bw = ax(w.x + (bc + 1) * S) - 3 - bx;
+        if (casilla(bc, f) !== 'B') continue;
+        // 🔁 Pegado a la mesa, con una unidad para las piernas (como el choque, ver 'B' en world/tilemap.js).
+        const derecha = bc > c, bx = ax(w.x + bc * S + (derecha ? 1 : 4)), bw = ax(w.x + bc * S + (derecha ? 12 : 15)) - bx;
         // 🔁 Más bajos *(Santi: "las mesas quedaron muy altas al igual que los bancos")*: el asiento a
         // 7 puntos del piso (unos 45 cm, con la gente de 27 puntos).
         const ALTO_BANCO = 7, by = y - ALTO_BANCO + 3, bh = y2 - ALTO_BANCO - by;

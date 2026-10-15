@@ -111,30 +111,35 @@ export const WAGONS = {
     // Acá los pasillos de arriba y abajo tocan la pared, así que las
     // ventanillas se alcanzan desde cualquier lado. Es el vagón más expuesto
     // del tren a los jinetes de afuera.
+    /**
+     * 🆕 LOS BANCOS ('B') a cada lado de cada mesa *(Santi: "haría que los bancos sean obstáculos")*:
+     * frenan el paso pero no las balas (ver 'B' en world/tilemap.js). La ronda, un pasajero y una
+     * bolsa caían arriba de uno y se corrieron a la casilla libre de al lado.
+     */
     layout: [
       '#WW###WW###WW###WW###WW###WW###WW#',
       '#................................#',
-      '#..CCC...CCC...CCC...CCC...CCC...#',
-      '#..CCC...CCC...CCC...CCC...CCC...#',
+      '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
+      '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
       '+................................+',
       '+................................+',
-      '#..CCC...CCC...CCC...CCC...CCC...#',
-      '#..CCC...CCC...CCC...CCC...CCC...#',
+      '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
+      '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
       '#................................#',
       '#WW###WW###WW###WW###WW###WW###WW#',
     ],
     enemies: [
-      { path: [[8, 1], [18, 1], [18, 8], [8, 8]] },
+      { path: [[7, 1], [19, 1], [19, 8], [7, 8]] },
     ],
     passengers: [
       { col: 2, row: 4, facing: 'right' },
       { col: 7, row: 2, facing: 'left' },
       { col: 13, row: 7, facing: 'right' },
-      { col: 20, row: 3, facing: 'left' },
+      { col: 19, row: 3, facing: 'left' },
       { col: 26, row: 5, facing: 'left' },
     ],
     loot: [
-      { col: 6, row: 3, type: 'bag' },
+      { col: 7, row: 3, type: 'bag' },
       { col: 19, row: 6, type: 'bag' },
       { col: 31, row: 4, type: 'bag' },
     ],

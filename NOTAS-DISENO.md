@@ -18996,6 +18996,14 @@ quedan sus mecánicas, que usa el de carga.)
   afuera (no tapa a nadie). La del fondo no (la cámara no llega y quedaba cortada). **Cada vagón con
   su color** en la cara de afuera, como en el galope *(Santi eligió la B: "cada vagón debería tener su
   color para poder distinguirlo")*.
+- **Los bancos son obstáculos** (casilla `B` en world/tilemap.js y en el mapa del comedor) *(Santi:
+  "el shift se podría usar contra el banco pero… se pueda disparar por encima del banco… el cuerpo
+  llega hasta el banco, pero la mesa para las balas")*: como la baranda del ganado, frenan el paso y te
+  podés pegar con Shift, pero pasan la vista y las balas; la bala la frena la mesa de al lado. Más
+  angostos que la casilla (11 unidades, el dibujo) y **pegados a su mesa** con una unidad para las
+  piernas: entre dos bancos vecinos quedan 24 unidades de pasillo, antes 20 *(Santi: "que el espacio
+  entre dos bancos sea un poco más grande")*. Con Shift te pegás al borde de la tabla. La ronda del
+  guardia, un pasajero y una bolsa caían en un banco y se corrieron a la casilla de al lado.
 - 🧪 El atajo [4] del campamento ahora va al comedor.
 - **Falta su gente:** sentada en los bancos, con dos poses nuevas (comer y tomar del jarro) más las que
   ya hay (el diario, fumar, de noche dormido sobre la mesa). Silueta primero.

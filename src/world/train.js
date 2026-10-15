@@ -2076,6 +2076,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, sa
         case 'S':
         case 'C':
         case 'R':
+        case 'B':
           estampar(r, piezaPiso(colors.floor, varianteDe(col, row), false), x, y);
           break;
 
@@ -2823,6 +2824,15 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, 
               ? piezaCama(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3))
               : piezaAsiento(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3));
             estampar(r, pieza, x, y - sube);
+          } });
+          break;
+        }
+
+        // 🆕 El banco del comedor, en el dibujo viejo: una tabla baja (el nuevo, en estiloNuevo/vagones.js).
+        case 'B': {
+          cosas.push({ base, draw: () => {
+            r.rect(x + 2, y - 3, size - 4, size - 1, '#4e3424');
+            r.rect(x + 2, y - 3, size - 4, 2, '#886244');
           } });
           break;
         }

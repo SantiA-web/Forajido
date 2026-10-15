@@ -337,6 +337,32 @@ function torsoEncargado(vista) {
   K.filas.forEach((fila, j) => { for (let x = 0; x < fila.length; x++) g[K.y + j - t.y][K.x + x] = fila[x]; });
   return { y: t.y, filas: g.map((f) => f.join('').replace(/\.+$/, '')) };
 }
+/**
+ * 🆕 P3c · EL GUARDIA BLINDADO *(Santi eligió la B: peto y espaldar)*: el uniforme del guardia con
+ * la placa de acero sobre el pecho y la espalda (`1 2 3 4`: luz, base, sombra, borde; con letras
+ * se mezclaba con el pelo), un punto más
+ * ancha que el chaleco a cada lado (de frente la tapan los brazos; de costado se ve más grueso,
+ * adelante y atrás, con las correas del chaleco entre las dos placas). La estrella de la compañía,
+ * encima de la placa. [desde la columna, filas desde la 9] por vista.
+ */
+const PLACA_BLINDADO = {
+  frente: [7, ['.112223.', '11222234', '12222234', '12222234', '22222334', '.444444.']],
+  diagF: [7, ['.112223.', '11222234', '12222234', '12222234', '22222334', '.444444.']],
+  lado: [6, ['.2VV12.', '42VV123', '42VV123', '42VV123', '42VV233', '.4VV44.']],
+  diagE: [7, ['.112223.', '11222234', '12222234', '12222234', '22222334', '.444444.']],
+  espalda: [7, ['.112223.', '11222234', '12222234', '12222234', '22222334', '.444444.']],
+};
+function torsoBlindado(vista) {
+  const t = TORSOS.guardia[vista], [x0, filas] = PLACA_BLINDADO[vista];
+  const g = t.filas.map((f) => f.padEnd(18, '.').split(''));
+  filas.forEach((fila, j) => {
+    const r = g[9 + j - t.y];
+    for (let x = 0; x < fila.length; x++) if (fila[x] !== '.' && !'Ee'.includes(r[x0 + x])) r[x0 + x] = fila[x];
+  });
+  return { y: t.y, filas: g.map((f) => f.join('').replace(/\.+$/, '')) };
+}
+TORSOS.blindado = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espalda'].map((v) => [v, torsoBlindado(v)]));
+
 /** De dónde a dónde va la correa (la vuelve a trazar `darForma` en jugador.js con el cuerpo ensanchado). */
 function correaEncargado(vista) { const c = CARTERA_ENCARGADO[vista] && CARTERA_ENCARGADO[vista].correa; return c ? [c[0], c[c.length - 1]] : null; }
 TORSOS.encargado = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espalda'].map((v) => [v, torsoEncargado(v)]));
@@ -408,6 +434,7 @@ const PESO = {
    * compañía); la manga, los dos, según la hora del asalto (ver fijarHoraDelSorteo).
    */
   ropa: { chaleco: 0.4, tiradores: 0.3, camisa: 0.3 },
+  cuerpoBlindado: { normal: 0.5, anchos: 0.5 },   // 🆕 P3c: el blindado, mitad y mitad (Santi, la B)
   /** 🆕 B4: los cuerpos (la B: normal 55, gordito, flaco y hombros anchos 15 cada uno) y la chaqueta del guardia (1 de cada 2). */
   cuerpo: { normal: 0.55, gordito: 0.15, flaco: 0.15, anchos: 0.15 },
   chaqueta: 0.5,
@@ -425,13 +452,14 @@ export function sortearAspecto(tipo, azar = Math.random) {
   const a = { piel: elegir(PESO_PIEL, azar), peinado: elegir(PESO.peinado, azar) };
   do a.pelo = elegir(PESO.pelo, azar);
   while (NUNCA.some((n) => n.pelo === a.pelo && n.piel === a.piel));
-  if (tipo === 'guardia') a.sombrero = elegir(PESO.sombreroGuardia, azar);
+  if (tipo === 'guardia' || tipo === 'blindado') a.sombrero = elegir(PESO.sombreroGuardia, azar);
   else if (tipo === 'encargado') a.sombrero = 'gorra';   // 🆕 P3c: siempre con su gorra
   else { a.sombrero = elegir(PESO.sombreroPasajero, azar); a.panuelo = elegir(PESO.panuelo, azar); }
   if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno' && a.sombrero !== 'gorra') a.colorSombrero = elegir(PESO.colorSombrero, azar);
   a.barba = elegir(a.pelo === 'canas' ? PESO.barbaCanas : PESO.barba, azar);
   if (tipo === 'pasajero') a.ropa = elegir(PESO.ropa, azar);
-  a.cuerpo = elegir(PESO.cuerpo, azar);
+  // 🆕 P3c: el blindado, sólo normal u hombros anchos (Santi, la C).
+  a.cuerpo = elegir(tipo === 'blindado' ? PESO.cuerpoBlindado : PESO.cuerpo, azar);
   a.chaqueta = tipo === 'guardia' && azar() < PESO.chaqueta;
   // Con la chaqueta, la manga larga (la chaqueta tapa la camisa).
   a.arremangada = !a.chaqueta && tipo !== 'encargado' && elegir(horaDelSorteo.dia ? PESO.mangaDia : PESO.mangaNoche, azar) === 'arremangada';
@@ -474,6 +502,11 @@ const BASE = {
   guardia: {
     L: 17, C: 16, c: 15,                     // camisa clara
     y: 1, E: 45, e: 29, W: 1, G: 28,         // botones oscuros, la estrella de bronce con su brillo, cinto
+  },
+  // 🆕 P3c: el blindado, el guardia con la placa de acero (ver PLACA_BLINDADO).
+  blindado: {
+    L: 17, C: 16, c: 15, y: 1, E: 45, e: 29, W: 1, G: 28,
+    1: 25, 2: 24, 3: 23, 4: 31,              // el acero: luz, base, sombra, borde
   },
   // 🆕 P3c: el Encargado, de saco azul marino cerrado (también las mangas) con botones dorados; sin estrella.
   encargado: {
@@ -534,11 +567,11 @@ function torsoConRopa(torso, vista, ropa) {
   }
   return (torsosDeRopa[clave] = { y: torso.y, filas: filas.map((r) => r.join('')) });
 }
-export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado', ropa = 'chaleco' }) {
+export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado', ropa = 'chaleco' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
-  const s = sombrero === undefined ? (tipo === 'guardia' ? 'plano' : tipo === 'encargado' ? 'gorra' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
+  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' ? 'plano' : tipo === 'encargado' ? 'gorra' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
   // (El Encargado: el pantalón de la compañía y encima su saco.)
-  const colores = { ...(tipo === 'encargado' ? UNIFORMES[uniforme] : {}), ...BASE[tipo], ...(tipo === 'guardia' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
+  const colores = { ...(tipo === 'encargado' ? UNIFORMES[uniforme] : {}), ...BASE[tipo], ...(tipo === 'guardia' || tipo === 'blindado' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
   if (!funda) Object.assign(colores, vista === 'lado' ? { F: colores.I ?? C.I, f: colores.T ?? C.T } : { F: null, f: null });
   const cabeza = [CABEZA[vista]];
   if (tipo === 'pasajero') cabeza.push(PANUELO[vista]);
@@ -649,7 +682,7 @@ export function cuadroGente(o) {
   const persona = capasPersona(o);
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
-  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia',
+  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia' || o.tipo === 'blindado',
     // 🆕 P3c: el Encargado, con el saco cerrado (sin la panza del chaleco abierto) y la correa cruzada.
     panza: o.tipo !== 'encargado', correa: o.tipo === 'encargado' ? correaEncargado(o.vista) : null };
   const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
@@ -930,6 +963,8 @@ export function cuadroTendido({ tipo = 'guardia', modo = 'muerto', late = 0, ang
   // La almohada (D d) y la frazada (N Z X, lana azul; S s la sábana) de la litera.
   const col = { ...C, ...capasPersona({ tipo, vista: 'frente', ...o }).colores, D: 17, d: 15, N: 20, Z: 19, X: 41, S: 17 };
   if (modo === 'cama') col.s = 16;
+  // 🆕 P3c: el blindado tirado, con la placa de acero en el pecho (donde va el chaleco).
+  if (tipo === 'blindado') Object.assign(col, { U: 25, V: 24, v: 23 });
   const idx = new Int16Array(TA * TL).fill(-1);
   const poner = (x, y, i) => {
     if (i == null) return;

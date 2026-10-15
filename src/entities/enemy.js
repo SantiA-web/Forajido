@@ -394,8 +394,8 @@ export function drawEnemy(r, e) {
    * donde apunta.
    */
   // 🆕 P3c: también el Encargado del tren (su gorra, su saco y su cartera, ver gente.js).
-  const tipoN = tipo === 'encargado' ? 'encargado' : 'guardia';
-  const nuevo = estiloNuevo.activo && (tipo === 'guardia' || tipo === 'encargado') && r.ctx;
+  const tipoN = tipo === 'encargado' || tipo === 'blindado' ? tipo : 'guardia';
+  const nuevo = estiloNuevo.activo && (tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado') && r.ctx;
   const espejoTirado = (Math.floor(e.x / 3) & 1) === 1;
   if (!e.alive) {
     if (nuevo) { tendidoNuevo(r, e.x, e.y, { tipo: tipoN, modo: 'muerto', sangre: true, espejo: espejoTirado, aspecto: aspectoDe(e, tipoN) }); return; }

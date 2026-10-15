@@ -18960,7 +18960,7 @@ y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo d
 - **La estrella del Sheriff** *(Santi: "misma estrella que los guardias, pero más grande y en el
   sombrero también lleva una estrella")*.
 - Cada uno: silueta primero, después color, las cinco vistas y las poses.
-- **✅ El Encargado del tren** (tipo \`encargado\` en gente.js; look \`cartera\`): la **gorra de plato**
+- **✅ El Encargado del tren** (tipo `encargado` en gente.js; look `cartera`): la **gorra de plato**
   azul marino (eligió la B de dos siluetas: la copa más ancha arriba), con la chapa dorada y la
   visera; el **saco azul marino cerrado** (también las mangas) con botones dorados, sin estrella; el
   pantalón gris de la compañía; la **cartera de cuero** colgando del lado contrario a la funda, con
@@ -18969,6 +18969,12 @@ y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo d
   trazar entera después de dar forma (se cortaba en pedazos) y el gordito va con el saco cerrado (sin
   la panza del chaleco abierto). Tirado, el saco con sus botones (sin la cartera: *"así está bien"*).
   🐛 De paso: el guardia caído y el rendido no recibían su aspecto (salían de fábrica).
+- **✅ El guardia blindado** (tipo `blindado` en gente.js; look `placa`): el uniforme del guardia con
+  la **placa de acero sobre el pecho y la espalda** (eligió la B de tres siluetas: peto y espaldar,
+  sin hombreras), gris con la luz arriba a la izquierda y el borde oscuro abajo, y la estrella de
+  la compañía encima. De costado, las dos placas con el chaleco bordó asomando entre ellas; tirado,
+  el pecho de acero. **Cuerpo: mitad normal, mitad hombros anchos** (la B de 75/25, 50/50 y 25/75).
+  (Las letras de la placa son números: con letras se mezclaba con el pelo y salía negra.)
 - **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
   poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
   (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del

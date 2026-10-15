@@ -19005,6 +19005,29 @@ y los pasajeros tienen el dibujo nuevo; los especiales siguen con el viejo. Lo d
   cuerpo** (la mano se veía pegada en la espalda, en todos los personajes). Atajo 🧪 [6] del
   campamento: el tren de pasajeros con el Sheriff y sus tres en tu vagón. Pendiente: el borde de color
   del estado era para el jefe viejo; este Sheriff es un guardia y avisa como ellos (ojos y el "!").
+- **🔨 El Cazarrecompensas: el dibujo hecho, falta conectarlo al juego** (tipo `cazarrecompensas` en
+  gente.js; es el único jefe de verdad, `createBoss`). Siempre el mismo: **hombros anchos**, pelo
+  negro y barba completa negra, pañuelo rojo, chaleco de cuero negro con botones de plata, camisa
+  clara, pantalón gris oscuro. **Sombrero A** de tres siluetas: el ala plana más ancha del juego (21
+  puntos), la copa baja abollada y la cinta roja. Sin el arma larga a la espalda (Santi siguió mis
+  recomendaciones). **La capa roja larga hasta las rodillas** (`capaCazador`, sobre el cuadro
+  terminado):
+  - **De frente, en diagonal hacia abajo y de costado, detrás del cuerpo** *(Santi: "que se distinga
+    que está detrás del cuerpo")*: sólo llena lo vacío, en el rojo más oscuro (el forro), con la orilla
+    un tono más clara; se angosta hacia los hombros y se abre abajo *(Santi: "no la agrandaría, sino
+    que achicaría a medida que se acerca a los hombros")*. Asoma entre el brazo y las costillas y
+    entre las piernas.
+  - **De espaldas y de tres cuartos de espaldas, encima**, del ancho de los brazos: el rojo vivo con
+    luz a la izquierda, sombra a la derecha, dos pliegues y el ruedo; arriba sigue la forma de los
+    hombros (si no, asomaban las mangas).
+  - **Con el paso, un punto y sólo hacia atrás** (en diagonal se ensanchaba hacia el lado que mira).
+  - **De costado corriendo, dibujada a mano** (`CAPA_VUELA`, dos dibujos que se turnan) con la foto
+    de referencia de Santi: angosta en los hombros, se ensancha hacia atrás, el borde de arriba sube y
+    el de abajo baja mostrando el forro. Se pega un punto detrás de la espalda y una fila arriba del
+    chaleco: lo toca con 3 puntos en los ocho cuadros. 🐛 De costado se mide desde el chaleco (el cinto
+    lo tapa el brazo) y el chaleco se busca debajo del pañuelo (el sombrero tiene sus colores).
+  - **Falta:** conectarlo en `drawBoss` (las armas según su equipo, acechando el arma baja, la
+    embestida corriendo, el borde de color del estado sólo del lado de la luz, tirado).
 - **✅ Las poses, revisadas por tres jueces** *(Santi: "hay dibujos que se ven muy feos en las
   poses… crea subagentes que juzguen… no pararás hasta que estén satisfechos")*. Tres subagentes
   (anatomía y pose, oficio de pixel art, lectura en el juego), con un instructivo de las reglas del

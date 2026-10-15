@@ -194,7 +194,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hecha y falta que Santi la juegue; P3b, las variantes: B1-B4 hechas (pelo, piel, barbas, ropa, cuerpos
   y chaqueta), las poses revisadas por tres subagentes jueces (tmp-ref/jueces.js) y B6 sólo el
   sombrero de paja suelto (B5 y lo demás de B6, afuera); P3b cerrada; P3c: el Encargado, el
-  blindado, el Pistolero y el Sheriff hechos, sigue el Cazarrecompensas (ver NOTAS,
+  blindado, el Pistolero y el Sheriff hechos; el Cazarrecompensas dibujado (falta conectarlo en
+  drawBoss, ver NOTAS,
   "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las
   escalerillas, los obstáculos del mundo (túneles, curvas), medir con el bot y

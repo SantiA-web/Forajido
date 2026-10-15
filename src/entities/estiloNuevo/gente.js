@@ -288,6 +288,18 @@ SOMBREROS.alto = {
   espalda: mapa(-3, ['.........hHk', '........hHkHk', '........hHHHk', '........hHHHk', '........hHHHk', '...hhhhHHHHHHHkkkk', '....xkkkkkkkkkkkx']),
 };
 
+/**
+ * 🆕 P3c · EL SOMBRERO DEL CAZARRECOMPENSAS *(Santi eligió la A de tres siluetas)*: el ala plana más
+ * ancha del juego (21 puntos de punta a punta), la copa baja y abollada, y la cinta roja de la capa.
+ */
+SOMBREROS.ancho = {
+  frente: mapa(-2, ['.........h.Hk', '........hHHHHk', '.......hbbbbbbk', 'hhhhhhhHHHHHHHkkkkkkk', '..xkkkkkkkkkkkkkkkx']),
+  diagF: mapa(-2, ['..........h.Hk', '.........hHHHHk', '........hbbbbbbk', '.hhhhhhhHHHHHHHkkkkkkk', '...xkkkkkkkkkkkkkkkx']),
+  lado: mapa(-2, ['.........h.Hk', '........hHHHHk', '.......hbbbbbbk', 'hhhhhhhHHHHHHHkkkkkkk', '..xkkkkkkkkkkkkkkkx']),
+  diagE: mapa(-2, ['.........h.Hk', '........hHHHHk', '.......hbbbbbbk', 'hhhhhhhHHHHHHHkkkkkkk', '..xkkkkkkkkkkkkkkkx']),
+  espalda: mapa(-2, ['.........h.Hk', '........hHHHHk', '.......hbbbbbbk', 'hhhhhhhHHHHHHHkkkkkkk', '..xkkkkkkkkkkkkkkkx']),
+};
+
 const PANUELO = {
   frente: mapa(7, ['.......zRRSRRr']),
   diagF: mapa(7, ['........zRRSRRr']),
@@ -489,6 +501,119 @@ TORSOS.sheriff = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espald
 export function aspectoSheriff(azar = Math.random) {
   return { piel: 'media', pelo: 'canas', peinado: 'corto', barba: elegir(PESO.barbaCanas, azar), sombrero: 'alto', cuerpo: 'normal', chaqueta: false, arremangada: false };
 }
+/**
+ * 🆕 P3c · EL CAZARRECOMPENSAS (el jefe que sube por vos; siempre el mismo): el cuerpo del civil con
+ * el chaleco de cuero negro, la camisa clara, el pañuelo rojo, **hombros anchos** y **la capa roja
+ * larga** hasta las rodillas *(Santi eligió la B de tres capas y la A de dos para el frente)*.
+ */
+TORSOS.cazarrecompensas = TORSOS.pasajero;
+export function aspectoCazador() {
+  return { piel: 'media', pelo: 'negro', peinado: 'corto', barba: 'completa', sombrero: 'ancho', cuerpo: 'anchos', chaqueta: false, arremangada: false };
+}
+/**
+ * LA CAPA, sobre el cuadro terminado (se arma con la forma del cuerpo de cada cuadro). Cuelga de los
+ * hombros (siete filas arriba del cinto) hasta las rodillas (cuatro abajo).
+ *  - **De frente, en diagonal hacia abajo y de costado va DETRÁS del cuerpo** *(Santi: "tiene que estar
+ *    muy bien hecha y que se distinga que está detrás del cuerpo")*: sólo llena lo vacío, y es el
+ *    rojo más oscuro (el forro en la sombra), con el borde de afuera un tono más claro (la tela que
+ *    da vuelta). Asoma un punto más allá de los brazos, entre el brazo y las costillas y entre las piernas.
+ *  - **De espaldas y de tres cuartos de espaldas va ENCIMA** (tapa la espalda y los brazos que
+ *    cuelgan): el rojo vivo, con luz a la izquierda, sombra a la derecha, los pliegues que bajan y
+ *    el ruedo oscuro. Se abre en campana.
+ *  - Caminando se abre un poco; **corriendo vuela**: hacia atrás de costado y más abierta de espaldas.
+ */
+const CAPA = { luz: 10, base: 9, sombra: 8, forro: 39 };
+// Cuánto asoma a cada lado del cinto, arriba y abajo: [[izquierda arriba, abajo], [derecha arriba, abajo]].
+// 🔁 Se angosta hacia los hombros y se abre abajo, sin agrandarse *(Santi: "de frente la capa es muy
+// cuadrada… no la agrandaría, sino que achicaría a medida que se acerca a los hombros")*.
+const ASOMA_CAPA = {
+  frente: [[2, 5], [2, 5]], diagF: [[2, 5], [1, 4]], lado: [[1, 4], [-99, -99]],
+  diagE: [[4, 5], [4, 5]], espalda: [[4, 5], [4, 5]],
+};
+/**
+ * 🆕 DE COSTADO CORRIENDO, LA CAPA VUELA, DIBUJADA A MANO *(Santi: "cuando corre de perfil… parece un
+ * cuadrado o una escalera. Debería elevarse y quedar algo más parecido a la imagen")*: angosta en los
+ * hombros y cada vez más ancha hacia atrás; el borde de arriba sube, el de abajo baja en diagonal
+ * mostrando el forro, y la punta ondea. Dos dibujos que se turnan (flamea). La columna 12 es la
+ * espalda (el borde de atrás del cinto); la fila 2, los hombros.
+ * `l` la luz arriba, `b` el rojo, `s` la sombra, `f` el forro.
+ */
+const CAPA_VUELA = [
+  ['lll...........', 'bbbllllllllll.', 'bbbbbbbbbbbbb.', 'bbbbbbbbbbbbl.', 'sbbbbbbbbbbbb.', 'bsbbbbbbbbbs..', 'bbsbbbbbbff...', 'sbbsbbbfff....', '.sbbbfff......', '..fff.........'],
+  ['..ll..........', '.lbblllllllll.', 'lbbbbbbbbbbbb.', 'bbbbbbbbbbbbl.', 'bbbbbbbbbbbbb.', 'sbbbbbbbbbbs..', '.sbbbbbbbff...', 'bbsbbbbfff....', 'sbbbbfff......', '.fff..........'],
+];
+function capaCazador(idx, vista, paso) {
+  const out = idx.slice(), A = 44, B = BASE.cazarrecompensas;
+  let cinto = 16 + 6, wa = 99, wb = -1;
+  for (let y = 12 + 6; y <= 20 + 6; y++) {
+    let n = 0;
+    for (let x = 0; x < A; x++) if (idx[y * A + x] === B.W) n++;
+    if (n >= 2) { cinto = y; break; }
+  }
+  for (let x = 0; x < A; x++) if (idx[cinto * A + x] === B.W || idx[cinto * A + x] === B.G) { wa = Math.min(wa, x); wb = Math.max(wb, x); }
+  if (wb < 0) { wa = 19; wb = 25; }
+  /**
+   * 🐛 De costado el cinto casi no se ve (lo tapa el brazo): en la mitad de los cuadros se agarraba
+   * otro punto y la capa salía corrida, pegada al cuerpo en más de cinco puntos *(Santi: "en R0, R2, R4
+   * y R6 la capa sale raro… muy ancha al salir")*. De costado se mide desde el chaleco: su primera fila
+   * son los hombros y su borde de atrás, la espalda.
+   */
+  let hombros = cinto - 8;
+  if (vista === 'lado') {
+    // (Desde debajo del pañuelo: el sombrero tiene los colores del chaleco y, con el cuerpo abajo, el
+    // ala caía donde se buscaba.)
+    let arriba = -1, panuelo = 10;
+    for (let y = 6; y < 30; y++) if ([B.S, B.R].some((c) => idx.subarray(y * A, y * A + A).includes(c))) { panuelo = y; break; }
+    for (let y = panuelo + 1; y < 30 && arriba < 0; y++) for (let x = 0; x < A; x++) if (idx[y * A + x] === B.U || idx[y * A + x] === B.V) { arriba = y; break; }
+    if (arriba >= 0) {
+      cinto = arriba + 8; hombros = arriba; wa = 99;
+      for (let y = arriba; y <= arriba + 8; y++) for (let x = 0; x < A; x++) if (idx[y * A + x] === B.U || idx[y * A + x] === B.V) { wa = Math.min(wa, x); break; }
+    }
+  }
+  const encima = vista === 'espalda' || vista === 'diagE';
+  const y0 = cinto - (encima ? 8 : 7), y1 = cinto + 4;   // (encima, desde arriba del hombro: si no, asomaba la manga)
+  // De costado corriendo, la capa dibujada a mano (detrás del cuerpo: llena sólo lo vacío).
+  if (vista === 'lado' && paso && paso[0] === 'R') {
+    const M = CAPA_VUELA[(Number(paso.slice(1)) >> 1) & 1], col = { l: CAPA.luz, b: CAPA.base, s: CAPA.sombra, f: CAPA.forro };
+    M.forEach((fila, j) => { for (let i = 0; i < fila.length; i++) {
+      // (Como en los cuadros que salían bien: un punto detrás de la espalda y una fila arriba del
+      // chaleco, así la tocan unos 3 puntos y no le sale de la cabeza.)
+      const x = wa - 13 + i, y = hombros - 2 + j, k = y * A + x;
+      if (fila[i] !== '.' && x >= 0 && x < A && out[k] < 0) out[k] = col[fila[i]];
+    } });
+    return out;
+  }
+  // 🔁 Con el paso, un punto y sólo hacia atrás *(Santi: "cuando corre o camina en diagonal… se
+  // ensancha mucho hacia el lado que está viendo")*: corriendo; caminando, sólo de costado.
+  const vuela = paso && paso[0] === 'R' ? 1 : paso && paso[0] === 'W' && vista === 'lado' ? 1 : 0;
+  const [[i0, i1], [d0, d1]] = ASOMA_CAPA[vista];
+  for (let y = y0; y <= y1; y++) {
+    const t = (y - y0) / (y1 - y0);
+    const extra = Math.round(vuela * t);
+    // (Se abre de a poco arriba y más abajo: la orilla hace la curva de la tela.)
+    const u2 = Math.sqrt(t);
+    const a = wa - Math.round(i0 + (i1 - i0) * u2) - extra;
+    const b = d0 < -50 ? Math.floor((wa + wb) / 2) : wb + Math.round(d0 + (d1 - d0) * u2) + (vista === 'espalda' ? extra : 0);
+    for (let x = Math.max(0, a); x <= Math.min(A - 1, b); x++) {
+      const k = y * A + x;
+      if (!encima) {
+        if (out[k] >= 0) continue;
+        out[k] = x === a || x === b ? CAPA.sombra : CAPA.forro;
+        continue;
+      }
+      // (Arriba sigue la forma de los hombros del cuerpo: no se pinta afuera de ellos.)
+      if (y <= y0 + 1 && out[k] < 0) continue;
+      // Encima: la luz a la izquierda, la sombra a la derecha, los pliegues abajo y el ruedo.
+      const u = (x - a) / Math.max(1, b - a);
+      let c = u < 0.2 ? CAPA.luz : u > 0.78 ? CAPA.sombra : CAPA.base;
+      if (y === y1) c = CAPA.sombra;
+      // Dos pliegues que bajan desde la mitad, a un tercio de cada lado.
+      else if (t > 0.45 && c === CAPA.base && (x === Math.round(a + (b - a) / 3) || x === Math.round(a + 2 * (b - a) / 3))) c = CAPA.sombra;
+      out[k] = c;
+    }
+  }
+  return out;
+}
 TORSOS.blindado = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espalda'].map((v) => [v, torsoBlindado(v)]));
 
 /** De dónde a dónde va la correa (la vuelve a trazar `darForma` en jugador.js con el cuerpo ensanchado). */
@@ -600,7 +725,7 @@ export function fijarHoraDelSorteo(dia) { horaDelSorteo.dia = !!dia; }
 /** El aspecto de alguien: se sortea la primera vez que se lo dibuja y queda guardado. */
 export function aspectoDe(ent, tipo) {
   // 🆕 P3c: el Sheriff es siempre el mismo (sólo la barba se sortea, ver aspectoSheriff).
-  return ent._aspecto || (ent._aspecto = tipo === 'sheriff' ? aspectoSheriff() : sortearAspecto(tipo));
+  return ent._aspecto || (ent._aspecto = tipo === 'sheriff' ? aspectoSheriff() : tipo === 'cazarrecompensas' ? aspectoCazador() : sortearAspecto(tipo));
 }
 const PELOS = {
   // 🔁 El negro cálido, marrón casi negro *(Santi eligió el 2 de tres; los negros
@@ -625,7 +750,8 @@ const COLOR_SOMBRERO = {
   bombin: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   paja: { h: 38, H: 37, k: 6, x: 5, b: 33 },
   gorra: { h: 41, H: 18, k: 40, x: 0, b: 40 },
-  alto: { h: 4, H: 3, k: 32, x: 0, b: 16 },     // 🆕 el del Sheriff: marrón oscuro con la cinta crema   // 🆕 la del Encargado: azul marino, cinta y visera oscuras
+  alto: { h: 4, H: 3, k: 32, x: 0, b: 16 },
+  ancho: { h: 33, H: 32, k: 0, x: 0, b: 8 },     // 🆕 el del Cazarrecompensas: negro pardo con la cinta roja     // 🆕 el del Sheriff: marrón oscuro con la cinta crema   // 🆕 la del Encargado: azul marino, cinta y visera oscuras
 };
 /** 🆕 La otra variante de los sombreros de fieltro: marrón oscuro con la cinta crema *(Santi)*. */
 const COLOR_MARRON = { h: 4, H: 3, k: 32, x: 0, b: 16 };
@@ -640,6 +766,9 @@ const BASE = {
   // De negro *(Santi eligió el negro de tres)*: chaleco gris oscuro de botones plateados, camisa rojo
   // vino, pañuelo negro y pantalón marrón: no se confunde con el guardia (bordó) ni con el civil (marrón).
   pistolero: { U: 24, V: 23, v: 31, w: 0, y: 25, L: 10, C: 9, c: 8, S: 31, R: 0, r: 0, z: 0, I: 34, T: 33, t: 32, W: 32, G: 25 },
+  // 🆕 P3c: el Cazarrecompensas: chaleco de cuero negro con botones de plata, camisa clara, el pañuelo
+  // rojo como la capa, pantalón gris oscuro.
+  cazarrecompensas: { U: 33, V: 32, v: 0, w: 0, y: 25, L: 16, C: 15, c: 14, S: 10, R: 9, r: 8, z: 39, W: 1, G: 25, I: 24, T: 23, t: 31 },
   // 🆕 P3c: el blindado, el guardia con la placa de acero (ver PLACA_BLINDADO).
   blindado: {
     L: 17, C: 16, c: 15, y: 1, E: 45, e: 29, W: 1, G: 28,
@@ -704,14 +833,14 @@ function torsoConRopa(torso, vista, ropa) {
   }
   return (torsosDeRopa[clave] = { y: torso.y, filas: filas.map((r) => r.join('')) });
 }
-export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff', ropa = 'chaleco' }) {
+export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff' || tipo === 'cazarrecompensas', ropa = 'chaleco' }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
-  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' || tipo === 'pistolero' ? 'plano' : tipo === 'encargado' ? 'gorra' : tipo === 'sheriff' ? 'alto' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
+  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' || tipo === 'pistolero' ? 'plano' : tipo === 'encargado' ? 'gorra' : tipo === 'sheriff' ? 'alto' : tipo === 'cazarrecompensas' ? 'ancho' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
   // (El Encargado: el pantalón de la compañía y encima su saco.)
   const colores = { ...(tipo === 'encargado' ? UNIFORMES[uniforme] : {}), ...BASE[tipo], ...(tipo === 'guardia' || tipo === 'blindado' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
   if (!funda) Object.assign(colores, vista === 'lado' ? { F: colores.I ?? C.I, f: colores.T ?? C.T } : { F: null, f: null });
   const cabeza = [CABEZA[vista]];
-  if (tipo === 'pasajero' || tipo === 'pistolero' || tipo === 'sheriff') cabeza.push(PANUELO[vista]);
+  if (tipo === 'pasajero' || tipo === 'pistolero' || tipo === 'sheriff' || tipo === 'cazarrecompensas') cabeza.push(PANUELO[vista]);
   if (PEINADOS[peinado] && PEINADOS[peinado][vista]) cabeza.push(PEINADOS[peinado][vista]);
   // (La barba va en puntos finos, encima: ver barbaFina.)
   // El sombrero va aparte: con la cabeza gacha baja más que la cara y la tapa (ver `gacha` en jugador.js).
@@ -824,6 +953,7 @@ export function cuadroGente(o) {
     panza: o.tipo !== 'encargado', correa: o.tipo === 'encargado' ? correaEncargado(o.vista) : null };
   const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
   if (o.tipo === 'sheriff') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''));
+  if (o.tipo === 'cazarrecompensas') q0.idx = capaCazador(q0.idx, o.vista, o.piernas || '');
   const q = { ...q0, finos: barbaFina(o, q0) };
   const F = PF || FB;
   if (!F) return q;

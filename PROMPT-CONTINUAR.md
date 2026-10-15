@@ -139,6 +139,10 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   pasajeros con el Sheriff en tu vagón (2026-10-15) y [7] 950 de recompensa, para que suba el
   Cazarrecompensas (2026-10-15). **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
   cuando el estilo nuevo esté terminado.
+- **Cuánta gente hay en cada vagón** *(Santi, 2026-10-15: "dejemos abierta la posibilidad de sumar
+  más y modificar los pasajeros y guardias en ciertos vagones")*: el comedor tiene 5 pasajeros para 10
+  mesas y se ve vacío. Revisar pasajeros y guardias vagón por vagón (cambia el juego: más para robar y
+  más testigos).
 - **El Cazarrecompensas, para después** *(Santi, 2026-10-15: "después pulimos esos detalles del
   Cazarrecompensas, además de que quiero mejorarlo para hacerlo más difícil")*: en la sombra se ve
   casi negro; sus balas salen de un punto fijo y no de la boca del arma; el arma larga desaparece al
@@ -199,7 +203,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   sombrero de paja suelto (B5 y lo demás de B6, afuera); P3b cerrada; P3c: el Encargado, el
   blindado, el Pistolero, el Sheriff y el Cazarrecompensas hechos; queda el Dinamitero, que espera a
   que exista su vagón. Sigue **P4, los otros vagones, primero el tren de pasajeros entero**: el
-  comedor (el pobre) hecho, falta su gente sentada con las poses de comer y tomar; después el
+  comedor (el pobre) hecho, con su gente sentada a la mesa y el que duerme acostado en el banco;
+  falta las poses de comer y tomar del jarro (elegidas, falta la silueta); después el
   dormitorio, primera clase / guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los

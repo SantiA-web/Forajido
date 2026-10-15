@@ -982,6 +982,34 @@ const BRAZOS = {
     frente: [{ p: [[7, 9], [4, 6], [8, 2]], bajo: true }, { p: [[13, 9], [16, 6], [11, 2]], bajo: true }],
     espalda: [{ p: [[13, 9], [16, 6], [12, 2]] }, { p: [[6, 9], [3, 6], [7, 2]] }],
   },
+  /**
+   * 🆕 DORMIDO ACOSTADO EN EL BANCO DEL COMEDOR (de frente, acostado a lo largo del banco) *(Santi: "la
+   * misma silueta que un pasajero de frente solo que tumbada, una mano y la otra sobre el pecho")*: el
+   * brazo de afuera colgando del banco y la mano del otro sobre el pecho. `acostadoDer`, colgando a la
+   * derecha (del otro lado de la mesa).
+   */
+  acostado: {
+    // (🔁 La mano más afuera, en el aire al costado del banco *(Santi: "que el brazo pueda flotar y no
+    // quedar contra el banco")*.)
+    frente: [{ p: [[7, 9], [3, 11], [1, 14]] }, { p: [[13, 9], [14, 12], [10, 11]] }],
+  },
+  acostadoDer: {
+    frente: [{ p: [[13, 9], [17, 11], [19, 14]] }, { p: [[7, 9], [6, 12], [10, 11]] }],
+  },
+  // 🆕 Respirando *(Santi)*: al tomar aire la mano sobre el pecho sube (`Medio`, un punto; `Aire`, el
+  // pecho lleno, dos), y al soltarlo baja de a uno (ver passenger.js).
+  acostadoMedio: {
+    frente: [{ p: [[7, 9], [3, 11], [1, 14]] }, { p: [[13, 9], [14, 11], [10, 10]] }],
+  },
+  acostadoDerMedio: {
+    frente: [{ p: [[13, 9], [17, 11], [19, 14]] }, { p: [[7, 9], [6, 11], [10, 10]] }],
+  },
+  acostadoAire: {
+    frente: [{ p: [[7, 9], [3, 11], [1, 14]] }, { p: [[13, 9], [14, 10], [10, 9]] }],
+  },
+  acostadoDerAire: {
+    frente: [{ p: [[13, 9], [17, 11], [19, 14]] }, { p: [[7, 9], [6, 10], [10, 9]] }],
+  },
   cartas: {
     lado: [{ p: [[10, 9], [11, 13], [13, 13]] }, { p: [[9, 9], [10, 13], [12, 12]], atras: true }],
     frente: [{ p: [[7, 9], [7, 12], [8, 14]] }, { p: [[13, 9], [13, 12], [11, 14]] }],

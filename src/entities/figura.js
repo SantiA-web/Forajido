@@ -607,7 +607,7 @@ function jugadorNuevo(r, f) {
   // el dibujo: la bala sale hacia donde apuntás, como siempre.
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
-    ? lienzoGente({ ...(gente.aspecto || {}), tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, doble: !!gente.doble, orilla: gente.orilla ?? null, orillaLado: gente.orillaLado ? gente.orillaLado * (espejo ? -1 : 1) : 0, fino }, luz, !!f.destello)
+    ? lienzoGente({ ...(gente.aspecto || {}), tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, doble: !!gente.doble, orilla: gente.orilla ?? null, mesa: gente.mesa ?? null, orillaLado: gente.orillaLado ? gente.orillaLado * (espejo ? -1 : 1) : 0, fino }, luz, !!f.destello)
     : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina, mascara: !!f.mascara }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();

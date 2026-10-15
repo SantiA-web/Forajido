@@ -1144,8 +1144,23 @@ export function buildTrain(
        * es el borde de abajo del asiento, para dibujarlo encima.
        */
       const dAsiento = p.id === 'pasajeros' ? [-1, -2].find((d) => fila[def.col + d] === 'S') : undefined;
-      pa.sentado = !esCama && dAsiento !== undefined;
-      if (pa.sentado) {
+      /**
+       * 🆕 EN EL COMEDOR, SENTADO EN EL BANCO DE AL LADO, mirando a la mesa *(Santi: "vamos con
+       * sentarlos en los bancos… las piernas no se verían del todo porque irían bajo la mesa")*: el
+       * banco está del lado al que mira (`facing` en data/wagons.js). Su caja sigue en el pasillo.
+       */
+      const dBanco = p.id === 'comedor' ? (def.facing === 'left' ? -1 : 1) : undefined;
+      if (dBanco !== undefined && fila[def.col + dBanco] === 'B') {
+        pa.sentado = true;
+        pa.enBanco = dBanco;
+        pa.asientoX = enTiles([def.col + dBanco, def.row]).x;
+        let fin = def.row;
+        while (((p.layout[fin + 1] || '')[def.col + dBanco]) === 'B') fin++;
+        pa.asientoBase = (fin + 1) * map.size;
+        pa.facing = dBanco > 0 ? 0 : Math.PI;
+      }
+      if (!pa.enBanco) pa.sentado = !esCama && dAsiento !== undefined;
+      if (pa.sentado && !pa.enBanco) {
         pa.asientoX = enTiles([def.col + dAsiento, def.row]).x;
         let fin = def.row;
         while (((p.layout[fin + 1] || '')[def.col + dAsiento]) === 'S') fin++;

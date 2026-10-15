@@ -115,6 +115,9 @@ export const WAGONS = {
      * 🆕 LOS BANCOS ('B') a cada lado de cada mesa *(Santi: "haría que los bancos sean obstáculos")*:
      * frenan el paso pero no las balas (ver 'B' en world/tilemap.js). La ronda, un pasajero y una
      * bolsa caían arriba de uno y se corrieron a la casilla libre de al lado.
+     *
+     * 🆕 LOS PASAJEROS, SENTADOS A LAS MESAS: cada uno en la casilla libre junto a un banco, que está
+     * del lado al que mira (ver `enBanco` en world/train.js).
      */
     layout: [
       '#WW###WW###WW###WW###WW###WW###WW#',
@@ -132,11 +135,11 @@ export const WAGONS = {
       { path: [[7, 1], [19, 1], [19, 8], [7, 8]] },
     ],
     passengers: [
-      { col: 2, row: 4, facing: 'right' },
+      { col: 1, row: 2, facing: 'right' },
       { col: 7, row: 2, facing: 'left' },
-      { col: 13, row: 7, facing: 'right' },
-      { col: 19, row: 3, facing: 'left' },
-      { col: 26, row: 5, facing: 'left' },
+      { col: 13, row: 6, facing: 'right' },
+      { col: 19, row: 7, facing: 'left' },
+      { col: 25, row: 3, facing: 'right' },
     ],
     loot: [
       { col: 7, row: 3, type: 'bag' },

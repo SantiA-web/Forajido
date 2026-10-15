@@ -466,7 +466,7 @@ function vagon(train, w, dia) {
         r(bx, by + bh, bw, 2, MAD_SS); r(bx, by + bh, bw, 1, MAD_S);    // el canto
         const pata = y2 - (by + bh + 2);
         for (const px of [bx + 1, bx + bw - 3]) { r(px - 1, by + bh + 2, 4, pata, 0); r(px, by + bh + 2, 2, pata - 1, MAD_SS); }
-        muebles.push({ x: bx - 1, y: by - 1, w: bw + 2, h: y2 - by + 1, base });
+        muebles.push({ x: bx - 1, y: by - 1, w: bw + 2, h: y2 - by + 1, base: base - 0.01 });
       }
       // --- la mesa: la tapa de tablas, su canto y las patas
       // 🔁 La tapa a 11 puntos del piso (unos 75 cm): el canto de 3 y las patas de 8.
@@ -503,6 +503,9 @@ function vagon(train, w, dia) {
       const cx = x + Math.floor(ancho / 2);
       if (estado < 2) dibujo(cx - 2, ty + Math.round(hondo * 0.3), CAFETERA, LATA);
       if (estado === 0) dibujo(cx - 3, ty + Math.round(hondo * 0.62), PAN, LATA);
+      // (La mesa va ANTES de la gente sentada en sus bancos, que se ordena por el borde de abajo del
+      // banco: así se les ven los brazos apoyados; lo de las piernas que cae debajo de la tapa no se
+      // dibuja, ver `mesa` en estiloNuevo/gente.js.)
       muebles.push({ x: x + 1, y: ty - 1, w: ancho + 2, h: y2 - ty + 1, base });
     }
   }

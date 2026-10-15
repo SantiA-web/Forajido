@@ -19005,8 +19005,31 @@ quedan sus mecánicas, que usa el de carga.)
   entre dos bancos sea un poco más grande")*. Con Shift te pegás al borde de la tabla. La ronda del
   guardia, un pasajero y una bolsa caían en un banco y se corrieron a la casilla de al lado.
 - 🧪 El atajo [4] del campamento ahora va al comedor.
-- **Falta su gente:** sentada en los bancos, con dos poses nuevas (comer y tomar del jarro) más las que
-  ya hay (el diario, fumar, de noche dormido sobre la mesa). Silueta primero.
+- **La gente, sentada en los bancos** *(Santi: "las piernas no se verían del todo porque irían bajo la
+  mesa")*: cada pasajero en la casilla libre junto a un banco, que está del lado al que mira
+  (`enBanco` en world/train.js); se dibuja de perfil en la orilla del banco que da a la mesa
+  (`AJUSTE_BANCO` en entities/passenger.js), y la mesa va después que él: le tapa los pies. A la mesa no
+  mira por la ventana ni revisa la maleta. Se corrieron sus lugares en el mapa; siguen siendo 5.
+- **¿Más gente?** *(Santi: "por ahora dejemos 5 pero dejemos abierta la posibilidad de sumar más y
+  modificar los pasajeros y guardias en ciertos vagones")*: con 10 mesas se ve vacío y la idea era
+  gente apretada compartiendo mesa, pero más pasajeros son más para robar y más testigos. Se revisa
+  vagón por vagón más adelante.
+- **Los brazos sobre la mesa** *(Santi: "las poses actuales se deberían ajustar para que los brazos la
+  hagan encima de la mesa… ajustar los brazos solamente")*: quieto, el diario, las cartas y el
+  cigarrillo, con los codos y las manos sobre la tapa (POSES_MESA y FUMAR_MESA en gente.js).
+- **El que duerme se acuesta en su banco** *(Santi: "boca arriba en el banco con el sombrero
+  cubriéndole el rostro"; eligió la B, un brazo colgando)*. Un dibujo hecho a mano salió ancho y con
+  cara, y lo rechazó: *"la misma silueta que un pasajero de frente solo que tumbada, una mano y la otra
+  sobre el pecho… No debería cambiar la cara ni agregar ojos"*. Es el pasajero de frente a lo largo del
+  banco, con el brazo de afuera colgando en el aire (`acostado` en BRAZOS, jugador.js) y **el sombrero
+  visto desde arriba sobre la cara** (SOMBRERO_ARRIBA, el bombín y el de paja; con él, sin barba: la capa
+  fina se veía a través). **Respira** *(Santi: "cuando tiene el pecho inflado debería quedarse un
+  momento más así y después bajarlo lentamente")*: cada 4,5 s la mano del pecho sube rápido dos puntos,
+  se queda 1,4 s y baja despacio de a uno (passenger.js).
+- **Falta:** las dos poses nuevas, comer y tomar del jarro (silueta primero). Eligió las
+  recomendaciones: **cuchara y plato hondo de lata**; **come con pausas** (bocado, mastica moviendo la
+  cabeza un punto, vuelve a cargar); y **el jarro** es una acción propia y además el que come toma un
+  trago cada tanto. Sólo de costado (así se sientan en los bancos).
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

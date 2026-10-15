@@ -355,10 +355,11 @@ function accionDeDia(pa, ahora) {
         s.desde = ahora;
         s.hasta = ahora + F.duracion[0] + Math.random() * (F.duracion[1] - F.duracion[0]);
       } else {
-        let hay = ['ventana'];
+        // (🆕 A la mesa del comedor no mira por la ventana ni revisa la maleta; sin otra cosa, quieto.)
+        let hay = pa.enBanco ? [null] : ['ventana'];
         if (pa.diario) hay.push('diario');
         if (pa.mazo) hay.push('barajar');
-        if (pa.lleva) hay.push('equipaje');
+        if (pa.lleva && !pa.enBanco) hay.push('equipaje');
         // No repite la misma dos veces seguidas si tiene otra.
         if (hay.length > 1) hay = hay.filter((a) => a !== s.accion);
         s.accion = hay[Math.floor(Math.random() * hay.length)];
@@ -403,6 +404,11 @@ function dibujarZ(r, x, arriba) {
  * cabeza contra el respaldo.
  */
 const AJUSTE_ASIENTO = { x: 2.25, y: 0, dormido: -0.5 };
+/**
+ * 🆕 Cuánto se corre hacia la mesa el que está sentado en un banco del comedor (en unidades): en la
+ * orilla de adelante del banco, así las rodillas entran debajo de la mesa y la mesa le tapa las piernas.
+ */
+const AJUSTE_BANCO = 5.5;
 
 /**
  * Dónde está su sombrero en el banco: en el otro lugar (cada banco tiene dos,
@@ -443,6 +449,42 @@ function pasajeroNuevo(r, pa, pies) {
   if (pa.dormido && pa.cama) {
     tendidoNuevo(r, pa.cama.x - 6, pa.cama.y, { tipo: 'pasajero', modo: 'cama', aspecto });
     pa._p3Desde = { x: pa.cama.x - 6, t: ahora };
+    return;
+  }
+
+  /**
+   * 🆕 EN EL COMEDOR, EL QUE DUERME SE ACUESTA EN SU BANCO *(Santi: "la misma silueta que un pasajero
+   * de frente solo que tumbada, una mano [colgando] y la otra sobre el pecho, el sombrero sobre la
+   * cabeza y nada más")*: el pasajero de frente, a lo largo del banco (la cabeza hacia la pared del
+   * fondo), con el brazo de afuera colgando (ver `acostado` en BRAZOS, jugador.js). Nada más cambia.
+   */
+  if (pa.dormido && pa.enBanco && pa.state === 'idle') {
+    const S = CONFIG.tileSize, PASO = CONFIG.estilo.punto / 4;
+    // (🔁 Un poco más cerca del piso *(Santi)*: el brazo que cuelga queda en el aire, no contra el banco.)
+    // El sombrero no va puesto: va encima de la cara, visto desde arriba (ver SOMBRERO_ARRIBA).
+    // 🆕 Respira *(Santi)*: toma aire rápido (la mano del pecho sube), se queda un momento con el pecho
+    // lleno y lo suelta despacio, bajando de a un punto. Una vez cada 4,5 segundos, cada uno a su ritmo
+    // (corrido por su posición).
+    const t = (ahora + pa.asientoX * 0.37) % 4.5;
+    const aire = t < 0.3 ? 'Medio' : t < 1.7 ? 'Aire' : t < 2.9 ? 'Medio' : '';
+    const figA = dibujarPersona(r, {
+      tipo: 'pasajero', x: pa.asientoX + pa.enBanco * 1.5, pies: pa.asientoBase - 2 * S + 23,
+      angulo: Math.PI / 2, interior: true,
+      // (Con el sombrero en la cara, sin la barba: va en la capa fina, encima de todo, y se veía a través del sombrero.)
+      nuevo: { arma: null, funda: false, aspecto: { ...aspecto, sombrero: 'ninguno', barba: aspecto.sombrero === 'bombin' || aspecto.sombrero === 'paja' ? null : aspecto.barba }, piernas: 'quieto', brazos: (pa.enBanco > 0 ? 'acostado' : 'acostadoDer') + aire },
+      destello: pa.hitFlash > 0,
+    });
+    if (aspecto.sombrero === 'bombin' || aspecto.sombrero === 'paja') {
+      const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
+      const hx = figA.x, hy = figA.arriba + 4 * PASO;
+      const luz = estiloNuevo.luzEn ? estiloNuevo.luzEn(hx, hy) : 0;
+      const L = lienzoSombreroSuelto({ ...aspecto, tipo: 'pasajero', fino, arriba: true }, luz);
+      const ox = Math.round(hx / PASO) * PASO - L.base[0] * PASO, oy = Math.round(hy / PASO) * PASO - L.base[1] * PASO;
+      r.ctx.drawImage(L.img, ox, oy, L.img.width * PASO, L.img.height * PASO);
+      if (fino) estiloNuevo.marcarGente(r.ctx, L.img, ox, oy, L.img.width * PASO, L.img.height * PASO);
+    }
+    pa._p3Desde = { x: pa.asientoX, t: ahora };
+    dibujarZ(r, figA.x + 4, figA.arriba);
     return;
   }
 
@@ -487,7 +529,8 @@ function pasajeroNuevo(r, pa, pies) {
     if (d < 3) { nuevo.arma = 'colt'; nuevo.desenfunda = d; } else { nuevo.arma = 'colt'; nuevo.empuna = revelaT > 0.8 ? 1 : 0; }
   } else if (sentado && pa.state === 'idle' && !(pa.robProgress > 0)) {
     const A = accionDeDia(pa, ahora);
-    if (!A) nuevo.accion = 'quieto';
+    // (🆕 A la mesa del comedor no mira por la ventana ni revisa la maleta: queda quieto.)
+    if (!A || (pa.enBanco && (A.accion === 'ventana' || A.accion === 'equipaje'))) nuevo.accion = 'quieto';
     else if (A.accion === 'ventana') {
       // Mira por la ventana: se da vuelta hacia el vidrio (arriba o abajo del vagón).
       const arriba = pa.y < 5 * CONFIG.tileSize;
@@ -502,7 +545,9 @@ function pasajeroNuevo(r, pa, pies) {
     r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
   }
   // Sentado en el almohadón, la espalda contra el respaldo (que está a la izquierda del asiento).
-  let xDibujo = sentado && pa.asientoX != null ? pa.asientoX + (pa.dormido ? AJUSTE_ASIENTO.dormido : AJUSTE_ASIENTO.x) : pa.x;
+  // (🆕 En el banco del comedor, en el medio de la tabla, que está corrida hacia la mesa.)
+  let xDibujo = sentado && pa.asientoX != null
+    ? pa.asientoX + (pa.enBanco ? pa.enBanco * AJUSTE_BANCO : pa.dormido ? AJUSTE_ASIENTO.dormido : AJUSTE_ASIENTO.x) : pa.x;
   /**
    * 🐛 AL LEVANTARSE NO SALTA *(Santi: "al despertarse aparecen tan lejos")*: el
    * que estaba sentado o en la litera (que se dibujan sobre el mueble, no donde
@@ -514,6 +559,8 @@ function pasajeroNuevo(r, pa, pies) {
     xDibujo = pa._p3Desde.x + (pa.x - pa._p3Desde.x) * t;
   }
   const piesDibujo = sentado && pa.asientoX != null ? pies + AJUSTE_ASIENTO.y : pies;
+  // 🆕 A la mesa del comedor: desde qué columna del dibujo empieza la mesa (ver `mesa` en cuadroGente).
+  if (sentado && pa.enBanco) nuevo.mesa = 10 + Math.ceil(Math.abs(pa.asientoX + pa.enBanco * 8.75 - xDibujo) / (CONFIG.estilo.punto / 4));
   /**
    * SU SOMBRERO EN EL BANCO (dormido, o recién despierto agarrándolo): en el
    * almohadón del otro lugar del banco. Si está más allá (arriba), va antes que

@@ -938,12 +938,12 @@ export function cuadroGente(o) {
   const fk = o.accion === 'fumar' ? o.k ?? 0 : o.fuma ?? null;
   const modo = o.accion === 'fumar' ? 'mano' : o.fumaModo || 'mano';
   const atras = o.vista === 'lado' ? CABEZA_ATRAS : 0;
-  const PF = fk != null && modo === 'mano' ? poseFumar(o.vista, fk, { sentado, cartas: !!o.cartas, atras }) : null;
+  const PF = fk != null && modo === 'mano' ? poseFumar(o.vista, fk, { sentado, cartas: !!o.cartas, atras, mesa: !!o.mesa }) : null;
   const FB0 = fk != null && modo === 'boca' ? FUMAR_BOCA[o.vista] : null;
   const FB = FB0 && atras ? { c: FB0.c && FB0.c.map(([x, y]) => [x - atras, y]), humo: [FB0.humo[0] - atras, FB0.humo[1]] } : FB0;
   // Lo que hace sentado (`accion`, ver poseSentado) se arma acá: así se guarda por nombre.
-  let brazos = PF || (o.accion === 'fumar' ? poseSentado('quieto', o.vista)
-    : o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva)
+  let brazos = PF || (o.accion === 'fumar' ? poseSentado('quieto', o.vista, 0, 'maleta', !!o.mesa)
+    : o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva, !!o.mesa)
       : fk != null && o.cartas ? 'cartas' : o.brazos);
   const persona = capasPersona(o);
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
@@ -954,6 +954,15 @@ export function cuadroGente(o) {
   const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
   if (o.tipo === 'sheriff') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''));
   if (o.tipo === 'cazarrecompensas') q0.idx = capaCazador(q0.idx, o.vista, o.piernas || '');
+  /**
+   * 🆕 SENTADO A LA MESA DEL COMEDOR: lo que cae debajo de la tapa (las piernas, desde la columna `mesa`
+   * y de la fila 16 para abajo) no se dibuja. Él va encima de la mesa (así se le ven los brazos
+   * apoyados) y la mesa le tapa las piernas.
+   */
+  if (o.mesa) {
+    q0.idx = q0.idx.slice();
+    for (let y = OY + 16; y < ALTO; y++) for (let x = OX + o.mesa; x < ANCHO; x++) q0.idx[y * ANCHO + x] = -1;
+  }
   const q = { ...q0, finos: barbaFina(o, q0) };
   const F = PF || FB;
   if (!F) return q;
@@ -1135,6 +1144,17 @@ const SOMBRERO_SUELTO = {
   paja: mapa(0, ['.....hHHk.....', '..hhhHHHHkkk..', 'hhhhbbbbbbkkkk', '.hhHHHHHHHkkk.']),
 };
 
+/**
+ * 🆕 EL SOMBRERO VISTO DESDE ARRIBA, sobre la cara del que duerme acostado en el banco del comedor
+ * *(Santi: "el sombrero tiene que estar visto desde arriba y taparle la cara")*: la copa redonda y el
+ * ala alrededor (el bombín, de ala angosta; el de paja, ancha, con la cinta). La luz, arriba a la
+ * izquierda.
+ */
+const SOMBRERO_ARRIBA = {
+  bombin: mapa(0, ['..kkkkk..', '.kHHHHHk.', 'kHhhHHHHk', 'kHhHHHHHk', 'kHHHHHHkk', '.kHHHHkk.', '..kkkkk..']),
+  paja: mapa(0, ['....hhhhh....', '..hhhhhhhhh..', '.hhhHHHHHhhh.', 'hhhHbbbbbHhhk', 'hhhHbHHHbHhhk', 'hhhHbbbbbHhkk', '.hhhHHHHHhhk.', '..hhhhhhhkk..', '....kkkkk....']),
+};
+
 /** La maleta y el bolso, en el piso al lado (`[cerrada, abierta]`), por vista. */
 const EQUIPAJE = {
   maleta: {
@@ -1150,6 +1170,33 @@ const EQUIPAJE = {
       mapa(21, ['...............J..J', '...............JnnJ', '...............MMMM', '...............MyMM', '...............MMMM', '...............mmmm'])],
   },
 };
+/**
+ * 🆕 A LA MESA DEL COMEDOR, DE COSTADO *(Santi: "las poses actuales se deberían ajustar para que los
+ * brazos la hagan encima de la mesa… ajustar los brazos solamente")*: las mismas poses, con los brazos
+ * hacia adelante sobre la mesa. Sentado el cuerpo baja 4, y la tapa de la mesa queda en la fila 11 (15
+ * en el dibujo); su borde, unos 4 puntos delante de la cadera. Lo de las piernas que cae debajo de la
+ * mesa no se dibuja (ver `mesa` en cuadroGente).
+ */
+const POSES_MESA = {
+  quieto: { lista: [b([[10, 9], [12, 11], [16, 11]]), b([[9, 9], [11, 11], [15, 11]], true)] },
+  diario: {
+    regazo: { lista: [b([[10, 9], [12, 11], [15, 11]]), b([[9, 9], [11, 11], [18, 11]], true)], papel: mapa(10, ['..............pPPPPp']) },
+    medio: { lista: [b([[10, 9], [13, 11], [14, 9]]), b([[9, 9], [12, 11], [15, 9]], true)], papel: mapa(6, ['..............PP', '..............Pl', '..............PP', '..............Pl', '..............pp']) },
+    arriba: { lista: [b([[10, 9], [13, 11], [13, 7]]), b([[9, 9], [12, 11], [14, 6]], true)], papel: mapa(3, ['..............PP', '..............Pl', '..............PP', '..............Pl', '..............PP', '..............Pl', '..............PP', '..............pp']) },
+    hoja: { lista: [b([[10, 9], [13, 11], [13, 7]]), b([[9, 9], [12, 11], [15, 5]], true)], papel: mapa(3, ['..............PPPP', '..............PlPl', '..............PPPP', '..............PlPl', '..............PPPP', '..............PlPl', '..............PPpp', '..............pp']) },
+  },
+  barajar: {
+    junto: { lista: [b([[10, 9], [12, 11], [15, 11]]), b([[9, 9], [11, 11], [16, 11]], true)], cartas: mapa(10, ['...............Lk', '...............LL']) },
+    abierto: { lista: [b([[10, 9], [12, 11], [15, 11]]), b([[9, 9], [11, 11], [18, 11]], true)], cartas: mapa(10, ['...............LL.Lk', '...............LL.LL']) },
+    cayendo: { lista: [b([[10, 9], [12, 11], [15, 11]]), b([[9, 9], [11, 11], [18, 11]], true)], cartas: mapa(9, ['................L', '...............LL.Lk', '...............LL.LL']) },
+  },
+};
+/** Fumar a la mesa: la mano descansa sobre la mesa y, al pitar, el codo queda apoyado. */
+const FUMAR_MESA = {
+  abajo: [[10, 9], [12, 11], [15, 11]], sube: [[10, 9], [13, 11], [14, 8]], boca: [[10, 9], [13, 11], [13, 6]],
+  c: { abajo: [[16, 11], [17, 11]], sube: [[15, 8], [16, 7]], boca: [[15, 6], [16, 6]] },
+  otra: b([[9, 9], [11, 11], [15, 11]], true),
+};
 const CUADROS_SENTADO = {
   diario: ['regazo', 'medio', 'arriba', 'arriba+', 'arriba', 'hoja', 'arriba+', 'medio'],
   barajar: ['junto', 'abierto', 'cayendo', 'junto', 'abierto', 'cayendo', 'junto', 'junto'],
@@ -1161,8 +1208,23 @@ const CUADROS_SENTADO = {
  * ('maleta' o 'bolso', para el equipaje). En las diagonales (se dio vuelta
  * hacia vos) no hace nada: las manos en la falda.
  */
-export function poseSentado(accion, vista, k = 0, lleva = 'maleta') {
+export function poseSentado(accion, vista, k = 0, lleva = 'maleta', mesa = false) {
   const V = vista === 'lado' || vista === 'frente' || vista === 'espalda' ? vista : null;
+  // 🆕 A la mesa del comedor (de costado): los brazos sobre la mesa.
+  if (mesa && vista === 'lado') {
+    if (accion === 'quieto') return { ...POSES_MESA.quieto, cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
+    if (POSES_MESA[accion]) {
+      let nombre = CUADROS_SENTADO[accion][k % 8];
+      const baja1 = nombre.endsWith('+');
+      if (baja1) nombre = nombre.slice(0, -1);
+      const P = POSES_MESA[accion][nombre];
+      const lista = baja1 ? P.lista.map((x) => ({ ...x, p: x.p.map(([a, c], i) => (i === 2 ? [a, c + 1] : [a, c])) })) : P.lista;
+      const props = [];
+      if (P.papel) props.push({ m: baja1 ? mapa(P.papel.y + 1, P.papel.filas) : P.papel, tabla: PAPEL, capa: 'frente' });
+      if (P.cartas) props.push({ m: P.cartas, tabla: NAIPES });
+      return { lista, props, inclina: 0, cabeza: 0 };
+    }
+  }
   // Dormido, los brazos cruzados y la cabeza caída; sin hacer nada, las manos en la falda.
   // Dormido respira: cada tanto la cabeza sube un punto (`k` impar).
   // Al despertarse: en las otras vistas (no se sientan así), quieto.
@@ -1412,9 +1474,10 @@ function lugarDeFumar(v, k) {
   return { pts, c, atras: !!v.bocaAtras && (a === 'boca' || b === 'boca') };
 }
 /** La pose de fumar con la mano (los brazos y el cigarrillo); null si en esa vista no fuma así. */
-function poseFumar(vista, k, { sentado = false, cartas = false, atras = 0 } = {}) {
+function poseFumar(vista, k, { sentado = false, cartas = false, atras = 0, mesa = false } = {}) {
   const base = atras && FUMAR[vista] ? bocaAtras(FUMAR[vista], atras) : FUMAR[vista];
-  const S = sentado ? FUMAR_SENTADO[vista] : null;
+  // (🆕 A la mesa del comedor, de costado: ver FUMAR_MESA.)
+  const S = sentado ? (mesa && vista === 'lado' ? FUMAR_MESA : FUMAR_SENTADO[vista]) : null;
   const CA = cartas ? FUMAR_CARTAS[vista] : null;
   if (!base || (sentado && !S) || (cartas && !CA)) return null;
   const v = S ? { ...base, ...S, c: { ...base.c, ...(S.c || {}) } } : base;
@@ -1440,11 +1503,12 @@ function bocaAtras(v, d) {
 const sueltos = new Map();
 /** El sombrero suelto, iluminado (con su borde); `base` es dónde apoya, en puntos del lienzo. */
 export function lienzoSombreroSuelto(o, luz = 0) {
-  const clave = [o.tipo, o.sombrero ?? '', o.colorSombrero ?? '', o.fino ? 1 : 0, luz].join('|');
+  const clave = [o.tipo, o.sombrero ?? '', o.colorSombrero ?? '', o.fino ? 1 : 0, o.arriba ? 1 : 0, luz].join('|');
   let g = sueltos.get(clave);
   if (g) return g;
   const col = { ...C, ...capasPersona({ vista: 'lado', ...o }).colores };
-  const M = SOMBRERO_SUELTO[o.sombrero] || SOMBRERO_SUELTO.bombin;
+  // (🆕 `arriba`: visto desde arriba, para el que duerme acostado; ver SOMBRERO_ARRIBA.)
+  const M = (o.arriba ? SOMBRERO_ARRIBA : SOMBRERO_SUELTO)[o.sombrero] || (o.arriba ? SOMBRERO_ARRIBA : SOMBRERO_SUELTO).bombin;
   const W = Math.max(...M.filas.map((f) => f.length)) + 2, H = M.filas.length + 2, idx = new Int16Array(W * H).fill(-1);
   M.filas.forEach((f, j) => { for (let x = 0; x < f.length; x++) if (f[x] !== '.') idx[(j + 1) * W + x + 1] = col[f[x]]; });
   if (!o.fino) {
@@ -1459,13 +1523,13 @@ export function lienzoSombreroSuelto(o, luz = 0) {
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   cv.getContext('2d').putImageData(new ImageData(datos, W, H), 0, 0);
-  g = { img: cv, base: [Math.floor(W / 2), H - 1] };
+  g = { img: cv, base: [Math.floor(W / 2), o.arriba ? Math.floor(H / 2) : H - 1] };
   sueltos.set(clave, g);
   return g;
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado', 'mesa'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

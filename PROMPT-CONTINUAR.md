@@ -141,6 +141,10 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   pasajeros con el Sheriff en tu vagón (2026-10-15) y [7] 950 de recompensa, para que suba el
   Cazarrecompensas (2026-10-15). **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
   cuando el estilo nuevo esté terminado.
+- **El Cazarrecompensas, para después** *(Santi, 2026-10-15: "después pulimos esos detalles del
+  Cazarrecompensas, además de que quiero mejorarlo para hacerlo más difícil")*: en la sombra se ve
+  casi negro; sus balas salen de un punto fijo y no de la boca del arma; el arma larga desaparece al
+  embestir. Y hacerlo más difícil (a diseñar con Santi).
 - **Los jinetes más alejados deberían tener menos puntería** *(Santi,
   2026-10-08: "los jinetes más alejados deberían tener menos puntería, pero eso
   lo vemos después")*. Arriba, los de allá van lejos y hoy pegan igual que los

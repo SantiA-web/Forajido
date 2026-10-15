@@ -18331,7 +18331,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | **P0 · La base** | La grilla, la paleta, la luz por escalones y la tecla de prueba | ✅ hecha |
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
-| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | 🔨 paso 1 ✅ · P3a ✅ · P3b ✅ · sigue P3c |
+| P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
 | P4 · Los otros vagones | Carga, correo, ganado, blindado, góndola, caboose | Falta |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |

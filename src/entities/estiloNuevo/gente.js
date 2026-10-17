@@ -962,6 +962,9 @@ export function cuadroGente(o) {
   if (o.mesa) {
     q0.idx = q0.idx.slice();
     for (let y = OY + 16; y < ALTO; y++) for (let x = OX + o.mesa; x < ANCHO; x++) q0.idx[y * ANCHO + x] = -1;
+    // (🆕 Lo que está sobre la mesa —el plato, el jarro, la cuchara en el plato— va encima: no se corta.)
+    const sobre = brazos && brazos.props ? brazos.props.filter((p) => p.sobreMesa) : [];
+    for (const p of sobre) p.m.filas.forEach((fila, j) => { for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') q0.idx[(OY + 4 + p.m.y + j) * ANCHO + OX + x] = p.tabla[fila[x]]; });
   }
   const q = { ...q0, finos: barbaFina(o, q0) };
   const F = PF || FB;
@@ -1191,6 +1194,33 @@ const POSES_MESA = {
     cayendo: { lista: [b([[10, 9], [12, 11], [15, 11]]), b([[9, 9], [11, 11], [18, 11]], true)], cartas: mapa(9, ['................L', '...............LL.Lk', '...............LL.LL']) },
   },
 };
+/**
+ * 🆕 COMER Y TOMAR DEL JARRO, A LA MESA DEL COMEDOR *(Santi eligió: cuchara y plato hondo de lata; come
+ * con pausas, mastica; el jarro, cosa aparte, y el que come toma un trago cada tanto)*. El plato y el
+ * jarro están sobre la mesa, delante de él (`sobreMesa`: no los corta la mesa, ver cuadroGente); la
+ * cuchara y el jarro, en la mano cuando los levanta.
+ */
+const LATA_MESA = { b: 20, w: 17, s: 16, c: 3, h: 4 };
+const PLATO_MESA = { m: mapa(12, ['.................bbbbb', '................bwchcwb', '................bwhchwb', '.................bbbbb']), tabla: LATA_MESA, sobreMesa: true };
+const JARRO_MESA = { m: mapa(8, ['.......................bbb', '.......................wwwb', '.......................swwb', '.......................sww']), tabla: LATA_MESA, sobreMesa: true };
+const cuchara = (y, fila, sobreMesa = false) => ({ m: mapa(y, [fila]), tabla: LATA_MESA, sobreMesa });
+const OTRA_PLATO = b([[9, 9], [12, 11], [16, 11]], true);
+const OTRA_JARRO = b([[9, 9], [11, 11], [15, 11]], true);
+POSES_MESA.comer = {
+  carga: { lista: [b([[10, 9], [13, 11], [18, 11]]), OTRA_PLATO], props: [PLATO_MESA, JARRO_MESA, cuchara(13, '....................s', true)] },
+  sube: { lista: [b([[10, 9], [15, 11], [16, 8]]), OTRA_PLATO], props: [PLATO_MESA, JARRO_MESA, cuchara(7, '..............ss')] },
+  boca: { lista: [b([[10, 9], [15, 10], [14, 6]]), OTRA_PLATO], props: [PLATO_MESA, JARRO_MESA, cuchara(6, '.............s')] },
+  mastica: { lista: [b([[10, 9], [13, 11], [17, 11]]), OTRA_PLATO], props: [PLATO_MESA, JARRO_MESA, cuchara(13, '...................s', true)] },
+  mastica1: { lista: [b([[10, 9], [13, 11], [17, 11]]), OTRA_PLATO], props: [PLATO_MESA, JARRO_MESA, cuchara(13, '...................s', true)], cabeza: 1 },
+};
+POSES_MESA.jarro = {
+  apoya: { lista: [b([[10, 9], [14, 11], [21, 9]]), OTRA_JARRO], props: [PLATO_MESA, JARRO_MESA] },
+  sube: { lista: [b([[10, 9], [15, 11], [16, 8]]), OTRA_JARRO], props: [PLATO_MESA, { m: mapa(6, ['..................bbb', '..................wwwb', '..................swwb', '..................sww']), tabla: LATA_MESA }] },
+    // (La cabeza, un punto hacia atrás *(Santi)*. Probamos que mirara hacia arriba —girada por código,
+    // como imagen y dibujada a mano— y en la grilla se veía mal: "que no mire hacia arriba".)
+    boca: { lista: [b([[10, 9], [14, 9], [12, 5]]), OTRA_JARRO], props: [PLATO_MESA, { m: mapa(4, ['............bwww', '............bwwws', '.............www']), tabla: LATA_MESA }], cabezaX: -1 },
+};
+
 /** Fumar a la mesa: la mano descansa sobre la mesa y, al pitar, el codo queda apoyado. */
 const FUMAR_MESA = {
   abajo: [[10, 9], [12, 11], [15, 11]], sube: [[10, 9], [13, 11], [14, 8]], boca: [[10, 9], [13, 11], [13, 6]],
@@ -1201,6 +1231,9 @@ const CUADROS_SENTADO = {
   diario: ['regazo', 'medio', 'arriba', 'arriba+', 'arriba', 'hoja', 'arriba+', 'medio'],
   barajar: ['junto', 'abierto', 'cayendo', 'junto', 'abierto', 'cayendo', 'junto', 'junto'],
   equipaje: ['quieto', 'baja', 'abre', 'adentro', 'adentro2', 'adentro', 'abre', 'baja'],
+  // 🆕 A la mesa del comedor (ver POSES_MESA.comer y .jarro).
+  comer: ['carga', 'sube', 'boca', 'boca', 'sube', 'mastica', 'mastica1', 'mastica'],
+  jarro: ['apoya', 'sube', 'boca', 'boca', 'boca', 'sube', 'apoya', 'apoya'],
 };
 /**
  * LA POSE DE UN PASAJERO SENTADO para `cuadroJugador` (`brazos`): `accion`
@@ -1222,7 +1255,8 @@ export function poseSentado(accion, vista, k = 0, lleva = 'maleta', mesa = false
       const props = [];
       if (P.papel) props.push({ m: baja1 ? mapa(P.papel.y + 1, P.papel.filas) : P.papel, tabla: PAPEL, capa: 'frente' });
       if (P.cartas) props.push({ m: P.cartas, tabla: NAIPES });
-      return { lista, props, inclina: 0, cabeza: 0 };
+      if (P.props) props.push(...P.props);
+      return { lista, props, inclina: 0, cabeza: P.cabeza || 0, cabezaX: P.cabezaX || 0 };
     }
   }
   // Dormido, los brazos cruzados y la cabeza caída; sin hacer nada, las manos en la falda.

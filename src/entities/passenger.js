@@ -338,6 +338,11 @@ function seesBody(pa, world, c) {
  * (0,15 s cada uno), del 2 al 6 en vuelta mientras dura (0,35 s cada uno) y dos
  * para terminar.
  */
+/** Cuánto dura cada uno de los 8 cuadros de comer y de tomar del jarro (en segundos). */
+const TIEMPOS_MESA = {
+  comer: [0.4, 0.2, 0.35, 0.25, 0.2, 0.4, 0.4, 0.4],
+  jarro: [0.8, 0.25, 0.5, 0.5, 0.5, 0.25, 0.8, 0.8],
+};
 function accionDeDia(pa, ahora) {
   // 🔁 Nunca se queda sin hacer nada: termina una cosa y empieza otra (ver CONFIG.fumar.duracionOtras).
   const s = pa._p3 || (pa._p3 = { accion: null, hasta: ahora });
@@ -356,7 +361,7 @@ function accionDeDia(pa, ahora) {
         s.hasta = ahora + F.duracion[0] + Math.random() * (F.duracion[1] - F.duracion[0]);
       } else {
         // (🆕 A la mesa del comedor no mira por la ventana ni revisa la maleta; sin otra cosa, quieto.)
-        let hay = pa.enBanco ? [null] : ['ventana'];
+        let hay = pa.enBanco ? [null, 'comer', 'jarro'] : ['ventana'];
         if (pa.diario) hay.push('diario');
         if (pa.mazo) hay.push('barajar');
         if (pa.lleva && !pa.enBanco) hay.push('equipaje');
@@ -371,6 +376,23 @@ function accionDeDia(pa, ahora) {
   if (!s.accion) return null;
   const t = ahora - s.desde, queda = s.hasta - ahora;
   if (s.accion === 'fumar') return { accion: 'fumar', k: cuadroDeFumar(t, CONFIG.fumar.cada, CONFIG.fumar.cuadro), girando: false };
+  /**
+   * 🆕 COMER Y TOMAR DEL JARRO (a la mesa del comedor): cada cuadro con su tiempo (ver POSES_MESA en
+   * gente.js). El que come, cada tres bocados toma un trago del jarro.
+   */
+  if (s.accion === 'comer' || s.accion === 'jarro') {
+    const T = TIEMPOS_MESA;
+    const largo = (a) => T[a].reduce((x, y) => x + y, 0);
+    let a = s.accion, u = t;
+    if (a === 'comer') {
+      const vuelta = 3 * largo('comer') + largo('jarro');
+      u = t % vuelta;
+      if (u >= 3 * largo('comer')) { a = 'jarro'; u -= 3 * largo('comer'); } else u %= largo('comer');
+    } else u = t % largo('jarro');
+    let k = 0;
+    while (k < 7 && u >= T[a][k]) u -= T[a][k++];
+    return { accion: a, k, girando: false };
+  }
   const k = t < 0.15 ? 0 : t < 0.3 ? 1 : queda < 0.15 ? 0 : queda < 0.3 ? 7 : 2 + (Math.floor((t - 0.3) / 0.35) % 5);
   return { accion: s.accion, k, girando: t < 0.3 || queda < 0.3 };
 }

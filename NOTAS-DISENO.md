@@ -19026,10 +19026,19 @@ quedan sus mecánicas, que usa el de carga.)
   fina se veía a través). **Respira** *(Santi: "cuando tiene el pecho inflado debería quedarse un
   momento más así y después bajarlo lentamente")*: cada 4,5 s la mano del pecho sube rápido dos puntos,
   se queda 1,4 s y baja despacio de a uno (passenger.js).
-- **Falta:** las dos poses nuevas, comer y tomar del jarro (silueta primero). Eligió las
-  recomendaciones: **cuchara y plato hondo de lata**; **come con pausas** (bocado, mastica moviendo la
-  cabeza un punto, vuelve a cargar); y **el jarro** es una acción propia y además el que come toma un
-  trago cada tanto. Sólo de costado (así se sientan en los bancos).
+- **Comer y tomar del jarro** (eligió las recomendaciones): **cuchara y plato hondo de lata** (blanca
+  con el borde azul, como la vajilla de las mesas, con el guiso); **come con pausas** (carga, sube, a la
+  boca, baja y mastica moviendo la cabeza un punto: 2,6 s el bocado); **el jarro** es una acción propia
+  (lo sube, el trago, lo baja y se queda con la mano en el jarro: 4,4 s) y además el que come toma un
+  trago cada tres bocados. Sólo de costado (POSES_MESA.comer y .jarro en gente.js, TIEMPOS_MESA en
+  passenger.js). El plato y el jarro van sobre la mesa delante de él y no los corta la mesa
+  (`sobreMesa`). El codo va adelante al llevar la cuchara a la boca: pegado al cuerpo, el brazo no se
+  leía. **Al tomar, la cabeza va un punto hacia atrás** y el jarro toca la boca. Se probó que mirara
+  apenas hacia arriba —girada por código, recortada y girada como imagen, y dibujada a mano— y en la
+  grilla de 3×3 siempre se veía mal *(Santi: "se ve pésimo… que no mire hacia arriba")*: a esta escala,
+  girar una cabeza la rompe.
+- **Las siluetas, sólo para elegir** *(Santi: "nunca más me proporciones las siluetas si no tengo que
+  elegir entre una cosa u otra")*: si no hay opciones, se le muestra directo con color.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

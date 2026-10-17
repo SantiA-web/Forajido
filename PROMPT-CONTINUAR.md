@@ -203,8 +203,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   sombrero de paja suelto (B5 y lo demás de B6, afuera); P3b cerrada; P3c: el Encargado, el
   blindado, el Pistolero, el Sheriff y el Cazarrecompensas hechos; queda el Dinamitero, que espera a
   que exista su vagón. Sigue **P4, los otros vagones, primero el tren de pasajeros entero**: el
-  comedor (el pobre) hecho, con su gente sentada a la mesa y el que duerme acostado en el banco;
-  falta las poses de comer y tomar del jarro (elegidas, falta la silueta); después el
+  comedor (el pobre) hecho, con su gente sentada a la mesa (comiendo, tomando del jarro) y el que
+  duerme acostado en el banco; sigue el
   dormitorio, primera clase / guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los

@@ -109,26 +109,37 @@ function recorrido(b) {
  *  3. LA DISTANCIA Y EL ARMA: completo hasta `plenoHasta` del alcance, y de
  *     ahí baja hasta `alFinal` en la punta.
  */
-export function danioDeBala(b, persona, victima, rng) {
+/**
+ * 🆕 A QUÉ ZONA VA ESTA BALA, sorteada UNA sola vez: la primera vez que hace falta saberlo (al cruzar una
+ * cobertura baja, que tapa las piernas del que está pegado detrás, ver `tapaLaBala` en systems/combat.js;
+ * o al llegar). Las chances son las de siempre *(Santi: "no haría que esa probabilidad desapareciera")*.
+ */
+export function zonaDeBala(b, rng) {
+  if (b.zonaSorteada) return b.zonaSorteada;
   const D = CONFIG.golpe.danio;
-  const lejos = recorrido(b);
-
   let zona;
-  const tirado = persona.caido > 0 || persona.inconsciente > 0 || persona.tumbado > 0;
-  if (tirado) {
-    zona = 'torso';
-  } else if (b.owner === 'player' && b.zonaElegida) {
+  if (b.owner === 'player' && b.zonaElegida) {
     const A = D.acierto;
     const ap = Math.max(0, Math.min(1, b.apuntado || 0));
     const cerca = A.sueltoCerca + (A.apuntadoCerca - A.sueltoCerca) * ap;
     const punta = A.sueltoLejos + (A.apuntadoLejos - A.sueltoLejos) * ap;
-    const chance = cerca + (punta - cerca) * lejos;
+    const chance = cerca + (punta - cerca) * recorrido(b);
     zona = rng.chance(chance) ? b.zona : zonaVecina(b.zona, rng);
   } else {
     const S = D.sorteoGuardia;
     const t = rng.next();
     zona = t < S.cabeza ? 'cabeza' : t < S.cabeza + S.torso ? 'torso' : 'piernas';
   }
+  b.zonaSorteada = zona;
+  return zona;
+}
+
+export function danioDeBala(b, persona, victima, rng) {
+  const D = CONFIG.golpe.danio;
+  const lejos = recorrido(b);
+
+  const tirado = persona.caido > 0 || persona.inconsciente > 0 || persona.tumbado > 0;
+  const zona = tirado ? 'torso' : zonaDeBala(b, rng);
 
   const tabla = victima === 'jugador' ? D.contraJugador : D.contraGuardia;
   const [min, max] = tabla[zona];

@@ -329,13 +329,13 @@ export function createCampScene(services) {
      * 🧪 [4] TE LARGA ADENTRO DE UN VAGÓN DE PASAJEROS *(Santi: "construí un
      * atajo para ir directo a un vagón de pasajeros")*, para ver el estilo nuevo
      * ([F9]) sin cruzar el tren. Es un asalto normal: cuenta como cualquiera.
-     * 🔁 Ahora al vagón que se está dibujando: el DORMITORIO (antes el comedor, Santi: "que al apretar 4
-     * vaya al comedor").
+     * 🔁 Ahora al vagón que se está dibujando: PRIMERA CLASE, y el tren la trae siempre (`forzarVagon`)
+     * *(Santi: "pon el atajo en el botón 4")*; antes el dormitorio y el comedor.
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit4')) {
-      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'dormitorio' });
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'primeraClase', forzarVagon: 'primeraClase' });
       return;
     }
     /**

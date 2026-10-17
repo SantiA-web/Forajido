@@ -972,15 +972,22 @@ export const WAGONS = {
     hint: 'Sillones de terciopelo. Gente que viaja con custodia.',
     sinComportamiento: true,
     sinVariantes: true,
+    // (🆕 Estilo nuevo P4: LA BARRA con el bartender *(Santi: "una mesa bar con un bartender")*, en la
+    // punta de arriba a la izquierda: 'T', el mostrador, ver world/tilemap.js. 🔁 Casi cerrada, con una
+    // puertita en el tramo de la derecha (la casilla libre de la columna 5) *(Santi: "que tenga como una
+    // puertita"; "la puerta… de forma vertical… del lado derecho")*, y de cinco casillas: "no es una barra
+    // para una cantina, es una para cinco personas". Sin las ventanas de detrás (el estante de las botellas
+    // tapaba una y entraba el sol igual; en la otra pegaba la barra: "tiene que pegar en la pared").
+    // 'N', las mesitas delante de cada sillón, que chocan como los bancos del comedor.)
     layout: [
-      '#WW##WW##WW##WW##WW##WW##WW##WW#',
-      '#..............................#',
-      '#.S.....S.....S.....S.....S....#',
-      '#..............................#',
+      '#########WW##WW##WW##WW##WW##WW#',
+      '#....T.........................#',
+      '#.......S.N...S.N...S.N...S.N..#',
+      '#TTTTT.........................#',
       '+..............................+',
       '+..............................+',
       '#..............................#',
-      '#...S.....S.....S.....S.....S..#',
+      '#...S.N...S.N...S.N...S.N...S.N#',
       '#..............................#',
       '#WW##WW##WW##WW##WW##WW##WW##WW#',
     ],
@@ -989,9 +996,10 @@ export const WAGONS = {
       { path: [], col: 21, row: 5, facing: 'right', vigila: true },
     ],
     passengers: [
-      { col: 10, row: 2, facing: 'down', rico: true },
-      { col: 24, row: 2, facing: 'down', rico: true },
-      { col: 18, row: 7, facing: 'up',   rico: true },
+      // (Al lado de su sillón: la mesita 'N' ocupa la casilla siguiente.)
+      { col: 9,  row: 2, facing: 'down', rico: true },
+      { col: 21, row: 2, facing: 'down', rico: true },
+      { col: 17, row: 7, facing: 'up',   rico: true },
     ],
     loot: [],
   },

@@ -38,8 +38,9 @@ export const PASO = CONFIG.estilo.punto / DENSIDAD;
 const PX = 1 / PASO;
 
 /** Qué vagones ya se dibujan en el estilo nuevo. */
-// 🆕 P4: el comedor (el de la gente común: ver `comedor` más abajo) y el dormitorio (ver `dormitorio`).
-const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio']);
+// 🆕 P4: el comedor (el de la gente común: ver `comedor` más abajo), el dormitorio (ver `dormitorio`) y
+// primera clase (ver `primeraClase`).
+const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase']);
 
 /**
  * LOS VAGONES DEL ESTILO NUEVO de este tren: sus columnas (para que el dibujo
@@ -159,11 +160,13 @@ function vagon(train, w, dia) {
    * luz; en la maqueta que aprobó Santi van en la pared.)
    */
   const F = CONFIG.tresCuartos.faroles;
-  const cuantos = Math.max(1, Math.floor((cols - 2) / F.cadaColumnas));
-  const sobra = cols - cuantos * F.cadaColumnas;
+  // (🆕 En primera clase, más seguidas: la luz pareja de los que pagan.)
+  const cada = w.id === 'primeraClase' ? 5 : F.cadaColumnas;
+  const cuantos = Math.max(1, Math.floor((cols - 2) / cada));
+  const sobra = cols - cuantos * cada;
   const faroles = [];
   for (let q = 0; q < cuantos; q++) {
-    let c = Math.round(sobra / 2 + (q + 0.5) * F.cadaColumnas);
+    let c = Math.round(sobra / 2 + (q + 0.5) * cada);
     for (let d = 0; d < 4 && casilla(c, 0) === 'W'; d++) c += (d % 2 ? -(d + 1) : d + 1);
     faroles.push(ax(w.x + (c + 0.5) * S));
   }
@@ -182,6 +185,30 @@ function vagon(train, w, dia) {
    * muy violeta")*: sin ninguna, quedaban en lo más oscuro, y la madera en lo oscuro cae en los violetas
    * de la paleta. Va colgada en la cara del tabique del pasillo, a la derecha del tabique de cada uno.
    */
+  /**
+   * 🆕 PRIMERA CLASE: LAS MESITAS, las casillas 'N' delante de cada sillón (chocan como los bancos del
+   * comedor, ver world/tilemap.js). Cada una con su VELA, que de noche ilumina alrededor *(Santi: "si es
+   * una vela de noche debería iluminar")*.
+   */
+  const mesitas = [];
+  if (w.id === 'primeraClase') {
+    for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 0; c < cols; c++) {
+      if (casilla(c, f) !== 'N') continue;
+      const mx = Math.round((ax(w.x + c * S) + ax(w.x + (c + 1) * S)) / 2) - 9, my = ay((f + 1) * S) - 3;
+      mesitas.push({ f, mx, my, vx: mx + 12, vy: my - 16 });
+    }
+    /**
+     * 🔁 LOS FAROLES, EN EL MEDIO DE LA PARED LISA entre dos ventanas *(Santi: "quedaron muy encima de las
+     * ventanas, ponlos más al medio")*, y uno sobre la barra (entre el estante y la primera ventana). La
+     * luz sale de ellos, así que los acompaña.
+     */
+    faroles.length = 0;
+    let finEstante = 0;
+    for (let c = 0; c < cols; c++) if (casilla(c, filasArriba + 2) === 'T') finEstante = c + 1;
+    const huecos = [[finEstante - 1, ventanasFondo.length ? ventanasFondo[0][0] : cols - 1]];
+    for (let k = 0; k + 1 < ventanasFondo.length; k++) huecos.push([ventanasFondo[k][1] + 1, ventanasFondo[k + 1][0]]);
+    for (const [a, b] of huecos) faroles.push(ax(w.x + ((a + b) / 2) * S));
+  }
   const lamparasAbajo = [];
   if (w.id === 'dormitorio') {
     const fUlt = map.rows - filasAbajo - 1;
@@ -223,11 +250,13 @@ function vagon(train, w, dia) {
       const yCharco = ay(yPisoArriba) + Math.round((tope - ay(yPisoArriba)) * 0.32);
       // (🆕 En el comedor, más tenues: la luz de querosén de la gente común. En el dormitorio, lámparas
       // chicas, una por camarote.)
-      const tenue = w.id === 'comedor' ? 0.8 : 1;
+      const tenue = w.id === 'comedor' ? 0.8 : w.id === 'primeraClase' ? 0.85 : 1;
       for (const fx of faroles) {
         f += tenue * 2.6 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
         f += 2.4 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - 26) / 18));
       }
+      // (🆕 Las velas de las mesitas de primera clase: un charco chico.)
+      for (const M of mesitas) f += 1.7 * Math.max(0, 1 - Math.hypot((x - M.vx) / 30, (y - M.vy - 6) / 20));
       // (🆕 Las de los camarotes de abajo del dormitorio: el charco en su camarote.)
       for (const L of lamparasAbajo) {
         const ly = ay((L.fila + 1.5) * S);
@@ -427,12 +456,101 @@ function vagon(train, w, dia) {
     });
   }
 
+  /**
+   * 🆕 P4 · PRIMERA CLASE, EL COCHE SALÓN *(Santi eligió las recomendaciones: sillones sueltos de
+   * terciopelo verde botella, mesitas de madera lustrada; y sumó "una mesa bar con un bartender")*. Lo
+   * rico se nota en el cuidado y el espacio, no en el oro: todo hace juego, alineado, la madera lustrada
+   * con un punto de brillo donde le da la luz, poco bronce.
+   *
+   * LA PARED DEL FONDO, con paneles de caoba (la moldura y el brillo arriba a la izquierda de cada uno);
+   * LAS CORTINAS DE TERCIOPELO VERDE recogidas con un cordón a los dos lados (de noche, cerradas); sobre
+   * la barra, EL ESTANTE con las botellas y las copas.
+   */
+  if (w.id === 'primeraClase') {
+    const r = rect(FONDO), p = pone(FONDO);
+    const yCara = 8, yPie = ay(yPisoArriba);
+    // Los paneles: de 14 de ancho, la moldura oscura, el campo y el brillo.
+    // (🔁 Sin pisar las ventanas: encima del vidrio la dejaban cortada *(Santi)*.)
+    // (🔁 Ni los faroles: también quedaban tapados *(Santi: "se le superpone a los faroles")*.)
+    const enVentana = (xa, xb) => ventanasFondo.some(([c0, c1]) => xb > ax(w.x + c0 * S) + 1 && xa < ax(w.x + (c1 + 1) * S) - 1)
+      || faroles.some((fx) => xb > fx - 5 && xa < fx + 5);
+    for (let x0p = 2; x0p + 12 < W; x0p += 16) {
+      if (enVentana(x0p, x0p + 12)) continue;
+      const py = yCara + 4, ph = yPie - yCara - 9;
+      r(x0p, py, 12, ph, 3); r(x0p, py, 12, 1, 1); r(x0p, py, 1, ph, 1);
+      r(x0p + 11, py, 1, ph, 5); r(x0p, py + ph - 1, 12, 1, 5);
+      if (deja(x0p + 2, py + 2, 8, 0.5)) { p(x0p + 2, py + 2, 6); p(x0p + 3, py + 2, 5); p(x0p + 2, py + 3, 5); }
+    }
+    r(0, yPie - 4, W, 2, 5); r(0, yPie - 4, W, 1, 6);                   // el zócalo lustrado
+    // Los faroles, otra vez encima (las cortinas y el estante de esta pared se pintan después de ellos).
+    const farolesEncima = () => { for (const fx of faroles) {
+      const y = yCara + 12;
+      r(fx - 3, y - 2, 7, 1, 0); r(fx - 1, y - 1, 3, 1, 28);
+      r(fx - 3, y, 7, 9, 0);
+      r(fx - 2, y + 1, 5, 7, dia ? 25 : 29, !dia);
+      r(fx, y + 2, 1, 5, dia ? 24 : 30, !dia);
+      r(fx - 3, y + 8, 7, 1, 28); r(fx - 1, y + 9, 3, 1, 6);
+    } };
+    // Las cortinas de terciopelo.
+    const VER = 26, VER_L = 27, VER_S = 42, CORDON = 28;
+    const panio = (x, ancho, desde, largo) => {
+      for (let q = 0; q < ancho; q++) for (let y = desde; y < desde + largo; y++) {
+        const borde = q === 0 || q === ancho - 1 || y === desde + largo - 1;
+        p(x + q, y, borde ? 0 : q % 3 === 0 ? VER_S : q % 3 === 1 && y < desde + 5 ? VER_L : VER);
+      }
+    };
+    for (const [c0, c1] of ventanasFondo) {
+      const vx = ax(w.x + c0 * S) + 3, vw = ax(w.x + (c1 + 1) * S) - 3 - vx;
+      const vy = yCara + 10, vh = Math.round((yPie - yCara) * 0.55);
+      r(vx - 11, vy - 5, vw + 22, 1, 0); r(vx - 11, vy - 4, vw + 22, 1, 7);  // la barra, de bronce
+      // (🔁 Hasta el piso *(Santi: "que las cortinas lleguen bien hasta el suelo para agregar
+      // sofisticación")*, y recogidas AFUERA del marco: encima de la ventana la dejaban cortada.)
+      const desde = vy - 3, largo = yPie - 2 - desde;
+      if (dia) {
+        // Recogidas a los dos lados, con el cordón.
+        const nudo = vy + Math.round(vh * 0.6);
+        for (const [x, lado] of [[vx - 10, 0], [vx + vw + 3, 1]]) {
+          panio(x, 7, desde, nudo - desde);
+          panio(x - (lado ? 0 : 1), 8, nudo + 2, desde + largo - nudo - 2);
+          r(x - 1, nudo, 9, 2, 0); r(x, nudo, 7, 1, CORDON); p(x + (lado ? 1 : 5), nudo + 1, CORDON); p(x + (lado ? 1 : 5), nudo + 2, CORDON);
+        }
+      } else {
+        const mitad = Math.ceil(vw / 2) + 11;
+        panio(vx - 11, mitad, desde, largo); panio(vx + vw + 11 - mitad, mitad, desde, largo);
+      }
+    }
+    // El estante de la barra, sobre los primeros `T` de arriba: dos repisas con botellas y copas.
+    let b0 = -1, b1 = -1;
+    for (let c = 0; c < cols; c++) if (casilla(c, filasArriba + 2) === 'T') { if (b0 < 0) b0 = c; b1 = c; }
+    // (🔁 Sin la última casilla, la del tramo que sube: *(Santi: "la barra choca contra la estantería")*.)
+    b1 -= 1;
+    if (b0 >= 0) {
+      const ex = ax(w.x + b0 * S) + 2, ew = ax(w.x + (b1 + 1) * S) - 2 - ex;
+      r(ex - 1, yCara + 2, ew + 2, yPie - yCara - 6, 0);
+      r(ex, yCara + 3, ew, yPie - yCara - 8, 1);                          // el fondo del mueble
+      const COLORES = [27, 5, 22, 26, 10, 7];
+      for (const ry of [yCara + 14, yCara + 27]) {
+        r(ex, ry, ew, 2, 5); r(ex, ry, ew, 1, 6);                         // la repisa
+        for (let bx = ex + 2, n = 0; bx < ex + ew - 3; bx += 4 + (n % 3 === 1 ? 2 : 0), n++) {
+          if (n % 5 === 3) { r(bx, ry - 4, 3, 4, 0); r(bx + 1, ry - 3, 1, 3, 22); continue; }   // una copa
+          const col = COLORES[(n * 7 + ry) % COLORES.length], alto = 7 + (n % 2) * 2;
+          r(bx, ry - alto, 3, alto, 0); r(bx + 1, ry - alto - 2, 1, 2, 0);
+          r(bx + 1, ry - alto + 1, 1, alto - 1, col); p(bx + 1, ry - alto + 2, 30);
+        }
+      }
+    }
+    farolesEncima();
+  }
+
   // ===== LOS ASIENTOS: respaldo a la izquierda, almohadón de cuero y patas
   const ANCHO_ASIENTO = 15;
   const asientos = [];
   // (En el dormitorio las 'S' son camas: ver `dormitorio` más abajo.)
   if (w.id !== 'dormitorio') {
-    const r = rect(ASIENTOS);
+    // (🆕 En primera clase, de terciopelo verde botella *(Santi eligió el verde)*; en el de pasajeros, cuero rojo.)
+    const TT = w.id === 'primeraClase' ? { 39: 42, 8: 26, 9: 27, 10: 43, 3: 1 } : null;
+    const r0 = rect(ASIENTOS);
+    const r = (x, y, ww, hh, i) => r0(x, y, ww, hh, TT && TT[i] != null ? TT[i] : i);
     const sube = Math.round(tc.alturaAsiento * 1.7 * PX);
     for (let c = 0; c < cols; c++) for (let f = 1; f < map.rows - 1; f++) {
       if (casilla(c, f) !== 'S' || casilla(c, f - 1) === 'S') continue;
@@ -783,6 +901,110 @@ function vagon(train, w, dia) {
         }
       }
       cortinasV.push({ x, y, w: x2 - x, h: yb - y, base: (f + 1) * S - 0.02, clave: (w.colStart + c) + ',' + f });
+    }
+  }
+
+  /**
+   * 🆕 PRIMERA CLASE: LA BARRA (el mostrador 'T', de caoba lustrada, con la barra de bronce para el pie
+   * y unas copas encima), LAS MESITAS (redondas, lustradas, con una lámpara chica; sólo dibujo, no
+   * chocan) delante de cada sillón, y LA ALFOMBRA DEL PASILLO, sana y con guarda: lo contrario de las del
+   * dormitorio.
+   */
+  if (w.id === 'primeraClase') {
+    const r = rect(MESAS), p = pone(MESAS);
+    const MAD_SS = 1, MAD_S = 3, MAD = 4, MAD_L = 5, BRILLO = 6, BRONCE = 7;
+    /**
+     * La barra: como los tabiques del dormitorio, un núcleo de `ANCHO_BARRA` puntos por casilla 'T' que
+     * se estira hacia los vecinos (y hasta la pared), con la tapa arriba y, abajo, la cara con los paneles
+     * y la barra de bronce para el pie. 🔁 Más angosta *(Santi: "apenas un poco más angosta")* y corrida
+     * `PEGADA` puntos hacia la pared del fondo *("apenas un poco más pegada a la pared del fondo")*.
+     * La puertita vaivén, en el hueco del tramo vertical, va aparte (world/porton.js).
+     */
+    // (🔁 12 de alto, una barra de pie *(Santi: "la barra es muy alta… bajala a 12")*: la leen como barra el
+    // bronce para el pie, los paneles, las copas y el estante, no la altura.)
+    const ALTO_BARRA = 12, PEGADA = 5, ANCHO_BARRA = 12;
+    const esBarra = (c, f) => casilla(c, f) === 'T';
+    const esPared = (c, f) => casilla(c, f) === '#' || casilla(c, f) === 'W';
+    const nucleoB = (c, f) => {
+      const x = ax(w.x + c * S), x2 = ax(w.x + (c + 1) * S), y = ay(f * S) - PEGADA, y2 = ay((f + 1) * S) - PEGADA;
+      const mx = Math.round((x + x2) / 2), my = Math.round((y + y2) / 2), g = ANCHO_BARRA / 2;
+      return { x, x2, y, y2, cx0: mx - g, cx1: mx + g, cy0: my - g, cy1: my + g };
+    };
+    // (La puertita vaivén ya no va acá: gira, se dibuja en cada cuadro. Ver world/porton.js.)
+    const H = ALTO_BARRA;
+    const trozos = [];
+    for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 0; c < cols; c++) {
+      if (!esBarra(c, f)) continue;
+      const N = nucleoB(c, f);
+      const izq = esBarra(c - 1, f) || esPared(c - 1, f), der = esBarra(c + 1, f), arr = esBarra(c, f - 1) || esPared(c, f - 1), aba = esBarra(c, f + 1);
+      const tramos = [[izq ? N.x : N.cx0, N.cy0, der ? N.x2 : N.cx1, N.cy1]];
+      // (El tramo que sube llega hasta la pared lisa, entre el estante y la ventana *(Santi: "la barra tiene
+      // que pegar en la pared, no en una ventana ni en una estantería")*.)
+      const aPared = esPared(c, f - 1) && !izq && !der;
+      if (esBarra(c, f - 1) || aba || aPared) tramos.push([N.cx0, esBarra(c, f - 1) || aPared ? N.y : N.cy0, N.cx1, aba ? N.y2 : N.cy1]);
+      trozos.push({ c, f, N, tramos, aba, izq, der });
+    }
+    // Primero el contorno de todo, después el relleno (sin rayas en las juntas).
+    for (const T of trozos) for (const [a, b, cc, d] of T.tramos) r(a - 1, b - H - 1, cc - a + 2, d - b + 2, 0);
+    for (const T of trozos) {
+      for (const [a, b, cc, d] of T.tramos) { r(a, b - H, cc - a, d - b, MAD); r(a, b - H, cc - a, 1, MAD_L); }
+      if (deja(T.N.x + 6, T.N.cy0 - H + 2, 9, 0.5) && T.der) r(T.N.x + 6, T.N.cy0 - H + 2, 6, 1, BRILLO);
+      // La cara hacia acá: debajo del tramo, si abajo no sigue la barra.
+      if (!T.aba) {
+        const a = T.izq ? T.N.x : T.N.cx0, cc = T.der ? T.N.x2 : T.N.cx1, yb = T.N.cy1;
+        r(a - 1, yb - H, cc - a + 2, H + 1, 0);
+        r(a, yb - H, cc - a, H, MAD_S); r(a, yb - H, cc - a, 1, MAD_SS);
+        for (let q = a + 2; q < cc - 8; q += 12) { r(q, yb - H + 3, 9, H - 8, MAD_SS); r(q + 1, yb - H + 4, 7, H - 10, MAD_S); }
+        r(a, yb - 4, cc - a, 1, BRONCE); r(a, yb - 3, cc - a, 1, 0);
+      }
+      const xs = T.tramos.flatMap(([a, , cc]) => [a, cc]), ys = T.tramos.flatMap(([, b, , d]) => [b - H, d]);
+      const x0 = Math.min(...xs) - 1, y0 = Math.min(...ys) - 10, x1 = Math.max(...xs) + 1, y1 = Math.max(T.N.cy1, ...ys) + 1;
+      muebles.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0, base: (T.f + 1) * S - 0.02 });
+    }
+    // Las copas y la botella, sobre el tramo largo (la fila de la cara hacia el pasillo).
+    const largo = trozos.filter((T) => !T.aba && T.der);
+    if (largo.length) {
+      const T0 = largo[0];
+      for (const [k, q] of [[0, 9], [1, 22], [2, 26], [1, 70], [0, 110]]) {
+        const gx = T0.N.x + q, T = largo.find((t) => gx >= t.N.x && gx + 4 <= t.N.x2);
+        if (!T) continue;
+        const ty = T.N.cy0 - H;
+        if (k === 2) { r(gx, ty - 6, 4, 9, 0); r(gx + 1, ty - 5, 2, 8, 27); r(gx + 1, ty - 8, 2, 3, 0); p(gx + 1, ty - 4, 30); }
+        else { r(gx, ty - 2, 4, 4, 0); r(gx + 1, ty - 1, 2, 2, 22); p(gx + 1, ty - 1, 30); }
+      }
+    }
+    // Las mesitas (ver `mesitas` más arriba), con su vela.
+    for (const M of mesitas) {
+      const { f, mx, my } = M;
+      // (🔁 La tapa más grande: con la tapa angosta parecía un poste de farol.)
+      const MW = 18, MH = 10;
+      const ty = my - MH;
+      r(mx - 1, ty - 1, MW + 2, 7, 0);
+      r(mx, ty, MW, 5, MAD); r(mx, ty, MW, 1, MAD_L); r(mx + 3, ty + 1, 4, 1, BRILLO);
+      r(mx, ty + 4, MW, 1, MAD_S);
+      r(mx + Math.floor(MW / 2) - 1, ty + 5, 3, MH - 5, 0); r(mx + Math.floor(MW / 2), ty + 5, 1, MH - 6, MAD_S);
+      r(mx + 4, my - 1, MW - 8, 1, 0);
+      // 🔁 La vela, en su candelero de bronce, finita y sin contorno grueso (la lámpara de antes "no se
+      // nota… por la forma mal hecha y por el borde tan grueso"). De noche, prendida.
+      const vx = M.vx;
+      r(vx - 1, ty, 3, 1, BRONCE); r(vx, ty - 1, 1, 1, BRONCE);          // el candelero
+      r(vx, ty - 5, 1, 4, 17);                                            // la vela
+      if (!dia) { p(vx, ty - 6, 29, true); p(vx, ty - 7, 28, true); }   // la llama
+      else p(vx, ty - 6, 1);                                               // el pabilo, apagado
+      muebles.push({ x: mx - 1, y: ty - 8, w: MW + 2, h: my - ty + 8, base: (f + 1) * S + 0.1 });
+    }
+    // La alfombra del pasillo.
+    const pp = pone(PISO);
+    let fa = -1; for (let f = 0; f < map.rows; f++) if (casilla(0, f) === '+' && fa < 0) fa = f;
+    if (fa >= 0) {
+      const ax0 = ax(w.x + 2 * S), ax1 = ax(w.x + (cols - 2) * S), ay0 = ay(fa * S) + 4, ay1 = ay((fa + 2) * S) - 4;
+      for (let yy = ay0; yy < ay1; yy++) for (let xx = ax0; xx < ax1; xx++) {
+        const b = Math.min(xx - ax0, ax1 - 1 - xx, yy - ay0, ay1 - 1 - yy);
+        let i = b < 2 ? 39 : b === 2 ? 37 : b === 3 ? 39 : 8;
+        // El dibujo del campo: rombos chicos en hilera.
+        if (b > 4 && Math.abs(((xx - ax0) % 16) - 8) + Math.abs(yy - (ay0 + ay1) / 2) < 3) i = 37;
+        pp(xx, yy, i);
+      }
     }
   }
 

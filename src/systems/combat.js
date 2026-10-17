@@ -10,11 +10,12 @@
 import { pointInBody } from '../engine/collision.js';
 import { damageEnemy, pegarEnLaPierna } from '../entities/enemy.js';
 import { damagePlayer, isHidden, tumbar } from '../entities/player.js';
-import { danioDeBala } from './golpe.js';
+import { danioDeBala, zonaDeBala } from './golpe.js';
 import { CONFIG } from '../data/config.js';
 import { damageRider } from './riders.js';
 import { dañarPuerta } from '../entities/door.js';
 import { dañarCortina } from '../world/cortinas.js';
+import { dañarPorton } from '../world/porton.js';
 import { dañarRodante } from '../entities/rodante.js';
 import { dañarCajon } from '../entities/cajon.js';
 import { prenderCajon, soltarExplosivo } from './explosives.js';
@@ -50,7 +51,8 @@ export function updateBullets(bullets, dt, world) {
        * hace que al blindado no se le pueda entrar a los tiros por ningún
        * lado: ni caminando, ni disparando. Sólo dinamita.
        */
-      if (world.map.blocksBulletsAt(b.x, b.y) || puertaBlindadaEnMedio(b, world)) {
+      // (🆕 La cobertura baja tiene su regla: ver `tapaLaBala`, más abajo.)
+      if (tapaLaBala(world, b) || puertaBlindadaEnMedio(b, world)) {
         b.alive = false;
         world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
         break;
@@ -71,6 +73,18 @@ export function updateBullets(bullets, dt, world) {
           b._puertasGolpeadas.add(d);
           dañarPuerta(d, b.damage);
           world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
+        }
+      }
+
+      // 🆕 La puertita vaivén de la barra (primera clase): la bala pasa, pero la marca; al tercer balazo,
+      // rota (ver world/porton.js).
+      if (world.portones) {
+        for (const pt of world.portones) {
+          if (pt.rota || Math.abs(b.x - pt.x) >= 4 || Math.abs(b.y - pt.y) >= pt.hh) continue;
+          b._portonesGolpeados = b._portonesGolpeados || new Set();
+          if (b._portonesGolpeados.has(pt)) continue;
+          b._portonesGolpeados.add(pt);
+          dañarPorton(pt);
         }
       }
 
@@ -184,6 +198,10 @@ export function updateBullets(bullets, dt, world) {
       let hitCivilian = false;
       for (const pa of world.passengers) {
         if (!pa.alive || !pointInBody(b.x, b.y, pa)) continue;
+        // (🆕 Pegado a una cobertura baja: ver `defensaBaja`.)
+        const defP = defensaBaja(world, b, pa, pa.state === 'cowering');
+        if (defP === 'encima') continue;
+        if (defP) { b.alive = false; world.bus.emit('impact', { x: defP.x, y: defP.y, kind: 'wall', zona: b.zona }); hitCivilian = true; break; }
         b.alive = false;
         pa.alive = false;
         pa.hitFlash = 0.12;
@@ -200,6 +218,10 @@ export function updateBullets(bullets, dt, world) {
       let hitEnemy = false;
       for (const e of world.enemies) {
         if (!e.alive || !pointInBody(b.x, b.y, e)) continue;
+        // (🆕 Pegado a una cobertura baja —escondido: a cubierto, sin asomarse ni apuntar—: ver `defensaBaja`.)
+        const defE = defensaBaja(world, b, e, !!(e.atCover && !e.peeking && !(e.aimTimer > 0)));
+        if (defE === 'encima') continue;
+        if (defE) { b.alive = false; world.bus.emit('impact', { x: defE.x, y: defE.y, kind: 'wall', zona: b.zona }); hitEnemy = true; break; }
         b.alive = false;
         hitEnemy = true;
         // 💥 Cuánto saca según la zona, el arma y la distancia (systems/golpe.js).
@@ -242,6 +264,10 @@ export function updateBullets(bullets, dt, world) {
          */
         if (b.fromRider && isHidden(p)) continue;
 
+        // (🆕 Pegado a una cobertura baja: ver `defensaBaja`.)
+        const defJ = p.alive && pointInBody(b.x, b.y, p) ? defensaBaja(world, b, p, !!(p.sneaking || isHidden(p))) : null;
+        if (defJ === 'encima') continue;
+        if (defJ) { b.alive = false; world.bus.emit('impact', { x: defJ.x, y: defJ.y, kind: 'wall', zona: b.zona }); break; }
         if (p.alive && pointInBody(b.x, b.y, p)) {
           const { puntos, zona } = danioDeBala(b, p, 'jugador', world.rng);
           /**
@@ -278,6 +304,45 @@ export function updateBullets(bullets, dt, world) {
   for (let i = bullets.length - 1; i >= 0; i--) {
     if (!bullets[i].alive) bullets.splice(i, 1);
   }
+}
+
+/**
+ * 🆕 ¿ESTO FRENA LA BALA? Lo que frena las balas, menos LA COBERTURA BAJA (`cubreBajo`: el mostrador
+ * de la barra; mañana sillones, mesas…): ésa la pasa SIEMPRE el que tira por encima (`porEncima`: el
+ * jugador con el clic derecho apretado; los guardias, que siempre apuntan), desde cualquier lado, a
+ * cualquier distancia y haya quien haya cerca *(Santi: "la bala pasa y punto, y que le pegue a alguien…
+ * eso es otro tema")*. Sin apuntar, pega en la madera. Lo que tapa al que está detrás se decide recién al
+ * pegarle (`defensaBaja`, más abajo).
+ */
+function tapaLaBala(world, b) {
+  const map = world.map;
+  if (!map.blocksBulletsAt(b.x, b.y)) return false;
+  if (!map.cubreBajoAt || !map.cubreBajoAt(b.x, b.y)) return true;
+  return !b.porEncima;
+}
+
+/**
+ * 🆕 AL PEGARLE A ALGUIEN PEGADO A UNA COBERTURA BAJA del lado de donde viene la bala: si iba a las
+ * piernas, le pega a la madera de delante (devuelve dónde: la bala muere ahí, sin herir); si iba a la
+ * cabeza o al torso y está agachado y bien pegado (`pegadoEntero`), le pasa por encima (`'encima'`:
+ * sigue de largo). Si no, le pega como
+ * siempre (null). *(Santi: "si una bala… va con destino a las piernas que pegue en la madera… si está
+ * pegado o casi pegado"; y la recomendación de agachado, tapado entero.)*
+ */
+function defensaBaja(world, b, q, agachado) {
+  const map = world.map;
+  if (!map.cubreBajoAt) return null;
+  const K = CONFIG.coberturaBaja;
+  const v = Math.hypot(b.vx, b.vy) || 1, ux = b.vx / v, uy = b.vy / v;
+  let d = null;
+  for (let k = 2; k <= K.pegado + 6; k += 2) if (map.cubreBajoAt(q.x - ux * k, q.y - uy * k)) { d = k; break; }
+  if (d == null) return null;
+  // (🔁 Agachado y bien pegado no le pega ninguna: las de las piernas, en la madera; las demás, por encima
+  // *(Santi: "las que iban a las piernas peguen en la madera y las que van al torso o cabeza pasen por
+  // encima")*.)
+  if (zonaDeBala(b, world.rng) === 'piernas') return { x: q.x - ux * d, y: q.y - uy * d };
+  if (agachado && d <= K.pegadoEntero + 6) return 'encima';
+  return null;
 }
 
 /**

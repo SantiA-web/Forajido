@@ -856,6 +856,7 @@ function soltarBala(bo, world, arma) {
       factor: arma.factorPerdigon,
       perdigon: disparo,
       tirador: bo,
+      porEncima: true,     // (🆕 por encima de la cobertura baja que tiene pegada)
     });
   }
   const clave = claveDe(bo, arma);

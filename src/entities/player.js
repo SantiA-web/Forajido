@@ -126,6 +126,16 @@ export function createPlayer(x, y, weaponId = DEFAULT_WEAPON, meleeId = DEFAULT_
 }
 
 /** ¿Está tapado ahora mismo? Lo usan los guardias para decidir si te ven. */
+/**
+ * 🆕 ¿TIRA POR ENCIMA DE LA COBERTURA BAJA? Con el clic derecho apretado, parado o agachado, de cerca o de
+ * lejos *(Santi: "con click derecho desde lejos parado o agachado desde cerca, sí o sí tiene que pasar")*.
+ * Mira el botón y no cuánto se cerró la mira (`apuntado` tarda en subir): si no, el tiro apenas apretado
+ * pegaba en la madera.
+ */
+export function tiraPorEncima(p, world) {
+  return !!((world.input && world.input.mouse && world.input.mouse.right) || (p.apuntado || 0) > 0.5);
+}
+
 export function isHidden(p) {
   return !!p.cover && p.peek < 0.4;
 }
@@ -1025,6 +1035,8 @@ function shoot(p, world) {
         distancia: world.aimAlto != null ? Math.hypot(world.aimX - p.x, world.aimY - p.y) : 0,
         zona: world.aimZona || undefined,
         apuntado: p.apuntado || 0,
+        // (🆕 Con el clic derecho apretado y sin agacharte, por encima de la cobertura baja.)
+        porEncima: tiraPorEncima(p, world),
         caida: w.caida,
         factor: w.factorPerdigon,
         perdigon: disparo,
@@ -1055,6 +1067,10 @@ function shoot(p, world) {
     // Apuntar (clic derecho) hace que la bala vaya más seguido a la zona que
     // tenía la mira; y cada arma pierde distinto con la distancia.
     apuntado: p.apuntado || 0,
+    // 🆕 Con el clic derecho apretado y parado (suelto o asomado con Shift), la bala pasa por encima de la
+    // cobertura baja (la barra), esté donde esté; agachado o sin apuntar, pega en la madera. Ver
+    // `tapaLaBala`, systems/combat.js.
+    porEncima: tiraPorEncima(p, world),
     caida: w.caida,
   });
 

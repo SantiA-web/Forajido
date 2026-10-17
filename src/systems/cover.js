@@ -235,11 +235,17 @@ export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = [
 
       // Y tiene que poder asomarse a tirar desde ahí. Si no, no es cobertura:
       // es un rincón donde quedarse a mirar la pared.
-      const peek = findPeek(map, point, targetX, targetY);
+      // (🆕 Detrás de una cobertura baja —la barra— no se corre: se para y tira por encima, si desde ahí
+      // lo ve. Y la PREFIERE *(Santi: "las prefieren porque te cubre piernas sí o sí y es buena para el
+      // disparo")*: ver CONFIG.coberturaBaja.)
+      const bajo = map.cubreBajoAt && map.cubreBajoAt(shieldX, shieldY);
+      const peek = bajo && hasLineOfSight(point.x, point.y, targetX, targetY, map.blocksSightAt)
+        ? { axis: { x: 0, y: 1 }, side: 1, offset: 0 }
+        : findPeek(map, point, targetX, targetY);
       if (!peek) continue;
 
       // Preferimos coberturas cercanas, a media distancia y que expongan poco.
-      const score = distToSelf * 0.7 + Math.abs(distToTarget - ideal) * 0.6 + peek.offset * 1.2;
+      const score = distToSelf * 0.7 + Math.abs(distToTarget - ideal) * 0.6 + peek.offset * 1.2 - (bajo ? CONFIG.coberturaBaja.preferencia : 0);
       if (score < bestScore) {
         bestScore = score;
         best = { x: point.x, y: point.y, peek };

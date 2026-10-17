@@ -1908,6 +1908,20 @@ export const CONFIG = {
    * frenan las balas, y desde afuera no se empujan. Por eso `health` de acá
    * no les aplica — no hay número de tiros que las abra, sólo la dinamita.
    */
+  /**
+   * 🆕 LA COBERTURA BAJA (la barra; ver `tapaLaBala` en systems/combat.js):
+   *  - `pegado`: a cuánto de la cobertura está "pegado o casi pegado" *(Santi confirmó una casilla)*: le
+   *    tapa las piernas.
+   *  - `pegadoEntero`: agachado y a esto o menos (media casilla), lo tapa entero *(Santi eligió la C)*.
+   *  - `preferencia`: cuánto la prefieren los guardias al buscar dónde cubrirse (ver `findCoverPoint`,
+   *    systems/cover.js): les tapa las piernas y les deja tirar.
+   */
+  coberturaBaja: {
+    pegado: 16,
+    pegadoEntero: 8,
+    preferencia: 40,
+  },
+
   /** 🆕 Las cortinas de los camarotes (ver world/cortinas.js): tiros que aguantan, como la puerta. */
   cortinas: {
     vida: 3,

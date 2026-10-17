@@ -2114,6 +2114,8 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, sa
         case 'C':
         case 'R':
         case 'B':
+        case 'T':
+        case 'N':
           estampar(r, piezaPiso(colors.floor, varianteDe(col, row), false), x, y);
           break;
 
@@ -2861,6 +2863,21 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, 
               ? piezaCama(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3))
               : piezaAsiento(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3));
             estampar(r, pieza, x, y - sube);
+          } });
+          break;
+        }
+
+        // 🆕 La mesita de primera clase, en el dibujo viejo: una tapa chica (la nueva, en estiloNuevo/vagones.js).
+        case 'N': {
+          cosas.push({ base, draw: () => r.rect(x + 2, y + 2, size - 4, size - 6, '#5a3820') });
+          break;
+        }
+
+        // 🆕 El mostrador de la barra, en el dibujo viejo: una tabla de madera (el nuevo, en estiloNuevo/vagones.js).
+        case 'T': {
+          cosas.push({ base, draw: () => {
+            r.rect(x, y - 8, size, size, '#3a2418');
+            r.rect(x, y - 8, size, 3, '#7e5230');
           } });
           break;
         }

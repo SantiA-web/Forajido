@@ -3185,9 +3185,11 @@ function lineaLibre(e, world, aimAt) {
    */
   const a = e.armaId ? armaDe(e) : null;
   const abre = a && a.perdigones ? a.abanico / 2 : 0;
+  // (🆕 La cobertura baja que tiene pegada no le tapa: tira por encima. Ver `balasTapanDesde`.)
+  const tapa = world.map.balasTapanDesde ? world.map.balasTapanDesde(e.x, e.y, true) : world.map.blocksBulletsAt;
   for (const off of abre ? [0, -abre, abre] : [0]) {
     for (let d = 9; d <= hasta; d += 4) {
-      if (world.map.blocksBulletsAt(e.x + Math.cos(ang + off) * d, e.y + Math.sin(ang + off) * d)) return false;
+      if (tapa(e.x + Math.cos(ang + off) * d, e.y + Math.sin(ang + off) * d)) return false;
     }
   }
   return true;
@@ -3248,6 +3250,8 @@ function fire(e, world, enPanico) {
       factor: arma.factorPerdigon,
       perdigon: disparo,
       tirador: e,
+      // 🆕 Se asoma a tirar: por encima de la cobertura baja que tiene pegada (ver `balasTapanDesde`).
+      porEncima: true,
     });
   }
   gastarBala(e, world);

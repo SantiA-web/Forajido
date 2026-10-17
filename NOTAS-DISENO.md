@@ -19082,6 +19082,40 @@ camarote, la gente sentada en el borde de la cama de día y acostada de noche)*:
   guardias las abran al buscarte, que el que duerme se despierte si abrís la suya, que las balas a
   ciegas le den a un pasajero.
 
+**✅ Primera clase, el coche salón** (`primeraClase` en world/estiloNuevo/vagones.js) *(Santi eligió las
+recomendaciones: coche salón, terciopelo verde botella; y sumó la barra con bartender y los
+guardaespaldas distintos)*:
+- **Los sillones de terciopelo verde** con su mesita delante (redonda, lustrada, con una **vela** que de
+  noche ilumina alrededor: *"si es una vela de noche debería iluminar"*). Las mesitas son la casilla `N`:
+  **chocan como los bancos** del comedor (se ve por encima y las balas pasan).
+- **La alfombra del pasillo**, bordó, sana, con la guarda y una hilera de rombos.
+- **La pared de paneles de caoba**, que no pisa las ventanas ni los faroles (los dejaba "cortados");
+  **las cortinas de terciopelo** recogidas con cordón **afuera del marco** y **hasta el piso** (*"para
+  agregar sofisticación"*), de noche cerradas; **los faroles en el medio de la pared lisa** entre dos
+  ventanas, con su luz (más seguidos que en los otros vagones: la luz pareja).
+- **La barra, para cinco** (*"no es una barra para una cantina"*): el mostrador `T` (frena el paso y las
+  balas, se ve por encima), angosto, **de pie a 12 puntos** (*"la barra es muy alta… bajala a 12"*; los
+  taburetes sin colisión en el medio del pasillo quedaban peor), con la barra de bronce para el pie, las
+  copas, y detrás **el estante de las botellas**. Pega en la pared lisa, no en una ventana ni en el
+  estante (se sacaron las ventanas de detrás). **La puertita vaivén** en el tramo de la derecha
+  (world/porton.js): se abre empujándola y vuelve sola, no frena a nadie ni tapa la vista (por eso nadie
+  tira a ciegas: te ven por encima), **y tres balazos la rompen**.
+- 🧪 El atajo [4] va a primera clase y el tren siempre la trae (`forzarVagon`).
+- **LA COBERTURA BAJA** (`cubreBajo` en la casilla: hoy la barra; para sumar sillones o mesas, se les
+  pone a su casilla) *(Santi, en varias vueltas: "la bala pasa y punto, y que le pegue a alguien… eso es
+  otro tema")*: **con clic derecho la bala la pasa siempre** (el jugador, parado o agachado, de cerca o de
+  lejos; los guardias, que siempre apuntan); **sin apuntar pega en la madera**. Lo que tapa se decide
+  recién al pegarle a alguien pegado a una cobertura baja del lado del tiro (una casilla o menos): **si
+  iba a las piernas, pega en la madera**; **agachado y bien pegado (media casilla) no le pega ninguna**
+  (las de las piernas en la madera, las demás por encima). La zona se sortea una sola vez, con las chances
+  de siempre (`zonaDeBala`, systems/golpe.js). **Los guardias prefieren la cobertura baja** al cubrirse
+  (`CONFIG.coberturaBaja.preferencia`) y tiran por encima sin correrse. (El primer armado frenaba la bala
+  en la barra si había alguien escondido del otro lado, aunque la bala no fuera para él: eso era el
+  "las balas se detienen en la esquina".)
+- **Falta:** el rico (galera, saco largo oscuro, chaleco claro con la cadena del reloj, corbata), el
+  bartender y los guardaespaldas (saco negro, camisa blanca, corbata y bombín negros), y sentar a los
+  ricos.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

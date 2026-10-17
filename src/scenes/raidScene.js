@@ -37,6 +37,9 @@ import { escalarColor, ALTO_DEL_ENGANCHE, MEDIDAS } from '../world/trenTresCuart
 import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
 
 import { cerrarCortinas, cortinasAlPasar } from '../world/cortinas.js';
+import { crearPortones, actualizarPortones, dibujarPorton } from '../world/porton.js';
+import { TRAIN_TYPES } from '../data/train.js';
+import { sortearComposicion } from '../world/train.js';
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
@@ -225,8 +228,16 @@ export function createRaidScene(services) {
     // la pantalla de abordaje, y ahora quiere decir lo mismo que caballoEn:
     // dónde dejaste el caballo es dónde subís.
     const caballoEn = params.caballoEn ?? params.boardAt ?? 1;
+    /**
+     * 🧪 `forzarVagon` (el atajo [4]): sortea trenes hasta que salga uno con ese vagón (primera clase sale
+     * la mitad de las veces).
+     */
+    let composicion = params.composicion || null;
+    if (!composicion && params.forzarVagon) {
+      for (let i = 0; i < 60 && !(composicion && composicion.includes(params.forzarVagon)); i++) composicion = sortearComposicion(rng, TRAIN_TYPES[params.tipoTren]);
+    }
     train = buildTrain(
-      rng, caballoEn, params.composicion || null, params.dificultad || null,
+      rng, caballoEn, composicion, params.dificultad || null,
       gameState.weapon, params.tipoTren || null, gameState.melee,
       {
         climaId: params.clima || null,
@@ -374,6 +385,8 @@ export function createRaidScene(services) {
       map, player, enemies, passengers, bullets, explosives, riders, loot, doors,
       // (🆕 Las cortinas de los camarotes, de noche: ver world/cortinas.js.)
       cortinas: train.cortinas || [],
+      // (🆕 La puertita vaivén de la barra de primera clase: ver world/porton.js.)
+      portones: crearPortones(train),
       bus, rng, input, camera, audio,
       aimX: player.x, aimY: player.y,
       // 🎯 C3b · Tu tiro desde el techo se resuelve en la vista de costado.
@@ -2822,6 +2835,7 @@ export function createRaidScene(services) {
     for (const pa of passengers) updatePassenger(pa, dt, world);
     for (const d of doors) updateDoor(d, dt, world);
     cortinasAlPasar(map, world.cortinas, [player, ...enemies, ...passengers]);
+    actualizarPortones(world.portones, [player, ...enemies, ...passengers], dt);
     updateBullets(bullets, dt, world);
     updateExplosives(explosives, dt, world);
     updateCajones(dt);
@@ -4360,6 +4374,8 @@ export function createRaidScene(services) {
     const pies = (o, alto) => o.y + (alto ?? o.hh ?? 4);
     const cosas = cosasAltasDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, saltear);
     if (nuevos) for (const p of nuevos.altas) if (enVista(p)) cosas.push({ base: p.base, draw: () => estamparPieza(r, p) });
+    // (🆕 La puertita vaivén de la barra: se dibuja en cada cuadro, gira.)
+    if (nuevos) for (const p of world.portones || []) cosas.push({ base: p.base, draw: () => dibujarPorton(r, p) });
     for (const d of doors) if (visible(d)) cosas.push({ base: pies(d), draw: () => drawDoor(r, d, colors) });
     for (const tr of tranqueras) if (visible(tr)) cosas.push({ base: pies(tr, 8), draw: () => dibujarTranquera(r, tr) });
     for (const c of cajones) if (visible(c)) cosas.push({ base: pies(c), draw: () => drawCajon(r, c) });

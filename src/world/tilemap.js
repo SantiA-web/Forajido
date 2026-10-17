@@ -49,6 +49,17 @@ const TILE_RULES = {
    * estar entre vos y el que mira. Las pone `cerrarCortinas` (world/train.js).
    */
   'Q': { solid: false, blocksSight: true, blocksBullets: false, seVeDesdeAdentro: true },
+  /**
+   * 🆕 EL MOSTRADOR DE LA BARRA (primera clase) *(Santi: "una mesa bar con un bartender")*: frena el paso
+   * y las balas (madera maciza: es cobertura), pero es bajo y se ve por encima (al bartender, detrás).
+   */
+  'T': { solid: true, blocksSight: false, blocksBullets: true, cubreBajo: true },
+  /**
+   * 🆕 LA MESITA DE PRIMERA CLASE *(Santi: "añadeles colisión como la de los bancos")*: frena el paso y
+   * te podés pegar con Shift, pero es baja: pasan la vista y las balas. Más angosta que la casilla (la
+   * tapa dibujada, de 18 puntos).
+   */
+  'N': { solid: true, blocksSight: false, blocksBullets: false, margenX: 1.25 },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones
@@ -204,6 +215,24 @@ export function createTilemap(layout) {
     blocksSightAt,
     blocksBulletsAt: (px, py) =>
       dentro(px, py) && TILE_RULES[tileAtPixel(px, py)].blocksBullets,
+    /**
+     * 🆕 LA COBERTURA BAJA (`cubreBajo`: hoy el mostrador de la barra; mañana sillones, mesas o lo que
+     * sea bajo) *(Santi: "al apuntar desde detrás de la barra con click derecho el personaje o guardia
+     * pueda tirar y las balas no peguen contra la madera… y prepararía esta mecánica para que en un
+     * futuro también se pueda implementar en sillones, mesas o cosas del estilo")*.
+     *
+     * Acá, sólo "¿le tapa al que tira por encima?" (no: a ninguna distancia, de ningún lado), para que el
+     * guardia sepa que puede tirar; la regla entera, con las piernas del que está detrás, es `tapaLaBala` en
+     * systems/combat.js. Para sumar un mueble, se le pone `cubreBajo: true` a su casilla.
+     */
+    balasTapanDesde: (sx, sy, porEncima) => (px, py) => {
+      if (!dentro(px, py)) return false;
+      const regla = TILE_RULES[tileAtPixel(px, py)];
+      if (!regla.blocksBullets) return false;
+      return !(porEncima && regla.cubreBajo);
+    },
+    /** ¿Es cobertura baja? (ver `tapaLaBala` en systems/combat.js) */
+    cubreBajoAt: (px, py) => dentro(px, py) && !!TILE_RULES[tileAtPixel(px, py)].cubreBajo,
 
     /**
      * Por cuánto se multiplica la velocidad de quien está parado acá: 1 en

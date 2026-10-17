@@ -14,6 +14,7 @@ import { danioDeBala } from './golpe.js';
 import { CONFIG } from '../data/config.js';
 import { damageRider } from './riders.js';
 import { dañarPuerta } from '../entities/door.js';
+import { dañarCortina } from '../world/cortinas.js';
 import { dañarRodante } from '../entities/rodante.js';
 import { dañarCajon } from '../entities/cajon.js';
 import { prenderCajon, soltarExplosivo } from './explosives.js';
@@ -70,6 +71,19 @@ export function updateBullets(bullets, dt, world) {
           b._puertasGolpeadas.add(d);
           dañarPuerta(d, b.damage);
           world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
+        }
+      }
+
+      // 🆕 La cortina cerrada de un camarote, igual que la puerta: la bala pasa, pero la agujerea y,
+      // con suficientes, la rompe (ver world/cortinas.js).
+      if (world.cortinas) {
+        for (const k of world.cortinas) {
+          if (k.estado !== 'cerrada') continue;
+          if (Math.abs(b.x - k.x) >= k.hw || Math.abs(b.y - k.y) >= k.hh) continue;
+          b._cortinasGolpeadas = b._cortinasGolpeadas || new Set();
+          if (b._cortinasGolpeadas.has(k)) continue;
+          b._cortinasGolpeadas.add(k);
+          dañarCortina(world.map, k);
         }
       }
 

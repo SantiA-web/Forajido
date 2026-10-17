@@ -1908,6 +1908,11 @@ export const CONFIG = {
    * frenan las balas, y desde afuera no se empujan. Por eso `health` de acá
    * no les aplica — no hay número de tiros que las abra, sólo la dinamita.
    */
+  /** 🆕 Las cortinas de los camarotes (ver world/cortinas.js): tiros que aguantan, como la puerta. */
+  cortinas: {
+    vida: 3,
+  },
+
   doors: {
     health: 3,        // tiros que aguanta una puerta común antes de romperse
     closeDelay: 1.6,  // segundos sin nadie en el marco antes de cerrarse sola

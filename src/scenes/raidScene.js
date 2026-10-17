@@ -36,7 +36,8 @@ import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor, ALTO_DEL_ENGANCHE, MEDIDAS } from '../world/trenTresCuartos.js';
 import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
 
-import { buildTrain, cerrarCortinas, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
+import { cerrarCortinas, cortinasAlPasar } from '../world/cortinas.js';
+import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
 import { fijarHoraDelSorteo } from '../entities/estiloNuevo/gente.js';
@@ -371,6 +372,8 @@ export function createRaidScene(services) {
 
     world = {
       map, player, enemies, passengers, bullets, explosives, riders, loot, doors,
+      // (🆕 Las cortinas de los camarotes, de noche: ver world/cortinas.js.)
+      cortinas: train.cortinas || [],
       bus, rng, input, camera, audio,
       aimX: player.x, aimY: player.y,
       // 🎯 C3b · Tu tiro desde el techo se resuelve en la vista de costado.
@@ -2818,6 +2821,7 @@ export function createRaidScene(services) {
     separateEnemies(enemies, map);
     for (const pa of passengers) updatePassenger(pa, dt, world);
     for (const d of doors) updateDoor(d, dt, world);
+    cortinasAlPasar(map, world.cortinas, [player, ...enemies, ...passengers]);
     updateBullets(bullets, dt, world);
     updateExplosives(explosives, dt, world);
     updateCajones(dt);

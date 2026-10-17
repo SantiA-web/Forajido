@@ -19071,6 +19071,16 @@ camarote, la gente sentada en el borde de la cama de día y acostada de noche)*:
   mirando al piso del camarote, con los pies en el piso *(Santi: "apenas un poquito más en el borde así los
   pies quedan más sobre el suelo")*: leen, fuman, barajan o revisan la maleta (no hay ventana enfrente).
   Su caja, en la casilla de al lado de la cama. De noche, el que no duerme también.
+- **Las cortinas en el juego** (world/cortinas.js) *(Santi eligió: "que una vez abierta quede abierta" y
+  "le hacen huecos y la rompen como a una puerta")*: cerrada (de noche) tapa la vista, se atraviesa y la
+  bala pasa, así que el guardia que sabe que estás detrás te tira a ciegas como contra una puerta.
+  **Cualquiera que pasa la abre** (vos, un guardia, un pasajero) **y queda abierta**. **Cada bala le saca
+  una vida** (3, `CONFIG.cortinas.vida`, como la puerta): con el primer tiro, algunos agujeros; con el
+  segundo, muchos (por ahí se ve lo de atrás); con el tercero queda rasgada y caída. Abierta o rota ya no
+  tapa. Cada abertura tiene un dibujo por estado (world/estiloNuevo/vagones.js).
+- **Ideas para después** (Santi no las eligió por ahora): que la cortina que se mueve delate, que los
+  guardias las abran al buscarte, que el que duerme se despierte si abrís la suya, que las balas a
+  ciegas le den a un pasajero.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

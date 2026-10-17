@@ -474,6 +474,9 @@ function vagon(train, w, dia) {
    */
   const MESAS = capa();
   const muebles = [];
+  // (🆕 Las cortinas del dormitorio, un estado por capa: ver `dormitorio` más abajo.)
+  const CORT = w.id === 'dormitorio' ? { c0: capa(), c1: capa(), c2: capa(), abierta: capa(), rota: capa() } : null;
+  const cortinasV = [];
   if (w.id === 'comedor') {
     const r = rect(MESAS), p = pone(MESAS);
     const MAD = 5, MAD_L = 6, MAD_S = 4, MAD_SS = 3;
@@ -740,7 +743,12 @@ function vagon(train, w, dia) {
       r(fx, y + 2, 1, 5, dia ? 24 : 30, !dia);
       r(fx - 3, y + 8, 7, 1, 28);
     }
-    // Las cortinas: en cada abertura de dos casillas entre tabiques, en la línea del tabique.
+    /**
+     * Las cortinas: en cada abertura de dos casillas entre tabiques, en la línea del tabique. 🔁 Cada
+     * estado en su capa (`CORT`): cerrada sana (c0), con algunos agujeros (c1), con muchos (c2),
+     * abierta (recogida a los costados) y rota (rasgada y caída). La pieza elige cuál mostrar según la
+     * cortina del juego (world/cortinas.js); de día, abiertas.
+     */
     const PANIO = 26, PANIO_L = 27, PANIO_S = 42;
     for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 2; c < cols - 2; c++) {
       const libre = (q) => casilla(q, f) === '.' || casilla(q, f) === 'Q';
@@ -749,14 +757,32 @@ function vagon(train, w, dia) {
       // (🔁 De tabique a tabique *(Santi: "hay un espacio de unos pixeles entre el borde de la pared y el de
       // la cortina")*: el paso entero, las dos casillas.)
       const x = A.x2, x2 = B.x, yb = A.cy1, y = A.cy0 - ALTO_TABIQUE - 3;
-      r(x, y, x2 - x, 1, 0); r(x, y + 1, x2 - x, 1, 24);                  // la barra
-      const panio = (px, ancho) => {
-        r(px, y + 2, ancho, yb - y - 2, 0);
-        for (let q = 1; q < ancho - 1; q++) for (let jj = y + 3; jj < yb - 1; jj++) p(px + q, jj, q % 3 === 0 ? PANIO_S : q % 3 === 1 && jj < y + 6 ? PANIO_L : PANIO);
-      };
-      if (dia) { panio(x, 6); panio(x2 - 6, 6); }                         // recogidas a los costados
-      else panio(x, x2 - x);                                              // cerrada
-      muebles.push({ x, y, w: x2 - x, h: yb - y, base: (f + 1) * S - 0.02 });
+      for (const [estado, capaE] of Object.entries(CORT)) {
+        const rr = rect(capaE), pp = pone(capaE);
+        rr(x, y, x2 - x, 1, 0); rr(x, y + 1, x2 - x, 1, 24);              // la barra
+        // `roto`: el ruedo rasgado, a distintas alturas.
+        const panio = (px, ancho, roto = 0) => {
+          for (let q = 0; q < ancho; q++) {
+            const fin = yb - (roto ? Math.floor(hash(px + q, f + 7) * roto) : 0);
+            for (let jj = y + 2; jj < fin; jj++) {
+              const borde = q === 0 || q === ancho - 1 || jj === fin - 1;
+              pp(px + q, jj, borde ? 0 : q % 3 === 0 ? PANIO_S : q % 3 === 1 && jj < y + 6 ? PANIO_L : PANIO);
+            }
+          }
+        };
+        if (estado === 'abierta') { panio(x, 6); panio(x2 - 6, 6); }
+        else if (estado === 'rota') { panio(x, 5, 6); panio(x + 5, 9, Math.round((yb - y) * 0.7)); panio(x2 - 5, 5, 6); }
+        else {
+          panio(x, x2 - x);
+          // Los agujeros de bala: por ahí se ve lo de atrás.
+          const n = estado === 'c1' ? 3 : estado === 'c2' ? 7 : 0;
+          for (let h = 0; h < n; h++) {
+            const hx = x + 3 + Math.floor(hash(h + c, f + 11) * (x2 - x - 7)), hy = y + 5 + Math.floor(hash(f + 3, h + c) * (yb - y - 10));
+            rr(hx - 1, hy - 1, 5, 5, 0); rr(hx, hy, 3, 3, -1);
+          }
+        }
+      }
+      cortinasV.push({ x, y, w: x2 - x, h: yb - y, base: (f + 1) * S - 0.02, clave: (w.colStart + c) + ',' + f });
     }
   }
 
@@ -806,6 +832,28 @@ function vagon(train, w, dia) {
     for (const m of muebles) {
       const [mx, my] = enMundo(m.x, m.y);
       resultado.altas.push(pieza(recorte(me, m.x, m.y, m.w, m.h), m.w, m.h, mx, my, m.base));
+    }
+  }
+  /**
+   * 🆕 LAS CORTINAS: una pieza por abertura, con un dibujo por estado; muestra el de su cortina en el
+   * juego (`train.cortinasPorClave`, world/cortinas.js). Sin cortina (de día), abierta.
+   */
+  if (cortinasV.length) {
+    const im = Object.fromEntries(Object.entries(CORT).map(([e, cp]) => [e, iluminado(cp)]));
+    for (const k of cortinasV) {
+      const [mx, my] = enMundo(k.x, k.y);
+      const imgs = {};
+      for (const e of Object.keys(im)) imgs[e] = pieza(recorte(im[e], k.x, k.y, k.w, k.h), k.w, k.h, mx, my, k.base).img;
+      const vidaMax = CONFIG.cortinas.vida;
+      resultado.altas.push({
+        x: mx, y: my, w: k.w * PASO, h: k.h * PASO, base: k.base,
+        get img() {
+          const K = train.cortinasPorClave && train.cortinasPorClave[k.clave];
+          if (!K) return imgs.abierta;
+          if (K.estado !== 'cerrada') return imgs[K.estado];
+          return K.vida > vidaMax * 0.6 ? imgs.c0 : K.vida > vidaMax * 0.3 ? imgs.c1 : imgs.c2;
+        },
+      });
     }
   }
   const yF = ay(yPisoAbajo - tc.alturaParedBaja);

@@ -553,23 +553,6 @@ export function plataformasDe(tramos, tileSize) {
  *                     sumando capas nuevas acá — mejor un solo lugar que
  *                     crece, que una firma con quince posicionales.
  */
-/**
- * 🆕 DE NOCHE, LAS CORTINAS DE LOS CAMAROTES SE CIERRAN (dormitorio) *(Santi: "de noche no ves quién
- * está adentro")*: cada abertura de dos casillas entre tabiques pasa a ser 'Q' (ver world/tilemap.js),
- * que tapa la vista pero se atraviesa.
- */
-export function cerrarCortinas(train) {
-  const { map } = train;
-  for (const w of train.wagons) {
-    if (w.id !== 'dormitorio') continue;
-    const cuantas = Math.round(w.width / map.size);
-    for (let f = 1; f < map.rows - 1; f++) for (let c = w.colStart + 2; c < w.colStart + cuantas - 2; c++) {
-      const g = map.grid[f];
-      if (g[c - 1] === '#' && g[c] === '.' && g[c + 1] === '.' && g[c + 2] === '#') { g[c] = 'Q'; g[c + 1] = 'Q'; }
-    }
-  }
-}
-
 export function buildTrain(
   rng, caballoEn = 1, composicion = null, dificultadId = null, weaponId = undefined,
   tipoTrenId = null, meleeId = undefined, opciones = {}

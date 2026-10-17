@@ -553,6 +553,23 @@ export function plataformasDe(tramos, tileSize) {
  *                     sumando capas nuevas acá — mejor un solo lugar que
  *                     crece, que una firma con quince posicionales.
  */
+/**
+ * 🆕 DE NOCHE, LAS CORTINAS DE LOS CAMAROTES SE CIERRAN (dormitorio) *(Santi: "de noche no ves quién
+ * está adentro")*: cada abertura de dos casillas entre tabiques pasa a ser 'Q' (ver world/tilemap.js),
+ * que tapa la vista pero se atraviesa.
+ */
+export function cerrarCortinas(train) {
+  const { map } = train;
+  for (const w of train.wagons) {
+    if (w.id !== 'dormitorio') continue;
+    const cuantas = Math.round(w.width / map.size);
+    for (let f = 1; f < map.rows - 1; f++) for (let c = w.colStart + 2; c < w.colStart + cuantas - 2; c++) {
+      const g = map.grid[f];
+      if (g[c - 1] === '#' && g[c] === '.' && g[c + 1] === '.' && g[c + 2] === '#') { g[c] = 'Q'; g[c + 1] = 'Q'; }
+    }
+  }
+}
+
 export function buildTrain(
   rng, caballoEn = 1, composicion = null, dificultadId = null, weaponId = undefined,
   tipoTrenId = null, meleeId = undefined, opciones = {}
@@ -1192,12 +1209,17 @@ export function buildTrain(
           }
         }
         if (mejor) {
-          // El medio de la litera de 2×2 que empieza en esa casilla.
+          // El medio de la litera que empieza en esa casilla (de una o dos casillas de ancho y de fondo).
+          // `vertical`: la cabecera arriba (la del dormitorio nuevo, ver estiloNuevo/vagones.js).
           const L = p.layout;
           const c0 = L[mejor.r][mejor.c - 1] === 'S' ? mejor.c - 1 : mejor.c;
           const r0 = (L[mejor.r - 1] || '')[mejor.c] === 'S' ? mejor.r - 1 : mejor.r;
-          const a = enTiles([c0, r0]), z = enTiles([c0 + 1, r0 + 1]);
-          pa.cama = { x: (a.x + z.x) / 2, y: (a.y + z.y) / 2, base: (r0 + 2) * map.size };
+          let r1 = r0; while ((L[r1 + 1] || '')[c0] === 'S') r1++;
+          let c1 = c0; while (L[r0][c1 + 1] === 'S') c1++;
+          const a = enTiles([c0, r0]), z = enTiles([c1, r1]);
+          // (`libre`: de qué lado de la cama hay piso, 1 a la derecha o -1 a la izquierda: ahí cuelga el brazo.)
+          pa.cama = { x: (a.x + z.x) / 2, y: (a.y + z.y) / 2, base: (r1 + 1) * map.size, vertical: r1 - r0 > c1 - c0, arriba: r0 * map.size,
+            libre: L[r0][c0 - 1] === '#' ? 1 : -1 };
         }
       }
       /**
@@ -2840,6 +2862,12 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, 
               : piezaAsiento(colors.seat, h / PUNTO, lados, varianteDe(col, row, 3));
             estampar(r, pieza, x, y - sube);
           } });
+          break;
+        }
+
+        // 🆕 La cortina cerrada del camarote, en el dibujo viejo: un paño verde (el nuevo, en estiloNuevo/vagones.js).
+        case 'Q': {
+          cosas.push({ base, draw: () => r.rect(x, y + size - 10, size, 10, '#2a4a2a') });
           break;
         }
 

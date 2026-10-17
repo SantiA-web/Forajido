@@ -38,8 +38,8 @@ export const PASO = CONFIG.estilo.punto / DENSIDAD;
 const PX = 1 / PASO;
 
 /** Qué vagones ya se dibujan en el estilo nuevo. */
-// 🆕 P4: el comedor (el de la gente común: ver `comedor` más abajo).
-const NUEVOS = new Set(['pasajeros', 'comedor']);
+// 🆕 P4: el comedor (el de la gente común: ver `comedor` más abajo) y el dormitorio (ver `dormitorio`).
+const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio']);
 
 /**
  * LOS VAGONES DEL ESTILO NUEVO de este tren: sus columnas (para que el dibujo
@@ -167,6 +167,30 @@ function vagon(train, w, dia) {
     for (let d = 0; d < 4 && casilla(c, 0) === 'W'; d++) c += (d % 2 ? -(d + 1) : d + 1);
     faroles.push(ax(w.x + (c + 0.5) * S));
   }
+  /**
+   * 🆕 EN EL DORMITORIO, UNA LÁMPARA CHICA POR CAMAROTE DE ARRIBA, en la pared del fondo junto al
+   * tabique de su derecha (ver `dormitorio` más abajo). Los de abajo reciben la luz que cruza el pasillo.
+   */
+  const tabiques = [];
+  if (w.id === 'dormitorio') {
+    for (let c = 1; c < cols - 1; c++) if (casilla(c, filasArriba) === '#' && casilla(c - 1, filasArriba) !== '#') tabiques.push(c);
+    faroles.length = 0;
+    for (const c of tabiques) faroles.push(ax(w.x + c * S) - 6);
+  }
+  /**
+   * 🔁 LOS CAMAROTES DE ABAJO TAMBIÉN TIENEN SU LÁMPARA *(Santi: "de noche se ve demasiado raro, oscuro y
+   * muy violeta")*: sin ninguna, quedaban en lo más oscuro, y la madera en lo oscuro cae en los violetas
+   * de la paleta. Va colgada en la cara del tabique del pasillo, a la derecha del tabique de cada uno.
+   */
+  const lamparasAbajo = [];
+  if (w.id === 'dormitorio') {
+    const fUlt = map.rows - filasAbajo - 1;
+    for (let c = 1; c < cols - 1; c++) {
+      if (casilla(c, fUlt) !== '#' || casilla(c - 1, fUlt) === '#') continue;
+      let fp = fUlt; while (casilla(c, fp - 1) === '#') fp--;     // la fila del tabique del pasillo
+      lamparasAbajo.push({ x: ax(w.x + (c + 1) * S) + 7, fila: fp });
+    }
+  }
 
   // ===== LA LUZ, por escalones
   const tope = ay(yPisoAbajo);
@@ -197,11 +221,17 @@ function vagon(train, w, dia) {
       // perdían las tablas.
       let f = y < ay(yPisoArriba) ? -1 : -2;
       const yCharco = ay(yPisoArriba) + Math.round((tope - ay(yPisoArriba)) * 0.32);
-      // (🆕 En el comedor, más tenues: la luz de querosén de la gente común.)
+      // (🆕 En el comedor, más tenues: la luz de querosén de la gente común. En el dormitorio, lámparas
+      // chicas, una por camarote.)
       const tenue = w.id === 'comedor' ? 0.8 : 1;
       for (const fx of faroles) {
         f += tenue * 2.6 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
         f += 2.4 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - 26) / 18));
+      }
+      // (🆕 Las de los camarotes de abajo del dormitorio: el charco en su camarote.)
+      for (const L of lamparasAbajo) {
+        const ly = ay((L.fila + 1.5) * S);
+        f += 2.6 * Math.max(0, 1 - Math.hypot((x - L.x) / 60, (y - ly) / 40));
       }
       return f;
     };
@@ -262,6 +292,8 @@ function vagon(train, w, dia) {
     // Las puntas del vagón (las paredes de los costados, vistas desde arriba).
     for (let c = 0; c < cols; c++) for (let f = filasArriba; f < map.rows - filasAbajo; f++) {
       if (casilla(c, f) !== '#') continue;
+      // (🆕 Los tabiques del dormitorio van aparte, finos: ver `dormitorio`.)
+      if (w.id === 'dormitorio' && c > 0 && c < cols - 1) continue;
       const x = ax(w.x + c * S), x2 = ax(w.x + (c + 1) * S), y = ay(f * S), y2 = ay((f + 1) * S);
       r(x, y, x2 - x, y2 - y, 0);
       r(x + 1, y, x2 - x - 2, y2 - y, BORDE);
@@ -306,6 +338,15 @@ function vagon(train, w, dia) {
       } else {
         p(vx + 5, vy + 4, 21); p(vx + vw - 6, vy + 6, 20); p(vx + 9, vy + vh - 6, 20);
       }
+    }
+    // 🆕 En el dormitorio, el perchero de cada camarote de arriba, con el saco colgado.
+    if (w.id === 'dormitorio') for (const fx of faroles) {
+      const hx = fx - 22, hy = yCara + 9;
+      r(hx - 1, hy, 4, 2, 0); r(hx, hy, 2, 1, 24);                       // el gancho
+      // El saco: los hombros caídos, el cuerpo y la manga, de paño marrón.
+      r(hx - 4, hy + 2, 10, 15, 0);
+      r(hx - 3, hy + 3, 8, 13, 33); r(hx - 3, hy + 3, 8, 1, 34); r(hx - 3, hy + 4, 1, 11, 34);
+      r(hx + 1, hy + 4, 1, 11, 32); r(hx + 3, hy + 6, 1, 9, 32);          // la abertura y la manga
     }
     for (const fx of faroles) {
       const y = yCara + 12;
@@ -389,7 +430,8 @@ function vagon(train, w, dia) {
   // ===== LOS ASIENTOS: respaldo a la izquierda, almohadón de cuero y patas
   const ANCHO_ASIENTO = 15;
   const asientos = [];
-  {
+  // (En el dormitorio las 'S' son camas: ver `dormitorio` más abajo.)
+  if (w.id !== 'dormitorio') {
     const r = rect(ASIENTOS);
     const sube = Math.round(tc.alturaAsiento * 1.7 * PX);
     for (let c = 0; c < cols; c++) for (let f = 1; f < map.rows - 1; f++) {
@@ -507,6 +549,214 @@ function vagon(train, w, dia) {
       // banco: así se les ven los brazos apoyados; lo de las piernas que cae debajo de la tapa no se
       // dibuja, ver `mesa` en estiloNuevo/gente.js.)
       muebles.push({ x: x + 1, y: ty - 1, w: ancho + 2, h: y2 - ty + 1, base });
+    }
+  }
+
+  /**
+   * 🆕 P4 · EL DORMITORIO, DE CLASE MEDIA *(Santi eligió la B: pagaron más que el asiento, pero no son
+   * ricos)*: madera barnizada pero vieja, la frazada de lana, todo prolijo y sencillo. Un escalón entre
+   * el comedor y primera clase.
+   *
+   * LOS TABIQUES DE LOS CAMAROTES, bajos y cortados (`ALTO_TABIQUE`): la tapa arriba y, si debajo hay
+   * piso, la cara de tablas hacia acá. Así se ve adentro del camarote; altos, taparían la cama. Cada
+   * casilla es una pieza, para mezclarse con la gente.
+   *
+   * LAS CORTINAS DE PAÑO VERDE en la abertura de cada camarote *(Santi eligió la A)*: de día recogidas a
+   * los dos costados; de noche cerradas, y tapan la vista (la casilla 'Q', ver world/tilemap.js).
+   *
+   * LA CAMA *(la A: una por camarote)*: un catre sencillo, en vertical, con la almohada arriba (donde va
+   * la cabeza del que duerme, ver passenger.js).
+   */
+  if (w.id === 'dormitorio') {
+    const r = rect(MESAS), p = pone(MESAS);
+    // (🔁 21 puntos, por el hombro *(Santi eligió 21 de 10/16/21/27: "las veo muy bajitas")*.)
+    // (🔁 Las camas, primero: la pared del pasillo de los camarotes de arriba les tapa los pies *(Santi:
+    // "te dije claramente que cortes la cama para que parezca que la pared del dormitorio la tapa")*.
+    // Todo va en la misma capa; pintada después, la cama quedaba encima de la pared.)
+    const MAD_SS = 1, MAD_S = 3, MAD = 4, MAD_L = 5;
+    /**
+     * Las camas. 🔁 Más sencillas *(Santi: "que las camas se vean menos premium")*: un catre de madera
+     * sin cabecera, el colchón con la sábana cruda, una almohada chata y una frazada de lana parda, lisa.
+     */
+    const SAB = 16, SAB_S = 15, LANA = 14, LANA_L = 15, ALTO_CAMA = 8;
+    for (let c = 0; c < cols; c++) for (let f = filasArriba; f < map.rows - filasAbajo; f++) {
+      if (casilla(c, f) !== 'S' || casilla(c - 1, f) === 'S' || casilla(c, f - 1) === 'S') continue;
+      let c2 = c; while (casilla(c2 + 1, f) === 'S') c2++;
+      let f2 = f; while (casilla(c, f2 + 1) === 'S') f2++;
+      const x = ax(w.x + c * S) + 1, x2 = ax(w.x + (c2 + 1) * S) - 1, y = ay(f * S), y2 = ay((f2 + 1) * S);
+      // (🔁 En vertical, la cabecera arriba, contra la pared *(Santi: "las camas en vertical")*. Del largo
+      // de una persona entera acostada (27 puntos), con la almohada y apenas lugar a los pies *(Santi: "arma
+      // la cama para el cuerpo parado de un personaje"; con las dos casillas enteras "quedó larguísima")*.
+      // Lo que sobra de la casilla, piso. En los camarotes de arriba, la pared del pasillo le tapa los pies
+      // *(Santi: "hacé de cuenta que la tapa la pared")*.)
+      const LARGO_CAMA = 30;
+      const ty = y - ALTO_CAMA + 3, tf = ty + LARGO_CAMA;                 // la tapa (el colchón), de ty a tf
+      const ancho = x2 - x;
+      // El colchón con la sábana.
+      r(x, ty - 1, ancho, tf - ty + 2, 0);
+      r(x + 1, ty, ancho - 2, tf - ty, SAB);
+      // La almohada, chata, arriba.
+      r(x + 2, ty + 1, ancho - 4, 6, SAB_S); r(x + 3, ty + 2, ancho - 6, 4, SAB);
+      // La frazada, lisa, con la sábana doblada apenas encima.
+      const fy = ty + 9;
+      r(x + 1, fy, ancho - 2, tf - fy, LANA);
+      r(x + 1, fy, ancho - 2, 2, SAB_S);
+      r(x + 1, fy + 2, 1, tf - fy - 2, LANA_L);
+      // El canto hacia acá (los pies): la frazada cae un poco y el catre con las patas.
+      r(x, tf, ancho, ALTO_CAMA, 0);
+      r(x + 1, tf, ancho - 2, 2, LANA);
+      r(x + 1, tf + 2, ancho - 2, 2, MAD_S); r(x + 1, tf + 2, ancho - 2, 1, MAD);
+      r(x + 2, tf + 4, 2, ALTO_CAMA - 5, MAD_SS); r(x2 - 4, tf + 4, 2, ALTO_CAMA - 5, MAD_SS);
+      muebles.push({ x, y: ty - 1, w: ancho, h: y2 - (ty - 1), base: (f2 + 1) * S - 0.03 });
+      /**
+       * 🆕 EL LAVATORIO de cada camarote *(Santi eligió la A: "para que no se vea tan vacío")*: un
+       * mueblecito de madera con la palangana y la jarra de loza (blanca con el borde azul). SIN CHOQUE
+       * *(Santi: "al ser pegado a la pared no quiero que tenga colisión")*: es sólo dibujo, se mezcla con
+       * la gente por su borde de abajo. Sólo arriba, contra la pared del fondo, al lado de la cabecera.
+       */
+      const arribaDelPasillo = f < map.rows / 2;
+      /**
+       * 🆕 EN LOS CAMAROTES DE ABAJO, UNA ALFOMBRA en vez del lavatorio *(Santi: "en las habitaciones
+       * cercanas a la pantalla quedó mal… pon alfombras… un poco desteñidas, y algunas un poco rotas")*:
+       * en el piso libre entre el tabique y la cama (en el piso: no choca con nada). De lana, roja, azul o
+       * verde gastadas: la guarda, el campo con un rombo, el fleco en las puntas; desteñida a manchas, y
+       * algunas con un agujero, una punta comida o el fleco deshilachado.
+       */
+      if (!arribaDelPasillo) {
+        const pp = pone(PISO);
+        // (🔁 Sorteadas en cada tren *(Santi: "que se sortearan de manera aleatoria para que no todos los
+        // trenes tengan las mismas alfombras en el mismo lugar")*: el número va guardado en el tren, así
+        // de día y de noche son las mismas.)
+        const sa = train._semillaAlfombras ?? (train._semillaAlfombras = Math.floor(Math.random() * 9973));
+        let cl = c; while (casilla(cl - 1, f) !== '#' && cl > 0) cl--;
+        const ax0 = ax(w.x + cl * S) + 4, ax1 = ax(w.x + c * S) - 5, ay0 = ay(f * S) + 4, ay1 = ay((f2 + 1) * S) - 5;
+        const h = hash(c + sa, f + 31);
+        const [BASE, CLARO, OSC] = [[11, 12, 47], [19, 20, 40], [26, 27, 42]][Math.floor(h * 3)];
+        const rota = hash(c + 5 + sa, f) < 0.6, agujero = rota && hash(c + sa, f + 3) < 0.5;
+        const hx = ax0 + 6 + Math.floor(hash(c + sa, 9) * (ax1 - ax0 - 16)), hy = ay0 + 4 + Math.floor(hash(9, c + sa) * (ay1 - ay0 - 10));
+        const mx = (ax0 + ax1) / 2, my = (ay0 + ay1) / 2;
+        for (let yy = ay0; yy < ay1; yy++) for (let xx = ax0; xx < ax1; xx++) {
+          const bx = Math.min(xx - ax0, ax1 - 1 - xx), by = Math.min(yy - ay0, ay1 - 1 - yy), b = Math.min(bx, by);
+          // La punta comida (abajo a la derecha) y el agujero.
+          if (rota && !agujero && (ax1 - 1 - xx) + (ay1 - 1 - yy) < 5) continue;
+          if (agujero && Math.abs(xx - hx) + Math.abs(yy - hy) * 1.5 < 3) continue;
+          let i = b < 2 ? OSC : b === 2 ? CLARO : BASE;
+          // El rombo del medio.
+          const rombo = Math.abs(xx - mx) / ((ax1 - ax0) / 2 - 5) + Math.abs(yy - my) / ((ay1 - ay0) / 2 - 4);
+          if (b > 3 && rombo < 0.55 && rombo > 0.38) i = OSC;
+          if (b > 3 && rombo < 0.2) i = CLARO;
+          // Desteñida a manchas (el sol y los pies).
+          if (i !== CLARO && hash(Math.floor(xx / 3) + sa, Math.floor(yy / 2) + c * 7) < 0.14) i = i === OSC ? BASE : CLARO;
+          pp(xx, yy, i);
+        }
+        // El fleco, en las dos puntas (deshilachado: le faltan hilos).
+        for (let yy = ay0 + 1; yy < ay1 - 1; yy += 2) for (const xx of [ax0 - 1, ax1]) if (!(rota && hash(xx + sa, yy) < 0.4)) pp(xx, yy, 16);
+        continue;
+      }
+      let lx = x2 + 3;
+      const LW = 14, LD = 7, LH = 11;
+      const lyA = arribaDelPasillo ? ay(f * S) : ay(f * S) + 4;          // el piso donde apoya, atrás
+      const lt = lyA - LH, lf = lt + LD;                                   // la tapa: de lt a lf; la cara, de lf a lyA + LD
+      r(lx - 1, lt - 1, LW + 2, lyA + LD - lt + 1, 0);
+      // La tapa del mueble.
+      r(lx, lt, LW, LD, MAD); r(lx, lt, LW, 1, MAD_L);
+      // La palangana, redonda, con el borde azul.
+      r(lx + 3, lt + 1, 6, 1, 20); r(lx + 2, lt + 2, 1, 3, 20); r(lx + 9, lt + 2, 1, 3, 20); r(lx + 3, lt + 5, 6, 1, 20);
+      r(lx + 3, lt + 2, 6, 3, 17); r(lx + 4, lt + 2, 2, 1, 30);
+      // La jarra, parada al costado, con su contorno.
+      r(lx + 9, lt - 4, 5, 10, 0);
+      r(lx + 10, lt - 3, 3, 8, 17); r(lx + 10, lt - 3, 3, 1, 30); r(lx + 12, lt - 2, 1, 7, 16);
+      // La cara: dos puertitas y las patas.
+      r(lx, lf, LW, LH - 2, MAD_S); r(lx, lf, LW, 1, MAD);
+      r(lx + Math.floor(LW / 2), lf + 1, 1, LH - 4, MAD_SS);
+      r(lx + Math.floor(LW / 2) - 2, lf + 4, 1, 1, 28); r(lx + Math.floor(LW / 2) + 2, lf + 4, 1, 1, 28);
+      r(lx + 1, lyA + LD - 2, 2, 2, MAD_SS); r(lx + LW - 3, lyA + LD - 2, 2, 2, MAD_SS);
+      muebles.push({ x: lx - 1, y: lt - 4, w: LW + 2, h: lyA + LD - lt + 4, base: (lyA + LD) * PASO + yArriba });
+    }
+    const ALTO_TABIQUE = 21, GRUESO = 6;
+    const interior = (c, f) => c > 0 && c < cols - 1 && f >= filasArriba && f < map.rows - filasAbajo;
+    const esTabique = (c, f) => casilla(c, f) === '#' && interior(c, f);
+    // 🔁 Finos, por el medio de la casilla (ocupando la casilla entera parecían mesas): un núcleo de
+    // `GRUESO` puntos que se estira hacia cada tabique vecino.
+    const nucleo = (c, f) => {
+      const x = ax(w.x + c * S), x2 = ax(w.x + (c + 1) * S), y = ay(f * S), y2 = ay((f + 1) * S);
+      const mx = Math.round((x + x2) / 2), my = Math.round((y + y2) / 2), g = GRUESO / 2;
+      return { x, x2, y, y2, cx0: mx - g, cx1: mx + g, cy0: my - g, cy1: my + g };
+    };
+    for (let c = 1; c < cols - 1; c++) for (let f = filasArriba; f < map.rows - filasAbajo; f++) {
+      if (!esTabique(c, f)) continue;
+      const N = nucleo(c, f);
+      // (🔁 Abajo, hasta la pared de adelante *(Santi: "la pared interior de las habitaciones de más cerca a
+      // la pantalla no llegan al final")*: terminaba en el medio de su última casilla.)
+      const contraAfuera = f + 1 >= map.rows - filasAbajo && (casilla(c, f + 1) === '#' || casilla(c, f + 1) === 'W');
+      const arr = esTabique(c, f - 1), aba = esTabique(c, f + 1) || contraAfuera;
+      // (🔁 Junto a la abertura de un camarote, el tabique llega hasta el borde de su casilla, que es pared
+      // entera en el juego: si no, la abertura dibujada era más ancha que el paso *(Santi: "la cortina
+      // quedó muy larga")*.)
+      const abre = (q) => casilla(q, f) === '.' || casilla(q, f) === 'Q';
+      const horiz = esTabique(c - 1, f) || esTabique(c + 1, f);
+      const izq = esTabique(c - 1, f) || (horiz && abre(c - 1)), der = esTabique(c + 1, f) || (horiz && abre(c + 1));
+      // Los tramos de la tapa (en el piso; después se suben ALTO_TABIQUE): el horizontal y el vertical.
+      const tramos = [[izq ? N.x : N.cx0, N.cy0, der ? N.x2 : N.cx1, N.cy1]];
+      // (Contra la pared de afuera, la tapa baja también lo que mide de alto: llega a la pared de adelante.)
+      if (arr || aba) tramos.push([N.cx0, arr ? N.y : N.cy0, N.cx1, aba ? N.y2 + (contraAfuera ? ALTO_TABIQUE : 0) : N.cy1]);
+      const H = ALTO_TABIQUE;
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      // Primero el contorno de todos los tramos, después el relleno (así no queda una raya en la junta).
+      for (const [a, b, cc, d] of tramos) {
+        const caraAbajo = !(aba && a === N.cx0 && cc === N.cx1) || !aba;
+        const fin = d - H + (caraAbajo && (d === N.cy1 || !aba) ? H : 0);
+        r(a - 1, b - H - 1, cc - a + 2, fin - (b - H) + 2, 0);
+        x0 = Math.min(x0, a - 1); y0 = Math.min(y0, b - H - 1); x1 = Math.max(x1, cc + 1); y1 = Math.max(y1, fin + 1);
+      }
+      // (🔁 La tapa, del color del vagón, como el borde de las paredes de afuera *(Santi: "el borde de las
+      // paredes interiores es igual al del piso, entonces se confunde")*.)
+      for (const [a, b, cc, d] of tramos) {
+        r(a, b - H, cc - a, d - b, BORDE);
+        r(a, b - H, cc - a, 1, BORDE_L);
+      }
+      // La cara de tablas hacia acá, debajo del tramo horizontal (y del vertical si termina acá).
+      const caras = [];
+      if (!aba) caras.push([izq ? N.x : N.cx0, der ? N.x2 : N.cx1, N.cy1]);
+      else if (izq || der) {
+        if (izq) caras.push([N.x, N.cx0, N.cy1]);
+        if (der) caras.push([N.cx1, N.x2, N.cy1]);
+      }
+      for (const [a, cc, yb] of caras) {
+        r(a, yb - H, cc - a, H, MAD_S);
+        r(a, yb - H, cc - a, 1, MAD_SS);
+        for (let q = a + 3; q < cc - 1; q += 7) r(q, yb - H + 2, 1, H - 4, MAD_SS);
+        r(a, yb - 1, cc - a, 1, 0);
+        y1 = Math.max(y1, yb);
+      }
+      muebles.push({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, base: (f + 1) * S - 0.02 });
+    }
+    // Las lámparas de los camarotes de abajo, en la cara del tabique del pasillo.
+    for (const L of lamparasAbajo) {
+      const yb = nucleo(1, L.fila).cy1, y = yb - ALTO_TABIQUE + 4, fx = L.x;
+      r(fx - 3, y - 2, 7, 1, 0); r(fx - 1, y - 1, 3, 1, 28);
+      r(fx - 3, y, 7, 9, 0);
+      r(fx - 2, y + 1, 5, 7, dia ? 25 : 29, !dia);
+      r(fx, y + 2, 1, 5, dia ? 24 : 30, !dia);
+      r(fx - 3, y + 8, 7, 1, 28);
+    }
+    // Las cortinas: en cada abertura de dos casillas entre tabiques, en la línea del tabique.
+    const PANIO = 26, PANIO_L = 27, PANIO_S = 42;
+    for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 2; c < cols - 2; c++) {
+      const libre = (q) => casilla(q, f) === '.' || casilla(q, f) === 'Q';
+      if (!(esTabique(c - 1, f) && libre(c) && libre(c + 1) && esTabique(c + 2, f))) continue;
+      const A = nucleo(c - 1, f), B = nucleo(c + 2, f);
+      // (🔁 De tabique a tabique *(Santi: "hay un espacio de unos pixeles entre el borde de la pared y el de
+      // la cortina")*: el paso entero, las dos casillas.)
+      const x = A.x2, x2 = B.x, yb = A.cy1, y = A.cy0 - ALTO_TABIQUE - 3;
+      r(x, y, x2 - x, 1, 0); r(x, y + 1, x2 - x, 1, 24);                  // la barra
+      const panio = (px, ancho) => {
+        r(px, y + 2, ancho, yb - y - 2, 0);
+        for (let q = 1; q < ancho - 1; q++) for (let jj = y + 3; jj < yb - 1; jj++) p(px + q, jj, q % 3 === 0 ? PANIO_S : q % 3 === 1 && jj < y + 6 ? PANIO_L : PANIO);
+      };
+      if (dia) { panio(x, 6); panio(x2 - 6, 6); }                         // recogidas a los costados
+      else panio(x, x2 - x);                                              // cerrada
+      muebles.push({ x, y, w: x2 - x, h: yb - y, base: (f + 1) * S - 0.02 });
     }
   }
 

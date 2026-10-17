@@ -468,6 +468,25 @@ function pasajeroNuevo(r, pa, pies) {
   // Durmiendo en la litera del dormitorio.
   // (La almohada de la litera está a la izquierda: la cabeza va ahí.)
   const ahora = performance.now() / 1000;
+  /**
+   * 🆕 EN LA CAMA VERTICAL DEL DORMITORIO NUEVO, acostado como el del banco del comedor *(Santi: "arma la
+   * cama para el cuerpo parado de un personaje"; el tapado con la frazada "se ve mal")*: el pasajero de
+   * frente, a lo largo de la cama, con la cabeza en la almohada (arriba), una mano en el pecho y la otra
+   * colgando del lado libre de la cama, y respira como él. Sin sombrero: está en el perchero.
+   */
+  if (pa.dormido && pa.cama && pa.cama.vertical && estiloNuevo.activo) {
+    const PASO = CONFIG.estilo.punto / 4;
+    const t = (ahora + pa.cama.x * 0.37) % 4.5;
+    const aire = t < 0.3 ? 'Medio' : t < 1.7 ? 'Aire' : t < 2.9 ? 'Medio' : '';
+    const figA = dibujarPersona(r, {
+      tipo: 'pasajero', x: pa.cama.x, pies: pa.cama.arriba + 23 * PASO, angulo: Math.PI / 2, interior: true,
+      nuevo: { arma: null, funda: false, aspecto: { ...aspecto, sombrero: 'ninguno' }, piernas: 'quieto', brazos: (pa.cama.libre > 0 ? 'acostadoDer' : 'acostado') + aire },
+      destello: pa.hitFlash > 0,
+    });
+    pa._p3Desde = { x: pa.cama.x, t: ahora };
+    dibujarZ(r, figA.x + 4, figA.arriba);
+    return;
+  }
   if (pa.dormido && pa.cama) {
     tendidoNuevo(r, pa.cama.x - 6, pa.cama.y, { tipo: 'pasajero', modo: 'cama', aspecto });
     pa._p3Desde = { x: pa.cama.x - 6, t: ahora };

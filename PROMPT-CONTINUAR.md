@@ -135,7 +135,7 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
 - **Los atajos de prueba del campamento** (marcados 🧪 en scenes/campScene.js):
   [2] la escopeta, [3] el Winchester, [4] directo a
   un vagón (pedido por Santi el 2026-10-08, para ver el estilo nuevo con [F9]; desde el
-  2026-10-15, al comedor), [5] el cuchillo sin comprarlo (2026-10-10, para probar el tajo) y [6] el tren de
+  2026-10-15, al comedor; desde el 2026-10-17, al dormitorio), [5] el cuchillo sin comprarlo (2026-10-10, para probar el tajo) y [6] el tren de
   pasajeros con el Sheriff en tu vagón (2026-10-15) y [7] 950 de recompensa, para que suba el
   Cazarrecompensas (2026-10-15). **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
   cuando el estilo nuevo esté terminado.
@@ -204,8 +204,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   blindado, el Pistolero, el Sheriff y el Cazarrecompensas hechos; queda el Dinamitero, que espera a
   que exista su vagón. Sigue **P4, los otros vagones, primero el tren de pasajeros entero**: el
   comedor (el pobre) hecho, con su gente sentada a la mesa (comiendo, tomando del jarro) y el que
-  duerme acostado en el banco; sigue el
-  dormitorio, primera clase / guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
+  duerme acostado en el banco; el dormitorio (clase media) hecho, falta su gente de día sentada en el
+  borde de la cama; después primera clase / guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las

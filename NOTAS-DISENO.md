@@ -19040,6 +19040,35 @@ quedan sus mecánicas, que usa el de carga.)
 - **Las siluetas, sólo para elegir** *(Santi: "nunca más me proporciones las siluetas si no tengo que
   elegir entre una cosa u otra")*: si no hay opciones, se le muestra directo con color.
 
+**✅ El dormitorio, de clase media** (`dormitorio` en world/estiloNuevo/vagones.js) *(Santi eligió las
+recomendaciones: clase media —pagaron más que el asiento, no son ricos—, cortina de paño, una cama por
+camarote, la gente sentada en el borde de la cama de día y acostada de noche)*:
+- **Los tabiques de los camarotes**, finos, por el medio de su casilla (ocupando la casilla entera
+  parecían mesas), de **21 puntos** *(Santi eligió 21 de 10/16/21/27: "las veo muy bajitas")*: la tapa
+  del color del vagón *("el borde de las paredes interiores es igual al del piso, entonces se
+  confunde")* y la cara de tablas barnizadas hacia acá. Junto a la abertura llegan al borde de su
+  casilla (es pared entera en el juego); abajo llegan hasta la pared de adelante.
+- **Las cortinas de paño verde**, de tabique a tabique: de día recogidas a los costados, **de noche
+  cerradas** (la casilla `Q` de world/tilemap.js, la pone `cerrarCortinas` en world/train.js): tapan la
+  vista, se atraviesan y la bala pasa. Una abertura por camarote, en el medio (el mapa viejo tenía siete
+  para cinco).
+- **Las camas en vertical** *(Santi)*, la cabecera contra la pared de afuera: un catre sencillo
+  *("menos premium")*, sábana cruda, almohada chata y frazada parda, **del largo de una persona** (30
+  puntos; con las dos casillas enteras "quedó larguísima"). En los camarotes de arriba, la pared del
+  pasillo le tapa los pies (se pinta antes que los tabiques).
+- **El que duerme**, acostado en la cama como el del banco del comedor (de frente, una mano en el pecho
+  y la otra colgando del lado libre, respira), sin sombrero. El que se tapaba con la frazada se sacó:
+  *"se ve mal"*.
+- **Arriba**, en la pared del fondo: una lámpara chica y el perchero con el saco; junto a la cabecera,
+  **el lavatorio** (palangana y jarra de loza; sin choque: *"al ser pegado a la pared no quiero que
+  tenga colisión"*). **Abajo**, una lámpara en la cara del tabique del pasillo (sin ella, de noche
+  quedaba "oscuro y muy violeta") y **una alfombra** desteñida, de lana roja, azul o verde, algunas con
+  un agujero, la punta comida o el fleco deshilachado, **sorteadas en cada tren** *(Santi: "no todos
+  los trenes tengan las mismas alfombras en el mismo lugar")*. (El lavatorio abajo, contra el tabique,
+  quedaba mal.)
+- 🧪 El atajo [4] del campamento ahora va al dormitorio.
+- **Falta:** la gente de día, sentada en el borde de la cama.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

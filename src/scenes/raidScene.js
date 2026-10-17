@@ -36,7 +36,7 @@ import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor, ALTO_DEL_ENGANCHE, MEDIDAS } from '../world/trenTresCuartos.js';
 import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
 
-import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
+import { buildTrain, cerrarCortinas, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
 import { fijarHoraDelSorteo } from '../entities/estiloNuevo/gente.js';
@@ -244,6 +244,7 @@ export function createRaidScene(services) {
     fijarHoraDelSorteo(gameState.esDeDia);
     // 🆕 De noche, la mayoría de los pasajeros duerme (ver CONFIG.passenger.dormidos).
     if (!gameState.esDeDia) {
+      cerrarCortinas(train);
       for (const pa of train.passengers) {
         if (!pa.encubierto && rng.next() < CONFIG.passenger.dormidos) pa.dormido = true;
       }

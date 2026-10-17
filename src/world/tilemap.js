@@ -42,6 +42,13 @@ const TILE_RULES = {
    * al lado, centrado.
    */
   'B': { solid: true,  blocksSight: false, blocksBullets: false, margenX: 2.5 },
+  /**
+   * 🆕 LA CORTINA CERRADA DEL CAMAROTE (dormitorio, de noche) *(Santi eligió la A: "cerrada tapa la
+   * vista pero se puede pasar")*: se atraviesa y la bala pasa (es paño), pero no se ve a través. Desde
+   * adentro de la casilla sí (`seVeDesdeAdentro`, como la res): para esconderte, la cortina tiene que
+   * estar entre vos y el que mira. Las pone `cerrarCortinas` (world/train.js).
+   */
+  'Q': { solid: false, blocksSight: true, blocksBullets: false, seVeDesdeAdentro: true },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones

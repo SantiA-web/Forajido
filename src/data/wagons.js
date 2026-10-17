@@ -849,16 +849,20 @@ export const WAGONS = {
     name: 'Vagón dormitorio',
     short: 'DORMITORIO',
     hint: 'Camarotes. Gente que no quiere ser molestada.',
+    // (🔁 Estilo nuevo P4: cada cama, en vertical, de una casilla de ancho y dos de largo, con la
+    // cabecera contra la pared de afuera *(Santi: "las camas en vertical")*; de 2×2, vista desde arriba,
+    // quedaba alta como un ropero. Y una abertura por camarote, en el medio: había siete para cinco, y
+    // alguna caía debajo de un tabique.)
     layout: [
       '###WW#####WW#####WW#####WW#####WW#######',
-      '#SS....#SS....#SS....#SS....#SS....#...#',
-      '#SS....#SS....#SS....#SS....#SS....#...#',
-      '###..###..###..###..###..###..###..#...#',
+      '#S.....#S.....#S.....#S.....#S.....#...#',
+      '#S.....#S.....#S.....#S.....#S.....#...#',
+      '###..#####..#####..#####..#####..###...#',
       '+......................................+',
       '+......................................+',
-      '#...###..###..###..###..###..###..###..#',
-      '#...#....SS#....SS#....SS#....SS#....SS#',
-      '#...#....SS#....SS#....SS#....SS#....SS#',
+      '#...###..#####..#####..#####..#####..###',
+      '#...#.....S#.....S#.....S#.....S#.....S#',
+      '#...#.....S#.....S#.....S#.....S#.....S#',
       '#######WW#####WW#####WW#####WW#####WW###',
     ],
     enemies: [

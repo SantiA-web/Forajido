@@ -1220,6 +1220,23 @@ export function buildTrain(
           // (`libre`: de qué lado de la cama hay piso, 1 a la derecha o -1 a la izquierda: ahí cuelga el brazo.)
           pa.cama = { x: (a.x + z.x) / 2, y: (a.y + z.y) / 2, base: (r1 + 1) * map.size, vertical: r1 - r0 > c1 - c0, arriba: r0 * map.size,
             libre: L[r0][c0 - 1] === '#' ? 1 : -1 };
+          /**
+           * 🆕 DE DÍA, SENTADO EN EL BORDE DE SU CAMA (dormitorio nuevo) *(Santi eligió: "sentada en el
+           * borde de la cama leyendo, fumando o revisando la maleta")*: del lado libre, de perfil, mirando
+           * al piso del camarote. Su caja va a la casilla de al lado de la cama, a la mitad de su largo (no
+           * choca con el mueble); se dibuja en el borde (`asientoX`).
+           */
+          if (pa.cama.vertical) {
+            const S = map.size;
+            pa.enCama = pa.cama.libre;
+            pa.sentado = true;
+            pa.x = pa.cama.x + pa.enCama * S;
+            pa.y = (r0 + 1) * S + 4 - pa.hh;
+            // (🔁 Dos puntos más afuera, en el borde *(Santi: "así los pies quedan más sobre el suelo")*.)
+            pa.asientoX = pa.cama.x + pa.enCama * (S / 2 - 1.5);
+            pa.asientoBase = pa.cama.base;
+            pa.facing = pa.enCama > 0 ? 0 : Math.PI;
+          }
         }
       }
       /**

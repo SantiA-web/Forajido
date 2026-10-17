@@ -19067,7 +19067,10 @@ camarote, la gente sentada en el borde de la cama de día y acostada de noche)*:
   los trenes tengan las mismas alfombras en el mismo lugar")*. (El lavatorio abajo, contra el tabique,
   quedaba mal.)
 - 🧪 El atajo [4] del campamento ahora va al dormitorio.
-- **Falta:** la gente de día, sentada en el borde de la cama.
+- **De día, sentados en el borde de la cama** (`enCama` en world/train.js), del lado libre, de perfil
+  mirando al piso del camarote, con los pies en el piso *(Santi: "apenas un poquito más en el borde así los
+  pies quedan más sobre el suelo")*: leen, fuman, barajan o revisan la maleta (no hay ventana enfrente).
+  Su caja, en la casilla de al lado de la cama. De noche, el que no duerme también.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

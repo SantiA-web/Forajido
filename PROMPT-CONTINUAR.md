@@ -204,8 +204,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   blindado, el Pistolero, el Sheriff y el Cazarrecompensas hechos; queda el Dinamitero, que espera a
   que exista su vagón. Sigue **P4, los otros vagones, primero el tren de pasajeros entero**: el
   comedor (el pobre) hecho, con su gente sentada a la mesa (comiendo, tomando del jarro) y el que
-  duerme acostado en el banco; el dormitorio (clase media) hecho, falta su gente de día sentada en el
-  borde de la cama; después primera clase / guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
+  duerme acostado en el banco; el dormitorio (clase media) hecho, con su gente; falta decidir cómo
+  funcionan sus cortinas en el juego; después primera clase / guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las

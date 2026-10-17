@@ -361,7 +361,8 @@ function accionDeDia(pa, ahora) {
         s.hasta = ahora + F.duracion[0] + Math.random() * (F.duracion[1] - F.duracion[0]);
       } else {
         // (🆕 A la mesa del comedor no mira por la ventana ni revisa la maleta; sin otra cosa, quieto.)
-        let hay = pa.enBanco ? [null, 'comer', 'jarro'] : ['ventana'];
+        // (🆕 En el borde de la cama del dormitorio, tampoco hay ventana enfrente.)
+        let hay = pa.enBanco ? [null, 'comer', 'jarro'] : pa.enCama ? [null] : ['ventana'];
         if (pa.diario) hay.push('diario');
         if (pa.mazo) hay.push('barajar');
         if (pa.lleva && !pa.enBanco) hay.push('equipaje');
@@ -571,7 +572,7 @@ function pasajeroNuevo(r, pa, pies) {
   } else if (sentado && pa.state === 'idle' && !(pa.robProgress > 0)) {
     const A = accionDeDia(pa, ahora);
     // (🆕 A la mesa del comedor no mira por la ventana ni revisa la maleta: queda quieto.)
-    if (!A || (pa.enBanco && (A.accion === 'ventana' || A.accion === 'equipaje'))) nuevo.accion = 'quieto';
+    if (!A || (pa.enBanco && (A.accion === 'ventana' || A.accion === 'equipaje')) || (pa.enCama && A.accion === 'ventana')) nuevo.accion = 'quieto';
     else if (A.accion === 'ventana') {
       // Mira por la ventana: se da vuelta hacia el vidrio (arriba o abajo del vagón).
       const arriba = pa.y < 5 * CONFIG.tileSize;
@@ -588,7 +589,7 @@ function pasajeroNuevo(r, pa, pies) {
   // Sentado en el almohadón, la espalda contra el respaldo (que está a la izquierda del asiento).
   // (🆕 En el banco del comedor, en el medio de la tabla, que está corrida hacia la mesa.)
   let xDibujo = sentado && pa.asientoX != null
-    ? pa.asientoX + (pa.enBanco ? pa.enBanco * AJUSTE_BANCO : pa.dormido ? AJUSTE_ASIENTO.dormido : AJUSTE_ASIENTO.x) : pa.x;
+    ? pa.asientoX + (pa.enCama ? 0 : pa.enBanco ? pa.enBanco * AJUSTE_BANCO : pa.dormido ? AJUSTE_ASIENTO.dormido : AJUSTE_ASIENTO.x) : pa.x;
   /**
    * 🐛 AL LEVANTARSE NO SALTA *(Santi: "al despertarse aparecen tan lejos")*: el
    * que estaba sentado o en la litera (que se dibujan sobre el mueble, no donde

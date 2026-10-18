@@ -1096,7 +1096,7 @@ const CUERVO = {
  *  lado     de costado: [fila, puntos] adelante (negativo: se saca); `espalda` y
  *           `piernas`, un punto menos atrás y en las piernas (el flaco)
  */
-const PARTE = { cuerpo: 1, brazo: 2, cabeza: 3, piernas: 4, brazoAtras: 5, brazoBajoCabeza: 6 };
+export const PARTE = { cuerpo: 1, brazo: 2, cabeza: 3, piernas: 4, brazoAtras: 5, brazoBajoCabeza: 6 };
 export const CUERPOS = {
   normal: { filas: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], brazos: 0, lado: [] },
   // Un punto más en el pecho y dos desde la panza: angosto arriba, ancho abajo.
@@ -1119,6 +1119,8 @@ const PANZA_REDONDA = [
 
 export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara, arremangada, forma, doble, dobleModo = null }) {
   const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
+  // 🆕 Las manos: con guantes (el rico, ver GUANTES_RICO en gente.js), de su color; si no, la piel.
+  const MP = C.mP ?? C.P, Mp = C.mp ?? C.p, Mq = C.mq ?? C.q;
   const TJ = tajo != null ? TAJO[tajo] : null;
   /**
    * 🔁 DIESTRO EN TODAS LAS VISTAS *(Santi: "la vaina está del lado izquierdo de
@@ -1263,7 +1265,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       ponerManga(x, y + 1, i, codo, lejos ? C.c : puno ? C.C : C.c);
     });
   };
-  const mano = ([x, y], lejos) => { poner(Math.round(x), Math.round(y), lejos ? C.p : C.P); poner(Math.round(x), Math.round(y) + 1, C.p); };
+  const mano = ([x, y], lejos) => { poner(Math.round(x), Math.round(y), lejos ? Mp : MP); poner(Math.round(x), Math.round(y) + 1, Mp); };
   /** El brazo izquierdo, del hombro al guardamanos. */
   const brazoIzqLarga = () => {
     const S = [VER_BRAZO[vista].hombro[0] + inclina + lomo, VER_BRAZO[vista].hombro[1] + baja];
@@ -1334,8 +1336,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         for (const [x, y, c] of A.puntos) poner(m[0] + x, m[1] + y, c);
         boca = [m[0] + A.boca[0], m[1] + A.boca[1]];
       }
-      poner(m[0], m[1], C.P); poner(m[0] + 1, m[1], C.p);
-      poner(m[0], m[1] + 1, C.p); poner(m[0] + 1, m[1] + 1, C.q);
+      poner(m[0], m[1], MP); poner(m[0] + 1, m[1], Mp);
+      poner(m[0], m[1] + 1, Mp); poner(m[0] + 1, m[1] + 1, Mq);
       return;
     }
     // (Sin decir: de costado el segundo bajo, así se ven los dos caños; en las otras vistas, los dos apuntan *(Santi)*.)
@@ -1382,8 +1384,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     }
     if (segundo) boca2 = [mx + A.boca[0], my + A.boca[1]];
     else boca = [mx + A.boca[0], my + A.boca[1]];
-    poner(mx, my, C.P); poner(mx - lx, my, C.P);
-    poner(mx, my + 1, C.p); poner(mx - lx, my + 1, C.p);
+    poner(mx, my, MP); poner(mx - lx, my, MP);
+    poner(mx, my + 1, Mp); poner(mx - lx, my + 1, Mp);
   };
 
   /**
@@ -1406,8 +1408,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       else { ponerManga(x, y, i, T.codo, afuera); ponerManga(x + 1, y, i, T.codo, adentro); }
     });
     const [mx, my] = ver(...mano);
-    poner(mx, my, atras ? C.p : C.P); poner(mx + 1, my, C.p);
-    poner(mx, my + 1, C.p); poner(mx + 1, my + 1, C.q);
+    poner(mx, my, atras ? Mp : MP); poner(mx + 1, my, Mp);
+    poner(mx, my + 1, Mp); poner(mx + 1, my + 1, Mq);
   }
   /** El brazo del cuchillo (ver TAJO): del hombro libre a la mano, y el cuchillo en la mano. */
   const cuadroTajo = (i) => ({ ...TAJO[i], ...(TAJO[i][vista] || {}) });
@@ -1531,8 +1533,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     const T = tramos(pts[0], pts[1], pts[2]);
     T.pts.forEach(([x, y], i) => { ponerManga(x, y, i, T.codo, b.atras ? C.c : C.L); ponerManga(x + 1, y, i, T.codo, b.atras ? C.c : C.C); });
     const [mx, my] = pts[2];
-    poner(mx, my, b.atras ? C.p : C.P); poner(mx + 1, my, C.p);
-    poner(mx, my + 1, C.p); poner(mx + 1, my + 1, C.q);
+    poner(mx, my, b.atras ? Mp : MP); poner(mx + 1, my, Mp);
+    poner(mx, my + 1, Mp); poner(mx + 1, my + 1, Mq);
     if (bandera && i === 0) for (const [dx, dy, c] of PANUELO_BLANCO) poner(mx + dx, my + dy, c);
   };
   if (BR) {
@@ -1965,7 +1967,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       }
     });
   }
-  return { idx, boca: boca && [boca[0] + OX, boca[1] + OY], boca2: boca2 && [boca2[0] + OX, boca2[1] + OY], hombro: [hx + OX, hy + OY], finos, cabeza: cabezaEn };
+  return { idx, duenio, boca: boca && [boca[0] + OX, boca[1] + OY], boca2: boca2 && [boca2[0] + OX, boca2[1] + OY], hombro: [hx + OX, hy + OY], finos, cabeza: cabezaEn };
 }
 
 const guardados = new Map();

@@ -462,9 +462,9 @@ function sombreroEnElBanco(r, pa) {
 }
 
 /** 🎨 EL PASAJERO CON EL DIBUJO NUEVO (P3a). */
-function pasajeroNuevo(r, pa, pies) {
+function pasajeroNuevo(r, pa, pies, tipo = 'pasajero') {
   const espejoTirado = (Math.floor(pa.x / 3) & 1) === 1;
-  const aspecto = aspectoDe(pa, 'pasajero');
+  const aspecto = aspectoDe(pa, tipo);
   if (!pa.alive) { tendidoNuevo(r, pa.x, pa.y, { tipo: 'pasajero', modo: 'muerto', sangre: true, espejo: espejoTirado, aspecto }); return; }
   // Durmiendo en la litera del dormitorio.
   // (La almohada de la litera está a la izquierda: la cabeza va ahí.)
@@ -612,7 +612,7 @@ function pasajeroNuevo(r, pa, pies) {
   const sombrero = sombreroSuelto && sentado && sinSombrero && pa.asientoX != null ? sombreroEnElBanco(r, pa) : null;
   if (sombrero && sombrero.antes) sombrero.dibujar();
   const fig = dibujarPersona(r, {
-    tipo: 'pasajero', x: xDibujo, pies: piesDibujo, angulo, fase: sentado ? null : fase,
+    tipo, x: xDibujo, pies: piesDibujo, angulo, fase: sentado ? null : fase,
     modo: pa.state === 'fleeing' ? 'trotar' : 'caminar',
     interior: true, nuevo,
     sacudida: shake,
@@ -644,10 +644,10 @@ export function drawPassenger(r, pa) {
    * propósito, asoma por encima de los respaldos.
    */
   const pies = pa.y + pa.hh;
-  const tipo = pa.botin ? 'rico' : 'pasajero';
+  const tipo = pa.botin ? 'rico' : pa.bartender ? 'bartender' : 'pasajero';
 
-  // 🎨 Con el dibujo nuevo (P3a, [F9]): el pasajero común (el rico sigue con el viejo hasta primera clase).
-  if (estiloNuevo.activo && tipo === 'pasajero' && r.ctx) { pasajeroNuevo(r, pa, pies); return; }
+  // 🎨 Con el dibujo nuevo (P3a, [F9]): el pasajero común y (🆕 P4) el rico de primera clase.
+  if (estiloNuevo.activo && r.ctx) { pasajeroNuevo(r, pa, pies, tipo); return; }
 
   if (!pa.alive) {
     dibujarTendido(r, pa.x, pa.y, { tipo, sangre: true, cinta: pa.botin ? '#a050c0' : '#3fa870' });

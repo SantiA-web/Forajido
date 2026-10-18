@@ -1684,8 +1684,8 @@ es un estado, no una frase suelta.
 **Los ricos viajan en primera clase.** Cada uno lleva encima cuatro veces lo que
 lleva cualquiera, pero **tarda más en soltarlo** — más tiempo quieto, y con
 alguien mirando. Se los reconoce por el **sombrero de copa**: es la silueta más
-alta del tren, asoma por encima de los respaldos. Y los cuidan dos
-**guardaespaldas** plantados en el pasillo, que no patrullan y dicen
+alta del tren, asoma por encima de los respaldos; saco largo oscuro, chaleco claro con la cadena del reloj y a veces guantes. Detrás de la barra atiende el **bartender** (delantal blanco y moño). Y los cuidan dos
+**guardaespaldas** de saco negro, camisa blanca y bombín, plantados en el pasillo, que no patrullan y dicen
 **VIGILANDO** arriba de la cabeza.
 
 > **Antes eran un "paquete"**: un rico con su guardaespaldas podía caer en

@@ -1091,6 +1091,8 @@ export function buildTrain(
       // `def.vigila`: la plantilla lo planta vigilando (los guardaespaldas de
       // primera clase). El mismo cartel que ya usaba el paquete del rico.
       if (esVigilando || def.vigila) guard.vigilaLider = true;
+      // (🆕 P4: los guardaespaldas de los ricos, con su ropa: ver TORSOS.escolta en estiloNuevo/gente.js.)
+      if (def.vigila) guard.escolta = true;
       guard.wagon = t.wagon;      // de qué vagón es: importa para la alarma
       guard.homePath = guard.path;
 
@@ -1229,6 +1231,8 @@ export function buildTrain(
        * cuánto afloja y cuánto tarda. `botin` es además lo que le dibuja el
        * sombrero de copa (entities/passenger.js).
        */
+      // 🆕 P4: el bartender de primera clase (`bartender: true` en la plantilla): un civil más, con su ropa.
+      if (def.bartender) pa.bartender = true;
       if (def.rico) {
         const rico = PAQUETES.pasajeroRico;
         pa.botin = { min: rico.botinMin, max: rico.botinMax };

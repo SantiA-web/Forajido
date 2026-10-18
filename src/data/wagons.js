@@ -996,6 +996,8 @@ export const WAGONS = {
       { path: [], col: 21, row: 5, facing: 'right', vigila: true },
     ],
     passengers: [
+      // 🆕 El bartender, detrás de la barra.
+      { col: 2,  row: 2, facing: 'down', bartender: true },
       // (Al lado de su sillón: la mesita 'N' ocupa la casilla siguiente.)
       { col: 9,  row: 2, facing: 'down', rico: true },
       { col: 21, row: 2, facing: 'down', rico: true },

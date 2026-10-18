@@ -395,7 +395,8 @@ export function drawEnemy(r, e) {
    */
   // 🆕 P3c: también el Encargado del tren (su gorra, su saco y su cartera, ver gente.js).
   // 🆕 P3c: y el Sheriff, con su guardapolvo y sus dos estrellas.
-  const tipoN = tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff' ? tipo : 'guardia';
+  // 🆕 P4: y los guardaespaldas de los ricos (saco negro, camisa blanca: ver TORSOS.escolta).
+  const tipoN = e.escolta ? 'escolta' : tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff' ? tipo : 'guardia';
   const nuevo = estiloNuevo.activo && (tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff') && r.ctx;
   const espejoTirado = (Math.floor(e.x / 3) & 1) === 1;
   if (!e.alive) {
@@ -606,7 +607,8 @@ export function drawEnemy(r, e) {
     }
   }
   const fig = dibujarPersona(r, {
-    tipo, x: e.x, pies, angulo: e.facing,
+    // (Con el dibujo nuevo, el de su ropa: el guardaespaldas, 'escolta'.)
+    tipo: nuevo ? tipoN : tipo, x: e.x, pies, angulo: e.facing,
     interior: true,
     nuevo: poseN,
     // Patrullando caminan; cuando te vieron, trotan. A cubierto, asomarse y

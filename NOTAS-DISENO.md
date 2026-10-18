@@ -19112,9 +19112,22 @@ guardaespaldas distintos)*:
   (`CONFIG.coberturaBaja.preferencia`) y tiran por encima sin correrse. (El primer armado frenaba la bala
   en la barra si había alguien escondido del otro lado, aunque la bala no fuera para él: eso era el
   "las balas se detienen en la esquina".)
-- **Falta:** el rico (galera, saco largo oscuro, chaleco claro con la cadena del reloj, corbata), el
-  bartender y los guardaespaldas (saco negro, camisa blanca, corbata y bombín negros), y sentar a los
-  ricos.
+- **✅ La gente de primera clase** (world/estiloNuevo/gente.js, `TORSOS.rico/escolta/bartender`):
+  - **El rico** *(Santi: "me gusta muchísimo")*: **galera**, **saco largo oscuro** (negro, gris o marrón,
+    sorteado) que sigue a las piernas al caminar (`sacoSinHuecos`), **chaleco claro** (crema o perla) con
+    botones oscuros y **la cadena del reloj dorada**, cuello blanco con corbata negra, **guantes** sorteados
+    (ninguno, blancos o grises: las manos toman su color, `mP mp mq`), **zapatos negros lustrados** y
+    siempre manga larga.
+  - **El bartender**: camisa blanca, chaleco negro, moño negro y **delantal blanco hasta las rodillas**;
+    sin sombrero y **con cualquier pelo**. Se para detrás de la barra.
+  - **El guardaespaldas** (`escolta`): **saco negro corto, bombín negro**, la funda a la vista, **sin
+    estrella ni cuello alto** (*"no queda muy bien con el arma"*). **La camisa blanca recta** en cualquier
+    cuerpo (`camisaRecta`: con los hombros anchos salía en V, en el gordito se iba a los costados), **sin
+    corbata y con sus botones grises** (Santi eligió entre corbata, moño, nada y chaleco gris: *"vamos con
+    la C y oscurece un punto a los botones"*). De perfil no se ve la camisa, **salvo en el de hombros
+    anchos**: *"su pecho inflado supera el volumen del saco"*.
+- **Falta:** que los ricos se sienten y hagan cosas (ir a la barra, pedir, charlar), que haya un
+  guardaespaldas por rico y que ninguno sea flaco.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

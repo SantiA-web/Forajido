@@ -1056,7 +1056,7 @@ export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'ca
  * la boca del caño y el hombro.
  */
 /** El dormido de perfil (ver DORMIDO_LADO), con su sombrero en el banco al lado. */
-function cuadroDormidoLado(o) {
+function cuadroDormidoLado(o, apoyado = false) {
   const col = { ...C, ...capasPersona(o).colores };
   const idx = new Int16Array(ANCHO * ALTO).fill(-1);
   const poner = (x, y, i) => {
@@ -1064,7 +1064,7 @@ function cuadroDormidoLado(o) {
     x += OX; y += OY;
     if (x >= 0 && y >= 0 && x < ANCHO && y < ALTO) idx[y * ANCHO + x] = i;
   };
-  for (const m of [DORMIDO_LADO]) m.filas.forEach((f, j) => {
+  for (const m of [apoyado ? DORMIDO_LADO_APOYADO : DORMIDO_LADO]) m.filas.forEach((f, j) => {
     for (let x = 0; x < f.length; x++) if (f[x] !== '.') poner(x, m.y + j, col[f[x]]);
   });
   if (!o.fino) {
@@ -1118,24 +1118,29 @@ function barbaFina(o, q) {
 }
 
 export function cuadroGente(o) {
-  if (o.accion === 'dormido' && o.vista === 'lado') return cuadroDormidoLado(o);
+  if (o.accion === 'dormido' && o.vista === 'lado') return cuadroDormidoLado(o, o.piernas === 'sentadoApoyado');
   /**
    * FUMANDO (ver FUMAR): `fuma` el cuadro (0-7) y `fumaModo` 'mano' o 'boca'
    * (con el arma larga). El pasajero sentado lo pide como acción ('fumar', `k`).
    * Si en esa vista no fuma con la mano (el de franco de espaldas), sigue con lo suyo.
    */
-  const sentado = o.piernas === 'sentado';
+  const sentado = o.piernas === 'sentado' || o.piernas === 'sentadoApoyado';
   const fk = o.accion === 'fumar' ? o.k ?? 0 : o.fuma ?? null;
   const modo = o.accion === 'fumar' ? 'mano' : o.fumaModo || 'mano';
   const atras = o.vista === 'lado' ? CABEZA_ATRAS : 0;
-  const PF = fk != null && modo === 'mano' ? poseFumar(o.vista, fk, { sentado, cartas: !!o.cartas, atras, mesa: !!o.mesa }) : null;
+  const PF0 = fk != null && modo === 'mano' ? poseFumar(o.vista, fk, { sentado, cartas: !!o.cartas, atras, mesa: !!o.mesa }) : null;
+  const echado = o.recostado && o.vista === 'lado';
+  const PF = echado && PF0 ? reclinar(PF0) : PF0;
   const FB0 = fk != null && modo === 'boca' ? FUMAR_BOCA[o.vista] : null;
   const FB = FB0 && atras ? { c: FB0.c && FB0.c.map(([x, y]) => [x - atras, y]), humo: [FB0.humo[0] - atras, FB0.humo[1]] } : FB0;
   // Lo que hace sentado (`accion`, ver poseSentado) se arma acá: así se guarda por nombre.
   let brazos = PF || (o.accion === 'fumar' ? poseSentado('quieto', o.vista, 0, 'maleta', !!o.mesa)
     : o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva, !!o.mesa)
       : fk != null && o.cartas ? 'cartas' : o.brazos);
-  const persona = capasPersona(o);
+  if (echado && brazos && typeof brazos === 'object' && brazos !== PF) brazos = reclinar(brazos);
+  const persona0 = capasPersona(o);
+  // (Una copia: capasPersona puede guardarla para los demás cuadros.)
+  const persona = echado && persona0.torso ? { ...persona0, torso: torsoEchado(persona0.torso) } : persona0;
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
   const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia' || o.tipo === 'blindado' || o.tipo === 'sheriff',
@@ -1172,6 +1177,46 @@ export function cuadroGente(o) {
     q.idx[a[1] * ANCHO + a[0]] = pita ? 45 : 44;
   }
   return { ...q, brasa: cig ? en(cig[1]) : null, humo: en(F.humo), fumaK: fk, pita };
+}
+
+/**
+ * 🆕 EL RICO ECHADO HACIA ATRÁS EN SU SILLÓN, despierto, como cuando duerme *(Santi: "que en las poses
+ * esté tirado hacia atrás como cuando duerme")*: el torso apoyado en el respaldo, en diagonal, de la cadera
+ * (que no se mueve) a los hombros, cuatro puntos más atrás (`RECLINA`, fila por fila del torso), y la
+ * cabeza con ellos. Los brazos y lo que tiene en la mano (el diario, el cigarrillo) se corren con la fila
+ * del torso a la que están pegados: siguen siendo las mismas poses, echadas atrás. Sólo de costado.
+ */
+const RECLINA = [-4, -4, -3, -3, -2, -2, -1, -1, 0];
+const reclinaEn = (y) => RECLINA[Math.max(0, Math.min(RECLINA.length - 1, y - 8))];
+function correrFila(fila, d) {
+  if (d >= 0) return '.'.repeat(d) + fila;
+  let i = 0; while (i < -d && fila[i] === '.') i++;
+  return fila.slice(i);
+}
+/**
+ * 🔁 EL TORSO ECHADO, SIN ADELGAZAR *(Santi: "el torso se hizo más flaco al estar echado… el dormido se
+ * ve bien")*: en diagonal, el mismo ancho por fila se ve más angosto. Como el dormido (6 y 7 puntos de
+ * ancho), cada fila suma un punto de espalda (su primer color, atrás) y las del pecho, uno de saco en el
+ * medio. La diagonal ya viene en `recline` (las filas se corren al dibujarlo).
+ */
+function torsoEchado(T) {
+  return mapa(T.y, T.filas.map((f, j) => {
+    let i = 0; while (i < f.length && f[i] === '.') i++;
+    if (i >= f.length || i === 0) return f;
+    let r = f.slice(0, i - 1) + f[i] + f.slice(i);
+    if (j < 8 && r[i + 1] === 'C') r = r.slice(0, i + 1) + 'C' + r.slice(i + 1);
+    return r;
+  }));
+}
+function reclinar(B) {
+  const pt = ([x, y]) => [x + reclinaEn(y), y];
+  // (🔁 La cabeza, un punto más atrás que los hombros *(Santi: "tira hacia atrás la cabeza un pixel")*.)
+  const out = { ...B, recline: RECLINA, cabezaX: (B.cabezaX || 0) + RECLINA[0] - 1 };
+  if (B.lista) out.lista = B.lista.map((b) => ({ ...b, p: b.p.map(pt) }));
+  if (B.props) out.props = B.props.map((p) => ({ ...p, m: mapa(p.m.y, p.m.filas.map((f, j) => correrFila(f, reclinaEn(p.m.y + j)))) }));
+  if (B.cig) out.cig = B.cig.map(pt);
+  if (B.humo) out.humo = pt(B.humo);
+  return out;
 }
 
 // ------------------------------------------------- lo que hacen sentados
@@ -1321,6 +1366,19 @@ const DORMIDO_LADO = mapa(6, [
   '.............QOOOO',
   '.............KKKKK',
 ]);
+/**
+ * 🆕 Y EL RICO, DORMIDO CON LOS PIES EN EL BANQUITO (ver `sentadoApoyado` en jugador.js): el mismo,
+ * con la pierna derecha hacia adelante y el zapato parado.
+ */
+const DORMIDO_LADO_APOYADO = mapa(6, [
+  ...DORMIDO_LADO.filas.slice(0, 11),
+  DORMIDO_LADO.filas[11].padEnd(20, '.') + 'OK',
+  DORMIDO_LADO.filas[12].padEnd(20, '.') + 'OQK',
+  DORMIDO_LADO.filas[13].padEnd(20, '.') + 'OOK',
+  DORMIDO_LADO.filas[14].padEnd(12, '.') + 'tttttttt' + 'OOK',
+  '........IIIIIIIIIIIIIOK',
+  '........tTTTTTTTTTTTTOK',
+]);
 /** Su sombrero, apoyado en el banco al lado (el bombín de costado). */
 /**
  * 🔁 SU SOMBRERO, APOYADO EN EL OTRO LUGAR DEL BANCO *(Santi: "que no quede encima
@@ -1336,6 +1394,8 @@ const DORMIDO_LADO = mapa(6, [
  */
 const SOMBRERO_SUELTO = {
   bombin: mapa(0, ['..hHk', '.hHHHk', '.bbbbb', 'hHHHHHk']),
+  // 🆕 La galera del rico, parada en el piso al lado de su sillón mientras duerme *(Santi)*.
+  galera: mapa(0, ['.hHHHk', '.hHHHk', '.hHHHk', '.hHHHk', '.hHHHk', '.bbbbb', 'hHHHHHk']),
   paja: mapa(0, ['.....hHHk.....', '..hhhHHHHkkk..', 'hhhhbbbbbbkkkk', '.hhHHHHHHHkkk.']),
 };
 
@@ -1755,7 +1815,7 @@ export function lienzoSombreroSuelto(o, luz = 0) {
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado', 'mesa', 'saco', 'chaleco', 'guantes'];
+const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado', 'mesa', 'saco', 'chaleco', 'guantes', 'recostado'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

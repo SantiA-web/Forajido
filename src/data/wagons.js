@@ -991,17 +991,28 @@ export const WAGONS = {
       '#..............................#',
       '#WW##WW##WW##WW##WW##WW##WW##WW#',
     ],
-    enemies: [
-      { path: [], col: 12, row: 4, facing: 'left',  vigila: true },
-      { path: [], col: 21, row: 5, facing: 'right', vigila: true },
-    ],
+    /**
+     * 🔁 LOS RICOS SE SORTEAN (de 2 a 4, `ricos`) entre los nueve sillones, y CADA UNO TRAE SU
+     * GUARDAESPALDAS *(Santi: "la cantidad de guardaespaldas debería depender de la cantidad de ricos")*:
+     * no se escriben acá, los arma world/train.js, parado detrás del respaldo del sillón de su rico y
+     * mirando al pasillo *(Santi: "si el rico está sentado, el guardaespaldas se para detrás del sillón")*.
+     */
+    enemies: [],
+    ricos: [2, 4],
     passengers: [
       // 🆕 El bartender, detrás de la barra.
       { col: 2,  row: 2, facing: 'down', bartender: true },
-      // (Al lado de su sillón: la mesita 'N' ocupa la casilla siguiente.)
-      { col: 9,  row: 2, facing: 'down', rico: true },
-      { col: 21, row: 2, facing: 'down', rico: true },
-      { col: 17, row: 7, facing: 'up',   rico: true },
+      // Un rico posible por sillón, sentado en él (el sillón 'S' está en la casilla de su izquierda, con
+      // el respaldo de ese lado, y mira a su mesita 'N').
+      { col: 9,  row: 2, facing: 'right', rico: true },
+      { col: 15, row: 2, facing: 'right', rico: true },
+      { col: 21, row: 2, facing: 'right', rico: true },
+      { col: 27, row: 2, facing: 'right', rico: true },
+      { col: 5,  row: 7, facing: 'right', rico: true },
+      { col: 11, row: 7, facing: 'right', rico: true },
+      { col: 17, row: 7, facing: 'right', rico: true },
+      { col: 23, row: 7, facing: 'right', rico: true },
+      { col: 29, row: 7, facing: 'right', rico: true },
     ],
     loot: [],
   },

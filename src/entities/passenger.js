@@ -362,7 +362,8 @@ function accionDeDia(pa, ahora) {
       } else {
         // (🆕 A la mesa del comedor no mira por la ventana ni revisa la maleta; sin otra cosa, quieto.)
         // (🆕 En el borde de la cama del dormitorio, tampoco hay ventana enfrente.)
-        let hay = pa.enBanco ? [null, 'comer', 'jarro'] : pa.enCama ? [null] : ['ventana'];
+        // (🆕 Ni el rico: la ventana le queda lejos de su sillón *(Santi: "están muy lejos de ella")*.)
+        let hay = pa.enBanco ? [null, 'comer', 'jarro'] : pa.enCama || pa.apoyaPies ? [null] : ['ventana'];
         if (pa.diario) hay.push('diario');
         if (pa.mazo) hay.push('barajar');
         if (pa.lleva && !pa.enBanco) hay.push('equipaje');
@@ -461,6 +462,28 @@ function sombreroEnElBanco(r, pa) {
   };
 }
 
+/**
+ * 🆕 LA GALERA DEL RICO DORMIDO, parada en el piso al lado de su sillón *(Santi: "dibujasela al
+ * costado")*: delante del almohadón, debajo de las piernas que van al banquito.
+ */
+function galeraAlCostado(r, pa) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const x = pa.asientoX + GALERA_PISO.x, y = pa.asientoBase + GALERA_PISO.y;
+  return {
+    antes: false,
+    dibujar: () => {
+      const luz = estiloNuevo.luzEn ? estiloNuevo.luzEn(x, y) : 0;
+      const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
+      const L = lienzoSombreroSuelto({ ...pa._aspecto, tipo: 'rico', fino }, luz);
+      const ox = Math.round(x / PASO) * PASO - L.base[0] * PASO, oy = Math.round(y / PASO) * PASO - L.base[1] * PASO;
+      r.ctx.drawImage(L.img, ox, oy, L.img.width * PASO, L.img.height * PASO);
+      if (fino) estiloNuevo.marcarGente(r.ctx, L.img, ox, oy, L.img.width * PASO, L.img.height * PASO);
+    },
+  };
+}
+/** Dónde va la galera en el piso, desde el asiento (en unidades). */
+const GALERA_PISO = { x: 3, y: 1 };
+
 /** 🎨 EL PASAJERO CON EL DIBUJO NUEVO (P3a). */
 function pasajeroNuevo(r, pa, pies, tipo = 'pasajero') {
   const espejoTirado = (Math.floor(pa.x / 3) & 1) === 1;
@@ -547,7 +570,8 @@ function pasajeroNuevo(r, pa, pies, tipo = 'pasajero') {
   const sentado = pa.sentado && (pa.state === 'idle' || pa.state === 'amenazado' || pa.state === 'panic') && !pa.revelando && !cubierto;
   const nuevo = { arma: null, funda: false, aspecto };
   let angulo = pa.facing;
-  if (sentado) nuevo.piernas = 'sentado';
+  // (🆕 El rico de primera clase, con los pies en el banquito: ver `apoyaPies` en world/train.js.)
+  if (sentado) nuevo.piernas = pa.apoyaPies ? 'sentadoApoyado' : 'sentado';
   if (pa.state === 'cowering') { nuevo.piernas = 'agachado'; nuevo.accion = 'quieto'; }
   if (cubierto) { nuevo.piernas = 'rodillas'; nuevo.brazos = 'cubrirse'; angulo = pa.y < 5 * CONFIG.tileSize ? Math.PI / 2 : -Math.PI / 2; }
   /**
@@ -609,7 +633,10 @@ function pasajeroNuevo(r, pa, pies, tipo = 'pasajero') {
    * él; si está más acá (abajo), después.
    */
   const sinSombrero = pa.dormido || (despertando && ahora - pa._p3Desperto < 0.3);
-  const sombrero = sombreroSuelto && sentado && sinSombrero && pa.asientoX != null ? sombreroEnElBanco(r, pa) : null;
+  const sombrero = sombreroSuelto && sentado && sinSombrero && pa.asientoX != null ? sombreroEnElBanco(r, pa)
+    : pa.apoyaPies && sentado && pa.dormido && aspecto.sombrero === 'galera' ? galeraAlCostado(r, pa) : null;
+  // 🆕 El rico, echado hacia atrás en su sillón (despierto: dormido ya tiene su dibujo, ver DORMIDO_LADO).
+  if (pa.apoyaPies && sentado && !pa.dormido) nuevo.recostado = true;
   if (sombrero && sombrero.antes) sombrero.dibujar();
   const fig = dibujarPersona(r, {
     tipo, x: xDibujo, pies: piesDibujo, angulo, fase: sentado ? null : fase,

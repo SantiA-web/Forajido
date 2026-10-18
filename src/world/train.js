@@ -819,7 +819,24 @@ export function buildTrain(
      * patrullarían pegados todo el asalto), sino desde la MITAD de su
      * propio recorrido, así los dos quedan desfasados de entrada.
      */
-    const defsBase = p.enemies || [];
+    /**
+     * 🆕 P4: PRIMERA CLASE SORTEA SUS RICOS (`p.ricos`, de cuántos a cuántos) entre los sillones, y le
+     * pone un guardaespaldas a cada uno, parado detrás del respaldo de su sillón (a dos casillas del
+     * rico: el sillón está en el medio) y mirando al pasillo. Ver la plantilla en data/wagons.js.
+     */
+    let pasajerosDefs = p.passengers || [];
+    const escoltaDe = new Map();
+    let defsBase = p.enemies || [];
+    if (p.ricos) {
+      const quedan = pasajerosDefs.filter((d) => d.rico);
+      const elegidos = new Set();
+      const n = Math.min(quedan.length, rng.int(p.ricos[0], p.ricos[1]));
+      while (elegidos.size < n) elegidos.add(quedan.splice(Math.floor(rng.next() * quedan.length), 1)[0]);
+      pasajerosDefs = pasajerosDefs.filter((d) => !d.rico || elegidos.has(d));
+      defsBase = [...defsBase, ...[...elegidos].map((d) => ({
+        path: [], col: d.col - 2, row: d.row, facing: d.row < 4 ? 'down' : 'up', vigila: true, ricoDe: d,
+      }))];
+    }
     const defs = (redada && tipoDelVagon !== 'blindado')
       // Menos los que vigilan algo (`vigila`, los guardaespaldas de primera
       // clase): la copia nacería en el MISMO punto que el original, porque un
@@ -1108,6 +1125,7 @@ export function buildTrain(
         guard.confinado = { x0: t.colStart * map.size + 6, x1: (t.colStart + t.cols) * map.size - 6 };
       }
 
+      if (def.ricoDe) escoltaDe.set(def.ricoDe, guard);
       enemies.push(guard);
       wagons[t.wagon].guardiasVivos++;
       revisar(avisos, map, start, `guardia del ${p.name} (vagón ${t.wagon})`);
@@ -1121,7 +1139,7 @@ export function buildTrain(
      * armar el tren para que cambie en cada asalto.
      */
     const pasajerosDelVagon = [];
-    for (const def of p.passengers || []) {
+    for (const def of pasajerosDefs) {
       const pos = enTiles([def.col, def.row]);
       const pa = createPassenger(pos.x, pos.y, FACINGS[def.facing] ?? Math.PI);
       pa.wagon = t.wagon;
@@ -1145,7 +1163,9 @@ export function buildTrain(
        * de pie, como antes). La caja con la que choca no se mueve; `asientoBase`
        * es el borde de abajo del asiento, para dibujarlo encima.
        */
-      const dAsiento = p.id === 'pasajeros' ? [-1, -2].find((d) => fila[def.col + d] === 'S') : undefined;
+      // (🆕 Y en primera clase, los ricos en sus sillones: también con el respaldo a la izquierda.)
+      const dAsiento = p.id === 'pasajeros' || (p.id === 'primeraClase' && def.rico)
+        ? [-1, -2].find((d) => fila[def.col + d] === 'S') : undefined;
       /**
        * 🆕 EN EL COMEDOR, SENTADO EN EL BANCO DE AL LADO, mirando a la mesa *(Santi: "vamos con
        * sentarlos en los bancos… las piernas no se verían del todo porque irían bajo la mesa")*: el
@@ -1237,6 +1257,14 @@ export function buildTrain(
         const rico = PAQUETES.pasajeroRico;
         pa.botin = { min: rico.botinMin, max: rico.botinMax };
         pa.robTime = rico.robTime;
+        /**
+         * 🆕 Con los pies en el banquito de delante de su sillón (ver world/estiloNuevo/vagones.js), en
+         * todas las poses *(Santi)*. Sin maleta: estaría debajo del banquito.
+         */
+        if (pa.sentado && p.id === 'primeraClase') { pa.apoyaPies = true; pa.lleva = null; }
+        // Su guardaespaldas (y él, de quién es).
+        const g = escoltaDe.get(def);
+        if (g) { g.cuida = pa; pa.escolta = g; }
       }
       passengers.push(pa);
       pasajerosDelVagon.push(pa);

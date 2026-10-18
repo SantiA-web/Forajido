@@ -207,8 +207,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   comedor (el pobre) hecho, con su gente sentada a la mesa (comiendo, tomando del jarro) y el que
   duerme acostado en el banco; el dormitorio (clase media) hecho, con su gente y sus cortinas (se abren al
   pasar y quedan abiertas; los tiros las agujerean y rompen); primera clase (el coche salón con la barra y
-  la cobertura baja) hecho, con su gente dibujada (el rico, el bartender, los guardaespaldas); falta que
-  los ricos se sienten y se muevan (barra, charla) y un guardaespaldas por rico; después el vagón de
+  la cobertura baja) hecho, con su gente dibujada (el rico, el bartender, los guardaespaldas); los ricos
+  sorteados (2 a 4) con un guardaespaldas cada uno, sentados echados atrás con los pies en el banquito;
+  falta el puro, la copa, el bartender secando y que se muevan (barra, visitas); después el vagón de
   guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los

@@ -910,6 +910,8 @@ function vagon(train, w, dia) {
    * chocan) delante de cada sillón, y LA ALFOMBRA DEL PASILLO, sana y con guarda: lo contrario de las del
    * dormitorio.
    */
+  /** El banquito de los pies (en puntos): cuánto se corre desde el borde de la casilla, el ancho y el alto. */
+  const BANQUITO = { dx: -3, ancho: 11, alto: 14 };
   if (w.id === 'primeraClase') {
     const r = rect(MESAS), p = pone(MESAS);
     const MAD_SS = 1, MAD_S = 3, MAD = 4, MAD_L = 5, BRILLO = 6, BRONCE = 7;
@@ -992,6 +994,23 @@ function vagon(train, w, dia) {
       if (!dia) { p(vx, ty - 6, 29, true); p(vx, ty - 7, 28, true); }   // la llama
       else p(vx, ty - 6, 1);                                               // el pabilo, apagado
       muebles.push({ x: mx - 1, y: ty - 8, w: MW + 2, h: my - ty + 8, base: (f + 1) * S + 0.1 });
+    }
+    /**
+     * 🆕 EL BANQUITO ACOLCHONADO delante de cada sillón, del mismo terciopelo verde, donde el rico apoya
+     * los pies *(Santi: "o le pondría un banquito acolchonado o acercaría la mesa… para que apoyen ahí
+     * las piernas en TODAS las poses")*. Más bajo que el almohadón del sillón. Sólo dibujo: no choca.
+     */
+    for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 0; c < cols; c++) {
+      if (casilla(c, f) !== 'S' || casilla(c + 1, f) === 'S') continue;
+      const BW = BANQUITO.ancho, x0 = ax(w.x + (c + 1) * S) + BANQUITO.dx, yb = ay((f + 1) * S), H = BANQUITO.alto;
+      // (🔁 La cara y las patas a la misma altura que las del sillón: un punto más abajo, parecía más
+      // cerca de la pantalla *(Santi: "que quede todo alineado con el sillón")*.)
+      r(x0 - 1, yb - H - 1, BW + 2, H - 2, 0);   // (🔁 con el borde de abajo, debajo de la cara *(Santi)*)
+      r(x0, yb - H, BW, H - 8, 27); r(x0, yb - H, BW, 1, 43);          // el almohadón
+      for (let q = x0 + 3; q < x0 + BW - 2; q += 4) r(q, yb - H + 2, 1, 1, 26);   // los botones del capitoné
+      r(x0, yb - 8, BW, 4, 42); r(x0, yb - 8, BW, 1, 26);             // la cara de adelante
+      r(x0 + 1, yb - 4, 2, 3, 1); r(x0 + BW - 3, yb - 4, 2, 3, 1);   // las patas
+      muebles.push({ x: x0 - 1, y: yb - H - 1, w: BW + 2, h: H + 1, base: (f + 1) * S - 0.03 });
     }
     // La alfombra del pasillo.
     const pp = pone(PISO);

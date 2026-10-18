@@ -19126,8 +19126,28 @@ guardaespaldas distintos)*:
     corbata y con sus botones grises** (Santi eligió entre corbata, moño, nada y chaleco gris: *"vamos con
     la C y oscurece un punto a los botones"*). De perfil no se ve la camisa, **salvo en el de hombros
     anchos**: *"su pecho inflado supera el volumen del saco"*.
-- **Falta:** que los ricos se sienten y hagan cosas (ir a la barra, pedir, charlar), que haya un
-  guardaespaldas por rico y que ninguno sea flaco.
+- **✅ Los ricos, sentados, cada uno con su guardaespaldas** *(Santi eligió las recomendaciones: B, A, B;
+  y corrigió el guardaespaldas: "en vez de que se pegue al rico, debería tomar posiciones")*:
+  - **Se sortean de 2 a 4** (`ricos` en la plantilla, data/wagons.js) entre los nueve sillones, y **cada
+    uno trae su guardaespaldas** (world/train.js los arma: ya no están escritos en la plantilla). Antes eran
+    3 ricos y 2 guardaespaldas; ahora de 2 a 4 de cada uno (3 de promedio). Los guardaespaldas nunca
+    salen flacos (`PESO.cuerpoEscolta`).
+  - **Sentado en su sillón**, el guardaespaldas **detrás del respaldo**, mirando al pasillo.
+  - **Con los pies en el banquito** (*"o le pondría un banquito acolchonado o acercaría la mesa"*; se
+    eligió el banquito: con los pies en la mesa quedaba mal educado y la mesita queda para la copa): uno
+    delante de cada sillón, del mismo terciopelo, con capitoné, alineado con el sillón; sólo dibujo. **Las
+    dos piernas apoyadas en todas las poses** (`sentadoApoyado`, jugador.js, y `DORMIDO_LADO_APOYADO`).
+    Sin maleta (quedaba debajo del banquito).
+  - **Echado hacia atrás** como el dormido (*"que en las poses esté tirado hacia atrás como cuando
+    duerme"*): las mismas poses (quieto, diario, fumar), con el torso y los brazos corridos fila por fila
+    hacia atrás (`RECLINA`, `reclinar`, gente.js), **un punto más ancho por fila** (*"el torso se hizo
+    más flaco"*) y la cabeza un punto más atrás que los hombros. No es un dibujo nuevo entero.
+  - **No mira por la ventana** (*"están muy lejos de ella"*).
+  - **Dormido, la galera parada en el piso** al lado del sillón (*"dibujasela al costado"*).
+- **Falta:** el puro (distinto del cigarrillo) y la copa; el bartender secando copas; ir a la barra
+  (pedir, servir, volver con la copa) y visitar a otro rico, con el guardaespaldas que lo sigue de lejos
+  y toma posición después de que el rico llega (detrás del sillón; en la puerta del vagón o en la
+  puertita de la barra, según dónde se pare el rico; del otro lado de la mesita si su rico visita).
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

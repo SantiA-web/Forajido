@@ -332,6 +332,22 @@ const VISTAS = {
  * los muslos derechos hasta las rodillas en el piso; los pies quedan atrás.
  */
 VISTAS.lado.piernas.sentado = mapa(21, ['.......IFFTTTTT', '.......tFfTTTTTt', '.............ITt', '.............IT', '............QOOOO', '............KKKKK']);
+/**
+ * 🆕 SENTADO CON LOS PIES EN EL BANQUITO (el rico de primera clase) *(Santi: "un banquito acolchonado…
+ * para que apoyen ahí las piernas en TODAS las poses")*: la pierna entera derecha hacia adelante, a la
+ * altura del asiento, y el zapato parado, con la punta para arriba y el taco sobre el banquito. Sólo de
+ * costado: los ricos se sientan siempre mirando a su mesita.
+ */
+// (🔁 Las dos piernas en el banquito *(Santi: "subí la otra pierna también")*: la de atrás, un punto más
+// arriba y en sombra, con su zapato asomando detrás del de adelante.)
+VISTAS.lado.piernas.sentadoApoyado = mapa(17, [
+  '...................OK',
+  '...................OQK',
+  '...................OOK',
+  '........tttttttttttOOK',
+  '.......IFFTTTTTTTTTTOK',
+  '.......tFfTTTTTTTTTTOK',
+]);
 VISTAS.frente.piernas.sentado = mapa(21, ['......FIITTTtt', '......FIITTTtt', '......fIIT.Ttt', '.......IIT.TTt', '.......QOO.OOo', '.......KKK.KKK']);
 VISTAS.diagF.piernas.sentado = mapa(21, ['......FIITTttt', '......FIITTtttt', '......fIITT.ttt', '........IIT..tt', '........QOO..OOo', '........KKKK.KKKK']);
 VISTAS.espalda.piernas.sentado = mapa(21, ['.......IITTTttF', '.......IITTTttF', '........IT..Ttf', '........IT..Tt', '.......OOO..OOO', '.......KKK..KKK']);
@@ -1162,7 +1178,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'sentado' ? 4 : piernas === 'rodillas' ? 5 : piernas === 'piso' ? 8 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'sentado' || piernas === 'sentadoApoyado' ? 4 : piernas === 'rodillas' ? 5 : piernas === 'piso' ? 8 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
   const deCostado = vista === 'lado' || vista.startsWith('diag');
   const inclina = AT ? (deCostado ? AT.inclina : 0) : TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : piernas === 'piso' && deCostado ? 1 : 0;
   /**
@@ -1511,6 +1527,8 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   const bi = BRo ? (vista === 'lado' || vista.startsWith('diag') ? BRo.inclina || 0 : 0) : 0;
   const bc = BRo ? BRo.cabeza || 0 : 0;
   const bx = BRo ? BRo.cabezaX || 0 : 0;
+  // 🆕 Echado hacia atrás (el rico en su sillón, ver `reclinar` en gente.js): cuánto se corre cada fila del torso.
+  const reclina = (j) => (BRo && BRo.recline ? BRo.recline[Math.min(j, BRo.recline.length - 1)] : 0);
   /** La cabeza de la persona: la cara y el pelo, y el sombrero (que con la cabeza gacha baja más, `BRo.gacha`). */
   const ga = BRo && BRo.gacha ? BRo.gacha : [0, 0];
   let cabezaEn = [0, 0];   // dónde quedó la cabeza (para el cuervo del pañuelo)
@@ -1541,10 +1559,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     con(PARTE.brazoAtras, () => BR.forEach((b, i) => { if (b.atras) brazoPose(b, i); }));
     props('fondo');
     if (vista === 'lado' && mochila) dibujarMochila();
-    const PB = V.piernas[piernas] || V.piernas.quieto;
+    const PB = V.piernas[piernas] || (piernas === 'sentadoApoyado' && V.piernas.sentado) || V.piernas.quieto;
     con(PARTE.piernas, () => dibujarMapa(PB));
     if (baja < 0 || baja === 2) con(PARTE.piernas, () => dibujarMapa({ y: PB.y - 1, filas: [PB.filas[0]] }));
-    dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0));
+    dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0) + reclina(j));
     if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo + bi, COLOR_ARMA);
     if (doble && SEGUNDA_FUNDA[vista]) {
       con(PARTE.piernas, () => dibujarMapa(SEGUNDA_FUNDA[vista].funda, 0, 0));
@@ -1577,13 +1595,13 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   con(PARTE.brazoAtras, () => { if (libreDetras) { if (TJ) { if (!TJ.delante && !TJ.vaina) brazoCuchillo(); } else if (!larga) brazoLibre(); } else if (libreLejos) brazoLibre(); });
   if (detras || armaLejos) con(PARTE.brazoAtras, brazo);
   if (mochila && vista === 'lado') dibujarMochila();
-  const P = V.piernas[piernas] || V.piernas.quieto;
+  const P = V.piernas[piernas] || (piernas === 'sentadoApoyado' && V.piernas.sentado) || V.piernas.quieto;
   con(PARTE.piernas, () => dibujarMapa(P));
   // Cuando el cuerpo sube 1 (pasando un paso, en el aire o agachado), la cadera se estira un punto para que no
   // quede un hueco entre el cinto y el pantalón.
   // (🐛 Es pierna: como torso, los cuerpos anchos la ensanchaban y quedaba una barra en la cadera.)
   if (baja < 0 || baja === 2) con(PARTE.piernas, () => dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] }));
-  dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0));
+  dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0) + reclina(j));
   if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo, COLOR_ARMA);
   if (doble && SEGUNDA_FUNDA[vista]) {
     con(PARTE.piernas, () => dibujarMapa(SEGUNDA_FUNDA[vista].funda, 0, 0));

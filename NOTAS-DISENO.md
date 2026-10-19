@@ -19144,7 +19144,26 @@ guardaespaldas distintos)*:
     más flaco"*) y la cabeza un punto más atrás que los hombros. No es un dibujo nuevo entero.
   - **No mira por la ventana** (*"están muy lejos de ella"*).
   - **Dormido, la galera parada en el piso** al lado del sillón (*"dibujasela al costado"*).
-- **Falta:** el puro (distinto del cigarrillo) y la copa; el bartender secando copas; ir a la barra
+- **✅ El puro, la copa y el bartender secando** (gente.js, passenger.js):
+  - **El puro** (*"se tiene que ver diferente al cigarro"*): un punto más largo que el cigarrillo, marrón
+    tabaco, y la punta de ceniza gris que sólo se pone naranja cuando pita. Los mismos lugares del brazo.
+  - **La copa de vino tinto** (`POSES_COPA`, acción `copa`): en la falda agarrada del tallo, al pecho y a
+    la boca inclinada con la cabeza un punto atrás. Sorbos chicos y espaciados (`TIEMPOS_MESA.copa`).
+  - **El rico no baraja** ni mira por la ventana: quieto, diario, copa o puro.
+  - **Barbas del rico**: más bigote (35%) y candado (30%) que las demás (`PESO.barbaRico`).
+  - **El bartender seca una copa** con un trapo beige mientras nadie le pide nada (`POSES_SECAR`, de
+    frente, las manos justo encima de la barra; `brazosQuietos`: con las dos manos juntas los cuerpos
+    anchos corrían los dos brazos para un lado). **Falta arreglar su silueta** (*"el brazo ancho al
+    principio… en el antebrazo queda con un minipixel… un pecho gris manchado de pixeles blancos"*).
+- **✅ EL BORDE FINO ENTRE EL BRAZO Y EL CUERPO, en todo el juego** (`bordeBrazos` en jugador.js) *(Santi:
+  "y si remarcamos con un borde de un pixel las armas y los brazos cuando están contra el cuerpo?";
+  eligió la línea fina, "que siga la parte que va pegada al cuerpo… el hombro no debería estar marcado",
+  y sólo donde los colores se parecen)*: la misma línea de un píxel de pantalla que rodea a la gente, en
+  puntos finos encima de la grilla, donde el brazo (con el arma o lo que tenga en la mano) toca el cuerpo
+  o la cabeza; del lado de lo que está adelante. Sin el hombro (de la fila de arriba del torso a la
+  segunda) y sólo si la diferencia de claridad es de 45 o menos (`BORDE_BRAZO.parecido`). El bartender
+  todavía no.
+- **Falta:** ir a la barra
   (pedir, servir, volver con la copa) y visitar a otro rico, con el guardaespaldas que lo sigue de lejos
   y toma posición después de que el rico llega (detrás del sillón; en la puerta del vagón o en la
   puertita de la barra, según dónde se pare el rico; del otro lado de la mesita si su rico visita).

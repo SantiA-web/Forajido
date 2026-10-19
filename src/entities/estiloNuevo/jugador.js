@@ -40,7 +40,7 @@
  * donde está parado (engine/luz.js).
  */
 import { iluminar } from '../../engine/luz.js';
-import { sombrear } from '../../engine/paleta.js';
+import { sombrear, RGB } from '../../engine/paleta.js';
 
 // ------------------------------------------------------------- los colores
 /** Cada letra de los mapas, a su color de la paleta. */
@@ -1881,7 +1881,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         // 🐛 El brazo que llega a la cabeza (las manos en la cabeza o arriba) no se corre: si no, la mano
         // se despegaba de la cabeza y el ala del sombrero quedaba con el agujero donde estaba el brazo.
         const aLaCabeza = suyos.some((k) => Math.floor(k / ANCHO) < yHombro - 1);
-        const sentido = aLaCabeza ? 0 : vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
+        // (🆕 `brazosQuietos`: las dos manos juntas delante del pecho —el bartender secando una copa—; tocándose,
+        // los dos brazos son un solo grupo y se corrían juntos para un lado. Delante del pecho, no se corren.)
+        const sentido = aLaCabeza || (BRo && BRo.brazosQuietos) ? 0 : vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
         for (const k of suyos) {
           const x = k % ANCHO, y = (k - x) / ANCHO, nx = x + sentido * (vista === 'lado' ? 1 : corrida(y));
           if (nx < 0 || nx >= ANCHO) continue;
@@ -1985,7 +1987,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
       }
     });
   }
-  return { idx, duenio, boca: boca && [boca[0] + OX, boca[1] + OY], boca2: boca2 && [boca2[0] + OX, boca2[1] + OY], hombro: [hx + OX, hy + OY], finos, cabeza: cabezaEn };
+  return { idx, duenio, baja, boca: boca && [boca[0] + OX, boca[1] + OY], boca2: boca2 && [boca2[0] + OX, boca2[1] + OY], hombro: [hx + OX, hy + OY], finos, cabeza: cabezaEn };
 }
 
 const guardados = new Map();
@@ -1995,6 +1997,48 @@ const guardados = new Map();
  * `luz` son pasos parejos para todo el cuerpo; `destello` lo pinta claro (el
  * balazo que recibiste).
  */
+/**
+ * 🆕 EL BORDE FINO ENTRE EL BRAZO Y EL CUERPO *(Santi: "y si remarcamos con un borde de un pixel las armas
+ * y los brazos cuando están contra el cuerpo así se diferencia mejor?"; eligió la línea fina, "que siga la
+ * parte que va pegada al cuerpo… el hombro no debería estar marcado", y sólo donde los colores se parecen)*:
+ * la misma línea de un píxel de pantalla que rodea a la gente (en puntos finos, encima de la grilla), donde
+ * el brazo —con lo que tiene en la mano— toca el cuerpo o la cabeza. Va del lado de lo que está adelante:
+ * el brazo de acá sobre el cuerpo, o el cuerpo sobre el brazo de atrás. No se marca:
+ *  - el hombro (de la fila de arriba del torso a la segunda), donde el brazo nace del cuerpo;
+ *  - donde los dos colores ya se distinguen solos (más de `BORDE_BRAZO.parecido` de diferencia de claridad).
+ * Devuelve los puntos finos (x, y, x, y… en el lienzo ×3), o null.
+ */
+export const BORDE_BRAZO = { parecido: 45 };
+const claridad = (i) => { const c = RGB[i]; return c ? 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2] : 0; };
+const ES_BRAZO = new Set([PARTE.brazo, PARTE.brazoAtras, PARTE.brazoBajoCabeza]);
+export function bordeBrazos(q) {
+  if (!q || !q.duenio) return null;
+  const { idx, duenio } = q, yH = 8 + (q.baja || 0) + OY;
+  const es = (x, y) => x >= 0 && y >= 0 && x < ANCHO && y < ALTO && idx[y * ANCHO + x] >= 0;
+  const puntos = [];
+  for (let y = 0; y < ALTO; y++) for (let x = 0; x < ANCHO; x++) {
+    if (!es(x, y)) continue;
+    const k = y * ANCHO + x, yo = duenio[k], brazo = ES_BRAZO.has(yo);
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (!es(nx, ny)) continue;
+      const kk = ny * ANCHO + nx, otro = duenio[kk];
+      if (ES_BRAZO.has(otro) === brazo || otro === 0 || yo === 0) continue;
+      // Del lado de lo que está adelante: el brazo de acá, o el cuerpo delante del brazo de atrás.
+      if (brazo ? yo === PARTE.brazoAtras : otro !== PARTE.brazoAtras) continue;
+      const yb = brazo ? y : ny;
+      if (yb >= yH - 1 && yb <= yH + 1) continue;
+      if (Math.abs(claridad(idx[k]) - claridad(idx[kk])) > BORDE_BRAZO.parecido) continue;
+      const X = x * 3, Y = y * 3;
+      if (dx === -1) puntos.push(X, Y, X, Y + 1, X, Y + 2);
+      if (dx === 1) puntos.push(X + 2, Y, X + 2, Y + 1, X + 2, Y + 2);
+      if (dy === -1) puntos.push(X, Y, X + 1, Y, X + 2, Y);
+      if (dy === 1) puntos.push(X, Y + 2, X + 1, Y + 2, X + 2, Y + 2);
+    }
+  }
+  return puntos.length ? puntos : null;
+}
+
 export function lienzoJugador(o, luz = 0, destello = false) {
   const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0].join('|');
   let g = guardados.get(clave);
@@ -2006,7 +2050,8 @@ export function lienzoJugador(o, luz = 0, destello = false) {
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
-  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: q.finos && [{ color: sombrear(CUERVO.color, luz), puntos: q.finos }] };
+  const borde = bordeBrazos(q);
+  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: [...(q.finos ? [{ color: sombrear(CUERVO.color, luz), puntos: q.finos }] : []), ...(borde ? [{ color: 0, puntos: borde }] : [])] };
   guardados.set(clave, g);
   return g;
 }

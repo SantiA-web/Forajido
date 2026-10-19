@@ -342,6 +342,8 @@ function seesBody(pa, world, c) {
 const TIEMPOS_MESA = {
   comer: [0.4, 0.2, 0.35, 0.25, 0.2, 0.4, 0.4, 0.4],
   jarro: [0.8, 0.25, 0.5, 0.5, 0.5, 0.25, 0.8, 0.8],
+  // 🆕 La copa del rico: sorbos chicos y más espaciados que el jarro.
+  copa: [1.6, 0.3, 0.45, 0.45, 0.45, 0.3, 1.2, 1.2],
 };
 function accionDeDia(pa, ahora) {
   // 🔁 Nunca se queda sin hacer nada: termina una cosa y empieza otra (ver CONFIG.fumar.duracionOtras).
@@ -363,9 +365,11 @@ function accionDeDia(pa, ahora) {
         // (🆕 A la mesa del comedor no mira por la ventana ni revisa la maleta; sin otra cosa, quieto.)
         // (🆕 En el borde de la cama del dormitorio, tampoco hay ventana enfrente.)
         // (🆕 Ni el rico: la ventana le queda lejos de su sillón *(Santi: "están muy lejos de ella")*.)
-        let hay = pa.enBanco ? [null, 'comer', 'jarro'] : pa.enCama || pa.apoyaPies ? [null] : ['ventana'];
+        // (🆕 El rico toma de su copa.)
+        let hay = pa.enBanco ? [null, 'comer', 'jarro'] : pa.apoyaPies ? [null, 'copa'] : pa.enCama ? [null] : ['ventana'];
         if (pa.diario) hay.push('diario');
-        if (pa.mazo) hay.push('barajar');
+        // (🆕 El rico no baraja *(Santi)*.)
+        if (pa.mazo && !pa.apoyaPies) hay.push('barajar');
         if (pa.lleva && !pa.enBanco) hay.push('equipaje');
         // No repite la misma dos veces seguidas si tiene otra.
         if (hay.length > 1) hay = hay.filter((a) => a !== s.accion);
@@ -382,7 +386,7 @@ function accionDeDia(pa, ahora) {
    * 🆕 COMER Y TOMAR DEL JARRO (a la mesa del comedor): cada cuadro con su tiempo (ver POSES_MESA en
    * gente.js). El que come, cada tres bocados toma un trago del jarro.
    */
-  if (s.accion === 'comer' || s.accion === 'jarro') {
+  if (s.accion === 'comer' || s.accion === 'jarro' || s.accion === 'copa') {
     const T = TIEMPOS_MESA;
     const largo = (a) => T[a].reduce((x, y) => x + y, 0);
     let a = s.accion, u = t;
@@ -390,7 +394,7 @@ function accionDeDia(pa, ahora) {
       const vuelta = 3 * largo('comer') + largo('jarro');
       u = t % vuelta;
       if (u >= 3 * largo('comer')) { a = 'jarro'; u -= 3 * largo('comer'); } else u %= largo('comer');
-    } else u = t % largo('jarro');
+    } else u = t % largo(a);
     let k = 0;
     while (k < 7 && u >= T[a][k]) u -= T[a][k++];
     return { accion: a, k, girando: false };
@@ -605,6 +609,13 @@ function pasajeroNuevo(r, pa, pies, tipo = 'pasajero') {
       nuevo.accion = 'quieto';
     } else { nuevo.accion = A.accion; nuevo.k = A.k; nuevo.lleva = pa.lleva; }
   } else if (sentado) nuevo.accion = 'quieto';
+  /**
+   * 🆕 EL BARTENDER, detrás de la barra, seca una copa con el trapo mientras nadie le pide nada: el trapo
+   * le da la vuelta en 8 cuadros de 0,2 s.
+   */
+  else if (pa.bartender && pa.state === 'idle' && !(pa.robProgress > 0)) {
+    nuevo.accion = 'secar'; nuevo.k = Math.floor(ahora / 0.2) % 8;
+  }
 
   // Hacia dónde mira, en el piso (sólo el despierto y tranquilo: el que duerme no ve).
   if (pa.state === 'idle' && !pa.dormido) {

@@ -20,7 +20,7 @@
  */
 import { iluminar } from '../../engine/luz.js';
 import { sombrear, RGB } from '../../engine/paleta.js';
-import { C, ANCHO, ALTO, OX, OY, PARTE, cuadroJugador, armaEn, linea } from './jugador.js';
+import { C, ANCHO, ALTO, OX, OY, PARTE, cuadroJugador, armaEn, linea, bordeBrazos } from './jugador.js';
 
 const mapa = (y, filas) => ({ y, filas });
 
@@ -855,6 +855,8 @@ const PESO = {
   chalecoRico: { crema: 0.6, perla: 0.4 },
   // 🆕 Los guantes del rico *(Santi: "los ricos civiles podrían llevar guantes… agregar al sorteo")*.
   guantesRico: { ninguno: 0.45, blancos: 0.35, grises: 0.2 },
+  // 🆕 El rico: más bigote y candado que las demás *(Santi: "que se haga más común el bigote y el candado")*.
+  barbaRico: { bigote: 0.35, candado: 0.3, afeitado: 0.1, completa: 0.1, patillas: 0.08, larga: 0.07 },
   barbaCanas: { afeitado: 0.15, completa: 0.25, bigote: 0.2, candado: 0.05, patillas: 0.1, larga: 0.25 },
 };
 function elegir(pesos, azar) {
@@ -874,7 +876,7 @@ export function sortearAspecto(tipo, azar = Math.random) {
   else if (tipo === 'bartender') a.sombrero = 'ninguno';       // 🆕 P4: el bartender, sin sombrero (el pelo, cualquiera *(Santi)*)
   else { a.sombrero = elegir(PESO.sombreroPasajero, azar); a.panuelo = elegir(PESO.panuelo, azar); }
   if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno' && a.sombrero !== 'gorra' && a.sombrero !== 'galera' && tipo !== 'escolta') a.colorSombrero = elegir(PESO.colorSombrero, azar);
-  a.barba = elegir(a.pelo === 'canas' ? PESO.barbaCanas : PESO.barba, azar);
+  a.barba = elegir(tipo === 'rico' ? PESO.barbaRico : a.pelo === 'canas' ? PESO.barbaCanas : PESO.barba, azar);
   if (tipo === 'pasajero') a.ropa = elegir(PESO.ropa, azar);
   // 🆕 P3c: el blindado, sólo normal u hombros anchos (Santi, la C).
   a.cuerpo = elegir(tipo === 'blindado' ? PESO.cuerpoBlindado : tipo === 'escolta' ? PESO.cuerpoEscolta : PESO.cuerpo, azar);
@@ -1163,7 +1165,11 @@ export function cuadroGente(o) {
     const sobre = brazos && brazos.props ? brazos.props.filter((p) => p.sobreMesa) : [];
     for (const p of sobre) p.m.filas.forEach((fila, j) => { for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') q0.idx[(OY + 4 + p.m.y + j) * ANCHO + OX + x] = p.tabla[fila[x]]; });
   }
-  const q = { ...q0, finos: barbaFina(o, q0) };
+  // 🆕 El borde fino entre el brazo y el cuerpo (ver bordeBrazos en jugador.js). El bartender todavía no:
+  // primero hay que arreglar su silueta secando la copa *(Santi)*.
+  const borde = o.tipo === 'bartender' ? null : bordeBrazos(q0);
+  const barba = barbaFina(o, q0);
+  const q = { ...q0, finos: borde ? [...(barba || []), { color: 0, puntos: borde, fijo: true }] : barba };
   const F = PF || FB;
   if (!F) return q;
   // El cigarrillo, encima de todo (el papel crema y la brasa); el humo y el brillo, en el mundo.
@@ -1173,6 +1179,18 @@ export function cuadroGente(o) {
   const en = ([x, y]) => [x + OX, y + OY + baja];
   if (cig) {
     const [p, a] = cig.map(en);
+    if (o.tipo === 'rico') {
+      /**
+       * 🆕 EL PURO DEL RICO, distinto del cigarrillo *(Santi: "el puro se tiene que ver diferente al
+       * cigarro")*: un punto más largo (sigue la línea del cigarrillo), marrón tabaco en vez del papel
+       * crema, y la punta de ceniza gris que sólo se pone naranja cuando pita.
+       */
+      const e = [2 * a[0] - p[0], 2 * a[1] - p[1]];
+      q.idx[p[1] * ANCHO + p[0]] = 5;
+      q.idx[a[1] * ANCHO + a[0]] = 5;
+      q.idx[e[1] * ANCHO + e[0]] = pita ? 45 : 24;
+      return { ...q, brasa: pita ? e : null, humo: en(F.humo), fumaK: fk, pita };
+    }
     q.idx[p[1] * ANCHO + p[0]] = 17;
     q.idx[a[1] * ANCHO + a[0]] = pita ? 45 : 44;
   }
@@ -1187,7 +1205,8 @@ export function cuadroGente(o) {
  * del torso a la que están pegados: siguen siendo las mismas poses, echadas atrás. Sólo de costado.
  */
 const RECLINA = [-4, -4, -3, -3, -2, -2, -1, -1, 0];
-const reclinaEn = (y) => RECLINA[Math.max(0, Math.min(RECLINA.length - 1, y - 8))];
+// (Lo que está a la altura de la cara —la mano en la boca, la copa, el puro— va con la cabeza, un punto más.)
+const reclinaEn = (y) => (y < 8 ? RECLINA[0] - 1 : RECLINA[Math.min(RECLINA.length - 1, y - 8)]);
 function correrFila(fila, d) {
   if (d >= 0) return '.'.repeat(d) + fila;
   let i = 0; while (i < -d && fila[i] === '.') i++;
@@ -1479,7 +1498,33 @@ const FUMAR_MESA = {
   c: { abajo: [[16, 11], [17, 11]], sube: [[15, 8], [16, 7]], boca: [[15, 6], [16, 6]] },
   otra: b([[9, 9], [11, 11], [15, 11]], true),
 };
+/**
+ * 🆕 LA COPA DEL RICO (vino tinto), en su sillón, de costado *(Santi: "el puro y la copa")*: en la falda,
+ * agarrada del tallo; la sube al pecho; a la boca, inclinada, con la cabeza un punto atrás (como el jarro
+ * del comedor). La mano tapa el tallo. Echado hacia atrás se corre con él (ver `reclinar`).
+ * Y 🆕 EL BARTENDER SECANDO UNA COPA con el trapo, de frente detrás de la barra: la copa vacía en una mano
+ * a la altura del pecho (más abajo la tapa la barra) y el trapo que le da la vuelta.
+ */
+// (El trapo, beige: blanco se perdía contra las mangas de la camisa.)
+const VIDRIO = { v: 22, w: 30, R: 9, T: 16, t: 15 };
+const OTRA_COPA = b([[9, 9], [10, 12], [12, 13]], true);
+const POSES_COPA = {
+  falda: { lista: [b([[10, 9], [11, 12], [13, 12]]), OTRA_COPA], props: [{ m: mapa(9, ['............vRv', '............vRv', '.............v.', '..............', '..............', '............vvv']), tabla: VIDRIO }] },
+  sube: { lista: [b([[10, 9], [14, 12], [14, 9]]), OTRA_COPA], props: [{ m: mapa(6, ['.............vRv', '.............vRv', '..............v.', '................', '................', '.............vvv']), tabla: VIDRIO }] },
+  boca: { lista: [b([[10, 9], [16, 8], [15, 4]]), OTRA_COPA], props: [{ m: mapa(2, ['.................v', '................vv', '...............v..', '.............vRv..', '.............RR...']), tabla: VIDRIO }], cabezaX: -1 },
+};
+// (La copa a la altura de la panza, justo encima de la barra; el trapo le da la vuelta: izquierda, arriba, derecha, abajo.)
+const POSES_SECAR = [[9, 12], [10, 12], [11, 11], [12, 11], [12, 12], [11, 12], [10, 11], [9, 11]].map((m) => ({
+  lista: [b([[7, 9], [6, 13], m]), b([[13, 9], [14, 13], [11, 12]])],
+  props: [
+    { m: mapa(9, ['..........vwv', '..........vvv', '...........v.']), tabla: VIDRIO },
+    // El trapo, en la mano que frota, contra la copa: va y viene de un lado al otro.
+    { m: mapa(m[1] - 1, ['.'.repeat(m[0] - 1) + 'TT', '.'.repeat(m[0] - 1) + 'Tt']), tabla: VIDRIO, capa: 'frente' },
+  ],
+  inclina: 0, cabeza: 0, brazosQuietos: true,
+}));
 const CUADROS_SENTADO = {
+  copa: ['falda', 'sube', 'boca', 'boca', 'boca', 'sube', 'falda', 'falda'],
   diario: ['regazo', 'medio', 'arriba', 'arriba+', 'arriba', 'hoja', 'arriba+', 'medio'],
   barajar: ['junto', 'abierto', 'cayendo', 'junto', 'abierto', 'cayendo', 'junto', 'junto'],
   equipaje: ['quieto', 'baja', 'abre', 'adentro', 'adentro2', 'adentro', 'abre', 'baja'],
@@ -1516,6 +1561,13 @@ export function poseSentado(accion, vista, k = 0, lleva = 'maleta', mesa = false
   // Al despertarse: en las otras vistas (no se sientan así), quieto.
   if (accion === 'agarraSombrero' || accion === 'agarraSombreroArriba' || accion === 'poneSombrero') return POSES_SENTADO[accion][vista] || { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
   if (accion === 'dormido') { const D = POSES_SENTADO.dormido[vista]; return { ...D, cabeza: D.cabeza - (k % 2) }; }
+  // 🆕 La copa del rico (de costado) y el bartender secando (de frente).
+  if (accion === 'copa') {
+    if (vista !== 'lado') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
+    const P = POSES_COPA[CUADROS_SENTADO.copa[k % 8]];
+    return { lista: P.lista, props: P.props, inclina: 0, cabeza: 0, cabezaX: P.cabezaX || 0 };
+  }
+  if (accion === 'secar') return vista === 'frente' ? POSES_SECAR[k % 8] : null;
   if (accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
   if (!V || !POSES_SENTADO[accion]) return null;
   let nombre = CUADROS_SENTADO[accion][k % 8];
@@ -1843,7 +1895,7 @@ export function lienzoGente(o, luz = 0, destello = false) {
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
   g = { img: cv, boca: q.boca, hombro: q.hombro, brasa: q.brasa || null, humo: q.humo || null, fumaK: q.fumaK ?? null, pita: !!q.pita,
-    finos: q.finos && q.finos.map((f) => ({ color: sombrear(f.color, luz), puntos: f.puntos })) };
+    finos: q.finos && q.finos.map((f) => ({ color: f.fijo ? f.color : sombrear(f.color, luz), puntos: f.puntos })) };
   guardados.set(clave, g);
   return g;
 }

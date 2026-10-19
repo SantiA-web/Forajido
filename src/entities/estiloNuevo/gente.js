@@ -1558,6 +1558,55 @@ const POSES_SECAR = [[9, 14], [9, 13], [9, 13], [9, 14], [8, 14], [8, 13], [8, 1
   ],
   inclina: 0, cabeza: 0,
 }));
+/**
+ * 🆕 EL BARTENDER SIRVE (de frente, detrás de la barra): la copa vacía en la mano de la izquierda; con la
+ * otra levanta la botella (verde, parada), la inclina sobre la copa, cae el vino y la copa queda llena;
+ * vuelve a pararla. El chorro toca la copa pero no la botella (en diagonal no se pegan): así cada brazo
+ * sigue siendo una pieza aparte y se acomoda a cada cuerpo (ver POSES_SECAR).
+ */
+const BOTELLA = { ...VIDRIO, g: 27, G: 43, n: 26 };
+const COPA_IZQ = (llena) => ({ m: mapa(11, ['......v' + (llena ? 'R' : 'w') + 'v', '......v' + (llena ? 'R' : 'v') + 'v']), tabla: VIDRIO });
+const BRAZO_COPA_IZQ = b([[6, 9], [5, 12], [7, 13]]);
+const POSES_SERVIR = {
+  alza: (llena) => ({ lista: [BRAZO_COPA_IZQ, b([[13, 9], [14, 12], [12, 11]])], props: [COPA_IZQ(llena), { m: mapa(6, ['............n', '............gG', '............gG', '............gg']), tabla: BOTELLA }] }),
+  inclina: (llena) => ({ lista: [BRAZO_COPA_IZQ, b([[13, 9], [14, 12], [11, 10]])], props: [COPA_IZQ(llena), { m: mapa(9, ['.........nggG']), tabla: BOTELLA }] }),
+  sirve: (llena) => ({ lista: [BRAZO_COPA_IZQ, b([[13, 9], [14, 12], [11, 10]])], props: [COPA_IZQ(llena), { m: mapa(9, ['.........nggG', '........R']), tabla: BOTELLA }] }),
+};
+const CUADROS_SERVIR = [['alza', 0], ['inclina', 0], ['sirve', 0], ['sirve', 0], ['sirve', 1], ['inclina', 1], ['alza', 1], ['alza', 1]];
+/**
+ * 🆕 EL RICO TOMA DE PIE EN LA BARRA, de espaldas (mira a la barra): la copa en la mano de la derecha, a la
+ * altura del pecho, que asoma al costado del cuerpo; la sube y se la lleva a la boca (el codo afuera, la
+ * copa al lado de la cabeza). Los mismos cuadros que la copa sentado.
+ */
+const POSES_COPA_PIE = {
+  falda: { lista: [b([[13, 9], [15, 12], [15, 13]]), b([[6, 9], [5, 13], [5, 16]])], props: [{ m: mapa(11, ['..............vRv', '..............vRv']), tabla: VIDRIO }] },
+  sube: { lista: [b([[13, 9], [16, 11], [15, 10]]), b([[6, 9], [5, 13], [5, 16]])], props: [{ m: mapa(8, ['..............vRv', '..............vRv']), tabla: VIDRIO }] },
+  boca: { lista: [b([[13, 9], [16, 10], [14, 7]]), b([[6, 9], [5, 13], [5, 16]])], props: [{ m: mapa(5, ['..............RRv', '...............vv']), tabla: VIDRIO }] },
+};
+/**
+ * 🆕 LA CHARLA *(Santi: "cuando un rico se acerca a hablar con otro… que hable hacia el que está sentado,
+ * esto deja lugar a dos poses (de espalda y de frente)")*: el que habla mueve la mano (abajo, a media altura,
+ * arriba, y otra vez), el otro escucha. De pie, de frente o de espaldas (según de qué lado del pasillo está
+ * el sillón), y sentado de costado (echado, ver `reclinar`).
+ */
+const POSES_CHARLA = {
+  frente: {
+    abajo: { lista: [b([[7, 9], [6, 13], [6, 16]]), b([[13, 9], [14, 13], [14, 16]])] },
+    medio: { lista: [b([[7, 9], [6, 13], [7, 12]]), b([[13, 9], [14, 13], [14, 16]])] },
+    arriba: { lista: [b([[7, 9], [5, 12], [5, 10]]), b([[13, 9], [14, 13], [14, 16]])] },
+  },
+  espalda: {
+    abajo: { lista: [b([[13, 9], [14, 13], [14, 16]]), b([[6, 9], [5, 13], [5, 16]])] },
+    medio: { lista: [b([[13, 9], [15, 12], [16, 12]]), b([[6, 9], [5, 13], [5, 16]])] },
+    arriba: { lista: [b([[13, 9], [16, 11], [17, 9]]), b([[6, 9], [5, 13], [5, 16]])] },
+  },
+  lado: {
+    abajo: { lista: [b([[10, 9], [11, 12], [13, 13]]), b([[9, 9], [10, 12], [12, 13]], true)] },
+    medio: { lista: [b([[10, 9], [12, 12], [14, 11]]), b([[9, 9], [10, 12], [12, 13]], true)] },
+    arriba: { lista: [b([[10, 9], [12, 11], [14, 9]]), b([[9, 9], [10, 12], [12, 13]], true)] },
+  },
+};
+const CUADROS_CHARLA = ['abajo', 'medio', 'arriba', 'medio', 'arriba', 'medio', 'abajo', 'abajo'];
 const CUADROS_SENTADO = {
   copa: ['falda', 'sube', 'boca', 'boca', 'boca', 'sube', 'falda', 'falda'],
   diario: ['regazo', 'medio', 'arriba', 'arriba+', 'arriba', 'hoja', 'arriba+', 'medio'],
@@ -1603,6 +1652,9 @@ export function poseSentado(accion, vista, k = 0, lleva = 'maleta', mesa = false
     return { lista: P.lista, props: P.props, inclina: 0, cabeza: 0, cabezaX: P.cabezaX || 0 };
   }
   if (accion === 'secar') return vista === 'frente' ? POSES_SECAR[k % 8] : null;
+  if (accion === 'servir') { if (vista !== 'frente') return null; const [n, llena] = CUADROS_SERVIR[k % 8]; return { ...POSES_SERVIR[n](!!llena), inclina: 0, cabeza: 0 }; }
+  if (accion === 'copaPie') { const P = vista === 'espalda' && POSES_COPA_PIE[CUADROS_SENTADO.copa[k % 8]]; return P ? { ...P, inclina: 0, cabeza: 0 } : null; }
+  if (accion === 'charla') { const P = POSES_CHARLA[vista] && POSES_CHARLA[vista][CUADROS_CHARLA[k % 8]]; return P ? { ...P, inclina: 0, cabeza: 0 } : null; }
   if (accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };
   if (!V || !POSES_SENTADO[accion]) return null;
   let nombre = CUADROS_SENTADO[accion][k % 8];

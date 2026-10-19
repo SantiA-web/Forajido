@@ -1687,7 +1687,10 @@ alguien mirando. Se los reconoce por el **sombrero de copa**: es la silueta más
 alta del tren, asoma por encima de los respaldos; saco largo oscuro, chaleco claro con la cadena del reloj y a veces guantes. Detrás de la barra atiende el **bartender** (delantal blanco y moño). Viajan **de dos a cuatro**, echados en
 sus sillones con los pies en un banquito. **Cada uno trae su guardaespaldas** de saco negro, camisa
 blanca y bombín, parado detrás del sillón, que no patrulla y dice
-**VIGILANDO** arriba de la cabeza.
+**VIGILANDO** arriba de la cabeza, armado con una **pistola Volcanic** de armazón dorado (tira más
+rápido que un revólver). Cada tanto un rico se levanta: va a la **barra** (el bartender le sirve) o
+**visita a otro** a charlar, y su guardaespaldas lo sigue de lejos y toma posición: en la puerta, en la
+puertita de la barra o del otro lado de la mesita.
 
 > **Antes eran un "paquete"**: un rico con su guardaespaldas podía caer en
 > cualquier vagón con gente, y ésa era la gracia — el vagón de pasajeros de

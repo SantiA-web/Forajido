@@ -19168,10 +19168,30 @@ guardaespaldas distintos)*:
   o la cabeza; del lado de lo que está adelante. Sin el hombro (de la fila de arriba del torso a la
   segunda) y sólo si la diferencia de claridad es de 45 o menos (`BORDE_BRAZO.parecido`). También el
   bartender, con la silueta ya arreglada.
-- **Falta:** ir a la barra
-  (pedir, servir, volver con la copa) y visitar a otro rico, con el guardaespaldas que lo sigue de lejos
-  y toma posición después de que el rico llega (detrás del sillón; en la puerta del vagón o en la
-  puertita de la barra, según dónde se pare el rico; del otro lado de la mesita si su rico visita).
+- **✅ LA VIDA EN PRIMERA CLASE** (systems/primeraClase.js, `CONFIG.primeraClase`) *(Santi: "deberían hacer
+  otras cosas como caminar hasta la barra, pedir algo, el bartender servir, que hablen entre ellos"; eligió
+  cada 10-20 s, hasta dos de pie)*. Mientras el vagón está tranquilo, un rico se levanta y:
+  - **va a la barra**: se para pegado al mostrador (`pegadoBarra`); el bartender va por detrás de la barra
+    hasta enfrente y **le sirve** (levanta la botella verde, la inclina, cae el vino: `POSES_SERVIR`); el
+    rico **toma de pie** (de espaldas, `POSES_COPA_PIE`) 6-10 s y vuelve a su sillón con la copa;
+  - **visita a otro rico**: se para pegado al sillón del otro del lado del pasillo (`pegadoVisita`), de
+    espaldas o de frente, y **charlan por turnos de 3 s** (el que habla mueve la mano: `POSES_CHARLA`, de pie
+    y sentado echado).
+  - **El guardaespaldas toma posiciones** (*"el rico camina por un vagón, no por todo un tren"*): lo sigue de
+    lejos (`distancia`) sin saber adónde va; un momento después de que llegó (`demora`), a su puesto:
+    detrás del respaldo; en el marco de la puerta del vagón o de la puertita, según el lado de la barra; del
+    otro lado de la mesita del que visita. Camina por el camino (`viajarHacia`), sin chocar los muebles.
+  - Si alguien deja de estar tranquilo, nadie empieza nada nuevo; con el jugador lejos, todo queda quieto
+    (como los guardias, `CONFIG.raid.cullPatrolDistance`). 🐛 El buscador de caminos se salteaba el primer
+    giro: al levantarse del sillón el rico se frotaba diez segundos contra el sillón; ahora se agrega.
+- **✅ LA PISTOLA VOLCANIC del guardaespaldas** (*"que sus revólveres sean algo como pistolas de palanca, como
+  la pistola Volcanic… aumentá la cadencia a la de un Schofield"*; antes, Santi descartó el rifle: de traje
+  negro no se leía): el revólver del guardia en todo salvo la cadencia (×0,7, la diferencia entre el Colt y el
+  Schofield del jugador: tira cada 0,53 s en vez de 0,75). Se dibuja como el Colt punto por punto, con el
+  tambor convertido en el **armazón de bronce** (los tres tonos del Winchester; *"el dorado no se nota nada"*).
+- 🐛 **Los torsos agujereados** (*"con huecos en el cuerpo de aire"*): con algo que cruza el pecho desde los
+  hombros (el rifle cruzado del guardia de hombros anchos), el relleno del cuerpo no arrancaba; ahora se
+  rellena todo lo que queda adentro del ancho del torso (darForma, jugador.js), en todos los cuerpos.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

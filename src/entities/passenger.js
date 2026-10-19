@@ -345,6 +345,17 @@ const TIEMPOS_MESA = {
   // 🆕 La copa del rico: sorbos chicos y más espaciados que el jarro.
   copa: [1.6, 0.3, 0.45, 0.45, 0.45, 0.3, 1.2, 1.2],
 };
+/** El cuadro de la copa (los tiempos de TIEMPOS_MESA.copa), `t` segundos después de empezar. */
+function cuadroDeCopa(t) {
+  const T = TIEMPOS_MESA.copa, largo = T.reduce((x, y) => x + y, 0);
+  let u = t % largo, k = 0;
+  while (k < 7 && u >= T[k]) u -= T[k++];
+  return k;
+}
+/** En la charla hablan por turnos de 3 segundos; empieza el que llegó. */
+function turnoDeCharla(t, visita) {
+  return (Math.floor(t / 3) % 2 === 0) === visita;
+}
 function accionDeDia(pa, ahora) {
   // 🔁 Nunca se queda sin hacer nada: termina una cosa y empieza otra (ver CONFIG.fumar.duracionOtras).
   const s = pa._p3 || (pa._p3 = { accion: null, hasta: ahora });
@@ -610,11 +621,26 @@ function pasajeroNuevo(r, pa, pies, tipo = 'pasajero') {
     } else { nuevo.accion = A.accion; nuevo.k = A.k; nuevo.lleva = pa.lleva; }
   } else if (sentado) nuevo.accion = 'quieto';
   /**
+   * 🆕 EL RICO DE PIE (ver systems/primeraClase.js): en la barra toma de la copa (de espaldas, mirando a la
+   * barra) y de visita charla con el que está sentado; hablan por turnos de unos segundos.
+   */
+  if (pa.rutina && pa.state === 'idle' && !sentado) {
+    const R = pa.rutina;
+    if (R.modo === 'tomando') { nuevo.accion = 'copaPie'; nuevo.k = cuadroDeCopa(R.llego); }
+    else if (R.modo === 'charlando' && turnoDeCharla(R.llego, true)) { nuevo.accion = 'charla'; nuevo.k = Math.floor(ahora / 0.3) % 8; }
+  }
+  // Y el que está sentado y lo visitan: le contesta cuando le toca.
+  if (pa.visitado && sentado && pa.state === 'idle' && !pa.dormido && pa.visitado.rutina && pa.visitado.rutina.modo === 'charlando'
+    && turnoDeCharla(pa.visitado.rutina.llego, false)) { nuevo.accion = 'charla'; nuevo.k = Math.floor(ahora / 0.3) % 8; }
+  /**
    * 🆕 EL BARTENDER, detrás de la barra, seca una copa con el trapo mientras nadie le pide nada: el trapo
    * le da la vuelta en 8 cuadros de 0,2 s.
    */
   else if (pa.bartender && pa.state === 'idle' && !(pa.robProgress > 0)) {
-    nuevo.accion = 'secar'; nuevo.k = Math.floor(ahora / 0.2) % 8;
+    // (🆕 Caminando detrás de la barra, nada en las manos; enfrente de un rico, le sirve: ver systems/primeraClase.js.)
+    const camina = pa.ruta && pa.rutaI < pa.ruta.length;
+    if (pa.sirviendo != null) { nuevo.accion = 'servir'; nuevo.k = Math.min(7, Math.floor((pa.sirviendo / CONFIG.primeraClase.servir) * 8)); }
+    else if (!camina) { nuevo.accion = 'secar'; nuevo.k = Math.floor(ahora / 0.2) % 8; }
   }
 
   // Hacia dónde mira, en el piso (sólo el despierto y tranquilo: el que duerme no ve).

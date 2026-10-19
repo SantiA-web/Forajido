@@ -186,6 +186,21 @@ export const ARMAS_GUARDIA = {
  * posibilidad, rifle con 20% y escopeta con 20%. Los de blindado pueden llevar
  * 40% de rifle, 40% de escopeta y 20% de revólver")*.
  */
+/**
+ * 🆕 P4 · LA PISTOLA VOLCANIC, la del guardaespaldas de primera clase *(Santi: "que sus revólveres sean algo
+ * como pistolas de palanca, como la pistola Volcanic… aumentá la cadencia de tiro a la de un Schofield")*.
+ * Es el revólver del guardia en todo (cargador, recarga, puntería, distancia), salvo la cadencia: tira con
+ * la diferencia que hay entre el Colt y el Schofield del jugador (0,28 contra 0,40 s: ×0,7). Se dibuja como
+ * el Colt con el bronce dorado del Winchester en el cajón (`volcanic` en estiloNuevo/jugador.js).
+ */
+ARMAS_GUARDIA.volcanic = {
+  ...ARMAS_GUARDIA.revolver,
+  id: 'volcanic',
+  nombre: 'Pistola Volcanic',
+  cadencia: 0.7,
+  corta: 'volcanic',
+};
+
 export const REPARTO_ARMAS = {
   comun: [['revolver', 60], ['winchester', 20], ['escopeta', 20]],
   blindado: [['winchester', 40], ['escopeta', 40], ['revolver', 20]],

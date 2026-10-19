@@ -553,6 +553,26 @@ const DIBUJOS_ARMAS = {
     // arriba, la mano, y la boca negra con su anillo, acortado (el de 4 es el que apunta al piso).
     frente: ['.d.', '.A.', '122', '2N3', '233'],
   },
+  /**
+   * 🆕 LA PISTOLA VOLCANIC del guardaespaldas *(Santi: "píntale apenas unos pixeles dorados como el
+   * Winchester, pero que la forma, las direcciones y eso sean las mismas")*: el Colt, dirección por
+   * dirección, igual punto por punto. 🔁 Lo que en el Colt es el tambor, acá es el armazón de bronce, con los
+   * tres tonos del bronce del Winchester en lugar de los del metal (el brillo `1` → `o`, el medio `2` →
+   * `b`, la sombra `3 d` → `q`), así conserva el volumen *(Santi: "el dorado no se nota nada, ponele un
+   * poco más de pixeles")*. El caño, el martillo y la culata, como el Colt.
+   */
+  volcanic: {
+    '-4': ['.M.', '.13', '.13', '.13', '.13', 'boq', 'qbq', '.o.', '.r.', '.A.', '...', '.s.'],
+    '-3': ['...M.', '...13', '..13.', '..13.', '.13..', '.13..', 'boq..', '.o...', '.r...', '.A...', '.....', '.s...'],
+    '-2': ['..........M.', '.........13.', '........13..', '.......13...', '......13....', '.....13d....', '....13d.....', 'dd.obq......', '..rbq.......', '..rq........', '..A.........', 'ss..........'],
+    '-1': ['...........1M', '.........1133', '.......1133..', '...obo133....', '.ddbqqqoq....', '..rqddd......', '..rdd........', '.sA..........', '.s...........', 's............'],
+    0: ['.d...........', '..dob.......2', '..rbq1111111M', '..rqq33333333', '.sAoqdddd....', 'ss...........', 's............'],
+    1: ['.d...........', '..dob........', '..rob........', '..rbq........', '.sAqq11......', 'ss.oq3311....', 's....dd3311..', '.......dd331M', '...........33'],
+    2: ['.d.........', '..do.......', '..rbo......', 'sA.qb1.....', 's..o31.....', 's...q31....', '.....d31...', '......d31..', '........31.', '.........3M'],
+    3: ['.d...', '.A...', 'r....', 'boq..', '.13..', '..13.', '..M3.'],
+    4: ['.d.', '.A.', '...', 'boq', '.13', '.13', '.M3'],
+    frente: ['.d.', '.A.', 'obb', 'bNq', 'bqq'],
+  },
   // EL SMITH & WESSON SCHOFIELD: la traba arriba atrás, el caño más corto, culata de madera.
   smith: {
     '-4': ['.M.', '.13', '.13', '213', '.d2', '.W.', '.A.', '...', '.w.'],
@@ -1716,7 +1736,18 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         } else if (antes) {
           const mas = vista !== 'lado' ? Math.max(0, ancho(y - yHombro) - ancho(y - 1 - yHombro)) : 0;
           [i, j] = [antes[0] - mas, antes[1] + mas];
-        } else continue;
+        } else {
+          /**
+           * 🐛 TAMPOCO LA PRIMERA: con algo que cruza todo el pecho desde los hombros (el rifle cruzado, las
+           * dos manos juntas) ninguna fila pasa entera por el medio, no había "de arriba" y no se rellenaba
+           * nada: el guardaespaldas de hombros anchos con el rifle quedaba con el torso agujereado *(Santi:
+           * "con huecos en el cuerpo de aire")*. Ahí, de punta a punta de lo que sí es cuerpo en esa fila.
+           */
+          let l = -1, r = -1;
+          for (let x = 0; x < ANCHO; x++) if (nuevo[f + x] >= 0 && dn[f + x] === PARTE.cuerpo) { if (l < 0) l = x; r = x; }
+          if (l < 0 || r - l < 2) continue;
+          [i, j] = [l, r];
+        }
         antes = [i, j];
         if (entero) continue;
         let ultimo = null;
@@ -1729,6 +1760,33 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
           nuevo[k] = c; dn[k] = PARTE.cuerpo;
         }
       }
+    }
+    /**
+     * 🐛 Y LO QUE QUEDA ADENTRO DEL TORSO: donde el brazo (o el rifle cruzado) tapaba el cuerpo y se corrió,
+     * dentro del ancho que el torso tiene dibujado en esa fila (ensanchado por el cuerpo), no puede quedar
+     * aire. Se rellena con la tela de al lado. El aire entre el brazo y las costillas de los hombros anchos
+     * queda afuera de ese ancho, y no se toca.
+     */
+    if (K !== CUERPOS.normal || chaqueta) {
+      const T0 = persona ? persona.torso : V.torso;
+      T0.filas.forEach((fila, jj) => {
+        const y = T0.y + jj + baja + OY, f = y * ANCHO;
+        if (y < 0 || y >= ALTO || !enTorso(y)) return;
+        let a = -1, b = -1;
+        for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') { if (a < 0) a = x; b = x; }
+        if (a < 0) return;
+        const corre = inclina + bi + (jj < 5 ? lomo : 0) + reclina(jj) + OX, w = vista !== 'lado' ? ancho(y - yHombro) : 0;
+        const x0 = Math.max(0, a + corre - w), x1 = Math.min(ANCHO - 1, b + corre + w);
+        let ultimo = null;
+        for (let x = x0; x <= x1; x++) {
+          const k = f + x;
+          if (nuevo[k] >= 0) { if (dn[k] === PARTE.cuerpo && !detalle.has(nuevo[k])) ultimo = nuevo[k]; continue; }
+          let c = ultimo;
+          if (c == null) for (let q = x + 1; q <= x1; q++) if (nuevo[f + q] >= 0 && dn[f + q] === PARTE.cuerpo && !detalle.has(nuevo[f + q])) { c = nuevo[f + q]; break; }
+          if (c == null) continue;
+          nuevo[k] = c; dn[k] = PARTE.cuerpo;
+        }
+      });
     }
     // El tramo del torso que pasa por el medio de una fila (sin la culata enfundada, que está aparte).
     const tramo = (y) => {

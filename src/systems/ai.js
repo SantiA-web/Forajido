@@ -51,7 +51,8 @@ import { companeroRecargando, buscarAngulo } from './escuadra.js';
  */
 export function armarGuardia(e, rng) {
   if (e.armaId) return;
-  e.armaId = armaDeGuardia(e.type, rng);
+  // (🆕 El guardaespaldas de primera clase, con su pistola Volcanic: ver data/armasGuardia.js.)
+  e.armaId = e.escolta ? 'volcanic' : armaDeGuardia(e.type, rng);
   e.armaEnMano = e.armaId;
   e.municion = { [e.armaId]: ARMAS_GUARDIA[e.armaId].cargador };
   const doble = ARMAS_DOBLES[e.type];
@@ -1455,6 +1456,9 @@ function volverAlPuesto(e, dt, world) {
     if (e.facingPuesto !== undefined) e.facing = e.facingPuesto;
     return;
   }
+  // (🆕 El guardaespaldas de primera clase cambia de puesto por el vagón: va por el camino, sin chocar con
+  // los sillones ni las mesitas. Ver systems/primeraClase.js.)
+  if (e.cuida) { viajarHacia(e, dt, world, e.puesto.x, e.puesto.y, CONFIG.enemy.patrolSpeed); return; }
   moveToward(e, e.puesto.x, e.puesto.y, CONFIG.enemy.patrolSpeed, dt, world.map);
 }
 

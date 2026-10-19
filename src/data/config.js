@@ -1916,6 +1916,28 @@ export const CONFIG = {
    *  - `preferencia`: cuánto la prefieren los guardias al buscar dónde cubrirse (ver `findCoverPoint`,
    *    systems/cover.js): les tapa las piernas y les deja tirar.
    */
+  /**
+   * 🆕 P4 · LA VIDA EN PRIMERA CLASE (ver systems/primeraClase.js) *(Santi eligió: cada 10 a 20 s se levanta
+   * alguien, hasta dos de pie a la vez)*. En segundos, salvo `velocidad` y `distancia` (unidades).
+   *  primero      cuánto tarda el primero en levantarse
+   *  cada         cada cuánto se levanta alguien
+   *  dePie        cuántos ricos de pie a la vez, como mucho
+   *  barra        de cada 1, cuántas veces va a la barra (las demás, de visita)
+   *  enLaBarra    cuánto toma en la barra después de que le sirven
+   *  visita       cuánto dura la charla
+   *  copaAlVolver cuánto sigue tomando de la copa al sentarse, de vuelta de la barra
+   *  servir       cuánto tarda el bartender en servir
+   *  velocidad    a qué paso caminan (los guardias de ronda, 24; a 20 cruzar el vagón llevaba 16 s)
+   *  distancia    a qué distancia lo sigue su guardaespaldas mientras camina ("sin pegarse")
+   *  demora       cuánto después de que el rico llegó va el guardaespaldas a su puesto
+   */
+  primeraClase: {
+    primero: [3, 8], cada: [10, 20], dePie: 2, barra: 0.5,
+    enLaBarra: [6, 10], visita: [10, 18], copaAlVolver: [8, 14], servir: 2.4,
+    velocidad: 30, distancia: 30, demora: [0.6, 1.2],
+    pegadoBarra: 4,   // a cuántas unidades del mostrador se para el que pide (desde el borde de la casilla)
+    pegadoVisita: 4,  // y el que visita, a cuántas del sillón del otro
+  },
   coberturaBaja: {
     pegado: 16,
     pegadoEntero: 8,

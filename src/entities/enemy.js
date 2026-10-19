@@ -435,7 +435,7 @@ export function drawEnemy(r, e) {
     const figC = dibujarPersona(r, {
       tipo, x: e.x, pies, angulo: e.facing, interior: true,
       // (🐛 Con su aspecto: el caído y el rendido salían con la cara y el cuerpo de fábrica.)
-      nuevo: { piernas: 'piso', arma: largaC || 'colt', empuna: largaC || e.aimTimer > 0 ? 1 : 0, funda: !largaC, aspecto: aspectoDe(e, tipoN) },
+      nuevo: { piernas: 'piso', arma: largaC || (defC && defC.corta) || 'colt', empuna: largaC || e.aimTimer > 0 ? 1 : 0, funda: !largaC, aspecto: aspectoDe(e, tipoN) },
       destello: e.hitFlash > 0,
     });
     anotarBoca(e, figC);
@@ -480,8 +480,8 @@ export function drawEnemy(r, e) {
     const largaR = defR && typeof defR.dibujo === 'string' ? defR.dibujo : null;
     const cuadroR = t < 0.25 ? 0 : t < 0.5 ? 1 : t < 0.75 ? 2 : 3;
     const nuevoR = cuadroR < 2 ? { piernas: 'rodillas', brazos: 'arriba', bandera: cuadroR === 0, enfundado: !largaR, funda: !largaR }
-      : cuadroR === 2 ? { piernas: 'agachado', arma: largaR ? null : 'colt', desenfunda: largaR ? null : 1, funda: !largaR }
-        : { piernas: 'quieto', arma: largaR || 'colt', empuna: 0, funda: !largaR };
+      : cuadroR === 2 ? { piernas: 'agachado', arma: largaR ? null : (defR && defR.corta) || 'colt', desenfunda: largaR ? null : 1, funda: !largaR }
+        : { piernas: 'quieto', arma: largaR || (defR && defR.corta) || 'colt', empuna: 0, funda: !largaR };
     const fig = dibujarPersona(r, {
       interior: true, nuevo: { ...nuevoR, aspecto: aspectoDe(e, tipoN) },
       tipo, x: e.x, pies, angulo: Math.PI / 2,
@@ -562,7 +562,8 @@ export function drawEnemy(r, e) {
   // De franco: sentado con las cartas; el revólver en la funda (el arma larga, colgada, no se ve todavía).
   const franco = sentado ? { piernas: 'sentado', brazos: 'cartas', arma: null, enfundado: !larga } : null;
   const poseN = {
-    arma: !conArma ? null : larga || (peleando ? 'colt' : null),
+    // (🆕 El arma corta de cada uno: el Colt, o la Volcanic del guardaespaldas.)
+    arma: !conArma ? null : larga || (peleando ? (defArma && defArma.corta) || 'colt' : null),
     empuna: larga ? (poseLarga !== larga ? 1 : 0) : e.aimTimer > 0 ? 1 : 0,
     enfundado: !larga && (!conArma || !peleando),
     funda: !larga,

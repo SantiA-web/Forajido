@@ -86,6 +86,7 @@ import {
 } from '../systems/ai.js';
 import { updateBullets } from '../systems/combat.js';
 import { updateExplosives } from '../systems/explosives.js';
+import { actualizarPrimeraClase } from '../systems/primeraClase.js';
 import { createAlertSystem } from '../systems/alert.js';
 import { applyRaidResult, gameState, numero } from '../state/gameState.js';
 
@@ -2833,6 +2834,7 @@ export function createRaidScene(services) {
     updateEnemies(dt);
     separateEnemies(enemies, map);
     for (const pa of passengers) updatePassenger(pa, dt, world);
+    actualizarPrimeraClase(world, dt);
     for (const d of doors) updateDoor(d, dt, world);
     cortinasAlPasar(map, world.cortinas, [player, ...enemies, ...passengers]);
     actualizarPortones(world.portones, [player, ...enemies, ...passengers], dt);

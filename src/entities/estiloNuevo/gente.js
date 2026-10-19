@@ -586,7 +586,9 @@ const DELANTAL = {
 };
 function torsoBartender(vista) {
   const t = TORSOS.pasajero[vista];
-  const g = Array.from({ length: 15 }, (_, j) => (t.filas[j] || '').padEnd(18, '.').split(''));
+  // (🔁 Sin la V de la camisa debajo del moño: eran dos puntos blancos sueltos sobre el chaleco *(Santi: "pixeles
+  // blancos sobre el pecho… pintados sueltos")*. La camisa blanca se ve en las mangas.)
+  const g = Array.from({ length: 15 }, (_, j) => (j === 1 ? (t.filas[j] || '').replace(/C/g, 'V') : t.filas[j] || '').padEnd(18, '.').split(''));
   const F = DELANTAL[vista];
   if (F) F[1].forEach((fila, j) => { for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') g[17 + j - t.y][F[0] + x] = fila[x]; });
   return { y: t.y, filas: g.map((f) => f.join('').replace(/\.+$/, '')) };
@@ -632,6 +634,30 @@ function camisaRecta(q, col, vista, cuerpo) {
 function franjaCamisa(dx, j, col) {
   if (dx === 0 && j >= 2 && j % 2 === 0) return 23;   // los botones, grises oscuros
   return dx < 0 ? col.U : dx > 0 ? col.v : col.V;
+}
+/**
+ * 🆕 SIN PUNTOS SUELTOS (el bartender) *(Santi: "hay pixeles que están volando")*: con las manos arriba,
+ * secando, quedaban pedacitos de uno o dos puntos despegados del cuerpo (la punta del cuello en el flaco, la
+ * cadera al lado del delantal). Se borra todo lo que no esté pegado al resto de la figura y tenga `max`
+ * puntos o menos.
+ */
+function sinSueltos(idx, max = 3) {
+  const out = idx.slice(), visto = new Uint8Array(ANCHO * ALTO);
+  for (let k0 = 0; k0 < out.length; k0++) {
+    if (out[k0] < 0 || visto[k0]) continue;
+    const pila = [k0], suyos = []; visto[k0] = 1;
+    while (pila.length) {
+      const k = pila.pop(); suyos.push(k);
+      const x = k % ANCHO, y = (k - x) / ANCHO;
+      for (const [a, b] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        if (a < 0 || b < 0 || a >= ANCHO || b >= ALTO) continue;
+        const kk = b * ANCHO + a;
+        if (!visto[kk] && out[kk] >= 0) { visto[kk] = 1; pila.push(kk); }
+      }
+    }
+    if (suyos.length <= max) for (const k of suyos) out[k] = -1;
+  }
+  return out;
 }
 /** Lo que se sortea del rico: el saco y el chaleco. */
 const SACOS_RICO = {
@@ -966,7 +992,9 @@ const BASE = {
   },
   // 🆕 P4: el bartender (ver TORSOS.bartender): la camisa y el delantal blancos, el chaleco negro, el moño.
   bartender: {
-    L: 30, C: 17, c: 16, U: 23, V: 31, v: 0, w: 0, y: 25,
+    // (🔁 El chaleco negro parejo, con los botones negros: con el lado de la luz gris y los
+    // botones claros, el pecho se veía "gris manchado de pixeles blancos" *(Santi)*.)
+    L: 30, C: 17, c: 16, U: 31, V: 31, v: 0, w: 0, y: 0,
     z: 16, R: 31, S: 0, r: 31,              // el moño negro
     W: 1, G: 25, I: 24, T: 23, t: 31,
   },
@@ -1147,12 +1175,13 @@ export function cuadroGente(o) {
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
   const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia' || o.tipo === 'blindado' || o.tipo === 'sheriff',
     // 🆕 P3c: el Encargado, con el saco cerrado (sin la panza del chaleco abierto) y la correa cruzada.
-    panza: o.tipo !== 'encargado', correa: o.tipo === 'encargado' ? correaEncargado(o.vista) : null };
+    panza: o.tipo !== 'encargado' && o.tipo !== 'bartender', correa: o.tipo === 'encargado' ? correaEncargado(o.vista) : null };
   const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
   if (o.tipo === 'sheriff') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''));
   if (o.tipo === 'rico') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''), { ...C, ...persona.colores }, ['L', 'C', 'c']);
   if (o.tipo === 'escolta') q0.idx = camisaRecta(q0, persona.colores, o.vista, o.cuerpo);
   if (o.tipo === 'cazarrecompensas') q0.idx = capaCazador(q0.idx, o.vista, o.piernas || '');
+  if (o.tipo === 'bartender') q0.idx = sinSueltos(q0.idx);
   /**
    * 🆕 SENTADO A LA MESA DEL COMEDOR: lo que cae debajo de la tapa (las piernas, desde la columna `mesa`
    * y de la fila 16 para abajo) no se dibuja. Él va encima de la mesa (así se le ven los brazos
@@ -1165,9 +1194,8 @@ export function cuadroGente(o) {
     const sobre = brazos && brazos.props ? brazos.props.filter((p) => p.sobreMesa) : [];
     for (const p of sobre) p.m.filas.forEach((fila, j) => { for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') q0.idx[(OY + 4 + p.m.y + j) * ANCHO + OX + x] = p.tabla[fila[x]]; });
   }
-  // 🆕 El borde fino entre el brazo y el cuerpo (ver bordeBrazos en jugador.js). El bartender todavía no:
-  // primero hay que arreglar su silueta secando la copa *(Santi)*.
-  const borde = o.tipo === 'bartender' ? null : bordeBrazos(q0);
+  // 🆕 El borde fino entre el brazo y el cuerpo (ver bordeBrazos en jugador.js).
+  const borde = bordeBrazos(q0);
   const barba = barbaFina(o, q0);
   const q = { ...q0, finos: borde ? [...(barba || []), { color: 0, puntos: borde, fijo: true }] : barba };
   const F = PF || FB;
@@ -1514,14 +1542,21 @@ const POSES_COPA = {
   boca: { lista: [b([[10, 9], [16, 8], [15, 4]]), OTRA_COPA], props: [{ m: mapa(2, ['.................v', '................vv', '...............v..', '.............vRv..', '.............RR...']), tabla: VIDRIO }], cabezaX: -1 },
 };
 // (La copa a la altura de la panza, justo encima de la barra; el trapo le da la vuelta: izquierda, arriba, derecha, abajo.)
-const POSES_SECAR = [[9, 12], [10, 12], [11, 11], [12, 11], [12, 12], [11, 12], [10, 11], [9, 11]].map((m) => ({
-  lista: [b([[7, 9], [6, 13], m]), b([[13, 9], [14, 13], [11, 12]])],
+// (🔁 Las manos a la altura de la panza y los antebrazos en diagonal, así el brazo queda de dos puntos hasta la
+// mano y el chaleco se ve en el pecho. Y SIN TOCARSE: el trapo frota la copa con un punto de aire; con las
+// manos juntas los dos brazos eran una sola pieza, no se acomodaban a cada cuerpo y quedaban huecos y puntos
+// sueltos *(Santi: "tiene el brazo ancho al principio… en el antebrazo queda con un minipixel"; "el flaco se ve
+// muy mal… hay pixeles que están volando")*.)
+// (La mano del trapo no sube más que el codo: más arriba el antebrazo quedaba acostado, de un punto de alto.)
+const POSES_SECAR = [[9, 14], [9, 13], [9, 13], [9, 14], [8, 14], [8, 13], [8, 13], [8, 14]].map((m) => ({
+  // (Los dos hombros parejos con el medio del cuerpo: el de la izquierda en 6, como el de la derecha en 13.)
+  lista: [b([[6, 9], [6, 12], m]), b([[13, 9], [14, 12], [13, 14]])],
   props: [
-    { m: mapa(9, ['..........vwv', '..........vvv', '...........v.']), tabla: VIDRIO },
-    // El trapo, en la mano que frota, contra la copa: va y viene de un lado al otro.
+    { m: mapa(11, ['...........vwv', '...........vvv', '............v.']), tabla: VIDRIO },
+    // El trapo, en la mano que frota, al lado de la copa.
     { m: mapa(m[1] - 1, ['.'.repeat(m[0] - 1) + 'TT', '.'.repeat(m[0] - 1) + 'Tt']), tabla: VIDRIO, capa: 'frente' },
   ],
-  inclina: 0, cabeza: 0, brazosQuietos: true,
+  inclina: 0, cabeza: 0,
 }));
 const CUADROS_SENTADO = {
   copa: ['falda', 'sube', 'boca', 'boca', 'boca', 'sube', 'falda', 'falda'],

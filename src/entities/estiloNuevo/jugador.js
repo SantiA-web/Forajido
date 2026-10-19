@@ -1881,9 +1881,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         // 🐛 El brazo que llega a la cabeza (las manos en la cabeza o arriba) no se corre: si no, la mano
         // se despegaba de la cabeza y el ala del sombrero quedaba con el agujero donde estaba el brazo.
         const aLaCabeza = suyos.some((k) => Math.floor(k / ANCHO) < yHombro - 1);
-        // (🆕 `brazosQuietos`: las dos manos juntas delante del pecho —el bartender secando una copa—; tocándose,
-        // los dos brazos son un solo grupo y se corrían juntos para un lado. Delante del pecho, no se corren.)
-        const sentido = aLaCabeza || (BRo && BRo.brazosQuietos) ? 0 : vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
+        const sentido = aLaCabeza ? 0 : vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
         for (const k of suyos) {
           const x = k % ANCHO, y = (k - x) / ANCHO, nx = x + sentido * (vista === 'lado' ? 1 : corrida(y));
           if (nx < 0 || nx >= ANCHO) continue;

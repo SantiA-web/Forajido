@@ -210,7 +210,7 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   la cobertura baja) hecho, con su gente dibujada (el rico, el bartender, los guardaespaldas); los ricos
   sorteados (2 a 4) con un guardaespaldas cada uno, sentados echados atrás con los pies en el banquito;
   el puro, la copa y el bartender secando hechos, y el borde fino entre brazo y cuerpo en todo el juego;
-  falta la silueta del bartender secando (y su borde) y que se muevan (barra, visitas); después el vagón de
+  la silueta del bartender secando arreglada; falta que se muevan (barra, visitas); después el vagón de
   guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los

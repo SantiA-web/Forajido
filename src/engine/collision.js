@@ -6,7 +6,12 @@
  * CENTRO y hw/hh son la media anchura y media altura.
  */
 
-/** ¿La caja está pisando algún tile sólido? */
+/**
+ * ¿La caja está pisando algún tile sólido?
+ * 🔁 Las cuatro puntas y el medio de cada lado: con las puntas solas, lo sólido más chico que la caja (el
+ * cajón de munición del vagón de guardias, 8 por 4) se atravesaba si las puntas le pasaban por afuera, y
+ * frenaba o no según de dónde vinieras *(Santi: "yo debería poder ponerme más adentro en el cajón")*.
+ */
 export function overlapsSolid(body, isSolidAt) {
   const left = body.x - body.hw;
   const right = body.x + body.hw - 0.01;
@@ -17,7 +22,11 @@ export function overlapsSolid(body, isSolidAt) {
     isSolidAt(left, top) ||
     isSolidAt(right, top) ||
     isSolidAt(left, bottom) ||
-    isSolidAt(right, bottom)
+    isSolidAt(right, bottom) ||
+    isSolidAt(body.x, top) ||
+    isSolidAt(body.x, bottom) ||
+    isSolidAt(left, body.y) ||
+    isSolidAt(right, body.y)
   );
 }
 

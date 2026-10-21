@@ -23,10 +23,11 @@
  * @param from       { col, row } de partida
  * @param to         { col, row } de destino
  * @param maxNodos   tope de seguridad, para no barrer un mapa entero de gusto
+ * @param entrar     🆕 el destino puede ser sólido: el guardia que vuelve a sentarse en su cajón de munición
  */
-export function findPath(map, from, to, maxNodos = 4000) {
+export function findPath(map, from, to, maxNodos = 4000, entrar = false) {
   if (from.col === to.col && from.row === to.row) return [];
-  if (map.isSolidTile(to.col, to.row)) return null;
+  if (!entrar && map.isSolidTile(to.col, to.row)) return null;
 
   const ancho = map.cols;
   const indice = (col, row) => row * ancho + col;
@@ -56,7 +57,7 @@ export function findPath(map, from, to, maxNodos = 4000) {
 
       const id = indice(nc, nr);
       if (previo.has(id)) continue;
-      if (map.isSolidTile(nc, nr)) continue;
+      if (map.isSolidTile(nc, nr) && !(entrar && nc === to.col && nr === to.row)) continue;
 
       previo.set(id, indice(col, row));
       cola.push([nc, nr]);

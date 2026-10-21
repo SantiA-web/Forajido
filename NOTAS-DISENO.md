@@ -19225,6 +19225,33 @@ guardaespaldas distintos)*:
     piernas, el muslo de atrás quedaba despegado del pie: agachado ya no se afinan).
   - 🔧 Las fotos de prueba no traían el borde fino (en el juego sí): ahora sí (tmp-ref/brazo-perfil.js), y
     tmp-ref/volcar.js busca puntos sueltos en toda la gente.
+- **✅ EL VAGÓN DE GUARDIAS, UN CUARTEL RÚSTICO** (world/estiloNuevo/vagones.js) *(Santi eligió las
+  recomendaciones: cuartel rústico, catres de lona sueltos, la mesa de pino y los cinco detalles)*. Lo contrario
+  de primera clase: madera cruda (tablas más oscuras, nudos), faroles de querosén.
+  - **Los catres**, de lona verde oliva en un bastidor con patas en X, la almohada y la frazada gris doblada;
+    del largo de una persona (con las tres casillas enteras eran larguísimos), y al pie, **el baúl** de cada
+    uno (madera, zunchos, candado).
+  - **Las mesas de cartas**, de pino, con una **vela metida en una botella** que de noche ilumina; en las de los
+    que juegan, los naipes, el pozo de monedas y el mazo; en las otras, el mazo y un jarro.
+  - **Los detalles**: el **armero** con tres Winchester (el caño largo con el tubo del cargador, la tapa de
+    madera, el cajón de bronce, la palanca en lazo, la culata que se ensancha: *"que sacándole el color se
+    entienda la silueta"*); la **estufa salamandra** pegada a la pared, con la cafetera y el caño al techo (de
+    noche, la boca encendida da luz; sin choque); un **sombrero o una cartuchera** colgados de un clavo sobre
+    cada catre de arriba; las **cajas de munición apiladas** en un rincón ('U': chocan, tapan la vista y las
+    balas); la **escupidera** de lata.
+  - **Los guardias de franco, sentados en cajones de munición** ('J', world/tilemap.js) *(Santi: "debería
+    funcionar como los asientos: siempre está ahí… siempre tienen que tener colisión")*: bajos, la tapa debajo
+    de los muslos (*"que se siente en la parte de arriba del cajón, no al costado"*); chocan con el tamaño del
+    dibujo (`margenX`, `margenY` arriba y abajo) y pasan la vista y las balas, como el banco del comedor. Al
+    dueño su cajón no lo frena (`e.cajon`, `movSolidAt` en systems/ai.js): si no, sentado arriba quedaba
+    trabado. Y vuelve a sentarse por el camino (`viajarHacia`; `findPath` puede terminar en su cajón): derecho,
+    uno se trababa entre la mesa y el cajón del compañero.
+  - 🔁 **Cada pareja, en la fila de su mesa**, uno a cada lado *(Santi: "no están alineados con la mesa";
+    eligió bajar a los guardias)*: antes estaban una fila más afuera, en diagonal. Las mesas no se movieron.
+  - 🐛 **El choque mira también el medio de cada lado** (engine/collision.js): con las cuatro puntas solas, lo
+    sólido más chico que los pies (el cajón) se atravesaba o no según de dónde vinieras.
+  - 🧪 El atajo [4] del campamento: un tren con el vagón de guardias, arrancando en su enganche de atrás
+    (`pruebaEnganche`) *("así me puedo meter en silencio para probarlo")*.
 - **✅ FORAJIDO-JUGAR.HTML con el estilo nuevo** *(Santi: "por qué en este archivo todavía no están los
   cambios de 1era clase?")*: con doble clic no hay dónde poner "?nuevo"; el archivo armado lo prende solo
   (`FORAJIDO_ESTILO_NUEVO`, armar-archivo.ps1). [F9] lo sigue apagando.

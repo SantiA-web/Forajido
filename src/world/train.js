@@ -1049,6 +1049,9 @@ export function buildTrain(
       if (pathFinal.length === 0) {
         guard.puesto = { x: start.x, y: start.y };
         guard.facingPuesto = facingFinal;
+        // (🆕 Sentado en un cajón de munición: el suyo no lo frena, ver `movSolidAt` en systems/ai.js.)
+        const cc = Math.floor(start.x / map.size), cf = Math.floor(start.y / map.size);
+        if (map.tileAt(cc, cf) === 'J') guard.cajon = { col: cc, row: cf };
       }
       /**
        * DISTRAÍDOS ENTRE SÍ. `systems/ai.js` (`updateSuspicion`) multiplica
@@ -2148,6 +2151,8 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, sa
         case 'B':
         case 'T':
         case 'N':
+        case 'J':
+        case 'U':
           estampar(r, piezaPiso(colors.floor, varianteDe(col, row), false), x, y);
           break;
 
@@ -2902,6 +2907,17 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, 
         // 🆕 La mesita de primera clase, en el dibujo viejo: una tapa chica (la nueva, en estiloNuevo/vagones.js).
         case 'N': {
           cosas.push({ base, draw: () => r.rect(x + 2, y + 2, size - 4, size - 6, '#5a3820') });
+          break;
+        }
+
+        // 🆕 Los cajones de munición del vagón de guardias, en el dibujo viejo: una caja (los nuevos, en
+        // estiloNuevo/vagones.js).
+        case 'J': {
+          cosas.push({ base, draw: () => { r.rect(x + 4, y + 2, 8, 8, '#5a3820'); r.rect(x + 4, y + 2, 8, 2, '#7e5230'); } });
+          break;
+        }
+        case 'U': {
+          cosas.push({ base, draw: () => { r.rect(x + 1, y - 6, size - 2, size + 4, '#5a3820'); r.rect(x + 1, y - 6, size - 2, 3, '#7e5230'); } });
           break;
         }
 

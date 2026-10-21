@@ -60,6 +60,22 @@ const TILE_RULES = {
    * tapa dibujada, de 18 puntos).
    */
   'N': { solid: true, blocksSight: false, blocksBullets: false, margenX: 1.25 },
+  /**
+   * 🆕 EL CAJÓN DE MUNICIÓN DONDE SE SIENTA EL GUARDIA DE FRANCO (vagón de guardias) *(Santi: "debería
+   * funcionar como los asientos: siempre está ahí, al lado de la mesa, y no importa si hay guardias
+   * sentados o no, siempre tienen que tener colisión")*: frena el paso; es bajo, pasan la vista y las
+   * balas, como el banco del comedor. Del tamaño del cajón dibujado (`margenX`; `margenY`, arriba y abajo:
+   * 7 de largo por 2,25 de fondo, bajo, debajo de los muslos del que está sentado: más hondo y más alto,
+   * asomaba detrás de la espalda y parecía sentado al costado *(Santi: "que el guardia se siente en la parte de
+   * arriba del cajón, no al costado")*). El guardia sentado arriba sí sale y vuelve: su cajón no lo frena
+   * a él (`cajon`, ver `movSolidAt` en systems/ai.js).
+   */
+  'J': { solid: true, blocksSight: false, blocksBullets: false, margenX: 4.5, margenY: [8.5, 5.25] },
+  /**
+   * 🆕 LAS CAJAS DE MUNICIÓN APILADAS (vagón de guardias) *(Santi: "todos los cajones de munición… deberían
+   * tener colisión")*: como la carga, frenan el paso, la vista y las balas.
+   */
+  'U': { solid: true, blocksSight: true, blocksBullets: true },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones
@@ -170,6 +186,8 @@ export function createTilemap(layout) {
     const regla = TILE_RULES[tileAt(col, row)];
     if (!regla.margenX) return [0, 0];
     const libre = 2 * regla.margenX;
+    // (Sólo el banco va pegado a la mesa: el cajón de munición, centrado.)
+    if (tileAt(col, row) !== 'B') return [regla.margenX, regla.margenX];
     const mesaIzq = tileAt(col - 1, row) === 'C', mesaDer = tileAt(col + 1, row) === 'C';
     if (mesaDer && !mesaIzq) return [libre - 1, 1];
     if (mesaIzq && !mesaDer) return [1, libre - 1];
@@ -182,7 +200,10 @@ export function createTilemap(layout) {
     if (!regla.margenX) return true;
     const col = Math.floor(px / size), [izq, der] = margenes(col, Math.floor(py / size));
     const dx = px - col * size;
-    return dx >= izq && dx <= size - der;
+    // (🆕 `margenY`: también más corto que la casilla de arriba a abajo, el cajón; [arriba, abajo] si no es parejo.)
+    const [ma, mb] = Array.isArray(regla.margenY) ? regla.margenY : [regla.margenY || 0, regla.margenY || 0];
+    const dy = py - Math.floor(py / size) * size;
+    return dx >= izq && dx <= size - der && dy >= ma && dy <= size - mb;
   }
 
   return {

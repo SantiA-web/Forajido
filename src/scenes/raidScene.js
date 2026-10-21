@@ -643,6 +643,8 @@ export function createRaidScene(services) {
     if (params.pruebaVagon) {
       const v = train.wagons.find((w) => w.id === params.pruebaVagon);
       if (v) { player.x = v.x + 3.5 * map.size; player.y = 4.5 * map.size; }
+      // (🆕 `pruebaEnganche`: en el enganche de atrás del vagón, afuera, para entrar sin que te vean.)
+      if (v && params.pruebaEnganche) player.x = v.x - map.size / 2;
     }
 
     camera.snap(player.x, player.y, map.bounds);

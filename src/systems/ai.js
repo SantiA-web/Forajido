@@ -207,8 +207,16 @@ function actualizarRecarga(e, dt) {
  * angosta flotando en el aire no debería contar como pared para
  * parapetarse contra ella (rompía el disparo asomándose, ver raidScene.js).
  */
-function movSolidAt(map) {
-  return map.isSolidForMovementAt || map.isSolidAt;
+function movSolidAt(map, e = null) {
+  const base = map.isSolidForMovementAt || map.isSolidAt;
+  /**
+   * 🆕 SU CAJÓN NO LO FRENA (`e.cajon`, la casilla 'J' donde se sienta el de franco, ver world/tilemap.js):
+   * si no, sentado arriba quedaba trabado adentro y no se podía levantar. A todos los demás, sí.
+   */
+  const K = e && e.cajon;
+  if (!K) return base;
+  const S = map.size, x0 = K.col * S, y0 = K.row * S;
+  return (px, py) => (px >= x0 && px < x0 + S && py >= y0 && py < y0 + S ? false : base(px, py));
 }
 
 /**
@@ -504,8 +512,8 @@ export function separateEnemies(enemies, map) {
       const nx = dx / dist;
       const ny = dy / dist;
 
-      moveAndCollide(a, -nx * push, -ny * push, movSolidAt(map));
-      moveAndCollide(b, nx * push, ny * push, movSolidAt(map));
+      moveAndCollide(a, -nx * push, -ny * push, movSolidAt(map, a));
+      moveAndCollide(b, nx * push, ny * push, movSolidAt(map, b));
     }
   }
 }
@@ -942,14 +950,14 @@ function huirDe(e, dt, world, ex) {
     e,
     Math.cos(ang) * paso,
     Math.sin(ang) * paso,
-    movSolidAt(world.map)
+    movSolidAt(world.map, e)
   );
   // Contra una pared: se corre al costado (siempre el mismo) en vez de
   // empujarla quieto.
   if (Math.hypot(e.x - x0, e.y - y0) < paso * 0.3) {
     if (!e.ladoHuida) e.ladoHuida = world.rng.chance(0.5) ? 1 : -1;
     const lat = ang + e.ladoHuida * Math.PI / 2;
-    moveAndCollide(e, Math.cos(lat) * paso, Math.sin(lat) * paso, movSolidAt(world.map));
+    moveAndCollide(e, Math.cos(lat) * paso, Math.sin(lat) * paso, movSolidAt(world.map, e));
   }
   turnTowards(e, ang, dt, 9);
 }
@@ -1316,7 +1324,7 @@ export function moveToward(e, targetX, targetY, speed, dt, map) {
    */
   const falta = Math.hypot(targetX - e.x, targetY - e.y);
   const paso = Math.min(speed * frenoEn(e, map) * dt, falta);
-  moveAndCollide(e, Math.cos(angle) * paso, Math.sin(angle) * paso, movSolidAt(map));
+  moveAndCollide(e, Math.cos(angle) * paso, Math.sin(angle) * paso, movSolidAt(map, e));
   turnTowards(e, angle, dt);
   return Math.hypot(e.x - before.x, e.y - before.y);
 }
@@ -1366,10 +1374,14 @@ export function viajarHacia(e, dt, world, targetX, targetY, speed) {
   e.rutaTimer = (e.rutaTimer || 0) - dt;
 
   if (!e.ruta || destinoCambio || e.rutaTimer <= 0) {
+    const destino = { col: Math.floor(targetX / map.size), row: Math.floor(targetY / map.size) };
     e.ruta = findPath(
       map,
       { col: Math.floor(e.x / map.size), row: Math.floor(e.y / map.size) },
-      { col: Math.floor(targetX / map.size), row: Math.floor(targetY / map.size) }
+      destino,
+      undefined,
+      // (🆕 Su cajón de munición es sólido, pero él se sienta ahí.)
+      !!(e.cajon && e.cajon.col === destino.col && e.cajon.row === destino.row)
     );
     e.rutaIndex = 0;
     e.rutaTimer = CONFIG.enemy.routeRefresh;
@@ -1403,13 +1415,13 @@ function moveAxisAligned(e, targetX, targetY, speed, dt, map) {
 
   if (Math.abs(dx) > 3) {
     const step = Math.sign(dx) * speed * dt;
-    moveAndCollide(e, step, 0, movSolidAt(map));
+    moveAndCollide(e, step, 0, movSolidAt(map, e));
     turnTowards(e, dx > 0 ? 0 : Math.PI, dt);
     return false;
   }
   if (Math.abs(dy) > 3) {
     const step = Math.sign(dy) * speed * dt;
-    moveAndCollide(e, 0, step, movSolidAt(map));
+    moveAndCollide(e, 0, step, movSolidAt(map, e));
     turnTowards(e, dy > 0 ? Math.PI / 2 : -Math.PI / 2, dt);
     return false;
   }
@@ -1458,7 +1470,9 @@ function volverAlPuesto(e, dt, world) {
   }
   // (🆕 El guardaespaldas de primera clase cambia de puesto por el vagón: va por el camino, sin chocar con
   // los sillones ni las mesitas. Ver systems/primeraClase.js.)
-  if (e.cuida) { viajarHacia(e, dt, world, e.puesto.x, e.puesto.y, CONFIG.enemy.patrolSpeed); return; }
+  // (🆕 Y el de franco que vuelve a su cajón de munición: derecho, se trababa entre la mesa y el cajón del
+  // compañero.)
+  if (e.cuida || e.cajon) { viajarHacia(e, dt, world, e.puesto.x, e.puesto.y, CONFIG.enemy.patrolSpeed); return; }
   moveToward(e, e.puesto.x, e.puesto.y, CONFIG.enemy.patrolSpeed, dt, world.map);
 }
 
@@ -1520,7 +1534,7 @@ function doPatrol(e, dt, world) {
     const dy = waypoint.y - e.y;
     if (Math.abs(dy) > 1) {
       const paso = Math.sign(dy) * Math.min(Math.abs(dy), velocidad * frenoEn(e, world.map) * dt);
-      moveAndCollide(e, 0, paso, movSolidAt(world.map));
+      moveAndCollide(e, 0, paso, movSolidAt(world.map, e));
     }
   }
 

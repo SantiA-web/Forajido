@@ -523,7 +523,9 @@ export function drawEnemy(r, e) {
   const sentado = e.deFranco && !e.armado && e.state === 'patrol' && e.puesto &&
     Math.abs(e.x - e.puesto.x) < 3 && Math.abs(e.y - e.puesto.y) < 3;
 
-  if (sentado) {
+  // (🆕 Con el estilo nuevo, el banquito y las cartas los dibuja el vagón de guardias: el cajón de munición
+  // y la mesa de pino, ver world/estiloNuevo/vagones.js.)
+  if (sentado && !nuevo) {
     r.rect(e.x - 4, pies - 4, 8, 4, '#4a3526');
     r.rect(e.x - 4, pies - 4, 8, 1, '#6b4d36');
     // Las cartas sobre la mesa las pone uno solo de la pareja, para no pintarlas dos veces.

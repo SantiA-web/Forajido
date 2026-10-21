@@ -918,25 +918,29 @@ export const WAGONS = {
     name: 'Vagón de guardias',
     short: 'GUARDIAS',
     hint: 'La escolta del tren. Mesas de cartas y catres.',
+    // (🆕 'J', el cajón de munición donde se sienta cada guardia de franco, en su puesto; 'U', las cajas de
+    // munición apiladas en el rincón. Ver world/tilemap.js.)
     layout: [
       '#####WW###WW###WW###WW###WW#####',
       '#SSS..SSS..SSS..SSS..SSS..SSS..#',
       '#..............................#',
-      '#....CC......CC......CC........#',
+      '#...JCCJ.....CC......CC........#',
       '+..............................+',
       '+..............................+',
-      '#........CC......CC......CC....#',
+      '#........CC......CC.....JCCJ...#',
       '#..............................#',
-      '#..SSS..SSS..SSS..SSS..SSS..SSS#',
+      '#UUSSS..SSS..SSS..SSS..SSS..SSS#',
       '####WW####WW####WW####WW####WW##',
     ],
     sinComportamiento: true,
     sinVariantes: true,
     enemies: [
-      { col: 4,  row: 2, facing: 'right', franco: 'cola', mesa: [5, 3],  rondaRedada: [[2, 7], [14, 7]] },
-      { col: 7,  row: 2, facing: 'left',  franco: 'cola', mesa: [5, 3],  rondaRedada: [[17, 2], [29, 2]] },
-      { col: 24, row: 7, facing: 'right', franco: 'loco', mesa: [25, 6], rondaRedada: [[2, 4], [14, 4]] },
-      { col: 27, row: 7, facing: 'left',  franco: 'loco', mesa: [25, 6], rondaRedada: [[29, 5], [17, 5]] },
+      // (🔁 En la fila de su mesa, uno a cada lado *(Santi: "los guardias que juegan a las cartas no están
+      // alineados con la mesa"; eligió bajar a los guardias)*: antes estaban una fila más afuera, en diagonal.)
+      { col: 4,  row: 3, facing: 'right', franco: 'cola', mesa: [5, 3],  rondaRedada: [[2, 7], [14, 7]] },
+      { col: 7,  row: 3, facing: 'left',  franco: 'cola', mesa: [5, 3],  rondaRedada: [[17, 2], [29, 2]] },
+      { col: 24, row: 6, facing: 'right', franco: 'loco', mesa: [25, 6], rondaRedada: [[2, 4], [14, 4]] },
+      { col: 27, row: 6, facing: 'left',  franco: 'loco', mesa: [25, 6], rondaRedada: [[29, 5], [17, 5]] },
     ],
     passengers: [],
     loot: [

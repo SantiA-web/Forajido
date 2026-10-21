@@ -35,6 +35,8 @@ const BARRA = [
 ];
 /** Detrás de la barra, por dónde camina el bartender (fila y de qué columna a qué columna). */
 const DETRAS = { r: 2, c0: 1, c1: 4 };
+/** Delante del estante de las botellas (contra la pared del fondo), donde se para a ordenarlo. */
+const ESTANTE = { r: 1, c0: 1, c1: 4 };
 
 const azar = (a, b) => a + Math.random() * (b - a);
 
@@ -112,7 +114,9 @@ function empezarAlgo(world, V) {
   const libres = BARRA.filter((L) => !V.ricos.some((o) => o.rutina && o.rutina.barra === L));
   const anfitriones = sentados.filter((o) => o !== pa);
   const quiere = Math.random() < C.barra ? 'barra' : 'visita';
-  if ((quiere === 'barra' || !anfitriones.length) && libres.length && !V.ricos.some((o) => o.rutina && o.rutina.barra)) {
+  // (🆕 Sin bartender tranquilo, nadie va a la barra: sólo se visitan *(Santi)*.)
+  const hayBartender = V.bartender && tranquilo(V.bartender);
+  if ((quiere === 'barra' || !anfitriones.length) && hayBartender && libres.length && !V.ricos.some((o) => o.rutina && o.rutina.barra)) {
     const L = libres[Math.floor(Math.random() * libres.length)];
     // (Pegado al mostrador, no en el medio de la casilla: quedaba a medio paso de la barra.)
     const P = V.en(L.c, L.r);
@@ -191,11 +195,20 @@ function actualizarRico(world, V, pa, R, dt) {
   if (R.modo === 'pidiendo' || R.modo === 'tomando' || R.modo === 'charlando') {
     R.llego += dt;
     pa.facing = R.mira;
+    /**
+     * 🆕 NADIE LO ATIENDE: el bartender se asustó (o está escondido, o caído) y los demás no se enteraron. El
+     * que pide espera un poco y se vuelve a su sillón sin copa *(Santi: "me gusta la idea del civil rico que
+     * se va")*.
+     */
+    if (R.modo === 'pidiendo' && R.hasta === Infinity && !(V.bartender && tranquilo(V.bartender))) {
+      R.sinAtender = true;
+      R.hasta = R.llego + azar(...C.sinAtender);
+    }
     if (R.modo === 'charlando' && R.anfitrion && !tranquilo(R.anfitrion)) R.hasta = 0;
     if (R.llego >= R.hasta) {
       if (R.anfitrion && R.anfitrion.visitado === pa) R.anfitrion.visitado = null;
       R.modo = 'volviendo';
-      R.conCopa = R.destino === 'barra';
+      R.conCopa = R.destino === 'barra' && !R.sinAtender;
       rutaHacia(world, pa, pa.casa);
     }
     return;
@@ -259,16 +272,19 @@ function puestoDeVisita(world, V, pa, R) {
 function actualizarBartender(world, V, bt, dt) {
   const C = CONFIG.primeraClase;
   if (!bt.casaBarra) bt.casaBarra = { x: bt.x, y: bt.y };
-  if (!tranquilo(bt)) { bt.sirve = null; return; }
+  bt._pcV = V;
+  if (!tranquilo(bt)) { bt.sirve = null; bt.sirviendo = null; bt.ordenando = false; bt.arrimado = 0; return; }
   const pedido = V.pedido;
   if (pedido && (!tranquilo(pedido) || !pedido.rutina || pedido.rutina.modo !== 'pidiendo')) V.pedido = null;
   if (V.pedido && !bt.sirve) {
     const c = Math.max(DETRAS.c0, Math.min(DETRAS.c1, V.pedido.rutina.barra.c));
     bt.sirve = { a: V.pedido, punto: V.en(c, DETRAS.r), t: 0 };
-    bt.ruta = [bt.sirve.punto]; bt.rutaI = 0;
+    bt.ordenando = false;
+    rutaHacia(world, bt, bt.sirve.punto);
   }
   const S = bt.sirve;
   if (S) {
+    bt.arrimado = Math.max(0, (bt.arrimado || 0) - C.arrimeVelocidad * dt);
     if (!caminar(world, bt, dt)) return;
     bt.facing = ABAJO;
     S.t += dt;
@@ -279,12 +295,67 @@ function actualizarBartender(world, V, bt, dt) {
       if (R && R.modo === 'pidiendo') { R.modo = 'tomando'; R.llego = 0; R.hasta = azar(...C.enLaBarra); }
       V.pedido = null;
       bt.sirve = null; bt.sirviendo = null;
-      bt.ruta = [bt.casaBarra]; bt.rutaI = 0;
+      bt.tarea = null;   // de vuelta a secar copas
+      rutaHacia(world, bt, bt.casaBarra);
     }
     return;
   }
   bt.sirviendo = null;
+  tareaDelBartender(world, V, bt, dt);
+}
+
+/**
+ * 🆕 LO QUE HACE EL BARTENDER MIENTRAS NADIE PIDE, de día y de noche (nunca duerme) *(Santi eligió la A)*:
+ *  - SECA COPAS en su lugar, de frente al salón (`CONFIG.primeraClase.secar`): ve como cualquiera.
+ *  - ORDENA EL ESTANTE (`ordenar`, en total, contando las pausas): da un paso atrás hasta el estante y,
+ *    de espaldas, mueve los brazos un rato, para, los vuelve a mover; a veces camina hasta otra parte del
+ *    estante y se vuelve a poner de espaldas *(Santi: "solo está de espaldas y mueve los brazos, y cuando
+ *    quiere desplazarse solo camina hacia dónde quiere ir")*. De espaldas no te ve de frente: es la ventana
+ *    para cruzar, como con los civiles dormidos.
+ * `bt.ordenando`: está moviendo los brazos (el dibujo, ver entities/passenger.js).
+ */
+function tareaDelBartender(world, V, bt, dt) {
+  const C = CONFIG.primeraClase;
+  /**
+   * 🆕 PEGADO AL ESTANTE: su caja choca con la pared a la altura de los hombros y los pies le quedaban lejos.
+   * Parado en el estante, el dibujo sube `arrimeEstante` (deslizándose), y baja cuando se va. Sólo el
+   * dibujo: su lugar en el juego no cambia.
+   */
+  const enEstante = bt.tarea && bt.tarea.modo === 'ordenar' && !bt.ruta && bt.tarea.paso && bt.tarea.paso.tipo !== 'camina';
+  const meta = enEstante ? C.arrimeEstante : 0, a = bt.arrimado || 0;
+  bt.arrimado = a < meta ? Math.min(meta, a + C.arrimeVelocidad * dt) : Math.max(meta, a - C.arrimeVelocidad * dt);
+  let T = bt.tarea;
+  if (!T) T = bt.tarea = { modo: 'secar', queda: azar(...C.secar) };
+  T.queda -= dt;
+  bt.ordenando = false;
+  if (T.modo === 'secar') {
+    if (bt.ruta && !caminar(world, bt, dt)) return;   // volviendo a su lugar
+    bt.ruta = null;
+    bt.facing = ABAJO;
+    if (T.queda <= 0) { bt.tarea = { modo: 'ordenar', queda: azar(...C.ordenar), paso: { tipo: 'camina' } }; alEstante(world, bt); }
+    return;
+  }
+  // Ordenando el estante.
+  if (T.queda <= 0) { bt.tarea = { modo: 'secar', queda: azar(...C.secar) }; rutaHacia(world, bt, bt.casaBarra); return; }
   if (bt.ruta && !caminar(world, bt, dt)) return;
   bt.ruta = null;
-  bt.facing = ABAJO;
+  bt.facing = ARRIBA;
+  const P = T.paso;
+  if (P.tipo === 'camina' || (P.t -= dt) <= 0) {
+    if (P.tipo === 'brazos' && Math.random() < C.moverse) { T.paso = { tipo: 'camina' }; alEstante(world, bt); return; }
+    T.paso = P.tipo === 'brazos' ? { tipo: 'pausa', t: azar(...C.pausa) } : { tipo: 'brazos', t: azar(...C.brazos) };
+  }
+  bt.ordenando = T.paso.tipo === 'brazos';
+}
+
+/** Camina hasta otra parte del estante (otra columna que la que tiene enfrente). */
+function alEstante(world, bt) {
+  const S = world.map.size, V = bt._pcV;
+  const ahora = Math.floor(bt.x / S) - V.c0;
+  const cols = [];
+  for (let c = ESTANTE.c0; c <= ESTANTE.c1; c++) if (c !== ahora) cols.push(c);
+  const c = cols[Math.floor(Math.random() * cols.length)];
+  // (Pegado a la pared del estante, no en el medio de la casilla *(Santi: "quiero que se vea más cerca")*.)
+  const P = V.en(c, ESTANTE.r);
+  rutaHacia(world, bt, { x: P.x, y: P.y - S / 2 + CONFIG.primeraClase.pegadoEstante });
 }

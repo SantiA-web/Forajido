@@ -15,6 +15,9 @@
 #     y un "import map" le dice al navegador qué código es cada nombre.
 #   - El CSS va en un <style>, y el escenario (canvas, HUD) se copia de index.html.
 #
+# Y arranca con el ESTILO NUEVO prendido (`FORAJIDO_ESTILO_NUEVO`, ver src/engine/estiloNuevo.js): con doble
+# clic no hay dirección donde poner "?nuevo". [F9] lo apaga.
+#
 # ⚠️ NO SE ACTUALIZA SOLO. Después de cambiar el juego, volvé a correr esto:
 #   doble clic no alcanza para un .ps1; clic derecho → "Ejecutar con PowerShell",
 #   o en una consola:  powershell -ExecutionPolicy Bypass -File armar-archivo.ps1
@@ -100,6 +103,7 @@ $($imports -join ",`n")
 </head>
 <body>
 $escenario
+  <script>window.FORAJIDO_ESTILO_NUEVO = true;</script>
   <script type="module">import 'forajido/main.js';</script>
 </body>
 </html>

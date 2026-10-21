@@ -23,7 +23,10 @@ import { CONFIG } from '../data/config.js';
 import { cuantizar } from './paleta.js';
 import { T } from '../text/es.js';
 
-let activo = /[?&]nuevo\b/.test(location.search);
+// (🆕 El archivo para jugar con doble clic, Forajido-jugar.html, arranca con el estilo nuevo prendido: no hay
+// dirección donde poner "?nuevo", y sin eso no se veía nada de lo nuevo *(Santi: "por qué en este archivo
+// todavía no están los cambios de 1era clase?")*. Ver armar-archivo.ps1. [F9] lo sigue apagando.)
+let activo = /[?&]nuevo\b/.test(location.search) || globalThis.FORAJIDO_ESTILO_NUEVO === true;
 let chico = null, chicoCtx = null;
 
 /**

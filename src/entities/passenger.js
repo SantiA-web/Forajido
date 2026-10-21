@@ -640,12 +640,15 @@ function pasajeroNuevo(r, pa, pies, tipo = 'pasajero') {
     // (🆕 Caminando detrás de la barra, nada en las manos; enfrente de un rico, le sirve: ver systems/primeraClase.js.)
     const camina = pa.ruta && pa.rutaI < pa.ruta.length;
     if (pa.sirviendo != null) { nuevo.accion = 'servir'; nuevo.k = Math.min(7, Math.floor((pa.sirviendo / CONFIG.primeraClase.servir) * 8)); }
+    // (🆕 Ordenando el estante, de espaldas: mueve los brazos, o está quieto en la pausa.)
+    else if (pa.tarea && pa.tarea.modo === 'ordenar') { if (pa.ordenando && !camina) { nuevo.accion = 'ordenar'; nuevo.k = Math.floor(ahora / 0.25) % 8; } }
     else if (!camina) { nuevo.accion = 'secar'; nuevo.k = Math.floor(ahora / 0.2) % 8; }
   }
 
   // Hacia dónde mira, en el piso (sólo el despierto y tranquilo: el que duerme no ve).
   if (pa.state === 'idle' && !pa.dormido) {
-    r.line(pa.x, pa.y, pa.x + Math.cos(pa.facing) * 7, pa.y + Math.sin(pa.facing) * 7, '#7a5a68');
+    const ay = pa.y - (pa.arrimado || 0);   // (con el dibujo, si está arrimado: ver `arrimado`)
+    r.line(pa.x, ay, pa.x + Math.cos(pa.facing) * 7, ay + Math.sin(pa.facing) * 7, '#7a5a68');
   }
   // Sentado en el almohadón, la espalda contra el respaldo (que está a la izquierda del asiento).
   // (🆕 En el banco del comedor, en el medio de la tabla, que está corrida hacia la mesa.)
@@ -711,7 +714,8 @@ export function drawPassenger(r, pa) {
   const tipo = pa.botin ? 'rico' : pa.bartender ? 'bartender' : 'pasajero';
 
   // 🎨 Con el dibujo nuevo (P3a, [F9]): el pasajero común y (🆕 P4) el rico de primera clase.
-  if (estiloNuevo.activo && r.ctx) { pasajeroNuevo(r, pa, pies, tipo); return; }
+  // (🆕 `arrimado`: el dibujo, más arriba que su caja; el bartender pegado al estante, ver systems/primeraClase.js.)
+  if (estiloNuevo.activo && r.ctx) { pasajeroNuevo(r, pa, pies - (pa.arrimado || 0), tipo); return; }
 
   if (!pa.alive) {
     dibujarTendido(r, pa.x, pa.y, { tipo, sangre: true, cinta: pa.botin ? '#a050c0' : '#3fa870' });

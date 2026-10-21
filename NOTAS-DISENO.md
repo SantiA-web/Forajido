@@ -19192,6 +19192,24 @@ guardaespaldas distintos)*:
 - 🐛 **Los torsos agujereados** (*"con huecos en el cuerpo de aire"*): con algo que cruza el pecho desde los
   hombros (el rifle cruzado del guardia de hombros anchos), el relleno del cuerpo no arrancaba; ahora se
   rellena todo lo que queda adentro del ancho del torso (darForma, jugador.js), en todos los cuerpos.
+- **✅ EL BARTENDER NUNCA DUERME** *(Santi: "ir bien y lento que rápido y mal"; eligió la A)*: de día y de
+  noche, mientras nadie pide, **seca copas** de frente (`secar`, 10-20 s) y **ordena el estante** de espaldas
+  (`ordenar`, 9-12 s con las pausas): mueve los brazos (una mano arriba, en el estante, la otra abajo:
+  `POSES_ORDENAR`), para, y a veces camina hasta otra parte del estante *("no te compliques con la nueva
+  pose, solo está de espaldas y mueve los brazos")*. De espaldas no te ve de frente, como un civil dormido.
+  Se para pegado al estante: su dibujo sube 5 (`arrimeEstante`, deslizándose) porque su caja choca con la
+  pared a la altura de los hombros *("quiero que se vea más cerca")*.
+  - **Nadie lo atiende**: si el bartender se asustó, se escondió o cayó, nadie va a la barra; el que ya
+    estaba esperando se vuelve a su sillón **sin copa** después de 4-6 s (`sinAtender`) *("me gusta la idea
+    del civil rico que se va")*.
+  - **El delantal de espaldas**: sin el hueco de aire entre las piernas (el delantal sigue entre ellas), y
+    **atado por la espalda**: una tira blanca de un punto alrededor del cuerpo que termina en un nudito, como
+    el pañuelo del jugador *("debería ser un pequeño nudo")*; en diagonal, el nudo corrido para el lado
+    contrario al que giró. De perfil, el delantal **corrido** un punto (no agrandado) para tapar los puntos
+    grises de la cintura *("No lo agrandes, correlo")*.
+- **✅ FORAJIDO-JUGAR.HTML con el estilo nuevo** *(Santi: "por qué en este archivo todavía no están los
+  cambios de 1era clase?")*: con doble clic no hay dónde poner "?nuevo"; el archivo armado lo prende solo
+  (`FORAJIDO_ESTILO_NUEVO`, armar-archivo.ps1). [F9] lo sigue apagando.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

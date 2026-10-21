@@ -259,7 +259,9 @@ export function createRaidScene(services) {
     if (!gameState.esDeDia) {
       cerrarCortinas(train);
       for (const pa of train.passengers) {
-        if (!pa.encubierto && rng.next() < CONFIG.passenger.dormidos) pa.dormido = true;
+        // (🆕 El bartender de primera clase nunca duerme: de noche también seca copas y ordena el estante,
+        // ver systems/primeraClase.js *(Santi)*.)
+        if (!pa.encubierto && !pa.bartender && rng.next() < CONFIG.passenger.dormidos) pa.dormido = true;
       }
     }
 

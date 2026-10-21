@@ -1937,6 +1937,19 @@ export const CONFIG = {
     velocidad: 30, distancia: 30, demora: [0.6, 1.2],
     pegadoBarra: 4,   // a cuántas unidades del mostrador se para el que pide (desde el borde de la casilla)
     pegadoVisita: 4,  // y el que visita, a cuántas del sillón del otro
+    /**
+     * 🆕 El bartender nunca duerme *(Santi eligió la A)*: seca copas de frente (`secar`, s) y ordena el
+     * estante de espaldas (`ordenar`, s en total, con sus pausas): ahí no ve de frente, como un civil
+     * dormido. Ordenando, mueve los brazos (`brazos`), para (`pausa`) y a veces (`moverse`, de cada 1)
+     * camina hasta otra parte del estante.
+     * `sinAtender`: si el bartender no está (asustado, escondido, caído), el que esperaba en la barra se
+     * vuelve a su sillón sin copa después de estos segundos.
+     */
+    secar: [10, 20], ordenar: [9, 12], brazos: [2, 4], pausa: [1, 2], moverse: 0.35, sinAtender: [4, 6],
+    pegadoEstante: 3,   // a cuántas unidades de la pared del estante se para a ordenarlo
+    // y cuánto sube su dibujo ahí (la caja choca con la pared a la altura de los hombros: sin esto, los pies
+    // quedaban a 7 unidades de la pared *(Santi: "quiero que se vea más cerca")*), y a qué velocidad
+    arrimeEstante: 5, arrimeVelocidad: 20,
   },
   coberturaBaja: {
     pegado: 16,

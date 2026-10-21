@@ -1690,7 +1690,9 @@ blanca y bombín, parado detrás del sillón, que no patrulla y dice
 **VIGILANDO** arriba de la cabeza, armado con una **pistola Volcanic** de armazón dorado (tira más
 rápido que un revólver). Cada tanto un rico se levanta: va a la **barra** (el bartender le sirve) o
 **visita a otro** a charlar, y su guardaespaldas lo sigue de lejos y toma posición: en la puerta, en la
-puertita de la barra o del otro lado de la mesita.
+puertita de la barra o del otro lado de la mesita. El **bartender no duerme nunca**: seca copas de frente
+o **ordena el estante de espaldas** — ese rato no te ve venir. Si lo asustás, el rico que esperaba en
+la barra se vuelve a su sillón sin copa.
 
 > **Antes eran un "paquete"**: un rico con su guardaespaldas podía caer en
 > cualquier vagón con gente, y ésa era la gracia — el vagón de pasajeros de

@@ -582,13 +582,18 @@ TORSOS.escolta = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espald
 const DELANTAL = {
   frente: [8, ['LLCCc', 'LLCCc', 'LLCCc', 'LLCCc', 'LLCCc', 'ccccc']],
   diagF: [8, ['LLCCc', 'LLCCc', 'LLCCc', 'LLCCc', 'LLCCc', 'ccccc']],
-  lado: [9, ['Cc', 'Cc', 'Cc', 'Cc', 'Cc', 'cc']],
+  // (🔁 De costado, un punto más adelante: delante del delantal asomaba el pantalón *(Santi: "no lo
+  // agrandes, corrélo")*.)
+  lado: [10, ['Cc', 'Cc', 'Cc', 'Cc', 'Cc', 'cc']],
 };
 function torsoBartender(vista) {
   const t = TORSOS.pasajero[vista];
   // (🔁 Sin la V de la camisa debajo del moño: eran dos puntos blancos sueltos sobre el chaleco *(Santi: "pixeles
   // blancos sobre el pecho… pintados sueltos")*. La camisa blanca se ve en las mangas.)
-  const g = Array.from({ length: 15 }, (_, j) => (j === 1 ? (t.filas[j] || '').replace(/C/g, 'V') : t.filas[j] || '').padEnd(18, '.').split(''));
+  // (Y de espaldas, el cuello de la camisa que asomaba en el medio de la espalda: lo de adentro de las dos
+  // primeras filas, salvo las puntas, que son el comienzo de las mangas.)
+  const sinCamisa = (f) => { const a = f.search(/[^.]/), z = f.length - 1; return f.split('').map((ch, x) => (x > a && x < z && (ch === 'C' || ch === 'c') ? 'V' : ch)).join(''); };
+  const g = Array.from({ length: 15 }, (_, j) => (j === 1 ? sinCamisa((t.filas[j] || '').replace(/C/g, 'V')) : j === 0 && (vista === 'espalda' || vista === 'diagE') ? sinCamisa(t.filas[j] || '') : t.filas[j] || '').padEnd(18, '.').split(''));
   const F = DELANTAL[vista];
   if (F) F[1].forEach((fila, j) => { for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') g[17 + j - t.y][F[0] + x] = fila[x]; });
   return { y: t.y, filas: g.map((f) => f.join('').replace(/\.+$/, '')) };
@@ -634,6 +639,73 @@ function camisaRecta(q, col, vista, cuerpo) {
 function franjaCamisa(dx, j, col) {
   if (dx === 0 && j >= 2 && j % 2 === 0) return 23;   // los botones, grises oscuros
   return dx < 0 ? col.U : dx > 0 ? col.v : col.V;
+}
+/**
+ * 🆕 EL DELANTAL ENTRE LAS PIERNAS, de espaldas *(Santi: "un espacio de aire que también sería delantal entre
+ * la pierna y el delantal"; "cuando estaba de espaldas y en la estantería")*: el delantal cuelga por delante,
+ * así que por el hueco entre las dos piernas se ve su parte de atrás, en sombra. De la cintura a donde termina
+ * el delantal (las rodillas, ver DELANTAL).
+ */
+function delantalEntrePiernas(q, vista) {
+  const out = q.idx.slice(), y0 = OY + 18, y1 = OY + 22;
+  for (let y = y0; y <= y1; y++) {
+    let a = -1, z = -1;
+    for (let x = 0; x < ANCHO; x++) if (out[y * ANCHO + x] >= 0 && q.duenio[y * ANCHO + x] === PARTE.piernas) { if (a < 0) a = x; z = x; }
+    if (a < 0) continue;
+    for (let x = a + 1; x < z; x++) if (out[y * ANCHO + x] < 0) out[y * ANCHO + x] = y === y1 ? 15 : 16;
+  }
+  /**
+   * 🆕 Y LA TIRA ATADA ATRÁS, como el pañuelo del jugador de espaldas (ver CARA_ASALTO en jugador.js) *(Santi:
+   * "un pequeño nudo como el del jugador con su pañuelo… una tira blanca de un pixel alrededor del cuerpo que
+   * termina en el nudo")*: en la cintura, de punta a punta del cuerpo, una tira de un punto, blanca en el medio
+   * y en sombra en los bordes; el nudo, un punto más oscuro en el medio, con la punta colgando debajo.
+   */
+  // (La cintura, en la fila donde esté: caminando, el cuerpo sube o baja un punto.)
+  let yc = -1, a = -1, z = -1;
+  for (let y = OY + 14; y <= OY + 18 && yc < 0; y++) {
+    let n = 0, a1 = -1, z1 = -1;
+    for (let x = 0; x < ANCHO; x++) if (out[y * ANCHO + x] === 1) { n++; if (a1 < 0) a1 = x; z1 = x; }
+    if (n >= 3) { yc = y; a = a1; z = z1; }
+  }
+  if (yc >= 0) {
+    // De punta a punta de lo que es cuerpo en esa fila (no las manos).
+    let i0 = -1, i1 = -1;
+    for (let x = 0; x < ANCHO; x++) if (out[yc * ANCHO + x] >= 0 && q.duenio[yc * ANCHO + x] === PARTE.cuerpo) { if (i0 < 0) i0 = x; i1 = x; }
+    // (En la diagonal, el nudo un punto hacia el lado contrario al que giró: ahí queda el medio de la espalda
+    // *(Santi)*. Girado para el otro lado es el mismo dibujo en espejo.)
+    const cx = Math.round((a + z) / 2) - (vista === 'diagE' ? 1 : 0);
+    for (let x = i0; x <= i1; x++) out[yc * ANCHO + x] = x === i0 || x === i1 ? 17 : 30;
+    out[yc * ANCHO + cx] = 16;                               // el nudo
+    // La punta, colgando, del color de la tira (en sombra se confundía con el delantal entre las piernas).
+    if (out[(yc + 1) * ANCHO + cx] >= 0) out[(yc + 1) * ANCHO + cx] = 17;
+  }
+  return out;
+}
+/**
+ * El bartender gordito: la panza estiraba la cintura del delantal y, de costado, se pintaba del color de la
+ * camisa (ver los dos arreglos adentro).
+ */
+function bartenderGordito(q, vista) {
+  const out = q.idx.slice(), yC = OY + 17, es = (k) => out[k] >= 0 && q.duenio[k] === PARTE.cuerpo;
+  // De frente y en diagonal: la primera fila del delantal (la cintura), del ancho del resto del delantal; lo
+  // que la panza la estiraba de más es chaleco (quedaba una franja blanca en T).
+  if (vista === 'frente' || vista === 'diagF') {
+    let a = -1, z = -1;
+    for (let x = 0; x < ANCHO; x++) if (es((yC + 1) * ANCHO + x)) { if (a < 0) a = x; z = x; }
+    if (a >= 0) for (let x = 0; x < ANCHO; x++) { const k = yC * ANCHO + x; if (es(k) && (x < a || x > z)) out[k] = x < a ? 31 : 0; }
+  }
+  // De costado: la panza, del chaleco y no de la camisa (parecía un bulto de delantal).
+  if (vista === 'lado' || vista === 'diagE') for (let y = OY + 9; y < yC; y++) for (let x = 0; x < ANCHO; x++) {
+    const k = y * ANCHO + x;
+    if (es(k) && (out[k] === 17 || out[k] === 16)) out[k] = out[k] === 17 ? 31 : 0;
+  }
+  // Y la cintura del delantal, de costado, sin el punto que la panza empujaba hacia adelante (quedaba un escalón).
+  if (vista === 'lado') {
+    let z = -1;
+    for (let x = 0; x < ANCHO; x++) if (es((yC + 1) * ANCHO + x)) z = x;
+    if (z >= 0) for (let x = z + 1; x < ANCHO; x++) if (es(yC * ANCHO + x)) out[yC * ANCHO + x] = -1;
+  }
+  return out;
 }
 /**
  * 🆕 SIN PUNTOS SUELTOS (el bartender) *(Santi: "hay pixeles que están volando")*: con las manos arriba,
@@ -1181,6 +1253,8 @@ export function cuadroGente(o) {
   if (o.tipo === 'rico') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''), { ...C, ...persona.colores }, ['L', 'C', 'c']);
   if (o.tipo === 'escolta') q0.idx = camisaRecta(q0, persona.colores, o.vista, o.cuerpo);
   if (o.tipo === 'cazarrecompensas') q0.idx = capaCazador(q0.idx, o.vista, o.piernas || '');
+  if (o.tipo === 'bartender' && o.cuerpo === 'gordito') q0.idx = bartenderGordito(q0, o.vista);
+  if (o.tipo === 'bartender' && (o.vista === 'espalda' || o.vista === 'diagE')) q0.idx = delantalEntrePiernas(q0, o.vista);
   if (o.tipo === 'bartender') q0.idx = sinSueltos(q0.idx);
   /**
    * 🆕 SENTADO A LA MESA DEL COMEDOR: lo que cae debajo de la tapa (las piernas, desde la columna `mesa`
@@ -1607,6 +1681,16 @@ const POSES_CHARLA = {
   },
 };
 const CUADROS_CHARLA = ['abajo', 'medio', 'arriba', 'medio', 'arriba', 'medio', 'abajo', 'abajo'];
+/**
+ * 🆕 EL BARTENDER ORDENA EL ESTANTE, de espaldas *(Santi: "no te compliques con la nueva pose, solo está de
+ * espaldas y mueve los brazos")*: una mano arriba, en el estante, y la otra abajo; y al revés.
+ */
+const POSES_ORDENAR = {
+  der: { lista: [b([[13, 9], [15, 7], [14, 4]]), b([[6, 9], [5, 13], [5, 16]])] },
+  medio: { lista: [b([[13, 9], [14, 12], [13, 13]]), b([[6, 9], [5, 12], [6, 13]])] },
+  izq: { lista: [b([[13, 9], [14, 13], [14, 16]]), b([[6, 9], [4, 7], [5, 4]])] },
+};
+const CUADROS_ORDENAR = ['der', 'der', 'medio', 'izq', 'izq', 'izq', 'medio', 'der'];
 const CUADROS_SENTADO = {
   copa: ['falda', 'sube', 'boca', 'boca', 'boca', 'sube', 'falda', 'falda'],
   diario: ['regazo', 'medio', 'arriba', 'arriba+', 'arriba', 'hoja', 'arriba+', 'medio'],
@@ -1653,6 +1737,7 @@ export function poseSentado(accion, vista, k = 0, lleva = 'maleta', mesa = false
   }
   if (accion === 'secar') return vista === 'frente' ? POSES_SECAR[k % 8] : null;
   if (accion === 'servir') { if (vista !== 'frente') return null; const [n, llena] = CUADROS_SERVIR[k % 8]; return { ...POSES_SERVIR[n](!!llena), inclina: 0, cabeza: 0 }; }
+  if (accion === 'ordenar') { const P = vista === 'espalda' && POSES_ORDENAR[CUADROS_ORDENAR[k % 8]]; return P ? { ...P, inclina: 0, cabeza: 0 } : null; }
   if (accion === 'copaPie') { const P = vista === 'espalda' && POSES_COPA_PIE[CUADROS_SENTADO.copa[k % 8]]; return P ? { ...P, inclina: 0, cabeza: 0 } : null; }
   if (accion === 'charla') { const P = POSES_CHARLA[vista] && POSES_CHARLA[vista][CUADROS_CHARLA[k % 8]]; return P ? { ...P, inclina: 0, cabeza: 0 } : null; }
   if (accion === 'quieto') return { ...POSES_SENTADO.dormido[vista], cabeza: 0, cabezaX: 0, inclina: 0, gacha: null };

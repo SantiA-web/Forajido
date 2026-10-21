@@ -4328,6 +4328,11 @@ export function createRaidScene(services) {
      * el estilo nuevo (world/estiloNuevo/vagones.js) reemplazan al dibujo viejo.
      */
     const nuevos = estiloNuevo.activo ? vagonesNuevos(train, gameState.esDeDia) : null;
+    // (🆕 El meneo del tren, de -1 a 1, al compás de la luz: lo que se mueve con él en los vagones nuevos, el agua
+    // del barril y la leña del caboose; ver `animadosV` en world/estiloNuevo/vagones.js.)
+    estiloNuevo.meneo = Math.sin(scroll * CONFIG.tresCuartos.luzVentanilla.velocidad * Math.PI * 2);
+    // (🆕 Y el del agua, más lento: ver CONFIG.tresCuartos.aguaVelocidad.)
+    estiloNuevo.meneoAgua = Math.sin(scroll * CONFIG.tresCuartos.aguaVelocidad * Math.PI * 2);
     if (nuevos) {
       swayX = Math.round(swayX / PASO) * PASO;
       camY = Math.round(camY / PASO) * PASO;

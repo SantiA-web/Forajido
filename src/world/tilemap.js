@@ -81,6 +81,10 @@ const TILE_RULES = {
    * y huecos, pasan la vista y las balas.
    */
   'P': { solid: true, blocksSight: false, blocksBullets: false },
+  /**
+   * 🆕 LA SILLA (el escritorio del caboose): del tamaño de la silla dibujada; baja, pasan la vista y las balas.
+   */
+  'Y': { solid: true, blocksSight: false, blocksBullets: false, margenX: 3.5, margenY: [6, 2] },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones
@@ -191,7 +195,7 @@ export function createTilemap(layout) {
     const regla = TILE_RULES[tileAt(col, row)];
     if (!regla.margenX) return [0, 0];
     const libre = 2 * regla.margenX;
-    // (Sólo el banco va pegado a la mesa: el cajón de munición, centrado.)
+    // (Sólo el banco va pegado a la mesa: el cajón de munición y la silla, centrados.)
     if (tileAt(col, row) !== 'B') return [regla.margenX, regla.margenX];
     const mesaIzq = tileAt(col - 1, row) === 'C', mesaDer = tileAt(col + 1, row) === 'C';
     if (mesaDer && !mesaIzq) return [libre - 1, 1];

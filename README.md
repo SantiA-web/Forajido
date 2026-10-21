@@ -1228,7 +1228,7 @@ refrigerado, los guardias de franco y la góndola ya tienen la suya:
 
 | Vagón | Tren | Qué es | Lo que falta |
 |---|---|---|---|
-| **Caboose** | Los dos | La tripulación, siempre el vagón 1. Un guardia, una bolsa | El **vigía** que mira la vía de atrás y se da vuelta al azar |
+| **Caboose** | Los dos | La tripulación, siempre el vagón 1. Un guardia, una bolsa. El escritorio del guarda con su taza de café, la estufa, el barril de agua que se mueve con el tren, la leña, los repuestos y una cama | El **vigía** que mira la vía de atrás y se da vuelta al azar (la escalerita a la torrecita ya está) |
 | **Dormitorio** | Pasajeros | Diez camarotes con su litera y una abertura al pasillo. Cuatro pasajeros, cada uno en su cabina | Las **puertas** de los camarotes |
 | **Vagón de guardias** | Pasajeros (especial) | Cuatro guardias **de franco**, sentados de a dos en cajones de munición, jugando a las cartas a la luz de una vela: distraídos y lentos para armarse. Un cuartel de catres de lona, con el armero y la estufa. Cuando sale, el tren sube de 16 a 18 guardias | — |
 | **Correo** | Pasajeros | El coche postal: casilleros con las cartas y mesas de clasificar contra el fondo; adelante, carros de mimbre llenos de sacas y pilas de cajones de encomiendas. Sin pasajeros, guardia seria y la caja fuerte al fondo | La caja fuerte y las bolsas, todavía con el dibujo viejo |

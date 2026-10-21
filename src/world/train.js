@@ -2154,6 +2154,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, sa
         case 'J':
         case 'U':
         case 'P':
+        case 'Y':
           estampar(r, piezaPiso(colors.floor, varianteDe(col, row), false), x, y);
           break;
 
@@ -2915,6 +2916,10 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, 
         // estiloNuevo/vagones.js).
         case 'J': {
           cosas.push({ base, draw: () => { r.rect(x + 4, y + 2, 8, 8, '#5a3820'); r.rect(x + 4, y + 2, 8, 2, '#7e5230'); } });
+          break;
+        }
+        case 'Y': {
+          cosas.push({ base, draw: () => { r.rect(x + 4, y - 4, 8, 14, '#5a3820'); } });
           break;
         }
         case 'P': {

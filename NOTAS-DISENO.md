@@ -19271,6 +19271,32 @@ guardaespaldas distintos)*:
     **cartas sueltas** en el piso y, en la cara de afuera, **el brazo de fierro** para agarrar la saca sin parar.
   - El correo liviano ya no viaja (su plano lo usa el cerrado del tren de carga): queda con el dibujo viejo.
   - Falta: la caja fuerte y las bolsas de botín, que se dibujan aparte en todos los vagones.
+- **✅ EL CABOOSE, LA CASA DE LA TRIPULACIÓN** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones
+  y los cinco detalles)*: madera barnizada vieja, cálida, gastada.
+  - **El plano** (data/wagons.js) *(Santi: "no estén perfectamente alineadas… se vería muy estructurado"; "debería
+    haber solo una cama")*: los cuatro bultos del medio, desparejos y fuera de la ronda; una sola cama.
+  - **Los rincones**: el **escritorio del guarda** (mesa con patas, papeles, talonario, tintero, la lámpara de
+    querosén prendida de noche, el reloj de bolsillo colgado arriba y **la taza de café**: vacía de día, llena y
+    humeando de noche, idea de Santi) con **la silla** delante (casilla 'Y', del tamaño de la silla); **la caja del
+    carbón** con la pala; **el canasto de la leña**, bajo, con los troncos parados.
+  - **El medio**: **los repuestos** (el cajón con las zapatas, la cadena en el piso y **la rueda del freno**
+    apoyada contra el frente, del lado de la pantalla, que rueda apenas con el tren), **el cofre de herramientas**
+    con los faroles de señales rojo y verde, **el barril de agua** con el cucharón y el balde, **el banco con los
+    lockers**. **La estufa**, contra la pared del fondo y sin choque *(Santi: "se nota un poco raro una estufa en el
+    medio… suelen ir contra la pared"; eligió los repuestos para su lugar)*.
+  - **La cama**, el catre de la tripulación con la frazada a cuadros revuelta, y **el baulcito** al lado ('U').
+  - **En la pared**: la escalerita al vigía (la torrecita del techo: queda para cuando se haga el vigía), las
+    banderas de señales, el horario de trenes; afuera, **el farol rojo de cola**.
+  - 🆕 **Lo que se mueve con el tren** (`animado`, `estiloNuevo.meneo` de raidScene.js): el **agua del barril**
+    (nueve dibujos; se inclina, el brillo se corre; su compás aparte, `CONFIG.tresCuartos.aguaVelocidad`, el mismo
+    que la luz: a la mitad quedó "demasiado lento"), los **troncos** (los de la orilla quietos, apretados; los de
+    adentro se INCLINAN: subiendo y bajando parecían "teclas de un teclado") y la **rueda**. Y con reloj, el humito
+    de la taza. Cada uno en su capa chica.
+  - 🔁 **Los choques, del tamaño de lo dibujado** *(Santi: "el jugador choca con el aire y no llega a tocar la
+    cama")*: la cama, una columna; el baulcito y la silla con su casilla; el escritorio, sólo la mesa. Y sin sombra
+    negra debajo de la silla y la cama: el borde sólo alrededor de cada parte, se ve el piso. **Pendiente**: revisar
+    los choques de los otros vagones con el mismo ojo *(Santi: "algunas otras de otros vagones que luego
+    corregiremos")*.
 - **✅ FORAJIDO-JUGAR.HTML con el estilo nuevo** *(Santi: "por qué en este archivo todavía no están los
   cambios de 1era clase?")*: con doble clic no hay dónde poner "?nuevo"; el archivo armado lo prende solo
   (`FORAJIDO_ESTILO_NUEVO`, armar-archivo.ps1). [F9] lo sigue apagando.

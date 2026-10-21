@@ -1721,6 +1721,12 @@ export const CONFIG = {
      * la punta del haz (la base casi no se mueve: el haz está clavado a su
      * ventanilla, como uno de verdad).
      */
+    /**
+     * 🆕 EL AGUA DEL BARRIL DEL CABOOSE: vueltas por segundo de su vaivén. 🔁 La misma que el meneo de la luz (0,62):
+     * a la mitad *(Santi: "se ve muy rápida")* quedó "demasiado lento, mejor ponlo a la velocidad que estaba antes".
+     * Queda aparte por si se quiere tocar sólo el agua.
+     */
+    aguaVelocidad: 0.62,
     luzVentanilla: {
       alcance: 1.5,
       abre: 0.18,

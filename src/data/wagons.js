@@ -794,16 +794,22 @@ export const WAGONS = {
     name: 'Vagón de observación',
     short: 'CABOOSE',
     hint: 'La tripulación. Desde acá se mira la vía.',
+    // (🔁 Una sola cama, la de arriba a la derecha; en el rincón de la otra, la caja del carbón. Y los cuatro
+    // bultos del medio, desparejos *(Santi: "no estén perfectamente alineadas… se vería muy estructurado el
+    // vagón"; "debería haber solo una cama")*: la estufa, el cofre de herramientas, el barril de agua y el
+    // banco con los lockers, fuera de la ronda (filas 4 y 5). Ver `caboose` en world/estiloNuevo/vagones.js.
+    // 🔁 Y cada cosa choca con lo que se ve *(Santi: "el jugador choca con el aire y no llega a tocar la cama")*:
+    // la cama, una columna; el baulcito ('U') y la silla ('Y') con su casilla; el escritorio, sólo la mesa.)
     layout: [
       '####WW####WW####WW##',
-      '#CC..............SS#',
-      '#CC..............SS#',
-      '#.....CC....CC.....#',
+      '#CC...............S#',
+      '#.Y.........CC...US#',
+      '#....CC............#',
       '+..................+',
       '+..................+',
-      '#.....CC....CC.....#',
-      '#SS..............CC#',
-      '#SS..............CC#',
+      '#......CC..........#',
+      '#CC..........CC..CC#',
+      '#CC..............CC#',
       '###WW####WW####WW###',
     ],
     enemies: [

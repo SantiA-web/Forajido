@@ -1231,6 +1231,7 @@ refrigerado, los guardias de franco y la góndola ya tienen la suya:
 | **Caboose** | Los dos | La tripulación, siempre el vagón 1. Un guardia, una bolsa | El **vigía** que mira la vía de atrás y se da vuelta al azar |
 | **Dormitorio** | Pasajeros | Diez camarotes con su litera y una abertura al pasillo. Cuatro pasajeros, cada uno en su cabina | Las **puertas** de los camarotes |
 | **Vagón de guardias** | Pasajeros (especial) | Cuatro guardias **de franco**, sentados de a dos en cajones de munición, jugando a las cartas a la luz de una vela: distraídos y lentos para armarse. Un cuartel de catres de lona, con el armero y la estufa. Cuando sale, el tren sube de 16 a 18 guardias | — |
+| **Correo** | Pasajeros | El coche postal: casilleros con las cartas y mesas de clasificar contra el fondo; adelante, carros de mimbre llenos de sacas y pilas de cajones de encomiendas. Sin pasajeros, guardia seria y la caja fuerte al fondo | La caja fuerte y las bolsas, todavía con el dibujo viejo |
 | **Primera clase** | Pasajeros (especial) | **Los tres ricos** del tren, con sombrero de copa, y dos guardaespaldas VIGILANDO. ~$600 entre los tres | — |
 | **Cerrado** | Carga | El correo liviano de siempre, con su nombre de tren de carga | — |
 | **Plataforma** | Carga | Carga amarrada sin paredes: te tapa de los guardias, no de los jinetes | — |

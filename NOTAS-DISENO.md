@@ -19252,6 +19252,25 @@ guardaespaldas distintos)*:
     sólido más chico que los pies (el cajón) se atravesaba o no según de dónde vinieras.
   - 🧪 El atajo [4] del campamento: un tren con el vagón de guardias, arrancando en su enganche de atrás
     (`pruebaEnganche`) *("así me puedo meter en silencio para probarlo")*.
+- **✅ EL VAGÓN DE CORREO, EL COCHE POSTAL** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y
+  los cinco detalles)*: un vagón de trabajo, prolijo pero gastado, la madera pintada de verde oscuro; los faroles
+  más arriba (debajo van los casilleros).
+  - 🔁 **Las pilas de arriba, dos muebles** *(Santi: "esa mesa no parece una mesa, se ve alta, como si fuera un
+    armario"; eligió la A)*: contra la pared, el **casillero** bajo de cuadraditos con las cartas asomando y las
+    puertitas abajo; adelante, la **mesa de clasificar** con patas y travesaño (debajo se ve el piso), con los
+    atados de cartas, el sello y la almohadilla. Antes, un solo bloque macizo con la cara cerrada hasta el piso.
+  - 🔁 **Las pilas de abajo, una sola cosa grande cada una, alternadas** *(Santi: "no me convence la parte de
+    abajo"; eligió la C)*: el **carro de correo** (canasto alto de mimbre, esquinas de fierro, manijas, dos
+    ruedas, lleno de sacas grandes y desparejas con la boca atada) y **los cajones de encomiendas** apilados (dos
+    atrás con uno chico arriba, uno grande adelante con una saca encima y otra parada al lado; tapa de tablas,
+    zunchos, etiqueta). Lo que no sirvió: sacas y paquetes chicos sueltos (huecos de piso que chocaban, se leían
+    como piedras o bolsas de arena), un montón parejo (una pared de piedras) y un solo cajón enorme (con la tapa
+    tan honda, un mueble alto): en este ángulo se leen las cosas grandes con frentes a distintas alturas.
+  - **Los detalles**: el **perchero** de fierro con dos sacas abiertas colgando y la **balanza** de pie (en los
+    dos rincones de arriba, casilla 'P': chocan, pasan la vista y las balas), el **reloj** de pared, las
+    **cartas sueltas** en el piso y, en la cara de afuera, **el brazo de fierro** para agarrar la saca sin parar.
+  - El correo liviano ya no viaja (su plano lo usa el cerrado del tren de carga): queda con el dibujo viejo.
+  - Falta: la caja fuerte y las bolsas de botín, que se dibujan aparte en todos los vagones.
 - **✅ FORAJIDO-JUGAR.HTML con el estilo nuevo** *(Santi: "por qué en este archivo todavía no están los
   cambios de 1era clase?")*: con doble clic no hay dónde poner "?nuevo"; el archivo armado lo prende solo
   (`FORAJIDO_ESTILO_NUEVO`, armar-archivo.ps1). [F9] lo sigue apagando.

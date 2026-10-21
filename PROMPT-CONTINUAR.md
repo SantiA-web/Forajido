@@ -215,7 +215,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   estante de espaldas) y su delantal atado atrás; de perfil, el brazo más centrado y la panza del gordito
   pegada al torso (sin manos volando). Primera clase cerrada; el vagón de guardias
   hecho (cuartel rústico: catres de lona, mesas de pino con la vela, armero, estufa, los de franco
-  sentados en cajones de munición que chocan); sigue correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
+  sentados en cajones de munición que chocan); el correo hecho (casilleros y mesas de clasificar, carros de
+  mimbre y cajones de encomiendas, perchero, balanza, reloj); sigue blindado y caboose (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las

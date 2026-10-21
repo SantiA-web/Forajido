@@ -41,7 +41,8 @@ const PX = 1 / PASO;
 /** Qué vagones ya se dibujan en el estilo nuevo. */
 // 🆕 P4: el comedor (el de la gente común: ver `comedor` más abajo), el dormitorio (ver `dormitorio`),
 // primera clase (ver `primeraClase`) y el de guardias (ver `guardias`).
-const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias']);
+// (🆕 Y el correo, el del tren de pasajeros.)
+const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo']);
 
 /**
  * LOS VAGONES DEL ESTILO NUEVO de este tren: sus columnas (para que el dibujo
@@ -405,8 +406,10 @@ function vagon(train, w, dia) {
       r(hx - 3, hy + 3, 8, 13, 33); r(hx - 3, hy + 3, 8, 1, 34); r(hx - 3, hy + 4, 1, 11, 34);
       r(hx + 1, hy + 4, 1, 11, 32); r(hx + 3, hy + 6, 1, 9, 32);          // la abertura y la manga
     }
+    // (🆕 En el correo, más arriba: debajo van los casilleros.)
+    const yFarol = w.id === 'correo' ? yCara + 4 : yCara + 12;
     for (const fx of faroles) {
-      const y = yCara + 12;
+      const y = yFarol;
       r(fx - 3, y - 2, 7, 1, 0); r(fx - 1, y - 1, 3, 1, 28);
       r(fx - 3, y, 7, 9, 0);
       r(fx - 2, y + 1, 5, 7, dia ? 25 : 29, !dia);
@@ -1287,6 +1290,208 @@ function vagon(train, w, dia) {
     }
   }
 
+  /**
+   * 🆕 P4 · EL VAGÓN DE CORREO, EL COCHE POSTAL DE LA COMPAÑÍA *(Santi eligió las recomendaciones y los cinco
+   * detalles)*: un vagón de trabajo, prolijo pero gastado, la madera pintada de verde oscuro.
+   *  - LAS PILAS DE ARRIBA (las 'C' contra la pared del fondo), LOS MUEBLES DE CLASIFICAR: la mesada con los
+   *    casilleros atrás (cartas asomando) y encima los atados de cartas, el sello y la almohadilla.
+   *  - LAS DE ABAJO, LAS SACAS DE LONA (con el cordón y la chapita de bronce) y LAS ENCOMIENDAS de papel madera
+   *    atadas con cordel, amontonadas.
+   *  - Los detalles: el PERCHERO de las sacas abiertas y la BALANZA de los paquetes (las 'P', en los dos
+   *    rincones de arriba: chocan), el RELOJ de pared, las CARTAS SUELTAS en el piso y, en la cara de afuera, EL
+   *    BRAZO para agarrar la saca sin parar el tren.
+   */
+  if (w.id === 'correo') {
+    const r = rect(MESAS), p = pone(MESAS);
+    const rf = rect(FONDO), pf = pone(FONDO), pp = pone(PISO);
+    const yCara = 8, yPie = ay(yPisoArriba);
+    const dibujo = (pq, x, y, filas, col) => filas.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') pq(x + q, y + j, col[fila[q]]); });
+    // --- la pared, pintada de verde oscuro (las tablas, las juntas y la veta).
+    const VERDE = { 3: 26, 1: 42, 4: 27 };
+    for (let y = yCara; y < yPie; y++) for (let x = 0; x < W; x++) { const k = y * W + x, i = FONDO.i[k]; if (VERDE[i] != null) FONDO.i[k] = VERDE[i]; }
+    // --- los muebles de clasificar (las pilas de arriba): la mesada y los casilleros contra la pared.
+    const CAS = 5, CAS_L = 6, CAS_S = 4, CAS_SS = 3;
+    const bloques = (fila0) => {
+      const out = [];
+      for (let c = 0; c < cols; c++) {
+        if (casilla(c, fila0) !== 'C' || casilla(c - 1, fila0) === 'C') continue;
+        let c2 = c; while (casilla(c2 + 1, fila0) === 'C') c2++;
+        let f2 = fila0; while (casilla(c, f2 + 1) === 'C') f2++;
+        out.push({ c, c2, f: fila0, f2 });
+      }
+      return out;
+    };
+    const arriba = bloques(filasArriba), abajo = bloques(map.rows - filasAbajo - 2);
+    for (const B of arriba) {
+      const x = ax(w.x + B.c * S) + 1, x2 = ax(w.x + (B.c2 + 1) * S) - 1, ancho = x2 - x;
+      const yA = B.f * S;
+      /**
+       * 🔁 DOS MUEBLES *(Santi: "esa mesa arriba no parece una mesa, se ve alta, como si fuera un armario";
+       * eligió la A)*: contra la pared, EL CASILLERO, bajo, de cuadraditos con las cartas y abajo las
+       * puertitas; adelante, LA MESA DE CLASIFICAR con patas y el travesaño, que deja ver el piso debajo,
+       * como las del comedor. Antes era un solo bloque macizo, con la cara cerrada hasta el piso.
+       */
+      const ALTO_CAS = 22, FONDO_CAS = 5;
+      const lt = ay(yA) - ALTO_CAS, lf = ay(yA + FONDO_CAS) - ALTO_CAS, lb = ay(yA + FONDO_CAS);
+      r(x - 1, lt - 1, ancho + 2, lb - lt + 1, 0);
+      r(x, lt, ancho, lf - lt, CAS); r(x, lt, ancho, 1, CAS_L);                  // la tapa
+      r(x, lf, ancho, lb - lf - 1, CAS_SS);
+      const finCasillas = lf + 13;
+      for (let gx = x + 1; gx + 4 <= x2 - 1; gx += 5) for (let gy = lf + 1; gy + 3 <= finCasillas; gy += 4) {
+        r(gx, gy, 4, 3, 1);                                                  // el hueco
+        const h = hash(gx + w.colStart, gy);
+        if (h < 0.55) r(gx, gy + 1, 4, 2, h < 0.2 ? 30 : 17);               // las cartas que asoman
+        if (h < 0.08) p(gx + 1, gy + 1, 9);                                  // una estampilla
+      }
+      // Abajo, las puertitas del casillero.
+      r(x, finCasillas + 1, ancho, lb - finCasillas - 2, CAS_S); r(x, finCasillas + 1, ancho, 1, CAS);
+      for (let q = x + Math.floor(ancho / 4); q < x2 - 2; q += Math.floor(ancho / 4)) r(q, finCasillas + 2, 1, lb - finCasillas - 3, CAS_SS);
+      muebles.push({ x: x - 1, y: lt - 1, w: ancho + 2, h: lb - lt + 1, base: yA + FONDO_CAS - 0.02 });
+      // La mesa: la tapa de tablas, el canto, las patas y el travesaño; debajo se ve el piso.
+      const ALTO_MESA = 11, yT0 = yA + 12, yT1 = (B.f2 + 1) * S - 2;
+      const mx = x + 1, mw = ancho - 2, ty = ay(yT0) - ALTO_MESA, tf = ay(yT1) - ALTO_MESA, piso = ay(yT1);
+      r(mx - 1, ty - 1, mw + 2, tf - ty + 5, 0);
+      r(mx, ty, mw, tf - ty, CAS); r(mx, ty, mw, 1, CAS_L);
+      for (let q = ty + 7; q < tf - 2; q += 7) r(mx, q, mw, 1, CAS_S);            // las juntas de las tablas
+      r(mx, tf, mw, 3, CAS_SS); r(mx, tf, mw, 1, CAS_S);                          // el canto
+      const pata = piso - (tf + 3);
+      for (const px of [mx + 2, mx + Math.floor(mw / 2) - 1, mx + mw - 5]) { r(px - 1, tf + 3, 4, pata, 0); r(px, tf + 3, 2, pata - 1, CAS_SS); }
+      r(mx + 3, piso - 4, mw - 6, 2, 0); r(mx + 4, piso - 4, mw - 8, 1, CAS_S);   // el travesaño
+      // Encima: los atados de cartas, cartas sueltas, el sello con su almohadilla.
+      const ATADO = ['ooooooo', 'oWWWWWo', 'osssssо', 'oWWWWWo', 'oWWWWWo', 'ooooooo'].map((f) => f.replace('о', 'o'));
+      for (let k = 0; k < 6; k++) {
+        const ex = mx + 3 + Math.floor(hash(B.c * 5 + k, 3) * (mw - 12)), ey = ty + 2 + Math.floor(hash(k, B.c * 3 + 1) * (tf - ty - 8));
+        if (k < 2) dibujo(p, ex, ey, ATADO, { o: 0, W: 30, s: 9 });
+        else if (k < 5) { r(ex - 1, ey - 1, 6, 5, 0); r(ex, ey, 4, 3, 17); r(ex, ey, 4, 1, 30); p(ex + 1, ey + 1, 16); }
+        else { r(ex, ey + 2, 6, 4, 0); r(ex + 1, ey + 3, 4, 2, 41); r(ex + 7, ey, 3, 6, 0); r(ex + 8, ey, 1, 4, 4); r(ex + 7, ey + 4, 3, 1, 31); }   // la almohadilla y el sello
+      }
+      muebles.push({ x: mx - 1, y: ty - 1, w: mw + 2, h: piso - ty + 1, base: (B.f2 + 1) * S - 0.01 });
+    }
+    // --- el reloj de pared, sobre el mueble del medio que no tiene farol encima.
+    {
+      const libres = arriba.filter((B) => !faroles.some((fx) => fx >= ax(w.x + B.c * S) && fx <= ax(w.x + (B.c2 + 1) * S)));
+      if (libres.length) {
+        const B = libres.reduce((a, b) => (Math.abs((a.c + a.c2) / 2 - cols / 2) <= Math.abs((b.c + b.c2) / 2 - cols / 2) ? a : b));
+        const cx = Math.round((ax(w.x + B.c * S) + ax(w.x + (B.c2 + 1) * S)) / 2), cy = yCara + 8;
+        dibujo(pf, cx - 5, cy - 5, ['...ooooo...', '..o55555o..', '.o5wwwwww5o', 'o5wwwkwww5o', 'o5wwwkwww5o', 'o5wwwkkkw5o', 'o5wwwwwww5o', 'o5wwwwwww5o', '.o5wwwwww5o', '..o55555o..', '...ooooo...'].map((f) => f.padEnd(11, '.')), { o: 0, 5: 7, w: 17, k: 0 });
+        pf(cx, cy - 6, 28);
+      }
+    }
+    // --- las sacas y las encomiendas, amontonadas (las pilas de abajo).
+    const SACA = ['...oooooooo...', '..oLLLLLLLLoo.', '.oLLCCCCCCCLko', 'oLCCCCCCCCCcko', 'oCCCCCCCYCCcoo', 'oCCCCCCCcccco.', '.occcccccccco.', '..oooooooooo..'];
+    const SACA_PARADA = ['...ooo...', '..okkko..', '...oko...', '..oLLCo..', '.oLLCCCo.', 'oLLCCCCco', 'oLCCCCCco', 'oLCCYCCco', 'oCCCCCcco', 'oCCCCccco', '.occccco.', '..ooooo..'];
+    const PAQUETE = ['oooooooooo', 'oPPPsPPPPo', 'oPPPsPPPPo', 'ossssssSso', 'oppppspppo', 'oppppspppo', 'oqqqqsqqqo', 'oooooooooo'];
+    const LONA = { o: 0, L: 16, C: 15, c: 14, k: 4, Y: 7 }, PAPEL = { o: 0, P: 37, p: 36, q: 35, s: 17, S: 16 };
+    /**
+     * 🔁 LAS PILAS DE ABAJO, UNA SOLA COSA GRANDE CADA UNA *(Santi: "no me convence la parte de abajo"; eligió la
+     * C)*: carros de correo y cajones de encomiendas, alternados. Llenan su lugar (el choque, el mismo); sueltas,
+     * las cosas chicas dejaban huecos de piso que chocaban y se leían como un montón sin forma.
+     *  - EL CARRO: un canasto de mimbre con las esquinas y el borde de fierro, las manijas, dos ruedas, y lleno
+     *    de sacas que asoman por arriba.
+     *  - EL CAJÓN: de tablas, con los zunchos de fierro y la etiqueta; encima, sacas tiradas y un paquete.
+     */
+    abajo.forEach((B, n) => {
+      const x = ax(w.x + B.c * S) + 2, x2 = ax(w.x + (B.c2 + 1) * S) - 2, ancho = x2 - x;
+      const yb = ay((B.f2 + 1) * S) - 3, yt = ay(B.f * S) + 3;
+      const h = (k) => hash(B.c * 7 + k, w.colStart);
+      // Una saca grande parada, con la boca atada arriba y la chapita de bronce.
+      const SACA_GRANDE = ['....ooo.....', '...okkko....', '....oko.....', '...oLLLo....', '..oLLCCCo...', '.oLLCCCCCo..', 'oLLCCCCCCco.', 'oLCCCCCCCcco', 'oLCCCYYCCcco', 'oLCCCCCCCcco', 'oCCCCCCCccco', 'oCCCCCCcccco', '.oCCCCcccco.', '..oooooooo..'];
+      if (n % 2 === 0) {
+        // --- el carro: la caja de mimbre, alta, sobre dos ruedas, llena de sacas.
+        const H = 20, ruedas = 4, piso = yb - ruedas;
+        const tt = yt - H + 4, tf = piso - H;                                   // la boca: de tt a tf; el frente, de tf a piso
+        r(x - 1, tt - 1, ancho + 2, piso - tt + 2, 0);
+        r(x, tt, ancho, tf - tt, 36); r(x, tt, ancho, 1, 37);                   // el borde de mimbre
+        r(x + 2, tt + 2, ancho - 4, tf - tt - 3, 33);                           // adentro
+        // (🔁 Pocas sacas grandes y desparejas, con la boca atada para arriba: muchas chicas y parejas parecían
+        // una pared de piedras.)
+        const LOMO = ['....oooooooo....', '..ooLLLLLLLLoo..', '.oLLLLCCCCCCLLo.', 'oLLCCCCCCCCCCcco', 'oLCCCCCCCCCCCcco', 'oCCCCCCCCCCCCcco', 'oCCCCCCCCCCCccco', '.oCCCCCCCcccccо.', '..occcccccccco..', '...oooooooooo...'].map((f) => f.split('о').join('o'));
+        const filas = [];
+        for (let sy = tt - 4, j = 0; sy < tf - 6; sy += 8, j++) filas.push([sy, j]);
+        for (const [sy, j] of filas) {
+          const cuantas = j % 2 ? 2 : 3, paso = (ancho - 14) / Math.max(1, cuantas - 1);
+          for (let q = 0; q < cuantas; q++) {
+            const sx = Math.round(x - 1 + q * paso + (h(j * 3 + q) - 0.5) * 6), syy = sy + Math.round((h(j * 5 + q + 1) - 0.5) * 4);
+            dibujo(p, Math.max(x - 1, Math.min(sx, x2 - 15)), syy, LOMO, LONA);
+            if ((j + q) % 2 === 0) dibujo(p, Math.max(x, Math.min(sx, x2 - 15)) + 6, syy - 3, ['.ooo.', 'okkko', '.oko.'], { o: 0, k: 4 });   // la boca atada
+          }
+        }
+        // El frente, de mimbre tejido, con el borde de arriba, el zuncho y las esquinas de fierro.
+        for (let yy = tf; yy < piso; yy++) for (let xx = x; xx < x2; xx++) p(xx, yy, yy % 3 === 2 ? 34 : (xx + (yy % 6 < 3 ? 0 : 2)) % 4 < 2 ? 36 : 35);
+        r(x, tf, ancho, 1, 37); r(x, tf + 1, ancho, 1, 0);
+        r(x, piso - 2, ancho, 2, 31);
+        for (const ex of [x, x2 - 2]) { r(ex, tf, 2, piso - tf, 31); p(ex, tf, 23); }
+        // Las manijas, a los costados del frente.
+        for (const mx of [x - 3, x2]) { r(mx, tf + 3, 3, 1, 0); r(mx, tf + 7, 3, 1, 0); r(mx === x - 3 ? mx : mx + 2, tf + 3, 1, 5, 0); }
+        // Las ruedas: dos de fierro, adelante.
+        const RUEDA = ['.ooo.', 'oKkKo', 'okoko', 'oKkKo', '.ooo.'];
+        for (const wx of [x + 2, x2 - 7]) dibujo(p, wx, yb - 4, RUEDA, { o: 0, K: 23, k: 31 });
+        muebles.push({ x: x - 4, y: tt - 8, w: ancho + 8, h: yb - tt + 9, base: (B.f2 + 1) * S - 0.01 });
+      } else {
+        /**
+         * --- los cajones de encomiendas, apilados: dos atrás con uno chico arriba, y uno grande adelante con una
+         * saca encima y otra parada al lado. 🔁 Varios, de distintos tamaños *(uno solo, con la tapa tan honda,
+         * se leía como un mueble alto)*: los frentes a distintas alturas los hacen cajas.
+         */
+        const cajon = (cx, piso, an, tapa, alto) => {
+          const t0 = piso - alto - tapa;
+          r(cx - 1, t0 - 1, an + 2, alto + tapa + 2, 0);
+          r(cx, t0, an, tapa, 5); r(cx, t0, an, 1, 6);                            // la tapa
+          for (let q = cx + 5; q < cx + an - 2; q += 5) r(q, t0 + 1, 1, tapa - 1, 4);
+          r(cx, piso - alto, an, alto, 4); r(cx, piso - alto, an, 1, 6);          // el frente
+          for (let q = piso - alto + 4; q < piso - 1; q += 4) r(cx, q, an, 1, 3);
+          for (const zx of [cx + 2, cx + an - 4]) { r(zx, t0, 2, tapa + alto, 31); }   // los zunchos
+          if (an >= 16) { const ex = cx + Math.floor(an / 2) - 4; r(ex - 1, piso - alto + 2, 10, 6, 0); r(ex, piso - alto + 3, 8, 4, 17); r(ex + 1, piso - alto + 4, 5, 1, 33); }   // la etiqueta
+        };
+        const atras = yt + 14;
+        cajon(x, atras, 21, 12, 13);
+        cajon(x2 - 18, atras + 1, 18, 10, 11);
+        cajon(x + 4, atras - 13 - 12 + 12, 14, 8, 9);
+        cajon(x + 1, yb, 26, 10, 13);
+        dibujo(p, x + 4 + Math.floor(h(1) * 6), yb - 13 - 10 - 2, SACA, LONA);
+        dibujo(p, x2 - 12, yb - SACA_GRANDE.length + 1, h(2) < 0.5 ? SACA_GRANDE : SACA_GRANDE.map((f) => f.split('').reverse().join('')), LONA);
+        muebles.push({ x: x - 1, y: atras - 35, w: ancho + 2, h: yb - atras + 36, base: (B.f2 + 1) * S - 0.01 });
+      }
+    });
+    // --- el perchero de las sacas y la balanza (las 'P'): el de la izquierda, el perchero; el otro, la balanza.
+    for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 0; c < cols; c++) {
+      if (casilla(c, f) !== 'P') continue;
+      const x = ax(w.x + c * S) + 2, x2 = ax(w.x + (c + 1) * S) - 2, yb = ay((f + 1) * S) - 2, ancho = x2 - x;
+      if (c < cols / 2) {
+        // 🔁 El travesaño de fierro con sus patas, y dos sacas panzonas colgando de los ganchos, con la boca
+        // abierta arriba *(con el marco cerrado y las sacas finitas parecía una ventana)*.
+        const top = yb - 27;
+        r(x - 1, top - 1, ancho + 2, 4, 0); r(x, top, ancho, 2, 23); r(x, top, ancho, 1, 24);   // el travesaño
+        for (const px of [x, x2 - 2]) { r(px - 1, top + 2, 4, yb - top - 2, 0); r(px, top + 2, 2, yb - top - 3, 31); }   // las patas
+        r(x - 3, yb - 2, 7, 3, 0); r(x2 - 4, yb - 2, 7, 3, 0); r(x - 2, yb - 1, 5, 1, 23); r(x2 - 3, yb - 1, 5, 1, 23);   // los pies
+        // (Largas, casi hasta el piso: cortas, abajo del perchero quedaba un hueco y parecía un banquito.)
+        const COLGADA = ['.ooooooo.', 'o1111111o', 'oL11111Lo', 'oLLLLLLLo', 'oLCCCCCco', 'oLCCCCCco', 'oLCCCCCco', 'oCCCCCCco', 'oCCCCCCco', 'oCCCCYCco', 'oCCCCCCco', 'oCCCCCCco', 'oCCCCCcco', 'oCCCCCcco', 'oCCCCcccо', '.oCCcccco', '.occcccco', '..oooooo.'].map((f) => f.replace('о', 'o'));
+        for (const sx of [x + 1, x + ancho - 10]) {
+          p(sx + 1, top + 2, 0); p(sx + 7, top + 2, 0);                      // los ganchos
+          dibujo(p, sx, top + 3, COLGADA, { o: 0, 1: 1, L: 16, C: 15, c: 14, Y: 7 });
+        }
+        muebles.push({ x: x - 1, y: top - 1, w: ancho + 2, h: yb - top + 2, base: (f + 1) * S - 0.02 });
+      } else {
+        // La balanza de pie: la plataforma, la columna y el brazo con la pesa.
+        const top = yb - 24;
+        r(x, yb - 6, ancho, 6, 0); r(x + 1, yb - 5, ancho - 2, 2, 5); r(x + 1, yb - 3, ancho - 2, 2, 31);   // la plataforma
+        r(x2 - 6, top, 4, yb - 6 - top, 0); r(x2 - 5, top + 1, 2, yb - 7 - top, 23); r(x2 - 5, top + 1, 1, yb - 7 - top, 24);   // la columna
+        r(x + 1, top, ancho - 3, 3, 0); r(x + 2, top + 1, ancho - 5, 1, 7);  // el brazo de bronce
+        r(x + 4, top - 1, 3, 5, 0); r(x + 5, top, 1, 3, 31);                 // la pesa
+        dibujo(p, x + 2, yb - 12, PAQUETE.slice(0, 6), PAPEL);              // un paquete en la plataforma
+        muebles.push({ x: x - 1, y: top - 2, w: ancho + 2, h: yb - top + 3, base: (f + 1) * S - 0.02 });
+      }
+    }
+    // --- cartas sueltas en el piso, más donde hay luz.
+    for (let k = 0; k < 18; k++) {
+      const ex = 8 + Math.floor(hash(k, w.colStart + 5) * (W - 16)), ey = ay(yPisoArriba) + 6 + Math.floor(hash(w.colStart + 9, k) * (ay(yPisoAbajo) - ay(yPisoArriba) - 12));
+      const c = Math.floor((ex * PASO + x0 - w.x) / S), f = Math.floor((ey * PASO + yArriba) / S);
+      if (casilla(c, f) !== '.' || !deja(ex, ey, 40 + k, 0.5)) continue;
+      pp(ex, ey, 17); pp(ex + 1, ey, 17); pp(ex + 2, ey, 30); pp(ex, ey + 1, 17); pp(ex + 1, ey + 1, 16); pp(ex + 2, ey + 1, 17);
+      if (k % 3 === 0) pp(ex + 1, ey + 2, 33);                                // pisada
+    }
+  }
+
   // ===== LA PARED DE ADELANTE: el borde y, debajo, su cara de afuera
   {
     const r = rect(FRENTE), p = pone(FRENTE);
@@ -1299,6 +1504,18 @@ function vagon(train, w, dia) {
      * 🔁 Primero ocupaban casi toda la cara, y la pared de afuera —que está de
      * espaldas al sol y no es donde se juega— le ganaba al adentro.
      */
+    /**
+     * 🆕 EL BRAZO PARA AGARRAR LA SACA (el correo), en la cara de afuera, cerca de la punta de adelante: el
+     * poste de fierro con los dos brazos plegados y el gancho en el medio. Con él, el tren levanta la saca
+     * colgada en la estación sin parar.
+     */
+    if (w.id === 'correo') {
+      const bx = W - 22, y0 = yTope + 9, y1 = yCaraFin - 5;
+      r(bx - 1, y0 - 1, 4, y1 - y0 + 2, 0); r(bx, y0, 2, y1 - y0, 31); r(bx, y0, 1, y1 - y0, 23);   // el poste
+      for (const ay0 of [y0 + 1, y1 - 3]) { r(bx - 7, ay0 - 1, 8, 3, 0); r(bx - 6, ay0, 7, 1, 23); }   // los brazos
+      const gy = Math.round((y0 + y1) / 2);
+      r(bx - 5, gy - 2, 6, 5, 0); r(bx - 4, gy - 1, 4, 1, 24); r(bx - 4, gy + 1, 4, 1, 24); p(bx - 4, gy, 24);   // el gancho
+    }
     for (const [c0, c1] of ventanasFrente) {
       const vx = ax(w.x + c0 * S) + 5, vw = ax(w.x + (c1 + 1) * S) - 5 - vx;
       const vy = yTope + 12, vh = Math.max(5, Math.round((yCaraFin - yTope - 12) * 0.45));

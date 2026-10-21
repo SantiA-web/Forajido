@@ -183,11 +183,13 @@ export const WAGONS = {
     name: 'Vagón de correo',
     short: 'CORREO',
     hint: 'Sin pasajeros. Guardia seria.',
+    // (🆕 'P', en los dos rincones de arriba: el perchero de las sacas y la balanza de los paquetes, ver
+    // world/tilemap.js y `correo` en world/estiloNuevo/vagones.js.)
     // Las ventanillas van alineadas con los huecos entre pilas de carga: hay
     // que meterse entre los cajones para llegar hasta ellas.
     layout: [
       '#####WW###WW###WW###WW###WW#####',
-      '#.CCC..CCC..CCC..CCC..CCC..CCC.#',
+      '#PCCC..CCC..CCC..CCC..CCC..CCCP#',
       '#.CCC..CCC..CCC..CCC..CCC..CCC.#',
       '#..............................#',
       '+..............................+',

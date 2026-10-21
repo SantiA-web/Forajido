@@ -76,6 +76,11 @@ const TILE_RULES = {
    * tener colisión")*: como la carga, frenan el paso, la vista y las balas.
    */
   'U': { solid: true, blocksSight: true, blocksBullets: true },
+  /**
+   * 🆕 EL PERCHERO DE LAS SACAS Y LA BALANZA DE LOS PAQUETES (vagón de correo): frenan el paso; son de fierro
+   * y huecos, pasan la vista y las balas.
+   */
+  'P': { solid: true, blocksSight: false, blocksBullets: false },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones

@@ -91,11 +91,12 @@ const VISTAS = {
       '.........rRRS',
     ]),
     torso: mapa(8, [
+      // (🔁 La columna de adelante, el pecho que asoma delante del brazo, limpia: sin los botones.)
       '.......UVVvR',
       '.......UVVvr',
-      '.......UVVvy',
       '.......UVVvv',
-      '.......UVVvy',
+      '.......UVVvv',
+      '.......UVVvv',
       '.......UVVvv',
       '.......VVVvw',
       '.......VVVvw',
@@ -1193,6 +1194,20 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     for (let x = 0; x < fila.length; x++) if (fila[x] !== '.') poner(x + corre, m.y + j + dy, tabla[fila[x]]);
   });
   /**
+   * 🆕 EL TORSO, Y DÓNDE TERMINA ADELANTE CADA FILA (`frenteTorso`, en el lienzo): de costado, la panza
+   * del gordito, el pecho del de hombros anchos y lo que se le saca al flaco van pegados al torso, no al
+   * brazo *(Santi: "tomá muy en serio la panza")*: medidos desde el brazo, caminando la panza se corría
+   * con él en escalerita y la mano del brazo de atrás quedaba entre el cuerpo y la panza.
+   */
+  const frenteTorso = new Int16Array(ALTO).fill(-1);
+  const dibujarTorso = (m, dy, dx) => {
+    dibujarMapa(m, dy, dx);
+    m.filas.forEach((fila, j) => {
+      const u = fila.replace(/\.+$/, '').length - 1, y = m.y + j + dy + OY;
+      if (u >= 0 && y >= 0 && y < ALTO) frenteTorso[y] = u + dx(j) + OX;
+    });
+  };
+  /**
    * Cuánto baja el cuerpo: lo dice cada cuadro (PASOS). Agachado y quieto, 3.
    * Trotando, de costado el cuerpo va inclinado un punto hacia adelante.
    */
@@ -1333,7 +1348,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     // Sin arma cuelga como el otro: dos puntos de ancho y la mano de 2×2.
     // (De frente, el derecho cuelga por fuera del cuerpo, del lado izquierdo de la pantalla.)
     // Caminando, se hamaca al revés del brazo libre (el guardia con el revólver enfundado).
-    if (!arma) { colgado(frontal ? [hx - 1, hy] : [hx, hy], -idaLibre(), tipo ? BRAZO_LIBRE[tipo].codo : 0.1, false, frontal ? 'izq' : null); return; }
+    // (🆕 De costado, quieto o caminando, un punto más atrás: encima del torso y no pegado delante
+    // *(Santi: "que quede apenas más centrado en el cuerpo")*.)
+    const centrado = vista === 'lado' && (piernas === 'quieto' || tipo === 'W') ? -1 : 0;
+    if (!arma) { colgado(frontal ? [hx - 1, hy] : [hx + centrado, hy], -idaLibre(), tipo ? BRAZO_LIBRE[tipo].codo : 0.1, false, frontal ? 'izq' : null); return; }
     // Apuntando hacia nosotros o lejos, el brazo se ve más corto (en escorzo).
     /**
      * Dónde cae la mano, puesto a mano para cada dirección: en el mismo
@@ -1582,7 +1600,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     const PB = V.piernas[piernas] || (piernas === 'sentadoApoyado' && V.piernas.sentado) || V.piernas.quieto;
     con(PARTE.piernas, () => dibujarMapa(PB));
     if (baja < 0 || baja === 2) con(PARTE.piernas, () => dibujarMapa({ y: PB.y - 1, filas: [PB.filas[0]] }));
-    dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0) + reclina(j));
+    dibujarTorso(persona ? persona.torso : V.torso, baja, (j) => inclina + bi + (j < 5 ? lomo : 0) + reclina(j));
     if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo + bi, COLOR_ARMA);
     if (doble && SEGUNDA_FUNDA[vista]) {
       con(PARTE.piernas, () => dibujarMapa(SEGUNDA_FUNDA[vista].funda, 0, 0));
@@ -1621,7 +1639,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   // quede un hueco entre el cinto y el pantalón.
   // (🐛 Es pierna: como torso, los cuerpos anchos la ensanchaban y quedaba una barra en la cadera.)
   if (baja < 0 || baja === 2) con(PARTE.piernas, () => dibujarMapa({ y: P.y - 1, filas: [P.filas[0]] }));
-  dibujarMapa(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0) + reclina(j));
+  dibujarTorso(persona ? persona.torso : V.torso, baja, (j) => inclina + (j < 5 ? lomo : 0) + reclina(j));
   if (enfundado) dibujarMapa(CULATA_ENFUNDADA[vista], baja, inclina + lomo, COLOR_ARMA);
   if (doble && SEGUNDA_FUNDA[vista]) {
     con(PARTE.piernas, () => dibujarMapa(SEGUNDA_FUNDA[vista].funda, 0, 0));
@@ -1660,6 +1678,17 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
   }
 
   if (forma && ((forma.cuerpo && forma.cuerpo !== 'normal') || forma.chaqueta)) darForma(forma);
+  /**
+   * 🆕 DE COSTADO, EL BRAZO LIBRE DE ALLÁ NO ASOMA ADELANTE: hamacándose, la mano (y un punto de manga)
+   * salía delante del pecho sola, sin el brazo: una mano volando *(Santi)*. Lo que pasa del frente del
+   * cuerpo (con la panza o el pecho) no se dibuja; detrás de la espalda sí se ve. (No en las poses, que lo
+   * ponen a propósito, ni con el cuchillo, el arma larga o los dos revólveres.)
+   */
+  if (vista === 'lado' && !BR && !TJ && !larga && !(doble && arma)) for (let y = 0; y < ALTO; y++) {
+    const f = y * ANCHO; let u = -1;
+    for (let x = 0; x < ANCHO; x++) if (idx[f + x] >= 0 && duenio[f + x] === PARTE.cuerpo) u = x;
+    if (u >= 0) for (let x = u + 1; x < ANCHO; x++) if (duenio[f + x] === PARTE.brazoAtras) { idx[f + x] = -1; duenio[f + x] = 0; }
+  }
 
   /** El cuerpo y la chaqueta (ver CUERPOS): ensancha el torso, corre los brazos, pinta la panza y la chaqueta. */
   function darForma({ cuerpo = 'normal', chaqueta = false, conChaleco = true, estrella: conEstrella = true, panza = true, correa = null }) {
@@ -1799,27 +1828,29 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     const pinta = (y, x, c, p = PARTE.cuerpo) => { if (x >= 0 && x < ANCHO) { nuevo[y * ANCHO + x] = c; dn[y * ANCHO + x] = p; } };
     // 2. De costado: la panza o el pecho para adelante, la espalda y las piernas del flaco.
     if (vista === 'lado') {
-      // (Por delante del brazo que cuelga: si no, el brazo la tapaba.)
-      // 🐛 Sólo el brazo que cuelga pegado al cuerpo (2 o 3 de ancho): con el brazo estirado
-      // la panza salía delante del caño *(los jueces: "un trapo en el caño")*; ahí el brazo va encima.
+      // 🔁 Desde el frente del torso (`frenteTorso`), no desde el brazo: la panza queda quieta y los brazos
+      // pasan, el de acá por encima y el de allá por detrás *(Santi)*. (Debajo del torso, la cadera: el
+      // frente de la última fila.)
       const frente = (y) => {
-        const f = y * ANCHO; let b = -1;
-        for (let x = 0; x < ANCHO; x++) if (ver[f + x] >= 0 && de[f + x] === PARTE.cuerpo) b = x;
-        if (b < 0) return b;
-        let n = 0; while (b + n + 1 < ANCHO && ver[f + b + n + 1] >= 0 && (de[f + b + n + 1] === PARTE.brazo || de[f + b + n + 1] === PARTE.brazoAtras)) n++;
-        return n <= 3 ? b + n : b;
+        for (let yy = y; yy >= 0; yy--) if (frenteTorso[yy] >= 0) return frenteTorso[yy];
+        return -1;
       };
       for (const [r, d] of K.lado) {
         const y = yHombro + r - 8, b = frente(y);
         if (b < 0) continue;
         if (d > 0) for (let n = 1; n <= d; n++) pinta(y, b + n, cuerpo === 'gordito' && r >= 10 ? (r >= 16 ? C.c : C.C) : C.V ?? C.C);
+        // (🆕 En el cinto, la panza tapa la hebilla: asomaba suelta entre la mano y la panza.)
+        if (d > 0 && cuerpo === 'gordito' && r === 16) pinta(y, b, C.c);
         else for (let n = 0; n < -d; n++) { nuevo[y * ANCHO + b - n] = -1; dn[y * ANCHO + b - n] = 0; }
       }
-      const atrasMenos = (y, p) => { for (let x = 0; x < ANCHO; x++) if (nuevo[y * ANCHO + x] >= 0 && dn[y * ANCHO + x] === p) { nuevo[y * ANCHO + x] = -1; dn[y * ANCHO + x] = 0; return; } };
+      // (🐛 Si atrás está la pierna —corriendo, la cadera de la pierna de atrás—, no: quedaba un punto suelto.)
+      const atrasMenos = (y, p) => { for (let x = 0; x < ANCHO; x++) if (nuevo[y * ANCHO + x] >= 0 && dn[y * ANCHO + x] === p) { if (x > 0 && nuevo[y * ANCHO + x - 1] >= 0 && dn[y * ANCHO + x - 1] === PARTE.piernas) return; nuevo[y * ANCHO + x] = -1; dn[y * ANCHO + x] = 0; return; } };
       if (K.espalda) for (let r = 0; r <= 8; r++) atrasMenos(yHombro + r, PARTE.cuerpo);
       // Las piernas, quieto: el punto de atrás de cada una, si tiene tres o más. (Caminando, de costado
       // las piernas se cruzan y sacar un punto las cortaba: quedan como las de todos.)
-      if (K.piernas && (piernas === 'quieto' || piernas === 'agachado')) for (let r = 9; r <= 16; r++) {
+      // (🐛 Agachado no: los muslos van acostados y, sacando puntos, la pierna de atrás quedaba despegada del
+      // pie *(Santi)*.)
+      if (K.piernas && piernas === 'quieto') for (let r = 9; r <= 16; r++) {
         const f = (yHombro + r) * ANCHO;
         for (let x = 0; x < ANCHO; x++) {
           if (!(nuevo[f + x] >= 0 && dn[f + x] === PARTE.piernas) || (x > 0 && nuevo[f + x - 1] >= 0 && dn[f + x - 1] === PARTE.piernas)) continue;
@@ -1969,8 +2000,10 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         // (De costado, sólo donde pasa delante de la panza: la camisa.)
         if (dn[k] !== PARTE.brazo || !sobre(k) || (vista === 'lado' && ![C.L, C.C, C.c].includes(cuerpoListo[k]))) continue;
         if (nuevo[k] === C.L || nuevo[k] === C.C) nuevo[k] = C.c;
+        // (De costado, sin el punto oscuro debajo: con el borde fino entre el brazo y la panza ya se lee, y la
+        // sombra quedaba como una mancha en el cinto.)
         const kb = k + ANCHO;
-        if (kb < nuevo.length && dn[kb] === PARTE.cuerpo && nuevo[kb] > 0) nuevo[kb] = sombrear(nuevo[kb], -1);
+        if (vista !== 'lado' && kb < nuevo.length && dn[kb] === PARTE.cuerpo && nuevo[kb] > 0) nuevo[kb] = sombrear(nuevo[kb], -1);
       }
     }
     // 6. El color de la chaqueta: lona marrón y el cuello oscuro; adentro, abierta, el chaleco y la camisa.

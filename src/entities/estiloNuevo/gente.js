@@ -339,14 +339,19 @@ const TORSOS = {
   guardia: {
     frente: mapa(8, ['.......CUCCCVc', '........UVCEv', '........UVEeE', '........UVyEv', '........UVVvv', '........VVyvv', '........VVVvw', '........VVyvw', '........WyGyW']),
     diagF: mapa(8, ['.......CUVCCvc', '........UUVCE', '........UVVEe', '........UVVyE', '........UVVvv', '........UVVyw', '........VVVvw', '........VVVyw', '........WyWGy']),
-    lado: mapa(8, ['.......UVVvC', '.......UVVvc', '.......UVVve', '.......UVVvE', '.......UVVvy', '.......UVVvv', '.......VVVvw', '.......VVVvw', '.......WWyWG']),
+    // (🔁 De costado, la columna de adelante es el pecho, que asoma delante del brazo: limpia, del color del
+    // chaleco a la sombra, con sólo la estrella de canto *(Santi eligió la B: "que quede apenas más centrado en
+    // el cuerpo")*. Antes la tapaba el brazo y tenía la estrella y los botones apilados.) Y la punta del hombro (la
+    // manga, arriba) un punto atrás, sobre el brazo: si no, el hombro salía del lugar de antes *(Santi)*.
+    lado: mapa(8, ['.......UVVCv', '.......UVVvv', '.......UVVvv', '.......UVVvE', '.......UVVvv', '.......UVVvv', '.......VVVvw', '.......VVVvw', '.......WWyWG']),
     diagE: mapa(8, ['.......CVVVCvc', '........UVVcv', '........UVVVv', '........UVVvv', '........UVVvv', '........UVVvv', '........VVVvw', '........VVVvw', '........WWWWW']),
     espalda: mapa(8, ['.......CVVCVVc', '........UVcVv', '........UVVVv', '........UVVvv', '........UVVvv', '........VVVvv', '........VVVvw', '........VVVvw', '........WWWWW']),
   },
   pasajero: {
     frente: mapa(8, ['.......CURSrVc', '........UCRCv', '........UVyVv', '........UVVvv', '........UVyvv', '........VVVvv', '........VVyvw', '........VVVvw', '........WyGyW']),
     diagF: mapa(8, ['.......CUVRSrc', '........UUCRv', '........UVVyv', '........UVVvv', '........UVVyv', '........UVVvw', '........VVVyw', '........VVVvw', '........WyWGy']),
-    lado: mapa(8, ['.......UVVvR', '.......UVVvr', '.......UVVvy', '.......UVVvv', '.......UVVvy', '.......UVVvv', '.......VVVvw', '.......VVVvw', '.......WWyWG']),
+    // (🔁 El pecho de costado, limpio y sin botones, como el del guardia.)
+    lado: mapa(8, ['.......UVVvR', '.......UVVvr', '.......UVVvv', '.......UVVvv', '.......UVVvv', '.......UVVvv', '.......VVVvw', '.......VVVvw', '.......WWyWG']),
     diagE: mapa(8, ['.......CVVVCvc', '........UVVcv', '........UVVVv', '........UVVvv', '........UVVvv', '........UVVvv', '........VVVvw', '........VVVvw', '........WWWWW']),
     espalda: mapa(8, ['.......CVVCVVc', '........UVcVv', '........UVVVv', '........UVVvv', '........UVVvv', '........VVVvv', '........VVVvw', '........VVVvw', '........WWWWW']),
   },
@@ -369,7 +374,8 @@ function torsoEncargado(vista) {
   const t = TORSOS.guardia[vista], K = CARTERA_ENCARGADO[vista];
   const alto = Math.max(t.filas.length, K.y + K.filas.length - t.y);
   // (El cinto, la última fila del torso, con los remaches oscuros: con los botones dorados era un bloque dorado.)
-  const g = Array.from({ length: alto }, (_, j) => (t.filas[j] || '').replace(/[Ee]/g, 'V').replace(/y/g, (c) => (j === t.filas.length - 1 ? 'W' : c)).padEnd(18, '.').split(''));
+  // (De costado, en el lugar de la estrella, un botón dorado: es lo único que asoma en el pecho.)
+  const g = Array.from({ length: alto }, (_, j) => (t.filas[j] || '').replace(/[Ee]/g, vista === 'lado' ? 'y' : 'V').replace(/y/g, (c) => (j === t.filas.length - 1 ? 'W' : c)).padEnd(18, '.').split(''));
   for (const [x, y] of K.correa) if (g[y - t.y] && g[y - t.y][x] !== '.') g[y - t.y][x] = 'g';
   K.filas.forEach((fila, j) => { for (let x = 0; x < fila.length; x++) g[K.y + j - t.y][K.x + x] = fila[x]; });
   return { y: t.y, filas: g.map((f) => f.join('').replace(/\.+$/, '')) };
@@ -415,7 +421,9 @@ const ESTRELLA_SHERIFF = {
   // 🔁 Una estrella de cinco puntas de verdad (5×4): la cruz agrandada quedaba fea *(Santi)*.
   frente: [8, 9, ['..E..', 'EEeEE', '.EeE.', '.E.E.']],
   diagF: [9, 9, ['..E..', 'EEeEE', '.EeE.', '.E.E.']],
-  lado: [10, 10, ['.E', 'Ee', '.E']],
+  // (🔁 De costado, de canto: dos puntos en el pecho que asoma delante del brazo; los tres apilados eran
+  // una raya dorada.)
+  lado: [11, 11, ['E', 'e']],
 };
 // 🔁 Continuo *(Santi: "parece que tiene unos muslos enormes. El saco debería ser continuo")*: cerrado
 // hasta abajo, con la raya oscura donde se juntan los dos lados.
@@ -697,7 +705,8 @@ function bartenderGordito(q, vista) {
   // De costado: la panza, del chaleco y no de la camisa (parecía un bulto de delantal).
   if (vista === 'lado' || vista === 'diagE') for (let y = OY + 9; y < yC; y++) for (let x = 0; x < ANCHO; x++) {
     const k = y * ANCHO + x;
-    if (es(k) && (out[k] === 17 || out[k] === 16)) out[k] = out[k] === 17 ? 31 : 0;
+    // (🔁 También la sombra que el brazo deja en la panza al pasar, `15`: quedaba un punto claro.)
+    if (es(k) && (out[k] === 17 || out[k] === 16 || out[k] === 15)) out[k] = out[k] === 17 ? 31 : 0;
   }
   // Y la cintura del delantal, de costado, sin el punto que la panza empujaba hacia adelante (quedaba un escalón).
   if (vista === 'lado') {

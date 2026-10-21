@@ -19207,6 +19207,24 @@ guardaespaldas distintos)*:
     el pañuelo del jugador *("debería ser un pequeño nudo")*; en diagonal, el nudo corrido para el lado
     contrario al que giró. De perfil, el delantal **corrido** un punto (no agrandado) para tapar los puntos
     grises de la cintura *("No lo agrandes, correlo")*.
+- **✅ DE PERFIL, EL BRAZO MÁS CENTRADO Y LA PANZA EN SERIO** (jugador.js, gente.js) *(Santi: "que quede apenas
+  más centrado en el cuerpo"; eligió la B; "quiero que ahora tomes muy enserio la panza y sus pixeles")*:
+  - **El brazo que cuelga, un punto más atrás**, quieto y caminando, en toda la gente (no en las poses con
+    arma): queda encima del torso y asoma el pecho delante. Esa columna, que antes tapaba el brazo, **dibujada
+    limpia**: el guardia, chaleco a la sombra con un punto dorado de la estrella; el pasajero y el jugador, sin
+    botones; el Encargado, un botón dorado; la estrella del Sheriff de canto, dos puntos. Y la **punta del
+    hombro** (la manga, arriba) también un punto atrás.
+  - **La panza del gordito, pegada al torso** (`frenteTorso`): se medía desde el brazo, y caminando se corría
+    con él en escalerita y la mano del brazo de atrás quedaba entre el cuerpo y la panza. Ahora queda quieta: el
+    brazo de acá pasa por encima (con el borde fino donde se parecen los colores) y el de allá por detrás. Lo
+    mismo el pecho del de hombros anchos y lo que se le saca al flaco. En el cinto la panza tapa la hebilla; sin
+    la sombra vieja que el brazo dejaba debajo (era una mancha); el bartender, con la panza toda de chaleco.
+  - **Sin la mano volando**: el brazo libre de allá, al hamacarse, asomaba la mano sola delante del pecho (más
+    en el flaco). Ya no pasa del frente del cuerpo; detrás de la espalda sí se ve.
+  - 🐛 El flaco corriendo (la cadera de la pierna de atrás, suelta) y el **flaco agachado** (al afinarle las
+    piernas, el muslo de atrás quedaba despegado del pie: agachado ya no se afinan).
+  - 🔧 Las fotos de prueba no traían el borde fino (en el juego sí): ahora sí (tmp-ref/brazo-perfil.js), y
+    tmp-ref/volcar.js busca puntos sueltos en toda la gente.
 - **✅ FORAJIDO-JUGAR.HTML con el estilo nuevo** *(Santi: "por qué en este archivo todavía no están los
   cambios de 1era clase?")*: con doble clic no hay dónde poner "?nuevo"; el archivo armado lo prende solo
   (`FORAJIDO_ESTILO_NUEVO`, armar-archivo.ps1). [F9] lo sigue apagando.

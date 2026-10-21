@@ -212,7 +212,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   el puro, la copa y el bartender secando hechos, y el borde fino entre brazo y cuerpo en todo el juego;
   la silueta del bartender secando arreglada; los ricos van a la barra y se visitan, con el guardaespaldas
   tomando posiciones y la pistola Volcanic; el bartender que nunca duerme (seca copas y ordena el
-  estante de espaldas) y su delantal atado atrás. Primera clase cerrada; sigue el vagón de
+  estante de espaldas) y su delantal atado atrás; de perfil, el brazo más centrado y la panza del gordito
+  pegada al torso (sin manos volando). Primera clase cerrada; sigue el vagón de
   guardias, correo, blindado y caboose (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los

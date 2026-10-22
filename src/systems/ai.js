@@ -1509,7 +1509,19 @@ function doPatrol(e, dt, world) {
    * el primer vagón. Mismo patrón que ya usan la puntería y la sospecha.
    */
   const velocidad = e.ai.patrolSpeed ?? c.patrolSpeed;
-  const arrived = moveAxisAligned(e, waypoint.x, waypoint.y, velocidad, dt, world.map);
+  /**
+   * 🆕 SI SE TRABÓ, VUELVE POR EL CAMINO (`rondaPorCamino`, ver el destrabe más abajo). La ronda camina en ejes
+   * (primero X, después Y) sin buscar ruta: alcanza para ir de un punto al otro de la ronda, pero el que vuelve
+   * desde otro lado (de buscarte) puede tener un mueble justo de costado y quedarse empujándolo. Medido en el
+   * blindado: el de la ronda de abajo volvió desde arriba, quedó pegado al costado de un parapeto de bolsas y
+   * todos sus puntos estaban del otro lado. Por el camino buscado (`viajarHacia`) lo rodea.
+   */
+  let arrived;
+  if (e.rondaPorCamino) {
+    viajarHacia(e, dt, world, waypoint.x, waypoint.y, velocidad);
+    arrived = distance(e.x, e.y, waypoint.x, waypoint.y) < 3;
+    if (arrived) { e.rondaPorCamino = false; e.ruta = null; }
+  } else arrived = moveAxisAligned(e, waypoint.x, waypoint.y, velocidad, dt, world.map);
 
   /**
    * EL DE RONDA LARGA VUELVE A SU CARRIL, SIEMPRE.
@@ -1651,7 +1663,10 @@ function doPatrol(e, dt, world) {
     e.rondaTrabado = 0;
     e.rondaUltimoX = e.x;
     e.rondaUltimoY = e.y;
-    e.pathIndex = (e.pathIndex + 1) % e.path.length;
+    // (🆕 La primera vez, al mismo punto pero por el camino; si tampoco así llega —un barril encima del punto—,
+    // al siguiente, como siempre.)
+    if (!e.rondaPorCamino) e.rondaPorCamino = true;
+    else { e.rondaPorCamino = false; e.ruta = null; e.pathIndex = (e.pathIndex + 1) % e.path.length; }
   }
 }
 

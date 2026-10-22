@@ -645,6 +645,9 @@ export function createRaidScene(services) {
       if (v) { player.x = v.x + 3.5 * map.size; player.y = 4.5 * map.size; }
       // (🆕 `pruebaEnganche`: en el enganche de atrás del vagón, afuera, para entrar sin que te vean.)
       if (v && params.pruebaEnganche) player.x = v.x - map.size / 2;
+      // (🧪 `pruebaPuertas` (el atajo [4]): las puertas de chapa de ese vagón se empujan como las de madera, para
+      // entrar a mirarlo sin dinamita.)
+      if (v && params.pruebaPuertas) for (const d of doors) if (d.kind === 'blindada' && d.x > v.x - map.size && d.x < v.x + v.width + map.size) d.kind = 'normal';
     }
 
     camera.snap(player.x, player.y, map.bounds);
@@ -4390,7 +4393,8 @@ export function createRaidScene(services) {
     for (const d of doors) if (visible(d)) cosas.push({ base: pies(d), draw: () => drawDoor(r, d, colors) });
     for (const tr of tranqueras) if (visible(tr)) cosas.push({ base: pies(tr, 8), draw: () => dibujarTranquera(r, tr) });
     for (const c of cajones) if (visible(c)) cosas.push({ base: pies(c), draw: () => drawCajon(r, c) });
-    for (const l of loot) if (visible(l)) cosas.push({ base: pies(l), draw: () => drawLootable(r, l) });
+    // (🎨 La caja fuerte contra un mueble se ordena con el mueble: ver `nicho` en world/train.js.)
+    for (const l of loot) if (visible(l)) cosas.push({ base: l.nicho && estiloNuevo.activo ? l.nicho.base : pies(l), draw: () => drawLootable(r, l) });
     // 🎨 El sentado y el que duerme en la litera van encima de su mueble (ver `baseDeDibujo`).
     for (const pa of passengers) if (pa.alive && visible(pa)) cosas.push({ base: baseDeDibujo(pa, pies(pa)), draw: () => drawPassenger(r, pa) });
     for (const e of enemies) if (e.alive && visible(e)) cosas.push({ base: pies(e), draw: () => pintar(e) });

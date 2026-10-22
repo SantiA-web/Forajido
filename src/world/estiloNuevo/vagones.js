@@ -32,7 +32,7 @@ import { DENSIDAD } from '../../engine/renderer.js';
 import { iluminar } from '../../engine/luz.js';
 import { masCercano, sombrear } from '../../engine/paleta.js';
 import { estiloNuevo } from '../../engine/estiloNuevo.js';
-import { WAGONS } from '../../data/wagons.js';
+import { WAGONS, nichoDeCaja } from '../../data/wagons.js';
 
 /** Cuántas unidades del mundo mide un punto de la grilla (0,75 con puntos de 3). */
 export const PASO = CONFIG.estilo.punto / DENSIDAD;
@@ -43,7 +43,10 @@ const PX = 1 / PASO;
 // primera clase (ver `primeraClase`) y el de guardias (ver `guardias`).
 // (🆕 Y el correo, el del tren de pasajeros.)
 // (🆕 Y el caboose, la casa de la tripulación.)
-const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose']);
+// (🆕 Y el blindado, la bóveda de chapa.)
+const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado']);
+/** ¿Este vagón ya se dibuja en el estilo nuevo? (Lo usa world/train.js para las cajas fuertes.) */
+export const esVagonNuevo = (id) => NUEVOS.has(id);
 
 /**
  * LOS VAGONES DEL ESTILO NUEVO de este tren: sus columnas (para que el dibujo
@@ -122,7 +125,8 @@ function vagon(train, w, dia) {
 
   // ---- los colores (índices de la paleta)
   const cc = CONFIG.colors.costado;
-  const hex = cc.coche[w.id] || cc.coche.pasajeros;
+  // (🆕 El blindado, del gris de su chapa.)
+  const hex = (w.id === 'blindado' && cc.blindado) || cc.coche[w.id] || cc.coche.pasajeros;
   const n = parseInt(hex.slice(1), 16);
   const BORDE = masCercano((n >> 16) & 255, (n >> 8) & 255, n & 255);
   const BORDE_L = sombrear(BORDE, 1), BORDE_S = sombrear(BORDE, -1), BORDE_SS = sombrear(BORDE, -2);
@@ -262,7 +266,23 @@ function vagon(train, w, dia) {
 
   // ===== LA LUZ, por escalones
   const tope = ay(yPisoAbajo);
-  const campo = dia
+  /**
+   * 🆕 EL BLINDADO NO TIENE VENTANILLAS: lo alumbran sólo sus faroles, de día y de noche *(Santi eligió la A: "casi
+   * igual de día que de noche, apenas más oscuro de noche")*. Lo que cambia es el piso lejos de los faroles: un
+   * escalón más oscuro de noche.
+   */
+  const campoBlindado = (x, y) => {
+    if (y >= ay(yPisoAbajo - tc.alturaParedBaja) + 8) return dia ? -1 : -2;
+    let f = y < ay(yPisoArriba) ? -1 : dia ? -1 : -2;
+    const yCharco = ay(yPisoArriba) + Math.round((tope - ay(yPisoArriba)) * 0.32);
+    for (const fx of faroles) {
+      // (2: con 2,4 el medio del charco llegaba al blanco y hacía una crucecita de puntos.)
+      f += 2 * Math.max(0, 1 - Math.hypot((x - fx) / 80, (y - yCharco) / 50));
+      f += 2.4 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - 24) / 18));
+    }
+    return f;
+  };
+  const campo = w.id === 'blindado' ? campoBlindado : dia
     ? (x, y) => {
       if (y < 8) return 0;
       let f = y < ay(yPisoArriba) ? -1 : 0;
@@ -324,6 +344,7 @@ function vagon(train, w, dia) {
   const hash = (x, y) => ((((x * 73856093) ^ (y * 19349663)) >>> 0) % 1000) / 1000;
   const yPisoA = ay(yPisoArriba);
   const luzSola = (y) => {
+    if (w.id === 'blindado') return y < yPisoA ? -1 : dia ? -1 : -2;
     if (dia) return y < yPisoA ? -1 : 0;
     return y < yPisoA ? -1 : -2;
   };
@@ -334,6 +355,24 @@ function vagon(train, w, dia) {
   {
     const r = rect(PISO), p = pone(PISO);
     const y0 = ay(yPisoArriba), y1 = ay(yPisoAbajo + 3);
+    if (w.id === 'blindado') {
+      /**
+       * 🆕 EL BLINDADO: PISO DE CHAPA, en planchas de dos columnas por una fila, con las juntas oscuras y LOS
+       * REMACHES a lo largo de cada junta (uno de los cinco detalles), más donde hay luz. (Sin rayones: bajo el farol
+       * se veían como ruido.)
+       */
+      for (let y = y0; y < y1; y++) for (let x = 0; x < W; x++) p(x, y, 24);
+      for (let c = 0; c <= cols; c += 2) {
+        const jx = ax(w.x + c * S);
+        r(jx, y0, 1, y1 - y0, 31);
+        for (let y = y0 + 3; y < y1; y += 5) if (deja(jx + 2, y, 60, 0.4)) p(jx + 2, y, 23);
+      }
+      for (let f = filasArriba + 1; f * S <= yPisoAbajo; f++) {
+        const jy = ay(f * S);
+        r(0, jy, W, 1, 31);
+        for (let x = 3; x < W; x += 6) if (deja(x, jy + 2, 61, 0.4)) p(x, jy + 2, 23);
+      }
+    } else {
     for (let y = y0; y < y1; y++) {
       /**
        * 🔁 MENOS DETALLE *(Santi: "hay demasiado detalle y cansa un poco la
@@ -364,7 +403,8 @@ function vagon(train, w, dia) {
         for (let q = 0; q < largo; q++) if ((x + q + off) % 110 !== 0) p(x + q, y + fila, color);
       }
     }
-    r(0, y0, W, 2, 32);                                                   // la sombra de la pared del fondo
+    }
+    r(0, y0, W, 2, w.id === 'blindado' ? 31 : 32);                        // la sombra de la pared del fondo
     // Las puntas del vagón (las paredes de los costados, vistas desde arriba).
     for (let c = 0; c < cols; c++) for (let f = filasArriba; f < map.rows - filasAbajo; f++) {
       if (casilla(c, f) !== '#') continue;
@@ -426,7 +466,8 @@ function vagon(train, w, dia) {
     }
     // (🆕 En el correo, más arriba: debajo van los casilleros.)
     const yFarol = w.id === 'correo' ? yCara + 4 : yCara + 12;
-    for (const fx of faroles) {
+    // (🆕 En el blindado no: los suyos cuelgan del techo y se hamacan, ver `blindado`.)
+    for (const fx of w.id === 'blindado' ? [] : faroles) {
       const y = yFarol;
       r(fx - 3, y - 2, 7, 1, 0); r(fx - 1, y - 1, 3, 1, 28);
       r(fx - 3, y, 7, 9, 0);
@@ -1856,6 +1897,463 @@ function vagon(train, w, dia) {
     }
   }
 
+  /**
+   * 🆕 P4 · EL VAGÓN BLINDADO, LA BÓVEDA DE CHAPA *(Santi eligió las recomendaciones y los cinco detalles)*: sin
+   * ventanillas, chapa gris remachada, alumbrado sólo por los faroles enjaulados que cuelgan del techo y se hamacan
+   * con el tren (casi igual de día que de noche: ver `campoBlindado` más arriba).
+   *  - EL FONDO: LA JAULA de barrotes a lo largo de la pared, con las sacas de plata y los cajones sellados detrás,
+   *    cerrada con cadena y candado.
+   *  - ADELANTE (la última fila): ARCONES con flejes y candado y LINGOTES tapados con una lona, desparejos.
+   *  - EL MEDIO: PARAPETOS DE SACOS DE ARENA y CAJONES DE CAUDALES mezclados, de distintas alturas. En el mismo
+   *    lugar de siempre (las rondas de los guardias no cambian).
+   *  - LOS RINCONES: EL ARMERO de chapa con las escopetas, LA CAJA DE DINAMITA de los guardias y los rollos de mecha;
+   *    EL PUESTO CONTRA INCENDIOS (los baldes de arena, el hacha, el cajón de arena) con sacos apilados; EL ATRIL DEL
+   *    REGISTRO de valores; y el rincón de la segunda caja fuerte.
+   *  - LAS CAJAS FUERTES se dibujan aparte, en el juego (entities/lootable.js), contra la jaula y en el rincón, en
+   *    casillas que ya chocan (`nichoDeCaja`, data/wagons.js): acá se les deja el lugar vacío.
+   *  - Los detalles: LAS TRONERAS con su tapa corrediza, LOS REMACHES del piso de chapa (ver el piso), UN LINGOTE
+   *    CAÍDO en el piso, EL SELLO DE LACRE ROTO de un cajón y LA CADENA de la jaula que se hamaca.
+   */
+  if (w.id === 'blindado') {
+    const r = rect(MESAS), p = pone(MESAS);
+    const rf = rect(FONDO), pf = pone(FONDO), pp = pone(PISO);
+    const yCara = 8, yPie = ay(yPisoArriba);
+    const dibujo = (pq, x, y, filas, col) => filas.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') pq(x + q, y + j, col[fila[q]]); });
+    const MAD = 5, MAD_L = 6, MAD_S = 4, MAD_SS = 3;
+    const X = (c) => ax(w.x + c * S), Y = (f) => ay(f * S);
+    const h = (a, b) => hash(a + w.colStart * 3, b);
+    const espejo = (filas) => filas.map((f) => f.split('').reverse().join(''));
+
+    // --- la pared: chapas grises remachadas, con una viga cada dos columnas y el zócalo.
+    for (let y = yCara; y < yPie; y++) for (let x = 0; x < W; x++) pf(x, y, 24);
+    const yJunta = yCara + 19;
+    rf(0, yJunta, W, 1, 31); rf(0, yJunta + 1, W, 1, 25);
+    for (let x = 2; x < W; x += 6) for (const y of [yCara + 2, yJunta - 2, yJunta + 3, yPie - 7]) if (deja(x, y, 50, 0.5)) { pf(x, y, 25); pf(x, y + 1, 31); }
+    for (let c = 0; c <= cols; c += 2) {
+      const vx = X(c) - 2;
+      rf(vx, yCara, 5, yPie - yCara, 0); rf(vx + 1, yCara, 3, yPie - yCara, 23); rf(vx + 1, yCara, 1, yPie - yCara, 25);
+      for (let y = yCara + 3; y < yPie - 3; y += 5) pf(vx + 2, y, 25);
+    }
+    rf(0, yPie - 3, W, 3, 31); rf(0, yPie - 3, W, 1, 23);
+    // --- las troneras, arriba de la jaula: la rendija para tirar y su tapa corrediza, cada una corrida distinto.
+    [4.5, 11.5, 19.5].forEach((cc, k) => {
+      const tx = ax(w.x + cc * S) - 6, ty = yCara + 7;
+      rf(tx - 2, ty - 3, 16, 1, 31); rf(tx - 2, ty + 6, 16, 1, 31);                          // los rieles de la tapa
+      rf(tx - 1, ty - 1, 14, 6, 0); rf(tx, ty, 12, 4, 31); rf(tx + 1, ty + 1, 10, 2, 0);   // el marco y la rendija
+      const corre = [5, 0, 3][k];
+      rf(tx + corre - 1, ty - 2, 9, 8, 0); rf(tx + corre, ty - 1, 7, 6, 24); rf(tx + corre, ty - 1, 7, 1, 25); rf(tx + corre, ty + 4, 7, 1, 23);
+      rf(tx + corre + 3, ty + 1, 1, 2, 0);                                                   // el tirador
+    });
+
+    // --- los faroles enjaulados, colgados del techo de una cadena: se hamacan con el tren (prendidos siempre).
+    const FAROL = ['..ooo..', '.oKKKo.', 'oKKKKKo', 'oKyYyKo', 'oKyYyKo', 'oKyyyKo', 'oKKKKKo', '.ooooo.'];
+    for (const fx of faroles) {
+      const largo = 9;
+      animado(fx - 7, yCara, 15, largo + FAROL.length + 2, yPisoArriba + S + 0.005, 9, (m, ra, pa) => {
+        const dx = Math.round(m * 1.6);
+        for (let k = 0; k <= largo; k++) pa(fx + Math.round((dx * k) / largo), yCara + k, k % 2 ? 24 : 0);
+        FAROL.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') { const ch = fila[q]; pa(fx + dx - 3 + q, yCara + largo + 1 + j, { o: 0, K: 23, y: 28, Y: 29 }[ch], ch === 'y' || ch === 'Y'); } });
+      });
+    }
+
+    // --- dónde van las cajas fuertes: ahí no se dibuja nada.
+    const nichos = new Set();
+    for (const L of (WAGONS[w.id] && WAGONS[w.id].loot) || []) {
+      if (L.type !== 'strongbox') continue;
+      const n = nichoDeCaja(WAGONS[w.id].layout, L.col, L.row);
+      if (n) nichos.add(n[0] + ',' + n[1]);
+    }
+    const libre = (c, f) => casilla(c, f) === 'C' && !nichos.has(c + ',' + f);
+
+    // --- lo que se repite: el cajón de caudales, la saca de plata, las bolsas de arena, el candado.
+    const SELLO = ['..o..', '.oRo.', 'oRrRo', 'oRRRo', '.ooo.'];
+    const SELLO_ROTO = ['.o....', 'oRo.o.', 'oRroRo', '.oo.Ro', '....o.'];
+    const cajon = (cx, piso, an, tapa, alto, sello) => {
+      const t0 = piso - alto - tapa;
+      r(cx - 1, t0 - 1, an + 2, alto + tapa + 2, 0);
+      r(cx, t0, an, tapa, MAD); r(cx, t0, an, 1, MAD_L);
+      for (let q = cx + 5; q < cx + an - 3; q += 5) r(q, t0 + 1, 1, tapa - 1, MAD_S);
+      r(cx, piso - alto, an, alto, MAD_S); r(cx, piso - alto, an, 1, MAD_L);
+      for (let q = piso - alto + 4; q < piso - 1; q += 4) r(cx, q, an, 1, MAD_SS);
+      // Las esquineras de fierro, con sus clavos.
+      for (const ex of [cx, cx + an - 3]) { r(ex, t0, 3, tapa + alto, 31); for (let q = t0 + 2; q < piso - 1; q += 4) p(ex + 1, q, 25); }
+      // El sello de lacre (rojo) colgando de su cordel sobre la junta de la tapa; o roto, el cordel suelto.
+      if (sello) {
+        const sx = cx + Math.floor(an / 2) - 2;
+        r(sx + 2, piso - alto - 2, 1, 4, 16);
+        dibujo(p, sx, piso - alto + 2, sello === 'roto' ? SELLO_ROTO : SELLO, { o: 0, R: 9, r: 10 });
+        if (sello === 'roto') { p(sx + 6, piso - alto + 5, 16); p(sx + 7, piso - alto + 6, 16); }
+      }
+    };
+    const SACO = ['....ooo.....', '...okkko....', '....oko.....', '...oLLLo....', '..oLLCCCo...', '.oLLCCCCCo..', 'oLLCCCCCCco.', 'oLCCCCCCCcco', 'oLCCCYYCCcco', 'oLCCCCCCCcco', 'oCCCCCCCccco', 'oCCCCCCcccco', '.oCCCCcccco.', '..oooooooo..'];
+    const LONA = { o: 0, k: 4, L: 16, C: 15, c: 14, Y: 7 };
+    /**
+     * 🔁 LAS BOLSAS DE ARENA, GRANDES Y BIEN TRABADAS *(Santi: "las bolsas deberían ser más grandes y estar mejor
+     * puestas")*: el parapeto de las trincheras. Cada bolsa del ancho de una columna, panzona, de arpillera marrón,
+     * con el pliegue de la punta atada; las hileras del frente trabadas como ladrillos (cada una corrida media bolsa)
+     * y arriba la última capa, acostada, vista desde arriba. Antes eran chiquitas y parejas y no se entendían.
+     */
+    const ARP = { o: 0, L: 37, C: 36, c: 35, s: 34 };
+    const filasBolsa = (an, arriba) => {
+      const m = (a, mid, b) => a + mid.repeat(Math.max(0, an - a.length - b.length)) + b;
+      return arriba
+        ? [m('...', 'o', '...'), m('.oo', 'L', 'oo.'), m('oL', 'L', 'Lo'), m('oL', 'C', 'Co'), m('oC', 'C', 'co'), m('.oc', 'c', 'co.'), m('..o', 'c', 'o..'), m('...', 'o', '...')]
+        : [m('...', 'o', '...'), m('.oo', 'L', 'oo.'), m('oL', 'C', 'Co'), m('oC', 'C', 'co'), m('oC', 'c', 'co'), m('oc', 'c', 'so'), m('.os', 's', 'so.'), m('..o', 's', 'o..'), m('...', 'o', '...')];
+    };
+    const bolsa = (x, y, an, arriba) => {
+      dibujo(p, x, y, filasBolsa(an, arriba), ARP);
+      const k = h(x, y) < 0.5 ? x + 4 : x + an - 5;                                       // el pliegue de la punta atada
+      for (let q = 2; q < (arriba ? 6 : 7); q++) p(k, y + q, arriba ? 35 : 34);
+      // La trama de la arpillera: puntitos más oscuros salteados (lisas parecían panes).
+      for (let q = 3; q < an - 3; q++) for (let rr = 2; rr < (arriba ? 5 : 6); rr++) if (h(x + q * 3, y + rr * 7) < 0.16) p(x + q, y + rr, rr < 4 ? 35 : 34);
+    };
+    // Los anchos de una hilera de `W`: bolsas de 22, la primera de media si va corrida; nunca un pedacito suelto.
+    const anchos = (W, j) => {
+      const out = []; let resto = W;
+      if (j % 2) { out.push(11); resto -= 11; }
+      while (resto > 0) { const a = Math.min(22, resto); if (a < 12 && out.length) out[out.length - 1] += a; else out.push(a); resto -= a; }
+      return out;
+    };
+    const hilera = (xa, xb, y, j, arriba) => {
+      let q = xa;
+      anchos(xb - xa, j).forEach((a, k) => { bolsa(q, y + Math.round((h(q, y + k) - 0.5) * 2), a + 1, arriba); q += a; });
+    };
+    // La pila: arriba, las acostadas (de atrás para adelante); el frente, `capas` hileras.
+    const sacos = (x, x2, yt, yb, capas) => {
+      const alto = capas * 7 + 2, tf = yb - alto, tt = yt + 3 - alto;
+      let j = 0;
+      // (Las de arriba, contadas desde el frente: así la última pega con la primera hilera del frente, sin piso entre las dos.)
+      const ys = []; for (let y = tf - 6; y >= tt - 2; y -= 6) ys.unshift(y);
+      for (const y of ys) hilera(x, x2, y, j++, true);
+      for (let y = tf; y <= yb - 9; y += 7) hilera(x, x2, y, j++, false);
+      return tt - 1;
+    };
+    const CANDADO = ['.ooo.', 'oKoKo', 'ooooo', 'oBBBo', 'oBbBo', 'oBBBo', '.ooo.'];
+    const candado = (x, y) => dibujo(p, x, y, CANDADO, { o: 0, K: 24, B: 7, b: 0 });
+
+    // --- LA JAULA: los tramos de la primera fila que no son rincón ni caja fuerte.
+    const fJ = filasArriba, yPisoJ = Y(fJ + 1) - 1, yTopJ = yJunta;
+    const esJaula = (c) => libre(c, fJ) && casilla(c, fJ + 1) !== 'C';
+    const tramosJ = [];
+    for (let c = 1; c < cols - 1; c++) {
+      if (!esJaula(c) || esJaula(c - 1)) continue;
+      let c2 = c; while (esJaula(c2 + 1)) c2++;
+      tramosJ.push([c, c2]);
+    }
+    for (const [ca, cb] of tramosJ) {
+      const x1 = X(ca) + 1, x2 = X(cb + 1) - 1;
+      // Detrás de los barrotes: las sacas de plata y los cajones sellados, sobre el piso de la jaula.
+      let cx = x1 + 3, k = 0;
+      while (cx < x2 - 13) {
+        const hk = h(cx, 7), piso = yPie + 13 + Math.floor(h(k, cx) * 5);
+        if (hk < 0.45) { dibujo(p, cx, piso - SACO.length, hk < 0.22 ? SACO : espejo(SACO), LONA); cx += 10 + Math.floor(h(k, 3) * 3); }
+        else { const an = Math.min(x2 - 3 - cx, 15 + Math.floor(h(k, 5) * 8)); if (an >= 10) cajon(cx, piso, an, 5, 9 + Math.floor(h(k, 9) * 4), h(k, 11) < 0.5); cx += an + 2; }
+        k++;
+      }
+      // Los barrotes, los rieles (arriba, al medio y abajo) y los postes.
+      for (let x = x1 + 3; x < x2 - 2; x += 5) { r(x, yTopJ, 2, yPisoJ - yTopJ, 0); r(x + 1, yTopJ, 1, yPisoJ - yTopJ, 24); }
+      for (const [ry, alto] of [[yTopJ, 4], [yTopJ + 18, 3], [yPisoJ - 4, 4]]) { r(x1, ry, x2 - x1, alto, 0); r(x1, ry + 1, x2 - x1, alto - 2, 23); r(x1, ry + 1, x2 - x1, 1, 25); }
+      const cd = Math.round((ca + cb) / 2);
+      const postes = [x1, x2 - 4];
+      for (let c = ca + 3; c < cb - 1; c += 3) if (Math.abs(c - cd) > 1) postes.push(X(c) - 2);
+      for (const px of postes) { r(px, yTopJ - 2, 5, yPisoJ - yTopJ + 2, 0); r(px + 1, yTopJ - 2, 3, yPisoJ - yTopJ + 1, 23); r(px + 1, yTopJ - 2, 1, yPisoJ - yTopJ + 1, 25); }
+      /**
+       * 🔁 LA PUERTA DE LA JAULA, REFORZADA *(Santi: "eso de la puerta que mencionaste, quiero que la refuerces")*:
+       * más ancha que una columna, con su propio marco de planchuela gruesa, el travesaño en diagonal, las dos
+       * bisagras grandes, la cerradura de caja con la cadena enroscada al marco y el candado colgando.
+       */
+      const dx1 = X(cd) - 3, dx2 = X(cd + 1) + 3, dy1 = yTopJ + 4, dy2 = yPisoJ - 4;
+      const marco = [[dx1, dy1, dx2 - dx1, 3], [dx1, dy2 - 3, dx2 - dx1, 3], [dx1, dy1, 3, dy2 - dy1], [dx2 - 3, dy1, 3, dy2 - dy1]];
+      for (const [mx, my, mw, mh] of marco) r(mx - 1, my - 1, mw + 2, mh + 2, 0);
+      for (const [mx, my, mw, mh] of marco) { r(mx, my, mw, mh, 24); r(mx, my, mw, 1, 25); r(mx, my, 1, mh, 25); }
+      // El travesaño en diagonal, de abajo a la izquierda a arriba a la derecha.
+      const largo = dx2 - dx1 - 6, sube = dy2 - dy1 - 8;
+      for (let pasada = 0; pasada < 2; pasada++) for (let q = 0; q <= largo; q++) {
+        const yy = dy2 - 5 - Math.round((q * sube) / largo);
+        if (pasada === 0) r(dx1 + 3 + q, yy - 1, 1, 4, 0); else { p(dx1 + 3 + q, yy, 25); p(dx1 + 3 + q, yy + 1, 24); }
+      }
+      for (const by of [dy1 + 4, dy2 - 9]) { r(dx1 - 3, by - 1, 5, 6, 0); r(dx1 - 2, by, 3, 4, 23); r(dx1 - 2, by, 3, 1, 25); }   // las bisagras
+      // La cerradura de caja, en el marco de la derecha, con la cadena enroscada y el candado.
+      const lx = dx2 - 2, ly = Math.round((dy1 + dy2) / 2) - 5;
+      r(lx - 6, ly - 1, 10, 10, 0); r(lx - 5, ly, 8, 8, 23); r(lx - 5, ly, 8, 1, 25); r(lx - 2, ly + 3, 1, 3, 0);
+      for (let q = lx + 2; q <= lx + 8; q += 3) dibujo(p, q, ly + 2, ['.o.', 'oKo', '.o.'], { o: 0, K: 25 });
+      for (let q = ly + 4; q <= ly + 8; q += 3) dibujo(p, lx + 7, q, ['.o.', 'oKo', '.o.'], { o: 0, K: 25 });
+      candado(lx + 6, ly + 10);
+      const ly2 = ly + 2;
+      // El cabo suelto de la cadena, colgando del candado: se hamaca con el tren.
+      animado(lx, ly2 + 15, 17, 14, yPisoArriba + S + 0.004, 9, (m, ra, pa) => {
+        for (let q = 0; q < 10; q++) {
+          const ex = lx + 8 + Math.round((m * 2.4 * q) / 9), ey = ly2 + 16 + q;
+          if (q % 2) { pa(ex - 1, ey, 0); pa(ex, ey, 25); pa(ex + 1, ey, 0); } else pa(ex, ey, 0);
+        }
+      });
+      muebles.push({ x: x1 - 1, y: yTopJ - 3, w: x2 - x1 + 2, h: yPisoJ - yTopJ + 4, base: yPisoArriba + S - 0.01 });
+    }
+
+    // --- LOS RINCONES (dos columnas cada uno).
+    const esquina = (c, f) => ({ x: X(c) + 1, x2: X(c + 2) - 1, yt: Y(f), yb: Y(f + 1) - 2 });
+    const cI = 1, cD = cols - 3, fU = map.rows - filasAbajo - 1;
+    // Arriba a la izquierda, contra la pared: EL ARMERO de chapa, abierto, con cuatro escopetas paradas y la cadena
+    // con candado que las traba. (🔁 Sin reja: los barrotes se mezclaban con los caños.)
+    if (libre(cI, fJ) && libre(cI, fJ + 1)) {
+      const { x, x2 } = esquina(cI, fJ), an = x2 - x, piso = Y(fJ + 1) - 2, alto = 38, prof = 6;
+      const ft = piso - alto, tt = ft - prof;
+      r(x - 1, tt - 1, an + 2, piso - tt + 2, 0);
+      r(x, tt, an, prof, 24); r(x, tt, an, 1, 25);
+      r(x, ft, an, alto, 23); r(x, ft, 1, alto, 24); r(x + an - 1, ft, 1, alto, 31);
+      r(x, piso - 3, an, 3, 31); r(x, ft, an, 1, 25);
+      const mitad = x + Math.floor(an / 2), dy = ft + 3, dh = alto - 9;
+      r(x + 2, dy, an - 4, dh, 0); r(x + 3, dy + 1, an - 6, dh - 2, 31);
+      r(x + 3, dy + dh - 5, an - 6, 3, 31); r(x + 3, dy + dh - 5, an - 6, 1, 23);                                     // el estante de abajo
+      for (const [dx, dw] of [[x + 2, mitad - x - 1], [mitad, x2 - mitad - 2]]) {
+        for (const ex of [dx + 3, dx + dw - 6]) {
+          r(ex - 1, dy + 2, 4, dh - 12, 0); r(ex, dy + 2, 1, dh - 12, 25); r(ex + 1, dy + 2, 1, dh - 12, 24);     // los dos caños
+          r(ex - 1, dy + dh - 11, 5, 3, 0); r(ex, dy + dh - 11, 3, 3, 24); r(ex, dy + dh - 11, 3, 1, 25);                                          // el cerrojo
+          r(ex - 1, dy + dh - 8, 5, 7, 0); r(ex, dy + dh - 8, 3, 6, MAD); r(ex, dy + dh - 8, 1, 6, MAD_L);         // la culata
+        }
+      }
+      const cy = dy + 9;
+      for (let q = x + 3; q < x2 - 3; q += 3) dibujo(p, q, cy, ['.o.', 'oKo', '.o.'], { o: 0, K: 25 });              // la cadena
+      candado(mitad - 2, cy + 1);
+      muebles.push({ x: x - 1, y: tt - 1, w: an + 2, h: piso - tt + 2, base: (fJ + 1) * S - 0.01 });
+    }
+    // Adelante del armero: LA CAJA DE DINAMITA de los guardias, abierta, llena de cartuchos. (🔁 Sin la tapa parada:
+    // tapaba el armero con un bloque liso.)
+    if (libre(cI, fJ + 1)) {
+      const { x, x2, yt, yb } = esquina(cI, fJ + 1), an = x2 - x, alto = 11, tf = yb - alto, tt = yt + 4 - alto;
+      r(x - 1, tt - 1, an + 2, yb - tt + 2, 0);
+      r(x, tt, an, tf - tt, 9); r(x, tt, an, 1, 10); r(x + 2, tt + 2, an - 4, tf - tt - 3, MAD_SS);                  // el borde y adentro
+      for (let y = tt + 2, j = 0; y + 3 <= tf - 1; y += 3, j++) for (let q = x + 2 - (j % 2) * 6; q < x2 - 2; q += 12) {
+        const a = Math.max(q, x + 2), b = Math.min(q + 12, x2 - 2);
+        r(a, y, b - a, 3, 0); r(a + 1, y + 1, b - a - 2, 1, 9); r(a + 1, y, b - a - 2, 1, 10); if (q + 12 <= x2 - 2) p(q + 10, y + 1, 16);   // los cartuchos
+      }
+      r(x, tf, an, alto, 9); r(x, tf, an, 1, 10); r(x, yb - 2, an, 2, 8);                                            // el frente, pintado de rojo
+      for (const ex of [x, x2 - 3]) r(ex, tt, 3, yb - tt, 31);
+      const ex = x + Math.floor(an / 2) - 7;
+      r(ex - 1, tf + 3, 16, 6, 0); r(ex, tf + 4, 14, 4, 17);                                                         // el rótulo blanco
+      for (let q = ex + 1; q < ex + 13; q += 3) r(q, tf + 5, 2, 2, 0);
+      muebles.push({ x: x - 1, y: tt - 1, w: an + 2, h: yb - tt + 2, base: (fJ + 2) * S - 0.01 });
+    }
+    // Y delante: un cajón bajo con LOS ROLLOS DE MECHA encima y la latita de los fulminantes.
+    if (libre(cI, fJ + 2)) {
+      const { x, x2, yt, yb } = esquina(cI, fJ + 2), an = x2 - x, alto = 8;
+      cajon(x, yb, an, yb - yt - 4, alto);
+      const ROLLO = ['..oooooooo..', '.oMMMMMMMMo.', 'oMmooooooMmo', 'oMo......oMo', 'oMmooooooMmo', '.oMMMMMMMMo.', '..oooooooo..'];
+      const top = yt + 4 - alto;
+      dibujo(p, x + 3, top + 2, ROLLO, { o: 0, M: 36, m: 35 });
+      dibujo(p, x + 17, top + 6, ROLLO, { o: 0, M: 36, m: 35 });
+      r(x + 15, top + 2, 6, 1, 0); r(x + 15, top + 3, 1, 3, 0);                                                     // la punta suelta
+      r(x2 - 9, top + 2, 7, 5, 0); r(x2 - 8, top + 3, 5, 3, 24); r(x2 - 8, top + 3, 5, 1, 25);                         // los fulminantes
+      muebles.push({ x: x - 1, y: top - 1, w: an + 2, h: yb - top + 2, base: (fJ + 3) * S - 0.01 });
+    }
+    // Arriba a la derecha: EL PUESTO CONTRA INCENDIOS: el tablero en la pared con los tres baldes de arena y el hacha.
+    // (🔁 El tablero de madera con una franja roja: rojo entero, los baldes rojos no se veían. Y sin el cajón de arena:
+    // las bolsas de adelante lo tapaban y sólo asomaba el cabo de la pala.)
+    if (libre(cD, fJ)) {
+      const { x, x2 } = esquina(cD, fJ), an = x2 - x;
+      const by = yCara + 9, bh = yPie - by - 4;
+      rf(x, by - 1, an, bh + 2, 0); rf(x + 1, by, an - 2, bh, MAD_S); rf(x + 1, by, an - 2, 3, 9); rf(x + 1, by, an - 2, 1, 10);
+      for (let q = by + 6; q < by + bh - 1; q += 5) rf(x + 1, q, an - 2, 1, MAD_SS);
+      const BALDE = ['..oooo..', '.o....o.', 'oooooooo', 'oSSSSSSo', 'oRRRRRRo', 'oRrRRRRo', '.oRRRRo.', '.oRrRRo.', '..oooo..'];
+      for (const q of [0, 1, 2]) { const bx = x + 2 + q * 9; rf(bx + 3, by + 1, 2, 1, 0); dibujo(pf, bx, by + 2, BALDE, { o: 0, S: 37, R: 9, r: 10 }); }
+      const hx = x2 - 7;
+      rf(hx, by + 2, 3, bh - 4, 0); rf(hx + 1, by + 3, 1, bh - 6, MAD_L);                                            // el cabo del hacha
+      dibujo(pf, hx - 3, by + 1, ['ooooooooo', 'oKKKKkKKo', 'oKKKKk.o.', '.ooooo...'], { o: 0, K: 25, k: 24 });       // la hoja
+    }
+    // Delante del puesto, las bolsas de arena: una pila alta atrás y una baja adelante (los frentes, a distintas alturas).
+    // (🔁 La de atrás, honda hasta la pared: entre el tablero y las bolsas quedaba piso que chocaba.)
+    for (const [f, capas, desde] of [[fJ + 1, 3, fJ], [fJ + 2, 1, fJ + 2]]) {
+      if (!libre(cD, f)) continue;
+      const { x, x2, yb } = esquina(cD, f), yt = Y(desde);
+      const tt = sacos(x, x2, yt, yb, capas);
+      muebles.push({ x: x - 1, y: tt - 1, w: x2 - x + 2, h: yb - tt + 2, base: (f + 1) * S - 0.01 });
+    }
+    // Abajo a la izquierda: EL ATRIL DEL REGISTRO de valores, alto, con patas, el libro abierto, el tintero y la pluma.
+    const fR = fU - 2;
+    if (libre(cI, fR)) {
+      const { x, x2, yt, yb } = esquina(cI, fR), an = x2 - x, ALTO = 18;
+      const tt = yt + 3 - ALTO, tf = yb - ALTO;
+      r(x - 1, tt - 1, an + 2, tf - tt + 5, 0);
+      r(x, tt, an, tf - tt, MAD); r(x, tt, an, 1, MAD_S); r(x, tf - 2, an, 2, MAD_L);                             // la tapa, inclinada
+      r(x, tf, an, 3, MAD_SS); r(x, tf, an, 1, MAD_S);
+      r(x + 3, tf + 3, an - 6, 5, 0); r(x + 4, tf + 3, an - 8, 4, MAD_S); p(x + Math.floor(an / 2), tf + 5, 7);          // el cajoncito
+      for (const px of [x + 1, x2 - 3]) { r(px - 1, tf + 3, 4, yb - tf - 3, 0); r(px, tf + 3, 2, yb - tf - 4, MAD_SS); }
+      r(x + 2, yb - 5, an - 4, 2, 0); r(x + 3, yb - 5, an - 6, 1, MAD_S);                                           // el travesaño
+      // El libro abierto: las dos hojas con sus renglones y el lomo.
+      const lx = x + 5, ly = tt + 3, lw = 24, lh = tf - tt - 6;
+      r(lx - 1, ly - 1, lw + 2, lh + 2, 0); r(lx, ly, lw, lh, 17); r(lx + Math.floor(lw / 2), ly, 1, lh, 16);
+      for (let q = ly + 2; q < ly + lh - 1; q += 2) { r(lx + 2, q, 8, 1, 33); r(lx + 14, q, 7 - (q % 3), 1, 33); }
+      r(x2 - 8, tt + 4, 4, 4, 0); r(x2 - 7, tt + 5, 2, 2, 18);                                                       // el tintero
+      for (let q = 0; q < 6; q++) p(x2 - 6 + q, tt + 3 - q, q < 2 ? 0 : 17);                                          // la pluma
+      muebles.push({ x: x - 1, y: tt - 6, w: an + 2, h: yb - tt + 7, base: (fR + 1) * S - 0.01 });
+    }
+    // Delante del atril: dos cajones de caudales, el chico arriba del grande.
+    if (libre(cI, fR + 1)) {
+      const { x, x2, yt, yb } = esquina(cI, fR + 1), an = x2 - x;
+      cajon(x, yb, an, yb - yt - 4, 12);
+      cajon(x + 3, yb - 16, 20, 5, 8);
+      muebles.push({ x: x - 1, y: yb - 32, w: an + 2, h: 34, base: (fR + 2) * S - 0.01 });
+    }
+    // Abajo a la derecha, el rincón de la otra caja fuerte: un cajón alto detrás (asoma por arriba de la caja) y, al
+    // lado, dos cajones de caudales, uno sobre el otro. (🔁 Una saca detrás asomaba como un sombrerito.)
+    if (casilla(cD, fR) === 'C') {
+      const x = X(cD) + 2, x2 = X(cD + 1) - 1, piso = Y(fR + 1) - 3;
+      cajon(x, piso, x2 - x, 5, 24);
+      muebles.push({ x: x - 1, y: piso - 31, w: x2 - x + 2, h: 32, base: (fR + 1) * S - 0.02 });
+    }
+    if (libre(cD + 1, fR) && libre(cD + 1, fR + 1)) {
+      const x = X(cD + 1) + 1, x2 = X(cD + 2) - 1, an = x2 - x;
+      cajon(x + 1, Y(fR + 1) - 3, an - 2, 6, 15);
+      muebles.push({ x: x - 1, y: Y(fR + 1) - 26, w: an + 2, h: 25, base: (fR + 1) * S - 0.01 });
+      cajon(x, Y(fR + 2) - 2, an, 10, 11);
+      muebles.push({ x: x - 1, y: Y(fR + 2) - 25, w: an + 2, h: 25, base: (fR + 2) * S - 0.01 });
+    }
+
+    // --- EL MEDIO: parapetos de bolsas de arena y cajones de caudales, mezclados y de distintas alturas.
+    const medios = [];
+    for (let f = fJ + 1; f < fU; f++) for (let c = cI + 2; c < cD; c++) {
+      if (!libre(c, f) || casilla(c - 1, f) === 'C') continue;
+      let c2 = c; while (casilla(c2 + 1, f) === 'C') c2++;
+      medios.push({ c, c2, f });
+    }
+    // (🔁 Las bolsas de arena ya no van acá: son los parapetos 'A', más abajo.)
+    const TIPOS = ['sello', 'pila', 'cajon', 'pila', 'cajon', 'pila'];
+    medios.forEach((B, n) => {
+      const x = X(B.c) + 1, x2 = X(B.c2 + 1) - 1, an = x2 - x, yt = Y(B.f), yb = Y(B.f + 1) - 2, base = (B.f + 1) * S - 0.01;
+      const tipo = TIPOS[n % TIPOS.length];
+      let top;
+      if (tipo === 'sacos' || tipo === 'bajos') top = sacos(x, x2, yt, yb, tipo === 'sacos' ? 3 : 2);
+      // 🔁 Más altos y con la tapa honda, hasta el fondo de su casilla *(Santi: "deberían ser un poco más altos para
+      // que quede bien con la colisión y el jugador no choque contra el aire… si no pensarán: es muy bajito, cómo
+      // esto tapa a un guardia")*: antes la tapa medía dos puntos y detrás quedaba piso que chocaba.
+      else if (tipo === 'pila') {
+        cajon(x, yb, an, yb - yt - 4, 13);
+        cajon(x + 3 + Math.floor(h(B.c, 1) * 8), yb - 17, 22, 7, 10);
+        top = yb - 17 - 10 - 7 - 1;
+      } else {
+        cajon(x, yb, an, yb - yt - 4, 18, tipo === 'sello' ? 'roto' : true);
+        top = yt + 4 - 18 - 1;
+      }
+      muebles.push({ x: x - 1, y: top - 1, w: an + 2, h: yb - top + 2, base });
+    });
+
+    /**
+     * --- 🔁 LOS PARAPETOS DE BOLSAS DE ARENA ('A'), angostos y largos hacia el fondo y bajos *(Santi: "debería ser al
+     * revés… cortalas para hacerlas más bajas, ponelas en vertical"; eligió girar la pila entera)*.
+     * 🔁 Y LAS BOLSAS TAMBIÉN A LO LARGO *(Santi: "las bolsas deberían estar puestas también en vertical")*: acostadas
+     * hacia el fondo, dos filas una al lado de la otra (la de la derecha corrida media bolsa), cortas y panzonas, con
+     * las cuatro puntas pellizcadas; de frente se ven sólo LAS PUNTAS, dos por hilera y dos hileras. Del tamaño de su
+     * choque (ver 'A' en world/tilemap.js).
+     */
+    const PUNTA = ['..oooooo..', '.oLLLLLLo.', 'oLCCCCCCco', 'oCCCsCCcco', 'oCcccccsco', '.osssssso.', '..oooooo..'];
+    const larga = (x, y, L) => {
+      // Vista de arriba: 10 de ancho y `L` hacia el fondo; más clara a la izquierda (de donde viene la luz).
+      const filas = [];
+      for (let j = 0; j < L; j++) {
+        if (j === 0 || j === L - 1) filas.push('o.oooooo.o');
+        else if (j === 1) filas.push('.oLLLLLLo.');
+        else if (j === L - 2) filas.push('.osssssso.');
+        else filas.push('oLLCCCCcso');
+      }
+      dibujo(p, x, y, filas, ARP);
+      const k = h(x, y) < 0.5 ? y + 3 : y + L - 4;
+      r(x + 2, k, 6, 1, 35);                                                                  // el pliegue de la atadura
+      for (let q = y + 2; q < y + L - 2; q++) for (let kk = x + 2; kk < x + 8; kk++) if (h(kk * 3, q * 7) < 0.12) p(kk, q, 35);   // la trama
+    };
+    for (let c = 0; c < cols; c++) for (let f = filasArriba; f < map.rows - filasAbajo; f++) {
+      if (casilla(c, f) !== 'A' || casilla(c, f - 1) === 'A') continue;
+      let f2 = f; while (casilla(c, f2 + 1) === 'A') f2++;
+      const x = X(c) + 1, an = X(c + 1) - 1 - x, yb = Y(f2 + 1) - 2, alto = 13, tf = yb - alto, tt = Y(f) + 3 - alto;
+      // Arriba: dos filas de bolsas a lo largo, de atrás para adelante; la de la derecha empieza con media bolsa.
+      for (const [bx, corre] of [[x, false], [x + an - 10, true]]) {
+        const fin = tf + 3;
+        let y = tt, k = 0;
+        while (y < fin) {
+          let L = corre && k === 0 ? 9 : 16;
+          const ultima = fin - y - L < 7;
+          if (ultima) L = fin - y;                                                             // la última, hasta el frente
+          larga(bx, y, Math.max(6, L));
+          if (ultima) break;
+          y += L - 2; k++;
+        }
+      }
+      // El frente: las puntas, dos por hilera y dos hileras.
+      for (const fy of [tf, tf + 6]) for (const bx of [x, x + an - 10]) dibujo(p, bx, fy, PUNTA, ARP);
+      // (Las rayas de adentro, entre bolsa y bolsa, en marrón oscuro: negras parecían los peldaños de una escalera. El
+      // borde negro queda sólo en la silueta.)
+      for (let yy = tt + 1; yy < yb; yy++) for (let xx = x; xx < x + an + 1; xx++) {
+        const k = yy * W + xx, arriba = MESAS.i[k - W], abajo = MESAS.i[k + W];
+        const izq = MESAS.i[k - 1], der = MESAS.i[k + 1];
+        if (MESAS.i[k] === 0 && arriba > 0 && abajo > 0 && izq !== -1 && der !== -1) MESAS.i[k] = 33;
+        // (Y la de entre las dos filas de bolsas, a lo largo.)
+        else if (MESAS.i[k] === 0 && izq > 0 && der > 0 && arriba !== -1 && abajo !== -1 && yy > tt + 1 && yy < tf) MESAS.i[k] = 33;
+      }
+      muebles.push({ x: x - 2, y: tt - 1, w: an + 4, h: yb - tt + 2, base: (f2 + 1) * S - 0.01 });
+    }
+
+    // --- ADELANTE: los arcones con sus flejes y los lingotes tapados con lona, desparejos.
+    const arcon = (x, x2, yt, yb, alto, saca) => {
+      const an = x2 - x, tf = yb - alto, tt = yt + 4 - alto;
+      r(x - 1, tt - 1, an + 2, yb - tt + 2, 0);
+      // La tapa abovedada: más clara en el lomo.
+      const lomo = tt + Math.floor((tf - tt) * 0.55);
+      r(x, tt, an, tf - tt, MAD_S); r(x, tt + 2, an, lomo - tt - 2, MAD); r(x, lomo, an, 3, MAD_L); r(x, tf - 1, an, 1, 0);
+      r(x, tf, an, alto, MAD_S); r(x, tf, an, 1, MAD);
+      for (let q = tf + 4; q < yb - 1; q += 4) r(x, q, an, 1, MAD_SS);
+      for (const zx of [x + 3, x + Math.floor(an / 2) - 1, x2 - 6]) { r(zx, tt, 3, yb - tt, 31); for (let q = tt + 2; q < yb - 1; q += 3) p(zx + 1, q, 25); }
+      const cx = x + Math.floor(an / 2) + 4;
+      r(cx - 3, tf + 1, 7, 7, 0); r(cx - 2, tf + 2, 5, 5, 7); r(cx - 2, tf + 2, 5, 1, 28); p(cx, tf + 4, 0); p(cx, tf + 5, 0);   // la cerradura
+      for (const ex of [x - 2, x2 + 1]) r(ex, tf + 3, 1, 4, 0);                                                       // las manijas
+      if (saca) dibujo(p, x + 5, tt - 3, ['...oooooooo...', '..oLLLLLLLLoo.', '.oLLCCCCCCCLko', 'oLCCCCCCCCCcko', 'oCCCCCCCYCCcoo', 'oCCCCCCCcccco.', '.occcccccccco.', '..oooooooooo..'], LONA);
+      return saca ? tt - 4 : tt - 1;
+    };
+    const LINGOTE = ['.oooooooo.', 'oYYYYYYYYo', 'oyyyyyyyyo', 'oooooooooo'];
+    const ORO = { o: 0, Y: 45, y: 28 };
+    const lingotes = (x, x2, yt, yb) => {
+      const an = x2 - x, alto = 6, tf = yb - alto, tt = yt + 6 - alto;
+      r(x - 1, tt - 1, an + 2, yb - tt + 2, 0);                                                                     // la tarima
+      r(x, tt, an, tf - tt, MAD_S); for (let q = tt + 3; q < tf; q += 4) r(x, q, an, 1, MAD_SS);
+      r(x, tf, an, alto, MAD_SS); r(x, tf, an, 1, MAD);
+      // Los lingotes, en dos pirámides (la de atrás asoma por arriba de la de adelante).
+      const piramide = (base, y0, n) => { for (let k = 0; k < 3; k++) for (let q = 0; q < n - k; q++) dibujo(p, base + q * 9 + k * 4, y0 - k * 3, LINGOTE, ORO); };
+      const n = Math.floor((an - 4) / 9);
+      piramide(x + 2, tt + 2, n); piramide(x + 2, tf - 4, n);
+      for (let k = 0; k < 4; k++) p(x + 4 + Math.floor(h(x, k) * (an - 8)), tf - 3 - Math.floor(h(k, x) * 8), 29);   // un brillo
+      // La lona: tapa la mitad de la derecha, con los pliegues, la soga y la punta que cae.
+      const lx = x + Math.floor(an * 0.42), top = tt - 8;
+      for (let y = top; y < yb - 2; y++) {
+        const desde = lx + Math.max(0, Math.round((yb - 2 - y) * 0.25) - 3);
+        for (let xx = desde; xx < x2; xx++) p(xx, y, xx === desde ? 0 : y === top ? 16 : (xx - desde + Math.floor(h(xx, 2) * 2)) % 6 === 0 ? 14 : 15);
+      }
+      r(lx, top - 1, x2 - lx, 1, 0); r(x2 - 1, top, 1, yb - top - 2, 14);
+      const sy = top + Math.floor((yb - top) * 0.45);
+      r(lx + 2, sy, x2 - lx - 2, 1, 4); r(lx + Math.floor((x2 - lx) / 2), sy - 1, 2, 3, 4);                       // la soga
+      for (let q = lx + 1; q < x2; q += 3) p(q, yb - 2 + (q % 2), 0);                                                // el borde que cae
+      return top - 1;
+    };
+    const FRENTE_TIPOS = [['arcon', 2], ['lingotes', 3], ['arcon', 2], ['saca', 2], ['lingotes', 3], ['arcon', 2], ['lingotes', 3], ['arcon', 2], ['lingotes', 3], ['saca', 2], ['arcon', 2], ['arcon', 2]];
+    {
+      let c = 1, n = 0;
+      while (c < cols - 1) {
+        if (!libre(c, fU)) { c++; continue; }
+        let fin = c; while (libre(fin + 1, fU)) fin++;
+        const [tipo, cuantas] = FRENTE_TIPOS[n % FRENTE_TIPOS.length];
+        const c2 = Math.min(fin, c + cuantas - 1 + (fin - (c + cuantas - 1) === 1 ? 1 : 0));
+        const x = X(c) + 2, x2 = X(c2 + 1) - 2, yt = Y(fU), yb = Y(fU + 1) - 2;
+        const altos = [11, 13, 9, 12];
+        const top = tipo === 'lingotes' ? lingotes(x, x2, yt, yb) : arcon(x, x2, yt, yb, altos[n % altos.length], tipo === 'saca');
+        muebles.push({ x: x - 3, y: top - 1, w: x2 - x + 6, h: yb - top + 2, base: (fU + 1) * S - 0.01 });
+        c = c2 + 1; n++;
+      }
+    }
+
+    // --- un lingote caído en el piso, en el pasillo, bajo la luz de un farol.
+    {
+      const cx = X(14.6), cy = Y(fJ + 3) + 6;
+      if (casilla(14, fJ + 3) === '.') { dibujo(pp, cx, cy, LINGOTE, ORO); pp(cx + 3, cy + 1, 29); }
+    }
+  }
+
   // ===== LA PARED DE ADELANTE: el borde y, debajo, su cara de afuera
   {
     const r = rect(FRENTE), p = pone(FRENTE);
@@ -1884,6 +2382,8 @@ function vagon(train, w, dia) {
      * 🆕 LOS FAROLES ROJOS DE COLA (el caboose), en la cara de afuera, en la punta de atrás del tren: los que
      * marcan el final. De noche, prendidos.
      */
+    // 🆕 El blindado, por fuera: dos hileras de remaches a lo largo de la chapa.
+    if (w.id === 'blindado') for (let x = 3; x < W; x += 6) { p(x, yTope + 10, BORDE_L); p(x, yCaraFin - 6, BORDE_L); }
     if (w.id === 'caboose') {
       const fx = 6, fy = yTope + 9;
       r(fx - 1, fy - 3, 3, 3, 0); r(fx, fy - 2, 1, 2, 23);                                   // el soporte

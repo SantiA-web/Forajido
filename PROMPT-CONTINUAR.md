@@ -136,7 +136,7 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   [2] la escopeta, [3] el Winchester, [4] directo a
   un vagón (pedido por Santi el 2026-10-08, para ver el estilo nuevo con [F9]; desde el
   2026-10-15, al comedor; desde el 2026-10-17, al dormitorio y después a primera clase, que el tren trae
-  siempre), [5] el cuchillo sin comprarlo (2026-10-10, para probar el tajo) y [6] el tren de
+  siempre; desde el 2026-10-22, al enganche de atrás del blindado, con sus puertas empujables), [5] el cuchillo sin comprarlo (2026-10-10, para probar el tajo) y [6] el tren de
   pasajeros con el Sheriff en tu vagón (2026-10-15) y [7] 950 de recompensa, para que suba el
   Cazarrecompensas (2026-10-15). **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
   cuando el estilo nuevo esté terminado.
@@ -217,8 +217,10 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hecho (cuartel rústico: catres de lona, mesas de pino con la vela, armero, estufa, los de franco
   sentados en cajones de munición que chocan); el correo hecho (casilleros y mesas de clasificar, carros de
   mimbre y cajones de encomiendas, perchero, balanza, reloj); el caboose hecho (escritorio con la taza, estufa
-  contra la pared, barril con agua, leña y rueda que se mueven con el tren, una cama); sigue el blindado, y revisar
-  los choques de los otros vagones (que coincidan con lo dibujado) (ver NOTAS, "P4 · LOS OTROS
+  contra la pared, barril con agua, leña y rueda que se mueven con el tren, una cama); el blindado hecho (jaula,
+  cajas fuertes nuevas, parapetos de bolsas con cobertura baja, cofres); siguen LOS ENGANCHES (puertas finitas y que
+  se estiren y encojan: plan pedido por Santi el 2026-10-22), y revisar los choques de los otros vagones (que
+  coincidan con lo dibujado) (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las

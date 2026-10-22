@@ -339,16 +339,32 @@ export const WAGONS = {
      */
     puertasBlindadas: true,
 
+    /**
+     * 🆕 LAS CAJAS FUERTES, CONTRA LOS MUEBLES *(estilo nuevo, Santi eligió dibujarlas con el vagón)*: se dibujan
+     * en la casilla de carga de al lado (`nichoDeCaja`: la de arriba, si no la de la derecha…), que ya choca, y
+     * vos te parás donde siempre, delante. Así nadie las atraviesa caminando. El juego no cambia: el botín sigue
+     * en su casilla.
+     */
+    cajasContraLosMuebles: true,
+
     // Corto y denso: la caja apretada del tren.
+    /**
+     * 🔁 LOS PARAPETOS DE BOLSAS DE ARENA ('A'), ANGOSTOS Y LARGOS HACIA EL FONDO *(Santi: "el parapeto de bolsas
+     * se ve horizontal, y debería ser al revés… cortalas para hacerlas más bajas, ponelas en vertical… y añadile
+     * el sistema de cobertura baja que creamos para la barra"; eligió girar la pila entera)*: una columna por dos
+     * filas, bajos (se tira por encima, ver world/tilemap.js). Donde no cortan ninguna ronda: dos donde estaban
+     * (corridos media casilla) y dos nuevos entre las rondas; donde había dos de ellos (la ronda de arriba a la
+     * derecha y la vuelta de la de abajo los cruzaban parados), quedan cofres.
+     */
     layout: [
       '##############################',
       '#CCCCCCCCCCCCCCCCCCCCCCCCCCCC#',
-      '#CC........................CC#',
-      '#CC..CC....CC....CC....CC..CC#',
+      '#CC..A.........A...........CC#',
+      '#CC..A.....CC..A.CC....CC..CC#',
       '+............................+',
       '+............................+',
-      '#CC..CC....CC....CC....CC..CC#',
-      '#CC........................CC#',
+      '#CC..CC....A..A..CC....CC..CC#',
+      '#CC........A..A............CC#',
       '#CCCCCCCCCCCCCCCCCCCCCCCCCCCC#',
       '##############################',
     ],
@@ -1297,6 +1313,15 @@ export const TRAMOS = {
     ],
   },
 };
+
+/**
+ * 🆕 LA CASILLA DE CARGA ('C') PEGADA A UNA CAJA FUERTE, donde se dibuja: la de arriba, la de la derecha, la de la
+ * izquierda o la de abajo, la primera que haya. `null` si no tiene ninguna. (Ver `cajasContraLosMuebles`.)
+ */
+export function nichoDeCaja(layout, col, row) {
+  for (const [dc, df] of [[0, -1], [1, 0], [-1, 0], [0, 1]]) if ((layout[row + df] || '')[col + dc] === 'C') return [col + dc, row + df];
+  return null;
+}
 
 /** El centinela del blindado necesita un lugar donde plantarse. */
 WAGONS.blindado.enemies[3].col = 26;

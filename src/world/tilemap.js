@@ -55,6 +55,13 @@ const TILE_RULES = {
    */
   'T': { solid: true, blocksSight: false, blocksBullets: true, cubreBajo: true },
   /**
+   * 🆕 EL PARAPETO DE BOLSAS DE ARENA (el blindado) *(Santi: "añadile el sistema de cobertura baja que creamos
+   * para la barra")*: como el mostrador, frena el paso y las balas y es bajo (se ve y se tira por encima). Del
+   * tamaño de las bolsas dibujadas: `margenX` a los costados y `margenY` sólo en las puntas de la pila
+   * (`seUne`: entre dos casillas de la misma pila no queda hueco).
+   */
+  'A': { solid: true, blocksSight: false, blocksBullets: true, cubreBajo: true, margenX: 1, margenY: [2.25, 1.5], seUne: true },
+  /**
    * 🆕 LA MESITA DE PRIMERA CLASE *(Santi: "añadeles colisión como la de los bancos")*: frena el paso y
    * te podés pegar con Shift, pero es baja: pasan la vista y las balas. Más angosta que la casilla (la
    * tapa dibujada, de 18 puntos).
@@ -210,7 +217,13 @@ export function createTilemap(layout) {
     const col = Math.floor(px / size), [izq, der] = margenes(col, Math.floor(py / size));
     const dx = px - col * size;
     // (🆕 `margenY`: también más corto que la casilla de arriba a abajo, el cajón; [arriba, abajo] si no es parejo.)
-    const [ma, mb] = Array.isArray(regla.margenY) ? regla.margenY : [regla.margenY || 0, regla.margenY || 0];
+    let [ma, mb] = Array.isArray(regla.margenY) ? regla.margenY : [regla.margenY || 0, regla.margenY || 0];
+    // (🆕 `seUne`: la casilla pegada a otra igual, sin margen de ese lado: la pila sigue.)
+    if (regla.seUne) {
+      const fila = Math.floor(py / size), t = tileAt(col, fila);
+      if (tileAt(col, fila - 1) === t) ma = 0;
+      if (tileAt(col, fila + 1) === t) mb = 0;
+    }
     const dy = py - Math.floor(py / size) * size;
     return dx >= izq && dx <= size - der && dy >= ma && dy <= size - mb;
   }

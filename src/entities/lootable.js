@@ -9,6 +9,8 @@
 import { CONFIG } from '../data/config.js';
 import { LOOT_TYPES } from '../data/wagons.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
+import { PALETA, sombrear } from '../engine/paleta.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 
 export function createLootable(x, y, typeId, rng) {
   const type = LOOT_TYPES[typeId];
@@ -151,6 +153,71 @@ function piezaBolsa(color) {
   });
 }
 
+/**
+ * 🆕 LA CAJA FUERTE DEL ESTILO NUEVO (los vagones nuevos; en el blindado, contra el mueble: ver `nicho` en
+ * world/train.js) *(Santi eligió dibujarlas con el blindado: "grandes, negras, con letras doradas, la rueda de la
+ * combinación y la manija de bronce")*. Con los colores de la paleta y la luz del lugar, como la puertita vaivén
+ * (world/porton.js). Tres estados:
+ *  - CERRADA: la tapa, el cuerpo de chapa con su bisel, la puerta con el filete dorado y las letras, la rueda de la
+ *    combinación, la manija y las bisagras.
+ *  - ABIERTA (ya la vaciaste): la puerta abierta hacia la izquierda y adentro el estante, vacío.
+ *  - REVENTADA con dinamita: la puerta colgando torcida de una bisagra, lo chamuscado alrededor y, hasta que la
+ *    levantes, las sacas de plata adentro.
+ */
+function dibujarCajaNueva(r, l, col) {
+  const PASO = CONFIG.estilo.punto / 4, ctx = r.ctx;
+  const n = l.nicho, cx = n ? n.x : l.x, piso = n ? n.piso : l.y + l.hh;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(cx, piso - 2) || 0) : 0;
+  // (🔁 Alta, más que ancha: con el frente casi cuadrado se veía chica al lado de la jaula.)
+  const ALTO = 34, ox = Math.round(cx / PASO) - 10, oy = Math.round(piso / PASO) - ALTO;
+  const R = (x, y, w, h, i) => { ctx.fillStyle = PALETA[i === 0 ? 0 : sombrear(i, luz)]; ctx.fillRect((ox + x) * PASO, (oy + y) * PASO, w * PASO, h * PASO); };
+  const D = (x, y, filas, c) => filas.forEach((f, j) => { for (let q = 0; q < f.length; q++) if (f[q] !== '.') R(x + q, y + j, 1, 1, c[f[q]]); });
+  // (🔁 El dorado, del bronce claro (7): el amarillo de los faroles, a la luz, se iba al naranja.)
+  const ORO = 7;
+  // El cuerpo: el contorno, la tapa (vista de arriba), la arista y el frente con el bisel; las patas.
+  R(0, 0, 20, 32, 0);
+  // (🔁 Un tono más clara: en la penumbra del blindado, la puerta quedaba negra entera.)
+  R(1, 1, 18, 4, 25); R(1, 1, 18, 1, 30);
+  R(1, 6, 18, 24, 24); R(1, 6, 1, 24, 25); R(1, 6, 18, 1, 25); R(18, 6, 1, 24, 23); R(1, 30, 18, 1, 23);
+  R(1, 32, 4, 2, 0); R(15, 32, 4, 2, 0); R(2, 32, 2, 1, 31); R(16, 32, 2, 1, 31);
+  if (!l.taken && !l.reventada) {
+    R(3, 8, 14, 21, 0); R(4, 9, 12, 19, 23);                                                    // la puerta
+    // (🔁 El filete, en el borde de la puerta: más adentro, la rueda lo cortaba.)
+    R(4, 9, 12, 1, ORO); R(4, 27, 12, 1, ORO); R(4, 9, 1, 19, ORO); R(15, 9, 1, 19, ORO);       // el filete dorado
+    // (🔁 Las letras, una sola hilera pareja arriba; la rueda, redonda, y la palanca al costado: con dos manchas,
+    // una raya y un cuadrado, la puerta parecía una cara.)
+    for (const q of [6, 7, 9, 10, 11, 13]) R(q, 12, 1, 1, ORO);
+    D(5, 16, ['..ooo..', '.oDDDo.', 'oDdddDo', 'oDdkdDo', 'oDdddDo', '.oDDDo.', '..ooo..'], { o: 0, D: 25, d: 24, k: 0 });   // la rueda de la combinación
+    R(8, 17, 1, 1, ORO);
+    D(12, 16, ['ooo', 'oHo', 'oHo', 'oHo', 'oHo', 'oHo', 'ooo'], { o: 0, H: ORO });                // la palanca de bronce
+    R(2, 11, 1, 3, 25); R(2, 23, 1, 3, 25);                                                      // las bisagras
+  } else {
+    // Abierta: adentro, oscuro, con los dos estantes.
+    R(3, 8, 14, 21, 0); R(4, 9, 12, 19, 1);
+    for (const y of [15, 21]) { R(4, y, 12, 1, 23); R(4, y + 1, 12, 1, 0); }
+    if (l.reventada && !l.taken) {
+      // Las sacas de plata que quedaron adentro, y monedas en los estantes.
+      D(5, 22, ['.ooo..ooo.', 'oLCCooLCCo', 'oCCcooCCco', 'oCCcooCcco', '.oooo.ooo.'], { o: 0, L: 16, C: 15, c: 14 });
+      R(5, 20, 5, 1, ORO); R(6, 19, 3, 1, ORO); R(7, 18, 1, 1, 45);   // (una pila: sueltas, armaban una cara)
+    }
+    if (l.reventada) {
+      // La puerta, colgando torcida de la bisagra de abajo, y lo chamuscado.
+      D(-6, 14, ['oo....', 'oBoo..', 'oBBBoo', 'oGBBBo', '.oGBBo', '.oGBBo', '.oGBBo', '.oGBBo', '..oGBo', '..oGBo', '..oGBo', '..oGBo', '..oooo'], { o: 0, B: 25, G: ORO });
+      for (const [x, y] of [[0, 0], [3, 1], [17, 0], [19, 4], [1, 7], [18, 9], [16, 29], [2, 28], [6, 7], [12, 7]]) R(x, y, 1, 1, 0);
+      R(2, 1, 4, 1, 31); R(14, 2, 3, 1, 31);
+    } else {
+      // La puerta, abierta hacia la izquierda: se le ve el canto, con el filete.
+      R(-5, 6, 5, 25, 0); R(-4, 7, 2, 23, 23); R(-2, 7, 1, 23, ORO);
+    }
+  }
+  // La barra de lo que falta para abrirla, arriba de la caja.
+  if (l.progress > 0) {
+    const w = 16, y = (oy - 3) * PASO;
+    r.rect(cx - w / 2, y, w, 3, '#1a1512');
+    r.rect(cx - w / 2, y, w * (l.progress / l.duration), 3, col.bagLoot);
+  }
+}
+
 function piezaCajaFuerte(base, adentro, reventada) {
   const W = 58, H = 50;
   return pieza(`caja|${base}|${adentro}|${reventada ? 1 : 0}`, W, H, (p) => {
@@ -211,6 +278,7 @@ export function drawLootable(r, l) {
   // Escondida: no hay nada que ver. Ni una silueta, ni una sombra — si algo
   // se dibujara, dejaría de estar oculta.
   if (l.oculto) return;
+  if (esCajaFuerte(l) && l.dibujoNuevo && estiloNuevo.activo) { dibujarCajaNueva(r, l, col); return; }
   if (l.taken) {
     r.ctx.globalAlpha = 0.35;
     r.box(l.x, l.y + 2, 5, 2, '#2c221c');

@@ -19271,6 +19271,38 @@ guardaespaldas distintos)*:
     **cartas sueltas** en el piso y, en la cara de afuera, **el brazo de fierro** para agarrar la saca sin parar.
   - El correo liviano ya no viaja (su plano lo usa el cerrado del tren de carga): queda con el dibujo viejo.
   - Falta: la caja fuerte y las bolsas de botín, que se dibujan aparte en todos los vagones.
+- **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
+  cinco detalles)*: chapa gris remachada, sin ventanillas.
+  - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi
+    igual de día que de noche, apenas más oscuro de noche (`campoBlindado`).
+  - **El fondo**: LA JAULA de barrotes con las sacas de plata y los cajones sellados detrás. 🔁 La puerta, reforzada
+    *(Santi: "quiero que la refuerces")*: más ancha que una columna, marco de planchuela, travesaño en diagonal,
+    bisagras, cerradura de caja, cadena y candado; el cabo de la cadena se hamaca.
+  - **Adelante**: arcones con flejes y candado y pilas de lingotes tapadas con lona, desparejos.
+  - **El medio**: cofres de caudales. 🔁 Con la tapa honda hasta el fondo de su casilla *(Santi: "deberían ser un
+    poco más altos para que quede bien con la colisión… si no pensarán: es muy bajito, cómo esto tapa a un
+    guardia")*: la tapa medía dos puntos y detrás quedaba piso que chocaba.
+  - 🆕 **LOS PARAPETOS DE BOLSAS DE ARENA**, casilla nueva **'A'** (world/tilemap.js) *(Santi: "debería ser al
+    revés… cortalas para hacerlas más bajas, ponelas en vertical… y añadile el sistema de cobertura baja que creamos
+    para la barra"; eligió girar la pila entera; "las bolsas deberían estar puestas también en vertical")*: una
+    columna por dos filas, bajos, las bolsas a lo largo (de frente se ven las puntas). **Cobertura baja como el
+    mostrador** (`cubreBajo`): frena el paso y las balas, se ve y se tira por encima. Choque del tamaño de las
+    bolsas (`margenX`, y `margenY` sólo en las puntas de la pila: `seUne`). **El plano cambió**: dos donde
+    estaban y dos nuevos entre las rondas; donde la ronda los cruzaba, cofres (4 parapetos, 6 cofres).
+  - **Los rincones**: el armero con cuatro escopetas y la cadena; la caja de dinamita de los guardias y los rollos de
+    mecha; el tablero contra incendios (baldes, hacha) con una pared de bolsas; el atril del registro; el rincón de
+    la otra caja fuerte.
+  - **Los cinco detalles**: las troneras con tapa corrediza, los remaches del piso de chapa, un lingote caído, el
+    sello de lacre roto y la cadena que se hamaca.
+  - 🆕 **LAS CAJAS FUERTES EN EL ESTILO NUEVO** (entities/lootable.js, `dibujarCajaNueva`): altas y negras, filete y
+    letras doradas, la rueda de la combinación y la palanca; cerrada, abierta, reventada (con las sacas) y reventada
+    vacía. En el blindado, **contra el mueble de al lado** (`cajasContraLosMuebles` y `nichoDeCaja`, data/wagons.js),
+    que ya choca: vos te parás donde siempre. También la del correo (en el piso, como antes).
+  - 🐛 **LA RONDA QUE SE TRABA VUELVE POR EL CAMINO** (systems/ai.js, `rondaPorCamino`): la ronda camina en ejes sin
+    buscar ruta; el que volvía de buscarte con un mueble justo de costado empujaba para siempre (medido en el
+    blindado). Ahora, trabado, primero va al mismo punto por el camino buscado; si ni así, al siguiente. 14 de 14
+    guardias con ronda caminando parejo en tres trenes.
+  - 🧪 **El atajo [4]**: al enganche de atrás del blindado, con sus puertas de chapa empujables (`pruebaPuertas`).
 - **✅ EL CABOOSE, LA CASA DE LA TRIPULACIÓN** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones
   y los cinco detalles)*: madera barnizada vieja, cálida, gastada.
   - **El plano** (data/wagons.js) *(Santi: "no estén perfectamente alineadas… se vería muy estructurado"; "debería

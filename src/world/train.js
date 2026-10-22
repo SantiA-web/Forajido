@@ -29,7 +29,8 @@ import { createLootable, esCajaFuerte } from '../entities/lootable.js';
 import { createDoor, trabarPuerta } from '../entities/door.js';
 import { createCajon } from '../entities/cajon.js';
 import { EXPLOSIVES } from '../data/explosives.js';
-import { WAGONS, TRAMOS } from '../data/wagons.js';
+import { WAGONS, TRAMOS, nichoDeCaja } from '../data/wagons.js';
+import { esVagonNuevo } from './estiloNuevo/vagones.js';
 import {
   TRAIN_TYPES, TIPO_TREN_POR_DEFECTO, DIFICULTADES, DIFICULTAD_POR_DEFECTO,
 } from '../data/train.js';
@@ -1385,6 +1386,19 @@ export function buildTrain(
       const pos = enTiles([def.col, def.row]);
       const l = createLootable(pos.x, pos.y, def.type, rng);
       l.wagon = t.wagon;
+      /**
+       * 🎨 LA CAJA FUERTE DEL ESTILO NUEVO (entities/lootable.js): en los vagones nuevos se dibuja con la paleta, y
+       * en el blindado contra el mueble de al lado (`cajasContraLosMuebles`, data/wagons.js): `nicho` dice dónde
+       * va (el medio, el piso donde apoya y su `base` para mezclarse con la gente).
+       */
+      if (esCajaFuerte(l) && esVagonNuevo(p.id)) {
+        l.dibujoNuevo = true;
+        const n = p.cajasContraLosMuebles && nichoDeCaja(p.layout, def.col, def.row);
+        if (n) {
+          const S = map.size, dx = (n[0] - def.col) * S, dy = (n[1] - def.row) * S;
+          l.nicho = { x: pos.x + dx, piso: pos.y + dy + S / 2 - 1.5, base: pos.y + dy + S / 2 - 0.005 };
+        }
+      }
 
       /**
        * EN EL TREN DE CARGA EL BOTÍN NO ES PLATA, ES MERCADERÍA
@@ -2150,6 +2164,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, sa
         case 'R':
         case 'B':
         case 'T':
+        case 'A':
         case 'N':
         case 'J':
         case 'U':
@@ -2928,6 +2943,12 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, 
         }
         case 'U': {
           cosas.push({ base, draw: () => { r.rect(x + 1, y - 6, size - 2, size + 4, '#5a3820'); r.rect(x + 1, y - 6, size - 2, 3, '#7e5230'); } });
+          break;
+        }
+
+        // 🆕 El parapeto de bolsas, en el dibujo viejo: un bulto bajo de arpillera (el nuevo, en estiloNuevo/vagones.js).
+        case 'A': {
+          cosas.push({ base, draw: () => { r.rect(x + 1, y - 4, size - 2, size + 2, '#886244'); r.rect(x + 1, y - 4, size - 2, 3, '#a67e58'); } });
           break;
         }
 

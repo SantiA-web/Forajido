@@ -333,11 +333,13 @@ export function createCampScene(services) {
      * y arrancás EN EL ENGANCHE DE ATRÁS, afuera (`pruebaEnganche`) *(Santi: "hacé un atajo para aparecer
      * en el enganche anterior al vagón de guardias así me puedo meter en silencio para probarlo")*; antes
      * primera clase (*"pon el atajo en el botón 4"*), el dormitorio y el comedor.
+     * 🔁 Ahora EL BLINDADO, y sus dos puertas de chapa se empujan como las de madera (`pruebaPuertas`)
+     * *(Santi: "que la puerta o no esté o que la atraviese fácilmente así puedo verlo por dentro")*.
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit4')) {
-      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'guardias', forzarVagon: 'guardias', pruebaEnganche: true });
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'blindado', forzarVagon: 'blindado', pruebaEnganche: true, pruebaPuertas: true });
       return;
     }
     /**

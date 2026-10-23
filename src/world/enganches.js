@@ -114,6 +114,12 @@ export function actualizarEnganches(E, dt, rng, anclaX) {
     g.largo = (g.x1 - g.x0) + e;
     g.estira = base + e;
     g.tenso = T && T.t < T.aviso ? 1 : 0;
+    // 🦵 EL CHOQUE CONTRA EL TOPE (`choque`: 1 estirado, -1 encogido, sólo en el cuadro en que llega): es lo que te
+    // hace trastabillar (scenes/raidScene.js).
+    const fuera = e > hi ? 1 : e < lo ? -1 : 0;
+    g.choque = fuera && fuera !== g.fuera && E.reloj - (g.ultimoChoque ?? -9) > K.choqueCada ? fuera : 0;
+    if (g.choque) g.ultimoChoque = E.reloj;
+    g.fuera = fuera;
   });
 
   // 🏮 EL PÉNDULO DE LOS FAROLES, colgado de tu vagón: lo empuja lo que acelera el vagón, para el otro lado.
@@ -242,6 +248,32 @@ export function cadenasDeEnganches(r, E, corr, fila0, fila1, S) {
     }
   }
   return cosas;
+}
+
+/**
+ * 🎯 ¿EL TREN SE ESTÁ SACUDIENDO? Desde el golpe de un tirón y por `sacudonDura` segundos *(Santi: "sí, agregalo": que
+ * el tirón también te mueva las manos al tirar, como el traqueteo)*. El aviso no: ahí sólo crujen las cadenas.
+ */
+export function sacudiendo(E) {
+  const T = E.tiron;
+  return !!T && T.t >= T.aviso && T.t < T.aviso + CONFIG.enganches.sacudonDura;
+}
+
+/** El enganche en el que cae `x` (o null). */
+export function engancheEn(E, x) {
+  return E.lista.find((g) => x >= g.x0 && x < g.x1) || null;
+}
+
+/**
+ * 🚶 CRUZAR UN ENGANCHE ESTIRADO LLEVA MÁS TIEMPO, Y UNO ENCOGIDO MENOS. La grilla no se estira: el que cruza se dibuja
+ * estirado con el enganche (`corrimientoEn`), así que a su paso de siempre se lo veía avanzar más rápido que sus
+ * piernas, patinando. Por eso, en el enganche se camina a `ancho / largo`: en pantalla, el paso de siempre; y de
+ * yapa, cruzar uno estirado tarda más *(Santi: "se vería mal hacerlo más lento o más rápido… pero vos sos el
+ * experto")*. Vale para todos (lo usa `frenoAt`): vos, los guardias, las reses.
+ */
+export function pasoEn(E, x) {
+  const g = engancheEn(E, x);
+  return g ? (g.x1 - g.x0) / Math.max(1, g.largo) : 1;
 }
 
 /** Las columnas de los enganches (para que el dibujo viejo no las pinte encima). */

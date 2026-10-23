@@ -2551,6 +2551,19 @@ export const CONFIG = {
     aguaFreno: 0.4,
     /** La cámara sigue a tu vagón con esta demora (s): lo que se ve es el sacudón, no la deriva lenta. */
     camaraDemora: 0.12,
+    /**
+     * 🦵 TRASTABILLAR (fase 3): si el enganche en el que estás choca contra su tope, perdés pie `trastabilla` segundos
+     * (sin moverte, sin tirar, sin cobertura) y el golpe te corre `trastabillaEmpuje` unidades por segundo (se apaga solo).
+     * Entre choque y choque de un mismo enganche, al menos `choqueCada` segundos.
+     */
+    trastabilla: 0.6,
+    trastabillaEmpuje: 45,
+    choqueCada: 0.5,
+    /**
+     * 🎯 EL TIRÓN TE MUEVE LAS MANOS: desde el golpe y por `sacudonDura` segundos (lo que tarda en cruzar el tren), a
+     * cualquiera que dispare se le suma a la dispersión lo mismo que en el traqueteo (`traqueteo.dispersionExtra`).
+     */
+    sacudonDura: 0.8,
   },
 
   traqueteo: {

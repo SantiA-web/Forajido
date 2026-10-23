@@ -2129,7 +2129,7 @@ export function bordeBrazos(q) {
 }
 
 export function lienzoJugador(o, luz = 0, destello = false) {
-  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0].join('|');
+  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0, o.aturdido ?? ''].join('|');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 900) guardados.clear();

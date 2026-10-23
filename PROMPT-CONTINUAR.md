@@ -220,7 +220,8 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   contra la pared, barril con agua, leña y rueda que se mueven con el tren, una cama); el blindado hecho (jaula,
   cajas fuertes nuevas, parapetos de bolsas con cobertura baja, cofres); LOS ENGANCHES en curso (ver NOTAS, "LOS
   ENGANCHES": fase 1, las puertas finitas, y fase 2, el enganche de chapa que se estira y se encoge con el tren con
-  peso, hechas; sigue la fase 3, lo que te hace: el salto del techo según el largo, trastabillar, el tiempo), y revisar
+  peso, y fase 3, trastabillar, el tiempo de cruzar y el tirón en la puntería, hechas; el techo, para cuando se haga
+  en la grilla nueva; sigue la fase 4, los frenos rotos), y revisar
   los choques de los otros vagones (que coincidan con lo dibujado) (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los

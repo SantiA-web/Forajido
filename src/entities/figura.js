@@ -86,10 +86,16 @@ export function deFrente(angulo) {
  *
  * Devuelve `null` si hace unos cuadros que no se mueve (parado).
  */
+/**
+ * 🚶 Cuánto se estira el dibujo donde está `x` (lo pone scenes/raidScene.js con los enganches; si no, 1): las piernas
+ * cuentan lo que se avanza en pantalla, así en un enganche estirado no patinan.
+ */
+export const andar = { estira: null };
+
 export function faseDeAndar(ent) {
   const px = ent._andarX ?? ent.x;
   const py = ent._andarY ?? ent.y;
-  const d = Math.hypot(ent.x - px, ent.y - py);
+  const d = Math.hypot(ent.x - px, ent.y - py) * (andar.estira ? andar.estira(ent.x) : 1);
   ent._andarX = ent.x;
   ent._andarY = ent.y;
 
@@ -608,7 +614,7 @@ function jugadorNuevo(r, f) {
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
     ? lienzoGente({ ...(gente.aspecto || {}), tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, doble: !!gente.doble, orilla: gente.orilla ?? null, mesa: gente.mesa ?? null, recostado: !!gente.recostado, orillaLado: gente.orillaLado ? gente.orillaLado * (espejo ? -1 : 1) : 0, fino }, luz, !!f.destello)
-    : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina, mascara: !!f.mascara }, luz, !!f.destello);
+    : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina, mascara: !!f.mascara, aturdido: f.aturdido ?? null }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();
   ctx.translate(x, pies);

@@ -1814,6 +1814,8 @@ deja de servir para nada.
 > **Los enganches se estiran y se encogen**: el tren tiene peso, y cada enganche es un resorte con topes. Cada tanto
 > la locomotora pega un tirón (con el crujido de aviso) que corre por el tren de enganche en enganche; tu vagón se
 > sacude, y los faroles y el agua se hamacan con él. En el de pasajeros, de 36 a 60; en el de carga, de 42 a 54.
+> **Si el enganche en el que estás choca contra su tope, trastabillás** 0,6 s (sin moverte ni tirar), y durante el
+> golpe a todos les tiemblan las manos. Cruzar uno estirado lleva más tiempo.
 
 Cada vagón tiene **dos puertas, en su propio borde** — no una compartida con
 el de al lado. Cruzar de un vagón a otro es: la puerta del que dejás, la

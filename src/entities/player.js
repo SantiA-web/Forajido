@@ -241,6 +241,8 @@ export function updatePlayer(p, dt, world) {
   // Te llevó puesto un barril: estás en el piso y no hacés nada hasta
   // levantarte. Va ANTES que todo lo demás justamente por eso.
   if (p.tumbado > 0) { updateTumbado(p, dt, world); return; }
+  // 🦵 Trastabillando en un enganche: lo mismo, más corto (ver `trastabillar`).
+  if (p.trastabilla > 0) { updateTrastabilla(p, dt, world); return; }
 
   /**
    * REVOLVIENDO LA MOCHILA ([TAB]) — no te movés, no apuntás y no disparás.
@@ -653,6 +655,42 @@ export function tumbar(p, desdeX, world) {
   world.audio.play('hitWall');
   world.camera.shake(CONFIG.feel.shakeHit, 0.3);
   return true;
+}
+
+/**
+ * 🦵 TRASTABILLAR (fase 3 de "LOS ENGANCHES") *(Santi: "al estar debajo y justo se movió mucho el enganche
+ * trastabillarás quedando vulnerable por un tiempo muy corto a disparos")*: el enganche en el que estás chocó contra su
+ * tope. Perdés pie `CONFIG.enganches.trastabilla` segundos: no te movés, no tirás, se te cae la cobertura y el golpe te
+ * corre para el lado contrario al tirón (estirado, el vagón de adelante se va y vos quedás atrás). Se dibuja con el
+ * tambaleo de los guardias golpeados (`aturdido`). Devuelve true si te agarró.
+ */
+export function trastabillar(p, sentido, world) {
+  if (!p.alive || p.tumbado > 0 || p.trastabilla > 0 || p.enTecho) return false;
+  const K = CONFIG.enganches;
+  p.trastabilla = K.trastabilla;
+  p.cover = null;
+  p.peek = 0;
+  p.culatazo = null;
+  p.knockX = -sentido * K.trastabillaEmpuje;
+  p.knockY = 0;
+  world.camera.shake(CONFIG.feel.shakeHit * 0.6, 0.2);
+  return true;
+}
+
+function updateTrastabilla(p, dt, world) {
+  p.trastabilla = Math.max(0, p.trastabilla - dt);
+  p.moving = false;
+  p.moveDirX = 0;
+  p.moveDirY = 0;
+  const solid = world.solidoParaJugador || world.map.isSolidForMovementAt || world.map.isSolidAt;
+  moveAndCollide(p, p.knockX * dt, p.knockY * dt, solid);
+  p.knockX *= 0.82;
+  p.knockY *= 0.82;
+}
+
+/** El cuadro del tambaleo a los `t` segundos (el mismo reloj que el guardia golpeado, entities/enemy.js). */
+function cuadroTrastabilla(t) {
+  return t < 0.08 ? 0 : t < 0.18 ? 1 : 2 + (Math.floor((t - 0.18) / 0.12) % 2);
 }
 
 /** En el piso: sólo te seguís deslizando por el envión, y nada más. */
@@ -1232,6 +1270,8 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
     empuna: p.empuna ?? 1,
     // El brazo del revólver: 0 con el codo doblado, 1 recto apuntando.
     alza: p.alza ?? 0,
+    // 🦵 Trastabillando: el tambaleo de los guardias (0 el golpe, 1 se aflojan las piernas, 2 y 3 de un lado al otro).
+    aturdido: p.trastabilla > 0 ? cuadroTrastabilla(CONFIG.enganches.trastabilla - p.trastabilla) : null,
   });
   const manoY = fig.manoY;
 

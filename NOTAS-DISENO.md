@@ -19324,7 +19324,22 @@ guardaespaldas distintos)*:
     - Todo lo del vagón se corre con él: muebles, gente, puertas, balas, caídos, y de noche la oscuridad, la luz de
       las ventanas y los faroles (`corrX`). La mira pasa de donde se ve a donde está (`delDibujoAlMundo`).
     - Tirones: en el de pasajeros cada 6-10 s, con medio segundo de aviso (el crujido); en el de carga, el traqueteo.
-    - **Para la fase 3**: la vista del techo todavía no se estira (va con el salto según el largo).
+    - **El techo, para después** *(Santi: "dejaría lo del techo cuando diseñemos el techo en la nueva grilla")*: la
+      vista del techo todavía no se estira, y el salto según el largo va con ella.
+  - **✅ FASE 3, LO QUE TE HACE** (entities/player.js, world/enganches.js):
+    - **Trastabillar**: si el enganche en el que estás choca contra su tope (`choque`), perdés pie 0,6 s
+      (`trastabilla`): no te movés, no tirás (la mira en rojo), se te cae la cobertura, y el golpe te corre para el
+      lado contrario al tirón. Se dibuja con el tambaleo de los guardias golpeados (`aturdido`), revisado en las 8
+      vistas. Medido: dos minutos sin tirones, ningún choque; cada tirón llega al tope en unos 4 de los 8 enganches
+      (los de adelante: hacia atrás se apaga).
+    - **Cruzar lleva más o menos tiempo** (`pasoEn`): en el enganche se camina a `ancho / largo` (estirado del todo,
+      ×0,8; encogido, ×1,33). Es lo que hace que se vea bien: el que cruza se dibuja estirado con el enganche, y a su
+      paso de siempre patinaba. Va en `frenoAt` (vos, los guardias, las reses) y las piernas cuentan lo que se avanza
+      en pantalla (`andar`, entities/figura.js).
+    - **El tirón te mueve las manos** (`sacudiendo`): desde el golpe y por 0,8 s (`sacudonDura`), a cualquiera que
+      dispare se le suma la dispersión del traqueteo (el Colt, de 0,035 a 0,095). *(Santi preguntó si apuntar a una
+      silla y que se corra era realista; medido: en tu vagón nunca pasa apuntando; al vagón de al lado, 10-28 % sin
+      apuntar según lo que tardes en apretar, y más en un tirón; dos vagones más allá, hasta 44 %.)*
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

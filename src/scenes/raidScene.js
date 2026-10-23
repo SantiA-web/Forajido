@@ -43,7 +43,7 @@ import { sortearComposicion } from '../world/train.js';
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
-import { crearEnganches, actualizarEnganches, empezarTiron, corrimientoEn, dibujarEnganches, cadenasDeEnganches, columnasDeEnganches } from '../world/enganches.js';
+import { crearEnganches, actualizarEnganches, empezarTiron, corrimientoEn, dibujarEnganches, cadenasDeEnganches, columnasDeEnganches, engancheEn, pasoEn, sacudiendo } from '../world/enganches.js';
 import { fijarHoraDelSorteo } from '../entities/estiloNuevo/gente.js';
 import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual, damagePlayer,
@@ -76,7 +76,8 @@ import { drawRider } from '../entities/rider.js';
 import {
   updateRiders, createRiderWatch, chanceContraElTecho, damageRider, abrirJinete, punteriaPorCarril,
 } from '../systems/riders.js';
-import { puedeTirarDesdeElTecho } from '../entities/player.js';
+import { puedeTirarDesdeElTecho, trastabillar } from '../entities/player.js';
+import { andar } from '../entities/figura.js';
 import { maxJinetesPara } from '../data/riders.js';
 import { createLootable, drawLootable, esCajaFuerte } from '../entities/lootable.js';
 import {
@@ -319,6 +320,15 @@ export function createRaidScene(services) {
 
     traqueteoTimer = train.traqueteoCada || 0;
     enganches = crearEnganches(train, rng);
+    /**
+     * 🚶 En un enganche se camina a su largo (`pasoEn`, world/enganches.js): se suma al freno de cada casilla, que ya
+     * lo miran vos, los guardias y las reses. Y las piernas cuentan lo que se avanza en pantalla (`andar`, figura.js).
+     */
+    {
+      const frenoCasilla = map.frenoAt.bind(map);
+      map.frenoAt = (x, y) => frenoCasilla(x, y) * pasoEn(enganches, x);
+      andar.estira = (x) => 1 / pasoEn(enganches, x);
+    }
     anclaCorr = 0; camaraEng = 0;
     traqueteoFase = null;
     traqueteoFaseTimer = 0;
@@ -486,8 +496,9 @@ export function createRaidScene(services) {
       // El sacudón del tren traicionero (CONFIG.traqueteo): cuánto se le suma
       // a la dispersión de CUALQUIERA que dispare mientras dura el efecto.
       // 0 el resto del tiempo, y siempre 0 si este tren no tiene el sistema.
+      // (🆕 Y el golpe del tirón de los enganches, el mismo sacudón: ver `sacudiendo` en world/enganches.js.)
       get dispersionExtra() {
-        return traqueteoFase === 'efecto' ? CONFIG.traqueteo.dispersionExtra : 0;
+        return traqueteoFase === 'efecto' || (enganches && sacudiendo(enganches)) ? CONFIG.traqueteo.dispersionExtra : 0;
       },
       // Sólo para depurar desde la consola: FORAJIDO.services.raid.techObstacles
       get techObstacles() { return techObstacles; },
@@ -2856,6 +2867,11 @@ export function createRaidScene(services) {
     updateTraqueteo(dt);
     // (🆕 Los enganches: el vaivén y, en el de pasajeros, sus tirones, con el crujido de aviso.)
     if (enganches && actualizarEnganches(enganches, dt, rng, player.x) === 'aviso') audio.play('trenCruje');
+    // 🦵 El enganche en el que estás chocó contra su tope: trastabillás (entities/player.js).
+    if (enganches && !player.enTecho) {
+      const g = engancheEn(enganches, player.x);
+      if (g && g.choque && trastabillar(player, g.choque, world)) audio.play('hitWall');
+    }
     if (enganches) {
       const suyo = corrimientoEn(enganches, player.x);
       camaraEng += (suyo - camaraEng) * Math.min(1, dt / CONFIG.enganches.camaraDemora);
@@ -5023,7 +5039,7 @@ export function createRaidScene(services) {
      * misma pregunta que hace `updateWeapon` para dejarte disparar, así que no
      * puede desincronizarse con lo que de verdad pasa al hacer clic.
      */
-    const puedeDisparar = player.reloadTimer <= 0 && player.tumbado <= 0 &&
+    const puedeDisparar = player.reloadTimer <= 0 && player.tumbado <= 0 && !(player.trastabilla > 0) &&
       (!player.cover || player.peek >= CONFIG.player.peekShootAt);
 
     const color = !puedeDisparar ? m.colorBloqueado

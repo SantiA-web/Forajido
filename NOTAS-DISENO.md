@@ -19304,6 +19304,27 @@ guardaespaldas distintos)*:
     - 🧪 El atajo [4] deja la blindada de chapa pero empujable desde afuera (`empujable`).
     - **Pendiente**: en otros vagones algunos muebles quedan a 13 de la pared de la punta (el perchero del correo, los
       cofres de las esquinas del blindado, el escritorio del caboose); ofrecido hacerles lo del dormitorio.
+  - **✅ FASE 2, EL ENGANCHE QUE SE ESTIRA Y SE ENCOGE** (world/enganches.js, `CONFIG.enganches`):
+    - **El dibujo**: dos plataformas de **chapa remachada oxidada**, una pegada a cada vagón *(eligió la C: las tablas
+      "no me cerraban", se confundían con el piso del vagón; gris, de noche quedaba azul marino)*; la chapa estriada
+      del medio, más clara, que se desliza encima; la sombra en la grava. **Las cadenas** cuelgan de un poste de
+      fierro en la punta de cada plataforma (sueltas parecían antenas): estiradas, tirantes; encogidas, cuelgan; en el
+      aviso, tiemblan. Van con la gente, cada una con su base: la de adelante te tapa los pies si estás detrás.
+    - **Un tren con peso** *(Santi: "no me siento, como jugador, en un tren en movimiento")*: cada vagón es un peso y
+      cada enganche un resorte con juego y topes (el largo mínimo y el máximo: pasajeros 36-60, carga 42-54). La
+      locomotora tira y el tirón corre hacia atrás, cada enganche contra el tope uno detrás del otro; la vía
+      despareja empuja cada vagón un poco, siempre. De la misma cuenta sale todo: el largo de cada enganche, el
+      sacudón de tu vagón contra el desierto (la cámara lo sigue con demora, `camaraDemora`; apuntando, del todo),
+      y dos péndulos colgados de tu vagón: los faroles y, más lento, el agua de los barriles. Adentro se sacó el
+      vaivén viejo de la cámara (en el techo sigue).
+    - **Ágil** *(Santi: "los vagones se mueven demasiado lento… debería ser muchísimo más fluido")*: la primera cuenta
+      tardaba dos segundos en cruzar el tren; se la hizo tres veces más rápida con el mismo recorrido (medio segundo).
+    - 🐛 **De a punto, no de a píxel**: corridos de a píxel de pantalla, el cuervo del pañuelo, las barbas y el borde
+      llegaban antes que el cuerpo (se pegan después de la grilla de puntos, `pasar` en engine/estiloNuevo.js).
+    - Todo lo del vagón se corre con él: muebles, gente, puertas, balas, caídos, y de noche la oscuridad, la luz de
+      las ventanas y los faroles (`corrX`). La mira pasa de donde se ve a donde está (`delDibujoAlMundo`).
+    - Tirones: en el de pasajeros cada 6-10 s, con medio segundo de aviso (el crujido); en el de carga, el traqueteo.
+    - **Para la fase 3**: la vista del techo todavía no se estira (va con el salto según el largo).
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

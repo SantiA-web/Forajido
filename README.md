@@ -1810,6 +1810,10 @@ deja de servir para nada.
 > **En el estilo nuevo** las puertas son finitas, del alto de una persona: dos hojas con su marco que giran al
 > empujarlas (la blindada, una sola hoja de chapa que se abre lenta, sólo desde adentro). **Abiertas también
 > chocan, y los tiros que les pegás cuentan** para su vida. La pared de la punta del vagón es finita.
+>
+> **Los enganches se estiran y se encogen**: el tren tiene peso, y cada enganche es un resorte con topes. Cada tanto
+> la locomotora pega un tirón (con el crujido de aviso) que corre por el tren de enganche en enganche; tu vagón se
+> sacude, y los faroles y el agua se hamacan con él. En el de pasajeros, de 36 a 60; en el de carga, de 42 a 54.
 
 Cada vagón tiene **dos puertas, en su propio borde** — no una compartida con
 el de al lado. Cruzar de un vagón a otro es: la puerta del que dejás, la

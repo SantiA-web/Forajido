@@ -43,6 +43,7 @@ import { sortearComposicion } from '../world/train.js';
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
+import { crearEnganches, actualizarEnganches, empezarTiron, corrimientoEn, dibujarEnganches, cadenasDeEnganches, columnasDeEnganches } from '../world/enganches.js';
 import { fijarHoraDelSorteo } from '../entities/estiloNuevo/gente.js';
 import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual, damagePlayer,
@@ -142,6 +143,22 @@ export function createRaidScene(services) {
   // anterior para tocar el volumen sólo cuando cambia, no cada cuadro.
   let hayTormenta, truenoTimer, cubiertoAntes;
   let traqueteoTimer, traqueteoFase, traqueteoFaseTimer, traqueteoVariante, traqueteoSwayX;
+  /**
+   * 🆕 LOS ENGANCHES QUE SE ESTIRAN (world/enganches.js) y cuánto se corre el dibujo: `anclaCorr` es lo que la
+   * cámara sigue a tu vagón (con demora: ver `camaraDemora`; apuntando, del todo), así que lo que ves moverse es el
+   * sacudón de tu vagón contra el desierto, y los otros vagones contra el tuyo.
+   */
+  let enganches = null, anclaCorr = 0, camaraEng = 0;
+  /**
+   * Cuánto se corre el dibujo en `x`, de a punto del dibujo.
+   * 🐛 Se probó de a píxel de pantalla, para que fuera más fluido, y quedó peor *(Santi: "el cuervo dibujado en el
+   * pañuelo llega a destino antes que el pañuelo")*: el cuadro entero pasa por la grilla de puntos al final
+   * (engine/estiloNuevo.js), así que el cuerpo saltaba igual de a punto, y lo que se pega después de la grilla —los
+   * puntos finos, el borde— se movía de a píxel, por su cuenta. Lo fluido lo da que el tren sea ágil.
+   */
+  const corrDibujo = (x) => (enganches ? Math.round((corrimientoEn(enganches, x) - anclaCorr) / PASO) * PASO : 0);
+  /** Al revés: de dónde se ve algo a dónde está (para la mira: la bala va a lo que ves). */
+  const delDibujoAlMundo = (xd) => { let x = xd; for (let i = 0; i < 4; i++) x = xd - corrDibujo(x); return x; };
   let traqueteoVelMult = 1;
   /** El vaivén de la cámara adentro del vagón (ver `actualizarVaivenCamara`). */
   let vaivenCamaraX = 0;
@@ -270,7 +287,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders });
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches });
     enemies = train.enemies;
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
@@ -301,6 +318,8 @@ export function createRaidScene(services) {
     cajones = train.cajones || [];
 
     traqueteoTimer = train.traqueteoCada || 0;
+    enganches = crearEnganches(train, rng);
+    anclaCorr = 0; camaraEng = 0;
     traqueteoFase = null;
     traqueteoFaseTimer = 0;
     traqueteoVariante = null;
@@ -2465,6 +2484,8 @@ export function createRaidScene(services) {
         traqueteoFase = 'aviso';
         traqueteoFaseTimer = c.avisoTiempo;
         traqueteoVariante = rng.chance(0.5) ? 'acelera' : 'frena';
+        // (🆕 Y los enganches dan el tirón: acelera, se estiran; frena, se encogen.)
+        if (enganches) empezarTiron(enganches, traqueteoVariante === 'acelera' ? 1 : -1, c.avisoTiempo);
         audio.play('trenCruje');
       }
       traqueteoSwayX = 0;
@@ -2802,8 +2823,10 @@ export function createRaidScene(services) {
      * systems/golpe.js para el porqué: en tres cuartos, apuntarle a la cabeza
      * era apuntarle al piso de atrás suyo.
      */
-    const blanco = blancoBajoLaMira(world.miraX, world.miraY, world);
-    world.aimX = blanco ? blanco.x : world.miraX;
+    // (🆕 Con los enganches estirados el dibujo va corrido: la mira se pasa de donde se ve a donde está.)
+    const miraMundoX = player.enTecho ? world.miraX : delDibujoAlMundo(world.miraX);
+    const blanco = blancoBajoLaMira(miraMundoX, world.miraY, world);
+    world.aimX = blanco ? blanco.x : miraMundoX;
     world.aimY = blanco ? blanco.y : world.miraY;
     world.aimAlto = blanco ? blanco.alto : null;
     world.aimZona = blanco ? blanco.zona : null;
@@ -2831,6 +2854,14 @@ export function createRaidScene(services) {
     updateEstampidas(dt);
     updateRodantes(dt);
     updateTraqueteo(dt);
+    // (🆕 Los enganches: el vaivén y, en el de pasajeros, sus tirones, con el crujido de aviso.)
+    if (enganches && actualizarEnganches(enganches, dt, rng, player.x) === 'aviso') audio.play('trenCruje');
+    if (enganches) {
+      const suyo = corrimientoEn(enganches, player.x);
+      camaraEng += (suyo - camaraEng) * Math.min(1, dt / CONFIG.enganches.camaraDemora);
+      const firme = Math.min(1, Math.max(0, player.apuntado || 0));
+      anclaCorr = camaraEng + (suyo - camaraEng) * firme;
+    }
     updateTormenta(dt);
     /**
      * ¿Quedaste sobre el vacío? Entre dos vagones, o sobre el ganado que no
@@ -4250,7 +4281,9 @@ export function createRaidScene(services) {
      */
     const firme = 1 - Math.min(1, Math.max(0, player.apuntado || 0));
     const fuerza = arriba ? CONFIG.techo.costado.vaivenFuerza : 1;
-    const x = -Math.sin(scroll * L.velocidad * Math.PI * 2) * V.amplitud * fuerza * suave * firme;
+    // (🚂 Adentro, con los enganches, el vagón ya se mece solo contra el desierto: ver `anclaCorr`. Queda el del techo.)
+    const sinTren = arriba || !enganches ? 1 : 0;
+    const x = -Math.sin(scroll * L.velocidad * Math.PI * 2) * V.amplitud * fuerza * suave * firme * sinTren;
     const d = renderer.densidad || 1;
     vaivenCamaraX = Math.round(x * d) / d;
   }
@@ -4340,14 +4373,27 @@ export function createRaidScene(services) {
     const nuevos = estiloNuevo.activo ? vagonesNuevos(train, gameState.esDeDia) : null;
     // (🆕 El meneo del tren, de -1 a 1, al compás de la luz: lo que se mueve con él en los vagones nuevos, el agua
     // del barril y la leña del caboose; ver `animadosV` en world/estiloNuevo/vagones.js.)
-    estiloNuevo.meneo = Math.sin(scroll * CONFIG.tresCuartos.luzVentanilla.velocidad * Math.PI * 2);
+    // (🚂 Con los enganches, el del farol colgado de tu vagón: ver el péndulo en world/enganches.js.)
+    estiloNuevo.meneo = enganches ? enganches.meneo : Math.sin(scroll * CONFIG.tresCuartos.luzVentanilla.velocidad * Math.PI * 2);
     // (🆕 Y el del agua, más lento: ver CONFIG.tresCuartos.aguaVelocidad.)
-    estiloNuevo.meneoAgua = Math.sin(scroll * CONFIG.tresCuartos.aguaVelocidad * Math.PI * 2);
+    estiloNuevo.meneoAgua = enganches ? enganches.meneoAgua : Math.sin(scroll * CONFIG.tresCuartos.aguaVelocidad * Math.PI * 2);
     if (nuevos) {
       swayX = Math.round(swayX / PASO) * PASO;
       camY = Math.round(camY / PASO) * PASO;
     }
-    const saltear = nuevos && nuevos.cols.size ? (col) => nuevos.cols.has(col) : null;
+    /**
+     * 🆕 LOS ENGANCHES QUE SE ESTIRAN: cada vagón se corre (`corrDibujo`, contra `anclaCorr`, que pone `update`); los
+     * enganches se dibujan nuevos (world/enganches.js), así que el dibujo viejo los saltea.
+     */
+    const colsEng = enganches ? columnasDeEnganches(enganches, map.size) : null;
+    const saltear = (nuevos && nuevos.cols.size) || colsEng ? (col) => (nuevos && nuevos.cols.has(col)) || (colsEng && colsEng.has(col)) : null;
+    const corrCol = enganches ? (col) => corrDibujo((col + 0.5) * map.size) : null;
+    /** Dibuja corrido lo que está en `x`. */
+    const corrido = (x, draw) => () => {
+      const dx = corrDibujo(x);
+      if (!dx) { draw(); return; }
+      r.ctx.save(); r.ctx.translate(dx, 0); draw(); r.ctx.restore();
+    };
     // La luz de los vagones nuevos, para la gente nueva (figura.js).
     estiloNuevo.luzEn = nuevos ? (x, y) => nuevos.luzEn(x, y) ?? 0 : null;
     const enVista = (p) => p.x < swayX + r.width + 4 && p.x + p.w > swayX - 4;
@@ -4357,7 +4403,8 @@ export function createRaidScene(services) {
       r.ctx.save();
       r.ctx.beginPath();
       r.ctx.rect(swayX - 50, camY - 200, r.width + 100, r.height + 400);
-      for (const [a, b] of nuevos.tramos) r.ctx.rect(a, camY - 200, b - a, r.height + 400);
+      // (🆕 Corridos como su vagón: ver `corrido`.)
+      for (const [a, b] of nuevos.tramos) r.ctx.rect(a + corrDibujo((a + b) / 2), camY - 200, b - a, r.height + 400);
       r.ctx.clip('evenodd');
       fn();
       r.ctx.restore();
@@ -4380,8 +4427,9 @@ export function createRaidScene(services) {
      * `base` es `y + hh`: el borde de abajo de la caja con la que cada uno choca.
      * La caja no cambió; sólo se usa para saber quién está adelante.
      */
-    drawPisoDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, saltear);
-    if (nuevos) for (const p of nuevos.piso) if (enVista(p)) estamparPieza(r, p);
+    drawPisoDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, saltear, corrCol);
+    if (nuevos) for (const p of nuevos.piso) if (enVista(p)) corrido(p.x + p.w / 2, () => estamparPieza(r, p))();
+    if (enganches) dibujarEnganches(r, enganches, corrDibujo, 4, 5, map.size);
 
     // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
     // la lista `enemies` es un guardia común.
@@ -4389,32 +4437,35 @@ export function createRaidScene(services) {
 
     // Los caídos están tirados EN el piso: van con el piso, debajo de todo lo
     // que está parado, así nunca le tapan nada a nadie.
-    for (const pa of passengers) if (!pa.alive && visible(pa)) drawPassenger(r, pa);
-    for (const e of enemies) if (!e.alive && visible(e)) pintar(e);
+    for (const pa of passengers) if (!pa.alive && visible(pa)) corrido(pa.x, () => drawPassenger(r, pa))();
+    for (const e of enemies) if (!e.alive && visible(e)) corrido(e.x, () => pintar(e))();
 
     const pies = (o, alto) => o.y + (alto ?? o.hh ?? 4);
-    const cosas = cosasAltasDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, saltear);
-    if (nuevos) for (const p of nuevos.altas) if (enVista(p)) cosas.push({ base: p.base, draw: () => estamparPieza(r, p) });
+    const cosas = cosasAltasDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, saltear, corrCol);
+    // (🆕 Todo lo del tren, corrido por los enganches: ver `corrido`.)
+    if (nuevos) for (const p of nuevos.altas) if (enVista(p)) cosas.push({ base: p.base, draw: corrido(p.x + p.w / 2, () => estamparPieza(r, p)) });
     // (🆕 La puertita vaivén de la barra: se dibuja en cada cuadro, gira.)
-    if (nuevos) for (const p of world.portones || []) cosas.push({ base: p.base, draw: () => dibujarPorton(r, p) });
+    if (nuevos) for (const p of world.portones || []) cosas.push({ base: p.base, draw: corrido(p.x, () => dibujarPorton(r, p)) });
     // (🆕 La del estilo nuevo, en dos partes, cada una con su base: ver `partesDePuerta`, entities/door.js.)
     for (const d of doors) if (visible(d)) {
-      if (d.fina && estiloNuevo.activo) for (const pz of partesDePuerta(d)) cosas.push({ base: pz.base, draw: () => drawDoor(r, d, colors, pz.parte) });
-      else cosas.push({ base: pies(d), draw: () => drawDoor(r, d, colors) });
+      if (d.fina && estiloNuevo.activo) for (const pz of partesDePuerta(d)) cosas.push({ base: pz.base, draw: corrido(d.x, () => drawDoor(r, d, colors, pz.parte)) });
+      else cosas.push({ base: pies(d), draw: corrido(d.x, () => drawDoor(r, d, colors)) });
     }
-    for (const tr of tranqueras) if (visible(tr)) cosas.push({ base: pies(tr, 8), draw: () => dibujarTranquera(r, tr) });
-    for (const c of cajones) if (visible(c)) cosas.push({ base: pies(c), draw: () => drawCajon(r, c) });
+    for (const tr of tranqueras) if (visible(tr)) cosas.push({ base: pies(tr, 8), draw: corrido(tr.x, () => dibujarTranquera(r, tr)) });
+    for (const c of cajones) if (visible(c)) cosas.push({ base: pies(c), draw: corrido(c.x, () => drawCajon(r, c)) });
     // (🎨 La caja fuerte contra un mueble se ordena con el mueble: ver `nicho` en world/train.js.)
-    for (const l of loot) if (visible(l)) cosas.push({ base: l.nicho && estiloNuevo.activo ? l.nicho.base : pies(l), draw: () => drawLootable(r, l) });
+    for (const l of loot) if (visible(l)) cosas.push({ base: l.nicho && estiloNuevo.activo ? l.nicho.base : pies(l), draw: corrido(l.x, () => drawLootable(r, l)) });
     // 🎨 El sentado y el que duerme en la litera van encima de su mueble (ver `baseDeDibujo`).
-    for (const pa of passengers) if (pa.alive && visible(pa)) cosas.push({ base: baseDeDibujo(pa, pies(pa)), draw: () => drawPassenger(r, pa) });
-    for (const e of enemies) if (e.alive && visible(e)) cosas.push({ base: pies(e), draw: () => pintar(e) });
-    for (const ro of rodantes) if (visible(ro)) cosas.push({ base: pies(ro), draw: () => drawRodante(r, ro) });
+    for (const pa of passengers) if (pa.alive && visible(pa)) cosas.push({ base: baseDeDibujo(pa, pies(pa)), draw: corrido(pa.x, () => drawPassenger(r, pa)) });
+    for (const e of enemies) if (e.alive && visible(e)) cosas.push({ base: pies(e), draw: corrido(e.x, () => pintar(e)) });
+    for (const ro of rodantes) if (visible(ro)) cosas.push({ base: pies(ro), draw: corrido(ro.x, () => drawRodante(r, ro)) });
     // Los jinetes van afuera: los de arriba del tren quedan detrás de la pared
     // del fondo, y los de abajo, delante de la de adelante. El orden lo resuelve solo.
     for (const rd of riders) cosas.push({ base: pies(rd, 6), draw: () => drawRider(r, rd) });
+    // (🆕 Las cadenas de los enganches, con su base: la de atrás detrás de la gente; la de adelante, delante.)
+    if (enganches) cosas.push(...cadenasDeEnganches(r, enganches, corrDibujo, 4, 5, map.size));
     if (!player.enTecho) {
-      cosas.push({ base: pies(player), draw: () => drawPlayer(r, player, train.hearStepRadius) });
+      cosas.push({ base: pies(player), draw: corrido(player.x, () => drawPlayer(r, player, train.hearStepRadius)) });
     }
     cosas.sort((a, b) => a.base - b.base);
     for (const c of cosas) c.draw();
@@ -4437,11 +4488,11 @@ export function createRaidScene(services) {
     // `solAlFinal` en CONFIG.tresCuartos.luzVentanilla).
     const pasado = duracionInicial > 0 ? Math.min(1, Math.max(0, 1 - timeLeft / duracionInicial)) : 0;
     const luz = {
-      meneo: Math.sin(scroll * L.velocidad * Math.PI * 2) * L.balanceo,
+      meneo: estiloNuevo.meneo * L.balanceo,
       dia: gameState.esDeDia,
       sol: 1 - (1 - L.solAlFinal) * pasado,
     };
-    fueraDeLosNuevos(() => luzDeLosVentanales(r, train, swayX, undefined, luz));
+    fueraDeLosNuevos(() => luzDeLosVentanales(r, train, swayX, undefined, luz, enganches ? corrDibujo : null));
 
     /**
      * 🌙 DE NOCHE, EL TREN SE APAGA Y LO PRENDEN LOS FAROLES (world/train.js).
@@ -4453,10 +4504,10 @@ export function createRaidScene(services) {
      * falta: la pared del fondo ya los tapa en esa franja.
      */
     if (!luz.dia) {
-      fueraDeLosNuevos(() => oscuridadDeNoche(r, train, swayX));
+      fueraDeLosNuevos(() => oscuridadDeNoche(r, train, swayX, undefined, enganches ? corrDibujo : null));
       for (const rd of riders) if (rd.y > map.height) drawRider(r, rd);
     }
-    fueraDeLosNuevos(() => farolesDelTren(r, train, swayX, undefined, luz));
+    fueraDeLosNuevos(() => farolesDelTren(r, train, swayX, undefined, luz, enganches ? corrDibujo : null));
 
     // Los jinetes de arriba del tren quedan detrás de la pared del fondo: se
     // los sigue viendo en silueta, encima de ella.
@@ -4464,7 +4515,7 @@ export function createRaidScene(services) {
 
     for (const p of particles) {
       r.ctx.globalAlpha = Math.min(1, p.life * 3);
-      r.box(p.x, p.y, 1, 1, p.color);
+      r.box(p.x + corrDibujo(p.x), p.y, 1, 1, p.color);
     }
     r.ctx.globalAlpha = 1;
 
@@ -4479,8 +4530,9 @@ export function createRaidScene(services) {
       drawPlayer(r, player, train.hearStepRadius);
       if (player.techoResbalando && !player.techoColgado) polvoDeResbalar(r);
     }
-    for (const b of bullets) drawBullet(r, sobreElTecho(b));
-    for (const ex of explosives) drawExplosive(r, sobreElTecho(ex));
+    // (🆕 Corridas como lo de adentro.)
+    for (const b of bullets) corrido(b.x, () => drawBullet(r, sobreElTecho(b)))();
+    for (const ex of explosives) corrido(ex.x, () => drawExplosive(r, sobreElTecho(ex)))();
 
     // La onda expansiva, un instante después del estruendo.
     for (const mb of blastMarks) {

@@ -2080,7 +2080,8 @@ export function isInsideZone(entity, zone) {
  * NADA DE ESTO TOCA EL JUEGO: la grilla, los choques, la vista y las balas
  * siguen igual. Sólo cambia dónde se pinta.
  */
-export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, saltear = null) {
+// (🆕 `corrCol(col)`: cuánto se corre el dibujo de esa columna, por los enganches que se estiran: world/enganches.js.)
+export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, saltear = null, corrCol = null) {
   const map = train.map;
   const size = map.size;
   const anchoVista = vistaW || r.width;
@@ -2122,7 +2123,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, sa
       // 🎨 Los vagones que ya se dibujan en el estilo nuevo (world/estiloNuevo/).
       if (saltear && saltear(col)) continue;
       const tile = map.grid[row][col];
-      const x = col * size;
+      const x = col * size + (corrCol ? corrCol(col) : 0);
       const y = row * size;
 
       switch (tile) {
@@ -2343,7 +2344,7 @@ export function drawPisoDelTren(r, train, colors, camX, camY, vistaW, vistaH, sa
  * versión)*. Con la base clavada al ventanal y la punta corrida por el meneo:
  * si se corriera entero parecería una mancha que patina por el piso.
  */
-export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}) {
+export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}, corrX = null) {
   const { meneo = 0, dia = true } = luz;
   const L = CONFIG.tresCuartos.luzVentanilla;
   // De día, el sol baja con el reloj del asalto (`luz.sol`, de 1 a
@@ -2412,7 +2413,8 @@ export function luzDeLosVentanales(r, train, camX, vistaW, luz = {}) {
     ctx.imageSmoothingEnabled = true;
     // La base clavada al ventanal y la punta corrida por el meneo: un corte en
     // diagonal, que corre cada fila en proporción a lo lejos que está.
-    ctx.transform(1, 0, meneo / img.alcance, 1, h.x0, h.yBorde);
+    // (🆕 Corrido con su vagón por los enganches: `corrX`, el de scenes/raidScene.js.)
+    ctx.transform(1, 0, meneo / img.alcance, 1, h.x0 + (corrX ? corrX(h.x0 + h.ancho / 2) : 0), h.yBorde);
     ctx.drawImage(img.lienzo, -img.izq, 0, img.anchoU, img.altoU);
     ctx.restore();
   }
@@ -2527,7 +2529,7 @@ function hazDibujado(anchoU, dia, sol) {
  * Va DESPUÉS de todo lo parado y ANTES de los faroles: los faroles son los
  * que vuelven a encender lo que tocan (`farolesDelTren`).
  */
-export function oscuridadDeNoche(r, train, camX, vistaW) {
+export function oscuridadDeNoche(r, train, camX, vistaW, corrX = null) {
   const F = CONFIG.tresCuartos.faroles;
   const tc = CONFIG.tresCuartos;
   const map = train.map;
@@ -2587,8 +2589,10 @@ export function oscuridadDeNoche(r, train, camX, vistaW) {
   ctx.globalCompositeOperation = 'multiply';
   ctx.fillStyle = `rgb(${canal(0)},${canal(1)},${canal(2)})`;
   for (const t of tramos) {
-    const x = t.desde * size;
-    const w = (t.hasta - t.desde + 1) * size;
+    // (🆕 Las puntas corridas por los enganches, `corrX`: el enganche estirado se oscurece entero, y el vagón con él.)
+    const xa = t.desde * size, xb = (t.hasta + 1) * size;
+    const x = xa + (corrX ? corrX(xa) : 0);
+    const w = xb + (corrX ? corrX(xb) : 0) - x;
     for (const [y0, y1] of t.partes) ctx.fillRect(x, y0, w, y1 - y0);
   }
   ctx.restore();
@@ -2642,7 +2646,7 @@ const PROFUNDIDAD_CHARCO = 0.62;
  * Y SE HAMACA con el mismo reloj que la luz de los ventanales y la cámara
  * (`meneo`): las tres cosas cuentan juntas que el vagón se mece.
  */
-export function farolesDelTren(r, train, camX, vistaW, luz = {}) {
+export function farolesDelTren(r, train, camX, vistaW, luz = {}, corrX = null) {
   const { meneo = 0, dia = true } = luz;
   if (dia) return;
   const F = CONFIG.tresCuartos.faroles;
@@ -2659,7 +2663,7 @@ export function farolesDelTren(r, train, camX, vistaW, luz = {}) {
   ctx.globalCompositeOperation = 'color-dodge';
   for (const f of visibles) {
     ctx.save();
-    ctx.translate(f.x + corre, f.y);
+    ctx.translate(f.x + corre + (corrX ? corrX(f.x) : 0), f.y);
     ctx.scale(1, PROFUNDIDAD_CHARCO);
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, F.radio);
     /**
@@ -2716,7 +2720,7 @@ const esHueco = (ch) => ch === 'X' || ch === 'O';
  *
  * Las alturas viven en `CONFIG.tresCuartos`.
  */
-export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, saltear = null) {
+export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, saltear = null, corrCol = null) {
   const map = train.map;
   const size = map.size;
   const tc = CONFIG.tresCuartos;
@@ -2782,7 +2786,7 @@ export function cosasAltasDelTren(r, train, colors, camX, camY, vistaW, vistaH, 
     for (let col = colDesde; col <= colHasta; col++) {
       if (saltear && saltear(col)) continue;
       const tile = map.grid[row][col];
-      const x = col * size;
+      const x = col * size + (corrCol ? corrCol(col) : 0);
       const y = row * size;
       // Apenas antes del borde: alguien parado exactamente sobre la línea
       // queda adelante de la cosa, no detrás.

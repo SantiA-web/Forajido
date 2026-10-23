@@ -2510,6 +2510,49 @@ export const CONFIG = {
    * VOS la ventaja de la puntería — que es exactamente lo traicionero que
    * tiene que ser.
    */
+  /**
+   * 🆕 LOS ENGANCHES QUE SE ESTIRAN Y SE ENCOGEN (world/enganches.js) *(Santi eligió la C)*. Un tren con peso: cada
+   * vagón, un peso; cada enganche, un resorte con topes.
+   *  base        lo que mide hoy un enganche (3 columnas), en unidades
+   *  rango       de cuánto a cuánto, según el tren (el de pasajeros va más rápido: se nota más): los topes
+   *  resorte     lo duro del enganche; freno, lo que se le va apagando el rebote
+   *  tope        lo duro del choque contra el tope (el largo mínimo o el máximo); topeFreno, su rebote
+   *  vuelta      lo que tira cada vagón a volver a su lugar (lo que sobra o falta de velocidad); vueltaFreno
+   *  via         lo que empuja la vía despareja a cada vagón, siempre; viaVel, sus compases (vueltas por segundo)
+   *  fuerza      el empujón de la locomotora en un tirón, según el tren
+   *  tironCada   cada cuántos segundos un tirón, en el de pasajeros (en el de carga, el traqueteo)
+   *  tironAviso  el aviso antes del golpe (el crujido, las cadenas que tiemblan), en segundos
+   *  tironGolpe  lo que dura el empujón; tironCalma, lo que se espera después antes de otro
+   *  pendulo...  el farol colgado de tu vagón: su compás, lo que se apaga y cuánto lo empuja el vagón al acelerar
+   */
+  enganches: {
+    base: 48,
+    rango: { pasajeros: [36, 60], carga: [42, 54] },
+    // ⚡ Tres veces más ágil que la primera cuenta *(Santi: "los vagones se mueven demasiado lento, las cosas tardan
+    // en llegar a dónde deberían")*: el mismo recorrido, en un tercio del tiempo (resortes ×9, frenos ×3, compases ×3).
+    resorte: 27,
+    freno: 0.9,
+    tope: 8100,
+    topeFreno: 60,
+    vuelta: 6.3,
+    vueltaFreno: 0.6,
+    via: 31.5,
+    viaVel: [0.45, 1.35],
+    fuerza: { pasajeros: 4950, carga: 2340 },
+    tironCada: { pasajeros: [6, 10] },
+    tironAviso: 0.5,
+    tironGolpe: 0.17,
+    tironCalma: 1.5,
+    penduloVel: 0.62,
+    penduloFreno: 0.8,
+    penduloEmpuje: 0.1,
+    /** El agua de los barriles: otro péndulo, colgado del mismo vagón, más lento y con menos freno (se sigue hamacando). */
+    aguaVel: 0.4,
+    aguaFreno: 0.4,
+    /** La cámara sigue a tu vagón con esta demora (s): lo que se ve es el sacudón, no la deriva lenta. */
+    camaraDemora: 0.12,
+  },
+
   traqueteo: {
     cada: 10,             // segundos entre sacudones, con variación al azar
     avisoTiempo: 0.6,

@@ -1860,6 +1860,14 @@ export const CONFIG = {
     // La pared con adentro detrás (la de adelante, las divisiones): baja, para
     // no tapar a la gente de la última fila.
     alturaParedBaja: 3,
+    /**
+     * 🆕 LA PARED DE LA PUNTA DEL VAGÓN, FINITA *(Santi: "debería ser más fina y ajustar la colisión a la nueva
+     * pared")*: su grueso, en unidades, pegada al borde de afuera del vagón (world/tilemap.js la hace chocar así; el
+     * resto de la columna es piso). Y el alto de la puerta que va en ella, en puntos (`altoPuerta`) *(Santi:
+     * "debería verse más alta")*: el de una persona.
+     */
+    paredPunta: 3,
+    altoPuerta: 28,
     alturaCarga: 7,
     alturaRes: 6,
     alturaBaranda: 6,
@@ -1971,6 +1979,9 @@ export const CONFIG = {
   doors: {
     health: 3,        // tiros que aguanta una puerta común antes de romperse
     closeDelay: 1.6,  // segundos sin nadie en el marco antes de cerrarse sola
+    // 🆕 el marco de chapa de la puerta blindada, a cada lado de la abertura (unidades): choca. 4 y no más: los dos
+    // carriles del pasillo van a 72 y 88, y con medio cuerpo (3,5) ocupan de 68,5 a 91,5; con 6, se trababan.
+    marcoBlindado: 4,
   },
 
   /**

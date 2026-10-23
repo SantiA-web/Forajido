@@ -195,6 +195,24 @@ export function createTilemap(layout) {
   };
 
   /**
+   * 🆕 LA PARED DE LA PUNTA DEL VAGÓN ES FINITA (`CONFIG.tresCuartos.paredPunta`), pegada al borde de afuera *(Santi:
+   * "debería ser más fina y ajustar la colisión a la nueva pared")*: un '#' con el enganche de un lado (aire,
+   * pasarela, baranda o el vacío) y el adentro del vagón del otro. -1: la pared está a la izquierda de la casilla; 1,
+   * a la derecha; 0, no es una punta (choca entera).
+   * Sólo en las columnas que avisa el tren (`ponerPuntasFinas`): las de los vagones del estilo nuevo, menos el
+   * dormitorio (`paredAdentro`, data/wagons.js). Los del dibujo viejo tienen la pared gruesa dibujada, y chocan entera.
+   */
+  let puntasFinas = null;
+  const deAfuera = (t) => t === 'O' || t === 'X' || t === 'E' || t === '+' || t === 'H' || t === undefined;
+  function paredFina(col, row) {
+    if (!puntasFinas || !puntasFinas.has(col) || tileAt(col, row) !== '#') return 0;
+    const iz = tileAt(col - 1, row), de = tileAt(col + 1, row);
+    if (deAfuera(iz) && !deAfuera(de) && de !== '#') return -1;
+    if (deAfuera(de) && !deAfuera(iz) && iz !== '#') return 1;
+    return 0;
+  }
+
+  /**
    * Cuánto de cada costado de esta casilla es pasillo: [izquierda, derecha]. El banco va pegado a la
    * mesa que tenga al lado (una unidad para las piernas) y deja el resto del lado de afuera.
    */
@@ -213,6 +231,12 @@ export function createTilemap(layout) {
   function solidoEn(px, py) {
     const regla = TILE_RULES[tileAtPixel(px, py)];
     if (!regla.solid) return false;
+    // (🆕 La punta del vagón: sólo su grueso, del lado de afuera.)
+    const fina = paredFina(Math.floor(px / size), Math.floor(py / size));
+    if (fina) {
+      const dx = px - Math.floor(px / size) * size, G = CONFIG.tresCuartos.paredPunta;
+      return fina < 0 ? dx <= G : dx >= size - G;
+    }
     if (!regla.margenX) return true;
     const col = Math.floor(px / size), [izq, der] = margenes(col, Math.floor(py / size));
     const dx = px - col * size;
@@ -230,6 +254,8 @@ export function createTilemap(layout) {
 
   return {
     grid, rows, cols, size,
+    /** 🆕 Qué columnas son puntas finitas de vagón (ver `paredFina`). */
+    ponerPuntasFinas(cols) { puntasFinas = new Set(cols); },
     width: cols * size,
     height: rows * size,
     bounds: { width: cols * size, height: rows * size },

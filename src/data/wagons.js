@@ -865,6 +865,14 @@ export const WAGONS = {
    * lado.
    */
   dormitorio: {
+    /**
+     * 🆕 LA PARED DE LA PUNTA, DONDE IBA LA VIEJA *(Santi: "poner la pared finita donde iba la otra… tiene que ser sólo
+     * en el dormitorio")*: en los demás vagones la pared finita va en el borde de afuera; acá, en la línea de adentro de
+     * la columna de la punta, pegada a los camarotes (con la de afuera, entre la pared y la cama quedaba un hueco). La
+     * columna de la punta queda afuera: el pasillo hasta el enganche y, a los costados, la vía. Ver `PUNTAS` en
+     * world/estiloNuevo/vagones.js.
+     */
+    paredAdentro: true,
     id: 'dormitorio',
     // Sus casillas 'S' no son asientos: acá la gente duerme (ver `mueble` y
     // `piezaCama` en world/piezas.js).

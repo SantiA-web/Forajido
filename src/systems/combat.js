@@ -13,7 +13,7 @@ import { damagePlayer, isHidden, tumbar } from '../entities/player.js';
 import { danioDeBala, zonaDeBala } from './golpe.js';
 import { CONFIG } from '../data/config.js';
 import { damageRider } from './riders.js';
-import { dañarPuerta } from '../entities/door.js';
+import { dañarPuerta, hojaGolpeada } from '../entities/door.js';
 import { dañarCortina } from '../world/cortinas.js';
 import { dañarPorton } from '../world/porton.js';
 import { dañarRodante } from '../entities/rodante.js';
@@ -66,8 +66,9 @@ export function updateBullets(bullets, dt, world) {
        */
       if (world.doors) {
         for (const d of world.doors) {
-          if (d.broken || d.open || d.kind === 'blindada') continue;
-          if (Math.abs(b.x - d.x) >= d.hw || Math.abs(b.y - d.y) >= d.hh) continue;
+          if (d.broken || d.kind === 'blindada') continue;
+          // (🆕 Abierta, la del estilo nuevo: le pega a la hoja, por donde quedó girada. Ver `hojaGolpeada`.)
+          if (d.open ? !hojaGolpeada(d, b.x, b.y) : Math.abs(b.x - d.x) >= d.hw || Math.abs(b.y - d.y) >= d.hh) continue;
           b._puertasGolpeadas = b._puertasGolpeadas || new Set();
           if (b._puertasGolpeadas.has(d)) continue;
           b._puertasGolpeadas.add(d);

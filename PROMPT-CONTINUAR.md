@@ -218,9 +218,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   sentados en cajones de munición que chocan); el correo hecho (casilleros y mesas de clasificar, carros de
   mimbre y cajones de encomiendas, perchero, balanza, reloj); el caboose hecho (escritorio con la taza, estufa
   contra la pared, barril con agua, leña y rueda que se mueven con el tren, una cama); el blindado hecho (jaula,
-  cajas fuertes nuevas, parapetos de bolsas con cobertura baja, cofres); siguen LOS ENGANCHES (puertas finitas y que
-  se estiren y encojan: plan pedido por Santi el 2026-10-22), y revisar los choques de los otros vagones (que
-  coincidan con lo dibujado) (ver NOTAS, "P4 · LOS OTROS
+  cajas fuertes nuevas, parapetos de bolsas con cobertura baja, cofres); LOS ENGANCHES en curso (ver NOTAS, "LOS
+  ENGANCHES": fase 1, las puertas finitas, hecha; sigue la fase 2, el enganche que se estira y se encoge), y revisar
+  los choques de los otros vagones (que coincidan con lo dibujado) (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los
   jinetes) se hace en P5, ya en el estilo nuevo. Después las

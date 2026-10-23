@@ -410,6 +410,8 @@ function vagon(train, w, dia) {
       if (casilla(c, f) !== '#') continue;
       // (🆕 Los tabiques del dormitorio van aparte, finos: ver `dormitorio`.)
       if (w.id === 'dormitorio' && c > 0 && c < cols - 1) continue;
+      // (🆕 Las dos puntas del vagón, finitas y de arriba a abajo: ver `PUNTAS` más abajo.)
+      if (c === 0 || c === cols - 1) continue;
       const x = ax(w.x + c * S), x2 = ax(w.x + (c + 1) * S), y = ay(f * S), y2 = ay((f + 1) * S);
       r(x, y, x2 - x, y2 - y, 0);
       r(x + 1, y, x2 - x - 2, y2 - y, BORDE);
@@ -931,7 +933,9 @@ function vagon(train, w, dia) {
       // quedó muy larga")*.)
       const abre = (q) => casilla(q, f) === '.' || casilla(q, f) === 'Q';
       const horiz = esTabique(c - 1, f) || esTabique(c + 1, f);
-      const izq = esTabique(c - 1, f) || (horiz && abre(c - 1)), der = esTabique(c + 1, f) || (horiz && abre(c + 1));
+      // (🆕 Y hasta la pared de la punta del vagón: con la punta finita, terminaba antes y quedaba un hueco.)
+      const punta = (q) => (q === 0 || q === cols - 1) && casilla(q, f) === '#';
+      const izq = esTabique(c - 1, f) || punta(c - 1) || (horiz && abre(c - 1)), der = esTabique(c + 1, f) || punta(c + 1) || (horiz && abre(c + 1));
       // Los tramos de la tapa (en el piso; después se suben ALTO_TABIQUE): el horizontal y el vertical.
       const tramos = [[izq ? N.x : N.cx0, N.cy0, der ? N.x2 : N.cx1, N.cy1]];
       // (Contra la pared de afuera, la tapa baja también lo que mide de alto: llega a la pared de adelante.)
@@ -1598,7 +1602,8 @@ function vagon(train, w, dia) {
     const ocupado = (xa, xb) => ventanasFondo.some(([c0, c1]) => xb > ax(w.x + c0 * S) && xa < ax(w.x + (c1 + 1) * S))
       || faroles.some((fx) => xb > fx - 6 && xa < fx + 6) || usados.some(([a, b]) => xb > a && xa < b);
     const lugarEnPared = (cerca, ancho) => {
-      for (let d = 0; d < W; d++) for (const sg of [1, -1]) { const x = Math.round(cerca + sg * d - ancho / 2); if (x > 4 && x + ancho < W - 4 && !ocupado(x - 2, x + ancho + 2)) { usados.push([x - 2, x + ancho + 2]); return x; } }
+      const xMin = 4, xMax = W - 4;
+      for (let d = 0; d < W; d++) for (const sg of [1, -1]) { const x = Math.round(cerca + sg * d - ancho / 2); if (x > xMin && x + ancho < xMax && !ocupado(x - 2, x + ancho + 2)) { usados.push([x - 2, x + ancho + 2]); return x; } }
       return null;
     };
     const bloque = (c, f) => {
@@ -2354,6 +2359,44 @@ function vagon(train, w, dia) {
     }
   }
 
+  /**
+   * 🆕 LAS PUNTAS DEL VAGÓN, FINITAS Y DE ARRIBA A ABAJO *(Santi: "arreglar la pared esa vertical que está con la
+   * puerta: debería ser más fina… debería ocultarse detrás de la pared del tren más cercana a la pantalla… dar la
+   * sensación de que continúa hasta topar con la pared… el borde negro no debería estar… y debería continuar hacia
+   * arriba y el borde de esta pared debería quedar unido del borde de la pared más lejana")*: una tira del grueso de
+   * la pared (`paredPunta`), pegada al borde de afuera, que sube hasta el filete de la pared del fondo (la esquina) y
+   * baja hasta perderse detrás de la pared de adelante, sin borde negro abajo. El hueco de la puerta queda a la vista,
+   * del alto de la puerta (`altoPuerta`): la pared sigue arriba del marco y abajo. Dos piezas por punta: la de arriba
+   * de la puerta, detrás de quien la cruza; la de abajo, delante (y de la hoja de adelante: le tapa el pie).
+   */
+  const PUNTAS = capa(), puntasV = [];
+  {
+    const r = rect(PUNTAS);
+    const G = Math.max(3, Math.round(tc.paredPunta * PX)), AP = tc.altoPuerta;
+    for (const c of [0, cols - 1]) {
+      let fd0 = -1, fd1 = -1;
+      for (let f = filasArriba; f < map.rows - filasAbajo; f++) if (casilla(c, f) !== '#') { if (fd0 < 0) fd0 = f; fd1 = f; }
+      // (🔁 En el dormitorio, en la línea de adentro de la columna de la punta, donde iba la pared vieja, pegada a los
+      // camarotes (`paredAdentro`, data/wagons.js; ver `AFUERA` más abajo).)
+      const adentro = WAGONS[w.id] && WAGONS[w.id].paredAdentro;
+      const x = adentro ? (c === 0 ? ax(w.x + S) - G : ax(w.x + (cols - 1) * S)) : c === 0 ? ax(w.x) : ax(w.x + w.width) - G;
+      const tira = (y0, y1) => {
+        if (y1 <= y0) return;
+        r(x, y0, G, y1 - y0, BORDE); r(x, y0, 1, y1 - y0, 0); r(x + G - 1, y0, 1, y1 - y0, 0);
+        r(c === 0 ? x + 1 : x + G - 2, y0, 1, y1 - y0, BORDE_L);
+      };
+      // (🔁 La de abajo arranca a la altura de la puerta y va delante de la hoja de adelante: está más cerca de la pantalla y
+      // le tapa la parte de abajo *(Santi: "la puerta más cercana sí debería estar tapada un poco por la pared")*.)
+      const yArr = fd0 < 0 ? H : ay(fd0 * S) - AP, yAb = fd0 < 0 ? H : ay((fd1 + 1) * S) - AP;
+      tira(0, yArr);
+      tira(yAb, H);
+      // (Arriba, la tira se junta con el filete de la pared del fondo: la esquina.)
+      const px0 = Math.max(0, x - 1), pw = Math.min(W, x + G + 1) - px0;
+      puntasV.push({ x: px0, y: 0, w: pw, h: Math.max(1, yArr), base: (fd0 < 0 ? map.rows : fd0) * S - 0.03 });
+      if (yAb < H) puntasV.push({ x: px0, y: yAb, w: pw, h: H - yAb, base: (fd1 + 1) * S + 0.01 });
+    }
+  }
+
   // ===== LA PARED DE ADELANTE: el borde y, debajo, su cara de afuera
   {
     const r = rect(FRENTE), p = pone(FRENTE);
@@ -2400,6 +2443,27 @@ function vagon(train, w, dia) {
       if (!dia) r(vx + 1, vy + 1, vw - 2, vh - 2, 28, true);
       r(vx + Math.floor(vw / 2) - 1, vy, 2, vh, 0);
       if (dia) for (let q = 0; q < 3; q++) p(vx + 2 + q, vy + 1 + q, 20);
+    }
+  }
+
+  /**
+   * 🆕 AFUERA DE LA PARED DE LA PUNTA, EN EL DORMITORIO (`paredAdentro`) *(Santi: "poner la pared finita donde iba la
+   * otra… sólo en el dormitorio… no agregues las barandas")*: la columna de la punta queda del otro lado de la pared.
+   * Se borra (paredes, muebles) y se ve la vía que pasa por debajo, como en el hueco del enganche; sólo queda el piso en
+   * las filas del pasillo, el mismo del vagón, que sigue hasta el enganche. Por los costados no se camina: la punta
+   * choca entera.
+   */
+  if (WAGONS[w.id] && WAGONS[w.id].paredAdentro) {
+    const borrar = (cp, xa, xb, ya = 0, yb = H) => { for (let y = ya; y < yb; y++) for (let x = Math.max(0, xa); x < Math.min(W, xb); x++) { cp.i[y * W + x] = -1; cp.m[y * W + x] = 0; } };
+    const G = Math.max(3, Math.round(tc.paredPunta * PX));
+    for (const c of [0, cols - 1]) {
+      const xa = c === 0 ? 0 : ax(w.x + (cols - 1) * S) + G, xb = c === 0 ? ax(w.x + S) - G : W;
+      for (const cp of [FONDO, FRENTE, ASIENTOS, MESAS]) borrar(cp, xa, xb);
+      let fd0 = -1, fd1 = -1;
+      for (let f = filasArriba; f < map.rows - filasAbajo; f++) if (casilla(c, f) !== '#') { if (fd0 < 0) fd0 = f; fd1 = f; }
+      // El piso, menos en las filas del pasillo.
+      if (fd0 < 0) borrar(PISO, xa, xb);
+      else { borrar(PISO, xa, xb, 0, ay(fd0 * S)); borrar(PISO, xa, xb, ay((fd1 + 1) * S), H); }
     }
   }
 
@@ -2462,6 +2526,14 @@ function vagon(train, w, dia) {
           return K.vida > vidaMax * 0.6 ? imgs.c0 : K.vida > vidaMax * 0.3 ? imgs.c1 : imgs.c2;
         },
       });
+    }
+  }
+  // 🆕 Las puntas, finitas (ver `PUNTAS`).
+  {
+    const pu = iluminado(PUNTAS);
+    for (const q of puntasV) {
+      const [mx, my] = enMundo(q.x, q.y);
+      resultado.altas.push(pieza(recorte(pu, q.x, q.y, q.w, q.h), q.w, q.h, mx, my, q.base));
     }
   }
   const yF = ay(yPisoAbajo - tc.alturaParedBaja);

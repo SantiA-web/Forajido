@@ -19271,6 +19271,39 @@ guardaespaldas distintos)*:
     **cartas sueltas** en el piso y, en la cara de afuera, **el brazo de fierro** para agarrar la saca sin parar.
   - El correo liviano ya no viaja (su plano lo usa el cerrado del tren de carga): queda con el dibujo viejo.
   - Falta: la caja fuerte y las bolsas de botín, que se dibujan aparte en todos los vagones.
+- **🚧 LOS ENGANCHES** *(Santi, 2026-10-22: "quiero que las puertas se vean más finitas… y la mecánica es que se
+  encojan y se alarguen los enganches")*. El plan, en cuatro fases *(eligió las recomendaciones, y la C de cuánto se
+  mueven)*: 1) las puertas finitas; 2) el enganche dibujado de nuevo (dos plataformas y el acople de eslabón y perno)
+  que se estira y se encoge: pasajeros de 36 a 60, carga de 42 a 54 (hoy 48), vaivén suave y tirones con aviso cada
+  6-10 s / 10-14 s (en el de carga, el traqueteo de siempre); se dibuja corriendo cada vagón unos puntos (todo lo de
+  adentro con él), la grilla no se toca; 3) lo que te hace: el salto del techo según el largo, trastabillar 0,6 s si
+  un tirón te agarra en el pasillo del enganche, más o menos tiempo para cruzarlo; 4) frenos rotos (`frenosDañados`):
+  1 de cada 10 trenes, un frenazo cada 15-25 s con 1,2 s de aviso; los vagones se chocan y te aplastan (muerte; a los
+  guardias también).
+  - **✅ FASE 1, LAS PUERTAS FINITAS** (entities/door.js, `dibujarPuertaNueva`):
+    - Desde arriba, una hoja de canto, no un cuadrado; **del alto de una persona** (`altoPuerta`, 28 puntos). Dos hojas
+      de 12 con **un marco** de 4 a cada lado *(eligió la B: "no deberían ser más cortas al abrirse?" — en esta vista lo
+      que va al fondo no se achica)*. Giran hacia el lado contrario del que empuja y vuelven solas.
+    - **La blindada, una sola hoja** de 24, más gruesa, gris con remaches y el volante; se abre lenta (sólo desde adentro:
+      es por donde salís). **El marco de chapa choca** (`marcoBlindado`, 4: con 6 se trababan los dos carriles del
+      pasillo, a 72 y 88). Volada, queda arrancada en el piso, con el marco chamuscado.
+    - **Las hojas abiertas chocan** a lo largo (`hojaChoca`): una banda de 0,25 del lado del pasillo y 3 del de afuera
+      (más finita, el que camina se la salteaba entre cuadros; más gruesa del lado del pasillo, trababa los carriles).
+    - **Los tiros a la hoja abierta cuentan** (`hojaGolpeada`): sus tres vidas, y el daño se ve abierta: intacta,
+      dañada (agujeros), muy dañada (más agujeros y una rajadura), rota (una hoja colgando).
+    - 🐛 **"Como si fuera humo"**: dibujada directo, no le tapaba a la gente su borde finito (se veía la silueta a
+      través) y se ordenaba entera en el pie de la abertura (la hoja de atrás quedaba delante del que pasaba). Ahora se
+      dibuja en su lienzo, tapa el borde (`taparGente`) y va en dos partes, cada una con su base (`partesDePuerta`).
+    - 🐛 El corte al cerrarse: la cara aparecía y desaparecía de golpe a cierto ángulo; ahora se angosta de a poco.
+    - **La pared de la punta, finita** (`paredPunta`, 3), con el choque del mismo grueso (`paredFina`,
+      world/tilemap.js): sube hasta el borde de la pared del fondo (la esquina) y baja hasta perderse detrás de la de
+      adelante; la pared de adelante tapa el pie de la hoja de adelante. **En el dormitorio, adentro**, donde iba la
+      vieja (`paredAdentro`): con la de afuera, entre la pared y la cama quedaba un hueco *(Santi: "sólo en el
+      dormitorio")*; afuera de ella, el piso del pasillo y la vía. Las paredes de los camarotes llegan hasta la punta.
+    - Sólo en los vagones del estilo nuevo; los del dibujo viejo siguen con la pared gruesa y la puerta de siempre.
+    - 🧪 El atajo [4] deja la blindada de chapa pero empujable desde afuera (`empujable`).
+    - **Pendiente**: en otros vagones algunos muebles quedan a 13 de la pared de la punta (el perchero del correo, los
+      cofres de las esquinas del blindado, el escritorio del caboose); ofrecido hacerles lo del dormitorio.
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

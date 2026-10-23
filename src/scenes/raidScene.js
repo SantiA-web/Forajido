@@ -79,7 +79,7 @@ import { puedeTirarDesdeElTecho } from '../entities/player.js';
 import { maxJinetesPara } from '../data/riders.js';
 import { createLootable, drawLootable, esCajaFuerte } from '../entities/lootable.js';
 import {
-  updateDoor, puertaTapaVision, drawDoor, trabarPuerta, destrabarPuerta, dañarPuerta,
+  updateDoor, puertaTapaVision, drawDoor, trabarPuerta, destrabarPuerta, dañarPuerta, hojaChoca, partesDePuerta,
 } from '../entities/door.js';
 import {
   updateEnemy, alertTo, alertCombat, alertaEnGuardia, separateEnemies, armarGuardia,
@@ -549,7 +549,13 @@ export function createRaidScene(services) {
          * La blindada no mira `open` a propósito: es chapa y su única llave
          * sigue siendo la dinamita.
          */
-        const frena = d.kind === 'blindada' || (d.trabada && !d.open);
+        // 🆕 El marco de chapa de la blindada (la del estilo nuevo, finita) choca siempre, abierta, cerrada o volada: la hoja
+        // es más angosta que la abertura y el marco cierra el resto (`marcoBlindado`, data/config.js).
+        if (d.kind === 'blindada' && d.fina && Math.abs(x - d.x) < d.hw + 1 && Math.abs(y - d.y) < d.hh &&
+            Math.abs(y - d.y) > d.hh - CONFIG.doors.marcoBlindado) return true;
+        // (🆕 Las hojas abiertas, a lo largo: ver `hojaChoca`, entities/door.js.)
+        if (hojaChoca(d, x, y)) return true;
+        const frena = (d.kind === 'blindada' && !(d.empujable && d.open)) || (d.trabada && !d.open);
         if (frena && !d.broken &&
             Math.abs(x - d.x) < d.hw && Math.abs(y - d.y) < d.hh) {
           return true;
@@ -647,7 +653,8 @@ export function createRaidScene(services) {
       if (v && params.pruebaEnganche) player.x = v.x - map.size / 2;
       // (🧪 `pruebaPuertas` (el atajo [4]): las puertas de chapa de ese vagón se empujan como las de madera, para
       // entrar a mirarlo sin dinamita.)
-      if (v && params.pruebaPuertas) for (const d of doors) if (d.kind === 'blindada' && d.x > v.x - map.size && d.x < v.x + v.width + map.size) d.kind = 'normal';
+      // (Sigue siendo de chapa, con su marco: sólo se empuja desde afuera, `empujable`.)
+      if (v && params.pruebaPuertas) for (const d of doors) if (d.kind === 'blindada' && d.x > v.x - map.size && d.x < v.x + v.width + map.size) d.empujable = true;
     }
 
     camera.snap(player.x, player.y, map.bounds);
@@ -4390,7 +4397,11 @@ export function createRaidScene(services) {
     if (nuevos) for (const p of nuevos.altas) if (enVista(p)) cosas.push({ base: p.base, draw: () => estamparPieza(r, p) });
     // (🆕 La puertita vaivén de la barra: se dibuja en cada cuadro, gira.)
     if (nuevos) for (const p of world.portones || []) cosas.push({ base: p.base, draw: () => dibujarPorton(r, p) });
-    for (const d of doors) if (visible(d)) cosas.push({ base: pies(d), draw: () => drawDoor(r, d, colors) });
+    // (🆕 La del estilo nuevo, en dos partes, cada una con su base: ver `partesDePuerta`, entities/door.js.)
+    for (const d of doors) if (visible(d)) {
+      if (d.fina && estiloNuevo.activo) for (const pz of partesDePuerta(d)) cosas.push({ base: pz.base, draw: () => drawDoor(r, d, colors, pz.parte) });
+      else cosas.push({ base: pies(d), draw: () => drawDoor(r, d, colors) });
+    }
     for (const tr of tranqueras) if (visible(tr)) cosas.push({ base: pies(tr, 8), draw: () => dibujarTranquera(r, tr) });
     for (const c of cajones) if (visible(c)) cosas.push({ base: pies(c), draw: () => drawCajon(r, c) });
     // (🎨 La caja fuerte contra un mueble se ordena con el mueble: ver `nicho` en world/train.js.)

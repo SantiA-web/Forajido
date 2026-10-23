@@ -623,6 +623,9 @@ export function buildTrain(
   }
 
   const map = createTilemap(layout);
+  // 🆕 Las puntas de los vagones del estilo nuevo son finitas (ver `paredFina`, world/tilemap.js), menos las del
+  // dormitorio, que tiene la pared adentro (`paredAdentro`, data/wagons.js).
+  map.ponerPuntasFinas(tramos.filter((t) => t.tipo === 'vagon' && esVagonNuevo(t.plantilla.id) && !t.plantilla.paredAdentro).flatMap((t) => [t.colStart, t.colStart + t.cols - 1]));
 
   // --- 3. Metadatos de cada vagón ---
   // El índice 0 es la plataforma de salida; 1..6 son los vagones robables.
@@ -709,11 +712,22 @@ export function buildTrain(
     ];
     for (const borde of bordes) {
       const centro = map.tileCenter(borde.col, 4);
-      const pos = { x: centro.x, y: centro.y + map.size / 2 };
+      /**
+       * (🆕 En la pared finita de la punta, pegada al borde de afuera del vagón: ver `paredPunta` en data/config.js. En el
+       * dormitorio, en la línea de adentro, donde iba la pared vieja (`paredAdentro`, data/wagons.js).)
+       */
+      const G = CONFIG.tresCuartos.paredPunta;
+      // (Sólo en los vagones del estilo nuevo; en los del dibujo viejo, en el medio de la columna, como siempre.)
+      const fina = esVagonNuevo(t.plantilla.id), adentro = !!t.plantilla.paredAdentro;
+      const afuera0 = borde.insideDir === 1 ? borde.col * map.size + G / 2 : (borde.col + 1) * map.size - G / 2;
+      const adentro0 = borde.insideDir === 1 ? (borde.col + 1) * map.size - G / 2 : borde.col * map.size + G / 2;
+      const borde0 = !fina ? centro.x : adentro ? adentro0 : afuera0;
+      const pos = { x: borde0, y: centro.y + map.size / 2 };
       const puerta = createDoor(pos.x, pos.y, {
         kind: esBlindado ? 'blindada' : 'normal',
         insideDir: borde.insideDir,
       });
+      puerta.fina = fina;
 
       /**
        * VAGONES QUE VIAJAN CERRADOS CON LLAVE (`puertasTrabadas` en la

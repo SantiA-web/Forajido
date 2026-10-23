@@ -1232,7 +1232,7 @@ refrigerado, los guardias de franco y la góndola ya tienen la suya:
 | **Dormitorio** | Pasajeros | Diez camarotes con su litera y una abertura al pasillo. Cuatro pasajeros, cada uno en su cabina | Las **puertas** de los camarotes |
 | **Vagón de guardias** | Pasajeros (especial) | Cuatro guardias **de franco**, sentados de a dos en cajones de munición, jugando a las cartas a la luz de una vela: distraídos y lentos para armarse. Un cuartel de catres de lona, con el armero y la estufa. Cuando sale, el tren sube de 16 a 18 guardias | — |
 | **Correo** | Pasajeros | El coche postal: casilleros con las cartas y mesas de clasificar contra el fondo; adelante, carros de mimbre llenos de sacas y pilas de cajones de encomiendas. Sin pasajeros, guardia seria y la caja fuerte al fondo | Las bolsas, todavía con el dibujo viejo |
-| **Blindado** | Pasajeros (express) | La bóveda de chapa, sin ventanillas: la jaula con la plata, dos cajas fuertes, cuatro guardias blindados con dinamita. **Parapetos de bolsas de arena** de cobertura baja (como la barra) y cofres de caudales para cubrirse | La puerta de chapa, en el estilo nuevo |
+| **Blindado** | Pasajeros (express) | La bóveda de chapa, sin ventanillas: la jaula con la plata, dos cajas fuertes, cuatro guardias blindados con dinamita. **Parapetos de bolsas de arena** de cobertura baja (como la barra) y cofres de caudales para cubrirse | — |
 | **Primera clase** | Pasajeros (especial) | **Los tres ricos** del tren, con sombrero de copa, y dos guardaespaldas VIGILANDO. ~$600 entre los tres | — |
 | **Cerrado** | Carga | El correo liviano de siempre, con su nombre de tren de carga | — |
 | **Plataforma** | Carga | Carga amarrada sin paredes: te tapa de los guardias, no de los jinetes | — |
@@ -1806,6 +1806,10 @@ descartó: si cualquiera puede tener dinamita, mirar dónde está el que la tien
 deja de servir para nada.
 
 ### Las puertas
+
+> **En el estilo nuevo** las puertas son finitas, del alto de una persona: dos hojas con su marco que giran al
+> empujarlas (la blindada, una sola hoja de chapa que se abre lenta, sólo desde adentro). **Abiertas también
+> chocan, y los tiros que les pegás cuentan** para su vida. La pared de la punta del vagón es finita.
 
 Cada vagón tiene **dos puertas, en su propio borde** — no una compartida con
 el de al lado. Cruzar de un vagón a otro es: la puerta del que dejás, la

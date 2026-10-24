@@ -189,14 +189,14 @@ export const WAGONS = {
     // que meterse entre los cajones para llegar hasta ellas.
     layout: [
       '#####WW###WW###WW###WW###WW#####',
-      '#PCCC..CCC..CCC..CCC..CCC..CCCP#',
+      '#PCCC..CCC..CCC..CCC..CCC..CCC.#',
       '#.CCC..CCC..CCC..CCC..CCC..CCC.#',
       '#..............................#',
       '+..............................+',
       '+..............................+',
-      '#..............................#',
-      '#.CC....CC....CC....CC....CC...#',
-      '#.CC....CC....CC....CC....CC...#',
+      '#.............................P#',
+      '#.RR....CC....CC....CC....RR...#',
+      '#.RR....CC....CC....CC....RR...#',
       '####WW####WW####WW####WW####WW##',
     ],
     enemies: [
@@ -208,7 +208,9 @@ export const WAGONS = {
     loot: [
       { col: 10, row: 6, type: 'bag' },
       { col: 22, row: 3, type: 'bag' },
-      { col: 30, row: 6, type: 'strongbox' },
+      // (📮 Contra la pared del fondo, en la esquina, al lado de los casilleros *(Santi: "mandala al fondo de la pared más
+      // lejana y pasá ese adorno a otro lugar")*: la balanza pasó a la punta de abajo, donde estaba ella.)
+      { col: 30, row: 1, type: 'strongbox' },
     ],
     /**
      * BARRILES DE PÓLVORA, PERO SÓLO SI EL TREN LLEVA VAGÓN DE ARMAS.

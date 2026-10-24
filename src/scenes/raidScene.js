@@ -56,7 +56,7 @@ import { WAGONS } from '../data/wagons.js';
 import { caballoActual, fondoDelAsalto } from '../data/horse.js';
 import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy, damageEnemy } from '../entities/enemy.js';
-import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, zonasDePeligro, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida } from '../world/caidas.js';
+import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro } from '../world/caidas.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga, jugadorCambiaDeVagon } from '../systems/escuadra.js';
@@ -332,7 +332,7 @@ export function createRaidScene(services) {
      */
     {
       const solidoDelMapa = map.isSolidAt.bind(map);
-      map.isSolidAt = (x, y) => solidoDelMapa(x, y) || baulQuietoEn(x, y);
+      map.isSolidAt = (x, y) => solidoDelMapa(x, y) || baulQuietoEn(x, y) || cajaFuerteEn(x, y);
     }
     // (🧪 El atajo [8]: el primer frenazo enseguida.)
     if (params.pruebaFrenos) enganches.proximoFrenazo = 4;
@@ -1582,6 +1582,10 @@ export function createRaidScene(services) {
       bus.on('explosion', ({ x, y, radius, porJugador, wagons }) => {
         // (🧳 La onda rompe lo tirado de las repisas.)
         if (caidas && romperEnRadio(caidas, x, y, radius)) spawnParticles(x, y, '#c8b890', 10);
+        // 💥 Y una sola dinamita destruye cualquiera de estas cosas (lo de las repisas, las pilas, lo que rueda), sin
+        // importar cuánto aguante a los tiros: ver `destruirEnRadio`, world/caidas.js.
+        if (caidas) for (const q of destruirEnRadio(caidas, x, y, radius)) spawnParticles(q.x, q.y, '#8a6a4a', 10);
+        for (const ro of rodantes || []) if (ro.alive && ro.tipo === 'valija' && Math.hypot(ro.x - x, ro.y - y) <= radius) ro.alive = false;
         spawnParticles(x, y, '#ffb45c', 26);
         spawnParticles(x, y, '#8a6a4a', 18);
         floaters.push({ x, y: y - 14, text: T.prompts.boom, life: 1.1, color: '#ffb45c' });
@@ -1927,7 +1931,8 @@ export function createRaidScene(services) {
     // 🧳 Lo que se cae y lo que sale por el pasillo: el aviso elige qué (y los guardias lo leen), el golpe lo larga.
     if (evento === 'frenazoAviso' || evento === 'arranconAviso') {
       avisarCaidas(caidas, evento === 'frenazoAviso' ? -1 : 1, rng);
-      esquivarCaidas();
+      // (🧍 Que los guardias lean el peligro y se salgan queda para el final *(Santi: "lo de los guardias lo haremos al
+      // final")*; lo que les pasa si los alcanza, sí: es lo mismo que a vos.)
       cubrirPasajeros();
     } else golpearCaidas(caidas);
     // 🚂 El arrancón: el tren acelera de golpe, más suave que el frenazo (nadie trastabilla).
@@ -1951,17 +1956,47 @@ export function createRaidScene(services) {
     for (const e of enemies) {
       if (!e.alive || engancheEn(enganches, e.x) || e.stagger > 0) continue;
       e.stagger = dura;
+      e.knockX = CONFIG.enganches.trastabillaEmpuje;            // (frena: para adelante, como a vos)
       e.aimTimer = 0;
       e.burstLeft = 0;
       e.peeking = false;
     }
   }
 
+  /**
+   * 🧳 TIRADO AL PISO, IGUAL QUE VOS (`tumbar` en entities/player.js) *(Santi: "el efecto que tienen estas estructuras…
+   * sobre el jugador, tienen que ser EXACTAMENTE igual para un guardia")*: segundo y medio en el piso sin hacer nada, y
+   * despedido para el lado contrario al que vino el golpe, con la misma fuerza.
+   */
+  function tumbarGuardia(e, desdeX) {
+    const c = CONFIG.rodante;
+    e.tirado = c.levantarse;
+    e.knockX = (e.x < desdeX ? -1 : 1) * c.empuje;
+    e.stagger = 0;
+    e.aimTimer = 0; e.burstLeft = 0; e.peeking = false; e.coverPoint = null; e.atCover = false;
+    spawnParticles(e.x, e.y, '#c9b28a', 6);
+    audio.play('hitWall');
+  }
+
+  /**
+   * 🔒 LAS CAJAS FUERTES CHOCAN *(Santi: "a todas las cajas fuertes poneles colisión")*, del tamaño de lo dibujado (la
+   * que está contra un mueble, donde se dibuja: `nicho`), y sirven de cobertura como cualquier mueble.
+   */
+  function cajaFuerteEn(x, y) {
+    if (!loot) return false;
+    for (const l of loot) {
+      if (l.typeId !== 'strongbox' || l.oculto) continue;
+      const cx = l.nicho ? l.nicho.x : l.x, cy = l.nicho ? l.nicho.piso - 4 : l.y;
+      if (Math.abs(x - cx) < 7 && Math.abs(y - cy) < 5) return true;
+    }
+    return false;
+  }
+
   /** 🥃 ¿Hay un baúl grande quieto acá? (Ver `isSolidAt` en el armado del asalto.) */
   function baulQuietoEn(x, y) {
     if (!rodantes) return false;
     for (const ro of rodantes) {
-      if (ro.tipo !== 'valija' || ro.variante !== 3 || !ro.quieta || !ro.alive) continue;
+      if (ro.tipo !== 'valija' || !ro.mueble || !ro.quieta || !ro.alive) continue;
       if (Math.abs(x - ro.x) < ro.hw && Math.abs(y - ro.y) < ro.hh) return true;
     }
     return false;
@@ -2348,7 +2383,7 @@ export function createRaidScene(services) {
         if (murio) {
           spawnParticles(e.x, e.y, colors.blood, 10);
           bus.emit('enemyKilled', { enemy: e, byPlayer: false, silent: true });
-        } else e.stagger = Math.max(e.stagger || 0, CONFIG.enganches.trastabilla);
+        }
       }
     }
     caidas.impactos.length = 0;
@@ -2359,50 +2394,29 @@ export function createRaidScene(services) {
       s.demora -= dt;
       if (s.demora > 0) continue;
       porSalir.splice(i, 1);
-      // (🥃 El baúl grande, más pesado: más ancho y más lento, y aguanta más tiros.)
+      // (🥃 Los muebles —el baúl grande, el carro de correo— traen su tamaño, su lentitud y su aguante.)
       const ro = createRodante(s.x, s.y, 'valija', rng, {
-        dir: s.dir, velocidad: rng.range(O.valijaVel[0], O.valijaVel[1]) * (s.baul ? 0.8 : 1), roce: O.valijaRoce,
-        vida: s.baul ? 3 : 1, hw: s.baul ? 11 : 6, hh: s.baul ? 5 : 3, variante: s.variante,
+        dir: s.dir, velocidad: rng.range(O.valijaVel[0], O.valijaVel[1]) * (s.lento || 1), roce: O.valijaRoce,
+        vida: s.vida || 1, hw: s.hw || 6, hh: s.hh || 3, variante: s.variante,
       });
+      ro.mueble = !!s.mueble;
+      if (s.variante === 4) { ro.ancho = s.ancho; ro.hondo = s.hondo; ro.semilla = Math.round(s.x); ro.sueltaSacas = [rng.range(0.1, 0.25), rng.range(0.35, 0.6)]; ro.faltan = 0; }
       ro.yMeta = map.height / 2 + rng.range(-6, 6);
       rodantes.push(ro);
     }
     for (const pa of passengers) if (pa.cubreFrenazo > 0) pa.cubreFrenazo -= dt;
-  }
-
-  /**
-   * 🧳 LOS GUARDIAS LEEN LO QUE VA A PASAR (en el aviso): el que está donde va a caer algo, o en el pasillo por donde
-   * va a salir lo de una pila, se sale (`esquiva`, ver systems/ai.js), cada uno con su demora y más lento si está en
-   * un tiroteo. Del lugar donde cae algo, al pasillo; del pasillo, al hueco libre más cercano entre los asientos (que
-   * no esté debajo de algo que va a caer).
-   */
-  function esquivarCaidas() {
-    const K = CONFIG.caidas, S = map.size;
-    const zonas = zonasDePeligro(caidas, S);
-    if (!zonas.length) return;
-    const en = (z, x, y, m = 4) => x > z.x0 - m && x < z.x1 + m && y > z.y0 - m && y < z.y1 + m;
-    const libre = (x, y) => !map.isSolidAt(x, y) && !zonas.some((z) => en(z, x, y, 2));
-    for (const e of enemies) {
-      if (!e.alive || e.rendido || e.inconsciente > 0) continue;
-      const z = zonas.find((q) => en(q, e.x, e.y));
-      if (!z) continue;
-      let destino = null;
-      if (z.pasillo) {
-        const c0 = Math.floor(e.x / S);
-        for (let d = 0; d <= 4 && !destino; d++) for (const c of d ? [c0 + d, c0 - d] : [c0]) {
-          for (const f of [3, 6]) {
-            const x = (c + 0.5) * S, y = (f + 0.5) * S;
-            if (libre(x, y)) { destino = { x, y }; break; }
-          }
-          if (destino) break;
-        }
-      } else destino = { x: e.x, y: map.height / 2 };
-      if (!destino) continue;
-      e.esquiva = {
-        ...destino, dura: 1.6,
-        demora: rng.range(K.reaccion[0], K.reaccion[1]) + (e.state === 'combat' ? K.reaccionPeleando : 0),
-      };
+    // 🛒 El carro que sale rodando suelta dos sacas de arriba, cada una a su tiempo (ver `sacaDelCarro`).
+    for (const ro of rodantes || []) {
+      if (!ro.sueltaSacas || !ro.sueltaSacas.length || !ro.alive) continue;
+      ro.sueltaSacas[0] -= dt;
+      if (ro.sueltaSacas[0] > 0) continue;
+      ro.sueltaSacas.shift();
+      ro.faltan = (ro.faltan || 0) + 1;
+      const P = CONFIG.estilo.punto / 4;
+      sacaDelCarro(caidas, ro.x + rng.range(-8, 8), ro.y + ro.hh - 40 * P, ro.y + rng.range(-4, 10), ro.dir, rng);
     }
+    // 📮 Los papelitos del piso, con lo que acelera el tren.
+    actualizarPapeles(caidas, dt, enganches, map);
   }
 
   /** 🧳 Los pasajeros sentados se cubren la cabeza mientras dura el aviso y un rato después del golpe. */
@@ -2423,14 +2437,7 @@ export function createRaidScene(services) {
     for (const e of enemies) {
       if (!e.alive || ro.atropellados.has(e) || !toca(e)) continue;
       ro.atropellados.add(e);
-      e.stagger = Math.max(e.stagger || 0, CONFIG.rodante.levantarse);
-      e.aimTimer = 0;
-      e.burstLeft = 0;
-      e.peeking = false;
-      e.coverPoint = null;
-      e.atCover = false;
-      spawnParticles(e.x, e.y, '#c9b28a', 6);
-      audio.play('hitWall');
+      if (!(e.tirado > 0)) tumbarGuardia(e, e.x - ro.dir * 20);
     }
     // Te empuja para el lado que va (`tumbar` te despide lejos del punto que le pasás: uno detrás tuyo).
     if (!ro.golpeo && toca(player) && tumbar(player, player.x - ro.dir * 20, world)) {
@@ -3146,9 +3153,10 @@ export function createRaidScene(services) {
        */
       const v = CONFIG.caidas.empujonBaul[eventoEng] || 0;
       for (const ro of rodantes) {
-        if (ro.tipo !== 'valija' || ro.variante !== 3 || !ro.quieta || !ro.alive) continue;
+        if (ro.tipo !== 'valija' || !ro.mueble || !ro.quieta || !ro.alive) continue;
         ro.quieta = false; ro.dir = -enganches.tiron.sentido; ro.velocidad = v * rng.range(0.85, 1.15);
-        ro.golpeo = false; ro.atropellados = null; ro.hw = 11;
+        ro.golpeo = false; ro.atropellados = null;
+        if (ro.variante === 3) ro.hw = 11;
       }
     }
     if (eventoEng === 'frenazoAviso' || eventoEng === 'frenazo' || eventoEng === 'arranconAviso' || eventoEng === 'arrancon') frenazo(eventoEng);
@@ -3158,6 +3166,14 @@ export function createRaidScene(services) {
     if (enganches && !player.enTecho) {
       const g = engancheEn(enganches, player.x);
       if (g && g.choque && trastabillar(player, g.choque, world)) audio.play('hitWall');
+    }
+    if (enganches) for (const e of enemies) {
+      if (!e.alive || e.stagger > 0 || e.tirado > 0) continue;
+      const g = engancheEn(enganches, e.x);
+      if (!g || !g.choque) continue;
+      e.stagger = CONFIG.enganches.trastabilla;
+      e.knockX = -g.choque * CONFIG.enganches.trastabillaEmpuje;
+      e.aimTimer = 0; e.burstLeft = 0; e.peeking = false; e.coverPoint = null; e.atCover = false;
     }
     if (enganches) {
       const suyo = corrimientoEn(enganches, player.x);
@@ -4735,6 +4751,7 @@ export function createRaidScene(services) {
     if (enganches) dibujarEnganches(r, enganches, corrDibujo, 4, 5, map.size);
     // (🧳 La sombra de lo que está por caer, en el piso.)
     if (caidas) dibujarSombrasDeCaidas(r, caidas, corrido, gameState.esDeDia);
+    const papelesEnElAire = caidas ? dibujarPapeles(r, caidas, corrido) : [];
 
     // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
     // la lista `enemies` es un guardia común.
@@ -4770,7 +4787,7 @@ export function createRaidScene(services) {
     // (🆕 Las cadenas de los enganches, con su base: la de atrás detrás de la gente; la de adelante, delante.)
     if (enganches) cosas.push(...cadenasDeEnganches(r, enganches, corrDibujo, 4, 5, map.size));
     // (🧳 Lo de las repisas, lo que cae, lo tirado y las pilas de las puertas.)
-    if (caidas) cosas.push(...cosasDeCaidas(r, caidas, corrido));
+    if (caidas) cosas.push(...cosasDeCaidas(r, caidas, corrido), ...papelesEnElAire);
     if (!player.enTecho) {
       cosas.push({ base: pies(player), draw: corrido(player.x, () => drawPlayer(r, player, train.hearStepRadius)) });
     }

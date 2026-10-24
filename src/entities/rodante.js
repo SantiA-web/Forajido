@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -145,10 +145,15 @@ export function updateRodante(ro, dt) {
     ro.velocidad = Math.max(0, ro.velocidad - ro.roce * dt);
     if (ro.velocidad === 0) ro.quieta = true;
   }
+  // (🛒 El carro de correo rueda: las ruedas giran con lo que avanza.)
+  if (ro.variante === 4) ro.giroRueda = (ro.giroRueda || 0) + paso / 3;
   // 🧳 La que sale de una pila, de costado del pasillo, entra en él (`yMeta`) mientras se desliza.
   if (ro.yMeta != null && !ro.quieta) {
     const d = ro.yMeta - ro.y;
-    ro.y += Math.sign(d) * Math.min(Math.abs(d), 220 * dt);
+    // (🛒 El carro entra en diagonal, rodando: lo que baja o sube va con lo que avanza *(Santi: "parece que pegó un
+    // salto… que rueden de forma diagonal al pasillo y ahí se acomoden en horizontal")*.)
+    const paso = ro.variante === 4 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
+    ro.y += Math.sign(d) * Math.min(Math.abs(d), paso);
   }
 }
 
@@ -156,6 +161,7 @@ export function updateRodante(ro, dt) {
 
 export function drawRodante(r, ro) {
   const col = CONFIG.colors;
+  if (ro.tipo === 'valija' && ro.variante === 4) { dibujarCarroRodando(r, ro); return; }
   if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
   /**
@@ -420,4 +426,20 @@ function dibujarValija(r, ro) {
     R(8, 7, 2, 2, 7); R(8, 8, 2, 1, 6);
   }
   });
+}
+
+/** 🛒 El carro de correo que salió rodando (world/caidas.js, `pintarCarro`): apoyado en el piso, con las ruedas girando. */
+function dibujarCarroRodando(r, ro) {
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  const rueda = Math.floor(ro.giroRueda || 0) % 2, luzR = luz + (ro.hitFlash > 0 ? 2 : 0);
+  // En diagonal mientras entra al pasillo; ya en el pasillo, derecho.
+  if (ro.yMeta != null && Math.abs(ro.yMeta - ro.y) > 1) {
+    const ox = Math.round(ro.x / P) - 28, oy = Math.round((ro.y + ro.hh) / P) - 61;
+    pintarTapando(r.ctx, ox, oy, 56, 62, luzR, (R) => pintarCarroDiagonal(R, rueda, ro.semilla || 0, ro.faltan || 0));
+    return;
+  }
+  const L = medidasCarro(ro.ancho, ro.hondo);
+  const ox = Math.round(ro.x / P) - Math.round(L.w / 2), oy = Math.round((ro.y + ro.hh) / P) - L.h;
+  pintarTapando(r.ctx, ox, oy, L.w, L.h, luzR, (R) => pintarCarro(R, ro.ancho, ro.hondo, rueda, ro.semilla || 0, ro.faltan || 0));
 }

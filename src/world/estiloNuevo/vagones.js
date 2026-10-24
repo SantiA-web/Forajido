@@ -1497,9 +1497,13 @@ function vagon(train, w, dia) {
       const h = (k) => hash(B.c * 7 + k, w.colStart);
       // Una saca grande parada, con la boca atada arriba y la chapita de bronce.
       const SACA_GRANDE = ['....ooo.....', '...okkko....', '....oko.....', '...oLLLo....', '..oLLCCCo...', '.oLLCCCCCo..', 'oLLCCCCCCco.', 'oLCCCCCCCcco', 'oLCCCYYCCcco', 'oLCCCCCCCcco', 'oCCCCCCCccco', 'oCCCCCCcccco', '.oCCCCcccco.', '..oooooooo..'];
-      if (n % 2 === 0) {
+      // (🛒 Carro o cajones según el lugar, no el orden: los carros de las puntas salen rodando y se dibujan aparte, ver
+      // world/caidas.js; son las casillas 'R'.)
+      if (Math.round((B.c - 2) / 6) % 2 === 0) {
         // --- el carro: la caja de mimbre, alta, sobre dos ruedas, llena de sacas.
-        const H = 20, ruedas = 4, piso = yb - ruedas;
+        // (🛒 El del medio no se mueve nunca: sin ruedas, apoyado en el piso *(Santi: "eliminale las ruedas porque sino
+        // no tendría sentido que no se moviera")*. Los de las puntas, que salen rodando, en world/caidas.js.)
+        const H = 20, ruedas = 0, piso = yb - ruedas;
         const tt = yt - H + 4, tf = piso - H;                                   // la boca: de tt a tf; el frente, de tf a piso
         r(x - 1, tt - 1, ancho + 2, piso - tt + 2, 0);
         r(x, tt, ancho, tf - tt, 36); r(x, tt, ancho, 1, 37);                   // el borde de mimbre
@@ -1526,7 +1530,7 @@ function vagon(train, w, dia) {
         for (const mx of [x - 3, x2]) { r(mx, tf + 3, 3, 1, 0); r(mx, tf + 7, 3, 1, 0); r(mx === x - 3 ? mx : mx + 2, tf + 3, 1, 5, 0); }
         // Las ruedas: dos de fierro, adelante.
         const RUEDA = ['.ooo.', 'oKkKo', 'okoko', 'oKkKo', '.ooo.'];
-        for (const wx of [x + 2, x2 - 7]) dibujo(p, wx, yb - 4, RUEDA, { o: 0, K: 23, k: 31 });
+        // (sin las ruedas)
         muebles.push({ x: x - 4, y: tt - 8, w: ancho + 8, h: yb - tt + 9, base: (B.f2 + 1) * S - 0.01 });
       } else {
         /**
@@ -1547,7 +1551,7 @@ function vagon(train, w, dia) {
         const atras = yt + 14;
         cajon(x, atras, 21, 12, 13);
         cajon(x2 - 18, atras + 1, 18, 10, 11);
-        cajon(x + 4, atras - 13 - 12 + 12, 14, 8, 9);
+        // (📦 El cajón chico de arriba va aparte: en el frenazo se desmorona, ver `correo` en world/caidas.js.)
         cajon(x + 1, yb, 26, 10, 13);
         dibujo(p, x + 4 + Math.floor(h(1) * 6), yb - 13 - 10 - 2, SACA, LONA);
         dibujo(p, x2 - 12, yb - SACA_GRANDE.length + 1, h(2) < 0.5 ? SACA_GRANDE : SACA_GRANDE.map((f) => f.split('').reverse().join('')), LONA);
@@ -1583,14 +1587,9 @@ function vagon(train, w, dia) {
         muebles.push({ x: x - 1, y: top - 2, w: ancho + 2, h: yb - top + 3, base: (f + 1) * S - 0.02 });
       }
     }
-    // --- cartas sueltas en el piso, más donde hay luz.
-    for (let k = 0; k < 18; k++) {
-      const ex = 8 + Math.floor(hash(k, w.colStart + 5) * (W - 16)), ey = ay(yPisoArriba) + 6 + Math.floor(hash(w.colStart + 9, k) * (ay(yPisoAbajo) - ay(yPisoArriba) - 12));
-      const c = Math.floor((ex * PASO + x0 - w.x) / S), f = Math.floor((ey * PASO + yArriba) / S);
-      if (casilla(c, f) !== '.' || !deja(ex, ey, 40 + k, 0.5)) continue;
-      pp(ex, ey, 17); pp(ex + 1, ey, 17); pp(ex + 2, ey, 30); pp(ex, ey + 1, 17); pp(ex + 1, ey + 1, 16); pp(ex + 2, ey + 1, 17);
-      if (k % 3 === 0) pp(ex + 1, ey + 2, 33);                                // pisada
-    }
+    // --- (📮 Las cartas sueltas en el piso van aparte: vuelan con los movimientos del tren, ver `papeles` en
+    // world/caidas.js.)
+
   }
 
   /**

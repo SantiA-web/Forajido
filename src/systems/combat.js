@@ -192,8 +192,9 @@ export function updateBullets(bullets, dt, world) {
            * romperlo")*. Ahí está la mitad de la gracia del arma — la mandás
            * rodando y el que la ve venir tiene que decidir algo.
            */
-          // (🥃 Y el baúl grande: es cobertura, así que le pega la bala de cualquiera, y aguanta tres.)
-          if (b.owner !== 'player' && ro.tipo !== 'polvora' && ro.variante !== 3) continue;
+          // (🥃 Y los muebles que ruedan —el baúl grande, el carro de correo—: son cobertura, así que les pega la bala
+          // de cualquiera, y aguantan tres.)
+          if (b.owner !== 'player' && ro.tipo !== 'polvora' && !ro.mueble) continue;
           b.alive = false;
           pegoRodante = true;
           const rompio = dañarRodante(ro, b.damage);

@@ -2591,8 +2591,7 @@ export const CONFIG = {
    *  caeDura       lo que tarda en llegar al piso; corre, cuánto se corre para el lado del golpe
    *  alcance       hasta dónde, hacia la pared, pega lo que cae (desde donde queda tirado)
    *  livianoParte  qué parte de la vida saca lo liviano (lo pesado mata)
-   *  pasilloLargo  qué largo de pasillo leen los guardias como peligroso delante de una pila que se va a soltar
-   *  reaccion      la demora de un guardia en salirse (más `reaccionPeleando` si está en un tiroteo)
+   *  pasilloLargo  qué largo de pasillo es peligroso delante de una pila que se va a soltar
    *  cubrirse      lo que se quedan cubiertos los pasajeros sentados después del golpe
    */
   caidas: {
@@ -2604,8 +2603,6 @@ export const CONFIG = {
     alcance: 22,
     livianoParte: 0.5,
     pasilloLargo: 260,
-    reaccion: [0.15, 0.6],
-    reaccionPeleando: 0.3,
     cubrirse: 1.2,
     /**
      * 🧳 LO TIRADO SE DESLIZA CON LOS SACUDONES (sin chocar con nadie: es parte del piso). El empujón de cada golpe, en
@@ -2616,6 +2613,8 @@ export const CONFIG = {
     alturaArana: 24,
     /** 🥃 Las botellas de un mismo tramo no caen todas juntas: cada una se larga hasta `botellasDemora` segundos después. */
     botellasDemora: 0.35,
+    /** 🔁 Lo demás que cae tampoco se larga todo junto: cada cosa, hasta `demoraMax` segundos después del golpe. */
+    demoraMax: 0.45,
     /**
      * 🥃 EL BAÚL GRANDE QUE SALIÓ AL PASILLO: se vuelca de lado en lado (`baulVuelca`: cuántas unidades avanza por cada
      * cuarto de vuelta) y, mientras nadie lo rompa, cada sacudón lo vuelve a mover (`empujonBaul`, en unidades por
@@ -2623,6 +2622,13 @@ export const CONFIG = {
      */
     baulVuelca: 9.5,
     empujonBaul: { frenazo: 150, arrancon: 115, tiron: 70 },
+    /**
+     * 📮 LAS CARTAS SUELTAS DEL PISO (`actualizarPapeles`): `inercia` qué parte de lo que acelera el vagón sienten,
+     * `pega` lo que las agarra el roce del piso (menos que eso, no se mueven), `roce` cuánto las frena el piso,
+     * `vuela` desde cuánto se levantan (y `vuelaChance` por cuadro), `salto` con qué fuerza, `gravedad` y
+     * `revolotea` en el aire; `tope`, lo más que los empuja un golpe (el choque contra un tope da picos enormes).
+     */
+    papeles: { inercia: 1, pega: 35, roce: 4, vuela: 108, vuelaChance: 0.25, salto: 22, gravedad: 60, revolotea: 40, tope: 450 },
     roceSuelo: 120,
   },
 

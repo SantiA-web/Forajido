@@ -17,12 +17,14 @@
  * SE LEE: en el aviso, lo que va a caer se tambalea y se corre al borde, y en el piso crece su sombra, justo donde va a
  * caer (`zonas`, que también leen los guardias para salirse).
  *
- * Hechos: el de pasajeros (portaequipajes) y primera clase (las botellas de la barra, las arañas del techo y un baúl
- * grande en el rincón de cada puerta). Los demás, de a uno: ver el plan en las notas.
+ * Hechos: el de pasajeros (portaequipajes), primera clase (las botellas de la barra, las arañas del techo y un baúl
+ * grande en el rincón de cada puerta) y el correo (las sacas de los casilleros, el cajón chico de cada pila de
+ * encomiendas y los carros de las puntas). Los demás, de a uno: ver el plan en las notas.
  */
 import { CONFIG } from '../data/config.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { aceleracionEn } from './enganches.js';
 
 const PASO = () => CONFIG.estilo.punto / 4;
 
@@ -42,10 +44,11 @@ const COSAS = {
 
 /** Arma lo de todo el tren: las repisas y las pilas de cada vagón que ya las tiene. */
 export function crearCaidas(train) {
-  const C = { objetos: [], pilas: [], impactos: [], sueltos: [] };
+  const C = { objetos: [], pilas: [], impactos: [], sueltos: [], papeles: [] };
   const map = train.map, S = map.size, tc = CONFIG.tresCuartos;
   for (const w of train.wagons) {
     if (w.id === 'primeraClase') { primeraClase(C, train, w); continue; }
+    if (w.id === 'correo') { correo(C, train, w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -167,7 +170,7 @@ function primeraClase(C, train, w) {
 /** ¿Choca acá un baúl de los que esperan junto a las puertas? (Para `isSolidForMovementAt` de la escena.) */
 export function bloqueaCaida(C, x, y) {
   for (const p of C.pilas) {
-    if (p.tipo !== 'baul' || p.estado === 'suelto') continue;
+    if ((p.tipo !== 'baul' && p.tipo !== 'carro') || p.estado === 'suelto') continue;
     if (Math.abs(x - p.x) < p.hw && Math.abs(y - (p.yTope + p.yBase) / 2) < p.hh) return true;
   }
   return false;
@@ -182,23 +185,44 @@ export function avisarCaidas(C, sentido, rng) {
   for (const o of C.objetos) {
     if (o.estado !== 'repisa' || !rng.chance(K.cae * (o.prob ?? 1))) continue;
     o.estado = 'aviso'; o.t = 0; o.dir = -sentido;
+    /**
+     * 🔁 CADA UNA A SU MANERA *(Santi: "caen de forma muy estructurada… parece intencional: caen a la vez y caen de
+     * igual manera… hay que cambiar esto para que se vea más espontáneo")*: se larga un poco después del golpe
+     * (`demora`), tarda lo suyo en llegar (`dura`), se corre más o menos (`correA`) y cae un poco más acá o más allá
+     * (`yPiso`). Se sortea en el aviso: la sombra y lo que leen los guardias ya son los de esa caída.
+     */
+    if (o.tipo !== 'botellas') {
+      o.yPiso0 = o.yPiso0 ?? o.yPiso;
+      o.demora = rng.range(0, K.demoraMax) * (o.tipo === 'arana' ? 0.4 : 1);
+      o.dura = K.caeDura * rng.range(0.8, 1.3);
+      o.correA = (o.corre ?? K.corre) * (o.corre ? rng.range(0.8, 1.2) : rng.range(0.3, 1.8));
+      o.yPiso = o.fijo ? o.yPiso0 : o.yPiso0 + rng.range(-4, 4);
+    }
   }
   for (const p of C.pilas) {
-    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul')) continue;
+    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro')) continue;
     if (p.atras === (sentido < 0)) { p.estado = 'aviso'; p.t = 0; }
   }
 }
 
 /** EL GOLPE: lo avisado se cae, y las pilas avisadas largan lo de arriba (en `C.sueltos`, para la escena). */
 export function golpearCaidas(C) {
-  for (const o of C.objetos) if (o.estado === 'aviso') { o.estado = 'cae'; o.t = 0; }
+  // (Cada uno arranca a su tiempo: hasta que el reloj llega a cero sigue en su lugar, tambaleándose.)
+  for (const o of C.objetos) if (o.estado === 'aviso') { o.estado = 'cae'; o.t = -(o.demora || 0); }
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
     const dir = p.atras ? 1 : -1;
     // El baúl grande sale él mismo, y deja el rincón libre.
     if (p.tipo === 'baul') {
       p.estado = 'suelto';
-      C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 3, demora: 0, baul: true });
+      C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 3, demora: 0, mueble: true, hw: 11, hh: 5, vida: 3, lento: 0.8 });
+      continue;
+    }
+    // 🛒 El carro de correo sale rodando él mismo, y deja su lugar.
+    if (p.tipo === 'carro') {
+      p.estado = 'suelto';
+      // (Aguanta cinco tiros *(Santi: "haría que los carritos tengan hasta 5 de vida")*.)
+      C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 4, demora: 0, mueble: true, hw: p.hw, hh: 6, vida: 5, lento: 0.9, ancho: p.ancho, hondo: p.hondo });
       continue;
     }
     p.estado = 'quieta';
@@ -258,9 +282,9 @@ export function actualizarCaidas(C, dt, map) {
       if (o.t >= K.caeDura + K.botellasDemora) o.estado = 'piso';
       continue;
     }
-    if (o.t >= K.caeDura) {
+    if (o.t >= (o.dura || K.caeDura)) {
       o.estado = 'piso';
-      o.x = o.xRepisa + o.dir * K.corre;
+      o.x = o.xRepisa + o.dir * (o.correA ?? o.corre ?? K.corre);
       C.impactos.push({ ...zonaDe(o), peso: o.peso, x: o.x, y: o.yPiso, tipo: o.tipo });
       // 🐛 Si cayó sobre un asiento, rebota al piso (lo que cae en su lugar, como las botellas o la araña, no): al hueco libre más cercano (primero para el lado del golpe). Arriba
       // del asiento lo tapaba el respaldo, y en el piso se ordena con la gente por donde apoya.
@@ -285,7 +309,7 @@ export function actualizarCaidas(C, dt, map) {
 
 /** Donde pega (en el mundo): debajo de la repisa, corrido para el lado del golpe. */
 function zonaDe(o) {
-  const K = CONFIG.caidas, x = o.xRepisa + o.dir * K.corre;
+  const K = CONFIG.caidas, x = o.xRepisa + o.dir * (o.correA ?? o.corre ?? K.corre);
   const [arriba, abajo] = o.zonaY || [K.alcance, 4];
   return { x0: x - o.hw - 2, x1: x + o.hw + 2, y0: o.yPiso - arriba, y1: o.yPiso + abajo };
 }
@@ -343,7 +367,7 @@ export function dibujarSombrasDeCaidas(r, C, corrido, dia = true) {
   const K = CONFIG.caidas, P = PASO(), ctx = r.ctx;
   for (const o of C.objetos) {
     // 🥃 La araña no tiene la sombra de aviso: la avisa su propia sombra (o su luz) temblando, ver `dibujarLuzDeArana`.
-    if (o.tipo === 'arana') { if (o.estado === 'repisa' || o.estado === 'aviso') corrido(o.x, () => dibujarLuzDeArana(r, o, dia))(); continue; }
+    if (o.tipo === 'arana') { if (o.estado === 'repisa' || o.estado === 'aviso' || (o.estado === 'cae' && o.t < 0)) corrido(o.x, () => dibujarLuzDeArana(r, o, dia))(); continue; }
     // 🥃 Las botellas tampoco *(Santi: "no deberían tener sombras al caer como la araña")*: las avisa su tambaleo.
     if (o.tipo === 'botellas') continue;
     if (o.estado !== 'aviso' && o.estado !== 'cae') continue;
@@ -380,9 +404,13 @@ export function cosasDeCaidas(r, C, corrido) {
       // Se tambalea (un punto, de un lado al otro) y se va corriendo al borde.
       const f = Math.min(1, o.t / K.aviso);
       x += o.dir * f * 2 * PASO() + (Math.floor(o.t * 14) % 2 ? PASO() : 0);
+    } else if (o.estado === 'cae' && o.t < 0) {
+      // Todavía no se largó: sigue tambaleándose en su lugar.
+      x += o.dir * 2 * PASO() + (Math.floor(o.t * 14) % 2 ? PASO() : 0);
     } else if (o.estado === 'cae') {
-      const f = Math.min(1, o.t / K.caeDura);
-      x += o.dir * K.corre * f;
+      const f = Math.min(1, o.t / (o.dura || K.caeDura)), corre = o.correA ?? o.corre ?? K.corre;
+      // (El cajón de la pila se va de costado primero y después cae: la mitad del camino, antes.)
+      x += o.dir * corre * (o.corre ? Math.min(1, f * 2) : f);
       y = o.yRepisa + (o.yPiso - o.yRepisa) * f * f;
       base = delante;
     } else if (o.estado === 'piso' || o.estado === 'roto') {
@@ -393,6 +421,9 @@ export function cosasDeCaidas(r, C, corrido) {
     // (🥃 Las botellas y la araña tienen su propio dibujo: ver `dibujarBotellas` y `dibujarArana`.)
     if (o.tipo === 'botellas') { out.push({ base: o.estado === 'repisa' || o.estado === 'aviso' ? o.yPared : o.yPiso, draw: corrido(o.xRepisa, () => dibujarBotellas(r, o)) }); continue; }
     if (o.tipo === 'arana') { out.push({ base: o.yPiso + (o.estado === 'piso' ? 0 : 20), draw: corrido(o.xRepisa, () => dibujarArana(r, o, x, y)) }); continue; }
+    // (📦 El cajón de la pila, sobre la pila, se ordena con ella; cayendo y en el piso, como cualquiera.)
+    if (o.tipo === 'cajonChico' && (o.estado === 'repisa' || o.estado === 'aviso')) base = o.basePila;
+    if (o.tipo === 'cajonChico' && o.estado === 'cae') base = o.yPiso;
     out.push({ base, draw: corrido(o.xRepisa, () => dibujarCosa(r, o.tipo, frame, x, y, o.variante)) });
   }
   for (const p of C.pilas) {
@@ -484,6 +515,27 @@ const DIBUJOS = {
       R(21, 2, 3, 3, 0); R(22, 3, 1, 1, 9);
     } },
   },
+  saca: {
+    // 📮 La saca de correo de lona, echada, con la boca atada y la chapita de bronce (la misma de
+    // world/estiloNuevo/vagones.js); rota, la lona abierta y las cartas desparramadas.
+    arriba: { w: 14, h: 8, pintar: (R) => dibujarMapa(R, 0, 0, SACA, LONA) },
+    piso: { w: 14, h: 8, pintar: (R) => dibujarMapa(R, 0, 0, SACA, LONA) },
+    roto: { w: 24, h: 9, pintar: (R) => {
+      dibujarMapa(R, 0, 1, ['..oooooo..', '.oLLLLLLo.', 'oLCCCCCCko', 'occccccco.', '.oooooooo.'], LONA);
+      for (const [cx, cy] of [[11, 2], [15, 5], [19, 1], [13, 7], [21, 6], [17, 3]]) { R(cx, cy, 3, 2, 0); R(cx, cy, 2, 1, 17); }
+    } },
+  },
+  cajonChico: {
+    // 📦 El cajón chico de encomiendas, de tablas, con los zunchos de fierro (el mismo de la pila); roto, las tablas
+    // astilladas y los paquetes que llevaba.
+    arriba: { w: 16, h: 19, pintar: (R) => cajonDeTablas(R, 14, 8, 9) },
+    piso: { w: 16, h: 19, pintar: (R) => cajonDeTablas(R, 14, 8, 9) },
+    roto: { w: 26, h: 10, pintar: (R) => {
+      R(0, 6, 9, 3, 0); R(1, 7, 7, 1, 4); R(10, 4, 7, 3, 0); R(11, 5, 5, 1, 5); R(3, 2, 2, 4, 0); R(3, 3, 1, 2, 4);
+      R(17, 7, 3, 2, 0); R(18, 7, 1, 1, 31);
+      dibujarMapa(R, 15, 0, PAQUETE.slice(0, 6), PAPEL);
+    } },
+  },
   baul: {
     // El baúl de viaje: la tapa combada, las tablas, las cantoneras y las dos correas; pesa (mata). Tirado, cae de
     // plano y se le salta la tapa.
@@ -572,6 +624,12 @@ function dibujarPila(r, p) {
   // 🥃 El baúl grande de primera clase, solo.
   if (p.tipo === 'baul') {
     pintarTapando(r.ctx, Math.round(p.x / P) - 15 + tiembla, Math.round(p.yBase / P) - 20, 30, 20, luz, pintarBaulGrande);
+    return;
+  }
+  // 🛒 El carro de correo, esperando en su lugar (en el aviso se sacude sobre sus ruedas).
+  if (p.tipo === 'carro') {
+    const L = medidasCarro(p.ancho, p.hondo);
+    pintarTapando(r.ctx, Math.round(p.x / P) - Math.round(L.w / 2) + tiembla, Math.round(p.yBase / P) - L.h, L.w, L.h, luz, (R) => pintarCarro(R, p.ancho, p.hondo, 0, p.semilla));
     return;
   }
   const ox = Math.round(p.x / P) - 11, base = Math.round(p.yBase / P) - 2;
@@ -735,7 +793,7 @@ function dibujarArana(r, o, x, y) {
     return;
   }
   // Colgada no se ve.
-  if (o.estado !== 'cae') return;
+  if (o.estado !== 'cae' || o.t < 0) return;
   const colgada = false, hamaca = 0;
   // (🔁 Más grande, con dos pisos y seis velas: chica, no se entendía qué era.)
   const ox = Math.round(x / P) - 15 + hamaca, oy = Math.round(y / P) - 31;
@@ -861,3 +919,268 @@ const BOTELLA_GIRA = [
   ['..######', 'cchcccc#', '..######'],
   ['c....', '.c...', '.##..', '.#h#.', '..#c#', '...##'],
 ];
+
+/**
+ * 📮 EL CORREO *(Santi eligió las recomendaciones)*:
+ *  - LAS SACAS DE ARRIBA DE LOS CASILLEROS (livianas): una sobre cada mueble de clasificar, contra la pared; en el golpe
+ *    se va de cabeza por delante de la mesa y cae al piso del pasillo de atrás.
+ *  - EL CAJÓN CHICO DE ARRIBA DE CADA PILA DE ENCOMIENDAS (pesado: mata): se desmorona para el lado del golpe y cae
+ *    en el hueco de al lado de la pila, donde uno se esconde.
+ *  - LOS CARROS DE MIMBRE DE LAS PUNTAS (las casillas 'R'): en el golpe salen rodando sobre sus ruedas al pasillo
+ *    (frena: el de la puerta de atrás; acelera: el de adelante). Como el baúl de primera clase: te tiran al piso,
+ *    quietos chocan y son cobertura, y cada sacudón los vuelve a mover hasta que los rompan.
+ */
+function correo(C, train, w) {
+  const map = train.map, S = map.size, tc = CONFIG.tresCuartos, P = PASO();
+  const cols = Math.round(w.width / S);
+  const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
+  const esPared = (f) => casilla(Math.floor(cols / 2), f) === '#' || casilla(Math.floor(cols / 2), f) === 'W';
+  let filasArriba = 0; while (esPared(filasArriba)) filasArriba++;
+  let filasAbajo = 0; while (esPared(map.rows - 1 - filasAbajo)) filasAbajo++;
+  const x0 = Math.floor(w.x / P) * P, yArr = -tc.alturaPared;
+  const ax = (u) => Math.round((u - x0) / P), ay = (u) => Math.round((u - yArr) / P);
+  const deAx = (pt) => x0 + pt * P, deAy = (pt) => yArr + pt * P;
+  const tramos = (fila, letra) => {
+    const out = [];
+    for (let c = 0; c < cols; c++) {
+      if (casilla(c, fila) !== letra || casilla(c - 1, fila) === letra) continue;
+      let c2 = c; while (casilla(c2 + 1, fila) === letra) c2++;
+      let f2 = fila; while (casilla(c, f2 + 1) === letra) f2++;
+      out.push({ c, c2, f: fila, f2 });
+    }
+    return out;
+  };
+  // Las sacas, sobre los casilleros (la tapa del mueble está `ALTO_CAS` = 22 puntos arriba del borde del piso).
+  for (const B of tramos(filasArriba, 'C')) {
+    const x = w.x + ((B.c + B.c2 + 1) / 2) * S + (azar(B.c, 5) - 0.5) * S;
+    C.objetos.push({
+      tipo: 'saca', peso: 'liviano', hw: 7, x, xRepisa: x, yRepisa: deAy(ay(B.f * S) - 22) + P, yPared: B.f * S + 6,
+      yPiso: (B.f2 + 1) * S + 12, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+    });
+  }
+  // Las pilas de encomiendas y los carros, en la fila de adelante.
+  const fila = map.rows - filasAbajo - 2;
+  for (const B of tramos(fila, 'C')) {
+    if (Math.round((B.c - 2) / 6) % 2 === 0) continue;             // (un carro de los del medio: no se mueve)
+    const x = ax(w.x + B.c * S) + 2, x2 = ax(w.x + (B.c2 + 1) * S) - 2;
+    const yt = ay(B.f * S) + 3, atras = yt + 14;
+    // El cajón chico: `cajon(x + 4, atras - 13, 14, 8, 9)` del dibujo de la pila.
+    const cx = deAx(x + 11), base = (B.f2 + 1) * S;
+    C.objetos.push({
+      tipo: 'cajonChico', peso: 'pesado', hw: 6, x: cx, xRepisa: cx, yRepisa: deAy(atras - 13) + P, yPared: base - 2 * S,
+      yPiso: base - 6, corre: ((x2 - x) * P) / 2 + 10, basePila: base - 0.005, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+    });
+  }
+  // 📮 Las cartas sueltas en el piso (las que dibujaba el piso del vagón: ver `papeles`).
+  const filaAbajo = map.rows - filasAbajo - 1;
+  for (let k = 0; k < 18; k++) {
+    const x = w.x + 10 + azar(k, w.colStart + 5) * (w.width - 20), y = (filasArriba + 0.4) * S + azar(w.colStart + 9, k) * ((filaAbajo - filasArriba + 0.2) * S);
+    const c = Math.floor((x - w.x) / S), f = Math.floor(y / S);
+    if (casilla(c, f) !== '.') continue;
+    C.papeles.push({ x, y, vx: 0, vy: 0, z: 0, vz: 0, giro: azar(k, 3) * 4, pisada: k % 3 === 0 });
+  }
+  for (const B of tramos(fila, 'R')) {
+    const x = ax(w.x + B.c * S) + 2, x2 = ax(w.x + (B.c2 + 1) * S) - 2;
+    const yt = ay(B.f * S) + 3, yb = ay((B.f2 + 1) * S) - 3;
+    C.pilas.push({
+      tipo: 'carro', x: deAx((x + x2) / 2), yTope: deAy(yt), yBase: deAy(yb) + P, hw: ((x2 - x) * P) / 2, hh: ((yb - yt) * P) / 2,
+      ancho: x2 - x, hondo: yb - yt, semilla: B.c, atras: B.c < cols / 2, arriba: [], estado: 'quieta', t: 0, wagon: w.id,
+    });
+  }
+}
+
+/** Un mapa de letras (`.` es vacío) con su tabla de colores. */
+function dibujarMapa(R, x, y, filas, col) {
+  filas.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') R(x + q, y + j, 1, 1, col[fila[q]]); });
+}
+const SACA = ['...oooooooo...', '..oLLLLLLLLoo.', '.oLLCCCCCCCLko', 'oLCCCCCCCCCcko', 'oCCCCCCCYCCcoo', 'oCCCCCCCcccco.', '.occcccccccco.', '..oooooooooo..'];
+const PAQUETE = ['oooooooooo', 'oPPPsPPPPo', 'oPPPsPPPPo', 'ossssssSso', 'oppppspppo', 'oppppspppo', 'oqqqqsqqqo', 'oooooooooo'];
+const LONA = { o: 0, L: 16, C: 15, c: 14, k: 4, Y: 7 }, PAPEL = { o: 0, P: 37, p: 36, q: 35, s: 17, S: 16 };
+
+/** 📦 Un cajón de tablas como los de la pila (`cajon` en world/estiloNuevo/vagones.js), desde (1, 1). */
+function cajonDeTablas(R, an, tapa, alto) {
+  R(0, 0, an + 2, alto + tapa + 2, 0);
+  R(1, 1, an, tapa, 5); R(1, 1, an, 1, 6);
+  for (let q = 6; q < an - 1; q += 5) R(q, 2, 1, tapa - 1, 4);
+  R(1, 1 + tapa, an, alto, 4); R(1, 1 + tapa, an, 1, 6);
+  for (let q = 1 + tapa + 4; q < tapa + alto; q += 4) R(1, q, an, 1, 3);
+  for (const zx of [3, an - 3]) R(zx, 1, 2, tapa + alto, 31);
+}
+
+/** 🛒 Lo que ocupa el carro en su lienzo: las manijas a los costados y las sacas que asoman arriba. */
+export function medidasCarro(ancho, hondo) {
+  return { w: ancho + 8, h: hondo + 24 + 1 };
+}
+
+/**
+ * 🛒 EL CARRO DE CORREO, el mismo de world/estiloNuevo/vagones.js, en su lienzo (`medidasCarro`): la caja de mimbre
+ * con el borde, lleno de sacas grandes con la boca atada, el frente tejido con el zuncho y las esquinas de fierro, las
+ * manijas y dos ruedas. `rueda`: el cuadro de las ruedas (0 o 1: giran cuando rueda).
+ */
+export function pintarCarro(R, ancho, hondo, rueda, semilla = 0, faltan = 0) {
+  const x = 4, x2 = x + ancho, yt = 24, yb = yt + hondo;
+  const H = 20, ruedas = 4, piso = yb - ruedas, tt = yt - H + 4, tf = piso - H;
+  R(x - 1, tt - 1, ancho + 2, piso - tt + 2, 0);
+  R(x, tt, ancho, tf - tt, 36); R(x, tt, ancho, 1, 37);
+  R(x + 2, tt + 2, ancho - 4, tf - tt - 3, 33);
+  const LOMO = ['....oooooooo....', '..ooLLLLLLLLoo..', '.oLLLLCCCCCCLLo.', 'oLLCCCCCCCCCCcco', 'oLCCCCCCCCCCCcco', 'oCCCCCCCCCCCCcco', 'oCCCCCCCCCCCccco', '.oCCCCCCCccccco.', '..occcccccccco..', '...oooooooooo...'];
+  for (let sy = tt - 4, j = 0; sy < tf - 6; sy += 8, j++) {
+    const cuantas = j % 2 ? 2 : 3, paso = (ancho - 14) / Math.max(1, cuantas - 1);
+    for (let q = 0; q < cuantas; q++) {
+      if (j === 0 && q < faltan) continue;                 // (las que se le cayeron al salir)
+      const sx = Math.round(x - 1 + q * paso + (azar(semilla * 7 + j * 3 + q, 11) - 0.5) * 6), syy = sy + Math.round((azar(semilla * 7 + j * 5 + q + 1, 13) - 0.5) * 4);
+      dibujarMapa(R, Math.max(x - 1, Math.min(sx, x2 - 15)), syy, LOMO, LONA);
+      if ((j + q) % 2 === 0) dibujarMapa(R, Math.max(x, Math.min(sx, x2 - 15)) + 6, syy - 3, ['.ooo.', 'okkko', '.oko.'], { o: 0, k: 4 });
+    }
+  }
+  for (let yy = tf; yy < piso; yy++) for (let xx = x; xx < x2; xx++) R(xx, yy, 1, 1, yy % 3 === 2 ? 34 : (xx + (yy % 6 < 3 ? 0 : 2)) % 4 < 2 ? 36 : 35);
+  R(x, tf, ancho, 1, 37); R(x, tf + 1, ancho, 1, 0);
+  R(x, piso - 2, ancho, 2, 31);
+  for (const ex of [x, x2 - 2]) { R(ex, tf, 2, piso - tf, 31); R(ex, tf, 1, 1, 23); }
+  for (const mx of [x - 3, x2]) { R(mx, tf + 3, 3, 1, 0); R(mx, tf + 7, 3, 1, 0); R(mx === x - 3 ? mx : mx + 2, tf + 3, 1, 5, 0); }
+  // Las ruedas, de fierro: los rayos en cruz o en equis, según cómo vayan girando.
+  const RUEDA = rueda ? ['.ooo.', 'okKko', 'oKoKo', 'okKko', '.ooo.'] : ['.ooo.', 'oKkKo', 'okoko', 'oKkKo', '.ooo.'];
+  for (const wx of [x + 2, x2 - 7]) dibujarMapa(R, wx, yb - 4, RUEDA, { o: 0, K: 23, k: 31 });
+}
+
+/**
+ * 💥 UNA SOLA DINAMITA DESTRUYE CUALQUIERA DE ESTAS COSAS *(Santi: "una sola dinamita destruye cualquier estructura de
+ * estas, no es que le saca uno de vida")*: lo que espera en las repisas y en las pilas, lo que cuelga y lo que quedó
+ * tirado, si lo agarra la onda. Lo de las repisas cae roto en el piso; lo que ya estaba roto (botellas, araña) queda
+ * donde estaba; los baúles y los carros que esperaban junto a las puertas, hechos astillas (sin choque). Devuelve
+ * dónde rompió algo, para las astillas. (Lo que rueda es un rodante: eso lo rompe la escena.)
+ */
+export function destruirEnRadio(C, x, y, radio) {
+  const rotos = [];
+  for (const o of C.objetos) {
+    if (o.estado === 'roto') continue;
+    const oy = o.estado === 'piso' || o.estado === 'cae' ? o.yPiso : o.tipo === 'arana' ? o.yPiso : o.yPared;
+    if (Math.hypot((o.estado === 'piso' ? o.x : o.xRepisa) - x, oy - y) > radio) continue;
+    if (o.estado !== 'piso') o.x = o.xRepisa;
+    o.estado = o.fijo ? 'piso' : 'roto';
+    o.vx = 0; o.pego = true;
+    rotos.push({ x: o.x, y: o.yPiso });
+  }
+  for (const p of C.pilas) {
+    if (p.estado === 'suelto' || Math.hypot(p.x - x, (p.yTope + p.yBase) / 2 - y) > radio) continue;
+    p.estado = 'suelto'; p.arriba = [];
+    rotos.push({ x: p.x, y: (p.yTope + p.yBase) / 2 });
+  }
+  return rotos;
+}
+
+/**
+ * 🛒 EL CARRO DE CORREO EN DIAGONAL, mientras sale de su lugar hacia el pasillo *(Santi: "que rueden de forma diagonal al
+ * pasillo y ahí se acomoden en horizontal")*: visto en ángulo, la boca es un rombo (lleno de sacas) y se ven dos caras
+ * de mimbre, la de la izquierda en sombra, con sus cantoneras de fierro y una rueda en cada punta de abajo. Las
+ * esquinas, puestas a mano, en un lienzo de 56×62. `rueda`: 0 o 1, los rayos girando.
+ */
+export function pintarCarroDiagonal(R, rueda, semilla = 0, faltan = 0) {
+  const L = [2, 22], T = [28, 6], Rr = [54, 22], B = [28, 38], H = 20;
+  const dentro = (x, y) => Math.abs(x - 28) / 26 + Math.abs(y - 22) / 16 <= 1;
+  // Las caras: de cada borde de abajo de la boca, para abajo.
+  for (let x = 2; x <= 54; x++) {
+    const yTop = x <= 28 ? L[1] + ((x - 2) * (B[1] - L[1])) / 26 : B[1] - ((x - 28) * (B[1] - Rr[1])) / 26;
+    for (let y = Math.round(yTop); y <= Math.round(yTop) + H; y++) {
+      const izq = x <= 28;
+      const teje = y % 3 === 2 ? (izq ? 33 : 34) : (x + (y % 6 < 3 ? 0 : 2)) % 4 < 2 ? (izq ? 35 : 36) : (izq ? 34 : 35);
+      R(x, y, 1, 1, teje);
+    }
+    R(x, Math.round(yTop) + H, 1, 2, 0);                                   // el borde de abajo
+    R(x, Math.round(yTop) + H - 2, 1, 2, 31);                              // el zuncho de abajo
+  }
+  // La boca: el rombo, por dentro oscuro y lleno de sacas, con el borde de mimbre.
+  for (let y = 6; y <= 38; y++) for (let x = 2; x <= 54; x++) if (dentro(x, y)) R(x, y, 1, 1, 33);
+  const LOMO = ['..oooooo..', '.oLLLLLLo.', 'oLCCCCCCco', 'oCCCCCCcco', '.occcccco.', '..oooooo..'];
+  const COL = { o: 0, L: 16, C: 15, c: 14 };
+  for (const [sx, sy] of [[12, 16], [26, 10], [36, 18], [22, 22], [8, 22], [40, 12]].slice(faltan)) {
+    const dx = Math.round((azar(semilla, sx) - 0.5) * 4), dy = Math.round((azar(sy, semilla) - 0.5) * 3);
+    LOMO.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.' && dentro(sx + dx + q, sy + dy + j)) R(sx + dx + q, sy + dy + j, 1, 1, COL[fila[q]]); });
+  }
+  for (const [p, q] of [[L, T], [T, Rr], [Rr, B], [B, L]]) {               // el borde de la boca
+    const n = Math.max(Math.abs(q[0] - p[0]), Math.abs(q[1] - p[1]));
+    for (let k = 0; k <= n; k++) { const x = Math.round(p[0] + ((q[0] - p[0]) * k) / n), y = Math.round(p[1] + ((q[1] - p[1]) * k) / n); R(x, y, 1, 1, 0); R(x, y + 1, 1, 1, 37); }
+  }
+  for (const [cx, cy] of [L, B, Rr]) { R(cx - 1, cy, 2, H, 31); R(cx - 1, cy, 1, 1, 23); }   // las cantoneras
+  R(0, 22, 1, H + 2, 0); R(55, 22, 1, H + 2, 0);                           // los costados
+  // Las ruedas: una en cada punta de abajo y una en la esquina de adelante.
+  const RUEDA = rueda ? ['.ooo.', 'okKko', 'oKoKo', 'okKko', '.ooo.'] : ['.ooo.', 'oKkKo', 'okoko', 'oKkKo', '.ooo.'];
+  for (const [wx, wy] of [[3, 39], [26, 55], [48, 39]]) RUEDA.forEach((fila, j) => { for (let q = 0; q < 5; q++) if (fila[q] !== '.') R(wx + q, wy + j, 1, 1, { o: 0, K: 23, k: 31 }[fila[q]]); });
+}
+
+/**
+ * 📮 LAS CARTAS SUELTAS DEL PISO VUELAN CON EL TREN *(Santi: "hay papelitos en el suelo muy chiquitos que me gustaría
+ * que vuelen al haber movimientos del tren… en todo momento, teniendo el traqueteo o no")*: cada una siente lo que
+ * acelera su vagón (`aceleracionEn`, world/enganches.js) para el lado contrario, como todo lo suelto. En el piso la
+ * agarra el roce (con el vaivén suave apenas tiembla o se corre un poco); con un sacudón se desliza, y con uno fuerte
+ * se levanta, revolotea dando vueltas y vuelve a caer. Contra lo que choca, rebota.
+ */
+export function actualizarPapeles(C, dt, E, map) {
+  if (!E || !C.papeles.length) return;
+  const K = CONFIG.caidas.papeles;
+  for (const p of C.papeles) {
+    const a = Math.max(-K.tope, Math.min(K.tope, -aceleracionEn(E, p.x) * K.inercia));
+    if (p.z <= 0) {
+      if (Math.abs(a) > K.pega) {
+        p.vx += (a - Math.sign(a) * K.pega) * dt;
+        p.vy += (Math.random() - 0.5) * Math.abs(a) * 0.3 * dt;
+      }
+      if (Math.abs(a) > K.vuela && Math.random() < K.vuelaChance * dt * 60) { p.vz = K.salto * (0.5 + Math.random()); p.z = 0.01; }
+      const roce = Math.max(0, 1 - K.roce * dt);
+      p.vx *= roce; p.vy *= roce;
+    } else {
+      // En el aire: lo lleva el envión, revolotea y cae despacio.
+      p.vx += a * 0.5 * dt + Math.sin(p.giro * 3) * K.revolotea * dt;
+      p.vz -= K.gravedad * dt;
+      p.z = Math.max(0, p.z + p.vz * dt);
+      p.giro += dt * (4 + Math.abs(p.vx) * 0.2);
+      if (p.z === 0) p.vz = 0;
+    }
+    const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
+    if (map.isSolidAt(nx, p.y)) p.vx *= -0.3; else p.x = nx;
+    if (map.isSolidAt(p.x, ny)) p.vy *= -0.3; else p.y = ny;
+  }
+}
+
+/**
+ * 📮 LOS PAPELITOS: en el piso, con el piso (debajo de todos); en el aire, con su sombrita en el piso y dando vueltas
+ * (tres dibujos: de plano, de canto, al revés). Devuelve lo que vuela, para ordenarlo con la gente.
+ */
+export function dibujarPapeles(r, C, corrido) {
+  const P = PASO(), aire = [];
+  for (const p of C.papeles) {
+    if (p.z > 0.5) { aire.push({ base: p.y, draw: corrido(p.x, () => papel(r, p, P)) }); corrido(p.x, () => sombraDePapel(r, p, P))(); continue; }
+    corrido(p.x, () => papel(r, p, P))();
+  }
+  return aire;
+}
+function sombraDePapel(r, p, P) {
+  r.ctx.fillStyle = PALETA[33];
+  r.ctx.fillRect(Math.round(p.x / P) * P, Math.round(p.y / P) * P, 2 * P, P);
+}
+function papel(r, p, P) {
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(p.x, p.y) || 0) : 0;
+  const R = pintor(r.ctx, Math.round(p.x / P), Math.round((p.y - p.z) / P), luz);
+  if (p.z <= 0.5) {
+    R(0, 0, 2, 1, 17); R(2, 0, 1, 1, 30); R(0, 1, 1, 1, 17); R(1, 1, 1, 1, 16); R(2, 1, 1, 1, 17);
+    if (p.pisada) R(1, 2, 1, 1, 33);
+    return;
+  }
+  const c = Math.floor(p.giro) % 3;
+  if (c === 0) { R(0, 0, 3, 1, 17); R(0, 1, 3, 1, 16); }
+  else if (c === 1) { R(1, 0, 1, 2, 30); }
+  else { R(0, 0, 2, 1, 16); R(1, 1, 2, 1, 17); }
+}
+
+/**
+ * 🛒 EL CARRO SUELTA SACAS AL SALIR *(Santi: "que el carrito al moverse hacia el pasillo suelte un par de las cosas que
+ * lleva encima y que si te caen en la cabeza es como las otras bolsas")*: una saca se le cae de arriba, para atrás (el
+ * carro arranca y ella se queda), y cae al piso donde está; la escena llama esto dos veces, a destiempo. Es liviana.
+ */
+export function sacaDelCarro(C, x, yArriba, yPiso, dir, rng) {
+  const K = CONFIG.caidas;
+  C.objetos.push({
+    tipo: 'saca', peso: 'liviano', hw: 7, x, xRepisa: x, yRepisa: yArriba, yPared: yPiso - 2 * CONFIG.tileSize, yPiso, yPiso0: yPiso,
+    estado: 'cae', t: 0, dir: -dir, demora: 0, dura: K.caeDura * rng.range(0.8, 1.2), correA: rng.range(4, 12), delCarro: true,
+  });
+}

@@ -19408,6 +19408,34 @@ guardaespaldas distintos)*:
         y es cobertura** (va en `isSolidAt`), le pegan todas las balas, aguanta tres, y **cada sacudón lo vuelve a
         volcar** hasta que lo rompan *(Santi: "así sigue siendo una amenaza hasta que lo rompan")*.
       - Atajo [8]: directo a primera clase (`forzarVagon`) con frenos rotos.
+    - **✅ EL CORREO** (world/caidas.js, `correo`):
+      - **Las sacas de arriba de los casilleros** (livianas): una sobre cada mueble; se van de cabeza por delante de la
+        mesa. **El cajón chico de arriba de cada pila de encomiendas** (pesado): se desmorona para el lado del golpe y
+        cae en el hueco de al lado de la pila. El dibujo fijo los dejó afuera (se dibujan aparte).
+      - **Los carros de mimbre de las puntas** (casillas `R`) salen rodando: en diagonal, vistos en ángulo, hasta el
+        pasillo, y ahí se acomodan derechos *(Santi: "parece que pegó un salto… que rueden de forma diagonal")*;
+        entran a 45° (más de costado se trababan contra la pila de al lado). Al salir **sueltan dos sacas** de arriba,
+        cada una a su tiempo (livianas). Aguantan **cinco** tiros. Quietos chocan, son cobertura y cada sacudón los
+        vuelve a mover. **El del medio no se mueve: sin ruedas.**
+      - **Las cartas sueltas del piso vuelan con el tren** (`papeles`) *(Santi: "en todo momento, teniendo el
+        traqueteo o no")*: sienten lo que acelera su vagón (`aceleracionEn`, suavizada: el choque contra un tope da
+        picos de miles). Medido: en reposo tiemblan y van y vienen; un tirón los levanta a todos (hasta 11 de corrida);
+        un frenazo, hasta 23.
+      - **La caja fuerte, contra la pared del fondo**, en la esquina, al lado de los casilleros; la balanza pasó a la
+        punta de abajo.
+    - **REGLAS PARA TODO LO QUE SE CAE O SE MUEVE** *(Santi, con el correo)*:
+      - **Nada cae a la vez ni igual**: cada cosa se larga a su tiempo (`demoraMax`), tarda distinto, se corre más o
+        menos y cae un poco más acá o más allá (se sortea en el aviso: la sombra ya es la de esa caída).
+      - **Una sola dinamita destruye cualquiera de estas cosas** (`destruirEnRadio`), aguante lo que aguante.
+      - **Al guardia, EXACTAMENTE lo mismo que a vos**: lo de arriba, media vida o muerte (sin aturdirlo de más); lo
+        que rueda (carro, baúl, valija) lo **tira al piso** 1,5 s y lo despide (`tirado`, acostado y sin la "z" del
+        desmayado); el frenazo y el choque del enganche lo hacen trastabillar con el empujón. *(Eligió "lo tira al piso"
+        para los carros, igual a vos.)*
+      - **Que los guardias lean el peligro y se salgan, al final** *(Santi: "lo de los guardias lo haremos al final")*:
+        se probó una versión (nervios, distracción, quedarse duro) y se sacó. Cuando se haga: que parezcan personas en
+        un tiroteo, no "pasa tal, se mueve a tal".
+      - **Las cajas fuertes chocan** (todas) y son cobertura.
+      - El atajo [8] lleva siempre al vagón que se está haciendo.
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

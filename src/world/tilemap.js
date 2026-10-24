@@ -95,6 +95,8 @@ const TILE_RULES = {
    */
   'Y': { solid: true, blocksSight: false, blocksBullets: false, margenX: 3.5, margenY: [6, 2] },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
+  // 🛒 Donde espera un carro de correo que sale rodando en el frenazo (world/caidas.js): el choque lo pone el carro.
+  'R': { solid: false, blocksSight: false, blocksBullets: false },
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones
   'X': { solid: true,  blocksSight: true,  blocksBullets: true },   // el vacío: fuera del tren

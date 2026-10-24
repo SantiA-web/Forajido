@@ -666,7 +666,8 @@ export function tendidoNuevo(r, x, y, o = {}) {
   ctx.drawImage(L.img, ox, oy, w, h);
   if (fino) estiloNuevo.marcarGente(ctx, L.img, ox, oy, w, h);
   ctx.restore();
-  if (o.modo === 'desmayado' || o.modo === 'cama') {
+  // (🧳 `sinZ`: el guardia tirado por algo que venía rodando está acostado, pero no dormido.)
+  if ((o.modo === 'desmayado' || o.modo === 'cama') && !o.sinZ) {
     // Arriba de la cabeza (a la izquierda del cuerpo, o a la derecha si está en espejo).
     const zx = cx + (espejo ? 1 : -1) * 9 - 1;
     const z = ['xxx', '..x', '.x.', 'xxx'];

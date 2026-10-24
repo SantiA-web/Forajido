@@ -145,6 +145,12 @@ export function actualizarEnganches(E, dt, rng, anclaX) {
     }
     for (let i = 0; i < n; i++) { V[i].v += F[i] * h; V[i].p += V[i].v * h; }
   }
+  // 📮 Cuánto aceleró cada vagón en este cuadro (lo usan los papelitos del piso: world/caidas.js).
+  // (Suavizada: el choque contra un tope da picos de miles en un solo cuadro, y eso no lo siente nada suelto.)
+  for (const w of V) {
+    w.a = (w.v - (w.vAntes ?? w.v)) / Math.max(1e-4, dt); w.vAntes = w.v;
+    w.aSuave = (w.aSuave || 0) + (w.a - (w.aSuave || 0)) * Math.min(1, dt / 0.08);
+  }
   E.lista.forEach((g, k) => {
     const e = V[k + 1].p - V[k].p;
     g.largo = (g.x1 - g.x0) + e;
@@ -177,6 +183,11 @@ export function actualizarEnganches(E, dt, rng, anclaX) {
   // movimiento anterior")*.
   E.meneoAgua = pendular(E.agua, K.aguaVel, K.aguaFreno);
   return evento;
+}
+
+/** 📮 Cuánto acelera (en este cuadro) el vagón donde está `x`, en unidades por segundo cada segundo. */
+export function aceleracionEn(E, x) {
+  return E.vagones[indiceDeVagon(E, x)].aSuave || 0;
 }
 
 /** En qué vagón (de la cuenta) cae `x`: el de antes del primer enganche que todavía no empezó. */

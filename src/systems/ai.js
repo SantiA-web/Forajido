@@ -275,6 +275,19 @@ export function updateEnemy(e, dt, world) {
    * depender de que cada rama de abajo se acuerde de respetarla. Un desmayado
    * no huye de una mecha encendida ni se repliega herido.
    */
+  /**
+   * 🧳 EL EMPUJÓN (de un sacudón del tren, de algo que le pasa por encima): lo corre y se apaga solo, haga lo que haga.
+   * Y TIRADO EN EL PISO por algo que venía rodando (`tirado`, ver `tumbarGuardia` en scenes/raidScene.js): lo mismo
+   * que a vos, segundo y medio sin poder hacer nada *(Santi: "el efecto… tiene que ser EXACTAMENTE igual para un
+   * guardia")*.
+   */
+  if (e.knockX) {
+    moveAndCollide(e, e.knockX * dt, 0, movSolidAt(world.map, e));
+    e.knockX *= 0.82;
+    if (Math.abs(e.knockX) < 1) e.knockX = 0;
+  }
+  if (e.tirado > 0) { e.tirado -= dt; return; }
+
   if (e.inconsciente > 0) {
     e.inconsciente -= dt;
     if (e.inconsciente <= 0) despertarDelNoqueo(e, world);
@@ -296,22 +309,6 @@ export function updateEnemy(e, dt, world) {
   if (e.caido > 0) {
     actualizarCaido(e, dt, world);
     return;
-  }
-
-  /**
-   * 🧳 ESQUIVANDO LO QUE VA A CAER (o lo que va a salir por el pasillo) *(Santi: "deberían también saber leer cuando un
-   * objeto está por caer o por avanzar")*: la escena le marca adónde salirse (`esquiva`, ver `esquivarCaidas` en
-   * scenes/raidScene.js). Primero tarda lo suyo en darse cuenta (`demora`: mientras, sigue con lo que hacía) y después
-   * corre hasta ahí. Aturdido, no.
-   */
-  if (e.esquiva && !(e.stagger > 0)) {
-    const q = e.esquiva;
-    if (q.demora > 0) q.demora -= dt;
-    else {
-      q.dura -= dt;
-      if (Math.hypot(q.x - e.x, q.y - e.y) < 1.5 || q.dura <= 0) e.esquiva = null;
-      else { moveToward(e, q.x, q.y, CONFIG.enemy.speed * 1.3, dt, world.map); return; }
-    }
   }
 
   considerarRepliegue(e, dt, world);

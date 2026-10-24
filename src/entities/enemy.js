@@ -428,6 +428,12 @@ export function drawEnemy(r, e) {
    * despierto y con el arma en la mano apuntándote. Es la diferencia que hay
    * que leer de un vistazo: el de la "z" no es un problema; éste, sí.
    */
+  // 🧳 Tirado por algo que venía rodando: acostado, como el desmayado, hasta que se levanta.
+  if (e.tirado > 0) {
+    if (nuevo) { tendidoNuevo(r, e.x, e.y, { tipo: tipoN, modo: 'desmayado', late: 0, sinZ: true, espejo: (e.knockX || 0) < 0, aspecto: aspectoDe(e, tipoN) }); return; }
+    dibujarTendido(r, e.x, e.y, { tipo, cinta });
+    return;
+  }
   if (e.caido > 0 && nuevo) {
     // 🔁 Sentado en el piso con las piernas estiradas y el cuerpo echado adelante, apuntando.
     const defC = ARMAS_GUARDIA[e.armaEnMano || e.armaId];

@@ -55,7 +55,8 @@ import { updateCajon, drawCajon, vaciarCajon } from '../entities/cajon.js';
 import { WAGONS } from '../data/wagons.js';
 import { caballoActual, fondoDelAsalto } from '../data/horse.js';
 import { blancoBajoLaMira } from '../systems/golpe.js';
-import { createEnemy, drawEnemy } from '../entities/enemy.js';
+import { createEnemy, drawEnemy, damageEnemy } from '../entities/enemy.js';
+import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, zonasDePeligro, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio } from '../world/caidas.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga, jugadorCambiaDeVagon } from '../systems/escuadra.js';
@@ -150,6 +151,8 @@ export function createRaidScene(services) {
    * sacudón de tu vagón contra el desierto, y los otros vagones contra el tuyo.
    */
   let enganches = null, anclaCorr = 0, camaraEng = 0;
+  /** 🧳 Lo que se cae y lo que sale por el pasillo (world/caidas.js), y lo que está por salir de una pila. */
+  let caidas = null, porSalir = [];
   /**
    * Cuánto se corre el dibujo en `x`, de a punto del dibujo.
    * 🐛 Se probó de a píxel de pantalla, para que fuera más fluido, y quedó peor *(Santi: "el cuervo dibujado en el
@@ -288,7 +291,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches });
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas });
     enemies = train.enemies;
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
@@ -319,7 +322,11 @@ export function createRaidScene(services) {
     cajones = train.cajones || [];
 
     traqueteoTimer = train.traqueteoCada || 0;
-    enganches = crearEnganches(train, rng);
+    enganches = crearEnganches(train, rng, params.estado || []);
+    caidas = crearCaidas(train);
+    porSalir = [];
+    // (🧪 El atajo [8]: el primer frenazo enseguida.)
+    if (params.pruebaFrenos) enganches.proximoFrenazo = 4;
     /**
      * 🚶 En un enganche se camina a su largo (`pasoEn`, world/enganches.js): se suma al freno de cada casilla, que ya
      * lo miran vos, los guardias y las reses. Y las piernas cuentan lo que se avanza en pantalla (`andar`, figura.js).
@@ -462,6 +469,8 @@ export function createRaidScene(services) {
       // Los barriles sueltos: `systems/combat.js` los necesita para que tus
       // balas les peguen.
       get rodantes() { return rodantes; },
+      // 🧳 Lo tirado de las repisas: las balas lo rompen (systems/combat.js).
+      get caidas() { return caidas; },
       /**
        * LOS CAJONES DE PÓLVORA (Fase 6a). Los leen dos sistemas: `combat.js`
        * (las balas les pegan y los prenden) y `explosives.js` (una explosión
@@ -719,6 +728,10 @@ export function createRaidScene(services) {
      *    aviso en pantalla es distinto: no fue un error tuyo.
      */
     const estadoTren = params.estado || [];
+    // 🛑 Los frenos rotos se anuncian al subir *(Santi eligió el cartel)*: ver `frenosDañados` en data/modifiers.js.
+    if (estadoTren.includes('frenosDañados')) {
+      floaters.push({ x: player.x, y: player.y - 44, text: T.prompts.frenosRotos, life: 3.5, color: colors.enemyAlert });
+    }
     if (params.alarmaInicial || estadoTren.includes('alertaActivada')) {
       alarm.trigger(train.boardedAt);
       floaters.push({
@@ -1548,8 +1561,17 @@ export function createRaidScene(services) {
 
       bus.on('playerCover', ({ entered }) => { if (entered) audio.play('cover'); }),
 
+      // (🧳 Lo tirado de una repisa, roto de un tiro: la ropa y el ruido. Ver `romperConBala` en world/caidas.js.)
+      bus.on('rodanteRoto', ({ x, y, tipo }) => {
+        if (tipo !== 'valija') return;
+        spawnParticles(x, y, '#c8b890', 10);
+        audio.play('hitWall');
+      }),
+
       // El estruendo: mucha tierra, un fogonazo y el aviso en pantalla.
       bus.on('explosion', ({ x, y, radius, porJugador, wagons }) => {
+        // (🧳 La onda rompe lo tirado de las repisas.)
+        if (caidas && romperEnRadio(caidas, x, y, radius)) spawnParticles(x, y, '#c8b890', 10);
         spawnParticles(x, y, '#ffb45c', 26);
         spawnParticles(x, y, '#8a6a4a', 18);
         floaters.push({ x, y: y - 14, text: T.prompts.boom, life: 1.1, color: '#ffb45c' });
@@ -1885,11 +1907,98 @@ export function createRaidScene(services) {
    * podría nacer prácticamente encima, y en este juego no
    * hay un solo peligro que no se pueda ver venir.
    */
+  /**
+   * 🛑 EL FRENAZO DE LOS FRENOS ROTOS (fase 4 de "LOS ENGANCHES"; la cuenta, en world/enganches.js).
+   *  - 'frenazoAviso': el chirrido (1,2 s) y el cartel; las cadenas tiemblan solas (`tenso`).
+   *  - 'frenazo': el golpe. Adentro de los vagones todos trastabillan —vos y los guardias— para adelante (frena la
+   *    locomotora: lo de atrás se le viene encima), y a todos les tiemblan las manos (`sacudiendo`).
+   */
+  function frenazo(evento) {
+    // 🧳 Lo que se cae y lo que sale por el pasillo: el aviso elige qué (y los guardias lo leen), el golpe lo larga.
+    if (evento === 'frenazoAviso' || evento === 'arranconAviso') {
+      avisarCaidas(caidas, evento === 'frenazoAviso' ? -1 : 1, rng);
+      esquivarCaidas();
+      cubrirPasajeros();
+    } else golpearCaidas(caidas);
+    // 🚂 El arrancón: el tren acelera de golpe, más suave que el frenazo (nadie trastabilla).
+    if (evento === 'arranconAviso') {
+      audio.play('trenAcelera');
+      floaters.push({ x: player.x, y: player.y - 28, text: T.prompts.trenAcelera, life: 1.2, color: colors.enemyAlert });
+      return;
+    }
+    if (evento === 'arrancon') { camera.shake(CONFIG.feel.shakeHit * 0.6, 0.25); return; }
+    if (evento === 'frenazoAviso') {
+      audio.play('trenFrena');
+      floaters.push({ x: player.x, y: player.y - 28, text: T.prompts.trenFrena, life: 1.4, color: colors.enemyAlert });
+      camera.shake(CONFIG.feel.shakeHit * 0.3, CONFIG.enganches.frenos.aviso);
+      return;
+    }
+    audio.play('hitWall');
+    camera.shake(CONFIG.feel.shakeHit * 1.5, 0.4);
+    if (!player.enTecho && !engancheEn(enganches, player.x)) trastabillar(player, -1, world);
+    soltarPorElFrenazo();
+    const dura = CONFIG.enganches.trastabilla;
+    for (const e of enemies) {
+      if (!e.alive || engancheEn(enganches, e.x) || e.stagger > 0) continue;
+      e.stagger = dura;
+      e.aimTimer = 0;
+      e.burstLeft = 0;
+      e.peeking = false;
+    }
+  }
+
+  /**
+   * 🛢️ EN EL TREN DE CARGA, EL FRENAZO SUELTA LOS BARRILES de siempre, pero rodando para adelante, desde atrás tuyo.
+   * (🔁 Las valijas que salían así, de la nada, se fueron *(Santi: "que las cosas no caigan de la nada")*: ahora salen
+   * de las repisas y de las pilas junto a las puertas, ver world/caidas.js. Los barriles, cuando los vagones de carga
+   * se dibujen en la grilla nueva.)
+   */
+  function soltarPorElFrenazo() {
+    const O = CONFIG.enganches.objetos, c = CONFIG.rodante;
+    if (player.enTecho || train.tramoAt(player.x) !== 'vagon') return;
+    const vagon = train.wagons[train.wagonAt(player.x)];
+    if (!vagon || vagon.carbon) return;
+    const desde = vagon.x + 16;
+    if (train.rodantesCada) {
+      for (let i = 0; i < O.barriles; i++) {
+        const x = Math.max(desde, player.x - c.adelanto - i * 30);
+        if (player.x - x < c.pistaMinima) continue;
+        rodantes.push(createRodante(x, map.height / 2, rng.pick(TIPOS_RODANTE), rng, { dir: 1 }));
+      }
+    }
+  }
+
+  /**
+   * 🛑 EL QUE ESTÁ EN UN ENGANCHE CUANDO SE CIERRA, MUERE APLASTADO (`aplasto`, world/enganches.js): vos o un guardia
+   * *(Santi: "no querrás estar en un enganche cuando eso pase (te aplastan los vagones)")*. El guardia muere sin
+   * crédito para vos, pero tampoco hace ruido: lo mató el tren.
+   */
+  function aplastarEnLosEnganches() {
+    for (const g of enganches.lista) {
+      if (!g.aplasto) continue;
+      const adentro = (o) => o.x >= g.x0 && o.x < g.x1;
+      if (player.alive && !player.enTecho && adentro(player)) {
+        player.invuln = 0;
+        damagePlayer(player, player.health + 999, player.x, player.y);
+        spawnParticles(player.x, player.y, colors.blood, 14);
+        floaters.push({ x: player.x, y: player.y - 24, text: T.prompts.aplastado, life: 2, color: colors.enemyAlert });
+      }
+      for (const e of enemies) {
+        if (!e.alive || !adentro(e)) continue;
+        e.alive = false;
+        e.health = 0;
+        spawnParticles(e.x, e.y, colors.blood, 12);
+        bus.emit('enemyKilled', { enemy: e, byPlayer: false, silent: true });
+      }
+    }
+  }
+
   function updateRodantes(dt) {
     const c = CONFIG.rodante;
 
     // Arriba del techo esto no existe: los barriles ruedan por el pasillo.
-    if (player.enTecho) { rodantes.length = 0; return; }
+    // (🧳 Menos las valijas tiradas: siguen donde quedaron.)
+    if (player.enTecho) { for (let i = rodantes.length - 1; i >= 0; i--) if (rodantes[i].tipo !== 'valija') rodantes.splice(i, 1); return; }
 
     /**
      * OJO CON EL ORDEN: el GENERADOR de barriles está apagado en los trenes
@@ -1989,8 +2098,19 @@ export function createRaidScene(services) {
           // Y la manada se pierde contra la locomotora: sin esto corría por
           // encima de su dibujo hasta que se le acababa el alcance.
           ? (ro.alcance <= 0 || chocaConElBlindado(ro) || train.tramoAt(ro.x) === 'locomotora')
-          : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200);
+          // (🧳 La valija se queda tirada hasta que te alejás; el barril del frenazo va para adelante.)
+          : ro.tipo === 'valija' ? (train.tramoAt(ro.x) !== 'vagon' || Math.abs(ro.x - player.x) > 1400)
+            : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200 || ro.x > player.x + 420);
         if (seAcabo) { rodantes.splice(i, 1); continue; }
+        // 🧳 La valija se para contra lo que tenga adelante (un asiento, la puerta).
+        if (ro.tipo === 'valija' && !ro.quieta && map.isSolidAt(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
+      }
+
+      // 🧳 La valija del frenazo: tirada ya no hace nada; deslizándose, aturde al guardia y a vos te hace trastabillar.
+      if (ro.tipo === 'valija') {
+        if (ro.quieta) continue;
+        golpeDeValija(ro);
+        continue;
       }
 
       // Una res atropella a los guardias que se le cruzan. Un barril no: pesa,
@@ -2171,6 +2291,126 @@ export function createRaidScene(services) {
       e.atCover = false;
       spawnParticles(e.x, e.y, '#c9b28a', 6);
       audio.play('hitWall');
+    }
+  }
+
+  /**
+   * 🧳 LO QUE SE CAE Y LO QUE SALE POR EL PASILLO, cada cuadro (world/caidas.js):
+   *  - lo que llegó al piso pega donde cayó: liviano, la mitad de la vida; pesado, mata. A vos y a los guardias (en
+   *    proporción a la vida de cada uno). Los pasajeros sentados están cubiertos: no.
+   *  - lo que largó una pila sale deslizándose por el pasillo (una valija, como rodante), de a una.
+   *  - los pasajeros cubiertos se van destapando.
+   */
+  function actualizarLoQueSeCae(dt) {
+    const K = CONFIG.caidas, O = CONFIG.enganches.objetos;
+    actualizarCaidas(caidas, dt, map);
+    for (const im of caidas.impactos) {
+      audio.play('hitWall');
+      spawnParticles(im.x, im.y, '#c9b28a', 8);
+      const pega = (o) => o.x + o.hw > im.x0 && o.x - o.hw < im.x1 && o.y + o.hh > im.y0 && o.y - o.hh < im.y1;
+      if (player.alive && !player.enTecho && pega(player)) {
+        player.invuln = 0;
+        damagePlayer(player, im.peso === 'pesado' ? player.health + 999 : player.maxHealth * K.livianoParte, im.x, im.y - 20);
+        floaters.push({ x: player.x, y: player.y - 24, text: T.prompts.teCayoEncima, life: 1.6, color: colors.enemyAlert });
+        camera.shake(CONFIG.feel.shakeHit, 0.25);
+      }
+      for (const e of enemies) {
+        if (!e.alive || !pega(e)) continue;
+        const murio = im.peso === 'pesado'
+          ? ((e.alive = false), (e.health = 0), true)
+          : damageEnemy(e, (e.maxHealth || e.health) * K.livianoParte, im.x, im.y - 20);
+        if (murio) {
+          spawnParticles(e.x, e.y, colors.blood, 10);
+          bus.emit('enemyKilled', { enemy: e, byPlayer: false, silent: true });
+        } else e.stagger = Math.max(e.stagger || 0, CONFIG.enganches.trastabilla);
+      }
+    }
+    caidas.impactos.length = 0;
+    for (const s of caidas.sueltos) porSalir.push(s);
+    caidas.sueltos.length = 0;
+    for (let i = porSalir.length - 1; i >= 0; i--) {
+      const s = porSalir[i];
+      s.demora -= dt;
+      if (s.demora > 0) continue;
+      porSalir.splice(i, 1);
+      const ro = createRodante(s.x, s.y, 'valija', rng, {
+        dir: s.dir, velocidad: rng.range(O.valijaVel[0], O.valijaVel[1]), roce: O.valijaRoce,
+        vida: 1, hw: 6, hh: 3, variante: s.variante,
+      });
+      ro.yMeta = map.height / 2 + rng.range(-6, 6);
+      rodantes.push(ro);
+    }
+    for (const pa of passengers) if (pa.cubreFrenazo > 0) pa.cubreFrenazo -= dt;
+  }
+
+  /**
+   * 🧳 LOS GUARDIAS LEEN LO QUE VA A PASAR (en el aviso): el que está donde va a caer algo, o en el pasillo por donde
+   * va a salir lo de una pila, se sale (`esquiva`, ver systems/ai.js), cada uno con su demora y más lento si está en
+   * un tiroteo. Del lugar donde cae algo, al pasillo; del pasillo, al hueco libre más cercano entre los asientos (que
+   * no esté debajo de algo que va a caer).
+   */
+  function esquivarCaidas() {
+    const K = CONFIG.caidas, S = map.size;
+    const zonas = zonasDePeligro(caidas, S);
+    if (!zonas.length) return;
+    const en = (z, x, y, m = 4) => x > z.x0 - m && x < z.x1 + m && y > z.y0 - m && y < z.y1 + m;
+    const libre = (x, y) => !map.isSolidAt(x, y) && !zonas.some((z) => en(z, x, y, 2));
+    for (const e of enemies) {
+      if (!e.alive || e.rendido || e.inconsciente > 0) continue;
+      const z = zonas.find((q) => en(q, e.x, e.y));
+      if (!z) continue;
+      let destino = null;
+      if (z.pasillo) {
+        const c0 = Math.floor(e.x / S);
+        for (let d = 0; d <= 4 && !destino; d++) for (const c of d ? [c0 + d, c0 - d] : [c0]) {
+          for (const f of [3, 6]) {
+            const x = (c + 0.5) * S, y = (f + 0.5) * S;
+            if (libre(x, y)) { destino = { x, y }; break; }
+          }
+          if (destino) break;
+        }
+      } else destino = { x: e.x, y: map.height / 2 };
+      if (!destino) continue;
+      e.esquiva = {
+        ...destino, dura: 1.6,
+        demora: rng.range(K.reaccion[0], K.reaccion[1]) + (e.state === 'combat' ? K.reaccionPeleando : 0),
+      };
+    }
+  }
+
+  /** 🧳 Los pasajeros sentados se cubren la cabeza mientras dura el aviso y un rato después del golpe. */
+  function cubrirPasajeros() {
+    const dura = CONFIG.enganches.frenos.aviso + CONFIG.caidas.cubrirse;
+    for (const pa of passengers) if (pa.sentado && !pa.dormido) pa.cubreFrenazo = dura;
+  }
+
+  /**
+   * 🧳 UNA VALIJA QUE SE DESLIZA TE TIRA AL PISO, como un barril (sin sacarte vida) *(Santi: "capaz no deberían hacer
+   * daño pero sí tirarme al piso")*; al guardia que se le cruza, lo mismo. Una vez cada una.
+   * 🐛 Antes te hacía trastabillar, y no se notaba: llega mientras todavía estás trastabillando por el frenazo, y no se
+   * puede trastabillar dos veces a la vez. Tirado es otra cosa: te alcanza igual.
+   */
+  function golpeDeValija(ro) {
+    ro.atropellados = ro.atropellados || new Set();
+    const toca = (o) => Math.abs(ro.x - o.x) <= ro.hw + o.hw && Math.abs(ro.y - o.y) <= ro.hh + o.hh;
+    for (const e of enemies) {
+      if (!e.alive || ro.atropellados.has(e) || !toca(e)) continue;
+      ro.atropellados.add(e);
+      e.stagger = Math.max(e.stagger || 0, CONFIG.rodante.levantarse);
+      e.aimTimer = 0;
+      e.burstLeft = 0;
+      e.peeking = false;
+      e.coverPoint = null;
+      e.atCover = false;
+      spawnParticles(e.x, e.y, '#c9b28a', 6);
+      audio.play('hitWall');
+    }
+    // Te empuja para el lado que va (`tumbar` te despide lejos del punto que le pasás: uno detrás tuyo).
+    if (!ro.golpeo && toca(player) && tumbar(player, player.x - ro.dir * 20, world)) {
+      ro.golpeo = true;
+      player.trastabilla = 0;
+      floaters.push({ x: player.x, y: player.y - 22, text: T.prompts.teLlevoPuesto, life: 1.6, color: colors.enemyAlert });
+      spawnParticles(player.x, player.y, '#c9b28a', 8);
     }
   }
 
@@ -2472,7 +2712,8 @@ export function createRaidScene(services) {
 
   /** Reventado a tiros: se hace astillas y deja de ser un problema. */
   function romperRodante(ro) {
-    spawnParticles(ro.x, ro.y, ro.tipo === 'barril' ? '#8a5a34' : '#9c7a45', 14);
+    // (🧳 La valija reventada larga la ropa.)
+    spawnParticles(ro.x, ro.y, ro.tipo === 'barril' ? '#8a5a34' : ro.tipo === 'valija' ? '#c8b890' : '#9c7a45', 14);
     audio.play('hitWall');
   }
 
@@ -2866,7 +3107,15 @@ export function createRaidScene(services) {
     updateRodantes(dt);
     updateTraqueteo(dt);
     // (🆕 Los enganches: el vaivén y, en el de pasajeros, sus tirones, con el crujido de aviso.)
-    if (enganches && actualizarEnganches(enganches, dt, rng, player.x) === 'aviso') audio.play('trenCruje');
+    const eventoEng = enganches ? actualizarEnganches(enganches, dt, rng, player.x) : null;
+    if (eventoEng === 'aviso') audio.play('trenCruje');
+    // (🧳 Los sacudones mueven lo tirado: ver `empujarCaidas`.)
+    if (caidas && enganches.tiron && (eventoEng === 'tiron' || eventoEng === 'frenazo' || eventoEng === 'arrancon')) {
+      empujarCaidas(caidas, enganches.tiron.sentido, eventoEng);
+    }
+    if (eventoEng === 'frenazoAviso' || eventoEng === 'frenazo' || eventoEng === 'arranconAviso' || eventoEng === 'arrancon') frenazo(eventoEng);
+    if (enganches) aplastarEnLosEnganches();
+    if (caidas) actualizarLoQueSeCae(dt);
     // 🦵 El enganche en el que estás chocó contra su tope: trastabillás (entities/player.js).
     if (enganches && !player.enTecho) {
       const g = engancheEn(enganches, player.x);
@@ -4446,6 +4695,8 @@ export function createRaidScene(services) {
     drawPisoDelTren(r, train, colors, swayX, camera.renderY, undefined, undefined, saltear, corrCol);
     if (nuevos) for (const p of nuevos.piso) if (enVista(p)) corrido(p.x + p.w / 2, () => estamparPieza(r, p))();
     if (enganches) dibujarEnganches(r, enganches, corrDibujo, 4, 5, map.size);
+    // (🧳 La sombra de lo que está por caer, en el piso.)
+    if (caidas) dibujarSombrasDeCaidas(r, caidas, corrido);
 
     // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
     // la lista `enemies` es un guardia común.
@@ -4480,6 +4731,8 @@ export function createRaidScene(services) {
     for (const rd of riders) cosas.push({ base: pies(rd, 6), draw: () => drawRider(r, rd) });
     // (🆕 Las cadenas de los enganches, con su base: la de atrás detrás de la gente; la de adelante, delante.)
     if (enganches) cosas.push(...cadenasDeEnganches(r, enganches, corrDibujo, 4, 5, map.size));
+    // (🧳 Lo de las repisas, lo que cae, lo tirado y las pilas de las puertas.)
+    if (caidas) cosas.push(...cosasDeCaidas(r, caidas, corrido));
     if (!player.enTecho) {
       cosas.push({ base: pies(player), draw: corrido(player.x, () => drawPlayer(r, player, train.hearStepRadius)) });
     }

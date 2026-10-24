@@ -26,6 +26,8 @@ import { CONFIG } from '../data/config.js';
 const TILE_RULES = {
   '#': { solid: true,  blocksSight: true,  blocksBullets: true },   // pared
   'S': { solid: true,  blocksSight: true,  blocksBullets: true },   // asiento
+  // 🧳 La pila de equipaje junto a la puerta (world/caidas.js): un baúl con valijas encima. Choca como un asiento.
+  'L': { solid: true,  blocksSight: true,  blocksBullets: true },
   'C': { solid: true,  blocksSight: true,  blocksBullets: true },   // carga, cajones, mesas
   'W': { solid: true,  blocksSight: false, blocksBullets: false },  // VENTANILLA
   'H': { solid: true,  blocksSight: false, blocksBullets: false },  // media pared / baranda

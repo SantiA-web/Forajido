@@ -19340,6 +19340,53 @@ guardaespaldas distintos)*:
       dispare se le suma la dispersión del traqueteo (el Colt, de 0,035 a 0,095). *(Santi preguntó si apuntar a una
       silla y que se corra era realista; medido: en tu vagón nunca pasa apuntando; al vagón de al lado, 10-28 % sin
       apuntar según lo que tardes en apretar, y más en un tirón; dos vagones más allá, hasta 44 %.)*
+  - **🚧 FASE 4, LOS FRENOS ROTOS** (`frenosDañados`, data/modifiers.js; world/enganches.js):
+    - **Hecho**: 1 de cada 10 trenes; cartel al subir *(eligió el cartel, no el mapa)*; cada 15-25 s un frenazo con
+      1,2 s de chirrido; los enganches se cierran hasta 8 (casi se tocan) de adelante para atrás y aplastan al que
+      esté adentro (vos o un guardia); adentro de los vagones todos trastabillan. Atajo [8].
+    - **Rehecho: NADA CAE DE LA NADA** *(Santi: "las cosas no caigan de la nada sino que sea mucho más realista…
+      repisas en las paredes con valijas y que esas sean las que caen")*. Las valijas que aparecían detrás tuyo se
+      van. El plan, por vagón *(eligió las recomendaciones)*:
+      - **Desde arriba** (repisas, pilas altas, lo colgado): caen en el lugar, justo debajo. Liviano te saca la
+        mitad de la vida; pesado te mata *("mínimo que te saque la mitad")*. A los guardias igual, en proporción a
+        su vida. **Los pasajeros sentados se cubren la cabeza** (sin daño).
+      - **Por el pasillo** (las pilas junto a las puertas): se deslizan o ruedan como las valijas, te hacen
+        trastabillar. Frena: la pila de la puerta de atrás, hacia la locomotora; acelera: la de adelante, hacia la cola.
+      - **Después de cada frenazo, un arrancón** más suave, unos segundos después (mueve las pilas de adelante).
+      - **Se gasta**: cada cosa cae una vez y queda tirada. Sólo con el frenazo, el arrancón y (después) el
+        traqueteo de carga; no con los tirones comunes.
+      - **Se lee**: en el aviso, lo que va a caer se tambalea y se corre al borde, y en el piso crece su sombra; las
+        pilas se sacuden contra la puerta. **Los guardias lo leen** y tratan de salirse, cada uno con su demora.
+      - **Los dibujos, realistas y coherentes** *(Santi: "el barril de agua al rodar moje la madera del suelo")*.
+      - Pasajeros: portaequipajes en la pared del fondo (valijas, sombrereras, un baúl) / pila de valijas y un baúl
+        junto a cada puerta. Primera clase: repisas y la araña del techo sobre el pasillo / baúles de viaje.
+        Comedor: estante de vajilla y faroles colgados / **barriles de comida** *(no el carrito)*. Dormitorio:
+        repisa de cada camarote / baúles de camarote. Guardias: estante de cajas de munición (los sombreros caen sin
+        daño) / cajas de munición de las puntas. Correo: pilas de encomiendas que se desmoronan, sacas de los
+        casilleros / carros de mimbre que ruedan. Caboose: la rueda del freno de los repuestos / el barril de agua
+        (moja el piso) *(el canasto de leña NO se mueve: "es pesadísimo")*. Blindado: lingotes sobre los arcones y
+        **la torre de bolsas junto a la puerta** / los arcones de las puntas. Carga: cuando se dibuje en la grilla nueva.
+      - Orden: pasajeros, primera clase, correo, guardias, comedor, dormitorio, caboose, blindado.
+    - **✅ PASAJEROS** (world/caidas.js; el portaequipajes, en world/estiloNuevo/vagones.js):
+      - Un portaequipajes de bronce en cada tramo de pared entre ventanas, con dos cosas (siempre las mismas en el
+        mismo vagón, dejándole lugar a los faroles): valija (cuero, tapiz o baulito), sombrerera, canasta (livianas) o
+        un baúl (pesado). En cada golpe se cae una parte (`cae`, 40 %).
+      - **Sin pilas de pasillo** *(Santi: "en el pasillo de pasajeros no haya obstáculos de pasillo, ya que es un vagón
+        de por sí muy apretado")*; la primera versión las tenía en dos rincones (casilla `L`) y su choque era malo.
+      - Lo que cae: en el aviso se tambalea y se corre al borde, y su sombra crece en el piso (un punteado de madera
+        oscura: negra y llena parecía un agujero); cae corrido hacia el lado del golpe; si cae sobre un asiento rebota al
+        hueco libre más cercano. Pega a quien esté debajo (medido: la sombrerera, de 100 a 50; el baúl de al lado mata).
+      - **Tirado es parte del piso** *(Santi: "que pase a formar parte del suelo (para no molestar) pero que… se mueva
+        con el movimiento del tren y si un disparo o dinamita va ahí que le pegue y lo rompa")*: no choca; con cada
+        sacudón se desliza para el lado contrario (`empujon`: frenazo 70, arrancón 45, tirón 25) hasta frenarse o
+        toparse con un asiento; una bala de cualquiera o la dinamita lo rompen (dibujo roto: la ropa, el sombrero, la
+        comida, las tablas). Se ordena por donde apoya y tapa el borde fino de la gente (`pintarTapando`): delante de
+        todos, primero, te tapaba entero; pintado directo, te dejaba el borde encima.
+      - Los pasajeros sentados se cubren la cabeza (la pose de pánico, `cubreFrenazo`); los guardias se salen (al
+        pasillo, o del pasillo al hueco más cercano), cada uno con su demora (`reaccion`).
+      - Lo de pasillo (para los demás vagones) te tira al piso, como un barril, sin sacarte vida *(Santi: "capaz no
+        deberían hacer daño pero sí tirarme al piso")*: trastabillar no se notaba, llegaba mientras todavía
+        trastabillabas por el frenazo.
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

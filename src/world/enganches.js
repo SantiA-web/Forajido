@@ -22,7 +22,7 @@ import { CONFIG } from '../data/config.js';
 import { PALETA } from '../engine/paleta.js';
 
 /** Los enganches de este tren (los tramos 'enganche', de punta a punta) y sus vagones, cada uno con su peso. */
-export function crearEnganches(train, rng) {
+export function crearEnganches(train, rng, estado = []) {
   const S = train.map.size, K = CONFIG.enganches;
   const tipo = train.tipoTren && train.tipoTren.id === 'carga' ? 'carga' : 'pasajeros';
   const [min, max] = K.rango[tipo];
@@ -38,8 +38,12 @@ export function crearEnganches(train, rng) {
     })),
   }));
   const cada = K.tironCada[tipo];
+  const frenos = estado.includes('frenosDañados');
+  const FR = K.frenos;
   return {
-    tipo, lista, vagones, min, max, reloj: 0, tiron: null,
+    tipo, lista, vagones, min, max, reloj: 0, tiron: null, frenos,
+    proximoFrenazo: frenos ? FR.cada[0] + rng.next() * (FR.cada[1] - FR.cada[0]) : Infinity,
+    proximoArrancon: Infinity,
     fuerza: K.fuerza[tipo],
     meneo: 0, pendulo: { a: 0, w: 0 }, meneoAgua: 0, agua: { a: 0, w: 0 }, vAncla: 0,
     // (En el de carga no: su tirón lo pone el traqueteo.)
@@ -60,13 +64,29 @@ export function empezarTiron(E, sentido, aviso = CONFIG.enganches.tironAviso) {
 const suave = (t) => t * t * (3 - 2 * t);
 
 /**
- * Avanza la cuenta. `anclaX`: dónde estás (el péndulo de los faroles cuelga de ese vagón). Devuelve 'aviso' en el
- * cuadro en que arranca un tirón propio (para el crujido).
+ * Avanza la cuenta. `anclaX`: dónde estás (el péndulo de los faroles cuelga de ese vagón). Devuelve, en el cuadro en
+ * que pasa: 'aviso' (arranca un tirón propio: el crujido), 'frenazoAviso' (arranca el chirrido de un frenazo),
+ * 'frenazo' (el golpe del frenazo), 'arranconAviso' o 'arrancon' (el arrancón de después), o 'tiron' (el golpe de un
+ * tirón común; el sentido, en `E.tiron.sentido`). Cada enganche que se cierra del todo marca `aplasto` en ese cuadro.
  */
 export function actualizarEnganches(E, dt, rng, anclaX) {
-  const K = CONFIG.enganches;
+  const K = CONFIG.enganches, FR = K.frenos;
   E.reloj += dt;
   let evento = null;
+  // 🛑 El frenazo, si este tren tiene los frenos rotos: le gana al tirón de siempre, y lo corre para después.
+  if (E.frenos && !E.tiron && E.reloj >= E.proximoFrenazo) {
+    E.tiron = { sentido: -1, t: 0, aviso: FR.aviso, frenazo: true };
+    E.proximoFrenazo = E.reloj + FR.cada[0] + rng.next() * (FR.cada[1] - FR.cada[0]);
+    E.proximo = Math.max(E.proximo, E.reloj + FR.aviso + 3);
+    evento = 'frenazoAviso';
+  }
+  // 🚂 Y el arrancón que viene después de cada frenazo (lo agenda el golpe del frenazo, más abajo).
+  if (E.frenos && !E.tiron && E.reloj >= E.proximoArrancon) {
+    E.tiron = { sentido: 1, t: 0, aviso: FR.arranconAviso, arrancon: true };
+    E.proximoArrancon = Infinity;
+    E.proximo = Math.max(E.proximo, E.reloj + FR.arranconAviso + 3);
+    evento = 'arranconAviso';
+  }
   if (!E.tiron && E.reloj >= E.proximo) {
     empezarTiron(E, rng.next() < 0.5 ? 1 : -1);
     const cada = K.tironCada[E.tipo];
@@ -77,14 +97,30 @@ export function actualizarEnganches(E, dt, rng, anclaX) {
   // Lo que empuja la locomotora: nada en el aviso (sólo se tensan las cadenas); después, un empujón que sube y baja
   // suave. El resto lo hacen los resortes: el tirón llega a cada vagón un poco después que al de adelante.
   let loco = 0;
-  if (T) {
-    T.t += dt;
-    const tt = (T.t - T.aviso) / K.tironGolpe;
-    if (tt > 0 && tt < 1) loco = T.sentido * E.fuerza * Math.sin(Math.PI * tt) ** 2;
-    if (T.t > T.aviso + K.tironGolpe + K.tironCalma) E.tiron = null;
-  }
   const V = E.vagones, n = V.length, base = K.base;
   const lo = E.min - base, hi = E.max - base;
+  if (T) {
+    const antes = T.t;
+    T.t += dt;
+    const golpe = T.frenazo ? FR.golpe : K.tironGolpe;
+    const tt = (T.t - T.aviso) / golpe;
+    if (tt > 0 && tt < 1) loco = T.sentido * (T.frenazo ? FR.fuerza : T.arrancon ? FR.arranconFuerza : E.fuerza) * Math.sin(Math.PI * tt) ** 2;
+    if (T.frenazo && antes < T.aviso && T.t >= T.aviso) {
+      evento = 'frenazo';
+      E.proximoArrancon = E.reloj + FR.arranconCada[0] + rng.next() * (FR.arranconCada[1] - FR.arranconCada[0]);
+    }
+    if (T.arrancon && antes < T.aviso && T.t >= T.aviso) evento = 'arrancon';
+    // (🧳 Y el golpe de un tirón común: lo tirado en el piso se desliza, ver world/caidas.js.)
+    if (!T.frenazo && !T.arrancon && antes < T.aviso && T.t >= T.aviso) evento = evento || 'tiron';
+    if (T.t > T.aviso + golpe + K.tironCalma) E.tiron = null;
+  }
+  // El tope de encogido de cada enganche: en el frenazo se corre hasta `cierre` (los vagones casi se tocan); después
+  // sigue al enganche mientras se vuelve a abrir, sin empujarlo (`g.lo`).
+  const cerrando = T && T.frenazo && T.t >= T.aviso && T.t < T.aviso + FR.golpe + FR.cerrado;
+  E.lista.forEach((g, k) => {
+    const e = V[k + 1].p - V[k].p;
+    g.lo = cerrando ? FR.cierre - base : Math.min(lo, Math.max(g.lo ?? lo, e));
+  });
   // En pasitos: con los topes duros, un paso de un cuadro entero se pasaría de largo.
   const PASOS = 4, h = Math.min(dt, 0.05) / PASOS;
   const F = new Array(n);
@@ -103,7 +139,7 @@ export function actualizarEnganches(E, dt, rng, anclaX) {
       let f = -K.resorte * e - K.freno * de;
       // Los topes: más allá del largo máximo (o del mínimo) choca, duro.
       if (e > hi) f -= K.tope * (e - hi) + K.topeFreno * de;
-      else if (e < lo) f -= K.tope * (e - lo) + K.topeFreno * de;
+      else if (e < E.lista[k].lo) f -= K.tope * (e - E.lista[k].lo) + K.topeFreno * de;
       F[k + 1] += f;
       F[k] -= f;
     }
@@ -120,6 +156,10 @@ export function actualizarEnganches(E, dt, rng, anclaX) {
     g.choque = fuera && fuera !== g.fuera && E.reloj - (g.ultimoChoque ?? -9) > K.choqueCada ? fuera : 0;
     if (g.choque) g.ultimoChoque = E.reloj;
     g.fuera = fuera;
+    // 🛑 Se cerró del todo (`aplasto`, sólo en el cuadro en que pasa): al que esté adentro lo aplastan.
+    const cerrado = g.estira <= FR.aplasta;
+    g.aplasto = cerrado && !g.cerrado;
+    g.cerrado = cerrado;
   });
 
   // 🏮 EL PÉNDULO DE LOS FAROLES, colgado de tu vagón: lo empuja lo que acelera el vagón, para el otro lado.
@@ -180,8 +220,14 @@ function pintor(ctx, PASO) {
 export function dibujarEnganches(r, E, corr, fila0, fila1, S) {
   const PASO = CONFIG.estilo.punto / 4, punto = pintor(r.ctx, PASO);
   const y0 = fila0 * S, y1 = (fila1 + 1) * S, PLAT = S;
+  const ctx = r.ctx;
   for (const g of E.lista) {
     const XL = g.x0 + corr(g.x0), XR = g.x1 + corr(g.x1);
+    // 🛑 Cerrado por un frenazo, las plataformas se montan: nada se sale del hueco entre los dos vagones.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(XL, y0 - S, Math.max(0, XR - XL), y1 - y0 + 2 * S);
+    ctx.clip();
     // La sombra en la grava, debajo del borde de adelante: el enganche va en el aire, sobre la vía.
     punto(XL, y1, (XR - XL) / PASO, 2, 0, XL);
     for (const [a, b, canto, ox] of [[XL, XL + PLAT, XL + PLAT - 2 * PASO, XL], [XR - PLAT, XR, XR - PLAT, XR]]) {
@@ -196,7 +242,7 @@ export function dibujarEnganches(r, E, corr, fila0, fila1, S) {
       punto(canto, y0 + PASO, 2, h - 2, 23, ox);
     }
     // La chapa del medio, estriada, que se desliza sobre las dos plataformas (va con la de atrás, que la sostiene).
-    const pa = XL + PLAT - 4, pb = XR - PLAT + 4, py0 = y0 + PASO * 3, py1 = y1 - PASO * 3;
+    const pa = XL + PLAT - 4, pb = Math.max(pa, XR - PLAT + 4), py0 = y0 + PASO * 3, py1 = y1 - PASO * 3;
     punto(pa - PASO, py0 - PASO, (pb - pa) / PASO + 2, (py1 - py0) / PASO + 2, 0, XL);
     punto(pa, py0, (pb - pa) / PASO, (py1 - py0) / PASO, 23, XL);
     punto(pa, py0, (pb - pa) / PASO, 1, 24, XL);
@@ -204,6 +250,7 @@ export function dibujarEnganches(r, E, corr, fila0, fila1, S) {
       for (let x = pa + PASO * (1 + (j % 2) * 1.5); x < pb - PASO; x += PASO * 3) punto(x, y, 1, 1, 24, XL);   // las estrías
     }
     punto(pa, py1 - PASO, (pb - pa) / PASO, 1, 31, XL);
+    ctx.restore();
   }
 }
 
@@ -229,6 +276,8 @@ export function cadenasDeEnganches(r, E, corr, fila0, fila1, S) {
         draw: () => {
           const XL = g.x0 + corr(g.x0), XR = g.x1 + corr(g.x1);
           const ca = XL + PLAT - PASO * 2, cb = XR - PLAT + PASO, hueco = Math.max(0, cb - ca);
+          // 🛑 Cerrado por un frenazo, los postes quedarían metidos en el otro vagón: no se ven.
+          if (cb < ca) return;
           const LARGO_CADENA = E.max - 2 * PLAT + PASO * 3;
           const cuelga = Math.min(PASO * 7, Math.sqrt(Math.max(0, LARGO_CADENA * LARGO_CADENA - hueco * hueco)) * 0.5);
           const tiembla = g.tenso ? (Math.floor(E.reloj * 30) % 2 ? PASO : -PASO) * 0.5 : 0;
@@ -257,6 +306,12 @@ export function cadenasDeEnganches(r, E, corr, fila0, fila1, S) {
 export function sacudiendo(E) {
   const T = E.tiron;
   return !!T && T.t >= T.aviso && T.t < T.aviso + CONFIG.enganches.sacudonDura;
+}
+
+/** ¿Está chirriando un frenazo (el aviso)? Para el cartel y las chispas. */
+export function frenazoEnAviso(E) {
+  const T = E.tiron;
+  return !!T && T.frenazo && T.t < T.aviso;
 }
 
 /** El enganche en el que cae `x` (o null). */

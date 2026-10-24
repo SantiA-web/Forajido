@@ -298,6 +298,22 @@ export function updateEnemy(e, dt, world) {
     return;
   }
 
+  /**
+   * 🧳 ESQUIVANDO LO QUE VA A CAER (o lo que va a salir por el pasillo) *(Santi: "deberían también saber leer cuando un
+   * objeto está por caer o por avanzar")*: la escena le marca adónde salirse (`esquiva`, ver `esquivarCaidas` en
+   * scenes/raidScene.js). Primero tarda lo suyo en darse cuenta (`demora`: mientras, sigue con lo que hacía) y después
+   * corre hasta ahí. Aturdido, no.
+   */
+  if (e.esquiva && !(e.stagger > 0)) {
+    const q = e.esquiva;
+    if (q.demora > 0) q.demora -= dt;
+    else {
+      q.dura -= dt;
+      if (Math.hypot(q.x - e.x, q.y - e.y) < 1.5 || q.dura <= 0) e.esquiva = null;
+      else { moveToward(e, q.x, q.y, CONFIG.enemy.speed * 1.3, dt, world.map); return; }
+    }
+  }
+
   considerarRepliegue(e, dt, world);
   actualizarCharla(e, dt, world);
 

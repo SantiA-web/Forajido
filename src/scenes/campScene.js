@@ -366,6 +366,16 @@ export function createCampScene(services) {
       }
       decir(T.camp.atajoRecompensa(gameState.bounty), 2);
     }
+    /**
+     * 🧪 [8] UN TREN DE PASAJEROS CON LOS FRENOS ROTOS, arrancando en un vagón de pasajeros, con el primer frenazo a
+     * los 4 segundos (`pruebaFrenos`), para probar el aplastamiento en los enganches y las valijas.
+     *
+     * ⚠️ SACARLO antes de mostrar el juego, con los otros.
+     */
+    if (input.wasPressed('Digit8')) {
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'pasajeros', estado: ['frenosDañados'], pruebaFrenos: true });
+      return;
+    }
     if (input.wasPressed('Digit6')) {
       scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'pasajeros', jefeForzado: 'sheriff', pruebaSheriff: true });
       return;

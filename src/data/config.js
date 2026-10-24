@@ -2564,6 +2564,55 @@ export const CONFIG = {
      * cualquiera que dispare se le suma a la dispersión lo mismo que en el traqueteo (`traqueteo.dispersionExtra`).
      */
     sacudonDura: 0.8,
+    /**
+     * 🛑 LOS FRENOS ROTOS (fase 4, `frenosDañados` en data/modifiers.js): cada `cada` segundos un frenazo, con
+     * `aviso` segundos de chirrido antes. La locomotora frena con `fuerza` durante `golpe` segundos y los vagones
+     * de atrás se le vienen encima: los enganches se cierran hasta `cierre` (casi se tocan; el tope de siempre se
+     * corre hasta ahí mientras dura, `cerrado` segundos después del golpe). Al que esté en un enganche cuando baja
+     * de `aplasta` lo aplastan (a vos y a los guardias); adentro de los vagones, todos trastabillan.
+     */
+    frenos: { cada: [15, 25], aviso: 1.2, fuerza: 32000, golpe: 0.25, cierre: 8, cerrado: 0.6, aplasta: 20,
+      // 🚂 EL ARRANCÓN: después de cada frenazo, entre `arranconCada` segundos, el maquinista arranca de golpe (más
+      // suave que el frenazo): `arranconAviso` de aviso y `arranconFuerza`. Mueve las cosas para la cola.
+      arranconCada: [3, 5], arranconAviso: 0.8, arranconFuerza: 7000 },
+    /**
+     * 🧳 LO QUE SALE POR EL PASILLO: las valijas de las pilas de las puertas (world/caidas.js) salen a `valijaVel` y
+     * se van frenando con `valijaRoce` hasta quedar tiradas; en los de carga, el frenazo suelta `barriles` barriles
+     * rodando desde atrás tuyo. Si te alcanzan, trastabillás; a los guardias los aturden lo mismo.
+     */
+    objetos: { valijaVel: [170, 230], valijaRoce: 140, barriles: 2 },
+  },
+
+  /**
+   * 🧳 LO QUE SE CAE Y LO QUE SALE POR EL PASILLO EN EL FRENAZO Y EL ARRANCÓN (world/caidas.js):
+   *  repisaPuntos  a qué altura de la pared (en puntos desde arriba) está la repisa del portaequipajes
+   *  cae           qué parte de lo que queda en las repisas se cae en cada golpe
+   *  aviso         lo que tarda en crecer del todo la sombra (y en correrse al borde lo que va a caer)
+   *  caeDura       lo que tarda en llegar al piso; corre, cuánto se corre para el lado del golpe
+   *  alcance       hasta dónde, hacia la pared, pega lo que cae (desde donde queda tirado)
+   *  livianoParte  qué parte de la vida saca lo liviano (lo pesado mata)
+   *  pasilloLargo  qué largo de pasillo leen los guardias como peligroso delante de una pila que se va a soltar
+   *  reaccion      la demora de un guardia en salirse (más `reaccionPeleando` si está en un tiroteo)
+   *  cubrirse      lo que se quedan cubiertos los pasajeros sentados después del golpe
+   */
+  caidas: {
+    repisaPuntos: 32,
+    cae: 0.4,
+    aviso: 1.0,
+    caeDura: 0.32,
+    corre: 5,
+    alcance: 22,
+    livianoParte: 0.5,
+    pasilloLargo: 260,
+    reaccion: [0.15, 0.6],
+    reaccionPeleando: 0.3,
+    cubrirse: 1.2,
+    /**
+     * 🧳 LO TIRADO SE DESLIZA CON LOS SACUDONES (sin chocar con nadie: es parte del piso). El empujón de cada golpe, en
+     * unidades por segundo (frenazo, arrancón, tirón común), y lo que lo frena el piso.
+     */
+    empujon: { frenazo: 70, arrancon: 45, tiron: 25 },
+    roceSuelo: 120,
   },
 
   traqueteo: {

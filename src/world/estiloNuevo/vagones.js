@@ -457,6 +457,26 @@ function vagon(train, w, dia) {
         p(vx + 5, vy + 4, 21); p(vx + vw - 6, vy + 6, 20); p(vx + 9, vy + vh - 6, 20);
       }
     }
+    /**
+     * 🧳 EL PORTAEQUIPAJES DEL VAGÓN DE PASAJEROS (world/caidas.js), en cada tramo liso de la pared entre dos ventanas:
+     * dos varillas de bronce sobre dos ménsulas, y la sombra en la pared. Lo que lleva encima se dibuja aparte (se cae).
+     */
+    if (w.id === 'pasajeros') {
+      const Y = CONFIG.caidas.repisaPuntos;
+      for (let k = 0; k + 1 < ventanasFondo.length; k++) {
+        const xa = ax(w.x + (ventanasFondo[k][1] + 1) * S) + 4, xb = ax(w.x + ventanasFondo[k + 1][0] * S) - 4;
+        r(xa, Y + 2, xb - xa, 2, 1);                                        // la sombra en la pared
+        r(xa - 1, Y - 1, xb - xa + 2, 3, 0);
+        r(xa, Y, xb - xa, 1, 6); r(xa, Y - 1, xb - xa, 1, 0);
+        for (let x = xa + 3; x < xb - 2; x += 6) if (deja(x, Y, 9, 0.4)) p(x, Y, 7);   // el brillo del bronce
+        r(xa + 1, Y + 1, xb - xa - 2, 1, 5);                                 // la varilla de abajo
+        for (const mx of [xa + 2, xb - 4]) {                                  // las ménsulas
+          r(mx - 1, Y + 1, 4, 7, 0);
+          for (let q = 0; q < 5; q++) p(mx + (q < 3 ? 0 : 1), Y + 2 + q, 5);
+          p(mx + 1, Y + 2, 6); p(mx + 2, Y + 2, 5);
+        }
+      }
+    }
     // 🆕 En el dormitorio, el perchero de cada camarote de arriba, con el saco colgado.
     if (w.id === 'dormitorio') for (const fx of faroles) {
       const hx = fx - 22, hy = yCara + 9;

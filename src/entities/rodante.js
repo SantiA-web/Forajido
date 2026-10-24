@@ -21,6 +21,9 @@ import { CONFIG } from '../data/config.js';
 import { dibujarCuerpoCajon } from './cajon.js';
 import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
+import { PALETA, sombrear } from '../engine/paleta.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { pintarTapando } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -79,6 +82,14 @@ export function createRodante(x, y, tipo, rng, opciones = {}) {
     /** Si el que empujaste todavía tenía su cartucho, sigue teniéndolo rodando. */
     tieneCartucho: opciones.tieneCartucho ?? false,
     puertasRotas: null,
+
+    /**
+     * 🧳 SÓLO LA VALIJA DEL FRENAZO (`tipo: 'valija'`): no rueda, se desliza, y el piso la va frenando (`roce`, en
+     * unidades por segundo cada segundo) hasta que queda tirada (`quieta`). `variante`: cuál de las tres.
+     */
+    roce: opciones.roce ?? 0,
+    quieta: false,
+    variante: opciones.variante ?? 0,
   };
 }
 
@@ -102,12 +113,22 @@ export function updateRodante(ro, dt) {
   ro.x += ro.dir * paso;
   ro.alcance -= paso;
   ro.giro += (ro.velocidad / 9) * dt;
+  if (ro.roce) {
+    ro.velocidad = Math.max(0, ro.velocidad - ro.roce * dt);
+    if (ro.velocidad === 0) ro.quieta = true;
+  }
+  // 🧳 La que sale de una pila, de costado del pasillo, entra en él (`yMeta`) mientras se desliza.
+  if (ro.yMeta != null && !ro.quieta) {
+    const d = ro.yMeta - ro.y;
+    ro.y += Math.sign(d) * Math.min(Math.abs(d), 220 * dt);
+  }
 }
 
 // ------------------------------------------------------------------- dibujo
 
 export function drawRodante(r, ro) {
   const col = CONFIG.colors;
+  if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
   /**
    * EL POLVO QUE DEJA ATRÁS. No es adorno: quieto, un barril se confunde con
@@ -308,4 +329,62 @@ function dibujarCajon(r, ro, col) {
   const w = ro.hw - 1 + tumbo * 1.5;
   const h = ro.hh - 2 - tumbo * 1.5;
   dibujarCuerpoCajon(r, ro.x, ro.y, w, h, false, ro.hitFlash > 0, false);
+}
+
+/**
+ * 🧳 LAS VALIJAS DEL FRENAZO (fase 4 de "LOS ENGANCHES"), en el estilo nuevo *(Santi eligió "barriles, y valijas en
+ * pasajeros")*: en el frenazo se caen de entre los asientos y salen deslizándose por el pasillo hacia adelante. No
+ * giran (van siempre de costado, a lo largo del pasillo), así que tienen una sola vista; tres, puestas punto por punto:
+ *  0 LA VALIJA DE CUERO: la tapa con la manija, las dos correas con su hebilla, las esquinas reforzadas y el cierre
+ *    de bronce en la costura de la tapa.
+ *  1 EL BOLSO DE TAPIZ (el "carpetbag"): la boca de bronce, el tapiz rojo con su dibujo, el fondo de cuero y la manija.
+ *  2 EL BAULITO: la tapa combada en dos verdes, las tablas, las cantoneras de bronce y la cerradura.
+ * Mientras se desliza va a los saltitos (un punto, cuadro por medio) y levanta polvo atrás. De noche, la luz del lugar
+ * (`luzEn`), como la gente.
+ */
+function dibujarValija(r, ro) {
+  const PASO = CONFIG.estilo.punto / 4, ctx = r.ctx;
+  const W = 18, H = 16, piso = ro.y + ro.hh;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, piso - 2) || 0) : 0;
+  const salta = !ro.quieta && ro.velocidad > 60 && Math.floor(ro.giro * 3) % 2 ? 1 : 0;
+  const ox = Math.round(ro.x / PASO) - W / 2, oy = Math.round(piso / PASO) - H - salta;
+  // (🐛 En su lienzo, para taparle el borde fino al que está detrás: ver `pintarTapando` en world/caidas.js.)
+  pintarTapando(ctx, ox, oy, W, H + 1, luz + (ro.hitFlash > 0 ? 2 : 0), (R) => {
+  // El polvo que levanta atrás (del lado contrario al que va), mientras se desliza.
+  if (!ro.quieta && ro.velocidad > 30) {
+    const t = Math.floor(ro.giro * 4), atras = (x) => (ro.dir > 0 ? x : W - 1 - x);
+    R(atras(-2 - (t % 3)), H - 2, 1, 1, 37); R(atras(-4 - ((t + 1) % 3)), H - 1, 1, 1, 38); R(atras(-1), H - 3 + (t % 2), 1, 1, 37);
+  }
+  // La sombra en el piso.
+  R(1, H, W - 1, 1, 0);
+  if (ro.variante === 1) {
+    // EL BOLSO DE TAPIZ: el contorno con las esquinas de arriba gastadas, la manija, la boca de bronce, el tapiz.
+    R(1, 3, 16, 13, 0); R(0, 5, 18, 10, 0);
+    R(6, 0, 6, 1, 0); R(5, 1, 1, 3, 0); R(12, 1, 1, 3, 0); R(6, 1, 6, 1, 33);
+    R(2, 4, 14, 1, 7); R(2, 4, 14, 1, 7); R(1, 5, 16, 1, 6);
+    R(1, 6, 16, 7, 9);
+    for (let y = 7, j = 0; y < 12; y += 2, j++) for (let x = 2 + (j % 2) * 2; x < 16; x += 4) { R(x, y, 1, 1, 10); R(x + 1, y + 1, 1, 1, 28); }
+    R(15, 6, 2, 7, 8);
+    R(1, 13, 16, 2, 33); R(1, 13, 16, 1, 34);
+  } else if (ro.variante === 2) {
+    // EL BAULITO: la tapa combada, las tablas, las cantoneras y la cerradura.
+    R(0, 2, 18, 14, 0); R(1, 1, 16, 1, 0);
+    // (🔁 Un paso más claro: de noche el frente se iba al negro.)
+    R(1, 2, 16, 4, 43); R(2, 2, 14, 1, 43); R(1, 4, 16, 1, 27);
+    R(1, 6, 16, 1, 0);
+    R(1, 7, 16, 8, 27); R(1, 10, 16, 1, 26); R(1, 13, 16, 1, 26);
+    R(1, 2, 1, 13, 6); R(16, 2, 1, 13, 6); R(1, 7, 16, 1, 6);
+    R(8, 7, 2, 3, 7); R(8, 8, 1, 1, 0);
+  } else {
+    // LA VALIJA DE CUERO. (🔁 Cuero rojizo y no marrón: del marrón del piso no se despegaba.)
+    R(7, 0, 4, 1, 0); R(6, 1, 1, 2, 0); R(11, 1, 1, 2, 0); R(7, 1, 4, 1, 47);
+    R(0, 2, 18, 14, 0);
+    R(1, 3, 16, 4, 12); R(1, 3, 16, 1, 13);
+    R(1, 7, 16, 1, 47);
+    R(1, 8, 16, 7, 11); R(1, 14, 16, 1, 47);
+    R(1, 8, 2, 2, 47); R(15, 8, 2, 2, 47); R(1, 13, 2, 2, 47); R(15, 13, 2, 2, 47);
+    for (const x of [4, 13]) { R(x, 3, 1, 12, 47); R(x, 10, 1, 2, 7); }
+    R(8, 7, 2, 2, 7); R(8, 8, 2, 1, 6);
+  }
+  });
 }

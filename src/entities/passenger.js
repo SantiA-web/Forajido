@@ -581,7 +581,8 @@ function pasajeroNuevo(r, pa, pies, tipo = 'pasajero') {
    * cabeza, hasta que grita y huye. Los de arriba (contra la pared del fondo) miran de frente;
    * los de abajo, de espaldas. (Se ordena como el sentado, delante de su asiento.)
    */
-  const cubierto = pa.state === 'panic' && pa.sentado && !pa.revelando && !pa.dormido;
+  // (🧳 Y en el frenazo: los sentados se cubren la cabeza, ver `cubrirPasajeros` en scenes/raidScene.js.)
+  const cubierto = (pa.state === 'panic' || pa.cubreFrenazo > 0) && pa.sentado && !pa.revelando && !pa.dormido;
   const sentado = pa.sentado && (pa.state === 'idle' || pa.state === 'amenazado' || pa.state === 'panic') && !pa.revelando && !cubierto;
   const nuevo = { arma: null, funda: false, aspecto };
   let angulo = pa.facing;

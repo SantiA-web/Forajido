@@ -172,10 +172,16 @@ export const ESTADO_TREN = {
     chance: 0.15,
   },
 
-  /** Fase 7 del plan. Llave apagada. */
+  /**
+   * 🛑 FRENOS ROTOS (fase 4 de "LOS ENGANCHES", ver NOTAS-DISENO.md) *(Santi: "si salió el tren con esos movimientos
+   * bruscos… los vagones podrán chocar entre sí bruscamente, y no querrás estar en un enganche cuando eso pase")*.
+   * Cada 15-25 s un frenazo con 1,2 s de chirrido antes: los vagones se chocan, el que está en un enganche muere
+   * aplastado (vos o un guardia), y adentro todos trastabillan (ver `frenos` en CONFIG.enganches). Te enterás con un
+   * cartel al subir *(eligió eso: no en el mapa)*. Uno de cada diez trenes.
+   */
   frenosDañados: {
     id: 'frenosDañados',
-    chance: 0,
+    chance: 0.10,
   },
 
   /** Fase 5 del plan, ligado a los paquetes de botín. Llave apagada. */

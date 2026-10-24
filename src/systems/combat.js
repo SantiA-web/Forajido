@@ -20,6 +20,7 @@ import { dañarRodante } from '../entities/rodante.js';
 import { dañarCajon } from '../entities/cajon.js';
 import { prenderCajon, soltarExplosivo } from './explosives.js';
 import { yDeBala } from '../entities/bullet.js';
+import { romperConBala } from '../world/caidas.js';
 
 export function updateBullets(bullets, dt, world) {
   for (const b of bullets) {
@@ -161,6 +162,19 @@ export function updateBullets(bullets, dt, world) {
        * sería resolverte el problema por vos, y este es un problema que el
        * juego te pone a vos para que elijas: esquivarlo o gastarle balas.
        */
+      /**
+       * 🧳 LO TIRADO DE LAS REPISAS (world/caidas.js): la bala que le pasa por encima le pega y lo rompe, sea de quien
+       * sea *(Santi: "si un disparo o dinamita va ahí que le pegue y lo rompa")*.
+       */
+      if (world.caidas) {
+        const roto = romperConBala(world.caidas, b.x, b.y);
+        if (roto) {
+          b.alive = false;
+          world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
+          world.bus.emit('rodanteRoto', { x: roto.x, y: roto.yPiso - 3, tipo: 'valija' });
+          break;
+        }
+      }
       if (world.rodantes) {
         let pegoRodante = false;
         for (const ro of world.rodantes) {

@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -113,7 +113,35 @@ export function updateRodante(ro, dt) {
   ro.x += ro.dir * paso;
   ro.alcance -= paso;
   ro.giro += (ro.velocidad / 9) * dt;
-  if (ro.roce) {
+  /**
+   * 🥃 EL BAÚL GRANDE NO SE DESLIZA: SE VUELCA (`vuelta`, en octavos: ver `pintarBaulRodando`). Al frenarse termina el
+   * cuarto de vuelta que estaba dando hasta quedar de plano (nunca se queda de canto), y cada vez que un lado golpea el
+   * piso lo cuenta (`golpesDeLado`: la escena pone el ruido y el polvo). Quieto, su choque depende de cómo quedó.
+   */
+  if (ro.variante === 3 && ro.tipo === 'valija') {
+    if (!ro.quieta) {
+      const K = CONFIG.caidas.baulVuelca, v0 = ro.vuelta || 0;
+      // En qué cuarto de vuelta está, contado para el lado que va (para saber cuándo un lado tocó el piso).
+      const cuarto = (v) => (ro.dir > 0 ? Math.floor(v / 2) : Math.ceil(v / 2));
+      ro.velocidad = Math.max(0, ro.velocidad - ro.roce * dt);
+      let p = paso;                                   // lo que ya avanzó arriba, a su velocidad
+      const termina = ro.velocidad < 28;
+      if (termina) {                                  // sin envión: termina el cuarto de vuelta, despacio
+        const extra = Math.max(0, 28 * (ro.freno ?? 1) * dt - paso);
+        ro.x += ro.dir * extra; p += extra;
+      }
+      ro.vuelta = v0 + (ro.dir * p) / K;
+      if (termina) {
+        const meta = ro.dir > 0 ? Math.ceil(v0 / 2 - 1e-6) * 2 : Math.floor(v0 / 2 + 1e-6) * 2;
+        if ((ro.dir > 0 && ro.vuelta >= meta) || (ro.dir < 0 && ro.vuelta <= meta)) { ro.vuelta = meta; ro.velocidad = 0; ro.quieta = true; }
+      }
+      if (cuarto(ro.vuelta) !== cuarto(v0)) ro.golpesDeLado = (ro.golpesDeLado || 0) + 1;
+      if (ro.quieta) {
+        const c = ((Math.round(ro.vuelta) % 8) + 8) % 8;
+        ro.hw = c === 2 || c === 6 ? 7.5 : 11;
+      }
+    }
+  } else if (ro.roce) {
     ro.velocidad = Math.max(0, ro.velocidad - ro.roce * dt);
     if (ro.velocidad === 0) ro.quieta = true;
   }
@@ -344,9 +372,12 @@ function dibujarCajon(r, ro, col) {
  */
 function dibujarValija(r, ro) {
   const PASO = CONFIG.estilo.punto / 4, ctx = r.ctx;
-  const W = 18, H = 16, piso = ro.y + ro.hh;
+  // (🥃 La variante 3 es el baúl grande de primera clase, que sale del rincón de su puerta.)
+  const grande = ro.variante === 3;
+  const W = grande ? 36 : 18, H = grande ? 36 : 16, piso = ro.y + ro.hh;
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, piso - 2) || 0) : 0;
-  const salta = !ro.quieta && ro.velocidad > 60 && Math.floor(ro.giro * 3) % 2 ? 1 : 0;
+  // (🥃 El baúl grande no salta: se vuelca.)
+  const salta = !grande && !ro.quieta && ro.velocidad > 60 && Math.floor(ro.giro * 3) % 2 ? 1 : 0;
   const ox = Math.round(ro.x / PASO) - W / 2, oy = Math.round(piso / PASO) - H - salta;
   // (🐛 En su lienzo, para taparle el borde fino al que está detrás: ver `pintarTapando` en world/caidas.js.)
   pintarTapando(ctx, ox, oy, W, H + 1, luz + (ro.hitFlash > 0 ? 2 : 0), (R) => {
@@ -357,7 +388,9 @@ function dibujarValija(r, ro) {
   }
   // La sombra en el piso.
   R(1, H, W - 1, 1, 0);
-  if (ro.variante === 1) {
+  if (grande) {
+    pintarBaulRodando(R, Math.round(ro.vuelta || 0));
+  } else if (ro.variante === 1) {
     // EL BOLSO DE TAPIZ: el contorno con las esquinas de arriba gastadas, la manija, la boca de bronce, el tapiz.
     R(1, 3, 16, 13, 0); R(0, 5, 18, 10, 0);
     R(6, 0, 6, 1, 0); R(5, 1, 1, 3, 0); R(12, 1, 1, 3, 0); R(6, 1, 6, 1, 33);

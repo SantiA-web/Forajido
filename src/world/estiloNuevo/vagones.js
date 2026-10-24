@@ -640,15 +640,9 @@ function vagon(train, w, dia) {
       const ex = ax(w.x + b0 * S) + 2, ew = ax(w.x + (b1 + 1) * S) - 2 - ex;
       r(ex - 1, yCara + 2, ew + 2, yPie - yCara - 6, 0);
       r(ex, yCara + 3, ew, yPie - yCara - 8, 1);                          // el fondo del mueble
-      const COLORES = [27, 5, 22, 26, 10, 7];
+      // (🥃 Las botellas y las copas van aparte, porque en el frenazo se caen: ver `dibujarBotellas` en world/caidas.js.)
       for (const ry of [yCara + 14, yCara + 27]) {
         r(ex, ry, ew, 2, 5); r(ex, ry, ew, 1, 6);                         // la repisa
-        for (let bx = ex + 2, n = 0; bx < ex + ew - 3; bx += 4 + (n % 3 === 1 ? 2 : 0), n++) {
-          if (n % 5 === 3) { r(bx, ry - 4, 3, 4, 0); r(bx + 1, ry - 3, 1, 3, 22); continue; }   // una copa
-          const col = COLORES[(n * 7 + ry) % COLORES.length], alto = 7 + (n % 2) * 2;
-          r(bx, ry - alto, 3, alto, 0); r(bx + 1, ry - alto - 2, 1, 2, 0);
-          r(bx + 1, ry - alto + 1, 1, alto - 1, col); p(bx + 1, ry - alto + 2, 30);
-        }
       }
     }
     farolesEncima();

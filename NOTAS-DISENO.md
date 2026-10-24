@@ -19387,6 +19387,27 @@ guardaespaldas distintos)*:
       - Lo de pasillo (para los demás vagones) te tira al piso, como un barril, sin sacarte vida *(Santi: "capaz no
         deberían hacer daño pero sí tirarme al piso")*: trastabillar no se notaba, llegaba mientras todavía
         trastabillabas por el frenazo.
+    - **✅ PRIMERA CLASE** (world/caidas.js, `primeraClase`) *(Santi eligió "botellas y arañas" y "uno grande por
+      puerta": en la pared baja, entre ventanas con cortinas y faroles, no entran repisas, y los ricos no viajan con el
+      equipaje encima)*:
+      - **Las botellas del estante de la barra**, en tres tramos (livianas: media vida, una vez por tramo, al que
+        esté detrás de la barra). El dibujo fijo del estante quedó con las repisas solas; las botellas y las copas se
+        dibujan aparte. En el aviso se tambalean, cada una a su ritmo y cada vez más; en el golpe se larga cada una a su
+        tiempo (`botellasDemora`), **girando** en 8 dibujos puestos a mano *(Santi: "parece que caen con la tapa
+        apuntando hacia arriba")* —con el pico del color de la botella y el brillo en la punta: oscuros, contra el fondo
+        del estante no se veía para dónde apuntaban—, y se hace vidrios al llegar. Quedan el charco y los vidrios. Sin
+        sombra de aviso.
+      - **Dos arañas de bronce** sobre la alfombra, en los huecos entre las mesitas (encima de una parecían un
+        candelabro apoyado). **Colgadas no se ven** *(Santi: "de día que se sepa por una sombra y que de noche
+        iluminen")*: su sombra de día, el charco de luz de sus velas de noche, hamacándose con el tren y temblando
+        fuerte en el aviso. Cuando se desprenden se ve la araña cayendo; matan. Caen menos seguido (`prob`).
+      - **Un baúl grande en cada puerta**, pegado a la pared de la punta, fuera del paso, con su choque. En el golpe
+        **se vuelca** hacia el pasillo *(Santi: "no rueda, sino que se desliza, y eso está mal… se debería ver el choque
+        de sus lados")*: 8 cuadros por vuelta (los de plano dibujados aparte; los de canto con sus esquinas puestas a
+        mano), cada lado que golpea el piso hace ruido y polvo, y siempre queda de plano. Te tira al piso. **Quieto choca
+        y es cobertura** (va en `isSolidAt`), le pegan todas las balas, aguanta tres, y **cada sacudón lo vuelve a
+        volcar** hasta que lo rompan *(Santi: "así sigue siendo una amenaza hasta que lo rompan")*.
+      - Atajo [8]: directo a primera clase (`forzarVagon`) con frenos rotos.
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

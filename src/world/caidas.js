@@ -17,7 +17,8 @@
  * SE LEE: en el aviso, lo que va a caer se tambalea y se corre al borde, y en el piso crece su sombra, justo donde va a
  * caer (`zonas`, que también leen los guardias para salirse).
  *
- * Por ahora, el vagón de pasajeros (los demás, de a uno: ver el plan en las notas).
+ * Hechos: el de pasajeros (portaequipajes) y primera clase (las botellas de la barra, las arañas del techo y un baúl
+ * grande en el rincón de cada puerta). Los demás, de a uno: ver el plan en las notas.
  */
 import { CONFIG } from '../data/config.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
@@ -44,6 +45,7 @@ export function crearCaidas(train) {
   const C = { objetos: [], pilas: [], impactos: [], sueltos: [] };
   const map = train.map, S = map.size, tc = CONFIG.tresCuartos;
   for (const w of train.wagons) {
+    if (w.id === 'primeraClase') { primeraClase(C, train, w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -100,17 +102,89 @@ export function crearCaidas(train) {
 }
 
 /**
+ * 🥃 PRIMERA CLASE *(Santi eligió "botellas y arañas" y "uno grande por puerta": en la pared baja, entre ventanas con
+ * cortinas y faroles, no entran repisas, y los ricos no viajan con el equipaje encima)*:
+ *  - LAS BOTELLAS DEL ESTANTE DE LA BARRA, en tres tramos (livianas): caen detrás de la barra, sobre el bartender o
+ *    sobre quien se esconda ahí, y dejan vidrios y un charco de licor. El estante queda vacío.
+ *  - DOS ARAÑAS DE BRONCE colgadas sobre la alfombra del pasillo (pesadas: matan): lo único que te alcanza parado en
+ *    el medio. Se hamacan con el tren; caen menos seguido (`prob`).
+ *  - UN BAÚL GRANDE EN EL RINCÓN DE CADA PUERTA, fuera del paso: choca del tamaño del baúl (`bloqueaCaida`), y en el
+ *    golpe sale deslizándose por el pasillo (frena: el de la puerta de atrás; acelera: el de adelante) y deja el lugar.
+ * Lo que queda tirado de las botellas y las arañas no se desliza ni se rompe más (`fijo`): ya está roto.
+ */
+function primeraClase(C, train, w) {
+  const map = train.map, S = map.size, tc = CONFIG.tresCuartos, P = PASO();
+  const cols = Math.round(w.width / S);
+  const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
+  let filasArriba = 0; while (casilla(Math.floor(cols / 2), filasArriba) === '#' || casilla(Math.floor(cols / 2), filasArriba) === 'W') filasArriba++;
+  const yPared = filasArriba * S, x0 = Math.floor(w.x / P) * P, yArr = -tc.alturaPared, yCara = 8;
+  // Las botellas: el estante está sobre los primeros 'T' de la barra (como en world/estiloNuevo/vagones.js).
+  let b0 = -1, b1 = -1;
+  for (let c = 0; c < cols; c++) if (casilla(c, filasArriba + 2) === 'T') { if (b0 < 0) b0 = c; b1 = c; }
+  b1 -= 1;
+  if (b0 >= 0) {
+    const ex = Math.round((w.x + b0 * S - x0) / P) + 2, ex1 = Math.round((w.x + (b1 + 1) * S - x0) / P) - 2;
+    for (let k = 0; k < 3; k++) {
+      const a = ex + Math.floor(((ex1 - ex) * k) / 3), b = ex + Math.floor(((ex1 - ex) * (k + 1)) / 3);
+      const x = x0 + ((a + b) / 2) * P;
+      C.objetos.push({
+        tipo: 'botellas', peso: 'liviano', hw: ((b - a) * P) / 2, x, xRepisa: x, yRepisa: yArr + (yCara + 27) * P,
+        yPared, yPiso: yPared + 14, pa: a, pb: b, x0, yArr, filas: [yCara + 14, yCara + 27], ex,
+        estado: 'repisa', t: 0, dir: 0, fijo: true, wagon: w.id,
+      });
+    }
+  }
+  // Las arañas, sobre la alfombra, en los huecos entre las mesitas de arriba más cerca de un tercio y de dos tercios
+  // del vagón (🔁 colgadas encima de una mesita parecían un candelabro apoyado en ella).
+  const yPasillo = 5 * S, fila = filasArriba + 1, huecos = [];
+  for (let c = 1; c < cols - 3; c++) {
+    if (casilla(c - 1, fila) !== 'N' || casilla(c, fila) !== '.') continue;
+    let d = c; while (casilla(d + 1, fila) === '.') d++;
+    if (d - c >= 2 && casilla(d + 1, fila) === 'S') huecos.push(w.x + ((c + d + 1) / 2) * S);
+  }
+  const lugares = huecos.length >= 2
+    ? [1 / 3, 2 / 3].map((t) => huecos.reduce((m, h) => (Math.abs(h - (w.x + w.width * t)) < Math.abs(m - (w.x + w.width * t)) ? h : m)))
+    : [w.x + w.width / 3, w.x + (2 * w.width) / 3];
+  for (const x of lugares) {
+    C.objetos.push({
+      tipo: 'arana', peso: 'pesado', hw: 12, x, xRepisa: x, yRepisa: yPasillo - CONFIG.caidas.alturaArana, yPared,
+      yPiso: yPasillo, zonaY: [12, 10], prob: 0.6, estado: 'repisa', t: 0, dir: 0, fijo: true, wagon: w.id,
+    });
+  }
+  // Los baúles: el de la puerta de atrás, en el rincón de abajo; el de adelante, en el de arriba.
+  // (🔁 Pegados a la pared de la punta, la de la puerta *(Santi: "hoy los veo muy al medio")*: antes iban una
+  // columna más adentro.)
+  const pegado = CONFIG.tresCuartos.paredPunta + 11 + 1;
+  for (const [c, f, atras, x] of [[1, 6, true, w.x + pegado], [cols - 2, 3, false, w.x + w.width - pegado]]) {
+    if (casilla(c, f) !== '.' || casilla(atras ? c + 1 : c - 1, f) !== '.') continue;
+    C.pilas.push({
+      tipo: 'baul', x, yTope: f * S + 2, yBase: (f + 1) * S - 2, hw: 11, hh: 5, atras,
+      arriba: [], estado: 'quieta', t: 0, wagon: w.id,
+    });
+  }
+}
+
+/** ¿Choca acá un baúl de los que esperan junto a las puertas? (Para `isSolidForMovementAt` de la escena.) */
+export function bloqueaCaida(C, x, y) {
+  for (const p of C.pilas) {
+    if (p.tipo !== 'baul' || p.estado === 'suelto') continue;
+    if (Math.abs(x - p.x) < p.hw && Math.abs(y - (p.yTope + p.yBase) / 2) < p.hh) return true;
+  }
+  return false;
+}
+
+/**
  * EL AVISO DE UN GOLPE (`sentido`: -1 frena, +1 acelera). Elige qué se va a caer de las repisas (una parte de lo que
  * queda) y qué pila se va a soltar.
  */
 export function avisarCaidas(C, sentido, rng) {
   const K = CONFIG.caidas;
   for (const o of C.objetos) {
-    if (o.estado !== 'repisa' || !rng.chance(K.cae)) continue;
+    if (o.estado !== 'repisa' || !rng.chance(K.cae * (o.prob ?? 1))) continue;
     o.estado = 'aviso'; o.t = 0; o.dir = -sentido;
   }
   for (const p of C.pilas) {
-    if (p.estado !== 'quieta' || !p.arriba.length) continue;
+    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul')) continue;
     if (p.atras === (sentido < 0)) { p.estado = 'aviso'; p.t = 0; }
   }
 }
@@ -120,8 +194,14 @@ export function golpearCaidas(C) {
   for (const o of C.objetos) if (o.estado === 'aviso') { o.estado = 'cae'; o.t = 0; }
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
-    p.estado = 'quieta';
     const dir = p.atras ? 1 : -1;
+    // El baúl grande sale él mismo, y deja el rincón libre.
+    if (p.tipo === 'baul') {
+      p.estado = 'suelto';
+      C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 3, demora: 0, baul: true });
+      continue;
+    }
+    p.estado = 'quieta';
     p.arriba.forEach((v, i) => C.sueltos.push({ x: p.x + dir * (6 + i * 10), y: (p.yTope + p.yBase) / 2, dir, variante: v.variante, demora: i * 0.12 }));
     p.arriba = [];
   }
@@ -134,7 +214,7 @@ export function golpearCaidas(C) {
  */
 export function empujarCaidas(C, sentido, golpe) {
   const v = CONFIG.caidas.empujon[golpe] || 0;
-  for (const o of C.objetos) if (o.estado === 'piso') o.vx = -sentido * v * (0.8 + 0.4 * azar(Math.round(o.xRepisa), Math.round(o.x)));
+  for (const o of C.objetos) if (o.estado === 'piso' && !o.fijo) o.vx = -sentido * v * (0.8 + 0.4 * azar(Math.round(o.xRepisa), Math.round(o.x)));
 }
 
 /** El cuerpo de lo tirado, para las balas (pegado al piso, del ancho de lo que es). */
@@ -147,7 +227,7 @@ const cuerpo = (o) => ({ x: o.x, y: o.yPiso - 3, hw: o.hw, hh: 3 });
  */
 export function romperConBala(C, x, y) {
   for (const o of C.objetos) {
-    if (o.estado !== 'piso') continue;
+    if (o.estado !== 'piso' || o.fijo) continue;
     const b = cuerpo(o);
     if (Math.abs(x - b.x) <= b.hw && Math.abs(y - b.y) <= b.hh) { o.estado = 'roto'; o.vx = 0; return o; }
   }
@@ -158,7 +238,7 @@ export function romperConBala(C, x, y) {
 export function romperEnRadio(C, x, y, radio) {
   let n = 0;
   for (const o of C.objetos) {
-    if (o.estado !== 'piso' || Math.hypot(o.x - x, o.yPiso - 3 - y) > radio) continue;
+    if (o.estado !== 'piso' || o.fijo || Math.hypot(o.x - x, o.yPiso - 3 - y) > radio) continue;
     o.estado = 'roto'; o.vx = 0; n++;
   }
   return n;
@@ -171,13 +251,20 @@ export function actualizarCaidas(C, dt, map) {
     if (o.estado === 'aviso') o.t += dt;
     if (o.estado !== 'cae') continue;
     o.t += dt;
+    // 🥃 Las botellas caen escalonadas (`botellasDemora`): pegan cuando llegan las primeras, y el tramo queda en el
+    // piso cuando llegó la última.
+    if (o.tipo === 'botellas') {
+      if (!o.pego && o.t >= K.caeDura) { o.pego = true; C.impactos.push({ ...zonaDe(o), peso: o.peso, x: o.x, y: o.yPiso, tipo: o.tipo }); }
+      if (o.t >= K.caeDura + K.botellasDemora) o.estado = 'piso';
+      continue;
+    }
     if (o.t >= K.caeDura) {
       o.estado = 'piso';
       o.x = o.xRepisa + o.dir * K.corre;
       C.impactos.push({ ...zonaDe(o), peso: o.peso, x: o.x, y: o.yPiso, tipo: o.tipo });
-      // 🐛 Si cayó sobre un asiento, rebota al piso: al hueco libre más cercano (primero para el lado del golpe). Arriba
+      // 🐛 Si cayó sobre un asiento, rebota al piso (lo que cae en su lugar, como las botellas o la araña, no): al hueco libre más cercano (primero para el lado del golpe). Arriba
       // del asiento lo tapaba el respaldo, y en el piso se ordena con la gente por donde apoya.
-      if (map) for (let d = 0; d <= 24; d += 2) {
+      if (map && !o.fijo) for (let d = 0; d <= 24; d += 2) {
         const libre = [o.x + o.dir * d, o.x - o.dir * d].find((x) => !map.isSolidAt(x - o.hw, o.yPiso - 3) && !map.isSolidAt(x + o.hw, o.yPiso - 3));
         if (libre !== undefined) { o.x = libre; break; }
       }
@@ -199,7 +286,8 @@ export function actualizarCaidas(C, dt, map) {
 /** Donde pega (en el mundo): debajo de la repisa, corrido para el lado del golpe. */
 function zonaDe(o) {
   const K = CONFIG.caidas, x = o.xRepisa + o.dir * K.corre;
-  return { x0: x - o.hw - 2, x1: x + o.hw + 2, y0: o.yPiso - K.alcance, y1: o.yPiso + 4 };
+  const [arriba, abajo] = o.zonaY || [K.alcance, 4];
+  return { x0: x - o.hw - 2, x1: x + o.hw + 2, y0: o.yPiso - arriba, y1: o.yPiso + abajo };
 }
 
 /**
@@ -251,9 +339,13 @@ export function pintarTapando(ctx, ox, oy, w, h, luz, pintar) {
  * LAS SOMBRAS EN EL PISO (van con el piso, debajo de todo): mientras algo está por caer, su sombra crece donde va a
  * pegar (un punteado que se va llenando), y es lo que avisa dónde no hay que estar.
  */
-export function dibujarSombrasDeCaidas(r, C, corrido) {
+export function dibujarSombrasDeCaidas(r, C, corrido, dia = true) {
   const K = CONFIG.caidas, P = PASO(), ctx = r.ctx;
   for (const o of C.objetos) {
+    // 🥃 La araña no tiene la sombra de aviso: la avisa su propia sombra (o su luz) temblando, ver `dibujarLuzDeArana`.
+    if (o.tipo === 'arana') { if (o.estado === 'repisa' || o.estado === 'aviso') corrido(o.x, () => dibujarLuzDeArana(r, o, dia))(); continue; }
+    // 🥃 Las botellas tampoco *(Santi: "no deberían tener sombras al caer como la araña")*: las avisa su tambaleo.
+    if (o.tipo === 'botellas') continue;
     if (o.estado !== 'aviso' && o.estado !== 'cae') continue;
     const f = o.estado === 'cae' ? 1 : Math.min(1, o.t / K.aviso);
     const z = zonaDe(o);
@@ -298,9 +390,13 @@ export function cosasDeCaidas(r, C, corrido) {
       // todos, te tapaba aunque pasaras más cerca de la pantalla.
       x = o.x; y = o.yPiso; base = o.yPiso; frame = o.estado;
     }
+    // (🥃 Las botellas y la araña tienen su propio dibujo: ver `dibujarBotellas` y `dibujarArana`.)
+    if (o.tipo === 'botellas') { out.push({ base: o.estado === 'repisa' || o.estado === 'aviso' ? o.yPared : o.yPiso, draw: corrido(o.xRepisa, () => dibujarBotellas(r, o)) }); continue; }
+    if (o.tipo === 'arana') { out.push({ base: o.yPiso + (o.estado === 'piso' ? 0 : 20), draw: corrido(o.xRepisa, () => dibujarArana(r, o, x, y)) }); continue; }
     out.push({ base, draw: corrido(o.xRepisa, () => dibujarCosa(r, o.tipo, frame, x, y, o.variante)) });
   }
   for (const p of C.pilas) {
+    if (p.estado === 'suelto') continue;
     out.push({ base: p.yBase, draw: corrido(p.x, () => dibujarPila(r, p)) });
   }
   return out;
@@ -473,9 +569,295 @@ function dibujarPila(r, p) {
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(p.x, p.yBase - 4) || 0) : 0;
   // En el aviso se sacude contra la puerta.
   const tiembla = p.estado === 'aviso' && Math.floor(p.t * 16) % 2 ? 1 : 0;
+  // 🥃 El baúl grande de primera clase, solo.
+  if (p.tipo === 'baul') {
+    pintarTapando(r.ctx, Math.round(p.x / P) - 15 + tiembla, Math.round(p.yBase / P) - 20, 30, 20, luz, pintarBaulGrande);
+    return;
+  }
   const ox = Math.round(p.x / P) - 11, base = Math.round(p.yBase / P) - 2;
   pintarTapando(r.ctx, ox + 1, base - 17, 20, 17, luz, (R) => DIBUJOS.baul.arriba.pintar(R));
   p.arriba.forEach((v, i) => {
     pintarTapando(r.ctx, ox + 2 + (i ? tiembla : -tiembla), base - 17 - 13 - i * 12, 18, 16, luz, (R) => valijaParada(R, v.variante));
   });
 }
+
+/**
+ * 🥃 EL BAÚL GRANDE DE PRIMERA CLASE, de viaje, para un mes: la tapa combada en dos tonos de cuero, la costura de la
+ * tapa, las tablas, las cantoneras de bronce, dos correas con su hebilla y la cerradura. (También lo usa el que sale
+ * deslizándose: entities/rodante.js.)
+ */
+export function pintarBaulGrande(R) {
+  R(1, 0, 28, 1, 0); R(0, 1, 30, 19, 0);
+  R(1, 1, 28, 6, 12); R(2, 1, 26, 1, 13); R(1, 4, 28, 1, 11);
+  R(1, 7, 28, 1, 0);
+  R(1, 8, 28, 11, 11); R(1, 11, 28, 1, 47); R(1, 15, 28, 1, 47); R(1, 18, 28, 1, 47);
+  for (const [x, y] of [[1, 1], [27, 1], [1, 16], [27, 16]]) { R(x, y, 2, 3, 6); R(x, y, 1, 1, 7); }
+  R(1, 7, 28, 1, 6);
+  for (const x of [8, 20]) { R(x, 1, 2, 18, 32); R(x, 9, 2, 2, 7); R(x, 10, 1, 1, 0); }
+  R(14, 7, 2, 4, 7); R(14, 9, 1, 1, 0);
+}
+
+/**
+ * 🥃 LAS BOTELLAS DEL ESTANTE, en su tramo: las mismas botellas y copas que dibujaba el estante (el dibujo fijo ahora
+ * deja sólo las repisas, ver world/estiloNuevo/vagones.js). En el aviso tintinean (una sí y una no, de a un punto);
+ * cayendo, cinco botellas en el aire; en el piso, el charco de licor y los vidrios, con un pico entero.
+ */
+function dibujarBotellas(r, o) {
+  const P = PASO(), K = CONFIG.caidas;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(o.x, o.yPiso) || 0) : 0;
+  const ox = Math.round(o.x0 / P), oy = Math.round(o.yArr / P);
+  const R = pintor(r.ctx, ox, oy, luz);
+  const cx = Math.round(o.x / P), py = Math.round(o.yPiso / P), ancho = Math.round(o.hw / P);
+  const Q = pintor(r.ctx, 0, 0, luz);
+  if (o.estado === 'repisa' || o.estado === 'aviso' || o.estado === 'cae') {
+    /**
+     * 🔁 CADA BOTELLA, LA SUYA *(Santi: "por más de que caigan juntas dentro de un mismo grupo deberían caer unas antes y
+     * otras después… deberían vibrar o tambalearse en la estantería antes de caer")*: en el aviso, cada una se
+     * tambalea a su compás (se corre un punto para un lado y para el otro, y salta), cada vez más; en el golpe, cada una
+     * se larga a su tiempo (`botellasDemora`), cae derecho desde su lugar y, al llegar al piso, se hace vidrios.
+     */
+    const COLORES = [27, 5, 22, 26, 10, 7];
+    const fuerza = o.estado === 'aviso' ? Math.min(1, o.t / K.aviso) : 1;
+    for (const ry of o.filas) {
+      for (let bx = o.ex + 2, n = 0; bx < o.pb - 1; bx += 4 + (n % 3 === 1 ? 2 : 0), n++) {
+        if (bx < o.pa) continue;
+        const copa = n % 5 === 3;
+        const col = COLORES[(n * 7 + ry) % COLORES.length], alto = copa ? 4 : 7 + (n % 2) * 2;
+        const demora = azar(n * 13 + ry, Math.round(o.x)) * K.botellasDemora;
+        let dx = 0, dy = 0;
+        if (o.estado === 'aviso' || (o.estado === 'cae' && o.t < demora)) {
+          const fase = Math.floor((o.estado === 'cae' ? K.aviso + o.t : o.t) * (12 + (n % 4) * 3) + n);
+          if (fuerza > 0.25) dx = fase % 4 === 0 ? 1 : fase % 4 === 2 ? -1 : 0;
+          if (fuerza > 0.6 && fase % 3 === 0) dy = -1;
+        } else if (o.estado === 'cae') {
+          const f = Math.min(1, (o.t - demora) / K.caeDura), alFondo = py - (oy + ry);
+          if (f >= 1) {
+            // Llegó: vidrios en el piso, donde cayó.
+            const gx = ox + bx;
+            Q(gx - 1, py, 1, 1, 22); Q(gx + 1, py - 1, 1, 1, 30); Q(gx + 2, py + 1, 1, 1, col); Q(gx, py + 1, 1, 1, 4);
+            continue;
+          }
+          dy = Math.round(alFondo * f * f);
+          /**
+           * 🔁 CAYENDO, SE DA VUELTA *(Santi: "las botellas al caer deberían cambiar su dibujo y hacer como que se dan
+           * vuelta, porque ahora parece que caen con la tapa apuntando hacia arriba")*: cada una gira a su manera (para
+           * un lado o para el otro, de media vuelta a vuelta y media en toda la caída), en los 8 dibujos de
+           * `BOTELLA_GIRA`. La copa, de boca para arriba o para abajo.
+           */
+          const gira = (0.5 + azar(n * 7 + ry, Math.round(o.x) + 3)) * (azar(Math.round(o.x), n + ry) < 0.5 ? -1 : 1);
+          const cuadro = (((Math.round(f * gira * 8)) % 8) + 8) % 8;
+          const cx0 = bx + 1, cy0 = ry - Math.round(alto / 2) + dy;
+          if (copa) {
+            const boca = cuadro >= 2 && cuadro <= 5;
+            R(bx, cy0 - 2, 3, 4, 0); R(bx + 1, boca ? cy0 - 2 : cy0 - 1, 1, 3, 22);
+            continue;
+          }
+          const mapa = BOTELLA_GIRA[cuadro];
+          const mx = cx0 - Math.floor(mapa[0].length / 2), my = cy0 - Math.floor(mapa.length / 2);
+          mapa.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') R(mx + q, my + j, 1, 1, fila[q] === 'c' ? col : fila[q] === 'h' ? 30 : 0); });
+          continue;
+        }
+        const x = bx + dx, top = ry - alto + dy;
+        if (copa) { R(x, top, 3, 4, 0); R(x + 1, top + 1, 1, 3, 22); continue; }
+        R(x, top, 3, alto, 0); R(x + 1, top - 2, 1, 2, 0);
+        R(x + 1, top + 1, 1, alto - 1, col); R(x + 1, top + 2, 1, 1, 30);
+      }
+    }
+    return;
+  }
+  // En el piso: el charco (un óvalo de licor, con su brillo) y los vidrios desparramados; un pico de botella entero.
+  for (let y = -2; y <= 2; y++) for (let x = -ancho; x <= ancho; x++) {
+    if ((x / ancho) ** 2 + (y / 2.5) ** 2 > 1) continue;
+    Q(cx + x, py + y, 1, 1, y === -1 && x % 3 === 0 ? 6 : 4);
+  }
+  for (let k = 0; k < 9; k++) {
+    const gx = cx - ancho + Math.floor(azar(k, Math.round(o.x)) * 2 * ancho), gy = py - 3 + Math.floor(azar(Math.round(o.x), k) * 7);
+    Q(gx, gy, 1, 1, k % 3 ? 22 : 30);
+  }
+  Q(cx + 2, py - 1, 4, 2, 0); Q(cx + 3, py - 1, 2, 1, 27);
+}
+
+/**
+ * 🥃 LO QUE SE VE DE LA ARAÑA MIENTRAS CUELGA *(Santi: "las arañas no se deberían ver. Me gustaría que de día se sepa
+ * por una sombra y que de noche iluminen. Se sabrá si algo está por caer por cómo tambalea esa luz o sombra")*: de
+ * día, su sombra sobre la alfombra (un óvalo con los seis brazos, oscureciendo lo que pisa); de noche, el charco de luz
+ * cálida de sus velas (aclarando, en anillos). Las dos se hamacan con el meneo del tren y, en el aviso, tiemblan fuerte
+ * para un lado y para el otro. Al caer se apaga (o se va la sombra): ahí se ve la araña.
+ */
+function dibujarLuzDeArana(r, o, dia) {
+  const P = PASO(), ctx = r.ctx;
+  const tiembla = o.estado === 'aviso' ? (Math.floor(o.t * 14) % 2 ? 2 : -2) + Math.round(Math.sin(o.t * 9) * 2) : 0;
+  const cx = Math.round(o.x / P) + Math.round((estiloNuevo.meneo || 0) * 2) + tiembla, cy = Math.round(o.yPiso / P);
+  ctx.save();
+  if (dia) {
+    // La sombra: más oscura en el medio (el tronco y la bellota) y punteada hacia los brazos.
+    ctx.globalCompositeOperation = 'multiply';
+    // (🔁 Más fuerte y más grande: el paso por la paleta se comía la primera, y casi no se veía.)
+    ctx.fillStyle = 'rgba(30, 15, 25, 0.6)';
+    const rw = 18, rh = 5;
+    for (let y = -rh; y <= rh; y++) for (let x = -rw; x <= rw; x++) {
+      const d = (x / rw) ** 2 + (y / rh) ** 2;
+      if (d > 1) continue;
+      if (d < 0.45 || ((x + y) % 2 === 0 && d < 0.85) || (Math.abs(x) % 6 === 0 && (x + y) % 2 === 0)) ctx.fillRect((cx + x) * P, (cy + y) * P, P, P);
+    }
+  } else {
+    // La luz: tres anillos que se suman, más fuerte en el medio.
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(255, 170, 90, 0.09)';
+    for (const [rw, rh] of [[30, 10], [21, 7], [12, 4]]) {
+      for (let y = -rh; y <= rh; y++) for (let x = -rw; x <= rw; x++) {
+        if ((x / rw) ** 2 + (y / rh) ** 2 > 1) continue;
+        ctx.fillRect((cx + x) * P, (cy + y) * P, P, P);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * 🥃 LA ARAÑA DE BRONCE, cayendo (colgada no se ve: ver `dibujarLuzDeArana`): el brazo, las seis velas en sus platitos,
+ * el aro de arriba y los caireles. En el piso, rota sobre la alfombra (el brazo doblado, las velas y los caireles por
+ * todos lados).
+ */
+function dibujarArana(r, o, x, y) {
+  const P = PASO(), K = CONFIG.caidas;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(o.x, o.yPiso) || 0) : 0;
+  if (o.estado === 'piso') {
+    // Rota sobre la alfombra: el brazo doblado en dos, el tronco suelto, las velas y los caireles desparramados.
+    pintarTapando(r.ctx, Math.round(o.x / P) - 17, Math.round(o.yPiso / P) - 11, 34, 12, luz, (R) => {
+      R(2, 5, 15, 4, 0); R(3, 6, 13, 2, 6); R(3, 6, 13, 1, 7);
+      R(15, 3, 15, 4, 0); R(16, 4, 13, 2, 6); R(16, 4, 13, 1, 7);
+      R(12, 7, 7, 4, 0); R(13, 8, 5, 2, 7);
+      for (const [cx, cy] of [[4, 4], [9, 4], [20, 2], [26, 2]]) { R(cx - 1, cy, 3, 1, 7); }
+      R(1, 1, 1, 3, 17); R(31, 8, 3, 1, 17); R(22, 9, 1, 2, 17); R(7, 10, 3, 1, 17);
+      for (const [cx, cy] of [[0, 9], [6, 11], [11, 1], [19, 11], [24, 8], [29, 0], [33, 5], [14, 0]]) R(cx, cy, 1, 1, 22);
+    });
+    return;
+  }
+  // Colgada no se ve.
+  if (o.estado !== 'cae') return;
+  const colgada = false, hamaca = 0;
+  // (🔁 Más grande, con dos pisos y seis velas: chica, no se entendía qué era.)
+  const ox = Math.round(x / P) - 15 + hamaca, oy = Math.round(y / P) - 31;
+  pintarTapando(r.ctx, ox, oy, 30, 32, luz, (R) => {
+    // La cadena, que sube hasta perderse (el techo no se ve); se inclina con la hamaca.
+    if (colgada) for (let k = 0; k < 18; k++) R(14 - Math.round((hamaca * (18 - k)) / 18), k, 2, 1, k % 2 ? 6 : 0);
+    R(12, 18, 6, 2, 0); R(13, 18, 4, 1, 7);                                   // la tapa de arriba
+    R(8, 20, 14, 2, 0); R(9, 20, 12, 1, 6);                                   // el aro de arriba
+    for (const cx of [9, 20]) { R(cx, 17, 1, 3, 17); R(cx, 16, 1, 1, 28); }  // con sus dos velas
+    R(13, 22, 4, 7, 0); R(14, 22, 2, 6, 7);                                   // el tronco
+    R(0, 26, 30, 3, 0); R(1, 26, 28, 1, 7); R(1, 27, 28, 1, 6);              // el brazo grande
+    for (const cx of [2, 7, 12, 17, 22, 27]) { R(cx - 1, 25, 3, 1, 7); R(cx, 21, 1, 4, 17); R(cx, 20, 1, 1, 28); }
+    for (const cx of [4, 9, 20, 25]) R(cx, 29, 1, 2, 22);                    // los caireles
+    R(14, 29, 2, 2, 6); R(14, 31, 2, 1, 7);                                   // la bellota de abajo
+  });
+}
+
+/**
+ * 🥃 EL BAÚL GRANDE VOLCÁNDOSE, en 8 cuadros por vuelta (de a 45°) *(Santi: "no rueda, sino que se desliza, y eso está
+ * mal. No debería ser un barril que ruede pero sí se debería ver el choque de sus lados (rectangulares) que van
+ * chocando contra el piso")*. En un lienzo de 36×36 puntos, apoyado en la fila de abajo:
+ *  - LOS CUATRO DE PLANO, cada uno dibujado aparte: 0 echado con la tapa arriba (el de siempre, `pintarBaulGrande`),
+ *    2 parado sobre una punta (la tapa a la derecha), 4 dado vuelta (la tapa abajo), 6 parado sobre la otra punta (la
+ *    tapa a la izquierda).
+ *  - LOS CUATRO DE CANTO, a 45°, apoyado en una esquina: cada uno con sus cuatro esquinas puestas a mano (los lados
+ *    son diagonales justas, de a un punto), la tapa, las tablas, las dos correas, la cerradura y las cantoneras.
+ * Volcándose para adelante (hacia la derecha) va 0, 1, 2… 7; para atrás, al revés. Se queda quieto sólo de plano.
+ */
+export function pintarBaulRodando(R, cuadro) {
+  const c = ((cuadro % 8) + 8) % 8;
+  if (c === 0) { pintarBaulGrande((x, y, w, h, i) => R(x + 3, y + 16, w, h, i)); return; }
+  if (c === 4) { baulDadoVuelta(R); return; }
+  if (c === 2) { baulParado(R, true); return; }
+  if (c === 6) { baulParado(R, false); return; }
+  // Los de canto: [A, B, C, D] (A–B es el lado de la tapa), la línea de la tapa (A'–B'), las dos correas y la cerradura.
+  const CANTO = {
+    1: { A: [14, 0], B: [35, 21], C: [21, 35], D: [0, 14], tapa: [[10, 4], [31, 25]], correas: [[[19, 5], [5, 19]], [[30, 16], [16, 30]]], llave: [20, 14] },
+    3: { A: [35, 14], B: [14, 35], C: [0, 21], D: [21, 0], tapa: [[31, 10], [10, 31]], correas: [[[19, 30], [5, 16]], [[30, 19], [16, 5]]], llave: [20, 20] },
+    5: { A: [21, 35], B: [0, 14], C: [14, 0], D: [35, 21], tapa: [[25, 31], [4, 10]], correas: [[[16, 30], [30, 16]], [[5, 19], [19, 5]]], llave: [14, 20] },
+    7: { A: [0, 21], B: [21, 0], C: [35, 14], D: [14, 35], tapa: [[4, 25], [25, 4]], correas: [[[5, 16], [19, 30]], [[16, 5], [30, 19]]], llave: [14, 14] },
+  }[c];
+  baulDeCanto(R, CANTO);
+}
+
+/** Una línea diagonal justa (de a un punto en x y en y), de `a` a `b`. */
+function diagonal(R, [x0, y0], [x1, y1], i) {
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)), sx = Math.sign(x1 - x0), sy = Math.sign(y1 - y0);
+  for (let k = 0; k <= n; k++) R(x0 + sx * k, y0 + sy * k, 1, 1, i);
+}
+
+/** El baúl de canto: el cuerpo, la tapa del lado A–B, las tablas, las correas, la cerradura y las cantoneras. */
+function baulDeCanto(R, { A, B, C, D, tapa, correas, llave }) {
+  const P4 = [A, B, C, D];
+  // ¿El punto está adentro (del lado de adentro de los cuatro lados)?
+  const lado = (p, q, x, y) => (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0]);
+  const s = Math.sign(lado(A, B, C[0], C[1]));
+  const adentro = (x, y) => P4.every((p, k) => Math.sign(lado(p, P4[(k + 1) % 4], x, y)) !== -s);
+  const enTapa = (x, y) => Math.sign(lado(tapa[0], tapa[1], x, y)) !== s;
+  for (let y = 0; y < 36; y++) for (let x = 0; x < 36; x++) {
+    if (!adentro(x, y)) continue;
+    R(x, y, 1, 1, enTapa(x, y) ? 12 : 11);
+  }
+  // Las tablas del cuerpo: dos líneas paralelas a la tapa, más adentro.
+  const hacia = [Math.sign(D[0] - A[0]), Math.sign(D[1] - A[1])];
+  for (const k of [8, 11]) {
+    const a = [A[0] + hacia[0] * k, A[1] + hacia[1] * k], b = [B[0] + hacia[0] * k, B[1] + hacia[1] * k];
+    diagonal(R, a, b, 47);
+  }
+  diagonal(R, tapa[0], tapa[1], 0);                                   // la costura de la tapa
+  for (const [a, b] of correas) diagonal(R, a, b, 32);                // las correas
+  R(llave[0], llave[1], 2, 2, 7); R(llave[0], llave[1] + 1, 1, 1, 0); // la cerradura
+  for (const [p, q] of [[A, B], [B, C], [C, D], [D, A]]) diagonal(R, p, q, 0);   // el contorno
+  for (const p of P4) {                                               // las cantoneras
+    const cx = p[0] + Math.sign(18 - p[0]) * 2, cy = p[1] + Math.sign(18 - p[1]) * 2;
+    R(cx, cy, 1, 1, 7); R(cx + Math.sign(18 - p[0]), cy, 1, 1, 6);
+  }
+}
+
+/** El baúl parado sobre una punta (20 de ancho por 30 de alto): la tapa a la derecha (`tapaDerecha`) o a la izquierda. */
+function baulParado(R, tapaDerecha) {
+  R(8, 6, 20, 30, 0);
+  R(9, 7, 18, 28, 11);
+  if (tapaDerecha) {
+    R(21, 7, 6, 28, 12); R(26, 8, 1, 26, 13); R(20, 7, 1, 28, 0);
+    R(16, 7, 1, 28, 47); R(12, 7, 1, 28, 47);
+    R(19, 19, 3, 2, 7); R(19, 20, 1, 1, 0);
+  } else {
+    R(9, 7, 6, 28, 12); R(9, 8, 1, 26, 13); R(15, 7, 1, 28, 0);
+    R(19, 7, 1, 28, 47); R(23, 7, 1, 28, 47);
+    R(14, 19, 3, 2, 7); R(16, 20, 1, 1, 0);
+  }
+  for (const y of [13, 27]) { R(9, y, 18, 2, 32); R(17, y, 2, 2, 7); }
+  for (const [x, y] of [[9, 7], [25, 7], [9, 32], [25, 32]]) { R(x, y, 2, 3, 6); R(x, y, 1, 1, 7); }
+}
+
+/** El baúl dado vuelta: la tapa abajo, apoyado sobre ella; las correas y las cantoneras, igual. */
+function baulDadoVuelta(R) {
+  R(4, 16, 28, 1, 0); R(3, 17, 30, 18, 0); R(4, 35, 28, 1, 0);
+  R(4, 17, 28, 11, 11); R(4, 20, 28, 1, 47); R(4, 24, 28, 1, 47);
+  R(4, 28, 28, 1, 0);
+  R(4, 29, 28, 6, 12); R(5, 34, 26, 1, 13); R(4, 31, 28, 1, 11);
+  for (const [x, y] of [[4, 17], [30, 17], [4, 32], [30, 32]]) { R(x, y, 2, 3, 6); R(x + 1, y + 2, 1, 1, 7); }
+  for (const x of [11, 23]) { R(x, 17, 2, 18, 32); R(x, 23, 2, 2, 7); }
+  R(17, 26, 2, 4, 7); R(17, 27, 1, 1, 0);
+}
+
+/**
+ * 🥃 LA BOTELLA QUE GIRA AL CAER, en 8 dibujos puestos punto por punto (de a 45°, girando como las agujas del reloj):
+ * 0 parada (el pico arriba), 1 inclinada con el pico arriba a la derecha, 2 acostada con el pico a la derecha, 3 con el
+ * pico abajo a la derecha, 4 dada vuelta, 5 pico abajo a la izquierda, 6 acostada con el pico a la izquierda, 7 pico
+ * arriba a la izquierda. '#' es el contorno; 'c', el vidrio de su color (también el pico); 'h', el brillo blanco junto
+ * al pico, como en la botella parada.
+ * 🐛 Con el pico y el contorno oscuros, contra el fondo oscuro del estante no se veía para dónde apuntaba: sólo una
+ * rayita de color. El pico va del color de la botella, y el brillo marca la punta.
+ */
+const BOTELLA_GIRA = [
+  ['.c.', '.c.', '###', '#h#', '#c#', '#c#', '#c#', '###'],
+  ['....c', '...c.', '..##.', '.#h#.', '#c#..', '##...'],
+  ['######..', '#cccchcc', '######..'],
+  ['##...', '#c#..', '.#h#.', '..##.', '...c.', '....c'],
+  ['###', '#c#', '#c#', '#c#', '#h#', '###', '.c.', '.c.'],
+  ['...##', '..#c#', '.#h#.', '.##..', '.c...', 'c....'],
+  ['..######', 'cchcccc#', '..######'],
+  ['c....', '.c...', '.##..', '.#h#.', '..#c#', '...##'],
+];

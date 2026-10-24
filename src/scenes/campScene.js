@@ -367,13 +367,14 @@ export function createCampScene(services) {
       decir(T.camp.atajoRecompensa(gameState.bounty), 2);
     }
     /**
-     * 🧪 [8] UN TREN DE PASAJEROS CON LOS FRENOS ROTOS, arrancando en un vagón de pasajeros, con el primer frenazo a
+     * 🧪 [8] UN TREN DE PASAJEROS CON LOS FRENOS ROTOS, arrancando EN PRIMERA CLASE (el tren la trae siempre:
+     * `forzarVagon`) *(Santi: "que al apretar 8 caiga en un vagón de primera clase con esta función forzada")*, con el primer frenazo a
      * los 4 segundos (`pruebaFrenos`), para probar el aplastamiento en los enganches y las valijas.
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit8')) {
-      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'pasajeros', estado: ['frenosDañados'], pruebaFrenos: true });
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'primeraClase', forzarVagon: 'primeraClase', estado: ['frenosDañados'], pruebaFrenos: true });
       return;
     }
     if (input.wasPressed('Digit6')) {

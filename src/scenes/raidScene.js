@@ -56,7 +56,7 @@ import { WAGONS } from '../data/wagons.js';
 import { caballoActual, fondoDelAsalto } from '../data/horse.js';
 import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy, damageEnemy } from '../entities/enemy.js';
-import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, zonasDePeligro, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio } from '../world/caidas.js';
+import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, zonasDePeligro, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida } from '../world/caidas.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga, jugadorCambiaDeVagon } from '../systems/escuadra.js';
@@ -325,6 +325,15 @@ export function createRaidScene(services) {
     enganches = crearEnganches(train, rng, params.estado || []);
     caidas = crearCaidas(train);
     porSalir = [];
+    /**
+     * 🥃 EL BAÚL GRANDE QUIETO EN EL PASILLO CHOCA Y SIRVE DE COBERTURA, como cualquier mueble *(Santi: "a estos baúles
+     * grandes sí les pondría colisión y cobertura como cualquier otro objeto")*: va en `isSolidAt`, que es lo que miran
+     * el movimiento, la cobertura (systems/cover.js) y los guardias.
+     */
+    {
+      const solidoDelMapa = map.isSolidAt.bind(map);
+      map.isSolidAt = (x, y) => solidoDelMapa(x, y) || baulQuietoEn(x, y);
+    }
     // (🧪 El atajo [8]: el primer frenazo enseguida.)
     if (params.pruebaFrenos) enganches.proximoFrenazo = 4;
     /**
@@ -627,8 +636,9 @@ export function createRaidScene(services) {
       }
       return false;
     };
+    // (🥃 Y los baúles que esperan en el rincón de cada puerta de primera clase: ver `bloqueaCaida`, world/caidas.js.)
     map.isSolidForMovementAt = (x, y) =>
-      map.isSolidAt(x, y) || bloqueaPuertaCerrada(x, y) || bloqueaCajon(x, y);
+      map.isSolidAt(x, y) || bloqueaPuertaCerrada(x, y) || bloqueaCajon(x, y) || (!!caidas && bloqueaCaida(caidas, x, y));
 
     /**
      * EL CARBÓN ES UNA PARED PARA VOS HASTA QUE TREPÁS (etapa 5).
@@ -1947,6 +1957,16 @@ export function createRaidScene(services) {
     }
   }
 
+  /** 🥃 ¿Hay un baúl grande quieto acá? (Ver `isSolidAt` en el armado del asalto.) */
+  function baulQuietoEn(x, y) {
+    if (!rodantes) return false;
+    for (const ro of rodantes) {
+      if (ro.tipo !== 'valija' || ro.variante !== 3 || !ro.quieta || !ro.alive) continue;
+      if (Math.abs(x - ro.x) < ro.hw && Math.abs(y - ro.y) < ro.hh) return true;
+    }
+    return false;
+  }
+
   /**
    * 🛢️ EN EL TREN DE CARGA, EL FRENAZO SUELTA LOS BARRILES de siempre, pero rodando para adelante, desde atrás tuyo.
    * (🔁 Las valijas que salían así, de la nada, se fueron *(Santi: "que las cosas no caigan de la nada")*: ahora salen
@@ -2106,6 +2126,12 @@ export function createRaidScene(services) {
         if (ro.tipo === 'valija' && !ro.quieta && map.isSolidAt(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
       }
 
+      // 🥃 El baúl que se vuelca: cada lado que golpea el piso, el ruido y el polvo.
+      if (ro.golpesDeLado !== ro._golpesVistos) {
+        ro._golpesVistos = ro.golpesDeLado;
+        audio.play('hitWall');
+        spawnParticles(ro.x, ro.y + ro.hh, '#c9b28a', 6);
+      }
       // 🧳 La valija del frenazo: tirada ya no hace nada; deslizándose, aturde al guardia y a vos te hace trastabillar.
       if (ro.tipo === 'valija') {
         if (ro.quieta) continue;
@@ -2333,9 +2359,10 @@ export function createRaidScene(services) {
       s.demora -= dt;
       if (s.demora > 0) continue;
       porSalir.splice(i, 1);
+      // (🥃 El baúl grande, más pesado: más ancho y más lento, y aguanta más tiros.)
       const ro = createRodante(s.x, s.y, 'valija', rng, {
-        dir: s.dir, velocidad: rng.range(O.valijaVel[0], O.valijaVel[1]), roce: O.valijaRoce,
-        vida: 1, hw: 6, hh: 3, variante: s.variante,
+        dir: s.dir, velocidad: rng.range(O.valijaVel[0], O.valijaVel[1]) * (s.baul ? 0.8 : 1), roce: O.valijaRoce,
+        vida: s.baul ? 3 : 1, hw: s.baul ? 11 : 6, hh: s.baul ? 5 : 3, variante: s.variante,
       });
       ro.yMeta = map.height / 2 + rng.range(-6, 6);
       rodantes.push(ro);
@@ -3112,6 +3139,17 @@ export function createRaidScene(services) {
     // (🧳 Los sacudones mueven lo tirado: ver `empujarCaidas`.)
     if (caidas && enganches.tiron && (eventoEng === 'tiron' || eventoEng === 'frenazo' || eventoEng === 'arrancon')) {
       empujarCaidas(caidas, enganches.tiron.sentido, eventoEng);
+      /**
+       * 🥃 Y EL BAÚL GRANDE QUE QUEDÓ EN EL PASILLO SE VUELVE A VOLCAR *(Santi: "cuando el baúl llega al pasillo y nadie lo
+       * destruye puede seguir moviéndose con acelero o desacelero del tren… así sigue siendo una amenaza hasta que lo
+       * rompan")*: para el lado contrario al tirón, y te puede volver a tirar al piso.
+       */
+      const v = CONFIG.caidas.empujonBaul[eventoEng] || 0;
+      for (const ro of rodantes) {
+        if (ro.tipo !== 'valija' || ro.variante !== 3 || !ro.quieta || !ro.alive) continue;
+        ro.quieta = false; ro.dir = -enganches.tiron.sentido; ro.velocidad = v * rng.range(0.85, 1.15);
+        ro.golpeo = false; ro.atropellados = null; ro.hw = 11;
+      }
     }
     if (eventoEng === 'frenazoAviso' || eventoEng === 'frenazo' || eventoEng === 'arranconAviso' || eventoEng === 'arrancon') frenazo(eventoEng);
     if (enganches) aplastarEnLosEnganches();
@@ -4696,7 +4734,7 @@ export function createRaidScene(services) {
     if (nuevos) for (const p of nuevos.piso) if (enVista(p)) corrido(p.x + p.w / 2, () => estamparPieza(r, p))();
     if (enganches) dibujarEnganches(r, enganches, corrDibujo, 4, 5, map.size);
     // (🧳 La sombra de lo que está por caer, en el piso.)
-    if (caidas) dibujarSombrasDeCaidas(r, caidas, corrido);
+    if (caidas) dibujarSombrasDeCaidas(r, caidas, corrido, gameState.esDeDia);
 
     // El jefe se dibuja con lo suyo (tiene silueta propia); todo lo demás de
     // la lista `enemies` es un guardia común.

@@ -2612,6 +2612,17 @@ export const CONFIG = {
      * unidades por segundo (frenazo, arrancón, tirón común), y lo que lo frena el piso.
      */
     empujon: { frenazo: 70, arrancon: 45, tiron: 25 },
+    /** 🥃 A qué altura cuelgan las arañas de primera clase sobre la alfombra (en unidades). */
+    alturaArana: 24,
+    /** 🥃 Las botellas de un mismo tramo no caen todas juntas: cada una se larga hasta `botellasDemora` segundos después. */
+    botellasDemora: 0.35,
+    /**
+     * 🥃 EL BAÚL GRANDE QUE SALIÓ AL PASILLO: se vuelca de lado en lado (`baulVuelca`: cuántas unidades avanza por cada
+     * cuarto de vuelta) y, mientras nadie lo rompa, cada sacudón lo vuelve a mover (`empujonBaul`, en unidades por
+     * segundo, como `empujon`). Quieto, choca y sirve de cobertura.
+     */
+    baulVuelca: 9.5,
+    empujonBaul: { frenazo: 150, arrancon: 115, tiron: 70 },
     roceSuelo: 120,
   },
 

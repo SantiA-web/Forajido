@@ -44,11 +44,12 @@ const COSAS = {
 
 /** Arma lo de todo el tren: las repisas y las pilas de cada vagón que ya las tiene. */
 export function crearCaidas(train) {
-  const C = { objetos: [], pilas: [], impactos: [], sueltos: [], papeles: [] };
+  const C = { objetos: [], pilas: [], impactos: [], sueltos: [], papeles: [], estantes: [], rayas: [] };
   const map = train.map, S = map.size, tc = CONFIG.tresCuartos;
   for (const w of train.wagons) {
     if (w.id === 'primeraClase') { primeraClase(C, train, w); continue; }
     if (w.id === 'correo') { correo(C, train, w); continue; }
+    if (w.id === 'guardias') { guardias(C, train, w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -170,7 +171,7 @@ function primeraClase(C, train, w) {
 /** ¿Choca acá un baúl de los que esperan junto a las puertas? (Para `isSolidForMovementAt` de la escena.) */
 export function bloqueaCaida(C, x, y) {
   for (const p of C.pilas) {
-    if ((p.tipo !== 'baul' && p.tipo !== 'carro') || p.estado === 'suelto') continue;
+    if ((p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion') || p.estado === 'suelto') continue;
     if (Math.abs(x - p.x) < p.hw && Math.abs(y - (p.yTope + p.yBase) / 2) < p.hh) return true;
   }
   return false;
@@ -200,7 +201,7 @@ export function avisarCaidas(C, sentido, rng) {
     }
   }
   for (const p of C.pilas) {
-    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro')) continue;
+    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion')) continue;
     if (p.atras === (sentido < 0)) { p.estado = 'aviso'; p.t = 0; }
   }
 }
@@ -216,6 +217,12 @@ export function golpearCaidas(C) {
     if (p.tipo === 'baul') {
       p.estado = 'suelto';
       C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 3, demora: 0, mueble: true, hw: 11, hh: 5, vida: 3, lento: 0.8 });
+      continue;
+    }
+    // 📦 La pila de munición: las tres cajas salen deslizándose, raspando el piso, una detrás de la otra.
+    if (p.tipo === 'municion') {
+      p.estado = 'suelto';
+      for (let k = 0; k < 3; k++) C.sueltos.push({ x: p.x, y: (p.yTope + p.yBase) / 2 + (k - 1) * 3, dir, variante: 5, demora: k * 0.14, mueble: true, hw: (p.cw * PASO()) / 2, hh: 4, vida: 2, lento: 0.85, ancho: p.cw });
       continue;
     }
     // 🛒 El carro de correo sale rodando él mismo, y deja su lugar.
@@ -370,6 +377,8 @@ export function dibujarSombrasDeCaidas(r, C, corrido, dia = true) {
     if (o.tipo === 'arana') { if (o.estado === 'repisa' || o.estado === 'aviso' || (o.estado === 'cae' && o.t < 0)) corrido(o.x, () => dibujarLuzDeArana(r, o, dia))(); continue; }
     // 🥃 Las botellas tampoco *(Santi: "no deberían tener sombras al caer como la araña")*: las avisa su tambaleo.
     if (o.tipo === 'botellas') continue;
+    // (🎩 Lo que no lastima —sombreros, cartucheras, rifles— tampoco avisa.)
+    if (o.peso === 'nada') continue;
     if (o.estado !== 'aviso' && o.estado !== 'cae') continue;
     const f = o.estado === 'cae' ? 1 : Math.min(1, o.t / K.aviso);
     const z = zonaDe(o);
@@ -420,6 +429,7 @@ export function cosasDeCaidas(r, C, corrido) {
     }
     // (🥃 Las botellas y la araña tienen su propio dibujo: ver `dibujarBotellas` y `dibujarArana`.)
     if (o.tipo === 'botellas') { out.push({ base: o.estado === 'repisa' || o.estado === 'aviso' ? o.yPared : o.yPiso, draw: corrido(o.xRepisa, () => dibujarBotellas(r, o)) }); continue; }
+    if (o.tipo === 'rifle') { out.push({ base: o.estado === 'piso' ? o.yPiso : o.estado === 'cae' ? delante : o.yPared, draw: corrido(o.xRepisa, () => dibujarRifle(r, o, x, y)) }); continue; }
     if (o.tipo === 'arana') { out.push({ base: o.yPiso + (o.estado === 'piso' ? 0 : 20), draw: corrido(o.xRepisa, () => dibujarArana(r, o, x, y)) }); continue; }
     // (📦 El cajón de la pila, sobre la pila, se ordena con ella; cayendo y en el piso, como cualquiera.)
     if (o.tipo === 'cajonChico' && (o.estado === 'repisa' || o.estado === 'aviso')) base = o.basePila;
@@ -430,6 +440,8 @@ export function cosasDeCaidas(r, C, corrido) {
     if (p.estado === 'suelto') continue;
     out.push({ base: p.yBase, draw: corrido(p.x, () => dibujarPila(r, p)) });
   }
+  // 🪵 Los estantes y los clavos de la pared (quedan aunque se caiga lo que tenían): detrás de lo que llevan.
+  for (const e of C.estantes) out.push({ base: e.yPared - 0.004, draw: corrido(e.x, () => dibujarEstante(r, e)) });
   return out;
 }
 
@@ -514,6 +526,26 @@ const DIBUJOS = {
       R(18, 5, 3, 3, 0); R(19, 6, 1, 1, 10);
       R(21, 2, 3, 3, 0); R(22, 3, 1, 1, 9);
     } },
+  },
+  municionCaja: {
+    // 📦 La caja de munición, de tablas, con la tapa, lo pintado en la cara y la manija de soga; rota, las tablas y las
+    // balas de bronce desparramadas.
+    arriba: { w: 12, h: 9, pintar: (R) => cajaDeMunicion(R) },
+    piso: { w: 12, h: 9, pintar: (R) => cajaDeMunicion(R) },
+    roto: { w: 20, h: 8, pintar: (R) => {
+      R(0, 4, 8, 3, 0); R(1, 5, 6, 1, 4); R(9, 2, 6, 3, 0); R(10, 3, 4, 1, 5); R(4, 1, 2, 3, 0); R(4, 2, 1, 1, 4);
+      for (const [bx, by] of [[16, 5], [13, 7], [18, 2], [7, 7], [11, 0]]) { R(bx, by, 2, 1, 7); R(bx + 2, by, 1, 1, 28); }
+    } },
+  },
+  sombrero: {
+    // 🎩 El sombrero de fieltro: colgado del ala (el mismo que colgaba del clavo); tirado, de plano, el ala ancha y la copa.
+    arriba: { w: 15, h: 7, pintar: (R) => dibujarMapa(R, 0, 0, SOMBRERO_COLGADO, SOMB) },
+    piso: { w: 15, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, ['....ooooooo....', '..ooHHHHHHHoo..', '.okkHhhhhhHkko.', '.okkkbbbbbkkko.', '..ookkkkkkkoo..', '....ooooooo....'], SOMB) },
+  },
+  cinto: {
+    // 🔫 La cartuchera: colgada del clavo (la misma de siempre); tirada, el cinto enroscado con las balas y la funda.
+    arriba: { w: 12, h: 16, pintar: (R) => dibujarMapa(R, 0, 0, CINTO_COLGADO, CU) },
+    piso: { w: 16, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, ['..oooooooo......', '.occyccyccoooo..', 'oco......occcco.', '.occyccyccocccco', '..oooooooo.occo.', '...........oo...'], CU) },
   },
   saca: {
     // 📮 La saca de correo de lona, echada, con la boca atada y la chapita de bronce (la misma de
@@ -624,6 +656,11 @@ function dibujarPila(r, p) {
   // 🥃 El baúl grande de primera clase, solo.
   if (p.tipo === 'baul') {
     pintarTapando(r.ctx, Math.round(p.x / P) - 15 + tiembla, Math.round(p.yBase / P) - 20, 30, 20, luz, pintarBaulGrande);
+    return;
+  }
+  // 📦 La pila de munición, esperando (en el aviso se sacude).
+  if (p.tipo === 'municion') {
+    pintarTapando(r.ctx, Math.round(p.x / P) - Math.round((2 * p.cw + 1) / 2) - 1 + tiembla, Math.round(p.yBase / P) - 26, 2 * p.cw + 3, 26, luz, (R) => pintarPilaMunicion(R, p.cw));
     return;
   }
   // 🛒 El carro de correo, esperando en su lugar (en el aviso se sacude sobre sus ruedas).
@@ -1148,6 +1185,9 @@ export function actualizarPapeles(C, dt, E, map) {
  */
 export function dibujarPapeles(r, C, corrido) {
   const P = PASO(), aire = [];
+  // 📦 Las rayas que dejó en el piso lo que se arrastró raspando (dos marcas paralelas, oscuras).
+  r.ctx.fillStyle = PALETA[33];
+  for (const q of C.rayas) corrido(q.x, () => { const x = Math.round(q.x / P) * P, y = Math.round(q.y / P) * P; r.ctx.fillRect(x, y, P, P); r.ctx.fillRect(x, y - 3 * P, P, P); })();
   for (const p of C.papeles) {
     if (p.z > 0.5) { aire.push({ base: p.y, draw: corrido(p.x, () => papel(r, p, P)) }); corrido(p.x, () => sombraDePapel(r, p, P))(); continue; }
     corrido(p.x, () => papel(r, p, P))();
@@ -1183,4 +1223,186 @@ export function sacaDelCarro(C, x, yArriba, yPiso, dir, rng) {
     tipo: 'saca', peso: 'liviano', hw: 7, x, xRepisa: x, yRepisa: yArriba, yPared: yPiso - 2 * CONFIG.tileSize, yPiso, yPiso0: yPiso,
     estado: 'cae', t: 0, dir: -dir, demora: 0, dura: K.caeDura * rng.range(0.8, 1.2), correA: rng.range(4, 12), delCarro: true,
   });
+}
+
+/**
+ * 🎖️ EL VAGÓN DE GUARDIAS *(Santi eligió las recomendaciones: "se deslizan raspando", "sobre cada catre del fondo" y
+ * "los rifles caen, sin daño")*:
+ *  - UN ESTANTE DE TABLAS SOBRE CADA CATRE DE ARRIBA, en lo libre de la pared (ni ventana ni farol), con dos cajas de
+ *    munición (livianas: media vida). Al lado, de un clavo, el sombrero o la cartuchera, uno y uno, como siempre: se
+ *    caen sin lastimar.
+ *  - LOS TRES WINCHESTER DEL ARMERO se sueltan de sus ganchos y quedan tirados abajo del armero, sin lastimar.
+ *  - LA PILA DE MUNICIÓN DEL RINCÓN, junto a la puerta de atrás (las casillas 'R'): en el frenazo las tres cajas
+ *    salen deslizándose, raspando el piso (polvo, astillas y rayas), una detrás de la otra. Son bajas y pesadas: se
+ *    arrastran, no se vuelcan. Te tiran al piso; quietas chocan, son cobertura y cada sacudón las vuelve a mover.
+ */
+function guardias(C, train, w) {
+  const map = train.map, S = map.size, tc = CONFIG.tresCuartos, P = PASO();
+  const cols = Math.round(w.width / S);
+  const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
+  const esPared = (f) => casilla(Math.floor(cols / 2), f) === '#' || casilla(Math.floor(cols / 2), f) === 'W';
+  let filasArriba = 0; while (esPared(filasArriba)) filasArriba++;
+  const x0 = Math.floor(w.x / P) * P, yArr = -tc.alturaPared, yCara = 8;
+  const ax = (u) => Math.round((u - x0) / P), ay = (u) => Math.round((u - yArr) / P);
+  const deAx = (pt) => x0 + pt * P, deAy = (pt) => yArr + pt * P;
+  const yPared = filasArriba * S, yPie = ay(yPared);
+  // Lo ocupado de la pared (como en world/estiloNuevo/vagones.js): las ventanas, los faroles y lo que ya se puso.
+  const ventanas = [];
+  for (let c = 0; c < cols; c++) {
+    if (casilla(c, 0) !== 'W' || casilla(c - 1, 0) === 'W') continue;
+    let d = c; while (casilla(d + 1, 0) === 'W') d++;
+    ventanas.push([c, d]);
+  }
+  const F = tc.faroles, cuantos = Math.max(1, Math.floor((cols - 2) / F.cadaColumnas)), sobra = cols - cuantos * F.cadaColumnas;
+  const faroles = [];
+  for (let q = 0; q < cuantos; q++) {
+    let c = Math.round(sobra / 2 + (q + 0.5) * F.cadaColumnas);
+    for (let d = 0; d < 4 && casilla(c, 0) === 'W'; d++) c += (d % 2 ? -(d + 1) : d + 1);
+    faroles.push(ax(w.x + (c + 0.5) * S));
+  }
+  const tomados = [];
+  const ocupado = (xa, xb) => ventanas.some(([c0, c1]) => xb > ax(w.x + c0 * S) && xa < ax(w.x + (c1 + 1) * S))
+    || faroles.some((fx) => xb > fx - 6 && xa < fx + 6) || tomados.some(([a, b]) => xb > a && xa < b);
+  const lugar = (xa, xb, ancho) => {
+    const medio = (xa + xb) / 2;
+    for (let d = 0; d < xb - xa; d++) for (const s of [1, -1]) {
+      const x = Math.round(medio + s * d - ancho / 2);
+      if (x >= xa - 4 && x + ancho <= xb + 4 && !ocupado(x - 1, x + ancho + 1)) return x;
+    }
+    return null;
+  };
+  // --- el armero: el mismo lugar que el dibujo fijo (el tramo de pared más largo sin ventanas, el de la punta).
+  {
+    const ultima = ventanas.length ? ventanas[ventanas.length - 1][1] + 1 : 0;
+    const xa = ax(w.x + ultima * S) + 4, xb = ax(w.x + (cols - 1) * S) - 2, AW = 28, x = lugar(xa, xb, AW);
+    if (x != null) {
+      tomados.push([x - 2, x + AW + 2]);
+      const y = yCara + 9, alto = yPie - yCara - 13, arriba = yCara + 2, largo = y + alto - 5 - arriba;
+      for (let k = 0; k < 3; k++) {
+        const gx = x + 3 + k * 8, xw = deAx(gx + 2);
+        C.objetos.push({
+          tipo: 'rifle', peso: 'nada', hw: 3, x: xw, xRepisa: xw, yRepisa: deAy(arriba + largo), yPared, yPiso: yPared + 8 + k * 4,
+          px: gx, py: arriba, largo, fijo: true, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+        });
+      }
+    }
+  }
+  // --- sobre cada catre de arriba: el estante con dos cajas, y al lado el clavo con el sombrero o la cartuchera.
+  let n = 0;
+  for (let c = 0; c < cols; c++) {
+    if (casilla(c, filasArriba) !== 'S' || casilla(c - 1, filasArriba) === 'S') continue;
+    let c2 = c; while (casilla(c2 + 1, filasArriba) === 'S') c2++;
+    const xa = ax(w.x + c * S) + 2, xb = ax(w.x + (c2 + 1) * S) - 2;
+    // (Si no entra uno de dos cajas, uno chico con una: entre la ventana, el farol y lo colgado, a veces no hay lugar.)
+    let EW = 30, xs = lugar(xa, xb, EW);
+    if (xs == null) { EW = 16; xs = lugar(xa, xb, EW); }
+    const ys = yCara + 24;
+    if (xs != null) {
+      tomados.push([xs - 2, xs + EW + 2]);
+      C.estantes.push({ px: xs, py: ys, w: EW, x: deAx(xs + EW / 2), yPared, x0, yArr });
+      for (const bx of EW > 16 ? [xs + 3, xs + 16] : [xs + 2]) {
+        const xw = deAx(bx + 6);
+        C.objetos.push({
+          tipo: 'municionCaja', peso: 'liviano', hw: 5, x: xw, xRepisa: xw, yRepisa: deAy(ys), yPared,
+          yPiso: yPared + 7 + Math.round(azar(bx, c) * 8), estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+        });
+      }
+    }
+    let sombrero = n++ % 2 === 0, ancho = sombrero ? 15 : 12, alto = sombrero ? 7 : 16;
+    // Al costado del estante, si hay lugar; si no, de un clavo debajo del estante, y ahí siempre un sombrero (la
+    // cartuchera es larga: bajaba hasta tapar el catre).
+    let xh = lugar(xa, xb, ancho), yh = yCara + 8;
+    if (xh == null && xs != null) { sombrero = true; ancho = 15; alto = 7; xh = xs + Math.round(EW / 2 - ancho / 2); yh = ys + 5; }
+    if (xh == null) continue;
+    tomados.push([xh - 1, xh + ancho + 1]);
+    C.estantes.push({ clavo: true, px: xh + Math.floor(ancho / 2), py: yh, x: deAx(xh + ancho / 2), yPared, x0, yArr });
+    const xw = deAx(xh + Math.floor(ancho / 2));
+    C.objetos.push({
+      tipo: sombrero ? 'sombrero' : 'cinto', peso: 'nada', hw: 5, x: xw, xRepisa: xw, yRepisa: deAy(yh + alto), yPared,
+      yPiso: yPared + 6 + Math.round(azar(c, 7) * 6), fijo: true, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+    });
+  }
+  // --- la pila de munición del rincón (las 'R').
+  for (let f = filasArriba; f < map.rows; f++) for (let c = 0; c < cols; c++) {
+    if (casilla(c, f) !== 'R' || casilla(c - 1, f) === 'R' || casilla(c, f - 1) === 'R') continue;
+    let c2 = c; while (casilla(c2 + 1, f) === 'R') c2++;
+    const x = ax(w.x + c * S) + 1, x2 = ax(w.x + (c2 + 1) * S) - 1, yb = ay((f + 1) * S) - 2;
+    const cw = Math.floor((x2 - x - 1) / 2);
+    C.pilas.push({
+      tipo: 'municion', x: deAx((x + x2) / 2), yTope: deAy(yb - 24), yBase: deAy(yb) + P, hw: ((x2 - x) * P) / 2, hh: 8,
+      cw, atras: c < cols / 2, arriba: [], estado: 'quieta', t: 0, wagon: w.id,
+    });
+  }
+}
+
+const SOMBRERO_COLGADO = ['.....ooooo.....', '....oHHHHHo....', '....ohhhhho....', '....obbbbbo....', '.ooooohhhhhoooo.', 'okkkkkkkkkkkkkko', '.oooooooooooooo.'];
+const SOMB = { o: 0, h: 35, H: 36, b: 32, k: 34 };
+const CINTO_COLGADO = ['....oooo....', '...occcco...', '..occoocco..', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '..oco..oooo.', '.oGGo.occcco', '..oo..occcco', '......occcco', '.......occo.', '........oo..'];
+const CU = { o: 0, c: 5, y: 28, G: 7 };
+
+/** 📦 La caja de munición: la tapa, la cara con lo pintado y la manija de soga. 12×9. */
+function cajaDeMunicion(R) {
+  R(0, 0, 12, 9, 0);
+  R(1, 1, 10, 3, 5); R(1, 1, 10, 1, 6);
+  R(1, 4, 10, 4, 4); R(1, 4, 1, 4, 3); R(10, 4, 1, 4, 3);
+  R(3, 5, 6, 1, 31); R(3, 6, 2, 1, 31);
+  R(5, 2, 2, 1, 16);
+}
+
+/** 📦 La pila de munición del rincón: dos cajas abajo y una arriba (las del dibujo de siempre), de ancho `cw`. */
+export function pintarPilaMunicion(R, cw) {
+  const caja = (cx, cy, ww, hh) => {
+    R(cx - 1, cy - 1, ww + 2, hh + 2, 0);
+    R(cx, cy, ww, 4, 5); R(cx, cy, ww, 1, 6);
+    R(cx, cy + 4, ww, hh - 4, 4); R(cx, cy + 4, 1, hh - 4, 3); R(cx + ww - 1, cy + 4, 1, hh - 4, 3);
+    R(cx + 3, cy + 6, ww - 6, 1, 31); R(cx + 3, cy + 8, 2, 1, 31);
+  };
+  caja(1, 13, cw, 12); caja(cw + 2, 13, cw, 12); caja(1 + Math.floor(cw / 2), 2, cw, 11);
+}
+
+/** 📦 Una caja de la pila que sale deslizándose (la misma de la pila, de ancho `cw`). */
+export function pintarCajaDeslizandose(R, cw) {
+  R(0, 0, cw + 2, 14, 0);
+  R(1, 1, cw, 4, 5); R(1, 1, cw, 1, 6);
+  R(1, 5, cw, 8, 4); R(1, 5, 1, 8, 3); R(cw, 5, 1, 8, 3);
+  R(4, 7, cw - 6, 1, 31); R(4, 9, 2, 1, 31);
+}
+
+/** 🪵 El estante de tablas (sobre dos ménsulas) o el clavo de la pared. */
+function dibujarEstante(r, e) {
+  const P = PASO();
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(e.x, e.yPared + 4) || 0) : 0;
+  const R = pintor(r.ctx, Math.round(e.x0 / P), Math.round(e.yArr / P), luz);
+  if (e.clavo) { R(e.px, e.py - 2, 1, 1, 0); R(e.px, e.py - 1, 1, 1, 25); return; }
+  R(e.px - 1, e.py, e.w + 2, 3, 0); R(e.px, e.py + 1, e.w, 1, 5); R(e.px, e.py, e.w, 1, 6);
+  R(e.px, e.py + 3, e.w, 2, 1);                                          // la sombra en la pared
+  for (const mx of [e.px + 2, e.px + e.w - 4]) { R(mx - 1, e.py + 2, 3, 6, 0); for (let q = 0; q < 4; q++) R(mx + (q < 2 ? 0 : 1), e.py + 3 + q, 1, 1, 4); }
+}
+
+/**
+ * 🔫 EL WINCHESTER DEL ARMERO: parado en su lugar (el mismo dibujo de siempre: el caño con el tubo del cargador, la
+ * tapa, el cajón de bronce, la palanca en lazo y la culata); en el aviso se sacude en el gancho; cayendo, derecho
+ * para abajo; tirado, acostado en el piso (un dibujo puesto a mano, con la culata a la izquierda).
+ */
+const ARMA = { o: 0, B: 25, T: 24, w: 5, W: 4, y: 28, Y: 7, D: 31 };
+const ABAJO_RIFLE = ['owWo..', 'owWo..', 'oyYYo.', 'oyYYo.', 'oyYYo.', 'owWoY.', 'owWo.Y', 'owWoY.', 'owWWo.', 'owWWWo', 'owWWWo', 'oDDDDo', 'oooooo'];
+const RIFLE_TIRADO = [
+  '.ooo...........ooooooooooo.',
+  'oWWWoooooooooooBBBBBBBBBBBo',
+  'oWWWWWwwoyYYyooTTTTTTTTTTo.',
+  'oDWWooooo.Y.ooooooooooooo..',
+  '.oo.....oYo................',
+];
+function dibujarRifle(r, o, x, y) {
+  const P = PASO(), K = CONFIG.caidas;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(o.x, o.yPiso) || 0) : 0;
+  if (o.estado === 'piso') {
+    pintarTapando(r.ctx, Math.round(o.x / P) - 13, Math.round(o.yPiso / P) - 5, 27, 5, luz, (R) => dibujarMapa(R, 0, 0, RIFLE_TIRADO, ARMA));
+    return;
+  }
+  const cano = o.largo - ABAJO_RIFLE.length - 2;
+  const filas = ['.o....', 'oBo...', ...Array(Math.max(0, cano)).fill('oBTo..'), ...ABAJO_RIFLE];
+  const sacude = o.estado === 'aviso' || (o.estado === 'cae' && o.t < 0) ? (Math.floor(o.t * 16) % 2 ? 1 : 0) : 0;
+  const ox = Math.round(x / P) - 2 + sacude, oy = Math.round(y / P) - filas.length;
+  pintarTapando(r.ctx, ox, oy, 6, filas.length, luz, (R) => dibujarMapa(R, 0, 0, filas, ARMA));
 }

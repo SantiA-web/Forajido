@@ -963,7 +963,7 @@ export const WAGONS = {
       '+..............................+',
       '#........CC......CC.....JCCJ...#',
       '#..............................#',
-      '#UUSSS..SSS..SSS..SSS..SSS..SSS#',
+      '#RRSSS..SSS..SSS..SSS..SSS..SSS#',
       '####WW####WW####WW####WW####WW##',
     ],
     sinComportamiento: true,

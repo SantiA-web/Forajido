@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -152,8 +152,11 @@ export function updateRodante(ro, dt) {
     const d = ro.yMeta - ro.y;
     // (🛒 El carro entra en diagonal, rodando: lo que baja o sube va con lo que avanza *(Santi: "parece que pegó un
     // salto… que rueden de forma diagonal al pasillo y ahí se acomoden en horizontal")*.)
-    const paso = ro.variante === 4 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
+    const paso = ro.variante === 4 || ro.variante === 5 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
     ro.y += Math.sign(d) * Math.min(Math.abs(d), paso);
+    // (📦 La caja de munición sale casi derecho al pasillo y recién ahí se arrastra a lo largo: de costado se trababa
+    // contra el catre de al lado de la pila.)
+    if (ro.variante === 5 && Math.abs(d) > 1) ro.x -= ro.dir * paso * 0.75;
   }
 }
 
@@ -162,6 +165,7 @@ export function updateRodante(ro, dt) {
 export function drawRodante(r, ro) {
   const col = CONFIG.colors;
   if (ro.tipo === 'valija' && ro.variante === 4) { dibujarCarroRodando(r, ro); return; }
+  if (ro.tipo === 'valija' && ro.variante === 5) { dibujarCajaDeslizandose(r, ro); return; }
   if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
   /**
@@ -442,4 +446,12 @@ function dibujarCarroRodando(r, ro) {
   const L = medidasCarro(ro.ancho, ro.hondo);
   const ox = Math.round(ro.x / P) - Math.round(L.w / 2), oy = Math.round((ro.y + ro.hh) / P) - L.h;
   pintarTapando(r.ctx, ox, oy, L.w, L.h, luzR, (R) => pintarCarro(R, ro.ancho, ro.hondo, rueda, ro.semilla || 0, ro.faltan || 0));
+}
+
+/** 📦 La caja de munición que se desliza (world/caidas.js): apoyada en el piso, sin saltar ni girar. */
+function dibujarCajaDeslizandose(r, ro) {
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  const w = ro.ancho + 2;
+  pintarTapando(r.ctx, Math.round(ro.x / P) - Math.round(w / 2), Math.round((ro.y + ro.hh) / P) - 14, w, 14, luz + (ro.hitFlash > 0 ? 2 : 0), (R) => pintarCajaDeslizandose(R, ro.ancho));
 }

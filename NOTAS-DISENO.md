@@ -19436,6 +19436,15 @@ guardaespaldas distintos)*:
         un tiroteo, no "pasa tal, se mueve a tal".
       - **Las cajas fuertes chocan** (todas) y son cobertura.
       - El atajo [8] lleva siempre al vagón que se está haciendo.
+    - **✅ EL DE GUARDIAS** (world/caidas.js, `guardias`):
+      - **Un estante sobre cada catre de arriba del fondo** con cajas de munición (pesadas, matan): de 30 con dos
+        cajas o, donde no entra, de 16 con una. Al lado o debajo, un sombrero o una cartuchera (livianos); donde no hay
+        lugar, la cartuchera no va.
+      - **Los rifles del armero se caen** (sin daño, *Santi: "los rifles caen, sin daño"*); el marco del armero queda.
+      - **La pila de cajas de munición de las puntas** (casillas `R`) se larga **deslizándose y raspando** el piso:
+        las tres salen del mismo lugar, casi derecho hacia el pasillo, dejando rayas en la madera. Te tiran al piso,
+        quietas chocan y son cobertura, cada sacudón las vuelve a mover y cada tiro les pega.
+      - El dibujo fijo dejó afuera los rifles, los sombreros y las cartucheras (se dibujan aparte).
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

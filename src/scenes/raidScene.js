@@ -2368,6 +2368,8 @@ export function createRaidScene(services) {
     for (const im of caidas.impactos) {
       audio.play('hitWall');
       spawnParticles(im.x, im.y, '#c9b28a', 8);
+      // (🎩 Lo que no lastima —sombreros, cartucheras, rifles—: sólo el golpe en el piso.)
+      if (im.peso === 'nada') continue;
       const pega = (o) => o.x + o.hw > im.x0 && o.x - o.hw < im.x1 && o.y + o.hh > im.y0 && o.y - o.hh < im.y1;
       if (player.alive && !player.enTecho && pega(player)) {
         player.invuln = 0;
@@ -2400,6 +2402,7 @@ export function createRaidScene(services) {
         vida: s.vida || 1, hw: s.hw || 6, hh: s.hh || 3, variante: s.variante,
       });
       ro.mueble = !!s.mueble;
+      if (s.variante === 5) ro.ancho = s.ancho;
       if (s.variante === 4) { ro.ancho = s.ancho; ro.hondo = s.hondo; ro.semilla = Math.round(s.x); ro.sueltaSacas = [rng.range(0.1, 0.25), rng.range(0.35, 0.6)]; ro.faltan = 0; }
       ro.yMeta = map.height / 2 + rng.range(-6, 6);
       rodantes.push(ro);
@@ -2414,6 +2417,17 @@ export function createRaidScene(services) {
       ro.faltan = (ro.faltan || 0) + 1;
       const P = CONFIG.estilo.punto / 4;
       sacaDelCarro(caidas, ro.x + rng.range(-8, 8), ro.y + ro.hh - 40 * P, ro.y + rng.range(-4, 10), ro.dir, rng);
+    }
+    // 📦 Lo que se arrastra raspando (la caja de munición) levanta polvo y astillas y deja rayas en el piso.
+    for (const ro of rodantes || []) {
+      if (ro.variante !== 5 || ro.quieta || !ro.alive) continue;
+      ro.raspa = (ro.raspa || 0) + ro.velocidad * dt;
+      if (ro.raspa < 3) continue;
+      ro.raspa = 0;
+      if (rng.chance(0.6)) spawnParticles(ro.x - ro.dir * ro.hw, ro.y + ro.hh, '#c9b28a', 2);
+      if (rng.chance(0.25)) spawnParticles(ro.x - ro.dir * ro.hw, ro.y + ro.hh, '#8a5a34', 1);
+      caidas.rayas.push({ x: ro.x - ro.dir * (ro.hw - 2), y: ro.y + ro.hh - 1 });
+      if (caidas.rayas.length > 400) caidas.rayas.shift();
     }
     // 📮 Los papelitos del piso, con lo que acelera el tren.
     actualizarPapeles(caidas, dt, enganches, map);

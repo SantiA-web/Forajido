@@ -1206,49 +1206,11 @@ function vagon(train, w, dia) {
         const y = yCara + 9, alto = yPie - yCara - 13;
         rf(x - 1, y - 1, AW + 2, 4, 0); rf(x, y, AW, 2, 5); rf(x, y, AW, 1, 6);              // el travesaño de arriba
         rf(x - 1, y + alto - 7, AW + 2, 5, 0); rf(x, y + alto - 6, AW, 3, 4); rf(x, y + alto - 6, AW, 1, 5);   // la repisa de abajo
-        /**
-         * 🔁 EL WINCHESTER, PARADO, CON SU FORMA *(Santi: "no tienen forma y son solo rectángulos… que se
-         * distinga la culata, el cañón, que sacándole el color se entienda la silueta")*: arriba, el caño
-         * finito con el tubo del cargador al lado; la tapa de madera; el cajón de bronce, más ancho; la
-         * palanca en lazo; la garganta angosta y la culata que se ensancha hasta la cantonera.
-         */
-        // (El caño, más de la mitad del largo, asoma arriba del travesaño; la palanca, de bronce: negra no se
-        // veía contra la pared oscura.)
-        const ABAJO = [
-          'owWo..', 'owWo..',                                               // la tapa de madera
-          'oyYYo.', 'oyYYo.', 'oyYYo.',                                     // el cajón de bronce
-          'owWoY.', 'owWo.Y', 'owWoY.',                                     // la garganta y la palanca en lazo
-          'owWWo.', 'owWWWo', 'owWWWo',                                     // la culata
-          'oDDDDo', 'oooooo',                                               // la cantonera
-        ];
-        const ARMA = { o: 0, B: 25, T: 24, w: 5, W: 4, y: 28, Y: 7, D: 31 };
-        for (let k = 0; k < 3; k++) {
-          const gx = x + 3 + k * 8, arriba = yCara + 2, largo = y + alto - 5 - arriba, cano = largo - ABAJO.length - 2;
-          const filas = ['.o....', 'oBo...', ...Array(Math.max(0, cano)).fill('oBTo..'), ...ABAJO];
-          dibujo(pf, gx, arriba, filas, ARMA);
-        }
+        // (🔫 Los tres Winchester, con su forma —el caño con el tubo del cargador, el cajón de bronce, la palanca en
+        // lazo y la culata—, van aparte: en el frenazo se caen, ver `guardias` en world/caidas.js.)
       }
     }
-    // --- sobre cada catre de arriba, de un clavo: un sombrero o una cartuchera, uno y uno.
-    {
-      let n = 0;
-      // El sombrero de fieltro, colgado del ala: la copa con la cinta y el ala ancha.
-      const SOMBRERO = ['.....ooooo.....', '....oHHHHHo....', '....ohhhhho....', '....obbbbbo....', '.ooooohhhhhoooo.', 'okkkkkkkkkkkkkko', '.oooooooooooooo.'];
-      const SOMB = { o: 0, h: 35, H: 36, b: 32, k: 34 };
-      // La cartuchera: el cinto doblado sobre el clavo, las balas de bronce en cada tira, la hebilla y la funda.
-      const CINTO = ['....oooo....', '...occcco...', '..occoocco..', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '..oco..oooo.', '.oGGo.occcco', '..oo..occcco', '......occcco', '.......occo.', '........oo..'];
-      const CU = { o: 0, c: 5, y: 28, G: 7 };
-      for (let c = 0; c < cols; c++) {
-        if (casilla(c, filasArriba) !== 'S' || casilla(c - 1, filasArriba) === 'S') continue;
-        let c2 = c; while (casilla(c2 + 1, filasArriba) === 'S') c2++;
-        const sombrero = n++ % 2 === 0, M = sombrero ? SOMBRERO : CINTO, ancho = M[0].length;
-        const x = lugar(ax(w.x + c * S) + 2, ax(w.x + (c2 + 1) * S) - 2, ancho);
-        if (x == null) continue;
-        const y = yCara + 8, cx = x + Math.floor(ancho / 2);
-        pf(cx, y - 2, 0); pf(cx, y - 1, 25);                                                  // el clavo
-        dibujo(pf, x, y, M, sombrero ? SOMB : CU);
-      }
-    }
+    // --- (🎩 Los sombreros y las cartucheras de los clavos, y los estantes con cajas de munición, van aparte: se caen.)
     // --- la estufa salamandra (de hierro, panzona, con patas) con la cafetera arriba y el caño hasta el techo.
     if (estufa) {
       const sx = estufa.x, base = ay(yPisoArriba) + 4;

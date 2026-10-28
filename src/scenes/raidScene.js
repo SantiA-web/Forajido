@@ -56,7 +56,7 @@ import { WAGONS } from '../data/wagons.js';
 import { caballoActual, fondoDelAsalto } from '../data/horse.js';
 import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy, damageEnemy } from '../entities/enemy.js';
-import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro, barrilRoto, tapaSaltada, derramar } from '../world/caidas.js';
+import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro, barrilRoto, tapaSaltada, derramar, ruedaAcostada, volcarBarrilAgua } from '../world/caidas.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga, jugadorCambiaDeVagon } from '../systems/escuadra.js';
@@ -2124,6 +2124,8 @@ export function createRaidScene(services) {
     for (let i = rodantes.length - 1; i >= 0; i--) {
       const ro = rodantes[i];
 
+      // (🚂 La rueda del freno que terminó de caer: queda acostada en el piso, como parte de él.)
+      if (ro.tumbada) { ruedaAcostada(caidas, ro.x, ro.y + ro.hh); rodantes.splice(i, 1); continue; }
       if (!ro.alive) { romperRodante(ro); rodantes.splice(i, 1); continue; }
 
       // Las reses también cruzan la góndola a la mitad (`frenoAt`, el carbón).
@@ -2160,7 +2162,8 @@ export function createRaidScene(services) {
         // 🧳 La valija se para contra lo que tenga adelante (un asiento, la puerta).
         // (🛢️ Salvo mientras entra al pasillo: el barril arranca pegado al banco de al lado, y las valijas de la pirámide
         // del dormitorio, pegadas a la pared del camarote; frenadas ahí, se quedaban trabadas en el rincón.)
-        const entrando = (ro.variante === 6 && ro.vuelca > 0) || (ro.yMeta != null && Math.abs(ro.yMeta - ro.y) > 2);
+        const entrando = (ro.variante === 6 && ro.vuelca > 0) || (ro.yMeta != null && Math.abs(ro.yMeta - ro.y) > 2)
+          || (ro.salida != null && (ro.dir > 0 ? ro.x < ro.salida : ro.x > ro.salida));
         if (ro.tipo === 'valija' && !ro.quieta && !entrando && map.isSolidAt(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
       }
 
@@ -2409,8 +2412,15 @@ export function createRaidScene(services) {
       if (s.variante === 4) { ro.ancho = s.ancho; ro.hondo = s.hondo; ro.semilla = Math.round(s.x); ro.sueltaSacas = [rng.range(0.1, 0.25), rng.range(0.35, 0.6)]; ro.faltan = 0; }
       // (🛢️ El barril: primero se vuelca hacia el pasillo y después rueda; rodando, llega más lejos que lo que se desliza.)
       if (s.lona) ro.lona = true;
+      // (🚂 La rueda del freno: rueda lejos, y es de fierro: las balas no la frenan ni la rompen.)
+      // (🔁 Con 0,3 del roce rodaba unas 500 unidades y se iba por la puerta sin llegar a caerse.)
+      if (s.variante === 7) { ro.balea = false; ro.roce = O.valijaRoce * 0.75; }
+      // (🚂 El barril de agua del caboose: el dibujo fijo lo esconde cuando se empieza a caer.)
+      if (s.agua) { ro.agua = s.agua; ro.ocultos = train._ocultos || (train._ocultos = new Set()); }
       if (s.variante === 6) { ro.contenido = s.contenido; ro.haciaPasillo = s.haciaPasillo; ro.vuelca = CONFIG.caidas.barril.vuelca; ro.roce = O.valijaRoce * CONFIG.caidas.barril.roce; }
-      ro.yMeta = map.height / 2 + rng.range(-6, 6);
+      // (🚂 La rueda del freno no entra al pasillo: rueda por su fila. Ver `caboose` en world/caidas.js.)
+      ro.yMeta = s.porSuFila ? null : map.height / 2 + rng.range(-6, 6);
+      if (s.salida != null) ro.salida = s.salida;
       rodantes.push(ro);
     }
     for (const pa of passengers) if (pa.cubreFrenazo > 0) pa.cubreFrenazo -= dt;
@@ -2445,6 +2455,14 @@ export function createRaidScene(services) {
       if (ro.recienVolcado) {
         ro.recienVolcado = false;
         audio.play('hitWall');
+        // (🚂 El de agua: el charco grande, el balde volcado y su casilla libre; y rueda vacío, dejando un rastro.)
+        if (ro.agua) {
+          ro.volcado = true;
+          volcarBarrilAgua(caidas, { ...ro, baldeX: ro.agua.baldeX, baldeY: ro.agua.baldeY, celdas: ro.agua.celdas });
+          spawnParticles(ro.x, ro.y + ro.hh, '#7fa7c9', 12);
+          ro.abierto = true; ro.queda = 30;
+          continue;
+        }
         spawnParticles(ro.x, ro.y + ro.hh, ro.contenido ? '#e9e1cf' : '#c9b28a', 6);
         if (rng.chance(KB.tapaSalta)) {
           ro.abierto = true; ro.queda = KB.derrame;
@@ -2457,7 +2475,7 @@ export function createRaidScene(services) {
       if (ro.chorro < KB.derrameCada) continue;
       ro.chorro = 0; ro.queda--;
       derramar(caidas, ro.x - ro.dir * rng.range(0, 6), ro.y + ro.hh - rng.range(0, 6), ro.contenido, rng.int(0, 2));
-      if (ro.contenido && rng.chance(0.3)) spawnParticles(ro.x, ro.y + ro.hh - 4, '#e9e1cf', 1);
+      if (ro.contenido === 1 && rng.chance(0.3)) spawnParticles(ro.x, ro.y + ro.hh - 4, '#e9e1cf', 1);
     }
     // 📮 Los papelitos del piso, con lo que acelera el tren.
     actualizarPapeles(caidas, dt, enganches, map);
@@ -2794,7 +2812,13 @@ export function createRaidScene(services) {
   /** Reventado a tiros: se hace astillas y deja de ser un problema. */
   function romperRodante(ro) {
     // (🛢️ El barril de comida reventado: queda el montón y lo que llevaba por el piso; la harina, una nube.)
+    if (ro.tipo === 'valija' && ro.variante === 7 && caidas) ruedaAcostada(caidas, ro.x, ro.y + ro.hh, true);
     if (ro.tipo === 'valija' && ro.variante === 6 && caidas) {
+      // (🚂 El de agua, reventado antes de terminar de volcarse: igual larga el agua, y el dibujo fijo lo esconde.)
+      if (ro.agua) {
+        if (ro.ocultos) ro.ocultos.add(ro.agua.clave);
+        if (!ro.volcado) volcarBarrilAgua(caidas, { ...ro, baldeX: ro.agua.baldeX, baldeY: ro.agua.baldeY, celdas: ro.agua.celdas });
+      }
       barrilRoto(caidas, ro.x, ro.y + ro.hh, ro.contenido);
       spawnParticles(ro.x, ro.y, ro.contenido ? '#e9e1cf' : '#6b3a2a', 16);
     }

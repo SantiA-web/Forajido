@@ -54,6 +54,10 @@ export const esVagonNuevo = (id) => NUEVOS.has(id);
  * viejo las saltee), sus tramos en x (para que las luces viejas no les caigan
  * encima) y sus piezas ya iluminadas.
  */
+/** Un lienzo vacío de un punto: lo que se muestra en lugar de una pieza escondida. */
+let vacio = null;
+const VACIO = () => vacio || (vacio = Object.assign(document.createElement('canvas'), { width: 1, height: 1 }));
+
 export function vagonesNuevos(train, dia) {
   const clave = dia ? 'd' : 'n';
   if (train._estiloNuevo && train._estiloNuevo.clave === clave) return train._estiloNuevo;
@@ -1645,7 +1649,8 @@ function vagon(train, w, dia) {
         r(sx, sy - 6, 5, 7, 0); r(sx + 1, sy - 6, 3, 7, 31); r(sx + 1, sy - 6, 1, 7, 23);
         r(cx0 - 3, piso - 3, 26, 4, 0); r(cx0 - 2, piso - 2, 24, 2, 24);                      // la chapa de abajo
         CUERPO.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') p(cx0 + q, sy + j, EST[fila[q]], !dia && 'gGy'.includes(fila[q])); });
-        dibujo(p, sx + 5, sy - 6, ['.ooo...', 'oKKKo..', 'oKkkkoo', 'oKkkko.', 'oKkkko.', 'oooooo.'], { o: 0, K: 25, k: 24 });   // la cafetera
+        // (🚂 La cafetera va aparte, porque en el frenazo se cae: ver `caboose` en world/caidas.js. Acá se anota dónde va.)
+        (w._caboose || (w._caboose = {})).cafetera = { px: sx + 5, py: sy - 6 };
         dibujo(p, cx0 + 21, piso - 11, ['oooooooooo', 'o11111111o', 'oBbbbbbbbo', 'oBbbbbbbbo', 'oBbbbbbbbo', 'oBbbbbbbbo', 'oBbbbbbbbo', '.oBbbbbbo.', '.oBbbbbbo.', '..oooooo..'], { o: 0, 1: 0, B: 24, b: 23 });   // el balde del carbón
         muebles.push({ x: cx0 - 4, y: sy - 8, w: 36, h: piso - sy + 10, base: yPisoArriba + 4 });
         estufa = { x: sx + 2, y: piso - 10 };
@@ -1764,16 +1769,9 @@ function vagon(train, w, dia) {
          * apenas, con el movimiento del tren")*: parada en el piso, un poco echada hacia el cajón (achatada), con
          * el aro, los cuatro rayos y el cubo. Con el meneo rueda un poquito: gira y se corre un punto.
          */
-        const R = 8, rx0 = x + 12, ry = yb - R - 1;
-        animado(rx0 - R - 4, ry - R - 3, 2 * R + 9, 2 * R + 6, (B.f2 + 1) * S, 9, (m, ra, pa) => {
-          const rx = rx0 + Math.round(m * 1.4), giro = m * 0.9 + 0.4, ach = 0.92;
-          for (let a = 0; a < 80; a++) { const t = (a / 80) * Math.PI * 2; pa(Math.round(rx + Math.cos(t) * (R + 1)), Math.round(ry + Math.sin(t) * (R + 1) * ach), 0); }
-          for (let a = 0; a < 80; a++) { const t = (a / 80) * Math.PI * 2; for (const rr of [R, R - 1]) pa(Math.round(rx + Math.cos(t) * rr), Math.round(ry + Math.sin(t) * rr * ach), rr === R ? 24 : 23); }
-          for (let a = 0; a < 80; a++) { const t = (a / 80) * Math.PI * 2; pa(Math.round(rx + Math.cos(t) * (R - 2)), Math.round(ry + Math.sin(t) * (R - 2) * ach), 0); }
-          for (let k = 0; k < 4; k++) { const t = (k / 4) * Math.PI * 2 + giro; for (let q = 1; q < R - 1; q++) { pa(Math.round(rx + Math.cos(t) * q), Math.round(ry + Math.sin(t) * q * ach), 31); } }
-          ra(rx - 1, ry - 1, 3, 3, 0); pa(rx, ry, 24);
-          ra(rx - 3, ry + R, 7, 1, 0);                                                          // donde apoya en el piso
-        });
+        // (🚂 La rueda va aparte, porque en el frenazo sale rodando: ver `caboose` en world/caidas.js, que la dibuja apoyada
+        // acá, con el mismo meneo. Se anota dónde va: el centro y el piso donde apoya.)
+        (w._caboose || (w._caboose = {})).rueda = { rx: x + 12, ry: yb - 9, base: (B.f2 + 1) * S, f, cajonX2: x2 };
         // Encima: dos zapatas de freno (las medialunas de fierro) y la cadena enrollada.
         for (const zx of [x + 5, x + 13]) dibujo(p, zx, tt + 1, ['.oooooo.', 'oKkkkkKo', 'okooooko', 'oo....oo'], { o: 0, K: 24, k: 23 });
         // (🔁 La cadena, enrollada en el piso, adelante a la derecha, junto a la rueda: llena lo que queda de la
@@ -1803,6 +1801,9 @@ function vagon(train, w, dia) {
           ra(bx + bw - 2, tope - BOCA - 2, 1, 10, 0); ra(bx + bw - 3, tope + 3, 3, 2, 0); pa(bx + bw - 2, tope + 3, 24);   // el cucharón colgado del borde
           dibujo(pa, bx + bw - 1, piso - 12, ['oooooooooooo', 'o1111111111o', 'oBbbbbbbbbbo', 'oBbbbbbbbbbo', 'oBbbbbbbbbbo', 'oBbbbbbbbbbo', 'oBbbbbbbbbbo', 'oBbbbbbbbbbo', '.oBbbbbbbbo.', '.oBbbbbbbbo.', '..oooooooo..'], { o: 0, 1: 21, B: 24, b: 23 });   // el balde, con agua
         }, 0, 'agua');
+        // (🚂 Cuando se vuelca en el frenazo, esta pieza se esconde y sigue el que rueda: ver `caboose` en world/caidas.js.)
+        animadosV[animadosV.length - 1].clave = 'barrilAgua:' + w.colStart;
+        (w._caboose || (w._caboose = {})).barril = { clave: 'barrilAgua:' + w.colStart, bx, bw, piso, base, c, f, c2: B.c2, baldeX: bx + bw - 1 };
       } else if (que === 'lockers') {
         // El banco con los lockers: el asiento arriba y dos puertitas con su tirador.
         const H = 10, tt = yt + 3 - H, tf = yb - H;
@@ -1825,7 +1826,8 @@ function vagon(train, w, dia) {
         r(x + Math.floor(ancho / 2) - 2, tf + 2, 4, 3, 0); p(x + Math.floor(ancho / 2) - 1, tf + 3, 28);   // el candado
         // (🔁 Grandes: el asa, el techito, el vidrio de color y la base.)
         const FAROL = ['...oo...', '..o..o..', '.oooooo.', 'oKKKKKKo', 'oVvvvvVo', 'oVvLLvVo', 'oVvLLvVo', 'oVvvvvVo', 'oKKKKKKo', '.oooooo.'];
-        dibujo(p, x + 4, tt - 8, FAROL, { o: 0, K: 23, V: 8, v: 9, L: 10 });
+        // (🚂 Los dos faroles van aparte, porque en el frenazo se caen: ver `caboose` en world/caidas.js.)
+        (w._caboose || (w._caboose = {})).faroles = { lista: [{ px: x + 4, py: tt - 8, rojo: true }, { px: x + 15, py: tt - 6, rojo: false }], base, yb };
         dibujo(p, x + 15, tt - 6, FAROL, { o: 0, K: 23, V: 42, v: 26, L: 43 });
         muebles.push({ x: x - 1, y: tt - 5, w: ancho + 2, h: yb - tt + 6, base });
       }
@@ -2499,6 +2501,8 @@ function vagon(train, w, dia) {
       resultado.altas.push({
         x: mx, y: my, w: A.w * PASO, h: A.h * PASO, base: A.base,
         get img() {
+          // (🚂 Escondida: la del barril de agua del caboose, cuando ya se volcó.)
+          if (A.clave && train._ocultos && train._ocultos.has(A.clave)) return VACIO();
           if (A.reloj) return imgs[Math.floor(performance.now() / 1000 / A.reloj) % imgs.length];
           const m = (A.fuente === 'agua' ? estiloNuevo.meneoAgua : estiloNuevo.meneo) || 0;
           return imgs[Math.max(0, Math.min(imgs.length - 1, Math.round((m + 1) / 2 * (imgs.length - 1))))];

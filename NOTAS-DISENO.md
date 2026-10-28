@@ -19473,6 +19473,16 @@ guardaespaldas distintos)*:
         vista")*, que salen todas (la de arriba primero) y dejan el rincón libre *("hay una valija que nunca se mueve…
         ponela en movimiento como las otras")*.
       - **Los que duermen se despiertan** con el chirrido del frenazo y se cubren como los demás.
+    - **✅ EL CABOOSE** (world/caidas.js, `caboose`) *(Santi eligió que la rueda "salga rodando", que caigan los faroles
+      de señales y la cafetera, y que lo mojado "sólo se vea"; el canasto de la leña no se mueve)*:
+      - El dibujo fijo anota dónde quedó cada cosa (`w._caboose`) y las caídas se arman con eso (`armarPendientes`).
+      - **Los faroles de señales** del cofre caen y se les rompe el vidrio rojo o verde; **la cafetera** de la estufa se
+        cae y vuelca el café. Livianos.
+      - **La rueda del freno** rueda de canto por su fila, la del cajón *(Santi: "no quiero que la rueda vaya al pasillo,
+        sino que avance por dónde estaba")*: los rayos y una mancha de óxido dan la vuelta; sin fuerza se tambalea y cae
+        acostada. Te tira al piso; acostada, un tiro no le hace nada (es de fierro), la dinamita la parte.
+      - **El barril de agua** se vuelca: el dibujo fijo se esconde, queda un charco grande y el balde volcado, su casilla
+        deja de chocar y rueda vacío dejando un rastro. Lo mojado se seca en 90 s.
       - 🐛 Lo que entra al pasillo desde un costado ya no se frena contra la pared de al lado mientras entra (una valija
         de la pirámide quedaba trabada en el rincón).
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los

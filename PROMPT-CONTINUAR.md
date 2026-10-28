@@ -222,7 +222,7 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   ENGANCHES": fase 1, las puertas finitas, y fase 2, el enganche de chapa que se estira y se encoge con el tren con
   peso, y fase 3, trastabillar, el tiempo de cruzar y el tirón en la puntería, hechas; el techo, para cuando se haga
   en la grilla nueva; fase 4, los frenos rotos, en curso: el frenazo, el aplastamiento y el arrancón hechos, y lo que se
-  cae y lo que sale por el pasillo, vagón por vagón (pasajeros, primera clase, correo, guardias, comedor y dormitorio hechos; sigue el caboose; ver NOTAS, también sus reglas)), y revisar
+  cae y lo que sale por el pasillo, vagón por vagón (pasajeros, primera clase, correo, guardias, comedor, dormitorio y caboose hechos; sigue el blindado; ver NOTAS, también sus reglas)), y revisar
   los choques de los otros vagones (que coincidan con lo dibujado) (ver NOTAS, "P4 · LOS OTROS
   VAGONES", y
   "P3 · LA GENTE DEL TREN"). La E4 (los

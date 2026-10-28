@@ -46,7 +46,7 @@ const COSAS = {
 
 /** Arma lo de todo el tren: las repisas y las pilas de cada vagón que ya las tiene. */
 export function crearCaidas(train) {
-  const C = { objetos: [], pilas: [], impactos: [], sueltos: [], papeles: [], estantes: [], rayas: [], derrames: [] };
+  const C = { objetos: [], pilas: [], impactos: [], sueltos: [], papeles: [], estantes: [], rayas: [], derrames: [], charcos: [], train, reloj: 0 };
   const map = train.map, S = map.size, tc = CONFIG.tresCuartos;
   for (const w of train.wagons) {
     if (w.id === 'primeraClase') { primeraClase(C, train, w); continue; }
@@ -54,6 +54,8 @@ export function crearCaidas(train) {
     if (w.id === 'guardias') { guardias(C, train, w); continue; }
     if (w.id === 'comedor') { comedor(C, train, w); continue; }
     if (w.id === 'dormitorio') { dormitorio(C, train, w); continue; }
+    // (🚂 El caboose espera a que el dibujo fijo ubique sus cosas: ver `armarPendientes`.)
+    if (w.id === 'caboose') { (C.porArmar = C.porArmar || []).push(w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -220,7 +222,7 @@ export function avisarCaidas(C, sentido, rng) {
       if (!p.barriles.some((b) => b.cae)) p.barriles[rng.int(0, p.barriles.length - 1)].cae = true;
       continue;
     }
-    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion')) continue;
+    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion' && p.tipo !== 'rueda' && p.tipo !== 'barrilAgua')) continue;
     if (p.atras === (sentido < 0)) { p.estado = 'aviso'; p.t = 0; }
   }
 }
@@ -237,6 +239,19 @@ export function golpearCaidas(C) {
     if (p.tipo === 'baul') {
       p.estado = 'suelto';
       C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 3, demora: 0, mueble: true, hw: 11, hh: 5, vida: 3, lento: 0.8, lona: p.lona });
+      continue;
+    }
+    // 🚂 La rueda del freno sale rodando de canto; el barril de agua se vuelca y rueda vacío (ver `caboose`).
+    if (p.tipo === 'rueda') {
+      p.estado = 'suelto';
+      // (🔁 Por su fila, la del cajón, derecho; no baja al pasillo *(Santi: "no quiero que la rueda vaya al pasillo, sino
+      // que avance por dónde estaba cuando está apoyada al cajón")*. Hasta pasar el cajón no choca con él.)
+      C.sueltos.push({ x: p.x, y: p.yBase - 4, dir, variante: 7, demora: 0, hw: 7, hh: 4, vida: 1, lento: 1.1, porSuFila: true, salida: dir > 0 ? p.cajonX2 + 7 : null });
+      continue;
+    }
+    if (p.tipo === 'barrilAgua') {
+      p.estado = 'suelto';
+      C.sueltos.push({ x: p.x, y: p.yBase - 3, dir, variante: 6, demora: 0, mueble: true, hw: 9, hh: 5, vida: 4, lento: 0.9, contenido: 2, haciaPasillo: p.dy, agua: { clave: p.clave, baldeX: p.baldeX, baldeY: p.yBase + 2, celdas: p.celdas } });
       continue;
     }
     // 🛢️ Los barriles: los que se vuelcan salen rodando cada uno a su tiempo; los demás se quedan parados.
@@ -291,7 +306,8 @@ const cuerpo = (o) => ({ x: o.x, y: o.yPiso - 3, hw: o.hw, hh: 3 });
  */
 export function romperConBala(C, x, y) {
   for (const o of C.objetos) {
-    if (o.estado !== 'piso' || o.fijo) continue;
+    // (🚂 La rueda del freno es de fierro: un tiro no le hace nada.)
+    if (o.estado !== 'piso' || o.fijo || o.aguantaBalas) continue;
     const b = cuerpo(o);
     if (Math.abs(x - b.x) <= b.hw && Math.abs(y - b.y) <= b.hh) { o.estado = 'roto'; o.vx = 0; return o; }
   }
@@ -311,6 +327,8 @@ export function romperEnRadio(C, x, y, radio) {
 /** Avanza las caídas. Cuando algo llega al piso deja un impacto en `C.impactos` (la escena hace el daño). */
 export function actualizarCaidas(C, dt, map) {
   const K = CONFIG.caidas;
+  armarPendientes(C);
+  C.reloj = (C.reloj || 0) + dt;
   for (const o of C.objetos) {
     if (o.estado === 'aviso') o.t += dt;
     if (o.estado !== 'cae') continue;
@@ -705,6 +723,14 @@ function dibujarPila(r, p) {
     if (arriba) pintarTapando(r.ctx, ox + 10 + tiembla, base - 19, 20, 11, luz, (R) => valijaTirada(R, arriba.variante));
     return;
   }
+  // 🚂 La rueda del freno, apoyada contra el cajón: se mueve un punto con el meneo y en el aviso se sacude. (El barril
+  // de agua, mientras está parado, lo dibuja el dibujo fijo, con el agua que se mueve.)
+  if (p.tipo === 'rueda') {
+    const m = Math.round((estiloNuevo.meneo || 0) * 1.4);
+    pintarTapando(r.ctx, Math.round(p.x0 / P) + p.px - 9 + m + tiembla, Math.round(p.yArr / P) + p.py - 9, 19, 19, luz, (R) => pintarRueda(R, 0));
+    return;
+  }
+  if (p.tipo === 'barrilAgua') return;
   // 🛢️ Los barriles parados (en el aviso, cada uno se bambolea a su ritmo).
   if (p.tipo === 'barriles') {
     p.barriles.forEach((b, i) => {
@@ -1157,6 +1183,13 @@ export function destruirEnRadio(C, x, y, radio) {
     if (p.estado === 'suelto' || Math.hypot(p.x - x, (p.yTope + p.yBase) / 2 - y) > radio) continue;
     // (🛢️ Los barriles parados quedan reventados en su lugar, con lo que llevaban por el piso.)
     if (p.tipo === 'barriles') for (const b of p.barriles) barrilRoto(C, p.x + b.dx, p.yBase, b.contenido);
+    // (🚂 La rueda, partida; el barril de agua, reventado: el agua al piso y su casilla libre.)
+    if (p.tipo === 'rueda') ruedaAcostada(C, p.x, p.yBase, true);
+    if (p.tipo === 'barrilAgua') {
+      (C.train._ocultos || (C.train._ocultos = new Set())).add(p.clave);
+      barrilRoto(C, p.x, p.yBase, 2);
+      volcarBarrilAgua(C, { x: p.x, y: p.yBase - 3, hh: 3, baldeX: p.baldeX, baldeY: p.yBase + 2, celdas: p.celdas });
+    }
     p.estado = 'suelto'; p.arriba = [];
     rotos.push({ x: p.x, y: (p.yTope + p.yBase) / 2 });
   }
@@ -1246,7 +1279,8 @@ export function dibujarPapeles(r, C, corrido) {
   r.ctx.fillStyle = PALETA[33];
   for (const q of C.rayas) corrido(q.x, () => { const x = Math.round(q.x / P) * P, y = Math.round(q.y / P) * P; r.ctx.fillRect(x, y, P, P); r.ctx.fillRect(x, y - 3 * P, P, P); })();
   // 🛢️ Lo que fue dejando un barril sin tapa (porotos o harina), un puñado por punto.
-  for (const q of C.derrames) corrido(q.x, () => pintarDerrame(r, q, P))();
+  for (const q of C.charcos) corrido(q.x, () => pintarCharco(r, q, P, C.reloj || 0))();
+  for (const q of C.derrames) corrido(q.x, () => pintarDerrame(r, q, P, C.reloj || 0))();
   for (const p of C.papeles) {
     if (p.z > 0.5) { aire.push({ base: p.y, draw: corrido(p.x, () => papel(r, p, P)) }); corrido(p.x, () => sombraDePapel(r, p, P))(); continue; }
     corrido(p.x, () => papel(r, p, P))();
@@ -1653,7 +1687,7 @@ function dibujarVajilla(r, o, frame, x, y) {
  */
 const BARRIL = { o: 0, T: 6, t: 5, j: 4, L: 6, D: 5, d: 4, s: 3, z: 23, Z: 31 };
 const TAPA_COL = { o: 0, T: 6, j: 4, r: 3, b: 31, 1: 1 };   // (🔁 la tapa, clara: de noche, en sombra, el barril tumbado era una mancha)
-const CONTENIDO_COL = [{ C: 12, c: 47 }, { C: 17, c: 16 }];
+const CONTENIDO_COL = [{ C: 12, c: 47 }, { C: 17, c: 16 }, { C: 33, c: 33 }];   // (🚂 el 2: agua, la madera mojada)
 export const BARRIL_PARADO = [
   '...oooooooooo...',
   '..oTTjTTTTjTTo..',
@@ -1773,13 +1807,25 @@ export function tapaSaltada(C, x, yPiso) {
 
 /** 🛢️ Un puñado de lo que lleva el barril (porotos o harina), en el piso. */
 export function derramar(C, x, y, contenido, k) {
-  C.derrames.push({ x, y, c: contenido || 0, k });
+  C.derrames.push({ x, y, c: contenido || 0, k, nace: C.reloj || 0 });
   if (C.derrames.length > 900) C.derrames.shift();
 }
 
-function pintarDerrame(r, q, P) {
+/**
+ * Un puñado en el piso: porotos (0), harina (1) o agua (2). 🚂 El agua es la madera mojada, más oscura, con algún brillo,
+ * y se va secando: en `SECA_AGUA` segundos se achica y desaparece.
+ */
+const SECA_AGUA = 90;
+function pintarDerrame(r, q, P, reloj) {
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(q.x, q.y) || 0) : 0;
   const R = pintor(r.ctx, Math.round(q.x / P), Math.round(q.y / P), luz);
+  if (q.c === 2) {
+    const edad = (reloj - (q.nace || 0)) / SECA_AGUA;
+    if (edad >= 1) return;
+    if (edad > 0.6) { R(0, 0, 1, 1, 33); return; }
+    R(0, 0, 3, 1, 33); if (q.k === 2) R(0, 1, 2, 1, 33); if (q.k === 1) R(1, 0, 1, 1, 30);
+    return;
+  }
   if (q.c) { R(0, 0, 2, 1, q.k ? 16 : 17); if (q.k === 2) R(1, 1, 1, 1, 16); }
   else { R(0, 0, 1, 1, q.k ? 47 : 12); if (q.k === 2) R(1, 1, 1, 1, 47); }
 }
@@ -1898,3 +1944,220 @@ DIBUJOS.saco = {
   piso: { w: 14, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, SACO_TIRADO, PANO) },
   roto: { w: 14, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, SACO_TIRADO, PANO) },
 };
+
+// ------------------------------------------------------------------------------------------------------ el caboose
+
+/**
+ * 🚂 EL CABOOSE *(Santi eligió que la rueda del freno "salga rodando", que caigan los faroles de señales y la cafetera, y
+ * que lo mojado "sólo se vea"; el canasto de la leña no se mueve: "es pesadísimo")*:
+ *  - LOS DOS FAROLES DE SEÑALES de arriba del cofre (rojo y verde) se tambalean, caen y se les rompe el vidrio de color
+ *    (livianos: media vida).
+ *  - LA CAFETERA de arriba de la estufa se cae y vuelca el café en el piso (liviana).
+ *  - LA RUEDA DEL FRENO DE MANO, apoyada contra el cajón de repuestos, sale rodando por el pasillo de canto (los rayos
+ *    dan la vuelta); cuando pierde fuerza se tambalea y cae acostada. Rodando te tira al piso; acostada es parte del
+ *    piso: un sacudón la corre, un tiro no le hace nada (es de fierro), la dinamita la parte.
+ *  - EL BARRIL DE AGUA se vuelca hacia el pasillo: el agua hace un charco grande, el balde de al lado queda volcado, y
+ *    el barril rueda vacío dejando un rastro de agua; lo mojado se va secando de a poco.
+ * Las posiciones las anota el dibujo fijo cuando dibuja el vagón (`w._caboose`, world/estiloNuevo/vagones.js): estas
+ * cosas se arman recién cuando están (ver `armarPendientes`).
+ */
+function caboose(C, w) {
+  const A = w._caboose, P = PASO(), map = C.train.map, S = map.size;
+  const x0 = Math.floor(w.x / P) * P, yArr = -CONFIG.tresCuartos.alturaPared;
+  const deAx = (pt) => x0 + pt * P, deAy = (pt) => yArr + pt * P;
+  if (A.faroles) A.faroles.lista.forEach((F, k) => {
+    const xw = deAx(F.px + 4);
+    C.objetos.push({
+      tipo: 'farolSenal', variante: F.rojo ? 0 : 1, peso: 'liviano', hw: 5, x: xw, xRepisa: xw, yRepisa: deAy(F.py + 10),
+      yPared: A.faroles.base + 0.001 + k * 0.001, yPiso: deAy(A.faroles.yb) + 4 + k * 3, rompeAlCaer: true, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+    });
+  });
+  if (A.cafetera) {
+    const xw = deAx(A.cafetera.px + 3);
+    C.objetos.push({
+      tipo: 'cafeteraEstufa', peso: 'liviano', hw: 4, x: xw, xRepisa: xw, yRepisa: deAy(A.cafetera.py + 6), yPared: 2 * S,
+      yPiso: 2 * S + 3, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+    });
+  }
+  if (A.rueda) {
+    const x = deAx(A.rueda.rx), cols = Math.round(w.width / S);
+    C.pilas.push({
+      // (Delante del cajón contra el que se apoya: se ordena un poco después que él.)
+      tipo: 'rueda', x, yTope: A.rueda.base - 8, yBase: A.rueda.base + 0.005, hw: 7, hh: 4, atras: (x - w.x) / S < cols / 2,
+      px: A.rueda.rx, py: A.rueda.ry, x0, yArr, base: A.rueda.base, cajonX2: deAx(A.rueda.cajonX2), arriba: [], estado: 'quieta', t: 0, wagon: w.id,
+    });
+  }
+  if (A.barril) {
+    const B = A.barril, cols = Math.round(w.width / S);
+    C.pilas.push({
+      tipo: 'barrilAgua', clave: B.clave, x: deAx(B.bx + B.bw / 2), yTope: deAy(B.piso) - 6, yBase: deAy(B.piso), hw: 9, hh: 4,
+      atras: B.c < cols / 2, dy: B.f < map.rows / 2 ? 1 : -1, baldeX: deAx(B.baldeX + 6), celdas: [B.c, B.c2, B.f, w.colStart],
+      arriba: [], estado: 'quieta', t: 0, wagon: w.id,
+    });
+  }
+}
+
+/** 🚂 Las cosas que esperan que el dibujo fijo las ubique (el caboose): se arman la primera vez que están. */
+function armarPendientes(C) {
+  if (!C.porArmar || !C.porArmar.length) return;
+  C.porArmar = C.porArmar.filter((w) => { if (!w._caboose) return true; caboose(C, w); return false; });
+}
+
+// 🚂 Los faroles de señales, la cafetera de la estufa, y lo roto/tirado de cada uno, puestos a mano.
+const FAROL_SENAL = ['...oo...', '..o..o..', '.oooooo.', 'oKKKKKKo', 'oVvvvvVo', 'oVvLLvVo', 'oVvLLvVo', 'oVvvvvVo', 'oKKKKKKo', '.oooooo.'];
+const FAROL_ROTO = ['..oooooo....', '.oKVVVVKo.v.', 'oKVvLLvVKo..', '.oKVVVVKo.vV', '..oooooo..v.', '.....V......'];
+const FAROL_COL = [{ o: 0, K: 23, V: 8, v: 9, L: 10 }, { o: 0, K: 23, V: 42, v: 26, L: 43 }];
+DIBUJOS.farolSenal = {
+  arriba: { w: 8, h: 10, pintar: (R, v) => dibujarMapa(R, 0, 0, FAROL_SENAL, FAROL_COL[v || 0]) },
+  piso: { w: 12, h: 6, pintar: (R, v) => dibujarMapa(R, 0, 0, FAROL_ROTO, FAROL_COL[v || 0]) },
+  roto: { w: 12, h: 6, pintar: (R, v) => dibujarMapa(R, 0, 0, FAROL_ROTO, FAROL_COL[v || 0]) },
+};
+const CAFETERA_TIRADA = ['..oooooo....', '.oKkkkkkoo..', 'oKkkkkkkko.c', '.oooooooo.cc', '....ccccccc.'];
+DIBUJOS.cafeteraEstufa = {
+  arriba: { w: 7, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, ['.ooo...', 'oKKKo..', 'oKkkkoo', 'oKkkko.', 'oKkkko.', 'oooooo.'], { o: 0, K: 25, k: 24 }) },
+  piso: { w: 12, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, CAFETERA_TIRADA, { o: 0, K: 25, k: 24, c: 33 }) },
+  roto: { w: 12, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, CAFETERA_TIRADA, { o: 0, K: 25, k: 24, c: 33 }) },
+};
+
+/**
+ * 🚂 LA RUEDA DEL FRENO DE MANO, de frente (19×19): el aro de fierro (más claro arriba), los cuatro rayos y el cubo. Dos
+ * dibujos de los rayos, en cruz y en equis, y una mancha de óxido en el aro que da la vuelta (`RUEDA_OXIDO`, puesta a
+ * mano para cada uno de los ocho cuadros): rodando se ve girar. Cayéndose, achatada; acostada en el piso, de canto; y
+ * partida, de la dinamita.
+ */
+const RUEDA_COL = { o: 0, A: 24, a: 23, S: 31, H: 24 };
+const RUEDA_CRUZ = [
+  '......ooooooo......', '....ooAAAAAAAoo....', '...oAAaaaaaaaAAo...', '..oAaaoooooooaaAo..', '.oAaoo...S...ooaAo.',
+  '.oAao....S....oaAo.', 'oAao.....S.....oaAo', 'oAao.....S.....oaAo', 'oAao....ooo....oaAo', 'oAaoSSSSoHoSSSSoaAo',
+  'oAao....ooo....oaAo', 'oAao.....S.....oaAo', 'oAao.....S.....oaAo', '.oaao....S....oaao.', '.oaaoo...S...ooaao.',
+  '..oaaaoooooooaaao..', '...oaaaaaaaaaaao...', '....ooaaaaaaaoo....', '......ooooooo......',
+];
+const RUEDA_EQUIS = [
+  '......ooooooo......', '....ooAAAAAAAoo....', '...oAAaaaaaaaAAo...', '..oAaaoooooooaaAo..', '.oAaoo.......ooaAo.',
+  '.oAaoX.......XoaAo.', 'oAao..X.....X..oaAo', 'oAao...X...X...oaAo', 'oAao....ooo....oaAo', 'oAao....oHo....oaAo',
+  'oAao....ooo....oaAo', 'oAao...X...X...oaAo', 'oAao..X.....X..oaAo', '.oaaoX.......Xoaao.', '.oaaoo.......ooaao.',
+  '..oaaaoooooooaaao..', '...oaaaaaaaaaaao...', '....ooaaaaaaaoo....', '......ooooooo......',
+];
+const RUEDA_OXIDO = [[[9, 1], [9, 2]], [[15, 3], [14, 3]], [[17, 9], [16, 9]], [[15, 15], [14, 15]], [[9, 17], [9, 16]], [[3, 15], [4, 15]], [[1, 9], [2, 9]], [[3, 3], [4, 3]]];
+const RUEDA_CAYENDO = ['......ooooooo......', '...ooAAAAAAAAAoo...', '.ooAaaoooooooaaAoo.', 'oAao.....S.....oaAo', 'oAaoSSSSoooSSSSoaAo', 'oaao.....S.....oaao', '.ooaaoooooooooaaoo.', '...ooaaaaaaaaaoo...', '......ooooooo......'];
+const RUEDA_ACOSTADA = ['....ooooooooooo....', '..ooAAAAAAAAAAAoo..', '.oaaoSSSoHoSSSoaao.', '..ooaaaaaaaaaaaoo..', '....ooooooooooo....'];
+const RUEDA_ROTA = ['..oooo......oooo......', '.oAaao.SS..oaaAo..oo..', 'oAao....SS.oo...oHo...', '.ooo......SS....oo....', '..........S...........'];
+
+/** 🚂 Pinta la rueda de frente en el cuadro `k` (0 a 7) de la vuelta, en su lienzo de 19×19. */
+export function pintarRueda(R, k) {
+  k = ((k % 8) + 8) % 8;
+  dibujarMapa(R, 0, 0, k % 2 ? RUEDA_EQUIS : RUEDA_CRUZ, { ...RUEDA_COL, X: 31 });
+  for (const [x, y] of RUEDA_OXIDO[k]) R(x, y, 1, 1, 47);
+}
+/** 🚂 Cayéndose, achatada (19×9). */
+export function pintarRuedaCayendo(R) { dibujarMapa(R, 0, 0, RUEDA_CAYENDO, RUEDA_COL); }
+DIBUJOS.ruedaFreno = {
+  piso: { w: 19, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, RUEDA_ACOSTADA, RUEDA_COL) },
+  roto: { w: 22, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, RUEDA_ROTA, RUEDA_COL) },
+};
+/** 🚂 La rueda que terminó de rodar y cayó acostada: parte del piso (un tiro no la rompe; la dinamita, sí). */
+export function ruedaAcostada(C, x, yPiso, rota = false) {
+  C.objetos.push({ tipo: 'ruedaFreno', peso: 'nada', hw: 9, x, xRepisa: x, yRepisa: yPiso, yPared: yPiso - 2 * CONFIG.tileSize, yPiso, aguantaBalas: true, estado: rota ? 'roto' : 'piso', t: 0, dir: 0 });
+}
+
+/**
+ * 🚂 EL BARRIL DE AGUA, el del caboose (22 de ancho, el mismo del dibujo fijo), cayéndose y rodando vacío: sin tapa (la
+ * boca abierta de frente, oscura) y por la panza las juntas de las duelas y una marca quemada que da la vuelta
+ * (`AGUA_GIRA`, a mano para cada cuadro). Parado lo dibuja el dibujo fijo, con el agua que se mueve.
+ */
+const AGUA_PANZA = [
+  '.......oooooooo.......', '.....ooLLLDDDDDoo.....', '....oDLzzzzzzzzDDo....', '...oDzzZZZZZZZZzzdo...', '..odzZZLLLDDDDDZZzdo..',
+  '.oszZDLLLLDDDDDDDZzso.', '.ozZDDLLLLDDDDDDDdZzo.', 'ozZdDDLooooooooDDddZzo', 'oZsdDooDDDDDDDDooddsZo', 'ossdoDDDDDDDDDDDDodsso',
+  'ossoDDDDDDDDDDDDDDosso', 'osoDDDDDDDDDDDDDDDDoso', 'ooDDDDDDDDDDDDDDDDDDoo', 'ooDDDDDDDDDDDDDDDDDDoo',
+];
+const TOPE_AGUA = [7, 5, 4, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 7];
+const AGUA_BOCA = [
+  '.......oooooooo.......', '.....oorrrrrrrroo.....', '....orr11111111rro....', '...or111111111111ro...', '..or11111111111111ro..',
+  '.or1111111111111111ro.', '.or1111111111111111ro.', 'or111111111111111111ro', 'or111111111111111111ro', 'or111111111111111111ro',
+  'or111111111111111111ro', 'or111111111111111111ro', 'or111111111111111111ro', 'or111111111111111111ro', '.or1111111111111111ro.',
+  '.or1111111111111111ro.', '..or11111111111111ro..', '...or111111111111ro...', '....orr11111111rro....', '.....oorrrrrrrroo.....',
+  '.......oooooooo.......',
+];
+const AGUA_CAYENDO = [
+  '.......oooooooo.......', '....ooorrrrrrrrooo....', '..oorr1111111111rroo..', '.orr11111111111111rro.', 'or111111111111111111ro',
+  'or111111111111111111ro', '.orr11111111111111rro.', '..oorrrrrrrrrrrrrroo..', 'oZZZZZZZZZZZZZZZZZZZZo', 'oLLDDdDDDdDDDdDDDdDDso',
+  'oLLDDdDDDdDDDdDDDdDDso', 'oLLDDdDDDdDDDdDDDdDDso', 'ozzzzzzzzzzzzzzzzzzzzo', 'oZZZZZZZZZZZZZZZZZZZZo', 'oLLDDdDDDdDDDdDDDdDDso',
+  '.oooooooooooooooooooo.',
+];
+const AGUA_GIRA = [
+  { juntas: [5, 10, 16], marca: [10, 11] }, { juntas: [3, 8, 13, 18], marca: [17] }, { juntas: [5, 10, 16], marca: [20] },
+  { juntas: [3, 8, 13, 18], marca: [] }, { juntas: [5, 10, 16], marca: [] }, { juntas: [3, 8, 13, 18], marca: [] },
+  { juntas: [5, 10, 16], marca: [1] }, { juntas: [3, 8, 13, 18], marca: [4] },
+];
+export const ALTO_BARRIL_AGUA = { inclinado: AGUA_CAYENDO.length, acostado: 7 + AGUA_BOCA.length };
+
+/** 🚂 Pinta el barril de agua (22 de ancho): `pose` 'inclinado' o 'acostado'; `cuadro`, la vuelta (0 a 7). */
+export function pintarBarrilAgua(R, pose, cuadro) {
+  const col = { ...BARRIL, ...TAPA_COL };
+  if (pose === 'inclinado') { dibujarMapa(R, 0, 0, AGUA_CAYENDO, col); return; }
+  const G = AGUA_GIRA[((cuadro % 8) + 8) % 8];
+  dibujarMapa(R, 0, 0, AGUA_PANZA, col);
+  for (const jx of G.juntas) for (let y = TOPE_AGUA[jx] + 1; y < AGUA_PANZA.length; y++) {
+    const ch = AGUA_PANZA[y][jx];
+    if (ch === 'L' || ch === 'D' || ch === 'd') R(jx, y, 1, 1, ch === 'd' ? 3 : 4);
+  }
+  for (const mx of G.marca) { R(mx, TOPE_AGUA[mx] + 4, 1, 1, 0); R(mx, TOPE_AGUA[mx] + 5, 1, 1, 3); }
+  dibujarMapa(R, 0, 7, AGUA_BOCA, col);
+}
+
+/** 🚂 El balde del barril de agua, volcado de costado en el piso (la boca oscura a la derecha). */
+DIBUJOS.balde = {
+  piso: { w: 12, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, ['.oooooooooo.', 'oBBBBBBBBoKo', 'obbbbbbbboKo', 'obbbbbbbboKo', 'oBBBBBBBBoKo', '.oooooooooo.'], { o: 0, B: 24, b: 23, K: 1 }) },
+  roto: { w: 12, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, ['.oooooooooo.', 'oBBBBBBBBoKo', 'obbbbbbbboKo', 'obbbbbbbboKo', 'oBBBBBBBBoKo', '.oooooooooo.'], { o: 0, B: 24, b: 23, K: 1 }) },
+};
+
+/**
+ * 🚂 EL BARRIL DE AGUA SE VUELCA: el charco grande donde cae, el balde volcado al lado (con su charquito), y la casilla
+ * donde estaba queda libre (ya no choca). Lo llama la escena cuando el barril termina de volcarse.
+ */
+export function volcarBarrilAgua(C, ro) {
+  const map = C.train.map;
+  // (🔁 Un charco de verdad, con su forma: hecho de puñaditos sueltos parecía polvo desparramado.)
+  C.charcos.push({ x: ro.x, y: ro.y + ro.hh - 2, grande: true, nace: C.reloj || 0 });
+  if (ro.baldeX != null) {
+    C.objetos.push({ tipo: 'balde', peso: 'nada', hw: 5, x: ro.baldeX, xRepisa: ro.baldeX, yRepisa: ro.baldeY, yPared: ro.baldeY - 2 * CONFIG.tileSize, yPiso: ro.baldeY, estado: 'piso', t: 0, dir: 0 });
+    C.charcos.push({ x: ro.baldeX + 10, y: ro.baldeY + 1, grande: false, nace: C.reloj || 0 });
+  }
+  if (ro.celdas) {
+    const [c0, c1, f, colStart] = ro.celdas;
+    for (let c = c0; c <= c1; c++) if (map.grid[f] && map.grid[f][colStart + c] === 'C') map.grid[f][colStart + c] = '.';
+  }
+}
+
+/**
+ * 🚂 EL CHARCO DEL BARRIL DE AGUA (y el chico del balde): la madera mojada, más oscura, con brillos, puesto a mano. Se va
+ * secando: pasada la mitad de `SECA_AGUA`, el dibujo achicado; después, nada.
+ */
+const CHARCO_GRANDE = [
+  '.........mmmmmmmmmmm................',
+  '....mmmmmmmmmmmmmmmmmmmmm...........',
+  '..mmmmmmmhmmmmmmmmmmmmmmmmmmm.......',
+  '.mmmmmmmmmhhmmmmmmmmmmmmmmmmmmmm....',
+  'mmmmmmmmmmmmmmmmmmmmmmmhmmmmmmmmmm..',
+  'mmmmmmmmmmmmmmmmmmmmmmmmhhmmmmmmmmmm',
+  '.mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm.',
+  '..mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm...',
+  '....mmmmmmmmmmmmmmm.mmmmmmmmmm......',
+  '.......mmmmmmmmm.......mmmm.........',
+];
+const CHARCO_CHICO = [
+  '......mmmmmmmmm.........',
+  '...mmmmmmmmmmmmmmmm.....',
+  '.mmmmmmmmmhmmmmmmmmmm...',
+  'mmmmmmmmmmmmmmmmmmmmmmm.',
+  '.mmmmmmmmmmmmmmmmmmmm...',
+  '....mmmmmmm..mmmmm......',
+];
+function pintarCharco(r, q, P, reloj) {
+  const edad = (reloj - (q.nace || 0)) / SECA_AGUA;
+  if (edad >= 1) return;
+  const D = q.grande && edad < 0.5 ? CHARCO_GRANDE : CHARCO_CHICO;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(q.x, q.y) || 0) : 0;
+  const R = pintor(r.ctx, Math.round(q.x / P) - Math.floor(D[0].length / 2), Math.round(q.y / P) - Math.floor(D.length / 2), luz);
+  dibujarMapa(R, 0, 0, D, { m: 33, h: 30 });
+}

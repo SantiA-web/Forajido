@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, deLona } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -120,6 +120,14 @@ export function updateRodante(ro, dt) {
     if (ro.vuelca === 0) ro.recienVolcado = true;
     return;
   }
+  /**
+   * 🚂 LA RUEDA DEL FRENO: rueda de canto mientras tiene fuerza; ya en el pasillo, cuando le falta, se tambalea y cae
+   * acostada (`cayendo`, y al terminar `tumbada`: la escena la deja en el piso).
+   */
+  if (ro.tipo === 'valija' && ro.variante === 7) {
+    if (ro.cayendo != null) { ro.cayendo -= dt; if (ro.cayendo <= 0) ro.tumbada = true; return; }
+    if (ro.velocidad < 22 && (ro.yMeta == null || Math.abs(ro.yMeta - ro.y) <= 2)) { ro.cayendo = 0.3; return; }
+  }
   // `freno`: lo pone la escena cada cuadro según la casilla (el carbón, 0,5).
   const paso = ro.velocidad * (ro.freno ?? 1) * dt;
   ro.x += ro.dir * paso;
@@ -160,13 +168,13 @@ export function updateRodante(ro, dt) {
   // (🛒 El carro de correo rueda: las ruedas giran con lo que avanza.)
   if (ro.variante === 4) ro.giroRueda = (ro.giroRueda || 0) + paso / 3;
   // (🛢️ El barril cuenta lo que rodó, para cada lado: es lo que le da la vuelta.)
-  if (ro.variante === 6) ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
+  if (ro.variante === 6 || ro.variante === 7) ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
   // 🧳 La que sale de una pila, de costado del pasillo, entra en él (`yMeta`) mientras se desliza.
   if (ro.yMeta != null && !ro.quieta) {
     const d = ro.yMeta - ro.y;
     // (🛒 El carro entra en diagonal, rodando: lo que baja o sube va con lo que avanza *(Santi: "parece que pegó un
     // salto… que rueden de forma diagonal al pasillo y ahí se acomoden en horizontal")*.)
-    const paso = ro.variante === 4 || ro.variante === 5 || ro.variante === 6 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
+    const paso = ro.variante === 4 || ro.variante === 5 || ro.variante === 6 || ro.variante === 7 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
     ro.y += Math.sign(d) * Math.min(Math.abs(d), paso);
     // (📦 La caja de munición sale casi derecho al pasillo y recién ahí se arrastra a lo largo: de costado se trababa
     // contra el catre de al lado de la pila.)
@@ -181,6 +189,7 @@ export function drawRodante(r, ro) {
   if (ro.tipo === 'valija' && ro.variante === 4) { dibujarCarroRodando(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 5) { dibujarCajaDeslizandose(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 6) { dibujarBarrilDeComida(r, ro); return; }
+  if (ro.tipo === 'valija' && ro.variante === 7) { dibujarRuedaRodando(r, ro); return; }
   if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
   /**
@@ -472,9 +481,31 @@ function dibujarBarrilDeComida(r, ro) {
   const P = CONFIG.estilo.punto / 4;
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
   const f = ro.vuelca > 0 ? ro.vuelca / CONFIG.caidas.barril.vuelca : 0;
+  /**
+   * 🚂 El barril de agua del caboose: parado lo sigue dibujando el dibujo fijo (con el agua que se mueve); en cuanto se
+   * empieza a caer, esa pieza se esconde y sigue éste, de 22 de ancho (`pintarBarrilAgua`): ocho cuadros por vuelta, uno
+   * cada 6,5 unidades.
+   */
+  if (ro.agua) {
+    if (f > 0.6) return;
+    if (ro.ocultos) ro.ocultos.add(ro.agua.clave);
+    const pose = f > 0.2 ? 'inclinado' : 'acostado', alto = ALTO_BARRIL_AGUA[pose];
+    pintarTapando(r.ctx, Math.round(ro.x / P) - 11, Math.round((ro.y + ro.hh) / P) - alto, 22, alto, luz + (ro.hitFlash > 0 ? 2 : 0),
+      (R) => pintarBarrilAgua(R, pose, Math.floor((ro.rodado || 0) / 6.5)));
+    return;
+  }
   const pose = f > 0.6 ? 'parado' : f > 0.2 ? 'inclinado' : 'acostado', alto = ALTO_BARRIL[pose];
   pintarTapando(r.ctx, Math.round(ro.x / P) - 8, Math.round((ro.y + ro.hh) / P) - alto, 16, alto, luz + (ro.hitFlash > 0 ? 2 : 0),
     (R) => pintarBarril(R, pose, Math.floor((ro.rodado || 0) / 4.7), ro.contenido, ro.abierto));
+}
+
+/** 🚂 La rueda del freno rodando de canto (un cuadro cada 5,6 unidades: ocho por vuelta) o cayéndose, achatada. */
+function dibujarRuedaRodando(r, ro) {
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  const piso = Math.round((ro.y + ro.hh) / P), ox = Math.round(ro.x / P) - 9;
+  if (ro.cayendo != null) { pintarTapando(r.ctx, ox, piso - 9, 19, 9, luz, pintarRuedaCayendo); return; }
+  pintarTapando(r.ctx, ox, piso - 19, 19, 19, luz, (R) => pintarRueda(R, Math.floor((ro.rodado || 0) / 5.6)));
 }
 
 /** 📦 La caja de munición que se desliza (world/caidas.js): apoyada en el piso, sin saltar ni girar. */

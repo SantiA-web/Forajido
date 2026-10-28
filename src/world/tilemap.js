@@ -94,6 +94,11 @@ const TILE_RULES = {
    * 🆕 LA SILLA (el escritorio del caboose): del tamaño de la silla dibujada; baja, pasan la vista y las balas.
    */
   'Y': { solid: true, blocksSight: false, blocksBullets: false, margenX: 3.5, margenY: [6, 2] },
+  /**
+   * 🍽️ LA ALACENA DEL COMEDOR (el aparador con el estante de la vajilla encima): un mueble alto de madera contra la
+   * pared del fondo. Frena el paso, la vista y las balas, como un asiento.
+   */
+  'V': { solid: true, blocksSight: true, blocksBullets: true },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
   // 🛒 Donde espera un carro de correo que sale rodando en el frenazo (world/caidas.js): el choque lo pone el carro.
   'R': { solid: false, blocksSight: false, blocksBullets: false },

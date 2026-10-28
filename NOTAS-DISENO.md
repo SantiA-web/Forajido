@@ -19445,6 +19445,19 @@ guardaespaldas distintos)*:
         las tres salen del mismo lugar, casi derecho hacia el pasillo, dejando rayas en la madera. Te tiran al piso,
         quietas chocan y son cobertura, cada sacudón las vuelve a mover y cada tiro les pega.
       - El dibujo fijo dejó afuera los rifles, los sombreros y las cartucheras (se dibujan aparte).
+    - **✅ EL COMEDOR** (world/caidas.js, `comedor`) *(Santi eligió "alacena en la punta", faroles que "solo se
+      hamacan" y barriles "junto a cada puerta")*:
+      - **La alacena** (casillas `V`, nuevas, en el rincón de arriba de la punta; esa pared quedó sin ventana): abajo el
+        aparador (un metro de hondo, dos puertas), encima el estante playo contra la pared. Lo de sus tres niveles
+        (platos apilados, la cafetera con los jarros, las latas, la olla de fierro) cae delante del aparador: liviano.
+      - **La vajilla de las mesas** dejó el dibujo fijo: en el frenazo y el arrancón cada pieza se desliza por la tabla
+        lo suyo (algunas no se mueven) y la que llega a la punta cae al piso, sin lastimar (es de lata).
+      - **Los barriles de comida** (casillas `R`, uno por casilla, pegados a la pared de la puerta *(Santi: "para que
+        no molesten tanto cuando no están rodando")*), de porotos o de harina: se vuelcan hacia el pasillo (parado,
+        cayéndose, acostado) y salen rodando: la tapa da la vuelta y el tapón de la panza pasa de un lado al otro, así
+        se lee que rueda. Te tiran al piso; quietos chocan y son cobertura; cada sacudón los vuelve a mover. A alguno se
+        le salta la tapa y va dejando lo que lleva por el piso. Aguantan tres tiros; rotos queda el montón.
+      - **Los faroles** no se caen: se hamacan, como en todos los vagones.
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

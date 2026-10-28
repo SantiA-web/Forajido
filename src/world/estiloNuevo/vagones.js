@@ -33,6 +33,7 @@ import { iluminar } from '../../engine/luz.js';
 import { masCercano, sombrear } from '../../engine/paleta.js';
 import { estiloNuevo } from '../../engine/estiloNuevo.js';
 import { WAGONS, nichoDeCaja } from '../../data/wagons.js';
+import { medidasAlacena } from '../caidas.js';
 
 /** Cuántas unidades del mundo mide un punto de la grilla (0,75 con puntos de 3). */
 export const PASO = CONFIG.estilo.punto / DENSIDAD;
@@ -784,23 +785,50 @@ function vagon(train, w, dia) {
       r(x + 2, ty + hondo, ancho, 3, MAD_SS); r(x + 2, ty + hondo, ancho, 1, MAD_S);   // el canto
       const pata = y2 - (ty + hondo + 3);
       for (const px of [x + 4, x2 - 6]) { r(px - 1, ty + hondo + 3, 4, pata, 0); r(px, ty + hondo + 3, 2, pata - 1, MAD_SS); }
-      // --- lo de encima: 0 servida, 1 a medio comer, 2 vacía
-      const estado = Math.floor(hash(c * 3 + 1, f * 5 + w.colStart) * 3);
-      const filasPlato = [ty + Math.round(hondo * 0.22), ty + Math.round(hondo * 0.62)];
-      const lados = [x + 4, x2 - 13];
-      lados.forEach((lx, li) => filasPlato.forEach((py, pi) => {
-        const k = li * 2 + pi, h = hash(c + k, f + 17);
-        if (estado === 2 && h < 0.6) return;
-        dibujo(lx + (li ? 0 : 1), py, estado === 0 ? PLATO_LLENO : estado === 1 && h < 0.5 ? PLATO_MEDIO : PLATO, LATA);
-        if (h > 0.35) dibujo(li ? lx - 5 : lx + 8, py - 1, JARRO, LATA);
-      }));
-      const cx = x + Math.floor(ancho / 2);
-      if (estado < 2) dibujo(cx - 2, ty + Math.round(hondo * 0.3), CAFETERA, LATA);
-      if (estado === 0) dibujo(cx - 3, ty + Math.round(hondo * 0.62), PAN, LATA);
+      // --- (🍽️ Lo de encima —los platos, los jarros, la cafetera y el pan— va aparte, porque en el frenazo se desliza
+      // por la tabla y se cae: ver `comedor` en world/caidas.js.)
       // (La mesa va ANTES de la gente sentada en sus bancos, que se ordena por el borde de abajo del
       // banco: así se les ven los brazos apoyados; lo de las piernas que cae debajo de la tapa no se
       // dibuja, ver `mesa` en estiloNuevo/gente.js.)
       muebles.push({ x: x + 1, y: ty - 1, w: ancho + 2, h: y2 - ty + 1, base });
+    }
+    /**
+     * 🍽️ LA ALACENA (las 'V', en el rincón de arriba de la punta) *(Santi eligió "alacena en la punta")*: abajo EL
+     * APARADOR, hondo, con la mesada y dos puertas; encima, contra la pared, EL ESTANTE DE LA VAJILLA, playo, con su
+     * cornisa, dos tablas y el fondo en sombra. De la misma madera pelada de las mesas, con algún golpe en los cantos.
+     * (Lo que lleva —platos, jarros, latas, la olla— va aparte, porque en el frenazo se cae: ver `comedor` en
+     * world/caidas.js. Las medidas, las mismas de allá: `medidasAlacena`.)
+     */
+    for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 0; c < cols; c++) {
+      if (casilla(c, f) !== 'V' || casilla(c - 1, f) === 'V' || casilla(c, f - 1) === 'V') continue;
+      let c2 = c; while (casilla(c2 + 1, f) === 'V') c2++;
+      const x = ax(w.x + c * S) + 1, x2 = ax(w.x + (c2 + 1) * S) - 1, aw = x2 - x;
+      const A = medidasAlacena(ay, f * S);
+      // El estante: la tapa de arriba, la cornisa, los dos parantes, el fondo en sombra y las tablas.
+      r(x - 1, A.techo - 1, aw + 2, A.mesada - A.techo + 1, 0);
+      r(x, A.techo, aw, A.cornisa - A.techo, MAD); r(x, A.techo, aw, 1, MAD_L);
+      r(x, A.cornisa, aw, 3, MAD_S); r(x, A.cornisa, aw, 1, MAD_L); r(x, A.cornisa + 2, aw, 1, MAD_SS);
+      r(x + 3, A.cornisa + 3, aw - 6, A.mesada - A.cornisa - 3, 1);
+      for (let q = A.cornisa + 5; q < A.mesada; q += 4) for (let k = x + 5; k < x2 - 5; k += 9) if (deja(k, q, 3)) p(k, q, 2);   // las juntas del fondo
+      for (const px of [x, x2 - 3]) { r(px, A.cornisa + 3, 3, A.mesada - A.cornisa - 3, MAD); r(px, A.cornisa + 3, 1, A.mesada - A.cornisa - 3, MAD_L); r(px + 2, A.cornisa + 3, 1, A.mesada - A.cornisa - 3, MAD_S); }
+      for (const ty of A.tablas) { r(x + 3, ty, aw - 6, 1, MAD_L); r(x + 3, ty + 1, aw - 6, 1, MAD_S); r(x + 3, ty + 2, aw - 6, 1, 0); }
+      // El aparador: la mesada (de tablas, gastada), el canto y la cara con las dos puertas, el zócalo.
+      r(x - 1, A.mesada - 1, aw + 2, A.pie - A.mesada + 2, 0);
+      r(x, A.mesada, aw, A.frente - A.mesada, MAD); r(x, A.mesada, aw, 1, MAD_S);
+      for (let q = A.mesada + 5; q < A.frente - 1; q += 5) r(x, q, aw, 1, MAD_S);
+      for (let q = 0; q < aw; q++) if (hash(x + q, A.frente) < 0.5) p(x + q, A.frente - 1, MAD_L);   // la orilla gastada
+      r(x, A.frente, aw, 2, MAD_SS); r(x, A.frente, aw, 1, MAD_S);
+      r(x, A.frente + 2, aw, A.pie - A.frente - 4, MAD_S);
+      const mitad = x + Math.floor(aw / 2);
+      for (const [dx, dw] of [[x + 2, mitad - x - 3], [mitad + 1, x2 - mitad - 3]]) {
+        r(dx, A.frente + 3, dw, A.pie - A.frente - 7, MAD_SS); r(dx + 1, A.frente + 4, dw - 2, A.pie - A.frente - 9, MAD_S);
+        r(dx + 1, A.frente + 4, dw - 2, 1, MAD);
+        p(dx < mitad ? dx + dw - 2 : dx + 1, A.frente + 6, 28);                                         // el tirador
+      }
+      r(x, A.pie - 2, aw, 2, MAD_SS);                                                                    // el zócalo
+      // Los golpes: un pedazo que falta en el canto de la mesada y en una puerta.
+      p(x + 7, A.frente, 0); p(x + 8, A.frente, 0); p(x2 - 12, A.frente + 6, 0);
+      muebles.push({ x: x - 1, y: A.techo - 1, w: aw + 2, h: A.pie - A.techo + 1, base: (f + 1) * S - 0.03 });
     }
   }
 

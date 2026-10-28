@@ -18,8 +18,9 @@
  * caer (`zonas`, que también leen los guardias para salirse).
  *
  * Hechos: el de pasajeros (portaequipajes), primera clase (las botellas de la barra, las arañas del techo y un baúl
- * grande en el rincón de cada puerta) y el correo (las sacas de los casilleros, el cajón chico de cada pila de
- * encomiendas y los carros de las puntas). Los demás, de a uno: ver el plan en las notas.
+ * grande en el rincón de cada puerta), el correo (las sacas de los casilleros, el cajón chico de cada pila de
+ * encomiendas y los carros de las puntas), el de guardias (los estantes, el armero y la munición) y el comedor (la
+ * alacena, la vajilla de las mesas y los barriles de comida). Los demás, de a uno: ver el plan en las notas.
  */
 import { CONFIG } from '../data/config.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
@@ -44,12 +45,13 @@ const COSAS = {
 
 /** Arma lo de todo el tren: las repisas y las pilas de cada vagón que ya las tiene. */
 export function crearCaidas(train) {
-  const C = { objetos: [], pilas: [], impactos: [], sueltos: [], papeles: [], estantes: [], rayas: [] };
+  const C = { objetos: [], pilas: [], impactos: [], sueltos: [], papeles: [], estantes: [], rayas: [], derrames: [] };
   const map = train.map, S = map.size, tc = CONFIG.tresCuartos;
   for (const w of train.wagons) {
     if (w.id === 'primeraClase') { primeraClase(C, train, w); continue; }
     if (w.id === 'correo') { correo(C, train, w); continue; }
     if (w.id === 'guardias') { guardias(C, train, w); continue; }
+    if (w.id === 'comedor') { comedor(C, train, w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -171,6 +173,11 @@ function primeraClase(C, train, w) {
 /** ¿Choca acá un baúl de los que esperan junto a las puertas? (Para `isSolidForMovementAt` de la escena.) */
 export function bloqueaCaida(C, x, y) {
   for (const p of C.pilas) {
+    // (🛢️ Los barriles, cada uno el suyo: los que quedan parados.)
+    if (p.tipo === 'barriles' && p.estado !== 'suelto') {
+      for (const b of p.barriles) if (Math.abs(x - (p.x + b.dx)) < 6 && Math.abs(y - (p.yBase - 3)) < 3.5) return true;
+      continue;
+    }
     if ((p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion') || p.estado === 'suelto') continue;
     if (Math.abs(x - p.x) < p.hw && Math.abs(y - (p.yTope + p.yBase) / 2) < p.hh) return true;
   }
@@ -184,6 +191,8 @@ export function bloqueaCaida(C, x, y) {
 export function avisarCaidas(C, sentido, rng) {
   const K = CONFIG.caidas;
   for (const o of C.objetos) {
+    // 🍽️ La vajilla de las mesas no se cae de una repisa: se desliza por la tabla (ver `deslizarVajilla`).
+    if (o.enMesa) { if (o.estado === 'repisa') planearVajilla(o, sentido, rng); continue; }
     if (o.estado !== 'repisa' || !rng.chance(K.cae * (o.prob ?? 1))) continue;
     o.estado = 'aviso'; o.t = 0; o.dir = -sentido;
     /**
@@ -201,6 +210,14 @@ export function avisarCaidas(C, sentido, rng) {
     }
   }
   for (const p of C.pilas) {
+    if (p.tipo === 'barriles') {
+      if (p.estado !== 'quieta' || !p.barriles.length || p.atras !== (sentido < 0)) continue;
+      // (Nada todo a la vez: cada uno se vuelca o no, y a su tiempo; pero alguno siempre.)
+      p.estado = 'aviso'; p.t = 0;
+      for (const b of p.barriles) { b.cae = rng.chance(K.barril.cae); b.demora = rng.range(0, 0.5); }
+      if (!p.barriles.some((b) => b.cae)) p.barriles[rng.int(0, p.barriles.length - 1)].cae = true;
+      continue;
+    }
     if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion')) continue;
     if (p.atras === (sentido < 0)) { p.estado = 'aviso'; p.t = 0; }
   }
@@ -210,6 +227,7 @@ export function avisarCaidas(C, sentido, rng) {
 export function golpearCaidas(C) {
   // (Cada uno arranca a su tiempo: hasta que el reloj llega a cero sigue en su lugar, tambaleándose.)
   for (const o of C.objetos) if (o.estado === 'aviso') { o.estado = 'cae'; o.t = -(o.demora || 0); }
+  for (const o of C.objetos) if (o.enMesa && o.planDx) o.deslizando = true;
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
     const dir = p.atras ? 1 : -1;
@@ -217,6 +235,16 @@ export function golpearCaidas(C) {
     if (p.tipo === 'baul') {
       p.estado = 'suelto';
       C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 3, demora: 0, mueble: true, hw: 11, hh: 5, vida: 3, lento: 0.8 });
+      continue;
+    }
+    // 🛢️ Los barriles: los que se vuelcan salen rodando cada uno a su tiempo; los demás se quedan parados.
+    if (p.tipo === 'barriles') {
+      for (const b of p.barriles) {
+        if (!b.cae) continue;
+        C.sueltos.push({ x: p.x + b.dx, y: p.yBase - 3, dir, variante: 6, demora: b.demora, mueble: true, hw: 6, hh: 4, vida: 3, lento: 0.9, contenido: b.contenido, haciaPasillo: p.dy });
+      }
+      p.barriles = p.barriles.filter((b) => !b.cae);
+      p.estado = p.barriles.length ? 'quieta' : 'suelto';
       continue;
     }
     // 📦 La pila de munición: las tres cajas salen deslizándose, raspando el piso, una detrás de la otra.
@@ -302,6 +330,7 @@ export function actualizarCaidas(C, dt, map) {
     }
   }
   for (const p of C.pilas) if (p.estado === 'aviso') p.t += dt;
+  for (const o of C.objetos) if (o.deslizando) deslizarVajilla(o, dt);
   // Lo tirado que un sacudón empujó: se desliza y el piso lo va frenando; contra un asiento, se para.
   const roce = CONFIG.caidas.roceSuelo;
   for (const o of C.objetos) {
@@ -431,6 +460,8 @@ export function cosasDeCaidas(r, C, corrido) {
     if (o.tipo === 'botellas') { out.push({ base: o.estado === 'repisa' || o.estado === 'aviso' ? o.yPared : o.yPiso, draw: corrido(o.xRepisa, () => dibujarBotellas(r, o)) }); continue; }
     if (o.tipo === 'rifle') { out.push({ base: o.estado === 'piso' ? o.yPiso : o.estado === 'cae' ? delante : o.yPared, draw: corrido(o.xRepisa, () => dibujarRifle(r, o, x, y)) }); continue; }
     if (o.tipo === 'arana') { out.push({ base: o.yPiso + (o.estado === 'piso' ? 0 : 20), draw: corrido(o.xRepisa, () => dibujarArana(r, o, x, y)) }); continue; }
+    // (🍽️ La vajilla —de la alacena y de las mesas— tiene un dibujo por pieza: ver `dibujarVajilla`.)
+    if (o.tipo === 'vajilla') { out.push({ base, draw: corrido(o.xRepisa, () => dibujarVajilla(r, o, frame, x, y)) }); continue; }
     // (📦 El cajón de la pila, sobre la pila, se ordena con ella; cayendo y en el piso, como cualquiera.)
     if (o.tipo === 'cajonChico' && (o.estado === 'repisa' || o.estado === 'aviso')) base = o.basePila;
     if (o.tipo === 'cajonChico' && o.estado === 'cae') base = o.yPiso;
@@ -656,6 +687,14 @@ function dibujarPila(r, p) {
   // 🥃 El baúl grande de primera clase, solo.
   if (p.tipo === 'baul') {
     pintarTapando(r.ctx, Math.round(p.x / P) - 15 + tiembla, Math.round(p.yBase / P) - 20, 30, 20, luz, pintarBaulGrande);
+    return;
+  }
+  // 🛢️ Los barriles parados (en el aviso, cada uno se bambolea a su ritmo).
+  if (p.tipo === 'barriles') {
+    p.barriles.forEach((b, i) => {
+      const bam = p.estado === 'aviso' && Math.floor(p.t * (12 + i * 5)) % 2 ? (i % 2 ? 1 : -1) : 0;
+      pintarTapando(r.ctx, Math.round((p.x + b.dx) / P) - 8 + bam, Math.round(p.yBase / P) - BARRIL_PARADO.length, 16, BARRIL_PARADO.length, luz, (R) => pintarBarril(R, 'parado', 0, b.contenido));
+    });
     return;
   }
   // 📦 La pila de munición, esperando (en el aviso se sacude).
@@ -1100,6 +1139,8 @@ export function destruirEnRadio(C, x, y, radio) {
   }
   for (const p of C.pilas) {
     if (p.estado === 'suelto' || Math.hypot(p.x - x, (p.yTope + p.yBase) / 2 - y) > radio) continue;
+    // (🛢️ Los barriles parados quedan reventados en su lugar, con lo que llevaban por el piso.)
+    if (p.tipo === 'barriles') for (const b of p.barriles) barrilRoto(C, p.x + b.dx, p.yBase, b.contenido);
     p.estado = 'suelto'; p.arriba = [];
     rotos.push({ x: p.x, y: (p.yTope + p.yBase) / 2 });
   }
@@ -1188,6 +1229,8 @@ export function dibujarPapeles(r, C, corrido) {
   // 📦 Las rayas que dejó en el piso lo que se arrastró raspando (dos marcas paralelas, oscuras).
   r.ctx.fillStyle = PALETA[33];
   for (const q of C.rayas) corrido(q.x, () => { const x = Math.round(q.x / P) * P, y = Math.round(q.y / P) * P; r.ctx.fillRect(x, y, P, P); r.ctx.fillRect(x, y - 3 * P, P, P); })();
+  // 🛢️ Lo que fue dejando un barril sin tapa (porotos o harina), un puñado por punto.
+  for (const q of C.derrames) corrido(q.x, () => pintarDerrame(r, q, P))();
   for (const p of C.papeles) {
     if (p.z > 0.5) { aire.push({ base: p.y, draw: corrido(p.x, () => papel(r, p, P)) }); corrido(p.x, () => sombraDePapel(r, p, P))(); continue; }
     corrido(p.x, () => papel(r, p, P))();
@@ -1406,3 +1449,329 @@ function dibujarRifle(r, o, x, y) {
   const ox = Math.round(x / P) - 2 + sacude, oy = Math.round(y / P) - filas.length;
   pintarTapando(r.ctx, ox, oy, 6, filas.length, luz, (R) => dibujarMapa(R, 0, 0, filas, ARMA));
 }
+
+// ------------------------------------------------------------------------------------------------------ el comedor
+
+/**
+ * 🍽️ LA ALACENA, medida en puntos del dibujo (la usan el dibujo fijo, world/estiloNuevo/vagones.js, y lo que se cae).
+ * `ay` pasa del mundo a los puntos; `yA`, la pared del fondo de su fila. El aparador llega hasta 12 unidades de la
+ * pared (un metro) y tiene 14 puntos de alto; el estante, playo (4 unidades), sube 26 puntos más desde la mesada.
+ * (🔁 Antes el aparador era de 20 unidades: casi dos metros de hondo, una mesada enorme.)
+ */
+export function medidasAlacena(ay, yA) {
+  const ALTO_AP = 14, ALTO_EST = 26;
+  const pie = ay(yA + 12), frente = pie - ALTO_AP, mesada = ay(yA + 4) - ALTO_AP;
+  const cornisa = mesada - ALTO_EST, techo = ay(yA) - ALTO_AP - ALTO_EST;
+  const tablas = [cornisa + 9, cornisa + 18];
+  // Donde apoya lo que lleva: en cada tabla y, abajo, en la mesada (contra el estante).
+  return { pie, frente, mesada, cornisa, techo, tablas, niveles: [tablas[0], tablas[1], mesada + 3] };
+}
+
+/**
+ * 🍽️ EL COMEDOR *(Santi eligió "alacena en la punta", que los faroles "solo se hamacan" y los barriles "junto a cada
+ * puerta")*:
+ *  - LA ALACENA ('V'): lo de sus tres niveles —los platos parados, la cafetera con los jarros, las latas y la olla— se
+ *    cae para adelante, al piso de delante del aparador (liviano: media vida).
+ *  - LA VAJILLA DE LAS MESAS (la que dibujaba el dibujo fijo, en los mismos lugares): en el frenazo y el arrancón cada
+ *    pieza se desliza por la tabla lo suyo (algunas no se mueven), y la que llega a la punta se cae al piso. Es de lata:
+ *    no lastima.
+ *  - LOS BARRILES DE COMIDA ('R'), uno o dos a cada lado de cada puerta, de porotos o de harina: se vuelcan hacia el
+ *    pasillo y salen rodando (como el baúl: te tiran al piso, quietos chocan y son cobertura, y cada sacudón los vuelve
+ *    a mover). Al que se le salta la tapa va dejando lo que lleva; reventado, queda el montón.
+ * Los faroles no se caen: se hamacan con el tren, como en todos los vagones.
+ */
+function comedor(C, train, w) {
+  const map = train.map, S = map.size, tc = CONFIG.tresCuartos, P = PASO();
+  const cols = Math.round(w.width / S);
+  const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
+  const esPared = (f) => casilla(Math.floor(cols / 2), f) === '#' || casilla(Math.floor(cols / 2), f) === 'W';
+  let filasArriba = 0; while (esPared(filasArriba)) filasArriba++;
+  let filasAbajo = 0; while (esPared(map.rows - 1 - filasAbajo)) filasAbajo++;
+  const x0 = Math.floor(w.x / P) * P, yArr = -tc.alturaPared;
+  const ax = (u) => Math.round((u - x0) / P), ay = (u) => Math.round((u - yArr) / P);
+  const deAx = (pt) => x0 + pt * P, deAy = (pt) => yArr + pt * P;
+  // --- la alacena: dos cosas por nivel.
+  for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 0; c < cols; c++) {
+    if (casilla(c, f) !== 'V' || casilla(c - 1, f) === 'V' || casilla(c, f - 1) === 'V') continue;
+    let c2 = c; while (casilla(c2 + 1, f) === 'V') c2++;
+    const x = ax(w.x + c * S) + 1, x2 = ax(w.x + (c2 + 1) * S) - 1, aw = x2 - x;
+    const A = medidasAlacena(ay, f * S), yPiso = (f + 1) * S;
+    const vuelta = azar(w.colStart, 41) < 0.5;
+    const niveles = [['platos', 'jarros'], ['latas', 'platos'], ['olla', 'jarros']];
+    niveles.forEach((dos, k) => (vuelta ? [...dos].reverse() : dos).forEach((que, q) => {
+      const cx = x + Math.round(aw * (q ? 0.71 : 0.29)) + Math.round((azar(k, q + w.colStart) - 0.5) * 6);
+      const xw = deAx(cx);
+      C.objetos.push({
+        tipo: 'vajilla', variante: que, peso: 'liviano', hw: 6, x: xw, xRepisa: xw, yRepisa: deAy(A.niveles[k]), yPared: yPiso,
+        yPiso: yPiso + 4 + Math.round(azar(k * 3 + q, w.colStart) * 12), estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+      });
+    }));
+  }
+  // --- la vajilla de las mesas: 0 servida, 1 a medio comer, 2 vacía (como la dibujaba el dibujo fijo).
+  for (let c = 0; c < cols; c++) for (let f = filasArriba; f < map.rows - filasAbajo; f++) {
+    if (casilla(c, f) !== 'C' || casilla(c - 1, f) === 'C' || casilla(c, f - 1) === 'C') continue;
+    let c2 = c; while (casilla(c2 + 1, f) === 'C') c2++;
+    let f2 = f; while (casilla(c, f2 + 1) === 'C') f2++;
+    const x = ax(w.x + c * S), x2 = ax(w.x + (c2 + 1) * S), y = ay(f * S), y2 = ay((f2 + 1) * S);
+    const base = (f2 + 1) * S - 0.01;
+    const ALTO_MESA = 11, ancho = x2 - x - 4, ty = y - ALTO_MESA + 2, hondo = y2 - ALTO_MESA - ty;
+    const mesa = { xa: deAx(x + 2), xb: deAx(x + 2 + ancho) };
+    const pieza = (variante, px, py) => {
+      const D = VAJILLA[variante].arriba, xw = deAx(px + Math.floor(D[0].length / 2));
+      C.objetos.push({
+        tipo: 'vajilla', variante, peso: 'nada', hw: (D[0].length * P) / 2, x: xw, xRepisa: xw, yRepisa: deAy(py + D.length),
+        yPared: base + 0.002, yPiso: base + 3 + Math.round(azar(px, py) * 8), mesa, enMesa: true, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+      });
+    };
+    const estado = Math.floor(azar(c * 3 + 1, f * 5 + w.colStart) * 3);
+    const filasPlato = [ty + Math.round(hondo * 0.22), ty + Math.round(hondo * 0.62)];
+    [x + 4, x2 - 13].forEach((lx, li) => filasPlato.forEach((py, pi) => {
+      const k = li * 2 + pi, h = azar(c + k, f + 17);
+      if (estado === 2 && h < 0.6) return;
+      pieza(estado === 0 ? 'platoLleno' : estado === 1 && h < 0.5 ? 'platoMedio' : 'plato', lx + (li ? 0 : 1), py);
+      if (h > 0.35) pieza('jarro', li ? lx - 5 : lx + 8, py - 1);
+    }));
+    const cx = x + Math.floor(ancho / 2);
+    if (estado < 2) pieza('cafetera', cx - 2, ty + Math.round(hondo * 0.3));
+    if (estado === 0) pieza('pan', cx - 3, ty + Math.round(hondo * 0.62));
+  }
+  // --- los barriles de comida, junto a las puertas (las 'R'): uno por casilla, parados al borde del pasillo.
+  for (let f = filasArriba; f < map.rows - filasAbajo; f++) for (let c = 0; c < cols; c++) {
+    if (casilla(c, f) !== 'R' || casilla(c - 1, f) === 'R') continue;
+    let c2 = c; while (casilla(c2 + 1, f) === 'R') c2++;
+    const dy = f < map.rows / 2 ? 1 : -1;                                   // para dónde queda el pasillo
+    const x = w.x + ((c + c2 + 1) / 2) * S;
+    const barriles = [];
+    // (🔁 Pegados a la pared de la puerta *(Santi: "los pegaría a la pared de la puerta para que no molesten tanto cuando no
+    // están rodando")*: antes cada uno iba en el medio de su casilla.)
+    const pegado = CONFIG.tresCuartos.paredPunta + 6 + 1, izq = c < cols / 2;
+    for (let k = 0; k <= c2 - c; k++) {
+      const xb = izq ? w.x + pegado + k * 12.5 : w.x + w.width - pegado - k * 12.5;
+      barriles.push({ dx: xb - x, contenido: azar((izq ? c + k : c2 - k) * 5, f + w.colStart) < 0.5 ? 0 : 1 });
+    }
+    const yBase = dy > 0 ? (f + 1) * S - 3 : f * S + 7;
+    C.pilas.push({
+      tipo: 'barriles', x, yTope: yBase - 6, yBase, hw: ((c2 - c + 1) * S) / 2, hh: 3, dy, barriles,
+      atras: c < cols / 2, arriba: [], estado: 'quieta', t: 0, wagon: w.id,
+    });
+  }
+}
+
+/** 🍽️ En el aviso del golpe, cada pieza de la mesa decide si se mueve, cuánto y cuándo (algunas se quedan). */
+function planearVajilla(o, sentido, rng) {
+  const K = CONFIG.caidas.vajilla;
+  if (rng.chance(K.quieta)) { o.planDx = 0; return; }
+  o.planDx = -sentido * rng.range(K.desliza[0], K.desliza[1]);
+  o.deslDemora = rng.range(0, 0.3);
+  o.correA = rng.range(3, 9);
+  o.dura = CONFIG.caidas.caeDura * rng.range(0.6, 0.9);
+}
+
+/** 🍽️ La pieza se desliza por la tabla; si llega a la punta de la mesa, se cae (y queda en el piso, como todo). */
+function deslizarVajilla(o, dt) {
+  if (o.estado !== 'repisa' || !o.planDx) { o.deslizando = false; return; }
+  o.deslDemora -= dt;
+  if (o.deslDemora > 0) return;
+  const s = Math.sign(o.planDx), paso = Math.min(Math.abs(o.planDx), CONFIG.caidas.vajilla.velocidad * dt);
+  o.xRepisa += s * paso; o.x = o.xRepisa; o.planDx -= s * paso;
+  if (o.xRepisa - o.hw < o.mesa.xa || o.xRepisa + o.hw > o.mesa.xb) {
+    o.estado = 'cae'; o.t = 0; o.dir = s; o.enMesa = false; o.deslizando = false; o.yPiso0 = o.yPiso;
+    return;
+  }
+  if (!o.planDx) o.deslizando = false;
+}
+
+/**
+ * 🍽️ LA VAJILLA, pieza por pieza, puesta a mano: parada (en la mesa o en la alacena), tirada en el piso y rota (de un
+ * tiro: abollada). De lata esmaltada, blanca con el borde azul; la cafetera de lata gris; el pan; las latas del café
+ * y del azúcar; la olla de fierro.
+ */
+const VAJILLA_COL = { o: 0, b: 20, w: 17, s: 16, c: 3, h: 4, g: 24, G: 25, d: 23, p: 6, P: 7, R: 9, W: 17, E: 24, e: 23, K: 23, k: 31 };
+const VAJILLA = {
+  // --- de las mesas
+  plato: { arriba: ['.bbbbb.', 'bwwwwwb', 'bwwwwwb', '.bbbbb.'], piso: ['.bbbbb.', 'bwwwwwb', '.bbbbb.'], roto: ['.bb.bb.', 'bwwsswb', '.bbbbb.'] },
+  platoLleno: { arriba: ['.bbbbb.', 'bwchcwb', 'bwhchwb', '.bbbbb.'], piso: ['.bbbbb.ch.', 'bwwwwwbhch', '.bbbbb..c.'] },
+  platoMedio: { arriba: ['.bbbbb.', 'bwwchwb', 'bwwwwwb', '.bbbbb.'], piso: ['.bbbbb..', 'bwwwwwbh', '.bbbbb..'] },
+  jarro: { arriba: ['bbb.', 'wwwb', 'swwb', 'sww.'], piso: ['bbbb..', 'wwwwbc', 'ssss.c'] },
+  cafetera: { arriba: ['.dd..', 'gGgg.', 'gGggd', 'gggg.', 'dddd.'], piso: ['.gggg..', 'dGGGGgd', '.gggg.c', '..cccc.'] },
+  pan: { arriba: ['.pPp.', 'ppppp', '.hhh.'], piso: ['.pPp.', 'ppppp', '.hhh.'] },
+  // --- de la alacena (🔁 los platos, apilados: parados de canto parecían cajitas; la olla, de fierro gris: negra era una mancha)
+  platos: {
+    arriba: ['...bbbbbbbb...', '.bbwwwwwwwwbb.', 'bwwwsssssswwwb', '.bbwwwwwwwwbb.', '.wwbbbbbbbbww.', '..bbbbbbbbbb..'],
+    piso: ['.bbbbb.....bbbbb..', 'bwwwwwb...bwwwwwb.', '.bbbbb.....bbbbb..', '.....bbbbb........', '....bwwwwwb.......', '.....bbbbb........'],
+    roto: ['.bb.bb.....bbbbb..', 'bwwsswb...bwswswb.', '.bbbbb.....bb.bb..', '.....bbbbb........', '....bwssswb.......', '.....bb.bb........'],
+  },
+  jarros: {
+    arriba: ['.dd...........', 'gGgg..bbb.bbb.', 'gGggd.wwwbwwwb', 'gggg..swwbswwb', 'dddd..sww.sww.'],
+    piso: ['..gggg..........', 'dgGGGgd...bwb...', '..gggg.c..bwwb..', '......ccc..bb.bb', '.......cc....bwb'],
+  },
+  latas: {
+    arriba: ['.oooo..ooo..', 'oRRRRo.oEEo.', 'oWWWWo.oEeo.', 'oRRRRo.oEeo.', 'oRRRRo.oEeo.', '.oooo..ooo..'],
+    piso: ['.oooooo......', 'oRRWRRRo.ooo.', '.oooooo.oEeEo', '..cccc...ooo.', '.cc..c.......'],
+  },
+  olla: {
+    arriba: ['....oo....', '..oooooo..', '.oEEEEEEo.', 'oooooooooo', 'oEeeeeekEo', 'oEeeeeekEo', '.oEeeekEo.', '..oooooo..'],
+    piso: ['....oooo....oo', '..ooeeeeoo.oEo', '.oEeeeeeeko.oo', 'oEeeeeeeeko...', '.oeeeeeeeko...', '..oooooooo....'],
+  },
+};
+
+/** 🍽️ Una pieza de vajilla, con la base en (x, y) del mundo. */
+function dibujarVajilla(r, o, frame, x, y) {
+  const P = PASO(), V = VAJILLA[o.variante];
+  const D = frame === 'arriba' ? V.arriba : frame === 'roto' ? (V.roto || V.piso) : V.piso;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(x, Math.max(y, 34)) || 0) : 0;
+  const w = D[0].length, h = D.length;
+  pintarTapando(r.ctx, Math.round(x / P) - Math.floor(w / 2), Math.round(y / P) - h, w, h, luz, (R) => dibujarMapa(R, 0, 0, D, VAJILLA_COL));
+}
+
+/**
+ * 🛢️ EL BARRIL DE COMIDA, de duelas de madera con dos zunchos de fierro (como el barril de agua del caboose, más chico).
+ * Dibujos puestos a mano: PARADO (la tapa de tablas arriba, las duelas, los zunchos), CAYÉNDOSE (la tapa ya mira para
+ * acá, achatada), ACOSTADO (rodando por el pasillo: arriba la panza, con los zunchos en arco, y abajo la tapa de frente)
+ * y ROTO (un zuncho suelto, las duelas y el montón de lo que llevaba).
+ * Rodando, la tapa da la vuelta en ocho cuadros (las juntas de las tablas y la marca quemada, cada uno a mano en
+ * `TAPA_GIRA`) y por la panza corren las juntas de las duelas y el tapón (`PANZA_GIRA`, elegidos a mano para cada
+ * cuadro): así se lee que rueda y no que se desliza. Sin tapa, se ve lo de adentro, siempre abajo (`TAPA_ABIERTA`).
+ * `contenido`: 0 porotos, 1 harina (el de harina, con la tapa empolvada).
+ */
+const BARRIL = { o: 0, T: 6, t: 5, j: 4, L: 6, D: 5, d: 4, s: 3, z: 23, Z: 31 };
+const TAPA_COL = { o: 0, T: 6, j: 4, r: 3, b: 31, 1: 1 };   // (🔁 la tapa, clara: de noche, en sombra, el barril tumbado era una mancha)
+const CONTENIDO_COL = [{ C: 12, c: 47 }, { C: 17, c: 16 }];
+export const BARRIL_PARADO = [
+  '...oooooooooo...',
+  '..oTTjTTTTjTTo..',
+  '.oTTTjTTTTjTTto.',
+  '.oLLDDDDDDDDDso.',
+  '.ozzzzzzzzzzzzo.',
+  '.oZZZZZZZZZZZZo.',
+  'oLLDDdDDdDDdDDso',
+  'oLLDDdDDdDDdDDso',
+  'oLLDDdDDdDDdDDso',
+  'oLLDDdDDdDDdDDso',
+  'oLLDDdDDdDDdDDso',
+  'oLLDDdDDdDDdDDso',
+  '.oLDDdDDdDDdDso.',
+  '.ozzzzzzzzzzzzo.',
+  '.oZZZZZZZZZZZZo.',
+  '.oLDDdDDdDDdDso.',
+  '..oooooooooooo..',
+];
+/** La harina que quedó en la tapa del de harina (parado). */
+const HARINA_EN_LA_TAPA = [[4, 1], [8, 2], [11, 1], [6, 2], [3, 2], [9, 1]];
+/**
+ * La panza del acostado, lo poco que se ve por encima de la tapa (desde acá, un barril tumbado es casi todo tapa): el
+ * canto de la tapa de allá (el arco), el zuncho de allá en arco y la panza; abajo va la tapa de frente.
+ * (🔁 Antes la panza era larga, con los dos zunchos: tumbado se leía como un barril parado.)
+ */
+const BARRIL_PANZA = [
+  '.....oooooo.....',
+  '...ooLLLDDDoo...',
+  '..oDDzzzzzzDdo..',
+  '.odzzZZZZZZzzdo.',
+  '.ozZZLLLDDDZZzo.',
+  'ozZDDLLLDDDDdZzo',
+  'oZdDDLLLDDDDddZo',
+  'osdDDDDDDDDDDdso',
+  'ossDDDDDDDDDDsso',
+  'osssssssssssssso',
+  'osssssssssssssso',
+];
+/** Dónde empieza la panza en cada columna (el arco de la tapa de allá). */
+const TOPE_PANZA = [5, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 5];
+/** Por cuadro: en qué columnas se ven las juntas de las duelas y dónde va el tapón (corre de izquierda a derecha y se esconde). */
+const PANZA_GIRA = [
+  { juntas: [4, 7, 11], tapon: [7, 8] },
+  { juntas: [2, 5, 10, 13], tapon: [13] },
+  { juntas: [4, 7, 11], tapon: [14] },
+  { juntas: [2, 5, 10, 13], tapon: [] },
+  { juntas: [4, 7, 11], tapon: [] },
+  { juntas: [2, 5, 10, 13], tapon: [] },
+  { juntas: [4, 7, 11], tapon: [1] },
+  { juntas: [2, 5, 10, 13], tapon: [2] },
+];
+/** La tapa de frente, dando la vuelta (de a un octavo, para el lado de las agujas del reloj): las tablas y la marca. */
+const TAPA_GIRA = [
+  ['.....oooooo.....', '...oorrrrrroo...', '..orrjTTTTjrro..', '.orTTjTbbTjTTro.', '.orTTjTbbTjTTro.', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', '.orTTjTTTTjTTro.', '.orTTjTTTTjTTro.', '..orrjTTTTjrro..', '...oorrrrrroo...', '.....oooooo.....'],
+  ['.....oooooo.....', '...oorrrrrroo...', '..orrTTTTjTrro..', '.orTTTTTjTTTTro.', '.orTTTTjTbbTTro.', 'orTTTTjTTbbTTjro', 'orTTTjTTTTTTjTro', 'orTTjTTTTTTjTTro', 'orTjTTTTTTjTTTro', 'orjTTTTTTjTTTTro', '.orTTTTTjTTTTro.', '.orTTTTjTTTTTro.', '..orrTjTTTTrro..', '...oorrrrrroo...', '.....oooooo.....'],
+  ['.....oooooo.....', '...oorrrrrroo...', '..orrTTTTTTrro..', '.orTTTTTTTTTTro.', '.orTTTTTTTTTTro.', 'orjjjjjjjjjjjjro', 'orTTTTTTTTbbTTro', 'orTTTTTTTTbbTTro', 'orTTTTTTTTTTTTro', 'orjjjjjjjjjjjjro', '.orTTTTTTTTTTro.', '.orTTTTTTTTTTro.', '..orrTTTTTTrro..', '...oorrrrrroo...', '.....oooooo.....'],
+  ['.....oooooo.....', '...oorrrrrroo...', '..orrTjTTTTrro..', '.orTTTTjTTTTTro.', '.orTTTTTjTTTTro.', 'orjTTTTTTjTTTTro', 'orTjTTTTTTjTTTro', 'orTTjTTTTTTjTTro', 'orTTTjTTTTTTjTro', 'orTTTTjTTbbTTjro', '.orTTTTjTbbTTro.', '.orTTTTTjTTTTro.', '..orrTTTTjTrro..', '...oorrrrrroo...', '.....oooooo.....'],
+  ['.....oooooo.....', '...oorrrrrroo...', '..orrjTTTTjrro..', '.orTTjTTTTjTTro.', '.orTTjTTTTjTTro.', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', '.orTTjTbbTjTTro.', '.orTTjTbbTjTTro.', '..orrjTTTTjrro..', '...oorrrrrroo...', '.....oooooo.....'],
+  ['.....oooooo.....', '...oorrrrrroo...', '..orrTTTTjTrro..', '.orTTTTTjTTTTro.', '.orTTTTjTTTTTro.', 'orTTTTjTTTTTTjro', 'orTTTjTTTTTTjTro', 'orTTjTTTTTTjTTro', 'orTjTTTTTTjTTTro', 'orjTTbbTTjTTTTro', '.orTTbbTjTTTTro.', '.orTTTTjTTTTTro.', '..orrTjTTTTrro..', '...oorrrrrroo...', '.....oooooo.....'],
+  ['.....oooooo.....', '...oorrrrrroo...', '..orrTTTTTTrro..', '.orTTTTTTTTTTro.', '.orTTTTTTTTTTro.', 'orjjjjjjjjjjjjro', 'orTTTTTTTTTTTTro', 'orTTbbTTTTTTTTro', 'orTTbbTTTTTTTTro', 'orjjjjjjjjjjjjro', '.orTTTTTTTTTTro.', '.orTTTTTTTTTTro.', '..orrTTTTTTrro..', '...oorrrrrroo...', '.....oooooo.....'],
+  ['.....oooooo.....', '...oorrrrrroo...', '..orrTjTTTTrro..', '.orTTTTjTTTTTro.', '.orTTbbTjTTTTro.', 'orjTTbbTTjTTTTro', 'orTjTTTTTTjTTTro', 'orTTjTTTTTTjTTro', 'orTTTjTTTTTTjTro', 'orTTTTjTTTTTTjro', '.orTTTTjTTTTTro.', '.orTTTTTjTTTTro.', '..orrTTTTjTrro..', '...oorrrrrroo...', '.....oooooo.....'],
+];
+const TAPA_ABIERTA = ['.....oooooo.....', '...oorrrrrroo...', '..orr111111rro..', '.or1111111111ro.', '.or1111111111ro.', 'or111111111111ro', 'or111111111111ro', 'or111111111111ro', 'orCCCCCCCCCCCCro', 'orccccccccccccro', '.orccccccccccro.', '.orccccccccccro.', '..orrccccccrro..', '...oorrrrrroo...', '.....oooooo.....'];
+const TAPA_CAYENDO = ['.....oooooo.....', '..ooorrrrrrooo..', '.orrTTTTTTTTrro.', 'orTTTTTTTTTTTTro', 'orTTTjTTTTjTTTro', 'orTTTjTTTTjTTTro', 'orTTTTTTTTTTTTro', '.orrTTTTTTTTrro.', '..ooorrrrrrooo..', '.....oooooo.....'];
+const BARRIL_ROTO = [
+  '..........ooooo.............',
+  '.ooooo...oCCCCCo...oooooooo.',
+  'oZZZZZo.oCCCCCCCo.oLLDDDDDDo',
+  'oZ...Zo.oCcCCCcCCo.oooooooo.',
+  'oZZZZZooCCCCcCCCCCo.oooooo..',
+  '.ooooo.ocCCCCCCcCCCco.oDDDDo',
+  '..c...occcccccccccccco.oooo.',
+  '.c..c..ooooooooooooooo..c...',
+  '..........c.....c.......c...',
+];
+const TAPA_TIRADA = ['..oooooooooo..', '.oTTjTTTjTTTo.', 'oTTTjTTTjTTTto', '.ottjtttjttto.', '..oooooooooo..'];
+/** Cuánto mide cada pose del barril (16 de ancho). */
+export const ALTO_BARRIL = { parado: BARRIL_PARADO.length, inclinado: 17, acostado: 21 };
+
+/**
+ * 🛢️ Pinta el barril en su lienzo de 16 de ancho: `pose` 'parado', 'inclinado' o 'acostado'; `cuadro`, la vuelta (0 a 7);
+ * `abierto`: se le saltó la tapa.
+ */
+export function pintarBarril(R, pose, cuadro, contenido, abierto = false) {
+  if (pose === 'parado') {
+    dibujarMapa(R, 0, 0, BARRIL_PARADO, BARRIL);
+    if (contenido) for (const [x, y] of HARINA_EN_LA_TAPA) R(x, y, 1, 1, 17);
+    return;
+  }
+  const k = ((cuadro % 8) + 8) % 8;
+  const panza = (filas) => {
+    dibujarMapa(R, 0, 0, BARRIL_PANZA.slice(0, filas), BARRIL);
+    const G = PANZA_GIRA[pose === 'acostado' ? k : 0];
+    for (const jx of G.juntas) for (let y = TOPE_PANZA[jx] + 1; y < filas; y++) {
+      const ch = BARRIL_PANZA[y][jx];
+      if (ch === 'L' || ch === 'D' || ch === 'd') R(jx, y, 1, 1, ch === 'd' ? 3 : 4);
+    }
+    for (const tx of G.tapon) { R(tx, TOPE_PANZA[tx] + 4, 1, 1, 0); R(tx, TOPE_PANZA[tx] + 5, 1, 1, 31); }
+  };
+  // Cayéndose: la tapa de arriba ya casi de frente, y debajo lo que queda a la vista de las duelas.
+  if (pose === 'inclinado') { dibujarMapa(R, 0, 6, BARRIL_PARADO.slice(6), BARRIL); dibujarMapa(R, 0, 0, TAPA_CAYENDO, TAPA_COL); return; }
+  panza(BARRIL_PANZA.length);
+  dibujarMapa(R, 0, 6, abierto ? TAPA_ABIERTA : TAPA_GIRA[k], { ...TAPA_COL, ...CONTENIDO_COL[contenido || 0] });
+}
+
+/** 🛢️ El barril reventado: queda en el piso con su montón, y lo que llevaba desparramado alrededor. */
+export function barrilRoto(C, x, yPiso, contenido) {
+  C.objetos.push({ tipo: 'barril', variante: contenido || 0, peso: 'nada', hw: 10, x, xRepisa: x, yRepisa: yPiso, yPared: yPiso - 2 * CONFIG.tileSize, yPiso, fijo: true, estado: 'roto', t: 0, dir: 0 });
+  for (let k = 0; k < 16; k++) derramar(C, x + (azar(k, Math.round(x)) - 0.5) * 32, yPiso - 4 + (azar(Math.round(x), k) - 0.5) * 10, contenido, k % 3);
+}
+
+/** 🛢️ La tapa que se le saltó a un barril, tirada en el piso (se desliza con los sacudones, se rompe de un tiro). */
+export function tapaSaltada(C, x, yPiso) {
+  C.objetos.push({ tipo: 'tapa', peso: 'nada', hw: 5, x, xRepisa: x, yRepisa: yPiso, yPared: yPiso - 2 * CONFIG.tileSize, yPiso, estado: 'piso', t: 0, dir: 0 });
+}
+
+/** 🛢️ Un puñado de lo que lleva el barril (porotos o harina), en el piso. */
+export function derramar(C, x, y, contenido, k) {
+  C.derrames.push({ x, y, c: contenido || 0, k });
+  if (C.derrames.length > 900) C.derrames.shift();
+}
+
+function pintarDerrame(r, q, P) {
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(q.x, q.y) || 0) : 0;
+  const R = pintor(r.ctx, Math.round(q.x / P), Math.round(q.y / P), luz);
+  if (q.c) { R(0, 0, 2, 1, q.k ? 16 : 17); if (q.k === 2) R(1, 1, 1, 1, 16); }
+  else { R(0, 0, 1, 1, q.k ? 47 : 12); if (q.k === 2) R(1, 1, 1, 1, 47); }
+}
+
+DIBUJOS.barril = {
+  roto: { w: 28, h: 9, pintar: (R, v) => dibujarMapa(R, 0, 0, BARRIL_ROTO, { o: 0, Z: 31, L: 6, D: 5, ...CONTENIDO_COL[v || 0] }) },
+};
+DIBUJOS.tapa = {
+  piso: { w: 14, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, TAPA_TIRADA, { o: 0, T: 6, t: 5, j: 4 }) },
+  // Rota: partida en dos.
+  roto: { w: 16, h: 5, pintar: (R) => { dibujarMapa(R, 0, 0, TAPA_TIRADA.map((f) => f.slice(0, 7)), { o: 0, T: 6, t: 5, j: 4 }); dibujarMapa(R, 9, 0, TAPA_TIRADA.map((f) => f.slice(7)), { o: 0, T: 6, t: 5, j: 4 }); } },
+};

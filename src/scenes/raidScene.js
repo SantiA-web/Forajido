@@ -56,7 +56,7 @@ import { WAGONS } from '../data/wagons.js';
 import { caballoActual, fondoDelAsalto } from '../data/horse.js';
 import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy, damageEnemy } from '../entities/enemy.js';
-import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro } from '../world/caidas.js';
+import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro, barrilRoto, tapaSaltada, derramar } from '../world/caidas.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga, jugadorCambiaDeVagon } from '../systems/escuadra.js';
@@ -291,7 +291,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas });
+    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas, rodantes: () => rodantes });
     enemies = train.enemies;
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
@@ -2158,7 +2158,9 @@ export function createRaidScene(services) {
             : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200 || ro.x > player.x + 420);
         if (seAcabo) { rodantes.splice(i, 1); continue; }
         // 🧳 La valija se para contra lo que tenga adelante (un asiento, la puerta).
-        if (ro.tipo === 'valija' && !ro.quieta && map.isSolidAt(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
+        // (🛢️ Salvo el barril mientras se vuelca y entra al pasillo: arranca pegado al banco de al lado.)
+        const entrando = ro.variante === 6 && (ro.vuelca > 0 || (ro.yMeta != null && Math.abs(ro.yMeta - ro.y) > 2));
+        if (ro.tipo === 'valija' && !ro.quieta && !entrando && map.isSolidAt(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
       }
 
       // 🥃 El baúl que se vuelca: cada lado que golpea el piso, el ruido y el polvo.
@@ -2404,6 +2406,8 @@ export function createRaidScene(services) {
       ro.mueble = !!s.mueble;
       if (s.variante === 5) ro.ancho = s.ancho;
       if (s.variante === 4) { ro.ancho = s.ancho; ro.hondo = s.hondo; ro.semilla = Math.round(s.x); ro.sueltaSacas = [rng.range(0.1, 0.25), rng.range(0.35, 0.6)]; ro.faltan = 0; }
+      // (🛢️ El barril: primero se vuelca hacia el pasillo y después rueda; rodando, llega más lejos que lo que se desliza.)
+      if (s.variante === 6) { ro.contenido = s.contenido; ro.haciaPasillo = s.haciaPasillo; ro.vuelca = CONFIG.caidas.barril.vuelca; ro.roce = O.valijaRoce * CONFIG.caidas.barril.roce; }
       ro.yMeta = map.height / 2 + rng.range(-6, 6);
       rodantes.push(ro);
     }
@@ -2428,6 +2432,30 @@ export function createRaidScene(services) {
       if (rng.chance(0.25)) spawnParticles(ro.x - ro.dir * ro.hw, ro.y + ro.hh, '#8a5a34', 1);
       caidas.rayas.push({ x: ro.x - ro.dir * (ro.hw - 2), y: ro.y + ro.hh - 1 });
       if (caidas.rayas.length > 400) caidas.rayas.shift();
+    }
+    /**
+     * 🛢️ EL BARRIL QUE TERMINÓ DE VOLCARSE GOLPEA EL PISO, y a alguno se le salta la tapa: la tapa queda tirada al lado y
+     * el barril va dejando lo que lleva (porotos o harina) por donde rueda, de a un puñado, hasta vaciarse.
+     */
+    for (const ro of rodantes || []) {
+      if (ro.tipo !== 'valija' || ro.variante !== 6 || !ro.alive) continue;
+      const KB = CONFIG.caidas.barril;
+      if (ro.recienVolcado) {
+        ro.recienVolcado = false;
+        audio.play('hitWall');
+        spawnParticles(ro.x, ro.y + ro.hh, ro.contenido ? '#e9e1cf' : '#c9b28a', 6);
+        if (rng.chance(KB.tapaSalta)) {
+          ro.abierto = true; ro.queda = KB.derrame;
+          tapaSaltada(caidas, ro.x + rng.range(-10, 10), ro.y + ro.hh + rng.range(2, 8));
+          for (let k = 0; k < 6; k++) derramar(caidas, ro.x + rng.range(-6, 6), ro.y + ro.hh - rng.range(0, 5), ro.contenido, rng.int(0, 2));
+        }
+      }
+      if (!ro.abierto || !(ro.queda > 0) || ro.quieta || ro.vuelca > 0) continue;
+      ro.chorro = (ro.chorro || 0) + ro.velocidad * dt;
+      if (ro.chorro < KB.derrameCada) continue;
+      ro.chorro = 0; ro.queda--;
+      derramar(caidas, ro.x - ro.dir * rng.range(0, 6), ro.y + ro.hh - rng.range(0, 6), ro.contenido, rng.int(0, 2));
+      if (ro.contenido && rng.chance(0.3)) spawnParticles(ro.x, ro.y + ro.hh - 4, '#e9e1cf', 1);
     }
     // 📮 Los papelitos del piso, con lo que acelera el tren.
     actualizarPapeles(caidas, dt, enganches, map);
@@ -2760,6 +2788,11 @@ export function createRaidScene(services) {
 
   /** Reventado a tiros: se hace astillas y deja de ser un problema. */
   function romperRodante(ro) {
+    // (🛢️ El barril de comida reventado: queda el montón y lo que llevaba por el piso; la harina, una nube.)
+    if (ro.tipo === 'valija' && ro.variante === 6 && caidas) {
+      barrilRoto(caidas, ro.x, ro.y + ro.hh, ro.contenido);
+      spawnParticles(ro.x, ro.y, ro.contenido ? '#e9e1cf' : '#6b3a2a', 16);
+    }
     // (🧳 La valija reventada larga la ropa.)
     spawnParticles(ro.x, ro.y, ro.tipo === 'barril' ? '#8a5a34' : ro.tipo === 'valija' ? '#c8b890' : '#9c7a45', 14);
     audio.play('hitWall');

@@ -2630,6 +2630,18 @@ export const CONFIG = {
      */
     papeles: { inercia: 1, pega: 35, roce: 4, vuela: 108, vuelaChance: 0.25, salto: 22, gravedad: 60, revolotea: 40, tope: 450 },
     roceSuelo: 120,
+    /**
+     * 🛢️ LOS BARRILES DE COMIDA DEL COMEDOR (junto a las puertas): en cada golpe, cada uno se vuelca con `cae` de chance
+     * (siempre al menos uno), tarda `vuelca` segundos en irse al piso y rueda con `roce` veces el roce de una valija
+     * (rueda: llega más lejos). A uno de cada tanto se le salta la tapa al golpear (`tapaSalta`) y va dejando lo que lleva
+     * por el piso, de a poco (`derrame` puñados, uno cada `derrameCada` unidades rodadas).
+     */
+    barril: { cae: 0.6, vuelca: 0.3, roce: 0.45, tapaSalta: 0.4, derrame: 45, derrameCada: 3 },
+    /**
+     * 🍽️ LA VAJILLA DE LAS MESAS DEL COMEDOR: en el frenazo y el arrancón se desliza por la tabla (`desliza`, en unidades,
+     * lo menos y lo más; algunas, `quieta`, no se mueven) y la que llega a la punta de la mesa se cae al piso, sin lastimar.
+     */
+    vajilla: { desliza: [3, 14], quieta: 0.35, velocidad: 70 },
   },
 
   traqueteo: {

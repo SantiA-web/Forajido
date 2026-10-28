@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -108,6 +108,18 @@ export function dañarRodante(ro, cantidad) {
 
 export function updateRodante(ro, dt) {
   ro.hitFlash = Math.max(0, ro.hitFlash - dt);
+  /**
+   * 🛢️ EL BARRIL DE COMIDA, MIENTRAS SE VUELCA (`vuelca`, los segundos que le faltan): todavía no rueda; se va acostando
+   * hacia el pasillo y su centro se corre lo que cambia de parado a acostado (para acá, lo largo del barril; para allá,
+   * casi nada: ver `pintarBarril`). Al terminar golpea el piso (`recienVolcado`: la escena pone el ruido y la tapa).
+   */
+  if (ro.tipo === 'valija' && ro.variante === 6 && ro.vuelca > 0) {
+    const antes = ro.vuelca;
+    ro.vuelca = Math.max(0, ro.vuelca - dt);
+    ro.y += (ro.haciaPasillo > 0 ? 6 : -2) * (antes - ro.vuelca) / CONFIG.caidas.barril.vuelca;
+    if (ro.vuelca === 0) ro.recienVolcado = true;
+    return;
+  }
   // `freno`: lo pone la escena cada cuadro según la casilla (el carbón, 0,5).
   const paso = ro.velocidad * (ro.freno ?? 1) * dt;
   ro.x += ro.dir * paso;
@@ -147,12 +159,14 @@ export function updateRodante(ro, dt) {
   }
   // (🛒 El carro de correo rueda: las ruedas giran con lo que avanza.)
   if (ro.variante === 4) ro.giroRueda = (ro.giroRueda || 0) + paso / 3;
+  // (🛢️ El barril cuenta lo que rodó, para cada lado: es lo que le da la vuelta.)
+  if (ro.variante === 6) ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
   // 🧳 La que sale de una pila, de costado del pasillo, entra en él (`yMeta`) mientras se desliza.
   if (ro.yMeta != null && !ro.quieta) {
     const d = ro.yMeta - ro.y;
     // (🛒 El carro entra en diagonal, rodando: lo que baja o sube va con lo que avanza *(Santi: "parece que pegó un
     // salto… que rueden de forma diagonal al pasillo y ahí se acomoden en horizontal")*.)
-    const paso = ro.variante === 4 || ro.variante === 5 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
+    const paso = ro.variante === 4 || ro.variante === 5 || ro.variante === 6 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
     ro.y += Math.sign(d) * Math.min(Math.abs(d), paso);
     // (📦 La caja de munición sale casi derecho al pasillo y recién ahí se arrastra a lo largo: de costado se trababa
     // contra el catre de al lado de la pila.)
@@ -166,6 +180,7 @@ export function drawRodante(r, ro) {
   const col = CONFIG.colors;
   if (ro.tipo === 'valija' && ro.variante === 4) { dibujarCarroRodando(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 5) { dibujarCajaDeslizandose(r, ro); return; }
+  if (ro.tipo === 'valija' && ro.variante === 6) { dibujarBarrilDeComida(r, ro); return; }
   if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
   /**
@@ -446,6 +461,19 @@ function dibujarCarroRodando(r, ro) {
   const L = medidasCarro(ro.ancho, ro.hondo);
   const ox = Math.round(ro.x / P) - Math.round(L.w / 2), oy = Math.round((ro.y + ro.hh) / P) - L.h;
   pintarTapando(r.ctx, ox, oy, L.w, L.h, luzR, (R) => pintarCarro(R, ro.ancho, ro.hondo, rueda, ro.semilla || 0, ro.faltan || 0));
+}
+
+/**
+ * 🛢️ El barril de comida (world/caidas.js, `pintarBarril`): parado y cayéndose mientras se vuelca, y después acostado,
+ * rodando: un cuadro cada 4,7 unidades (ocho por vuelta: lo que mide la panza alrededor).
+ */
+function dibujarBarrilDeComida(r, ro) {
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  const f = ro.vuelca > 0 ? ro.vuelca / CONFIG.caidas.barril.vuelca : 0;
+  const pose = f > 0.6 ? 'parado' : f > 0.2 ? 'inclinado' : 'acostado', alto = ALTO_BARRIL[pose];
+  pintarTapando(r.ctx, Math.round(ro.x / P) - 8, Math.round((ro.y + ro.hh) / P) - alto, 16, alto, luz + (ro.hitFlash > 0 ? 2 : 0),
+    (R) => pintarBarril(R, pose, Math.floor((ro.rodado || 0) / 4.7), ro.contenido, ro.abierto));
 }
 
 /** 📦 La caja de munición que se desliza (world/caidas.js): apoyada en el piso, sin saltar ni girar. */

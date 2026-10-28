@@ -119,14 +119,20 @@ export const WAGONS = {
      * 🆕 LOS PASAJEROS, SENTADOS A LAS MESAS: cada uno en la casilla libre junto a un banco, que está
      * del lado al que mira (ver `enBanco` en world/train.js).
      */
+    /**
+     * 🍽️ LA ALACENA ('V'), en el rincón de arriba de la punta: el aparador y el estante de la vajilla *(Santi eligió
+     * "alacena en la punta")*. Detrás, la pared sin ventana (la sacamos: un mueble no va contra un vidrio).
+     * 🛢️ LOS BARRILES DE COMIDA ('R', uno por casilla), a los dos lados de cada puerta: en el frenazo y el arrancón se
+     * vuelcan y salen rodando por el pasillo (ver `comedor` en world/caidas.js). Del lado de adelante hay más lugar: dos.
+     */
     layout: [
-      '#WW###WW###WW###WW###WW###WW###WW#',
-      '#................................#',
+      '#WW###WW###WW###WW###WW###WW######',
+      '#..............................VV#',
       '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
-      '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
+      '#RBCCCB.BCCCB.BCCCB.BCCCB.BCCCBRR#',
       '+................................+',
       '+................................+',
-      '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
+      '#RBCCCB.BCCCB.BCCCB.BCCCB.BCCCBRR#',
       '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
       '#................................#',
       '#WW###WW###WW###WW###WW###WW###WW#',

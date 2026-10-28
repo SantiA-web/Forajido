@@ -2158,8 +2158,9 @@ export function createRaidScene(services) {
             : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200 || ro.x > player.x + 420);
         if (seAcabo) { rodantes.splice(i, 1); continue; }
         // 🧳 La valija se para contra lo que tenga adelante (un asiento, la puerta).
-        // (🛢️ Salvo el barril mientras se vuelca y entra al pasillo: arranca pegado al banco de al lado.)
-        const entrando = ro.variante === 6 && (ro.vuelca > 0 || (ro.yMeta != null && Math.abs(ro.yMeta - ro.y) > 2));
+        // (🛢️ Salvo mientras entra al pasillo: el barril arranca pegado al banco de al lado, y las valijas de la pirámide
+        // del dormitorio, pegadas a la pared del camarote; frenadas ahí, se quedaban trabadas en el rincón.)
+        const entrando = (ro.variante === 6 && ro.vuelca > 0) || (ro.yMeta != null && Math.abs(ro.yMeta - ro.y) > 2);
         if (ro.tipo === 'valija' && !ro.quieta && !entrando && map.isSolidAt(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
       }
 
@@ -2407,6 +2408,7 @@ export function createRaidScene(services) {
       if (s.variante === 5) ro.ancho = s.ancho;
       if (s.variante === 4) { ro.ancho = s.ancho; ro.hondo = s.hondo; ro.semilla = Math.round(s.x); ro.sueltaSacas = [rng.range(0.1, 0.25), rng.range(0.35, 0.6)]; ro.faltan = 0; }
       // (🛢️ El barril: primero se vuelca hacia el pasillo y después rueda; rodando, llega más lejos que lo que se desliza.)
+      if (s.lona) ro.lona = true;
       if (s.variante === 6) { ro.contenido = s.contenido; ro.haciaPasillo = s.haciaPasillo; ro.vuelca = CONFIG.caidas.barril.vuelca; ro.roce = O.valijaRoce * CONFIG.caidas.barril.roce; }
       ro.yMeta = map.height / 2 + rng.range(-6, 6);
       rodantes.push(ro);
@@ -2464,6 +2466,9 @@ export function createRaidScene(services) {
   /** 🧳 Los pasajeros sentados se cubren la cabeza mientras dura el aviso y un rato después del golpe. */
   function cubrirPasajeros() {
     const dura = CONFIG.enganches.frenos.aviso + CONFIG.caidas.cubrirse;
+    // 🛏️ El chirrido del frenazo despierta a los que duermen *(Santi eligió "los despierta")*: se sientan y se cubren
+    // como los demás, y desde ahí ya ven como cualquiera despierto.
+    for (const pa of passengers) if (pa.alive && pa.dormido) pa.dormido = false;
     for (const pa of passengers) if (pa.sentado && !pa.dormido) pa.cubreFrenazo = dura;
   }
 

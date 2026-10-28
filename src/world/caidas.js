@@ -20,7 +20,8 @@
  * Hechos: el de pasajeros (portaequipajes), primera clase (las botellas de la barra, las arañas del techo y un baúl
  * grande en el rincón de cada puerta), el correo (las sacas de los casilleros, el cajón chico de cada pila de
  * encomiendas y los carros de las puntas), el de guardias (los estantes, el armero y la munición) y el comedor (la
- * alacena, la vajilla de las mesas y los barriles de comida). Los demás, de a uno: ver el plan en las notas.
+ * alacena, la vajilla de las mesas y los barriles de comida) y el dormitorio (el lavatorio, el saco del perchero, y en
+ * los rincones de las puertas un baúl de camarote y una pila de valijas). Los demás, de a uno: ver el plan en las notas.
  */
 import { CONFIG } from '../data/config.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
@@ -52,6 +53,7 @@ export function crearCaidas(train) {
     if (w.id === 'correo') { correo(C, train, w); continue; }
     if (w.id === 'guardias') { guardias(C, train, w); continue; }
     if (w.id === 'comedor') { comedor(C, train, w); continue; }
+    if (w.id === 'dormitorio') { dormitorio(C, train, w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -178,7 +180,7 @@ export function bloqueaCaida(C, x, y) {
       for (const b of p.barriles) if (Math.abs(x - (p.x + b.dx)) < 6 && Math.abs(y - (p.yBase - 3)) < 3.5) return true;
       continue;
     }
-    if ((p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion') || p.estado === 'suelto') continue;
+    if ((p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion' && p.tipo !== 'valijas') || p.estado === 'suelto') continue;
     if (Math.abs(x - p.x) < p.hw && Math.abs(y - (p.yTope + p.yBase) / 2) < p.hh) return true;
   }
   return false;
@@ -234,7 +236,7 @@ export function golpearCaidas(C) {
     // El baúl grande sale él mismo, y deja el rincón libre.
     if (p.tipo === 'baul') {
       p.estado = 'suelto';
-      C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 3, demora: 0, mueble: true, hw: 11, hh: 5, vida: 3, lento: 0.8 });
+      C.sueltos.push({ x: p.x + dir * 2, y: (p.yTope + p.yBase) / 2, dir, variante: 3, demora: 0, mueble: true, hw: 11, hh: 5, vida: 3, lento: 0.8, lona: p.lona });
       continue;
     }
     // 🛢️ Los barriles: los que se vuelcan salen rodando cada uno a su tiempo; los demás se quedan parados.
@@ -262,6 +264,9 @@ export function golpearCaidas(C) {
     }
     p.estado = 'quieta';
     p.arriba.forEach((v, i) => C.sueltos.push({ x: p.x + dir * (6 + i * 10), y: (p.yTope + p.yBase) / 2, dir, variante: v.variante, demora: i * 0.12 }));
+    // 🛏️ En la pirámide del dormitorio salen todas (no hay baúl abajo) y el rincón queda libre *(Santi: "hay una valija que
+    // nunca se mueve, que queda en la puerta. Ponela en movimiento como las otras")*.
+    if (p.tipo === 'valijas') p.estado = 'suelto';
     p.arriba = [];
   }
 }
@@ -318,7 +323,8 @@ export function actualizarCaidas(C, dt, map) {
       continue;
     }
     if (o.t >= (o.dura || K.caeDura)) {
-      o.estado = 'piso';
+      // (🫗 Lo de loza —la jarra y la palangana del lavatorio— se rompe al pegar en el piso.)
+      o.estado = o.rompeAlCaer ? 'roto' : 'piso';
       o.x = o.xRepisa + o.dir * (o.correA ?? o.corre ?? K.corre);
       C.impactos.push({ ...zonaDe(o), peso: o.peso, x: o.x, y: o.yPiso, tipo: o.tipo });
       // 🐛 Si cayó sobre un asiento, rebota al piso (lo que cae en su lugar, como las botellas o la araña, no): al hueco libre más cercano (primero para el lado del golpe). Arriba
@@ -686,7 +692,17 @@ function dibujarPila(r, p) {
   const tiembla = p.estado === 'aviso' && Math.floor(p.t * 16) % 2 ? 1 : 0;
   // 🥃 El baúl grande de primera clase, solo.
   if (p.tipo === 'baul') {
-    pintarTapando(r.ctx, Math.round(p.x / P) - 15 + tiembla, Math.round(p.yBase / P) - 20, 30, 20, luz, pintarBaulGrande);
+    pintarTapando(r.ctx, Math.round(p.x / P) - 15 + tiembla, Math.round(p.yBase / P) - 20, 30, 20, luz, (R) => pintarBaulGrande(p.lona ? deLona(R) : R));
+    return;
+  }
+  // 🛏️ La pirámide de valijas del dormitorio: dos acostadas abajo, una al lado de la otra, y una arriba en el medio (los
+  // mismos dibujos de la valija tirada). En el aviso, la de arriba se sacude.
+  if (p.tipo === 'valijas') {
+    const ox = Math.round(p.x / P) - 20, base = Math.round(p.yBase / P);
+    const [arriba, izq, der] = p.arriba;
+    if (izq) pintarTapando(r.ctx, ox, base - 11, 20, 11, luz, (R) => valijaTirada(R, izq.variante));
+    if (der) pintarTapando(r.ctx, ox + 20, base - 11, 20, 11, luz, (R) => valijaTirada(R, der.variante));
+    if (arriba) pintarTapando(r.ctx, ox + 10 + tiembla, base - 19, 20, 11, luz, (R) => valijaTirada(R, arriba.variante));
     return;
   }
   // 🛢️ Los barriles parados (en el aviso, cada uno se bambolea a su ritmo).
@@ -1775,4 +1791,110 @@ DIBUJOS.tapa = {
   piso: { w: 14, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, TAPA_TIRADA, { o: 0, T: 6, t: 5, j: 4 }) },
   // Rota: partida en dos.
   roto: { w: 16, h: 5, pintar: (R) => { dibujarMapa(R, 0, 0, TAPA_TIRADA.map((f) => f.slice(0, 7)), { o: 0, T: 6, t: 5, j: 4 }); dibujarMapa(R, 9, 0, TAPA_TIRADA.map((f) => f.slice(7)), { o: 0, T: 6, t: 5, j: 4 }); } },
+};
+
+// --------------------------------------------------------------------------------------------------- el dormitorio
+
+/**
+ * 🛏️ EL DORMITORIO *(Santi eligió "sólo el lavatorio", nada desde arriba en los camarotes de abajo, "el baúl de camarote
+ * y pila de valijas: las dos cosas para que no sea todo igual" y que el frenazo despierte a los que duermen)*:
+ *  - EL LAVATORIO de cada camarote de arriba: la jarra y la palangana de loza (las mismas que dibujaba el dibujo fijo)
+ *    se tambalean, caen delante del mueble y se rompen: quedan los pedazos y el charco que moja la madera. Caen de poca
+ *    altura: no lastiman.
+ *  - EL SACO del perchero se cae del gancho, sin lastimar.
+ *  - EN LOS RINCONES DE LAS PUERTAS, pegados a la pared: en uno, un baúl de camarote de lona y tablas (el de primera
+ *    clase, de clase media: se vuelca hacia el pasillo, te tira al piso, quieto choca y cada sacudón lo vuelve a mover);
+ *    en el otro, una pila de valijas sobre un baúl que no se mueve (las valijas salen deslizándose). Cuál va en cada
+ *    rincón, se sortea en cada tren.
+ * (Los que duermen se despiertan con el chirrido: ver `cubrirPasajeros` en scenes/raidScene.js.)
+ */
+function dormitorio(C, train, w) {
+  const map = train.map, S = map.size, tc = CONFIG.tresCuartos, P = PASO();
+  const cols = Math.round(w.width / S);
+  const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
+  const esPared = (f) => casilla(Math.floor(cols / 2), f) === '#' || casilla(Math.floor(cols / 2), f) === 'W';
+  let filasArriba = 0; while (esPared(filasArriba)) filasArriba++;
+  const x0 = Math.floor(w.x / P) * P, yArr = -tc.alturaPared, yCara = 8;
+  const ax = (u) => Math.round((u - x0) / P), ay = (u) => Math.round((u - yArr) / P);
+  const deAx = (pt) => x0 + pt * P, deAy = (pt) => yArr + pt * P;
+  // --- el lavatorio, al lado de la cabecera de cada cama de arriba (las mismas cuentas que world/estiloNuevo/vagones.js).
+  for (let c = 0; c < cols; c++) {
+    const f = filasArriba;
+    if (casilla(c, f) !== 'S' || casilla(c - 1, f) === 'S') continue;
+    let c2 = c; while (casilla(c2 + 1, f) === 'S') c2++;
+    const lx = ax(w.x + (c2 + 1) * S) - 1 + 3, LD = 7, LH = 11;
+    const lyA = ay(f * S), lt = lyA - LH;
+    const base = (lyA + LD) * P + yArr, yPiso = base + 3;
+    for (const [tipo, px, k] of [['palangana', lx + 2, 0], ['jarra', lx + 9, 1]]) {
+      const D = DIBUJOS[tipo].arriba, xw = deAx(px + Math.floor(D.w / 2));
+      C.objetos.push({
+        tipo, peso: 'nada', hw: 4, x: xw, xRepisa: xw, yRepisa: deAy(lt + 6), yPared: base + 0.001 + k * 0.001,
+        yPiso: yPiso + Math.round(azar(c, k + 3) * 4) + k * 2, rompeAlCaer: true, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+      });
+    }
+  }
+  // --- el saco de cada perchero (al lado de cada tabique de arriba, como la lámpara: ver `faroles` del dormitorio).
+  for (let c = 1; c < cols - 1; c++) {
+    if (casilla(c, filasArriba) !== '#' || casilla(c - 1, filasArriba) === '#') continue;
+    const hx = ax(w.x + c * S) - 6 - 22, hy = yCara + 9, xw = deAx(hx + 1);
+    C.objetos.push({
+      tipo: 'saco', peso: 'nada', hw: 5, x: xw, xRepisa: xw, yRepisa: deAy(hy + 17), yPared: filasArriba * S,
+      yPiso: filasArriba * S + 4 + Math.round(azar(c, 5) * 4), corre: 3, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+    });
+  }
+  // --- los rincones de las puertas: el de atrás, abajo a la izquierda; el de adelante, arriba a la derecha. La pared
+  // de la punta del dormitorio va en la línea de adentro de la columna de la punta (`paredAdentro`).
+  const baulAtras = azar(w.colStart, 77) < 0.5;
+  for (const [c, f, atras] of [[1, 6, true], [cols - 2, 3, false]]) {
+    if (casilla(c, f) !== '.' || casilla(atras ? c + 1 : c - 1, f) !== '.') continue;
+    const cara = atras ? w.x + S : w.x + (cols - 1) * S;              // la cara de adentro de la pared de la punta
+    if (baulAtras === atras) {
+      C.pilas.push({
+        tipo: 'baul', lona: true, x: cara + (atras ? 1 : -1) * 12, yTope: f * S + 2, yBase: (f + 1) * S - 2, hw: 11, hh: 5, atras,
+        arriba: [], estado: 'quieta', t: 0, wagon: w.id,
+      });
+    } else {
+      // (🔁 En pirámide, acostadas: dos abajo y una arriba *(Santi: "me imaginaba algo más como una pirámide de valijas, no
+      // una torre, así queda más chata y tapa menos la vista")*. La primera de la lista es la de arriba: sale primero.)
+      C.pilas.push({
+        tipo: 'valijas', x: cara + (atras ? 1 : -1) * 16, yTope: f * S + 2, yBase: (f + 1) * S - 2, hw: 15, hh: 5, atras,
+        arriba: [0, 1, 2].map((i) => ({ variante: Math.floor(azar(c + i, f) * 3) })), estado: 'quieta', t: 0, wagon: w.id,
+      });
+    }
+  }
+}
+
+/**
+ * 🛏️ EL BAÚL DE CAMAROTE, de clase media: el mismo baúl de primera clase (el mismo dibujo, hecho a mano), pero de lona
+ * cruda sobre tablas, con flejes de madera y herrajes de fierro en vez de cuero y bronce. `deLona(R)` devuelve un pintor
+ * que cambia esos colores al pintar.
+ */
+const LONA_DEL_BAUL = { 12: 15, 13: 16, 11: 14, 47: 4, 6: 23, 7: 24, 32: 5 };
+export function deLona(R) {
+  return (x, y, w, h, i) => R(x, y, w, h, LONA_DEL_BAUL[i] ?? i);
+}
+
+// 🫗 La loza del lavatorio y el saco del perchero, puestos a mano: arriba (en su lugar) y rotos/tirados en el piso. El
+// charco ('m') es la madera mojada, más oscura, con algún brillo ('h').
+const LOZA = { o: 0, b: 20, w: 17, s: 16, h: 30, m: 33 };
+const PANO = { o: 0, c: 33, L: 34, d: 32 };
+const PALANGANA_ROTA = ['....mmmmmmm...', '..mmmmhmmmmmm.', '.mmbwmmmmwbmmm', 'mmmwwbmmmbbmm.', '.mmmmmmhmmmm..', '...mmmmmmm....'];
+const JARRA_ROTA = ['..mmmmmmm...', '.mmwwmhmmmm.', 'mmmmmmmwsmmm', '.mwmmmmmmmm.', '...mmmmm..w.'];
+DIBUJOS.palangana = {
+  arriba: { w: 8, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, ['.bbbbbb.', 'bwhhwwwb', 'bwwwwwwb', 'bwwwwwwb', '.bbbbbb.'], LOZA) },
+  piso: { w: 14, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, PALANGANA_ROTA, LOZA) },
+  roto: { w: 14, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, PALANGANA_ROTA, LOZA) },
+};
+DIBUJOS.jarra = {
+  arriba: { w: 5, h: 10, pintar: (R) => dibujarMapa(R, 0, 0, ['ooooo', 'ohhho', 'owwso', 'owwso', 'owwso', 'owwso', 'owwso', 'owwso', 'owwso', 'ooooo'], LOZA) },
+  piso: { w: 12, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, JARRA_ROTA, LOZA) },
+  roto: { w: 12, h: 5, pintar: (R) => dibujarMapa(R, 0, 0, JARRA_ROTA, LOZA) },
+};
+const SACO_TIRADO = ['..oooooooo....', '.oLLccccccoo..', 'occcdccccLcco.', 'occcccdcccccco', '.ooccccccdcco.', '...ooooooooo..'];
+DIBUJOS.saco = {
+  // Colgado: los hombros caídos, el cuerpo, la abertura y la manga, de paño marrón (el mismo del dibujo fijo).
+  arriba: { w: 10, h: 15, pintar: (R) => dibujarMapa(R, 0, 0, ['oooooooooo', 'oLLLLLLLLo', 'oLcccdccco', 'oLcccdccco', 'oLcccdcdco', 'oLcccdcdco', 'oLcccdcdco', 'oLcccdcdco', 'oLcccdcdco', 'oLcccdcdco', 'oLcccdcdco', 'oLcccdcdco', 'oLcccdcdco', 'occcccccco', 'oooooooooo'], PANO) },
+  // Tirado: arrugado en el piso.
+  piso: { w: 14, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, SACO_TIRADO, PANO) },
+  roto: { w: 14, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, SACO_TIRADO, PANO) },
 };

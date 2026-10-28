@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, deLona } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -414,7 +414,8 @@ function dibujarValija(r, ro) {
   // La sombra en el piso.
   R(1, H, W - 1, 1, 0);
   if (grande) {
-    pintarBaulRodando(R, Math.round(ro.vuelta || 0));
+    // (🛏️ El del dormitorio, de lona y tablas: el mismo dibujo con sus colores, ver `deLona`.)
+    pintarBaulRodando(ro.lona ? deLona(R) : R, Math.round(ro.vuelta || 0));
   } else if (ro.variante === 1) {
     // EL BOLSO DE TAPIZ: el contorno con las esquinas de arriba gastadas, la manija, la boca de bronce, el tapiz.
     R(1, 3, 16, 13, 0); R(0, 5, 18, 10, 0);

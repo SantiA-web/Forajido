@@ -19460,6 +19460,21 @@ guardaespaldas distintos)*:
         se lee que rueda. Te tiran al piso; quietos chocan y son cobertura; cada sacudón los vuelve a mover. A alguno se
         le salta la tapa y va dejando lo que lleva por el piso. Aguantan tres tiros; rotos queda el montón.
       - **Los faroles** no se caen: se hamacan, como en todos los vagones.
+    - **✅ EL DORMITORIO** (world/caidas.js, `dormitorio`) *(Santi eligió "sólo el lavatorio", nada desde arriba en los
+      camarotes de abajo, "el baúl de camarote y pila de valijas: las dos cosas para que no sea todo igual" y que el
+      frenazo despierte a los que duermen)*:
+      - **El lavatorio** de los camarotes de arriba: la jarra y la palangana de loza dejaron el dibujo fijo; se
+        tambalean, caen delante del mueble y se rompen (`rompeAlCaer`): los pedazos y el charco que oscurece la madera.
+        Caen de poca altura: no lastiman. **El saco del perchero** se cae del gancho, sin lastimar.
+      - **Los rincones de las puertas**, sorteado en cada tren cuál lleva qué, pegados a la pared de la punta (que en el
+        dormitorio va adentro): **el baúl de camarote** (el mismo dibujo del de primera clase, de lona cruda, flejes de
+        madera y herrajes de fierro: `deLona`), que se vuelca hacia el pasillo; y **una pirámide de valijas** acostadas,
+        dos abajo y una arriba *(Santi: "una pirámide de valijas, no una torre, así queda más chata y tapa menos la
+        vista")*, que salen todas (la de arriba primero) y dejan el rincón libre *("hay una valija que nunca se mueve…
+        ponela en movimiento como las otras")*.
+      - **Los que duermen se despiertan** con el chirrido del frenazo y se cubren como los demás.
+      - 🐛 Lo que entra al pasillo desde un costado ya no se frena contra la pared de al lado mientras entra (una valija
+        de la pirámide quedaba trabada en el rincón).
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

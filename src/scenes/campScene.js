@@ -369,13 +369,13 @@ export function createCampScene(services) {
     /**
      * 🧪 [8] UN TREN DE PASAJEROS CON LOS FRENOS ROTOS, arrancando EN EL VAGÓN QUE SE ESTÁ EDITANDO (el tren lo trae
      * siempre: `forzarVagon`) *(Santi: "por el vagón que vayamos a editar quiero que el atajo 8 esté ocupado por ese
-     * vagón")*: hoy, EL COMEDOR. Con el primer frenazo a
+     * vagón")*: hoy, EL DORMITORIO. Con el primer frenazo a
      * los 4 segundos (`pruebaFrenos`), para probar el aplastamiento en los enganches y las valijas.
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit8')) {
-      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'comedor', forzarVagon: 'comedor', estado: ['frenosDañados'], pruebaFrenos: true, prueba: true });
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'dormitorio', forzarVagon: 'dormitorio', estado: ['frenosDañados'], pruebaFrenos: true, prueba: true });
       return;
     }
     if (input.wasPressed('Digit6')) {

@@ -479,13 +479,10 @@ function vagon(train, w, dia) {
       }
     }
     // 🆕 En el dormitorio, el perchero de cada camarote de arriba, con el saco colgado.
+    // (🛏️ Acá queda sólo el gancho: el saco va aparte porque en el frenazo se cae, ver `dormitorio` en world/caidas.js.)
     if (w.id === 'dormitorio') for (const fx of faroles) {
       const hx = fx - 22, hy = yCara + 9;
       r(hx - 1, hy, 4, 2, 0); r(hx, hy, 2, 1, 24);                       // el gancho
-      // El saco: los hombros caídos, el cuerpo y la manga, de paño marrón.
-      r(hx - 4, hy + 2, 10, 15, 0);
-      r(hx - 3, hy + 3, 8, 13, 33); r(hx - 3, hy + 3, 8, 1, 34); r(hx - 3, hy + 4, 1, 11, 34);
-      r(hx + 1, hy + 4, 1, 11, 32); r(hx + 3, hy + 6, 1, 9, 32);          // la abertura y la manga
     }
     // (🆕 En el correo, más arriba: debajo van los casilleros.)
     const yFarol = w.id === 'correo' ? yCara + 4 : yCara + 12;
@@ -940,12 +937,8 @@ function vagon(train, w, dia) {
       r(lx - 1, lt - 1, LW + 2, lyA + LD - lt + 1, 0);
       // La tapa del mueble.
       r(lx, lt, LW, LD, MAD); r(lx, lt, LW, 1, MAD_L);
-      // La palangana, redonda, con el borde azul.
-      r(lx + 3, lt + 1, 6, 1, 20); r(lx + 2, lt + 2, 1, 3, 20); r(lx + 9, lt + 2, 1, 3, 20); r(lx + 3, lt + 5, 6, 1, 20);
-      r(lx + 3, lt + 2, 6, 3, 17); r(lx + 4, lt + 2, 2, 1, 30);
-      // La jarra, parada al costado, con su contorno.
-      r(lx + 9, lt - 4, 5, 10, 0);
-      r(lx + 10, lt - 3, 3, 8, 17); r(lx + 10, lt - 3, 3, 1, 30); r(lx + 12, lt - 2, 1, 7, 16);
+      // (🛏️ La palangana y la jarra de loza van aparte, porque en el frenazo se caen y se rompen: ver `dormitorio` en
+      // world/caidas.js. Acá queda el mueble.)
       // La cara: dos puertitas y las patas.
       r(lx, lf, LW, LH - 2, MAD_S); r(lx, lf, LW, 1, MAD);
       r(lx + Math.floor(LW / 2), lf + 1, 1, LH - 4, MAD_SS);

@@ -19445,6 +19445,8 @@ guardaespaldas distintos)*:
         las tres salen del mismo lugar, casi derecho hacia el pasillo, dejando rayas en la madera. Te tiran al piso,
         quietas chocan y son cobertura, cada sacudón las vuelve a mover y cada tiro les pega.
       - El dibujo fijo dejó afuera los rifles, los sombreros y las cartucheras (se dibujan aparte).
+      - 🐛 El sombrero colgado tenía el ala un punto más ancha que la copa y la copa corrida: ahora los dos de 15,
+        centrados (lo encontró el revisor de dibujos de la skill `forajido`).
     - **✅ EL COMEDOR** (world/caidas.js, `comedor`) *(Santi eligió "alacena en la punta", faroles que "solo se
       hamacan" y barriles "junto a cada puerta")*:
       - **La alacena** (casillas `V`, nuevas, en el rincón de arriba de la punta; esa pared quedó sin ventana): abajo el

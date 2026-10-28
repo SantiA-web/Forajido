@@ -1378,7 +1378,8 @@ function guardias(C, train, w) {
   }
 }
 
-const SOMBRERO_COLGADO = ['.....ooooo.....', '....oHHHHHo....', '....ohhhhho....', '....obbbbbo....', '.ooooohhhhhoooo.', 'okkkkkkkkkkkkkko', '.oooooooooooooo.'];
+// (🐛 El ala medía un punto más que la copa y la copa bajaba corrida un punto a la derecha: ahora las dos, de 15 y centradas.)
+const SOMBRERO_COLGADO = ['.....ooooo.....', '....oHHHHHo....', '....ohhhhho....', '....obbbbbo....', '.oooohhhhhoooo.', 'okkkkkkkkkkkkko', '.ooooooooooooo.'];
 const SOMB = { o: 0, h: 35, H: 36, b: 32, k: 34 };
 const CINTO_COLGADO = ['....oooo....', '...occcco...', '..occoocco..', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '.oyco..ocyo.', '..oco..oco..', '..oco..oooo.', '.oGGo.occcco', '..oo..occcco', '......occcco', '.......occo.', '........oo..'];
 const CU = { o: 0, c: 5, y: 28, G: 7 };

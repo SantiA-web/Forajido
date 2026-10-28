@@ -55,7 +55,7 @@ export function crearCaidas(train) {
     if (w.id === 'comedor') { comedor(C, train, w); continue; }
     if (w.id === 'dormitorio') { dormitorio(C, train, w); continue; }
     // (🚂 El caboose espera a que el dibujo fijo ubique sus cosas: ver `armarPendientes`.)
-    if (w.id === 'caboose') { (C.porArmar = C.porArmar || []).push(w); continue; }
+    if (w.id === 'caboose' || w.id === 'blindado') { (C.porArmar = C.porArmar || []).push(w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -198,7 +198,8 @@ export function avisarCaidas(C, sentido, rng) {
     // 🍽️ La vajilla de las mesas no se cae de una repisa: se desliza por la tabla (ver `deslizarVajilla`).
     if (o.enMesa) { if (o.estado === 'repisa') planearVajilla(o, sentido, rng); continue; }
     if (o.estado !== 'repisa' || !rng.chance(K.cae * (o.prob ?? 1))) continue;
-    o.estado = 'aviso'; o.t = 0; o.dir = -sentido;
+    // (`haciaDir`: lo que cae siempre para el mismo lado: la torre del blindado, hacia adentro del vagón.)
+    o.estado = 'aviso'; o.t = 0; o.dir = o.haciaDir ?? -sentido;
     /**
      * 🔁 CADA UNA A SU MANERA *(Santi: "caen de forma muy estructurada… parece intencional: caen a la vez y caen de
      * igual manera… hay que cambiar esto para que se vea más espontáneo")*: se larga un poco después del golpe
@@ -207,8 +208,9 @@ export function avisarCaidas(C, sentido, rng) {
      */
     if (o.tipo !== 'botellas') {
       o.yPiso0 = o.yPiso0 ?? o.yPiso;
-      o.demora = rng.range(0, K.demoraMax) * (o.tipo === 'arana' ? 0.4 : 1);
-      o.dura = K.caeDura * rng.range(0.8, 1.3);
+      // (`tarde`: lo que se larga a su hora, en orden: las bolsas de la torre del blindado, una enseguida de la otra.)
+      o.demora = o.tarde != null ? o.tarde * rng.range(0.9, 1.1) : rng.range(0, K.demoraMax) * (o.tipo === 'arana' ? 0.4 : 1);
+      o.dura = K.caeDura * rng.range(0.8, 1.3) * (o.lenta || 1);
       o.correA = (o.corre ?? K.corre) * (o.corre ? rng.range(0.8, 1.2) : rng.range(0.3, 1.8));
       o.yPiso = o.fijo ? o.yPiso0 : o.yPiso0 + rng.range(-4, 4);
     }
@@ -345,6 +347,8 @@ export function actualizarCaidas(C, dt, map) {
       o.estado = o.rompeAlCaer ? 'roto' : 'piso';
       o.x = o.xRepisa + o.dir * (o.correA ?? o.corre ?? K.corre);
       C.impactos.push({ ...zonaDe(o), peso: o.peso, x: o.x, y: o.yPiso, tipo: o.tipo });
+      // (🚂 Cayó la última bolsa de la torre: su lugar queda libre, se puede pasar.)
+      if (o.libera && map && --o.libera.faltan === 0) { const [c0, c1, f0, f1, cs] = o.libera.celdas; for (let f = f0; f <= f1; f++) for (let c = c0; c <= c1; c++) if (map.grid[f] && map.grid[f][cs + c] === 'C') map.grid[f][cs + c] = '.'; }
       // 🐛 Si cayó sobre un asiento, rebota al piso (lo que cae en su lugar, como las botellas o la araña, no): al hueco libre más cercano (primero para el lado del golpe). Arriba
       // del asiento lo tapaba el respaldo, y en el piso se ordena con la gente por donde apoya.
       if (map && !o.fijo) for (let d = 0; d <= 24; d += 2) {
@@ -472,7 +476,8 @@ export function cosasDeCaidas(r, C, corrido) {
     } else if (o.estado === 'cae') {
       const f = Math.min(1, o.t / (o.dura || K.caeDura)), corre = o.correA ?? o.corre ?? K.corre;
       // (El cajón de la pila se va de costado primero y después cae: la mitad del camino, antes.)
-      x += o.dir * corre * (o.corre ? Math.min(1, f * 2) : f);
+      // (🚂 `diagonal`: la bolsa de la torre se va para el costado mientras cae, parejo: la torre se viene abajo.)
+      x += o.dir * corre * (o.corre && !o.diagonal ? Math.min(1, f * 2) : f);
       y = o.yRepisa + (o.yPiso - o.yRepisa) * f * f;
       base = delante;
     } else if (o.estado === 'piso' || o.estado === 'roto') {
@@ -489,6 +494,8 @@ export function cosasDeCaidas(r, C, corrido) {
     // (📦 El cajón de la pila, sobre la pila, se ordena con ella; cayendo y en el piso, como cualquiera.)
     if (o.tipo === 'cajonChico' && (o.estado === 'repisa' || o.estado === 'aviso')) base = o.basePila;
     if (o.tipo === 'cajonChico' && o.estado === 'cae') base = o.yPiso;
+    // (🚂 El balde del blindado queda arriba de la torre de bolsas: se ordena con ella, delante.)
+    if (o.basePiso && (o.estado === 'piso' || o.estado === 'roto')) base = o.basePiso;
     out.push({ base, draw: corrido(o.xRepisa, () => dibujarCosa(r, o.tipo, frame, x, y, o.variante)) });
   }
   for (const p of C.pilas) {
@@ -2000,7 +2007,11 @@ function caboose(C, w) {
 /** 🚂 Las cosas que esperan que el dibujo fijo las ubique (el caboose): se arman la primera vez que están. */
 function armarPendientes(C) {
   if (!C.porArmar || !C.porArmar.length) return;
-  C.porArmar = C.porArmar.filter((w) => { if (!w._caboose) return true; caboose(C, w); return false; });
+  C.porArmar = C.porArmar.filter((w) => {
+    if (w._caboose) { caboose(C, w); return false; }
+    if (w._blindado) { blindado(C, w); return false; }
+    return true;
+  });
 }
 
 // 🚂 Los faroles de señales, la cafetera de la estufa, y lo roto/tirado de cada uno, puestos a mano.
@@ -2161,3 +2172,75 @@ function pintarCharco(r, q, P, reloj) {
   const R = pintor(r.ctx, Math.round(q.x / P) - Math.floor(D[0].length / 2), Math.round(q.y / P) - Math.floor(D.length / 2), luz);
   dibujarMapa(R, 0, 0, D, { m: 33, h: 30 });
 }
+
+// -------------------------------------------------------------------------------------------------------- el blindado
+
+/**
+ * 🚂 EL BLINDADO: el dibujo fijo anota dónde quedaron los baldes del puesto contra incendios y cada bolsa de la torre
+ * (`w._blindado`). Los baldes se descuelgan primero y caen sobre las bolsas bajas de adelante, volcando la arena.
+ * 🔁 LA TORRE SE CAE ENTERA, EN DIAGONAL *(Santi: "que se caiga completamente como en diagonal… se tienen que ver que
+ * las bolsas se desprenden, pero bastante seguido para que… impacte y mate")*: de arriba para abajo, una bolsa
+ * enseguida de la otra, todas para adentro del vagón; las de más arriba llegan más lejos y más adelante, las de abajo
+ * se desploman al pie. Pesadas: matan. Cuando cae la última, el rincón queda libre.
+ */
+function blindado(C, w) {
+  const A = w._blindado, P = PASO();
+  const x0 = Math.floor(w.x / P) * P, yArr = -CONFIG.tresCuartos.alturaPared;
+  const deAx = (pt) => x0 + pt * P, deAy = (pt) => yArr + pt * P;
+  (A.baldes || []).forEach((B, k) => {
+    const xw = deAx(B.px + 4);
+    C.objetos.push({
+      tipo: 'baldeArena', peso: 'liviano', hw: 4, x: xw, xRepisa: xw, yRepisa: deAy(B.py + 9), yPared: B.base + k * 0.001,
+      // (Caen ahí nomás, sobre las bolsas de arriba de la torre. `prob` 3: con `cae` 0,4, siempre.)
+      yPiso: A.base + 3 + k * 2, basePiso: A.base + CONFIG.tileSize + 0.01 + k * 0.001, corre: 1.5, prob: 3, haciaDir: -1, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+    });
+  });
+  const N = (A.bolsas || []).length, S = CONFIG.tileSize, libera = { celdas: A.celdas, faltan: N };
+  (A.bolsas || []).forEach((B, k) => {
+    const xw = deAx(B.px + B.an / 2), u = N > 1 ? 1 - k / (N - 1) : 0;   // (u: 1 la de más arriba, 0 la del pie)
+    C.objetos.push({
+      tipo: 'bolsaArena', variante: B.an + (B.arriba ? 100 : 0), peso: 'pesado', hw: Math.round(B.an * P / 2), x: xw, xRepisa: xw,
+      yRepisa: deAy(B.py + 9), yPared: A.base + 0.002 + k * 0.0001, yPiso: A.base + 3 + u * (S + 22) + (k % 2) * 3,
+      corre: 4 + u * 30, diagonal: true, lenta: 1 + u, haciaDir: -1, prob: 3, tarde: 0.45 + k * 0.06,
+      libera, estado: 'repisa', t: 0, dir: 0, wagon: w.id,
+    });
+  });
+}
+
+// 🚂 La bolsa de arena (`variante`: su ancho), parada como en la torre y caída, acostada; rota, con la arena afuera.
+const ARPILLERA = { o: 0, L: 37, C: 36, c: 35, s: 34, A: 37 };
+function filasDeBolsa(an, acostada) {
+  const m = (a, mid, b) => a + mid.repeat(Math.max(0, an - a.length - b.length)) + b;
+  return acostada
+    ? [m('...', 'o', '...'), m('.oo', 'L', 'oo.'), m('oL', 'L', 'Lo'), m('oL', 'C', 'Co'), m('oC', 'C', 'co'), m('.oc', 'c', 'co.'), m('..o', 'c', 'o..'), m('...', 'o', '...')]
+    : [m('...', 'o', '...'), m('.oo', 'L', 'oo.'), m('oL', 'C', 'Co'), m('oC', 'C', 'co'), m('oC', 'c', 'co'), m('oc', 'c', 'so'), m('.os', 's', 'so.'), m('..o', 's', 'o..'), m('...', 'o', '...')];
+}
+function pintarBolsa(R, an, acostada, rota) {
+  const dx = Math.floor((24 - an) / 2);
+  // (La trama de la arpillera, como las de la pila: puntitos más oscuros salteados.)
+  const trama = (y0) => { for (let q = 3; q < an - 3; q++) for (let rr = 2; rr < 5; rr++) if ((q * 7 + rr * 13 + an) % 11 === 0) R(dx + q, y0 + rr, 1, 1, rr < 4 ? 35 : 34); };
+  dibujarMapa(R, dx, rota ? 1 : 0, filasDeBolsa(an, acostada), ARPILLERA);
+  const k = dx + 4;
+  for (let q = 2; q < 6; q++) R(k, q + (rota ? 1 : 0), 1, 1, 34);                      // el pliegue de la punta atada
+  trama(rota ? 1 : 0);
+  if (rota) {
+    // Reventada: la boca abierta y la arena desparramada por el piso, para los dos lados.
+    R(dx + an - 6, 2, 4, 3, 0); R(dx + an - 5, 3, 2, 1, 33);
+    for (const [ax, ay, aw] of [[dx + an - 4, 7, 6], [dx + an - 2, 8, 5], [dx - 1, 8, 4], [dx + 6, 9, 9]]) R(ax, ay, aw, 1, 37);
+  }
+}
+DIBUJOS.bolsaArena = {
+  // (`variante`: el ancho; más 100, las de arriba de la torre, acostadas, vistas desde arriba.)
+  arriba: { w: 24, h: 9, pintar: (R, v) => (v > 100 ? pintarBolsa(R, v - 100, true, false) : pintarBolsa(R, v || 22, false, false)) },
+  piso: { w: 24, h: 8, pintar: (R, v) => pintarBolsa(R, v % 100 || 22, true, false) },
+  roto: { w: 24, h: 10, pintar: (R, v) => pintarBolsa(R, v % 100 || 22, true, true) },
+};
+// 🚂 El balde de arena del puesto contra incendios: colgado, y volcado con la arena afuera.
+const BALDE_COLGADO = ['..oooo..', '.o....o.', 'oooooooo', 'oSSSSSSo', 'oRRRRRRo', 'oRrRRRRo', '.oRRRRo.', '.oRrRRo.', '..oooo..'];
+const BALDE_VOLCADO = ['.ooooooo......', 'oRRRRRRRo.....', 'oSRrRRRRRo....', 'oSRRRRRRo.SS..', '.oooooooo.SSSS', '....SSSSSSSSS.'];
+const BALDE_COL = { o: 0, S: 37, R: 9, r: 10 };
+DIBUJOS.baldeArena = {
+  arriba: { w: 8, h: 9, pintar: (R) => dibujarMapa(R, 0, 0, BALDE_COLGADO, BALDE_COL) },
+  piso: { w: 14, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, BALDE_VOLCADO, BALDE_COL) },
+  roto: { w: 14, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, BALDE_VOLCADO, BALDE_COL) },
+};

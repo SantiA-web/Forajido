@@ -2022,13 +2022,20 @@ function vagon(train, w, dia) {
       anchos(xb - xa, j).forEach((a, k) => { bolsa(q, y + Math.round((h(q, y + k) - 0.5) * 2), a + 1, arriba); q += a; });
     };
     // La pila: arriba, las acostadas (de atrás para adelante); el frente, `capas` hileras.
-    const sacos = (x, x2, yt, yb, capas) => {
+    // (`sueltas`: la torre no se dibuja acá: cada bolsa la pone world/caidas.js, `blindado`, y en el frenazo se cae
+    // entera, en diagonal *(Santi: "que se caiga completamente como en diagonal")*. Acá sólo se anota dónde va cada una.)
+    const sacos = (x, x2, yt, yb, capas, sueltas) => {
       const alto = capas * 7 + 2, tf = yb - alto, tt = yt + 3 - alto;
       let j = 0;
       // (Las de arriba, contadas desde el frente: así la última pega con la primera hilera del frente, sin piso entre las dos.)
       const ys = []; for (let y = tf - 6; y >= tt - 2; y -= 6) ys.unshift(y);
-      for (const y of ys) hilera(x, x2, y, j++, true);
-      for (let y = tf; y <= yb - 9; y += 7) hilera(x, x2, y, j++, false);
+      const fila = (y, jj, arriba) => {
+        if (!sueltas) return hilera(x, x2, y, jj, arriba);
+        let q = x;
+        anchos(x2 - x, jj).forEach((a, k) => { sueltas.push({ px: q, py: y + Math.round((h(q, y + k) - 0.5) * 2), an: a + 1, arriba }); q += a; });
+      };
+      for (const y of ys) fila(y, j++, true);
+      for (let y = tf; y <= yb - 9; y += 7) fila(y, j++, false);
       return tt - 1;
     };
     const CANDADO = ['.ooo.', 'oKoKo', 'ooooo', 'oBBBo', 'oBbBo', 'oBBBo', '.ooo.'];
@@ -2158,7 +2165,12 @@ function vagon(train, w, dia) {
       rf(x, by - 1, an, bh + 2, 0); rf(x + 1, by, an - 2, bh, MAD_S); rf(x + 1, by, an - 2, 3, 9); rf(x + 1, by, an - 2, 1, 10);
       for (let q = by + 6; q < by + bh - 1; q += 5) rf(x + 1, q, an - 2, 1, MAD_SS);
       const BALDE = ['..oooo..', '.o....o.', 'oooooooo', 'oSSSSSSo', 'oRRRRRRo', 'oRrRRRRo', '.oRRRRo.', '.oRrRRo.', '..oooo..'];
-      for (const q of [0, 1, 2]) { const bx = x + 2 + q * 9; rf(bx + 3, by + 1, 2, 1, 0); dibujo(pf, bx, by + 2, BALDE, { o: 0, S: 37, R: 9, r: 10 }); }
+      // (🚂 Los baldes los pone world/caidas.js, `blindado`: en el frenazo se descuelgan. Acá, sólo los ganchos.)
+      (w._blindado || (w._blindado = {})).baldes = [];
+      for (const q of [0, 1, 2]) {
+        const bx = x + 2 + q * 9; rf(bx + 3, by + 1, 2, 1, 0);
+        ((w._blindado || (w._blindado = {})).baldes || (w._blindado.baldes = [])).push({ px: bx, py: by + 2, base: (fJ + 1) * S - 0.02 });
+      }
       const hx = x2 - 7;
       rf(hx, by + 2, 3, bh - 4, 0); rf(hx + 1, by + 3, 1, bh - 6, MAD_L);                                            // el cabo del hacha
       dibujo(pf, hx - 3, by + 1, ['ooooooooo', 'oKKKKkKKo', 'oKKKKk.o.', '.ooooo...'], { o: 0, K: 25, k: 24 });       // la hoja
@@ -2168,8 +2180,11 @@ function vagon(train, w, dia) {
     for (const [f, capas, desde] of [[fJ + 1, 3, fJ], [fJ + 2, 1, fJ + 2]]) {
       if (!libre(cD, f)) continue;
       const { x, x2, yb } = esquina(cD, f), yt = Y(desde);
-      const tt = sacos(x, x2, yt, yb, capas);
+      // (🚂 La torre, la alta: su hilera de arriba se desmorona en el frenazo.)
+      const sueltas = capas > 1 ? [] : null;
+      const tt = sacos(x, x2, yt, yb, capas, sueltas);
       muebles.push({ x: x - 1, y: tt - 1, w: x2 - x + 2, h: yb - tt + 2, base: (f + 1) * S - 0.01 });
+      if (sueltas) Object.assign(w._blindado || (w._blindado = {}), { bolsas: sueltas, base: (f + 1) * S, celdas: [cD, cD + 1, desde, f, w.colStart] });
     }
     // Abajo a la izquierda: EL ATRIL DEL REGISTRO de valores, alto, con patas, el libro abierto, el tintero y la pluma.
     const fR = fU - 2;
@@ -2312,18 +2327,38 @@ function vagon(train, w, dia) {
     };
     const LINGOTE = ['.oooooooo.', 'oYYYYYYYYo', 'oyyyyyyyyo', 'oooooooooo'];
     const ORO = { o: 0, Y: 45, y: 28 };
+    // (🚂 Con el meneo del tren y en el frenazo los lingotes se corren de un lado a otro, más los de arriba, pero nunca
+    // se caen *(Santi: "que los lingotes se muevan de un lado a otro pero que nunca caigan y sólo quede como dibujo")*:
+    // la tarima entera va en los nueve dibujos del meneo, `animado`.)
     const lingotes = (x, x2, yt, yb) => {
-      const an = x2 - x, alto = 6, tf = yb - alto, tt = yt + 6 - alto;
+      const an = x2 - x, alto = 6, tf = yb - alto, tt = yt + 6 - alto, top = tt - 8;
+      animado(x - 2, top - 2, an + 4, yb - top + 4, (fU + 1) * S - 0.01, 17, (m, r, p) => lingotesEn(x, x2, yb, an, alto, tf, tt, top, m, r, p));
+      return top - 1;
+    };
+    const lingotesEn = (x, x2, yb, an, alto, tf, tt, top, m, r, p) => {
       r(x - 1, tt - 1, an + 2, yb - tt + 2, 0);                                                                     // la tarima
       r(x, tt, an, tf - tt, MAD_S); for (let q = tt + 3; q < tf; q += 4) r(x, q, an, 1, MAD_SS);
       r(x, tf, an, alto, MAD_SS); r(x, tf, an, 1, MAD);
       // Los lingotes, en dos pirámides (la de atrás asoma por arriba de la de adelante).
-      const piramide = (base, y0, n) => { for (let k = 0; k < 3; k++) for (let q = 0; q < n - k; q++) dibujo(p, base + q * 9 + k * 4, y0 - k * 3, LINGOTE, ORO); };
+      // (Cada piso se corre más que el de abajo; la de atrás, un poco menos.)
+      // (🔁 Más brusco *(Santi: "al haber un movimiento fuerte que choquen contra el cofre de la izquierda")*: con el
+      // meneo de siempre se corren de a poco; en el frenazo (las puntas del meneo) se van de golpe, la de abajo hasta
+      // pegar contra las manijas del cofre de al lado, los de arriba de rebote un punto más y un poco levantados.)
+      const fuerte = Math.abs(m) > 0.88, sg = Math.sign(m);
+      const corre = (k) => fuerte ? sg * (3 + k + (k === 2 ? 1 : 0)) : Math.round(m * 2.2 * (0.5 + k * 0.4));
+      const salta = (k) => fuerte && k > 0 ? -1 : 0;
+      // (🆕 La baranda de fierro del otro lado *(Santi: "para justificar que no se caen, dibujá como una barra de metal
+      // estilo valla")*: los parantes y dos barras; asoma donde los lingotes no la tapan.)
+      // (🔁 Del gris de la chapa: en marrón parecía una tabla más.)
+      for (const bx of [x + 1, x + Math.floor(an / 2), x2 - 3]) { r(bx - 1, tt - 9, 3, 12, 0); r(bx, tt - 8, 1, 11, BORDE_L); }
+      for (const by of [tt - 8, tt - 3]) { r(x, by - 1, an - 1, 3, 0); r(x + 1, by, an - 3, 1, by < tt - 5 ? BORDE_L : BORDE); }
+      const piramide = (base, y0, n, cuanto) => { for (let k = 0; k < 3; k++) for (let q = 0; q < n - k; q++) dibujo(p, base + q * 9 + k * 4 + Math.round(corre(k) * cuanto), y0 - k * 3 + salta(k), LINGOTE, ORO); };
       const n = Math.floor((an - 4) / 9);
-      piramide(x + 2, tt + 2, n); piramide(x + 2, tf - 4, n);
+      piramide(x + 2, tt + 2, n, 0.7); piramide(x + 2, tf - 4, n, 1);
+      if (fuerte && sg < 0) for (const yy of [tf - 3, tf - 7]) { p(x - 2, yy, 29); p(x - 3, yy - 1, 30); }       // el golpe contra el cofre
       for (let k = 0; k < 4; k++) p(x + 4 + Math.floor(h(x, k) * (an - 8)), tf - 3 - Math.floor(h(k, x) * 8), 29);   // un brillo
       // La lona: tapa la mitad de la derecha, con los pliegues, la soga y la punta que cae.
-      const lx = x + Math.floor(an * 0.42), top = tt - 8;
+      const lx = x + Math.floor(an * 0.42);
       for (let y = top; y < yb - 2; y++) {
         const desde = lx + Math.max(0, Math.round((yb - 2 - y) * 0.25) - 3);
         for (let xx = desde; xx < x2; xx++) p(xx, y, xx === desde ? 0 : y === top ? 16 : (xx - desde + Math.floor(h(xx, 2) * 2)) % 6 === 0 ? 14 : 15);
@@ -2332,7 +2367,6 @@ function vagon(train, w, dia) {
       const sy = top + Math.floor((yb - top) * 0.45);
       r(lx + 2, sy, x2 - lx - 2, 1, 4); r(lx + Math.floor((x2 - lx) / 2), sy - 1, 2, 3, 4);                       // la soga
       for (let q = lx + 1; q < x2; q += 3) p(q, yb - 2 + (q % 2), 0);                                                // el borde que cae
-      return top - 1;
     };
     const FRENTE_TIPOS = [['arcon', 2], ['lingotes', 3], ['arcon', 2], ['saca', 2], ['lingotes', 3], ['arcon', 2], ['lingotes', 3], ['arcon', 2], ['lingotes', 3], ['saca', 2], ['arcon', 2], ['arcon', 2]];
     {

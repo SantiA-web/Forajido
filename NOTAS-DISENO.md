@@ -19485,6 +19485,21 @@ guardaespaldas distintos)*:
         deja de chocar y rueda vacío dejando un rastro. Lo mojado se seca en 90 s.
       - 🐛 Lo que entra al pasillo desde un costado ya no se frena contra la pared de al lado mientras entra (una valija
         de la pirámide quedaba trabada en el rincón).
+    - **✅ EL BLINDADO** (world/caidas.js, `blindado`; los lingotes en world/estiloNuevo/vagones.js) *(Santi: "en el
+      blindado no agregaría más nada")*:
+      - **Los lingotes no se caen nunca**, sólo se mueven *(Santi: "que los lingotes se muevan de un lado a otro pero que
+        nunca caigan y solo quede como dibujo")*: la tarima va en 17 dibujos del meneo. Con el meneo de siempre se corren
+        de a poco, más los pisos de arriba; en el frenazo, de golpe *(Santi: "al haber un movimiento fuerte que choquen
+        contra el cofre de la izquierda, que sea más brusco")*: pegan contra las manijas del cofre de al lado, los de
+        arriba rebotan un punto más, con chispitas. Detrás, **una baranda de fierro** gris (tres parantes y dos barras)
+        que asoma donde no la tapan *(Santi: "para justificar que no se caen, dibujá como una barra de metal estilo valla")*.
+      - **La torre de bolsas se cae entera, en diagonal** *(Santi: "preferiría que se caiga completamente como en
+        diagonal… se tienen que ver que las bolsas se desprenden, pero bastante seguido para que… impacte y mate")*:
+        primero los tres baldes del puesto contra incendios se descuelgan y quedan volcados con la arena; después cada
+        bolsa, de arriba para abajo, una cada 0,06 s, siempre para adentro del vagón (para afuera iban contra la pared
+        de la puerta); las de arriba llegan más lejos y más adelante. Pesadas: matan. Cuando cae la última, el rincón
+        queda libre.
+      - **Los arcones de las puntas no se mueven**: están encerrados entre cofres y cajones, no tienen por dónde salir.
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

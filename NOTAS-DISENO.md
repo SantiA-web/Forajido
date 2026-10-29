@@ -19520,11 +19520,13 @@ guardaespaldas distintos)*:
         fuera del carril). Ya afuera, 0,9-1,6 s sin tirarte: tu respiro. Si la IA lo vuelve a meter abajo de lo que ya
         vio, se sale de nuevo.
       - **El chirrido** (idea mía, *Santi: "agregá esa idea tuya"*): el que no está peleando levanta la vista, cada uno a
-        su tiempo, y mira para lo que tenga más cerca que se puede venir; mirando para ahí, lo lee de frente.
+        su tiempo, y mira para lo que tenga más cerca que se puede venir. 🔁 *(Santi: "me parece muchísimo que se salven
+        un 84%… quiero ese número cerca de 60%")*: mirando para arriba no lo lee como el que lo vio venir de frente:
+        entre el sacudón y el ruido no siempre se da cuenta (`falla.mirando` 0,45; con 0,33 se salvaba el 77 %).
       - **Medido** (60 asaltos por caso, debajo de la torre del blindado): solo, de frente la ve el 95 % y muere el 5 %;
         de costado 75/25; de espaldas 10/90; de espaldas tirando, 0/100; de espaldas con un compañero que grita, la ve
         el 85 % y muere el 5 %; si el compañero está tirando, no grita nunca. El pistolero, de espaldas, la ve la mitad.
-        De espaldas sin pelear, con el chirrido, la ve el 84 %. Mueren justo los que no la vieron.
+        De espaldas sin pelear, con el chirrido, se salva el 61 % (100 asaltos). Mueren justo los que no la vieron.
       - 🐛 Las cajas de munición del vagón de guardias habían quedado livianas: ahora pesadas, como se eligió.
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.

@@ -2597,7 +2597,8 @@ export const CONFIG = {
   /**
    * 🧍 LOS GUARDIAS LEEN EL PELIGRO (systems/peligro.js) *(Santi: "casi siempre, a veces no… si están de espaldas las
    * chances de esquivar disminuyen muchísimo")*:
-   *  falla         la chance de no darse cuenta, según para dónde mira (o si se lo gritaron)
+   *  falla         la chance de no darse cuenta, según para dónde mira (o si se lo gritaron, o si levantó la vista con
+   *                el chirrido: `mirando`)
    *  reaccion      cuánto tarda en darse cuenta (s), lo mismo; trasGirar, el que lo oyó, cuando ya se dio vuelta
    *  giro, loTieneDeFrente   qué tan rápido se da vuelta el que lo oyó, y desde qué ángulo ya lo ve (radianes)
    *  mejorFalla, mejorReaccion   el sheriff, el cazarrecompensas, el pistolero y el dinamitero: menos y más rápido
@@ -2610,7 +2611,7 @@ export const CONFIG = {
    *                dura (s), y hasta dónde busca qué mirar (px)
    */
   peligro: {
-    falla: { frente: 0.12, costado: 0.25, espaldas: 0.85, oido: 0.12 },
+    falla: { frente: 0.12, costado: 0.25, espaldas: 0.85, oido: 0.12, mirando: 0.45 },
     reaccion: { frente: [0.15, 0.45], costado: [0.3, 0.7], espaldas: [0.6, 1.0], trasGirar: [0.1, 0.25] },
     giro: 6,
     loTieneDeFrente: 0.4,

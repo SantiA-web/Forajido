@@ -87,14 +87,19 @@ function disparando(e) {
  */
 function notar(e, z, world, oido, lista) {
   const K = CONFIG.peligro, rng = world.rng, bueno = esMejor(e);
-  const mira = comoLoMira(e, z), vista = oido ? 'oido' : ['frente', 'costado', 'espaldas'][mira];
+  // (🔁 El que levantó la vista con el chirrido no lo lee como el que lo vio venir de frente *(Santi: "me parece
+  // muchísimo que se salven un 84%… quiero ese número cerca de 60%")*: miró, pero entre el sacudón y el ruido no
+  // siempre se da cuenta de qué se viene: `falla.mirando`.)
+  const mira = comoLoMira(e, z), miro = e.miroArriba && !oido;
+  e.miroArriba = false;
+  const vista = oido ? 'oido' : miro && mira === 0 ? 'mirando' : ['frente', 'costado', 'espaldas'][mira];
   const junto = lista.filter((q) => q.tipo === z.tipo && cerca(q, z, K.grupo));
   for (const q of junto) e.lecturas.set(q.clave, true);
   // (En su ráfaga y de espaldas: ni lo ve ni oye el grito.)
   if (mira === 2 && disparando(e)) return;
   if (rng.chance(K.falla[vista] * (bueno ? K.mejorFalla : 1))) return;
   for (const q of junto) e.lecturas.set(q.clave, 'vio');
-  const [a, b] = K.reaccion[oido ? 'trasGirar' : vista];
+  const [a, b] = K.reaccion[oido ? 'trasGirar' : vista === 'mirando' ? 'frente' : vista];
   e.peligro = {
     z, claves: new Set(junto.map((q) => q.clave)), t: rng.range(a, b) * (bueno ? K.mejorReaccion : 1), oido, girar: oido,
     // (Lo liviano no se grita: sólo lo que te tira al piso o te mata.)
@@ -156,7 +161,7 @@ function mirarArriba(e, dt, lista) {
     // (Ya lo tiene de frente: ahora sí lo lee, de frente.)
     let dif = a - (e.facing || 0);
     dif = Math.abs(Math.atan2(Math.sin(dif), Math.cos(dif)));
-    if (dif < CONFIG.peligro.loTieneDeFrente) e.mirando = null;
+    if (dif < CONFIG.peligro.loTieneDeFrente) { e.mirando = null; e.miroArriba = true; }
   }
   return true;
 }

@@ -19431,9 +19431,8 @@ guardaespaldas distintos)*:
         que rueda (carro, baúl, valija) lo **tira al piso** 1,5 s y lo despide (`tirado`, acostado y sin la "z" del
         desmayado); el frenazo y el choque del enganche lo hacen trastabillar con el empujón. *(Eligió "lo tira al piso"
         para los carros, igual a vos.)*
-      - **Que los guardias lean el peligro y se salgan, al final** *(Santi: "lo de los guardias lo haremos al final")*:
-        se probó una versión (nervios, distracción, quedarse duro) y se sacó. Cuando se haga: que parezcan personas en
-        un tiroteo, no "pasa tal, se mueve a tal".
+      - **✅ Los guardias leen el peligro** (systems/peligro.js, `CONFIG.peligro`): ver más abajo, "LOS GUARDIAS LEEN EL
+        PELIGRO". Que parezcan personas en un tiroteo, no "pasa tal, se mueve a tal".
       - **Las cajas fuertes chocan** (todas) y son cobertura.
       - El atajo [8] lleva siempre al vagón que se está haciendo.
     - **✅ EL DE GUARDIAS** (world/caidas.js, `guardias`):
@@ -19500,6 +19499,33 @@ guardaespaldas distintos)*:
         de la puerta); las de arriba llegan más lejos y más adelante. Pesadas: matan. Cuando cae la última, el rincón
         queda libre.
       - **Los arcones de las puntas no se mueven**: están encerrados entre cofres y cajones, no tienen por dónde salir.
+    - **✅ LOS GUARDIAS LEEN EL PELIGRO** (systems/peligro.js, `CONFIG.peligro`; va antes de la IA de cada uno, en
+      `updateEnemies`, y mientras se salva la reemplaza) *(Santi eligió que esquiven "casi siempre, a veces no", que
+      dejen de tirar mientras se salvan, que se avisen a los gritos y que sólo el sheriff, el cazarrecompensas, el
+      pistolero y el dinamitero sean un poco mejores: la mitad de falla y 30 % más rápidos)*:
+      - **Lo que leen**: la sombra de lo que va a caer (desde el aviso), la pila que se va a soltar por el pasillo y lo
+        que ya viene rodando por su carril. Lo que no lastima (sombreros, cartucheras, rifles) no asusta.
+      - **Darse cuenta según para dónde mira** *(Santi: "si están de espaldas las chances de esquivar disminuyen
+        muchísimo")*: no se da cuenta 12 % de frente, 25 % de costado, 85 % de espaldas; tarda 0,15-0,45, 0,3-0,7 y
+        0,6-1 s. Lo que cae junto (una torre, un estante) se lee junto: o todo o nada.
+      - **En su ráfaga y de espaldas no se salva** *(Santi: "no hay forma de que se salve, ni con un grito, porque está
+        distraído")*.
+      - **El grito** ("¡CUIDADO ARRIBA!", "¡SE VIENE!", hasta 140 px): *(Santi: "la única forma posible de que un guardia
+        que está de espaldas pueda ver que se aproxima un obstáculo")*. No grita el que está tirando *(Santi: "si justo
+        se encuentra jalando del gatillo no puede")* ni por lo liviano *(Santi: "los obstáculos livianos no provocan
+        gritos")*. El que lo oye se queda quieto y se da vuelta a buscarlo; cuando lo tiene de frente, recién ahí
+        arranca *(Santi: "no se aviva al exacto momento, porque no sabe de dónde viene… se da vuelta en el lugar dónde
+        está y una vez que lo ve ahí recién reacciona")*. El giro tarda unos 0,3 s.
+      - **Salirse**: el paso más corto que lo saca de abajo de todo lo que vio, a donde se pueda pisar (de lo que rueda,
+        fuera del carril). Ya afuera, 0,9-1,6 s sin tirarte: tu respiro. Si la IA lo vuelve a meter abajo de lo que ya
+        vio, se sale de nuevo.
+      - **El chirrido** (idea mía, *Santi: "agregá esa idea tuya"*): el que no está peleando levanta la vista, cada uno a
+        su tiempo, y mira para lo que tenga más cerca que se puede venir; mirando para ahí, lo lee de frente.
+      - **Medido** (60 asaltos por caso, debajo de la torre del blindado): solo, de frente la ve el 95 % y muere el 5 %;
+        de costado 75/25; de espaldas 10/90; de espaldas tirando, 0/100; de espaldas con un compañero que grita, la ve
+        el 85 % y muere el 5 %; si el compañero está tirando, no grita nunca. El pistolero, de espaldas, la ve la mitad.
+        De espaldas sin pelear, con el chirrido, la ve el 84 %. Mueren justo los que no la vieron.
+      - 🐛 Las cajas de munición del vagón de guardias habían quedado livianas: ahora pesadas, como se eligió.
 - **✅ EL BLINDADO, LA BÓVEDA DE CHAPA** (world/estiloNuevo/vagones.js) *(Santi eligió las recomendaciones y los
   cinco detalles)*: chapa gris remachada, sin ventanillas.
   - **La luz** *(eligió la A)*: sólo los tres faroles enjaulados que cuelgan del techo (se hamacan con el tren); casi

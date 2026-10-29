@@ -59,6 +59,7 @@ import { createEnemy, drawEnemy, damageEnemy } from '../entities/enemy.js';
 import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro, barrilRoto, tapaSaltada, derramar, ruedaAcostada, volcarBarrilAgua } from '../world/caidas.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
+import { esquivarPeligro, mirarAlChirrido } from '../systems/peligro.js';
 import { crearEscuadra, actualizarEscuadras, jugadorEmpiezaRecarga, jugadorCambiaDeVagon } from '../systems/escuadra.js';
 import {
   updateSheriff, updateEscolta, actualizarAuraDelSheriff, apagarAura,
@@ -1931,8 +1932,9 @@ export function createRaidScene(services) {
     // 🧳 Lo que se cae y lo que sale por el pasillo: el aviso elige qué (y los guardias lo leen), el golpe lo larga.
     if (evento === 'frenazoAviso' || evento === 'arranconAviso') {
       avisarCaidas(caidas, evento === 'frenazoAviso' ? -1 : 1, rng);
-      // (🧍 Que los guardias lean el peligro y se salgan queda para el final *(Santi: "lo de los guardias lo haremos al
-      // final")*; lo que les pasa si los alcanza, sí: es lo mismo que a vos.)
+      // (🧍 Los guardias lo leen solos, con la sombra; con el chirrido, el que no pelea levanta la vista. Ver
+      // systems/peligro.js.)
+      mirarAlChirrido(enemies, rng);
       cubrirPasajeros();
     } else golpearCaidas(caidas);
     // 🚂 El arrancón: el tren acelera de golpe, más suave que el frenazo (nadie trastabilla).
@@ -3378,6 +3380,8 @@ export function createRaidScene(services) {
        * y boss.js se importarían en círculo, y boss.js ya depende de ai.js
        * para reusarle el buscador de rutas y la línea de visión.
        */
+      // 🧍 Lo que se cae y lo que viene por el pasillo: el que se está salvando no hace otra cosa (systems/peligro.js).
+      if (esquivarPeligro(e, dt, world)) { e.hitFlash = Math.max(0, (e.hitFlash || 0) - dt); continue; }
       if (e.esJefe) { updateBoss(e, dt, world); continue; }
 
       /**

@@ -384,11 +384,14 @@ function zonaDe(o) {
  */
 export function zonasDePeligro(C, S) {
   const z = [];
-  for (const o of C.objetos) if (o.estado === 'aviso' || o.estado === 'cae') z.push(zonaDe(o));
+  // (`clave`: para que cada guardia lo lea una sola vez; `desde`: de dónde viene, para saber si lo está mirando. Ver
+  // systems/peligro.js.)
+  // (Lo que no lastima —un sombrero, un rifle— no es peligro para nadie.)
+  for (const o of C.objetos) if ((o.estado === 'aviso' || o.estado === 'cae') && o.peso !== 'nada') z.push({ ...zonaDe(o), clave: o, peso: o.peso, desde: { x: o.xRepisa, y: o.yRepisa } });
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
     const dir = p.atras ? 1 : -1, largo = CONFIG.caidas.pasilloLargo;
-    z.push({ x0: dir > 0 ? p.x : p.x - largo, x1: dir > 0 ? p.x + largo : p.x, y0: 4 * S - 2, y1: 6 * S + 2, pasillo: true });
+    z.push({ x0: dir > 0 ? p.x : p.x - largo, x1: dir > 0 ? p.x + largo : p.x, y0: 4 * S - 2, y1: 6 * S + 2, pasillo: true, clave: p, desde: { x: p.x, y: p.yBase } });
   }
   return z;
 }
@@ -1403,7 +1406,8 @@ function guardias(C, train, w) {
       for (const bx of EW > 16 ? [xs + 3, xs + 16] : [xs + 2]) {
         const xw = deAx(bx + 6);
         C.objetos.push({
-          tipo: 'municionCaja', peso: 'liviano', hw: 5, x: xw, xRepisa: xw, yRepisa: deAy(ys), yPared,
+          // (🐛 Pesadas, como se eligió *(Santi: "pesadas, matan")*: habían quedado livianas, media vida.)
+          tipo: 'municionCaja', peso: 'pesado', hw: 5, x: xw, xRepisa: xw, yRepisa: deAy(ys), yPared,
           yPiso: yPared + 7 + Math.round(azar(bx, c) * 8), estado: 'repisa', t: 0, dir: 0, wagon: w.id,
         });
       }

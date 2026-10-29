@@ -2594,6 +2594,40 @@ export const CONFIG = {
    *  pasilloLargo  qué largo de pasillo es peligroso delante de una pila que se va a soltar
    *  cubrirse      lo que se quedan cubiertos los pasajeros sentados después del golpe
    */
+  /**
+   * 🧍 LOS GUARDIAS LEEN EL PELIGRO (systems/peligro.js) *(Santi: "casi siempre, a veces no… si están de espaldas las
+   * chances de esquivar disminuyen muchísimo")*:
+   *  falla         la chance de no darse cuenta, según para dónde mira (o si se lo gritaron)
+   *  reaccion      cuánto tarda en darse cuenta (s), lo mismo; trasGirar, el que lo oyó, cuando ya se dio vuelta
+   *  giro, loTieneDeFrente   qué tan rápido se da vuelta el que lo oyó, y desde qué ángulo ya lo ve (radianes)
+   *  mejorFalla, mejorReaccion   el sheriff, el cazarrecompensas, el pistolero y el dinamitero: menos y más rápido
+   *  oyeGrito      hasta dónde se oye el "¡CUIDADO!" (px); grupo, lo que cae a menos de eso se lee junto
+   *  respiro       lo que se queda sin tirarte cuando ya se salvó (s)
+   *  apuro         cuánto más rápido que su paso se sale; margen, qué tan afuera se para
+   *  rodanteLento, rodanteSegundos, lecturaRodante   lo que rueda: más lento que eso no asusta; lo lee hasta los
+   *                segundos que le faltan para llegar, y nunca más lejos que lecturaRodante (px)
+   *  mirarDemora, mirarDura, mirarHasta   con el chirrido, el que no pelea levanta la vista: cuándo empieza, cuánto
+   *                dura (s), y hasta dónde busca qué mirar (px)
+   */
+  peligro: {
+    falla: { frente: 0.12, costado: 0.25, espaldas: 0.85, oido: 0.12 },
+    reaccion: { frente: [0.15, 0.45], costado: [0.3, 0.7], espaldas: [0.6, 1.0], trasGirar: [0.1, 0.25] },
+    giro: 6,
+    loTieneDeFrente: 0.4,
+    mejorFalla: 0.5,
+    mejorReaccion: 0.7,
+    oyeGrito: 140,
+    grupo: 24,
+    respiro: [0.9, 1.6],
+    apuro: 1.4,
+    margen: 3,
+    rodanteLento: 25,
+    rodanteSegundos: 1.1,
+    lecturaRodante: 150,
+    mirarDemora: [0.05, 0.4],
+    mirarDura: [0.6, 1.1],
+    mirarHasta: 110,
+  },
   caidas: {
     repisaPuntos: 32,
     cae: 0.4,

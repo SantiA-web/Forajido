@@ -561,6 +561,10 @@ export function buildTrain(
   const {
     climaId = null, estado = [], comportamientos = [], variantes = [],
     encubiertos = [], paquetes = [], cajaOculta = false,
+    // (📦 De día o de noche: los portones del cerrado van abiertos o cerrados. Lo pasa quien sabe la hora.)
+    dia = false,
+    // (📦 Si saltaste del caballo por el portón abierto de un cerrado: el índice de ese vagón. Ver más abajo.)
+    portonEn = null,
   } = opciones;
   const tipoTren = TRAIN_TYPES[tipoTrenId] || TRAIN_TYPES[TIPO_TREN_POR_DEFECTO];
   composicion = composicion || sortearComposicion(rng, tipoTren);
@@ -620,6 +624,31 @@ export function buildTrain(
     for (const row of [4, 5]) {
       layout[row] = pintar(layout[row], tramoDelCaballo.colStart, 2, () => 'E');
     }
+  }
+
+  /**
+   * --- 2 ter. 📦 LOS PORTONES DEL CERRADO, DE DÍA ABIERTOS *(Santi: "de día funcionaran como una ventana (podrás
+   * dispararle a los jinetes y ellos a ti)")*: las casillas de pared de cada lado, frente al hueco entre las pilas del
+   * medio, pasan a ser ventanilla ('W'): no se pasa caminando, pero se ve y se tira de afuera para adentro y al revés.
+   * De noche van cerrados: pared. (El dibujo: ver `porton` en world/estiloNuevo/vagones.js.)
+   */
+  const portones = [];
+  for (const t of tramos) {
+    if (t.tipo !== 'vagon' || t.plantilla.id !== 'cerrado') continue;
+    const [c0, c1] = portonDelCerrado(t.plantilla.layout);
+    portones.push({ wagon: t.wagon, c0: t.colStart + c0, c1: t.colStart + c1, abierto: dia });
+    if (dia) for (const row of [0, ALTO - 1]) layout[row] = pintar(layout[row], t.colStart + c0, c1 - c0 + 1, () => 'W');
+  }
+  /**
+   * 📦 ENTRASTE POR EL PORTÓN *(Santi: "podrás saltar por aquí como si fuera un enganche")*: como en un enganche, la
+   * salida es donde quedó el caballo, galopando al lado del portón. La de la cola se borra y la fila de adentro, junto
+   * al portón de este lado, pasa a ser la salida ('E').
+   */
+  const portonUsado = portonEn != null ? portones.find((P) => P.wagon === portonEn && P.abierto) : null;
+  if (portonUsado) {
+    const cola = tramos[0];
+    for (const row of [4, 5]) layout[row] = pintar(layout[row], cola.colStart, cola.cols, (ch) => (ch === 'E' ? '+' : ch));
+    layout[ALTO - 2] = pintar(layout[ALTO - 2], portonUsado.c0, portonUsado.c1 - portonUsado.c0 + 1, () => 'E');
   }
 
   const map = createTilemap(layout);
@@ -1827,7 +1856,10 @@ export function buildTrain(
   // Un tile a la derecha del centro cuando el caballo quedó en un enganche, para
   // no aparecer adentro de la zona de escape y poder bajarse sin haber jugado.
   const entradaX = caballo === 1 ? entrada.x : entrada.x + map.size;
-  const player = createPlayer(entradaX, entrada.y, weaponId, meleeId);
+  // (📦 Por el portón: adentro, una fila más acá de la salida, en el medio del hueco.)
+  const player = portonUsado
+    ? createPlayer(((portonUsado.c0 + portonUsado.c1 + 1) / 2) * map.size, (ALTO - 2.5) * map.size, weaponId, meleeId)
+    : createPlayer(entradaX, entrada.y, weaponId, meleeId);
 
   return {
     map,
@@ -1875,9 +1907,12 @@ export function buildTrain(
     // `spawnReinforcement`): tienen que nacer con el mismo perfil que todos
     // los demás guardias de este tren, no con el de CONFIG.enemy a secas.
     ai: perfilIA,
-    caballoEn: caballo,
-    boardedAt: caballo,
+    // (📦 Entrando por un portón, el caballo queda "en" ese vagón: `caballoEn - 1` es el vagón de la salida.)
+    caballoEn: portonUsado ? portonUsado.wagon + 1 : caballo,
+    boardedAt: portonUsado ? portonUsado.wagon : caballo,
     exitZone: findExitZone(map),
+    /** 📦 Los portones de los cerrados: `{ wagon, c0, c1, abierto }` (columnas del mapa). */
+    portones,
     totalLootValue: loot.reduce((sum, l) => sum + l.value, 0),
 
     /** ¿En qué vagón está este punto? 0 = la plataforma de salida. */
@@ -2020,6 +2055,18 @@ function revisarRondas(avisos, plantilla, nombre) {
       }
     }
   });
+}
+
+/**
+ * 📦 Las columnas del portón de un cerrado (en su plantilla): el hueco entre las pilas de la primera fila de carga,
+ * alrededor del medio. Las mismas de los dos lados.
+ */
+export function portonDelCerrado(layout) {
+  const medio = Math.floor(layout[0].length / 2);
+  let c0 = medio, c1 = medio;
+  while (c0 > 1 && layout[1][c0 - 1] !== 'C') c0--;
+  while (c1 < layout[0].length - 2 && layout[1][c1 + 1] !== 'C') c1++;
+  return [c0, c1];
 }
 
 /** La zona de escape es el rectángulo que ocupan las salidas ('E'). */

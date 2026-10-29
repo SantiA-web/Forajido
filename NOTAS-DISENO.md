@@ -19589,6 +19589,38 @@ guardaespaldas distintos)*:
 - **✅ FORAJIDO-JUGAR.HTML con el estilo nuevo** *(Santi: "por qué en este archivo todavía no están los
   cambios de 1era clase?")*: con doble clic no hay dónde poner "?nuevo"; el archivo armado lo prende solo
   (`FORAJIDO_ESTILO_NUEVO`, armar-archivo.ps1). [F9] lo sigue apagando.
+- **✅ EL CERRADO, EL FURGÓN DEL TREN DE CARGA** (world/estiloNuevo/vagones.js) *(Santi: "un vagón de carga se tiene
+  que ver como tal"; eligió "rendijas y portón")*: su propio plano (data/wagons.js; antes usaba el del correo liviano),
+  paredes de tablas sin ventanas: la luz entra por las rendijas y, de día, por los dos portones corredizos abiertos.
+  - **LOS PORTONES** (world/train.js, `portonDelCerrado`): de día abiertos, de noche cerrados (pared). El del fondo
+    muestra afuera el suelo que pasa (tierra, manchas, piedritas, matas, sin vía). El de adelante muestra el piso de
+    madera de adentro. 🔁 **Los dos marcos iguales** *(Santi: "elegí el dibujo que sea más realista… y aplicala de
+    igual manera"; "me gusta más que el borde del portón tenga la madera finita… llevá la madera finita hasta que se
+    iguale a la pared en altura")*: postes de madera de cuatro puntos, el dintel finito arriba de todo, en el borde de
+    la pared, sin pared encima, y el umbral de chapa abajo. Sin el riel atravesado.
+  - **Saltar por el portón** *(Santi: "podrás saltar por aquí como si fuera un enganche")*: desde el caballo, igual
+    que a un enganche (misma franja, mismo perdón); caés adentro junto al portón y el caballo te espera ahí.
+  - **El borde del portón de adelante** *(Santi: "el jugador debería poder pasar el marco y llegar hasta el borde del
+    hueco… no debería poder usar la función de shift cuando está justo al borde")*: se camina hasta el umbral; ahí no
+    hay cobertura.
+  - **La carga**: pilas de cajones de tablas, bolsas de harina y arpillera acomodadas como cubos en su mueble *(Santi:
+    "hay bolsas que siguen sin el mueble que hicimos")*, de una casilla de hondo, y los fardos de pasto seco, amarillos
+    *(Santi: "los fardos, no deberían ser más amarillos?")*. Barriles grandes junto a las puertas.
+  - **Frenos rotos en el cerrado** (world/caidas.js, `cerrado`): la torre de cajones se cae y los cajones quedan en el
+    piso; las bolsas caen y la de harina revienta con su nube; los barriles grandes se vuelcan y salen rodando.
+  - 🆕 **COBERTURA BAJA PARA TODO LO CAÍDO** *(Santi: "a partir de ahora quiero que todos los barriles caídos y cajas
+    que sean coberturas tengan la cobertura baja")*: los cajones caídos (`cubreCaida`) y los barriles quietos
+    (`cubreBajo`, entities/rodante.js) frenan el paso y las balas de abajo, y se tira por encima. La cobertura que se
+    mueve entra al mapa por `ponerCoberturasMoviles` (world/tilemap.js).
+  - 🆕 **LA PARED DE MÁS ACÁ, EN TODOS LOS VAGONES** *(Santi: "debería parecer que pasa hasta la mitad de la pared,
+    como si fuera la parte del interior de la pared… debería desaparecer las partículas de impacto en las paredes
+    más cercanas a la pantalla"; "la bala desaparece un poco después de pasar el borde… ajustá el dibujo")*: la bala
+    que va hacia la pantalla se tapa desde el borde de arriba de la pared, sigue por dentro hasta la mitad y se apaga
+    sin chispas (systems/combat.js y raidScene.js). **Las esquinas no frenan** *(Santi: "cuando el disparo va cerca de
+    la esquinita, no debería frenarse, debería continuar")*: cerca del portón la bala sigue hasta el borde; las que
+    pasan por el portón del fondo las corta el marco.
+  - 🐛 Los barriles de comida del comedor pasaron de 'R' a 'Z' (la 'R' ya era otra cosa).
+  - 🧪 El atajo [8] lleva al cerrado de un tren de carga con los frenos rotos.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

@@ -100,8 +100,12 @@ const TILE_RULES = {
    */
   'V': { solid: true, blocksSight: true, blocksBullets: true },
   '.': { solid: false, blocksSight: false, blocksBullets: false },  // suelo
-  // 🛒 Donde espera un carro de correo que sale rodando en el frenazo (world/caidas.js): el choque lo pone el carro.
-  'R': { solid: false, blocksSight: false, blocksBullets: false },
+  // 🛒 Los rincones que se sueltan en el frenazo (world/caidas.js): el carro del correo, los barriles del comedor, la
+  // pila de munición de los guardias. El choque lo pone lo que está ahí. (Antes eran 'R', la misma letra de las reses
+  // del refrigerado, más abajo: la de las reses le ganaba y estos rincones tapaban la vista y frenaban a la mitad.)
+  'Z': { solid: false, blocksSight: false, blocksBullets: false },
+  // 📦 Donde espera un barril del vagón cerrado (world/caidas.js): el choque lo pone el barril.
+  'D': { solid: false, blocksSight: false, blocksBullets: false },
   'E': { solid: false, blocksSight: false, blocksBullets: false },  // salida (te espera el caballo)
   '+': { solid: false, blocksSight: false, blocksBullets: false },  // enganche entre vagones
   'X': { solid: true,  blocksSight: true,  blocksBullets: true },   // el vacío: fuera del tren
@@ -183,7 +187,25 @@ export function createTilemap(layout) {
   }
 
   function blocksSightAt(px, py) {
-    return dentro(px, py) && TILE_RULES[tileAtPixel(px, py)].blocksSight;
+    if (!dentro(px, py) || !TILE_RULES[tileAtPixel(px, py)].blocksSight) return false;
+    const f = finos.size ? finoEn(px, py) : null;
+    return f === null ? true : f;
+  }
+
+  /**
+   * 📦 LOS CHOQUES QUE SIGUEN AL DIBUJO *(Santi: "que llegue a tocar el objeto y que el jugador no choque contra el
+   * aire")*: en las casillas de carga que avisa el dibujo (`ponerChoquesFinos`; hoy, las del cerrado) no choca la
+   * casilla entera, sino lo que de verdad está apoyado en el piso: unos rectángulos (en el mundo) y lo que se mueve
+   * (`dinamico(x, y)`, el fardo que se corre). Lo demás de la casilla es aire: se camina, se ve y pasan las balas.
+   * `null`: esta casilla no tiene choque fino (choca entera, como siempre).
+   */
+  const finos = new Map(), finosDe = new Map();
+  let movil = null;                    // (las coberturas que se mueven: ver `ponerCoberturasMoviles`)
+  function finoEn(px, py) {
+    const F = finos.get(Math.floor(py / size) * 100000 + Math.floor(px / size));
+    if (!F) return null;
+    for (const [a, b, c, d] of F.rects) if (px >= a && px <= c && py >= b && py <= d) return true;
+    return !!F.dinamico && F.dinamico(px, py);
   }
 
   /**
@@ -240,6 +262,7 @@ export function createTilemap(layout) {
   function solidoEn(px, py) {
     const regla = TILE_RULES[tileAtPixel(px, py)];
     if (!regla.solid) return false;
+    if (finos.size) { const f = finoEn(px, py); if (f !== null) return f; }
     // (🆕 La punta del vagón: sólo su grueso, del lado de afuera.)
     const fina = paredFina(Math.floor(px / size), Math.floor(py / size));
     if (fina) {
@@ -265,6 +288,19 @@ export function createTilemap(layout) {
     grid, rows, cols, size,
     /** 🆕 Qué columnas son puntas finitas de vagón (ver `paredFina`). */
     ponerPuntasFinas(cols) { puntasFinas = new Set(cols); },
+    /**
+     * 📦 Los choques finos de un vagón (ver `finoEn`): `lista` de `{ celdas: [c0, c1, f0, f1], rects, dinamico }`.
+     * `clave` es el vagón: si lo vuelve a avisar (el dibujo se rehace), reemplaza lo de antes.
+     */
+    ponerChoquesFinos(clave, lista) {
+      for (const k of finosDe.get(clave) || []) finos.delete(k);
+      const claves = [];
+      for (const F of lista) {
+        const [c0, c1, f0, f1] = F.celdas;
+        for (let f = f0; f <= f1; f++) for (let c = c0; c <= c1; c++) { finos.set(f * 100000 + c, F); claves.push(f * 100000 + c); }
+      }
+      finosDe.set(clave, claves);
+    },
     width: cols * size,
     height: rows * size,
     bounds: { width: cols * size, height: rows * size },
@@ -286,13 +322,28 @@ export function createTilemap(layout) {
      * une nunca se sale del rectángulo del mapa.
      */
     isSolidAt: (px, py) => solidoEn(px, py),
-    /** ¿Hay acá algo contra lo que pegarse? Lo sólido, menos el aire del enganche. */
-    daCoberturaAt: (px, py) => solidoEn(px, py) && !TILE_RULES[tileAtPixel(px, py)].sinCobertura,
+    /**
+     * 🆕 LO QUE NO ES CASILLA Y TAMBIÉN ES COBERTURA BAJA: los cajones caídos de la torre del cerrado, los barriles y
+     * los baúles que rodaron y quedaron quietos *(Santi: "las cajas deberían trabajar como cualquier objeto: que
+     * funcionen de cobertura… quiero que todos los barriles caídos y cajas que sean coberturas tengan la 'cobertura
+     * baja'")*. Se mueven, así que no se anotan en la grilla: la escena le pasa al mapa quién pregunta por ellos
+     * (`ponerCoberturasMoviles`, raidScene.js) y el mapa los suma a lo que ya contesta de sus casillas. Todos bajos:
+     * frenan la bala del que tira sin apuntar y los pasa la del que tira por encima, como el mostrador. (Cuentan para
+     * pegarse, para agacharse detrás y para que el guardia sepa si puede tirar; la bala la frena systems/combat.js.)
+     */
+    ponerCoberturasMoviles: (fn) => { movil = fn; },
+    coberturaMovilAt: (px, py) => !!movil && movil(px, py),
+    /** ¿Hay acá algo contra lo que pegarse? Lo sólido, menos el aire del enganche. (Y lo que se mueve.) */
+    daCoberturaAt: (px, py) => (solidoEn(px, py) && !TILE_RULES[tileAtPixel(px, py)].sinCobertura) || (!!movil && movil(px, py)),
     /** Cuánto de cada costado de esta casilla es pasillo, [izquierda, derecha] (el banco). */
     margenes,
     blocksSightAt,
-    blocksBulletsAt: (px, py) =>
-      dentro(px, py) && TILE_RULES[tileAtPixel(px, py)].blocksBullets,
+    // (Sólo las casillas: a la bala de verdad la frenan los que se mueven en systems/combat.js, que además los rompe.)
+    blocksBulletsAt: (px, py) => {
+      if (!dentro(px, py) || !TILE_RULES[tileAtPixel(px, py)].blocksBullets) return false;
+      const f = finos.size ? finoEn(px, py) : null;
+      return f === null ? true : f;
+    },
     /**
      * 🆕 LA COBERTURA BAJA (`cubreBajo`: hoy el mostrador de la barra; mañana sillones, mesas o lo que
      * sea bajo) *(Santi: "al apuntar desde detrás de la barra con click derecho el personaje o guardia
@@ -304,13 +355,14 @@ export function createTilemap(layout) {
      * systems/combat.js. Para sumar un mueble, se le pone `cubreBajo: true` a su casilla.
      */
     balasTapanDesde: (sx, sy, porEncima) => (px, py) => {
+      if (movil && movil(px, py)) return !porEncima;
       if (!dentro(px, py)) return false;
       const regla = TILE_RULES[tileAtPixel(px, py)];
       if (!regla.blocksBullets) return false;
       return !(porEncima && regla.cubreBajo);
     },
     /** ¿Es cobertura baja? (ver `tapaLaBala` en systems/combat.js) */
-    cubreBajoAt: (px, py) => dentro(px, py) && !!TILE_RULES[tileAtPixel(px, py)].cubreBajo,
+    cubreBajoAt: (px, py) => (dentro(px, py) && !!TILE_RULES[tileAtPixel(px, py)].cubreBajo) || (!!movil && movil(px, py)),
 
     /**
      * Por cuánto se multiplica la velocidad de quien está parado acá: 1 en

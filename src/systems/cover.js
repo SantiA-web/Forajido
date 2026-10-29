@@ -41,12 +41,21 @@ export function findCoverSurface(x, y, hw, hh, map, reach) {
       const row = Math.floor(probeY / size);
 
       let flushX = x, flushY = y;
-      // (Contra el banco, pegado a su tabla: es más angosto que la casilla.)
-      const [mIzq, mDer] = map.margenes ? map.margenes(col, row) : [0, 0];
-      if (dir.dx === 1) flushX = col * size + mIzq - hw - 0.5;
-      else if (dir.dx === -1) flushX = (col + 1) * size - mDer + hw + 0.5;
-      else if (dir.dy === 1) flushY = row * size - hh - 0.5;
-      else flushY = (row + 1) * size + hh + 0.5;
+      if (map.coberturaMovilAt && map.coberturaMovilAt(probeX, probeY)) {
+        // (🆕 Lo que se mueve —un cajón caído, un barril quieto— no llena su casilla: se busca su borde de verdad,
+        // volviendo de a medio paso hasta salir de él.)
+        let k = offset;
+        while (k > half && map.coberturaMovilAt(x + dir.dx * (k - 0.5), y + dir.dy * (k - 0.5))) k -= 0.5;
+        if (dir.dx !== 0) flushX = x + dir.dx * (k - half - 0.5);
+        else flushY = y + dir.dy * (k - half - 0.5);
+      } else {
+        // (Contra el banco, pegado a su tabla: es más angosto que la casilla.)
+        const [mIzq, mDer] = map.margenes ? map.margenes(col, row) : [0, 0];
+        if (dir.dx === 1) flushX = col * size + mIzq - hw - 0.5;
+        else if (dir.dx === -1) flushX = (col + 1) * size - mDer + hw + 0.5;
+        else if (dir.dy === 1) flushY = row * size - hh - 0.5;
+        else flushY = (row + 1) * size + hh + 0.5;
+      }
 
       const candidate = {
         x: flushX, y: flushY,
@@ -166,6 +175,7 @@ export function findCoverAtras(map, fromX, fromY, targetX, targetY, occupied = [
 
       if (occupied.some((o) => Math.hypot(o.x - point.x, o.y - point.y) < c.coverSpacing)) continue;
 
+      if (map.isSolidForMovementAt && map.isSolidForMovementAt(point.x, point.y)) continue;
       // Mismo escudo que el buscador normal: algo sólido entre él y el jugador.
       const angle = Math.atan2(targetY - point.y, targetX - point.x);
       if (!map.isSolidAt(point.x + Math.cos(angle) * 13, point.y + Math.sin(angle) * 13)) continue;
@@ -226,6 +236,8 @@ export function findCoverPoint(map, fromX, fromY, targetX, targetY, occupied = [
       // los tres amontonados detrás del mismo asiento.
       if (occupied.some((o) => Math.hypot(o.x - point.x, o.y - point.y) < c.coverSpacing)) continue;
       if (filtro && !filtro(point)) continue;
+      // (🆕 Ni encima de lo que no es casilla y choca: un cajón caído, un barril quieto.)
+      if (map.isSolidForMovementAt && map.isSolidForMovementAt(point.x, point.y)) continue;
 
       // La clave: justo delante, en la dirección del objetivo, tiene que haber algo.
       const angle = Math.atan2(targetY - point.y, targetX - point.x);

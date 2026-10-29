@@ -16,11 +16,11 @@ import { damageRider } from './riders.js';
 import { dañarPuerta, hojaGolpeada } from '../entities/door.js';
 import { dañarCortina } from '../world/cortinas.js';
 import { dañarPorton } from '../world/porton.js';
-import { dañarRodante } from '../entities/rodante.js';
+import { dañarRodante, cubreBajo } from '../entities/rodante.js';
 import { dañarCajon } from '../entities/cajon.js';
 import { prenderCajon, soltarExplosivo } from './explosives.js';
 import { yDeBala } from '../entities/bullet.js';
-import { romperConBala } from '../world/caidas.js';
+import { romperConBala, cubreCaida } from '../world/caidas.js';
 
 export function updateBullets(bullets, dt, world) {
   for (const b of bullets) {
@@ -52,8 +52,41 @@ export function updateBullets(bullets, dt, world) {
        * hace que al blindado no se le pueda entrar a los tiros por ningún
        * lado: ni caminando, ni disparando. Sólo dinamita.
        */
+      /**
+       * 🧱 LA PARED DE MÁS ACÁ, EN TODOS LOS VAGONES *(Santi: "el jugador al disparar hacia la pared de más acá da la
+       * sensación de que la bala pega en el borde de la pared, cuando debería parecer que pasa hasta la mitad de la
+       * pared, como si fuera la parte del interior de la pared (el jugador no la ve)")*. La pared de adelante se ve
+       * desde afuera: lo que se ve es su borde de arriba y su cara de afuera, y la bala le pega del otro lado, en la cara
+       * de adentro, que no se ve. Así que la bala entra en la fila de la pared sin frenarse y se apaga a la mitad (el
+       * borde de abajo de esa fila, `yMedio`), sin las astillas: suena, pero no se ve dónde pegó (`oculto`).
+       *
+       * Y por lo mismo, LA ESQUINITA DE UN HUECO NO FRENA *(Santi: "cuando el disparo, ya sea desde el borde hacia
+       * adentro o desde dentro hacia el borde y ese disparo va cerca de la esquinita, no debería frenarse, debería
+       * continuar")*: lo que frena es la mitad de la pared, no su borde. La bala que cruza la esquina de la pared junto a
+       * un portón o una ventanilla y sale por el hueco antes de llegar a la mitad, sigue. Una que entra muy de costado no
+       * se pasea por adentro de la pared: se apaga después de una casilla.
+       */
+      const S = world.map.size, yMedio = world.map.rows * S, yAntes = b.y - sy;
+      const enFilaDeAdelante = b.y >= yMedio - S && b.y < yMedio;
+      if ((yAntes < yMedio) !== (b.y < yMedio) && world.map.blocksBulletsAt(b.x, yMedio - 0.5)) {
+        // (De adentro para afuera, en la cara de adentro: no se ve. De afuera para adentro, en la de afuera: sí.)
+        b.alive = false;
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona, oculto: sy > 0 });
+        break;
+      }
+      if (enFilaDeAdelante && world.map.blocksBulletsAt(b.x, b.y)) {
+        b._enLaPared = (b._enLaPared || 0) + Math.hypot(sx, sy);
+        if (b._enLaPared > S) { b.alive = false; world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona, oculto: true }); break; }
+      }
+      // (📦 Y parado en el umbral del portón de más acá del cerrado, la que sale por el costado del hueco le pega al poste
+      // de adentro: ver `postesDelPorton`, scenes/raidScene.js.)
+      if (world.postesDelPorton && world.postesDelPorton(b.x - sx, b.x, b.y)) {
+        b.alive = false;
+        world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona, oculto: true });
+        break;
+      }
       // (🆕 La cobertura baja tiene su regla: ver `tapaLaBala`, más abajo.)
-      if (tapaLaBala(world, b) || puertaBlindadaEnMedio(b, world)) {
+      if ((!enFilaDeAdelante && tapaLaBala(world, b)) || puertaBlindadaEnMedio(b, world)) {
         b.alive = false;
         world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
         break;
@@ -167,6 +200,12 @@ export function updateBullets(bullets, dt, world) {
        * sea *(Santi: "si un disparo o dinamita va ahí que le pegue y lo rompa")*.
        */
       if (world.caidas) {
+        // (🆕 Los cajones caídos de la torre: cobertura baja, de fierro y tablas gruesas; no se rompen a tiros.)
+        if (!b.porEncima && cubreCaida(world.caidas, b.x, b.y)) {
+          b.alive = false;
+          world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'wall', zona: b.zona });
+          break;
+        }
         const roto = romperConBala(world.caidas, b.x, b.y);
         if (roto) {
           b.alive = false;
@@ -195,6 +234,8 @@ export function updateBullets(bullets, dt, world) {
           // (🥃 Y los muebles que ruedan —el baúl grande, el carro de correo—: son cobertura, así que les pega la bala
           // de cualquiera, y aguantan tres.)
           if (b.owner !== 'player' && ro.tipo !== 'polvora' && !ro.mueble) continue;
+          // (🆕 Y quieto en el piso es cobertura baja: el que tira por encima le pasa por arriba. Ver `cubreBajo`.)
+          if (b.porEncima && cubreBajo(ro)) continue;
           b.alive = false;
           pegoRodante = true;
           const rompio = dañarRodante(ro, b.damage);

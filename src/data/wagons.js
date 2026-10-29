@@ -122,17 +122,17 @@ export const WAGONS = {
     /**
      * 🍽️ LA ALACENA ('V'), en el rincón de arriba de la punta: el aparador y el estante de la vajilla *(Santi eligió
      * "alacena en la punta")*. Detrás, la pared sin ventana (la sacamos: un mueble no va contra un vidrio).
-     * 🛢️ LOS BARRILES DE COMIDA ('R', uno por casilla), a los dos lados de cada puerta: en el frenazo y el arrancón se
+     * 🛢️ LOS BARRILES DE COMIDA ('Z', uno por casilla), a los dos lados de cada puerta: en el frenazo y el arrancón se
      * vuelcan y salen rodando por el pasillo (ver `comedor` en world/caidas.js). Del lado de adelante hay más lugar: dos.
      */
     layout: [
       '#WW###WW###WW###WW###WW###WW######',
       '#..............................VV#',
       '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
-      '#RBCCCB.BCCCB.BCCCB.BCCCB.BCCCBRR#',
+      '#ZBCCCB.BCCCB.BCCCB.BCCCB.BCCCBZZ#',
       '+................................+',
       '+................................+',
-      '#RBCCCB.BCCCB.BCCCB.BCCCB.BCCCBRR#',
+      '#ZBCCCB.BCCCB.BCCCB.BCCCB.BCCCBZZ#',
       '#.BCCCB.BCCCB.BCCCB.BCCCB.BCCCB..#',
       '#................................#',
       '#WW###WW###WW###WW###WW###WW###WW#',
@@ -201,8 +201,8 @@ export const WAGONS = {
       '+..............................+',
       '+..............................+',
       '#.............................P#',
-      '#.RR....CC....CC....CC....RR...#',
-      '#.RR....CC....CC....CC....RR...#',
+      '#.ZZ....CC....CC....CC....ZZ...#',
+      '#.ZZ....CC....CC....CC....ZZ...#',
       '####WW####WW####WW####WW####WW##',
     ],
     enemies: [
@@ -969,7 +969,7 @@ export const WAGONS = {
       '+..............................+',
       '#........CC......CC.....JCCJ...#',
       '#..............................#',
-      '#RRSSS..SSS..SSS..SSS..SSS..SSS#',
+      '#ZZSSS..SSS..SSS..SSS..SSS..SSS#',
       '####WW####WW####WW####WW####WW##',
     ],
     sinComportamiento: true,
@@ -1361,6 +1361,27 @@ WAGONS.cerrado = {
   name: 'Vagón cerrado',
   short: 'CERRADO',
   hint: 'Mercadería estibada. Poca guardia.',
+  /**
+   * 📦 SU PROPIO PLANO DESDE EL ESTILO NUEVO *(Santi eligió "rendijas y portón")*: un furgón de carga no tiene
+   * ventanas, así que las paredes son lisas (la luz entra por las rendijas de las tablas y, de día, por los dos
+   * portones corredizos abiertos, columnas 14 a 17 de cada lado: ver world/estiloNuevo/vagones.js y
+   * `portonDelCerrado` en world/train.js). 🔁 Antes el portón del fondo iba entreabierto siempre. Las pilas, los guardias, el botín y los barriles de
+   * pólvora siguen donde estaban en el correo liviano (la pila de abajo del medio, una columna más ancha: ahí se corre el
+   * fardo). Las 'D', junto a las puertas: un barril parado en cada una, que
+   * con los frenos rotos se vuelca y sale rodando (world/caidas.js, `cerrado`).
+   */
+  layout: [
+    '################################',
+    '#.CCC..CCC.CCC....CCC.CCC..CCC.#',
+    '#.CCC..CCC.CCC....CCC.CCC..CCC.#',
+    '#D............................D#',
+    '+..............................+',
+    '+..............................+',
+    '#D............................D#',
+    '#.CC...CC.CCC......CC....CC....#',
+    '#.CC...CC.CCC......CC....CC....#',
+    '################################',
+  ],
 };
 
 /**

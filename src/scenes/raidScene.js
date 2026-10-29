@@ -49,14 +49,14 @@ import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual, damagePlayer,
 } from '../entities/player.js';
 import {
-  createRodante, updateRodante, drawRodante, TIPOS_RODANTE,
+  createRodante, updateRodante, drawRodante, TIPOS_RODANTE, cubreBajo,
 } from '../entities/rodante.js';
 import { updateCajon, drawCajon, vaciarCajon } from '../entities/cajon.js';
 import { WAGONS } from '../data/wagons.js';
 import { caballoActual, fondoDelAsalto } from '../data/horse.js';
 import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy, damageEnemy } from '../entities/enemy.js';
-import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro, barrilRoto, tapaSaltada, derramar, ruedaAcostada, volcarBarrilAgua } from '../world/caidas.js';
+import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, cubreCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro, barrilRoto, tapaSaltada, derramar, ruedaAcostada, volcarBarrilAgua } from '../world/caidas.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { esquivarPeligro, mirarAlChirrido } from '../systems/peligro.js';
@@ -270,6 +270,8 @@ export function createRaidScene(services) {
         encubiertos: params.encubiertos || [],
         paquetes: params.paquetes || [],
         cajaOculta: !!params.cajaOculta,
+        dia: !!gameState.esDeDia,
+        portonEn: params.portonEn ?? null,
       }
     );
     map = train.map;
@@ -333,7 +335,19 @@ export function createRaidScene(services) {
      */
     {
       const solidoDelMapa = map.isSolidAt.bind(map);
-      map.isSolidAt = (x, y) => solidoDelMapa(x, y) || baulQuietoEn(x, y) || cajaFuerteEn(x, y);
+      map.isSolidAt = (x, y) => solidoDelMapa(x, y) || baulQuietoEn(x, y) || cajaFuerteEn(x, y) || (!!caidas && cubreCaida(caidas, x, y));
+      /**
+       * 🆕 Y LO BAJO DE ESO (los cajones caídos, el baúl, las cajas de munición y los barriles quietos) ES COBERTURA BAJA
+       * *(Santi: "todos los barriles caídos y cajas que sean coberturas tengan la 'cobertura baja'")*: ver
+       * `ponerCoberturasMoviles` en world/tilemap.js.
+       */
+      map.ponerCoberturasMoviles((x, y) => (!!caidas && cubreCaida(caidas, x, y)) || rodanteQueCubre(x, y));
+      /**
+       * 📦 Y EN EL HUECO DEL PORTÓN DE MÁS ACÁ NO HAY CONTRA QUÉ PEGARSE *(Santi: "no debería poder usar la función de
+       * shift cuando está justo al borde")*: es el aire, como al costado de un enganche.
+       */
+      const coberturaDelMapa = map.daCoberturaAt.bind(map);
+      map.daCoberturaAt = (x, y) => !portonDeAdelante(x, y) && coberturaDelMapa(x, y);
     }
     // (🧪 El atajo [8]: el primer frenazo enseguida.)
     if (params.pruebaFrenos) enganches.proximoFrenazo = 4;
@@ -437,6 +451,8 @@ export function createRaidScene(services) {
       // (🆕 La puertita vaivén de la barra de primera clase: ver world/porton.js.)
       portones: crearPortones(train),
       bus, rng, input, camera, audio,
+      // (📦 Los postes del portón de más acá del cerrado, por dentro: ver systems/combat.js.)
+      postesDelPorton,
       aimX: player.x, aimY: player.y,
       // 🎯 C3b · Tu tiro desde el techo se resuelve en la vista de costado.
       tiroDesdeElTecho: (options) => tiroDesdeElTecho(options),
@@ -660,7 +676,15 @@ export function createRaidScene(services) {
      * el borde y caés al enganche (`caerDelCarbon`). Los COSTADOS siguen siendo
      * el borde del tren — caerse al desierto no existe *(elegido por Santi)*.
      */
+    /**
+     * 📦 EL PORTÓN DE MÁS ACÁ DEL CERRADO, ABIERTO: se pasa por debajo del marco y se camina por el piso hasta el borde
+     * del umbral *(Santi: "el jugador debería poder pasar el marco y llegar hasta el borde del hueco que deja el
+     * portón")*. Sólo vos: los guardias no se asoman. (Dónde queda: `_portonFrente`, world/estiloNuevo/vagones.js.)
+     */
+    const hueco = portonDeAdelante;
     world.solidoParaJugador = (x, y) => {
+      const pf = hueco(x, y);
+      if (pf) return y >= pf.umbral - 1;
       if (!player.enCarbon) return map.isSolidForMovementAt(x, y) || esCarbonEn(x);
       if (!esCarbonEn(x)) return false;
       if (esPuntaDelCarbon(x) && map.tileAtPixel(x, y) === '#') return false;
@@ -1131,9 +1155,10 @@ export function createRaidScene(services) {
   /** Los sistemas avisan por el bus; la escena reacciona. */
   function listen() {
     unsubscribers = [
-      bus.on('impact', ({ x, y, kind, zona, puntos, queria, deJugador, apuntada }) => {
+      bus.on('impact', ({ x, y, kind, zona, puntos, queria, deJugador, apuntada, oculto }) => {
         const color = kind === 'flesh' ? colors.blood : '#c9b28a';
-        spawnParticles(x, y, color, kind === 'flesh' ? 7 : 4);
+        // (🧱 `oculto`: le pegó a la cara de adentro de la pared de más acá, que no se ve: suena, sin astillas.)
+        if (!oculto) spawnParticles(x, y, color, kind === 'flesh' ? 7 : 4);
         audio.play(kind === 'flesh' ? 'hitFlesh' : 'hitWall');
         // 🧪 De prueba (`CONFIG.golpe.pruebaZonas`): en qué zona pegó tu bala.
         // Y cuánto sacó, y si la puntería la mandó a otra zona que la que querías.
@@ -1994,6 +2019,33 @@ export function createRaidScene(services) {
     return false;
   }
 
+  /**
+   * 📦 ¿Este punto está en el hueco del portón de más acá de un cerrado abierto, de la pared para afuera? Devuelve sus
+   * medidas (`_portonFrente`, world/estiloNuevo/vagones.js) o null.
+   */
+  function portonDeAdelante(x, y) {
+    if (!train || y < (map.rows - 1) * map.size) return null;
+    const w = train.wagons[train.wagonAt(x)], pf = w && w._portonFrente;
+    return pf && x >= pf.x0 && x <= pf.x1 ? pf : null;
+  }
+
+  /**
+   * 📦 ¿La bala salió del hueco del portón de más acá por un costado, más abajo de la mitad de la pared (donde se para
+   * el que está en el umbral)? Le pega al poste por dentro. Ver systems/combat.js.
+   */
+  function postesDelPorton(xAntes, x, y) {
+    if (!train || y < map.rows * map.size) return false;
+    const pf = portonDeAdelante(xAntes, y);
+    return !!pf && y <= pf.pie && (x < pf.x0 || x > pf.x1);
+  }
+
+  /** 🆕 ¿Hay acá algo que rodó y quedó quieto que sea cobertura baja? (Ver `cubreBajo`, entities/rodante.js.) */
+  function rodanteQueCubre(x, y) {
+    if (!rodantes) return false;
+    for (const ro of rodantes) if (cubreBajo(ro) && Math.abs(x - ro.x) < ro.hw && Math.abs(y - ro.y) < ro.hh) return true;
+    return false;
+  }
+
   /** 🥃 ¿Hay un baúl grande quieto acá? (Ver `isSolidAt` en el armado del asalto.) */
   function baulQuietoEn(x, y) {
     if (!rodantes) return false;
@@ -2419,7 +2471,7 @@ export function createRaidScene(services) {
       if (s.variante === 7) { ro.balea = false; ro.roce = O.valijaRoce * 0.75; }
       // (🚂 El barril de agua del caboose: el dibujo fijo lo esconde cuando se empieza a caer.)
       if (s.agua) { ro.agua = s.agua; ro.ocultos = train._ocultos || (train._ocultos = new Set()); }
-      if (s.variante === 6) { ro.contenido = s.contenido; ro.haciaPasillo = s.haciaPasillo; ro.vuelca = CONFIG.caidas.barril.vuelca; ro.roce = O.valijaRoce * CONFIG.caidas.barril.roce; }
+      if (s.variante === 6) { ro.grande = !!s.grande; ro.contenido = s.contenido; ro.haciaPasillo = s.haciaPasillo; ro.vuelca = CONFIG.caidas.barril.vuelca; ro.roce = O.valijaRoce * CONFIG.caidas.barril.roce; }
       // (🚂 La rueda del freno no entra al pasillo: rueda por su fila. Ver `caboose` en world/caidas.js.)
       ro.yMeta = s.porSuFila ? null : map.height / 2 + rng.range(-6, 6);
       if (s.salida != null) ro.salida = s.salida;
@@ -2468,7 +2520,7 @@ export function createRaidScene(services) {
         spawnParticles(ro.x, ro.y + ro.hh, ro.contenido ? '#e9e1cf' : '#c9b28a', 6);
         if (rng.chance(KB.tapaSalta)) {
           ro.abierto = true; ro.queda = KB.derrame;
-          tapaSaltada(caidas, ro.x + rng.range(-10, 10), ro.y + ro.hh + rng.range(2, 8));
+          tapaSaltada(caidas, ro.x + rng.range(-10, 10), ro.y + ro.hh + rng.range(2, 8), ro.grande);
           for (let k = 0; k < 6; k++) derramar(caidas, ro.x + rng.range(-6, 6), ro.y + ro.hh - rng.range(0, 5), ro.contenido, rng.int(0, 2));
         }
       }
@@ -2821,7 +2873,7 @@ export function createRaidScene(services) {
         if (ro.ocultos) ro.ocultos.add(ro.agua.clave);
         if (!ro.volcado) volcarBarrilAgua(caidas, { ...ro, baldeX: ro.agua.baldeX, baldeY: ro.agua.baldeY, celdas: ro.agua.celdas });
       }
-      barrilRoto(caidas, ro.x, ro.y + ro.hh, ro.contenido);
+      barrilRoto(caidas, ro.x, ro.y + ro.hh, ro.contenido, ro.grande);
       spawnParticles(ro.x, ro.y, ro.contenido ? '#e9e1cf' : '#6b3a2a', 16);
     }
     // (🧳 La valija reventada larga la ropa.)
@@ -4774,6 +4826,8 @@ export function createRaidScene(services) {
     // del barril y la leña del caboose; ver `animadosV` en world/estiloNuevo/vagones.js.)
     // (🚂 Con los enganches, el del farol colgado de tu vagón: ver el péndulo en world/enganches.js.)
     estiloNuevo.meneo = enganches ? enganches.meneo : Math.sin(scroll * CONFIG.tresCuartos.luzVentanilla.velocidad * Math.PI * 2);
+    // (📦 Y lo que corrió el suelo, la misma cuenta que el desierto de afuera: lo ve el portón abierto del cerrado.)
+    estiloNuevo.desfile = scroll * CONFIG.parallax.suelo * CONFIG.parallax.velocidad * traqueteoVelMult;
     // (🆕 Y el del agua, más lento: ver CONFIG.tresCuartos.aguaVelocidad.)
     estiloNuevo.meneoAgua = enganches ? enganches.meneoAgua : Math.sin(scroll * CONFIG.tresCuartos.aguaVelocidad * Math.PI * 2);
     if (nuevos) {
@@ -4935,7 +4989,43 @@ export function createRaidScene(services) {
       if (player.techoResbalando && !player.techoColgado) polvoDeResbalar(r);
     }
     // (🆕 Corridas como lo de adentro.)
-    for (const b of bullets) corrido(b.x, () => drawBullet(r, sobreElTecho(b)))();
+    /**
+     * 🔁 LA BALA QUE SALE POR EL PORTÓN DEL FONDO DEL CERRADO se ve sólo por el hueco *(Santi: "las balas al pasar por
+     * el marco de arriba debería cortarse el dibujo de la bala")*: pasada la pared (`b.y < 0`) va detrás de ella, y la
+     * tapan el marco y la pared; sigue viéndose por el hueco y, más allá, por encima de la pared. (`_portonHueco`, en el
+     * mundo: estiloNuevo/vagones.js.)
+     */
+    const recortePorton = (b) => {
+      if (b.y >= 0) return null;
+      const w = train.wagons[train.wagonAt(b.x)];
+      return (w && w._portonHueco) || null;
+    };
+    /**
+     * 🧱 Y LA QUE SE METE EN LA PARED DE MÁS ACÁ (de adentro para afuera) se tapa desde el borde de arriba de la pared
+     * *(Santi: "la bala desaparece un poco después de pasar el borde, o sea, se ve sobre la pared")*: va por la cara de
+     * adentro, que no se ve, hasta apagarse a la mitad (ver systems/combat.js). Por un hueco (el portón, una
+     * ventanilla) no se tapa.
+     */
+    const yBordeAdelante = (map.rows - 1) * map.size - CONFIG.tresCuartos.alturaParedBaja;
+    const tapaDeAdelante = (b) => b.vy > 0 && b.y >= yBordeAdelante - 8 && b.y < map.rows * map.size + 1 && map.blocksBulletsAt(b.x, map.rows * map.size - 0.5);
+    for (const b of bullets) {
+      if (tapaDeAdelante(b)) {
+        const c = r.ctx;
+        c.save(); c.translate(corrDibujo(b.x) || 0, 0);
+        c.beginPath(); c.rect(b.x - 1000, yBordeAdelante - 2000, 2000, 2000); c.clip();
+        drawBullet(r, sobreElTecho(b));
+        c.restore();
+        continue;
+      }
+      const hueco = recortePorton(b);
+      if (!hueco) { corrido(b.x, () => drawBullet(r, sobreElTecho(b)))(); continue; }
+      const [hx0, hy0, hx1, hy1] = hueco, c = r.ctx;
+      c.save(); c.translate(corrDibujo(b.x) || 0, 0);          // (el vagón también se dibuja corrido)
+      c.beginPath(); c.rect(hx0, hy0, hx1 - hx0, hy1 - hy0); c.rect(hx0 - 400, -1000, 800 + hx1 - hx0, 980);
+      c.clip();
+      drawBullet(r, sobreElTecho(b));
+      c.restore();
+    }
     for (const ex of explosives) corrido(ex.x, () => drawExplosive(r, sobreElTecho(ex)))();
 
     // La onda expansiva, un instante después del estruendo.

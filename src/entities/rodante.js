@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -91,6 +91,15 @@ export function createRodante(x, y, tipo, rng, opciones = {}) {
     quieta: false,
     variante: opciones.variante ?? 0,
   };
+}
+
+/**
+ * 🆕 ¿ES COBERTURA BAJA? El baúl grande, las cajas de munición y el barril, ya quietos en el piso *(Santi: "quiero que
+ * todos los barriles caídos y cajas que sean coberturas tengan la 'cobertura baja'")*: la bala del que tira por encima
+ * los pasa. (El carro del correo no: es alto, con sus sacas.)
+ */
+export function cubreBajo(ro) {
+  return ro.alive && ro.quieta && ro.tipo === 'valija' && ro.mueble && (ro.variante === 3 || ro.variante === 5 || ro.variante === 6);
 }
 
 /** Devuelve true si con este tiro se rompió. */
@@ -494,9 +503,10 @@ function dibujarBarrilDeComida(r, ro) {
       (R) => pintarBarrilAgua(R, pose, Math.floor((ro.rodado || 0) / 6.5)));
     return;
   }
-  const pose = f > 0.6 ? 'parado' : f > 0.2 ? 'inclinado' : 'acostado', alto = ALTO_BARRIL[pose];
-  pintarTapando(r.ctx, Math.round(ro.x / P) - 8, Math.round((ro.y + ro.hh) / P) - alto, 16, alto, luz + (ro.hitFlash > 0 ? 2 : 0),
-    (R) => pintarBarril(R, pose, Math.floor((ro.rodado || 0) / 4.7), ro.contenido, ro.abierto));
+  // (📦 El grande del cerrado: 20 de ancho, y da la vuelta un poco más despacio, porque es más gordo.)
+  const pose = f > 0.6 ? 'parado' : f > 0.2 ? 'inclinado' : 'acostado', alto = (ro.grande ? ALTO_BARRIL_G : ALTO_BARRIL)[pose], an = ro.grande ? 20 : 16;
+  pintarTapando(r.ctx, Math.round(ro.x / P) - an / 2, Math.round((ro.y + ro.hh) / P) - alto, an, alto, luz + (ro.hitFlash > 0 ? 2 : 0),
+    (R) => pintarBarril(R, pose, Math.floor((ro.rodado || 0) / (ro.grande ? 5.9 : 4.7)), ro.contenido, ro.abierto, ro.grande));
 }
 
 /** 🚂 La rueda del freno rodando de canto (un cuadro cada 5,6 unidades: ocho por vuelta) o cayéndose, achatada. */

@@ -716,10 +716,31 @@ function cuerpoDeVagon(k, p, x0, ancho, capa = '') {
       const caja = P.furgon[p.id] || P.furgon.default;
       pared(k, x0 + 2, y0, ancho - 4, alto, caja, { paso: 5 });
       const cx = x0 + ancho / 2;
-      pieza(k, cx - 15, y0 + alto - 3, 30, 2, c(P.bastidor));       // el riel de la corrediza
-      pieza(k, cx - 15, y0 + alto - 1.5, 30, 0.5, c(escalarColor(P.bastidor, 2)));
-      puerta(k, cx - 13, y0 + 2, 26, alto - 7, caja);
-      k.r.line(cx - 13, k.base - y0 - alto + 5, cx + 12, k.base - y0 - 3, c(escalarColor(caja, 0.9)));
+      if (p.id === 'cerrado') {
+        /**
+         * 📦 EL PORTÓN DEL CERRADO, de cuatro casillas, las del medio (como adentro: world/estiloNuevo/vagones.js). De
+         * noche, cerrado. De día, abierto: la hoja corrida a la izquierda, colgada del riel largo, y el hueco oscuro,
+         * con el umbral. Es por donde se salta desde el caballo (`portonBajoElCaballo`, scenes/rideScene.js).
+         */
+        const L = 4 * 16, px0 = cx - L / 2, rx = k.noche ? px0 - 3 : px0 - L - 6, rw = k.noche ? L + 6 : 2 * L + 9;
+        pieza(k, rx, y0 + alto - 3, rw, 2, c(P.bastidor));
+        pieza(k, rx, y0 + alto - 1.5, rw, 0.5, c(escalarColor(P.bastidor, 2)));
+        const hoja = (hx) => {
+          puerta(k, hx, y0 + 2, L, alto - 7, caja);
+          k.r.line(hx, k.base - y0 - alto + 5, hx + L - 1, k.base - y0 - 3, c(escalarColor(caja, 0.9)));
+        };
+        if (k.noche) hoja(px0);
+        else {
+          pieza(k, px0, y0 + 2, L, alto - 7, c(escalarColor(caja, 0.22)));
+          pieza(k, px0, y0 + 2, L, 2, c(P.bastidor));
+          hoja(px0 - L - 3);
+        }
+      } else {
+        pieza(k, cx - 15, y0 + alto - 3, 30, 2, c(P.bastidor));       // el riel de la corrediza
+        pieza(k, cx - 15, y0 + alto - 1.5, 30, 0.5, c(escalarColor(P.bastidor, 2)));
+        puerta(k, cx - 13, y0 + 2, 26, alto - 7, caja);
+        k.r.line(cx - 13, k.base - y0 - alto + 5, cx + 12, k.base - y0 - 3, c(escalarColor(caja, 0.9)));
+      }
       if (p.layout.some((fila) => fila.includes('W'))) {
         ventanilla(k, x0 + 14, y0 + 32, 8, 7);
         ventanilla(k, x0 + ancho - 22, y0 + 32, 8, 7);

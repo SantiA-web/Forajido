@@ -100,7 +100,7 @@ export function createRideScene(services) {
   let trastabilla, choque, saltando, terminado;
   let exposicion, visto, obstaculos, aviso;
   let vida, invuln, tiradores, balas;
-  let calidadSalto, techoDestino, barra;
+  let calidadSalto, techoDestino, portonDestino, barra;
   /**
    * `suelo`: cuánto terreno lleva recorrido el tren. Es lo que hace que el
    * desierto desfile hacia atrás en vez de estar clavado a los vagones.
@@ -140,7 +140,7 @@ export function createRideScene(services) {
 
     train = buildTrain(
       rng, 1, composicion, dificultad.id, undefined, tipoTren.id, undefined,
-      { climaId: clima, estado, comportamientos, variantes, encubiertos, paquetes, cajaOculta }
+      { climaId: clima, estado, comportamientos, variantes, encubiertos, paquetes, cajaOculta, dia: !!gameState.esDeDia }
     );
     plataformas = plataformasDe(train.tramos, size);
     largoTren = train.map.width;
@@ -183,6 +183,7 @@ export function createRideScene(services) {
     aviso = null;
     calidadSalto = null;
     techoDestino = null;
+    portonDestino = null;
     barra = null;
     suelo = 0;
     rumbo = 0;
@@ -371,6 +372,19 @@ export function createRideScene(services) {
    */
   const columnasDeSalto = (i) => (i === 1 ? Math.max(3, train.tramos[0].cols) : 3);
 
+  /**
+   * 📦 LOS PORTONES ABIERTOS DE LOS CERRADOS (de día) *(Santi: "podrás saltar por aquí como si fuera un enganche")*: se
+   * salta igual que a un enganche —la misma franja, la misma zona limpia, el mismo caballo que te perdona más o menos—;
+   * caés adentro, junto al portón, y ahí te espera el caballo: es tu salida (ver `portonEn` en world/train.js).
+   */
+  const centroPorton = (P) => ((P.c0 + P.c1 + 1) / 2) * size;
+  function portonBajoElCaballo() {
+    for (const P of train.portones || []) {
+      if (P.abierto && Math.abs(x - centroPorton(P)) <= (3 * size) / 2 + caballo.saltoTolerancia) return P;
+    }
+    return null;
+  }
+
   /** El enganche que tengo al lado, o null si estoy pasando por un vagón. */
   function plataformaBajoElCaballo() {
     for (let i = 1; i < plataformas.length; i++) {
@@ -394,7 +408,13 @@ export function createRideScene(services) {
    */
   function calidadDelSalto() {
     const p = plataformaBajoElCaballo();
-    if (!p) return { plataforma: null, grado: 'errado' };
+    if (!p) {
+      const P = portonBajoElCaballo();
+      if (!P) return { plataforma: null, grado: 'errado' };
+      if (distanciaAlTren() > caballo.saltoDistancia) return { plataforma: null, porton: P, grado: 'lejos' };
+      const desvio = Math.abs(x - centroPorton(P));
+      return { plataforma: null, porton: P, grado: desvio <= caballo.saltoPreciso ? 'limpio' : 'sucio', desvio };
+    }
     if (distanciaAlTren() > caballo.saltoDistancia) {
       return { plataforma: p, grado: 'lejos' };
     }
@@ -631,6 +651,13 @@ export function createRideScene(services) {
     scenes.pendiente = plataforma;
   }
 
+  /** 📦 Saltar adentro de un cerrado por su portón abierto: como `subir`, y el caballo se queda al lado del portón. */
+  function subirPorton(P, grado) {
+    if (terminado) return;
+    subir(1, grado);
+    portonDestino = P.wagon;
+  }
+
   /**
    * Subir al techo en vez de a un enganche. El caballo queda en el mismo
    * lugar que si hubieras saltado a la plataforma de ANTES de este vagón —
@@ -808,6 +835,7 @@ export function createRideScene(services) {
           saltoSucio: calidadSalto === 'sucio',
           vidaInicial: vida,
           enTecho: !!techoDestino,
+          portonEn: portonDestino ?? undefined,
           techoX: techoDestino ? techoDestino.x : undefined,
         });
       }
@@ -960,8 +988,11 @@ export function createRideScene(services) {
     if (quiereSaltar && trastabilla <= 0 && choque <= 0) {
       const c = calidadDelSalto();
       if (c.grado === 'limpio' || c.grado === 'sucio') {
-        // Sobre un enganche: el salto de siempre, geométrico. Sin barra.
-        subir(c.plataforma, c.grado);
+        // Sobre un enganche: el salto de siempre, geométrico. Sin barra. (📦 O sobre un portón: lo mismo.)
+        if (c.porton) subirPorton(c.porton, c.grado);
+        else subir(c.plataforma, c.grado);
+      } else if (c.porton) {
+        fallarSalto(c.grado);
       } else {
         // No hay enganche acá. Si estás pegado al cuerpo de un vagón con
         // techo, este Espacio no salta: ABRE LA BARRA. El que salta es el
@@ -1338,12 +1369,13 @@ export function createRideScene(services) {
    */
   function dibujarMarcaDeSalto(r) {
     if (terminado) return;
-    const p = plataformaBajoElCaballo();
-    if (!p) return;
+    // (📦 La del portón de un cerrado es igual: ver `portonBajoElCaballo`.)
+    const p = plataformaBajoElCaballo(), P = p ? null : portonBajoElCaballo();
+    if (!p && !P) return;
 
-    const px = plataformas[p];
+    const px = p ? plataformas[p] : centroPorton(P);
     const base = train.map.height;
-    const ancho = columnasDeSalto(p) * size / 2 + caballo.saltoTolerancia;
+    const ancho = (p ? columnasDeSalto(p) : 3) * size / 2 + caballo.saltoTolerancia;
     const cerca = distanciaAlTren() <= caballo.saltoDistancia;
 
     // La franja válida, apagada.
@@ -1374,7 +1406,7 @@ export function createRideScene(services) {
    * tiene techo, y que la marca no exista es la forma de decirlo sin texto.
    */
   function dibujarMarcaTecho(r) {
-    if (terminado || barra || plataformaBajoElCaballo()) return;
+    if (terminado || barra || plataformaBajoElCaballo() || portonBajoElCaballo()) return;
     const vagon = vagonAlLado();
     if (!vagon || !vagon.tieneTecho) return;
 

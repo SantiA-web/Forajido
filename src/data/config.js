@@ -1860,6 +1860,8 @@ export const CONFIG = {
     // La pared con adentro detrás (la de adelante, las divisiones): baja, para
     // no tapar a la gente de la última fila.
     alturaParedBaja: 3,
+    /** 🏜️ La luz del suelo de afuera de noche, en escalones (world/estiloNuevo/suelo.js). */
+    sueloNoche: -2,
     /**
      * 🆕 LA PARED DE LA PUNTA DEL VAGÓN, FINITA *(Santi: "debería ser más fina y ajustar la colisión a la nueva
      * pared")*: su grueso, en unidades, pegada al borde de afuera del vagón (world/tilemap.js la hace chocar así; el

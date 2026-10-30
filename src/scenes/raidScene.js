@@ -35,6 +35,7 @@ import { distance, moveAndCollide } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor, ALTO_DEL_ENGANCHE, MEDIDAS } from '../world/trenTresCuartos.js';
 import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
+import { dibujarSueloDeAfuera, sombraDelSuelo } from '../world/estiloNuevo/suelo.js';
 
 import { cerrarCortinas, cortinasAlPasar } from '../world/cortinas.js';
 import { crearPortones, actualizarPortones, dibujarPorton } from '../world/porton.js';
@@ -4857,7 +4858,7 @@ export function createRaidScene(services) {
       r.ctx.beginPath();
       r.ctx.rect(swayX - 50, camY - 200, r.width + 100, r.height + 400);
       // (🆕 Corridos como su vagón: ver `corrido`.)
-      for (const [a, b] of nuevos.tramos) r.ctx.rect(a + corrDibujo((a + b) / 2), camY - 200, b - a, r.height + 400);
+      for (const [a, b] of nuevos ? nuevos.tramos : []) r.ctx.rect(a + corrDibujo((a + b) / 2), camY - 200, b - a, r.height + 400);
       r.ctx.clip('evenodd');
       fn();
       r.ctx.restore();
@@ -6199,8 +6200,17 @@ export function createRaidScene(services) {
     // empieza en el borde del mapa (los vagones viejos tapan lo suyo igual).
     const abajo = alturaMapa - camera.renderY + (estiloNuevo.activo ? 0 : CONFIG.tresCuartos.alturaCaraAfuera);
 
-    franjaDeDesierto(r, 0, arriba, false, vel, dia);
-    franjaDeDesierto(r, abajo, r.height, true, vel, dia);
+    /**
+     * 🏜️ CON EL ESTILO NUEVO, LA TIERRA DEL PORTÓN *(Santi: "se sigue viendo un plano marrón aburrido con líneas negras
+     * muy gruesas… que iguales el dibujo del fondo a cómo se ve dentro del portón abierto")*: en vez de las franjas,
+     * el suelo en la grilla de puntos, todo de un tirón (debajo del tren también: se ve por los enganches).
+     */
+    if (estiloNuevo.activo) {
+      dibujarSueloDeAfuera(r.ctx, desplazamientoX(), camera.renderY, r.width, r.height, scroll * CONFIG.parallax.suelo * vel, !dia);
+    } else {
+      franjaDeDesierto(r, 0, arriba, false, vel, dia);
+      franjaDeDesierto(r, abajo, r.height, true, vel, dia);
+    }
 
     // 🌗 La sombra del tren sobre el desierto de allá (world/sensacionTecho.js).
     // Se estira con el sol, que baja con el reloj del asalto.
@@ -6208,7 +6218,13 @@ export function createRaidScene(services) {
     const pasado = duracionInicial > 0 ? Math.min(1, Math.max(0, 1 - timeLeft / duracionInicial)) : 0;
     // La pared del fondo sube `alturaPared` por encima del mapa: la sombra
     // nace donde termina ella, no en el borde del mapa (quedaría tapada).
-    sombraDelTren(r, train, desplazamientoX(), arriba - CONFIG.tresCuartos.alturaPared, {
+    // (🏜️ Con el estilo nuevo, por escalones sobre la tierra nueva y del lado de acá: world/estiloNuevo/suelo.js.)
+    if (estiloNuevo.activo) {
+      if (dia && !hayTormenta) {
+        sombraDelSuelo(r.ctx, train, desplazamientoX(), camera.renderY, r.width, r.height,
+          scroll * CONFIG.parallax.suelo * vel, 1 - (1 - Lv.solAlFinal) * pasado, corrDibujo);
+      }
+    } else sombraDelTren(r, train, desplazamientoX(), arriba - CONFIG.tresCuartos.alturaPared, {
       sol: 1 - (1 - Lv.solAlFinal) * pasado,
       hayLuz: dia && !hayTormenta,
     });
@@ -6240,6 +6256,8 @@ export function createRaidScene(services) {
    */
   function lechoDeLaVia(r, y0, y1, alturaMapa, vel, dia) {
     if (y1 - y0 < 3) return;
+    // (🛤️ Con el estilo nuevo, la vía va pintada en el mismo suelo: `pintarVia`, world/estiloNuevo/suelo.js.)
+    if (estiloNuevo.activo) return;
     // De unidades del mundo (0 = borde de arriba del mapa) a la pantalla.
     const en = (wy) => Math.round(wy - camera.renderY);
     const h = alturaMapa;

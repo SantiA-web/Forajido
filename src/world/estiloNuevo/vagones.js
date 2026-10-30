@@ -32,6 +32,7 @@ import { DENSIDAD } from '../../engine/renderer.js';
 import { iluminar } from '../../engine/luz.js';
 import { masCercano, sombrear } from '../../engine/paleta.js';
 import { estiloNuevo } from '../../engine/estiloNuevo.js';
+import { pintarSuelo } from './suelo.js';
 import { WAGONS, nichoDeCaja } from '../../data/wagons.js';
 import { medidasAlacena, pintarBarril, BARRIL_PARADO, BARRIL_PARADO_G, pintarBaulGrande, pintarCajon, pintarSaco, TAM_TORRE } from '../caidas.js';
 
@@ -3223,27 +3224,8 @@ function vagon(train, w, dia) {
     const cv = document.createElement('canvas'); cv.width = V.w; cv.height = V.h;
     const cx = cv.getContext('2d');
     const ind = new Int16Array(V.w * V.h), marcas = new Uint8Array(V.w * V.h);
-    // `j`: lo lejos del vagón, en puntos (0, pegado a él, abajo del hueco). De ahí a la fila del dibujo.
-    const fila = (j) => V.h - 1 - j;
-    const pv = (x, y, i) => { if (x >= 0 && y >= 0 && x < V.w && y < V.h) ind[y * V.w + x] = i; };
-    const pintar = (k) => {
-      // (Las manchas de la tierra de a varios puntos: punto por punto era sal y pimienta.)
-      for (let j = 0; j < V.h; j++) for (let x = 0; x < V.w; x++) {
-        const u = x + k, hm = hash(Math.floor(u / 5) + (j >> 2) * 3, (j >> 2) * 11);
-        ind[fila(j) * V.w + x] = hash(u, j * 7 + 3) < 0.035 ? 36 : hm < 0.22 ? 34 : 35;
-      }
-      // Piedras sueltas (con su sombrita abajo) y matitas de pasto seco, cada una en un lugar sorteado de su cuadro.
-      const C = 14;
-      for (let n = Math.floor((k - C) / C); n <= Math.floor((k + V.w + C) / C); n++) {
-        for (let m = 2; m < V.h - 2; m += 8) {
-          const hz = hash(n * 13 + m, 41);
-          if (hz > 0.4) continue;
-          const sx = Math.round(n * C + hash(n, m) * (C - 3)) - k, sy = fila(Math.min(V.h - 2, m + Math.floor(hash(m, n) * 8)));
-          if (hz < 0.2) { pv(sx, sy, 25); pv(sx + 1, sy, 24); pv(sx, sy + 1, 31); pv(sx + 1, sy + 1, 31); }
-          else { pv(sx, sy, 26); pv(sx + 1, sy, 26); pv(sx + 2, sy, 26); pv(sx, sy - 1, 27); pv(sx + 2, sy - 1, 27); pv(sx + 1, sy - 2, 43); }
-        }
-      }
-    };
+    // (🔁 La tierra, la misma que la de afuera del tren: sale de los puntos del mundo. Ver world/estiloNuevo/suelo.js.)
+    const pintar = (k) => pintarSuelo(ind, V.w, V.h, Math.round(mx / PASO), Math.round(my / PASO), k);
     let hecho = null;
     lista.push({
       x: mx, y: my, w: V.w * PASO, h: V.h * PASO, base,

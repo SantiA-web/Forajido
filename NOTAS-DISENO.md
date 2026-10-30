@@ -19621,6 +19621,33 @@ guardaespaldas distintos)*:
     pasan por el portón del fondo las corta el marco.
   - 🐛 Los barriles de comida del comedor pasaron de 'R' a 'Z' (la 'R' ya era otra cosa).
   - 🧪 El atajo [8] lleva al cerrado de un tren de carga con los frenos rotos.
+- **✅ EL SUELO DE AFUERA Y LA VÍA, EN EL ESTILO NUEVO** (world/estiloNuevo/suelo.js) *(Santi: "al estar dentro del
+  tren se sigue viendo un plano marrón aburrido con líneas negras muy gruesas. Quiero que iguales el dibujo del fondo a
+  cómo se ve dentro del portón abierto de la pared lejana")*: afuera iban las franjas del parallax viejo. Ahora es
+  tierra vista desde arriba, en la grilla y con la paleta, que pasa a la velocidad del suelo; el portón del cerrado y el
+  afuera son la misma tierra (`pintarSuelo`, en puntos del mundo).
+  - 🔁 **Dos vueltas antes**: granitos de un punto *(Santi: "se ve como sucio y hace mucho ruido")* y después manchas
+    grandes *(Santi: "Parece que el tren está andando sobre un pantalón militar")*. Entre cuatro opciones (tierra lisa,
+    el viento, el matorral, el balasto) eligió **las vetas del viento con las jarillas y las piedras del matorral**
+    *(Santi: "quiero la opción B pero ponele los arbustitos y piedras de la opción C")*: tierra de un tono, vetas
+    largas y finitas a lo largo de la vía, jarillas con su sombra, grupos de piedras y matitas, grandes y espaciados.
+    De noche, un escalón entero menos, sin tramado.
+  - 🔁 **La sombra del tren, del lado de acá** *(Santi: "si la luz viene de arriba la sombra no debería proyectarse
+    abajo del tren?")*: la luz de los ventanales cae en diagonal hacia la pantalla, así que el sol viene de allá; la
+    sombra asoma por debajo de la pared de adelante, corrida a la izquierda con la misma inclinación (medio punto por
+    punto). Por escalones sobre la misma tierra (antes, bandas transparentes del lado de allá). 🐛 Y corrida con su
+    vagón cuando los enganches lo corren *(Santi: "no va parejo al movimiento del tren")*.
+  - 🆕 **LA VÍA, REHECHA** *(Santi: "revisá todo lo de las vías: texturas, colores, formas… teniendo en cuenta la
+    perspectiva de la cámara"; eligió las recomendaciones)*: va pintada en el mismo suelo y se ve por los enganches.
+    Corrida unos 9 para abajo (el piso del vagón va levantado y la vía está en el suelo); el terraplén con la ladera de
+    allá angosta y la de acá larga *(Santi: "debería haber más debajo por una cuestión de perspectiva")*, de la misma
+    piedra gris con piedras de luz y sombra y el borde mordido; **los durmientes de madera, visibles y pasando** (uno
+    cada 44 puntos: a 5 unidades por cuadro se siguen con la vista), con su veta, la sombra a la izquierda y el canto
+    de acá oscuro; y los rieles sobre sus placas, con la cara de arriba que brilla, el costado oscuro y su sombra hacia
+    acá. Antes, el dibujo viejo: puntos tres veces más chicos, colores fuera de la paleta y los durmientes borroneados.
+  - 🐛 Sin vagones nuevos a la vista (con [F9] apagado y un enganche), el dibujo se trababa (`nuevos.tramos`).
+  - **Pendiente**: el vagón viejo de corral deja ver la piedra por debajo de su borde de adelante; se arregla cuando se
+    dibuje en la grilla nueva.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

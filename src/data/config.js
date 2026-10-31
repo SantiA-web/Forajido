@@ -2551,6 +2551,11 @@ export const CONFIG = {
     /** El agua de los barriles: otro péndulo, colgado del mismo vagón, más lento y con menos freno (se sigue hamacando). */
     aguaVel: 0.4,
     aguaFreno: 0.4,
+    // 🥩 El de las reses colgadas del refrigerado (world/estiloNuevo/vagones.js): ida y vuelta por segundo, y lo que se frena.
+    resVel: 0.45,
+    resFreno: 0.8,
+    // (Y lo que las empuja un tirón del tren: menos que a los faroles, que si no se van al tope y saltan de punta a punta.)
+    resEmpuje: 0.005,
     /** La cámara sigue a tu vagón con esta demora (s): lo que se ve es el sacudón, no la deriva lenta. */
     camaraDemora: 0.12,
     /**
@@ -2593,6 +2598,7 @@ export const CONFIG = {
    *  caeDura       lo que tarda en llegar al piso; corre, cuánto se corre para el lado del golpe
    *  alcance       hasta dónde, hacia la pared, pega lo que cae (desde donde queda tirado)
    *  livianoParte  qué parte de la vida saca lo liviano (lo pesado mata)
+   *  medioParte    🥩 y lo medio, como la media res del refrigerado: mucha
    *  pasilloLargo  qué largo de pasillo es peligroso delante de una pila que se va a soltar
    *  cubrirse      lo que se quedan cubiertos los pasajeros sentados después del golpe
    */
@@ -2631,6 +2637,16 @@ export const CONFIG = {
     mirarDura: [0.6, 1.1],
     mirarHasta: 110,
   },
+  /**
+   * 🥩 EL VAHO DEL ALIENTO EN EL REFRIGERADO (scenes/raidScene.js, `vahoDelFrio`): cada cuántos segundos respira cada uno
+   * (más o menos un tercio), cuántos puntos tiene la nubecita, a qué altura sobre los pies sale (la boca) y de qué color.
+   */
+  /**
+   * 🥩 La bala que atraviesa una res colgada del refrigerado (ver `balaEnRes` en scenes/raidScene.js): los pedacitos de
+   * carne y grasa que saltan, cuántas gotas de jugo caen (de tantas a tantas) y con qué peso caen (unidades/s²).
+   */
+  balaEnRes: { pedacitos: 6, gotas: [2, 3], peso: 160 },
+  vaho: { cada: 1.6, puntos: 3, alto: 13, color: '#dfe7ec' },
   caidas: {
     repisaPuntos: 32,
     cae: 0.4,
@@ -2639,6 +2655,7 @@ export const CONFIG = {
     corre: 5,
     alcance: 22,
     livianoParte: 0.5,
+    medioParte: 0.8,
     pasilloLargo: 260,
     cubrirse: 1.2,
     /**
@@ -2646,6 +2663,8 @@ export const CONFIG = {
      * unidades por segundo (frenazo, arrancón, tirón común), y lo que lo frena el piso.
      */
     empujon: { frenazo: 70, arrancon: 45, tiron: 25 },
+    /** 🥩 La barra de hielo que sale del depósito del refrigerado: patina, casi no la frena el piso (parte del roce de la valija). Con 0,35 se iba por la puerta del vagón. */
+    hielo: { roce: 0.6 },
     /** 🥃 A qué altura cuelgan las arañas de primera clase sobre la alfombra (en unidades). */
     alturaArana: 24,
     /** 🥃 Las botellas de un mismo tramo no caen todas juntas: cada una se larga hasta `botellasDemora` segundos después. */

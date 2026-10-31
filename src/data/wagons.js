@@ -1203,16 +1203,22 @@ export const WAGONS = {
     name: 'Vagón refrigerado',
     short: 'REFRIGERADO',
     hint: 'Reses colgadas. Se ve poco.',
+    /**
+     * 🥩 EN EL ESTILO NUEVO (world/estiloNuevo/vagones.js, `refrigerado`) *(Santi eligió las recomendaciones)*:
+     *  - LOS DOS DEPÓSITOS DE HIELO ('C'), en los rincones que quedaban vacíos: arriba a la derecha y abajo a la
+     *    izquierda, de dos por dos. Chocan enteros. El escondite "entre el hielo" (data/paquetes.js) es al lado de ellos.
+     *  - DOS GANCHOS VACÍOS, donde falta una res ('.' en medio de una tira): ahí se ve y se camina como en el pasillo.
+     */
     layout: [
       '#######WW#############WW########',
-      '#.R.R.R.R.R.R.R.R.R.R.R.R.R.R..#',
-      '#.R.R.R.R.R.R.R.R.R.R.R.R.R.R..#',
-      '#.R.R.R.R.R.R.R.R.R.R.R.R.R.R..#',
+      '#.R.R.R.R.R.R.R.R.R.R.R.R.R.RCC#',
+      '#.R.R.R.R.R.R.R.R.R.R.R.R.R.RCC#',
+      '#.R.R.R.R...R.R.R.R.R.R.R.R.R..#',
       '+..............................+',
       '+..............................+',
-      '#..R.R.R.R.R.R.R.R.R.R.R.R.R.R.#',
-      '#..R.R.R.R.R.R.R.R.R.R.R.R.R.R.#',
-      '#..R.R.R.R.R.R.R.R.R.R.R.R.R.R.#',
+      '#..R.R.R.R.R.R.R.R.R...R.R.R.R.#',
+      '#CCR.R.R.R.R.R.R.R.R.R.R.R.R.R.#',
+      '#CCR.R.R.R.R.R.R.R.R.R.R.R.R.R.#',
       '####WW######################WW##',
     ],
     enemies: [

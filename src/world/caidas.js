@@ -57,7 +57,8 @@ export function crearCaidas(train) {
     // (📦 El cerrado: los barriles ya; la torre y las bolsas, cuando las ubica el dibujo fijo.)
     if (w.id === 'cerrado') { cerrado(C, train, w); continue; }
     // (🚂 El caboose espera a que el dibujo fijo ubique sus cosas: ver `armarPendientes`.)
-    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen') { (C.porArmar = C.porArmar || []).push(w); continue; }
+    // (🥩 Y el refrigerado: ver `refri`.)
+    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado') { (C.porArmar = C.porArmar || []).push(w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -200,6 +201,12 @@ export function bloqueaCaida(C, x, y) {
  */
 export function cubreCaida(C, x, y) {
   for (const o of C.objetos) {
+    /**
+     * 🥩 La media res tirada en el pasillo del refrigerado no tapa nada: la gente pasa por encima *(Santi: "a las reses en
+     * el piso no le pongas colisión")* y las balas la atraviesan *(Santi: "las reses tampoco quiero que detengan balas")*,
+     * como a las colgadas. 🔁 Antes chocaba, frenaba balas y era cobertura baja.
+     */
+    if (o.tipo === 'mediaRes') continue;
     if (o.tipo !== 'cajonTorre' || o.estado !== 'piso') continue;
     const hondo = (TAM_TORRE[o.variante % 10][1] + 1) * PASO();
     if (Math.abs(x - o.x) < o.hw && y > o.yPiso - hondo && y < o.yPiso + 1) return true;
@@ -256,7 +263,7 @@ export function avisarCaidas(C, sentido, rng) {
       if (!p.barriles.some((b) => b.cae)) p.barriles[rng.int(0, p.barriles.length - 1)].cae = true;
       continue;
     }
-    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion' && p.tipo !== 'rueda' && p.tipo !== 'barrilAgua')) continue;
+    if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion' && p.tipo !== 'rueda' && p.tipo !== 'barrilAgua' && p.tipo !== 'hielo')) continue;
     if (p.atras === (sentido < 0)) { p.estado = 'aviso'; p.t = 0; }
   }
   /**
@@ -303,6 +310,13 @@ export function golpearCaidas(C) {
     if (p.tipo === 'barrilAgua') {
       p.estado = 'suelto';
       C.sueltos.push({ x: p.x, y: p.yBase - 3, dir, variante: 6, demora: 0, mueble: true, hw: 9, hh: 5, vida: 4, lento: 0.9, contenido: 2, haciaPasillo: p.dy, agua: { clave: p.clave, baldeX: p.baldeX, baldeY: p.yBase + 2, celdas: p.celdas } });
+      continue;
+    }
+    // 🥩 El hielo del refrigerado: salen dos barras patinando, una detrás de la otra, hasta que se acaban (ver `refri`).
+    if (p.tipo === 'hielo') {
+      const n = Math.min(p.quedan, 2);
+      for (let k = 0; k < n; k++) C.sueltos.push({ x: p.sx + dir * k * 3, y: p.sy + k * 2, dir, variante: 9, demora: 0.15 + k * 0.22, hw: 6, hh: 3, vida: 1, lento: 1.15 });
+      p.quedan -= n; p.estado = p.quedan > 0 ? 'quieta' : 'suelto';
       continue;
     }
     // 🏪 Los rollos de tela: se caen de la estantería al piso, delante, y salen rodando por el pasillo (ver `almacen`).
@@ -414,6 +428,8 @@ export function actualizarCaidas(C, dt, map) {
       C.impactos.push({ ...zonaDe(o), peso: o.peso, x: o.x, y: o.yPiso, tipo: o.tipo });
       // (🚂 Cayó la última bolsa de la torre: su lugar queda libre, se puede pasar.)
       if (o.libera && map) liberar(o, map);
+      // (🥩 La res que se descolgó deja su casilla libre: se ve y se pasa por ahí.)
+      if (o.celda && map && map.grid[o.celda[0]]) map.grid[o.celda[0]][o.celda[1]] = '.';
       // 🐛 Si cayó sobre un asiento, rebota al piso (lo que cae en su lugar, como las botellas o la araña, no): al hueco libre más cercano (primero para el lado del golpe). Arriba
       // del asiento lo tapaba el respaldo, y en el piso se ordena con la gente por donde apoya.
       if (map && !o.fijo) for (let d = 0; d <= 24; d += 2) {
@@ -566,6 +582,12 @@ export function cosasDeCaidas(r, C, corrido) {
     if (o.tipo === 'botellas') { out.push({ base: o.estado === 'repisa' || o.estado === 'aviso' ? o.yPared : o.yPiso, draw: corrido(o.xRepisa, () => dibujarBotellas(r, o)) }); continue; }
     // (🪜 La escalera del almacén, delante de su estantería: parada, cayendo y tirada en el piso. Ver `dibujarEscalera`.)
     if (o.tipo === 'escalera') { out.push({ base: o.yPared, draw: corrido(o.xRepisa, () => dibujarEscalera(r, o)) }); continue; }
+    // (🥩 La res y el gancho vacío del refrigerado: lo que queda colgado detrás, y lo que cae. Ver `dibujarRes`.)
+    if (o.tipo === 'mediaRes' || o.tipo === 'ganchoRes') {
+      out.push({ base: o.yPared - 0.001, draw: corrido(o.xRepisa, () => dibujarRes(r, o, 'gancho')) });
+      out.push({ base: baseDeRes(o), draw: corrido(o.xRepisa, () => dibujarRes(r, o, 'cuerpo')) });
+      continue;
+    }
     if (o.tipo === 'rifle') { out.push({ base: o.estado === 'piso' ? o.yPiso : o.estado === 'cae' ? delante : o.yPared, draw: corrido(o.xRepisa, () => dibujarRifle(r, o, x, y)) }); continue; }
     if (o.tipo === 'arana') { out.push({ base: o.yPiso + (o.estado === 'piso' ? 0 : 20), draw: corrido(o.xRepisa, () => dibujarArana(r, o, x, y)) }); continue; }
     // (🍽️ La vajilla —de la alacena y de las mesas— tiene un dibujo por pieza: ver `dibujarVajilla`.)
@@ -795,6 +817,8 @@ function valijaTirada(R, v) {
 
 /** LA PILA JUNTO A LA PUERTA: el baúl grande abajo (no se mueve) y, encima, lo que todavía no salió. */
 function dibujarPila(r, p) {
+  // (🥩 El hielo del refrigerado ya está en el dibujo fijo, en su depósito.)
+  if (p.tipo === 'hielo') return;
   const P = PASO();
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(p.x, p.yBase - 4) || 0) : 0;
   // En el aviso se sacude contra la puerta.
@@ -2071,7 +2095,8 @@ export function derramar(C, x, y, contenido, k) {
 
 /**
  * Un puñado en el piso: porotos (0), harina (1) o agua (2). 🚂 El agua es la madera mojada, más oscura, con algún brillo,
- * y se va secando: en `SECA_AGUA` segundos se achica y desaparece.
+ * y se va secando: en `SECA_AGUA` segundos se achica y desaparece. 🥩 Y la gota de jugo de una res baleada (3): una
+ * manchita rojo oscuro que se queda en la madera.
  */
 const SECA_AGUA = 90;
 function pintarDerrame(r, q, P, reloj) {
@@ -2084,6 +2109,7 @@ function pintarDerrame(r, q, P, reloj) {
     R(0, 0, 3, 1, 33); if (q.k === 2) R(0, 1, 2, 1, 33); if (q.k === 1) R(1, 0, 1, 1, 30);
     return;
   }
+  if (q.c === 3) { R(0, 0, q.k ? 2 : 1, 1, 8); if (q.k === 2) R(0, 1, 1, 1, 8); return; }
   if (q.c) { R(0, 0, 2, 1, q.k ? 16 : 17); if (q.k === 2) R(1, 1, 1, 1, 16); }
   else { R(0, 0, 1, 1, q.k ? 47 : 12); if (q.k === 2) R(1, 1, 1, 1, 47); }
 }
@@ -2265,6 +2291,699 @@ function caboose(C, w) {
 }
 
 /** 🚂 Las cosas que esperan que el dibujo fijo las ubique (el caboose): se arman la primera vez que están. */
+/**
+ * 🥩 LA MEDIA RES DEL REFRIGERADO, DE PERFIL Y SIMPLE *(Santi: "quiero cambiar el dibujo de las reses, se ven raras y con
+ * muchos detalles"; eligió "A y B mezcladas")*: el lomo recto a la izquierda con su franja de grasa, y la panza
+ * contorneada a la derecha: la pata arriba, colgada del garrón; el muslo que se abre, la cintura angosta, el pecho ancho
+ * y el cogote abajo. 'A': la carne roja, tres rojos y la grasa del lomo. 'B': la misma cubierta de grasa blanca; la carne
+ * asoma en el corte del garrón y en el cogote. 🔁 Antes, tres reses llenas de detalle (costillas blancas, espinazo, el
+ * corte), que se leían raro.
+ *  - `RES_COLGADA`: colgada, en sus cinco inclinaciones desde el gancho (de -2 a 2): la res entera, dura, corrida en
+ *    escalones desde el garrón hasta dos o cuatro puntos en la punta. En un lienzo de 20, con el gancho en la columna 7;
+ *    las primeras tres filas son el gancho (se queda colgado cuando la res se cae).
+ *  - `RES_INCLINADA` y `RES_TIRADA`: cayéndose (con el cogote ya en el piso) y tirada a lo largo, el lomo arriba. Para
+ *    cada lado, [izquierda, derecha]: la de la izquierda es la de la derecha espejada.
+ * (La 'A' colgada, la inclinada y la tirada son mapas a mano; la 'B' es la 'A' con los colores de la grasa, y las
+ * inclinaciones, la derecha corrida en escalones.) Las usa el dibujo fijo (world/estiloNuevo/vagones.js) y la que se
+ * cae (`refri`).
+ */
+export const RES_COLGADA = {
+  A: [
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....oFLRo..........',
+      '.....oFLRRo.........',
+      '....oFLRRRo.........',
+      '....oFLRRRRo........',
+      '....oFLRRRRRo.......',
+      '....oFLRRRRRRo......',
+      '....oFLRRRRRRo......',
+      '....oFLRRRRRro......',
+      '....oFLRRRRrro......',
+      '...oFLRRRRro........',
+      '...oFLRRRro.........',
+      '...oFLRRRo..........',
+      '...oFLRRRo..........',
+      '...oFLRRRo..........',
+      '...oFLRRRRo.........',
+      '...oFLRRRRRo........',
+      '...oFLRRRRRRo.......',
+      '..oFLRRRRRRro.......',
+      '..oFLRRRRRRro.......',
+      '..oFLRRRRRRro.......',
+      '..oFLRRRRRrro.......',
+      '..oFLRRRRRro........',
+      '..oFLRRRRrro........',
+      '..oFLRRRrro.........',
+      '..oFLRrro...........',
+      '..oFLrro............',
+      '...oLro.............',
+      '....oo..............',
+      '....................',
+    ],
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....oFLRo..........',
+      '.....oFLRRo.........',
+      '.....oFLRRRo........',
+      '.....oFLRRRRo.......',
+      '.....oFLRRRRRo......',
+      '.....oFLRRRRRRo.....',
+      '....oFLRRRRRRo......',
+      '....oFLRRRRRro......',
+      '....oFLRRRRrro......',
+      '....oFLRRRRro.......',
+      '....oFLRRRro........',
+      '....oFLRRRo.........',
+      '....oFLRRRo.........',
+      '....oFLRRRo.........',
+      '....oFLRRRRo........',
+      '....oFLRRRRRo.......',
+      '....oFLRRRRRRo......',
+      '....oFLRRRRRRro.....',
+      '....oFLRRRRRRro.....',
+      '....oFLRRRRRRro.....',
+      '...oFLRRRRRrro......',
+      '...oFLRRRRRro.......',
+      '...oFLRRRRrro.......',
+      '...oFLRRRrro........',
+      '....oFLRrro.........',
+      '....oFLrro..........',
+      '.....oLro...........',
+      '......oo............',
+      '....................',
+    ],
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....oFLRo..........',
+      '.....oFLRRo.........',
+      '.....oFLRRRo........',
+      '.....oFLRRRRo.......',
+      '.....oFLRRRRRo......',
+      '.....oFLRRRRRRo.....',
+      '.....oFLRRRRRRo.....',
+      '.....oFLRRRRRro.....',
+      '.....oFLRRRRrro.....',
+      '.....oFLRRRRro......',
+      '.....oFLRRRro.......',
+      '.....oFLRRRo........',
+      '.....oFLRRRo........',
+      '.....oFLRRRo........',
+      '.....oFLRRRRo.......',
+      '.....oFLRRRRRo......',
+      '.....oFLRRRRRRo.....',
+      '.....oFLRRRRRRro....',
+      '.....oFLRRRRRRro....',
+      '.....oFLRRRRRRro....',
+      '.....oFLRRRRRrro....',
+      '.....oFLRRRRRro.....',
+      '.....oFLRRRRrro.....',
+      '.....oFLRRRrro......',
+      '......oFLRrro.......',
+      '......oFLrro........',
+      '.......oLro.........',
+      '........oo..........',
+      '....................',
+    ],
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....oFLRo..........',
+      '.....oFLRRo.........',
+      '.....oFLRRRo........',
+      '.....oFLRRRRo.......',
+      '.....oFLRRRRRo......',
+      '.....oFLRRRRRRo.....',
+      '......oFLRRRRRRo....',
+      '......oFLRRRRRro....',
+      '......oFLRRRRrro....',
+      '......oFLRRRRro.....',
+      '......oFLRRRro......',
+      '......oFLRRRo.......',
+      '......oFLRRRo.......',
+      '......oFLRRRo.......',
+      '......oFLRRRRo......',
+      '......oFLRRRRRo.....',
+      '......oFLRRRRRRo....',
+      '......oFLRRRRRRro...',
+      '......oFLRRRRRRro...',
+      '......oFLRRRRRRro...',
+      '.......oFLRRRRRrro..',
+      '.......oFLRRRRRro...',
+      '.......oFLRRRRrro...',
+      '.......oFLRRRrro....',
+      '........oFLRrro.....',
+      '........oFLrro......',
+      '.........oLro.......',
+      '..........oo........',
+      '....................',
+    ],
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....oFLRo..........',
+      '.....oFLRRo.........',
+      '......oFLRRRo.......',
+      '......oFLRRRRo......',
+      '......oFLRRRRRo.....',
+      '......oFLRRRRRRo....',
+      '......oFLRRRRRRo....',
+      '......oFLRRRRRro....',
+      '......oFLRRRRrro....',
+      '.......oFLRRRRro....',
+      '.......oFLRRRro.....',
+      '.......oFLRRRo......',
+      '.......oFLRRRo......',
+      '.......oFLRRRo......',
+      '.......oFLRRRRo.....',
+      '.......oFLRRRRRo....',
+      '.......oFLRRRRRRo...',
+      '........oFLRRRRRRro.',
+      '........oFLRRRRRRro.',
+      '........oFLRRRRRRro.',
+      '........oFLRRRRRrro.',
+      '........oFLRRRRRro..',
+      '........oFLRRRRrro..',
+      '........oFLRRRrro...',
+      '..........oFLRrro...',
+      '..........oFLrro....',
+      '...........oLro.....',
+      '............oo......',
+      '....................',
+    ],
+  ],
+  B: [
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....offFo..........',
+      '.....offFFo.........',
+      '....offFFFo.........',
+      '....offFFFFo........',
+      '....offFFFFFo.......',
+      '....offFFFFFFo......',
+      '....offFFFFFFo......',
+      '....offFFFFFgo......',
+      '....offFFFFggo......',
+      '...offFFFFgo........',
+      '...offFFFgo.........',
+      '...offFFFo..........',
+      '...offFFFo..........',
+      '...offFFFo..........',
+      '...offFFFFo.........',
+      '...offFFFFFo........',
+      '...offFFFFFFo.......',
+      '..offFFFFFFgo.......',
+      '..offFFFFFFgo.......',
+      '..offFFFFFFgo.......',
+      '..offFFFFFggo.......',
+      '..offFFFFFgo........',
+      '..offFFFFggo........',
+      '..offFFFggo.........',
+      '..oFLRrro...........',
+      '..oFLrro............',
+      '...oLro.............',
+      '....oo..............',
+      '....................',
+    ],
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....offFo..........',
+      '.....offFFo.........',
+      '.....offFFFo........',
+      '.....offFFFFo.......',
+      '.....offFFFFFo......',
+      '.....offFFFFFFo.....',
+      '....offFFFFFFo......',
+      '....offFFFFFgo......',
+      '....offFFFFggo......',
+      '....offFFFFgo.......',
+      '....offFFFgo........',
+      '....offFFFo.........',
+      '....offFFFo.........',
+      '....offFFFo.........',
+      '....offFFFFo........',
+      '....offFFFFFo.......',
+      '....offFFFFFFo......',
+      '....offFFFFFFgo.....',
+      '....offFFFFFFgo.....',
+      '....offFFFFFFgo.....',
+      '...offFFFFFggo......',
+      '...offFFFFFgo.......',
+      '...offFFFFggo.......',
+      '...offFFFggo........',
+      '....oFLRrro.........',
+      '....oFLrro..........',
+      '.....oLro...........',
+      '......oo............',
+      '....................',
+    ],
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....offFo..........',
+      '.....offFFo.........',
+      '.....offFFFo........',
+      '.....offFFFFo.......',
+      '.....offFFFFFo......',
+      '.....offFFFFFFo.....',
+      '.....offFFFFFFo.....',
+      '.....offFFFFFgo.....',
+      '.....offFFFFggo.....',
+      '.....offFFFFgo......',
+      '.....offFFFgo.......',
+      '.....offFFFo........',
+      '.....offFFFo........',
+      '.....offFFFo........',
+      '.....offFFFFo.......',
+      '.....offFFFFFo......',
+      '.....offFFFFFFo.....',
+      '.....offFFFFFFgo....',
+      '.....offFFFFFFgo....',
+      '.....offFFFFFFgo....',
+      '.....offFFFFFggo....',
+      '.....offFFFFFgo.....',
+      '.....offFFFFggo.....',
+      '.....offFFFggo......',
+      '......oFLRrro.......',
+      '......oFLrro........',
+      '.......oLro.........',
+      '........oo..........',
+      '....................',
+    ],
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....offFo..........',
+      '.....offFFo.........',
+      '.....offFFFo........',
+      '.....offFFFFo.......',
+      '.....offFFFFFo......',
+      '.....offFFFFFFo.....',
+      '......offFFFFFFo....',
+      '......offFFFFFgo....',
+      '......offFFFFggo....',
+      '......offFFFFgo.....',
+      '......offFFFgo......',
+      '......offFFFo.......',
+      '......offFFFo.......',
+      '......offFFFo.......',
+      '......offFFFFo......',
+      '......offFFFFFo.....',
+      '......offFFFFFFo....',
+      '......offFFFFFFgo...',
+      '......offFFFFFFgo...',
+      '......offFFFFFFgo...',
+      '.......offFFFFFggo..',
+      '.......offFFFFFgo...',
+      '.......offFFFFggo...',
+      '.......offFFFggo....',
+      '........oFLRrro.....',
+      '........oFLrro......',
+      '.........oLro.......',
+      '..........oo........',
+      '....................',
+    ],
+    [
+      '.......o............',
+      '......oHo...........',
+      '......oHo...........',
+      '......oBo...........',
+      '.....oFLRo..........',
+      '.....offFo..........',
+      '.....offFFo.........',
+      '......offFFFo.......',
+      '......offFFFFo......',
+      '......offFFFFFo.....',
+      '......offFFFFFFo....',
+      '......offFFFFFFo....',
+      '......offFFFFFgo....',
+      '......offFFFFggo....',
+      '.......offFFFFgo....',
+      '.......offFFFgo.....',
+      '.......offFFFo......',
+      '.......offFFFo......',
+      '.......offFFFo......',
+      '.......offFFFFo.....',
+      '.......offFFFFFo....',
+      '.......offFFFFFFo...',
+      '........offFFFFFFgo.',
+      '........offFFFFFFgo.',
+      '........offFFFFFFgo.',
+      '........offFFFFFggo.',
+      '........offFFFFFgo..',
+      '........offFFFFggo..',
+      '........offFFFggo...',
+      '..........oFLRrro...',
+      '..........oFLrro....',
+      '...........oLro.....',
+      '............oo......',
+      '....................',
+    ],
+  ],
+};
+export const RES_INCLINADA = {
+  A: [
+    [
+      '..oo..................',
+      '..oBo.................',
+      '.oRLFo................',
+      '.oRRLFo...............',
+      '.oRRRLFo..............',
+      'oRRRRRLFo.............',
+      'orRRRRRLFo............',
+      '.orRRRRRLFo...........',
+      '..orrRRRRLFo..........',
+      '....orrRRRLFo.........',
+      '......oRRRRLFo........',
+      '.......oRRRRLFo.......',
+      '.......oRRRRRLFo......',
+      '......oRRRRRRRLFo.....',
+      '......orRRRRRRRLFo....',
+      '.......orRRRRRRRLFo...',
+      '........orrRRRRRRLFo..',
+      '..........orrRRRRLFo..',
+      '............orrRRRLFo.',
+      '..............orrRLFo.',
+      '................orrLo.',
+      '..................oo..',
+    ],
+    [
+      '..................oo..',
+      '.................oBo..',
+      '................oFLRo.',
+      '...............oFLRRo.',
+      '..............oFLRRRo.',
+      '.............oFLRRRRRo',
+      '............oFLRRRRRro',
+      '...........oFLRRRRRro.',
+      '..........oFLRRRRrro..',
+      '.........oFLRRRrro....',
+      '........oFLRRRRo......',
+      '.......oFLRRRRo.......',
+      '......oFLRRRRRo.......',
+      '.....oFLRRRRRRRo......',
+      '....oFLRRRRRRRro......',
+      '...oFLRRRRRRRro.......',
+      '..oFLRRRRRRrro........',
+      '..oFLRRRRrro..........',
+      '.oFLRRRrro............',
+      '.oFLRrro..............',
+      '.oLrro................',
+      '..oo..................',
+    ],
+  ],
+  B: [
+    [
+      '..oo..................',
+      '..oBo.................',
+      '.oFffo................',
+      '.oFFffo...............',
+      '.oFFFffo..............',
+      'oFFFFFffo.............',
+      'ogFFFFFffo............',
+      '.ogFFFFFffo...........',
+      '..oggFFFFffo..........',
+      '....oggFFFffo.........',
+      '......oFFFFffo........',
+      '.......oFFFFffo.......',
+      '.......oFFFFFffo......',
+      '......oFFFFFFFffo.....',
+      '......ogFFFFFFFffo....',
+      '.......ogFFFFFFFffo...',
+      '........oggFFFFFFffo..',
+      '..........oggFFFFffo..',
+      '............oggFFFffo.',
+      '..............oggFffo.',
+      '................oggfo.',
+      '..................oo..',
+    ],
+    [
+      '..................oo..',
+      '.................oBo..',
+      '................offFo.',
+      '...............offFFo.',
+      '..............offFFFo.',
+      '.............offFFFFFo',
+      '............offFFFFFgo',
+      '...........offFFFFFgo.',
+      '..........offFFFFggo..',
+      '.........offFFFggo....',
+      '........offFFFFo......',
+      '.......offFFFFo.......',
+      '......offFFFFFo.......',
+      '.....offFFFFFFFo......',
+      '....offFFFFFFFgo......',
+      '...offFFFFFFFgo.......',
+      '..offFFFFFFggo........',
+      '..offFFFFggo..........',
+      '.offFFFggo............',
+      '.offFggo..............',
+      '.ofggo................',
+      '..oo..................',
+    ],
+  ],
+};
+export const RES_TIRADA = {
+  A: [
+    [
+      '.....ooooooooooooooooooooooooo....',
+      '..oooFFFFFFFFFFFFFFFFFFFFFFFFFoo..',
+      '..oBBLLLLLLLLLLLLLLLLLLLLLLLLLFFo.',
+      '..oooRRRRRRRRRRRRRRRRRRRRRRRRRRLLo',
+      '.....ooRRRRRRRRRRRRRRRRRRRRRRRRrro',
+      '.......oRRRRRRRRroooRRRRRRRRRRrro.',
+      '.........oRRRRrro....oRRRRRRRrro..',
+      '..........oooooo......orrrrrroo...',
+      '.......................oooooo.....',
+    ],
+    [
+      '....ooooooooooooooooooooooooo.....',
+      '..ooFFFFFFFFFFFFFFFFFFFFFFFFFooo..',
+      '.oFFLLLLLLLLLLLLLLLLLLLLLLLLLBBo..',
+      'oLLRRRRRRRRRRRRRRRRRRRRRRRRRRooo..',
+      'orrRRRRRRRRRRRRRRRRRRRRRRRRoo.....',
+      '.orrRRRRRRRRRRooorRRRRRRRRo.......',
+      '..orrRRRRRRRo....orrRRRRo.........',
+      '...oorrrrrro......oooooo..........',
+      '.....oooooo.......................',
+    ],
+  ],
+  B: [
+    [
+      '.....ooooooooooooooooooooooooo....',
+      '..ooofffffffffffffffffffffffffoo..',
+      '..oBBfffffffffffffffffffffffffffo.',
+      '..oooFFFFFFFFFFFFFFFFFFFFFFFFFFffo',
+      '.....ooFFFFFFFFFFFFFFFFFFFFFFFFggo',
+      '.......oFFFFFFFFgoooFFFFFFFFFFggo.',
+      '.........oFFFFggo....oFFFFFFFggo..',
+      '..........oooooo......oggggggoo...',
+      '.......................oooooo.....',
+    ],
+    [
+      '....ooooooooooooooooooooooooo.....',
+      '..oofffffffffffffffffffffffffooo..',
+      '.offfffffffffffffffffffffffffBBo..',
+      'offFFFFFFFFFFFFFFFFFFFFFFFFFFooo..',
+      'oggFFFFFFFFFFFFFFFFFFFFFFFFoo.....',
+      '.oggFFFFFFFFFFooogFFFFFFFFo.......',
+      '..oggFFFFFFFo....oggFFFFo.........',
+      '...ooggggggo......oooooo..........',
+      '.....oooooo.......................',
+    ],
+  ],
+};
+
+// El gancho vacío: la S de fierro, con la punta para arriba; y tirado en el piso.
+export const GANCHO = [
+  '..o....',
+  '.oHo...',
+  '.oHo...',
+  '.oHo...',
+  '.oHo...',
+  '.oHo.o.',
+  '.oHooHo',
+  '..oHHo.',
+  '...oo..',
+];
+const GANCHO_TIRADO = [
+  '...oooo..',
+  'oooHHHHo.',
+  'oHHoooHHo',
+  '.oo...oo.',
+];
+export const COL_RES = { o: 0, H: 24, B: 17, b: 16, R: 9, r: 8, L: 10, F: 16, f: 17, g: 15 };
+
+/** 🥩 El balde de zinc de la repisa del refrigerado: parado, y tirado de costado con la boca para la izquierda. */
+const BALDE_ZINC = [
+  '..ooooo..',
+  '.o.....o.',
+  'ooooooooo',
+  'oKKKKKKKo',
+  '.oKkkkdo.',
+  '.oKkkkdo.',
+  '.oKkkkdo.',
+  '..oKkdo..',
+  '..ooooo..',
+];
+const BALDE_ZINC_TIRADO = [
+  '..oooooooo.',
+  '.oiKKKkkkdo',
+  'oiiKkkkkkdo',
+  '.oiKkkkkkdo',
+  '..ooooooooo',
+  '.....hh....',
+];
+const ZINC = { o: 0, K: 25, k: 24, d: 23, i: 31, h: 23 };
+DIBUJOS.baldeHielo = {
+  arriba: { w: 9, h: 9, pintar: (R) => dibujarMapa(R, 0, 0, BALDE_ZINC, ZINC) },
+  piso: { w: 11, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, BALDE_ZINC_TIRADO, ZINC) },
+  roto: { w: 11, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, BALDE_ZINC_TIRADO, ZINC) },
+};
+
+/** 🥩 LA BARRA DE HIELO que sale patinando del depósito: arriba la cara con luz, adelante el hielo con las burbujas. */
+const BARRA_HIELO = [
+  '.oooooooooo.',
+  'oWWWWWWWWWWo',
+  'oWwwwwwwwwWo',
+  'oIIIIIIIIIIo',
+  'oIiIIIIIiIIo',
+  'oIIIIIIIIIIo',
+  '.oooooooooo.',
+];
+export function pintarBarraHielo(R) { dibujarMapa(R, 0, 0, BARRA_HIELO, { o: 0, W: 30, w: 22, I: 21, i: 20 }); }
+
+/**
+ * 🥩 LO QUE SE CAE EN EL REFRIGERADO *(Santi eligió las recomendaciones)*, con lo que anotó el dibujo fijo (`w._refri`):
+ *  - LA RES DE LA PUNTA DE CADA TIRA, la del lado del pasillo, SE DESCUELGA: con el aviso se hamaca fuerte; después se
+ *    suelta del gancho (el gancho queda colgado), se inclina y queda tirada en el pasillo, a lo largo. Saca mucha vida
+ *    (`medio`: ver `medioParte`). Tirada, no choca ni frena balas (`cubreCaida`), y su casilla queda libre. Las balas
+ *    no la rompen.
+ *  - EL GANCHO VACÍO de la punta de una tira se suelta del riel y cae: liviano.
+ *  - LOS DOS BALDES de la repisa: livianos.
+ *  - EL HIELO de los depósitos: con los golpes que lo empujan hacia adentro del vagón salen dos barras patinando por el
+ *    piso (casi no frenan) y te tiran al piso como una valija. Cuatro por depósito.
+ */
+function refri(C, w) {
+  const A = w._refri, P = PASO(), S = CONFIG.tileSize;
+  const x0 = Math.floor(w.x / P) * P, yArr = -CONFIG.tresCuartos.alturaPared;
+  const deAx = (pt) => x0 + pt * P, deAy = (pt) => yArr + pt * P;
+  const ocultos = C.train._ocultos || (C.train._ocultos = new Set());
+  const mitad = C.train.map.rows / 2;
+  for (const Q of A.reses) {
+    const xw = deAx(Q.px), arriba = Q.f < mitad;
+    const comun = { x: xw, xRepisa: xw, yTop: deAy(Q.top), yPared: Q.base, riel: Q.riel, clave: Q.clave, ocultos, fijo: true, estado: 'repisa', t: 0, dir: 0, wagon: w.id };
+    if (Q.gancho) {
+      C.objetos.push({ ...comun, tipo: 'ganchoRes', peso: 'liviano', hw: 4, yRepisa: deAy(Q.top + 8), yPiso: (Q.f + 0.5) * S + 3, corre: 2, prob: 0.6,
+        filas: GANCHO, gx: 3, colgado: 0, inclinado: [GANCHO, GANCHO], tirado: [GANCHO_TIRADO, GANCHO_TIRADO], anc: [[3, 8], [3, 8]] });
+      continue;
+    }
+    C.objetos.push({ ...comun, tipo: 'mediaRes', peso: 'medio', hw: 14, yRepisa: deAy(Q.piso), yPiso: arriba ? (Q.f + 1) * S + 9 : Q.f * S - 5,
+      zonaY: [9, 4], corre: 14, lenta: 2.2, prob: 0.5, celda: [Q.f, Q.c],
+      filas: RES_COLGADA[Q.mapa][2], incl: RES_COLGADA[Q.mapa], gx: 7, colgado: 3, inclinado: RES_INCLINADA[Q.mapa], tirado: RES_TIRADA[Q.mapa], anc: [[19, 20], [2, 20]] });
+  }
+  A.baldes.forEach((B, k) => {
+    const xw = deAx(B.px);
+    C.objetos.push({ tipo: 'baldeHielo', peso: 'liviano', hw: 5, x: xw, xRepisa: xw, yRepisa: deAy(B.py), yPared: B.base + k * 0.0001, yPiso: B.yPiso + k * 3, corre: 4, estado: 'repisa', t: 0, dir: 0, wagon: w.id });
+  });
+  for (const H of A.hielo) {
+    C.pilas.push({ tipo: 'hielo', x: deAx(H.px), yTope: H.y - 6, yBase: H.y, hw: 10, hh: 4, sx: deAx(H.px), sy: H.y, atras: H.atras, quedan: 4, arriba: [], estado: 'quieta', t: 0, wagon: w.id });
+  }
+}
+
+/** Dónde se ordena con la gente la res (o el gancho) que se cae: en la tira, y bajando al pasillo mientras cae. */
+function baseDeRes(o) {
+  if (o.estado === 'piso' || o.estado === 'roto') return o.yPiso;
+  if (o.estado !== 'cae' || o.t < 0) return o.yPared;
+  const f = Math.min(1, o.t / (o.dura || CONFIG.caidas.caeDura));
+  return f < 0.4 ? o.yPared : o.yPared + (o.yPiso - o.yPared) * Math.min(1, (f - 0.4) / 0.35);
+}
+
+/**
+ * 🥩 LA RES (o el gancho vacío) QUE SE CAE. Mientras está quieta la dibuja el dibujo fijo; desde el aviso la esconde y se
+ * dibuja acá. `parte`: 'gancho' es lo que queda colgado (el pedazo de riel y el gancho, detrás), 'cuerpo' lo que cae.
+ *  - EL AVISO: se hamaca fuerte desde el gancho, de punta a punta de sus inclinaciones (~RES_COLGADA~).
+ *  - CAYENDO, en tres tiempos: se suelta y baja derecho hasta tocar el piso; se inclina (el mapa inclinado) mientras se
+ *    viene al pasillo; y queda acostada (el mapa tirado). Son tres dibujos, no ocho cuadros.
+ *  - TIRADA en el pasillo.
+ */
+function dibujarRes(r, o, parte) {
+  if (o.estado === 'repisa') return;
+  o.ocultos.add(o.clave);
+  const P = PASO(), K = CONFIG.caidas;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(o.xRepisa, Math.max(o.yPared, 34)) || 0) : 0;
+  const X = Math.round(o.xRepisa / P), top = Math.round(o.yTop / P), M = o.filas, n = M.length, c0 = o.gx;
+  const pinta = (R, filas, ox, oy, desde = 0, corre = null) => filas.forEach((fila, j) => {
+    if (j < desde) return;
+    const d = corre ? corre(j) : 0;
+    for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') R(ox + q + d, oy + j, 1, 1, COL_RES[fila[q]]);
+  });
+  if (parte === 'gancho') {
+    if (!o.riel && !o.colgado) return;
+    pintarTapando(r.ctx, X - 3, top - o.riel - 1, 7, o.riel + o.colgado + 1, luz, (R) => {
+      if (o.riel) { R(2, 0, 3, o.riel, 0); R(3, 0, 1, o.riel, 24); }
+      pinta(R, M.slice(0, o.colgado), 3 - c0, o.riel + 1);
+    });
+    return;
+  }
+  if (o.estado === 'aviso' || (o.estado === 'cae' && o.t < 0)) {
+    const t = o.estado === 'aviso' ? o.t : K.aviso + (o.demora || 0) + o.t;
+    const m = Math.sin(t * 7.5) * Math.min(1, 0.4 + t / 1.2);
+    // (La res, en sus inclinaciones de colgada, de punta a punta; el gancho, corrido.)
+    if (o.incl) pintarTapando(r.ctx, X - 12, top, 25, n, luz, (R) => pinta(R, o.incl[Math.round(2 + 2 * m)], 12 - c0, 0, o.colgado));
+    else pintarTapando(r.ctx, X - 12, top, 25, n, luz, (R) => pinta(R, M, 12 - c0, 0, o.colgado, (j) => Math.round((m * 4 * j) / (n - 1))));
+    return;
+  }
+  const f = o.estado === 'cae' ? Math.min(1, o.t / (o.dura || K.caeDura)) : 1;
+  if (f < 0.4) {
+    const d = Math.round((f / 0.4) ** 2 * 6);
+    pintarTapando(r.ctx, X - 12, top + d, 25, n, luz, (R) => pinta(R, M, 12 - c0, 0, o.colgado));
+    return;
+  }
+  const lado = o.dir >= 0 ? 1 : 0, corre = o.correA ?? o.corre ?? 0;
+  const xFin = Math.round((o.xRepisa + o.dir * corre) / P), yFin = Math.round(o.yPiso / P);
+  if (f < 0.75) {
+    const g = (f - 0.4) / 0.35, D = o.inclinado[lado], [axx, ayy] = o.anc[lado];
+    const bx = Math.round(X + (xFin - o.dir * 12 - X) * g * 0.5), by = Math.round(top + n + 5 + (yFin - (top + n + 5)) * g);
+    pintarTapando(r.ctx, bx - axx, by - ayy, D[0].length, D.length, luz, (R) => pinta(R, D, 0, 0));
+    return;
+  }
+  const D = o.tirado[lado];
+  pintarTapando(r.ctx, xFin - Math.floor(D[0].length / 2), yFin - D.length + 1, D[0].length, D.length, luz, (R) => pinta(R, D, 0, 0));
+}
+
 function armarPendientes(C) {
   if (!C.porArmar || !C.porArmar.length) return;
   C.porArmar = C.porArmar.filter((w) => {
@@ -2272,6 +2991,7 @@ function armarPendientes(C) {
     if (w._blindado) { blindado(C, w); return false; }
     if (w._cerrado) { cerradoArmar(C, w); return false; }
     if (w._almacen) { almacen(C, w); return false; }
+    if (w._refri) { refri(C, w); return false; }
     return true;
   });
 }

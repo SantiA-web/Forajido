@@ -34,7 +34,7 @@ import { masCercano, sombrear } from '../../engine/paleta.js';
 import { estiloNuevo } from '../../engine/estiloNuevo.js';
 import { pintarSuelo } from './suelo.js';
 import { WAGONS, nichoDeCaja } from '../../data/wagons.js';
-import { medidasAlacena, pintarBarril, BARRIL_PARADO, BARRIL_PARADO_G, pintarBaulGrande, pintarCajon, pintarSaco, TAM_TORRE, pintarRolloTela, pintarCajaWhisky } from '../caidas.js';
+import { medidasAlacena, pintarBarril, BARRIL_PARADO, BARRIL_PARADO_G, pintarBaulGrande, pintarCajon, pintarSaco, TAM_TORRE, pintarRolloTela, pintarCajaWhisky, RES_COLGADA, GANCHO, COL_RES } from '../caidas.js';
 
 /** Cuántas unidades del mundo mide un punto de la grilla (0,75 con puntos de 3). */
 export const PASO = CONFIG.estilo.punto / DENSIDAD;
@@ -48,7 +48,8 @@ const PX = 1 / PASO;
 // (🆕 Y el blindado, la bóveda de chapa.)
 // (📦 Y el cerrado, el primero del tren de carga.)
 // (🏪 Y el almacén, el de la compañía.)
-const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen']);
+// (🥩 Y el refrigerado, el de las reses.)
+const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado']);
 /** ¿Este vagón ya se dibuja en el estilo nuevo? (Lo usa world/train.js para las cajas fuertes.) */
 export const esVagonNuevo = (id) => NUEVOS.has(id);
 
@@ -134,7 +135,8 @@ function vagon(train, w, dia) {
   // ---- los colores (índices de la paleta)
   const cc = CONFIG.colors.costado;
   // (🆕 El blindado, del gris de su chapa.)
-  const hex = (w.id === 'blindado' && cc.blindado) || cc.coche[w.id] || cc.coche.pasajeros;
+  // (🥩 Y el refrigerado, del crema de siempre: sin esto salía del color del de pasajeros.)
+  const hex = (w.id === 'blindado' && cc.blindado) || (w.id === 'refrigerado' && cc.refrigerado) || cc.coche[w.id] || cc.coche.pasajeros;
   const n = parseInt(hex.slice(1), 16);
   const BORDE = masCercano((n >> 16) & 255, (n >> 8) & 255, n & 255);
   const BORDE_L = sombrear(BORDE, 1), BORDE_S = sombrear(BORDE, -1), BORDE_SS = sombrear(BORDE, -2);
@@ -304,7 +306,9 @@ function vagon(train, w, dia) {
    */
   let ventanillas = [];
   const yFarolA = 28;
-  if (w.id === 'almacen') {
+  // (🥩 En el refrigerado, las rejillas de ventilación van en el mismo lugar que las ventanillas, y el farol es uno solo,
+  // en el hueco entre las dos tiras del medio: ver `refrigerado` más abajo.)
+  if (w.id === 'almacen' || w.id === 'refrigerado') {
     ventanillas = ventanasFondo.map(([c0, c1]) => {
       const vx = ax(w.x + c0 * S) + 7, x1 = ax(w.x + (c1 + 1) * S) - 7;
       const barras = [];
@@ -312,7 +316,7 @@ function vagon(train, w, dia) {
       return { x: vx, w: x1 - vx, y: 13, h: 14, barras };
     });
     faroles.length = 0;
-    for (const c of [10, 22]) faroles.push(ax(w.x + c * S));
+    for (const c of w.id === 'refrigerado' ? [15.5] : [10, 22]) faroles.push(ax(w.x + c * S));
   }
 
   // ===== LA LUZ, por escalones
@@ -387,7 +391,37 @@ function vagon(train, w, dia) {
     }
     return f;
   };
-  const campo = w.id === 'almacen' ? campoAlmacen : w.id === 'blindado' ? campoBlindado : w.id === 'cerrado' ? campoCerrado : dia
+  /**
+   * 🥩 EL REFRIGERADO, CERRADO Y EN PENUMBRA *(Santi eligió la recomendada)*: un escalón abajo de día (dos de noche). De día
+   * sólo entra luz por las rejillas de ventilación del fondo: cae en el piso, delante, a rayas (las tablillas de la
+   * rejilla cortan la luz en hojas finas). De noche, el farol del medio: su resplandor y el charco en el piso, y lo demás
+   * en penumbra (se ve poco, como pide el vagón).
+   */
+  const campoRefri = (x, y) => {
+    if (y >= ay(yPisoAbajo - tc.alturaParedBaja) + 8) return dia ? -1 : -2;
+    const y0 = ay(yPisoArriba);
+    let f = y < y0 ? -1 : dia ? -1 : -2;
+    if (!dia) {
+      const yCharco = ay(3.4 * S);
+      for (const fx of faroles) {
+        f += 2.6 * Math.max(0, 1 - Math.hypot((x - fx) / 84, (y - yCharco) / 52));
+        f += 2.2 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - yFarolA) / 18));
+      }
+      return f;
+    }
+    if (y <= y0 || y >= tope) return f;
+    const d = y - y0, D0 = 22, D1 = 70;
+    if (d < D0 - 3 || d > D1 + 3) return f;
+    for (const V of ventanillas) {
+      const xs = V.x - d * 0.5;
+      let g = Math.max(0, Math.min(1, Math.min(x - xs, xs + V.w - x, d - D0, D1 - d) / 3));
+      if (g <= 0) continue;
+      if (d % 5 < 2) g *= 0.25;
+      f += 2 * g;
+    }
+    return f;
+  };
+  const campo = w.id === 'refrigerado' ? campoRefri : w.id === 'almacen' ? campoAlmacen : w.id === 'blindado' ? campoBlindado : w.id === 'cerrado' ? campoCerrado : dia
     ? (x, y) => {
       if (y < 8) return 0;
       let f = y < ay(yPisoArriba) ? -1 : 0;
@@ -449,7 +483,7 @@ function vagon(train, w, dia) {
   const hash = (x, y) => ((((x * 73856093) ^ (y * 19349663)) >>> 0) % 1000) / 1000;
   const yPisoA = ay(yPisoArriba);
   const luzSola = (y) => {
-    if (w.id === 'blindado' || w.id === 'cerrado') return y < yPisoA ? -1 : dia ? -1 : -2;
+    if (w.id === 'blindado' || w.id === 'cerrado' || w.id === 'refrigerado') return y < yPisoA ? -1 : dia ? -1 : -2;
     if (w.id === 'almacen') return dia ? 0 : y < yPisoA ? -1 : -2;
     if (dia) return y < yPisoA ? -1 : 0;
     return y < yPisoA ? -1 : -2;
@@ -538,8 +572,14 @@ function vagon(train, w, dia) {
     if (w.id === 'almacen') {
       for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 10 === 0 ? 39 : 47);
       for (let x = 2; x < W; x += 10) for (let y = yCara + 2; y < yCara + 9; y++) if (deja(x, y, 70, 0.5)) p(x, y, 11);
-    } else for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 14 === 0 ? 1 : 3);
-    for (let x = 7; x < W; x += 14) {
+    }
+    /**
+     * 🥩 EN EL REFRIGERADO, LAS TABLAS PINTADAS A LA CAL, blancas y frías *(Santi eligió la recomendada)*: la junta gris,
+     * sin veta (la cal la tapa). La escarcha y los clavos, en `refrigerado` más abajo.
+     */
+    else if (w.id === 'refrigerado') for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 14 === 0 ? 24 : 25);
+    else for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 14 === 0 ? 1 : 3);
+    for (let x = 7; x < W && w.id !== 'refrigerado'; x += 14) {
       if (deja(x, yCara + 2, 3)) p(x, yCara + 2, 5);
       if (deja(x, yPie - 5, 4)) p(x, yPie - 5, 5);
       // La veta de cada tabla: una o dos rayitas a lo alto.
@@ -553,7 +593,7 @@ function vagon(train, w, dia) {
     }
     r(0, yPie - 2, W, 2, 1);
     // (🏪 Las del almacén son otras, chicas y con barrotes: ver `almacen`.)
-    for (const [c0, c1] of w.id === 'almacen' ? [] : ventanasFondo) {
+    for (const [c0, c1] of w.id === 'almacen' || w.id === 'refrigerado' ? [] : ventanasFondo) {
       const vx = ax(w.x + c0 * S) + 3, vw = ax(w.x + (c1 + 1) * S) - 3 - vx;
       const vy = yCara + 10, vh = Math.round((yPie - yCara) * 0.55);
       r(vx - 1, vy - 1, vw + 2, vh + 2, 0);
@@ -599,7 +639,7 @@ function vagon(train, w, dia) {
     // (🆕 En el blindado no: los suyos cuelgan del techo y se hamacan, ver `blindado`.)
     // (📦 Ni en el cerrado: no tiene, ver `campoCerrado`.)
     // (🏪 Ni en el almacén: cuelgan del techo, ver `almacen`.)
-    for (const fx of w.id === 'blindado' || w.id === 'cerrado' || w.id === 'almacen' ? [] : faroles) {
+    for (const fx of w.id === 'blindado' || w.id === 'cerrado' || w.id === 'almacen' || w.id === 'refrigerado' ? [] : faroles) {
       const y = yFarol;
       r(fx - 3, y - 2, 7, 1, 0); r(fx - 1, y - 1, 3, 1, 28);
       r(fx - 3, y, 7, 9, 0);
@@ -3337,6 +3377,281 @@ function vagon(train, w, dia) {
   }
 
   /**
+   * 🥩 P4 · EL REFRIGERADO, EL DE LAS RESES *(Santi eligió las recomendaciones)*: cerrado, frío y en penumbra.
+   *  - LA PARED, de tablas pintadas a la cal (ver la pared del fondo), con escarcha arriba y abajo y en los clavos. Sin
+   *    ventanas: LAS REJILLAS DE VENTILACIÓN, de tablillas, por donde de día entra la luz a rayas (ver `campoRefri`). De
+   *    noche, UN FAROL colgado en el medio.
+   *  - LAS TIRAS DE RESES *(Santi: "las carnes de una misma tira parecen que están una al lado de la otra cuando
+   *    deberían estar una encima de la otra")*: cada tira, UN RIEL de fierro que sale de la pared, y en él las medias
+   *    reses colgadas de su gancho, largas (34 puntos con el gancho: casi una persona y media), hasta cerca del piso: cada
+   *    una tapa el pie de la de atrás, y la tira se lee como una sola columna que baja hacia el pasillo. 🔁 Antes, una res
+   *    chiquita por casilla, con piso entre una y otra. Mezcladas al azar, la roja y la de grasa (`RES_COLGADA`). Cada res
+   *    es su propia pieza (se ordena con la gente: la de adelante te tapa) y SE MECE CON EL TREN (ver `colgar`). Las de
+   *    abajo tienen la punta del riel del lado del pasillo. Las casillas siguen igual que siempre ('R': tapan la vista, no
+   *    las balas, y frenan).
+   *  - DONDE FALTA UNA RES, EL GANCHO VACÍO, colgando y meciéndose.
+   *  - LOS DOS DEPÓSITOS DE HIELO, en los rincones: el de arriba con el frente de listones, y el hielo en barras detrás;
+   *    el de abajo, con la tapa de arriba abierta (se ven las barras desde arriba). Debajo del de arriba, LA CANALETA y la
+   *    gota que cae (ocho cuadros), y el charquito.
+   *  - EN EL PISO, ASERRÍN CON MANCHAS DE SANGRE debajo de cada res.
+   *  - Los detalles: EL TERMÓMETRO de la compañía junto a la puerta de atrás, y EL HACHA Y LA PINZA DEL HIELO colgadas
+   *    junto al depósito.
+   * (El gancho, el termómetro, la pinza y el hacha son mapas a mano; la res, ver `RES_COLGADA` en world/caidas.js.)
+   */
+  if (w.id === 'refrigerado') {
+    const r = rect(MESAS), p = pone(MESAS);
+    const rf = rect(FONDO), pf = pone(FONDO);
+    const rp = rect(PISO), pp = pone(PISO);
+    const yCara = 8, yPie = ay(yPisoArriba);
+    const X = (c) => ax(w.x + c * S), Y = (f) => ay(f * S);
+    // (Lo que se cae con los golpes —la res de la punta de cada tira, los ganchos vacíos, los baldes y el hielo— lo arma
+    // world/caidas.js con lo que anota acá el dibujo: ~refri~.)
+    const refri = { reses: [], baldes: [], hielo: [] };
+    const h = (a, b) => hash(a + w.colStart * 3, b);
+    const dibujo = (pq, x, y, filas, col) => filas.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') pq(x + q, y + j, col[fila[q]]); });
+    const MAD = 5, MAD_L = 6, MAD_S = 4, MAD_SS = 3;
+    const G = Math.max(3, Math.round(tc.paredPunta * PX));
+
+    // --- la escarcha de la pared encalada (más arriba, contra el techo, y abajo, contra el piso) y los clavos
+    for (let x = 0; x < W; x++) {
+      for (let y = yCara; y < yCara + 5; y++) if (h(x, y) < 0.24 - (y - yCara) * 0.045) pf(x, y, 22);
+      for (let y = yPie - 7; y < yPie - 2; y++) if (h(x, y + 50) < 0.03 + (y - (yPie - 7)) * 0.035) pf(x, y, 22);
+    }
+    for (let x = 7; x < W; x += 14) for (const y of [yCara + 4, yPie - 7]) { pf(x, y, 23); if (h(x, y) < 0.6) pf(x + 1, y, 22); }
+
+    // --- las rejillas de ventilación: el marco de madera y las tablillas inclinadas; entre ellas, el cielo (o la noche)
+    for (const V of ventanillas) {
+      const { x, w: an, y, h: alto } = V;
+      rf(x - 3, y - 3, an + 6, alto + 6, 0);
+      rf(x - 2, y - 2, an + 4, alto + 4, MAD_S); rf(x - 2, y - 2, an + 4, 1, MAD); rf(x - 2, y + alto + 1, an + 4, 1, MAD_SS);
+      for (let q = 0; q < alto; q++) rf(x, y + q, an, 1, q % 3 === 2 ? (dia ? 21 : 18) : q % 3 === 0 ? 25 : 24);
+      rf(x + Math.floor(an / 2), y, 1, alto, MAD_S);
+    }
+
+    // --- el farol, colgado del techo de su cadena, en el hueco entre las dos tiras del medio: se hamaca. De noche, prendido.
+    const FAROL = ['..ooo..', '.oKKKo.', 'oKKKKKo', 'oKyYyKo', 'oKyYyKo', 'oKyyyKo', 'oKKKKKo', '.ooooo.'];
+    for (const fx of faroles) {
+      const largo = yFarolA - 6;
+      animado(fx - 7, 0, 15, largo + FAROL.length + 3, yPisoArriba + 2 * S + 0.006, 9, (m, ra, pa) => {
+        const dx = Math.round(m * 1.6);
+        for (let k = 0; k <= largo; k++) pa(fx + Math.round((dx * k) / largo), 1 + k, k % 2 ? 24 : 0);
+        FAROL.forEach((fila, j) => {
+          for (let q = 0; q < fila.length; q++) {
+            const ch = fila[q];
+            if (ch === '.') continue;
+            const vidrio = ch === 'y' || ch === 'Y';
+            pa(fx + dx - 3 + q, 2 + largo + j, vidrio ? (dia ? (ch === 'Y' ? 22 : 21) : ch === 'Y' ? 29 : 28) : ch === 'o' ? 0 : 23, vidrio && !dia);
+          }
+        });
+      });
+    }
+
+    // --- las tiras: el riel, las reses y los ganchos vacíos
+    // (La media res, el gancho y sus colores, en world/caidas.js: también los usa la res que se cae.)
+    /**
+     * Una res (o un gancho) colgando del riel, en su pieza: `riel`, los puntos de riel que se ven arriba del gancho (de la
+     * de más atrás de la tira: hasta la pared, o la punta del lado del pasillo).
+     * 🔁 SE MUEVE CON EL TREN *(Santi: "fijate que la animación del movimiento sea acorde"; eligió "con el tren")*: la res
+     * se inclina entera desde el gancho, dura, en sus cinco inclinaciones (`RES_COLGADA`, world/caidas.js), y la mueve el
+     * péndulo de las reses (`meneoRes`, world/enganches.js): con el tren parejo apenas se mece; con un frenazo o un
+     * arrancón todas se van para el mismo lado y se calman de a poco, cada una apenas atrasada (`atraso`). Antes cada una
+     * se doblaba como un trapo (cada fila corrida distinto) y a su ritmo, sin que tuviera que ver con el tren. El gancho
+     * vacío, que es chico, se sigue corriendo por filas.
+     */
+    const colgar = (cx, top, filas, riel, base, fase, clave) => {
+      const incl = filas.length === 5 ? filas : null, n = incl ? incl[0].length : filas.length, x = cx - 9, y = top - riel - 1;
+      animado(x, y, 21, n + riel + 2, base, incl ? 5 : 8, (m, ra, pa) => {
+        if (riel) { ra(cx - 1, top - riel, 3, riel, 0); ra(cx, top - riel, 1, riel, 24); }
+        const M = incl ? incl[Math.round(2 + 2 * m)] : filas, gx = incl ? 7 : Math.floor(filas[0].length / 2);
+        M.forEach((fila, j) => {
+          const ox = cx - gx + (incl ? 0 : Math.round(m * 2 * j / (n - 1)));
+          for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') pa(ox + q, top + j, COL_RES[fila[q]]);
+        });
+      }, 0, 'res');
+      const A = animadosV[animadosV.length - 1];
+      A.fase = fase; A.clave = clave; A.atraso = Math.floor(h(cx, top) * 6);
+    };
+    const yRielPared = yPie - 34;
+    const bloquesTira = [[filasArriba, filasArriba + 2], [map.rows - filasAbajo - 3, map.rows - filasAbajo - 1]];
+    for (const [f0, f1] of bloquesTira) {
+      for (let c = 1; c < cols - 1; c++) {
+        let hay = false;
+        for (let f = f0; f <= f1; f++) if (casilla(c, f) === 'R') hay = true;
+        if (!hay) continue;
+        const cx = Math.round((X(c) + X(c + 1)) / 2);
+        // La punta del riel contra la pared del fondo: la planchuela clavada.
+        if (f0 === filasArriba) { rf(cx - 3, yRielPared - 2, 7, 4, 0); rf(cx - 2, yRielPared - 1, 5, 2, 23); rf(cx - 2, yRielPared - 1, 5, 1, 24); }
+        for (let f = f0; f <= f1; f++) {
+          const que = casilla(c, f);
+          if (que !== 'R' && que !== '.') continue;
+          const piso = ay((f + 0.5) * S), abajo = piso - 4;
+          const k = h(c, f * 7 + 1);
+          // (La de la punta del lado del pasillo es la que se puede descolgar.)
+          const frente = f === (f0 === filasArriba ? f1 : f0);
+          // (🔁 Mezcladas, sorteadas: la roja ('A') y la de grasa ('B'). Antes había también un cuarto, más corto.)
+          const mapa = k < 0.55 ? 'A' : 'B', filas = que === '.' ? GANCHO : RES_COLGADA[mapa];
+          // (El gancho, a la altura de los otros: la punta de la res, de 34 filas.)
+          const top = abajo - 33;
+          const riel = f === f0 ? (f0 === filasArriba ? top - yRielPared : 6) : 0;
+          // (Al de la punta del pasillo, el tope del riel: un bulón.)
+          if (f === f0 && f0 !== filasArriba) { r(cx - 2, top - riel - 2, 5, 3, 0); r(cx - 1, top - riel - 1, 3, 1, 24); }
+          colgar(cx, top, filas, riel, (f + 0.5) * S + 0.003, c * 0.9 + f * 0.35, 'res:' + (w.colStart + c) + ',' + f);
+          if (frente) refri.reses.push({ px: cx, top, piso, base: (f + 0.5) * S + 0.003, riel, f, c: w.colStart + c, gancho: que !== 'R', mapa, clave: 'res:' + (w.colStart + c) + ',' + f });
+          if (que !== 'R') continue;
+          // El aserrín del piso y la sangre que gotea, debajo de la res.
+          for (let yy = -4; yy <= 4; yy++) for (let xx = -10; xx <= 10; xx++) {
+            if ((xx / 10) ** 2 + (yy / 4) ** 2 > 1) continue;
+            const q = h(cx + xx, piso + yy);
+            if (q < 0.16) pp(cx + xx, piso + yy, 37); else if (q < 0.24) pp(cx + xx, piso + yy, 36);
+          }
+          for (const [bx, by] of [[0, 1], [-2, 2], [2, 0], [1, 3], [-1, -1]]) if (h(c * 7 + bx, f * 5 + by) < 0.7) pp(cx + bx, piso + by, h(bx + 9, c + f) < 0.5 ? 39 : 8);
+        }
+      }
+    }
+
+    // --- los depósitos de hielo
+    /**
+     * UN DEPÓSITO DE HIELO, de dos por dos, hasta el techo (`ALTO`), del rincón hasta la pared de la punta: arriba, la tapa
+     * de tablas con la boca por donde se carga (escarchada); adelante, de listones con el hielo en barras entre ellos
+     * (`listones`), o de tablas cerradas. `boca`: la boca abierta, con las barras de hielo vistas desde arriba.
+     */
+    const deposito = (x, x2, f0, listones, boca) => {
+      const yt = Y(f0), yb = Y(f0 + 2), ALTO = 38, an = x2 - x;
+      const t0 = yt - ALTO, t1 = yb - ALTO;
+      r(x - 1, t0 - 1, an + 2, yb - t0 + 2, 0);
+      // La tapa de arriba: las tablas, con la escarcha.
+      r(x, t0, an, t1 - t0, MAD);
+      for (let q = t0 + 5; q < t1; q += 5) r(x, q, an, 1, MAD_S);
+      r(x, t1 - 1, an, 1, MAD_L);
+      for (let yy = t0; yy < t1 - 1; yy++) for (let xx = x; xx < x2; xx++) if (h(xx, yy + 7) < 0.025) p(xx, yy, 22);
+      // La boca, con su marco.
+      const bw = 18, bh = 11, bx = x + Math.floor((an - bw) / 2), by = t0 + Math.floor((t1 - t0 - bh) / 2);
+      r(bx - 1, by - 1, bw + 2, bh + 2, 0);
+      if (boca) {
+        r(bx, by, bw, bh, 18);
+        for (const [qx, qy, qw, qh] of [[1, 1, 7, 4], [9, 1, 8, 4], [1, 6, 9, 4], [11, 6, 6, 4]]) {
+          r(bx + qx, by + qy, qw, qh, 21); r(bx + qx, by + qy, qw, 1, 30); r(bx + qx, by + qy + qh - 1, qw, 1, 20);
+        }
+        // La tapa, levantada y apoyada contra la pared de atrás.
+        r(bx - 1, by - 7, bw + 2, 6, 0); r(bx, by - 6, bw, 4, MAD_L); r(bx, by - 6, bw, 1, MAD); r(bx + 7, by - 4, 4, 1, 24);
+      } else {
+        r(bx, by, bw, bh, MAD_S); r(bx, by, bw, 1, MAD); r(bx, by + bh - 1, bw, 1, MAD_SS);
+        r(bx + 6, by + 4, 6, 3, 0); r(bx + 7, by + 5, 4, 1, 24);                                   // la manija
+      }
+      // El frente.
+      for (let xx = x; xx < x2; xx++) for (let yy = t1; yy < yb; yy++) {
+        const k = (xx - x) % 6;
+        if (!listones || k < 4) { p(xx, yy, k === 0 ? MAD_L : k === 3 ? MAD_S : MAD); continue; }
+        // Entre los listones, el hielo: barras de 9 de alto, con la luz arriba y la junta oscura abajo.
+        const b = (yy - t1) % 9;
+        p(xx, yy, b === 8 ? 19 : b === 0 ? 30 : b < 3 ? 22 : 21);
+      }
+      // Los travesaños y el zócalo.
+      for (const ty of [t1 + 3, yb - 9]) { r(x, ty, an, 3, 0); r(x, ty + 1, an, 1, MAD); }
+      r(x, yb - 2, an, 2, MAD_SS);
+      muebles.push({ x: x - 1, y: t0 - 1, w: an + 2, h: yb - t0 + 2, base: (f0 + 2) * S - 0.01 });
+      return { x, x2, yb };
+    };
+    let arriba = null;
+    if (casilla(cols - 3, filasArriba) === 'C') arriba = deposito(X(cols - 3), ax(w.x + w.width) - G, filasArriba, true, false);
+    if (casilla(1, map.rows - filasAbajo - 1) === 'C') deposito(ax(w.x) + G, X(3), map.rows - filasAbajo - 2, false, true);
+    // (Por dónde sale el hielo que patina con los golpes: delante de cada depósito. El de arriba, hacia la cola; el de abajo,
+    // hacia la locomotora: los dos, hacia adentro del vagón.)
+    if (arriba) refri.hielo.push({ px: (arriba.x + arriba.x2) / 2, y: (filasArriba + 2) * S + 5, atras: false });
+    if (casilla(1, map.rows - filasAbajo - 1) === 'C') refri.hielo.push({ px: (ax(w.x) + G + X(3)) / 2, y: (map.rows - filasAbajo - 3) * S + 6, atras: true });
+
+    // --- la canaleta debajo del depósito de arriba, el charquito y la gota que cae (ocho cuadros, a su ritmo)
+    if (arriba) {
+      const { x, x2, yb } = arriba;
+      rp(x, yb, x2 - x, 3, 0); rp(x + 1, yb + 1, x2 - x - 2, 1, 20);
+      for (let yy = -2; yy <= 2; yy++) for (let xx = -8; xx <= 8; xx++) {
+        const d = (xx / 8) ** 2 + (yy / 2.4) ** 2;
+        if (d <= 1) pp(x - 4 + xx, yb + 6 + yy, d < 0.35 ? 21 : 20);
+      }
+      const gx = x + 14, gy = yb - 10;
+      animado(gx - 2, gy - 1, 5, 14, yPisoArriba + 2 * S + 0.004, 8, (m, ra, pa) => {
+        const k = Math.round((m + 1) / 2 * 7);
+        if (k < 3) pa(gx, gy + 1, k === 0 ? 20 : 21);
+        else if (k === 3) { pa(gx, gy + 1, 21); pa(gx, gy + 2, 22); }
+        else if (k < 7) { pa(gx, gy + 3 * (k - 3), 21); pa(gx, gy + 3 * (k - 3) + 1, 22); }
+        else { pa(gx - 1, gy + 10, 22); pa(gx + 1, gy + 10, 22); pa(gx, gy + 11, 21); }
+      }, 0.14);
+    }
+
+    // --- el termómetro de la compañía, en la pared, junto a la puerta de atrás
+    const TERMOMETRO = [
+      '.ooooo.',
+      'oPPPPPo',
+      'oPogoPo',
+      'oPogoPo',
+      'oPogoTo',
+      'oPogoPo',
+      'oPogoTo',
+      'oPoroPo',
+      'oPoroTo',
+      'oPoroPo',
+      'oPoroTo',
+      'oPoroPo',
+      'oPoRoPo',
+      'oPRRRPo',
+      'oPoRoPo',
+      'oPPPPPo',
+      '.ooooo.',
+    ];
+    dibujo(pf, X(1) + 7, yCara + 9, TERMOMETRO, { o: 0, P: 6, T: 4, g: 22, r: 10, R: 9 });
+    pf(X(1) + 10, yCara + 7, 0); pf(X(1) + 10, yCara + 8, 23);
+
+    // --- la repisa de los baldes, en la pared entre dos tiras: los baldes los pone world/caidas.js (se caen con los golpes)
+    const xr = X(13) + 1, anR = X(14) - 1 - xr, yR = yCara + 26;
+    rf(xr - 1, yR - 1, anR + 2, 4, 0); rf(xr, yR, anR, 2, MAD); rf(xr, yR + 2, anR, 1, MAD_SS);
+    for (const bx of [xr + 2, xr + anR - 3]) { rf(bx - 1, yR + 3, 3, 5, 0); rf(bx, yR + 3, 1, 4, MAD_S); }
+    for (const k of [0, 1]) refri.baldes.push({ px: xr + 5 + k * 10, py: yR, base: yPisoArriba + 0.001, yPiso: filasArriba * S + 9 });
+
+    // --- el hacha y la pinza del hielo, colgadas de dos clavos junto al depósito
+    const PINZA = [
+      '...ooo...',
+      '..oHHHo..',
+      '..oHoHo..',
+      '...oHo...',
+      '...oHo...',
+      '..oHoHo..',
+      '.oHo.oHo.',
+      '.oHo.oHo.',
+      'oHo...oHo',
+      'oHo...oHo',
+      'oHo...oHo',
+      '.oHo.oHo.',
+      '..oo.oo..',
+    ];
+    const HACHA = [
+      '.oooo...',
+      'oGGGGo..',
+      'oGggGMo.',
+      'oGGGGMo.',
+      '.oooMo..',
+      '...oMo..',
+      '...oMo..',
+      '...oMo..',
+      '...oMo..',
+      '...oMo..',
+      '...oMo..',
+      '...oMo..',
+      '...oMo..',
+      '...oMo..',
+      '...oMo..',
+      '...omo..',
+      '...ooo..',
+    ];
+    // (Entre los rieles de las dos últimas tiras, que si no los tapan.)
+    const xh = X(cols - 5) + 1;
+    pf(xh + 4, yCara + 6, 0); pf(xh + 4, yCara + 7, 23);
+    dibujo(pf, xh, yCara + 8, PINZA, { o: 0, H: 24 });
+    pf(xh + 15, yCara + 5, 0); pf(xh + 15, yCara + 6, 23);
+    dibujo(pf, xh + 11, yCara + 7, HACHA, { o: 0, G: 24, g: 25, M: 6, m: 5 });
+    w._refri = refri;
+  }
+
+  /**
    * 🆕 LAS PUNTAS DEL VAGÓN, FINITAS Y DE ARRIBA A ABAJO *(Santi: "arreglar la pared esa vertical que está con la
    * puerta: debería ser más fina… debería ocultarse detrás de la pared del tren más cercana a la pantalla… dar la
    * sensación de que continúa hasta topar con la pared… el borde negro no debería estar… y debería continuar hacia
@@ -3499,8 +3814,34 @@ function vagon(train, w, dia) {
         tx += 4;
       }
     }
+    /**
+     * 🥩 EL REFRIGERADO, POR FUERA: pintado del crema de siempre (el color del galope), con CARNES FRESCAS en letras rojas
+     * *(Santi eligió la recomendada)*, gastadas como las del almacén.
+     */
+    if (w.id === 'refrigerado') {
+      const LETRAS = {
+        C: ['.oo', 'o..', 'o..', 'o..', '.oo'], A: ['.o.', 'o.o', 'ooo', 'o.o', 'o.o'], R: ['oo.', 'o.o', 'oo.', 'o.o', 'o.o'],
+        N: ['o..o', 'oo.o', 'o.oo', 'o..o', 'o..o'], E: ['ooo', 'o..', 'oo.', 'o..', 'ooo'], S: ['.oo', 'o..', '.o.', '..o', 'oo.'],
+        F: ['ooo', 'o..', 'oo.', 'o..', 'o..'],
+      };
+      const texto = 'CARNES FRESCAS', ty = yCaraFin - 12;
+      const ancho = [...texto].reduce((s, ch) => s + (LETRAS[ch] ? LETRAS[ch][0].length + 1 : 3), 0);
+      let tx = Math.round(W / 2 - ancho / 2);
+      for (const ch of texto) {
+        const L = LETRAS[ch];
+        if (L) L.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] === 'o') { const k = hash(tx + q, ty + j + w.colStart); p(tx + q, ty + j, k < 0.05 ? BORDE_SS : k < 0.2 ? 8 : 9); } });
+        tx += L ? L[0].length + 1 : 3;
+      }
+    }
     for (const [c0, c1] of ventanasFrente) {
       const vx = ax(w.x + c0 * S) + 5, vw = ax(w.x + (c1 + 1) * S) - 5 - vx;
+      // (🥩 Las del refrigerado son rejillas de tablillas, no ventanillas: nada de luz adentro de noche.)
+      if (w.id === 'refrigerado') {
+        const vy = yTope + 12, vh = Math.max(5, Math.round((yCaraFin - yTope - 12) * 0.45));
+        r(vx - 1, vy - 1, vw + 2, vh + 2, 0);
+        for (let q = 0; q < vh; q++) r(vx, vy + q, vw, 1, q % 2 ? 31 : 24);
+        continue;
+      }
       const vy = yTope + 12, vh = Math.max(5, Math.round((yCaraFin - yTope - 12) * 0.45));
       r(vx - 1, vy - 1, vw + 2, vh + 2, 0);
       // De noche, desde afuera las ventanillas se ven prendidas (como en el galope).
@@ -3573,7 +3914,19 @@ function vagon(train, w, dia) {
           // (🚂 Escondida: la del barril de agua del caboose, cuando ya se volcó.)
           if (A.clave && train._ocultos && train._ocultos.has(A.clave)) return VACIO();
           if (A.reloj) return imgs[Math.floor(performance.now() / 1000 / A.reloj) % imgs.length];
-          const m = (A.fuente === 'agua' ? estiloNuevo.meneoAgua : estiloNuevo.meneo) || 0;
+          let m = (A.fuente === 'agua' ? estiloNuevo.meneoAgua : estiloNuevo.meneo) || 0;
+          /**
+           * 🥩 'res': las reses del refrigerado, con el péndulo de las reses (más pesado y lento que el de los faroles),
+           * cada una `atraso` cuadros atrás (`estiloNuevo.historialRes`), más un vaivén chiquito propio (`fase`) que con
+           * el tren parejo apenas las mueve.
+           */
+          if (A.fuente === 'res') {
+            const hr = estiloNuevo.historialRes || [];
+            m = (hr.length ? hr[Math.max(0, hr.length - 1 - (A.atraso || 0))] : 0) + 0.3 * Math.sin(performance.now() / 1000 * 1.6 + (A.fase || 0));
+            // (Y el empujoncito de un balazo: para el lado de la bala, y vuelve y se calma; ver `balaEnRes` en raidScene.)
+            const g = estiloNuevo.golpesRes && estiloNuevo.golpesRes[A.clave];
+            if (g) m += g.dir * 0.6 * Math.exp(-2.2 * g.edad) * Math.cos(Math.PI * 2 * 0.9 * g.edad);
+          }
           return imgs[Math.max(0, Math.min(imgs.length - 1, Math.round((m + 1) / 2 * (imgs.length - 1))))];
         },
       });

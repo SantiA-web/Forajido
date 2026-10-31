@@ -19695,6 +19695,43 @@ guardaespaldas distintos)*:
     cajón de adelante por el suyo.
   - 🧪 El atajo [8] lleva al almacén con los frenos rotos.
   - Las cajas fuertes en su lugar nuevo se abren bien (lo probó Santi).
+- **✅ EL REFRIGERADO, EL DE LAS RESES** (world/estiloNuevo/vagones.js, `refrigerado`) *(Santi eligió las
+  recomendaciones)*: cerrado, frío y en penumbra.
+  - **La pared** de tablas a la cal con escarcha; sin ventanas: **rejillas de ventilación** de tablillas, por donde de
+    día entra la luz a rayas, y de noche **un farol** colgado. Por fuera, color crema y **CARNES FRESCAS**.
+  - **Las tiras de reses**, una encima de la otra, cada tira con su riel saliendo de la pared y las medias reses
+    colgadas hasta cerca del piso; donde falta una, **el gancho vacío**. Debajo, aserrín con manchas.
+  - **Los dos depósitos de hielo** en los rincones ('C', data/wagons.js: chocan enteros; el escondite "entre el hielo"
+    va al lado, data/paquetes.js), **la canaleta** con su gota, **el termómetro**, **la repisa de los baldes** y **el
+    hacha y la pinza del hielo**.
+  - 🆕 **El vaho del aliento** *(scenes/raidScene.js, `vahoDelFrio`; `vaho` en data/config.js)*: todos los que están en
+    el refrigerado echan una nubecita blanca por la boca cada tanto, para donde miran.
+  - **Frenos rotos en el refrigerado** (world/caidas.js, `refri`): la res de la punta de cada tira se hamaca fuerte, se
+    suelta (el gancho queda colgado), se inclina y queda tirada en el pasillo; saca mucha vida (`medioParte` 0,8:
+    medido, el 80 %). El gancho vacío se cae; los baldes se caen; y de los depósitos salen **barras de hielo** que
+    patinan por el piso y te tiran como una valija (`hielo.roce` 0,6: con 0,35 se iban por la puerta).
+  - 🔁 **Las reses, más simples** *(Santi: "quiero cambiar el dibujo de las reses, se ven raras y con muchos
+    detalles"; eligió "A y B mezcladas")*: de perfil, el lomo recto con su franja de grasa y la panza contorneada (la
+    pata arriba, el muslo, la cintura, el pecho y el cogote). En cada tira, al azar, la roja y la cubierta de grasa
+    blanca (`RES_COLGADA` en world/caidas.js). Antes, costillas, espinazo y el corte: se leían raro. La roja colgada,
+    cayéndose y tirada son mapas a mano; la de grasa es la roja con otros colores, las cinco inclinaciones son la misma
+    corrida en escalones y los lados izquierdos son espejos, hechos por código.
+  - 🔁 **Se mueven con el tren** *(Santi: "fijate que la animación del movimiento sea acorde"; eligió "con el tren")*:
+    cada res se inclina entera desde el gancho, dura, en cinco inclinaciones, con su propio péndulo (`meneoRes` en
+    world/enganches.js; `resVel`, `resFreno`, `resEmpuje` en data/config.js). Con el tren parejo apenas se mecen; con
+    un frenazo todas se van juntas para el mismo lado hasta la inclinación más grande y se calman en unos 5 segundos,
+    cada una apenas atrasada. Antes cada una se doblaba como un trapo y a su ritmo. Con el empuje de los faroles
+    quedaban pegadas al tope y saltaban de punta a punta: medido, el empuje bajó a 0,005.
+  - 🔁 **Las reses tiradas no chocan ni frenan balas** *(Santi: "a las reses en el piso no le pongas colisión" y "las
+    reses tampoco quiero que detengan balas")*: se pasa por encima (medido: se camina derecho) y no son cobertura.
+  - 🆕 **El balazo en una res colgada** *(Santi: "al disparar a través de las reses colgando quiero que salga un
+    chorrito de sangre. Sería realista?")*: le conté que no (la res viene desangrada, fría y sin corazón que empuje) y
+    eligió **lo realista** y **un empujoncito** (`balaEnRes` en scenes/raidScene.js y data/config.js): cuando la bala
+    cruza la carne saltan pedacitos de carne y grasa para el lado de la bala, caen 2 o 3 gotas de jugo que dejan una
+    manchita al pie de la res (no se seca), y la res se hamaca un escalón para ese lado y vuelve. La bala sigue de largo.
+  - **Pendiente para decidir**: la bala atraviesa todas las reses de la fila sin perder fuerza (en la prueba, 13
+    seguidas); en la realidad se frenaría a la segunda o tercera.
+  - 🧪 El atajo [8] lleva al refrigerado con los frenos rotos.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

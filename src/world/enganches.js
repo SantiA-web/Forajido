@@ -45,7 +45,7 @@ export function crearEnganches(train, rng, estado = []) {
     proximoFrenazo: frenos ? FR.cada[0] + rng.next() * (FR.cada[1] - FR.cada[0]) : Infinity,
     proximoArrancon: Infinity,
     fuerza: K.fuerza[tipo],
-    meneo: 0, pendulo: { a: 0, w: 0 }, meneoAgua: 0, agua: { a: 0, w: 0 }, vAncla: 0,
+    meneo: 0, pendulo: { a: 0, w: 0 }, meneoAgua: 0, agua: { a: 0, w: 0 }, meneoRes: 0, res: { a: 0, w: 0 }, vAncla: 0,
     // (En el de carga no: su tirón lo pone el traqueteo.)
     proximo: cada ? cada[0] + rng.next() * (cada[1] - cada[0]) : Infinity,
   };
@@ -172,9 +172,9 @@ export function actualizarEnganches(E, dt, rng, anclaX) {
   const ancla = V[indiceDeVagon(E, anclaX ?? 0)];
   const acel = (ancla.v - E.vAncla) / Math.max(1e-4, dt);
   E.vAncla = ancla.v;
-  const pendular = (P, vel, freno) => {
+  const pendular = (P, vel, freno, empuje = K.penduloEmpuje) => {
     const om = Math.PI * 2 * vel;
-    P.w += (-om * om * P.a - freno * P.w - acel * K.penduloEmpuje) * dt;
+    P.w += (-om * om * P.a - freno * P.w - acel * empuje) * dt;
     P.a += P.w * dt;
     return 1.3 * Math.tanh(P.a / 1.3);
   };
@@ -182,6 +182,8 @@ export function actualizarEnganches(E, dt, rng, anclaX) {
   // 💧 Y el agua de los barriles, que se hamaca con el mismo vagón *(Santi: "el agua creo que se sigue moviendo con el
   // movimiento anterior")*.
   E.meneoAgua = pendular(E.agua, K.aguaVel, K.aguaFreno);
+  // 🥩 Y las reses del refrigerado, más pesadas: van y vienen más despacio y tardan más en calmarse.
+  E.meneoRes = pendular(E.res, K.resVel, K.resFreno, K.resEmpuje);
   return evento;
 }
 

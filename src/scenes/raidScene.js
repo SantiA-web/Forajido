@@ -58,6 +58,7 @@ import { caballoActual, fondoDelAsalto } from '../data/horse.js';
 import { blancoBajoLaMira } from '../systems/golpe.js';
 import { createEnemy, drawEnemy, damageEnemy } from '../entities/enemy.js';
 import { crearCaidas, avisarCaidas, golpearCaidas, actualizarCaidas, dibujarSombrasDeCaidas, cosasDeCaidas, empujarCaidas, romperEnRadio, bloqueaCaida, cubreCaida, destruirEnRadio, actualizarPapeles, dibujarPapeles, sacaDelCarro, barrilRoto, tapaSaltada, derramar, ruedaAcostada, volcarBarrilAgua } from '../world/caidas.js';
+import { PALETA } from '../engine/paleta.js';
 import { createBoss, drawBoss } from '../entities/boss.js';
 import { updateBoss } from '../systems/boss.js';
 import { esquivarPeligro, mirarAlChirrido } from '../systems/peligro.js';
@@ -310,6 +311,7 @@ export function createRaidScene(services) {
     particles = [];
     floaters = [];
     blastMarks = [];
+    estiloNuevo.golpesRes = {};
     techObstacles = [];
     techoBajarProgress = 0;
     techoSpawnTimer = CONFIG.techo.obstaculoCada;
@@ -1156,6 +1158,7 @@ export function createRaidScene(services) {
   /** Los sistemas avisan por el bus; la escena reacciona. */
   function listen() {
     unsubscribers = [
+      bus.on('balaEnRes', balaEnRes),
       bus.on('impact', ({ x, y, kind, zona, puntos, queria, deJugador, apuntada, oculto }) => {
         const color = kind === 'flesh' ? colors.blood : '#c9b28a';
         // (🧱 `oculto`: le pegó a la cara de adentro de la pared de más acá, que no se ve: suena, sin astillas.)
@@ -2444,9 +2447,11 @@ export function createRaidScene(services) {
       // (🎩 Lo que no lastima —sombreros, cartucheras, rifles—: sólo el golpe en el piso.)
       if (im.peso === 'nada') continue;
       const pega = (o) => o.x + o.hw > im.x0 && o.x - o.hw < im.x1 && o.y + o.hh > im.y0 && o.y - o.hh < im.y1;
+      // (🥩 Lo medio —la media res del refrigerado— saca mucha vida: `medioParte`.)
+      const parte = im.peso === 'medio' ? K.medioParte : K.livianoParte;
       if (player.alive && !player.enTecho && pega(player)) {
         player.invuln = 0;
-        damagePlayer(player, im.peso === 'pesado' ? player.health + 999 : player.maxHealth * K.livianoParte, im.x, im.y - 20);
+        damagePlayer(player, im.peso === 'pesado' ? player.health + 999 : player.maxHealth * parte, im.x, im.y - 20);
         floaters.push({ x: player.x, y: player.y - 24, text: T.prompts.teCayoEncima, life: 1.6, color: colors.enemyAlert });
         camera.shake(CONFIG.feel.shakeHit, 0.25);
       }
@@ -2454,7 +2459,7 @@ export function createRaidScene(services) {
         if (!e.alive || !pega(e)) continue;
         const murio = im.peso === 'pesado'
           ? ((e.alive = false), (e.health = 0), true)
-          : damageEnemy(e, (e.maxHealth || e.health) * K.livianoParte, im.x, im.y - 20);
+          : damageEnemy(e, (e.maxHealth || e.health) * parte, im.x, im.y - 20);
         if (murio) {
           spawnParticles(e.x, e.y, colors.blood, 10);
           bus.emit('enemyKilled', { enemy: e, byPlayer: false, silent: true });
@@ -2486,6 +2491,8 @@ export function createRaidScene(services) {
       if (s.agua) { ro.agua = s.agua; ro.ocultos = train._ocultos || (train._ocultos = new Set()); }
       if (s.variante === 6) { ro.grande = !!s.grande; ro.contenido = s.contenido; ro.haciaPasillo = s.haciaPasillo; ro.vuelca = CONFIG.caidas.barril.vuelca; ro.roce = O.valijaRoce * CONFIG.caidas.barril.roce; }
       // (🏪 El rollo de tela: primero se cae de la estantería, y después rueda lejos.)
+      // (🥩 La barra de hielo del refrigerado: patina lejos.)
+      if (s.variante === 9) ro.roce = O.valijaRoce * CONFIG.caidas.hielo.roce;
       if (s.variante === 8) { ro.color = s.color; ro.baja = ro.bajaDura = CONFIG.caidas.telas.baja; ro.altoBaja = s.alto; ro.roce = O.valijaRoce * CONFIG.caidas.telas.roce; }
       // (🚂 La rueda del freno no entra al pasillo: rueda por su fila. Ver `caboose` en world/caidas.js.)
       ro.yMeta = s.porSuFila ? null : map.height / 2 + rng.range(-6, 6);
@@ -3307,6 +3314,9 @@ export function createRaidScene(services) {
     if (eventoEng === 'frenazoAviso' || eventoEng === 'frenazo' || eventoEng === 'arranconAviso' || eventoEng === 'arrancon') frenazo(eventoEng);
     if (enganches) aplastarEnLosEnganches();
     if (caidas) actualizarLoQueSeCae(dt);
+    vahoDelFrio(dt);
+    // (🥩 Lo que se va calmando cada res baleada.)
+    for (const k in estiloNuevo.golpesRes || {}) if ((estiloNuevo.golpesRes[k].edad += dt) > 3) delete estiloNuevo.golpesRes[k];
     // 🦵 El enganche en el que estás chocó contra su tope: trastabillás (entities/player.js).
     if (enganches && !player.enTecho) {
       const g = engancheEn(enganches, player.x);
@@ -4510,6 +4520,13 @@ export function createRaidScene(services) {
       const p = particles[i];
       p.life -= dt;
       if (p.life <= 0) { particles.splice(i, 1); continue; }
+      // (🥩 La gota de jugo de la res: espera su turno colgada, cae con su peso y deja la manchita donde toca el piso.)
+      if (p.cae != null) {
+        if (p.demora > 0) { p.demora -= dt; continue; }
+        p.vy += CONFIG.balaEnRes.peso * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.9;
+        if (p.y >= p.cae) { if (caidas) derramar(caidas, p.x, p.cae, 3, p.k); particles.splice(i, 1); }
+        continue;
+      }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.vx *= 0.9;
@@ -4527,6 +4544,51 @@ export function createRaidScene(services) {
       blastMarks[i].life -= dt;
       if (blastMarks[i].life <= 0) blastMarks.splice(i, 1);
     }
+  }
+
+  /**
+   * 🥩 EL VAHO DEL ALIENTO EN EL REFRIGERADO *(Santi eligió la recomendada)*: cada uno que está adentro —vos, los guardias,
+   * los pasajeros—, cada tanto, larga una nubecita blanca por delante de la cara, que sube un poco y se borra. Son
+   * partículas: los dibujos de la gente no se tocan. Ver CONFIG.vaho.
+   */
+  function vahoDelFrio(dt) {
+    const K = CONFIG.vaho;
+    for (const g of [player, ...enemies, ...(passengers || [])]) {
+      if (!g || !g.alive || g.enTecho || train.tramoAt(g.x) !== 'vagon') continue;
+      const w = train.wagons[train.wagonAt(g.x)];
+      if (!w || w.id !== 'refrigerado') continue;
+      g.vaho = (g.vaho ?? rng.range(0, K.cada)) - dt;
+      if (g.vaho > 0) continue;
+      g.vaho = K.cada * rng.range(0.7, 1.3);
+      // (Para donde mira: el guardia y el pasajero, por `facing`; vos, por donde apuntás.)
+      const mira = Math.cos(g.facing ?? g.aim ?? 0) < 0 ? -1 : 1;
+      for (let i = 0; i < K.puntos; i++) {
+        particles.push({ x: g.x + mira * rng.range(3, 6), y: g.y - K.alto + rng.range(-1, 1), vx: mira * rng.range(4, 12), vy: -rng.range(2, 6), life: rng.range(0.5, 0.9), color: K.color });
+      }
+    }
+  }
+
+  /**
+   * 🥩 LA BALA QUE ATRAVIESA UNA RES COLGADA *(Santi: "al disparar a través de las reses colgando quiero que salga un
+   * chorrito de sangre. Sería realista?"; le conté que no —la res ya viene desangrada, fría y sin corazón que empuje— y
+   * eligió "lo realista")*: saltan pedacitos de carne y de grasa para el lado de la bala, caen unas gotas oscuras de jugo
+   * que dejan su manchita en el piso (`derramar`, contenido 3: no se seca), y la res se hamaca un poco para ese lado y
+   * vuelve (`estiloNuevo.golpesRes`, lo suma world/estiloNuevo/vagones.js al meneo del tren).
+   */
+  function balaEnRes({ x, y, vx, col, fila }) {
+    const K = CONFIG.balaEnRes, dir = vx < 0 ? -1 : 1, S = CONFIG.tileSize;
+    // (Salen por el lado de donde sale la bala, del tamaño de un punto del dibujo.)
+    x += dir * 3;
+    for (let i = 0; i < K.pedacitos; i++) {
+      particles.push({ x, y: y + rng.range(-2, 2), vx: dir * rng.range(25, 60), vy: rng.range(-25, 8), life: rng.range(0.15, 0.3), color: PALETA[i % 3 ? (i % 2 ? 9 : 8) : 16], punto: true });
+    }
+    const piso = (fila + 0.5) * S;
+    const gotas = rng.int(K.gotas[0], K.gotas[1]);
+    for (let i = 0; i < gotas; i++) {
+      particles.push({ x: x + rng.range(-1.5, 1.5), y: y + rng.range(0, 3), vx: dir * rng.range(0, 6), vy: rng.range(0, 6), life: 3, color: PALETA[8], cae: piso + rng.range(-1, 2), k: i % 3, demora: i * rng.range(0.15, 0.35), punto: true });
+    }
+    estiloNuevo.golpesRes['res:' + col + ',' + fila] = { dir, edad: 0 };
+    audio.play('hitFlesh');
   }
 
   function spawnParticles(x, y, color, count) {
@@ -4845,6 +4907,10 @@ export function createRaidScene(services) {
     estiloNuevo.desfile = scroll * CONFIG.parallax.suelo * CONFIG.parallax.velocidad * traqueteoVelMult;
     // (🆕 Y el del agua, más lento: ver CONFIG.tresCuartos.aguaVelocidad.)
     estiloNuevo.meneoAgua = enganches ? enganches.meneoAgua : Math.sin(scroll * CONFIG.tresCuartos.aguaVelocidad * Math.PI * 2);
+    // (🥩 Y el de las reses del refrigerado, con lo de los últimos cuadros: cada res lo toma un poco atrasada.)
+    const hr = estiloNuevo.historialRes || (estiloNuevo.historialRes = []);
+    hr.push(enganches ? enganches.meneoRes : 0);
+    if (hr.length > 8) hr.shift();
     if (nuevos) {
       swayX = Math.round(swayX / PASO) * PASO;
       camY = Math.round(camY / PASO) * PASO;
@@ -4988,7 +5054,9 @@ export function createRaidScene(services) {
 
     for (const p of particles) {
       r.ctx.globalAlpha = Math.min(1, p.life * 3);
-      r.box(p.x + corrDibujo(p.x), p.y, 1, 1, p.color);
+      // (🥩 `punto`: los pedacitos y las gotas de la res, un punto del dibujo, sobre su grilla.)
+      if (p.punto) r.box(Math.round((p.x + corrDibujo(p.x)) / PASO) * PASO, Math.round(p.y / PASO) * PASO, PASO, PASO, p.color);
+      else r.box(p.x + corrDibujo(p.x), p.y, 1, 1, p.color);
     }
     r.ctx.globalAlpha = 1;
 

@@ -199,6 +199,18 @@ export function updateBullets(bullets, dt, world) {
        * 🧳 LO TIRADO DE LAS REPISAS (world/caidas.js): la bala que le pasa por encima le pega y lo rompe, sea de quien
        * sea *(Santi: "si un disparo o dinamita va ahí que le pegue y lo rompa")*.
        */
+      /**
+       * 🥩 LA RES COLGADA QUE ATRAVIESA LA BALA (la casilla 'R' del refrigerado): no la frena, pero avisa una vez por
+       * res, y la escena hace saltar pedacitos, gotear el jugo y hamacarse la res *(Santi eligió "lo realista" y "un
+       * empujoncito")*. Por encima no le pega: pasa sobre las reses.
+       */
+      if (!b.porEncima && world.map.tileAtPixel(b.x, b.y) === 'R') {
+        // (Cuando cruza la carne, no cuando entra a la casilla: la res cuelga del medio de la casilla y se abre unos 3
+        // puntos para la derecha, con la panza.)
+        const S = world.map.size, col = Math.floor(b.x / S), fila = Math.floor(b.y / S), cual = col + ',' + fila;
+        const xm = (col + 0.5) * S + 2;
+        if (b._res !== cual && (b.x - sx - xm) * (b.x - xm) <= 0) { b._res = cual; world.bus.emit('balaEnRes', { x: xm, y: yDeBala(b), vx: b.vx, col, fila }); }
+      }
       if (world.caidas) {
         // (🆕 Los cajones caídos de la torre: cobertura baja, de fierro y tablas gruesas; no se rompen a tiros.)
         if (!b.porEncima && cubreCaida(world.caidas, b.x, b.y)) {

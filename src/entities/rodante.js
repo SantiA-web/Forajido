@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA, pintarRolloTela } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA, pintarRolloTela, pintarBarraHielo } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -194,7 +194,7 @@ export function updateRodante(ro, dt) {
     const d = ro.yMeta - ro.y;
     // (🛒 El carro entra en diagonal, rodando: lo que baja o sube va con lo que avanza *(Santi: "parece que pegó un
     // salto… que rueden de forma diagonal al pasillo y ahí se acomoden en horizontal")*.)
-    const paso = ro.variante >= 4 && ro.variante <= 8 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
+    const paso = ro.variante >= 4 && ro.variante <= 9 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
     ro.y += Math.sign(d) * Math.min(Math.abs(d), paso);
     // (📦 La caja de munición sale casi derecho al pasillo y recién ahí se arrastra a lo largo: de costado se trababa
     // contra el catre de al lado de la pila.)
@@ -211,6 +211,7 @@ export function drawRodante(r, ro) {
   if (ro.tipo === 'valija' && ro.variante === 6) { dibujarBarrilDeComida(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 7) { dibujarRuedaRodando(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 8) { dibujarRolloRodando(r, ro); return; }
+  if (ro.tipo === 'valija' && ro.variante === 9) { dibujarHieloPatinando(r, ro); return; }
   if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
   /**
@@ -542,6 +543,13 @@ function dibujarRolloRodando(r, ro) {
   const piso = Math.round((ro.y + ro.hh) / P) - alto;
   pintarTapando(r.ctx, Math.round(ro.x / P) - 5, piso - 16, 10, 16, luz + (ro.hitFlash > 0 ? 2 : 0),
     (R) => pintarRolloTela(R, Math.floor((ro.rodado || 0) / 2.9), ro.color, 6));
+}
+
+/** 🥩 La barra de hielo del refrigerado (world/caidas.js), patinando por el piso: no rueda ni salta. */
+function dibujarHieloPatinando(r, ro) {
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  pintarTapando(r.ctx, Math.round(ro.x / P) - 6, Math.round((ro.y + ro.hh) / P) - 7, 12, 7, luz + (ro.hitFlash > 0 ? 2 : 0), (R) => pintarBarraHielo(R));
 }
 
 /** 📦 La caja de munición que se desliza (world/caidas.js): apoyada en el piso, sin saltar ni girar. */

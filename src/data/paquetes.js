@@ -206,7 +206,8 @@ export const TILE_DE_ESCONDITE = {
   cajones: 'C',
   escritorio: 'C',
   carga: 'C',
-  hielo: 'R',
+  // (🥩 Junto a los depósitos de hielo del refrigerado, los 'C' de los rincones: ver data/wagons.js.)
+  hielo: 'C',
   bultos: 'C',
 };
 

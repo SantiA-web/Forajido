@@ -3044,6 +3044,7 @@ function vagon(train, w, dia) {
     const h = (a, b) => hash(a + w.colStart * 3, b);
     const en = (ox, oy) => (x, y, ww, hh, i) => r(ox + x, oy + y, ww, hh, i);
     const A = (w._almacen = { whisky: [], faroles: [], telas: [], maquina: null, escalera: null });
+    const finosAlmacen = [];
     // (En el mundo: donde cae lo de las estanterías, en el piso delante de ellas; y la base de lo que va encima de ellas.)
     const yCae = 3 * S + 4, baseArriba = yPisoArriba + 2 * S;
 
@@ -3217,14 +3218,37 @@ function vagon(train, w, dia) {
          * a la estantería")*: antes salía del piso de adelante, inclinada. Y ahora se cae (la última de todo, ver `almacen`
          * en world/caidas.js), así que no va en el dibujo fijo: acá sólo se anota dónde está.
          */
-        A.escalera = { px: L.x2 - 20, top: E.top - 3, pie: E.yS, base: (B.f2 + 1) * S + 0.001 };
+        // (`base`: la del frente de la estantería, como ella; ver abajo los muebles de esta estantería.)
+        A.escalera = { px: L.x2 - 20, top: E.top - 3, pie: E.yS, base: yArriba + (E.yS + 1) * PASO + 0.001 };
+        /**
+         * 🐛 LOS CHOQUES DE ESTA ESTANTERÍA, COMO ESTÁ DIBUJADA *(Santi: "la estantería que tiene la escalera tiene mal la
+         * colisión")*: delante tiene un solo cajón, a la izquierda, y a la derecha piso libre; pero las casillas chocaban
+         * enteras, y se chocaba contra el aire delante de la escalera. Ahora choca la estantería (desde la pared hasta su
+         * frente, donde se para la escalera) y el cajón; lo demás se camina. La escalera tirada no choca: queda chata en
+         * el piso, se pasa por encima (como los rollos de tela).
+         */
+        const P = PASO, mx = (q) => x0 + q * P, my = (q) => yArriba + q * P;
+        finosAlmacen.push({
+          celdas: [w.colStart + B.c, w.colStart + B.c2, B.f, B.f2],
+          rects: [[mx(L.x - 1), my(Y(B.f)), mx(L.x2 + 1), my(E.yS + 1)], [mx(L.x - 1), my(Y(B.f)), mx(L.x + 45), my(yb + 1)]],
+        });
       } else if (rol === 'telas2') {
         cajonCia(L.x, yb, 40, tapa, 9, 1);
         latas(L.x + 3, L.x + 38, yb - 9 - 3, 60);
         cajonCia(L.x2 - 40, yb, 40, tapa, 10, 0);
       } else { cajonCia(L.x, yb, 30, tapa, 10, 1); cajonCia(L.x + 31, yb, L.x2 - L.x - 31, tapa + 1, 9, 0); }
-      muebles.push({ x: L.x - 6, y: 0, w: L.x2 - L.x + 12, h: L.yb + 6, base: (B.f2 + 1) * S - 0.01 });
+      /**
+       * 🐛 LA ESTANTERÍA DE LA ESCALERA, EN DOS PEDAZOS *(Santi: "el jugador se dibuja por debajo de los dibujos de la
+       * estantería")*: delante de ella, a la derecha, ahora se camina (ver sus choques), y el que se paraba ahí quedaba
+       * tapado, porque todo el mueble se ordenaba por el borde de adelante del cajón. Ahora la estantería se ordena por
+       * su frente (donde apoya la escalera) y el cajón de adelante, por el suyo.
+       */
+      if (rol === 'alta') {
+        muebles.push({ x: L.x - 6, y: 0, w: L.x2 - L.x + 12, h: E.yS + 2, base: yArriba + (E.yS + 1) * PASO });
+        muebles.push({ x: L.x - 6, y: L.yb - 30, w: 52, h: 36, base: (B.f2 + 1) * S - 0.01 });
+      } else muebles.push({ x: L.x - 6, y: 0, w: L.x2 - L.x + 12, h: L.yb + 6, base: (B.f2 + 1) * S - 0.01 });
     });
+    map.ponerChoquesFinos('almacen:' + w.colStart, finosAlmacen);
 
     // --- ABAJO: los cajones sellados, dos atrás y dos adelante (con su sello); encima, lo de cada uno.
     // (El rollo de alambre, acostado: el aro visto desde arriba, con las vueltas, y el canto.)

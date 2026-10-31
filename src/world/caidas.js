@@ -218,22 +218,8 @@ export function avisarCaidas(C, sentido, rng) {
     if (o.enMesa) { if (o.estado === 'repisa') planearVajilla(o, sentido, rng); continue; }
     // (🧵 `soloDir`: lo que está contra un borde, como la máquina de coser del almacén, se cae sólo si el golpe la tira para ahí.)
     if (o.soloDir && o.estado === 'repisa' && o.soloDir !== -sentido) continue;
-    /**
-     * 🪜 `ultimo`: LA ESCALERA DEL ALMACÉN ES LO ÚLTIMO EN CAERSE *(Santi: "será el último objeto en caer, primero se
-     * balanceará y luego caerá")*: espera a que no quede nada más por caerse en su vagón (ni en las repisas ni rollos
-     * arriba de las estanterías). Y entonces, con el golpe que tira lo último, se balancea un rato largo (`balanceo`) y
-     * cae después de todo lo demás.
-     */
-    if (o.ultimo) {
-      if (o.estado !== 'repisa') continue;
-      const queda = C.objetos.some((q) => q !== o && q.wagon === o.wagon && q.estado === 'repisa')
-        || C.pilas.some((p) => p.wagon === o.wagon && p.tipo === 'telas' && p.estado === 'quieta' && p.rollos.length);
-      if (queda) continue;
-      const KE = K.escalera;
-      o.estado = 'aviso'; o.t = 0; o.dir = 0; o.correA = 0;
-      o.demora = KE.balanceo * rng.range(0.9, 1.1); o.dura = KE.dura;
-      continue;
-    }
+    // (🪜 La escalera del almacén se decide al final, cuando ya se sabe qué más se cae con este golpe: ver abajo.)
+    if (o.ultimo) continue;
     if (o.estado !== 'repisa' || !rng.chance(K.cae * (o.prob ?? 1))) continue;
     // (`haciaDir`: lo que cae siempre para el mismo lado: la torre del blindado, hacia adentro del vagón.)
     o.estado = 'aviso'; o.t = 0; o.dir = o.haciaDir ?? -sentido;
@@ -272,6 +258,23 @@ export function avisarCaidas(C, sentido, rng) {
     }
     if (p.estado !== 'quieta' || (!p.arriba.length && p.tipo !== 'baul' && p.tipo !== 'carro' && p.tipo !== 'municion' && p.tipo !== 'rueda' && p.tipo !== 'barrilAgua')) continue;
     if (p.atras === (sentido < 0)) { p.estado = 'aviso'; p.t = 0; }
+  }
+  /**
+   * 🪜 `ultimo`: LA ESCALERA DEL ALMACÉN ES LO ÚLTIMO EN CAERSE *(Santi: "será el último objeto en caer, primero se
+   * balanceará y luego caerá")*: cae con el golpe que tira lo último que quedaba en su vagón (en las repisas y los
+   * rollos de arriba de las estanterías): se balancea un rato largo (`balanceo`) y cae después de todo lo demás.
+   * 🐛 Antes se fijaba ANTES de saber qué tiraba este golpe: lo último caía y ella seguía quieta hasta el golpe
+   * siguiente, y a veces no venía otro *(Santi: "hay momentos en los que la escalera ni se mueve")*. Ahora se fija
+   * después, y con cada golpe que no la tira igual se hamaca un rato (`tambalea`): siempre se mueve.
+   */
+  for (const o of C.objetos) {
+    if (!o.ultimo || o.estado !== 'repisa') continue;
+    const KE = K.escalera;
+    const queda = C.objetos.some((q) => q !== o && q.wagon === o.wagon && q.estado === 'repisa')
+      || C.pilas.some((p) => p.wagon === o.wagon && p.tipo === 'telas' && p.rollos.some((q) => p.estado !== 'aviso' || !q.cae));
+    if (queda) { o.tambalea = KE.tambalea; continue; }
+    o.estado = 'aviso'; o.t = 0; o.dir = 0; o.correA = 0; o.tambalea = 0;
+    o.demora = KE.balanceo * rng.range(0.9, 1.1); o.dura = KE.dura;
   }
 }
 
@@ -390,6 +393,7 @@ export function actualizarCaidas(C, dt, map) {
   C.reloj = (C.reloj || 0) + dt;
   for (const o of C.objetos) {
     if (o.estado === 'aviso') o.t += dt;
+    if (o.tambalea > 0) o.tambalea = Math.max(0, o.tambalea - dt);
     if (o.estado !== 'cae') continue;
     o.t += dt;
     // 🥃 Las botellas caen escalonadas (`botellasDemora`): pegan cuando llegan las primeras, y el tramo queda en el
@@ -2754,6 +2758,10 @@ function dibujarEscalera(r, o) {
   if (o.estado === 'aviso' || (o.estado === 'cae' && o.t < 0)) {
     const t = o.estado === 'aviso' ? o.t : K.aviso + (o.demora || 0) + o.t;
     dx = Math.round(BALANCEO[Math.floor(t * 8) % 8] * Math.min(1, 0.35 + t / 1.4));
+  } else if (o.estado === 'repisa' && o.tambalea > 0) {
+    // (Se hamaca y se vuelve a quedar quieta: más fuerte al principio, y se va apagando.)
+    const t = K.escalera.tambalea - o.tambalea;
+    dx = Math.round(BALANCEO[Math.floor(t * 8) % 8] * Math.min(1, (o.tambalea / K.escalera.tambalea) * 1.4));
   } else if (o.estado === 'cae') ang = ((Math.min(7, Math.floor((o.t / o.dura) * 8)) + 1) / 8) * (Math.PI / 2);
   else if (o.estado === 'piso' || o.estado === 'roto') ang = Math.PI / 2;
   // (De -1, parada, a 1, acostada: lo que se corre en la pantalla la punta respecto del pie, por punto de largo.)

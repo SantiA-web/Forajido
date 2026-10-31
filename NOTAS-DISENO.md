@@ -19680,8 +19680,21 @@ guardaespaldas distintos)*:
       vagón (`ultimo`), se balancea un rato (`escalera` en data/config.js) y cae para el pasillo en ocho cuadros,
       girando sobre el pie. Pega en todo su largo (`zonaY`) y saca la mitad de la vida (medido: de 100 a 50). Sin sombra
       de aviso: la avisa el balanceo.
+    - 🐛 **A veces ni se movía** *(Santi: "hay momentos en los que la escalera ni se mueve")*: se fijaba si quedaba algo
+      por caer ANTES de saber qué tiraba el golpe, así que con el golpe que tiraba lo último seguía quieta, esperando
+      otro. Ahora se fija al final del aviso; y con cada golpe que todavía no la tira, igual se hamaca un rato y se
+      vuelve a quedar quieta (`tambalea`). Medido: se hamacó en el primer frenazo y en el segundo, y cayó en el tercero
+      con lo último.
+  - 🐛 **Los choques de la estantería de la escalera** *(Santi: "la estantería que tiene la escalera tiene mal la
+    colisión, revisala con la escalera caída y con la escalera de pie")*: delante tiene un solo cajón, a la izquierda, y
+    a la derecha piso libre, pero chocaban las casillas enteras. Ahora choca la estantería hasta su frente (donde apoya
+    la escalera) y el cajón; lo demás se camina (`ponerChoquesFinos`, `almacen:`). La escalera tirada no choca: queda
+    chata y se pasa por encima, como los rollos.
+  - 🐛 **Y el que se para ahí se dibuja delante** *(Santi: "el jugador se dibuja por debajo de los dibujos de la
+    estantería")*: esa estantería va en dos pedazos, la estantería ordenada por su frente (con la escalera parada) y el
+    cajón de adelante por el suyo.
   - 🧪 El atajo [8] lleva al almacén con los frenos rotos.
-  - **Sin probar**: abrir las cajas fuertes en su lugar nuevo.
+  - Las cajas fuertes en su lugar nuevo se abren bien (lo probó Santi).
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

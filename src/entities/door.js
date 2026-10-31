@@ -385,8 +385,20 @@ function dibujarPuertaNueva(r, d, colors, parte = 'todo') {
       const lugares = [0.3, 0.7, 0.15, 0.55, 0.85, 0.45];
       for (let q = 0; q < Math.min(lugares.length, etapa * 2); q++) punto(x0, h0 + lugares[q] * 2 * LARGO - alto, GRUESO, 1, 0);
     }
-    // Trabada: el tablón rojo cruzado sobre la abertura.
-    if (d.trabada && abre < 0.2) {
+    /**
+     * 🏪 LA DEL ALMACÉN: LA BARRA DE FIERRO, PUESTA *(Santi eligió "las puertas con la barra de fierro puesta: viaja
+     * cerrado")*. Atraviesa la abertura de punta a punta, apoyada en dos horquillas clavadas en los marcos, con el
+     * candado colgando en el medio. Se rompe igual que la otra, a tiros.
+     */
+    if (d.trabada && d.barra && abre < 0.2) {
+      for (const hy of [y0 + MARCO * 0.5, y1 - MARCO * 0.5]) { punto(d.x - PASO * 4, hy - alto * 0.55 - PASO * 2, 9, 5, 0); punto(d.x - PASO * 3, hy - alto * 0.55 - PASO, 7, 3, 23); }
+      punto(d.x - PASO * 3, y0 + MARCO * 0.5 - alto * 0.55, 7, (y1 - y0 - MARCO) / PASO, 0);
+      punto(d.x - PASO * 2, y0 + MARCO * 0.5 - alto * 0.55, 5, (y1 - y0 - MARCO) / PASO, 24);
+      punto(d.x - PASO * 2, y0 + MARCO * 0.5 - alto * 0.55, 1, (y1 - y0 - MARCO) / PASO, 25);
+      punto(d.x + PASO * 2, y0 + MARCO * 0.5 - alto * 0.55, 1, (y1 - y0 - MARCO) / PASO, 31);
+      const cy = (y0 + y1) / 2 - alto * 0.55;
+      punto(d.x - PASO * 3, cy - PASO, 7, 8, 0); punto(d.x - PASO * 2, cy, 5, 6, 7); punto(d.x - PASO * 2, cy, 5, 1, 28); punto(d.x, cy + PASO * 2, 1, 2, 0);
+    } else if (d.trabada && abre < 0.2) {
       const ty = d.y - alto * 0.5;
       punto(d.x - PASO * 6, ty - PASO, 13, 4, 0);
       punto(d.x - PASO * 5, ty, 11, 2, 9);

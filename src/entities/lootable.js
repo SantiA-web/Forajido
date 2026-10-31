@@ -180,6 +180,14 @@ function dibujarCajaNueva(r, l, col) {
   R(1, 1, 18, 4, 25); R(1, 1, 18, 1, 30);
   R(1, 6, 18, 24, 24); R(1, 6, 1, 24, 25); R(1, 6, 18, 1, 25); R(18, 6, 1, 24, 23); R(1, 30, 18, 1, 23);
   R(1, 32, 4, 2, 0); R(15, 32, 4, 2, 0); R(2, 32, 2, 1, 31); R(16, 32, 2, 1, 31);
+  /**
+   * 🏪 LAS DEL ALMACÉN, ATORNILLADAS AL PISO *(Santi eligió "las dos cajas fuertes de la compañía, negras con dorado,
+   * atornilladas al piso")*: en cada pata, la planchuela de fierro que sale para los costados, con sus dos bulones.
+   */
+  if (l.atornillada) for (const px of [-2, 14]) {
+    R(px, 32, 8, 3, 0); R(px + 1, 33, 6, 1, 23);
+    R(px + 1, 33, 1, 1, 25); R(px + 6, 33, 1, 1, 25);
+  }
   if (!l.taken && !l.reventada) {
     R(3, 8, 14, 21, 0); R(4, 9, 12, 19, 23);                                                    // la puerta
     // (🔁 El filete, en el borde de la puerta: más adentro, la rueda lo cortaba.)

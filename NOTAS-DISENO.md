@@ -19648,6 +19648,40 @@ guardaespaldas distintos)*:
   - 🐛 Sin vagones nuevos a la vista (con [F9] apagado y un enganche), el dibujo se trababa (`nuevos.tramos`).
   - **Pendiente**: el vagón viejo de corral deja ver la piedra por debajo de su borde de adelante; se arregla cuando se
     dibuje en la grilla nueva.
+- **✅ EL ALMACÉN, "EL EXPRESO DE LA COMPAÑÍA"** (world/estiloNuevo/vagones.js, `almacen`) *(Santi eligió las
+  recomendaciones, las ventanillas con barrotes, las cuatro cosas que se caen con los frenos rotos y los cuatro
+  detalles)*: lo más caro del tren de carga, ordenado y cerrado con llave.
+  - **La pared**, de tablas oscuras barnizadas, con **ventanillas chicas y altas con barrotes** arriba de los pasillos
+    entre estanterías (data/wagons.js): de día el sol entra y cae a rayas en el piso; de noche, **dos faroles colgados**
+    del techo que se hamacan (la cadena larga: antes parecían apoyados en la estantería). Por fuera, **EXPRESO DEL SUD**
+    en letras doradas gastadas *(Santi eligió "el nombre de la compañía en letras doradas gastadas")*, poco gastadas.
+  - **Arriba, las estanterías altas** con lo fino (rollos de tela de colores, cajones de whisky, faroles nuevos, latas);
+    **abajo, los cajones sellados** con la marca quemada y el lacre, uno con la máquina de coser y otro con alambre. **El
+    rincón del encargado** (pupitre, libro de carga, tintero, sello) y la báscula. Los detalles: el almanaque, la
+    escalerita, el guardapolvo colgado.
+  - **Las puertas con la barra de fierro puesta** (entities/door.js) *(Santi eligió "las puertas con la barra de fierro
+    puesta: viaja cerrado")*: de punta a punta en sus horquillas, con el candado; se rompe a tiros como la otra.
+  - **Las dos cajas fuertes**, negras con dorado y **atornilladas al piso** (entities/lootable.js). 🔁 **Debajo de las
+    ventanillas, contra la pared** *(Santi: "ponelas debajo de las ventanas de barrotes contra la pared. Que tengan
+    colisión pero que no molesten en la cobertura de la estantería… en huecos diferentes y que su ubicación exacta se
+    sortee en cada tren")* (world/train.js): cada una en un hueco distinto, sorteado, y corrida un poco dentro del
+    hueco. Chocan sólo contra la pared (`nicho`, `cajaFuerteEn`): delante queda libre.
+  - **Frenos rotos en el almacén** (world/caidas.js, `almacen`): se caen los rollos de tela de arriba de las
+    estanterías y salen rodando por el pasillo (`telas` en data/config.js); los cajones de whisky se rompen y dejan el
+    charco; los faroles nuevos se caen; la máquina de coser, sólo para su lado (`soloDir`). La puerta trabada frena los
+    rollos.
+    - 🔁 **Los rollos no chocan con la gente, sí con las balas** *(Santi: "a los rollos de lona no le pongas colisión
+      para los personajes pero sí para las balas")*: se pasa por encima; aguantan tres tiros y siguen siendo cobertura
+      baja. **Entre ellos sí chocan** *(Santi: "entre los rollos si quiero que haya colisión")*: el que rueda se frena
+      contra el que está tirado.
+    - 🆕 **LA ESCALERA, LO ÚLTIMO EN CAER** *(Santi: "a la escalera de mano literalmente pegala a la estantería y que sea
+      un objeto que caiga pero en vertical. Será el último objeto en caer, primero se balanceará y luego caerá y te baja
+      mitad de vida")*: pegada y derecha contra la estantería más alta; espera a que no quede nada más por caer en el
+      vagón (`ultimo`), se balancea un rato (`escalera` en data/config.js) y cae para el pasillo en ocho cuadros,
+      girando sobre el pie. Pega en todo su largo (`zonaY`) y saca la mitad de la vida (medido: de 100 a 50). Sin sombra
+      de aviso: la avisa el balanceo.
+  - 🧪 El atajo [8] lleva al almacén con los frenos rotos.
+  - **Sin probar**: abrir las cajas fuertes en su lugar nuevo.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

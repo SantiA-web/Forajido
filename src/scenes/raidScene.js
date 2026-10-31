@@ -2052,6 +2052,9 @@ export function createRaidScene(services) {
     if (!rodantes) return false;
     for (const ro of rodantes) {
       if (ro.tipo !== 'valija' || !ro.mueble || !ro.quieta || !ro.alive) continue;
+      // (🏪 El rollo de tela del almacén no: se pasa por encima *(Santi: "a los rollos no le pongas colisión para los
+      // personajes pero sí para las balas")*. Las balas le siguen pegando (systems/combat.js) y sigue siendo cobertura baja.)
+      if (ro.variante === 8) continue;
       if (Math.abs(x - ro.x) < ro.hw && Math.abs(y - ro.y) < ro.hh) return true;
     }
     return false;
@@ -2217,9 +2220,16 @@ export function createRaidScene(services) {
         // 🧳 La valija se para contra lo que tenga adelante (un asiento, la puerta).
         // (🛢️ Salvo mientras entra al pasillo: el barril arranca pegado al banco de al lado, y las valijas de la pirámide
         // del dormitorio, pegadas a la pared del camarote; frenadas ahí, se quedaban trabadas en el rincón.)
-        const entrando = (ro.variante === 6 && ro.vuelca > 0) || (ro.yMeta != null && Math.abs(ro.yMeta - ro.y) > 2)
+        // (🏪 Ni mientras el rollo de tela se cae de la estantería.)
+        const entrando = (ro.variante === 6 && ro.vuelca > 0) || ro.baja > 0 || (ro.yMeta != null && Math.abs(ro.yMeta - ro.y) > 2)
           || (ro.salida != null && (ro.dir > 0 ? ro.x < ro.salida : ro.x > ro.salida));
-        if (ro.tipo === 'valija' && !ro.quieta && !entrando && map.isSolidAt(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
+        // (🏪 El rollo de tela rueda lejos: también lo para la puerta trabada del almacén, que si no la cruzaba y se perdía.)
+        // (🏪 Y entre ellos sí chocan: el que rueda se frena contra otro rollo tirado *(Santi: "entre los rollos sí quiero
+        // que haya colisión")*. A la gente no la frenan, ver `baulQuietoEn`.)
+        const otroRollo = (x, y) => rodantes.some((q) => q !== ro && q.alive && q.quieta && q.tipo === 'valija' && q.variante === 8
+          && Math.abs(x - q.x) < q.hw && Math.abs(y - q.y) < q.hh);
+        const choca = (x, y) => (ro.variante === 8 ? map.isSolidForMovementAt(x, y) || otroRollo(x, y) : map.isSolidAt(x, y));
+        if (ro.tipo === 'valija' && !ro.quieta && !entrando && choca(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
       }
 
       // 🥃 El baúl que se vuelca: cada lado que golpea el piso, el ruido y el polvo.
@@ -2229,8 +2239,10 @@ export function createRaidScene(services) {
         spawnParticles(ro.x, ro.y + ro.hh, '#c9b28a', 6);
       }
       // 🧳 La valija del frenazo: tirada ya no hace nada; deslizándose, aturde al guardia y a vos te hace trastabillar.
+      // 🏪 El rollo de tela que llega al piso: el golpe sordo y el polvo. Mientras cae, todavía no pega.
+      if (ro.recienCaido) { ro.recienCaido = false; audio.play('hitWall'); spawnParticles(ro.x, ro.y + ro.hh, '#c9b28a', 6); }
       if (ro.tipo === 'valija') {
-        if (ro.quieta) continue;
+        if (ro.quieta || ro.baja > 0) continue;
         golpeDeValija(ro);
         continue;
       }
@@ -2473,6 +2485,8 @@ export function createRaidScene(services) {
       // (🚂 El barril de agua del caboose: el dibujo fijo lo esconde cuando se empieza a caer.)
       if (s.agua) { ro.agua = s.agua; ro.ocultos = train._ocultos || (train._ocultos = new Set()); }
       if (s.variante === 6) { ro.grande = !!s.grande; ro.contenido = s.contenido; ro.haciaPasillo = s.haciaPasillo; ro.vuelca = CONFIG.caidas.barril.vuelca; ro.roce = O.valijaRoce * CONFIG.caidas.barril.roce; }
+      // (🏪 El rollo de tela: primero se cae de la estantería, y después rueda lejos.)
+      if (s.variante === 8) { ro.color = s.color; ro.baja = ro.bajaDura = CONFIG.caidas.telas.baja; ro.altoBaja = s.alto; ro.roce = O.valijaRoce * CONFIG.caidas.telas.roce; }
       // (🚂 La rueda del freno no entra al pasillo: rueda por su fila. Ver `caboose` en world/caidas.js.)
       ro.yMeta = s.porSuFila ? null : map.height / 2 + rng.range(-6, 6);
       if (s.salida != null) ro.salida = s.salida;

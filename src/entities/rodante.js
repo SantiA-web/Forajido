@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA, pintarRolloTela } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -99,7 +99,8 @@ export function createRodante(x, y, tipo, rng, opciones = {}) {
  * los pasa. (El carro del correo no: es alto, con sus sacas.)
  */
 export function cubreBajo(ro) {
-  return ro.alive && ro.quieta && ro.tipo === 'valija' && ro.mueble && (ro.variante === 3 || ro.variante === 5 || ro.variante === 6);
+  // (🏪 Y el rollo de tela del almacén, tirado en el pasillo.)
+  return ro.alive && ro.quieta && ro.tipo === 'valija' && ro.mueble && (ro.variante === 3 || ro.variante === 5 || ro.variante === 6 || ro.variante === 8);
 }
 
 /** Devuelve true si con este tiro se rompió. */
@@ -136,6 +137,15 @@ export function updateRodante(ro, dt) {
   if (ro.tipo === 'valija' && ro.variante === 7) {
     if (ro.cayendo != null) { ro.cayendo -= dt; if (ro.cayendo <= 0) ro.tumbada = true; return; }
     if (ro.velocidad < 22 && (ro.yMeta == null || Math.abs(ro.yMeta - ro.y) <= 2)) { ro.cayendo = 0.3; return; }
+  }
+  /**
+   * 🏪 EL ROLLO DE TELA, MIENTRAS SE CAE DE LA ESTANTERÍA (`baja`, los segundos que le faltan): todavía no rueda. Al llegar
+   * al piso, el golpe (`recienCaido`: la escena pone el ruido y el polvo).
+   */
+  if (ro.tipo === 'valija' && ro.variante === 8 && ro.baja > 0) {
+    ro.baja = Math.max(0, ro.baja - dt);
+    if (ro.baja === 0) ro.recienCaido = true;
+    return;
   }
   // `freno`: lo pone la escena cada cuadro según la casilla (el carbón, 0,5).
   const paso = ro.velocidad * (ro.freno ?? 1) * dt;
@@ -177,13 +187,14 @@ export function updateRodante(ro, dt) {
   // (🛒 El carro de correo rueda: las ruedas giran con lo que avanza.)
   if (ro.variante === 4) ro.giroRueda = (ro.giroRueda || 0) + paso / 3;
   // (🛢️ El barril cuenta lo que rodó, para cada lado: es lo que le da la vuelta.)
-  if (ro.variante === 6 || ro.variante === 7) ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
+  // (🏪 Y el rollo de tela.)
+  if (ro.variante === 6 || ro.variante === 7 || ro.variante === 8) ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
   // 🧳 La que sale de una pila, de costado del pasillo, entra en él (`yMeta`) mientras se desliza.
   if (ro.yMeta != null && !ro.quieta) {
     const d = ro.yMeta - ro.y;
     // (🛒 El carro entra en diagonal, rodando: lo que baja o sube va con lo que avanza *(Santi: "parece que pegó un
     // salto… que rueden de forma diagonal al pasillo y ahí se acomoden en horizontal")*.)
-    const paso = ro.variante === 4 || ro.variante === 5 || ro.variante === 6 || ro.variante === 7 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
+    const paso = ro.variante >= 4 && ro.variante <= 8 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
     ro.y += Math.sign(d) * Math.min(Math.abs(d), paso);
     // (📦 La caja de munición sale casi derecho al pasillo y recién ahí se arrastra a lo largo: de costado se trababa
     // contra el catre de al lado de la pila.)
@@ -199,6 +210,7 @@ export function drawRodante(r, ro) {
   if (ro.tipo === 'valija' && ro.variante === 5) { dibujarCajaDeslizandose(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 6) { dibujarBarrilDeComida(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 7) { dibujarRuedaRodando(r, ro); return; }
+  if (ro.tipo === 'valija' && ro.variante === 8) { dibujarRolloRodando(r, ro); return; }
   if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
   /**
@@ -516,6 +528,20 @@ function dibujarRuedaRodando(r, ro) {
   const piso = Math.round((ro.y + ro.hh) / P), ox = Math.round(ro.x / P) - 9;
   if (ro.cayendo != null) { pintarTapando(r.ctx, ox, piso - 9, 19, 9, luz, pintarRuedaCayendo); return; }
   pintarTapando(r.ctx, ox, piso - 19, 19, 19, luz, (R) => pintarRueda(R, Math.floor((ro.rodado || 0) / 5.6)));
+}
+
+/**
+ * 🏪 El rollo de tela del almacén: cayéndose de la estantería (más rápido a medida que baja, como lo que cae), y en el
+ * piso rodando (un cuadro cada 2,9 unidades: ocho por vuelta, lo que mide su vuelta de 10 puntos).
+ */
+function dibujarRolloRodando(r, ro) {
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  const f = ro.baja > 0 ? ro.baja / ro.bajaDura : 0;
+  const alto = Math.round(((ro.altoBaja || 0) * (1 - (1 - f) * (1 - f))) / P);
+  const piso = Math.round((ro.y + ro.hh) / P) - alto;
+  pintarTapando(r.ctx, Math.round(ro.x / P) - 5, piso - 16, 10, 16, luz + (ro.hitFlash > 0 ? 2 : 0),
+    (R) => pintarRolloTela(R, Math.floor((ro.rodado || 0) / 2.9), ro.color, 6));
 }
 
 /** 📦 La caja de munición que se desliza (world/caidas.js): apoyada en el piso, sin saltar ni girar. */

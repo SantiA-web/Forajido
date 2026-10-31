@@ -633,16 +633,21 @@ export const WAGONS = {
     name: 'Vagón almacén',
     short: 'ALMACÉN',
     hint: 'El depósito. Dos cajas fuertes y nadie a quien preguntarle.',
+    /**
+     * 🏪 EN EL ESTILO NUEVO (world/estiloNuevo/vagones.js, `almacen`): las ventanillas del fondo, arriba de los pasillos
+     * entre las estanterías (detrás de una estantería alta no se verían); EL PUPITRE DEL ENCARGADO ('N') en el rincón de
+     * arriba a la derecha y LA BÁSCULA ('P') en el de abajo.
+     */
     layout: [
-      '#####WW###WW###WW###WW###WW#####',
-      '#.CCCC..CCCC..CCCC..CCCC..CCC..#',
+      '######WW####WW####WW####WW######',
+      '#.CCCC..CCCC..CCCC..CCCC..CCC.N#',
       '#.CCCC..CCCC..CCCC..CCCC..CCC..#',
       '#..............................#',
       '+..............................+',
       '+..............................+',
       '#..............................#',
       '#.CCCC..CCCC..CCCC..CCCC..CCC..#',
-      '#.CCCC..CCCC..CCCC..CCCC..CCC..#',
+      '#.CCCC..CCCC..CCCC..CCCC..CCC.P#',
       '####WW####WW####WW####WW####WW##',
     ],
     /**

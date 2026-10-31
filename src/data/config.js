@@ -2674,6 +2674,12 @@ export const CONFIG = {
      * por el piso, de a poco (`derrame` puñados, uno cada `derrameCada` unidades rodadas).
      */
     barril: { cae: 0.6, vuelca: 0.3, roce: 0.45, tapaSalta: 0.4, derrame: 45, derrameCada: 3 },
+    // 🏪 Los rollos de tela del almacén: cuántos de cada estantería se caen con cada golpe (`cae`), los segundos que tardan
+    // en llegar al piso (`baja`) y cuánto los frena el piso al rodar (`roce`, de lo de la valija: ruedan lejos).
+    telas: { cae: 0.35, baja: 0.35, roce: 0.6 },
+    // 🪜 La escalera del almacén, lo último en caerse: cuánto se balancea después del golpe antes de largarse
+    // (`balanceo`, segundos; lo demás se larga antes de medio segundo) y lo que tarda en caer (`dura`).
+    escalera: { balanceo: 1.1, dura: 0.5 },
     /**
      * 🍽️ LA VAJILLA DE LAS MESAS DEL COMEDOR: en el frenazo y el arrancón se desliza por la tabla (`desliza`, en unidades,
      * lo menos y lo más; algunas, `quieta`, no se mueven) y la que llega a la punta de la mesa se cae al piso, sin lastimar.

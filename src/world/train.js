@@ -791,7 +791,8 @@ export function buildTrain(
        * Y sellado es MEJOR para lo que este vagón tiene que ser: romper la
        * puerta te deja de una con los cuatro adentro, esperándote.
        */
-      if (t.plantilla.puertasTrabadas) trabarPuerta(puerta, true);
+      // (🏪 Y en el estilo nuevo se dibuja con la barra de fierro puesta, no con el tablón: ver `dibujarPuertaNueva`.)
+      if (t.plantilla.puertasTrabadas) { trabarPuerta(puerta, true); puerta.barra = true; }
 
       doors.push(puerta);
     }
@@ -1425,8 +1426,30 @@ export function buildTrain(
       }
     }
 
+    /**
+     * 🏪 LAS CAJAS FUERTES DEL ALMACÉN, DEBAJO DE LAS VENTANILLAS DE BARROTES, contra la pared del fondo *(Santi: "ponelas
+     * debajo de las ventanas de barrotes contra la pared… en huecos diferentes y que su ubicación exacta se sortee en cada
+     * tren")*: cada una en un hueco distinto entre dos estanterías (los que tienen ventanilla arriba), y dentro del hueco
+     * un poco corrida, al azar. Chocan, pero sólo contra la pared (`cajaFuerteEn`, scenes/raidScene.js): delante queda
+     * libre, y se puede seguir usando de cobertura el costado de la estantería.
+     */
+    let huecosCaja = null;
+    if (p.id === 'almacen' && esVagonNuevo(p.id)) {
+      const L = p.layout;
+      huecosCaja = [];
+      for (let c = 1; c < L[0].length - 1; c++) {
+        if (L[0][c] === 'W' && L[0][c + 1] === 'W' && L[0][c - 1] !== 'W' && L[1][c] === '.' && L[1][c + 1] === '.') huecosCaja.push(c);
+      }
+      for (let i = huecosCaja.length - 1; i > 0; i--) { const j = rng.int(0, i); [huecosCaja[i], huecosCaja[j]] = [huecosCaja[j], huecosCaja[i]]; }
+    }
     for (const def of p.loot || []) {
-      const pos = enTiles([def.col, def.row]);
+      let pos = enTiles([def.col, def.row]), contraLaPared = null;
+      if (huecosCaja && huecosCaja.length && def.type === 'strongbox') {
+        const S = map.size, c = huecosCaja.shift(), base = enTiles([c, 1]);
+        const x = base.x + S / 2 + rng.range(-2, 2), piso = 1 * S + 10;
+        pos = { x, y: piso - 4 };
+        contraLaPared = { x, piso, base: piso - 0.005 };
+      }
       const l = createLootable(pos.x, pos.y, def.type, rng);
       l.wagon = t.wagon;
       /**
@@ -1436,6 +1459,9 @@ export function buildTrain(
        */
       if (esCajaFuerte(l) && esVagonNuevo(p.id)) {
         l.dibujoNuevo = true;
+        // (🏪 Las del almacén, atornilladas al piso: ver `dibujarCajaNueva`.)
+        if (p.id === 'almacen') l.atornillada = true;
+        if (contraLaPared) l.nicho = contraLaPared;
         const n = p.cajasContraLosMuebles && nichoDeCaja(p.layout, def.col, def.row);
         if (n) {
           const S = map.size, dx = (n[0] - def.col) * S, dy = (n[1] - def.row) * S;

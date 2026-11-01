@@ -25,6 +25,8 @@ const DIRECTIONS = [
 export function findCoverSurface(x, y, hw, hh, map, reach) {
   const size = map.size;
   let best = null;
+  const solido = map.isSolidForMovementAt || map.isSolidAt;
+  const cuerpoChoca = (px, py) => solido(px - hw, py - hh) || solido(px + hw, py - hh) || solido(px - hw, py + hh) || solido(px + hw, py + hh);
 
   for (const dir of DIRECTIONS) {
     const half = dir.dx !== 0 ? hw : hh;
@@ -41,20 +43,24 @@ export function findCoverSurface(x, y, hw, hh, map, reach) {
       const row = Math.floor(probeY / size);
 
       let flushX = x, flushY = y;
-      if (map.coberturaMovilAt && map.coberturaMovilAt(probeX, probeY)) {
-        // (🆕 Lo que se mueve —un cajón caído, un barril quieto— no llena su casilla: se busca su borde de verdad,
-        // volviendo de a medio paso hasta salir de él.)
-        let k = offset;
-        while (k > half && map.coberturaMovilAt(x + dir.dx * (k - 0.5), y + dir.dy * (k - 0.5))) k -= 0.5;
-        if (dir.dx !== 0) flushX = x + dir.dx * (k - half - 0.5);
-        else flushY = y + dir.dy * (k - half - 0.5);
-      } else {
-        // (Contra el banco, pegado a su tabla: es más angosto que la casilla.)
-        const [mIzq, mDer] = map.margenes ? map.margenes(col, row) : [0, 0];
-        if (dir.dx === 1) flushX = col * size + mIzq - hw - 0.5;
-        else if (dir.dx === -1) flushX = (col + 1) * size - mDer + hw + 0.5;
-        else if (dir.dy === 1) flushY = row * size - hh - 0.5;
-        else flushY = (row + 1) * size + hh + 0.5;
+      // (Contra el banco, pegado a su tabla: es más angosto que la casilla.)
+      const [mIzq, mDer] = map.margenes ? map.margenes(col, row) : [0, 0];
+      if (dir.dx === 1) flushX = col * size + mIzq - hw - 0.5;
+      else if (dir.dx === -1) flushX = (col + 1) * size - mDer + hw + 0.5;
+      else if (dir.dy === 1) flushY = row * size - hh - 0.5;
+      else flushY = (row + 1) * size + hh + 0.5;
+      /**
+       * (🆕 Lo que se mueve —un cajón caído, un barril quieto— no llena su casilla: su borde no es el de la casilla. 🔁 Lo
+       * mismo con lo que choca fino, como el borde de las estacas de la plataforma *(Santi: "al apretar shift en el nuevo
+       * borde se buguea")*. 🔁 Y si pegado a la casilla el cuerpo queda adentro de otra cosa, en el vagón cerrado te
+       * dejaba trabado para siempre: en todos esos casos se camina de a medio paso, con el cuerpo entero, hasta tocar.)
+       */
+      const movil = map.coberturaMovilAt && map.coberturaMovilAt(probeX, probeY);
+      if (movil || (map.choqueFinoAt && map.choqueFinoAt(probeX, probeY)) || cuerpoChoca(flushX, flushY)) {
+        let k = 0;
+        while (k < offset && !cuerpoChoca(x + dir.dx * (k + 0.5), y + dir.dy * (k + 0.5))) k += 0.5;
+        flushX = x + dir.dx * k;
+        flushY = y + dir.dy * k;
       }
 
       const candidate = {

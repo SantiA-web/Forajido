@@ -23,7 +23,7 @@ import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA, pintarRolloTela, pintarBarraHielo } from '../world/caidas.js';
+import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA, pintarRolloTela, pintarBarraHielo, pintarTroncoRodando, ALTO_TRONCO, pintarTablasSueltas, ALTO_TABLAS, pintarRuedasRodando, ALTO_RUEDAS } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -100,7 +100,7 @@ export function createRodante(x, y, tipo, rng, opciones = {}) {
  */
 export function cubreBajo(ro) {
   // (🏪 Y el rollo de tela del almacén, tirado en el pasillo.)
-  return ro.alive && ro.quieta && ro.tipo === 'valija' && ro.mueble && (ro.variante === 3 || ro.variante === 5 || ro.variante === 6 || ro.variante === 8);
+  return ro.alive && ro.quieta && ro.tipo === 'valija' && ro.mueble && (ro.variante === 3 || ro.variante === 5 || ro.variante === 6 || ro.variante === 8 || ro.variante === 10 || ro.variante === 11);
 }
 
 /** Devuelve true si con este tiro se rompió. */
@@ -147,6 +147,19 @@ export function updateRodante(ro, dt) {
     if (ro.baja === 0) ro.recienCaido = true;
     return;
   }
+  /**
+   * 🛑 LO DE LA PLATAFORMA (10 el tronco, 11 las tablas, 12 las ruedas): lo que sale de arriba de una pila va a su altura
+   * (`altura`) hasta pasar el borde (`salida`), y ahí cae al piso (`recienCaido`: el golpe y el polvo, la escena). Y lo
+   * que llegó a la punta del vagón (`seCae`, lo marca la escena) sigue cayendo, de la plataforma para abajo.
+   */
+  if (ro.tipo === 'valija' && ro.variante >= 10) {
+    const paso = ro.salida == null || (ro.dir > 0 ? ro.x >= ro.salida : ro.x <= ro.salida);
+    if (ro.seCae || (ro.altura > 0 && paso)) {
+      ro.vBaja = (ro.vBaja || 0) + CONFIG.caidas.plataforma.gravedad * dt;
+      ro.altura -= ro.vBaja * dt;
+      if (!ro.seCae && ro.altura <= 0) { ro.altura = 0; ro.vBaja = 0; ro.salida = null; ro.recienCaido = true; }
+    }
+  }
   // `freno`: lo pone la escena cada cuadro según la casilla (el carbón, 0,5).
   const paso = ro.velocidad * (ro.freno ?? 1) * dt;
   ro.x += ro.dir * paso;
@@ -188,7 +201,7 @@ export function updateRodante(ro, dt) {
   if (ro.variante === 4) ro.giroRueda = (ro.giroRueda || 0) + paso / 3;
   // (🛢️ El barril cuenta lo que rodó, para cada lado: es lo que le da la vuelta.)
   // (🏪 Y el rollo de tela.)
-  if (ro.variante === 6 || ro.variante === 7 || ro.variante === 8) ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
+  if (ro.variante === 6 || ro.variante === 7 || ro.variante === 8 || ro.variante === 10 || ro.variante === 12) ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
   // 🧳 La que sale de una pila, de costado del pasillo, entra en él (`yMeta`) mientras se desliza.
   if (ro.yMeta != null && !ro.quieta) {
     const d = ro.yMeta - ro.y;
@@ -212,6 +225,7 @@ export function drawRodante(r, ro) {
   if (ro.tipo === 'valija' && ro.variante === 7) { dibujarRuedaRodando(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 8) { dibujarRolloRodando(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 9) { dibujarHieloPatinando(r, ro); return; }
+  if (ro.tipo === 'valija' && ro.variante >= 10) { dibujarDeLaPlataforma(r, ro); return; }
   if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
   /**
@@ -543,6 +557,25 @@ function dibujarRolloRodando(r, ro) {
   const piso = Math.round((ro.y + ro.hh) / P) - alto;
   pintarTapando(r.ctx, Math.round(ro.x / P) - 5, piso - 16, 10, 16, luz + (ro.hitFlash > 0 ? 2 : 0),
     (R) => pintarRolloTela(R, Math.floor((ro.rodado || 0) / 2.9), ro.color, 6));
+}
+
+/** 🛑 El tronco, la capa de tablas y el juego de ruedas de la plataforma (world/caidas.js), a su altura sobre el piso. */
+function dibujarDeLaPlataforma(r, ro) {
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  const piso = Math.round((ro.y + ro.hh) / P) - Math.round((ro.altura || 0) / P), x = Math.round(ro.x / P);
+  // (De día, a pleno sol, su sombra en el piso, corrida como la de los bultos: hacia acá y a la izquierda.)
+  if (luz === 0 && !ro.seCae) {
+    const suelo = Math.round((ro.y + ro.hh) / P);
+    const sombra = (sx, sy, sw, sh) => pintarTapando(r.ctx, sx, sy, sw, sh, 0, (R) => R(0, 0, sw, sh, 14));
+    if (ro.variante === 10) sombra(x - 9, suelo - 36, 13, 39);
+    else if (ro.variante === 12) { sombra(x - 11, suelo - 39, 16, 4); sombra(x - 11, suelo - 2, 16, 4); }
+    else sombra(x - Math.round(ro.ancho / 2) - 3, suelo - 34, ro.ancho + 2, 37);
+  }
+  // (Una vuelta: ocho cuadros en lo que mide su contorno.)
+  if (ro.variante === 10) pintarTapando(r.ctx, x - 6, piso - ALTO_TRONCO, 13, ALTO_TRONCO, luz, (R) => pintarTroncoRodando(R, Math.floor((ro.rodado || 0) / 2.9)));
+  else if (ro.variante === 12) pintarTapando(r.ctx, x - 9, piso - ALTO_RUEDAS, 19, ALTO_RUEDAS, luz, (R) => pintarRuedasRodando(R, Math.floor((ro.rodado || 0) / 5.3)));
+  else pintarTapando(r.ctx, x - Math.round(ro.ancho / 2) - 1, piso - ALTO_TABLAS, ro.ancho + 2, ALTO_TABLAS, luz, (R) => pintarTablasSueltas(R, ro.ancho));
 }
 
 /** 🥩 La barra de hielo del refrigerado (world/caidas.js), patinando por el piso: no rueda ni salta. */

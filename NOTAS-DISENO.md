@@ -19729,9 +19729,42 @@ guardaespaldas distintos)*:
     eligió **lo realista** y **un empujoncito** (`balaEnRes` en scenes/raidScene.js y data/config.js): cuando la bala
     cruza la carne saltan pedacitos de carne y grasa para el lado de la bala, caen 2 o 3 gotas de jugo que dejan una
     manchita al pie de la res (no se seca), y la res se hamaca un escalón para ese lado y vuelve. La bala sigue de largo.
-  - **Pendiente para decidir**: la bala atraviesa todas las reses de la fila sin perder fuerza (en la prueba, 13
-    seguidas); en la realidad se frenaría a la segunda o tercera.
+  - 🔁 **La bala se frena a la tercera res** *(Santi: "que la bala se frene a la tercera res")*: atravesaba todas las
+    de la fila sin perder fuerza (`balaEnRes.frenaEn`). En la que se queda, unos pedacitos saltan para atrás.
   - 🧪 El atajo [8] lleva al refrigerado con los frenos rotos.
+- **✅ LA PLATAFORMA** (world/estiloNuevo/plataforma.js, `plataforma` en world/caidas.js) *(Santi eligió "una carga por
+  plataforma", "estacas con cadenas", "y algo se cae del tren", y los cuatro detalles)*: el primer vagón sin paredes.
+  - **El piso** de tablas con juntas al azar *(Santi: "los tablones están en diagonal y no derechos")*; las estacas en sus
+    bolsillos y la viga del costado; debajo, en la sombra, la tierra que pasa y los bogies.
+  - 🆕 **El borde choca donde está dibujado** *(Santi: "choco antes de llegar al borde")*: con choques finos
+    (`plataforma.bordeGrueso`).
+  - **La carga, sujeta con cadenas**: una plataforma lleva madera (tablones y troncos) y la otra maquinaria (la caldera,
+    los juegos de ruedas, los rieles y un cajón); cuál primero, sorteado. De los seis bultos, el del medio de atrás va
+    tapado con **la lona de hule verde** y su punta flamea (8 cuadros a mano). Si el tren trae una sola, se sortea.
+  - **Los detalles**: el rótulo del destino (MINA EL ORO, MINA LA PLATA), la barreta y el mazo tirados, y 🆕 **el aserrín
+    que vuela** (`aserrinAlViento`, `plataforma.aserrin`): ráfagas de puntitos de la madera, para atrás del tren.
+  - 🔁 **De noche** *(Santi: "no parece de noche" y después "parece que la madera está pintada color violeta")*: la
+    escala de la madera gastada, bajando, se iba al violeta; las tablas pasan a marrones oscuros, con brillos grises. Los
+    grises fríos parecían cemento.
+  - **Frenos rotos** *(Santi: "y algo se cae del tren")*: se cortan las cadenas y cada bulto se larga a su tiempo
+    (`caidas.plataforma`). Los troncos ruedan por capas y sacan un cuarto de la vida; las tablas se deslizan por capas y
+    la pila queda baja, de cobertura; las ruedas salen de a un juego y sacan un poco más. Lo que llega a la punta se cae
+    del tren. La caldera, los rieles y el cajón no se mueven. De día, cada bulto tiene su sombra según lo que le queda.
+  - 🔁 **Lo que cae choca** *(Santi: "los troncos y las cosas que caen tiene que tener colision")*: los troncos, las tablas
+    y las ruedas, tirados, frenan a la gente (`sacarDeEncima` corre al que queda adentro) y se frenan entre ellos. Los
+    troncos y las tablas frenan las balas y son cobertura baja (*Santi aceptó que las tablas también*); por las ruedas,
+    huecas, la bala pasa, y no sirven para pegarse con Shift.
+  - 🐛 **El Shift dejaba trabado** (systems/cover.js, `findCoverSurface`): el borde se calculaba con el centro del jugador
+    y en el vagón cerrado te metía adentro de la carga, para siempre. Si pasa eso, ahora camina de a medio paso con el
+    cuerpo entero hasta tocar. Barrido en siete vagones (cerrado, almacén, refrigerado, plataforma, comedor, correo y
+    guardias): ningún lugar te deja adentro.
+  - Medido en el juego: las balas contra lo tirado (ver arriba), los guardias detrás de lo tirado tiran por encima, y el
+    que persigue rodea la carga sin trabarse.
+  - **Qué es a mano y qué no**: los rayos de la rueda, la punta del tronco y la lona son mapas a mano. La corteza del
+    tronco y las tablas sueltas son por código. La sombra de lo que rueda es un rectángulo chato.
+  - **Pendientes para decidir**: el botín de noche no se oscurece en los vagones nuevos (recomendé dejarlo, para que se
+    encuentre); lo que golpea a un guardia sólo lo tira, no le saca vida.
+  - 🧪 El atajo [8] lleva a la plataforma con los frenos rotos.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

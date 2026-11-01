@@ -33,6 +33,7 @@ import { iluminar } from '../../engine/luz.js';
 import { masCercano, sombrear } from '../../engine/paleta.js';
 import { estiloNuevo } from '../../engine/estiloNuevo.js';
 import { pintarSuelo } from './suelo.js';
+import { vagonPlataforma } from './plataforma.js';
 import { WAGONS, nichoDeCaja } from '../../data/wagons.js';
 import { medidasAlacena, pintarBarril, BARRIL_PARADO, BARRIL_PARADO_G, pintarBaulGrande, pintarCajon, pintarSaco, TAM_TORRE, pintarRolloTela, pintarCajaWhisky, RES_COLGADA, GANCHO, COL_RES } from '../caidas.js';
 
@@ -49,7 +50,8 @@ const PX = 1 / PASO;
 // (📦 Y el cerrado, el primero del tren de carga.)
 // (🏪 Y el almacén, el de la compañía.)
 // (🥩 Y el refrigerado, el de las reses.)
-const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado']);
+// (🪵 Y la plataforma, la primera sin paredes: va en su propio archivo, world/estiloNuevo/plataforma.js.)
+const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado', 'plataforma']);
 /** ¿Este vagón ya se dibuja en el estilo nuevo? (Lo usa world/train.js para las cajas fuertes.) */
 export const esVagonNuevo = (id) => NUEVOS.has(id);
 
@@ -73,7 +75,7 @@ export function vagonesNuevos(train, dia) {
     const cuantas = Math.round(w.width / train.map.size);
     for (let c = w.colStart; c < w.colStart + cuantas; c++) cols.add(c);
     tramos.push([w.x, w.x + w.width]);
-    const v = vagon(train, w, dia);
+    const v = w.id === 'plataforma' ? vagonPlataforma(train, w, dia) : vagon(train, w, dia);
     piso.push(...v.piso);
     altas.push(...v.altas);
     luces.push({ x0: w.x, x1: w.x + w.width, luz: v.luz });

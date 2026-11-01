@@ -2643,9 +2643,17 @@ export const CONFIG = {
    */
   /**
    * 🥩 La bala que atraviesa una res colgada del refrigerado (ver `balaEnRes` en scenes/raidScene.js): los pedacitos de
-   * carne y grasa que saltan, cuántas gotas de jugo caen (de tantas a tantas) y con qué peso caen (unidades/s²).
+   * carne y grasa que saltan, cuántas gotas de jugo caen (de tantas a tantas) y con qué peso caen (unidades/s²); en
+   * qué res se queda la bala, y los pedacitos que saltan para atrás de esa.
    */
-  balaEnRes: { pedacitos: 6, gotas: [2, 3], peso: 160 },
+  balaEnRes: { pedacitos: 6, gotas: [2, 3], peso: 160, frenaEn: 3, pedacitosAdentro: 2 },
+  /**
+   * La plataforma: de qué grueso choca el borde de las estacas (unidades; la casilla es de 16), y el aserrín de la madera:
+   * cada cuánto sale una ráfaga (`cada`, segundos, por vagón), cuántos puntitos (`puntos`), a qué velocidad se van
+   * (`vel`, unidades por segundo), cuánto suben (`sube`), cuánto duran (`vida`), de cuánto hondo sale del bulto (`hondo`),
+   * hasta dónde fuera de la pantalla sigue saliendo (`margen`) y sus colores de la paleta, de día y de noche.
+   */
+  plataforma: { bordeGrueso: 2, aserrin: { cada: 0.35, puntos: [3, 6], vel: [55, 95], sube: 6, vida: [0.6, 1.2], hondo: 12, margen: 120, colorDia: [17, 16], colorNoche: [15, 14] } },
   vaho: { cada: 1.6, puntos: 3, alto: 13, color: '#dfe7ec' },
   caidas: {
     repisaPuntos: 32,
@@ -2700,6 +2708,11 @@ export const CONFIG = {
     // (`balanceo`, segundos; lo demás se larga antes de medio segundo) y lo que tarda en caer (`dura`).
     // (`tambalea`: lo que se hamaca con un golpe que todavía no la tira, porque queda algo más por caerse.)
     escalera: { balanceo: 1.1, dura: 0.5, tambalea: 1.2 },
+    // 🛑 La plataforma: con qué chance se suelta cada bulto en cada golpe (`suelta`), cuánto lastiman (`danio`, parte de la
+    // vida), hasta cuánto tarda en largarse después del golpe (`demora`), cuán rápido salen (`lento`, de lo de una valija) y cuánto los frena el piso (`roce`, ídem). `entre`: los segundos
+    // entre un tronco y otro de la misma capa. `gravedad`, con qué cae lo que se baja de una pila; `pega`: hasta qué altura
+    // sobre el piso todavía te pega; `hondo`: cuánto cae lo que se va del tren antes de perderse.
+    plataforma: { suelta: 0.75, demora: 0.5, gravedad: 260, pega: 5, hondo: 26, tronco: { lento: 0.7, roce: 0.35, danio: 0.25, entre: 0.16 }, tablon: { lento: 0.55, roce: 0.8 }, rueda: { lento: 0.8, roce: 0.5, danio: 0.35 } },
     /**
      * 🍽️ LA VAJILLA DE LAS MESAS DEL COMEDOR: en el frenazo y el arrancón se desliza por la tabla (`desliza`, en unidades,
      * lo menos y lo más; algunas, `quieta`, no se mueven) y la que llega a la punta de la mesa se cae al piso, sin lastimar.

@@ -58,7 +58,8 @@ export function crearCaidas(train) {
     if (w.id === 'cerrado') { cerrado(C, train, w); continue; }
     // (🚂 El caboose espera a que el dibujo fijo ubique sus cosas: ver `armarPendientes`.)
     // (🥩 Y el refrigerado: ver `refri`.)
-    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado') { (C.porArmar = C.porArmar || []).push(w); continue; }
+    // (🛑 Y la plataforma: ver `plataforma`.)
+    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'plataforma') { (C.porArmar = C.porArmar || []).push(w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -246,6 +247,13 @@ export function avisarCaidas(C, sentido, rng) {
     }
   }
   for (const p of C.pilas) {
+    // 🛑 La plataforma: cada bulto se suelta o no con este golpe, para el lado del golpe (ver `plataforma`).
+    if (p.tipo === 'plataforma') {
+      if (p.estado !== 'quieta' || p.etapa >= 2 || !rng.chance(K.plataforma.suelta)) continue;
+      p.estado = 'aviso'; p.t = 0; p.sentido = sentido;
+      C.train._platEtapas[p.b.clave].tiembla = true;
+      continue;
+    }
     // 🏪 Los rollos de tela de arriba de una estantería del almacén: con cualquier golpe fuerte, para el lado del golpe; cada
     // uno se cae o no, a su tiempo, pero alguno siempre.
     if (p.tipo === 'telas') {
@@ -292,6 +300,8 @@ export function golpearCaidas(C) {
   for (const o of C.objetos) if (o.enMesa && o.planDx) o.deslizando = true;
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
+    // (🛑 Cada bulto a su tiempo: juntos parecía armado. Hasta soltarse sigue temblando: ver `actualizarCaidas`.)
+    if (p.tipo === 'plataforma') { p.estado = 'espera'; p.espera = azar(Math.round(p.x), p.etapa + 1) * CONFIG.caidas.plataforma.demora; continue; }
     const dir = p.atras ? 1 : -1;
     // El baúl grande sale él mismo, y deja el rincón libre.
     if (p.tipo === 'baul') {
@@ -402,6 +412,7 @@ export function romperEnRadio(C, x, y, radio) {
 
 /** Avanza las caídas. Cuando algo llega al piso deja un impacto en `C.impactos` (la escena hace el daño). */
 export function actualizarCaidas(C, dt, map) {
+  for (const p of C.pilas) if (p.estado === 'espera' && (p.espera -= dt) <= 0) soltarBulto(C, p);
   const K = CONFIG.caidas;
   armarPendientes(C);
   C.reloj = (C.reloj || 0) + dt;
@@ -478,6 +489,12 @@ export function zonasDePeligro(C, S) {
   for (const o of C.objetos) if ((o.estado === 'aviso' || o.estado === 'cae') && o.peso !== 'nada') z.push({ ...zonaDe(o), clave: o, peso: o.peso, desde: { x: o.xRepisa, y: o.yRepisa } });
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
+    // (🛑 Lo de la plataforma sale por la fila de su bulto, no por el pasillo.)
+    if (p.tipo === 'plataforma') {
+      const d = -p.sentido, largo = CONFIG.caidas.pasilloLargo;
+      z.push({ x0: d > 0 ? p.x : p.x - largo, x1: d > 0 ? p.x + largo : p.x, y0: p.b.f * S - 2, y1: (p.b.f + 2) * S + 2, pasillo: true, clave: p, desde: { x: p.x, y: p.yBase } });
+      continue;
+    }
     // (🏪 Los rollos de tela salen para el lado contrario al golpe, desde delante de su estantería.)
     const telas = p.tipo === 'telas', dir = telas ? -p.sentido : p.atras ? 1 : -1, largo = CONFIG.caidas.pasilloLargo;
     z.push({ x0: dir > 0 ? p.x : p.x - largo, x1: dir > 0 ? p.x + largo : p.x, y0: (telas ? 3 : 4) * S - 2, y1: 6 * S + 2, pasillo: true, clave: p, desde: { x: p.x, y: p.yBase } });
@@ -817,8 +834,8 @@ function valijaTirada(R, v) {
 
 /** LA PILA JUNTO A LA PUERTA: el baúl grande abajo (no se mueve) y, encima, lo que todavía no salió. */
 function dibujarPila(r, p) {
-  // (🥩 El hielo del refrigerado ya está en el dibujo fijo, en su depósito.)
-  if (p.tipo === 'hielo') return;
+  // (🥩 El hielo del refrigerado ya está en el dibujo fijo, en su depósito. 🛑 Y los bultos de la plataforma.)
+  if (p.tipo === 'hielo' || p.tipo === 'plataforma') return;
   const P = PASO();
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(p.x, p.yBase - 4) || 0) : 0;
   // En el aviso se sacude contra la puerta.
@@ -1307,7 +1324,7 @@ export function destruirEnRadio(C, x, y, radio) {
     rotos.push({ x: o.x, y: o.yPiso });
   }
   for (const p of C.pilas) {
-    if (p.estado === 'suelto' || Math.hypot(p.x - x, (p.yTope + p.yBase) / 2 - y) > radio) continue;
+    if (p.estado === 'suelto' || p.tipo === 'plataforma' || Math.hypot(p.x - x, (p.yTope + p.yBase) / 2 - y) > radio) continue;
     // (🛢️ Los barriles parados quedan reventados en su lugar, con lo que llevaban por el piso.)
     if (p.tipo === 'barriles') for (const b of p.barriles) barrilRoto(C, p.x + b.dx, p.yBase, b.contenido, b.grande);
     // (🚂 La rueda, partida; el barril de agua, reventado: el agua al piso y su casilla libre.)
@@ -2984,6 +3001,224 @@ function dibujarRes(r, o, parte) {
   pintarTapando(r.ctx, xFin - Math.floor(D[0].length / 2), yFin - D.length + 1, D[0].length, D.length, luz, (R) => pinta(R, D, 0, 0));
 }
 
+/**
+ * 🛑 LA CARGA DE LA PLATAFORMA CON LOS FRENOS ROTOS *(Santi eligió "Y algo se cae del tren": se cortan las cadenas, los
+ * troncos ruedan y lastiman, los tablones se deslizan y lo que llega a la punta se cae del tren)*. Sólo se suelta lo que
+ * puede moverse: las pilas de troncos, las de tablones y las ruedas. La caldera, los rieles, el cajón y la máquina tapada
+ * pesan demasiado y se quedan: son la cobertura que sigue en pie.
+ *
+ * Dos golpes por bulto (`etapa`): en cada uno se va una capa, por la fila del bulto y para el lado contrario al golpe. La
+ * capa de abajo se queda calzada contra las otras: cuando es lo único que queda, el bulto pasa a ser cobertura baja
+ * (casilla 'T': se ve y se tira por encima). De los dos juegos de ruedas, se suelta uno solo.
+ */
+function plataforma(C, w) {
+  const etapas = C.train._platEtapas || (C.train._platEtapas = {});
+  for (const b of w._bultos) {
+    if (b.que !== 'troncos' && b.que !== 'tablones' && b.que !== 'ruedas') continue;
+    const m = b.mundo;
+    etapas[b.clave] = etapas[b.clave] || { etapa: 0, tiembla: false };
+    C.pilas.push({ tipo: 'plataforma', wagon: w.id, w, b, etapa: 0, estado: 'quieta', t: 0, arriba: [], x: (m.x0 + m.x1) / 2, yTope: m.yc - 16, yBase: m.yc + 16, hw: (m.x1 - m.x0) / 2, hh: 16 });
+  }
+}
+
+/** Se cortan las cadenas y se va la capa de arriba de este bulto (`C.sueltos`, para la escena). */
+function soltarBulto(C, p) {
+  const { b, w } = p, m = b.mundo, K = CONFIG.caidas.plataforma, map = C.train.map, dir = -p.sentido;
+  const estado = C.train._platEtapas[b.clave];
+  const tramo = { x0: w.x, x1: w.x + w.width };
+  const borde = dir > 0 ? m.x1 : m.x0;
+  estado.tiembla = false;
+  p.estado = 'quieta';
+  // (Las cadenas se cortan una sola vez: en el primer golpe.)
+  if (p.etapa === 0) (C.cadenas = C.cadenas || []).push({ x: p.x, y: m.yc });
+  const pisar = (c, f, t) => { if (map.grid[f] && map.grid[f][w.colStart + c] === 'C') map.grid[f][w.colStart + c] = t; };
+  if (b.que === 'ruedas') {
+    // (Sale el juego del lado para el que tira el golpe; el otro se queda calzado. Su media casilla queda libre.)
+    p.etapa = 2;
+    const n = dir > 0 ? 1 : 0;
+    estado.etapa = n + 1 === 2 ? 1 : 2;
+    for (let f = b.f; f < b.f + 2; f++) pisar(b.c + n, f, '.');
+    C.sueltos.push({ x: b.ruedas[n], y: m.yc, dir, variante: 12, demora: 0, mueble: true, hw: 7, hh: 16, vida: 1, lento: K.rueda.lento, porSuFila: true, altura: 0, tramo, danio: K.rueda.danio, roceDe: K.rueda.roce });
+    return;
+  }
+  p.etapa++;
+  estado.etapa = p.etapa;
+  if (b.que === 'troncos') {
+    // (Capa 2, los dos de arriba; capa 1, los tres del medio. Sale primero el que está más cerca del borde.)
+    const capa = b.troncos.filter((T) => T.L === 3 - p.etapa).sort((A, B) => dir * (B.x - A.x));
+    capa.forEach((T, i) => C.sueltos.push({ x: T.x, y: m.yc, dir, variante: 10, demora: i * K.tronco.entre * (0.7 + 0.6 * azar(Math.round(T.x), p.etapa)), mueble: true, hw: 5, hh: 16, vida: 9999, lento: K.tronco.lento * (0.85 + 0.3 * azar(i, Math.round(T.x))), porSuFila: true, altura: T.z, salida: borde + dir * 5, tramo, danio: K.tronco.danio, roceDe: K.tronco.roce }));
+  } else {
+    // (Una capa entera de tablas, atadas, se desliza de arriba de la pila hasta caer al costado.)
+    const hw = (m.x1 - m.x0) / 2;
+    C.sueltos.push({ x: p.x, y: m.yc, dir, variante: 11, demora: 0, mueble: true, hw, hh: 16, vida: 9999, lento: K.tablon.lento, porSuFila: true, altura: (18 - p.etapa * 6) * PASO(), salida: borde + dir * hw, tramo, roceDe: K.tablon.roce, ancho: b.x1 - b.x0 });
+  }
+  // (Ya no queda más que la capa de abajo: cobertura baja.)
+  if (p.etapa === 2) for (let f = b.f; f < b.f + 2; f++) for (let c = b.c; c < b.c + 2; c++) pisar(c, f, 'T');
+}
+
+/**
+ * 🛑 EL TRONCO QUE RUEDA (variante 10): cruzado, como iba en la pila; `cuadro`, los ocho de la vuelta. La corteza a lo
+ * hondo y, de frente, la punta cortada con sus anillos, igual que en la pila: la rajadura es lo que da la vuelta, y las
+ * vetas de la corteza pasan de costado. Desde (0, 0); mide 13 × `ALTO_TRONCO`.
+ */
+const LARGO_TRONCO = 40;
+export const ALTO_TRONCO = LARGO_TRONCO + 13;
+const PUNTA_TRONCO = [
+  '....ooooo....',
+  '..oobbbbboo..',
+  '.obLLLLLCCbo.',
+  '.obLLaaaCCbo.',
+  'obLLaCCCaCCbo',
+  'obLaCCCCCaCbo',
+  'obLaCChCCaCbo',
+  'obLaCCCCCaCbo',
+  'obCCaCCCaCCbo',
+  '.obCCaaaCCbo.',
+  '.obCCCCCCCbo.',
+  '..oobbbbboo..',
+  '....ooooo....',
+];
+const RAJADURA_TRONCO = [
+  [[6, 5], [6, 4], [6, 3]], [[7, 5], [8, 4], [9, 3]], [[7, 6], [8, 6], [9, 6]], [[7, 7], [8, 8], [9, 9]],
+  [[6, 7], [6, 8], [6, 9]], [[5, 7], [4, 8], [3, 9]], [[5, 6], [4, 6], [3, 6]], [[5, 5], [4, 4], [3, 3]],
+];
+const CORTEZA_TRONCO = 'odbbMMMbbbbdo';
+const VETAS_TRONCO = [[3, 7], [4, 8], [5, 9], [6, 10], [7, 2], [8, 3], [9, 4], [10, 5]];
+const COL_TRONCO = { o: 0, d: 3, b: 4, M: 5, L: 38, C: 37, a: 36, h: 35 };
+export function pintarTroncoRodando(R, cuadro = 0) {
+  const k = ((cuadro % 8) + 8) % 8;
+  dibujarMapa(R, 0, 0, ['.ooooooooooo.'], COL_TRONCO);
+  for (let y = 1; y <= LARGO_TRONCO + 6; y++) {
+    dibujarMapa(R, 0, y, [CORTEZA_TRONCO], COL_TRONCO);
+    // (Las vetas de la corteza, cortadas a lo largo.)
+    for (const [n, x] of VETAS_TRONCO[k].entries()) if ((y + n * 3) % 7 < 4) R(x, y, 1, 1, 3);
+  }
+  dibujarMapa(R, 0, LARGO_TRONCO, PUNTA_TRONCO, COL_TRONCO);
+  for (const [x, y] of RAJADURA_TRONCO[k]) R(x, LARGO_TRONCO + y, 1, 1, 35);
+}
+
+/**
+ * 🛑 LA CAPA DE TABLAS QUE SE DESLIZA (variante 11): atadas entre sí, no ruedan: la tapa con sus juntas y las puntas
+ * desparejas, y el frente de canto. Desde (0, 0); mide `an` + 2 × `ALTO_TABLAS`.
+ */
+export const ALTO_TABLAS = LARGO_TRONCO + 8;
+const PUNTAS_TABLAS = [1, 3, 0, 2, 3, 1, 2, 0];
+export function pintarTablasSueltas(R, an) {
+  R(0, 0, an + 2, ALTO_TABLAS, 0);
+  for (let y = 1; y <= LARGO_TRONCO; y++) {
+    const fila = Math.floor((y - 1) / 6), corre = PUNTAS_TABLAS[fila % 8];
+    R(1 + corre, y, an - corre, 1, (y - 1) % 6 === 5 ? 36 : 37);
+    if ((y - 1) % 6 !== 5) R(1 + corre, y, 1, 1, 38);
+  }
+  R(1, LARGO_TRONCO + 1, an, 2, 36); R(1, LARGO_TRONCO + 3, an, 1, 34); R(1, LARGO_TRONCO + 4, an, 2, 36); R(1, LARGO_TRONCO + 6, an, 1, 34);
+}
+
+/**
+ * 🛑 EL JUEGO DE RUEDAS QUE RUEDA (variante 12): la rueda de allá, el eje y la de acá. Cuatro mapas de los rayos (giran un
+ * cuarto de vuelta y se repiten) y la mancha de óxido de la llanta, que es la que completa los ocho cuadros de la vuelta.
+ * Desde (0, 0); mide 19 × `ALTO_RUEDAS`.
+ */
+export const ALTO_RUEDAS = 56;
+const RUEDA_RAYOS = [
+  [
+    '.......ooooo.......',
+    '.....ooLLLLLoo.....',
+    '....oLLLLLLLLLo....',
+    '...oLLLDDsDDLLLo...',
+    '..oLLDDDDsDDDDLLo..',
+    '..oLLDDDDsDDDDLLo..',
+    '.oTTDDDDDsDDDDDTTo.',
+    '.oTTDDDDDsDDDDDTTo.',
+    'oTTDDDDDsssDDDDDTTo',
+    'oTTsssssshssssssTTo',
+    'oTTDDDDDsssDDDDDTTo',
+    '.oTTDDDDDsDDDDDTTo.',
+    '.oTTDDDDDsDDDDDTTo.',
+    '..oTTDDDDsDDDDTTo..',
+    '..oTTDDDDsDDDDTTo..',
+    '...oTTTDDsDDTTTo...',
+    '....oTTTTTTTTTo....',
+    '.....ooTTTTToo.....',
+    '.......ooooo.......',
+  ],
+  [
+    '.......ooooo.......',
+    '.....ooLLLLLoo.....',
+    '....oLLLLLLLLLo....',
+    '...oLLLDDDsDLLLo...',
+    '..oLLDDDDDsDDDLLo..',
+    '..oLLDDDDsDDDDLLo..',
+    '.oTTDDDDDsDDDDsTTo.',
+    '.oTTsDDDDsDDsDDTTo.',
+    'oTTDDssDsssDDDDDTTo',
+    'oTTDDDDsshDDDDDDTTo',
+    'oTTDDDDDsssDssDDTTo',
+    '.oTTDDsDDsDDDDsTTo.',
+    '.oTTsDDDDsDDDDDTTo.',
+    '..oTTDDDDsDDDDTTo..',
+    '..oTTDDDsDDDDDTTo..',
+    '...oTTTDsDDDTTTo...',
+    '....oTTTTTTTTTo....',
+    '.....ooTTTTToo.....',
+    '.......ooooo.......',
+  ],
+  [
+    '.......ooooo.......',
+    '.....ooLLLLLoo.....',
+    '....oLLLLLLLLLo....',
+    '...oLLLDDDDDLLLo...',
+    '..oLLsDDDDDDDsLLo..',
+    '..oLLDsDDDDDsDLLo..',
+    '.oTTDDDsDDDsDDDTTo.',
+    '.oTTDDDDsDsDDDDTTo.',
+    'oTTDDDDDsssDDDDDTTo',
+    'oTTDDDDDshsDDDDDTTo',
+    'oTTDDDDDsssDDDDDTTo',
+    '.oTTDDDDsDsDDDDTTo.',
+    '.oTTDDDsDDDsDDDTTo.',
+    '..oTTDsDDDDDsDTTo..',
+    '..oTTsDDDDDDDsTTo..',
+    '...oTTTDDDDDTTTo...',
+    '....oTTTTTTTTTo....',
+    '.....ooTTTTToo.....',
+    '.......ooooo.......',
+  ],
+  [
+    '.......ooooo.......',
+    '.....ooLLLLLoo.....',
+    '....oLLLLLLLLLo....',
+    '...oLLLDsDDDLLLo...',
+    '..oLLDDDsDDDDDLLo..',
+    '..oLLDDDDsDDDDLLo..',
+    '.oTTsDDDDsDDDDDTTo.',
+    '.oTTDDsDDsDDDDsTTo.',
+    'oTTDDDDDsssDssDDTTo',
+    'oTTDDDDDDhssDDDDTTo',
+    'oTTDDssDsssDDDDDTTo',
+    '.oTTsDDDDsDDsDDTTo.',
+    '.oTTDDDDDsDDDDsTTo.',
+    '..oTTDDDDsDDDDTTo..',
+    '..oTTDDDDDsDDDTTo..',
+    '...oTTTDDDsDTTTo...',
+    '....oTTTTTTTTTo....',
+    '.....ooTTTTToo.....',
+    '.......ooooo.......',
+  ],
+];
+const OXIDO_RUEDA = [[9, 1], [15, 3], [17, 9], [15, 15], [9, 17], [3, 15], [1, 9], [3, 3]];
+const COL_RUEDA = { o: 0, L: 25, T: 24, D: 23, s: 31, h: 25 };
+export function pintarRuedasRodando(R, cuadro = 0) {
+  const k = ((cuadro % 8) + 8) % 8, abajo = ALTO_RUEDAS - 19;
+  const rueda = (y) => {
+    dibujarMapa(R, 0, y, RUEDA_RAYOS[k % 4], COL_RUEDA);
+    const [ox, oy] = OXIDO_RUEDA[k];
+    R(ox, y + oy, 1, 1, 11);
+  };
+  rueda(0);
+  R(7, 9, 5, abajo, 0); R(8, 9, 3, abajo, 23); R(8, 9, 1, abajo, 24);
+  rueda(abajo);
+}
+
 function armarPendientes(C) {
   if (!C.porArmar || !C.porArmar.length) return;
   C.porArmar = C.porArmar.filter((w) => {
@@ -2992,6 +3227,7 @@ function armarPendientes(C) {
     if (w._cerrado) { cerradoArmar(C, w); return false; }
     if (w._almacen) { almacen(C, w); return false; }
     if (w._refri) { refri(C, w); return false; }
+    if (w.id === 'plataforma' && w._bultos) { plataforma(C, w); return false; }
     return true;
   });
 }

@@ -333,6 +333,8 @@ export function createTilemap(layout) {
      */
     ponerCoberturasMoviles: (fn) => { movil = fn; },
     coberturaMovilAt: (px, py) => !!movil && movil(px, py),
+    /** 🆕 ¿Esta casilla choca fino (ver `ponerChoquesFinos`)? Entonces no la llena: su borde no es el de la casilla. */
+    choqueFinoAt: (px, py) => finos.has(Math.floor(py / size) * 100000 + Math.floor(px / size)),
     /** ¿Hay acá algo contra lo que pegarse? Lo sólido, menos el aire del enganche. (Y lo que se mueve.) */
     daCoberturaAt: (px, py) => (solidoEn(px, py) && !TILE_RULES[tileAtPixel(px, py)].sinCobertura) || (!!movil && movil(px, py)),
     /** Cuánto de cada costado de esta casilla es pasillo, [izquierda, derecha] (el banco). */

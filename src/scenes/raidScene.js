@@ -2050,6 +2050,23 @@ export function createRaidScene(services) {
     return false;
   }
 
+  /**
+   * 🛑 NADIE QUEDA ADENTRO DE LO QUE SE CAE DE LA PLATAFORMA: ahora que choca, el que quedaba debajo cuando se frenaba
+   * no podía moverse más. Lo corre al lado libre más cercano, sin que se note: es lo que se habría corrido del golpe.
+   */
+  function sacarDeEncima(ro) {
+    for (const o of [player, ...enemies]) {
+      if (!o || !o.alive || o.enTecho) continue;
+      // (Pegado no es adentro: el que camina contra el tronco se queda donde está.)
+      if (Math.abs(o.x - ro.x) >= ro.hw + o.hw - 0.1 || Math.abs(o.y - ro.y) >= ro.hh + o.hh - 0.1) continue;
+      const hw = ro.hw + o.hw + 0.5, hh = ro.hh + o.hh + 0.5;
+      const lugares = [[ro.x - hw, o.y], [ro.x + hw, o.y], [o.x, ro.y - hh], [o.x, ro.y + hh]]
+        .sort((a, b) => Math.hypot(a[0] - o.x, a[1] - o.y) - Math.hypot(b[0] - o.x, b[1] - o.y));
+      const libre = lugares.find(([x, y]) => [[-1, -1], [1, -1], [-1, 1], [1, 1]].every(([sx, sy]) => !map.isSolidForMovementAt(x + sx * o.hw, y + sy * o.hh)));
+      if (libre) { o.x = libre[0]; o.y = libre[1]; }
+    }
+  }
+
   /** 🥃 ¿Hay un baúl grande quieto acá? (Ver `isSolidAt` en el armado del asalto.) */
   function baulQuietoEn(x, y) {
     if (!rodantes) return false;
@@ -2057,6 +2074,7 @@ export function createRaidScene(services) {
       if (ro.tipo !== 'valija' || !ro.mueble || !ro.quieta || !ro.alive) continue;
       // (🏪 El rollo de tela del almacén no: se pasa por encima *(Santi: "a los rollos no le pongas colisión para los
       // personajes pero sí para las balas")*. Las balas le siguen pegando (systems/combat.js) y sigue siendo cobertura baja.)
+      // (🔁 🛑 Lo de la plataforma, tirado, sí choca *(Santi: "los troncos y las cosas que caen tienen que tener colisión")*.)
       if (ro.variante === 8) continue;
       if (Math.abs(x - ro.x) < ro.hw && Math.abs(y - ro.y) < ro.hh) return true;
     }
@@ -2209,8 +2227,15 @@ export function createRaidScene(services) {
        * veces cruza el enganche, rompe la puerta que se le cruza y atropella
        * guardias. Devuelve true si se terminó (se cayó del tren o explotó).
        */
+      if (ro.tipo === 'valija' && ro.variante >= 10 && ro.quieta && ro.alive) sacarDeEncima(ro);
       if (ro.tipo === 'polvora') {
         if (actualizarPolvora(ro)) { rodantes.splice(i, 1); continue; }
+      } else if (ro.tipo === 'valija' && ro.variante >= 10 && (ro.seCae || ro.x < ro.tramo.x0 || ro.x > ro.tramo.x1)) {
+        // 🛑 LO DE LA PLATAFORMA QUE LLEGA A LA PUNTA SE CAE DEL TREN: sigue de largo, cae y se pierde *(Santi: "y algo se cae
+        // del tren")*. Mientras cae ya no le pega a nadie.
+        if (!ro.seCae) { ro.seCae = true; ro.quieta = false; ro.velocidad = Math.max(ro.velocidad, 40); audio.play('hitWall'); }
+        if (ro.altura < -CONFIG.caidas.plataforma.hondo) { spawnParticles(ro.x, ro.y + ro.hh, '#c9b28a', 8); rodantes.splice(i, 1); }
+        continue;
       } else {
         const seAcabo = ro.tipo === 'res'
           // Y la manada se pierde contra la locomotora: sin esto corría por
@@ -2229,9 +2254,29 @@ export function createRaidScene(services) {
         // (🏪 El rollo de tela rueda lejos: también lo para la puerta trabada del almacén, que si no la cruzaba y se perdía.)
         // (🏪 Y entre ellos sí chocan: el que rueda se frena contra otro rollo tirado *(Santi: "entre los rollos sí quiero
         // que haya colisión")*. A la gente no la frenan, ver `baulQuietoEn`.)
-        const otroRollo = (x, y) => rodantes.some((q) => q !== ro && q.alive && q.quieta && q.tipo === 'valija' && q.variante === 8
+        // (🛑 Lo mismo los troncos y las tablas de la plataforma, entre ellos. Y ahí la punta del vagón no los frena: se caen.)
+        const otroRollo = (x, y) => rodantes.some((q) => q !== ro && q.alive && q.quieta && q.tipo === 'valija' && (q.variante === 8 || q.variante === ro.variante || (ro.variante >= 10 && q.variante >= 10))
           && Math.abs(x - q.x) < q.hw && Math.abs(y - q.y) < q.hh);
-        const choca = (x, y) => (ro.variante === 8 ? map.isSolidForMovementAt(x, y) || otroRollo(x, y) : map.isSolidAt(x, y));
+        const choca = (x, y) => (ro.variante >= 10
+          ? x > ro.tramo.x0 + map.size && x < ro.tramo.x1 - map.size && (map.isSolidForMovementAt(x, y) || otroRollo(x, y))
+          : ro.variante === 8 ? map.isSolidForMovementAt(x, y) || otroRollo(x, y) : map.isSolidAt(x, y));
+        /**
+         * 🛑 LO QUE SE CAE DE LA PLATAFORMA NO SE ATRAVIESA, EN UNA MISMA FILA: el más rápido alcanza al de adelante y sigue
+         * a su paso; si el de adelante está tirado, se queda pegado a él. (Sólo chocaban con lo que ya estaba quieto y de
+         * su misma clase: dos troncos que venían juntos terminaban uno adentro del otro, y las tablas tapaban a los troncos.)
+         * Si dos ya están uno adentro del otro, aunque sea tirados, el de atrás se corre hasta quedar pegado; y dos que
+         * vienen de frente se frenan.
+         */
+        if (ro.tipo === 'valija' && ro.variante >= 10 && !(ro.altura > 0)) {
+          for (const q of rodantes) {
+            if (q === ro || !(q.variante >= 10) || !q.alive || q.seCae || q.altura > 0 || q.y !== ro.y) continue;
+            const pegados = ro.hw + q.hw, falta = (q.x - ro.x) * ro.dir;
+            if (falta < 0 || falta >= pegados - 0.01) continue;
+            ro.x = q.x - ro.dir * pegados;
+            if (q.quieta || q.dir !== ro.dir) { ro.quieta = true; ro.velocidad = 0; break; }
+            ro.velocidad = Math.min(ro.velocidad, q.velocidad);
+          }
+        }
         if (ro.tipo === 'valija' && !ro.quieta && !entrando && choca(ro.x + ro.dir * ro.hw, ro.y)) { ro.quieta = true; ro.velocidad = 0; }
       }
 
@@ -2245,7 +2290,8 @@ export function createRaidScene(services) {
       // 🏪 El rollo de tela que llega al piso: el golpe sordo y el polvo. Mientras cae, todavía no pega.
       if (ro.recienCaido) { ro.recienCaido = false; audio.play('hitWall'); spawnParticles(ro.x, ro.y + ro.hh, '#c9b28a', 6); }
       if (ro.tipo === 'valija') {
-        if (ro.quieta || ro.baja > 0) continue;
+        // (🛑 Lo de la plataforma todavía arriba de la pila pasa por encima de la gente.)
+        if (ro.quieta || ro.baja > 0 || ro.altura > CONFIG.caidas.plataforma.pega) continue;
         golpeDeValija(ro);
         continue;
       }
@@ -2441,6 +2487,9 @@ export function createRaidScene(services) {
   function actualizarLoQueSeCae(dt) {
     const K = CONFIG.caidas, O = CONFIG.enganches.objetos;
     actualizarCaidas(caidas, dt, map);
+    // 🛑 Las cadenas de la plataforma, cortadas de un tirón: el chasquido y las chispas de fierro.
+    for (const c of caidas.cadenas || []) { audio.play('hitWall'); spawnParticles(c.x, c.y, '#b4b0aa', 10); }
+    if (caidas.cadenas) caidas.cadenas.length = 0;
     for (const im of caidas.impactos) {
       audio.play('hitWall');
       spawnParticles(im.x, im.y, '#c9b28a', 8);
@@ -2493,6 +2542,9 @@ export function createRaidScene(services) {
       // (🏪 El rollo de tela: primero se cae de la estantería, y después rueda lejos.)
       // (🥩 La barra de hielo del refrigerado: patina lejos.)
       if (s.variante === 9) ro.roce = O.valijaRoce * CONFIG.caidas.hielo.roce;
+      // (🛑 Lo de la plataforma: ver `plataforma` en world/caidas.js. El tronco y las tablas frenan las balas y no se rompen
+      // *(Santi eligió que las tablas también: si te frenan a vos, que te cubran)*; por las ruedas, huecas, pasan.)
+      if (s.variante >= 10) { ro.tramo = s.tramo; ro.altura = s.altura; ro.danio = s.danio; ro.ancho = s.ancho; ro.roce = O.valijaRoce * s.roceDe; ro.balea = s.variante !== 12; }
       if (s.variante === 8) { ro.color = s.color; ro.baja = ro.bajaDura = CONFIG.caidas.telas.baja; ro.altoBaja = s.alto; ro.roce = O.valijaRoce * CONFIG.caidas.telas.roce; }
       // (🚂 La rueda del freno no entra al pasillo: rueda por su fila. Ver `caboose` en world/caidas.js.)
       ro.yMeta = s.porSuFila ? null : map.height / 2 + rng.range(-6, 6);
@@ -2584,6 +2636,8 @@ export function createRaidScene(services) {
     if (!ro.golpeo && toca(player) && tumbar(player, player.x - ro.dir * 20, world)) {
       ro.golpeo = true;
       player.trastabilla = 0;
+      // (🛑 El tronco y las ruedas, además, lastiman.)
+      if (ro.danio) damagePlayer(player, player.maxHealth * ro.danio, ro.x, ro.y);
       floaters.push({ x: player.x, y: player.y - 22, text: T.prompts.teLlevoPuesto, life: 1.6, color: colors.enemyAlert });
       spawnParticles(player.x, player.y, '#c9b28a', 8);
     }
@@ -3315,6 +3369,7 @@ export function createRaidScene(services) {
     if (enganches) aplastarEnLosEnganches();
     if (caidas) actualizarLoQueSeCae(dt);
     vahoDelFrio(dt);
+    aserrinAlViento(dt);
     // (🥩 Lo que se va calmando cada res baleada.)
     for (const k in estiloNuevo.golpesRes || {}) if ((estiloNuevo.golpesRes[k].edad += dt) > 3) delete estiloNuevo.golpesRes[k];
     // 🦵 El enganche en el que estás chocó contra su tope: trastabillás (entities/player.js).
@@ -4529,6 +4584,8 @@ export function createRaidScene(services) {
       }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+      // (🪵 Lo que lleva el viento del tren no se frena: se va hasta borrarse.)
+      if (p.viento) continue;
       p.vx *= 0.9;
       p.vy *= 0.9;
     }
@@ -4569,18 +4626,44 @@ export function createRaidScene(services) {
   }
 
   /**
+   * 🪵 EL ASERRÍN QUE VUELA *(Santi lo eligió entre los detalles de la plataforma)*: de la carga de madera, cada tanto, una
+   * ráfaga le arranca unos puntitos a un bulto (de arriba de lo que le queda) y el viento del tren se los lleva para
+   * atrás, a la izquierda, como a la punta de la lona. Sólo en la plataforma de madera y si está a la vista. Ver
+   * CONFIG.plataforma.aserrin.
+   */
+  function aserrinAlViento(dt) {
+    const K = CONFIG.plataforma.aserrin, etapas = train._platEtapas || {};
+    for (const w of train.wagons) {
+      if (w._carga !== 'madera' || w.x + w.width < camera.x - K.margen || w.x > camera.x + 480 + K.margen) continue;
+      w._aserrin = (w._aserrin ?? rng.range(0, K.cada)) - dt;
+      if (w._aserrin > 0) continue;
+      w._aserrin = K.cada * rng.range(0.5, 1.5);
+      const bultos = w._bultos.filter((b) => b.que === 'tablones' || b.que === 'troncos');
+      if (!bultos.length) continue;
+      const b = bultos[rng.int(0, bultos.length - 1)], etapa = (etapas[b.clave] && etapas[b.clave].etapa) || 0;
+      const alto = b.alto * PASO * (1 - etapa / 3), colores = gameState.esDeDia ? K.colorDia : K.colorNoche;
+      const puntos = rng.int(K.puntos[0], K.puntos[1]), xr = rng.range(b.mundo.x0, b.mundo.x1), yr = b.mundo.yc + rng.range(-K.hondo, K.hondo);
+      for (let i = 0; i < puntos; i++) {
+        particles.push({ x: xr + rng.range(-4, 4), y: yr - alto + rng.range(-2, 2), vx: -rng.range(K.vel[0], K.vel[1]), vy: rng.range(-K.sube, K.sube * 0.4), life: rng.range(K.vida[0], K.vida[1]), color: PALETA[colores[i % colores.length]], punto: true, viento: true });
+      }
+    }
+  }
+
+  /**
    * 🥩 LA BALA QUE ATRAVIESA UNA RES COLGADA *(Santi: "al disparar a través de las reses colgando quiero que salga un
    * chorrito de sangre. Sería realista?"; le conté que no —la res ya viene desangrada, fría y sin corazón que empuje— y
    * eligió "lo realista")*: saltan pedacitos de carne y de grasa para el lado de la bala, caen unas gotas oscuras de jugo
    * que dejan su manchita en el piso (`derramar`, contenido 3: no se seca), y la res se hamaca un poco para ese lado y
    * vuelve (`estiloNuevo.golpesRes`, lo suma world/estiloNuevo/vagones.js al meneo del tren).
    */
-  function balaEnRes({ x, y, vx, col, fila }) {
+  function balaEnRes({ x, y, vx, col, fila, adentro }) {
     const K = CONFIG.balaEnRes, dir = vx < 0 ? -1 : 1, S = CONFIG.tileSize;
-    // (Salen por el lado de donde sale la bala, del tamaño de un punto del dibujo.)
-    x += dir * 3;
-    for (let i = 0; i < K.pedacitos; i++) {
-      particles.push({ x, y: y + rng.range(-2, 2), vx: dir * rng.range(25, 60), vy: rng.range(-25, 8), life: rng.range(0.15, 0.3), color: PALETA[i % 3 ? (i % 2 ? 9 : 8) : 16], punto: true });
+    // (Salen por el lado de donde sale la bala, del tamaño de un punto del dibujo. La que se queda adentro no sale: unos
+    // pocos saltan para atrás por el agujero de entrada.)
+    const sale = adentro ? -dir : dir;
+    x += sale * 3;
+    for (let i = 0; i < (adentro ? K.pedacitosAdentro : K.pedacitos); i++) {
+      particles.push({ x, y: y + rng.range(-2, 2), vx: sale * rng.range(adentro ? 10 : 25, adentro ? 30 : 60), vy: rng.range(-25, 8), life: rng.range(0.15, 0.3), color: PALETA[i % 3 ? (i % 2 ? 9 : 8) : 16], punto: true });
     }
     const piso = (fila + 0.5) * S;
     const gotas = rng.int(K.gotas[0], K.gotas[1]);

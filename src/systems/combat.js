@@ -208,8 +208,15 @@ export function updateBullets(bullets, dt, world) {
         // (Cuando cruza la carne, no cuando entra a la casilla: la res cuelga del medio de la casilla y se abre unos 3
         // puntos para la derecha, con la panza.)
         const S = world.map.size, col = Math.floor(b.x / S), fila = Math.floor(b.y / S), cual = col + ',' + fila;
+        // 🔁 Y SE QUEDA EN LA TERCERA *(Santi: "que la bala se frene a la tercera res")*: atraviesa dos y la tercera la
+        // frena (`adentro`: no sale por el otro lado). Antes atravesaba la fila entera sin perder fuerza.
         const xm = (col + 0.5) * S + 2;
-        if (b._res !== cual && (b.x - sx - xm) * (b.x - xm) <= 0) { b._res = cual; world.bus.emit('balaEnRes', { x: xm, y: yDeBala(b), vx: b.vx, col, fila }); }
+        if (b._res !== cual && (b.x - sx - xm) * (b.x - xm) <= 0) {
+          b._res = cual; b._reses = (b._reses || 0) + 1;
+          const adentro = b._reses >= CONFIG.balaEnRes.frenaEn;
+          world.bus.emit('balaEnRes', { x: xm, y: yDeBala(b), vx: b.vx, col, fila, adentro });
+          if (adentro) { b.alive = false; break; }
+        }
       }
       if (world.caidas) {
         // (🆕 Los cajones caídos de la torre: cobertura baja, de fierro y tablas gruesas; no se rompen a tiros.)

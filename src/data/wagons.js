@@ -265,6 +265,7 @@ export const WAGONS = {
     name: 'Vagón de ganado',
     short: 'GANADO',
     hint: 'Corrales. Casi nada que robar.',
+    puertasTranquera: true,
     // El más corto del tren, y a propósito: es un vagón de paso. Cuando medía
     // lo mismo que los demás eran 640 px de casi nada en el medio de la
     // retirada, y eso es tiempo muerto.
@@ -280,14 +281,14 @@ export const WAGONS = {
     sinTecho: true,
     layout: [
       '#HHHHHHHHHHHHHHHHHHHHHH#',
-      '#..CCCCC..CCCCC..CCCCC.#',
-      '#..C...C..C...C..C...C.#',
-      '#..CCCCC..CCCCC..CCCCC.#',
+      'H..CCCCC..CCCCC..CCCCC.H',
+      'H..C...C..C...C..C...C.H',
+      'H..CCCCC..CCCCC..CCCCC.H',
       '+......................+',
       '+......................+',
-      '#..CCCCC..CCCCC..CCCCC.#',
-      '#..C...C..C...C..C...C.#',
-      '#..CCCCC..CCCCC..CCCCC.#',
+      'H..CCCCC..CCCCC..CCCCC.H',
+      'H..C...C..C...C..C...C.H',
+      'H..CCCCC..CCCCC..CCCCC.H',
       '#HHHHHHHHHHHHHHHHHHHHHH#',
     ],
     enemies: [
@@ -1087,17 +1088,18 @@ export const WAGONS = {
     name: 'Plataforma',
     short: 'PLATAFORMA',
     hint: 'Carga amarrada a cielo abierto. Te ven de todos lados.',
+    puertasTranquera: true,
     sinTecho: true,
     layout: [
       '#HHHHHHHHHHHHHHHHHHHHHH#',
-      '#......................#',
-      '#...CC......CC......CC.#',
-      '#...CC......CC......CC.#',
+      'H......................H',
+      'H...CC......CC......CC.H',
+      'H...CC......CC......CC.H',
       '+......................+',
       '+......................+',
-      '#.CC......CC......CC...#',
-      '#.CC......CC......CC...#',
-      '#......................#',
+      'H.CC......CC......CC...H',
+      'H.CC......CC......CC...H',
+      'H......................H',
       '#HHHHHHHHHHHHHHHHHHHHHH#',
     ],
     enemies: [

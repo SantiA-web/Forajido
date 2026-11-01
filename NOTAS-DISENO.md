@@ -19765,6 +19765,43 @@ guardaespaldas distintos)*:
   - **Pendientes para decidir**: el botín de noche no se oscurece en los vagones nuevos (recomendé dejarlo, para que se
     encuentre); lo que golpea a un guardia sólo lo tira, no le saca vida.
   - 🧪 El atajo [8] lleva a la plataforma con los frenos rotos.
+- **✅ EL GANADO** (world/estiloNuevo/ganado.js, entities/novillo.js, `ganado` en world/caidas.js) *(Santi eligió "corrales al
+  aire libre", "novillos de costado", "se rompe un corral y se escapan", y los cuatro detalles)*.
+  - **Seis corrales** de travesaños sobre postes, sin techo: te ven de afuera y el camino de arriba se corta, como antes.
+  - **Los novillos**, 3 o 4 por corral y 5 en los que tienen tranquera (`estampida.reses`), de costado, con mapas a mano para
+    cada lado y 8 cuadros: quietos mueven la cola y la cabeza; asustados tiemblan; en la estampida trotan. Tres pelajes:
+    colorado, negro y overo. 🔁 *(Santi: "nunca vi una vaca roja")*: el colorado iba en el rojo de la sangre; ahora es marrón
+    rojizo, como el pelaje de verdad. Algunos llevan la marca quemada.
+  - **Los detalles**: los bebederos (🔁 *"están flotando, quiero que los bajes a tierra"*: batea con patas y sombra, a mano),
+    el cartel LA PAZ / MATADERO con la marca, las moscas (8 cuadros, por código) y 🆕 la paja que vuela con el viento del tren
+    (`pajaAlViento`, `caidas.ganado.paja`).
+  - 🔁 **El piso, arena y paja en todo el vagón** *(Santi: "no debería ser todo tierra?"; le conté que estos vagones llevaban
+    arena y paja sobre las tablas, y eligió la recomendación)*: en el pasillo, donde más se pisa, asoman tablas sueltas; en los
+    corrales, la tierra más oscura y pisada. Por código.
+  - **Frenos rotos** (`caidas.ganado`): con cada golpe se asustan, se amontonan para el lado que tira el tren, las moscas se
+    abren y los bebederos salpican y mojan la tierra. Desde el segundo golpe puede ceder un corral (70 %, hasta dos por vagón,
+    decidido por mí): la tranquera o, si no tiene, el cerco que da al pasillo, con las puntas astilladas a mano. La tropilla se
+    amontona contra el hueco y sale de a uno para el lado que tiró el tren; cada novillo que corre es el que estaba en el
+    corral. La tranquera abierta a mano también los larga de a uno. El corral vacío sigue chocando entero.
+  - 🔁 **En el piso, otra manada mata, también al jugador** *(Santi: "si el guardia está tumbado y le vuelve a pasar una por
+    arriba, lo mata, lo mismo debería ser para el jugador")*: `player.aturdidoPor`, en `moverRodantes`. Las demás reses de la
+    manada que te tiró te pasan por encima sin sumar. Lo que golpea a un guardia también le saca vida, igual que al jugador
+    (`golpearGuardias`): el tronco un cuarto, la rueda un poco más.
+- **✅ LAS PUNTAS DEL GANADO Y DE LA PLATAFORMA** *(Santi: "las vallas del costado deberían cubrir toda la plataforma"; "las
+  puertas de este vagón y las del vagón plataforma también las hagas tipo tranquera")*.
+  - El borde de las puntas pasó de pared ('#') a baranda ('H') con choque fino (`finosDePunta`): las balas y la vista pasan y
+    el cuerpo frena donde está dibujado.
+  - 🔁 *(Santi: "siguen teniendo la altura de las paredes, tienes que bajarlas para que luzcan como las de arriba y abajo")*: en
+    el ganado, los postes de la baranda unidos por una línea finita; en la plataforma, las mismas estacas de arriba y abajo.
+  - **La tranquera** (`puertasTranquera` en data/wagons.js, `HOJAS_TRANQUERA` en entities/door.js): dos hojas de travesaños con
+    su cruz que giran como las otras puertas, con tres estados a mano (entera, dañada, muy dañada). 🔁 *"Un marco muy alto"*:
+    del alto de las de los corrales (`altoTranquera`), con un poste simple. **Se ve a través**, a diferencia de las demás
+    puertas (`puertaTapaVision`): decidido por mí, avisado a Santi. El dibujo de la hoja es a mano; el giro, por código.
+  - 🔁 **Lo que se cae de la plataforma se lleva puesta la estaca de su fila** (`train._vallasRotas`): queda el muñón en el
+    bolsillo, y sigue chocando. Lo que rueda se cae apenas su punta toca el borde: las tablas, anchas, se quedaban paradas encima.
+  - **Sin probar en movimiento real**: los dibujos y los números se revisaron con el juego congelado. En la prueba de las dos
+    manadas se alargó a mano el tiempo en el piso: no se midió si en una partida normal la segunda alcanza a llegar.
+  - 🧪 El atajo [8] lleva al ganado con los frenos rotos.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

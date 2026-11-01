@@ -1870,6 +1870,8 @@ export const CONFIG = {
      */
     paredPunta: 3,
     altoPuerta: 28,
+    /** 🐂 La tranquera de las puntas del ganado y de la plataforma: la de los corrales, no de una persona *(Santi: "un marco muy alto")*. */
+    altoTranquera: 18,
     alturaCarga: 7,
     alturaRes: 6,
     alturaBaranda: 6,
@@ -2712,6 +2714,13 @@ export const CONFIG = {
     // vida), hasta cuánto tarda en largarse después del golpe (`demora`), cuán rápido salen (`lento`, de lo de una valija) y cuánto los frena el piso (`roce`, ídem). `entre`: los segundos
     // entre un tronco y otro de la misma capa. `gravedad`, con qué cae lo que se baja de una pila; `pega`: hasta qué altura
     // sobre el piso todavía te pega; `hondo`: cuánto cae lo que se va del tren antes de perderse.
+    /**
+     * 🐂 LOS CORRALES DEL GANADO, CON LOS FRENOS ROTOS: el primer golpe (`golpesAntes`) sólo los asusta; de ahí en más, cada
+     * golpe tiene `cede` de que un corral ceda, hasta `maxRotos` por vagón, y su tropilla sale después de `arranque`.
+     * `susto`: los segundos que siguen asustados; `apilar`: lo rápido que se amontonan. `gotas`: lo que salta de cada bebedero.
+     * `paja`: la que se lleva el viento del tren, como el aserrín de la plataforma.
+     */
+    ganado: { golpesAntes: 1, cede: 0.7, maxRotos: 2, demora: 0.5, arranque: 0.7, susto: 3, apilar: 3, gotas: 8, paja: { cada: 0.5, puntos: [2, 4], vel: [50, 90], sube: 5, vida: [0.6, 1.2], margen: 120, colorDia: [7, 6], colorNoche: [5, 4] } },
     plataforma: { suelta: 0.75, demora: 0.5, gravedad: 260, pega: 5, hondo: 26, tronco: { lento: 0.7, roce: 0.35, danio: 0.25, entre: 0.16 }, tablon: { lento: 0.55, roce: 0.8 }, rueda: { lento: 0.8, roce: 0.5, danio: 0.35 } },
     /**
      * 🍽️ LA VAJILLA DE LAS MESAS DEL COMEDOR: en el frenazo y el arrancón se desliza por la tabla (`desliza`, en unidades,

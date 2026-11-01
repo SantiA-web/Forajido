@@ -2230,17 +2230,24 @@ export function createRaidScene(services) {
       if (ro.tipo === 'valija' && ro.variante >= 10 && ro.quieta && ro.alive) sacarDeEncima(ro);
       if (ro.tipo === 'polvora') {
         if (actualizarPolvora(ro)) { rodantes.splice(i, 1); continue; }
-      } else if (ro.tipo === 'valija' && ro.variante >= 10 && (ro.seCae || ro.x < ro.tramo.x0 || ro.x > ro.tramo.x1)) {
+      } else if (ro.tipo === 'valija' && ro.variante >= 10 && (ro.seCae || ro.x - ro.hw < ro.tramo.x0 || ro.x + ro.hw > ro.tramo.x1)) {
         // 🛑 LO DE LA PLATAFORMA QUE LLEGA A LA PUNTA SE CAE DEL TREN: sigue de largo, cae y se pierde *(Santi: "y algo se cae
-        // del tren")*. Mientras cae ya no le pega a nadie.
-        if (!ro.seCae) { ro.seCae = true; ro.quieta = false; ro.velocidad = Math.max(ro.velocidad, 40); audio.play('hitWall'); }
+        // del tren")*. Mientras cae ya no le pega a nadie. (🔁 Apenas la punta llega a la valla: por el centro, las tablas, que
+        // son anchas, se quedaban paradas encima de la valla.)
+        if (!ro.seCae) {
+          ro.seCae = true; ro.quieta = false; ro.velocidad = Math.max(ro.velocidad, 40); audio.play('hitWall');
+          // (🔁 Se va del tren llevándose puesta la estaca de la punta: ver world/estiloNuevo/plataforma.js.)
+          (train._vallasRotas = train._vallasRotas || new Set()).add(ro.tramo.w + ':' + (ro.dir < 0 ? 0 : 1) + ':' + (ro.y < map.height / 2 ? 0 : 1));
+          spawnParticles(ro.x, ro.y, '#8a5a34', 10);
+        }
         if (ro.altura < -CONFIG.caidas.plataforma.hondo) { spawnParticles(ro.x, ro.y + ro.hh, '#c9b28a', 8); rodantes.splice(i, 1); }
         continue;
       } else {
         const seAcabo = ro.tipo === 'res'
           // Y la manada se pierde contra la locomotora: sin esto corría por
           // encima de su dibujo hasta que se le acababa el alcance.
-          ? (ro.alcance <= 0 || chocaConElBlindado(ro) || train.tramoAt(ro.x) === 'locomotora')
+          // (🐂 O por la cola del tren, la que salió para atrás de un corral roto.)
+          ? (ro.alcance <= 0 || chocaConElBlindado(ro) || train.tramoAt(ro.x) === 'locomotora' || ro.x < 0)
           // (🧳 La valija se queda tirada hasta que te alejás; el barril del frenazo va para adelante.)
           : ro.tipo === 'valija' ? (train.tramoAt(ro.x) !== 'vagon' || Math.abs(ro.x - player.x) > 1400)
             : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200 || ro.x > player.x + 420);
@@ -2296,15 +2303,33 @@ export function createRaidScene(services) {
         continue;
       }
 
-      // Una res atropella a los guardias que se le cruzan. Un barril no: pesa,
-      // pero no viene corriendo con doscientos kilos de miedo encima. Un cajón
-      // de pólvora empujado sí — es un arma, no decorado.
+      // Una res atropella a los guardias que se le cruzan. Un cajón de pólvora
+      // empujado también — es un arma, no decorado.
+      // (🔁 El barril suelto antes les pasaba de largo: ahora los tira como a vos
+      // *(Santi: "siempre tiene que ser lo mismo para los guardias que para el
+      // jugador los obstáculos")*.)
       if (ro.tipo === 'res' || ro.tipo === 'polvora') atropellarGuardias(ro);
+      else golpearGuardias(ro);
 
       // ¿Te llevó puesto? Sólo una vez por barril (o por res).
-      if (ro.golpeo || player.tumbado > 0) continue;
+      if (ro.golpeo) continue;
       if (Math.abs(ro.x - player.x) > ro.hw + player.hw) continue;
       if (Math.abs(ro.y - player.y) > ro.hh + player.hh) continue;
+      /**
+       * 🔁 EN EL PISO, OTRA MANADA TE MATA, COMO AL GUARDIA *(Santi: "si el guardia está tumbado y le vuelve a pasar una por
+       * arriba, lo mata, lo mismo debería ser para el jugador")*. La misma regla de `atropellarGuardias`: las demás reses de
+       * la manada que te volteó te pasan por encima sin sumar nada.
+       */
+      if (player.tumbado > 0) {
+        if (ro.tipo === 'res' && CONFIG.estampida.matalAturdido && player.alive && !player.enTecho && player.aturdidoPor !== ro.estampidaId) {
+          ro.golpeo = true;
+          player.invuln = 0;
+          damagePlayer(player, player.health + 999, ro.x, ro.y);
+          floaters.push({ x: player.x, y: player.y - 22, text: T.prompts.teLlevoPuesto, life: 1.6, color: colors.enemyAlert });
+          spawnParticles(player.x, player.y, colors.blood, 10);
+        }
+        continue;
+      }
 
       ro.golpeo = true;
       llevarsePuesto(ro);
@@ -2490,6 +2515,18 @@ export function createRaidScene(services) {
     // 🛑 Las cadenas de la plataforma, cortadas de un tirón: el chasquido y las chispas de fierro.
     for (const c of caidas.cadenas || []) { audio.play('hitWall'); spawnParticles(c.x, c.y, '#b4b0aa', 10); }
     if (caidas.cadenas) caidas.cadenas.length = 0;
+    // 🐂 El corral que cedió: su tropilla se amontona contra el hueco y sale para el lado que tiró el tren (`updateEstampidas`).
+    for (const ro of caidas.rotos || []) {
+      estampidas.push({ id: ++estampidaSiguienteId, x: ro.e.sx, faltan: ro.e.cuantos, arranque: K.ganado.arranque, gap: 0, dir: ro.dir, e: ro.e });
+      audio.play(ro.puerta ? 'tranquera' : 'hitWall');
+      spawnParticles(ro.e.sx, ro.y, '#8a5a34', 10);
+    }
+    if (caidas.rotos) caidas.rotos.length = 0;
+    // 💧 El agua que salta de los bebederos.
+    for (const s of caidas.salpicones || []) {
+      for (let i = 0; i < K.ganado.gotas; i++) particles.push({ x: s.x + rng.range(-10, 10), y: s.y - rng.range(0, 3), vx: s.dir * rng.range(10, 55), vy: -rng.range(10, 45), life: rng.range(0.25, 0.5), color: PALETA[i % 2 ? 21 : 20], punto: true });
+    }
+    if (caidas.salpicones) caidas.salpicones.length = 0;
     for (const im of caidas.impactos) {
       audio.play('hitWall');
       spawnParticles(im.x, im.y, '#c9b28a', 8);
@@ -2624,14 +2661,21 @@ export function createRaidScene(services) {
    * 🐛 Antes te hacía trastabillar, y no se notaba: llega mientras todavía estás trastabillando por el frenazo, y no se
    * puede trastabillar dos veces a la vez. Tirado es otra cosa: te alcanza igual.
    */
-  function golpeDeValija(ro) {
+  function golpearGuardias(ro) {
     ro.atropellados = ro.atropellados || new Set();
-    const toca = (o) => Math.abs(ro.x - o.x) <= ro.hw + o.hw && Math.abs(ro.y - o.y) <= ro.hh + o.hh;
     for (const e of enemies) {
-      if (!e.alive || ro.atropellados.has(e) || !toca(e)) continue;
+      if (!e.alive || ro.atropellados.has(e)) continue;
+      if (Math.abs(ro.x - e.x) > ro.hw + e.hw || Math.abs(ro.y - e.y) > ro.hh + e.hh) continue;
       ro.atropellados.add(e);
       if (!(e.tirado > 0)) tumbarGuardia(e, e.x - ro.dir * 20);
+      // (🛑 Lo que a vos te lastima, a él también, en la misma parte de su vida.)
+      if (ro.danio) damageEnemy(e, (e.maxHealth || e.health) * ro.danio, ro.x, ro.y);
     }
+  }
+
+  function golpeDeValija(ro) {
+    const toca = (o) => Math.abs(ro.x - o.x) <= ro.hw + o.hw && Math.abs(ro.y - o.y) <= ro.hh + o.hh;
+    golpearGuardias(ro);
     // Te empuja para el lado que va (`tumbar` te despide lejos del punto que le pasás: uno detrás tuyo).
     if (!ro.golpeo && toca(player) && tumbar(player, player.x - ro.dir * 20, world)) {
       ro.golpeo = true;
@@ -2674,6 +2718,8 @@ export function createRaidScene(services) {
    */
   function llevarsePuesto(ro) {
     if (!tumbar(player, ro.x, world)) return;
+    // (🐂 De qué manada fue, para saber si la próxima es otra: ver `moverRodantes`.)
+    player.aturdidoPor = ro.estampidaId ?? null;
 
     floaters.push({
       x: player.x, y: player.y - 22,
@@ -2713,9 +2759,13 @@ export function createRaidScene(services) {
 
       es.gap = c.gap;
       es.faltan -= 1;
+      // (🐂 Sale un novillo del corral: es ése, con su pelaje y su marca, el que corre por el pasillo.)
+      const sale = es.e && es.e.novillos[es.e.cuantos - 1 - es.e.salieron];
+      if (es.e) es.e.salieron++;
 
-      const res = createRodante(es.x, map.height / 2, 'res', rng, {
-        dir: 1,                    // hacia la locomotora: DELANTE tuyo, no hacia vos
+      // (🐂 No en fila india: cada uno por su lado del pasillo, como una manada.)
+      const res = createRodante(es.x, map.height / 2 + rng.range(-5, 5), 'res', rng, {
+        dir: es.dir || 1,          // hacia la locomotora: DELANTE tuyo, no hacia vos (🐂 el corral roto, para donde tiró el tren)
         velocidad: c.velocidad * rng.range(0.92, 1.08),
         hw: 9, hh: 7,
         balea: false,              // es un bicho vivo, no se revienta a tiros
@@ -2724,6 +2774,8 @@ export function createRaidScene(services) {
       // Todas las reses de un mismo tropel comparten id: así el guardia sabe
       // si lo está pisando la manada que ya lo volteó o una nueva.
       res.estampidaId = es.id;
+      res.pelaje = sale ? sale.pelaje : rng.int(0, 2);
+      res.marca = sale ? sale.marca : rng.chance(0.5);
       rodantes.push(res);
 
       if (es.faltan <= 0) estampidas.splice(i, 1);
@@ -2866,13 +2918,17 @@ export function createRaidScene(services) {
     const c = CONFIG.estampida;
     tr.abierta = true;
     tr.progreso = 0;
+    // (🐂 En el estilo nuevo, se amontonan contra la tranquera y salen de a uno: ver world/estiloNuevo/ganado.js.)
+    const corral = tr.est;
+    if (corral) { corral.roto = true; corral.hacia = 1; }
 
     estampidas.push({
       id: ++estampidaSiguienteId,
-      x: tr.x,
-      faltan: c.reses,
+      x: corral ? corral.sx : tr.x,
+      faltan: corral ? corral.cuantos : c.reses,
       arranque: c.arranque,
       gap: 0,
+      e: corral,
     });
 
     floaters.push({
@@ -3370,6 +3426,7 @@ export function createRaidScene(services) {
     if (caidas) actualizarLoQueSeCae(dt);
     vahoDelFrio(dt);
     aserrinAlViento(dt);
+    pajaAlViento(dt);
     // (🥩 Lo que se va calmando cada res baleada.)
     for (const k in estiloNuevo.golpesRes || {}) if ((estiloNuevo.golpesRes[k].edad += dt) > 3) delete estiloNuevo.golpesRes[k];
     // 🦵 El enganche en el que estás chocó contra su tope: trastabillás (entities/player.js).
@@ -4645,6 +4702,25 @@ export function createRaidScene(services) {
       const puntos = rng.int(K.puntos[0], K.puntos[1]), xr = rng.range(b.mundo.x0, b.mundo.x1), yr = b.mundo.yc + rng.range(-K.hondo, K.hondo);
       for (let i = 0; i < puntos; i++) {
         particles.push({ x: xr + rng.range(-4, 4), y: yr - alto + rng.range(-2, 2), vx: -rng.range(K.vel[0], K.vel[1]), vy: rng.range(-K.sube, K.sube * 0.4), life: rng.range(K.vida[0], K.vida[1]), color: PALETA[colores[i % colores.length]], punto: true, viento: true });
+      }
+    }
+  }
+
+  /**
+   * 🌾 LA PAJA QUE VUELA *(Santi la eligió entre los detalles del ganado)*: como el aserrín de la plataforma, cada tanto una
+   * ráfaga levanta unas briznas del piso de un corral y el viento del tren se las lleva para atrás. Ver CONFIG.caidas.ganado.
+   */
+  function pajaAlViento(dt) {
+    const K = CONFIG.caidas.ganado.paja;
+    for (const w of train.wagons) {
+      if (!w._corrales || w.x + w.width < camera.x - K.margen || w.x > camera.x + 480 + K.margen) continue;
+      w._paja = (w._paja ?? rng.range(0, K.cada)) - dt;
+      if (w._paja > 0) continue;
+      w._paja = K.cada * rng.range(0.5, 1.5);
+      const co = w._corrales[rng.int(0, w._corrales.length - 1)], colores = gameState.esDeDia ? K.colorDia : K.colorNoche;
+      const xr = co.est.sx - rng.range(0, 60), yr = co.bebe.y + rng.range(0, 24), puntos = rng.int(K.puntos[0], K.puntos[1]);
+      for (let i = 0; i < puntos; i++) {
+        particles.push({ x: xr + rng.range(-4, 4), y: yr + rng.range(-2, 2), vx: -rng.range(K.vel[0], K.vel[1]), vy: rng.range(-K.sube, K.sube * 0.4), life: rng.range(K.vida[0], K.vida[1]), color: PALETA[colores[i % colores.length]], punto: true, viento: true });
       }
     }
   }
@@ -6539,6 +6615,8 @@ export function createRaidScene(services) {
    * cómo planeás el recorrido.
    */
   function dibujarTranquera(r, tr) {
+    // (🐂 En el estilo nuevo va dibujada en su corral: world/estiloNuevo/ganado.js.)
+    if (estiloNuevo.activo) return;
     const arriba = tr.lado === 'arriba';
     const hacia = arriba ? -1 : 1;
 

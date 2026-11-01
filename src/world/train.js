@@ -757,6 +757,8 @@ export function buildTrain(
         insideDir: borde.insideDir,
       });
       puerta.fina = fina;
+      // (🐂 Las del ganado y la plataforma, de tablas con aire: ver `dibujarPuertaNueva`.)
+      puerta.tranquera = fina && !!t.plantilla.puertasTranquera;
 
       /**
        * VAGONES QUE VIAJAN CERRADOS CON LLAVE (`puertasTrabadas` en la

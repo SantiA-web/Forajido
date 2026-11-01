@@ -26,6 +26,7 @@ import { DENSIDAD } from '../../engine/renderer.js';
 import { iluminar } from '../../engine/luz.js';
 import { estiloNuevo } from '../../engine/estiloNuevo.js';
 import { pintarSuelo } from './suelo.js';
+import { finosDePunta } from './ganado.js';
 
 const PASO = CONFIG.estilo.punto / DENSIDAD;
 const PX = 1 / PASO;
@@ -180,8 +181,7 @@ export function vagonPlataforma(train, w, dia) {
   // ===== LAS ESTACAS, en sus bolsillos de fierro, una cada dos casillas en los dos bordes
   const estacas = [];
   for (let c = 1; c < cols - 1; c += 2) estacas.push(X(c) + 8);
-  const estaca = (r, p, x, yPie) => {
-    const alto = 18;
+  const estaca = (r, p, x, yPie, alto = 18) => {
     r(x - 1, yPie - alto - 1, 5, alto + 1, 0);
     r(x, yPie - alto, 1, alto, 6); r(x + 1, yPie - alto, 1, alto, 5); r(x + 2, yPie - alto, 1, alto, 4);
     r(x, yPie - alto, 3, 1, 7);                          // la punta cortada, que agarra el sol
@@ -587,6 +587,31 @@ export function vagonPlataforma(train, w, dia) {
       const c0 = w.colStart + 1, c1 = w.colStart + cols - 2;
       lista.push({ celdas: [c0, c1, f, f], rects: [[w.x + S, y0, w.x + (cols - 1) * S, y1]] });
     }
+    /**
+     * 🔁 LAS PUNTAS, CON LAS MISMAS ESTACAS *(Santi: "las nuevas que agregaste siguen teniendo la altura de las paredes, tienes
+     * que bajarlas para que luzcan como las de arriba y abajo")*: dos a cada lado del pasillo, con su bolsillo, cada una
+     * delante o detrás de la gente según dónde esté parada.
+     * 🛑 Lo que se cae de la plataforma se lleva puesta la de su fila al irse del tren (`train._vallasRotas`, raidScene.js):
+     * queda el muñón en el bolsillo. Sigue chocando igual: a la gente no la deja caer.
+     */
+    [ax(w.x + CONFIG.tresCuartos.paredPunta / 2), ax(w.x + w.width - CONFIG.tresCuartos.paredPunta / 2)].forEach((xc, lado) => {
+      for (const [f, seccion, seRompe] of [[1, 0, false], [3, 0, true], [7, 1, true], [9, 1, false]]) {
+        const pie = Y(f), x = xc - 1, px = x - 2, py = pie - 19, pw = 7, ph = 20;
+        const dibujo = (alto) => {
+          const ind = new Int16Array(pw * ph).fill(-1);
+          const pa = (qx, qy, i) => { qx = Math.round(qx) - px; qy = Math.round(qy) - py; if (qx >= 0 && qy >= 0 && qx < pw && qy < ph) ind[qy * pw + qx] = i; };
+          estaca((qx, qy, ww, hh, i) => { for (let j = 0; j < hh; j++) for (let q = 0; q < ww; q++) pa(qx + q, qy + j, i); }, pa, x, pie, alto);
+          return lienzo(iluminar({ ancho: pw, alto: ph, indices: ind, marcas: new Uint8Array(pw * ph), campo: campoCarga }), pw, ph);
+        };
+        const entera = dibujo(18), muñon = seRompe ? dibujo(7) : entera, clave = w.index + ':' + lado + ':' + seccion;
+        const [mx, my] = enMundo(px, py);
+        resultado.altas.push({
+          x: mx, y: my, w: pw * PASO, h: ph * PASO, base: f * S,
+          get img() { return train._vallasRotas && train._vallasRotas.has(clave) ? muñon : entera; },
+        });
+      }
+    });
+    lista.push(...finosDePunta(w, map));
     map.ponerChoquesFinos('plataforma:' + w.colStart, lista);
   }
   // Las estacas de acá y la viga, delante de todos.

@@ -178,7 +178,8 @@ export function hojaGolpeada(d, x, y) {
 
 /** ¿Tapa la vista ahora mismo? Sólo si está cerrada y entera. */
 export function puertaTapaVision(d) {
-  return !d.broken && !d.open;
+  // (🐂 Por entre las tablas de la tranquera se ve.)
+  return !d.broken && !d.open && !d.tranquera;
 }
 
 /**
@@ -275,13 +276,46 @@ export function partesDePuerta(d) {
  * finito (`taparGente`). Pintada directo, el borde se veía a través de la hoja: "la silueta".
  * `parte`: 'atras', 'adelante' o 'todo' (ver `partesDePuerta`). Con los colores de la paleta y la luz del lugar.
  */
+/**
+ * 🐂 LA HOJA DE LA TRANQUERA *(Santi: "las puertas de este vagón y las del vagón plataforma también las hagas tipo
+ * tranquera")*: de la bisagra (izquierda) a la punta, tres travesaños, los parantes y la cruz. A mano las tres: entera,
+ * con el travesaño de arriba roto, y además con el del medio y la cruz partidos. Lo que gira es el dibujo de esta hoja.
+ */
+const HOJAS_TRANQUERA = [
+  [
+    'LLLLLLLLLLLLLLLLL', 'DDDDDDDDDDDDDDDDD',
+    'PD............MPD', 'PD...........M.PD', 'PD..........M..PD', 'PD.........M...PD', 'PD........M....PD',
+    'LLLLLLLLLLLLLLLLL', 'DDDDDDDDDDDDDDDDD',
+    'PD......M......PD', 'PD.....M.......PD', 'PD....M........PD', 'PD...M.........PD',
+    'LLLLLLLLLLLLLLLLL', 'DDDDDDDDDDDDDDDDD',
+    'PD.............PD', 'PD.............PD',
+  ],
+  [
+    'LLLLLLLL..LLLLLLL', 'DDDDDDD...DDDDDDD',
+    'PD............MPD', 'PD...........M.PD', 'PD..........M..PD', 'PD.........M...PD', 'PD........M....PD',
+    'LLLLLLLLLLLLLLLLL', 'DDDDDDDDDDDDDDDDD',
+    'PD......M......PD', 'PD.....M.......PD', 'PD....M........PD', 'PD...M.........PD',
+    'LLLLLLLLLLLLLLLLL', 'DDDDDDDDDDDDDDDDD',
+    'PD.............PD', 'PD.............PD',
+  ],
+  [
+    'LLLLLLLL..LLLLLLL', 'DDDDDDD...DDDDDDD',
+    'PD............MPD', 'PD...........M.PD', 'PD.............PD', 'PD.............PD', 'PD........M....PD',
+    'LLLLL......LLLLLL', 'DDDD.......DDDDDD',
+    'PD......M......PD', 'PD.....M.......PD', 'PD....M........PD', 'PD...M.........PD',
+    'LLLLLLLLLLLLLLLLL', 'DDDDDDDDDDDDDDDDD',
+    'PD.............PD', 'PD.............PD',
+  ],
+];
+const COL_TRANQUERA = { L: 7, D: 5, P: 6, M: 6 };
+
 let lienzoPuerta = null;
 function dibujarPuertaNueva(r, d, colors, parte = 'todo') {
   const PASO = CONFIG.estilo.punto / 4;
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(d.x, d.y) || 0) : 0;
   const chapa = d.kind === 'blindada';
   // (🔁 Del alto de una persona *(Santi: "debería verse más alta")*: `altoPuerta`, data/config.js.)
-  const ALTO = CONFIG.tresCuartos.altoPuerta + (chapa ? 2 : 0), GRUESO = chapa ? 5 : 3;
+  const ALTO = d.tranquera ? CONFIG.tresCuartos.altoTranquera : CONFIG.tresCuartos.altoPuerta + (chapa ? 2 : 0), GRUESO = chapa ? 5 : 3;
   const C = chapa ? { canto: 25, cara: 24, osc: 23, marca: 30 } : { canto: 6, cara: 5, osc: 3, marca: 4 };
   const y0 = d.y - d.hh, y1 = d.y + d.hh, alto = ALTO * PASO, x0 = d.x - (GRUESO * PASO) / 2;
   const abre = d.broken ? 0 : d.abre || 0;
@@ -308,6 +342,13 @@ function dibujarPuertaNueva(r, d, colors, parte = 'todo') {
    */
   const MARCO = chapa ? CONFIG.doors.marcoBlindado : 4, LARGO = d.hh - MARCO, h0 = y0 + MARCO, h1 = y1 - MARCO;
   const marco = (ya) => {
+    // (🐂 El de la tranquera, un poste como los de la baranda: lo de un marco de puerta le quedaba enorme.)
+    if (d.tranquera) {
+      const xp = d.x - 1.5 * PASO, yp = ya + MARCO - alto;
+      punto(xp - PASO, yp - PASO, 5, ALTO + 1, 0);
+      punto(xp, yp, 1, ALTO, 36); punto(xp + PASO, yp, 1, ALTO, 35); punto(xp + 2 * PASO, yp, 1, ALTO, 34);
+      return;
+    }
     // De arriba: el canto del poste, de ya a ya + MARCO; de frente, su cara.
     const G2 = GRUESO + 2, xm = d.x - (G2 * PASO) / 2;
     punto(xm - PASO, ya - alto - PASO, G2 + 2, (MARCO + 2 * PASO) / PASO, 0);
@@ -338,6 +379,17 @@ function dibujarPuertaNueva(r, d, colors, parte = 'todo') {
     let k = 0;
     for (let s = 0; s <= h.largo; s += PASO, k++) {
       const x = x0 + dx * s, y = h.hy + dy * s;
+      // 🐂 La tranquera: el dibujo de la hoja, con el aire entre las tablas. De canto, del grueso entero; abierta, de a un punto.
+      if (d.tranquera) {
+        const hoja = HOJAS_TRANQUERA[d.broken ? 2 : etapa], ancho = Math.max(1, Math.round(GRUESO * (1 - Math.abs(dx))));
+        hoja.forEach((fila, j) => {
+          const letra = fila[Math.min(16, k)];
+          if (letra === '.') return;
+          if (pasada === 0) punto(x - PASO, y - alto + (j - 1) * PASO, ancho + 2, 3, 0);
+          else punto(x, y - alto + j * PASO, ancho, 1, COL_TRANQUERA[letra]);
+        });
+        continue;
+      }
       if (pasada === 0) { punto(x - PASO, y - alto - PASO, GRUESO + 2, ALTO + 2, 0); continue; }
       punto(x, y - alto, GRUESO, 1, s < PASO ? C.canto : C.cara);                       // el canto de arriba
       punto(x, y - alto + PASO, 1, ALTO - 1, C.cara);                                  // la cara
@@ -381,7 +433,7 @@ function dibujarPuertaNueva(r, d, colors, parte = 'todo') {
     for (const [ax, ay] of [[2, -1], [-3, -2], [4, 3], [-1, 5]]) punto(d.x + ax * PASO, y1 - PASO * (2 + ay), 2, 1, chapa ? 23 : 4);   // astillas
   } else if (atras) {
     // Cerrada y con daño: también los agujeros en el canto.
-    if (!chapa && abre < 0.2) {
+    if (!chapa && !d.tranquera && abre < 0.2) {
       const lugares = [0.3, 0.7, 0.15, 0.55, 0.85, 0.45];
       for (let q = 0; q < Math.min(lugares.length, etapa * 2); q++) punto(x0, h0 + lugares[q] * 2 * LARGO - alto, GRUESO, 1, 0);
     }

@@ -59,7 +59,7 @@ export function crearCaidas(train) {
     // (🚂 El caboose espera a que el dibujo fijo ubique sus cosas: ver `armarPendientes`.)
     // (🥩 Y el refrigerado: ver `refri`.)
     // (🛑 Y la plataforma: ver `plataforma`.)
-    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'plataforma') { (C.porArmar = C.porArmar || []).push(w); continue; }
+    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'plataforma' || w.id === 'ganado') { (C.porArmar = C.porArmar || []).push(w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -246,6 +246,7 @@ export function avisarCaidas(C, sentido, rng) {
       o.yPiso = o.fijo ? o.yPiso0 : o.yPiso0 + rng.range(-4, 4);
     }
   }
+  avisarCorrales(C, sentido, rng);
   for (const p of C.pilas) {
     // 🛑 La plataforma: cada bulto se suelta o no con este golpe, para el lado del golpe (ver `plataforma`).
     if (p.tipo === 'plataforma') {
@@ -298,6 +299,7 @@ export function golpearCaidas(C) {
   // (Cada uno arranca a su tiempo: hasta que el reloj llega a cero sigue en su lugar, tambaleándose.)
   for (const o of C.objetos) if (o.estado === 'aviso') { o.estado = 'cae'; o.t = -(o.demora || 0); }
   for (const o of C.objetos) if (o.enMesa && o.planDx) o.deslizando = true;
+  golpearCorrales(C);
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
     // (🛑 Cada bulto a su tiempo: juntos parecía armado. Hasta soltarse sigue temblando: ver `actualizarCaidas`.)
@@ -415,6 +417,7 @@ export function actualizarCaidas(C, dt, map) {
   for (const p of C.pilas) if (p.estado === 'espera' && (p.espera -= dt) <= 0) soltarBulto(C, p);
   const K = CONFIG.caidas;
   armarPendientes(C);
+  actualizarCorrales(C, dt);
   C.reloj = (C.reloj || 0) + dt;
   for (const o of C.objetos) {
     if (o.estado === 'aviso') o.t += dt;
@@ -487,6 +490,12 @@ export function zonasDePeligro(C, S) {
   // systems/peligro.js.)
   // (Lo que no lastima —un sombrero, un rifle— no es peligro para nadie.)
   for (const o of C.objetos) if ((o.estado === 'aviso' || o.estado === 'cae') && o.peso !== 'nada') z.push({ ...zonaDe(o), clave: o, peso: o.peso, desde: { x: o.xRepisa, y: o.yRepisa } });
+  // (🐂 La tropilla del corral que va a ceder sale por el pasillo.)
+  for (const k of C.corrales || []) {
+    if (k.estado !== 'aviso' && k.estado !== 'espera') continue;
+    const d = -k.sentido, largo = CONFIG.caidas.pasilloLargo, x = k.e.sx;
+    z.push({ x0: d > 0 ? x : x - largo, x1: d > 0 ? x + largo : x, y0: 4 * S - 2, y1: 6 * S + 2, pasillo: true, clave: k, desde: { x, y: k.co.bebe.y } });
+  }
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
     // (🛑 Lo de la plataforma sale por la fila de su bulto, no por el pasillo.)
@@ -3025,7 +3034,7 @@ function plataforma(C, w) {
 function soltarBulto(C, p) {
   const { b, w } = p, m = b.mundo, K = CONFIG.caidas.plataforma, map = C.train.map, dir = -p.sentido;
   const estado = C.train._platEtapas[b.clave];
-  const tramo = { x0: w.x, x1: w.x + w.width };
+  const tramo = { x0: w.x, x1: w.x + w.width, w: w.index };
   const borde = dir > 0 ? m.x1 : m.x0;
   estado.tiembla = false;
   p.estado = 'quieta';
@@ -3219,6 +3228,67 @@ export function pintarRuedasRodando(R, cuadro = 0) {
   rueda(abajo);
 }
 
+/**
+ * 🐂 LOS CORRALES DEL GANADO *(Santi eligió "se rompe un corral y se escapan")*. Dónde está cada uno lo anota el dibujo fijo
+ * (`w._corrales`, world/estiloNuevo/ganado.js), y lo que le pasa va en `co.est`, que el dibujo lee:
+ *  - con cada golpe se asustan todos y se amontonan para el lado que tira el tren, y los bebederos salpican y mojan el piso;
+ *  - del segundo golpe en más, puede ceder un corral: la tranquera si tiene, si no el cerco que da al pasillo. Su tropilla
+ *    sale de a uno (`C.rotos`: la escena arma la estampida) para el lado que tiró el tren, y lleva puesto a cualquiera.
+ */
+function ganado(C, w) {
+  C.corrales = C.corrales || [];
+  for (const co of w._corrales) C.corrales.push({ w, co, e: co.est, estado: 'quieta', sentido: -1, espera: 0, mojo: false });
+}
+
+function avisarCorrales(C, sentido, rng) {
+  const K = CONFIG.caidas.ganado, vagones = new Set();
+  for (const k of C.corrales || []) {
+    k.sentido = sentido;
+    vagones.add(k.w);
+    if (k.e.roto) continue;
+    k.e.susto = K.susto; k.e.hacia = -sentido;
+  }
+  for (const w of vagones) {
+    w._golpesCorral = (w._golpesCorral || 0) + 1;
+    const delVagon = C.corrales.filter((k) => k.w === w);
+    if (w._golpesCorral <= K.golpesAntes || delVagon.filter((k) => k.e.roto || k.estado !== 'quieta').length >= K.maxRotos || !rng.chance(K.cede)) continue;
+    const enteros = delVagon.filter((k) => !k.e.roto && k.estado === 'quieta');
+    if (!enteros.length) continue;
+    const k = enteros[rng.int(0, enteros.length - 1)];
+    k.estado = 'aviso'; k.espera = rng.range(0, K.demora);
+  }
+}
+
+function golpearCorrales(C) {
+  for (const k of C.corrales || []) {
+    if (k.estado === 'aviso') k.estado = 'espera';
+    // 💧 El agua de la batea salta y moja: el charco queda en el piso del corral y se va secando.
+    const { x, y } = k.co.bebe;
+    (C.salpicones = C.salpicones || []).push({ x, y, dir: -k.sentido });
+    if (k.charco) { k.charco.nace = C.reloj || 0; k.charco.grande = true; } else { k.charco = { x, y: y + 10, grande: false, barro: true, nace: C.reloj || 0 }; C.charcos.push(k.charco); }
+  }
+}
+
+function actualizarCorrales(C, dt) {
+  const K = CONFIG.caidas.ganado;
+  for (const k of C.corrales || []) {
+    const e = k.e;
+    if (k.estado === 'espera' && (k.espera -= dt) <= 0) {
+      k.estado = 'suelto';
+      e.roto = true;
+      e.hacia = -k.sentido;
+      // (La tranquera que cedió ya no se puede abrir.)
+      if (k.co.tr) k.co.tr.abierta = true;
+      (C.rotos = C.rotos || []).push({ e, dir: -k.sentido, puerta: !!k.co.puerta, y: k.co.bebe.y });
+    }
+    // (Mientras siga saliendo la tropilla, los que quedan siguen asustados.)
+    if (e.roto && e.salieron < e.cuantos) e.susto = K.susto;
+    else e.susto = Math.max(0, e.susto - dt);
+    const meta = e.susto > 0 ? 1 : 0;
+    e.apilo = meta > e.apilo ? Math.min(meta, e.apilo + K.apilar * dt) : Math.max(meta, e.apilo - (K.apilar / 3) * dt);
+  }
+}
+
 function armarPendientes(C) {
   if (!C.porArmar || !C.porArmar.length) return;
   C.porArmar = C.porArmar.filter((w) => {
@@ -3228,6 +3298,7 @@ function armarPendientes(C) {
     if (w._almacen) { almacen(C, w); return false; }
     if (w._refri) { refri(C, w); return false; }
     if (w.id === 'plataforma' && w._bultos) { plataforma(C, w); return false; }
+    if (w.id === 'ganado' && w._corrales) { ganado(C, w); return false; }
     return true;
   });
 }
@@ -3389,7 +3460,8 @@ function pintarCharco(r, q, P, reloj) {
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(q.x, q.y) || 0) : 0;
   const R = pintor(r.ctx, Math.round(q.x / P) - Math.floor(D[0].length / 2), Math.round(q.y / P) - Math.floor(D.length / 2), luz);
   // (🥃 El de whisky, con brillos ámbar.)
-  dibujarMapa(R, 0, 0, D, { m: 33, h: q.whisky ? 28 : 30 });
+  // (🐂 El de la batea de los corrales cae sobre la tierra: barro oscuro, con un brillo apagado.)
+  dibujarMapa(R, 0, 0, D, q.barro ? { m: 32, h: 20 } : { m: 33, h: q.whisky ? 28 : 30 });
 }
 
 // -------------------------------------------------------------------------------------------------------- el blindado

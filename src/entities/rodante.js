@@ -21,6 +21,7 @@ import { CONFIG } from '../data/config.js';
 import { dibujarCuerpoCajon } from './cajon.js';
 import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
+import { pintarNovillo, ANCHO_NOVILLO, ALTO_NOVILLO } from './novillo.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA, pintarRolloTela, pintarBarraHielo, pintarTroncoRodando, ALTO_TRONCO, pintarTablasSueltas, ALTO_TABLAS, pintarRuedasRodando, ALTO_RUEDAS } from '../world/caidas.js';
@@ -340,6 +341,13 @@ function dibujarBarril(r, ro, col) {
  * amenaza sería el peor error de lectura posible.
  */
 function dibujarRes(r, ro, col) {
+  // 🐂 En el estilo nuevo, el novillo del corral, al trote: ocho cuadros por cada 48 unidades que corre.
+  if (estiloNuevo.activo) {
+    const P = CONFIG.estilo.punto / 4, luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+    const ox = Math.round(ro.x / P) - ANCHO_NOVILLO / 2, oy = Math.round((ro.y + ro.hh) / P) - ALTO_NOVILLO;
+    pintarTapando(r.ctx, ox, oy, ANCHO_NOVILLO, ALTO_NOVILLO, luz, (R) => pintarNovillo(R, ro.dir < 0 ? 'O' : 'E', ro.pelaje || 0, Math.floor(Math.abs(ro.x) / 6), 'trote', 0, 0, !!ro.marca));
+    return;
+  }
   const trote = Math.sin(ro.giro * 2.4) * 1.2;
   const w = ro.hw, h = ro.hh;
   const d = ro.dir;                       // +1 = corre hacia la derecha

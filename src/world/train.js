@@ -655,6 +655,15 @@ export function buildTrain(
   // 🆕 Las puntas de los vagones del estilo nuevo son finitas (ver `paredFina`, world/tilemap.js), menos las del
   // dormitorio, que tiene la pared adentro (`paredAdentro`, data/wagons.js).
   map.ponerPuntasFinas(tramos.filter((t) => t.tipo === 'vagon' && esVagonNuevo(t.plantilla.id) && !t.plantilla.paredAdentro).flatMap((t) => [t.colStart, t.colStart + t.cols - 1]));
+  // 🪜 En la góndola, la pared de la escalera (casilla 'G') frena la vista y las balas sólo en su grueso, como las otras puntas.
+  for (const t of tramos) {
+    if (t.tipo !== 'vagon' || !t.plantilla.carbon) continue;
+    const S = map.size, G = CONFIG.tresCuartos.paredPunta, a = t.colStart, b = t.colStart + t.cols - 1;
+    map.ponerChoquesFinos('escalera' + a, [
+      { celdas: [a, a, 4, 5], rects: [[a * S, 4 * S, a * S + G, 6 * S]] },
+      { celdas: [b, b, 4, 5], rects: [[(b + 1) * S - G, 4 * S, (b + 1) * S, 6 * S]] },
+    ]);
+  }
 
   // --- 3. Metadatos de cada vagón ---
   // El índice 0 es la plataforma de salida; 1..6 son los vagones robables.
@@ -725,7 +734,8 @@ export function buildTrain(
    */
   const doors = [];
   for (const t of tramos) {
-    if (t.tipo !== 'vagon') continue;
+    // (La góndola no tiene puertas: se entra y se sale por la escalera.)
+    if (t.tipo !== 'vagon' || t.plantilla.carbon) continue;
     /**
      * 🐛 SE BUSCABA EL VAGÓN POR ID (`w.id === 'blindado'`): un blindado con
      * otro id tenía puertas de madera que se abrían empujando.

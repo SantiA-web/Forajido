@@ -36,6 +36,7 @@ import { pintarSuelo } from './suelo.js';
 import { vagonPlataforma } from './plataforma.js';
 import { vagonGanado } from './ganado.js';
 import { pintarArmas, escribir, anchoTexto } from './armas.js';
+import { vagonGondola } from './gondola.js';
 import { WAGONS, nichoDeCaja } from '../../data/wagons.js';
 import { medidasAlacena, pintarBarril, BARRIL_PARADO, BARRIL_PARADO_G, pintarBaulGrande, pintarCajon, pintarSaco, TAM_TORRE, pintarRolloTela, pintarCajaWhisky, RES_COLGADA, GANCHO, COL_RES } from '../caidas.js';
 
@@ -55,7 +56,7 @@ const PX = 1 / PASO;
 // (🪵 Y la plataforma, la primera sin paredes: va en su propio archivo, world/estiloNuevo/plataforma.js.)
 // (🐂 Y el ganado, también sin paredes y en el suyo, world/estiloNuevo/ganado.js.)
 // (🧨 Las armas, con las paredes de siempre; lo de adentro, en world/estiloNuevo/armas.js.)
-const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado', 'plataforma', 'ganado', 'armas']);
+const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado', 'plataforma', 'ganado', 'armas', 'gondola']);
 /** ¿Este vagón ya se dibuja en el estilo nuevo? (Lo usa world/train.js para las cajas fuertes.) */
 export const esVagonNuevo = (id) => NUEVOS.has(id);
 
@@ -79,7 +80,7 @@ export function vagonesNuevos(train, dia) {
     const cuantas = Math.round(w.width / train.map.size);
     for (let c = w.colStart; c < w.colStart + cuantas; c++) cols.add(c);
     tramos.push([w.x, w.x + w.width]);
-    const v = w.id === 'plataforma' ? vagonPlataforma(train, w, dia) : w.id === 'ganado' ? vagonGanado(train, w, dia) : vagon(train, w, dia);
+    const v = w.id === 'plataforma' ? vagonPlataforma(train, w, dia) : w.id === 'ganado' ? vagonGanado(train, w, dia) : w.id === 'gondola' ? vagonGondola(train, w, dia) : vagon(train, w, dia);
     piso.push(...v.piso);
     altas.push(...v.altas);
     luces.push({ x0: w.x, x1: w.x + w.width, luz: v.luz });

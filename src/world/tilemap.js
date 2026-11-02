@@ -149,6 +149,12 @@ const TILE_RULES = {
    */
   'K': { solid: false, blocksSight: false, blocksBullets: false, freno: 'carbon' },
   'M': { solid: true,  blocksSight: true,  blocksBullets: true },
+  /**
+   * 🪜 LA PARED DE LA PUNTA DE LA GÓNDOLA, DONDE ESTÁ LA ESCALERA *(Santi: "para entrar o salir a este vagón solo es
+   * escalando una escalera")*. Se ve y frena como pared, en su grueso (`ponerChoquesFinos`, world/train.js); pero no
+   * choca: los guardias siguen cruzando el tren por acá, trepando (`trepaLaChapa`, scenes/raidScene.js). Vos, con [E].
+   */
+  'G': { solid: false, blocksSight: true, blocksBullets: true },
 };
 
 export function createTilemap(layout) {
@@ -361,6 +367,7 @@ export function createTilemap(layout) {
       if (!dentro(px, py)) return false;
       const regla = TILE_RULES[tileAtPixel(px, py)];
       if (!regla.blocksBullets) return false;
+      if (finos.size && finoEn(px, py) === false) return false;
       return !(porEncima && regla.cubreBajo);
     },
     /** ¿Es cobertura baja? (ver `tapaLaBala` en systems/combat.js) */

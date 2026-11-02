@@ -502,9 +502,12 @@ export function drawEnemy(r, e) {
 
   if (e.state !== 'combat') drawVisionCone(r, e);
 
-  r.ctx.globalAlpha = 0.25;
-  r.box(e.x, pies, 5, 2, '#000');
-  r.ctx.globalAlpha = 1;
+  // (Hundido en el carbón no tiene sombrita: ver `dibujarPiesEnCarbon`, world/caidas.js.)
+  if (!e.sinSombra) {
+    r.ctx.globalAlpha = 0.25;
+    r.box(e.x, pies, 5, 2, '#000');
+    r.ctx.globalAlpha = 1;
+  }
 
   // Levanta el brazo antes de pegarte: ese es el aviso del cuerpo a cuerpo.
   // Va en el piso, como el cono: marca hasta dónde llega el golpe.

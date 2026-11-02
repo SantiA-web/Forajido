@@ -19828,6 +19828,24 @@ guardaespaldas distintos)*:
     el pasillo (en 30 s de prueba con frenos rotos, los guardias caminaron sin trabarse y sin errores).
   - 🧪 El atajo [8] lleva a las armas con los frenos rotos.
 
+## ✅ LA GÓNDOLA, EN EL ESTILO NUEVO (2026-11-01)
+
+El último vagón del tren de carga. Santi eligió "chapa y carbón", "el carbón se corre", y los cuatro detalles: el polvo al viento, las huellas, la pala con la carretilla y el rótulo de la mina. Código: `src/world/estiloNuevo/gondola.js`, `gondola` en `src/world/caidas.js`.
+
+- **Carbón mate.** *(Santi: "con tanto brillo parece más un mineral como metal que carbón, sobre todo de noche")*: sin brillos; de noche el piso más oscuro, para que los montones se despeguen.
+- **Lo hondo** *(Santi: "no es un poquito de carbón… quiero que se note")*. Eligió tres cosas: **te hundís** hasta la pantorrilla (`dibujarPiesEnCarbon`: hueco atrás, terrones adelante, 8 cuadros, lentos: rápidos *"parece que el jugador está caminando sobre agua"*; sin sombrita), **pozos** que deja el montón que se corre, y **el corte** en las puntas, con el carbón en capas.
+- **Los montones se corren** con los frenos rotos. El aviso es **un reguero de terrones** que rueda hacia donde va a ir (*"no me gusta ese cuadrado de puntitos"*). Son lomas en pendiente (*"no deberían ser tan cuadradas"*). Su choque sigue siendo el de las casillas, un rectángulo.
+- **Sin puertas** *(Santi: "para entrar o salir a este vagón solo es escalando una escalera… elimina la puerta y reemplazala por la misma pared")*. Las puntas son pared entera, con la casilla nueva `G`: frena vista y balas en su grueso (`ponerChoquesFinos`).
+- **🔁 Ya no te caés** *(Santi: "quiero que la pared te detenga (no podés caerte)")*: deja sin efecto el "las puntas no tienen pared" de la etapa 5. Se baja sólo con [E].
+- **Los guardias y el Sheriff trepan**: se quedan quietos `techo.bajarHold` (0,4 s) y aparecen del otro lado (`trepaLaChapa`, raidScene). Lo decidí yo para que el tren no quede partido en dos: la casilla `G` no choca para ellos. No tienen animación de trepar.
+- **🐂 Las reses no llegan** *(Santi: "las vacas no pueden llegar a este vagón")*: se pierden en una polvareda antes de la chapa (`chocaConLaGondola`).
+- **🪜 La escalera de soga**, en cada punta. Primero la hice de soga y ondulando; *(Santi: "dije 'casi' como una bandera… más estructurado y detenido. No es tela: son tablas de madera agarradas con una soga gruesa")*. Ahora cuatro tablas rectas: sube despacio, se queda, baja (`POSES_ESCALERA`). Vuela hacia la cola en las dos puntas, porque el viento va para allá: la de adelante queda sobre el carbón. **Al usarla se queda quieta** (`caidas.gondola.escalera`), como entendí *"debería detenerse un poco"*.
+- **El carbón del golpe** ya no sale al enganche: baja por el corte y se frena contra la pared.
+- 🐛 **Dos guardias encimados** se empujaban una unidad entera por cuadro (`systems/ai.js`): cuadros de 24 a 42 ms y guardias que saltaban. Ahora, 0,001.
+- ⚠️ **No son a mano del todo los mapas de la escalera**: elegí la altura de cada tabla en cada cuadro y un script armó los mapas fijos. Santi lo sabe.
+- **Sin probar en movimiento real**: revisado cuadro a cuadro, sin errores en 30 s con guardias vivos y un frenazo. Faltó ver: el Sheriff trepando, la estampida de verdad contra la pared (las reses las puse a mano en la pasarela), y con la escalera nueva, un guardia usándola. Con [F9] corre sin errores, pero no miré cómo queda.
+  - 🧪 El atajo [8] lleva a la góndola con los frenos rotos.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

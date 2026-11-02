@@ -1274,12 +1274,13 @@ encima del carbón, y eso es lo mismo que caminar por el techo.
 
 | | Cómo funciona |
 |---|---|
-| **Subir y bajar** | En los **enganches**: mantené **[E] 0,4 s** al borde, en silencio. Hasta que no trepaste, el carbón es una pared |
-| **Caerse** | Parado en el carbón, las puntas no tienen pared: si salís caminando por una punta, **te caés al enganche** con ruido, como al errar un salto en el techo. Por los costados no se cae |
-| **Cruzarla** | **Al 75% de la velocidad**, para todos: vos 58 px/s (7,7 s de punta a punta; era a la mitad, 11,5 s), un guardia persiguiéndote 35. La cruzan también las reses de la estampida y el Sheriff: nadie queda cortado |
+| **Subir y bajar** | Sin puertas: por la **escalera de soga** de cada punta, mantené **[E] 0,4 s** al borde, en silencio. La escalera se queda quieta mientras la usan. Hasta que no trepaste, el carbón es una pared |
+| **Caerse** | **No te podés caer**: la pared de las puntas y la de los costados te frenan |
+| **Cruzarla** | **Al 75% de la velocidad**, para todos: vos 58 px/s (7,7 s de punta a punta; era a la mitad, 11,5 s), un guardia persiguiéndote 35. Los guardias y el Sheriff la cruzan trepando (0,4 s quietos en la pared): nadie queda cortado. **Las reses de la estampida no llegan**: se pierden contra la pared |
 | **Por el techo** | Si venís por arriba de otro vagón, seguís de largo sin caerte, y frena igual. Desde el caballo se puede saltar encima |
 | **Jinetes** | **No te alcanzan**: las paredes de la góndola son altas y vas encima del carbón. No te ven ni te pegan, ni sobre el carbón ni por el techo |
-| **Montículos** | Cobertura contra los guardias: tapan la vista y las balas |
+| **Montículos** | Cobertura contra los guardias: tapan la vista y las balas. Con los **frenos rotos se corren**: un reguero de terrones avisa adónde van, y dejan un pozo donde estaban |
+| **El carbón** | Te hundís hasta la pantorrilla y dejás huellas. Con cada golpe, por el corte de las puntas baja carbón |
 | **A la intemperie** | Te llueve encima, y desde el galope te ven tan rápido como al lado del ganado |
 | **Barriles** | No se sueltan en el carbón |
 

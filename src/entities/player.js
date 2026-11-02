@@ -1241,9 +1241,12 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const pies = by + p.hh;
   const agachado = p.sneaking || (p.cover && p.peek <= 0.15);
 
-  r.ctx.globalAlpha = 0.25;
-  r.box(p.x, p.y + p.hh, 5, 2, '#000');
-  r.ctx.globalAlpha = 1;
+  // (Hundido en el carbón no tiene sombrita: ver `dibujarPiesEnCarbon`, world/caidas.js.)
+  if (!p.sinSombra) {
+    r.ctx.globalAlpha = 0.25;
+    r.box(p.x, p.y + p.hh, 5, 2, '#000');
+    r.ctx.globalAlpha = 1;
+  }
 
   const llenado = p.mochila || 0;
   const bulto = llenado > 0 ? 1 + Math.round(llenado * 3) : 0;

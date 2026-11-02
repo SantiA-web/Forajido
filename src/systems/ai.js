@@ -509,7 +509,8 @@ export function separateEnemies(enemies, map) {
       if (dist >= minDist) continue;
 
       // Exactamente encima: los separamos en una dirección cualquiera.
-      if (dist < 0.001) { dx = 1; dy = 0; dist = 0.001; }
+      // (🔁 dx igual a dist: con dx = 1 el empujón salía mil veces más largo, el guardia cruzaba el vagón de una y cada par costaba miles de pasitos por cuadro.)
+      if (dist < 0.001) { dx = 0.001; dy = 0; dist = 0.001; }
 
       /**
        * El empujón se reparte mitad y mitad, y así tiene que ser: si a uno de

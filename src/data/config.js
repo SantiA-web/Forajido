@@ -2729,6 +2729,16 @@ export const CONFIG = {
      * el fuego llega al barril, le queda `mecha` segundos. `balas`: las balas de cañón que salen con cada golpe y cómo ruedan.
      */
     armas: { golpesAntes: 1, rajar: 0.7, maxRajados: 2, demora: 0.5, vel: [80, 110], roce: 32, cada: 2.25, velFuego: 46, arde: 0.7, quema: 0.2, mecha: 0.45, radioBala: 4, balas: { porGolpe: [1, 2], lento: 0.85, roce: 0.3, baja: 0.3, danio: 0.2 } },
+    /**
+     * ⛏️ LA GÓNDOLA *(Santi eligió "el carbón se corre")*. Con cada golpe, cada montículo se corre (`corre`, de chance) `pasos`
+     * casillas para el lado del tirón, si tiene lugar: se hunde donde estaba y crece donde llega, en `dura` segundos, y a `llega` de
+     * ese tiempo pasa a chocar allá. Quien está ahí queda tirado, pierde `danio` de su vida y sale despedido al pasillo.
+     * `terrones`: los que ruedan entre un lugar y el otro y quedan tirados, adornos, hasta `maxTerrones`. `huellas`: cada cuántas
+     * unidades se pisa y cuánto dura. `polvo`: el que se lleva el viento del tren, y `polvoGolpe`, los puntos de más al correrse.
+     */
+    gondola: { corre: 0.7, pasos: [2, 3], demora: 0.35, dura: 0.6, llega: 0.6, danio: 0.25, terrones: [5, 8], maxTerrones: 70, huellas: { cada: 7, vida: 10, max: 140 }, polvo: { cada: 0.3, puntos: [3, 6], vel: [60, 110], sube: 6, vida: [0.6, 1.3], margen: 60, colorDia: [23, 24, 31], colorNoche: [18, 41] }, polvoGolpe: 14, reguero: { terrones: [10, 14], tiempo: 1, dura: 0.45, polvo: 6 }, hundePozo: 7, piesCada: 8,
+      // 🪜 La escalera de soga: cada cuánto cambia de pose (ms), al flamear y cuando alguien la agarra; y cuánto queda quieta después de soltarla.
+      escalera: { cada: 170, alUsarla: 60, quietaDespues: 700 }, derrame: { cada: [2, 5], golpe: 3, dura: 0.7 } },
     plataforma: { suelta: 0.75, demora: 0.5, gravedad: 260, pega: 5, hondo: 26, tronco: { lento: 0.7, roce: 0.35, danio: 0.25, entre: 0.16 }, tablon: { lento: 0.55, roce: 0.8 }, rueda: { lento: 0.8, roce: 0.5, danio: 0.35 } },
     /**
      * 🍽️ LA VAJILLA DE LAS MESAS DEL COMEDOR: en el frenazo y el arrancón se desliza por la tabla (`desliza`, en unidades,

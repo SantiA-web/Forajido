@@ -1125,8 +1125,9 @@ export const WAGONS = {
    * funciona como un techo. Pasar por aquí reduce el movimiento")*
    *
    * EL CARBÓN LLENA EL VAGÓN HASTA ARRIBA (etapa 5): no hay "adentro". Su
-   * piso ('K') ES la superficie del carbón, y lo pisan todos a la mitad —
-   * guardias, reses, el Sheriff—, así nadie queda cortado del otro lado.
+   * piso ('K') ES la superficie del carbón, y lo pisan a la mitad los guardias
+   * y el Sheriff, así nadie queda cortado del otro lado. (🔁 Las reses, no: se
+   * pierden contra la pared, `chocaConLaGondola`, scenes/raidScene.js.)
    *
    * VOS TREPÁS Y BAJÁS EN LOS ENGANCHES *(Santi: "para subir o bajar es por
    * los enganches")*: mantener [E] 0,4 s al borde, en silencio
@@ -1163,8 +1164,8 @@ export const WAGONS = {
       '#KKKKKKKKKKKKKKKKKKKKKKKKKK#',
       '#KKMMMKKKKKKKMMMKKKKKKKMMKK#',
       '#KKMMMKKKKKKKMMMKKKKKKKMMKK#',
-      '+KKKKKKKKKKKKKKKKKKKKKKKKKK+',
-      '+KKKKKKKKKKKKKKKKKKKKKKKKKK+',
+      'GKKKKKKKKKKKKKKKKKKKKKKKKKKG',
+      'GKKKKKKKKKKKKKKKKKKKKKKKKKKG',
       '#KKKKKKKMMMKKKKKKKMMMKKKKKK#',
       '#KKKKKKKMMMKKKKKKKMMMKKKKKK#',
       '#KKKKKKKKKKKKKKKKKKKKKKKKKK#',

@@ -93,7 +93,7 @@ import {
 import { updateBullets } from '../systems/combat.js';
 import { updateExplosives, prenderCajon, soltarExplosivo } from '../systems/explosives.js';
 import { createCajon } from '../entities/cajon.js';
-import { nuevoReguero, sumarAlReguero, prenderReguero, regueroQueArde } from '../world/caidas.js';
+import { nuevoReguero, sumarAlReguero, prenderReguero, regueroQueArde, pisarCarbon, dibujarPiesEnCarbon, hundeEnPozo } from '../world/caidas.js';
 import { actualizarPrimeraClase } from '../systems/primeraClase.js';
 import { createAlertSystem } from '../systems/alert.js';
 import { applyRaidResult, gameState, numero } from '../state/gameState.js';
@@ -680,6 +680,9 @@ export function createRaidScene(services) {
      * (el carbón está a su altura) y lo que hay del otro lado tampoco: cruzás
      * el borde y caés al enganche (`caerDelCarbon`). Los COSTADOS siguen siendo
      * el borde del tren — caerse al desierto no existe *(elegido por Santi)*.
+     *
+     * 🔁 YA NO *(Santi: "quiero que la pared te detenga (no podés caerte)")*: desde que la punta es pared entera, frena
+     * también parado arriba. Se baja por la escalera, con [E].
      */
     /**
      * 📦 EL PORTÓN DE MÁS ACÁ DEL CERRADO, ABIERTO: se pasa por debajo del marco y se camina por el piso hasta el borde
@@ -691,8 +694,8 @@ export function createRaidScene(services) {
       const pf = hueco(x, y);
       if (pf) return y >= pf.umbral - 1;
       if (!player.enCarbon) return map.isSolidForMovementAt(x, y) || esCarbonEn(x);
-      if (!esCarbonEn(x)) return false;
-      if (esPuntaDelCarbon(x) && map.tileAtPixel(x, y) === '#') return false;
+      if (!esCarbonEn(x)) return true;
+      if (map.tileAtPixel(x, y) === 'G') return map.blocksBulletsAt(x, y);
       return map.isSolidForMovementAt(x, y);
     };
 
@@ -728,6 +731,8 @@ export function createRaidScene(services) {
     if (params.pruebaVagon) {
       const v = train.wagons.find((w) => w.id === params.pruebaVagon);
       if (v) { player.x = v.x + 3.5 * map.size; player.y = 4.5 * map.size; }
+      // (La góndola se pisa arriba del carbón: sin esto, el atajo te dejaba adentro sin poder moverte.)
+      if (v && v.carbon && !params.pruebaEnganche) player.enCarbon = true;
       // (🆕 `pruebaEnganche`: en el enganche de atrás del vagón, afuera, para entrar sin que te vean.)
       if (v && params.pruebaEnganche) player.x = v.x - map.size / 2;
       // (🧪 `pruebaPuertas` (el atajo [4]): las puertas de chapa de ese vagón se empujan como las de madera, para
@@ -1811,6 +1816,35 @@ export function createRaidScene(services) {
   }
 
   /**
+   * 🪜 EL GUARDIA TREPA LA PARED DE LA GÓNDOLA: la misma maniobra que vos con [E], el mismo tiempo, y aparece del otro
+   * lado *(Santi: "para entrar o salir a este vagón solo es escalando una escalera")*. Sin esto el tren quedaba partido
+   * en dos, o el guardia atravesaba la chapa caminando. Devuelve true mientras trepa: no hace otra cosa.
+   */
+  /** 🪜 La escalera de esta punta se queda quieta mientras la usan, y un rato después *(Santi: "cuando alguien usa la escalera debería detenerse un poco")*. */
+  function agarraLaEscalera(w, x) {
+    if (w._usoEscalera) w._usoEscalera[x < w.x + w.width / 2 ? 0 : 1] = performance.now() + CONFIG.caidas.gondola.escalera.quietaDespues;
+  }
+
+  function trepaLaChapa(e, dt) {
+    if (e.trepando > 0) {
+      e.hitFlash = Math.max(0, (e.hitFlash || 0) - dt);
+      e.trepando -= dt;
+      if (e.trepando <= 0) e.x = e.trepaA;
+      return true;
+    }
+    if (!e.alive || e.tirado > 0 || map.tileAtPixel(e.x, e.y) !== 'G') return false;
+    const w = train.wagons[train.wagonAt(e.x)], G = CONFIG.tresCuartos.paredPunta, lado = e.x < w.x + w.width / 2 ? 1 : -1;
+    // (La cara de afuera de esta punta; el grueso de la pared va de ahí hacia adentro.)
+    const borde = lado > 0 ? w.x : w.x + w.width, adentro = (e.x - borde) * lado;
+    if (adentro < 0 || adentro > G) return false;
+    const margen = (e.hw || 5) + 1;
+    e.trepaA = adentro < G / 2 ? borde + lado * (G + margen) : borde - lado * margen;
+    e.trepando = CONFIG.techo.bajarHold;
+    agarraLaEscalera(w, e.x);
+    return true;
+  }
+
+  /**
    * LO QUE TE VIENE DE FRENTE ARRIBA DEL TREN.
    *
    * No son piedras clavadas que se esquivan caminando —esa fue la primera
@@ -2211,7 +2245,6 @@ export function createRaidScene(services) {
       if (ro.tumbada) { ruedaAcostada(caidas, ro.x, ro.y + ro.hh); rodantes.splice(i, 1); continue; }
       if (!ro.alive) { romperRodante(ro); rodantes.splice(i, 1); continue; }
 
-      // Las reses también cruzan la góndola a la mitad (`frenoAt`, el carbón).
       ro.freno = map.frenoAt(ro.x, ro.y);
       updateRodante(ro, dt);
 
@@ -2251,7 +2284,7 @@ export function createRaidScene(services) {
           // Y la manada se pierde contra la locomotora: sin esto corría por
           // encima de su dibujo hasta que se le acababa el alcance.
           // (🐂 O por la cola del tren, la que salió para atrás de un corral roto.)
-          ? (ro.alcance <= 0 || chocaConElBlindado(ro) || train.tramoAt(ro.x) === 'locomotora' || ro.x < 0)
+          ? (ro.alcance <= 0 || chocaConElBlindado(ro) || chocaConLaGondola(ro) || train.tramoAt(ro.x) === 'locomotora' || ro.x < 0)
           // (🧳 La valija se queda tirada hasta que te alejás; el barril del frenazo va para adelante.)
           : ro.tipo === 'valija' ? (train.tramoAt(ro.x) !== 'vagon' || Math.abs(ro.x - player.x) > 1400)
             : (train.tramoAt(ro.x) !== 'vagon' || ro.x < player.x - 200 || ro.x > player.x + 420);
@@ -2363,6 +2396,19 @@ export function createRaidScene(services) {
   function chocaConElBlindado(ro) {
     const vagon = train.wagons[train.wagonAt(ro.x)];
     return !!vagon && vagon.guardType === 'blindado';
+  }
+
+  /**
+   * 🐂 Y CONTRA LA PARED DE LA GÓNDOLA *(Santi: "las vacas no pueden llegar a este vagón")*: se entra por una escalera de
+   * soga, y un novillo no trepa. Se pierde ahí, en una polvareda, antes de tocar la chapa.
+   */
+  function chocaConLaGondola(ro) {
+    const x = ro.x + ro.dir * ro.hw;
+    if (train.tramoAt(x) !== 'vagon') return false;
+    const vagon = train.wagons[train.wagonAt(x)];
+    if (!vagon || !vagon.carbon) return false;
+    spawnParticles(ro.x, ro.y, '#c9b28a', 10);
+    return true;
   }
 
   /**
@@ -2589,6 +2635,35 @@ export function createRaidScene(services) {
         (tE.quemados = tE.quemados || new Set()).add(e);
         if (damageEnemy(e, (e.maxHealth || e.health) * K.armas.quema, e.x, e.y)) bus.emit('enemyKilled', { enemy: e, byPlayer: tE.owner === 'player' });
       }
+    }
+    // ⛏️ El montículo que llegó: quien estaba ahí queda tirado, pierde vida y sale despedido al pasillo. Lo mismo vos que un guardia.
+    for (const d of caidas.derrumbes || []) {
+      audio.play('hitWall');
+      camera.shake(CONFIG.feel.shakeHit, 0.2);
+      const pega = (o) => o.x + o.hw > d.x0 && o.x - o.hw < d.x1 && o.y + o.hh > d.y0 && o.y - o.hh < d.y1;
+      const afuera = (o) => { o.y = d.salida + (d.salida === 4 * map.size ? o.hh + 1 : -o.hh - 1); };
+      if (player.alive && !player.enTecho && pega(player)) {
+        afuera(player);
+        tumbar(player, player.x - d.dir * 20, world);
+        player.invuln = 0;
+        damagePlayer(player, player.maxHealth * K.gondola.danio, d.x, d.y);
+        floaters.push({ x: player.x, y: player.y - 24, text: T.prompts.teCayoEncima, life: 1.6, color: colors.enemyAlert });
+      }
+      for (const e of enemies) {
+        if (!e.alive || !pega(e)) continue;
+        afuera(e);
+        tumbarGuardia(e, e.x - d.dir * 20);
+        if (damageEnemy(e, (e.maxHealth || e.health) * K.gondola.danio, d.x, d.y)) bus.emit('enemyKilled', { enemy: e, byPlayer: false, silent: true });
+      }
+    }
+    if (caidas.derrumbes) caidas.derrumbes.length = 0;
+    // (El polvo negro que levanta.)
+    for (const q of caidas.polvoCarbon || []) spawnParticles(q.x, q.y, gameState.esDeDia ? PALETA[24] : PALETA[41], q.n ?? K.gondola.polvoGolpe);
+    if (caidas.polvoCarbon) caidas.polvoCarbon.length = 0;
+    // 👣 Las huellas en el carbón.
+    if (caidas.montones) {
+      if (player.alive && !player.enTecho) pisarCarbon(caidas, player, map);
+      for (const e of enemies) if (e.alive) pisarCarbon(caidas, e, map);
     }
     for (const im of caidas.impactos) {
       audio.play('hitWall');
@@ -3492,6 +3567,7 @@ export function createRaidScene(services) {
     vahoDelFrio(dt);
     aserrinAlViento(dt);
     pajaAlViento(dt);
+    polvoDeCarbon(dt);
     // (🥩 Lo que se va calmando cada res baleada.)
     for (const k in estiloNuevo.golpesRes || {}) if ((estiloNuevo.golpesRes[k].edad += dt) > 3) delete estiloNuevo.golpesRes[k];
     // 🦵 El enganche en el que estás chocó contra su tope: trastabillás (entities/player.js).
@@ -3634,6 +3710,7 @@ export function createRaidScene(services) {
        * y boss.js se importarían en círculo, y boss.js ya depende de ai.js
        * para reusarle el buscador de rutas y la línea de visión.
        */
+      if (trepaLaChapa(e, dt)) continue;
       // 🧍 Lo que se cae y lo que viene por el pasillo: el que se está salvando no hace otra cosa (systems/peligro.js).
       if (esquivarPeligro(e, dt, world)) { e.hitFlash = Math.max(0, (e.hitFlash || 0) - dt); continue; }
       if (e.esJefe) { updateBoss(e, dt, world); continue; }
@@ -3997,6 +4074,7 @@ export function createRaidScene(services) {
     }
 
     carbonProgress += dt;
+    agarraLaEscalera(train.wagons.find((w) => w.carbon && destino.x >= w.x - map.size && destino.x <= w.x + w.width + map.size) || train.wagons[train.wagonAt(player.x)], player.x);
     if (carbonProgress >= CONFIG.techo.bajarHold) {
       // Pegado a una pared, la cobertura te devolvería a ella el cuadro siguiente.
       player.cover = null;
@@ -4772,6 +4850,27 @@ export function createRaidScene(services) {
   }
 
   /**
+   * ⛏️ EL POLVO DE CARBÓN *(Santi lo eligió entre los detalles de la góndola)*: como el aserrín y la paja, el viento del tren le va
+   * levantando polvo negro al carbón. Sale de un montículo o del piso. Ver CONFIG.caidas.gondola.polvo.
+   */
+  function polvoDeCarbon(dt) {
+    const K = CONFIG.caidas.gondola.polvo, S = CONFIG.tileSize;
+    for (const w of train.wagons) {
+      if (!w._monticulos || w.x + w.width < camera.x - K.margen || w.x > camera.x + 480 + K.margen) continue;
+      w._polvo = (w._polvo ?? rng.range(0, K.cada)) - dt;
+      if (w._polvo > 0) continue;
+      w._polvo = K.cada * rng.range(0.5, 1.5);
+      const colores = gameState.esDeDia ? K.colorDia : K.colorNoche;
+      const m = rng.chance(0.6) ? w._monticulos[rng.int(0, w._monticulos.length - 1)] : null;
+      const xr = m ? w.x + (m.c + rng.range(0, m.an)) * S : w.x + rng.range(1, w.width / S - 1) * S;
+      const yr = m ? m.f * S - rng.range(0, 4) : rng.range(1, map.rows - 1) * S, puntos = rng.int(K.puntos[0], K.puntos[1]);
+      for (let i = 0; i < puntos; i++) {
+        particles.push({ x: xr + rng.range(-4, 4), y: yr + rng.range(-2, 2), vx: -rng.range(K.vel[0], K.vel[1]), vy: rng.range(-K.sube, K.sube * 0.4), life: rng.range(K.vida[0], K.vida[1]), color: PALETA[colores[i % colores.length]] });
+      }
+    }
+  }
+
+  /**
    * 🌾 LA PAJA QUE VUELA *(Santi la eligió entre los detalles del ganado)*: como el aserrín de la plataforma, cada tanto una
    * ráfaga levanta unas briznas del piso de un corral y el viento del tren se las lleva para atrás. Ver CONFIG.caidas.ganado.
    */
@@ -5218,7 +5317,18 @@ export function createRaidScene(services) {
     for (const l of loot) if (visible(l)) cosas.push({ base: l.nicho && estiloNuevo.activo ? l.nicho.base : pies(l), draw: corrido(l.x, () => drawLootable(r, l)) });
     // 🎨 El sentado y el que duerme en la litera van encima de su mueble (ver `baseDeDibujo`).
     for (const pa of passengers) if (pa.alive && visible(pa)) cosas.push({ base: baseDeDibujo(pa, pies(pa)), draw: corrido(pa.x, () => drawPassenger(r, pa)) });
-    for (const e of enemies) if (e.alive && visible(e)) cosas.push({ base: pies(e), draw: corrido(e.x, () => pintar(e)) });
+    // (🦶 En la góndola, el carbón les tapa los pies, y en un pozo se dibujan más abajo: ver `dibujarPiesEnCarbon`.)
+    const conCarbon = estiloNuevo.activo && caidas && caidas.montones;
+    const metido = (o, f) => () => {
+      const dy = conCarbon ? hundeEnPozo(caidas, o) : 0;
+      if (!dy) return f();
+      r.ctx.save(); r.ctx.translate(0, dy); f(); r.ctx.restore();
+    };
+    for (const e of enemies) if (e.alive && visible(e)) {
+      if (conCarbon) cosas.push({ base: pies(e) - 0.001, draw: corrido(e.x, () => dibujarPiesEnCarbon(r, caidas, e, map, gameState.esDeDia, true)) });
+      cosas.push({ base: pies(e), draw: corrido(e.x, metido(e, () => pintar(e))) });
+      if (conCarbon) cosas.push({ base: pies(e) + 0.001, draw: corrido(e.x, () => dibujarPiesEnCarbon(r, caidas, e, map, gameState.esDeDia)) });
+    }
     for (const ro of rodantes) if (visible(ro)) cosas.push({ base: pies(ro), draw: corrido(ro.x, () => drawRodante(r, ro)) });
     // Los jinetes van afuera: los de arriba del tren quedan detrás de la pared
     // del fondo, y los de abajo, delante de la de adelante. El orden lo resuelve solo.
@@ -5228,7 +5338,9 @@ export function createRaidScene(services) {
     // (🧳 Lo de las repisas, lo que cae, lo tirado y las pilas de las puertas.)
     if (caidas) cosas.push(...cosasDeCaidas(r, caidas, corrido), ...papelesEnElAire);
     if (!player.enTecho) {
-      cosas.push({ base: pies(player), draw: corrido(player.x, () => drawPlayer(r, player, train.hearStepRadius)) });
+      if (conCarbon) cosas.push({ base: pies(player) - 0.001, draw: corrido(player.x, () => dibujarPiesEnCarbon(r, caidas, player, map, gameState.esDeDia, true)) });
+      cosas.push({ base: pies(player), draw: corrido(player.x, metido(player, () => drawPlayer(r, player, train.hearStepRadius))) });
+      if (conCarbon && player.enCarbon) cosas.push({ base: pies(player) + 0.001, draw: corrido(player.x, () => dibujarPiesEnCarbon(r, caidas, player, map, gameState.esDeDia)) });
     }
     cosas.sort((a, b) => a.base - b.base);
     for (const c of cosas) c.draw();

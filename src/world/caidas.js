@@ -27,6 +27,7 @@ import { CONFIG } from '../data/config.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { aceleracionEn } from './enganches.js';
+import { TERRONES, COL_CARBON, COL_LUNA } from './estiloNuevo/gondola.js';
 import { FUSIL, FUSIL_CORREA, COL_FUSIL, BALA_CANON, COL_BALA, LUGAR_BALAS, MARCO_BALAS, COL_MARCO } from './estiloNuevo/armas.js';
 
 const PASO = () => CONFIG.estilo.punto / 4;
@@ -60,7 +61,7 @@ export function crearCaidas(train) {
     // (🚂 El caboose espera a que el dibujo fijo ubique sus cosas: ver `armarPendientes`.)
     // (🥩 Y el refrigerado: ver `refri`.)
     // (🛑 Y la plataforma: ver `plataforma`.)
-    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'plataforma' || w.id === 'ganado' || w.id === 'armas') { (C.porArmar = C.porArmar || []).push(w); continue; }
+    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'plataforma' || w.id === 'ganado' || w.id === 'armas' || w.id === 'gondola') { (C.porArmar = C.porArmar || []).push(w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -211,6 +212,9 @@ export function cubreCaida(C, x, y) {
     if (o.tipo === 'mediaRes') continue;
     // (🧨 Los fusiles tirados chocan, como todo lo que cae. Rotos a tiros ya no.)
     if (o.tipo === 'fusiles' && o.estado === 'piso') { if (Math.abs(x - o.x) < o.hw && y > o.yPiso - 7 && y < o.yPiso + 1) return true; continue; }
+    // (⛏️ La pala tirada y la carretilla, parada o volcada, igual.)
+    if (o.tipo === 'pala' && o.estado === 'piso') { if (Math.abs(x - o.x) < o.hw && y > o.yPiso - 5 && y < o.yPiso + 1) return true; continue; }
+    if (o.tipo === 'carretilla' && o.estado !== 'roto' && o.estado !== 'cae' && o.estado !== 'enterrado') { const cx = o.estado === 'piso' ? o.x : o.xRepisa, cy = o.estado === 'piso' ? o.yPiso : o.yRepisa; if (Math.abs(x - cx) < o.hw && y > cy - 8 && y < cy + 1) return true; continue; }
     if (o.tipo !== 'cajonTorre' || o.estado !== 'piso') continue;
     const hondo = (TAM_TORRE[o.variante % 10][1] + 1) * PASO();
     if (Math.abs(x - o.x) < o.hw && y > o.yPiso - hondo && y < o.yPiso + 1) return true;
@@ -251,6 +255,7 @@ export function avisarCaidas(C, sentido, rng) {
   }
   avisarCorrales(C, sentido, rng);
   avisarArmas(C, sentido, rng);
+  avisarCarbon(C, sentido, rng);
   for (const p of C.pilas) {
     // 🧨 Las balas de cañón de la pila: salen con cualquier golpe, para el lado del golpe.
     if (p.tipo === 'balas') {
@@ -310,6 +315,7 @@ export function golpearCaidas(C) {
   for (const o of C.objetos) if (o.enMesa && o.planDx) o.deslizando = true;
   golpearCorrales(C);
   golpearArmas(C);
+  golpearCarbon(C, CONFIG.caidas.gondola);
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
     if (p.tipo === 'balas') {
@@ -439,6 +445,7 @@ export function actualizarCaidas(C, dt, map) {
   armarPendientes(C);
   actualizarCorrales(C, dt);
   actualizarArmas(C, dt);
+  actualizarCarbon(C, dt);
   C.reloj = (C.reloj || 0) + dt;
   for (const o of C.objetos) {
     if (o.estado === 'aviso') o.t += dt;
@@ -511,6 +518,12 @@ export function zonasDePeligro(C, S) {
   // systems/peligro.js.)
   // (Lo que no lastima —un sombrero, un rifle— no es peligro para nadie.)
   for (const o of C.objetos) if ((o.estado === 'aviso' || o.estado === 'cae') && o.peso !== 'nada') z.push({ ...zonaDe(o), clave: o, peso: o.peso, desde: { x: o.xRepisa, y: o.yRepisa } });
+  // (⛏️ El montículo que se corre: donde va a llegar.)
+  for (const q of C.montones || []) {
+    const m = q.m;
+    if (m.estado !== 'aviso' && m.estado !== 'espera') continue;
+    z.push({ x0: q.w.x + m.hacia * S, x1: q.w.x + (m.hacia + m.an) * S, y0: m.f * S, y1: (m.f + m.filas) * S, clave: m, peso: 'medio', desde: { x: q.w.x + (m.c + m.an / 2) * S, y: (m.f + 1) * S } });
+  }
   // (🧨 El barril que se va a rajar sale rodando por su fila.)
   for (const q of C.porRajar || []) {
     const c = q.c, d = q.dir, largo = CONFIG.caidas.pasilloLargo;
@@ -575,6 +588,7 @@ export function pintarTapando(ctx, ox, oy, w, h, luz, pintar) {
 export function dibujarSombrasDeCaidas(r, C, corrido, dia = true) {
   const K = CONFIG.caidas, P = PASO(), ctx = r.ctx;
   dibujarRegueros(r, C, corrido);
+  dibujarCarbonSuelto(r, C, corrido, dia);
   for (const o of C.objetos) {
     // 🥃 La araña no tiene la sombra de aviso: la avisa su propia sombra (o su luz) temblando, ver `dibujarLuzDeArana`.
     if (o.tipo === 'arana') { if (o.estado === 'repisa' || o.estado === 'aviso' || (o.estado === 'cae' && o.t < 0)) corrido(o.x, () => dibujarLuzDeArana(r, o, dia))(); continue; }
@@ -609,6 +623,8 @@ export function dibujarSombrasDeCaidas(r, C, corrido, dia = true) {
 export function cosasDeCaidas(r, C, corrido) {
   const K = CONFIG.caidas, out = [];
   for (const o of C.objetos) {
+    // (⛏️ Lo que quedó debajo de un montículo ya no está.)
+    if (o.estado === 'enterrado') continue;
     // En la repisa, contra la pared del fondo: detrás de todos. Cayendo y tirado, delante de los asientos del fondo
     // (cae sobre ellos), que terminan dos filas más abajo.
     const delante = o.yPared + 2 * CONFIG.tileSize + 0.02;
@@ -3521,9 +3537,343 @@ function armarPendientes(C) {
     if (w.id === 'plataforma' && w._bultos) { plataforma(C, w); return false; }
     if (w.id === 'ganado' && w._corrales) { ganado(C, w); return false; }
     if (w._armas) { armas(C, w); return false; }
+    if (w._gondola) { gondola(C, w); return false; }
     return true;
   });
 }
+
+/**
+ * ⛏️ LA GÓNDOLA *(Santi eligió "el carbón se corre")*. Los montículos los anota el dibujo (`w._monticulos`, world/estiloNuevo/gondola.js):
+ *  - con cada golpe, cada uno se corre para el lado del tirón, si tiene lugar, y tiembla antes de hacerlo. Nunca entra al pasillo, que
+ *    tiene que quedar libre, y se queda en su fila. La casilla cambia de verdad: la cobertura está en otro lado.
+ *  - quien está donde llega queda tirado y pierde vida (`C.derrumbes`: el daño, en la escena, igual para todos).
+ *  - LA PALA, clavada en su montículo, se cae cuando él se corre; LA CARRETILLA se vuelca sola con el golpe. Tiradas chocan.
+ *  - LOS TERRONES ruedan de un lugar al otro, y quedan tirados. LAS HUELLAS las pisa la escena (`pisarCarbon`).
+ */
+function gondola(C, w) {
+  C.montones = C.montones || [];
+  const P = PASO(), S = CONFIG.tileSize, G = w._gondola;
+  for (const m of w._monticulos) C.montones.push({ w, m });
+  const deAx = (pt) => G.x0 + pt * P;
+  if (G.conPala) {
+    const m = G.conPala, x = w.x + (m.c + m.an / 2 + 0.3) * S;
+    // (`prob: 0`: no se cae sola, se cae con su montículo: ver `avisarCarbon`.)
+    C.objetos.push({ tipo: 'pala', peso: 'liviano', hw: 11, x, xRepisa: x, yRepisa: (m.f + 0.7) * S, yPared: (m.f + m.filas) * S, yPiso: (m.f + m.filas) * S + 5, corre: 6, prob: 0, monticulo: m, quieto: true, estado: 'repisa', t: 0, dir: 0, wagon: w.id });
+  }
+  const xc = deAx(0) + 7.5 * S + (w.index % 2) * 9 * S;
+  C.objetos.push({ tipo: 'carretilla', peso: 'nada', hw: 14, x: xc, xRepisa: xc, yRepisa: 2 * S, yPared: 2 * S, yPiso: 2 * S, corre: 9, prob: 0.8, quieto: true, estado: 'repisa', t: 0, dir: 0, wagon: w.id });
+}
+
+function avisarCarbon(C, sentido, rng) {
+  const K = CONFIG.caidas.gondola, dir = -sentido;
+  for (const q of C.montones || []) {
+    const { w, m } = q;
+    if (m.estado !== 'quieto' || !rng.chance(K.corre)) continue;
+    const cols = Math.round(w.width / CONFIG.tileSize);
+    const otros = C.montones.filter((o) => o.w === w && o.m !== m && o.m.f === m.f).map((o) => o.m);
+    const libre = (c) => c >= 2 && c + m.an <= cols - 2 && otros.every((o) => c + m.an + 1 <= Math.min(o.c, o.hacia) || c >= Math.max(o.c, o.hacia) + o.an + 1);
+    let n = rng.int(K.pasos[0], K.pasos[1]);
+    while (n > 0 && !libre(m.c + dir * n)) n--;
+    if (!n) continue;
+    m.hacia = m.c + dir * n; m.dir = dir; m.estado = 'aviso'; m.t = 0; m.tAviso = 0;
+    // ⚠️ El aviso *(Santi: "no me gusta ese cuadrado de puntitos"; eligió "reguero de terrones")*: se adelantan rodando, de a uno, hasta
+    // adonde va a llegar, y ahí ya asoma la punta del montón (el dibujo, en world/estiloNuevo/gondola.js).
+    const S = CONFIG.tileSize, R = K.reguero;
+    const borde = w.x + (dir > 0 ? m.c + m.an : m.c) * S, punta = w.x + (dir > 0 ? m.hacia + m.an : m.hacia) * S;
+    const cuantos = R.terrones[0] + Math.floor(azar(m.c, m.f + 11) * (R.terrones[1] - R.terrones[0] + 1));
+    for (let i = 0; i < cuantos; i++) {
+      const y = (m.f + 0.3 + azar(i + 3, m.c) * (m.filas - 0.4)) * S, xb = borde + (punta - borde) * (0.35 + 0.65 * azar(i + 17, m.f));
+      (C.terrones = C.terrones || []).push({ x: borde, y, xa: borde, xb, t: -(i / cuantos) * R.tiempo, dura: R.dura * (0.8 + azar(i, 19) * 0.5), k: i % 8, aviso: true });
+    }
+    (C.polvoCarbon = C.polvoCarbon || []).push({ x: w.x + (m.hacia + m.an / 2) * S, y: (m.f + 1) * S, n: R.polvo });
+    // (La pala clavada en el que se corre se cae, para el mismo lado.)
+    for (const o of C.objetos) if (o.monticulo === m && o.estado === 'repisa') { o.estado = 'aviso'; o.t = 0; o.dir = dir; o.demora = 0; o.dura = CONFIG.caidas.caeDura; o.correA = o.corre; o.yPiso0 = o.yPiso; }
+  }
+}
+
+function golpearCarbon(C, K) {
+  for (const q of C.montones || []) if (q.m.estado === 'aviso') { q.m.estado = 'espera'; q.m.t = -K.demora * azar(q.m.c * 13, q.m.f); }
+  // (Con el golpe, por las puntas se vuelca carbón para afuera.)
+  for (const w of new Set((C.montones || []).map((q) => q.w))) for (let i = 0; i < K.derrame.golpe; i++) { derramarPunta(C, w, 1, K); derramarPunta(C, w, -1, K); }
+}
+
+/** Un terrón que baja por el corte de la punta y se frena contra la pared (🔁 antes salía al enganche, por donde estaba la puerta): no queda tirado. */
+function derramarPunta(C, w, lado, K) {
+  const S = CONFIG.tileSize, n = (C.nDerrame = (C.nDerrame || 0) + 1);
+  const xa = lado > 0 ? w.x + 2.8 * S : w.x + w.width - 2.8 * S, xb = lado > 0 ? w.x + 7 : w.x + w.width - 7;
+  (C.terrones = C.terrones || []).push({ x: xa, y: (4.4 + azar(n, 3) * 1.4) * S, xa, xb, t: -azar(n, 5) * 0.5, dura: K.derrame.dura * (0.8 + azar(n, 7) * 0.5), k: n % 8, cae: true });
+}
+
+/** ¿Dónde hay un pozo debajo de este punto? De 0 (en la orilla o afuera) a 1 (en el medio). */
+function enPozo(C, x, y) {
+  const S = CONFIG.tileSize;
+  let mas = 0;
+  for (const p of C.pozos || []) {
+    const cx = p.w.x + (p.c + p.an / 2) * S, cy = (p.f + 1) * S;
+    const d = Math.hypot((x - cx) / ((p.an / 2) * S), (y - cy) / S);
+    if (d < 1) mas = Math.max(mas, Math.min(1, (1 - d) * 2.5));
+  }
+  return mas;
+}
+
+/** 🕳️ Cuánto más abajo se dibuja el que pisa un pozo: se va metiendo a medida que entra. */
+export function hundeEnPozo(C, ent) {
+  if (!C || !C.pozos || !C.pozos.length || ent.tirado) return 0;
+  return Math.round(enPozo(C, ent.x, ent.y + (ent.hh || 0)) * CONFIG.caidas.gondola.hundePozo / PASO()) * PASO();
+}
+
+const PIES_LIENZOS = [new Map(), new Map()];
+/**
+ * 🦶 EL CARBÓN TAPA LOS PIES *(Santi eligió "te hundís")*: en el carbón se camina hundido hasta la pantorrilla, jugador y guardias. Es el
+ * carbón que se aparta y vuelve, con la vista de frente y la de costado a mano, y ocho cuadros que avanzan con lo que camina. 🔁 Lento: cambiando a cada paso, parecía que caminaba sobre agua.
+ */
+export function dibujarPiesEnCarbon(r, C, ent, map, dia, atras = false) {
+  const pies = ent.y + (ent.hh || 0), hundido = !ent.tirado && map.tileAtPixel(ent.x, pies) === 'K';
+  // (El hueco se dibuja antes que la persona: de paso le avisa que no lleve sombrita, que quedaba flotando debajo del carbón.)
+  if (atras) ent.sinSombra = hundido;
+  if (!hundido) return;
+  const P = PASO(), ctx = r.ctx, S = Math.abs(Math.cos(ent.aim ?? ent.facing ?? 0)) > 0.7;
+  // (🔁 Atrás, antes que la persona, el hueco negro de donde salen las piernas; adelante, terrones chatos que las tapan.
+  // Con los brillos en diagonal y sin hueco, parecían palitos y un par de botas grises.)
+  const filas = atras ? (S ? HOYO_COSTADO : HOYO_FRENTE) : (S ? PIES_COSTADO : PIES_FRENTE)[Math.floor((Math.abs(ent.x) + Math.abs(ent.y)) / CONFIG.caidas.gondola.piesCada) % 8];
+  const col = atras ? { d: 0 } : dia ? COL_PIES : COL_PIES_LUNA;
+  const ox = Math.round(ent.x / P) - Math.floor(filas[0].length / 2), oy = Math.round((pies + hundeEnPozo(C, ent)) / P) - filas.length + (atras ? -1 : 1);
+  // (En un lienzo, para poder taparle también el borde fino a la persona, que se pinta al final: si no, las botas se veían a través.)
+  const cache = PIES_LIENZOS[dia ? 0 : 1];
+  let cv = cache.get(filas);
+  if (!cv) {
+    cv = document.createElement('canvas'); cv.width = filas[0].length; cv.height = filas.length;
+    const c2 = cv.getContext('2d');
+    filas.forEach((fila, j) => { for (let i = 0; i < fila.length; i++) if (fila[i] !== '.') { c2.fillStyle = PALETA[col[fila[i]]]; c2.fillRect(i, j, 1, 1); } });
+    cache.set(filas, cv);
+  }
+  const ww = cv.width * P, hh = cv.height * P;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(cv, ox * P, oy * P, ww, hh);
+  if (!atras) estiloNuevo.taparGente(ctx, cv, ox * P, oy * P, ww, hh);
+}
+
+function ponerCasillas(C, w, m, c, t) {
+  const map = C.train.map;
+  for (let f = m.f; f < m.f + m.filas; f++) for (let k = c; k < c + m.an; k++) if (map.grid[f]) map.grid[f][w.colStart + k] = t;
+}
+
+function actualizarCarbon(C, dt) {
+  const K = CONFIG.caidas.gondola, S = CONFIG.tileSize;
+  for (const q of C.montones || []) {
+    const { w, m } = q;
+    if (m.estado === 'aviso' || m.estado === 'espera') m.tAviso = (m.tAviso || 0) + dt;
+    if (m.estado === 'aviso' || m.estado === 'quieto') continue;
+    m.t += dt;
+    if (m.estado === 'espera' && m.t >= 0) {
+      m.estado = 'corre'; m.t = 0; m.desde = m.c; m.c = m.hacia; m.llego = false;
+      ponerCasillas(C, w, m, m.desde, 'K');
+      // 🕳️ Donde estaba queda el pozo, y se ve lo hondo que es. Si pisa otro pozo, lo rellena; lo suelto de ahí se va adentro.
+      C.pozos = (C.pozos || []).filter((p) => p.w !== w || p.f !== m.f || p.c + p.an <= m.desde || p.c >= m.desde + m.an);
+      C.pozos.push({ w, c: m.desde, f: m.f, an: m.an, t: 0, semilla: azar(m.desde, m.f + 21) });
+      const hueco = (o) => o.y >= m.f * S && o.y <= (m.f + m.filas) * S + 2 && o.x >= w.x + m.desde * S && o.x <= w.x + (m.desde + m.an) * S;
+      if (C.terronesQuietos) C.terronesQuietos = C.terronesQuietos.filter((o) => !hueco(o));
+      if (C.huellas) C.huellas = C.huellas.filter((o) => !hueco(o));
+      // Los terrones que ruedan del montículo viejo al nuevo.
+      const n = K.terrones[0] + Math.floor(azar(m.c, m.f + 3) * (K.terrones[1] - K.terrones[0] + 1));
+      for (let i = 0; i < n; i++) {
+        const xa = w.x + (m.desde + azar(i, m.c) * m.an) * S, xb = w.x + (m.c + azar(i + 5, m.f) * m.an) * S + m.dir * 8 * azar(i, 9);
+        const y = (m.f + 0.2 + azar(i + 9, m.c) * m.filas) * S;
+        (C.terrones = C.terrones || []).push({ x: xa, y, xa, xb, t: -azar(i, 3) * 0.2, dura: K.dura * (0.8 + azar(i, 7) * 0.9), k: i % 8 });
+      }
+      (C.polvoCarbon = C.polvoCarbon || []).push({ x: w.x + (m.c + m.an / 2) * S, y: (m.f + 1) * S });
+    }
+    if (m.estado !== 'corre') continue;
+    if (!m.llego && m.t >= K.dura * K.llega) {
+      m.llego = true;
+      ponerCasillas(C, w, m, m.c, 'M');
+      const x0 = w.x + m.c * S, x1 = w.x + (m.c + m.an) * S, y0 = m.f * S, y1 = (m.f + m.filas) * S;
+      (C.derrumbes = C.derrumbes || []).push({ x0, x1, y0, y1, dir: m.dir, x: (x0 + x1) / 2, y: (y0 + y1) / 2, salida: m.f < 4 ? 4 * S : 6 * S });
+      // (Lo que estaba tirado ahí queda enterrado.)
+      for (const o of C.objetos) if (o.wagon === 'gondola' && o.estado === 'piso' && o.x > x0 - o.hw && o.x < x1 + o.hw && o.yPiso > y0 && o.yPiso < y1 + 2) o.estado = 'enterrado';
+    }
+    if (m.t >= K.dura) { m.estado = 'quieto'; m.t = 0; m.desde = null; }
+  }
+  // Los terrones que ruedan.
+  if (C.terrones) {
+    for (let i = C.terrones.length - 1; i >= 0; i--) {
+      const t = C.terrones[i];
+      if ((t.t += dt) < 0) continue;
+      const f = Math.min(1, t.t / t.dura);
+      t.x = t.xa + (t.xb - t.xa) * (1 - (1 - f) * (1 - f));
+      if (f >= 1) { C.terrones.splice(i, 1); if (!t.cae) (C.terronesQuietos = C.terronesQuietos || []).push({ x: t.x, y: t.y, k: t.k }); }
+    }
+    if (C.terronesQuietos && C.terronesQuietos.length > K.maxTerrones) C.terronesQuietos.splice(0, C.terronesQuietos.length - K.maxTerrones);
+  }
+  for (const p of C.pozos || []) p.t += dt;
+  // De vez en cuando, con el traqueteo, un terrón baja solo por el corte de una punta.
+  if (C.montones && C.montones.length && (C.proximoDerrame = (C.proximoDerrame ?? 1) - dt) <= 0) {
+    const n = (C.nDerrame || 0) + 1;
+    C.proximoDerrame = K.derrame.cada[0] + azar(n, 11) * (K.derrame.cada[1] - K.derrame.cada[0]);
+    derramarPunta(C, C.montones[0].w, azar(n, 13) < 0.5 ? 1 : -1, K);
+  }
+  if (C.huellas) {
+    const reloj = C.reloj || 0;
+    while (C.huellas.length && reloj - C.huellas[0].nace > K.huellas.vida) C.huellas.shift();
+  }
+}
+
+/** 👣 La escena lo llama por cada uno que camina: sobre el carbón va dejando una pisada, cada `cada` unidades, de un pie y del otro. */
+export function pisarCarbon(C, ent, map) {
+  if (map.tileAtPixel(ent.x, ent.y + (ent.hh || 0)) !== 'K' || enPozo(C, ent.x, ent.y + (ent.hh || 0)) > 0) return;
+  const K = CONFIG.caidas.gondola.huellas;
+  const dx = ent.x - (ent._hx ?? (ent._hx = ent.x)), dy = ent.y - (ent._hy ?? (ent._hy = ent.y));
+  if (dx * dx + dy * dy < K.cada * K.cada) return;
+  ent._hx = ent.x; ent._hy = ent.y; ent._hp = !ent._hp;
+  const deCostado = Math.abs(dx) >= Math.abs(dy);
+  (C.huellas = C.huellas || []).push({ x: ent.x + (deCostado ? 0 : ent._hp ? 2 : -2), y: ent.y + (ent.hh || 0) - 1 + (deCostado ? (ent._hp ? 1 : -1) : 0), deCostado, nace: C.reloj || 0 });
+  if (C.huellas.length > K.max) C.huellas.shift();
+}
+
+// (🔁 Hondas: con el carbón que levantó el pie alrededor.)
+const HUELLA_COSTADO = ['.llll.', 'lddddl', '.dddd.', '..ll..'];
+const HUELLA_FRENTE = ['.ll.', 'lddl', '.dd.', 'ldd.', '.ll.'];
+const COL_PIES = { h: 24, l: 23, m: 31, d: 1 };
+const COL_PIES_LUNA = { h: 19, l: 41, m: 18, d: 40 };
+const HOYO_FRENTE = ['...dddddddddd...', '.dddddddddddddd.', 'dddddddddddddddd', '.dddddddddddddd.', '...dddddddddd...'];
+const HOYO_COSTADO = ['....dddddddddddd....', '.dddddddddddddddddd.', 'dddddddddddddddddddd', '.dddddddddddddddddd.', '....dddddddddddd....'];
+/** 🦶 El carbón que tapa los pies, de frente y de costado: ocho cuadros cada uno, a mano. */
+const PIES_FRENTE = [
+  ['....hhl....hl...', '..hllmm..hllmm..', '.lmmmmdhlmmmddl.', 'lmmdddlmmdddmmmd', 'mddmmmddddmmdddd', 'ddmmdddddmmddddd', '.dddddd.dddddd..'],
+  ['.....hl...hhl...', '..hhlmm.hllmmd..', '.hlmmdlllmmddml.', 'lmmddlmmdddmmmdd', 'mddmmmdddmmddddd', 'dddmmddmmdddddd.', '..ddddddddd.ddd.'],
+  ['...hl.....hll...', '.hllmm..hhlmmd..', 'hlmmmddhlmmddhl.', 'mmdddlmmmdddlmmd', 'ddmmmddddmmddddd', '.dddmmddmmdddddd', '..ddd.dddddddd..'],
+  ['......hl....hl..', '..hl.hllm.hllm..', '.hlmmlmmddlmmdl.', 'lmmddmddmmmddmmd', 'mdddmmdddddmmddd', 'ddmmddddmmdddddd', '.ddddd.ddddddd..'],
+  ['...hhl....hl....', '.hllmmd.hllmm...', 'hlmmddhllmmdhll.', 'mmddlmmmddlmmmdd', 'ddmmmddddmmmdddd', '.ddddmmddddddmmd', '..dddddd.dddddd.'],
+  ['.....hhl....hl..', '..hl.lmmd.hlmm..', '.llmhlmddhlmmdl.', 'lmmmmddlmmmddmmd', 'dddddmmmdddmmddd', 'dmmddddddmmddddd', '.dddd.dddddddd..'],
+  ['....hl....hhl...', '.hhlmm..hllmmd..', 'llmmddhlmmmddhl.', 'mmddlmmddddlmmmd', 'dmmmdddmmmmddddd', 'ddddmmdddddmmddd', '.ddddddd.ddddd..'],
+  ['......hhl...hl..', '..hl.hllmm.hlm..', '.hlmhlmmddlmmdl.', 'lmmmmddmmmmddmmd', 'ddddmmmddddmmddd', '.dmmddddmmmddddd', '..dddd.ddddddd..'],
+];
+const PIES_COSTADO = [
+  ['.....hhl.......hl...', '...hllmm...hl.hllm..', '..lmmmmdd.hlmlmmddl.', '.lmmdddlmlmmmmddmmmd', 'lmddmmmdddddmmdddddd', 'dddmmddddmmdddddmmdd', '.ddddddd.ddddddddd..'],
+  ['...hl.........hhl...', '.hllmm..hhl..hllmm..', 'hlmmmdd.lmmhlmmddhl.', 'mmdddlmmddlmmmddlmmd', 'ddmmmddddmmdddmmdddd', '.ddddmmddddddmmddddd', '..ddddddd.dddddddd..'],
+  ['.......hl.....hl....', '..hl..hllm..hllm.hl.', '.hlmmhlmmdd.lmmdlmml', 'lmmddlmddmmlmdddmmdd', 'mddmmmdddddmmmddddmd', 'dddddmmddmmdddddmmdd', '.dddd.dddddddddddd..'],
+  ['..hhl.......hl......', '.hlmmd...hhllm...hl.', 'hlmmddl.hlmmmddhlmm.', 'mmddlmmlmmddddlmmddd', 'ddmmmdddddmmmmdddddd', '.dddddmmdddddddmmddd', '..dddddd.ddddddddd..'],
+  ['.....hl.......hhl...', '..hllmm.hl..hllmmd..', '.lmmmddlmmdhlmmddhl.', 'lmddddmmdddmmdddlmmd', 'mddmmmdddmmddmmddddd', 'ddddddmmdddddddmmddd', '.dddddddd.ddddddd...'],
+  ['........hhl.....hl..', '.hl..hllmmd..hllmm..', 'hlmmlmmmddd.lmmmddl.', 'mmddmddddlmmmdddmmmd', 'ddmmdddmmmdddmmddddd', '.dddmmddddddmmdddddd', '..ddddd.dddddddddd..'],
+  ['...hl......hhl......', '.hllmm...hllmmd..hl.', '.lmmddl.lmmmddhllmm.', 'lmdddmmlmdddlmmmdddd', 'mdmmmddddmmmdddddmmd', 'dddddmmdddddmmdddddd', '.ddddddd.ddddddddd..'],
+  ['......hl........hl..', '..hl.hllm...hhl.hlm.', '.hlmhlmmddhllmmdlmm.', 'lmmmmddmmmmdddmmdddd', 'ddddmmmddddmmmdddmmd', '.dmmddddmmdddddddddd', '..ddddd.dddddddddd..'],
+];
+/** Los ocho cuadros de un terrón que rueda: el brillo le va dando la vuelta. 🔁 Con punta y sin borde arriba: redondos y con el borde entero, sobre el carbón parecían aritos. */
+const TERRON_RUEDA = [
+  ['..hl..', '.hlmm.', 'hlmmdo', 'lmmddo', '.oooo.'],
+  ['.hl...', 'hllmm.', 'lmmmdo', '.mmddo', '..ooo.'],
+  ['..ml..', '.mmlh.', 'mmmllo', 'dmmmlo', '.oooo.'],
+  ['.mm...', 'mmmlh.', 'dmmllo', '.dmmho', '..ooo.'],
+  ['..md..', '.mmmd.', 'lmmmdo', 'hlmddo', '.oooo.'],
+  ['.dm...', 'ddmml.', 'dmmmlo', '.mmlho', '..ooo.'],
+  ['..dm..', '.ddmm.', 'dmmmlo', 'mmllho', '.oooo.'],
+  ['.lm...', 'lmmmd.', 'hlmmdo', '.lmmdo', '..ooo.'],
+];
+// (Los del reguero, mientras ruedan, más claros: son el aviso, y sobre el carbón tienen que verse.)
+const COL_TERRON_AVISO = { o: 0, h: 25, l: 24, m: 23, d: 31 };
+const COL_TERRON_AVISO_LUNA = { o: 0, h: 21, l: 20, m: 19, d: 41 };
+const COL_TERRON_SUELTO = { o: 1, h: 24, l: 23, m: 31, d: 1 };
+const COL_TERRON_SUELTO_LUNA = { o: 40, h: 19, l: 41, m: 18, d: 40 };
+
+function dibujarCarbonSuelto(r, C, corrido, dia) {
+  const P = PASO(), ctx = r.ctx, S = CONFIG.tileSize;
+  const COL = dia ? COL_TERRON_SUELTO : COL_TERRON_SUELTO_LUNA;
+  const mapa = (filas, x, y, col) => {
+    const ox = Math.round(x / P) - Math.floor(filas[0].length / 2), oy = Math.round(y / P) - filas.length + 1;
+    filas.forEach((fila, j) => { for (let i = 0; i < fila.length; i++) if (fila[i] !== '.') { ctx.fillStyle = PALETA[col[fila[i]]]; ctx.fillRect((ox + i) * P, (oy + j) * P, P, P); } });
+  };
+  // 🕳️ Los pozos, debajo de todo lo suelto. Por la pared de allá siempre va bajando algún terrón.
+  for (const p of C.pozos || []) {
+    const G = p.w._gondola;
+    if (!G || !G.pozos) continue;
+    const Po = G.pozos[p.an], ww = Po.ancho * P, hh = Po.alto * P;
+    const cx = p.w.x + (p.c + p.an / 2) * S, cy = (p.f + 1) * S;
+    const x = G.x0 + Math.round((cx - ww / 2 - G.x0) / P) * P, y = G.yArriba + Math.round((cy - hh / 2 - G.yArriba) / P) * P;
+    const k = Math.min(7, Math.floor((p.t / CONFIG.caidas.gondola.dura) * 8));
+    corrido(cx, () => {
+      ctx.drawImage(Po.cuadros[k], x, y, ww, hh);
+      if (k < 7) return;
+      for (let i = 0; i < 2; i++) {
+        const fase = ((C.reloj || 0) * 0.3 + p.semilla + i * 0.5) % 1;
+        if (fase > 0.4) continue;
+        const f = fase / 0.4;
+        mapa(TERRON_RUEDA[Math.floor(f * 8) % 8], x + ww * (0.3 + i * 0.35 + p.semilla * 0.1), y + hh * (0.12 + f * 0.4), COL);
+      }
+    })();
+  }
+  for (const t of C.terronesQuietos || []) corrido(t.x, () => mapa(TERRON_RUEDA[t.k], t.x, t.y, COL))();
+  for (const t of C.terrones || []) { if (t.t < 0) continue; corrido(t.x, () => mapa(TERRON_RUEDA[Math.floor(t.t * 18 + t.k) % 8], t.x, t.y, t.aviso ? (dia ? COL_TERRON_AVISO : COL_TERRON_AVISO_LUNA) : COL))(); }
+  // 👣 Las huellas: un hundido oscuro con el borde que levantó el pie. Las últimas horas de cada una, salteada.
+  const K = CONFIG.caidas.gondola.huellas, reloj = C.reloj || 0;
+  const COLH = dia ? { d: 0, l: 23 } : { d: 0, l: 41 };
+  for (const h of C.huellas || []) {
+    if ((reloj - h.nace) / K.vida > 0.75 && Math.floor(h.x + h.y) % 2) continue;
+    corrido(h.x, () => mapa(h.deCostado ? HUELLA_COSTADO : HUELLA_FRENTE, h.x, h.y, COLH))();
+  }
+}
+
+// ⛏️ La pala y la carretilla: una sola vista, de costado, y tiradas. A mano.
+const PALA_CLAVADA = ['ooooooo', 'oWWWWWo', 'ooWWWoo', '.ooWoo.', '..oWo..', '..oWo..', '..oWo..', '..owo..', '..oWo..', '..oWo..', '..oWo..', '..owo..', '..oWo..', '..oWo..', '..oWo..', '..owo..', '..oWo..', '..oWo..', '.ooWoo.', 'oFFFFFo', 'oHFFFFo', 'oFFFDFo', '.ooooo.'];
+const PALA_TIRADA = [
+  '.oooooo.....................',
+  'oHFFFFFoo................ooo',
+  'oFFFFFFFFooooooooooooooooWWo',
+  'oFFFFFFFFWWWwWWWwWWWwWWWoWWo',
+  'oDFFFFFooooooooooooooooo.ooo',
+  '.oooooo.....................',
+];
+const COL_PALA = { o: 0, W: 6, w: 4, F: 24, H: 25, D: 23 };
+const CARRETILLA = [
+  '..........oo.ooo..oooo.oo.............',
+  '........ooTCoCTCooCTTCoCCoo...........',
+  '......ooCCCCTCCCCTCCCCCTCCCoo.........',
+  '.....oooooooooooooooooooooooooo.......',
+  '.....oLLLLLLLLLLLLLLLLLLLLLLLLLo......',
+  '.....oLLDLLLLLLLLDLLLLLLLLDLLLLo......',
+  '......oDDDDDDDDDDDDDDDDDDDDDDDDo......',
+  '......oLLLLLLLLLLLLLLLLLLLLLLLLLo.....',
+  '.......oLLDLLLLLLLDLLLLLLLDLLLLLoo....',
+  '.......oDDDDDDDDDDDDDDDDDDDDDDDDoWWo..',
+  '........oooooooooooooooooooooooooWWWo.',
+  '...ooooo....oWo...............oWo.ooo.',
+  '..oFFFFFo...oWo...............oWo.....',
+  '.oFoowooFo..oWo................oWo....',
+  'oFoo.w.ooFo.oWo................oWo....',
+  'oFo..w..oFooWWo................oWo....',
+  'oFowwKwwwWWWWo.................oWo....',
+  'oFo..w..oFoo...................oWo....',
+  'oFoo.w.ooFo....................oWo....',
+  '.oFoowooFo....................ooWoo...',
+  '..oFFFFFo.....................ooooo...',
+  '...ooooo..............................',
+];
+const CARRETILLA_VOLCADA = [
+  '...ooooo..............................',
+  '..oFFFFFo.............................',
+  '.oFowoowFo............................',
+  'oFowwKwwoFo...........................',
+  '.oFowoowFo............................',
+  '..oFFFFFooWWo.........................',
+  '...oooooooWWWoooooooooooooooooooooo...',
+  '........oLLLLLLLLLLLLLLLLLLLLLLLLLoWWo',
+  '.......oLLDLLLLLLLDLLLLLLLDLLLLLLLoWWo',
+  '.......oDDDDDDDDDDDDDDDDDDDDDDDDDDoooo',
+  '......ooooooooooooooooooooooooooooo...',
+  '...ooTCoooCTCooCCToCTCCoooTCCoCTo.....',
+  '..oCTCCoTCCCCooTCCCTCCoTCCCoCTCCo.....',
+  '...ooo.oooo.oooo.ooo.oooo.oooo.o......',
+];
+const COL_CARRETILLA = { o: 0, L: 5, D: 4, T: 24, C: 23, W: 6, w: 4, F: 24, K: 25 };
+DIBUJOS.pala = {
+  arriba: { w: 7, h: 23, pintar: (R) => dibujarMapa(R, 0, 0, PALA_CLAVADA, COL_PALA) },
+  piso: { w: 28, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, PALA_TIRADA, COL_PALA) },
+  roto: { w: 28, h: 6, pintar: (R) => dibujarMapa(R, 0, 0, PALA_TIRADA, COL_PALA) },
+};
+DIBUJOS.carretilla = {
+  arriba: { w: 38, h: 22, pintar: (R) => dibujarMapa(R, 0, 0, CARRETILLA, COL_CARRETILLA) },
+  piso: { w: 38, h: 14, pintar: (R) => dibujarMapa(R, 0, 0, CARRETILLA_VOLCADA, COL_CARRETILLA) },
+  roto: { w: 38, h: 14, pintar: (R) => dibujarMapa(R, 0, 0, CARRETILLA_VOLCADA, COL_CARRETILLA) },
+};
 
 // 🚂 Los faroles de señales, la cafetera de la estufa, y lo roto/tirado de cada uno, puestos a mano.
 const FAROL_SENAL = ['...oo...', '..o..o..', '.oooooo.', 'oKKKKKKo', 'oVvvvvVo', 'oVvLLvVo', 'oVvLLvVo', 'oVvvvvVo', 'oKKKKKKo', '.oooooo.'];

@@ -2721,6 +2721,14 @@ export const CONFIG = {
      * `paja`: la que se lleva el viento del tren, como el aserrín de la plataforma.
      */
     ganado: { golpesAntes: 1, cede: 0.7, maxRotos: 2, demora: 0.5, arranque: 0.7, susto: 3, apilar: 3, gotas: 8, paja: { cada: 0.5, puntos: [2, 4], vel: [50, 90], sube: 5, vida: [0.6, 1.2], margen: 120, colorDia: [7, 6], colorNoche: [5, 4] } },
+    /**
+     * 🧨 EL VAGÓN DE ARMAS *(Santi eligió "barril rajado y reguero")*. Desde el segundo golpe puede rajarse un barril (`rajar`, de
+     * chance; hasta `maxRajados` por vagón, a `demora` de chance): sale rodando por su fila a una velocidad de `vel` y el piso lo
+     * frena (`roce`), y va dejando pólvora cada `cada` unidades. Un tiro o una explosión la prenden: el fuego corre a `velFuego`
+     * unidades por segundo para los dos lados, cada punto arde `arde` segundos y quien lo pisa pierde `quema` de su vida. Cuando
+     * el fuego llega al barril, le queda `mecha` segundos. `balas`: las balas de cañón que salen con cada golpe y cómo ruedan.
+     */
+    armas: { golpesAntes: 1, rajar: 0.7, maxRajados: 2, demora: 0.5, vel: [80, 110], roce: 32, cada: 2.25, velFuego: 46, arde: 0.7, quema: 0.2, mecha: 0.45, radioBala: 4, balas: { porGolpe: [1, 2], lento: 0.85, roce: 0.3, baja: 0.3, danio: 0.2 } },
     plataforma: { suelta: 0.75, demora: 0.5, gravedad: 260, pega: 5, hondo: 26, tronco: { lento: 0.7, roce: 0.35, danio: 0.25, entre: 0.16 }, tablon: { lento: 0.55, roce: 0.8 }, rueda: { lento: 0.8, roce: 0.5, danio: 0.35 } },
     /**
      * 🍽️ LA VAJILLA DE LAS MESAS DEL COMEDOR: en el frenazo y el arrancón se desliza por la tabla (`desliza`, en unidades,

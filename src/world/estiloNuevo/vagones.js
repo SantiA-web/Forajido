@@ -35,6 +35,7 @@ import { estiloNuevo } from '../../engine/estiloNuevo.js';
 import { pintarSuelo } from './suelo.js';
 import { vagonPlataforma } from './plataforma.js';
 import { vagonGanado } from './ganado.js';
+import { pintarArmas, escribir, anchoTexto } from './armas.js';
 import { WAGONS, nichoDeCaja } from '../../data/wagons.js';
 import { medidasAlacena, pintarBarril, BARRIL_PARADO, BARRIL_PARADO_G, pintarBaulGrande, pintarCajon, pintarSaco, TAM_TORRE, pintarRolloTela, pintarCajaWhisky, RES_COLGADA, GANCHO, COL_RES } from '../caidas.js';
 
@@ -53,7 +54,8 @@ const PX = 1 / PASO;
 // (🥩 Y el refrigerado, el de las reses.)
 // (🪵 Y la plataforma, la primera sin paredes: va en su propio archivo, world/estiloNuevo/plataforma.js.)
 // (🐂 Y el ganado, también sin paredes y en el suyo, world/estiloNuevo/ganado.js.)
-const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado', 'plataforma', 'ganado']);
+// (🧨 Las armas, con las paredes de siempre; lo de adentro, en world/estiloNuevo/armas.js.)
+const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado', 'plataforma', 'ganado', 'armas']);
 /** ¿Este vagón ya se dibuja en el estilo nuevo? (Lo usa world/train.js para las cajas fuertes.) */
 export const esVagonNuevo = (id) => NUEVOS.has(id);
 
@@ -142,8 +144,10 @@ function vagon(train, w, dia) {
   // (🥩 Y el refrigerado, del crema de siempre: sin esto salía del color del de pasajeros.)
   const hex = (w.id === 'blindado' && cc.blindado) || (w.id === 'refrigerado' && cc.refrigerado) || cc.coche[w.id] || cc.coche.pasajeros;
   const n = parseInt(hex.slice(1), 16);
-  const BORDE = masCercano((n >> 16) & 255, (n >> 8) & 255, n & 255);
-  const BORDE_L = sombrear(BORDE, 1), BORDE_S = sombrear(BORDE, -1), BORDE_SS = sombrear(BORDE, -2);
+  // (🧨 El de las armas, del verde de sus tablas: el más cercano a su color de siempre salía azul oscuro.)
+  const BORDE = w.id === 'armas' ? 26 : masCercano((n >> 16) & 255, (n >> 8) & 255, n & 255);
+  // (🧨 Y sin sombrear: un punto más arriba es verde hoja y uno más abajo, casi negro. Verde militar parejo.)
+  const BORDE_L = w.id === 'armas' ? BORDE : sombrear(BORDE, 1), BORDE_S = w.id === 'armas' ? BORDE : sombrear(BORDE, -1), BORDE_SS = sombrear(BORDE, w.id === 'armas' ? -1 : -2);
 
   // ---- las capas: una por pieza, todas del tamaño del vagón
   const capa = () => ({ i: new Int16Array(W * H).fill(-1), m: new Uint8Array(W * H) });
@@ -312,7 +316,8 @@ function vagon(train, w, dia) {
   const yFarolA = 28;
   // (🥩 En el refrigerado, las rejillas de ventilación van en el mismo lugar que las ventanillas, y el farol es uno solo,
   // en el hueco entre las dos tiras del medio: ver `refrigerado` más abajo.)
-  if (w.id === 'almacen' || w.id === 'refrigerado') {
+  // (🧨 Y en las armas, con un solo farol con reja, en el hueco del medio.)
+  if (w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'armas') {
     ventanillas = ventanasFondo.map(([c0, c1]) => {
       const vx = ax(w.x + c0 * S) + 7, x1 = ax(w.x + (c1 + 1) * S) - 7;
       const barras = [];
@@ -320,7 +325,7 @@ function vagon(train, w, dia) {
       return { x: vx, w: x1 - vx, y: 13, h: 14, barras };
     });
     faroles.length = 0;
-    for (const c of w.id === 'refrigerado' ? [15.5] : [10, 22]) faroles.push(ax(w.x + c * S));
+    for (const c of w.id === 'refrigerado' ? [15.5] : w.id === 'armas' ? [14.27] : [10, 22]) faroles.push(ax(w.x + c * S));
   }
 
   // ===== LA LUZ, por escalones
@@ -425,7 +430,26 @@ function vagon(train, w, dia) {
     }
     return f;
   };
-  const campo = w.id === 'refrigerado' ? campoRefri : w.id === 'almacen' ? campoAlmacen : w.id === 'blindado' ? campoBlindado : w.id === 'cerrado' ? campoCerrado : dia
+  /**
+   * 🧨 LAS ARMAS: de día, el sol a rayas por las ventanillas, como en el almacén. De noche, EL VAGÓN MÁS OSCURO DEL TREN *(Santi
+   * eligió "farol con reja")*: con tanta pólvora no se puede tener más fuego que ese farol, y lo demás queda casi a oscuras.
+   */
+  const campoArmas = (x, y) => {
+    if (y >= ay(yPisoAbajo - tc.alturaParedBaja) + 8) return -1;
+    const y0 = ay(yPisoArriba);
+    if (!dia) {
+      // (🔁 Con -3 en el piso los frentes de los cajones y las balas quedaban negros, como agujeros.)
+      let f = -2;
+      const yCharco = ay(4 * S);
+      for (const fx of faroles) {
+        f += 3 * Math.max(0, 1 - Math.hypot((x - fx) / 84, (y - yCharco) / 56));
+        f += 2.4 * Math.max(0, 1 - Math.hypot((x - fx) / 26, (y - yFarolA) / 18));
+      }
+      return f;
+    }
+    return campoAlmacen(x, y);
+  };
+  const campo = w.id === 'armas' ? campoArmas : w.id === 'refrigerado' ? campoRefri : w.id === 'almacen' ? campoAlmacen : w.id === 'blindado' ? campoBlindado : w.id === 'cerrado' ? campoCerrado : dia
     ? (x, y) => {
       if (y < 8) return 0;
       let f = y < ay(yPisoArriba) ? -1 : 0;
@@ -489,6 +513,7 @@ function vagon(train, w, dia) {
   const luzSola = (y) => {
     if (w.id === 'blindado' || w.id === 'cerrado' || w.id === 'refrigerado') return y < yPisoA ? -1 : dia ? -1 : -2;
     if (w.id === 'almacen') return dia ? 0 : y < yPisoA ? -1 : -2;
+    if (w.id === 'armas') return dia ? 0 : -2;
     if (dia) return y < yPisoA ? -1 : 0;
     return y < yPisoA ? -1 : -2;
   };
@@ -582,8 +607,22 @@ function vagon(train, w, dia) {
      * sin veta (la cal la tapa). La escarcha y los clavos, en `refrigerado` más abajo.
      */
     else if (w.id === 'refrigerado') for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 14 === 0 ? 24 : 25);
+    /**
+     * 🧨 EN LAS ARMAS, LAS TABLAS PINTADAS DE VERDE MILITAR, gastadas, con la franja roja a lo largo *(Santi eligió la
+     * recomendada)*: donde se saltó la pintura asoma la madera.
+     */
+    else if (w.id === 'armas') {
+      for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 12 === 0 ? 42 : 26);
+      for (let x = 3; x < W; x += 12) for (let k = 0; k < 2; k++) {
+        const vy = yCara + 3 + Math.floor(hash(x, k + 31) * (yPie - yCara - 12)), largo = 3 + Math.floor(hash(k, x) * 6);
+        if (deja(x, vy, 71, 0.5)) for (let q = 0; q < largo; q++) p(x + Math.floor(hash(x, 5) * 7), vy + q, 27);
+      }
+      r(0, yPie - 13, W, 1, 0); r(0, yPie - 12, W, 1, 10); r(0, yPie - 11, W, 3, 9); r(0, yPie - 8, W, 1, 0);
+      for (let k = 0; k < W; k += 3) if (hash(k, w.colStart + 1) < 0.16) p(k, yPie - 10 + Math.floor(hash(k, 3) * 2), 26);
+      for (let k = 0; k < W; k += 5) if (hash(k, 77) < 0.25) { p(k, yCara + 1, 4); p(k + 1, yCara + 1, 4); }
+    }
     else for (let x = 0; x < W; x++) for (let y = yCara; y < yPie; y++) p(x, y, x % 14 === 0 ? 1 : 3);
-    for (let x = 7; x < W && w.id !== 'refrigerado'; x += 14) {
+    for (let x = 7; x < W && w.id !== 'refrigerado' && w.id !== 'armas'; x += 14) {
       if (deja(x, yCara + 2, 3)) p(x, yCara + 2, 5);
       if (deja(x, yPie - 5, 4)) p(x, yPie - 5, 5);
       // La veta de cada tabla: una o dos rayitas a lo alto.
@@ -597,7 +636,7 @@ function vagon(train, w, dia) {
     }
     r(0, yPie - 2, W, 2, 1);
     // (🏪 Las del almacén son otras, chicas y con barrotes: ver `almacen`.)
-    for (const [c0, c1] of w.id === 'almacen' || w.id === 'refrigerado' ? [] : ventanasFondo) {
+    for (const [c0, c1] of w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'armas' ? [] : ventanasFondo) {
       const vx = ax(w.x + c0 * S) + 3, vw = ax(w.x + (c1 + 1) * S) - 3 - vx;
       const vy = yCara + 10, vh = Math.round((yPie - yCara) * 0.55);
       r(vx - 1, vy - 1, vw + 2, vh + 2, 0);
@@ -643,7 +682,7 @@ function vagon(train, w, dia) {
     // (🆕 En el blindado no: los suyos cuelgan del techo y se hamacan, ver `blindado`.)
     // (📦 Ni en el cerrado: no tiene, ver `campoCerrado`.)
     // (🏪 Ni en el almacén: cuelgan del techo, ver `almacen`.)
-    for (const fx of w.id === 'blindado' || w.id === 'cerrado' || w.id === 'almacen' || w.id === 'refrigerado' ? [] : faroles) {
+    for (const fx of w.id === 'blindado' || w.id === 'cerrado' || w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'armas' ? [] : faroles) {
       const y = yFarol;
       r(fx - 3, y - 2, 7, 1, 0); r(fx - 1, y - 1, 3, 1, 28);
       r(fx - 3, y, 7, 9, 0);
@@ -3655,6 +3694,15 @@ function vagon(train, w, dia) {
     w._refri = refri;
   }
 
+  // 🧨 Lo de adentro del vagón de armas, en su archivo.
+  if (w.id === 'armas') {
+    const rm = rect(MESAS);
+    pintarArmas({
+      w, map, S, cols, casilla, ax, ay, rMesas: rm, pMesas: pone(MESAS), rFondo: rect(FONDO), pFondo: pone(FONDO), en: (ox, oy) => (x, y, ww, hh, i) => rm(ox + x, oy + y, ww, hh, i),
+      muebles, animado, faroles, yFarolA, ventanillas, dia, h: (a, b) => hash(a + w.colStart * 3, b), yPisoArriba, filasAbajo, filasArriba, yArriba, PASO, x0,
+    });
+  }
+
   /**
    * 🆕 LAS PUNTAS DEL VAGÓN, FINITAS Y DE ARRIBA A ABAJO *(Santi: "arreglar la pared esa vertical que está con la
    * puerta: debería ser más fina… debería ocultarse detrás de la pared del tren más cercana a la pantalla… dar la
@@ -3837,6 +3885,14 @@ function vagon(train, w, dia) {
         tx += L ? L[0].length + 1 : 3;
       }
     }
+    /**
+     * 🧨 LAS ARMAS, POR FUERA: del verde de la pared, con la franja roja y PELIGRO POLVORA en letras crema gastadas.
+     */
+    if (w.id === 'armas') {
+      r(0, yCaraFin - 15, W, 1, 0); r(0, yCaraFin - 14, W, 8, 9); r(0, yCaraFin - 14, W, 1, 10); r(0, yCaraFin - 6, W, 1, 0);
+      const texto = 'PELIGRO POLVORA', paso = Math.floor(W / 3);
+      for (const k of [0, 1, 2]) escribir(p, Math.round(paso * (k + 0.5) - anchoTexto(texto) / 2), yCaraFin - 13, texto, 17, (x, y) => hash(x, y + w.colStart) < 0.05);
+    }
     for (const [c0, c1] of ventanasFrente) {
       const vx = ax(w.x + c0 * S) + 5, vw = ax(w.x + (c1 + 1) * S) - 5 - vx;
       // (🥩 Las del refrigerado son rejillas de tablillas, no ventanillas: nada de luz adentro de noche.)
@@ -3848,6 +3904,12 @@ function vagon(train, w, dia) {
       }
       const vy = yTope + 12, vh = Math.max(5, Math.round((yCaraFin - yTope - 12) * 0.45));
       r(vx - 1, vy - 1, vw + 2, vh + 2, 0);
+      // (🧨 Las de las armas, con barrotes y sin luz: adentro casi no hay fuego.)
+      if (w.id === 'armas') {
+        r(vx, vy, vw, vh, dia ? 19 : 18);
+        for (let bx = vx + 3; bx < vx + vw - 2; bx += 4) r(bx, vy, 1, vh, 0);
+        continue;
+      }
       // De noche, desde afuera las ventanillas se ven prendidas (como en el galope).
       r(vx, vy, vw, vh, dia ? 19 : 44, !dia);
       if (!dia) r(vx + 1, vy + 1, vw - 2, vh - 2, 28, true);

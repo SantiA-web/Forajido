@@ -19802,6 +19802,31 @@ guardaespaldas distintos)*:
   - **Sin probar en movimiento real**: los dibujos y los números se revisaron con el juego congelado. En la prueba de las dos
     manadas se alargó a mano el tiempo en el piso: no se midió si en una partida normal la segunda alcanza a llegar.
   - 🧪 El atajo [8] lleva al ganado con los frenos rotos.
+- **✅ LAS ARMAS** (world/estiloNuevo/armas.js, `armas` en world/caidas.js, `caidas.armas` en data/config.js) *(Santi eligió "verde
+  militar", "armeros y cajones", "barril rajado y reguero", y los cuatro detalles: "ametralladora bajo lona", "arena y NO FUMAR",
+  "farol con reja" y "balas de cañón")*.
+  - **La pared**, tablas verdes con franja roja; por fuera, el mismo verde parejo y PELIGRO POLVORA en letras crema gastadas, con
+    ventanillas de barrotes sin luz. El verde va sin sombrear (`BORDE`): un punto más arriba es verde hoja y uno más abajo, casi negro.
+  - **La carga**: armeros con fusiles y cajones marcados arriba y abajo, y el pasillo libre (ahí pasan las rondas y el Dinamitero).
+  - **Los detalles**, a mano: la ametralladora bajo la lona, sólo de adorno; el NO FUMAR y los tres baldes de arena, que no se caen;
+    el farol con reja colgado, al lado de la ventanilla del medio y no delante; la pila de balas de cañón en su marco.
+  - **La noche**: un solo farol, paredes más oscuras que en los otros vagones. 🔁 Con el piso un punto más oscuro todavía, los frentes
+    de los cajones y las balas quedaban negros, como agujeros: el piso quedó igual que en el almacén.
+  - 🔁 **El barril de pólvora, redibujado a mano en todos los vagones** (`pintarBarrilPolvora` en entities/cajon.js): cargado, vacío,
+    con cartucho y rajado; acostado cuando rueda y prendido (entities/rodante.js, entities/explosive.js).
+  - **Frenos rotos**: desde el primer golpe caen fusiles, cajones y balas. Los fusiles y los cajones chocan con la gente (los cajones,
+    además, aguantan balas), y las balas de cañón salen rodando por el pasillo y golpean. Desde el segundo golpe un barril cargado
+    puede empezar a temblar (70 %, hasta dos por vagón, decidido por mí) y se raja con el golpe siguiente: rueda por su fila, nunca por
+    el pasillo, deja la pólvora y frena solo.
+  - **El reguero** (`prenderReguero`, `dibujarRegueros`, `LLAMA` de 8 cuadros): un tiro de cualquiera o una explosión lo prende, y el
+    fuego corre para los dos lados. Cuando llega al barril le queda media mecha (`mecha`) y explota. Lo quemado queda de mancha.
+    Pisar el fuego saca el 20 % de la vida (`quema`, decidido por mí), una sola vez por reguero, igual a jugador y a guardias.
+    Los guardias no esquivan el fuego del piso: decidido por mí, avisado a Santi.
+  - Con varios golpes, los novillos del ganado pueden llegar a este vagón. Lo dejé así y se lo avisé a Santi.
+  - **Sin probar en movimiento real**: revisado con el juego congelado, y los tiros y la explosión los puse desde el banco, no con las
+    armas del jugador. No se midió el golpe de una bala de cañón contra alguien, ni se forzó a un guardia contra una bala parada en
+    el pasillo (en 30 s de prueba con frenos rotos, los guardias caminaron sin trabarse y sin errores).
+  - 🧪 El atajo [8] lleva a las armas con los frenos rotos.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

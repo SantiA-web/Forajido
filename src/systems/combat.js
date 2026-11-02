@@ -20,7 +20,7 @@ import { dañarRodante, cubreBajo } from '../entities/rodante.js';
 import { dañarCajon } from '../entities/cajon.js';
 import { prenderCajon, soltarExplosivo } from './explosives.js';
 import { yDeBala } from '../entities/bullet.js';
-import { romperConBala, cubreCaida } from '../world/caidas.js';
+import { romperConBala, cubreCaida, prenderReguero } from '../world/caidas.js';
 
 export function updateBullets(bullets, dt, world) {
   for (const b of bullets) {
@@ -218,6 +218,8 @@ export function updateBullets(bullets, dt, world) {
           if (adentro) { b.alive = false; break; }
         }
       }
+      // 🧨 EL REGUERO DE PÓLVORA del barril rajado: la bala que le pasa por encima, de quien sea, lo prende (world/caidas.js). Sigue de largo.
+      if (world.caidas && !b.porEncima && prenderReguero(world.caidas, b.x, b.y, CONFIG.caidas.armas.radioBala, b.owner)) world.audio.play('fuse');
       if (world.caidas) {
         // (🆕 Los cajones caídos de la torre: cobertura baja, de fierro y tablas gruesas; no se rompen a tiros.)
         if (!b.porEncima && cubreCaida(world.caidas, b.x, b.y)) {

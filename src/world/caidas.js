@@ -27,6 +27,7 @@ import { CONFIG } from '../data/config.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { aceleracionEn } from './enganches.js';
+import { FUSIL, FUSIL_CORREA, COL_FUSIL, BALA_CANON, COL_BALA, LUGAR_BALAS, MARCO_BALAS, COL_MARCO } from './estiloNuevo/armas.js';
 
 const PASO = () => CONFIG.estilo.punto / 4;
 
@@ -59,7 +60,7 @@ export function crearCaidas(train) {
     // (🚂 El caboose espera a que el dibujo fijo ubique sus cosas: ver `armarPendientes`.)
     // (🥩 Y el refrigerado: ver `refri`.)
     // (🛑 Y la plataforma: ver `plataforma`.)
-    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'plataforma' || w.id === 'ganado') { (C.porArmar = C.porArmar || []).push(w); continue; }
+    if (w.id === 'caboose' || w.id === 'blindado' || w.id === 'almacen' || w.id === 'refrigerado' || w.id === 'plataforma' || w.id === 'ganado' || w.id === 'armas') { (C.porArmar = C.porArmar || []).push(w); continue; }
     if (w.id !== 'pasajeros') continue;
     const cols = Math.round(w.width / S);
     const casilla = (c, f) => (map.grid[f] || [])[w.colStart + c];
@@ -208,6 +209,8 @@ export function cubreCaida(C, x, y) {
      * como a las colgadas. 🔁 Antes chocaba, frenaba balas y era cobertura baja.
      */
     if (o.tipo === 'mediaRes') continue;
+    // (🧨 Los fusiles tirados chocan, como todo lo que cae. Rotos a tiros ya no.)
+    if (o.tipo === 'fusiles' && o.estado === 'piso') { if (Math.abs(x - o.x) < o.hw && y > o.yPiso - 7 && y < o.yPiso + 1) return true; continue; }
     if (o.tipo !== 'cajonTorre' || o.estado !== 'piso') continue;
     const hondo = (TAM_TORRE[o.variante % 10][1] + 1) * PASO();
     if (Math.abs(x - o.x) < o.hw && y > o.yPiso - hondo && y < o.yPiso + 1) return true;
@@ -247,7 +250,13 @@ export function avisarCaidas(C, sentido, rng) {
     }
   }
   avisarCorrales(C, sentido, rng);
+  avisarArmas(C, sentido, rng);
   for (const p of C.pilas) {
+    // 🧨 Las balas de cañón de la pila: salen con cualquier golpe, para el lado del golpe.
+    if (p.tipo === 'balas') {
+      if (p.estado === 'quieta' && p.quedan > 0) { p.estado = 'aviso'; p.t = 0; p.sentido = sentido; }
+      continue;
+    }
     // 🛑 La plataforma: cada bulto se suelta o no con este golpe, para el lado del golpe (ver `plataforma`).
     if (p.tipo === 'plataforma') {
       if (p.estado !== 'quieta' || p.etapa >= 2 || !rng.chance(K.plataforma.suelta)) continue;
@@ -300,8 +309,19 @@ export function golpearCaidas(C) {
   for (const o of C.objetos) if (o.estado === 'aviso') { o.estado = 'cae'; o.t = -(o.demora || 0); }
   for (const o of C.objetos) if (o.enMesa && o.planDx) o.deslizando = true;
   golpearCorrales(C);
+  golpearArmas(C);
   for (const p of C.pilas) {
     if (p.estado !== 'aviso') continue;
+    if (p.tipo === 'balas') {
+      const KB = CONFIG.caidas.armas.balas, n = Math.min(p.quedan, KB.porGolpe[0] + (azar(Math.round(C.reloj * 60), p.quedan) < 0.5 ? 1 : 0));
+      for (let k = 0; k < n; k++) {
+        p.quedan--;
+        const [lx, ly] = LUGAR_BALAS[p.quedan];
+        C.sueltos.push({ x: p.x0Mundo + (p.px + lx + 5.5) * PASO(), y: p.yPiso, dir: -p.sentido, variante: 'bala', demora: k * 0.2, mueble: true, hw: 4, hh: 3.5, vida: 999, lento: KB.lento, alto: Math.max(0, p.yBolas - ly * PASO() - p.yPiso) });
+      }
+      p.estado = p.quedan > 0 ? 'quieta' : 'vacia';
+      continue;
+    }
     // (🛑 Cada bulto a su tiempo: juntos parecía armado. Hasta soltarse sigue temblando: ver `actualizarCaidas`.)
     if (p.tipo === 'plataforma') { p.estado = 'espera'; p.espera = azar(Math.round(p.x), p.etapa + 1) * CONFIG.caidas.plataforma.demora; continue; }
     const dir = p.atras ? 1 : -1;
@@ -418,6 +438,7 @@ export function actualizarCaidas(C, dt, map) {
   const K = CONFIG.caidas;
   armarPendientes(C);
   actualizarCorrales(C, dt);
+  actualizarArmas(C, dt);
   C.reloj = (C.reloj || 0) + dt;
   for (const o of C.objetos) {
     if (o.estado === 'aviso') o.t += dt;
@@ -490,6 +511,11 @@ export function zonasDePeligro(C, S) {
   // systems/peligro.js.)
   // (Lo que no lastima —un sombrero, un rifle— no es peligro para nadie.)
   for (const o of C.objetos) if ((o.estado === 'aviso' || o.estado === 'cae') && o.peso !== 'nada') z.push({ ...zonaDe(o), clave: o, peso: o.peso, desde: { x: o.xRepisa, y: o.yRepisa } });
+  // (🧨 El barril que se va a rajar sale rodando por su fila.)
+  for (const q of C.porRajar || []) {
+    const c = q.c, d = q.dir, largo = CONFIG.caidas.pasilloLargo;
+    z.push({ x0: d > 0 ? c.x : c.x - largo, x1: d > 0 ? c.x + largo : c.x, y0: c.y - 10, y1: c.y + 10, pasillo: true, clave: q, desde: { x: c.x, y: c.y } });
+  }
   // (🐂 La tropilla del corral que va a ceder sale por el pasillo.)
   for (const k of C.corrales || []) {
     if (k.estado !== 'aviso' && k.estado !== 'espera') continue;
@@ -505,7 +531,8 @@ export function zonasDePeligro(C, S) {
       continue;
     }
     // (🏪 Los rollos de tela salen para el lado contrario al golpe, desde delante de su estantería.)
-    const telas = p.tipo === 'telas', dir = telas ? -p.sentido : p.atras ? 1 : -1, largo = CONFIG.caidas.pasilloLargo;
+    // (🧨 Las balas de cañón, igual.)
+    const telas = p.tipo === 'telas' || p.tipo === 'balas', dir = telas ? -p.sentido : p.atras ? 1 : -1, largo = CONFIG.caidas.pasilloLargo;
     z.push({ x0: dir > 0 ? p.x : p.x - largo, x1: dir > 0 ? p.x + largo : p.x, y0: (telas ? 3 : 4) * S - 2, y1: 6 * S + 2, pasillo: true, clave: p, desde: { x: p.x, y: p.yBase } });
   }
   return z;
@@ -547,6 +574,7 @@ export function pintarTapando(ctx, ox, oy, w, h, luz, pintar) {
  */
 export function dibujarSombrasDeCaidas(r, C, corrido, dia = true) {
   const K = CONFIG.caidas, P = PASO(), ctx = r.ctx;
+  dibujarRegueros(r, C, corrido);
   for (const o of C.objetos) {
     // 🥃 La araña no tiene la sombra de aviso: la avisa su propia sombra (o su luz) temblando, ver `dibujarLuzDeArana`.
     if (o.tipo === 'arana') { if (o.estado === 'repisa' || o.estado === 'aviso' || (o.estado === 'cae' && o.t < 0)) corrido(o.x, () => dibujarLuzDeArana(r, o, dia))(); continue; }
@@ -630,6 +658,11 @@ export function cosasDeCaidas(r, C, corrido) {
   for (const p of C.pilas) {
     if (p.estado === 'suelto') continue;
     out.push({ base: p.yBase, draw: corrido(p.x, () => dibujarPila(r, p)) });
+  }
+  // 🧨 El fuego que corre por el reguero, ordenado por sus pies.
+  for (const t of C.regueros || []) {
+    if (!t.prendido) continue;
+    for (const q of t.puntos) if (q.arde > 0) out.push({ base: q.y + 2, draw: corrido(q.x, () => dibujarLlama(r, q, C.reloj || 0)) });
   }
   // 📦 La nube de harina de la bolsa reventada (cerrado), delante de la gente que está ahí.
   C.nubes = C.nubes.filter((n) => (C.reloj || 0) - n.nace < NUBE_DURA);
@@ -847,6 +880,15 @@ function dibujarPila(r, p) {
   if (p.tipo === 'hielo' || p.tipo === 'plataforma') return;
   const P = PASO();
   const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(p.x, p.yBase - 4) || 0) : 0;
+  // 🧨 La pila de balas de cañón: las que quedan, de atrás para adelante, y delante, el frente del marco. En el aviso tiemblan las de arriba.
+  if (p.tipo === 'balas') {
+    const tb = p.estado === 'aviso' && Math.floor(p.t * 16) % 2 ? 1 : 0, ox = p.px + Math.round(p.x0Mundo / P), oy = Math.round(p.yArr / P) + p.piso - 28;
+    pintarTapando(r.ctx, ox, oy, 42, 33, luz, (R) => {
+      for (let k = 0; k < p.quedan; k++) { const [lx, ly] = LUGAR_BALAS[k]; dibujarMapa(R, lx + (k >= p.quedan - 2 ? tb : 0), ly, BALA_CANON, COL_BALA); }
+      dibujarMapa(R, 0, 28, MARCO_BALAS.frente, COL_MARCO);
+    });
+    return;
+  }
   // En el aviso se sacude contra la puerta.
   const tiembla = p.estado === 'aviso' && Math.floor(p.t * 16) % 2 ? 1 : 0;
   // 🥃 El baúl grande de primera clase, solo.
@@ -3289,6 +3331,185 @@ function actualizarCorrales(C, dt) {
   }
 }
 
+/**
+ * 🧨 EL VAGÓN DE ARMAS *(Santi eligió "barril rajado y reguero"; "en todos los casos cae carga")*. Dónde está cada cosa lo anota
+ * el dibujo fijo (`w._armas`, world/estiloNuevo/armas.js):
+ *  - LOS FUSILES, de a tres, y LOS CAJONES de arriba de las pilas: se caen como lo de cualquier repisa. Tirados chocan con la gente.
+ *  - LAS BALAS DE CAÑÓN: salen de la pila de a una o dos con cada golpe y ruedan por el pasillo. Son de fierro: no se rompen.
+ *  - EL BARRIL RAJADO: desde el segundo golpe puede rajarse uno cargado (`C.rajados`, la escena lo hace rodar) y va dejando un
+ *    reguero de pólvora por su fila. Un tiro o una explosión la prenden, el fuego corre por el piso y, si llega a un barril
+ *    que todavía tiene pólvora, lo prende (`C.fuegoEnBarril`). Toda la cuenta del fuego está acá; el daño, en la escena.
+ */
+function armas(C, w) {
+  const A = w._armas, P = PASO();
+  const x0 = Math.floor(w.x / P) * P, yArr = -CONFIG.tresCuartos.alturaPared;
+  const deAx = (pt) => x0 + pt * P, deAy = (pt) => yArr + pt * P;
+  A.fusiles.forEach((F, k) => {
+    const xw = deAx(F.px + 7.5);
+    C.objetos.push({ tipo: 'fusiles', peso: 'liviano', hw: 11, x: xw, xRepisa: xw, yRepisa: deAy(F.piso), yPared: F.base + k * 0.0001, yPiso: F.yPiso, variante: k % 2, estado: 'repisa', t: 0, dir: 0, wagon: w.id });
+  });
+  A.cajones.forEach((K, k) => {
+    const xw = deAx(K.px + (K.an + 2) / 2);
+    C.objetos.push({ tipo: 'cajonTorre', variante: K.v, peso: 'pesado', hw: Math.round((K.an * P) / 2), x: xw, xRepisa: xw, yRepisa: deAy(K.piso + 1), yPared: K.base + k * 0.0001, yPiso: K.yPiso, corre: 6, aguantaBalas: true, quieto: true, prob: 0.7, estado: 'repisa', t: 0, dir: 0, wagon: w.id });
+  });
+  if (A.balas) {
+    const b = A.balas;
+    C.pilas.push({ tipo: 'balas', px: b.px, piso: b.piso, x: deAx(b.px + 21), x0Mundo: x0, yArr, yBase: b.base, yPiso: b.yPiso, yBolas: deAy(b.piso), quedan: b.quedan, yTope: deAy(b.piso - 28), arriba: [], estado: 'quieta', t: 0, wagon: w.id });
+  }
+  (C.vagonesArmas = C.vagonesArmas || []).push(w);
+}
+
+function avisarArmas(C, sentido, rng) {
+  const K = CONFIG.caidas.armas;
+  for (const w of C.vagonesArmas || []) {
+    w._golpesArmas = (w._golpesArmas || 0) + 1;
+    w._rajados = w._rajados || 0;
+    if (w._golpesArmas <= K.golpesAntes || w._rajados >= K.maxRajados || !rng.chance(K.rajar)) continue;
+    const buenos = (C.train.cajones || []).filter((c) => c.alive && c.cargado && !c.rajado && c.wagon === w.index);
+    if (!buenos.length) continue;
+    const c = buenos[rng.int(0, buenos.length - 1)];
+    w._rajados++;
+    (C.porRajar = C.porRajar || []).push({ c, dir: -sentido, espera: rng.range(0, K.demora), golpeado: false });
+  }
+}
+function golpearArmas(C) { for (const q of C.porRajar || []) q.golpeado = true; }
+
+function actualizarArmas(C, dt) {
+  const K = CONFIG.caidas.armas;
+  // El barril que se va a rajar tiembla (`tiembla`: ver `drawCajon`) y a su tiempo sale.
+  C.porRajar = (C.porRajar || []).filter((q) => {
+    if (!q.c.alive || !q.c.cargado) return false;
+    q.c.tiembla = true;
+    if (!q.golpeado || (q.espera -= dt) > 0) return true;
+    q.c.tiembla = false;
+    (C.rajados = C.rajados || []).push(q);
+    return false;
+  });
+  // El fuego: cada punto prendido prende a su vecino cuando el fuego llega hasta él; arde un rato y queda quemado.
+  for (const t of C.regueros || []) {
+    if (!t.prendido) continue;
+    t.puntos.forEach((q, i) => {
+      if (q.prende > 0 && (q.prende -= dt) <= 0) { q.prende = 0; q.arde = K.arde; if (i === t.puntos.length - 1) llegaAlBarril(C, t); }
+      if (q.arde > 0 && (q.arde -= dt) <= 0) { q.arde = 0; q.quemado = true; }
+    });
+  }
+}
+
+/** Empieza un reguero: lo llama la escena cuando el barril se raja. */
+export function nuevoReguero(C, barril) {
+  const t = { puntos: [], prendido: false, barril, owner: null, llego: false };
+  (C.regueros = C.regueros || []).push(t);
+  return t;
+}
+/** Otro puñado de pólvora en el piso. Si el reguero ya arde, el fuego lo alcanza enseguida. */
+export function sumarAlReguero(t, x, y) {
+  const q = { x, y: y + rand2(x), k: Math.abs(Math.round(x * 7)) % GRANOS.length, prende: 0, arde: 0, quemado: false };
+  t.puntos.push(q);
+  if (t.prendido) q.prende = CONFIG.caidas.armas.cada / CONFIG.caidas.armas.velFuego;
+}
+const rand2 = (x) => (azar(Math.round(x), 11) - 0.5) * 3;
+
+function llegaAlBarril(C, t) {
+  if (t.llego) return;
+  t.llego = true;
+  (C.fuegoEnBarril = C.fuegoEnBarril || []).push(t);
+}
+
+/** Prende lo que esté a `radio` de este punto, de quien sea. Devuelve true si prendió algo. El fuego corre para los dos lados. */
+export function prenderReguero(C, x, y, radio, owner) {
+  const K = CONFIG.caidas.armas;
+  let prendio = false;
+  for (const t of C.regueros || []) {
+    let mejor = -1, d0 = radio;
+    t.puntos.forEach((q, i) => {
+      if (q.arde > 0 || q.quemado || q.prende > 0) return;
+      const d = Math.hypot(q.x - x, q.y - y);
+      if (d <= d0) { d0 = d; mejor = i; }
+    });
+    if (mejor < 0) continue;
+    t.prendido = true; t.owner = owner; prendio = true;
+    t.puntos.forEach((q, i) => {
+      if (q.arde > 0 || q.quemado) return;
+      const tiempo = Math.abs(i - mejor) * K.cada / K.velFuego + 0.001;
+      if (!(q.prende > 0) || tiempo < q.prende) q.prende = tiempo;
+    });
+  }
+  return prendio;
+}
+
+/** ¿Hay fuego acá? Para que la escena queme al que lo pisa. */
+export function regueroQueArde(C, x, y, hw, hh) {
+  for (const t of C.regueros || []) {
+    if (!t.prendido) continue;
+    for (const q of t.puntos) if (q.arde > 0 && Math.abs(q.x - x) <= hw + 2 && Math.abs(q.y - y) <= hh + 2) return t;
+  }
+  return null;
+}
+
+/** Los granos de pólvora en el piso, tres a mano. Quemado queda el mismo dibujo, de hollín. */
+const GRANOS = [['.g.o.', 'oogoo', '.o..g'], ['o..g.', 'ogooo', '..o.o'], ['.o.g.', 'gooog', 'o..o.']];
+function dibujarRegueros(r, C, corrido) {
+  const P = PASO(), ctx = r.ctx;
+  for (const t of C.regueros || []) {
+    if (!t.puntos.length) continue;
+    corrido(t.puntos[0].x, () => {
+      for (const q of t.puntos) {
+        if (q.arde > 0) continue;
+        const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(q.x, q.y) || 0) : 0;
+        const ox = Math.round(q.x / P) - 2, oy = Math.round(q.y / P);
+        // (La pólvora, negra con algún grano gris; lo quemado, sólo la mancha oscura sobre las tablas.)
+        GRANOS[q.k].forEach((fila, j) => { for (let i = 0; i < 5; i++) {
+          if (fila[i] === '.' || (q.quemado && fila[i] === 'g')) continue;
+          ctx.fillStyle = PALETA[q.quemado ? sombrear(3, luz) : fila[i] === 'g' ? sombrear(31, luz) : 0];
+          ctx.fillRect((ox + i) * P, (oy + j) * P, P, P);
+        } });
+      }
+    })();
+  }
+}
+
+/** LA LLAMA DEL REGUERO, ocho cuadros a mano (siempre clara: es fuego). */
+const LLAMA = [
+  ['...f...', '..fF...', '..FFf..', '.fFYFf.', '.FYYYF.', '.FYWYF.', '..YWY..'],
+  ['....f..', '...fF..', '..fFF..', '.fFYFf.', '.FYYYF.', '.FYWYF.', '..YWY..'],
+  ['.......', '...f...', '..fFf..', '.fFYFf.', '.FYYYF.', '.FYWYF.', '..YWY..'],
+  ['.......', '..f....', '..Ff...', '.fFYFf.', '.FYYYFf', '.FYWYF.', '..YWY..'],
+  ['..f....', '..Ff...', '.fFF...', '.fFYFf.', '.FYYYF.', '.FYWYF.', '..YWY..'],
+  ['.......', '...f...', '..fF...', '.fFYF..', 'fFYYYF.', '.FYWYF.', '..YWY..'],
+  ['.......', '.......', '...f...', '..fFf..', '.FFYFF.', '.FYWYF.', '..YWY..'],
+  ['.......', '....f..', '...Ff..', '..FFYf.', '.FYYYF.', '.FYWYF.', '..YWY..'],
+];
+const COL_LLAMA = { f: 44, F: 45, Y: 29, W: 30 };
+function dibujarLlama(r, q, reloj) {
+  const P = PASO(), c = Math.floor(reloj * 14 + q.x) % 8;
+  pintarTapando(r.ctx, Math.round(q.x / P) - 3, Math.round(q.y / P) - 6, 7, 7, 0, (R) => dibujarMapa(R, 0, 0, LLAMA[(c + 8) % 8], COL_LLAMA));
+}
+
+/** 🧨 La bala de cañón rodando: el mismo dibujo, con el brillo fijo (la luz no gira) y la marca de la fundición dando la vuelta. */
+const MARCA_BALA = [[5, 1], [8, 2], [9, 5], [8, 8], [5, 9], [2, 8], [1, 5], [2, 2]];
+export function pintarBalaRodando(R, cuadro) {
+  dibujarMapa(R, 0, 0, BALA_CANON, COL_BALA);
+  const [x, y] = MARCA_BALA[((cuadro % 8) + 8) % 8];
+  R(x, y, 1, 1, 0); R(x + 1, y, 1, 1, 24);
+}
+
+/**
+ * 🧨 LOS TRES FUSILES DEL ARMERO: parados como están en el armero; tirados en el piso, desparramados y cruzados; rotos a tiros, los
+ * pedazos: la culata partida y los caños sueltos.
+ */
+const FUSILES_TIRADOS = [
+  ['.............................o', 'oooo.....................oooMo', 'oCCCooooooooooooooooooooMMMoo.', 'oCcCCCCCCCMMMMMMMMMMMMMMMoo...', 'oooooMoooooooooooooooooooo..o.', '......oooo.......oooo....ooHo.', '..ooooCCCCooooooooMMMooooMMoo.', '.oCCCCcCCCCCCMMMMMMMoooooooo..', '.oooooooooooooooooooo.........'],
+  ['oooo..........................', 'oCCCoooo...............oooo...', 'oCcCCCCCooooooooooooooMMMMo...', 'oooooMoCCCCCMMMMMMMMMMMoooo...', '.....oooooooooooooooooo....oo.', '.oo..........oooooooooooooMMo.', 'oCCoooooooooooMMMMMMMMMMMMoo..', 'oCcCCCCCCCCCMMMoooooooooooo...', '.oooooooooooooo...............'],
+];
+const FUSILES_ROTOS = ['..oo...........oo.....', '.oCCo..oooooooMMoo....', 'oCcCo.oMMMMMMMoo..oo..', '.ooo...ooooooo...oCCo.', '...o......ooo...oCCco.', '..oCo...ooMMMoo..ooo..', '...o...oMMMoo.........', '........ooo...........'];
+DIBUJOS.fusiles = {
+  arriba: { w: 15, h: 27, pintar: (R, v) => {
+    dibujarMapa(R, 0, 0, FUSIL, COL_FUSIL); dibujarMapa(R, 5, 0, v ? FUSIL_CORREA : FUSIL, COL_FUSIL); dibujarMapa(R, 10, 0, FUSIL, COL_FUSIL);
+  } },
+  piso: { w: 30, h: 9, pintar: (R, v) => dibujarMapa(R, 0, 0, FUSILES_TIRADOS[v || 0], { ...COL_FUSIL, H: 25 }) },
+  roto: { w: 22, h: 8, pintar: (R) => dibujarMapa(R, 0, 0, FUSILES_ROTOS, COL_FUSIL) },
+};
+
 function armarPendientes(C) {
   if (!C.porArmar || !C.porArmar.length) return;
   C.porArmar = C.porArmar.filter((w) => {
@@ -3299,6 +3520,7 @@ function armarPendientes(C) {
     if (w._refri) { refri(C, w); return false; }
     if (w.id === 'plataforma' && w._bultos) { plataforma(C, w); return false; }
     if (w.id === 'ganado' && w._corrales) { ganado(C, w); return false; }
+    if (w._armas) { armas(C, w); return false; }
     return true;
   });
 }
@@ -3634,6 +3856,8 @@ export const MARCAS_CAJON = [
   { f: ['oo.ooo.oo', '.........', 'ooo.o.ooo'], i: 1 },                      // las letras
   null,                                                                       // (6: sin marca)
   { f: ['ooo.o.o', 'o...o.o', 'oo...o.', 'o...o.o', 'ooo.o.o'], i: 1 },      // 🏪 7: la marca quemada de la compañía (EX)
+  { f: ['.ooo.', 'ooooo', 'ooooo', 'ooooo', '.ooo.', '.ooo.'], i: 1 },       // 🧨 8: la bala: munición
+  { f: ['..o..', '..oo.', '.ooo.', 'ooooo', 'oo.oo', '.ooo.'], i: 9 },       // 🧨 9: la llama: pólvora
 ];
 export function pintarCajon(R, an, tapa, alto, marca = 6) {
   const piso = alto + tapa + 1;

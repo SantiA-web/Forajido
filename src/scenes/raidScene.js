@@ -91,7 +91,9 @@ import {
   updateEnemy, alertTo, alertCombat, alertaEnGuardia, separateEnemies, armarGuardia,
 } from '../systems/ai.js';
 import { updateBullets } from '../systems/combat.js';
-import { updateExplosives } from '../systems/explosives.js';
+import { updateExplosives, prenderCajon, soltarExplosivo } from '../systems/explosives.js';
+import { createCajon } from '../entities/cajon.js';
+import { nuevoReguero, sumarAlReguero, prenderReguero, regueroQueArde } from '../world/caidas.js';
 import { actualizarPrimeraClase } from '../systems/primeraClase.js';
 import { createAlertSystem } from '../systems/alert.js';
 import { applyRaidResult, gameState, numero } from '../state/gameState.js';
@@ -1612,6 +1614,8 @@ export function createRaidScene(services) {
       bus.on('explosion', ({ x, y, radius, porJugador, wagons }) => {
         // (🧳 La onda rompe lo tirado de las repisas.)
         if (caidas && romperEnRadio(caidas, x, y, radius)) spawnParticles(x, y, '#c8b890', 10);
+        // (🧨 Y prende la pólvora que haya en el piso.)
+        if (caidas) prenderReguero(caidas, x, y, radius, porJugador ? 'player' : 'enemy');
         // 💥 Y una sola dinamita destruye cualquiera de estas cosas (lo de las repisas, las pilas, lo que rueda), sin
         // importar cuánto aguante a los tiros: ver `destruirEnRadio`, world/caidas.js.
         if (caidas) for (const q of destruirEnRadio(caidas, x, y, radius)) spawnParticles(q.x, q.y, '#8a6a4a', 10);
@@ -2229,7 +2233,7 @@ export function createRaidScene(services) {
        */
       if (ro.tipo === 'valija' && ro.variante >= 10 && ro.quieta && ro.alive) sacarDeEncima(ro);
       if (ro.tipo === 'polvora') {
-        if (actualizarPolvora(ro)) { rodantes.splice(i, 1); continue; }
+        if (actualizarPolvora(ro, dt)) { rodantes.splice(i, 1); continue; }
       } else if (ro.tipo === 'valija' && ro.variante >= 10 && (ro.seCae || ro.x - ro.hw < ro.tramo.x0 || ro.x + ro.hw > ro.tramo.x1)) {
         // 🛑 LO DE LA PLATAFORMA QUE LLEGA A LA PUNTA SE CAE DEL TREN: sigue de largo, cae y se pierde *(Santi: "y algo se cae
         // del tren")*. Mientras cae ya no le pega a nadie. (🔁 Apenas la punta llega a la valla: por el centro, las tablas, que
@@ -2266,7 +2270,7 @@ export function createRaidScene(services) {
           && Math.abs(x - q.x) < q.hw && Math.abs(y - q.y) < q.hh);
         const choca = (x, y) => (ro.variante >= 10
           ? x > ro.tramo.x0 + map.size && x < ro.tramo.x1 - map.size && (map.isSolidForMovementAt(x, y) || otroRollo(x, y))
-          : ro.variante === 8 ? map.isSolidForMovementAt(x, y) || otroRollo(x, y) : map.isSolidAt(x, y));
+          : ro.variante === 8 || ro.variante === 'bala' ? map.isSolidForMovementAt(x, y) || otroRollo(x, y) : map.isSolidAt(x, y));
         /**
          * 🛑 LO QUE SE CAE DE LA PLATAFORMA NO SE ATRAVIESA, EN UNA MISMA FILA: el más rápido alcanza al de adelante y sigue
          * a su paso; si el de adelante está tirado, se queda pegado a él. (Sólo chocaban con lo que ya estaba quieto y de
@@ -2367,8 +2371,30 @@ export function createRaidScene(services) {
    * Tiene tres reglas propias que un barril suelto no tiene, y las
    * tres salen de que **esto es un arma tuya y no una molestia del tren**.
    */
-  function actualizarPolvora(ro) {
+  function actualizarPolvora(ro, dt) {
     const t = EXPLOSIVES.cajonPolvora;
+
+    /**
+     * 🧨 EL BARRIL RAJADO *(Santi eligió "barril rajado y reguero")* va por su fila, nunca por el pasillo (ahí pasan las rondas), y
+     * no rompe puertas ni salta enganches: el piso lo frena y se queda tirado de nuevo como barril, con su rajadura. Mientras
+     * rueda deja la pólvora en el piso. (Ver `armas` en world/caidas.js.)
+     */
+    if (ro.rajado) {
+      const K = CONFIG.caidas.armas;
+      ro.velocidad = Math.max(0, ro.velocidad - K.roce * dt);
+      // (Los granos caen por detrás del barril, no debajo: así no se dibujan sobre él cuando para.)
+      while ((ro.x - ro.dir * ro.hw - ro.ultimoGrano) * ro.dir >= K.cada) {
+        ro.ultimoGrano += ro.dir * K.cada;
+        sumarAlReguero(ro.reguero, ro.ultimoGrano, ro.y + ro.hh - 2);
+      }
+      if (ro.velocidad > 0 && !map.isSolidForMovementAt(ro.x + ro.dir * ro.hw, ro.y)) return false;
+      const c = createCajon(ro.x, ro.y, ro.tieneCartucho);
+      c.vida = ro.vida; c.wagon = train.wagonAt(ro.x); c.rajado = true;
+      cajones.push(c);
+      ro.reguero.barril = c;
+      audio.play('hitWall');
+      return true;
+    }
 
     /**
      * 1. ROMPE LA PUERTA QUE SE LE CRUCE. *(Santi: "si el barril choca contra
@@ -2527,6 +2553,43 @@ export function createRaidScene(services) {
       for (let i = 0; i < K.ganado.gotas; i++) particles.push({ x: s.x + rng.range(-10, 10), y: s.y - rng.range(0, 3), vx: s.dir * rng.range(10, 55), vy: -rng.range(10, 45), life: rng.range(0.25, 0.5), color: PALETA[i % 2 ? 21 : 20], punto: true });
     }
     if (caidas.salpicones) caidas.salpicones.length = 0;
+    // 🧨 El barril que se rajó sale rodando por su fila, y empieza a dejar su reguero.
+    for (const q of caidas.rajados || []) {
+      const c = q.c, i = cajones.indexOf(c);
+      if (i < 0 || !c.alive) continue;
+      cajones.splice(i, 1);
+      const ro = createRodante(c.x, c.y, 'polvora', rng, { dir: q.dir, cargado: true, tieneCartucho: c.tieneCartucho, vida: c.vida, hw: c.hw + 1, hh: c.hh + 2, velocidad: rng.range(K.armas.vel[0], K.armas.vel[1]) });
+      ro.rajado = true; ro.ultimoGrano = c.x; ro.reguero = nuevoReguero(caidas, ro);
+      rodantes.push(ro);
+      audio.play('hitWall');
+      spawnParticles(c.x, c.y, '#8a5a34', 10);
+    }
+    if (caidas.rajados) caidas.rajados.length = 0;
+    // 🧨 El fuego del reguero llegó al barril: si todavía tiene pólvora, le queda una mecha cortita.
+    for (const t of caidas.fuegoEnBarril || []) {
+      const b = t.barril;
+      if (!b || !b.alive || !b.cargado) continue;
+      if (b.tipo === 'polvora') { b.alive = false; soltarExplosivo(b.x, b.y, world, t.owner, K.armas.mecha); }
+      else if (cajones.includes(b)) prenderCajon(b, world, t.owner, K.armas.mecha);
+    }
+    if (caidas.fuegoEnBarril) caidas.fuegoEnBarril.length = 0;
+    // 🧨 Quien pisa el fuego se quema, una sola vez por reguero, y lo mismo vos que un guardia.
+    if (caidas.regueros) {
+      const tP = player.alive && !player.enTecho && regueroQueArde(caidas, player.x, player.y, player.hw, player.hh);
+      if (tP && !tP.quemoAlJugador) {
+        tP.quemoAlJugador = true;
+        player.invuln = 0;
+        damagePlayer(player, player.maxHealth * K.armas.quema, player.x, player.y);
+        floaters.push({ x: player.x, y: player.y - 24, text: T.prompts.teQuemaste, life: 1.4, color: colors.enemyAlert });
+      }
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        const tE = regueroQueArde(caidas, e.x, e.y, e.hw, e.hh);
+        if (!tE || (tE.quemados && tE.quemados.has(e))) continue;
+        (tE.quemados = tE.quemados || new Set()).add(e);
+        if (damageEnemy(e, (e.maxHealth || e.health) * K.armas.quema, e.x, e.y)) bus.emit('enemyKilled', { enemy: e, byPlayer: tE.owner === 'player' });
+      }
+    }
     for (const im of caidas.impactos) {
       audio.play('hitWall');
       spawnParticles(im.x, im.y, '#c9b28a', 8);
@@ -2582,6 +2645,8 @@ export function createRaidScene(services) {
       // (🛑 Lo de la plataforma: ver `plataforma` en world/caidas.js. El tronco y las tablas frenan las balas y no se rompen
       // *(Santi eligió que las tablas también: si te frenan a vos, que te cubran)*; por las ruedas, huecas, pasan.)
       if (s.variante >= 10) { ro.tramo = s.tramo; ro.altura = s.altura; ro.danio = s.danio; ro.ancho = s.ancho; ro.roce = O.valijaRoce * s.roceDe; ro.balea = s.variante !== 12; }
+      // (🧨 La bala de cañón: primero baja de la pila, y después rueda. Es de fierro: frena las balas, no se rompe y lastima.)
+      if (s.variante === 'bala') { const KB = CONFIG.caidas.armas.balas; ro.baja = ro.bajaDura = KB.baja; ro.altoBaja = s.alto; ro.roce = O.valijaRoce * KB.roce; ro.danio = KB.danio; }
       if (s.variante === 8) { ro.color = s.color; ro.baja = ro.bajaDura = CONFIG.caidas.telas.baja; ro.altoBaja = s.alto; ro.roce = O.valijaRoce * CONFIG.caidas.telas.roce; }
       // (🚂 La rueda del freno no entra al pasillo: rueda por su fila. Ver `caboose` en world/caidas.js.)
       ro.yMeta = s.porSuFila ? null : map.height / 2 + rng.range(-6, 6);

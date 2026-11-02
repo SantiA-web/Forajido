@@ -24,7 +24,7 @@ import { pieza, tono, NEGRO } from '../world/piezas.js';
 import { pintarNovillo, ANCHO_NOVILLO, ALTO_NOVILLO } from './novillo.js';
 import { PALETA, sombrear } from '../engine/paleta.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA, pintarRolloTela, pintarBarraHielo, pintarTroncoRodando, ALTO_TRONCO, pintarTablasSueltas, ALTO_TABLAS, pintarRuedasRodando, ALTO_RUEDAS } from '../world/caidas.js';
+import { pintarBalaRodando, pintarTapando, pintarBaulRodando, pintarCarro, medidasCarro, pintarCarroDiagonal, pintarCajaDeslizandose, pintarBarril, ALTO_BARRIL, ALTO_BARRIL_G, deLona, pintarRueda, pintarRuedaCayendo, pintarBarrilAgua, ALTO_BARRIL_AGUA, pintarRolloTela, pintarBarraHielo, pintarTroncoRodando, ALTO_TRONCO, pintarTablasSueltas, ALTO_TABLAS, pintarRuedasRodando, ALTO_RUEDAS } from '../world/caidas.js';
 
 export const TIPOS_RODANTE = ['barril', 'cajon'];
 
@@ -101,7 +101,7 @@ export function createRodante(x, y, tipo, rng, opciones = {}) {
  */
 export function cubreBajo(ro) {
   // (🏪 Y el rollo de tela del almacén, tirado en el pasillo.)
-  return ro.alive && ro.quieta && ro.tipo === 'valija' && ro.mueble && (ro.variante === 3 || ro.variante === 5 || ro.variante === 6 || ro.variante === 8 || ro.variante === 10 || ro.variante === 11);
+  return ro.alive && ro.quieta && ro.tipo === 'valija' && ro.mueble && (ro.variante === 3 || ro.variante === 5 || ro.variante === 6 || ro.variante === 8 || ro.variante === 10 || ro.variante === 11 || ro.variante === 'bala');
 }
 
 /** Devuelve true si con este tiro se rompió. */
@@ -143,7 +143,7 @@ export function updateRodante(ro, dt) {
    * 🏪 EL ROLLO DE TELA, MIENTRAS SE CAE DE LA ESTANTERÍA (`baja`, los segundos que le faltan): todavía no rueda. Al llegar
    * al piso, el golpe (`recienCaido`: la escena pone el ruido y el polvo).
    */
-  if (ro.tipo === 'valija' && ro.variante === 8 && ro.baja > 0) {
+  if (ro.tipo === 'valija' && (ro.variante === 8 || ro.variante === 'bala') && ro.baja > 0) {
     ro.baja = Math.max(0, ro.baja - dt);
     if (ro.baja === 0) ro.recienCaido = true;
     return;
@@ -202,13 +202,14 @@ export function updateRodante(ro, dt) {
   if (ro.variante === 4) ro.giroRueda = (ro.giroRueda || 0) + paso / 3;
   // (🛢️ El barril cuenta lo que rodó, para cada lado: es lo que le da la vuelta.)
   // (🏪 Y el rollo de tela.)
-  if (ro.variante === 6 || ro.variante === 7 || ro.variante === 8 || ro.variante === 10 || ro.variante === 12) ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
+  // (🧨 Y el barril de pólvora, y las balas de cañón.)
+  if (ro.variante === 6 || ro.variante === 7 || ro.variante === 8 || ro.variante === 10 || ro.variante === 12 || ro.variante === 'bala' || ro.tipo === 'polvora') ro.rodado = (ro.rodado || 0) + ro.dir * paso * (ro.freno ?? 1);
   // 🧳 La que sale de una pila, de costado del pasillo, entra en él (`yMeta`) mientras se desliza.
   if (ro.yMeta != null && !ro.quieta) {
     const d = ro.yMeta - ro.y;
     // (🛒 El carro entra en diagonal, rodando: lo que baja o sube va con lo que avanza *(Santi: "parece que pegó un
     // salto… que rueden de forma diagonal al pasillo y ahí se acomoden en horizontal")*.)
-    const paso = ro.variante >= 4 && ro.variante <= 9 ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
+    const paso = (ro.variante >= 4 && ro.variante <= 9) || ro.variante === 'bala' ? Math.max(0.2, ro.velocidad * (ro.freno ?? 1) * dt) : 220 * dt;
     ro.y += Math.sign(d) * Math.min(Math.abs(d), paso);
     // (📦 La caja de munición sale casi derecho al pasillo y recién ahí se arrastra a lo largo: de costado se trababa
     // contra el catre de al lado de la pila.)
@@ -226,6 +227,7 @@ export function drawRodante(r, ro) {
   if (ro.tipo === 'valija' && ro.variante === 7) { dibujarRuedaRodando(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 8) { dibujarRolloRodando(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante === 9) { dibujarHieloPatinando(r, ro); return; }
+  if (ro.tipo === 'valija' && ro.variante === 'bala') { dibujarBalaRodando(r, ro); return; }
   if (ro.tipo === 'valija' && ro.variante >= 10) { dibujarDeLaPlataforma(r, ro); return; }
   if (ro.tipo === 'valija') { dibujarValija(r, ro); return; }
 
@@ -413,12 +415,18 @@ function dibujarRes(r, ro, col) {
  * vos: si el que se te viene encima te tumba o te mata.
  */
 function dibujarPolvora(r, ro) {
-  // EL TUMBO VA EN PASOS y no continuo: cada medida distinta es una pieza
-  // guardada distinta, y con el seno crudo serían cientos.
-  const tumbo = Math.round(Math.abs(Math.sin(ro.giro * 1.6)) * 4) / 4;
-  const w = ro.hw - 1 + tumbo * 1.5;
-  const h = ro.hh - 3 - tumbo * 1.5;
-  dibujarCuerpoCajon(r, ro.x, ro.y, w, h, ro.cargado, ro.hitFlash > 0, ro.tieneCartucho);
+  /**
+   * 🧨 🔁 EL BARRIL DE PÓLVORA RUEDA COMO EL DE COMIDA GRANDE: la tapa de frente dando la vuelta en sus ocho cuadros (los mismos
+   * mapas a mano de `pintarBarril`), con los zunchos pintados de rojo si está cargado: lo único que importa mientras se te viene
+   * encima. Antes iba dando tumbos de canto, con un dibujo de la resolución vieja.
+   */
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  const alto = ALTO_BARRIL_G.acostado;
+  pintarTapando(r.ctx, Math.round(ro.x / P) - 10, Math.round((ro.y + ro.hh) / P) - alto, 20, alto, luz + (ro.hitFlash > 0 ? 2 : 0), (R) => {
+    const Q = ro.cargado ? (x, y, w, h, i) => R(x, y, w, h, i === 23 ? 10 : i === 31 ? 9 : i) : R;
+    pintarBarril(Q, 'acostado', Math.floor((ro.rodado || 0) / 5.9), 0, false, true);
+  });
 }
 
 /**
@@ -584,6 +592,15 @@ function dibujarDeLaPlataforma(r, ro) {
   if (ro.variante === 10) pintarTapando(r.ctx, x - 6, piso - ALTO_TRONCO, 13, ALTO_TRONCO, luz, (R) => pintarTroncoRodando(R, Math.floor((ro.rodado || 0) / 2.9)));
   else if (ro.variante === 12) pintarTapando(r.ctx, x - 9, piso - ALTO_RUEDAS, 19, ALTO_RUEDAS, luz, (R) => pintarRuedasRodando(R, Math.floor((ro.rodado || 0) / 5.3)));
   else pintarTapando(r.ctx, x - Math.round(ro.ancho / 2) - 1, piso - ALTO_TABLAS, ro.ancho + 2, ALTO_TABLAS, luz, (R) => pintarTablasSueltas(R, ro.ancho));
+}
+
+/** 🧨 La bala de cañón: cayéndose de la pila y después rodando (un cuadro cada 3,2 unidades: ocho por vuelta). */
+function dibujarBalaRodando(r, ro) {
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ro.x, ro.y) || 0) : 0;
+  const f = ro.baja > 0 ? ro.baja / ro.bajaDura : 0;
+  const alto = Math.round(((ro.altoBaja || 0) * (1 - (1 - f) * (1 - f))) / P);
+  pintarTapando(r.ctx, Math.round(ro.x / P) - 5, Math.round((ro.y + ro.hh) / P) - alto - 11, 11, 11, luz, (R) => pintarBalaRodando(R, Math.floor((ro.rodado || 0) / 3.2)));
 }
 
 /** 🥩 La barra de hielo del refrigerado (world/caidas.js), patinando por el piso: no rueda ni salta. */

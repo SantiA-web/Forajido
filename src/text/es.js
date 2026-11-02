@@ -129,6 +129,7 @@ export const T = {
     teAgarraste: '¡TE AGARRASTE DEL ALERO!',
     colgadoAyuda: (tecla) => `MANTENÉ [${tecla}] PARA SUBIR`,
     teCaisteDelTren: '¡TE CAÍSTE DEL TREN!',
+    teQuemaste: '¡TE QUEMASTE!',
     teLlevoPuesto: '¡TE LLEVÓ PUESTO!',
     tranquera: '[E] ABRIR EL CORRAL',
     tranqueraAbierta: '¡SE SUELTA EL GANADO!',

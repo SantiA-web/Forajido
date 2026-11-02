@@ -24,6 +24,8 @@ import { CONFIG } from '../data/config.js';
 import { EXPLOSIVES } from '../data/explosives.js';
 import { dibujarDanio, etapaDeDanio } from './danio.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
+import { pintarTapando } from '../world/caidas.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 
 export function createCajon(x, y, tieneCartucho = true) {
   const t = EXPLOSIVES.cajonPolvora;
@@ -227,17 +229,113 @@ export function dibujarCuerpoCajon(r, x, y, hw, hh, cargado, golpeado, tieneCart
   r.ctx.drawImage(img, x - (img.width * PUNTO) / 2, y - hh - 21 * PUNTO,
     img.width * PUNTO, img.height * PUNTO);
 }
+/**
+ * 🧨 EL BARRIL DE PÓLVORA, EN EL ESTILO NUEVO, A MANO: el mismo barril de duelas y zunchos de los otros (20 de ancho), con lo
+ * que dice lo mismo que antes:
+ *   la franja roja ancha    → ESTO EXPLOTA. La tienen todos los cargados, y se ve de lejos.
+ *   los tres cartuchos      → y además hay uno para llevarte. Son chicos: se ven de cerca.
+ *   sin franja y destapado  → ya le sacaste el cartucho: no explota más.
+ *   las rajaduras           → el barril que se rajó con los frenos rotos (ver `armas` en world/caidas.js).
+ */
+export const BARRIL_POLVORA = [
+  '....oooooooooooo....',
+  '..ooTTTjTTTTjTTTto..',
+  '.oTTTTjTTTTjTTTTtto.',
+  '.oLLLDDDDDDDDDDDsso.',
+  '.ozzzzzzzzzzzzzzzzo.',
+  '.oZZZZZZZZZZZZZZZZo.',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oBBRRRRRRRRRRRRRRrro',
+  'oBBRRRRRRRRRRRRRRrro',
+  'oBBRRRRRRRRRRRRRRrro',
+  'oBBRRRRRRRRRRRRRRrro',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  '.oLLDDdDDDdDDDdDDso.',
+  '.ozzzzzzzzzzzzzzzzo.',
+  '.oZZZZZZZZZZZZZZZZo.',
+  '.oLLDDdDDDdDDDdDDso.',
+  '..oLDDdDDDdDDDdDso..',
+  '...oooooooooooooo...',
+];
+const BARRIL_VACIO = [
+  '....oooooooooooo....',
+  '..ooLLLDDDDDDDssoo..',
+  '.oLD11111111111DDso.',
+  '.oLDD1111111111DDso.',
+  '.ozzzzzzzzzzzzzzzzo.',
+  '.oZZZZZZZZZZZZZZZZo.',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  'oLLDDDdDDDdDDDdDDsso',
+  '.oLLDDdDDDdDDDdDDso.',
+  '.ozzzzzzzzzzzzzzzzo.',
+  '.oZZZZZZZZZZZZZZZZo.',
+  '.oLLDDdDDDdDDDdDDso.',
+  '..oLDDdDDDdDDDdDso..',
+  '...oooooooooooooo...',
+];
+/** Los tres cartuchos que asoman por la tapa, con su mecha. */
+const CARTUCHOS = [
+  '.....w....w....w....',
+  '....oBo..oBo..oBo...',
+  '....oRo..oRo..oRo...',
+  '....oWo..oWo..oWo...',
+  '....oRo..oRo..oRo...',
+  '....oro..oro..oro...',
+  '....ooo..ooo..ooo...',
+];
+/** La rajadura, en la panza, y los granos que se le escapan por abajo. */
+const RAJADURA = [
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '.............o......',
+  '............oo......',
+  '............o.......',
+  '...........oo.......',
+  '...........o........',
+  '..........oo........',
+  '..........o.........',
+  '.........oo.........',
+  '.........o..........',
+  '....................',
+  '....................',
+  '........g...........',
+  '.........g..........',
+  '.......g..g.........',
+];
+const COL_BARRIL_P = { o: 0, T: 6, t: 5, j: 4, L: 6, D: 5, d: 4, s: 3, z: 23, Z: 31, B: 10, R: 9, r: 8, 1: 1, w: 16, W: 17, g: 46 };
+export const ANCHO_BARRIL_P = 20, ALTO_BARRIL_P = BARRIL_POLVORA.length;
+
+/** Pinta el barril parado, con la base abajo, desde (0, 7): arriba le quedan siete puntos para los cartuchos. */
+export function pintarBarrilPolvora(R, cargado, tieneCartucho, rajado) {
+  const mapa = (filas, y) => filas.forEach((fila, j) => { for (let q = 0; q < fila.length; q++) if (fila[q] !== '.') R(q, y + j, 1, 1, COL_BARRIL_P[fila[q]]); });
+  mapa(cargado ? BARRIL_POLVORA : BARRIL_VACIO, 7);
+  if (cargado && tieneCartucho) mapa(CARTUCHOS, 0);
+  if (rajado) mapa(RAJADURA, 7);
+}
+
 export function drawCajon(r, c) {
   const w = c.hw, h = c.hh;
-  const golpeado = c.hitFlash > 0;
-
-  // La sombra: lo despega del piso y lo hace leer como un bulto y no como una
-  // mancha pintada en el suelo. Mismo truco que los barriles.
-  r.ctx.globalAlpha = 0.35;
-  r.box(c.x, c.y + h, w - 1, 2, '#000');
-  r.ctx.globalAlpha = 1;
-
-  dibujarCuerpoCajon(r, c.x, c.y, w, h, c.cargado, golpeado, c.tieneCartucho);
+  const P = CONFIG.estilo.punto / 4;
+  const luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(c.x, c.y) || 0) : 0;
+  // 🧨 (`R(q, y, 1, 1, i)`, con la sombra chata debajo.) Golpeado, dos escalones más claro, como todo lo demás.
+  // (Y el que se va a rajar con los frenos rotos, tiembla: ver `armas` en world/caidas.js.)
+  const tiembla = c.tiembla && Math.floor(performance.now() / 60) % 2 ? 1 : 0;
+  pintarTapando(r.ctx, Math.round(c.x / P) - 10 + tiembla, Math.round((c.y + h) / P) - 26, 20, 27, luz + (c.hitFlash > 0 ? 2 : 0), (R) => {
+    R(1, 26, 18, 1, 1);
+    pintarBarrilPolvora(R, c.cargado, c.tieneCartucho, c.rajado);
+  });
 
   /**
    * CUÁNTO LE QUEDA, sólo si ya le pegaste. Las mismas rayitas que usan los

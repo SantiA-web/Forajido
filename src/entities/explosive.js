@@ -8,6 +8,9 @@
 import { CONFIG } from '../data/config.js';
 import { EXPLOSIVES } from '../data/explosives.js';
 import { pieza, tono, NEGRO } from '../world/piezas.js';
+import { pintarTapando } from '../world/caidas.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { pintarBarrilPolvora } from './cajon.js';
 
 export function createExplosive({ x, y, targetX, targetY, typeId, owner, fuse }) {
   const type = EXPLOSIVES[typeId];
@@ -101,17 +104,23 @@ export function drawExplosive(r, ex) {
     r.ctx.globalAlpha = 1;
   }
 
+  // 🧨 El barril que se prendió sigue siendo el barril, con su mecha chispeando: antes aparecía un cartucho en su lugar.
+  if (t.id === 'cajonPolvora') {
+    const P = CONFIG.estilo.punto / 4, luz = estiloNuevo.luzEn ? Math.round(estiloNuevo.luzEn(ex.x, ex.y) || 0) : 0;
+    pintarTapando(r.ctx, Math.round(ex.x / P) - 10, Math.round((ex.y + 6) / P) - 26, 20, 27, luz, (R) => pintarBarrilPolvora(R, true, false, false));
+  } else {
   // El cartucho. Se arma una vez y se estampa (ver world/piezas.js).
   const img = piezaDinamita(c.dynamite, c.dynamiteBand);
   r.ctx.drawImage(img, ex.x - (img.width * PUNTO) / 2, y - (img.height * PUNTO) / 2,
     img.width * PUNTO, img.height * PUNTO);
+  }
 
   // La chispa: parpadea cada vez más rápido a medida que se acaba la mecha.
   const ritmo = 6 + (1 - restante) * 26;
   const encendida = Math.floor(ex.spin * ritmo) % 2 === 0;
   if (encendida) {
     const tam = 1 + Math.round((1 - restante) * 2);
-    r.box(ex.x, y - 4, tam, tam, restante < 0.35 ? '#fff4c0' : '#ffb45c');
+    r.box(ex.x, t.id === 'cajonPolvora' ? y - 12 : y - 4, tam, tam, restante < 0.35 ? '#fff4c0' : '#ffb45c');
   }
 
   // En el piso y a punto de reventar, un aro de aviso.

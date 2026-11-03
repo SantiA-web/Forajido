@@ -994,7 +994,8 @@ trasera**. Y adelante de todo va la **locomotora**, en los dos trenes: de ahí s
 los refuerzos, y **se puede entrar**. La puerta es blindada; adentro hay un pasillo
 angosto entre el tanque y el carbón, y la cabina con la caldera en el medio. Hay un
 maquinista que levanta las manos si lo apuntás, un fogonero que te pega con la pala y
-un blindado, y el premio es botín: una caja fuerte y dos bolsas.
+un blindado, y el premio es botín: una caja fuerte y dos bolsas. Por arriba no se llega:
+el camino del techo termina en el último vagón, y desde el caballo tampoco se salta a ella.
 
 **Y uno de cada cuatro trenes de carga cambia una plataforma por el vagón de
 armas** (ver "El vagón de armas", más abajo). Es lo primero que cambia de qué

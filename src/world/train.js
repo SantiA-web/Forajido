@@ -723,7 +723,7 @@ export function buildTrain(
        * camino de arriba se corta ahí. Sale de los datos (`sinTecho` en
        * wagons.js), no de una lista escrita a mano acá.
        */
-      tieneTecho: !t.plantilla.sinTecho,
+      tieneTecho: !t.plantilla.sinTecho && !t.plantilla.techoNoSePisa,
       /**
        * `sinTecho` DECIDÍA DOS COSAS A LA VEZ: si hay techo que pisar y si te
        * llueve encima / te ven desde el galope. En el ganado y la plataforma

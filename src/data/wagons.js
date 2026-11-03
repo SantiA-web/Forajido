@@ -644,6 +644,8 @@ export const WAGONS = {
     hint: 'El maquinista, el fogonero y un blindado. La paga del viaje.',
     puertasBlindadas: true,
     sinPuertaAdelante: true,   // adelante está la caldera
+    // 🚂 El camino de arriba termina en el último vagón *(Santi eligió "sin techo")*: la única entrada es la puerta. Adentro no llueve: por eso no es `sinTecho`.
+    techoNoSePisa: true,
     sinVariantes: true,
     layout: [
       // (🔁 La caldera entra en la cabina, casillas C de la 14 a la 16: se pasa por allá o por acá. Las T de abajo son las palancas; la de arriba, el banco.)

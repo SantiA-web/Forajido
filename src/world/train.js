@@ -657,7 +657,7 @@ export function buildTrain(
   const map = createTilemap(layout);
   // 🆕 Las puntas de los vagones del estilo nuevo son finitas (ver `paredFina`, world/tilemap.js), menos las del
   // dormitorio, que tiene la pared adentro (`paredAdentro`, data/wagons.js).
-  map.ponerPuntasFinas(tramos.filter((t) => t.tipo === 'vagon' && esVagonNuevo(t.plantilla.id) && !t.plantilla.paredAdentro).flatMap((t) => (t.plantilla.id === 'cabina' ? [t.colStart] : [t.colStart, t.colStart + t.cols - 1])));   // (🐛 En la cabina, la de adelante es gruesa: finita, por ahí se bajaba cruzando la caldera *(Santi)*.)
+  map.ponerPuntasFinas(tramos.filter((t) => t.tipo === 'vagon' && esVagonNuevo(t.plantilla.id) && !t.plantilla.paredAdentro && t.plantilla.id !== 'cabina').flatMap((t) => [t.colStart, t.colStart + t.cols - 1]));   // (🐛 En la cabina, las dos son gruesas: finita, por adelante se bajaba cruzando la caldera *(Santi)* y por atrás se entraba al carbón.)
   // 🪜 En la góndola, la pared de la escalera (casilla 'G') frena la vista y las balas sólo en su grueso, como las otras puntas.
   for (const t of tramos) {
     if (t.tipo !== 'vagon' || !t.plantilla.carbon) continue;

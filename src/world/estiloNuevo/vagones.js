@@ -845,6 +845,15 @@ function vagon(train, w, dia) {
 
   // ===== LOS ASIENTOS: respaldo a la izquierda, almohadón de cuero y patas
   const ANCHO_ASIENTO = 15;
+  /**
+   * 🆕 LOS CHOQUES DEL TAMAÑO DEL MUEBLE *(Santi: "el jugador choca con el aire y no llega a tocar la cama")*: el asiento, la
+   * cama, el catre, el aparador, la barra y los tabiques chocan con lo que se ve y no con la casilla entera. Sólo para el que
+   * camina, jugador y guardias por igual (`soloPaso`, world/tilemap.js): las balas y la vista se frenan donde siempre. Lo que
+   * ahora termina antes de su casilla se mezcla con la gente desde donde termina (`base`): si no, el que queda parado
+   * delante se dibujaría detrás.
+   */
+  const choquesMuebles = [];
+  const chocaMueble = (c0, c1, f0, f1, rects) => choquesMuebles.push({ celdas: [w.colStart + c0, w.colStart + c1, f0, f1], soloPaso: true, rects: rects.map(([a, b, c, d]) => [x0 + a * PASO, yArriba + b * PASO, x0 + c * PASO, yArriba + d * PASO]) });
   const asientos = [];
   // (En el dormitorio las 'S' son camas: ver `dormitorio` más abajo.)
   // (🆕 En el de guardias, también: son catres, ver `guardias`.)
@@ -883,6 +892,7 @@ function vagon(train, w, dia) {
       r(x + 1, y + bh - 8, bw - 2, 1, 8);
       r(x + 2, y + bh - 4, 2, 3, 3); r(x + bw - 4, y + bh - 4, 2, 3, 3);   // las patas
       asientos.push({ x, y, w: bw, h: bh, base: (fin + 1) * S - 0.01 });
+      chocaMueble(c, c, f, fin, [[x, ay(f * S), x + bw, y2]]);
     }
   }
 
@@ -1022,7 +1032,8 @@ function vagon(train, w, dia) {
       r(x, A.pie - 2, aw, 2, MAD_SS);                                                                    // el zócalo
       // Los golpes: un pedazo que falta en el canto de la mesada y en una puerta.
       p(x + 7, A.frente, 0); p(x + 8, A.frente, 0); p(x2 - 12, A.frente + 6, 0);
-      muebles.push({ x: x - 1, y: A.techo - 1, w: aw + 2, h: A.pie - A.techo + 1, base: (f + 1) * S - 0.03 });
+      chocaMueble(c, c2, f, f, [[x - 1, ay(f * S), x2 + 1, A.pie]]);
+      muebles.push({ x: x - 1, y: A.techo - 1, w: aw + 2, h: A.pie - A.techo + 1, base: yArriba + A.pie * PASO - 0.03 });
     }
   }
 
@@ -1081,7 +1092,8 @@ function vagon(train, w, dia) {
       r(x + 1, tf, ancho - 2, 2, LANA);
       r(x + 1, tf + 2, ancho - 2, 2, MAD_S); r(x + 1, tf + 2, ancho - 2, 1, MAD);
       r(x + 2, tf + 4, 2, ALTO_CAMA - 5, MAD_SS); r(x2 - 4, tf + 4, 2, ALTO_CAMA - 5, MAD_SS);
-      muebles.push({ x, y: ty - 1, w: ancho, h: y2 - (ty - 1), base: (f2 + 1) * S - 0.03 });
+      chocaMueble(c, c2, f, f2, [[x, y, x2, tf + ALTO_CAMA]]);
+      muebles.push({ x, y: ty - 1, w: ancho, h: y2 - (ty - 1), base: yArriba + (tf + ALTO_CAMA) * PASO - 0.03 });
       /**
        * 🆕 EL LAVATORIO de cada camarote *(Santi eligió la A: "para que no se vea tan vacío")*: un
        * mueblecito de madera con la palangana y la jarra de loza (blanca con el borde azul). SIN CHOQUE
@@ -1173,6 +1185,7 @@ function vagon(train, w, dia) {
       // (Contra la pared de afuera, la tapa baja también lo que mide de alto: llega a la pared de adelante.)
       if (arr || aba) tramos.push([N.cx0, arr ? N.y : N.cy0, N.cx1, aba ? N.y2 + (contraAfuera ? ALTO_TABIQUE : 0) : N.cy1]);
       const H = ALTO_TABIQUE;
+      chocaMueble(c, c, f, f, tramos.map(([a, b, cc, d]) => [a - 1, b, cc + 1, d + 1]));
       let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
       // Primero el contorno de todos los tramos, después el relleno (así no queda una raya en la junta).
       for (const [a, b, cc, d] of tramos) {
@@ -1201,7 +1214,7 @@ function vagon(train, w, dia) {
         r(a, yb - 1, cc - a, 1, 0);
         y1 = Math.max(y1, yb);
       }
-      muebles.push({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, base: (f + 1) * S - 0.02 });
+      muebles.push({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, base: (!aba || izq || der ? yArriba + (N.cy1 + 1) * PASO : (f + 1) * S) - 0.02 });
     }
     // Las lámparas de los camarotes de abajo, en la cara del tabique del pasillo.
     for (const L of lamparasAbajo) {
@@ -1312,7 +1325,8 @@ function vagon(train, w, dia) {
       }
       const xs = T.tramos.flatMap(([a, , cc]) => [a, cc]), ys = T.tramos.flatMap(([, b, , d]) => [b - H, d]);
       const x0 = Math.min(...xs) - 1, y0 = Math.min(...ys) - 10, x1 = Math.max(...xs) + 1, y1 = Math.max(T.N.cy1, ...ys) + 1;
-      muebles.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0, base: (T.f + 1) * S - 0.02 });
+      chocaMueble(T.c, T.c, T.f, T.f, T.tramos.map(([a, b, cc, d]) => [a - 1, b, cc + 1, d + 1]));
+      muebles.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0, base: (T.aba ? (T.f + 1) * S : yArriba + (T.N.cy1 + 1) * PASO) - 0.02 });
     }
     // Las copas y la botella, sobre el tramo largo (la fila de la cara hacia el pasillo).
     const largo = trozos.filter((T) => !T.aba && T.der);
@@ -1477,10 +1491,13 @@ function vagon(train, w, dia) {
       // La cara hacia acá: el palo de adelante y las patas en X.
       r(x, tf, ancho, 2, 3); r(x, tf, ancho, 1, 4);
       for (const lx of [x + 2, x2 - 8]) for (let q = 0; q < ALTO_CATRE - 2; q++) { p(lx + q, tf + 2 + q, 3); p(lx + 5 - q, tf + 2 + q, 3); }
-      muebles.push({ x: x - 1, y: ty - 1, w: ancho + 2, h: tf + ALTO_CATRE - ty + 1, base: (f + 1) * S - 0.03 });
+      muebles.push({ x: x - 1, y: ty - 1, w: ancho + 2, h: tf + ALTO_CATRE - ty + 1, base: yArriba + (tf + ALTO_CATRE) * PASO - 0.03 });
       // El baúl, al pie: de madera con los cantos de fierro y el candado.
       const BW = 16, bx = cabezaDer ? x - BW - 3 : x2 + 3;
-      if (cabezaDer ? bx < X0 - 2 : bx + BW > X1 + 2) continue;
+      const sinBaul = cabezaDer ? bx < X0 - 2 : bx + BW > X1 + 2;
+      // (Choca el catre con su baúl, juntos: entre los dos no entra nadie.)
+      chocaMueble(c, c2, f, f, [[(sinBaul || !cabezaDer ? x : bx) - 1, y, (sinBaul || cabezaDer ? x2 : bx + BW) + 1, tf + Math.max(ALTO_CATRE, 7)]]);
+      if (sinBaul) continue;
       // (Bajo: con la tapa de todo el fondo del catre parecía un ropero.)
       const bf = tf + 1, bt = bf - 6, BH = 6;
       r(bx - 1, bt - 1, BW + 2, bf - bt + BH + 2, 0);
@@ -1489,7 +1506,7 @@ function vagon(train, w, dia) {
       r(bx, bf, BW, BH, 3); r(bx, bf, BW, 1, 4);                                             // la cara
       r(bx + 4, bf, 1, BH, 31); r(bx + BW - 5, bf, 1, BH, 31);
       r(bx + Math.floor(BW / 2) - 1, bf + 1, 2, 2, 28);                                       // el candado
-      muebles.push({ x: bx - 1, y: bt - 1, w: BW + 2, h: bf - bt + BH + 2, base: (f + 1) * S - 0.03 });
+      muebles.push({ x: bx - 1, y: bt - 1, w: BW + 2, h: bf - bt + BH + 2, base: yArriba + (bf + BH) * PASO - 0.03 });
     }
     // --- las mesas de cartas, de pino.
     const PINO = 36, PINO_L = 37, PINO_S = 35, PINO_SS = 34;
@@ -3600,6 +3617,9 @@ function vagon(train, w, dia) {
     let arriba = null;
     if (casilla(cols - 3, filasArriba) === 'C') arriba = deposito(X(cols - 3), ax(w.x + w.width) - G, filasArriba, true, false);
     if (casilla(1, map.rows - filasAbajo - 1) === 'C') deposito(ax(w.x) + G, X(3), map.rows - filasAbajo - 2, false, true);
+    // (🐛 Los depósitos llegan hasta la pared de la punta, pero esa casilla es de pared finita: por ahí se entraba caminando al hielo.)
+    if (casilla(cols - 3, filasArriba) === 'C') chocaMueble(cols - 1, cols - 1, filasArriba, filasArriba + 1, [[X(cols - 1), Y(filasArriba), X(cols), Y(filasArriba + 2)]]);
+    if (casilla(1, map.rows - filasAbajo - 1) === 'C') chocaMueble(0, 0, map.rows - filasAbajo - 2, map.rows - filasAbajo - 1, [[X(0), Y(map.rows - filasAbajo - 2), X(1), Y(map.rows - filasAbajo)]]);
     // (Por dónde sale el hielo que patina con los golpes: delante de cada depósito. El de arriba, hacia la cola; el de abajo,
     // hacia la locomotora: los dos, hacia adentro del vagón.)
     if (arriba) refri.hielo.push({ px: (arriba.x + arriba.x2) / 2, y: (filasArriba + 2) * S + 5, atras: false });
@@ -4031,6 +4051,7 @@ function vagon(train, w, dia) {
   }
 
   const campoConEsquinas = (x, y) => { const a = luzDeEsquina(x, y); return a ? campo(a[0], a[1]) : campo(x, y); };
+  if (choquesMuebles.length) map.ponerChoquesFinos('muebles:' + w.colStart, choquesMuebles);
   const iluminado = (c) => iluminar({ ancho: W, alto: H, indices: c.i, marcas: c.m, campo: campoConEsquinas });
   const recorte = (datos, x, y, ww, hh) => {
     const out = new Uint8ClampedArray(ww * hh * 4);

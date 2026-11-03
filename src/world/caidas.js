@@ -1765,7 +1765,7 @@ function comedor(C, train, w) {
       const cx = x + Math.round(aw * (q ? 0.71 : 0.29)) + Math.round((azar(k, q + w.colStart) - 0.5) * 6);
       const xw = deAx(cx);
       C.objetos.push({
-        tipo: 'vajilla', variante: que, peso: 'liviano', hw: 6, x: xw, xRepisa: xw, yRepisa: deAy(A.niveles[k]), yPared: yPiso,
+        tipo: 'vajilla', variante: que, peso: 'liviano', hw: 6, x: xw, xRepisa: xw, yRepisa: deAy(A.niveles[k]), yPared: deAy(A.pie),
         yPiso: yPiso + 4 + Math.round(azar(k * 3 + q, w.colStart) * 12), estado: 'repisa', t: 0, dir: 0, wagon: w.id,
       });
     }));

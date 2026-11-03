@@ -521,6 +521,8 @@ export function vagonCabina(train, w, dia) {
     const xb = X(11) + 1, yb = Y(3) - 12;
     dibujo(PISO, xb, yb, BANCO);
     dibujo(PISO, xb + 24, yb - 7, VIANDA);
+    // (Choca del largo del banco, no de las dos casillas. Las balas, como siempre: ver `soloPaso`, world/tilemap.js.)
+    map.ponerChoquesFinos('cabina:' + w.colStart, [{ celdas: [w.colStart + 11, w.colStart + 12, 2, 2], soloPaso: true, rects: [[...enMundo(xb, Y(2)), ...enMundo(xb + BANCO[0].length, Y(3))]] }]);
   }
 
   // ===== EL CARBÓN DEL TÉNDER: de punta a punta, con el borde de chapa de allá. Y el tabique contra la cabina

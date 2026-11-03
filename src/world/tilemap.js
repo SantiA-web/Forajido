@@ -194,7 +194,7 @@ export function createTilemap(layout) {
 
   function blocksSightAt(px, py) {
     if (!dentro(px, py) || !TILE_RULES[tileAtPixel(px, py)].blocksSight) return false;
-    const f = finos.size ? finoEn(px, py) : null;
+    const f = finos.size ? finoBala(px, py) : null;
     return f === null ? true : f;
   }
 
@@ -204,6 +204,7 @@ export function createTilemap(layout) {
    * casilla entera, sino lo que de verdad está apoyado en el piso: unos rectángulos (en el mundo) y lo que se mueve
    * (`dinamico(x, y)`, el fardo que se corre). Lo demás de la casilla es aire: se camina, se ve y pasan las balas.
    * `null`: esta casilla no tiene choque fino (choca entera, como siempre).
+   * `soloPaso`: sólo para el que camina; las balas y la vista se siguen frenando en la casilla entera (`finoBala`).
    */
   const finos = new Map(), finosDe = new Map();
   let movil = null;                    // (las coberturas que se mueven: ver `ponerCoberturasMoviles`)
@@ -212,6 +213,10 @@ export function createTilemap(layout) {
     if (!F) return null;
     for (const [a, b, c, d] of F.rects) if (px >= a && px <= c && py >= b && py <= d) return true;
     return !!F.dinamico && F.dinamico(px, py);
+  }
+  function finoBala(px, py) {
+    const F = finos.get(Math.floor(py / size) * 100000 + Math.floor(px / size));
+    return F && F.soloPaso ? null : finoEn(px, py);
   }
 
   /**
@@ -376,7 +381,7 @@ export function createTilemap(layout) {
     // (Sólo las casillas: a la bala de verdad la frenan los que se mueven en systems/combat.js, que además los rompe.)
     blocksBulletsAt: (px, py) => {
       if (!dentro(px, py) || !TILE_RULES[tileAtPixel(px, py)].blocksBullets) return false;
-      const f = finos.size ? finoEn(px, py) : null;
+      const f = finos.size ? finoBala(px, py) : null;
       return f === null ? true : f;
     },
     /**
@@ -394,7 +399,7 @@ export function createTilemap(layout) {
       if (!dentro(px, py)) return false;
       const regla = TILE_RULES[tileAtPixel(px, py)];
       if (!regla.blocksBullets) return false;
-      if (finos.size && finoEn(px, py) === false) return false;
+      if (finos.size && finoBala(px, py) === false) return false;
       return !(porEncima && regla.cubreBajo);
     },
     /** ¿Es cobertura baja? (ver `tapaLaBala` en systems/combat.js) */

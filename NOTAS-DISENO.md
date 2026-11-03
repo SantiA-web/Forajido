@@ -19863,6 +19863,22 @@ El último vagón del tren de carga. Santi eligió "chapa y carbón", "el carbó
 - ⚠️ **Sin probar**: jugarla de verdad con vida normal (la pala, matar a los tres, abrir la caja fuerte) y mirarla en el galope al lado de la locomotora. Desde afuera (galope y techo) sigue el dibujo viejo: se cambia en P5. Las palancas quedaron corridas respecto de su casilla, por la mano del maquinista. Las curvas de la cabina caen en casillas libres: lo que quede en un rincón se ve un poco tapado.
   - 🧪 El atajo [8] lleva a la cabina, con los frenos rotos en el ganado de al lado.
 
+## ✅ LOS CHOQUES DEL TAMAÑO DE LO QUE SE VE (2026-11-03)
+
+*(Santi: "el jugador choca con el aire y no llega a tocar la cama")*. Revisados los 16 vagones, con una marca sobre el dibujo de todo lo que choca y buscando por dónde entra el cuerpo del jugador (`moveAndCollide`: ocho puntos de la caja).
+
+- 🐛 **Se entraba a dos lugares**: a los depósitos de hielo del refrigerado y al carbón de la locomotora, caminando por la casilla de la punta, que es de pared finita y tenía el mueble dibujado encima. La cabina ya no tiene puntas finitas; los depósitos chocan también en esa casilla.
+- **Del tamaño del mueble, no de la casilla** (`chocaMueble`, world/estiloNuevo/vagones.js): asientos (pasajeros y primera clase), aparador, paredes de los camarotes, camas, barra (también el tramo que sube a la pared), catres con su baúl y el banco de la cabina. Vale igual para jugador y guardias.
+- **`soloPaso`** (world/tilemap.js, `finoBala`): estos choques son sólo para el que camina; las balas y la vista se siguen frenando en la casilla entera. Las paredes finitas miden unas 5 unidades, y así ninguna bala ni línea de visión las puede saltear.
+- **Lo que termina antes de su casilla cambia su `base`**: si no, el que queda parado delante se dibujaría detrás. La vajilla de la alacena acompaña al aparador.
+- **Quedan como estaban**: los choques del cerrado, el almacén, la plataforma, el ganado y la góndola, que ya seguían al dibujo; los barriles, los carros y lo que cae, que chocan por otro lado.
+- **Probado**: por dónde entra el cuerpo del jugador en los 7 vagones tocados, caminando contra cada tipo de mueble menos el banco, y 30 s con guardias vivos en 7 vagones, sin errores.
+- ⚠️ **Sin probar**: una partida entera con estos cambios.
+- ⚠️ **Queda así a propósito**:
+  - Las palancas de la cabina conservan el choque de su casilla: están en el borde de dos casillas y sólo sobra un poco de aire subiendo desde abajo por la derecha.
+  - El asiento termina donde termina el dibujo: se le pueden pisar apenas los pies al que está sentado.
+  - El banquito verde de primera clase se pisa: es chico y ahí va sentado el rico, que podría trabarse al levantarse si chocara.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

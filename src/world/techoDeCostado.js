@@ -27,6 +27,8 @@
 
 import { CONFIG } from '../data/config.js';
 import { dibujarTrenTresCuartos, MEDIDAS, LADO_GONDOLA, escalarColor } from './trenTresCuartos.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { tieneAfueraNuevo, dibujarPerfilNuevo } from './estiloNuevo/trenDeAfuera.js';
 import { dibujarHorizonte } from './horizonte.js';
 import { drawSpeedLines } from '../engine/parallax.js';
 import { adornoDelDesierto, adornoDeCerca } from './desierto.js';
@@ -283,7 +285,7 @@ export function dibujarTrenDeCostado(r, train, base, camX, ancho, noche) {
   const visibles = train.wagons.filter((w) => !w.esCola && w.x < camX + ancho + 20 && w.x + w.width > camX - 20);
   const corte = (w) => {
     if (w.carbon) return base - M.bastidor - LADO_GONDOLA;
-    if (w.tieneTecho || w.id === 'ganado') return base - M.bastidor - M.caja - M.alero;
+    if (w.tieneTecho) return base - M.bastidor - M.caja - M.alero;
     return null;
   };
 
@@ -294,10 +296,11 @@ export function dibujarTrenDeCostado(r, train, base, camX, ancho, noche) {
   ctx.rect(camX - 100, -2000, ancho + 200, 4000);
   for (const w of visibles) {
     const y = corte(w);
-    if (y !== null) ctx.rect(w.x, -2000, w.width, 2000 + y);
+    // (Una unidad de más a cada lado: el dibujo cae en la grilla y puede asomar un punto afuera del vagón.)
+    if (y !== null) ctx.rect(w.x - 1, -2000, w.width + 2, 2000 + y);
   }
   ctx.clip('evenodd');
-  dibujarTrenTresCuartos(r, train, base, camX, ancho, { noche });
+  dibujarTrenTresCuartos(r, train, base, camX, ancho, { noche, costado: true });
   ctx.restore();
 
   for (const w of visibles) {
@@ -315,6 +318,8 @@ export function dibujarTrenDeCostado(r, train, base, camX, ancho, noche) {
       r.rect(w.x + 2, sup.abajo - 1, w.width - 4, 1, tono(P.gondola, noche ? 0.8 : 1.5));
       continue;
     }
+    // (🚂 En el estilo nuevo, lo que ya tiene su dibujo: ver world/estiloNuevo/trenDeAfuera.js.)
+    if (estiloNuevo.activo && tieneAfueraNuevo(w)) { dibujarPerfilNuevo(ctx, w.x, w.width, sup.arriba, alto, noche); continue; }
     // El perfil del techo: las puntas redondeadas (dos escalones) y bandas
     // horizontales de luz: arriba agarra el sol, abajo se oscurece hacia el alero.
     const base0 = noche ? 0.55 : 1;

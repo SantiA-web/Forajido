@@ -369,13 +369,13 @@ export function createCampScene(services) {
     /**
      * 🧪 [8] UN TREN CON LOS FRENOS ROTOS, arrancando EN EL VAGÓN QUE SE ESTÁ EDITANDO (el tren lo trae
      * siempre: `forzarVagon`) *(Santi: "por el vagón que vayamos a editar quiero que el atajo 8 esté ocupado por ese
-     * vagón")*: hoy, LA GÓNDOLA (del tren de carga). Con el primer frenazo a
-     * los 4 segundos (`pruebaFrenos`), para probar el aplastamiento en los enganches y las valijas.
+     * vagón")*: hoy, LA LOCOMOTORA Y LA COLA DESDE AFUERA: al galope, con un tren corto para llegar rápido de una punta a la otra;
+     * saltando al techo se los ve desde arriba.
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit8')) {
-      scenes.goTo('raid', { tipoTren: 'carga', caballoEn: 1, pruebaVagon: 'cabina', forzarVagon: 'armas', estado: ['frenosDañados'], pruebaFrenos: true, prueba: true });
+      scenes.goTo('ride', { tipoTren: 'pasajeros', composicion: ['pasajeros', 'cerrado'] });
       return;
     }
     if (input.wasPressed('Digit6')) {

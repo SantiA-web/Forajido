@@ -413,6 +413,10 @@ const OSCURO = { 25: 24, 24: 23, 23: 31, 31: 1, 1: 40, 40: 0, 28: 45, 45: 44, 44
 /** De noche, lejos del fogón, el hierro y el bronce a la luz de la luna: con sólo oscurecerlos, media caldera quedaba negra. */
 const LUNA = { 25: 20, 24: 19, 23: 41, 31: 18, 1: 40, 29: 45, 28: 44, 45: 44, 44: 47, 47: 39, 10: 8, 9: 39 };
 
+/** Lo que la locomotora de afuera usa igual (estiloNuevo/locoDeAfuera.js): las mismas piezas a mano y la misma luz del tubo. */
+export const COL_PIEZAS = COL;
+export const PIEZAS_CALDERA = { CHIMENEA, DOMO, ARENERA, CAMPANA, FARO, CODO, CILINDRO, HUMO, FRANJAS, FRANJAS_HUMO, FRANJAS_TAPA, OSCURO };
+
 export function vagonCabina(train, w, dia) {
   const map = train.map, S = map.size, tc = CONFIG.tresCuartos;
   const x0 = Math.floor(w.x / PASO) * PASO, yArriba = -tc.alturaPared;
@@ -444,11 +448,11 @@ export function vagonCabina(train, w, dia) {
     for (let x = x1; x < x2; x += 32) for (const dx of [-3, 4]) for (const y of [y1 + 2, y2 - 3]) if (x + dx >= x1 && x + dx < x2) p(x + dx, y, 24);
   };
 
-  const xCabina = X(10), xFin = X(18), xCubierta = W - 30;
+  const xCabina = X(4), xFin = X(12), xCubierta = W - 30;
   const yPasillo = Y(4), yCarbon = Y(6);
   // 🔁 El cilindro, más gordo *(Santi: "hacelo un poco más ancho")*: 72 puntos, casi dos gentes y media. Se apoya sobre las filas 4 y 5 y
   // sube por encima de ellas, como todo lo que tiene altura en esta cámara: el que pasa por la fila 3 asoma por detrás.
-  const yB = Y(6), D = 72, yT = yB - D, xTapa = X(14) + 16, xHumo = W - 92, xPunta = W - 44;
+  const yB = Y(6), D = 72, yT = yB - D, xTapa = X(8) + 16, xHumo = W - 92, xPunta = W - 44;
   const t = (y) => (y - yT) / D;
   const yFuego = yT + 30;
   const yPieLomo = yT + 14;
@@ -461,7 +465,7 @@ export function vagonCabina(train, w, dia) {
     for (const yj of [Math.round(yF * 0.36), Math.round(yF * 0.7)]) { r(0, yj, xCabina, 1, 31); r(0, yj + 1, xCabina, 1, 24); for (let x = 3; x < xCabina; x += 12) p(x, yj + 3, 24); }
     for (let x = 64; x < xCabina; x += 64) { r(x, 4, 1, yF - 4, 31); r(x + 1, 4, 1, yF - 4, 24); }
     for (let x = 8; x < xCabina - 6; x += 12) p(x, 7, 24);
-    dibujo(PISO, X(4) - 8, 18, TAPA_TANQUE);
+    dibujo(PISO, X(1) + 4, 18, TAPA_TANQUE);
     // El borde de adelante agarra la luz: es lo que le da la altura.
     r(0, yF - 3, xCabina, 1, 25); r(0, yF - 2, xCabina, 1, 24); r(0, yF - 1, xCabina, 1, 0);
     chapa(p, 0, xCabina, yF, yPasillo, dia ? 31 : 23, dia ? 23 : 24);
@@ -470,11 +474,11 @@ export function vagonCabina(train, w, dia) {
     // El lomo del tanque se redondea hacia acá, y por el frente bajan la escalera y el caño con su llave.
     for (let y = yF - 11; y < yF - 3; y++) for (let x = 0; x < xCabina; x++) if ((y < yF - 7 ? (x + y) % 2 === 0 : true)) p(x, y, 24);
     r(0, yF - 3, xCabina, 1, 25);
-    const xE = X(8);
+    const xE = X(3) - 6;
     r(xE - 1, yF - 14, 2, yPasillo - yF + 12, 0); r(xE + 12, yF - 14, 2, yPasillo - yF + 12, 0);
     r(xE, yF - 14, 1, yPasillo - yF + 12, 25); r(xE + 13, yF - 14, 1, yPasillo - yF + 12, 24);
     for (let y = yF - 11; y < yPasillo - 3; y += 6) { r(xE + 1, y, 11, 1, 25); r(xE + 1, y + 1, 11, 1, 0); }
-    const xV = X(2);
+    const xV = X(1);
     r(xV + 3, yF + 4, 5, yPasillo - yF - 5, 0); r(xV + 4, yF + 4, 2, yPasillo - yF - 5, 25); r(xV + 6, yF + 4, 1, yPasillo - yF - 5, 23);
     dibujo(PISO, xV, yF + 4, VALVULA);
   }
@@ -505,24 +509,24 @@ export function vagonCabina(train, w, dia) {
     chapa(p, xCabina, xFin, yF, yP, 23, 31);
     r(xCabina, yF + 28, xFin - xCabina, 2, 10);
     r(xCabina, yP - 1, xFin - xCabina, 1, 0);
-    for (const vx of [X(11), X(14) + 5]) {   // (🔁 La de adelante, más para acá: donde estaba caía en la curva de la esquina.)
+    for (const vx of [X(5), X(8) + 5]) {   // (🔁 La de adelante, más para acá: donde estaba caía en la curva de la esquina.)
       r(vx - 1, yF + 3, 42, 22, 0); r(vx, yF + 4, 40, 20, 47); r(vx, yF + 4, 40, 1, 44);
       r(vx + 2, yF + 6, 36, 16, 0); r(vx + 3, yF + 7, 34, 14, 21); r(vx + 3, yF + 15, 34, 6, 20); r(vx + 20, yF + 7, 1, 14, 0);
       for (let j = 0; j < 5; j++) p(vx + 6 + j, yF + 12 - j, 22);
     }
     // La cuerda del silbato, baja del techo y se pasa a la pared.
-    const xc = X(13) + 13;
+    const xc = X(7) + 13;
     r(xc, yF, 1, 22, 16); r(xc - 1, yF, 1, 22, 0); r(xc + 1, yF, 1, 22, 0);
     dibujo(PISO, xc - 2, yF + 21, MANIJA_SILBATO);
   }
 
   // ===== EL BANCO, con la vianda arriba, contra la pared de allá
   {
-    const xb = X(11) + 1, yb = Y(3) - 12;
+    const xb = X(5) + 1, yb = Y(3) - 12;
     dibujo(PISO, xb, yb, BANCO);
     dibujo(PISO, xb + 24, yb - 7, VIANDA);
     // (Choca del largo del banco, no de las dos casillas. Las balas, como siempre: ver `soloPaso`, world/tilemap.js.)
-    map.ponerChoquesFinos('cabina:' + w.colStart, [{ celdas: [w.colStart + 11, w.colStart + 12, 2, 2], soloPaso: true, rects: [[...enMundo(xb, Y(2)), ...enMundo(xb + BANCO[0].length, Y(3))]] }]);
+    map.ponerChoquesFinos('cabina:' + w.colStart, [{ celdas: [w.colStart + 5, w.colStart + 6, 2, 2], soloPaso: true, rects: [[...enMundo(xb, Y(2)), ...enMundo(xb + BANCO[0].length, Y(3))]] }]);
   }
 
   // ===== EL CARBÓN DEL TÉNDER: de punta a punta, con el borde de chapa de allá. Y el tabique contra la cabina
@@ -552,7 +556,7 @@ export function vagonCabina(train, w, dia) {
     }
     for (let x = 4; x < xCabina; x += 16) p(x, yCarbon + 8, 31);
     // (La casilla del tabique: visto de arriba, el canto de chapa.)
-    const a = X(11) - X(10);
+    const a = X(5) - X(4);
     r(xCabina, yCarbon - 3, a, yAcá - yCarbon + 3, 23);
     r(xCabina, yCarbon - 4, a, 1, 0); r(xCabina, yCarbon - 3, a, 2, 25); r(xCabina, yCarbon - 1, a, 1, 24);
     r(xCabina, yCarbon - 3, 1, yAcá - yCarbon + 3, 0); r(xCabina + a - 1, yCarbon - 3, 1, yAcá - yCarbon + 3, 0);
@@ -567,7 +571,7 @@ export function vagonCabina(train, w, dia) {
     punta(0, 0, yPasillo); punta(0, yCarbon - 1, yAcá);
     punta(xFin - 6, 0, yAcá);
     // 🔁 La pared de adelante, tan gruesa como su casilla, igual que el tabique: chocabas contra el aire, un buen trecho antes de la pared.
-    const xG = X(17);
+    const xG = X(11);
     for (const [y1, y2] of [[Y(1), yT], [yB, yAcá]]) {
       r(xG, y1, xFin - 6 - xG, y2 - y1, 23); r(xG, y1, 1, y2 - y1, 0);
       for (let y = y1 + 6; y < y2; y += 12) p(xG + 5, y, 24);
@@ -633,14 +637,14 @@ export function vagonCabina(train, w, dia) {
       }
     };
     const bronce = (tt) => (tt < 0.06 ? 45 : tt < 0.33 ? 28 : tt < 0.57 ? 45 : tt < 0.72 ? 44 : tt < 0.86 ? 47 : 39);
-    for (const ax0 of [xFin + 26, xFin + 84, xFin + 142]) aro(ax0, 2, bronce);
+    for (const ax0 of [xFin + 27, xFin + 55, xFin + 83]) aro(ax0, 2, bronce);
     aro(xTapa + 8, 2, bronce);
     aro(xHumo - 8, 6, (tt) => (tt < 0.06 ? 9 : tt < 0.33 ? 10 : tt < 0.57 ? 9 : tt < 0.86 ? 8 : 39));
     // El brocal donde la caldera atraviesa la pared.
     aro(xFin - 7, 7, (tt) => (tt < 0.06 ? 23 : tt < 0.33 ? 24 : tt < 0.57 ? 23 : tt < 0.72 ? 31 : 1));
     // Los remaches, en una sola hilera a lo largo.
     for (let x = xTapa + 22; x < xHumo - 10; x += 6) {
-      if ((x - xFin - 26) % 58 < 6) continue;
+      if ((x - xFin - 27) % 28 < 6) continue;
       p(x, yT + 40, 23);
     }
     // El pasamanos, finito, por el lado de acá del lomo, con sus soportes de bronce. No termina en el aire: el último soporte lo cierra.
@@ -648,14 +652,14 @@ export function vagonCabina(train, w, dia) {
       const yC = yT + 25, x1 = xFin + 3, x2 = xHumo - 14;
       for (let x = x1; x < x2; x++) { const v = ALTA.i[(yC + 3) * W + x]; p(x, yC + 3, OSCURO[v] ?? 1); }
       rA(x1, yC, x2 - x1, 1, 0); rA(x1, yC + 1, x2 - x1, 1, 25); rA(x1, yC + 2, x2 - x1, 1, 0);
-      for (const x of [xFin + 12, xFin + 70, xFin + 128, x2 - 2]) { rA(x, yC - 1, 3, 7, 0); rA(x + 1, yC, 1, 5, 45); }
+      for (const x of [xFin + 19, xFin + 53, x2 - 2]) { rA(x, yC - 1, 3, 7, 0); rA(x + 1, yC, 1, 5, 45); }
     }
     // El caño del agua, más grueso y más abajo, en la parte de la caldera que ya está en sombra: nace en la pared y se mete en la caldera por un codo.
     {
       const yC = yT + 50, x1 = xFin + 3, x2 = xHumo - 22;
       rA(x1, yC, x2 - x1, 1, 0); rA(x1, yC + 1, x2 - x1, 1, 24); rA(x1, yC + 2, x2 - x1, 1, 31); rA(x1, yC + 3, x2 - x1, 1, 0);
       for (let x = x1; x < x2; x++) p(x, yC + 4, 1);
-      for (const x of [xFin + 40, xFin + 98]) { rA(x, yC - 1, 3, 6, 0); rA(x + 1, yC, 1, 4, 47); }
+      for (const x of [xFin + 33, xFin + 61]) { rA(x, yC - 1, 3, 6, 0); rA(x + 1, yC, 1, 4, 47); }
       dibujo(ALTA, x2, yC, CODO);
     }
     // Lo de la cabina: el manómetro y el tubo de agua, sobre el costado, y el caño que los une. Bien a la vista del maquinista.
@@ -677,9 +681,9 @@ export function vagonCabina(train, w, dia) {
       }
     };
     const encima = (mapa, x) => { const al = mapa.length, an = mapa[0].length; sombra(x, an, yPieLomo); dibujo(ALTA, x, yPieLomo - al + 1, mapa); };
-    encima(DOMO, xFin + 40);
-    encima(CAMPANA, xFin + 96);
-    encima(ARENERA, xFin + 116);
+    encima(DOMO, xFin + 13);
+    encima(CAMPANA, xFin + 45);
+    encima(ARENERA, xFin + 65);
     encima(CHIMENEA, xHumo + 8);
     encima(FARO, xPunta - 13);
   }
@@ -701,7 +705,7 @@ export function vagonCabina(train, w, dia) {
     r(xFin, yB + 8, ancho, 1, 25); r(xFin, yB + 9, ancho, 1, 0);
     chapa(p, xFin, xP, yB + 10, yB + 15, 31, 23);
     r(xFin, yB + 12, ancho, 1, 10); r(xFin, yB + 15, ancho, 1, 0);
-    dibujo(ESTRIBO, xFin + 124, yB - 1, CAJON_HERRAMIENTAS);
+    dibujo(ESTRIBO, xFin + 76, yB - 1, CAJON_HERRAMIENTAS);
     // 🔁 EL MIRIÑAQUE, como todo lo demás en esta cámara: una tapa que se ve desde arriba y un frente que baja *(Santi: "la punta termina más cerca de
     // la pantalla que más lejos")*. Tenía razón: las dos caras bajando hasta el piso llevaban la punta para abajo en la pantalla, que acá quiere decir
     // hacia el que mira. Ahora la tapa es un triángulo a nivel, con la punta sobre el eje de la locomotora; la tapa cubre los dos rieles, y debajo del
@@ -742,7 +746,7 @@ export function vagonCabina(train, w, dia) {
     r(0, yCara - 1, xFin, 1, 0);
     r(xFin - 1, yAcá, 1, yCara - yAcá, 0);
     // La chapa de bronce del fabricante, en la cabina.
-    const cx = X(13) + 4;
+    const cx = X(7) + 4;
     r(cx, yAcá + 8, 34, 13, 0); r(cx + 1, yAcá + 9, 32, 11, 45); r(cx + 1, yAcá + 9, 32, 1, 28); r(cx + 4, yAcá + 12, 26, 1, 44); r(cx + 4, yAcá + 15, 26, 1, 44);
   }
 
@@ -752,7 +756,7 @@ export function vagonCabina(train, w, dia) {
    * su franja y sus remaches bajan con la curva. (Sale de la cuenta de `formaEsquina`.)
    */
   {
-    const R = Math.round(CONFIG.tresCuartos.radioEsquina / PASO), xG = X(17), yP = Y(1), GD = xFin - xG;
+    const R = Math.round(CONFIG.tresCuartos.radioEsquina / PASO), xG = X(11), yP = Y(1), GD = xFin - xG;
     const pp = pone(PISO), pf = pone(FRENTE);
     const borra = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return; const k = y * W + x; for (const cp of [PISO, FRENTE]) { cp.i[k] = -1; cp.m[k] = 0; } };
     const tono = (E, u, v) => (E.filo(u, v) ? 0 : E.deCostado(u, v) ? 23 : E.hacia(u, v) > 0.5 ? 25 : 24);
@@ -788,7 +792,7 @@ export function vagonCabina(train, w, dia) {
     for (let v = 0; v < R; v++) for (let u = 0; u < R; u++) {
       const dentro = (a, b) => Math.hypot(R - a - 0.5, R - b - 0.5) <= R || a >= R || b >= R;
       if (dentro(u, v)) continue;
-      pf(X(11) + u, yAcá - 1 - v, dentro(u + 1, v) || dentro(u, v + 1) ? 0 : 23);
+      pf(X(5) + u, yAcá - 1 - v, dentro(u + 1, v) || dentro(u, v + 1) ? 0 : 23);
     }
     // Las de abajo por afuera: el borde da la vuelta y la cara lo acompaña, y la cara termina redondeada abajo.
     for (const [G, Xu] of [[GD, (u) => xFin - 1 - u], [6, (u) => u]]) {
@@ -877,7 +881,7 @@ export function vagonCabina(train, w, dia) {
   // las chicas, de la mitad de radio, dan el doble de vueltas.
   {
     const xI = xFin, yI = yB + 10, AN = xP - xFin, AL = yVia + 2 - yI;
-    const q1 = xFin + 38 - xI, q2 = xFin + 86 - xI, yC = yR - yI, RUEDA = 18, RY = 15;
+    const q1 = xFin + 29 - xI, q2 = xFin + 69 - xI, yC = yR - yI, RUEDA = 18, RY = 15;
     const cuadros = [];
     for (let k = 0; k < 16; k++) {
       const ind = new Int16Array(AN * AL).fill(-1), a = (k / 16) * Math.PI * 2;
@@ -936,10 +940,10 @@ export function vagonCabina(train, w, dia) {
     });
   }
 
-  // Las dos palancas, cada una en su casilla (columna 16, filas 6 y 7): el maquinista va delante de una y detrás de la otra.
+  // Las dos palancas, cada una en su casilla (columna 10, filas 6 y 7): el maquinista va delante de una y detrás de la otra.
   for (const [mapa, fila, dx] of [[PALANCA_VAPOR, 6, 0], [PALANCA_FRENO, 7, 2]]) {
     const pz = suelto(mapa, COL, () => (dia ? 0 : -1));
-    const [mx, my] = enMundo(X(16) - 8 + dx, Y(fila + 1) - mapa.length);
+    const [mx, my] = enMundo(X(10) - 8 + dx, Y(fila + 1) - mapa.length);
     resultado.altas.push({ img: pz.img, x: mx, y: my, w: pz.an * PASO, h: pz.al * PASO, base: (fila + 1) * S - 0.01 });
   }
 

@@ -647,30 +647,32 @@ export const WAGONS = {
     // 🚂 El camino de arriba termina en el último vagón *(Santi eligió "sin techo")*: la única entrada es la puerta. Adentro no llueve: por eso no es `sinTecho`.
     techoNoSePisa: true,
     sinVariantes: true,
+    // 🔁 Un tercio más corta, toda la locomotora *(Santi: "acortaría la longitud de la locomotora, y bastante, como un tercio")*: de 30 columnas a 21. Se va casi todo del ténder
+    // (de 10 a 4) y lo demás de la caldera. La cabina, donde se pelea, mide lo mismo.
     layout: [
-      // (🔁 La caldera entra en la cabina, casillas C de la 14 a la 16: se pasa por allá o por acá. Las T de abajo son las palancas; la de arriba, el banco.)
-      '##################',
-      '##########.......#',
-      '##########.TT....#',
-      '##########....CCC#',
-      '+.............CCC#',
-      '+.............CCC#',
-      '#CCCCCCCCC#.....T#',
-      '#CCCCCCCCC#.....T#',
-      '#CCCCCCCCC#......#',
-      '##################',
+      // (🔁 La caldera entra en la cabina, casillas C de la 8 a la 10: se pasa por allá o por acá. Las T de abajo son las palancas; la de arriba, el banco.)
+      '############',
+      '####.......#',
+      '####.TT....#',
+      '####....CCC#',
+      '+.......CCC#',
+      '+.......CCC#',
+      '#CCC#.....T#',
+      '#CCC#.....T#',
+      '#CCC#......#',
+      '############',
     ],
     enemies: [
       // 🔁 El maquinista, al costado de la caldera y mirando para adelante *(Santi: "está conduciendo mientras ve hacia el norte")*.
-      { guardType: 'maquinista', col: 15, row: 6, facing: 'right' },
-      { guardType: 'fogonero', col: 12, row: 4, facing: 'right' },
-      { guardType: 'blindado', path: [[13, 3], [13, 7], [11, 7], [11, 3]] },
+      { guardType: 'maquinista', col: 9, row: 6, facing: 'right' },
+      { guardType: 'fogonero', col: 6, row: 4, facing: 'right' },
+      { guardType: 'blindado', path: [[7, 3], [7, 7], [5, 7], [5, 3]] },
     ],
     passengers: [],
     loot: [
-      { col: 15, row: 1, type: 'strongbox' },
-      { col: 11, row: 8, type: 'bag' },
-      { col: 6, row: 4, type: 'bag' },
+      { col: 9, row: 1, type: 'strongbox' },
+      { col: 5, row: 8, type: 'bag' },
+      { col: 2, row: 4, type: 'bag' },
     ],
   },
 
@@ -1344,27 +1346,27 @@ export const TRAMOS = {
    * miriñaque— lo hace `drawLocomotora` (world/train.js) encima de estas
    * casillas, que por ser 'X' no pintan nada.
    *
-   * 30 COLUMNAS (480 px) Y NO CUENTAN PARA EL RELOJ: la regla de ~40 s cada
+   * NO CUENTAN PARA EL RELOJ: la regla de ~40 s cada
    * 1.000 px mide tren que se JUEGA, y acá no se juega nada.
    *
    * La gente de la locomotora sigue entrando por el mismo lugar de siempre, el
    * centro del último enganche (`puntaLocomotora`): o sea que ahora se ve de
    * dónde sale.
    */
-  // (🔁 12 columnas: las otras 18 son ahora el ténder y la cabina, que se pisan: ver `cabina` en WAGONS. El tren mide lo mismo.)
+  // (🔁 9 columnas: las otras 12 son el ténder y la cabina, que se pisan: ver `cabina` en WAGONS.)
   locomotora: {
     id: 'locomotora',
     layout: [
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
-      'XXXXXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
+      'XXXXXXXXX',
     ],
   },
 

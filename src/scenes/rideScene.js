@@ -44,7 +44,7 @@ import { T } from '../text/es.js';
 import { sortearComposicion, buildTrain, plataformasDe } from '../world/train.js';
 import {
   dibujarTrenTresCuartos, escalarColor, alturaDeAterrizaje, olvidarLaminas,
-  ALTO_DEL_TECHO, ALTO_DEL_ENGANCHE, ALTURA_VENTANILLA,
+  altoDelTecho, alturaVentanilla, ALTO_DEL_ENGANCHE,
 } from '../world/trenTresCuartos.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
 import { sembrarDesierto } from '../world/desierto.js';
@@ -1158,7 +1158,7 @@ export function createRideScene(services) {
        */
       const desdeY = train.map.height - 2;
       const avance = Math.max(0, Math.min(1, (b.y - desdeY) / Math.max(1, y - desdeY)));
-      const alzada = ALTURA_VENTANILLA * (1 - avance) + 8 * avance;
+      const alzada = alturaVentanilla() * (1 - avance) + 8 * avance;
       r.rect(b.x - 1, b.y - 1 - alzada, 3, 2, colors.bulletE);
     }
 
@@ -1286,7 +1286,7 @@ export function createRideScene(services) {
    * las dos escenas y no dos que se parecen.
    */
   function dibujarAdornos(r, camX, camY, vistaW, vistaH, base, tinte) {
-    const fondoDelTren = base - ALTO_DEL_TECHO - 20;
+    const fondoDelTren = base - altoDelTecho() - 20;
     sembrarDesierto(r, {
       x0: camX, y0: camY, x1: camX + vistaW, y1: camY + vistaH,
       desplaza: suelo,
@@ -1339,7 +1339,7 @@ export function createRideScene(services) {
       const parpadeo = Math.floor(scroll * 22) % 2 === 0;
       // A la altura de las ventanillas del vagón (world/trenTresCuartos.js).
       if (parpadeo) {
-        const vy = base - ALTURA_VENTANILLA;
+        const vy = base - alturaVentanilla();
         r.rect(px - 4, vy - 7, 9, 14, '#ffd08a');
         r.text('!', px, vy - 16, colors.enemyAlert);
       }

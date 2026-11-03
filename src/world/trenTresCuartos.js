@@ -29,6 +29,9 @@
 
 import { CONFIG } from '../data/config.js';
 import { APROXIMACION } from '../data/horse.js';
+import { dibujarLocoNueva, dibujarColaNueva, dibujarLuzDeCola } from './estiloNuevo/locoDeAfuera.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { tieneAfueraNuevo, dibujarCocheNuevo, dibujarEngancheNuevo, ALTURAS_DE_FRENTE, RADIO_RUEDA } from './estiloNuevo/trenDeAfuera.js';
 
 /**
  * Las medidas del vagón, en px.
@@ -68,8 +71,13 @@ const VENTANILLA = { desde: 20, alto: 14 };
 /** A qué altura sobre la vía queda el CENTRO de una ventanilla. */
 export const ALTURA_VENTANILLA = M.bastidor + VENTANILLA.desde + VENTANILLA.alto / 2;
 
+/** Las dos alturas del tren en el dibujo que esté activo. */
+export const altoDelTecho = () => (estiloNuevo.activo ? ALTURAS_DE_FRENTE.techo : ALTO_DEL_TECHO);
+export const alturaVentanilla = () => (estiloNuevo.activo ? ALTURAS_DE_FRENTE.ventanilla : ALTURA_VENTANILLA);
+
 /** A qué altura cae el que salta arriba de este vagón: la góndola es más baja. */
 export function alturaDeAterrizaje(vagon) {
+  if (estiloNuevo.activo) return vagon && vagon.carbon ? ALTURAS_DE_FRENTE.carbon : ALTURAS_DE_FRENTE.techo;
   if (vagon && vagon.carbon) return M.bastidor + LADO_GONDOLA + M.tapa / 2;
   return ALTO_DEL_TECHO;
 }
@@ -96,6 +104,7 @@ export function dibujarTrenTresCuartos(r, train, base, camX, anchoVista, opcione
   const size = train.map.size;
   const k = {
     r, base, P, noche,
+    costado: !!opciones.costado,
     t: (typeof performance !== 'undefined' ? performance.now() : 0) / 1000,
     c: (hex) => (noche ? escalarColor(hex, 0.42) : hex),
     vidrio: noche ? P.vidrioNoche : P.vidrioDia,
@@ -104,13 +113,22 @@ export function dibujarTrenTresCuartos(r, train, base, camX, anchoVista, opcione
   for (const tramo of train.tramos) {
     const x0 = tramo.colStart * size;
     const ancho = tramo.cols * size;
-    if (x0 > camX + anchoVista + 90 || x0 + ancho < camX - 90) continue;
+    // (La locomotora se dibuja desde 12 casillas antes de su tramo y su faro alumbra más allá: sin contarlo, aparecía de golpe ya entrando en pantalla.)
+    const desde = tramo.tipo === 'locomotora' ? x0 - 12 * size : x0, hasta = x0 + ancho + (tramo.tipo === 'locomotora' ? 180 : 0);
+    if (desde > camX + anchoVista + 90 || hasta < camX - 90) continue;
     // (🚂 De afuera, la cabina y la caldera siguen siendo el dibujo viejo de la locomotora entera, que mide lo mismo que las dos.)
     if (tramo.tipo === 'vagon' && tramo.plantilla.id === 'cabina') continue;
     if (tramo.tipo === 'vagon') dibujarVagon(k, tramo.plantilla, x0, ancho);
     else if (tramo.tipo === 'enganche') dibujarEnganche(k, x0, ancho);
     else if (tramo.tipo === 'salida') dibujarCola(k, x0, ancho);
-    else if (tramo.tipo === 'locomotora') dibujarLocomotora(k, x0 - 18 * size);
+    else if (tramo.tipo === 'locomotora') dibujarLocomotora(k, x0 - 12 * size);
+  }
+  // La luz del farol de cola, después de todo el tren: alumbra también al vagón que tiene al lado.
+  if (noche && estiloNuevo.activo) {
+    for (const tramo of train.tramos) {
+      const x0 = tramo.colStart * size;
+      if (tramo.tipo === 'salida' && x0 < camX + anchoVista + 100 && x0 > camX - 100) dibujarLuzDeCola(r.ctx, x0, base, k.t);
+    }
   }
 }
 
@@ -539,6 +557,11 @@ export function familiaDe(p) {
  */
 function dibujarVagon(k, p, x0, ancho) {
   sombraEnElPiso(k, x0 + 1, ancho - 2);
+  // (🚂 En el estilo nuevo, lo que ya tiene su dibujo: ver world/estiloNuevo/trenDeAfuera.js.)
+  if (estiloNuevo.activo && tieneAfueraNuevo(p)) {
+    dibujarCocheNuevo(k.r.ctx, p, x0, ancho, k.base, (k.t * APROXIMACION.trenVelocidad) / (Math.PI * 2 * RADIO_RUEDA), k.noche, k.t, k.costado);
+    return;
+  }
   const estampa = (capa) => {
     const { img, alto } = laminaDeVagon(k, p, ancho, capa);
     k.r.ctx.drawImage(img, x0, k.base - alto, ancho, alto);
@@ -757,6 +780,7 @@ function cuerpoDeVagon(k, p, x0, ancho, capa = '') {
  * el desierto del otro lado, y es a donde saltás.
  */
 function dibujarEnganche(k, x0, ancho) {
+  if (estiloNuevo.activo && !k.costado) { dibujarEngancheNuevo(k.r.ctx, x0, ancho, k.base, k.noche); return; }
   const { c, P } = k;
   pieza(k, x0 - 3, M.bastidor - 3, ancho + 6, 2, c(P.bastidor));
   pieza(k, x0 + ancho / 2 - 3, M.bastidor - 5, 6, 6, c(P.ruedas));
@@ -770,6 +794,7 @@ function dibujarEnganche(k, x0, ancho) {
  * y sus dos barandas, la de este lado y la del otro.
  */
 function dibujarCola(k, x0, ancho) {
+  if (estiloNuevo.activo) { dibujarColaNueva(k.r.ctx, x0, ancho, k.base, k.noche); return; }
   const { c, P } = k;
   const piso = M.bastidor + PLACA.frente;
   pieza(k, x0 + 4, M.bastidor - 3, ancho - 4, 3, c(P.bastidor));
@@ -795,6 +820,7 @@ function dibujarCola(k, x0, ancho) {
  * vagones. Las tapas y las ruedas no se estiran.
  */
 function dibujarLocomotora(k, x0) {
+  if (estiloNuevo.activo) { dibujarLocoNueva(k.r.ctx, x0, k.base, k.t * APROXIMACION.trenVelocidad, k.t, k.noche); return; }
   const { r, base, t, c } = k;
   const L = CONFIG.colors.locomotora;
   const P = k.P;

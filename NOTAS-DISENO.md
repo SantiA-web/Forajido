@@ -18227,7 +18227,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
 | P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
 | P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | ✅ los dos trenes, con la locomotora adentro y las esquinas redondas (falta probarla jugando: ver "LA LOCOMOTORA, ADENTRO") |
-| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
+| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera hecho; falta la cabalgata (caballos, jinetes, fondo), la E4 y el jugador en el techo |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
 | P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
 | P8 · Limpieza | Borrar el dibujo viejo | Falta |
@@ -19878,6 +19878,23 @@ El último vagón del tren de carga. Santi eligió "chapa y carbón", "el carbó
   - Las palancas de la cabina conservan el choque de su casilla: están en el borde de dos casillas y sólo sobra un poco de aire subiendo desde abajo por la derecha.
   - El asiento termina donde termina el dibujo: se le pueden pisar apenas los pies al que está sentado.
   - El banquito verde de primera clase se pisa: es chico y ahí va sentado el rico, que podría trabarse al levantarse si chocara.
+
+## ✅ EL TREN DESDE AFUERA, EN LA GRILLA NUEVA (2026-11-03)
+
+*(Santi: "las puertas muy anchas y muy altas", "se ven muy de vista lateral", "ahora sí. Espectacular", y "seguí con la locomotora y la cola".)*
+
+Todos los vagones, la locomotora y la cola, vistos desde el caballo, en el estilo nuevo: `world/estiloNuevo/trenDeAfuera.js` y `locoDeAfuera.js`.
+
+- **Lo que hace leer 3/4** (también en la memoria `perspectiva-con-referencia`): la referencia es el mismo vagón en el asalto. Pared de 40 puntos, techo tan hondo como la pared (44), parte lisa clara con la curva alrededor a escalones, las líneas del alero y del piso que suben en las puntas (esquinas redondas) y la caja que tapa lo de arriba de las ruedas. Las vistas de costado quedan sólo para caminar por el techo.
+- **Ganado y plataforma** son chatos, con baranda de allá y de acá; la carga y las vacas van en dos filas.
+- **La locomotora** es un solo cuerpo bajo un solo techo *(Santi: "yo pensaba que esa parte del carbón estaba dentro de la locomotora, debajo del techo")*: arriba, la tapa del tanque del lado de allá y una boca de carbón del lado de acá, en el mismo lugar que adentro. Tubo, aros, domo, campana, arenera, chimenea y faro (las mismas piezas del asalto), bielas, humo y, de noche, un haz por escalones.
+- **Un tercio más corta, por dentro y por fuera** *(Santi: "acortaría la longitud de la locomotora, y bastante, como un tercio")*: de 30 columnas a 21. El ténder pasa de 10 a 4 y la caldera de 12 a 9. La cabina, donde se pelea, mide lo mismo: gente, botín, banco, palancas y choques se corrieron con ella.
+- **La cola es de chapa** *(Santi: "la cola debería ser de chapa no de madera")*, con la baranda de atrás cerrada *(Santi: "hay una baranda que no cierra")*.
+- **La luz del farol rojo, de noche** *(Santi: "quiero que ilumine bastante por la noche")*: una mancha grande con borde tramado, que suma rojo a lo que tiene alrededor; se dibuja después de todo el tren. No tiñe al caballo ni al jinete, y en el asalto no está.
+- **Arreglado:** la locomotora aparecía de golpe, ya entrando en pantalla (se la descartaba por dónde arranca su tramo, y se dibuja desde antes).
+- **Lo que quedó flojo:** la vista desde el techo mezcla dibujos (vagones de costado; locomotora y cola en 3/4) y su enganche sigue siendo el viejo; las ruedas de los vagones quedan por la mitad; las bielas se esconden detrás del estribo cuando suben. El dibujo viejo de la locomotora (con [F9]) sigue midiendo 30 columnas: no se tocó.
+
+A mano: ventanas, escotilla, boca de hielo, garita, ventilador, chimenea, vaca corta, tapa del tanque, boca de carbón, farol, escalón, copos de humo. De una cuenta: lo que se repite (tablas, chapas, techo, tubo, ruedas y bielas, carbón, barandas, piso de la cola, las luces, dónde va cada copo).
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

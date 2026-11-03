@@ -685,6 +685,8 @@ export const CONFIG = {
      * **0,351 cartuchos por segundo, exactamente el doble** de lo que tira hoy
      * un guardia del blindado (0,175 — uno cada 5,7 s).
      */
+    // 🚂 Cuánto (en radianes) puede errarle tu mira al maquinista para que igual levante las manos.
+    maquinistaApuntado: 0.5,
     dinamiteroRecarga: 5.0,
 
     /** Cuántas lanza de una. Ver `puntosDeTanda` (systems/ai.js). */
@@ -1869,6 +1871,11 @@ export const CONFIG = {
      * "debería verse más alta")*: el de una persona.
      */
     paredPunta: 3,
+    /**
+     * 🆕 El radio de las esquinas de adentro de los vagones con techo y de la locomotora, en unidades *(Santi: "buscando que el tren no quede tan
+     * cuadrado")*. Con el grueso de la pared (3) entra en la casilla de la punta, así que no le cambia el camino a nadie.
+     */
+    radioEsquina: 10.5,
     altoPuerta: 28,
     /** 🐂 La tranquera de las puntas del ganado y de la plataforma: la de los corrales, no de una persona *(Santi: "un marco muy alto")*. */
     altoTranquera: 18,

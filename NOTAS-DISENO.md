@@ -18226,7 +18226,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | P1 · El vagón de pasajeros | La maqueta hecha de verdad, de día y de noche | ✅ hecha |
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
 | P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
-| P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | 🔨 el comedor ✅ (falta su gente) |
+| P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | ✅ los dos trenes, con la locomotora adentro y las esquinas redondas (falta probarla jugando: ver "LA LOCOMOTORA, ADENTRO") |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | Falta |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
 | P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
@@ -19845,6 +19845,21 @@ El último vagón del tren de carga. Santi eligió "chapa y carbón", "el carbó
 - ⚠️ **No son a mano del todo los mapas de la escalera**: elegí la altura de cada tabla en cada cuadro y un script armó los mapas fijos. Santi lo sabe.
 - **Sin probar en movimiento real**: revisado cuadro a cuadro, sin errores en 30 s con guardias vivos y un frenazo. Faltó ver: el Sheriff trepando, la estampida de verdad contra la pared (las reses las puse a mano en la pasarela), y con la escalera nueva, un guardia usándola. Con [F9] corre sin errores, pero no miré cómo queda.
   - 🧪 El atajo [8] lleva a la góndola con los frenos rotos.
+
+## ✅ LA LOCOMOTORA, ADENTRO (2026-11-03)
+
+*(Santi: "ahora sí quiero que se pueda entrar. Sería un lugar chico, la puerta sería blindada, quiero el que maneja y mínimo un guardia blindado")*. Deja sin efecto el "se ve y no se entra". Va en los dos trenes, después del último enganche: no se sortea y no entra en la composición. Código: `src/world/estiloNuevo/cabina.js`, `cabina` en `data/wagons.js`.
+
+- **El lugar**: se entra por la puerta blindada a un pasillo angosto entre el tanque de agua (allá) y el carbón del ténder (acá), y se llega a la cabina, con la caldera entrando por el medio.
+- **La gente**: el maquinista *(Santi eligió "Maquinista se rinde, fogonero pelea")* se queda en los mandos y levanta las manos si lo apuntás; no tiene arma ni da la alarma (`actualizarMaquinista`, systems/ai.js). El fogonero palea hasta que te ve y te pega con la pala (`peleaConPala`). Y un blindado. Los refuerzos salen derecho por la puerta y recién en el enganche se ponen a pelear (`saliendo`). El premio, por ahora sólo botín *(Santi: "por ahora solo botín, luego le añadiremos más mecanicas")*: una caja fuerte y dos bolsas.
+- **El tubo, revisado con la cuenta de la cámara** *(Santi: "la perspectiva visual para mí es fundamental")*: lomo al 15 %, franjas de luz, aros, pasamanos, caños con codo, fogón de canto con el fuego animado. Se guió por una imagen en esta cámara sólo para las proporciones.
+- **Las ruedas giran** con lo que corre el suelo *(16 cuadros que salen de una cuenta, no son mapas a mano)*. El humo va en una columna gorda de copos a mano.
+- **El carbón del ténder**, hondo: se ve la cara de adentro de la pared, en sombra, y el montón abajo con sus lomas.
+- **El miriñaque**: Santi notó que la punta iba hacia la pantalla, y tenía razón. Ahora es una tapa triangular a nivel, y sólo bajo el borde de acá bajan los barrotes.
+- **Choques**: la caldera no se atraviesa (la columna de adelante era fina: por ahí se bajaba) y las reses no entran (`chocaConLaGondola`).
+- 🆕 **LAS ESQUINAS REDONDAS, EN TODO VAGÓN CON TECHO Y EN LA LOCOMOTORA** *(Santi: "quiero que la curva sea un poco más grande y que el borde de la pared también acompañe la curva y que choque la curva... buscando que el tren no quede tan cuadrado")*, en los dos trenes. Radio 10,5 unidades (`tresCuartos.radioEsquina`). El choque está en `world/tilemap.js` (`enEsquinaCurva`) y sólo frena al que camina. El dibujo (`formaEsquina`, `cabina.js`) **sale de una cuenta, no son mapas a mano**, porque tiene que coincidir con el choque: el borde da la vuelta, la cara del fondo se dobla con su zócalo y sus franjas, y la de afuera termina redondeada. Plataforma, ganado y góndola siguen rectos: no tienen techo.
+- ⚠️ **Sin probar**: una partida entera con guardias vivos, el tren de pasajeros jugado (sólo revisado cuadro a cuadro), el techo de la locomotora y cómo se la ve desde el galope. Las palancas quedaron corridas respecto de su casilla, por la mano del maquinista. Las curvas de la cabina caen en casillas libres: lo que quede en un rincón se ve un poco tapado.
+  - 🧪 El atajo [8] lleva a la cabina, con los frenos rotos en el ganado de al lado.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 

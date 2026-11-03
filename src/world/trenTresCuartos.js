@@ -105,10 +105,12 @@ export function dibujarTrenTresCuartos(r, train, base, camX, anchoVista, opcione
     const x0 = tramo.colStart * size;
     const ancho = tramo.cols * size;
     if (x0 > camX + anchoVista + 90 || x0 + ancho < camX - 90) continue;
+    // (🚂 De afuera, la cabina y la caldera siguen siendo el dibujo viejo de la locomotora entera, que mide lo mismo que las dos.)
+    if (tramo.tipo === 'vagon' && tramo.plantilla.id === 'cabina') continue;
     if (tramo.tipo === 'vagon') dibujarVagon(k, tramo.plantilla, x0, ancho);
     else if (tramo.tipo === 'enganche') dibujarEnganche(k, x0, ancho);
     else if (tramo.tipo === 'salida') dibujarCola(k, x0, ancho);
-    else if (tramo.tipo === 'locomotora') dibujarLocomotora(k, x0);
+    else if (tramo.tipo === 'locomotora') dibujarLocomotora(k, x0 - 18 * size);
   }
 }
 

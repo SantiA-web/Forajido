@@ -629,6 +629,49 @@ export const WAGONS = {
    * la pista de la caja fuerte oculta acá sea otra cosa — no hay a quién
    * amenazar (ver data/train.js, `gente`).
    */
+  /**
+   * 🚂 EL TÉNDER Y LA CABINA *(Santi: "ahora sí quiero que se pueda entrar. Sería un lugar chico, la puerta sería blindada, quiero el
+   * que maneja y mínimo un guardia blindado")*. Va en todos los trenes, después del último enganche (`planificarTramos`): no entra en
+   * la composición ni se sortea. El dibujo está en world/estiloNuevo/cabina.js.
+   *
+   * Se entra por UN PASILLO ANGOSTO (filas 4 y 5) entre el tanque y el carbón. Por ahora el premio es sólo botín *(Santi: "por ahora solo
+   * botín, luego le añadiremos más mecanicas")*.
+   */
+  cabina: {
+    id: 'cabina',
+    name: 'Cabina de la locomotora',
+    short: 'CABINA',
+    hint: 'El maquinista, el fogonero y un blindado. La paga del viaje.',
+    puertasBlindadas: true,
+    sinPuertaAdelante: true,   // adelante está la caldera
+    sinVariantes: true,
+    layout: [
+      // (🔁 La caldera entra en la cabina, casillas C de la 14 a la 16: se pasa por allá o por acá. Las T de abajo son las palancas; la de arriba, el banco.)
+      '##################',
+      '##########.......#',
+      '##########.TT....#',
+      '##########....CCC#',
+      '+.............CCC#',
+      '+.............CCC#',
+      '#CCCCCCCCC#.....T#',
+      '#CCCCCCCCC#.....T#',
+      '#CCCCCCCCC#......#',
+      '##################',
+    ],
+    enemies: [
+      // 🔁 El maquinista, al costado de la caldera y mirando para adelante *(Santi: "está conduciendo mientras ve hacia el norte")*.
+      { guardType: 'maquinista', col: 15, row: 6, facing: 'right' },
+      { guardType: 'fogonero', col: 12, row: 4, facing: 'right' },
+      { guardType: 'blindado', path: [[13, 3], [13, 7], [11, 7], [11, 3]] },
+    ],
+    passengers: [],
+    loot: [
+      { col: 15, row: 1, type: 'strongbox' },
+      { col: 11, row: 8, type: 'bag' },
+      { col: 6, row: 4, type: 'bag' },
+    ],
+  },
+
   almacen: {
     id: 'almacen',
     name: 'Vagón almacén',
@@ -1306,19 +1349,20 @@ export const TRAMOS = {
    * centro del último enganche (`puntaLocomotora`): o sea que ahora se ve de
    * dónde sale.
    */
+  // (🔁 12 columnas: las otras 18 son ahora el ténder y la cabina, que se pisan: ver `cabina` en WAGONS. El tren mide lo mismo.)
   locomotora: {
     id: 'locomotora',
     layout: [
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
+      'XXXXXXXXXXXX',
     ],
   },
 

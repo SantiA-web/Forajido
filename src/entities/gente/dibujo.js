@@ -112,6 +112,8 @@ export const ROPA_DE_LOOK = {
   placa: 'blindado',
   dosRevolveres: 'pistolero',
   bandolera: 'dinamitero',
+  maquinista: 'maquinista',
+  fogonero: 'fogonero',
   civil: 'encubierto',
   estrella: 'sheriff',
   cartera: 'encargado',

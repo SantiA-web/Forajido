@@ -236,7 +236,7 @@ export function dibujarPersona(r, f) {
    * el dibujo viejo hasta que llegue su paso *(Santi eligió meterlo al juego
    * antes de terminar las poses, para ir probando)*.
    */
-  if (estiloNuevo.activo && f.interior && f.nuevo && (f.tipo === 'guardia' || f.tipo === 'pasajero' || f.tipo === 'encargado' || f.tipo === 'blindado' || f.tipo === 'pistolero' || f.tipo === 'sheriff' || f.tipo === 'cazarrecompensas' || f.tipo === 'rico' || f.tipo === 'escolta' || f.tipo === 'bartender') && ((f.postura || 'pie') === 'pie' || f.nuevo.piernas) && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
+  if (estiloNuevo.activo && f.interior && f.nuevo && (f.tipo === 'guardia' || f.tipo === 'pasajero' || f.tipo === 'encargado' || f.tipo === 'blindado' || f.tipo === 'dinamitero' || f.tipo === 'maquinista' || f.tipo === 'fogonero' || f.tipo === 'pistolero' || f.tipo === 'sheriff' || f.tipo === 'cazarrecompensas' || f.tipo === 'rico' || f.tipo === 'escolta' || f.tipo === 'bartender') && ((f.postura || 'pie') === 'pie' || f.nuevo.piernas) && !f.manosArriba && r.ctx) return jugadorNuevo(r, f);
   const tipo = ROPA[f.tipo] ? f.tipo : 'guardia';
   const [nombre, fn, g, espejo] = VISTA[direccionDe(f.angulo ?? Math.PI / 2)];
   const postura = f.postura || 'pie';
@@ -613,7 +613,7 @@ function jugadorNuevo(r, f) {
   // el dibujo: la bala sale hacia donde apuntás, como siempre.
   const angDibujo = Math.round(ang * 8 / Math.PI) * Math.PI / 8;
   const L = gente
-    ? lienzoGente({ ...(gente.aspecto || {}), tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, doble: !!gente.doble, orilla: gente.orilla ?? null, mesa: gente.mesa ?? null, recostado: !!gente.recostado, orillaLado: gente.orillaLado ? gente.orillaLado * (espejo ? -1 : 1) : 0, fino }, luz, !!f.destello)
+    ? lienzoGente({ ...(gente.aspecto || {}), tipo: f.tipo, vista, piernas, arma: armaNueva, ang: angDibujo, empuna, enfundado: !!gente.enfundado, funda: gente.funda, golpe, desenfunda: gente.desenfunda ?? null, aturdido: gente.aturdido ?? null, brazos: gente.brazos || null, accion: gente.accion || null, k: gente.k ?? 0, lleva: gente.lleva || null, bandera: !!gente.bandera, fuma: gente.fuma ?? null, fumaModo: gente.fumaModo || null, cartas: !!gente.cartas, doble: !!gente.doble, orilla: gente.orilla ?? null, mesa: gente.mesa ?? null, recostado: !!gente.recostado, orillaLado: gente.orillaLado ? gente.orillaLado * (espejo ? -1 : 1) : 0, dinamita: gente.dinamita ?? null, cartuchos: gente.cartuchos ?? null, pala: gente.pala ?? null, paleo: gente.paleo ?? null, mandos: gente.mandos ?? null, manos: gente.manos ?? null, fino }, luz, !!f.destello)
     : lienzoJugador({ vista, piernas, arma: armaNueva, ang: angDibujo, mochila: Math.min(4, Math.round(f.mochila || 0)), fino, golpe, empuna, tajo, vaina: !!f.vaina, mascara: !!f.mascara, aturdido: f.aturdido ?? null }, luz, !!f.destello);
   const ctx = r.ctx;
   ctx.save();

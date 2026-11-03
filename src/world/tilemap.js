@@ -264,8 +264,24 @@ export function createTilemap(layout) {
     if (mesaIzq && !mesaDer) return [1, libre - 1];
     return [regla.margenX, regla.margenX];
   }
+  /**
+   * 🆕 LAS ESQUINAS CURVAS *(Santi: "que choque la curva... un vagón prácticamente quedaría más pequeño en espacio porque se eliminan las esquinas")*:
+   * lo que queda entre el rincón y el arco es pared, aunque la casilla sea aire. Sólo para el que camina: las balas ya las frena la casilla de la punta.
+   */
+  const esquinasCurvas = new Map();
+  function enEsquinaCurva(px, py) {
+    if (!esquinasCurvas.size) return false;
+    const lista = esquinasCurvas.get(Math.floor(py / size) * 100000 + Math.floor(px / size));
+    if (!lista) return false;
+    for (const e of lista) {
+      const qx = (px - e.x) * e.dx, qy = (py - e.y) * e.dy;
+      if (qx >= 0 && qy >= 0 && qx < e.R && qy < e.R && Math.hypot(e.R - qx, e.R - qy) > e.R) return true;
+    }
+    return false;
+  }
   /** Sólido en este punto: la casilla, menos los costados de los que son más angostos (el banco). */
   function solidoEn(px, py) {
+    if (enEsquinaCurva(px, py)) return true;
     const regla = TILE_RULES[tileAtPixel(px, py)];
     if (!regla.solid) return false;
     if (finos.size) { const f = finoEn(px, py); if (f !== null) return f; }
@@ -294,6 +310,17 @@ export function createTilemap(layout) {
     grid, rows, cols, size,
     /** 🆕 Qué columnas son puntas finitas de vagón (ver `paredFina`). */
     ponerPuntasFinas(cols) { puntasFinas = new Set(cols); },
+    /** 🆕 Las esquinas curvas (ver `enEsquinaCurva`): `{ x, y, dx, dy, R }`, con el rincón en (x, y) y `dx`, `dy` para dónde queda el adentro. */
+    ponerEsquinasCurvas(lista) {
+      for (const e of lista) {
+        const xs = [e.x, e.x + e.dx * e.R].sort((a, b) => a - b), ys = [e.y, e.y + e.dy * e.R].sort((a, b) => a - b);
+        for (let f = Math.floor(ys[0] / size); f <= Math.floor(ys[1] / size); f++) for (let c = Math.floor(xs[0] / size); c <= Math.floor(xs[1] / size); c++) {
+          const k = f * 100000 + c;
+          if (!esquinasCurvas.has(k)) esquinasCurvas.set(k, []);
+          esquinasCurvas.get(k).push(e);
+        }
+      }
+    },
     /**
      * 📦 Los choques finos de un vagón (ver `finoEn`): `lista` de `{ celdas: [c0, c1, f0, f1], rects, dinamico }`.
      * `clave` es el vagón: si lo vuelve a avisar (el dibujo se rehace), reemplaza lo de antes.

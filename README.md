@@ -990,9 +990,11 @@ certero, el precio de no estar atento. **Cuanto más pagan por tu cabeza
 | **De carga** | 9 | El **caboose** es el 1 | **Almacén** (nunca antes del 3), dos cerrados, dos **plataformas**, ganado, **góndola** (nunca en las puntas) y **refrigerado** |
 
 Colgando de la parte de atrás, detrás del caboose, está la **plataforma
-trasera**. Y adelante de todo va la locomotora, que se ve y no se entra — de ahí
-salen los refuerzos. Se dibuja entera —ténder, cabina, caldera, chimenea con su humo, faro y
-miriñaque—, pero es fondo: no se pisa, no se entra y no cuenta para el reloj.
+trasera**. Y adelante de todo va la **locomotora**, en los dos trenes: de ahí salen
+los refuerzos, y **se puede entrar**. La puerta es blindada; adentro hay un pasillo
+angosto entre el tanque y el carbón, y la cabina con la caldera en el medio. Hay un
+maquinista que levanta las manos si lo apuntás, un fogonero que te pega con la pala y
+un blindado, y el premio es botín: una caja fuerte y dos bolsas.
 
 **Y uno de cada cuatro trenes de carga cambia una plataforma por el vagón de
 armas** (ver "El vagón de armas", más abajo). Es lo primero que cambia de qué

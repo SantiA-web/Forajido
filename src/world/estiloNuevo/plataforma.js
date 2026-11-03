@@ -5,8 +5,7 @@
  *
  * Es el primer vagón sin paredes: un piso de tablas a cielo abierto. Detrás del borde de allá se ve la tierra (la de
  * afuera, world/estiloNuevo/suelo.js, que ya está pintada debajo de todo); del lado de acá, el canto de la viga del
- * costado con los bolsillos de fierro de las estacas, y debajo, en la sombra del vagón, la tierra que pasa y los dos
- * bogies con sus ruedas.
+ * costado con los bolsillos de fierro de las estacas, y debajo, en la sombra del vagón, la tierra que pasa.
  *
  *  - LAS ESTACAS, de madera, metidas en sus bolsillos a lo largo de los dos bordes: las de allá van detrás de todos;
  *    las de acá, delante.
@@ -449,25 +448,7 @@ export function vagonPlataforma(train, w, dia) {
     }
   }
 
-  // ===== DEBAJO: la tierra que pasa, en la sombra del vagón, y los dos bogies con sus ruedas
-  const BOGIES = capa();
-  {
-    const r = rect(BOGIES);
-    const rueda = (cx, cy) => {
-      const R = 7;
-      for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) {
-        const d = Math.hypot(x, y);
-        if (d > R + 0.4) continue;
-        BOGIES.i[(cy + y) * W + cx + x] = d > R - 1 ? 0 : d > R - 2.5 ? (y < 0 ? 24 : 23) : d > 2 ? 31 : 23;
-      }
-    };
-    for (const bc of [3, cols - 3]) {
-      const cx = X(bc), cy = yBajo + 7;
-      r(cx - 20, yBajo, 40, 6, 0); r(cx - 19, yBajo + 1, 38, 4, 31); r(cx - 19, yBajo + 1, 38, 1, 23);   // el bastidor
-      rueda(cx - 11, cy); rueda(cx + 11, cy);
-      r(cx - 3, yBajo + 2, 6, 6, 0); r(cx - 2, yBajo + 3, 4, 4, 23);              // la caja del resorte
-    }
-  }
+  // (🔁 Sin ruedas *(Santi)*: la vía pasa debajo del piso, muy adentro del borde: el costado las tapa.)
 
   // ===== LAS PIEZAS
   const iluminado = (cp, campo) => iluminar({ ancho: W, alto: H, indices: cp.i, marcas: cp.m, campo });
@@ -549,11 +530,6 @@ export function vagonPlataforma(train, w, dia) {
         get img() { const q = train._platEtapas && train._platEtapas[b.clave]; return imgs[q ? q.etapa : 0]; },
       });
     }
-  }
-  {
-    const bo = iluminado(BOGIES, () => (dia ? -1 : NOCHE));
-    const [mx, my] = enMundo(0, yBajo);
-    resultado.altas.push({ img: lienzo(recorte(bo, 0, yBajo, W, H - yBajo), W, H - yBajo), x: mx, y: my, w: W * PASO, h: (H - yBajo) * PASO, base: map.rows * S + 0.02 });
   }
   for (const q of piezas) {
     const [mx, my] = enMundo(q.px, q.py);

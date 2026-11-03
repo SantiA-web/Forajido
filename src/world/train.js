@@ -31,6 +31,7 @@ import { createCajon } from '../entities/cajon.js';
 import { EXPLOSIVES } from '../data/explosives.js';
 import { WAGONS, TRAMOS, nichoDeCaja } from '../data/wagons.js';
 import { esVagonNuevo } from './estiloNuevo/vagones.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 import {
   TRAIN_TYPES, TIPO_TREN_POR_DEFECTO, DIFICULTADES, DIFICULTAD_POR_DEFECTO,
 } from '../data/train.js';
@@ -502,7 +503,9 @@ export function planificarTramos(composicion, caballoEn = 0) {
    * res que llegue al borde tiene que caer en algún vagón para `wagonAt`.
    * Todo lo que pregunta por vagones (`t.tipo === 'vagon'`) la saltea solo.
    */
-  agregar('locomotora', TRAMOS.locomotora, composicion.length);
+  // (🚂 Y el ténder y la cabina, que sí se pisan: ver `cabina` en data/wagons.js. Cuentan como un vagón más, el último.)
+  agregar('vagon', WAGONS.cabina, composicion.length + 1);
+  agregar('locomotora', TRAMOS.locomotora, composicion.length + 1);
 
   return tramos;
 }
@@ -654,7 +657,7 @@ export function buildTrain(
   const map = createTilemap(layout);
   // 🆕 Las puntas de los vagones del estilo nuevo son finitas (ver `paredFina`, world/tilemap.js), menos las del
   // dormitorio, que tiene la pared adentro (`paredAdentro`, data/wagons.js).
-  map.ponerPuntasFinas(tramos.filter((t) => t.tipo === 'vagon' && esVagonNuevo(t.plantilla.id) && !t.plantilla.paredAdentro).flatMap((t) => [t.colStart, t.colStart + t.cols - 1]));
+  map.ponerPuntasFinas(tramos.filter((t) => t.tipo === 'vagon' && esVagonNuevo(t.plantilla.id) && !t.plantilla.paredAdentro).flatMap((t) => (t.plantilla.id === 'cabina' ? [t.colStart] : [t.colStart, t.colStart + t.cols - 1])));   // (🐛 En la cabina, la de adelante es gruesa: finita, por ahí se bajaba cruzando la caldera *(Santi)*.)
   // 🪜 En la góndola, la pared de la escalera (casilla 'G') frena la vista y las balas sólo en su grueso, como las otras puntas.
   for (const t of tramos) {
     if (t.tipo !== 'vagon' || !t.plantilla.carbon) continue;
@@ -663,6 +666,29 @@ export function buildTrain(
       { celdas: [a, a, 4, 5], rects: [[a * S, 4 * S, a * S + G, 6 * S]] },
       { celdas: [b, b, 4, 5], rects: [[(b + 1) * S - G, 4 * S, (b + 1) * S, 6 * S]] },
     ]);
+  }
+
+  // 🆕 Las esquinas curvas: los vagones con techo y la locomotora, en los dos trenes (son las mismas plantillas). Plataforma, ganado y góndola no: no tienen techo.
+  {
+    const S = map.size, R = CONFIG.tresCuartos.radioEsquina, G = CONFIG.tresCuartos.paredPunta, lista = [];
+    for (const t of tramos) {
+      if (t.tipo !== 'vagon' || !esVagonNuevo(t.plantilla.id) || ['plataforma', 'ganado', 'gondola'].includes(t.plantilla.id)) continue;
+      const a = t.colStart, b = t.colStart + t.cols - 1;
+      if (t.plantilla.id === 'cabina') {
+        lista.push({ x: (a + 10) * S, y: S, dx: 1, dy: 1, R }, { x: (a + 17) * S, y: S, dx: -1, dy: 1, R }, { x: (a + 11) * S, y: 9 * S, dx: 1, dy: -1, R }, { x: (a + 17) * S, y: 9 * S, dx: -1, dy: -1, R });
+        continue;
+      }
+      const m = a + Math.floor(t.cols / 2), esPared = (f) => { const c = map.tileAt(m, f); return c === '#' || c === 'W'; };
+      let f0 = 0; while (f0 < ALTO && esPared(f0)) f0++;
+      let f1 = ALTO; while (f1 > 0 && esPared(f1 - 1)) f1--;
+      const adentro = t.plantilla.paredAdentro;
+      const lados = [[a, adentro ? (a + 1) * S : a * S + G, 1], [b, adentro ? b * S : (b + 1) * S - G, -1]];
+      for (const [col, x, dx] of lados) {
+        if (map.tileAt(col, f0) === '#') lista.push({ x, y: f0 * S, dx, dy: 1, R });
+        if (map.tileAt(col, f1 - 1) === '#') lista.push({ x, y: f1 * S, dx, dy: -1, R });
+      }
+    }
+    map.ponerEsquinasCurvas(lista);
   }
 
   // --- 3. Metadatos de cada vagón ---
@@ -750,6 +776,7 @@ export function buildTrain(
       { col: t.colStart + t.cols - 1, insideDir: -1 }, // la de salida
     ];
     for (const borde of bordes) {
+      if (t.plantilla.sinPuertaAdelante && borde.insideDir === -1) continue;
       const centro = map.tileCenter(borde.col, 4);
       /**
        * (🆕 En la pared finita de la punta, pegada al borde de afuera del vagón: ver `paredPunta` en data/config.js. En el
@@ -2631,10 +2658,12 @@ export function oscuridadDeNoche(r, train, camX, vistaW, corrX = null) {
    * dentro es todo igual de punta a punta, así que casi todo se junta.
    */
   const tramos = [];
+  const conCabinaNueva = estiloNuevo.activo && train.tipoPorColumna.includes('cabina') && esVagonNuevo('cabina');
   const tramoDe = (col) => {
     const casilla = (f) => (map.grid[f] || [])[col];
     const tipo = train.tipoPorColumna[col];
-    if (tipo === 'locomotora') return [[22, map.height - 22]];
+    // (🔁 La de la cabina nueva ya está a la luz de la luna en su dibujo: oscurecerla otra vez la dejaba negra, con un rectángulo sobre la vía.)
+    if (tipo === 'locomotora') return conCabinaNueva ? [] : [[22, map.height - 22]];
     const partes = [];
     const plantilla = WAGONS[tipo];
     let desde = null;
@@ -3206,10 +3235,12 @@ function drawLocomotora(r, train, colors, camX, anchoVista) {
   if (!t) return;
   const L = colors.locomotora;
   if (!L) return;
+  // (🚂 En el estilo nuevo la caldera la dibuja world/estiloNuevo/cabina.js.)
+  if (train._estiloNuevo) return;
 
   const size = train.map.size;
-  const x0 = t.colStart * size;
-  const ancho = t.cols * size;
+  const x0 = (t.colStart - 18) * size;   // (🔁 El dibujo viejo sigue midiendo 30 columnas: empieza en el ténder.)
+  const ancho = (t.cols + 18) * size;
   // Fuera de cuadro no se dibuja, igual que las casillas.
   if (x0 > camX + anchoVista + 60 || x0 + ancho < camX - 60) return;
 

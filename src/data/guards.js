@@ -119,6 +119,14 @@ export const GUARD_TYPES = {
    * vigilancia" (`peso: 0`, data/train.js) y `frenosDañados`: el tipo está
    * entero y probado, esperando que exista el vagón del que tiene que bajar.
    */
+  /**
+   * 🚂 EL MAQUINISTA *(Santi eligió "Maquinista se rinde, fogonero pelea")*: no suelta los mandos, y si lo apuntás levanta las manos. No
+   * tiene arma y no da la alarma (`actualizarMaquinista`, systems/ai.js).
+   */
+  maquinista: { id: 'maquinista', name: 'Maquinista', health: 100, look: 'maquinista', sinArmaDeFuego: true, maquinista: true },
+  /** 🚂 EL FOGONERO: palea hasta que te ve; después te pega con la pala, cuerpo a cuerpo, sin salir de la cabina (`peleaConPala`, systems/ai.js). */
+  fogonero: { id: 'fogonero', name: 'Fogonero', health: 150, look: 'fogonero', sinArmaDeFuego: true, pala: true },
+
   dinamitero: {
     id: 'dinamitero',
     name: 'Dinamitero',

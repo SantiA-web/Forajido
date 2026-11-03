@@ -255,6 +255,30 @@ const SOMBREROS = {
     diagE: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '..xkkkkkkkkkkkkkkx']),
     espalda: mapa(0, ['........hHHHk', '........bbbbb', '...hhhhHHHHHHHkkkk', '..xkkkkkkkkkkkkkkx']),
   },
+  /** 🚂 LA GORRA DEL MAQUINISTA, a rayas, con la visera. */
+  maquinista: {
+    frente: mapa(0, ['.........hHhk', '........hHhHhk', '.......hHhHhHhk', '.......bbbbbbbb']),
+    diagF: mapa(0, ['..........hHhk', '.........hHhHhk', '........hHhHhHk', '.......bbbbbbbbb']),
+    lado: mapa(0, ['.........hHhk', '........hHhHhk', '.......hHhHhHk', '.......hHhHbbbbb']),
+    diagE: mapa(0, ['.........hHhk', '........hHhHhk', '.......hHhHhHk', '.......hHhHhHk']),
+    espalda: mapa(0, ['.........hHhk', '........hHhHhk', '.......hHhHhHhk', '.......hHhHhHhk']),
+  },
+  /** 🚂 EL PAÑUELO DEL FOGONERO, atado a la cabeza; atrás le cuelga la punta. */
+  panuelo: {
+    frente: mapa(1, ['.........hHHk', '........hHHHHk', '........bbbbb']),
+    diagF: mapa(1, ['..........hHHk', '.........hHHHHk', '.........bbbbb']),
+    lado: mapa(1, ['.........hHHk', '........hHHHHk', '........bbbbbb', '.......hb.....', '.......h......']),
+    diagE: mapa(1, ['.........hHHk', '........hHHHHk', '.......hbbbbb', '.......h.....']),
+    espalda: mapa(1, ['.........hHHk', '........hHHHHk', '........bbbbb', '..........hk..', '..........hk..']),
+  },
+  /** 🆕 EL GORRO DE TELA DEL DINAMITERO *(Santi eligió el minero)*: sin ala, blando y caído para un costado. */
+  minero: {
+    frente: mapa(0, ['..........hHk', '........hhHHHk', '.......hHHHHHHk', '.......bbbbbbbk']),
+    diagF: mapa(0, ['...........hHk', '.........hhHHHk', '........hHHHHHHk', '........bbbbbbbk']),
+    lado: mapa(0, ['..........hHk', '.......hhHHHHk', '......hHHHHHHk', '.......bbbbbbk']),
+    diagE: mapa(0, ['.........hHk', '........hHHHkk', '.......hHHHHHHk', '.......bbbbbbbk']),
+    espalda: mapa(0, ['.........hHk', '........hHHHkk', '.......hHHHHHHk', '.......bbbbbbbk']),
+  },
   bombin: {
     frente: mapa(0, ['.........hHk', '........hHHHk', '........bbbbb', '.......hHHHHHk']),
     diagF: mapa(0, ['..........hHk', '.........hHHHk', '.........bbbbb', '........hHHHHHk']),
@@ -882,6 +906,177 @@ TORSOS.blindado = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espal
 function correaEncargado(vista) { const c = CARTERA_ENCARGADO[vista] && CARTERA_ENCARGADO[vista].correa; return c ? [c[0], c[c.length - 1]] : null; }
 TORSOS.encargado = Object.fromEntries(['frente', 'diagF', 'lado', 'diagE', 'espalda'].map((v) => [v, torsoEncargado(v)]));
 
+/**
+ * 🆕 EL DINAMITERO *(Santi eligió el minero)*: sin uniforme, la camisa arremangada, los tiradores (`J j`) y la bandolera roja
+ * cruzada. Los puntos 5 a 8 son LOS CARTUCHOS: se vacían cuando los tira y vuelven en los 5 s de recarga (ver `capasPersona`). De
+ * espaldas se ve sólo la correa (`9`). Sin funda: no tiene arma de fuego.
+ */
+/** 🚂 EL MAQUINISTA: camisa clara, el pañuelo rojo al cuello y la pechera del mameluco azul, con su botón de bronce. Sin funda. */
+TORSOS.maquinista = {
+  frente: mapa(8, ['.......CLCCCCc', '........55567', '........J5JJj', '........JJJJj', '........J9J9j', '........JJJJj', '........JJJJj', '........jJJjj', '........WyGyW']),
+  diagF: mapa(8, ['.......CLCCCCc', '........L5556', '........LJ5Jj', '........LJJJj', '........LJ9Jj', '........LJJJj', '........CJJJj', '........CjJjj', '........WyWGy']),
+  lado: mapa(8, ['.......LCCCc', '.......L5556', '.......LCJ5j', '.......LCJJj', '.......LCJ9j', '.......LCJJj', '.......CJJJj', '.......CJjJj', '.......WWyWG']),
+  diagE: mapa(8, ['.......CLLLCCc', '........L5556', '........LJCJj', '........LJCJj', '........LJCJj', '........LJJJj', '........LJJJj', '........CjJjj', '........WWWWW']),
+  espalda: mapa(8, ['.......CLLCLLc', '........L555c', '........LJCJc', '........LCJCc', '........LCJCc', '........JJJJj', '........JJJJj', '........jJJjj', '........WWWWW']),
+};
+/** 🚂 EL FOGONERO: la camiseta gris tiznada, con la mancha de carbón (`9`) y los tiradores. Sin funda y con los brazos al aire. */
+TORSOS.fogonero = {
+  frente: mapa(8, ['.......CLCCCCc', '........J9CCJ', '........JC9CJ', '........JCCCJ', '........J9CCJ', '........JCC9J', '........JCCcJ', '........jCCcj', '........WyGyW']),
+  diagF: mapa(8, ['.......CLCCCCc', '........LJ9CJ', '........LJC9J', '........LJCCJ', '........LJ9CJ', '........LJC9J', '........CJCCJ', '........CjCCj', '........WyWGy']),
+  lado: mapa(8, ['.......LCCCc', '.......LCJ9c', '.......LCJCc', '.......L9JCc', '.......LCJ9c', '.......LCJCc', '.......CCJCc', '.......CCjCc', '.......WWyWG']),
+  diagE: mapa(8, ['.......CLLLCCc', '........9LJCJ', '........LLJ9J', '........LLJCJ', '........9LJCJ', '........LLJ9J', '........LLJCJ', '........CCjCj', '........WWWWW']),
+  espalda: mapa(8, ['.......CLLCLLc', '........J9CCJ', '........JLC9J', '........LJCJC', '........LJ9JC', '........LJCJ9', '........LJCJC', '........CjCjC', '........WWWWW']),
+};
+/**
+ * 🚂 LA PALA DEL FOGONERO, a mano, en seis posturas: arriba o abajo, adelante o atrás. `dx` y `dy` son dónde queda la mano de adelante
+ * dentro del mapa. Cada cuadro de cada vista elige la suya, así que entre los 40 cuadros los dibujos de la pala se repiten.
+ */
+const PALA = {
+  arriba: { dx: 2, dy: 11, filas: ['.HHh.', '.HHh.', '.HHh.', '.HHh.', '.hhh.', '..m..', '..m..', '..m..', '..m..', '..m..', '..m..', '..m..', '..m..', '..M..', '..M..'] },
+  abajo: { dx: 2, dy: 3, filas: ['..M..', '..M..', '..m..', '..m..', '..m..', '..m..', '..m..', '..m..', '..m..', '.hhh.', '.HHh.', '.HHh.', '.HHh.', '.HHh.'] },
+  atrasAlta: { dx: 8, dy: 8, filas: ['HH.........', 'HHh........', 'HHhm.......', '.hhmm......', '....mm.....', '.....mm....', '......mm...', '.......mm..', '........mm.', '.........MM', '..........M'] },
+  adelanteAlta: { dx: 2, dy: 8, filas: ['.........HH', '........hHH', '.......mhHH', '......mmhh.', '.....mm....', '....mm.....', '...mm......', '..mm.......', '.mm........', 'MM.........', 'M..........'] },
+  adelante: { dx: 3, dy: 2, filas: ['..........hHHH', '..........hHHH', 'MMMmmmmmmmhHHH', '..........hHHH', '..........hHHH'] },
+  abajoAdelante: { dx: 3, dy: 3, filas: ['MM.........', '.MM........', '..mm.......', '...mm......', '....mm.....', '.....mm....', '......mmh..', '.......hHH.', '........HHH', '.........HH'] },
+};
+const COL_PALA = { H: 24, h: 23, m: 5, M: 4, n: 0 };
+/** Cada cuadro del golpe, en cada vista: [mano de adelante], [la otra], la postura de la pala y si queda atrás del cuerpo. */
+const GOLPE_PALA = {
+  frente: { hombros: [[7, 9], [13, 9]], capa: 'frente', cuadros: [
+    [[12, 12], [8, 12], 'arriba'], [[14, 10], [6, 11], 'arriba'], [[15, 6], [7, 7], 'arriba'], [[12, 4], [8, 4], 'arriba'],
+    [[12, 6], [8, 6], 'arriba'], [[12, 11], [8, 11], 'abajo'], [[12, 13], [8, 13], 'abajo'], [[12, 12], [8, 12], 'abajo'],
+  ] },
+  diagF: { hombros: [[7, 9], [13, 9]], capa: 'frente', cuadros: [
+    [[14, 12], [10, 13], 'adelanteAlta'], [[15, 9], [8, 11], 'arriba'], [[13, 5], [6, 7], 'atrasAlta'], [[14, 4], [9, 5], 'arriba'],
+    [[15, 7], [10, 8], 'adelanteAlta'], [[16, 10], [11, 11], 'adelante'], [[15, 12], [10, 13], 'abajoAdelante'], [[14, 12], [10, 13], 'abajoAdelante'],
+  ] },
+  lado: { hombros: [[10, 9], [9, 9]], capa: 'frente', cuadros: [
+    [[13, 12], [11, 13], 'adelanteAlta'], [[12, 8], [10, 9], 'arriba'], [[10, 4], [8, 5], 'atrasAlta'], [[12, 5], [10, 6], 'arriba'],
+    [[14, 8], [12, 9], 'adelanteAlta'], [[15, 10], [13, 11], 'adelante'], [[15, 12], [13, 12], 'abajoAdelante'], [[14, 12], [12, 13], 'adelanteAlta'],
+  ] },
+  diagE: { hombros: [[13, 9], [6, 9]], capa: 'fondo', cuadros: [
+    [[13, 12], [8, 12], 'adelanteAlta'], [[15, 9], [6, 10], 'arriba'], [[14, 5], [7, 6], 'atrasAlta'], [[14, 4], [8, 5], 'arriba'],
+    [[15, 7], [9, 8], 'adelanteAlta'], [[16, 10], [9, 11], 'adelante'], [[15, 12], [9, 12], 'abajoAdelante'], [[14, 12], [9, 12], 'abajoAdelante'],
+  ] },
+  espalda: { hombros: [[13, 9], [6, 9]], capa: 'fondo', cuadros: [
+    [[12, 12], [7, 12], 'arriba'], [[14, 10], [5, 11], 'arriba'], [[15, 6], [6, 7], 'arriba'], [[12, 4], [7, 4], 'arriba'],
+    [[12, 6], [7, 6], 'arriba'], [[12, 11], [7, 11], 'abajo'], [[12, 13], [7, 13], 'abajo'], [[12, 12], [7, 12], 'abajo'],
+  ] },
+};
+/** Palear, de perfil: agacharse, cargar y tirar al fogón. El cuarto dato (`true`): con carbón en la hoja. */
+const PALEO = [
+  [[13, 14], [11, 13], 'abajoAdelante', false],
+  [[14, 14], [11, 13], 'abajoAdelante', false],
+  [[14, 12], [11, 12], 'adelante', true],
+  [[15, 10], [12, 11], 'adelante', true],
+  [[15, 8], [12, 9], 'adelanteAlta', false],
+  [[15, 8], [12, 9], 'adelanteAlta', false],
+  [[14, 11], [11, 11], 'adelante', false],
+  [[13, 13], [11, 12], 'abajoAdelante', false],
+];
+function posePala(hombros, capa, [m1, m2, cual, carbon], inclina) {
+  const P = PALA[cual], x = m1[0] - P.dx, y = m1[1] - P.dy;
+  const filas = P.filas.map((f) => '.'.repeat(Math.max(0, x)) + f);
+  const props = [{ m: mapa(y, filas), tabla: COL_PALA, capa }];
+  if (carbon) props.push({ m: mapa(m1[1] - 3, ['.'.repeat(m1[0] + 8) + 'nnn']), tabla: COL_PALA, capa });
+  const codo = (h, m) => [Math.round((h[0] + m[0]) / 2) + (m[0] >= h[0] ? 1 : -1), Math.round((h[1] + m[1]) / 2) + 1];
+  return {
+    lista: [{ p: [hombros[0], codo(hombros[0], m1), m1] }, { p: [hombros[1], codo(hombros[1], m2), m2], atras: capa === 'fondo' || m2[0] < m1[0] - 3 }],
+    props, inclina,
+  };
+}
+/** 🚂 En los mandos, de perfil y mirando para adelante: la mano de adelante en la palanca del vapor, la otra abajo, en el freno. Mueve apenas el vapor, despacio. */
+const MANDOS = [10, 10, 10, 9, 9, 9, 10, 10];
+const poseMandos = (k) => ({ lista: [{ p: [[10, 9], [14, 11], [18, MANDOS[k]]] }, { p: [[9, 9], [11, 12], [14, 14]], atras: true }] });
+/** 🚂 CON LAS MANOS ARRIBA, en cada vista, temblando: [hombro, codo, mano] de cada brazo. */
+const MANOS_ARRIBA = {
+  frente: [[[7, 9], [5, 6], [5, 2]], [[13, 9], [15, 6], [15, 2]]],
+  diagF: [[[7, 9], [5, 6], [6, 2]], [[13, 9], [15, 6], [15, 2]]],
+  lado: [[[10, 9], [12, 6], [12, 2]], [[9, 9], [8, 6], [8, 2]]],
+  diagE: [[[13, 9], [15, 6], [15, 2]], [[6, 9], [4, 6], [5, 2]]],
+  espalda: [[[13, 9], [15, 6], [15, 2]], [[6, 9], [4, 6], [4, 2]]],
+};
+const TIEMBLA = [0, 0, 1, 1, 0, 0, 1, 0];
+function poseManos(vista, k) {
+  return { lista: MANOS_ARRIBA[vista].map(([h, c, m], i) => ({ p: [h, c, [m[0] + (i ? -TIEMBLA[k] : TIEMBLA[(k + 2) % 8]) * 0, m[1] + TIEMBLA[(k + i * 3) % 8]]], atras: i === 1 && vista === 'lado' })) };
+}
+TORSOS.dinamitero = {
+  frente: mapa(8, ['.......CLCCCCc', '........J5CCJ', '........JC6CJ', '........JCC7J', '........JCC8J', '........JCC9J', '........JCCcJ', '........jCCcj', '........WyGyW']),
+  diagF: mapa(8, ['.......CLCCCCc', '........LJ5CJ', '........LJ6CJ', '........LJC7J', '........LJC8J', '........LJC9J', '........CJCCJ', '........CjCCj', '........WyWGy']),
+  lado: mapa(8, ['.......LCCCc', '.......LCJ5c', '.......LCJ6c', '.......LCJ7c', '.......LCJ8c', '.......LCJ9c', '.......CCJCc', '.......CCjCc', '.......WWyWG']),
+  diagE: mapa(8, ['.......CLLLCCc', '........9LJCJ', '........L9JCJ', '........LL9CJ', '........LLJ9J', '........LLJC9', '........LLJCJ', '........CCjCj', '........WWWWW']),
+  espalda: mapa(8, ['.......CLLCLLc', '........9JCCJ', '........L9CCJ', '........LJ9JC', '........LCJ9C', '........LCJC9', '........LCJCC', '........CCjCC', '........WWWWW']),
+};
+/**
+ * 🧨 TIRAR LAS DOS DINAMITAS, en 8 cuadros y en cada vista: 0, las dos en las manos, abajo (también es cómo las lleva peleando); 1 a 4
+ * las sube; 5 se queda arriba con las mechas prendidas; 6 y 7 las larga para adelante. [hombro, codo, mano] de cada brazo.
+ */
+const TIRAR_DINAMITA = {
+  frente: [
+    [[[7, 9], [6, 12], [6, 14]], [[13, 9], [14, 12], [14, 14]]],
+    [[[7, 9], [5, 11], [5, 12]], [[13, 9], [15, 11], [15, 12]]],
+    [[[7, 9], [4, 9], [4, 8]], [[13, 9], [16, 9], [16, 8]]],
+    [[[7, 9], [4, 7], [4, 5]], [[13, 9], [16, 7], [16, 5]]],
+    [[[7, 9], [4, 5], [4, 2]], [[13, 9], [16, 5], [16, 2]]],
+    [[[7, 9], [4, 5], [4, 2]], [[13, 9], [16, 5], [16, 2]]],
+    [[[7, 9], [5, 5], [6, 2]], [[13, 9], [15, 5], [14, 2]]],
+    [[[7, 9], [6, 7], [7, 6]], [[13, 9], [14, 7], [13, 6]]],
+  ],
+  diagF: [
+    [[[7, 9], [8, 12], [9, 14]], [[13, 9], [13, 12], [13, 13]]],
+    [[[7, 9], [6, 11], [7, 12]], [[13, 9], [15, 11], [15, 12]]],
+    [[[7, 9], [5, 9], [5, 8]], [[13, 9], [16, 9], [16, 8]]],
+    [[[7, 9], [4, 7], [4, 5]], [[13, 9], [16, 7], [16, 5]]],
+    [[[7, 9], [4, 5], [4, 2]], [[13, 9], [16, 5], [16, 2]]],
+    [[[7, 9], [4, 5], [4, 2]], [[13, 9], [16, 5], [16, 2]]],
+    [[[7, 9], [6, 5], [7, 2]], [[13, 9], [15, 5], [14, 2]]],
+    [[[7, 9], [8, 7], [9, 6]], [[13, 9], [14, 7], [14, 6]]],
+  ],
+  lado: [
+    [[[10, 9], [11, 12], [13, 13]], [[9, 9], [10, 12], [12, 13]]],
+    [[[10, 9], [12, 11], [13, 11]], [[9, 9], [11, 11], [12, 11]]],
+    [[[10, 9], [12, 9], [13, 8]], [[9, 9], [11, 9], [12, 8]]],
+    [[[10, 9], [12, 6], [12, 4]], [[9, 9], [10, 6], [10, 4]]],
+    [[[10, 9], [10, 5], [9, 2]], [[9, 9], [8, 5], [7, 2]]],
+    [[[10, 9], [10, 5], [9, 2]], [[9, 9], [8, 5], [7, 2]]],
+    [[[10, 9], [12, 5], [13, 2]], [[9, 9], [11, 5], [12, 2]]],
+    [[[10, 9], [13, 7], [15, 6]], [[9, 9], [12, 7], [14, 6]]],
+  ],
+  diagE: [
+    [[[13, 9], [14, 12], [14, 14]], [[6, 9], [5, 12], [6, 14]]],
+    [[[13, 9], [15, 11], [15, 12]], [[6, 9], [4, 11], [4, 12]]],
+    [[[13, 9], [16, 9], [16, 8]], [[6, 9], [3, 9], [3, 8]]],
+    [[[13, 9], [16, 7], [16, 5]], [[6, 9], [3, 7], [3, 5]]],
+    [[[13, 9], [16, 5], [16, 2]], [[6, 9], [3, 5], [3, 2]]],
+    [[[13, 9], [16, 5], [16, 2]], [[6, 9], [3, 5], [3, 2]]],
+    [[[13, 9], [15, 5], [14, 2]], [[6, 9], [4, 5], [5, 2]]],
+    [[[13, 9], [14, 7], [13, 6]], [[6, 9], [5, 7], [6, 6]]],
+  ],
+  espalda: [
+    [[[13, 9], [14, 12], [14, 14]], [[6, 9], [5, 12], [5, 14]]],
+    [[[13, 9], [15, 11], [15, 12]], [[6, 9], [4, 11], [4, 12]]],
+    [[[13, 9], [16, 9], [16, 8]], [[6, 9], [3, 9], [3, 8]]],
+    [[[13, 9], [16, 7], [16, 5]], [[6, 9], [3, 7], [3, 5]]],
+    [[[13, 9], [16, 5], [16, 2]], [[6, 9], [3, 5], [3, 2]]],
+    [[[13, 9], [16, 5], [16, 2]], [[6, 9], [3, 5], [3, 2]]],
+    [[[13, 9], [14, 5], [13, 2]], [[6, 9], [5, 5], [6, 2]]],
+    [[[13, 9], [13, 7], [12, 6]], [[6, 9], [6, 7], [7, 6]]],
+  ],
+};
+/** El brazo de allá va detrás del cuerpo, en estas vistas. */
+const DINAMITA_ATRAS = { lado: true, diagF: true, diagE: true };
+/** Las dos manos con su cartucho: el rojo, la mecha y, desde que la prende (cuadro 2), la chispa que titila. */
+function poseDinamita(vista, k) {
+  const brazos = TIRAR_DINAMITA[vista][k];
+  const tabla = { D: 10, d: 8, M: 17, B: k % 2 ? 45 : 29 };
+  const lista = brazos.map((p, i) => ({ p, atras: i === 1 && !!DINAMITA_ATRAS[vista] }));
+  const props = brazos.map((p, i) => {
+    const [mx, my] = p[2], ax = '.'.repeat(Math.max(0, mx));
+    return { m: mapa(my - 5, [k >= 2 ? ax + 'B' : '.', ax + 'M', ax + 'Dd', ax + 'Dd', ax + 'Dd']), tabla, capa: i === 1 && DINAMITA_ATRAS[vista] ? 'fondo' : 'frente' };
+  });
+  return { lista, props };
+}
+
 // ------------------------------------------------------------------ colores
 /**
  * DE QUÉ COLOR ES CADA LETRA, por personaje (sobre los del jugador). Los
@@ -980,17 +1175,22 @@ export function sortearAspecto(tipo, azar = Math.random) {
   else if (tipo === 'encargado') a.sombrero = 'gorra';   // 🆕 P3c: siempre con su gorra
   else if (tipo === 'rico') { a.sombrero = 'galera'; a.saco = elegir(PESO.sacoRico, azar); a.chaleco = elegir(PESO.chalecoRico, azar); a.guantes = elegir(PESO.guantesRico, azar); }
   else if (tipo === 'escolta') { a.sombrero = 'bombin'; a.colorSombrero = 'negro'; }      // 🆕 P4: el guardaespaldas
+  else if (tipo === 'maquinista') a.sombrero = 'maquinista';
+  else if (tipo === 'fogonero') a.sombrero = 'panuelo';
+  else if (tipo === 'dinamitero') a.sombrero = 'minero';       // 🆕 siempre con su gorro de tela
   else if (tipo === 'bartender') a.sombrero = 'ninguno';       // 🆕 P4: el bartender, sin sombrero (el pelo, cualquiera *(Santi)*)
   else { a.sombrero = elegir(PESO.sombreroPasajero, azar); a.panuelo = elegir(PESO.panuelo, azar); }
-  if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno' && a.sombrero !== 'gorra' && a.sombrero !== 'galera' && tipo !== 'escolta') a.colorSombrero = elegir(PESO.colorSombrero, azar);
+  if (a.sombrero !== 'paja' && a.sombrero !== 'ninguno' && a.sombrero !== 'gorra' && a.sombrero !== 'galera' && a.sombrero !== 'minero' && a.sombrero !== 'maquinista' && a.sombrero !== 'panuelo' && tipo !== 'escolta') a.colorSombrero = elegir(PESO.colorSombrero, azar);
   a.barba = elegir(tipo === 'rico' ? PESO.barbaRico : a.pelo === 'canas' ? PESO.barbaCanas : PESO.barba, azar);
   if (tipo === 'pasajero') a.ropa = elegir(PESO.ropa, azar);
   // 🆕 P3c: el blindado, sólo normal u hombros anchos (Santi, la C).
   a.cuerpo = elegir(tipo === 'blindado' ? PESO.cuerpoBlindado : tipo === 'escolta' ? PESO.cuerpoEscolta : PESO.cuerpo, azar);
+  if (tipo === 'dinamitero' || tipo === 'maquinista' || tipo === 'fogonero') a.cuerpo = 'normal';
   a.chaqueta = tipo === 'guardia' && azar() < PESO.chaqueta;
   // Con la chaqueta, la manga larga (la chaqueta tapa la camisa).
   // (🆕 El rico, de saco: siempre la manga larga.)
   a.arremangada = !a.chaqueta && tipo !== 'encargado' && tipo !== 'rico' && tipo !== 'escolta' && elegir(horaDelSorteo.dia ? PESO.mangaDia : PESO.mangaNoche, azar) === 'arremangada';
+  if (tipo === 'dinamitero' || tipo === 'fogonero') a.arremangada = true;
   return a;
 }
 /** De día o de noche: la pone el asalto al empezar (de noche, más mangas largas). */
@@ -1026,11 +1226,19 @@ const COLOR_SOMBRERO = {
   gorra: { h: 41, H: 18, k: 40, x: 0, b: 40 },
   alto: { h: 4, H: 3, k: 32, x: 0, b: 16 },
   galera: { h: 24, H: 31, k: 0, x: 0, b: 23 },   // 🆕 la del rico: negra, con la cinta apenas más clara
+  maquinista: { h: 19, H: 30, k: 41, x: 0, b: 0 },   // 🚂 la gorra a rayas azules y blancas
+  panuelo: { h: 9, H: 10, k: 8, x: 0, b: 39 },       // 🚂 el pañuelo colorado del fogonero
+  minero: { h: 24, H: 23, k: 31, x: 0, b: 31 },   // 🆕 el gorro del Dinamitero: tela gris gastada
   ancho: { h: 33, H: 32, k: 0, x: 0, b: 8 },     // 🆕 el del Cazarrecompensas: negro pardo con la cinta roja     // 🆕 el del Sheriff: marrón oscuro con la cinta crema   // 🆕 la del Encargado: azul marino, cinta y visera oscuras
 };
 /** 🆕 La otra variante de los sombreros de fieltro: marrón oscuro con la cinta crema *(Santi)*. */
 const COLOR_MARRON = { h: 4, H: 3, k: 32, x: 0, b: 16 };
 const BASE = {
+  // 🆕 El Dinamitero: la camisa gastada, el pantalón de trabajo, el cuero de los tiradores y la bandolera roja.
+  // 🚂 El maquinista, de mameluco azul; el fogonero, de camiseta gris tiznada y pantalón oscuro.
+  maquinista: { L: 25, C: 30, c: 24, U: 30, V: 30, v: 24, w: 24, y: 41, W: 1, G: 25, E: 30, e: 30, I: 19, T: 41, t: 18, J: 41, j: 18, 5: 10, 6: 9, 7: 8, 9: 28 },
+  fogonero: { L: 24, C: 25, c: 23, U: 25, V: 25, v: 23, w: 23, y: 33, W: 1, G: 25, E: 25, e: 25, I: 33, T: 32, t: 0, J: 33, j: 32, 9: 23 },
+  dinamitero: { L: 16, C: 15, c: 14, U: 16, V: 15, v: 14, w: 13, y: 33, W: 1, G: 25, E: 15, e: 15, I: 34, T: 33, t: 32, J: 32, j: 0, 9: 39 },
   guardia: {
     L: 17, C: 16, c: 15,                     // camisa clara
     y: 1, E: 45, e: 29, W: 1, G: 28,         // botones oscuros, la estrella de bronce con su brillo, cinto
@@ -1132,11 +1340,13 @@ function torsoConRopa(torso, vista, ropa) {
   }
   return (torsosDeRopa[clave] = { y: torso.y, filas: filas.map((r) => r.join('')) });
 }
-export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff' || tipo === 'cazarrecompensas' || tipo === 'escolta', ropa = 'chaleco', saco = 'negro', chaleco = 'crema', guantes = 'ninguno' }) {
+export function capasPersona({ tipo, vista, sombrero, piel = 'media', pelo = 'castano', uniforme = 'bordo', barba = null, peinado = 'corto', panuelo = 'azul', colorSombrero = 'negro', funda = tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff' || tipo === 'cazarrecompensas' || tipo === 'escolta', ropa = 'chaleco', saco = 'negro', chaleco = 'crema', guantes = 'ninguno', cartuchos = 4 }) {
   // `sombrero` null es sin sombrero; sin decir nada, el de cada uno.
-  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' || tipo === 'pistolero' ? 'plano' : tipo === 'encargado' ? 'gorra' : tipo === 'sheriff' ? 'alto' : tipo === 'cazarrecompensas' ? 'ancho' : tipo === 'rico' ? 'galera' : tipo === 'bartender' ? null : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
+  const s = sombrero === undefined ? (tipo === 'guardia' || tipo === 'blindado' || tipo === 'pistolero' ? 'plano' : tipo === 'encargado' ? 'gorra' : tipo === 'sheriff' ? 'alto' : tipo === 'cazarrecompensas' ? 'ancho' : tipo === 'rico' ? 'galera' : tipo === 'bartender' ? null : tipo === 'dinamitero' ? 'minero' : tipo === 'maquinista' ? 'maquinista' : tipo === 'fogonero' ? 'panuelo' : 'bombin') : sombrero === 'ninguno' ? null : sombrero;
   // (El Encargado: el pantalón de la compañía y encima su saco.)
   const colores = { ...(tipo === 'encargado' ? UNIFORMES[uniforme] : {}), ...BASE[tipo], ...(tipo === 'guardia' || tipo === 'blindado' ? UNIFORMES[uniforme] : {}), ...PIELES[piel], ...PELOS[pelo], ...(s ? (colorSombrero === 'marron' && s !== 'paja' ? COLOR_MARRON : COLOR_SOMBRERO[s]) : {}), ...(tipo === 'pasajero' ? COLORES_PANUELO[panuelo] : {}) };
+  // 🧨 Los cartuchos de la bandolera: el que ya tiró deja la correa sola.
+  if (tipo === 'dinamitero') for (let i = 0; i < 4; i++) colores[5 + i] = i < 4 - cartuchos ? 39 : 10;
   if (!funda) Object.assign(colores, vista === 'lado' ? { F: colores.I ?? C.I, f: colores.T ?? C.T } : { F: null, f: null });
   if (tipo === 'rico') Object.assign(colores, SACOS_RICO[saco] || SACOS_RICO.negro, CHALECOS_RICO[chaleco] || CHALECOS_RICO.crema, GUANTES_RICO[guantes] || {});
   const cabeza = [CABEZA[vista]];
@@ -1245,7 +1455,8 @@ export function cuadroGente(o) {
   const FB0 = fk != null && modo === 'boca' ? FUMAR_BOCA[o.vista] : null;
   const FB = FB0 && atras ? { c: FB0.c && FB0.c.map(([x, y]) => [x - atras, y]), humo: [FB0.humo[0] - atras, FB0.humo[1]] } : FB0;
   // Lo que hace sentado (`accion`, ver poseSentado) se arma acá: así se guarda por nombre.
-  let brazos = PF || (o.accion === 'fumar' ? poseSentado('quieto', o.vista, 0, 'maleta', !!o.mesa)
+  const GP = o.pala != null && GOLPE_PALA[o.vista];
+  let brazos = o.dinamita != null ? poseDinamita(o.vista, o.dinamita) : GP ? posePala(GP.hombros, GP.capa, GP.cuadros[o.pala]) : o.paleo != null ? posePala(GOLPE_PALA.lado.hombros, 'frente', PALEO[o.paleo], [1, 1, 0, 0, 0, 0, 0, 1][o.paleo]) : o.mandos != null ? poseMandos(o.mandos) : o.manos != null ? poseManos(o.vista, o.manos) : PF || (o.accion === 'fumar' ? poseSentado('quieto', o.vista, 0, 'maleta', !!o.mesa)
     : o.accion ? poseSentado(o.accion, o.vista, o.k, o.lleva, !!o.mesa)
       : fk != null && o.cartas ? 'cartas' : o.brazos);
   if (echado && brazos && typeof brazos === 'object' && brazos !== PF) brazos = reclinar(brazos);
@@ -1254,9 +1465,9 @@ export function cuadroGente(o) {
   const persona = echado && persona0.torso ? { ...persona0, torso: torsoEchado(persona0.torso) } : persona0;
   // Agarrando el sombrero del banco: todavía no lo tiene puesto (está suelto, ver lienzoSombreroSuelto).
   if (brazos && brazos.sinSombrero) persona.sombrero = null;
-  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco', estrella: o.tipo === 'guardia' || o.tipo === 'blindado' || o.tipo === 'sheriff',
+  const forma = { cuerpo: o.cuerpo || 'normal', chaqueta: !!o.chaqueta, conChaleco: o.tipo !== 'dinamitero' && o.tipo !== 'maquinista' && o.tipo !== 'fogonero' && (o.tipo === 'guardia' || (o.ropa || 'chaleco') === 'chaleco'), estrella: o.tipo === 'guardia' || o.tipo === 'blindado' || o.tipo === 'sheriff',
     // 🆕 P3c: el Encargado, con el saco cerrado (sin la panza del chaleco abierto) y la correa cruzada.
-    panza: o.tipo !== 'encargado' && o.tipo !== 'bartender', correa: o.tipo === 'encargado' ? correaEncargado(o.vista) : null };
+    panza: o.tipo !== 'encargado' && o.tipo !== 'bartender' && o.tipo !== 'dinamitero' && o.tipo !== 'maquinista' && o.tipo !== 'fogonero', correa: o.tipo === 'encargado' ? correaEncargado(o.vista) : null };
   const q0 = cuadroJugador({ piernas: 'quieto', ang: 0, ...o, brazos, persona, forma });
   if (o.tipo === 'sheriff') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''));
   if (o.tipo === 'rico') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''), { ...C, ...persona.colores }, ['L', 'C', 'c']);
@@ -2048,7 +2259,7 @@ export function lienzoSombreroSuelto(o, luz = 0) {
 }
 
 const guardados = new Map();
-const CLAVES = ['tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado', 'mesa', 'saco', 'chaleco', 'guantes', 'recostado'];
+const CLAVES = ['pala', 'paleo', 'mandos', 'manos', 'dinamita', 'cartuchos', 'tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado', 'mesa', 'saco', 'chaleco', 'guantes', 'recostado'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

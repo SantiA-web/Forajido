@@ -217,6 +217,9 @@ export function createEnemy(x, y, options = {}) {
      * plantarse cuando lo tenés encima.
      */
     sinArmaDeFuego: tipo.sinArmaDeFuego || false,
+    // 🚂 El maquinista y el fogonero (ver `actualizarMaquinista` y `peleaConPala`, systems/ai.js).
+    maquinista: tipo.maquinista || false,
+    pala: tipo.pala || false,
 
     throwWindup: 0,
     throwCooldown: 0,
@@ -396,8 +399,9 @@ export function drawEnemy(r, e) {
   // 🆕 P3c: también el Encargado del tren (su gorra, su saco y su cartera, ver gente.js).
   // 🆕 P3c: y el Sheriff, con su guardapolvo y sus dos estrellas.
   // 🆕 P4: y los guardaespaldas de los ricos (saco negro, camisa blanca: ver TORSOS.escolta).
-  const tipoN = e.escolta ? 'escolta' : tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff' ? tipo : 'guardia';
-  const nuevo = estiloNuevo.activo && (tipo === 'guardia' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'pistolero' || tipo === 'sheriff') && r.ctx;
+  // 🆕 Y el Dinamitero, el minero de la bandolera (ver TORSOS.dinamitero).
+  const tipoN = e.escolta ? 'escolta' : tipo === 'maquinista' || tipo === 'fogonero' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'dinamitero' || tipo === 'pistolero' || tipo === 'sheriff' ? tipo : 'guardia';
+  const nuevo = estiloNuevo.activo && (tipo === 'guardia' || tipo === 'maquinista' || tipo === 'fogonero' || tipo === 'encargado' || tipo === 'blindado' || tipo === 'dinamitero' || tipo === 'pistolero' || tipo === 'sheriff') && r.ctx;
   const espejoTirado = (Math.floor(e.x / 3) & 1) === 1;
   if (!e.alive) {
     if (nuevo) { tendidoNuevo(r, e.x, e.y, { tipo: tipoN, modo: 'muerto', sangre: true, espejo: espejoTirado, aspecto: aspectoDe(e, tipoN) }); return; }
@@ -441,7 +445,7 @@ export function drawEnemy(r, e) {
     const figC = dibujarPersona(r, {
       tipo, x: e.x, pies, angulo: e.facing, interior: true,
       // (🐛 Con su aspecto: el caído y el rendido salían con la cara y el cuerpo de fábrica.)
-      nuevo: { piernas: 'piso', arma: largaC || (defC && defC.corta) || 'colt', empuna: largaC || e.aimTimer > 0 ? 1 : 0, funda: !largaC, aspecto: aspectoDe(e, tipoN) },
+      nuevo: { piernas: 'piso', arma: e.sinArmaDeFuego ? null : largaC || (defC && defC.corta) || 'colt', empuna: largaC || e.aimTimer > 0 ? 1 : 0, funda: !largaC && !e.sinArmaDeFuego, aspecto: aspectoDe(e, tipoN) },
       destello: e.hitFlash > 0,
     });
     anotarBoca(e, figC);
@@ -488,6 +492,8 @@ export function drawEnemy(r, e) {
     const nuevoR = cuadroR < 2 ? { piernas: 'rodillas', brazos: 'arriba', bandera: cuadroR === 0, enfundado: !largaR, funda: !largaR }
       : cuadroR === 2 ? { piernas: 'agachado', arma: largaR ? null : (defR && defR.corta) || 'colt', desenfunda: largaR ? null : 1, funda: !largaR }
         : { piernas: 'quieto', arma: largaR || (defR && defR.corta) || 'colt', empuna: 0, funda: !largaR };
+    // (El Dinamitero no tiene arma que sacar.)
+    if (e.sinArmaDeFuego) Object.assign(nuevoR, { arma: null, desenfunda: null, enfundado: false, funda: false });
     const fig = dibujarPersona(r, {
       interior: true, nuevo: { ...nuevoR, aspecto: aspectoDe(e, tipoN) },
       tipo, x: e.x, pies, angulo: Math.PI / 2,
@@ -500,7 +506,8 @@ export function drawEnemy(r, e) {
     return;
   }
 
-  if (e.state !== 'combat') drawVisionCone(r, e);
+  // (🚂 El maquinista no vigila: mira los mandos.)
+  if (e.state !== 'combat' && !e.maquinista) drawVisionCone(r, e);
 
   // (Hundido en el carbón no tiene sombrita: ver `dibujarPiesEnCarbon`, world/caidas.js.)
   if (!e.sinSombra) {
@@ -584,6 +591,28 @@ export function drawEnemy(r, e) {
     aspecto: aspectoDe(e, tipoN),
   };
   /**
+   * 🧨 EL DINAMITERO: sin arma de fuego ni funda. La bandolera muestra lo que le queda, y peleando lleva las dos en las manos hasta
+   * que las prende: sube los brazos, y al final del `throwWindup` las suelta. Con la bandolera vacía, las manos vacías: ésa es su ventana.
+   */
+  if (e.sinArmaDeFuego && tipoN === 'dinamitero') {
+    const W = CONFIG.enemy.throwWindup;
+    Object.assign(poseN, { arma: null, enfundado: false, funda: false, desenfunda: null, cartuchos: Math.round(((e.dynamite || 0) / (e.dynamiteMax || 1)) * 4) });
+    poseN.dinamita = e.throwWindup > 0 ? Math.min(7, Math.floor((1 - e.throwWindup / W) * 8)) : peleando && e.dynamite >= (e.dynamiteMax || 2) ? 0 : null;
+  }
+  // 🚂 El maquinista, en los mandos o con las manos arriba; el fogonero, paleando o peleando con la pala. Cada uno, 8 cuadros.
+  if (e.maquinista) {
+    Object.assign(poseN, { arma: null, enfundado: false, funda: false, desenfunda: null, piernas: 'quieto' });
+    const k = Math.floor(performance.now() / 180) % 8;
+    if (e.manosArriba) poseN.manos = k; else poseN.mandos = k;
+  }
+  if (e.pala) {
+    const k = poseN.golpe;
+    Object.assign(poseN, { arma: null, enfundado: false, funda: false, desenfunda: null });
+    delete poseN.golpe;
+    if (peleando) poseN.pala = k ?? 0;
+    else { poseN.paleo = Math.floor(performance.now() / 150) % 8; poseN.piernas = 'quieto'; }
+  }
+  /**
    * 🆕 FUMA (ver CONFIG.fumar) *(Santi: "solo cuando paran o los que vigilan
    * puertas")*: el fumador, parado y tranquilo patrullando (el que vigila una
    * puerta está siempre parado), o el de franco mientras juega. Con el arma
@@ -658,7 +687,7 @@ export function drawEnemy(r, e) {
   // Mecha encendida en la mano, en alto: el aviso de que te va a tirar una
   // dinamita. Tiene que verse de lejos y sin ambigüedad, porque la respuesta
   // correcta (salir de la cobertura ya mismo) es contraria a todo lo demás.
-  if (e.throwWindup > 0) {
+  if (e.throwWindup > 0 && !(nuevo && tipoN === 'dinamitero')) {
     const parpadeo = Math.floor(e.throwWindup * 22) % 2 === 0;
     r.rect(fig.x + 7, fig.top - 1, 1, 3, col.dynamite);
     if (parpadeo) r.rect(fig.x + 7, fig.top - 3, 1, 1, '#fff4c0');

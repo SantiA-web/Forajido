@@ -36,6 +36,7 @@ import { pintarSuelo } from './suelo.js';
 import { vagonPlataforma } from './plataforma.js';
 import { vagonGanado } from './ganado.js';
 import { pintarArmas, escribir, anchoTexto } from './armas.js';
+import { vagonCabina, formaEsquina } from './cabina.js';
 import { vagonGondola } from './gondola.js';
 import { WAGONS, nichoDeCaja } from '../../data/wagons.js';
 import { medidasAlacena, pintarBarril, BARRIL_PARADO, BARRIL_PARADO_G, pintarBaulGrande, pintarCajon, pintarSaco, TAM_TORRE, pintarRolloTela, pintarCajaWhisky, RES_COLGADA, GANCHO, COL_RES } from '../caidas.js';
@@ -56,7 +57,7 @@ const PX = 1 / PASO;
 // (🪵 Y la plataforma, la primera sin paredes: va en su propio archivo, world/estiloNuevo/plataforma.js.)
 // (🐂 Y el ganado, también sin paredes y en el suyo, world/estiloNuevo/ganado.js.)
 // (🧨 Las armas, con las paredes de siempre; lo de adentro, en world/estiloNuevo/armas.js.)
-const NUEVOS = new Set(['pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado', 'plataforma', 'ganado', 'armas', 'gondola']);
+const NUEVOS = new Set(['cabina', 'pasajeros', 'comedor', 'dormitorio', 'primeraClase', 'guardias', 'correo', 'caboose', 'blindado', 'cerrado', 'almacen', 'refrigerado', 'plataforma', 'ganado', 'armas', 'gondola']);
 /** ¿Este vagón ya se dibuja en el estilo nuevo? (Lo usa world/train.js para las cajas fuertes.) */
 export const esVagonNuevo = (id) => NUEVOS.has(id);
 
@@ -80,7 +81,7 @@ export function vagonesNuevos(train, dia) {
     const cuantas = Math.round(w.width / train.map.size);
     for (let c = w.colStart; c < w.colStart + cuantas; c++) cols.add(c);
     tramos.push([w.x, w.x + w.width]);
-    const v = w.id === 'plataforma' ? vagonPlataforma(train, w, dia) : w.id === 'ganado' ? vagonGanado(train, w, dia) : w.id === 'gondola' ? vagonGondola(train, w, dia) : vagon(train, w, dia);
+    const v = w.id === 'cabina' ? vagonCabina(train, w, dia) : w.id === 'plataforma' ? vagonPlataforma(train, w, dia) : w.id === 'ganado' ? vagonGanado(train, w, dia) : w.id === 'gondola' ? vagonGondola(train, w, dia) : vagon(train, w, dia);
     piso.push(...v.piso);
     altas.push(...v.altas);
     luces.push({ x0: w.x, x1: w.x + w.width, luz: v.luz });
@@ -3942,7 +3943,95 @@ function vagon(train, w, dia) {
     }
   }
 
-  const iluminado = (c) => iluminar({ ancho: W, alto: H, indices: c.i, marcas: c.m, campo });
+  /**
+   * 🆕 LAS ESQUINAS REDONDAS *(Santi: "quiero que la curva sea un poco más grande y que el borde de la pared también acompañe la curva y que choque la
+   * curva... buscando que el tren no quede tan cuadrado")*, las cuatro, por adentro y por afuera. Va al final: dobla lo que ya está pintado.
+   * - La cara de la pared del fondo se corre hacia acá en cada columna, lo mismo que el arco: arriba sigue el borde y abajo el pie, y el zócalo y las
+   *   franjas bajan con la curva. Lo que cae más abajo del pie va en el piso, detrás de todos.
+   * - La pared de adelante: el borde da la vuelta (en esta capa, delante de todos), y su cara de afuera lo acompaña y termina redondeada abajo.
+   * (Sale de la cuenta de `formaEsquina`, no son mapas a mano: tiene que coincidir con el choque, world/train.js.)
+   */
+  const R_ESQUINA = Math.round(tc.radioEsquina * PX);
+  let luzDeEsquina = null;
+  {
+    const G = Math.max(3, Math.round(tc.paredPunta * PX)), T = 8, E = formaEsquina(G, T, R_ESQUINA);
+    const yPie = ay(yPisoArriba), yTope = ay(yPisoAbajo - tc.alturaParedBaja), yBase = yTope + T - 1;
+    const pF = pone(FONDO), pU = pone(PUNTAS), pP = pone(PISO), pR = pone(FRENTE), capas = [PISO, FONDO, PUNTAS, FRENTE, ASIENTOS, MESAS];
+    const borra = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return; const k = y * W + x; for (const cp of capas) { cp.i[k] = -1; cp.m[k] = 0; } };
+    const desdeLaPunta = [];
+    // Lo doblado sigue con la luz de donde salió: la cara, en la sombra de la cara; el borde, con la del borde.
+    luzDeEsquina = (x, y) => {
+      for (const aU of desdeLaPunta) {
+        const u = aU(x);
+        if (u < 0 || u >= E.cu) continue;
+        if (y < yPie + R_ESQUINA) {
+          if (y < E.cv && E.clase(u, y) === 1) return [x, 3];
+          const d = u >= G ? E.baja(u) : 0;
+          if (u >= G && y >= T + d && y < yPie + d) return [x, y - d];
+        } else if (y >= yTope - R_ESQUINA && y <= yBase) {
+          const cl = E.clase(u, yBase - y);
+          if (cl === 1) return [x, yTope + 2];
+          if (cl === 0) return [x, yBase + 3];
+        }
+      }
+      return null;
+    };
+    for (const c of [0, cols - 1]) {
+      const adentro = WAGONS[w.id] && WAGONS[w.id].paredAdentro;
+      const x = adentro ? (c === 0 ? ax(w.x + S) - G : ax(w.x + (cols - 1) * S)) : c === 0 ? ax(w.x) : ax(w.x + w.width) - G;
+      desdeLaPunta.push(c === 0 ? (xx) => xx - x : (xx) => x + G - 1 - xx);
+      const Xu = c === 0 ? (u) => x + u : (u) => x + G - 1 - u;
+      // (Lo que el redondeo de la grilla dejó más afuera de la pared: una columna suelta que asomaba. En las filas de la puerta queda el piso.)
+      {
+        let fd0 = -1, fd1 = -1;
+        for (let f = filasArriba; f < map.rows - filasAbajo; f++) if (casilla(c, f) !== '#') { if (fd0 < 0) fd0 = f; fd1 = f; }
+        const yPuerta0 = fd0 < 0 ? H : ay(fd0 * S), yPuerta1 = fd0 < 0 ? H : ay((fd1 + 1) * S);
+        for (let xc = c === 0 ? x - 1 : x + G; c === 0 ? xc >= 0 : xc < W; xc += c === 0 ? -1 : 1) for (let y = 0; y < H; y++) {
+          const k = y * W + xc;
+          for (const cp of capas) if (cp !== PISO || y < yPuerta0 || y >= yPuerta1) { cp.i[k] = -1; cp.m[k] = 0; }
+        }
+      }
+      // Arriba: primero la cara doblada, después el borde encima.
+      for (let u = G; u < E.cu; u++) {
+        const xc = Xu(u), d = E.baja(u), dS = E.baja(u + 1);
+        for (let y = yPie - 1; y >= T; y--) {
+          const k = y * W + xc;
+          if (FONDO.i[k] < 0) continue;
+          (y + d < yPie ? pF : pP)(xc, y + d, FONDO.i[k], FONDO.m[k]);
+        }
+        for (let y = yPie - 1 + dS; y <= yPie - 1 + d; y++) if (y >= yPie) pP(xc, y, 0);
+      }
+      for (let v = 0; v < E.cv; v++) for (let u = 0; u < E.cu; u++) {
+        const cl = E.clase(u, v);
+        if (cl === 0) { borra(Xu(u), v); continue; }
+        if (cl === 2) continue;
+        const q = E.hacia(u, v), tono = E.filo(u, v) ? 0 : q > 0.62 ? BORDE_L : q > 0.2 ? BORDE : BORDE_S;
+        pF(Xu(u), v, tono);
+        if (u < G) pU(Xu(u), v, tono);
+      }
+      // Abajo: el borde y la cara de afuera. El tono sigue al de cada lado: en la punta, lo claro va afuera; en la pared de adelante, adentro.
+      for (let v = 0; v < E.cv; v++) for (let u = 0; u < E.cu; u++) {
+        const cl = E.clase(u, v), xc = Xu(u), y = yBase - v;
+        if (cl === 2) continue;
+        // (La cara sigue con el color que tenga esa columna más abajo: cada vagón pinta la suya.)
+        if (cl === 0) { const m = FRENTE.i[(yBase + 6) * W + xc]; pR(xc, y, u === 0 ? 0 : m >= 0 ? m : BORDE_S); continue; }
+        const q = E.deCostado(u, v) ? E.hacia(u, v) : 1 - E.hacia(u, v);
+        pR(xc, y, E.filo(u, v) ? 0 : q > 0.62 ? BORDE_L : q > 0.2 ? BORDE : BORDE_S);
+      }
+      for (let y = yBase; y < H; y++) pR(Xu(0), y, 0);
+      const pie = [];
+      for (let u = 0; u < E.cu; u++) {
+        let yb = H - 1;
+        for (let v = 0; v < E.cv; v++) { if (E.clase(u, v) === 0) borra(Xu(u), H - 1 - v); else { yb = H - 1 - v; break; } }
+        pie.push(yb);
+      }
+      pie.forEach((yb, u) => { for (let y = yb - 3; y < yb; y++) if (u > 0) pR(Xu(u), y, 31); });
+      pie.forEach((yb, u) => { for (let y = u ? pie[u - 1] : yb; y <= yb; y++) pR(Xu(u), y, 0); });
+    }
+  }
+
+  const campoConEsquinas = (x, y) => { const a = luzDeEsquina(x, y); return a ? campo(a[0], a[1]) : campo(x, y); };
+  const iluminado = (c) => iluminar({ ancho: W, alto: H, indices: c.i, marcas: c.m, campo: campoConEsquinas });
   const recorte = (datos, x, y, ww, hh) => {
     const out = new Uint8ClampedArray(ww * hh * 4);
     for (let j = 0; j < hh; j++) out.set(datos.subarray(((y + j) * W + x) * 4, ((y + j) * W + x + ww) * 4), j * ww * 4);
@@ -4062,7 +4151,8 @@ function vagon(train, w, dia) {
     });
   };
   if (vistaPorton) vistaDeSuelo(vistaPorton, resultado.piso, 0);
-  const yF = ay(yPisoAbajo - tc.alturaParedBaja);
+  // (🔁 Desde más arriba: los rincones de la curva son parte de esta pared.)
+  const yF = Math.max(0, ay(yPisoAbajo - tc.alturaParedBaja) - R_ESQUINA - 1);
   const [, myF] = enMundo(0, yF);
   resultado.altas.push(pieza(recorte(iluminado(FRENTE), 0, yF, W, H - yF), W, H - yF, x0, myF, map.rows * S - 0.01));
   return resultado;

@@ -461,7 +461,7 @@ export function vagonGondola(train, w, dia) {
   const enMundo = (x, y) => [x0 + x * PASO, yArriba + y * PASO];
 
   const capa = () => ({ i: new Int16Array(W * H).fill(-1), m: new Uint8Array(W * H) });
-  const PISO = capa(), FRENTE = capa(), BOGIES = capa(), deLuna = new Uint8Array(W * H);
+  const PISO = capa(), FRENTE = capa(), deLuna = new Uint8Array(W * H);
   const pone = (cp) => (x, y, i) => { x = Math.round(x); y = Math.round(y); if (x < 0 || y < 0 || x >= W || y >= H) return; cp.i[y * W + x] = i; };
   const rect = (cp) => { const p = pone(cp); return (x, y, ww, hh, i) => { for (let j = 0; j < hh; j++) for (let q = 0; q < ww; q++) p(x + q, y + j, i); }; };
 
@@ -565,24 +565,7 @@ export function vagonGondola(train, w, dia) {
     }
   }
 
-  // ===== LOS BOGIES
-  {
-    const r = rect(BOGIES);
-    const rueda = (cx, cy) => {
-      const R = 7;
-      for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) {
-        const d = Math.hypot(x, y);
-        if (d > R + 0.4) continue;
-        BOGIES.i[(cy + y) * W + cx + x] = d > R - 1 ? 0 : d > R - 2.5 ? (y < 0 ? 24 : 23) : d > 2 ? 31 : 23;
-      }
-    };
-    for (const bc of [3, cols - 3]) {
-      const cx = X(bc), cy = yBajo + 7;
-      r(cx - 20, yBajo, 40, 6, 0); r(cx - 19, yBajo + 1, 38, 4, 31); r(cx - 19, yBajo + 1, 38, 1, 23);
-      rueda(cx - 11, cy); rueda(cx + 11, cy);
-      r(cx - 3, yBajo + 2, 6, 6, 0); r(cx - 2, yBajo + 3, 4, 4, 23);
-    }
-  }
+  // (🔁 Sin ruedas *(Santi)*: la vía pasa debajo del piso, muy adentro del borde: la pared de acá las tapa.)
 
   const lienzo = (datos, ww, hh) => {
     const cv = document.createElement('canvas'); cv.width = ww; cv.height = hh;
@@ -620,11 +603,6 @@ export function vagonGondola(train, w, dia) {
     for (let j = 0; j < hh; j++) out.set(datos.subarray(((y + j) * W + x) * 4, ((y + j) * W + x + ww) * 4), j * ww * 4);
     return out;
   };
-  {
-    const bo = iluminar({ ancho: W, alto: H, indices: BOGIES.i, marcas: BOGIES.m, campo: () => (dia ? -1 : NOCHE) });
-    const [mx, my] = enMundo(0, yBajo);
-    resultado.altas.push({ img: lienzo(recorte(bo, 0, yBajo, W, H - yBajo), W, H - yBajo), x: mx, y: my, w: W * PASO, h: (H - yBajo) * PASO, base: map.rows * S + 0.02 });
-  }
 
   /**
    * ⛰️ LOS MONTÍCULOS: cada uno, dos piezas. La que está donde está (crece, si recién llegó) y la que se hunde donde estaba. Tiemblan

@@ -298,7 +298,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas, rodantes: () => rodantes });
+    if (params.prueba) window.RAID_BANCO = () => ({ spawnReinforcement, camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas, rodantes: () => rodantes });
     enemies = train.enemies;
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
@@ -625,7 +625,9 @@ export function createRaidScene(services) {
             Math.abs(y - d.y) > d.hh - CONFIG.doors.marcoBlindado) return true;
         // (🆕 Las hojas abiertas, a lo largo: ver `hojaChoca`, entities/door.js.)
         if (hojaChoca(d, x, y)) return true;
-        const frena = (d.kind === 'blindada' && !(d.empujable && d.open)) || (d.trabada && !d.open);
+        // (🚂 La de la cabina deja pasar mientras está abierta por un refuerzo que sale: ahí se te abre la oportunidad de entrar sin dinamita.)
+        if (d.salida && !d.salida.saliendo && !d.open) d.salida = null;
+        const frena = (d.kind === 'blindada' && !((d.empujable || d.salida) && d.open)) || (d.trabada && !d.open);
         if (frena && !d.broken &&
             Math.abs(x - d.x) < d.hw && Math.abs(y - d.y) < d.hh) {
           return true;
@@ -904,7 +906,8 @@ export function createRaidScene(services) {
    */
   function spawnSheriff(tipo, enVagon = null) {
     const primerVagon = Math.min(3, train.wagons.length - 1);
-    const idx = enVagon ?? rng.int(primerVagon, train.wagons.length - 1);
+    // (🚂 En la cabina no: es el último de la lista, pero no es un vagón de los que se recorren.)
+    const idx = enVagon ?? rng.int(primerVagon, Math.max(primerVagon, train.wagons.length - 2));
     const v = train.wagons[idx];
     if (!v) return;
 
@@ -2406,7 +2409,8 @@ export function createRaidScene(services) {
     const x = ro.x + ro.dir * ro.hw;
     if (train.tramoAt(x) !== 'vagon') return false;
     const vagon = train.wagons[train.wagonAt(x)];
-    if (!vagon || !vagon.carbon) return false;
+    // (🚂 Tampoco entran a la cabina *(Santi: "no quiero que el ganado entre aquí")*.)
+    if (!vagon || (!vagon.carbon && vagon.id !== 'cabina')) return false;
     spawnParticles(ro.x, ro.y, '#c9b28a', 10);
     return true;
   }
@@ -3400,14 +3404,16 @@ export function createRaidScene(services) {
    * atrás, porque atrás está el aire libre y tu caballo.
    */
   function spawnReinforcement() {
-    const spawn = train.puntaLocomotora;
-    if (!spawn) return;
+    /**
+     * 🚂 SALEN DE LA CABINA Y ABREN LA PUERTA BLINDADA AL PASAR: es la oportunidad de entrar sin dinamita. Nacen adentro, pegados a la puerta,
+     * y la empujan como cualquiera. Si estás adentro, no viene nadie: no hay de dónde.
+     */
+    const cabina = train.wagons[train.wagons.length - 1];
+    if (!cabina || train.wagonAt(player.x) === train.wagons.length - 1) return;
+    const spawn = { x: cabina.x + CONFIG.tileSize * 2.5, y: CONFIG.techo.centroY };
 
-    // El último vagón (el que está pegado a la locomotora) — antes era un
-    // "6" fijo, pero la cantidad de vagones ya no es siempre 6 (el tren de
-    // carga trae 8). `train.wagons[0]` es la plataforma de salida, así que
-    // el último robable es el último índice del array.
-    const ultimoVagon = train.wagons.length - 1;
+    // El último vagón de verdad, el que está pegado a la cabina: su ronda es la que recorre.
+    const ultimoVagon = train.wagons.length - 2;
 
     const guard = createEnemy(spawn.x, spawn.y, {
       path: train.wagons[ultimoVagon].ronda,
@@ -3415,6 +3421,9 @@ export function createRaidScene(services) {
       ai: train.ai,
     });
     guard.wagon = ultimoVagon;
+    guard.saliendo = { x: cabina.x - CONFIG.tileSize * 2, y: spawn.y };   // (hasta el enganche, derecho: ver `updateEnemy`, systems/ai.js)
+    const puerta = doors.find((d) => d.kind === 'blindada' && !d.broken && d.x >= cabina.x && d.x < cabina.x + CONFIG.tileSize);
+    if (puerta) puerta.salida = guard;
     enemies.push(guard);
     train.wagons[ultimoVagon].guardiasVivos++;
     alertCombat(guard, ultimoVisto.x, ultimoVisto.y, world);

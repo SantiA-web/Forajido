@@ -375,7 +375,7 @@ export function createCampScene(services) {
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit8')) {
-      scenes.goTo('raid', { tipoTren: 'carga', caballoEn: 1, pruebaVagon: 'gondola', forzarVagon: 'gondola', estado: ['frenosDañados'], pruebaFrenos: true, prueba: true });
+      scenes.goTo('raid', { tipoTren: 'carga', caballoEn: 1, pruebaVagon: 'cabina', forzarVagon: 'armas', estado: ['frenosDañados'], pruebaFrenos: true, prueba: true });
       return;
     }
     if (input.wasPressed('Digit6')) {

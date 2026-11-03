@@ -311,6 +311,19 @@ export function updateEnemy(e, dt, world) {
     return;
   }
 
+  // 🚂 El refuerzo sale derecho por la puerta blindada de la cabina, y recién en el enganche se pone a pelear.
+  if (e.saliendo) {
+    moveToward(e, e.saliendo.x, e.saliendo.y, CONFIG.enemy.speed, dt, world.map);
+    if (e.x <= e.saliendo.x + 2) e.saliendo = null;
+    return;
+  }
+
+  // 🚂 El maquinista no se mueve de los mandos.
+  if (e.maquinista) {
+    actualizarMaquinista(e, dt, world);
+    return;
+  }
+
   considerarRepliegue(e, dt, world);
   actualizarCharla(e, dt, world);
 
@@ -2358,6 +2371,12 @@ export function doCombat(e, dt, world) {
   const c = e.ai;
   const player = world.player;
 
+  // 🚂 El fogonero pelea a su manera.
+  if (e.pala) {
+    peleaConPala(e, dt, world);
+    return;
+  }
+
   /**
    * ANTES QUE NADA: si le queda un tiro de vida y alguien lo está cubriendo, se
    * está yendo. Es la única conducta que le gana a todo el resto del combate —
@@ -2901,6 +2920,38 @@ function origenDeTiro(e, angulo) {
   const b = e._p3Boca;
   if (!b || performance.now() - b.t > 500) return { x, y };
   return { x: e.x + b.dx, y, altoSalida: y + 3.5 - (e.y + b.dy) };
+}
+
+/**
+ * 🚂 EL MAQUINISTA *(Santi eligió "Maquinista se rinde, fogonero pelea")*: se queda en los mandos, mirando para adelante. Si estás en la cabina, tenés
+ * el botón de apuntar apretado y lo estás mirando, se da vuelta y levanta las manos. Cuando bajás el arma, vuelve a los mandos.
+ */
+function actualizarMaquinista(e, dt, world) {
+  const p = world.player;
+  const dx = p.x - e.x, dy = p.y - e.y, a = world.train && world.train.wagonAt(p.x) === world.train.wagonAt(e.x);
+  let dif = Math.atan2(-dy, -dx) - (p.facing || 0);
+  dif = Math.atan2(Math.sin(dif), Math.cos(dif));
+  const apuntado = !!(world.input && world.input.mouse && world.input.mouse.right) || (p.apuntado || 0) > 0.5;
+  e.manosArriba = !!a && p.alive && !p.enTecho && apuntado && Math.abs(dif) < CONFIG.enemy.maquinistaApuntado;
+  turnTowards(e, e.manosArriba ? Math.atan2(dy, dx) : 0, dt, 8);
+}
+
+/**
+ * 🚂 EL FOGONERO PELEA: no tiene más que la pala. Se te viene encima y te pega, igual que un guardia sin balas (`doEnemyMelee`). No sale de
+ * la cabina: si te vas por la puerta, se queda en el pasillo y vuelve a paso lento a su lugar.
+ */
+function peleaConPala(e, dt, world) {
+  const c = CONFIG.enemy, p = world.player, tr = world.train;
+  const adentro = p.alive && !p.enTecho && tr && tr.wagonAt(p.x) === tr.wagonAt(e.x);
+  if (!adentro) {
+    if (e.meleeWindup > 0) e.meleeWindup = 0;
+    if (e.puesto) moveToward(e, e.puesto.x, e.puesto.y, c.patrolSpeed, dt, world.map);
+    return;
+  }
+  if (distance(e.x, e.y, p.x, p.y) < c.meleeRange) { doEnemyMelee(e, dt, world); return; }
+  if (e.meleeWindup > 0) e.meleeWindup = 0;
+  turnTowards(e, Math.atan2(p.y - e.y, p.x - e.x), dt, 8);
+  viajarHacia(e, dt, world, p.x, p.y, c.speed);
 }
 
 /** Golpe cuerpo a cuerpo del guardia: levanta el brazo y después pega. */

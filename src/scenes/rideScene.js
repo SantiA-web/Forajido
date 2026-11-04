@@ -43,7 +43,7 @@ import { gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { sortearComposicion, buildTrain, plataformasDe } from '../world/train.js';
 import {
-  dibujarTrenTresCuartos, escalarColor, alturaDeAterrizaje, olvidarLaminas,
+  dibujarTrenTresCuartos, finDelTrenDeAfuera, escalarColor, alturaDeAterrizaje, olvidarLaminas,
   altoDelTecho, alturaVentanilla, ALTO_DEL_ENGANCHE,
 } from '../world/trenTresCuartos.js';
 import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
@@ -143,7 +143,7 @@ export function createRideScene(services) {
       { climaId: clima, estado, comportamientos, variantes, encubiertos, paquetes, cajaOculta, dia: !!gameState.esDeDia }
     );
     plataformas = plataformasDe(train.tramos, size);
-    largoTren = train.map.width;
+    largoTren = finDelTrenDeAfuera(train);   // (Lo que se ve: no se galopa más allá de la punta.)
 
     x = plataformas[1] - A.inicioDetras;
     /**

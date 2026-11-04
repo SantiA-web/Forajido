@@ -675,7 +675,7 @@ export function buildTrain(
       if (t.tipo !== 'vagon' || !esVagonNuevo(t.plantilla.id) || ['plataforma', 'ganado', 'gondola'].includes(t.plantilla.id)) continue;
       const a = t.colStart, b = t.colStart + t.cols - 1;
       if (t.plantilla.id === 'cabina') {
-        lista.push({ x: (a + 4) * S, y: S, dx: 1, dy: 1, R }, { x: (a + 11) * S, y: S, dx: -1, dy: 1, R }, { x: (a + 5) * S, y: 9 * S, dx: 1, dy: -1, R }, { x: (a + 11) * S, y: 9 * S, dx: -1, dy: -1, R });
+        lista.push({ x: (a + 10) * S, y: S, dx: 1, dy: 1, R }, { x: (a + 17) * S, y: S, dx: -1, dy: 1, R }, { x: (a + 11) * S, y: 9 * S, dx: 1, dy: -1, R }, { x: (a + 17) * S, y: 9 * S, dx: -1, dy: -1, R });
         continue;
       }
       const m = a + Math.floor(t.cols / 2), esPared = (f) => { const c = map.tileAt(m, f); return c === '#' || c === 'W'; };

@@ -3,7 +3,7 @@
  *
  * La referencia es la locomotora del asalto (estiloNuevo/cabina.js): la misma caldera y las mismas piezas, pero con las medidas del tren de afuera.
  * La pared y lo hondo son los de los vagones (40 y `HONDO`), y la caldera, más angosta que la caja, se ve más baja que el techo de la cabina.
- * De atrás para adelante, igual que adentro: el tanque, el pasillo y el carbón, la cabina, la caldera y el miriñaque, en un solo cuerpo y bajo un solo techo.
+ * De atrás para adelante, en el mismo orden que adentro (pero más corta, ver `W`): el tanque, el pasillo y el carbón, la cabina, la caldera y el miriñaque, en un solo cuerpo y bajo un solo techo.
  *
  * A mano, en mapas: la cúpula, la campana, la arenera, la chimenea, el faro, el cilindro, los copos de humo (todos de cabina.js), el farol y el
  * estribo de la cola, la tapa del tanque y la boca del carbón. Sale de una cuenta lo que se repite: las chapas, el tubo con sus franjas, el miriñaque,
@@ -17,12 +17,18 @@ import { PIEZAS_CALDERA, COL_PIEZAS } from './cabina.js';
 import { HONDO, NOCHE, VENTANA, COL_VENTANA, COL_VENTANA_NOCHE, VENTILADOR, COL_FIERRO, ruedasYCarreton } from './trenDeAfuera.js';
 
 const PASO = CONFIG.estilo.punto / DENSIDAD;
-/** Alto y largo de la lámina, en puntos. La vía, abajo de todo, como en los vagones. */
-const H = 107, W = 448;
-/** Dónde termina cada parte a lo largo: como adentro, 64 y 200 unidades. */
-const X_TENDER = 85, X_CABINA = 267;
+/**
+ * Alto y largo de la lámina, en puntos. La vía, abajo de todo, como en los vagones.
+ * 🔁 DE AFUERA ES MÁS CORTA QUE DE ADENTRO *(Santi: "tenía que achicarse un tercio cuando la mirás por afuera, desde el galope. Por dentro tiene que seguir igual que antes")*:
+ * adentro, la cabina y la caldera ocupan sus 30 columnas (480 unidades); de afuera mide 320 y el resto del tramo queda vacío. Se corta todo del cuerpo y el tubo queda
+ * entero *(Santi: "yo quería que la cortes en el vagón, no en el tubo")*.
+ */
+const H = 107, W = 427;
+export const LARGO_LOCO = W * PASO;
+/** Dónde termina cada parte a lo largo, de afuera. */
+const X_TENDER = 36, X_CABINA = 182;
 /** La caldera. */
-const yT = 22, yB = 72, D = yB - yT, xTapa = 248, xHumo = 356, xPunta = 404, xP = 417, yPieLomo = yT + 10;
+const yT = 22, yB = 72, D = yB - yT, xTapa = 163, xHumo = 335, xPunta = 383, xP = 396, yPieLomo = yT + 10;
 /** La pared, la misma de los vagones. */
 const yAlero = 47, yPared = 51, yBastidor = 91;
 
@@ -115,7 +121,7 @@ function laminaCaldera(noche) {
   // Los aros: abrazan el tubo y se apagan abajo.
   const aro = (x, a, c) => { for (let y = yT + 1; y < yB - 1; y++) { const xc = x + curva(x, y); for (let q = 0; q < a; q++) pon(xc + q, y, c(t(y))); } };
   const bronce = (q) => (q < 0.06 ? 45 : q < 0.33 ? 28 : q < 0.57 ? 45 : q < 0.72 ? 44 : q < 0.86 ? 47 : 39);
-  for (const x of [X_CABINA + 16, X_CABINA + 44, X_CABINA + 72]) aro(x, 2, bronce);
+  for (const x of [X_CABINA + 26, X_CABINA + 84, X_CABINA + 142]) aro(x, 2, bronce);
   aro(xHumo - 8, 6, (q) => (q < 0.06 ? 9 : q < 0.33 ? 10 : q < 0.57 ? 9 : q < 0.86 ? 8 : 39));
   // El brocal, donde la caldera sale de la cabina.
   aro(X_CABINA + 2, 5, (q) => (q < 0.06 ? 23 : q < 0.33 ? 24 : q < 0.57 ? 23 : q < 0.72 ? 31 : 1));
@@ -123,13 +129,13 @@ function laminaCaldera(noche) {
   {
     const yC = yT + 18, x1 = X_CABINA + 8, x2 = xHumo - 14;
     r(x1, yC, x2 - x1, 1, 0); r(x1, yC + 1, x2 - x1, 1, 25); r(x1, yC + 2, x2 - x1, 1, 0);
-    for (const x of [X_CABINA + 8, X_CABINA + 42, x2 - 2]) { r(x, yC - 1, 3, 6, 0); r(x + 1, yC, 1, 4, 45); }
+    for (const x of [X_CABINA + 14, X_CABINA + 72, X_CABINA + 130, x2 - 2]) { r(x, yC - 1, 3, 6, 0); r(x + 1, yC, 1, 4, 45); }
   }
   // El caño del agua, en la parte de la caldera que ya está en sombra.
   {
     const yC = yT + 34, x1 = X_CABINA + 8, x2 = xHumo - 22;
     r(x1, yC, x2 - x1, 1, 0); r(x1, yC + 1, x2 - x1, 1, 24); r(x1, yC + 2, x2 - x1, 1, 31); r(x1, yC + 3, x2 - x1, 1, 0);
-    for (const x of [X_CABINA + 22, X_CABINA + 50]) { r(x, yC - 1, 3, 6, 0); r(x + 1, yC, 1, 4, 47); }
+    for (const x of [X_CABINA + 40, X_CABINA + 98]) { r(x, yC - 1, 3, 6, 0); r(x + 1, yC, 1, 4, 47); }
     mapa(x2, yC, F.CODO);
   }
   // Lo que va parado encima, sobre el lomo: apoya al 20 % del tubo y asoma por encima del borde. La sombra le cae hacia acá.
@@ -138,9 +144,9 @@ function laminaCaldera(noche) {
     for (let q = 2; q < an - 2; q++) for (let j = 0; j < 4; j++) { const c = h.ver(x + q, yPieLomo + j), o = F.OSCURO[c]; if (c > 0 && o !== undefined) h.ind[(yPieLomo + j) * W + x + q] = o; }
     mapa(x, yPieLomo - m.length + 1, m);
   };
-  encima(F.DOMO, X_CABINA + 2);
-  encima(F.CAMPANA, X_CABINA + 34);
-  encima(F.ARENERA, X_CABINA + 54);
+  encima(F.DOMO, X_CABINA + 40);
+  encima(F.CAMPANA, X_CABINA + 96);
+  encima(F.ARENERA, X_CABINA + 116);
   encima(F.CHIMENEA, xHumo + 8);
   encima(F.FARO, xPunta - 13);
   // La panza en sombra, detrás de las ruedas.
@@ -241,7 +247,7 @@ function laminaCuerpo(noche) {
 /** LAS RUEDAS Y LAS BIELAS: 16 cuadros por vuelta (rayos, contrapeso y bielas salen de la cuenta de cada cuadro, como en el asalto). */
 const RUEDA = 18, RY = 15;
 function cuadrosRuedas(noche) {
-  const xI = X_CABINA, yI = yB + 8, AN = xP - xI, AL = H - yI, q1 = 18, q2 = 58, yC = H - 15 - yI, xCil = xHumo + 2 - xI, yCil = yB + 17 - yI;
+  const xI = X_CABINA, yI = yB + 8, AN = xP - xI, AL = H - yI, q1 = 38, q2 = 86, yC = H - 15 - yI, xCil = xHumo + 2 - xI, yCil = yB + 17 - yI;
   const cuadros = [];
   for (let k = 0; k < 16; k++) {
     const ind = new Int16Array(AN * AL).fill(-1), a = (k / 16) * Math.PI * 2;
@@ -317,7 +323,7 @@ export function dibujarLocoNueva(ctx, x0, base, recorrido, t, noche) {
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(P.caldera, x, yP, W * PASO, H * PASO);
   // Las ruedas del ténder y de la cabina, y las grandes.
-  ruedasYCarreton(ctx, x, [36, 128, 226], base, recorrido, noche);
+  ruedasYCarreton(ctx, x, [36, 146], base, recorrido, noche);
   const R = P.ruedas, k = Math.floor((recorrido / (Math.PI * 2 * RUEDA * PASO)) * 16);
   ctx.drawImage(R.cuadros[((k % 16) + 16) % 16], x + R.x * PASO, yP + R.y * PASO, R.an * PASO, R.al * PASO);
   ctx.drawImage(P.estribo, x, yP, W * PASO, H * PASO);

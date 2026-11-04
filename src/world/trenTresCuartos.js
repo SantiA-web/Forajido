@@ -29,7 +29,7 @@
 
 import { CONFIG } from '../data/config.js';
 import { APROXIMACION } from '../data/horse.js';
-import { dibujarLocoNueva, dibujarColaNueva, dibujarLuzDeCola } from './estiloNuevo/locoDeAfuera.js';
+import { dibujarLocoNueva, dibujarColaNueva, dibujarLuzDeCola, LARGO_LOCO } from './estiloNuevo/locoDeAfuera.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { tieneAfueraNuevo, dibujarCocheNuevo, dibujarEngancheNuevo, ALTURAS_DE_FRENTE, RADIO_RUEDA } from './estiloNuevo/trenDeAfuera.js';
 
@@ -98,6 +98,12 @@ export function escalarColor(hex, f) {
  * @param anchoVista cuánto mundo entra a lo ancho (con el zoom, no la pantalla)
  * @param opciones.noche  apaga la caja y prende las ventanillas
  */
+/** Dónde termina el tren visto desde afuera: en el estilo nuevo, la locomotora de afuera es más corta que su tramo. */
+export function finDelTrenDeAfuera(train) {
+  const t = train.tramos.find((tr) => tr.tipo === 'locomotora');
+  return estiloNuevo.activo && t ? (t.colStart - 18) * train.map.size + LARGO_LOCO : train.map.width;
+}
+
 export function dibujarTrenTresCuartos(r, train, base, camX, anchoVista, opciones = {}) {
   const noche = !!opciones.noche;
   const P = CONFIG.colors.costado;
@@ -113,15 +119,15 @@ export function dibujarTrenTresCuartos(r, train, base, camX, anchoVista, opcione
   for (const tramo of train.tramos) {
     const x0 = tramo.colStart * size;
     const ancho = tramo.cols * size;
-    // (La locomotora se dibuja desde 12 casillas antes de su tramo y su faro alumbra más allá: sin contarlo, aparecía de golpe ya entrando en pantalla.)
-    const desde = tramo.tipo === 'locomotora' ? x0 - 12 * size : x0, hasta = x0 + ancho + (tramo.tipo === 'locomotora' ? 180 : 0);
+    // (La locomotora se dibuja desde 18 casillas antes de su tramo y su faro alumbra más allá: sin contarlo, aparecía de golpe ya entrando en pantalla.)
+    const desde = tramo.tipo === 'locomotora' ? x0 - 18 * size : x0, hasta = x0 + ancho + (tramo.tipo === 'locomotora' ? 180 : 0);
     if (desde > camX + anchoVista + 90 || hasta < camX - 90) continue;
     // (🚂 De afuera, la cabina y la caldera siguen siendo el dibujo viejo de la locomotora entera, que mide lo mismo que las dos.)
     if (tramo.tipo === 'vagon' && tramo.plantilla.id === 'cabina') continue;
     if (tramo.tipo === 'vagon') dibujarVagon(k, tramo.plantilla, x0, ancho);
     else if (tramo.tipo === 'enganche') dibujarEnganche(k, x0, ancho);
     else if (tramo.tipo === 'salida') dibujarCola(k, x0, ancho);
-    else if (tramo.tipo === 'locomotora') dibujarLocomotora(k, x0 - 12 * size);
+    else if (tramo.tipo === 'locomotora') dibujarLocomotora(k, x0 - 18 * size);
   }
   // La luz del farol de cola, después de todo el tren: alumbra también al vagón que tiene al lado.
   if (noche && estiloNuevo.activo) {

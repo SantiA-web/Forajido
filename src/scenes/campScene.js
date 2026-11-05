@@ -369,13 +369,13 @@ export function createCampScene(services) {
     /**
      * 🧪 [8] UN TREN CON LOS FRENOS ROTOS, arrancando EN EL VAGÓN QUE SE ESTÁ EDITANDO (el tren lo trae
      * siempre: `forzarVagon`) *(Santi: "por el vagón que vayamos a editar quiero que el atajo 8 esté ocupado por ese
-     * vagón")*: hoy, LA LOCOMOTORA Y LA COLA DESDE AFUERA: al galope, con un tren corto para llegar rápido de una punta a la otra;
-     * saltando al techo se los ve desde arriba.
+     * vagón")*: hoy, LOS JINETES DE LA LEY: adentro del vagón de pasajeros, con cuatro jinetes ya galopando
+     * al lado del tren, dos de cada lado (`pruebaJinetes`). Se los ve por las ventanas y desde el techo.
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit8')) {
-      scenes.goTo('ride', { tipoTren: 'pasajeros', composicion: ['pasajeros', 'cerrado'] });
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaJinetes: true, prueba: true });
       return;
     }
     if (input.wasPressed('Digit6')) {

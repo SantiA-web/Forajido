@@ -27,7 +27,12 @@
  * renderer de un solo color, y la hoja se tiñe entera para eso.
  */
 
-import { dibujarPersona } from './figura.js';
+import { dibujarPersona, jineteNuevo, jineteChico, sillaNueva } from './figura.js';
+import { aspectoDe } from './estiloNuevo/gente.js';
+import { PALETA } from '../engine/paleta.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { lienzoCaballo } from './estiloNuevo/caballo.js';
+import { CONFIG } from '../data/config.js';
 import { PUNTO } from '../world/piezas.js';
 import {
   HOJA, CELDA_ANCHO, CELDA_ALTO, DIRECCIONES, FILA_QUIETO, MEDIDAS, POR_POSE, PELAJES,
@@ -204,7 +209,14 @@ function aRGB(h, s, l) {
  */
 export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaje = null, noche = false, escala = 1) {
   const PASO = PASO_GALOPE * escala;
-  const [nombre, achata] = POR_POSE[String(Math.max(-4, Math.min(4, Math.round(pose))))] || POR_POSE['0'];
+  /**
+   * 🐎 EN EL ESTILO NUEVO, EL MISMO CABALLO EN PUNTOS DE LA GRILLA (estiloNuevo/caballo.js).
+   * Mide lo mismo y cae en el mismo lugar. Lo único distinto: no se achata entre
+   * dirección y dirección, porque estirar unos puntos los deshace.
+   */
+  const enPuntos = estiloNuevo.activo && !!r.ctx;
+  const [nombre, achataHoja] = POR_POSE[String(Math.max(-4, Math.min(4, Math.round(pose))))] || POR_POSE['0'];
+  const achata = enPuntos ? 1 : achataHoja;
   const m = MEDIDAS[nombre];
   const fila = DIRECCIONES.indexOf(nombre);
 
@@ -219,15 +231,40 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaj
 
   const ancho = CELDA_ANCHO * PASO * achata;
   const alto = CELDA_ALTO * PASO;
-  const ox = x - m.centro * PASO * achata;
-  const oy = (y + 7) - m.suelo * PASO;
+  const P = CONFIG.estilo.punto / 4;
+  /**
+   * 🐛 SE PEGA A LA GRILLA DE LA PANTALLA, NO A LA DEL MUNDO *(Santi: "por qué lo veo
+   * medio borroso en el galope?")*. Pegado al mundo, a toda carrera el caballo avanzaba
+   * de a saltos de un punto mientras la cámara lo seguía suave: en pantalla iba y venía
+   * un punto varias veces por segundo, y a ese temblor se lo ve borroso.
+   */
+  const pantalla = enPuntos ? r.ctx.getTransform() : null;
+  const pegar = (v, escalaDe, corre) => {
+    if (!pantalla || pantalla.b || pantalla.c) return v;
+    const g = CONFIG.estilo.punto;
+    return (Math.round((escalaDe * v + corre) / g) * g - corre) / escalaDe;
+  };
+  const ox = pegar(x - m.centro * PASO * achata, pantalla?.a, pantalla?.e);
+  const oy = pegar((y + 7) - m.suelo * PASO, pantalla?.d, pantalla?.f);
+  // Si un punto del dibujo no llega a 2 píxeles (el zoom del galope, de lejos), va el dibujo chico.
+  const chico = enPuntos && escala === 1 && pantalla.a * P < 2;
+  const lienzo = enPuntos
+    ? lienzoCaballo({ fila, cuadro: zancada ? col : null, grande: escala > 1, chico, pelaje: pelaje || 'criollo' }, noche ? -2 : 0)
+    : null;
+  const puntoDe = chico ? P * 2 : P;
 
-  const asiento = { x: ox + m.sillaX * PASO * achata, y: oy + m.sillaY * PASO };
-  const riendas = { x: ox + m.bocadoX * PASO * achata, y: oy + m.bocadoY * PASO };
+  // El Mustang tiene el torso 2 puntos más abajo (ver assets/mustangPuntos.js): la silla y el bocado bajan con él.
+  const baja = enPuntos && pelaje === 'mustang' ? 2 * P : 0;
+  const asiento = { x: ox + m.sillaX * PASO * achata, y: oy + m.sillaY * PASO + baja };
+  const riendas = { x: ox + m.bocadoX * PASO * achata, y: oy + m.bocadoY * PASO + baja };
 
   const cual = () => (r.plano ? hojaTenida(r.plano) : pelaje || noche ? hojaPelaje(pelaje, noche) : hoja);
 
   const estampa = () => {
+    if (lienzo) {
+      r.ctx.drawImage(r.plano ? siluetaDe(lienzo, r.plano) : lienzo, ox, oy, lienzo.width * puntoDe, lienzo.height * puntoDe);
+      return;
+    }
     if (!lista || !r.ctx) return;
     r.ctx.drawImage(
       cual(),
@@ -258,6 +295,12 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaj
   return {
     asiento,
     riendas,
+    // Para el jinete nuevo: la esquina del dibujo, cuál dibujo y qué cuadro, para ir pegado punto por punto.
+    origen: { x: ox, y: oy + baja },
+    nombre,
+    cuadro: zancada ? col : null,
+    noche,
+    chico,
     /**
      * A DÓNDE MIRA EL ANIMAL, para que el jinete mire al mismo lado. Sale del
      * dibujo que le tocó, no de la pose: entre la pose 2 y la 3 el caballo usa
@@ -272,8 +315,19 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaj
      */
     flanco: m.flanco * 2 * achata,
     /** Se llama DESPUÉS del jinete: le vuelve a poner la cabeza por encima. */
-    adelante: () => {
-      if (!viene || !lista || !r.ctx) return;
+    adelante() {
+      // 🆕 El jinete nuevo de frente: la cabeza del caballo, de nuevo encima (`tapa`, en puntos del dibujo).
+      if (lienzo && this.tapa && r.ctx) {
+        const [x0, y0, x1, y1] = this.tapa;
+        r.ctx.save();
+        r.ctx.beginPath();
+        r.ctx.rect(ox + x0 * puntoDe, oy + y0 * puntoDe, (x1 - x0) * puntoDe, (y1 - y0) * puntoDe);
+        r.ctx.clip();
+        estampa();
+        r.ctx.restore();
+        return;
+      }
+      if (!viene || (!lista && !lienzo) || !r.ctx) return;
       r.ctx.save();
       r.ctx.beginPath();
       // Una caja alrededor del BOCADO —la cabeza está donde está el bocado—,
@@ -287,6 +341,11 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaj
         m.cabeza[0] * 2 * PASO * achata, (m.cabeza[1] + m.cabeza[2]) * PASO,
       );
       r.ctx.clip();
+      if (lienzo) {
+        estampa();
+        r.ctx.restore();
+        return;
+      }
       r.ctx.drawImage(
         cual(),
         col * CELDA_ANCHO, filaReal * CELDA_ALTO, CELDA_ANCHO, CELDA_ALTO,
@@ -295,6 +354,25 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaj
       r.ctx.restore();
     },
   };
+}
+
+/** La silueta de un color, para la sombra del jinete detrás de la pared del tren. */
+const siluetas = new Map();
+function siluetaDe(lienzo, color) {
+  let porColor = siluetas.get(lienzo);
+  if (!porColor) { porColor = new Map(); siluetas.set(lienzo, porColor); }
+  let c = porColor.get(color);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = lienzo.width; c.height = lienzo.height;
+    const g = c.getContext('2d');
+    g.drawImage(lienzo, 0, 0);
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = color;
+    g.fillRect(0, 0, c.width, c.height);
+    porColor.set(color, c);
+  }
+  return c;
 }
 
 /**
@@ -399,8 +477,155 @@ export function dibujarMontura(r, sx, asiento, pose) {
   return anchoM;
 }
 
+/** Dónde va la persona sobre el caballo, en puntos del caballo, y dónde tiene el bocado (de costado). */
+/**
+ * Dónde va la persona en cada dibujo del caballo (`col` y `fila`: su punto 0,0 en puntos del caballo) y con qué
+ * vista. 🆕 Las diagonales *(Santi: "Sigamos con las diagonales")*: el sudeste de tres cuartos de frente, el
+ * noreste de tres cuartos de espaldas.
+ */
+const JINETE_EN = {
+  este: { vista: 'lado', col: 13, fila: -2 },
+  sudeste: { vista: 'diagF', col: 19, fila: -2 },
+  noreste: { vista: 'diagE', col: 17, fila: -1 },
+  // 🆕 De lleno: el sur de frente, sentado detrás de la cabeza del caballo (que le tapa la falda); el norte de espaldas.
+  sur: { vista: 'frente', col: 21, fila: -6, tapa: [26, 11, 36, 22], tapaChico: [13, 7, 18, 12] },
+  // 🔁 De espaldas, la silla apoyada donde termina la grupa *(Santi: "parece volando, no sobre el lomo")*.
+  // 🔁 Y la grupa, que está más cerca, encima de las piernas: asoman las botas a los costados *(Santi)*.
+  norte: { vista: 'espalda', col: 20, fila: -1, tapa: [0, 17, 52, 46], tapaChico: [0, 10, 26, 23] },
+};
+/** Si esa dirección ya tiene el jinete nuevo. */
+const hayJineteNuevo = (montura) => !!JINETE_EN[montura.nombre];
+
+/**
+ * 🆕 LA CABEZADA, a mano, en puntos del dibujo de costado: testera (de atrás de las orejas al cruce), frontalera
+ * (la frente) y muserola (la nariz). La rienda sale del cruce de la muserola y la testera *(Santi)*.
+ * `silla`: adónde va la rienda cuando el caballo queda sin jinete. `panza`: cuánto cuelga la rienda.
+ * En el chico, sólo la muserola y la rienda: las tres tiras no entran en una cabeza tan chica *(Santi)*.
+ */
+const CABEZADA = {
+  sudeste: { muserola: [[43, 18], [42, 22]], cruce: [41, 19], silla: [27, 15], panza: 3 },
+  noreste: { muserola: [[43, 9], [42, 13]], cruce: [41, 11], silla: [26, 16], panza: 3 },
+  sudesteChico: { muserola: [[21, 9], [20, 11]], cruce: [20, 9.5], silla: [13, 7], panza: 1.5 },
+  // De frente, sólo una rienda a cada lado de la boca (la muserola se perdía en la cara oscura); de espaldas no se ven.
+  sur: { cruce: [27, 17], cruce2: [34, 17], silla: [30, 12], panza: 1 },
+  norte: null,
+  surChico: null,   // (de lejos, las dos riendas de frente le tapaban la panza con una V negra)
+  norteChico: null,
+  noresteChico: { muserola: [[21, 4], [20, 6]], cruce: [19.5, 5], silla: [12, 8], panza: 1.5 },
+  grande: { testera: [[42, 8], [46, 13]], frontalera: [[43, 9], [46, 9]], muserola: [[47, 11], [45, 16]], cruce: [46, 13], silla: [29, 14], panza: 3 },
+  chico: { muserola: [[23, 5], [22, 7.5]], cruce: [22.5, 6.2], silla: [15, 7], panza: 1.5 },
+};
+
+/** Una tira recta de A a B (en puntos del dibujo), con cuadraditos de 2×2 píxeles de la pantalla: finos, encima de la grilla. */
+function tira(puntos, ox, oy, punto, s, A, B) {
+  let cx = Math.round(A[0] * punto / s), cy = Math.round(A[1] * punto / s);
+  const fx = Math.round(B[0] * punto / s), fy = Math.round(B[1] * punto / s);
+  const dx = Math.abs(fx - cx), dy = Math.abs(fy - cy), sx = fx > cx ? 1 : -1, sy = fy > cy ? 1 : -1;
+  let e = dx - dy;
+  for (;;) {
+    puntos.push(ox + cx * s, oy + cy * s);
+    if (cx === fx && cy === fy) return;
+    const d = 2 * e;
+    if (d > -dy) { e -= dy; cx += sx; }
+    if (d < dx) { e += dx; cy += sy; }
+  }
+}
+
+/** 🆕 Una tira que cuelga en curva de A a B, con `panza` puntos de caída en el medio *(Santi: "que se panceé")*. */
+function tiraConPanza(puntos, ox, oy, punto, s, A, B, panza) {
+  const pasos = Math.ceil(Math.hypot(B[0] - A[0], B[1] - A[1]) * punto / s) * 2;
+  const vistos = new Set();
+  for (let i = 0; i <= pasos; i++) {
+    const u = i / pasos;
+    const cx = Math.round((A[0] + (B[0] - A[0]) * u) * punto / s);
+    const cy = Math.round((A[1] + (B[1] - A[1]) * u + Math.sin(u * Math.PI) * panza) * punto / s);
+    const clave = cx + ',' + cy;
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    puntos.push(ox + cx * s, oy + cy * s);
+  }
+}
+
+/**
+ * 🆕 LA CABEZADA Y LA RIENDA, de un cuadradito de 2×2 de grueso *(Santi: "las riendas y todo esto podrías
+ * hacerla de 2x2 con un solo pixel de grosor?")*. `hasta`: el otro extremo de la rienda, en puntos del
+ * dibujo: la mano del jinete, o la silla si no hay nadie.
+ */
+function dibujarCabezada(r, montura, hasta) {
+  const P = CONFIG.estilo.punto / 4;
+  const clave = montura.chico ? montura.nombre + 'Chico' : montura.nombre;
+  const C = clave in CABEZADA ? CABEZADA[clave] : montura.chico ? CABEZADA.chico : CABEZADA.grande;
+  if (!C) return;
+  const punto = montura.chico ? 2 * P : P;
+  const s = 2 / r.ctx.getTransform().a;
+  const { x: ox, y: oy } = montura.origen;
+  const puntos = [];
+  if (C.testera) tira(puntos, ox, oy, punto, s, ...C.testera);
+  if (C.frontalera) tira(puntos, ox, oy, punto, s, ...C.frontalera);
+  if (C.muserola) tira(puntos, ox, oy, punto, s, ...C.muserola);
+  tiraConPanza(puntos, ox, oy, punto, s, C.cruce, hasta || C.silla, C.panza);
+  if (C.cruce2) tiraConPanza(puntos, ox, oy, punto, s, C.cruce2, hasta ? [hasta[0] + 1, hasta[1]] : C.silla, C.panza);
+  estiloNuevo.pintarFinos(r.ctx, puntos, s, PALETA[1]);
+}
+
+/**
+ * 🆕 LA SILLA QUEDA EN EL LOMO aunque no haya jinete *(Santi: "que al saltar al tren la montura siga en el
+ * lomo del caballo")*. Devuelve false si esa dirección todavía no tiene silla nueva.
+ */
+export function dibujarSilla(r, montura) {
+  if (!estiloNuevo.activo || !r.ctx || r.plano || !montura.origen || !hayJineteNuevo(montura)) return false;
+  const P = CONFIG.estilo.punto / 4;
+  const { x, y } = montura.origen, luz = montura.noche ? -1 : 0;
+  const J = JINETE_EN[montura.nombre];
+  if (montura.chico) jineteChico(r, { x, y, luz, persona: false, vista: J.vista });
+  else sillaNueva(r, { x: x + J.col * P, y: y + J.fila * P, luz, vista: J.vista });
+  dibujarCabezada(r, montura);
+  return true;
+}
+
+/** 🆕 El jugador saltando del caballo al tren, sin la silla: `pies`, dónde tiene las botas. Devuelve false si no hay dibujo nuevo. */
+export function dibujarSaltando(r, x, pies, montura) {
+  if (!estiloNuevo.activo || !r.ctx || r.plano) return false;
+  const P = CONFIG.estilo.punto / 4;
+  const luz = montura.noche ? -1 : 0;
+  if (montura.chico) {
+    const g = 2 * P;
+    jineteChico(r, { x: Math.round((x - 14 * g) / g) * g, y: Math.round((pies - 12 * g) / g) * g, luz, silla: false });
+  } else {
+    jineteNuevo(r, { x: Math.round((x - 16 * P) / P) * P, y: Math.round((pies - 26 * P) / P) * P, cuadro: null, luz, silla: false });
+  }
+  return true;
+}
+
+/**
+ * 🆕 EL JUGADOR MONTADO EN EL ESTILO NUEVO, de costado *(Santi: "primero lo haría con el jugador para
+ * establecer las bases")*.
+ */
+function jineteDeCostado(r, montura, ropa) {
+  const P = CONFIG.estilo.punto / 4;
+  const { x: ox, y: oy } = montura.origen;
+  const { col, fila, vista, tapa, tapaChico } = JINETE_EN[montura.nombre];
+  // Lo del caballo que queda delante de la persona (de frente, la cabeza): se vuelve a pintar en `adelante`.
+  montura.tapa = (montura.chico ? tapaChico : tapa) || null;
+  const luz = montura.noche ? -1 : 0;
+  // 🆕 El jinete de la ley: un guardia, con su aspecto sorteado y guardado en él (`ropa.ent`).
+  const gente = ropa.detalles === 'ley' ? { aspecto: aspectoDe(ropa.ent || montura, 'guardia'), tipo: 'guardia' } : null;
+  if (montura.chico) {
+    const persona = jineteChico(r, { x: ox, y: oy, luz, destello: ropa.destello, vista, gente });
+    dibujarCabezada(r, montura, persona.mano);
+    return persona;
+  }
+  const persona = jineteNuevo(r, { x: ox + col * P, y: oy + fila * P, cuadro: montura.cuadro, luz, destello: ropa.destello, vista, gente });
+  dibujarCabezada(r, montura, [persona.mano[0] + col, persona.mano[1] + fila]);
+  return persona;
+}
+
 export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, montura = null) {
   const quien = ropa.detalles || 'jugador';
+  // 🎨 Lo que ya está dibujado: el jugador, sin arma en la mano y de costado. El resto, con el dibujo viejo hasta que llegue.
+  // 🆕 Y el de la ley mientras no apunta (con el rifle en la funda); apuntando, el viejo hasta E4.
+  const leyEnfundado = quien === 'ley' && !ropa.apunta && ropa.arma !== 'rifleListo';
+  if (estiloNuevo.activo && r.ctx && !r.plano && montura && montura.origen && hayJineteNuevo(montura) && ((quien === 'jugador' && !ropa.arma) || leyEnfundado)) return jineteDeCostado(r, montura, ropa);
   /**
    * 🔻 LA VISTA LA MANDA EL CABALLO *(Santi: "hay veces que el caballo no cambia
    * de dirección pero el personaje sí, entonces se ve raro")*. Antes el ángulo

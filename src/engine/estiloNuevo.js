@@ -138,7 +138,10 @@ export const estiloNuevo = {
     // ya está dibujado en la grilla y sale exacto; lo viejo pierde detalle.
     chicoCtx.imageSmoothingEnabled = false;
     chicoCtx.clearRect(0, 0, w, h);
-    chicoCtx.drawImage(cv, 0, 0, w, h);
+    // 🐛 Se copia un cuadrado exacto de w×k por h×k: si la ventana no da justo múltiplo
+    // de 3, achicar "todo el lienzo" repetía o salteaba una fila de puntos por el medio
+    // *(Santi: "se ve borroso hasta de cerca")*.
+    chicoCtx.drawImage(cv, 0, 0, w * k, h * k, 0, 0, w, h);
     if (CONFIG.estilo.paleta) {
       const img = chicoCtx.getImageData(0, 0, w, h);
       chicoCtx.putImageData(cuantizar(img), 0, 0);
@@ -167,7 +170,7 @@ export const estiloNuevo = {
     }
     chicaMCtx.imageSmoothingEnabled = false;
     chicaMCtx.clearRect(0, 0, w, h);
-    chicaMCtx.drawImage(mascara, 0, 0, w, h);
+    chicaMCtx.drawImage(mascara, 0, 0, w * k, h * k, 0, 0, w, h);
     const a = chicaMCtx.getImageData(0, 0, w, h).data;
     const es = (x, y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 128;
     ctx.fillStyle = '#140c1c';

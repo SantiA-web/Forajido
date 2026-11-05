@@ -46,7 +46,8 @@ import {
   dibujarTrenTresCuartos, finDelTrenDeAfuera, escalarColor, alturaDeAterrizaje, olvidarLaminas,
   altoDelTecho, alturaVentanilla, ALTO_DEL_ENGANCHE,
 } from '../world/trenTresCuartos.js';
-import { GOLPES, dibujarAnimal, dibujarJinete } from '../entities/caballo.js';
+import { GOLPES, dibujarAnimal, dibujarJinete, dibujarSilla, dibujarSaltando } from '../entities/caballo.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { sembrarDesierto } from '../world/desierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
@@ -97,6 +98,8 @@ export function createRideScene(services) {
   let zancadaIntervalo;
   const polvo = crearPolvo(CONFIG.colors.polvo);
   let x, y, vel, aguante, reloj, gastado, scroll, alcanzada;
+  /** En el estilo nuevo: el tamaño al que se va y el que se ve ahora. Ver `moverZoom`. */
+  let zoomMeta = null, zoomVisto = null;
   let trastabilla, choque, saltando, terminado;
   let exposicion, visto, obstaculos, aviso;
   let vida, invuln, tiradores, balas;
@@ -119,6 +122,7 @@ export function createRideScene(services) {
    *   todavía.
    */
   function enter(params = {}) {
+    zoomMeta = zoomVisto = null;
     hud.hide();
     // Las láminas de los vagones son de la corrida anterior: medio mega cada
     // una, y el tren nuevo sortea otra composición (ver `olvidarLaminas`).
@@ -808,6 +812,7 @@ export function createRideScene(services) {
   }
 
   function update(dt) {
+    moverZoom(dt);
     scroll += dt;
     invuln = Math.max(0, invuln - dt);
     actualizarPolvo(dt);
@@ -1019,6 +1024,26 @@ export function createRideScene(services) {
    * se note dónde empieza el movimiento.
    */
   function zoomActual(r = services.renderer) {
+    if (!estiloNuevo.activo) return zoomContinuo(r);
+    return zoomVisto ?? (zoomContinuo(r) > A.zoomEscalon.baja ? 1 : A.zoomEscalon.lejos);
+  }
+
+  /** Lleva el zoom de un tamaño al otro. Ver `zoomEscalon` en data/horse.js. */
+  function moverZoom(dt) {
+    if (!estiloNuevo.activo) return;
+    const E = A.zoomEscalon, z = zoomContinuo(services.renderer);
+    if (zoomMeta === null) {
+      zoomMeta = zoomVisto = z > E.baja ? 1 : E.lejos;
+      return;
+    }
+    if (zoomMeta === 1 && z < E.baja) zoomMeta = E.lejos;
+    else if (zoomMeta !== 1 && z > E.sube) zoomMeta = 1;
+    const paso = (dt * (1 - E.lejos)) / E.pase;
+    zoomVisto = zoomVisto < zoomMeta ? Math.min(zoomMeta, zoomVisto + paso) : Math.max(zoomMeta, zoomVisto - paso);
+  }
+
+  /** El zoom que pide la distancia al tren, de a poco. */
+  function zoomContinuo(r) {
     const falta = Math.max(0, plataformas[1] - x);
     // Los últimos `zoomFijoDesde` px van a escala 1 clavada: ver el porqué en
     // data/horse.js. Sin esto el zoom sigue corrigiéndose mientras apuntás el salto.
@@ -1052,6 +1077,17 @@ export function createRideScene(services) {
     return (util - cieloDeLejos(Math.min(1, z))) / alto;
   }
 
+  /**
+   * La cámara avanza de a puntos enteros de la grilla. A la mitad de tamaño entran dos
+   * puntos del dibujo en cada punto de la pantalla: si la cámara se corriera menos que
+   * eso, se verían unas veces los pares y otras los impares, y el tren entero titilaría.
+   */
+  function pegarCamara(v, z, r) {
+    if (!estiloNuevo.activo || z !== zoomMeta) return v;
+    const paso = CONFIG.estilo.punto / (r.ctx.getTransform().a * z);
+    return Math.round(v / paso) * paso;
+  }
+
   /** Lo que la HUD tapa arriba, en píxeles de pantalla (ver `render`). */
   const DESPLAZO_HUD = 20;
 
@@ -1078,8 +1114,8 @@ export function createRideScene(services) {
     const mira = Math.min(1, falta / 260);
     // El tope acompaña a `atrasMaximo`: si el jugador puede perder terreno, la
     // cámara tiene que poder seguirlo hasta allá o lo pierde de vista.
-    const camX = Math.max(-A.inicioDetras - A.atrasMaximo - 80,
-      x - vistaW * (0.5 - 0.22 * mira));
+    const camX = pegarCamara(Math.max(-A.inicioDetras - A.atrasMaximo - 80,
+      x - vistaW * (0.5 - 0.22 * mira)), z, r);
 
     /**
      * Y AHORA TAMBIÉN SIGUE EN VERTICAL, porque el campo (150 px) ya no entra
@@ -1117,7 +1153,7 @@ export function createRideScene(services) {
      * del borde de la pantalla: arrancabas sin verte. Si no entran los dos,
      * gana el caballo.
      */
-    const camY = Math.max(camYTren, y + A.encuadre.debajo - vistaH);
+    const camY = pegarCamara(Math.max(camYTren, y + A.encuadre.debajo - vistaH), z, r);
 
     dibujarAfuera(r, camX, z, camY, vistaW, vistaH);
 
@@ -1470,11 +1506,14 @@ export function createRideScene(services) {
      */
     if (terminado) {
       const t = 1 - saltando / 0.4;
-      dibujarAnimal(r, x, y, zancada, 0, esfuerzo, 0, caballo.id);
+      const suelto = dibujarAnimal(r, x, y, zancada, 0, esfuerzo, 0, caballo.id, !gameState.esDeDia);
+      dibujarSilla(r, suelto);
       const desde = y - 6;
       const hasta = train.map.height
         - (techoDestino ? alturaDeAterrizaje(vagonAlLado()) : ALTO_DEL_ENGANCHE);
-      dibujarJinete(r, x, desde + t * (hasta - desde) - Math.sin(t * Math.PI) * 14, 0, 1.2);
+      const arco = desde + t * (hasta - desde) - Math.sin(t * Math.PI) * 14;
+      // (Las botas salen de donde las tenía montado, 2 más abajo del arco: así no pega un salto al empezar.)
+      if (!dibujarSaltando(r, x, arco + 2, suelto)) dibujarJinete(r, x, arco, 0, 1.2);
       return;
     }
 
@@ -1522,7 +1561,8 @@ export function createRideScene(services) {
      */
     r.ctx.save();
     r.ctx.translate(x, y + 6);
-    r.ctx.rotate(rumbo * 0.14);
+    // (En el estilo nuevo no se inclina: girar los puntos los deshace y se ve borroso. El giro lo cuenta la pose.)
+    if (!estiloNuevo.activo) r.ctx.rotate(rumbo * 0.14);
     r.ctx.translate(-x, -(y + 6));
 
     /**
@@ -1532,7 +1572,7 @@ export function createRideScene(services) {
      * del caballo y el jinete las recibe. Antes eran dos números sueltos acá,
      * y cada vez que se tocaba el caballo había que acordarse de tocarlos.
      */
-    const montura = dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose, caballo.id);
+    const montura = dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose, caballo.id, !gameState.esDeDia);
     // A la carrera el jinete se echa hacia adelante: más cuanto más le pide.
     // Se sienta con SU rebote, no con el del lomo (ver `rebote`, más arriba).
     // Y se sienta DONDE DICE EL CABALLO: la altura del lomo cambia con la

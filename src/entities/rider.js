@@ -74,6 +74,7 @@ export function drawRider(r, rd) {
   const rebote = Math.cos((zancada.t / T - 0.25) * Math.PI * 2) * 1.2 * 0.5;
   dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, 0, 2, {
     detalles: 'ley',
+    ent: rd,
     destello: rd.hitFlash > 0,
     // Los ojos se ponen rojos mientras apunta, igual que un guardia en combate.
     estado: rd.aimTimer > 0 ? 'alerta' : 'calma',

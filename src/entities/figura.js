@@ -32,8 +32,9 @@ import { tendido, TENDIDO } from './gente/tendido.js';
 import { tresCuartosConHuesos } from './gente/tresCuartos.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { PALETA } from '../engine/paleta.js';
-import { lienzoJugador, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
-import { lienzoGente, lienzoTendido, PIES_TENDIDO, ANCHO_TENDIDO, ALTO_TENDIDO } from './estiloNuevo/gente.js';
+import { lienzoJugador, lienzoJinete, lienzoJineteChico, lienzoSilla, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
+import { lienzoGente, lienzoTendido, PIES_TENDIDO, ANCHO_TENDIDO, ALTO_TENDIDO, lienzoJineteGente, coloresDe } from './estiloNuevo/gente.js';
+import { C as COLORES_JUGADOR } from './estiloNuevo/jugador.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
 export { ROPA_DE_LOOK, ROPA_DE_JEFE } from './gente/dibujo.js';
@@ -568,6 +569,61 @@ function dibujarHumo(ctx, L, aMundo, espejo, PASO) {
   if (L.brasa) punto(L.brasa, L.pita ? PALETA[29] : PALETA[45], 1);
   for (const [dx, dy, claro] of HUMO[L.fumaK] || []) punto([L.humo[0] + dx, L.humo[1] + dy], claro ? PALETA[25] : PALETA[24], ALFA_HUMO[claro]);
   ctx.globalAlpha = 1;
+}
+
+/**
+ * 🆕 EL JUGADOR MONTADO, con el dibujo de la gente (`lienzoJinete`). `x` e `y` son la columna 0 y la fila 0
+ * de la persona: las saca el caballo de su propio dibujo, así van los dos pegados punto por punto.
+ */
+/** 🆕 `gente`: { aspecto, tipo } si es otra persona (un jinete de la ley, con el rifle en la funda). */
+export function jineteNuevo(r, { x, y, cuadro, luz, destello, silla = true, vista = 'lado', gente = null }) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
+  const L = gente ? lienzoJineteGente({ aspecto: gente.aspecto, tipo: gente.tipo, vista, cuadro, silla, fino }, luz, !!destello) : lienzoJinete({ vista, cuadro, fino, silla }, luz, !!destello);
+  const ix = x - (PIES_NUEVO[0] - 10) * PASO, iy = y - (PIES_NUEVO[1] - 27) * PASO;
+  r.ctx.drawImage(L.img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
+  if (fino) estiloNuevo.marcarGente(r.ctx, L.img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
+  pintarBordes(r.ctx, L.finos, ix, iy, PASO);
+  return { mano: L.mano, top: y, arriba: y, manoY: y + L.mano[1] * PASO, pechoY: y + 11 * PASO, x: x + 10 * PASO, vista, espejo: false };
+}
+
+/**
+ * 🆕 Los colores del jinete chico de la ley: los de su persona (sombrero, piel, chaleco, pantalón). El chico
+ * del jugador lleva pañuelo (R, S, r); el guardia no: ahí va el cuello de la camisa.
+ */
+function coloresChicos(gente) {
+  const pc = { ...COLORES_JUGADOR, ...coloresDe(gente.aspecto, gente.tipo) };
+  // (El ala del chico es la K: la del color de su sombrero.)
+  return { ...pc, R: pc.C, S: pc.L, r: pc.c, K: pc.H };
+}
+
+/** Los puntos finos de un lienzo (ver bordeBrazos en jugador.js), con `punto` unidades por punto del lienzo. */
+function pintarBordes(ctx, finos, ix, iy, punto) {
+  for (const g of finos || []) {
+    const puntos = [];
+    for (let i = 0; i < g.puntos.length; i += 2) puntos.push(ix + g.puntos[i] / 3 * punto, iy + g.puntos[i + 1] / 3 * punto);
+    estiloNuevo.pintarFinos(ctx, puntos, punto / 3, PALETA[g.color]);
+  }
+}
+
+/** La silla sola sobre el lomo, en la columna 0 y la fila 0 de la persona, como `jineteNuevo`. */
+export function sillaNueva(r, { x, y, luz, vista = 'lado' }) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const img = lienzoSilla(luz, vista);
+  const ix = x - (PIES_NUEVO[0] - 10) * PASO, iy = y - (PIES_NUEVO[1] - 27) * PASO;
+  r.ctx.drawImage(img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
+  estiloNuevo.marcarGente(r.ctx, img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
+}
+
+/** El jinete chico (de lejos): `x` e `y` son la esquina del caballo chico. Devuelve la mano, en sus puntos. */
+export function jineteChico(r, { x, y, luz, destello, persona = true, silla = true, vista = 'lado', gente = null }) {
+  const punto = CONFIG.estilo.punto / 2;
+  const L = lienzoJineteChico({ persona, silla, vista, colores: gente ? coloresChicos(gente) : null, rifle: !!gente }, luz, !!destello);
+  const iy = y + L.arriba * punto, w = L.img.width * punto, h = L.img.height * punto;
+  r.ctx.drawImage(L.img, x, iy, w, h);
+  estiloNuevo.marcarGente(r.ctx, L.img, x, iy, w, h);
+  pintarBordes(r.ctx, L.finos, x, iy, punto);
+  return { mano: L.mano, top: iy, arriba: iy, manoY: y + L.mano[1] * punto, pechoY: y + 4 * punto, x: x + 11 * punto, vista, espejo: false };
 }
 
 function jugadorNuevo(r, f) {

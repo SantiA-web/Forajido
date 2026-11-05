@@ -18227,7 +18227,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
 | P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
 | P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | ✅ los dos trenes, con la locomotora adentro y las esquinas redondas (falta probarla jugando: ver "LA LOCOMOTORA, ADENTRO") |
-| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera hecho; falta la cabalgata (caballos, jinetes, fondo), la E4 y el jugador en el techo |
+| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera, el caballo y los jinetes (el jugador y la ley) hechos; falta la E4, el fondo de la cabalgata, la huida y el jugador en el techo |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
 | P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
 | P8 · Limpieza | Borrar el dibujo viejo | Falta |
@@ -19896,6 +19896,50 @@ Todos los vagones, la locomotora y la cola, vistos desde el caballo, en el estil
 
 A mano: ventanas, escotilla, boca de hielo, garita, ventilador, chimenea, vaca corta, tapa del tanque, boca de carbón, farol, escalón, copos de humo. De una cuenta: lo que se repite (tablas, chapas, techo, tubo, ruedas y bielas, carbón, barandas, piso de la cola, las luces, dónde va cada copo).
 
+## ✅ LA CABALGATA: EL CABALLO Y LOS JINETES, EN LA GRILLA NUEVA (2026-11-05)
+
+El orden lo eligió Santi: caballo, jinetes y después el fondo. Falta el fondo y la E4.
+
+- **El caballo** es la hoja de Santi pasada a la grilla 3×3 *(memoria `caballo-de-santi-en-3x3`)*: mapas de 52×46 en
+  `assets/caballoPuntos.js` (y el Mustang en `mustangPuntos.js`, marrón rojizo *(Santi: "ponele colores rojizos")*),
+  con cinco direcciones (norte, noreste, este, sudeste y sur) y 8 cuadros de galope, y uno chico de 26×23 para lejos.
+  Los arma `entities/estiloNuevo/caballo.js`. De noche tiene sus propios colores, porque con la luz de siempre se
+  perdía contra el suelo.
+- **Dos tamaños y no un zoom que cambia de a poco** *(Santi lo eligió al preguntar por qué se veía borroso)*: de cerca o
+  a la mitad exacta (`zoomEscalon`, data/horse.js), con la cámara corriéndose de a puntos enteros. En el estilo nuevo
+  el caballo ya no se inclina al girar: lo cuenta la pose.
+- **El jinete del jugador**, la misma persona del tren con el sombrero y las piernas copiados *(memoria
+  `jinete-misma-persona-del-tren`)*: en las 5 direcciones, de cerca y de lejos, con 8 cuadros, las dos manos en las
+  riendas y la silla.
+  - 🔁 En diagonal, la canilla derecha y la rodilla que se dobla para un solo lado *(Santi: "la pierna del personaje se
+    ve un poco rara, como si fuera un resorte")*.
+  - 🔁 De espaldas, sobre el lomo y no flotando *(Santi: "parece volando, no sobre el lomo")*. La grupa, que está más
+    cerca, se vuelve a pintar encima de las piernas (`tapa`), y las piernas siguen su borde fila por fila *(Santi: "las
+    rodillas no caen con el lomo del caballo... hay pixeles de aire")*.
+  - De frente, la cabeza del caballo tapa la panza, y las riendas salen de cada lado de la boca.
+- **Los jinetes de la ley**:
+  - **Son guardias del tren** *(Santi eligió "Como los guardias")*: cada uno sortea una vez su aspecto (`aspectoDe`,
+    guardado en el jinete) y lo conserva. Montan como el jugador (`montado` en jugador.js, `lienzoJineteGente` en
+    gente.js).
+  - **El rifle va en la funda de la silla** *(Santi eligió "En la funda de la silla")*, del lado que se ve:
+    - de costado y en diagonal, la culata adelante y la funda bajando por debajo de la pierna, de cuero claro para que
+      se lea sobre la silla y el caballo;
+    - de frente, la culata junto a la rodilla;
+    - de espaldas, la punta junto a la bota.
+  - **Los chicos** llevan los colores de su guardia y también la funda.
+  - **Mientras apuntan siguen con el dibujo viejo**, hasta la E4.
+- 🐛 **Los cuatro cuerpos montados**:
+  - Al guardia ancho o con chaqueta se le borraba la silla.
+  - *(Santi: "en el jinete flaco en la pose diagonal el brazo se le despega del cuerpo")*: con las riendas las dos manos
+    se tocan y los brazos se corrían juntos para un solo lado. Ahora cada punto va con su brazo; se corre el hombro, y
+    la mano sigue en las riendas.
+  - *(Santi: "en los de chaqueta en la pose de perfil se ve parte del chaleco rojo")*: el borde de la chaqueta no seguía
+    al cuerpo echado adelante.
+- 🧪 **El atajo [8]**: un asalto con cuatro jinetes de la ley ya galopando al lado del tren (`pruebaJinetes`).
+- ⚠️ **Sin probar**: el Mustang en las vistas de frente y de espaldas, girar al galope y la huida. La huida sigue entera
+  con el dibujo viejo, también el caballo. En el flaco en diagonal de espaldas queda un punto de aire junto a la mano de
+  atrás.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,
@@ -19916,7 +19960,7 @@ y quedó como manchas.
 | **E1 · La base** | Los huesos que faltaban (raíz, torso, cabeza) y la ropa pegada a cada uno; el jugador de costado ya se dibuja así | ✅ hecha |
 | E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, la caída al enganche, el sprint; piernas más finas | ✅ hecha y jugada |
 | E3 · Mirar con el mouse arriba | Te movés con las teclas y el cuerpo, el brazo y la cabeza miran a la mira; esqueleto de tres cuartos de frente y de espaldas | ✅ hecha, **sin jugar** |
-| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | Falta |
+| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | En curso: los jinetes ya montados en la grilla nueva, con el rifle en la funda; falta apuntar, el fogonazo y la caída |
 
 ### ✅ E1 · La base (`ladoConHuesos` y `huesosDeLado`, entities/gente/costado.js)
 

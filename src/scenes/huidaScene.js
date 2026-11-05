@@ -33,7 +33,7 @@ import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { caballoActual, HORSES, esperaDelImpulso, APROXIMACION as A } from '../data/horse.js';
 import { applyRaidResult, recompensaTapada, gameState, numero } from '../state/gameState.js';
 import { T } from '../text/es.js';
-import { GOLPES, dibujarAnimal, dibujarJinete, dibujarMontura } from '../entities/caballo.js';
+import { GOLPES, dibujarAnimal, dibujarJinete, dibujarMontura, dibujarSilla } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
 import { sembrarDesierto, pintarSuelo } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
@@ -1905,7 +1905,7 @@ export function createHuidaScene(services) {
     r.ctx.globalAlpha = Math.max(0, Math.min(1, s.vida / 1.5));
     dibujarCaballo(s, r, () => {
       const montura = dibujarAnimal(r, s.x, s.y, zancada, trote, 1, pose, null, !dia);
-      dibujarMontura(r, montura.asiento.x, montura.asiento.y, pose);
+      if (!dibujarSilla(r, montura)) dibujarMontura(r, montura.asiento.x, montura.asiento.y, pose);
       montura.adelante();
     });
     r.ctx.restore();
@@ -1939,6 +1939,7 @@ export function createHuidaScene(services) {
       const rebote = Math.cos((zancada.t / T0 - 0.25) * Math.PI * 2) * 0.6;
       dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, pose, 2, {
         detalles: 'ley',
+        ent: j,
         destello: j.hitFlash > 0,
         estado: j.aimTimer > 0 ? 'alerta' : 'calma',
         apunta: apuntando,

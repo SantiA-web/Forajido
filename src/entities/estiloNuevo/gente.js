@@ -20,7 +20,7 @@
  */
 import { iluminar } from '../../engine/luz.js';
 import { sombrear, RGB } from '../../engine/paleta.js';
-import { C, ANCHO, ALTO, OX, OY, PARTE, cuadroJugador, armaEn, linea, bordeBrazos } from './jugador.js';
+import { C, ANCHO, ALTO, OX, OY, PARTE, cuadroJugador, armaEn, linea, bordeBrazos, montado, bordeSilla } from './jugador.js';
 
 const mapa = (y, filas) => ({ y, filas });
 
@@ -2256,6 +2256,36 @@ export function lienzoSombreroSuelto(o, luz = 0) {
   g = { img: cv, base: [Math.floor(W / 2), o.arriba ? Math.floor(H / 2) : H - 1] };
   sueltos.set(clave, g);
   return g;
+}
+
+/**
+ * 🆕 EL JINETE DE LA LEY, montado *(Santi eligió "Como los guardias" y el rifle "En la funda de la silla")*: la
+ * misma persona que un guardia del tren, con su aspecto sorteado (`aspecto`, ver aspectoDe), sentada como el
+ * jugador (las piernas, la silla y las dos manos en las riendas, ver `montado` en jugador.js) y con el rifle
+ * enfundado al costado de la silla. Devuelve también `mano`, de donde salen las riendas.
+ */
+const jinetes = new Map();
+export function lienzoJineteGente({ aspecto = {}, tipo = 'guardia', vista = 'lado', cuadro = null, silla = true, rifle = true, fino = false }, luz = 0, destello = false) {
+  const clave = [JSON.stringify(aspecto), tipo, vista, cuadro ?? 'Q', silla, rifle, fino, luz, destello].join('|');
+  let g = jinetes.get(clave);
+  if (g) return g;
+  if (jinetes.size > 600) jinetes.clear();
+  const { piernas, mano, brazos } = montado(vista, cuadro, { silla, rifle });
+  const q = cuadroGente({ ...aspecto, tipo, vista, piernas, ang: 0, brazos, fino });
+  const indices = destello ? q.idx.map((i) => (i > 0 ? sombrear(i, 4) : i)) : q.idx;
+  const cv = document.createElement('canvas');
+  cv.width = ANCHO; cv.height = ALTO;
+  cv.getContext('2d').putImageData(new ImageData(iluminar({ ancho: ANCHO, alto: ALTO, indices, campo: () => luz }), ANCHO, ALTO), 0, 0);
+  const finos = (q.finos || []).map((f) => ({ color: f.fijo ? f.color : sombrear(f.color, luz), puntos: f.puntos }));
+  const borde = bordeSilla(q);
+  if (borde) finos.push({ color: 0, puntos: borde });
+  g = { img: cv, mano, finos };
+  jinetes.set(clave, g);
+  return g;
+}
+/** 🆕 Los colores de una persona (el jinete chico de la ley se pinta con ellos, ver lienzoJineteChico). */
+export function coloresDe(aspecto = {}, tipo = 'guardia', vista = 'lado') {
+  return capasPersona({ ...aspecto, tipo, vista }).colores;
 }
 
 const guardados = new Map();

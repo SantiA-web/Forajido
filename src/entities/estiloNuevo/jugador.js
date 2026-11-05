@@ -373,6 +373,167 @@ VISTAS.diagE.piernas.piso = mapa(25, ['.......tttTTII', '........tttTT']);
 VISTAS.espalda.piernas.rodillas = mapa(22, ['.......IITTTtt', '.......IIT.Ttt', '.......IIT.TTt', '......ItT...tTt', '.....KOOK...KOOK', '.....KKKK...KKKK']);
 VISTAS.frente.piernas.rodillas = mapa(22, ['......FIITTTtt', '......fIIT.Ttt', '.......IIT.TTt', '.......III.TTt', '.......ttt.ttt']);
 
+/**
+ * 🆕 MONTADO (el jugador en el caballo, de costado) *(Santi eligió usar la misma persona de los vagones y
+ * dibujarle sólo las piernas de montar: "primero lo haría con el jugador para establecer las bases")*.
+ * Ocho cuadros, uno por cada cuadro del galope: el cuerpo amortigua (MONTA_BAJA, el mismo rebote de
+ * antes pasado a puntos) y la rodilla se dobla cuando se hunde en la silla y se estira cuando sube
+ * en los estribos. La bota va y viene un punto dentro del estribo. MQ: el caballo parado.
+ * 🔁 Las mismas piernas del vagón *(Santi: "en el asalto son más cortas respecto al cuerpo… y darles
+ * menos detalle")*: 10 filas desde la cadera, 3 puntos de ancho (`IIT`) y la bota de 2 filas.
+ * 🔁 Sin saltar en la silla *(Santi: "es muy exagerado")*: el cuerpo baja un solo punto, la bota queda
+ * quieta en el estribo y sólo la rodilla se corre un punto.
+ */
+VISTAS.lado.piernas.M0 = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '..........IIT', '...........IIT', '...........IIT', '...........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+VISTAS.lado.piernas.M1 = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '...........IIT', '............IIT', '...........IIT', '...........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+VISTAS.lado.piernas.M2 = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '...........IIT', '............IIT', '............IIT', '...........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+VISTAS.lado.piernas.M3 = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '...........IIT', '............IIT', '...........IIT', '...........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+VISTAS.lado.piernas.M4 = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '..........IIT', '...........IIT', '...........IIT', '...........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+VISTAS.lado.piernas.M5 = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '..........IIT', '...........IIT', '...........IIT', '..........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+VISTAS.lado.piernas.M6 = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '..........IIT', '..........IIT', '...........IIT', '..........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+VISTAS.lado.piernas.M7 = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '..........IIT', '...........IIT', '...........IIT', '..........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+VISTAS.lado.piernas.MQ = mapa(16, ['.......IFFTT', '.......tFfTT', '.........IIT', '..........IIT', '...........IIT', '...........IIT', '...........IIT', '..........IIT', '..........QOOOO', '..........KKKKK']);
+/**
+ * 🆕 MONTADO EN DIAGONAL, cada vista y cada cuadro en su mapa *(Santi: "Sigamos con las diagonales")*. La misma
+ * pierna del costado (10 filas, `IIT`, bota de 2) y la misma rodilla que se corre un punto cuando el cuerpo baja.
+ * De tres cuartos de frente (el caballo al sudeste) la pierna de acá es la derecha, a la izquierda de la pantalla:
+ * el muslo viene hacia nosotros y se ve corto, y la pierna cae derecho debajo de la cadera. De tres cuartos de espaldas (al noreste), la
+ * de acá queda a la derecha. La de allá la tapa el caballo: se ve sólo el muslo.
+ * 🔁 La pierna, recta debajo de la rodilla, y la rodilla se dobla para un solo lado *(Santi: "se ve un poco rara,
+ * como si fuera un resorte")*: corrida para un lado y para el otro, en zigzag, parecía un resorte.
+ */
+VISTAS.diagF.piernas.M0 = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '........IIT', '........IIT', '........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagF.piernas.M1 = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '.........IIT', '.........IIT', '........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagF.piernas.M2 = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '.........IIT', '.........IIT', '.........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagF.piernas.M3 = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '.........IIT', '.........IIT', '........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagF.piernas.M4 = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '........IIT', '........IIT', '........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagF.piernas.M5 = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '........IIT', '........IIT', '........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagF.piernas.M6 = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '........IIT', '........IIT', '........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagF.piernas.M7 = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '........IIT', '........IIT', '........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagF.piernas.MQ = mapa(16, ['.......IITTttt', '.......IIITTtt', '........IIT.tt', '........IIT', '........IIT', '........IIT', '........IIT', '........IIT', '........QOOOO', '........KKKKK']);
+VISTAS.diagE.piernas.M0 = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+VISTAS.diagE.piernas.M1 = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '.............IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+VISTAS.diagE.piernas.M2 = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '.............IIT', '.............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+VISTAS.diagE.piernas.M3 = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '.............IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+VISTAS.diagE.piernas.M4 = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+VISTAS.diagE.piernas.M5 = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+VISTAS.diagE.piernas.M6 = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+VISTAS.diagE.piernas.M7 = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+VISTAS.diagE.piernas.MQ = mapa(16, ['.......tttTTII', '.......tttTTIIT', '........tt..IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............IIT', '............QOOOO', '............KKKKK']);
+/**
+ * 🆕 MONTADO DE FRENTE (el caballo viene hacia la cámara) Y DE ESPALDAS (se va hacia el fondo), cada cuadro en su
+ * mapa: las dos piernas a los costados del caballo, los muslos cortos (vienen hacia nosotros o se van) y la pierna
+ * derecha abajo; cuando el cuerpo se hunde en la silla, las rodillas se abren un punto. 🔁 Casi derechas: abiertas
+ * de costado se leían como brazos. 🔁 De espaldas, en cambio, bien abiertas: la grupa está más cerca de la cámara
+ * que las piernas y se pinta encima *(Santi: "las piernas y las botas se comen pixeles del caballo")*; las botas
+ * asoman a los dos lados de la grupa. 🔁 Pegadas al borde de la grupa, fila por fila *(Santi: "las rodillas no caen con
+ * el lomo del caballo [...] hay pixeles de aire")*: muy abiertas, quedaba aire entre la pierna y el caballo.
+ */
+VISTAS.frente.piernas.M0 = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '....IIT......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.frente.piernas.M1 = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '...IIT.......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.frente.piernas.M2 = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '...IIT.......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.frente.piernas.M3 = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '...IIT.......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.frente.piernas.M4 = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '....IIT......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.frente.piernas.M5 = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '....IIT......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.frente.piernas.M6 = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '....IIT......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.frente.piernas.M7 = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '....IIT......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.frente.piernas.MQ = mapa(16, ['......FIITTTtt', '.....IIIT..TTtt', '....IIT......TTt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '....IT........Tt', '...IIT........TTt', '...QOO........OOo', '...KKK........KKK']);
+VISTAS.espalda.piernas.M0 = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '...IT............Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+VISTAS.espalda.piernas.M1 = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '....IT..........Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+VISTAS.espalda.piernas.M2 = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '....IT..........Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+VISTAS.espalda.piernas.M3 = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '....IT..........Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+VISTAS.espalda.piernas.M4 = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '...IT............Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+VISTAS.espalda.piernas.M5 = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '...IT............Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+VISTAS.espalda.piernas.M6 = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '...IT............Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+VISTAS.espalda.piernas.M7 = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '...IT............Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+VISTAS.espalda.piernas.MQ = mapa(16, ['.......IITTTtt', '....IIIIT....TTTt', '....IT.........Tt', '....IT.........Tt', '...IT............Tt', '...IT............Tt', '..IT.............Tt', '.IT...............Tt', 'OOO...............OOO', 'KKK...............KKK']);
+const MONTA_BAJA = [0, 1, 1, 1, 0, 0, 0, 0];
+/** La silla, la manta y el estribo: quedan fijos sobre el lomo, no suben con el cuerpo. */
+const SILLA = mapa(15, [
+  '....gm',
+  '....gmm',
+  '....gmm........mg',
+  '....gmmmmmmmmmmgg',
+  '....ggggggggggggg',
+  '...XmmmmmmmmmmmmmX',
+  '...ZXmmmmmmmmmmmXZ',
+  '....ZZZZZZZZZZZZZ',
+  '..........x',
+  '..........x',
+  '..........x',
+  '..........aaaaa',
+]);
+const COLORES_SILLA = { ...COLORES, a: 23 };
+/**
+ * 🆕 LA SILLA EN DIAGONAL: más corta (se ve en escorzo), con el borrén de atrás arriba a la izquierda y la
+ * manta colgando del lado de acá. El estribo, debajo de la bota.
+ */
+const SILLA_DE = {
+  lado: SILLA,
+  // De frente y de espaldas la silla queda casi toda detrás de la persona: asoman la manta a los dos lados y los estribos.
+  frente: mapa(15, [
+    '......gmmmmmmg',
+    '.....XmmmmmmmmX',
+    '....XZ........ZX',
+    '....ZZ........ZZ',
+    '', '', '', '', '', '', '',
+    '...aaa........aaa',
+  ]),
+  espalda: mapa(15, [
+    '.......gmmmmmmg',
+    '......XmmmmmmmmX',
+    '.....XZmmmmmmmmZX',
+    '.....ZZmmmmmmmmZZ',
+    '.......ZZZZZZZZ',
+    '', '', '', '', '', '',
+    'aaa...............aaa',
+  ]),
+  diagF: mapa(15, [
+    '.....gm',
+    '.....gmm.....mg',
+    '.....gmmmmmmmmg',
+    '....gggggggggggg',
+    '...XmmmmmmmmmmX',
+    '...ZXmmmmmmmmXZ',
+    '....ZZZZZZZZZZ',
+    '..........x',
+    '..........x',
+    '..........x',
+    '..........x',
+    '........aaaaa',
+  ]),
+  diagE: mapa(15, [
+    '......gm',
+    '......gmm.....mg',
+    '......gmmmmmmmmg',
+    '.....gggggggggggg',
+    '.....XmmmmmmmmmmX',
+    '.....ZXmmmmmmmmXZ',
+    '......ZZZZZZZZZZ',
+    '..............x',
+    '..............x',
+    '..............x',
+    '..............x',
+    '............aaaaa',
+  ]),
+};
+/**
+ * 🆕 LA CABEZA DEL JUGADOR MONTADO: la misma del tren, con el sombrero copiado tal cual *(Santi: "agarres el
+ * sombrero que tiene dentro del tren y se lo pegués")*. 🔁 Lo único que cambia: el sombrero va un punto más
+ * adelante que la cara, y la inclinación la da dónde está la cabeza (`cabezaX`). Redibujarlo inclinado lo arruinó.
+ */
+const CABEZA_MONTADA = mapa(-1, [
+  '..........hkH',
+  '.........hhkHk',
+  '....hh..hbbbbbk..kk',
+  '.....hhHHHHHHHHHkk',
+  '......xkkkkkkkkkx',
+  '........qpPPp',
+  '........qpPPPn',
+  '.........qBBp',
+  '.........rRRS',
+]);
+
 // ------------------------------------------------- las piernas que se mueven
 /**
  * 🔁 OCHO CUADROS POR CICLO *(Santi: "a partir de ahora creo que todo debería
@@ -1133,7 +1294,7 @@ const CUERVO = {
  *  lado     de costado: [fila, puntos] adelante (negativo: se saca); `espalda` y
  *           `piernas`, un punto menos atrás y en las piernas (el flaco)
  */
-export const PARTE = { cuerpo: 1, brazo: 2, cabeza: 3, piernas: 4, brazoAtras: 5, brazoBajoCabeza: 6 };
+export const PARTE = { cuerpo: 1, brazo: 2, cabeza: 3, piernas: 4, brazoAtras: 5, brazoBajoCabeza: 6, silla: 7 };
 export const CUERPOS = {
   normal: { filas: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], brazos: 0, lado: [] },
   // Un punto más en el pecho y dos desde la panza: angosto arriba, ancho abajo.
@@ -1213,7 +1374,7 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
    */
   const tipo = PASOS[piernas[0]] && /^\d$/.test(piernas.slice(1)) ? piernas[0] : null;
   const k = tipo ? +piernas[1] : 0;
-  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'sentado' || piernas === 'sentadoApoyado' ? 4 : piernas === 'rodillas' ? 5 : piernas === 'piso' ? 8 : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
+  const baja = (tipo ? PASOS[tipo].baja[k] : piernas === 'agachado' ? 3 : piernas === 'sentado' || piernas === 'sentadoApoyado' ? 4 : piernas === 'rodillas' ? 5 : piernas === 'piso' ? 8 : /^M\d$/.test(piernas) ? MONTA_BAJA[+piernas[1]] : 0) + (GL ? GL.baja : golpe != null ? GOLPE.baja[golpe] : TJ ? TJ.baja : AT ? AT.baja : 0);
   const deCostado = vista === 'lado' || vista.startsWith('diag');
   const inclina = AT ? (deCostado ? AT.inclina : 0) : TJ ? (deCostado ? TJ.inclina : 0) : golpe != null ? (deCostado ? (GL ? GL.inclina : GOLPE.inclina[golpe]) : 0) : vista === 'lado' && tipo === 'R' ? 1 : piernas === 'piso' && deCostado ? 1 : 0;
   /**
@@ -1575,14 +1736,14 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     // gente *(Santi: "revisá al jugador")*; la gente ya la trae corrida (capasPersona en gente.js).
     const atras = !persona && vista === 'lado' ? 1 : 0;
     con(PARTE.cabeza, () => {
-      for (const m of persona ? persona.cabeza : [V.cabeza]) dibujarMapa(m, dy, dx - atras);
+      for (const m of persona ? persona.cabeza : [(BRo && BRo.cabezaMapa) || V.cabeza]) dibujarMapa(m, dy, dx - atras);
       if (persona && persona.sombrero) dibujarMapa(persona.sombrero, dy + (conGacha ? ga[0] : 0), dx + (conGacha ? ga[1] : 0));
     });
     cabezaEn = [dx - atras, dy];
   };
   const props = (capa) => (BRo && BRo.props || []).forEach((p) => {
     // Lo que tiene en la mano va con el brazo; lo que está en el piso, quieto.
-    if ((p.capa || 'frente') === capa) con(p.piso ? PARTE.cuerpo : capa === 'fondo' ? PARTE.brazoAtras : PARTE.brazo, () => dibujarMapa(p.m, p.piso ? 0 : baja, p.piso ? 0 : inclina + lomo + bi, p.tabla));
+    if ((p.capa || 'frente') === capa) con(p.parte || (p.piso ? PARTE.cuerpo : capa === 'fondo' ? PARTE.brazoAtras : PARTE.brazo), () => dibujarMapa(p.m, p.piso ? 0 : baja, p.piso ? 0 : inclina + lomo + bi, p.tabla));
   });
   const brazoPose = (b, i) => {
     const pts = b.p.map(([x, y]) => [x + inclina + lomo + bi, y + baja]);
@@ -1706,6 +1867,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
     // (Sólo el que lleva estrella: el pasajero tiene esas letras con otros colores, y su camisa se manchaba.)
     const estrella = new Set(conEstrella ? [C.E, C.e].filter((c) => c != null) : []);
     const esCuerpo = (k) => de[k] === PARTE.cuerpo;
+    // 🐛 0. La silla (y la funda del rifle), quieta y debajo de todo: sin esto, el jinete de la ley de hombros
+    // anchos o con chaqueta quedaba montado en el aire.
+    for (let k = 0; k < idx.length; k++) if (ver[k] >= 0 && de[k] === PARTE.silla) { nuevo[k] = ver[k]; dn[k] = PARTE.silla; }
     // 1. El cuerpo (torso, cabeza, piernas), con el torso ensanchado fila por fila.
     const estrellas = [];
     for (let y = 0; y < ALTO; y++) {
@@ -1970,9 +2134,33 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
         // 🐛 El brazo que llega a la cabeza (las manos en la cabeza o arriba) no se corre: si no, la mano
         // se despegaba de la cabeza y el ala del sombrero quedaba con el agujero donde estaba el brazo.
         const aLaCabeza = suyos.some((k) => Math.floor(k / ANCHO) < yHombro - 1);
-        const sentido = aLaCabeza ? 0 : vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
+        const sentido0 = aLaCabeza ? 0 : vista === 'lado' ? (K.espalda && p === PARTE.brazoAtras ? 1 : 0) : medio < cx ? -1 : 1;
+        /**
+         * 🐛 MONTADO, CADA PUNTO CON SU BRAZO, Y EL LADO LO DICE EL HOMBRO *(Santi: "en el jinete flaco en la
+         * pose diagonal el brazo se le despega del cuerpo")*: con las riendas las dos manos se tocan delante de
+         * la panza, y los dos brazos eran una sola pieza que se corría entera para un lado (al flaco, uno hacia
+         * afuera; al ancho, uno encima del pecho). Ahora cada punto va con el brazo más cercano, y se corre
+         * hacia el lado de su hombro: entero en el hombro y nada en la mano, que sigue en las riendas.
+         */
+        const deBrazo = BRo && BRo.porHombro && BR && vista !== 'lado'
+          ? BR.filter((b) => !!b.atras === (p === PARTE.brazoAtras)).map((b) => b.p.map(([bx, by]) => [bx + inclina + lomo + bi + OX + 0.5, by + baja + OY])) : [];
+        const hasta = (px, py, [ax, ay], [bx2, by2]) => {
+          const dx = bx2 - ax, dy = by2 - ay, L = dx * dx + dy * dy;
+          const t = L ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L)) : 0;
+          return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+        };
+        const corre = (x, y) => {
+          if (!deBrazo.length || aLaCabeza) return sentido0 * (vista === 'lado' ? 1 : corrida(y));
+          let mejor = deBrazo[0], dm = Infinity;
+          for (const pts of deBrazo) { const d = Math.min(hasta(x, y, pts[0], pts[1]), hasta(x, y, pts[1], pts[2])); if (d < dm) { dm = d; mejor = pts; } }
+          const s = mejor[0][0] < cx + bi + reclina(0) ? -1 : 1;
+          const y0 = mejor[0][1], y1 = mejor[2][1];
+          // (El brazo de atrás, entero: la mano no se ve, y de espaldas el codo quedaba despegado del flaco.)
+          const f = p === PARTE.brazoAtras || y1 <= y0 ? 1 : Math.max(0, Math.min(1, (y1 - y) / (y1 - y0)));
+          return Math.round(s * corrida(y) * f);
+        };
         for (const k of suyos) {
-          const x = k % ANCHO, y = (k - x) / ANCHO, nx = x + sentido * (vista === 'lado' ? 1 : corrida(y));
+          const x = k % ANCHO, y = (k - x) / ANCHO, nx = x + corre(x, y);
           if (nx < 0 || nx >= ANCHO) continue;
           let c = ver[k];
           if (chaqueta && LONA.has(c) && (c === C.L || c === C.C || c === C.c)) c = LONA.get(c);   // las mangas de lona
@@ -2015,7 +2203,9 @@ export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe,
           const k = y * ANCHO + x;
           if (nuevo[k] < 0 || dn[k] !== PARTE.cuerpo) continue;
           const abierta = (vista === 'frente' || vista === 'diagF') && Math.abs(x - centro) < 1.6 + Math.max(0, ancho(r));
-          const deCostado = vista === 'lado' && x - OX >= 11 + inclina + lomo;
+          // (🐛 Montado va echado adelante, cada fila un poco más: el borde de la chaqueta también *(Santi: "en
+          // los de chaqueta en la pose de perfil se ve parte del chaleco rojo que no debería estar")*.)
+          const deCostado = vista === 'lado' && x - OX >= 11 + inclina + lomo + bi + reclina(r);
           if (abierta || deCostado) continue;
           const c = nuevo[k];
           if (c === C.E || c === C.e) { nuevo[k] = 35; continue; }
@@ -2098,6 +2288,32 @@ const guardados = new Map();
  * Devuelve los puntos finos (x, y, x, y… en el lienzo ×3), o null.
  */
 export const BORDE_BRAZO = { parecido: 45 };
+/** El borde fino de un punto (`x`, `y`), del lado que da a `-dx`, `-dy`, en tercios de punto. */
+function puntosDeBorde(puntos, x, y, dx, dy) {
+  const X = x * 3, Y = y * 3;
+  if (dx === -1) puntos.push(X + 2, Y, X + 2, Y + 1, X + 2, Y + 2);
+  if (dx === 1) puntos.push(X, Y, X, Y + 1, X, Y + 2);
+  if (dy === -1) puntos.push(X, Y + 2, X + 1, Y + 2, X + 2, Y + 2);
+  if (dy === 1) puntos.push(X, Y, X + 1, Y, X + 2, Y);
+}
+/**
+ * 🆕 EL BORDE FINO DE LA PERSONA ENCIMA DE LA SILLA *(Santi: "el borde negro de 1x1 debería también incluir
+ * las piernas")*: la silla va en el mismo dibujo, así que el borde de afuera no separaba las piernas de ella.
+ * Se traza sobre la silla, para no comerle ancho a la pierna.
+ */
+function bordeSilla(q) {
+  if (!q || !q.duenio) return null;
+  const { idx, duenio } = q, puntos = [];
+  for (let y = 0; y < ALTO; y++) for (let x = 0; x < ANCHO; x++) {
+    const k = y * ANCHO + x;
+    if (idx[k] < 0 || duenio[k] === PARTE.silla || duenio[k] === 0) continue;
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      const nx = x + dx, ny = y + dy, n = ny * ANCHO + nx;
+      if (nx >= 0 && ny >= 0 && nx < ANCHO && ny < ALTO && idx[n] >= 0 && duenio[n] === PARTE.silla) puntosDeBorde(puntos, nx, ny, dx, dy);
+    }
+  }
+  return puntos.length ? puntos : null;
+}
 const claridad = (i) => { const c = RGB[i]; return c ? 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2] : 0; };
 const ES_BRAZO = new Set([PARTE.brazo, PARTE.brazoAtras, PARTE.brazoBajoCabeza]);
 export function bordeBrazos(q) {
@@ -2128,8 +2344,138 @@ export function bordeBrazos(q) {
   return puntos.length ? puntos : null;
 }
 
+/**
+ * 🆕 EL JUGADOR MONTADO, de costado: las dos manos adelante con las riendas, quietas aunque el cuerpo
+ * suba y baje (es lo que hace un jinete). 🔁 Echado adelante de la cintura para arriba, y más cuanto más
+ * arriba, con el pecho y los hombros incluidos *(Santi: "se debería inclinar más su torso, pero también
+ * incluyendo el pecho, no solo la espalda baja")*. Devuelve también `mano`, de donde salen las riendas, en puntos de la persona.
+ */
+/**
+ * Cómo va montado en cada vista: los brazos (con `b`, cuánto baja el cuerpo en ese cuadro), cuánto se echa
+ * adelante cada fila del torso, dónde queda la cabeza y `mano`, el medio de la mano, de donde sale la rienda.
+ * 🆕 En diagonal se echa adelante la mitad que de costado: la otra mitad va hacia la cámara o hacia el fondo.
+ */
+const MONTADO = {
+  lado: {
+    lista: (b) => [
+      { p: [[13, 10], [14, 13], [16, 14 - b]] },
+      { p: [[12, 10], [13, 13], [15, 13 - b]], atras: true },
+    ],
+    recline: [3, 3, 2, 2, 2, 1, 1, 0, 0], cabezaX: 3, cabezaMapa: CABEZA_MONTADA, mano: [17, 15],
+  },
+  // De tres cuartos de frente: el brazo derecho (el de acá) cruza por delante de la panza; el izquierdo, al costado.
+  diagF: {
+    lista: (b) => [
+      { p: [[8, 10], [8, 13], [11, 14 - b]] },
+      { p: [[13, 10], [14, 12], [13, 14 - b]] },
+    ],
+    recline: [2, 2, 1, 1, 1, 1, 0, 0, 0], cabezaX: 2, mano: [13, 15],
+  },
+  // De frente: las dos manos juntas delante de la panza.
+  frente: {
+    lista: (b) => [
+      { p: [[7, 10], [7, 12], [9, 13 - b]] },
+      { p: [[12, 10], [12, 12], [11, 13 - b]] },
+    ],
+    recline: [0], cabezaX: 0, mano: [11, 14],
+  },
+  // De espaldas: los brazos van adelante, tapados por el cuerpo; asoman los codos.
+  espalda: {
+    lista: (b) => [
+      { p: [[8, 10], [7, 12], [9, 13 - b]], atras: true },
+      { p: [[12, 10], [13, 12], [11, 13 - b]], atras: true },
+    ],
+    recline: [0], cabezaX: 0, mano: [11, 13],
+  },
+  // De tres cuartos de espaldas: el derecho (el de acá) a la derecha del cuerpo; el izquierdo, casi tapado.
+  diagE: {
+    lista: (b) => [
+      { p: [[13, 10], [14, 12], [15, 13 - b]] },
+      { p: [[9, 10], [11, 12], [13, 13 - b]], atras: true },
+    ],
+    recline: [2, 2, 1, 1, 1, 1, 0, 0, 0], cabezaX: 2, mano: [15, 14],
+  },
+};
+/**
+ * 🆕 EL RIFLE EN LA FUNDA DE LA SILLA, el de los jinetes de la ley *(Santi eligió "En la funda de la silla")*:
+ * colgada del lado de acá, la culata adelante y arriba, junto a la cabeza de la silla, y la funda de cuero
+ * bajando hacia atrás por debajo de la pierna (la pierna va encima). De frente asoma la culata al costado de
+ * la rodilla; de espaldas, la punta de la funda al costado de la grupa. La culata, de madera clara (h y j); el
+ * cuero, claro para que se lea sobre la silla y el caballo: la luz arriba (J), la base (M), la sombra abajo (m)
+ * y el borde (g). 🔁 Más abajo que la silla, cruzando el caballo: encima de la manta no se distinguía.
+ */
+const COLORES_FUNDA = { ...COLORES_SILLA, h: 7, j: 6, J: 36, M: 35, m: 34, g: 33 };
+const FUNDA_RIFLE = {
+  lado: mapa(19, [
+    '.................hj',
+    '...............JMMg',
+    '.............JMMm',
+    '...........JMMm',
+    '.........JMMm',
+    '.......JMMm',
+    '.....JMMm',
+    '....gMm',
+    '....gg',
+  ]),
+  diagF: mapa(19, [
+    '...............hj',
+    '.............JMMg',
+    '............JMm',
+    '...........JMm',
+    '..........JMm',
+    '........JMm',
+    '.......JMm',
+    '......gm',
+  ]),
+  diagE: mapa(18, [
+    '.................hj',
+    '...............JMMg',
+    '..............JMm',
+    '.............JMm',
+    '...........JMm',
+    '..........JMm',
+    '........JMm',
+    '.......JMm',
+    '......gm',
+  ]),
+  frente: mapa(17, [
+    '..hj',
+    '..jj',
+    '..gM',
+    '..JM',
+    '...m',
+  ]),
+  // (🔁 De espaldas, sólo la punta, finita y pegada a la pierna: más grande parecía una bota suelta.)
+  espalda: mapa(21, [
+    '....................M',
+    '....................Mm',
+    '.....................m',
+  ]),
+};
+/**
+ * 🆕 LO DE IR MONTADO, para cualquier persona (también los jinetes de la ley, en gente.js): las piernas del
+ * cuadro, los brazos con las riendas, la silla y, si `rifle`, la funda con el rifle.
+ */
+export function montado(vista = 'lado', cuadro = null, { silla = true, rifle = false } = {}) {
+  const b = cuadro == null ? 0 : MONTA_BAJA[cuadro];
+  const M = MONTADO[vista];
+  const props = [];
+  if (silla) props.push({ m: SILLA_DE[vista], tabla: COLORES_SILLA, capa: 'fondo', piso: true, parte: PARTE.silla });
+  if (silla && rifle) props.push({ m: FUNDA_RIFLE[vista], tabla: COLORES_FUNDA, capa: 'fondo', piso: true, parte: PARTE.silla });
+  return {
+    piernas: cuadro == null ? 'MQ' : 'M' + cuadro,
+    mano: M.mano,
+    brazos: { lista: M.lista(b), props: props.length ? props : undefined, recline: M.recline, cabezaX: M.cabezaX, cabezaMapa: M.cabezaMapa, porHombro: true },
+  };
+}
+export function lienzoJinete({ vista = 'lado', cuadro, mochila, fino, mascara, silla = true }, luz = 0, destello = false) {
+  const { piernas, mano, brazos } = montado(vista, cuadro, { silla });
+  return { ...lienzoJugador({ vista, piernas, ang: 0, mochila, fino, mascara, brazos }, luz, destello), mano };
+}
+export { bordeSilla };
+
 export function lienzoJugador(o, luz = 0, destello = false) {
-  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0, o.aturdido ?? ''].join('|');
+  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0, o.aturdido ?? '', o.brazos ? (o.brazos.props ? 2 : 1) : 0].join('|');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 900) guardados.clear();
@@ -2139,8 +2485,233 @@ export function lienzoJugador(o, luz = 0, destello = false) {
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
   cv.getContext('2d').putImageData(new ImageData(datos, ANCHO, ALTO), 0, 0);
-  const borde = bordeBrazos(q);
-  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: [...(q.finos ? [{ color: sombrear(CUERVO.color, luz), puntos: q.finos }] : []), ...(borde ? [{ color: 0, puntos: borde }] : [])] };
+  const borde = [...(bordeBrazos(q) || []), ...(bordeSilla(q) || [])];
+  g = { img: cv, boca: q.boca, hombro: q.hombro, finos: [...(q.finos ? [{ color: sombrear(CUERVO.color, luz), puntos: q.finos }] : []), ...(borde.length ? [{ color: 0, puntos: borde }] : [])] };
   guardados.set(clave, g);
+  return g;
+}
+
+const lienzoDeIndices = (indices, ancho, alto, luz) => {
+  const cv = document.createElement('canvas');
+  cv.width = ancho; cv.height = alto;
+  cv.getContext('2d').putImageData(new ImageData(iluminar({ ancho, alto, indices, campo: () => luz }), ancho, alto), 0, 0);
+  return cv;
+};
+
+/** La silla sola, para el caballo que queda sin jinete (cuando saltás al tren, o bajan a uno en la huida). */
+const sillas = new Map();
+export function lienzoSilla(luz = 0, vista = 'lado') {
+  const clave = luz + '|' + vista;
+  if (sillas.has(clave)) return sillas.get(clave);
+  const idx = new Int16Array(ANCHO * ALTO).fill(-1);
+  const S = SILLA_DE[vista];
+  S.filas.forEach((f, j) => { for (let x = 0; x < f.length; x++) if (f[x] !== '.') idx[(S.y + j + OY) * ANCHO + x + OX] = COLORES_SILLA[f[x]]; });
+  const cv = lienzoDeIndices(idx, ANCHO, ALTO, luz);
+  sillas.set(clave, cv);
+  return cv;
+}
+
+/**
+ * 🆕 EL JINETE CHICO, de lejos *(Santi: "en el chico el personaje del jugador parece que cambia de forma")*:
+ * el dibujo grande, achicado a la mitad, caía distinto en la grilla en cada cuadro. Ahora tiene su propio
+ * mapa, con cada punto del tamaño de los del caballo chico y en sus mismas columnas y filas: no puede cambiar.
+ * Son dos mapas, la persona y la silla, y cada uno empieza en la fila del caballo que dice su número.
+ * 🔁 Flaco y de una pieza: 3 puntos de torso y 2 de pierna, lo que mide el grande visto de lejos, y no 5
+ * *(Santi: "muy gordo y cuadrado, sin forma")*. El sombrero, de copa baja y ala ancha, con el borde más oscuro.
+ */
+const JINETE_CHICO = mapa(-1, [
+  '............kHk',
+  '..........xKKKKKx',
+  '............pPn',
+  '............rR',
+  '...........UVC',
+  '...........UVC',
+  '..........UVvLP',
+  '..........VVv',
+  '..........WWy',
+  '...........IT',
+  '............IT',
+  '...........IT',
+  '...........QOO',
+]);
+const SILLA_CHICA = mapa(6, [
+  '.........g',
+  '.........gm',
+  '.........gmm.mg',
+  '........Xmmm..mX',
+  '........ZZZ..ZZZ',
+  '',
+  '...........aaa',
+]);
+/**
+ * 🆕 El chico en diagonal, cada uno sobre su caballo chico: al sudeste de tres cuartos de frente (la cara, el
+ * pañuelo y las manos juntas delante de la panza) y al noreste de espaldas (la nuca y la mano a la derecha).
+ */
+const JINETE_CHICO_DE = {
+  lado: JINETE_CHICO,
+  diagF: mapa(-2, [
+    '.............kHk',
+    '...........xKKKKKx',
+    '.............pPp',
+    '.............rRS',
+    '............CUVv',
+    '............CUVv',
+    '.............LPv',
+    '.............UVv',
+    '.............WWy',
+    '.............ITt',
+    '.............IT',
+    '.............IT',
+    '.............QOO',
+  ]),
+  diagE: mapa(-1, [
+    '.............kHk',
+    '...........xKKKKKx',
+    '.............qBB',
+    '.............rRR',
+    '.............UVvC',
+    '.............UVvC',
+    '............UVvLP',
+    '............VVv',
+    '............WWW',
+    '............tIT',
+    '.............IT',
+    '.............IT',
+    '.............QOO',
+  ]),
+};
+// 🆕 De frente (detrás de la cabeza del caballo, que le tapa la falda) y de espaldas: las piernas a los costados.
+JINETE_CHICO_DE.frente = mapa(-3, [
+  '..............kHk',
+  '............xKKKKKx',
+  '..............pPp',
+  '..............RSR',
+  '.............CUVvC',
+  '.............CUVvC',
+  '..............PPv',
+  '..............WWy',
+  '............IIT.TTt',
+  '...........IT.....Tt',
+  '...........IT.....Tt',
+  '...........QO.....Oo',
+]);
+JINETE_CHICO_DE.espalda = mapa(-1, [
+  '..............kHk',
+  '............xKKKKKx',
+  '..............qBq',
+  '..............rRr',
+  '.............CVVvC',
+  '.............cVVvc',
+  '..............VVv',
+  '..............WWW',
+  '.............IITTt',
+  '...........IIT...TTt',
+  '..........IT.......Tt',
+  '..........IT.......Tt',
+  '..........OO.......OO',
+]);
+const SILLA_CHICA_DE = {
+  lado: SILLA_CHICA,
+  frente: mapa(4, [
+    '.............gmmmg',
+    '............XZmmmZX',
+    '............ZZ...ZZ',
+    '',
+    '',
+    '...........aa.....aa',
+  ]),
+  espalda: mapa(7, [
+    '.............gmmmg',
+    '............XZmmmZX',
+    '............ZZZZZZZ',
+    '',
+    '',
+    '..........aa.......aa',
+  ]),
+  diagF: mapa(5, [
+    '...........g',
+    '...........gm',
+    '...........gm..mg',
+    '..........Xmm..mX',
+    '..........ZZZ..ZZ',
+    '',
+    '.............aaa',
+  ]),
+  diagE: mapa(6, [
+    '..........g',
+    '..........gm',
+    '..........gmm..mg',
+    '.........Xmmm..mX',
+    '.........ZZZZ..ZZ',
+    '',
+    '.............aaa',
+  ]),
+};
+// 🆕 La funda del rifle, chica (ver FUNDA_RIFLE), en puntos del caballo chico.
+const FUNDA_CHICA = {
+  lado: mapa(8, [
+    '...............h',
+    '.............JM',
+    '...........JM',
+    '..........gm',
+  ]),
+  diagF: mapa(8, [
+    '..............h',
+    '.............JM',
+    '...........JM',
+    '..........gm',
+  ]),
+  diagE: mapa(7, [
+    '................h',
+    '..............JM',
+    '.............JM',
+    '...........JM',
+    '..........gm',
+  ]),
+  // (🔁 De frente y de espaldas, dos puntos a la altura de la rodilla y de la bota: más arriba parecía un brazo levantado.)
+  frente: mapa(6, [
+    '..........h',
+    '..........m',
+  ]),
+  espalda: mapa(10, [
+    '.....................M',
+    '.....................m',
+  ]),
+};
+const MANO_CHICO = { lado: [14.5, 5.5], diagF: [14.5, 4.5], diagE: [16.5, 5.5], frente: [14.5, 3.5], espalda: [15, 4] };
+const CHICO = { ancho: 26, alto: 19, arriba: -3 };
+const chicos = new Map();
+/** `silla`: con la silla, y `persona`: con la persona. Devuelve también dónde tiene la mano, en puntos del caballo chico. */
+/**
+ * 🆕 `colores`: los de otra persona (un jinete de la ley), encima de los del jugador; `rifle`: con la funda.
+ */
+export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado', colores = null, rifle = false }, luz = 0, destello = false) {
+  const clave = [persona, silla, luz, destello, vista, colores ? JSON.stringify(colores) : '', rifle].join('|');
+  if (chicos.has(clave)) return chicos.get(clave);
+  const { ancho, alto, arriba } = CHICO;
+  const idx = new Int16Array(ancho * alto).fill(-1), esPersona = new Uint8Array(ancho * alto);
+  const tablaPersona = colores ? { ...COLORES_SILLA, ...colores } : COLORES_SILLA;
+  const pinta = (m, marca, tabla = COLORES_SILLA) => m.filas.forEach((f, j) => {
+    for (let x = 0; x < f.length; x++) if (f[x] !== '.') {
+      const k = (m.y + j - arriba) * ancho + x;
+      idx[k] = destello ? sombrear(tabla[f[x]], 4) : tabla[f[x]];
+      esPersona[k] = marca;
+    }
+  });
+  if (silla) pinta(SILLA_CHICA_DE[vista], 0);
+  if (silla && rifle) pinta(FUNDA_CHICA[vista], 0, COLORES_FUNDA);
+  if (persona) pinta(JINETE_CHICO_DE[vista], 1, tablaPersona);
+  // El borde fino de la persona encima de la silla, como el grande (ver bordeSilla).
+  const puntos = [];
+  for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) {
+    if (!esPersona[y * ancho + x]) continue;
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      const nx = x + dx, ny = y + dy, n = ny * ancho + nx;
+      if (nx < 0 || ny < 0 || nx >= ancho || ny >= alto || idx[n] < 0 || esPersona[n]) continue;
+      puntosDeBorde(puntos, nx, ny, dx, dy);
+    }
+  }
+  const g = { img: lienzoDeIndices(idx, ancho, alto, luz), arriba, mano: MANO_CHICO[vista], finos: puntos.length ? [{ color: 0, puntos }] : [] };
+  chicos.set(clave, g);
   return g;
 }

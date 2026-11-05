@@ -560,6 +560,16 @@ export const APROXIMACION = {
   zoomFijoDesde: 140,
 
   /**
+   * 🔁 EN EL ESTILO NUEVO, DOS TAMAÑOS Y NO UN ZOOM QUE CAMBIA DE A POCO *(Santi eligió
+   * esto al preguntar por qué se veía borroso)*. A un zoom cualquiera la grilla pierde
+   * puntos, y otros distintos en cada valor: el dibujo titila mientras se mueve. A la
+   * mitad exacta se pierden siempre los mismos. `baja` y `sube` son distintos para
+   * que no cambie de tamaño una y otra vez si andás justo en el límite; `pase`, en
+   * segundos, es lo que tarda de un tamaño al otro, para que no sea un tirón.
+   */
+  zoomEscalon: { lejos: 0.5, baja: 0.97, sube: 0.995, pase: 0.3 },
+
+  /**
    * 🔁 LO QUE TIENE QUE ENTRAR EN PANTALLA, y por eso el zoom también se abre
    * cuando estás lejos AL SUR *(Santi: "puede que avance hacia adelante y
    * quedarme bien al sur de la pantalla y el zoom se hace igual")*. Ver

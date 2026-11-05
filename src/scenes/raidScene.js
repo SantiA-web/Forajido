@@ -78,7 +78,7 @@ import { EXPLOSIVES } from '../data/explosives.js';
 import { crearGrilla, buscarLugar, guardar, sacarUltima, sacar, ocupadas, cabeEn, colocarEn } from '../engine/grilla.js';
 import { drawRider } from '../entities/rider.js';
 import {
-  updateRiders, createRiderWatch, chanceContraElTecho, damageRider, abrirJinete, punteriaPorCarril,
+  updateRiders, createRiderWatch, chanceContraElTecho, damageRider, abrirJinete, punteriaPorCarril, spawnRider,
 } from '../systems/riders.js';
 import { puedeTirarDesdeElTecho, trastabillar } from '../entities/player.js';
 import { andar } from '../entities/figura.js';
@@ -708,6 +708,9 @@ export function createRaidScene(services) {
      * data/riders.js (maxJinetesPara) y NOTAS-DISENO.md, paso B.
      */
     riderWatch = createRiderWatch({ bus, audio, max: maxJinetesPara(gameState.bounty) });
+    // 🧪 EL ATAJO [8] DE HOY: los jinetes de la ley ya galopando al lado del tren, dos de cada lado, para verlos sin
+    // esperar la alarma *(Santi: "como querés que me fije lo de los jinetes si aprieto 8 y no me lleva a ningún lado")*.
+    if (params.pruebaJinetes) for (const lado of [1, -1, 1, -1]) spawnRider(world, lado);
 
     /**
      * ENTRAR POR EL TECHO. `caballoEn` ya dejó el caballo y la salida en el

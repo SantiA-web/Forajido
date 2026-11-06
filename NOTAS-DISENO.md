@@ -18227,7 +18227,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
 | P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
 | P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | ✅ los dos trenes, con la locomotora adentro y las esquinas redondas (falta probarla jugando: ver "LA LOCOMOTORA, ADENTRO") |
-| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera, el caballo y los jinetes (el jugador y la ley) hechos, y los de la ley ya apuntan con su fogonazo; falta el resto de la E4, el fondo de la cabalgata, la huida y el jugador en el techo |
+| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera, el caballo y los jinetes (el jugador y la ley) hechos, y los de la ley ya apuntan con su fogonazo y se caen del caballo; falta el jugador apuntando montado, el fondo de la cabalgata, la huida y el jugador en el techo |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
 | P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
 | P8 · Limpieza | Borrar el dibujo viejo | Falta |
@@ -19997,6 +19997,33 @@ El segundo paso de la E4 *(Santi: "vamos con el fogonazo")*.
 - ⏳ **Sigue**: caerse del caballo y el jugador apuntando montado; pendiente, el guardia de a pie apuntando derecho
   arriba o abajo. Idea sin decidir: distinguir con el fogonazo el tiro a ciegas del apuntado.
 
+## ✅ E4 · SE CAEN DEL CABALLO (2026-11-06)
+
+El tercer paso de la E4 *(Santi: "vamos con la caída del caballo")*. Antes el caballo desaparecía y quedaba el tirado
+viejo deslizándose. Santi eligió: **para atrás**, el caballo **se abre y se va**, y el cuerpo **queda y levanta polvo**.
+
+- **La caída, 8 cuadros** (estiloNuevo/caida.js, 0,6 s): el golpe (suelta las riendas, los brazos arriba, se le levanta
+  el sombrero), se va para atrás desde la cintura, acostado sobre el anca con las piernas arriba, se resbala por la
+  grupa, cae de cabeza detrás del caballo estirando el brazo, llega con la mano, pega de espaldas y bajan las piernas.
+  Dibujados a mano por partes (sombrero, cabeza, torso, brazos, piernas), cada parte en su lugar en cada cuadro; nada
+  se gira con código. Arranca donde iba sentado (el mismo lienzo que el montado, corrido). El sombrero vuela aparte y
+  cae al lado de la cabeza. 🔁 Las piernas se engrosaron a tres puntos: de dos parecían palitos.
+- **El tirado de costado** *(Santi: "dibujale el tirado al costado y hacé uno con chaqueta para los que tienen
+  chaqueta")*: sigue al último cuadro (de espaldas, una rodilla apenas levantada, el brazo sobre el costado, el
+  sombrero en el suelo). Antes quedaba el tirado de adentro del tren, visto desde arriba, y se notaba el salto. Con
+  chaqueta: el costado de lona en sombra, el chaleco con la estrella asomando arriba y el brazo claro encima (🔁 toda
+  del mismo tono parecía una bolsa). En los cuadros de la caída, el de chaqueta lleva las mangas de lona.
+- **En el aire sigue a la par** (iba a la velocidad del tren); **al pegar en la tierra se frena** contra el suelo, que
+  corre a la velocidad del tren, y se va quedando atrás (`caerDelCaballo` en systems/riders.js).
+- **El polvo**: una nube al pegar y otras mientras se arrastra; se quedan en el suelo. 4 cuadros dibujados en la
+  grilla; de día tierra clara, de noche más apagada. 🔁 Más grande: de 3 puntos parecía una crucecita.
+- **El caballo**, con la silla vacía y los estribos sueltos, sigue galopando y enseguida se abre en diagonal (el de tu
+  lado hacia la cámara, el del otro hacia el fondo) y sale de la pantalla.
+- Revisado en el galope de los dos lados (el del otro lado cae detrás del tren, que lo tapa) y desde el techo, de
+  noche. ⚠️ **Sin probar**: el galope de noche, y los cuerpos gordito y flaco (la caída es la misma para todos los
+  cuerpos: sólo cambian los colores).
+- ⏳ **Sigue**: el jugador apuntando montado; pendiente, el guardia de a pie apuntando derecho arriba o abajo.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,
@@ -20017,7 +20044,7 @@ y quedó como manchas.
 | **E1 · La base** | Los huesos que faltaban (raíz, torso, cabeza) y la ropa pegada a cada uno; el jugador de costado ya se dibuja así | ✅ hecha |
 | E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, la caída al enganche, el sprint; piernas más finas | ✅ hecha y jugada |
 | E3 · Mirar con el mouse arriba | Te movés con las teclas y el cuerpo, el brazo y la cabeza miran a la mira; esqueleto de tres cuartos de frente y de espaldas | ✅ hecha, **sin jugar** |
-| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | En curso: los de la ley sacan el rifle y apuntan dados vuelta en la silla, con la cabeza en la culata, y el fogonazo sale de la boca del caño dibujado (también desde el techo); falta la caída, el jugador apuntando montado y el guardia de a pie apuntando derecho arriba o abajo |
+| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | En curso: los de la ley sacan el rifle y apuntan dados vuelta en la silla, con la cabeza en la culata, y el fogonazo sale de la boca del caño dibujado (también desde el techo), y se caen del caballo para atrás y quedan en la tierra levantando polvo; falta el jugador apuntando montado y el guardia de a pie apuntando derecho arriba o abajo |
 
 ### ✅ E1 · La base (`ladoConHuesos` y `huesosDeLado`, entities/gente/costado.js)
 

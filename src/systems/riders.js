@@ -23,6 +23,7 @@
 import { CONFIG } from '../data/config.js';
 import { RIDERS, RIDER_SPAWN, RIDER_SEPARACION_MINIMA } from '../data/riders.js';
 import { createRider } from '../entities/rider.js';
+import { CAIDA_PEGA } from '../entities/estiloNuevo/caida.js';
 import { distance, hasLineOfSight } from '../engine/collision.js';
 import { isHidden, damagePlayer } from '../entities/player.js';
 import { danioDeBala } from './golpe.js';
@@ -272,15 +273,60 @@ function sacarElRifle(rd, dt) {
   rd.empuna = meta > e ? Math.min(1, e + dt / RIFLE.sube) : Math.max(0, e - dt / RIFLE.baja);
 }
 
+/**
+ * 🆕 E4 · SE CAE DEL CABALLO *(Santi: "vamos con la caída del caballo"; eligió "Para atrás", "Se abre y se va" y
+ * "Queda y levanta polvo")*. Antes el caballo seguía de largo con el cuerpo encima. Ahora:
+ *  - el jinete se va para atrás por el anca y cae de espaldas (los 8 cuadros de estiloNuevo/caida.js, en
+ *    `CAIDA_DURA`); en el aire sigue a la par, porque iba a la velocidad del tren;
+ *  - al pegar en la tierra (`CAIDA_PEGA`) se arrastra y se va frenando contra el suelo, que corre a la velocidad del
+ *    tren para atrás: `cuerpoDx` va de 0 a esa velocidad en `CAE.frena` segundos. Levanta polvo al pegar y
+ *    mientras se arrastra, y el polvo se queda en el suelo;
+ *  - el caballo, sin peso, se abre del tren hacia afuera (`caballoY`) y se adelanta un poco, y sale de la pantalla.
+ * El cuerpo es `cuerpoX + cuerpoDx`; `x` sigue siendo el caballo.
+ */
+const CAE = { abreDesde: 0.3, abre: 55, adelanta: 45, frena: 0.4, polvoPega: 5, polvoCada: 0.05, polvoVida: 0.4, dura: 3.5 };
+function caerDelCaballo(rd, dt) {
+  const antes = rd.muerto || 0;
+  const t = antes + dt;
+  rd.muerto = t;
+  rd.gallop += dt;
+  if (rd.cuerpoX == null) { rd.cuerpoX = rd.x; rd.cuerpoDx = 0; rd.caballoY = 0; rd.polvo = []; rd.polvoReloj = 0; }
+  const suelo = CONFIG.parallax.suelo * CONFIG.parallax.velocidad;
+  // El caballo se abre de a poco, no de golpe.
+  if (t > CAE.abreDesde) {
+    const k = Math.min(1, (t - CAE.abreDesde) / 0.3);
+    rd.caballoY += rd.side * CAE.abre * k * dt;
+    rd.x += CAE.adelanta * k * dt;
+  }
+  // El cuerpo, desde que pega: se frena contra el suelo.
+  let arrastre = 0;
+  if (t > CAIDA_PEGA) {
+    const s = t - CAIDA_PEGA;
+    rd.cuerpoDx = -suelo * (s - CAE.frena * (1 - Math.exp(-s / CAE.frena)));
+    arrastre = Math.exp(-s / CAE.frena);
+  }
+  // El polvo: se queda en el suelo (corre con él) y sube un poco.
+  for (const q of rd.polvo) { q.t += dt; q.x -= suelo * dt; q.y -= 5 * dt; }
+  rd.polvo = rd.polvo.filter((q) => q.t < CAE.polvoVida);
+  const cuerpo = rd.cuerpoX + rd.cuerpoDx;
+  if (antes < CAIDA_PEGA && t >= CAIDA_PEGA) {
+    for (let i = 0; i < CAE.polvoPega; i++) rd.polvo.push({ x: cuerpo - 16 + i * 4 + Math.random() * 3, y: rd.y + 5 + Math.random() * 2, t: Math.random() * 0.08 });
+  } else if (t > CAIDA_PEGA && arrastre > 0.2) {
+    rd.polvoReloj -= dt;
+    if (rd.polvoReloj <= 0) {
+      rd.polvoReloj = CAE.polvoCada;
+      rd.polvo.push({ x: cuerpo - 10 + Math.random() * 14, y: rd.y + 5 + Math.random() * 2, t: 0 });
+    }
+  }
+}
+
 export function updateRiders(riders, dt, world) {
   // 🐎 Arriba, entre el aviso de un jinete y el del siguiente pasa un rato:
   // que no tiren todos juntos (`carriles.entreAvisos`).
   world.esperaAviso = Math.max(0, (world.esperaAviso || 0) - dt);
   for (const rd of riders) {
     if (!rd.alive) {
-      // El caballo sigue de largo con el cuerpo encima y sale de escena.
-      rd.muerto = (rd.muerto || 0) + dt;
-      rd.x += 120 * dt;
+      caerDelCaballo(rd, dt);
       rd.hitFlash = Math.max(0, rd.hitFlash - dt);
       continue;
     }
@@ -309,7 +355,7 @@ export function updateRiders(riders, dt, world) {
   separarJinetes(riders);
 
   for (let i = riders.length - 1; i >= 0; i--) {
-    if (!riders[i].alive && riders[i].muerto > 2.5) riders.splice(i, 1);
+    if (!riders[i].alive && riders[i].muerto > CAE.dura) riders.splice(i, 1);
   }
 }
 

@@ -11,8 +11,11 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarTendido } from './figura.js';
-import { dibujarAnimal, dibujarJinete } from './caballo.js';
+import { dibujarTendido, caidaNueva, polvoNuevo } from './figura.js';
+import { dibujarAnimal, dibujarJinete, dibujarSilla, asientoNuevo } from './caballo.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { gameState } from '../state/gameState.js';
+import { CAIDA_DURA } from './estiloNuevo/caida.js';
 import { dibujarFogonazo } from './bullet.js';
 import { RIDERS } from '../data/riders.js';
 
@@ -48,7 +51,10 @@ export function createRider(x, y, side, typeId = 'ley') {
 
 export function drawRider(r, rd) {
   if (!rd.alive) {
-    dibujarTendido(r, rd.x, rd.y + 4, { tipo: "jineteLey", cinta: "#4a78b8" });
+    // (La sombra del jinete en la pared, `r.plano`, no la tiene el que se cayó.)
+    if (r.plano) return;
+    if (estiloNuevo.activo && r.ctx) { dibujarCaida(r, rd); return; }
+    dibujarTendido(r, (rd.cuerpoX ?? rd.x) + (rd.cuerpoDx || 0), rd.y + 4, { tipo: "jineteLey", cinta: "#4a78b8" });
     return;
   }
 
@@ -85,6 +91,10 @@ export function drawRider(r, rd) {
   }, montura);
   montura.adelante();
 
+  // (🆕 E4: dónde iba sentado, por si se cae: la caída arranca en la silla. Ver `dibujarCaida`.)
+  const asiento = asientoNuevo(montura);
+  if (asiento) rd._asiento = { dx: asiento.x - rd.x, dy: asiento.y - rd.y };
+
   /**
    * 🆕 E4 · EL FOGONAZO, DE LA BOCA DEL CAÑO DIBUJADO *(Santi: "vamos con el fogonazo")*: el dibujo anota dónde quedó
    * (`_boca`, como los guardias de a pie con `_p3Boca`), la bala sale de ahí (`disparar` en systems/riders.js) y el
@@ -100,4 +110,33 @@ export function drawRider(r, rd) {
    * (más corta y de otro color en el fuego de contención). Ahora el aviso es verlo sacar el rifle, darse vuelta en
    * la silla y apoyar la cabeza en la culata (`sacarElRifle` en systems/riders.js), que dura lo mismo.
    */
+}
+
+/**
+ * 🆕 E4 · EL QUE SE CAE DEL CABALLO (el movimiento, en `caerDelCaballo` de systems/riders.js; los cuadros, en
+ * entities/estiloNuevo/caida.js). Primero el caballo, que sigue galopando con la silla vacía y, a partir de
+ * `CAE.abreDesde`, se abre del tren (de tu lado, en diagonal hacia la cámara; del otro, hacia el fondo). Después el
+ * jinete, que arranca donde iba sentado y cae para atrás, y al terminar queda el tirado de siempre. El polvo, encima.
+ */
+function dibujarCaida(r, rd) {
+  const t = rd.muerto || 0;
+  const T = 0.56;
+  const zancada = { t: ((rd.gallop % T) + T) % T, T };
+  const trote = Math.round(Math.cos((zancada.t / T - 0.15) * Math.PI * 2) * 1.2);
+  const pose = t > 0.3 ? rd.side * 2 : 0;
+  const yCaballo = rd.y + (rd.caballoY || 0);
+  r.ctx.globalAlpha = 0.25;
+  r.box(rd.x, yCaballo + 7, 11, 2, '#000');
+  r.ctx.globalAlpha = 1;
+  const montura = dibujarAnimal(r, rd.x, yCaballo, zancada, trote, 1, pose);
+  dibujarSilla(r, montura);
+  if (montura.adelante) montura.adelante();
+
+  const a = rd._asiento || { dx: -2, dy: -13 };
+  const x = (rd.cuerpoX ?? rd.x) + (rd.cuerpoDx || 0) + a.dx, y = rd.y + a.dy;
+  const aspecto = rd._aspecto || {};
+  // (Al terminar, el tirado de costado: el "cuadro" 8, ver TIRADO en estiloNuevo/caida.js.)
+  caidaNueva(r, { x, y, k: t < CAIDA_DURA ? Math.min(7, Math.floor(t / CAIDA_DURA * 8)) : 8, aspecto });
+  const noche = !gameState.esDeDia;
+  for (const q of rd.polvo || []) polvoNuevo(r, q.x, q.y, Math.floor(q.t / 0.1), noche);
 }

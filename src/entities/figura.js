@@ -35,6 +35,7 @@ import { PALETA } from '../engine/paleta.js';
 import { lienzoJugador, lienzoJinete, lienzoJineteChico, lienzoSilla, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
 import { lienzoGente, lienzoTendido, PIES_TENDIDO, ANCHO_TENDIDO, ALTO_TENDIDO, lienzoJineteGente, coloresDe } from './estiloNuevo/gente.js';
 import { C as COLORES_JUGADOR } from './estiloNuevo/jugador.js';
+import { lienzoCaida, ANCHO_CAIDA, ALTO_CAIDA, OX_CAIDA, POLVO, COLOR_POLVO } from './estiloNuevo/caida.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
 export { ROPA_DE_LOOK, ROPA_DE_JEFE } from './gente/dibujo.js';
@@ -615,6 +616,42 @@ export function sillaNueva(r, { x, y, luz, vista = 'lado' }) {
   const ix = x - (PIES_NUEVO[0] - 10) * PASO, iy = y - (PIES_NUEVO[1] - 27) * PASO;
   r.ctx.drawImage(img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
   estiloNuevo.marcarGente(r.ctx, img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
+}
+
+/**
+ * 🆕 E4 · El cuadro `k` del jinete de la ley que se cae del caballo (estiloNuevo/caida.js). `x`, `y`: dónde cae
+ * la columna 0 y la fila 0 de sus mapas, en el mundo (la columna -16 y la fila 4 del jinete montado).
+ */
+export function caidaNueva(r, { x, y, k, aspecto, luz = 0 }) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
+  const img = lienzoCaida(aspecto, k, luz, fino);
+  const o = origenDeCaida(x, y);
+  const ix = o.x - OX_CAIDA * PASO, iy = o.y;
+  r.ctx.drawImage(img, ix, iy, ANCHO_CAIDA * PASO, ALTO_CAIDA * PASO);
+  if (fino) estiloNuevo.marcarGente(r.ctx, img, ix, iy, ANCHO_CAIDA * PASO, ALTO_CAIDA * PASO);
+}
+
+/**
+ * 🆕 E4 · Dónde caen la columna 0 y la fila 0 de los mapas de la caída, con el jinete sentado en `x`, `y` (lo
+ * mismo que recibe `jineteNuevo`): la columna -16 y la fila 4 del montado. `punto(col, fila)`: uno de sus puntos.
+ */
+export function origenDeCaida(x, y) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const ox = Math.round((x - (PIES_NUEVO[0] - 10 + 16) * PASO) / PASO) * PASO;
+  const oy = Math.round((y - (PIES_NUEVO[1] - 27 - 4) * PASO) / PASO) * PASO;
+  return { x: ox, y: oy, punto: (c, f) => ({ x: ox + c * PASO, y: oy + f * PASO }) };
+}
+
+/** 🆕 E4 · Una nube de polvo (estiloNuevo/caida.js), cuadro `k` de 4, centrada en `x`, `y`, punto por punto. */
+export function polvoNuevo(r, x, y, k, noche = false) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const m = POLVO[Math.max(0, Math.min(POLVO.length - 1, k))];
+  const col = COLOR_POLVO[noche ? 'noche' : 'dia'];
+  const x0 = Math.round(x / PASO - m[0].length / 2) * PASO, y0 = Math.round(y / PASO - m.length / 2) * PASO;
+  m.forEach((fila, j) => {
+    for (let i = 0; i < fila.length; i++) if (col[fila[i]] != null) r.rect(x0 + i * PASO, y0 + j * PASO, PASO, PASO, PALETA[col[fila[i]]]);
+  });
 }
 
 /** El jinete chico (de lejos): `x` e `y` son la esquina del caballo chico. Devuelve la mano, en sus puntos. */

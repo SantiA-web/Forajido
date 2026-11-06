@@ -493,6 +493,13 @@ const JINETE_EN = {
   // 🔁 Y la grupa, que está más cerca, encima de las piernas: asoman las botas a los costados *(Santi)*.
   norte: { vista: 'espalda', col: 20, fila: -1, tapa: [0, 17, 52, 46], tapaChico: [0, 10, 26, 23] },
 };
+/** 🆕 E4 · Dónde se sienta el jinete nuevo en esta montura (lo que recibe `jineteNuevo`), o null si no hay. */
+export function asientoNuevo(montura) {
+  const J = JINETE_EN[montura.nombre];
+  if (!J || !montura.origen || montura.chico) return null;
+  const P = CONFIG.estilo.punto / 4;
+  return { x: montura.origen.x + J.col * P, y: montura.origen.y + J.fila * P };
+}
 /** Si esa dirección ya tiene el jinete nuevo. */
 const hayJineteNuevo = (montura) => !!JINETE_EN[montura.nombre];
 

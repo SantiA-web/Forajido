@@ -13,6 +13,7 @@
 import { CONFIG } from '../data/config.js';
 import { dibujarTendido } from './figura.js';
 import { dibujarAnimal, dibujarJinete } from './caballo.js';
+import { dibujarFogonazo } from './bullet.js';
 import { RIDERS } from '../data/riders.js';
 
 export function createRider(x, y, side, typeId = 'ley') {
@@ -72,7 +73,7 @@ export function drawRider(r, rd) {
   const montura = dibujarAnimal(r, rd.x, rd.y, zancada, trote, 1, 0);
   // El jinete amortigua el rebote del lomo, igual que el jugador en el galope.
   const rebote = Math.cos((zancada.t / T - 0.25) * Math.PI * 2) * 1.2 * 0.5;
-  dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, 0, 2, {
+  const fig = dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, 0, 2, {
     detalles: 'ley',
     ent: rd,
     // 🆕 E4: cuánto tiene el rifle afuera y hacia dónde apunta (ver sacarElRifle en systems/riders.js).
@@ -83,6 +84,16 @@ export function drawRider(r, rd) {
     estado: rd.aimTimer > 0 ? 'alerta' : 'calma',
   }, montura);
   montura.adelante();
+
+  /**
+   * 🆕 E4 · EL FOGONAZO, DE LA BOCA DEL CAÑO DIBUJADO *(Santi: "vamos con el fogonazo")*: el dibujo anota dónde quedó
+   * (`_boca`, como los guardias de a pie con `_p3Boca`), la bala sale de ahí (`disparar` en systems/riders.js) y el
+   * fogonazo es el mismo del jugador y los guardias (`dibujarFogonazo`), hacia donde apuntó, mientras dure `rd.fogonazo`.
+   */
+  // (La sombra del jinete en la pared, `r.plano` en raidScene.js, no anota la boca ni tiene fogonazo.)
+  const boca = !r.plano && fig && fig.boca;
+  if (boca) rd._boca = { dx: boca.x - rd.x, dy: boca.y - rd.y, t: performance.now() };
+  if (boca && rd.fogonazo > 0) dibujarFogonazo(r, boca.x, boca.y, rd.aimDir || 0, rd.fogonazo / CONFIG.feel.muzzleTime, boca.hacia);
 
   /**
    * 🔁 E4 · EL AVISO YA NO ES UNA RAYA *(Santi: "sacala")*: antes salía una raya del pecho del jinete hacia el tren

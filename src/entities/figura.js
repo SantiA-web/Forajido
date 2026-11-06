@@ -584,7 +584,9 @@ export function jineteNuevo(r, { x, y, cuadro, luz, destello, silla = true, vist
   r.ctx.drawImage(L.img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
   if (fino) estiloNuevo.marcarGente(r.ctx, L.img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
   pintarBordes(r.ctx, L.finos, ix, iy, PASO);
-  return { mano: L.mano, top: y, arriba: y, manoY: y + L.mano[1] * PASO, pechoY: y + 11 * PASO, x: x + 10 * PASO, vista, espejo: false };
+  // 🆕 E4: la boca del caño dibujado, en el mundo (sólo apuntando): de ahí salen el fogonazo y la bala.
+  const boca = L.boca ? { x: ix + (L.boca[0] + 0.5) * PASO, y: iy + (L.boca[1] + 0.5) * PASO, hacia: L.hacia || null } : null;
+  return { mano: L.mano, top: y, arriba: y, manoY: y + L.mano[1] * PASO, pechoY: y + 11 * PASO, x: x + 10 * PASO, vista, espejo: false, boca };
 }
 
 /**

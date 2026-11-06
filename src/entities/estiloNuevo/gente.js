@@ -2395,7 +2395,8 @@ export function lienzoJineteGente({ aspecto = {}, tipo = 'guardia', vista = 'lad
   const finos = (q.finos || []).map((f) => ({ color: f.fijo ? f.color : sombrear(f.color, luz), puntos: f.puntos }));
   const borde = bordeSilla(q);
   if (borde) finos.push({ color: 0, puntos: borde });
-  g = { img: cv, mano, finos, boca: q.boca || null };
+  // (`hacia`: si te apunta de frente o de espaldas, el fogonazo es otro dibujo; ver dibujarFogonazo en entities/bullet.js.)
+  g = { img: cv, mano, finos, boca: q.boca || null, hacia: girado };
   jinetes.set(clave, g);
   return g;
 }

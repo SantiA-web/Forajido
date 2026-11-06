@@ -6101,8 +6101,14 @@ export function createRaidScene(services) {
     return { x1: rd.x - 5 * e, x2: rd.x + 5 * e, y1: cascos - 32 * e, y2: cascos - 16 * e };
   }
 
-  /** La punta de su arma cuando apunta (el fogonazo sale de ahí). */
+  /**
+   * La punta de su arma cuando apunta (el fogonazo sale de ahí).
+   * 🔁 E4 *(Santi: "pasalo a la vista del techo")*: de la boca del caño dibujado, como en el galope; la anota
+   * `dibujarJineteDeCostado`, ya achicada si va lejos. Sin dibujo reciente, el punto de antes (adivinado).
+   */
   function armaDeJinete(rd, base) {
+    const b = rd._bocaCostado;
+    if (b && performance.now() - b.t < 500) return { x: b.x, y: b.y };
     const { y, escala: e } = jineteDeCostado(rd, base);
     return { x: rd.x + 4 * e, y: y + 7 - 32 * e };
   }
@@ -6143,7 +6149,11 @@ export function createRaidScene(services) {
         : `saturate(${0.7 - 0.1 * t}) contrast(${0.8 - 0.08 * t}) brightness(${0.92 - 0.04 * t})`;
     }
     // `side: 1`: de costado, el gesto de apuntar va siempre hacia arriba, hacia vos.
-    drawRider(r, { ...rd, y, side: 1 });
+    const copia = { ...rd, y, side: 1 };
+    drawRider(r, copia);
+    // 🆕 E4: dónde quedó la boca del caño, en el mundo (con lo que se achica de lejos): de ahí el fogonazo.
+    const b = copia._boca;
+    if (b && b !== rd._boca) rd._bocaCostado = { x: rd.x + b.dx * escala, y: cascos + (y + b.dy - cascos) * escala, t: b.t };
     r.ctx.filter = 'none';
     r.ctx.restore();
   }

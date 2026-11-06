@@ -1,6 +1,8 @@
 /** Una bala. Un punto que viaja y desaparece. */
 
 import { CONFIG } from '../data/config.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { PALETA } from '../engine/paleta.js';
 
 export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon, tirador, alTecho, altoSalida, porEncima }) {
   return {
@@ -117,9 +119,10 @@ export function drawBullet(r, b) {
  * Lo usan el jugador y los guardias: el fogonazo es del ARMA, no de quién la
  * tiene, y si cada uno tuviera el suyo habría que aprender dos.
  */
-export function dibujarFogonazo(r, x, y, angulo, fuerza = 1) {
+export function dibujarFogonazo(r, x, y, angulo, fuerza = 1, hacia = null) {
   const f = Math.max(0, Math.min(1, fuerza));
   if (f <= 0) return;
+  if (estiloNuevo.activo) return fogonazoEnLaGrilla(r, x, y, angulo, f, hacia);
   const largo = (5 + f * 5) * PUNTO;
   for (const [da, esc] of [[0, 1], [-0.55, 0.62], [0.55, 0.62]]) {
     const a = angulo + da;
@@ -128,4 +131,166 @@ export function dibujarFogonazo(r, x, y, angulo, fuerza = 1) {
   }
   r.box(x, y, 2 * PUNTO, 2 * PUNTO, '#ffe9a8');
   r.box(x, y, PUNTO, PUNTO, '#fffbe8');
+}
+
+/**
+ * 🆕 E4 · EL FOGONAZO EN LA GRILLA NUEVA *(Santi: "vamos con el fogonazo")*. El de arriba es de rayas de un cuarto
+ * de punto: la grilla de 3×3 se queda con un píxel de cada nueve y se lo comía casi entero (al jinete no se le veía
+ * nada, y al jugador apenas). Éste se dibuja directo en puntos de la grilla.
+ *
+ * Es la misma forma de siempre —una lengua larga por el caño y dos abiertas, con el blanco en la boca—, dibujada en
+ * cada una de las 8 direcciones, y en dos cuadros: el tiro (`fuerte`) y lo que queda el cuadro siguiente (`debil`).
+ * El punto de la boca es `ancla` (columna, fila): el dibujo arranca un punto más allá del caño.
+ *   W blanco · a amarillo claro · y amarillo · n naranja
+ */
+const COLOR_FOGONAZO = { W: 30, a: 29, y: 28, n: 45 };
+const FOGONAZO = {
+  E: {
+    fuerte: { ancla: [0, 2], mapa: [
+      '..n....',
+      '.y..n..',
+      'WWaayyn',
+      '.y..n..',
+      '..n....'] },
+    debil: { ancla: [0, 1], mapa: [
+      '.n..',
+      'Wayn',
+      '.n..'] },
+  },
+  SE: {
+    fuerte: { ancla: [0, 0], mapa: [
+      'WWyn.',
+      'Wa...',
+      'y.an.',
+      'n.ny.',
+      '....n'] },
+    debil: { ancla: [0, 0], mapa: [
+      'Wn.',
+      'na.',
+      '..n'] },
+  },
+  S: {
+    fuerte: { ancla: [2, 0], mapa: [
+      '..W..',
+      '.yWy.',
+      'n.a.n',
+      '..a..',
+      '.nyn.',
+      '..y..',
+      '..n..'] },
+    debil: { ancla: [1, 0], mapa: [
+      '.W.',
+      'nan',
+      '.y.',
+      '.n.'] },
+  },
+  SO: {
+    fuerte: { ancla: [4, 0], mapa: [
+      '.nyWW',
+      '...aW',
+      '.na.y',
+      '.yn.n',
+      'n....'] },
+    debil: { ancla: [2, 0], mapa: [
+      '.nW',
+      '.an',
+      'n..'] },
+  },
+  O: {
+    fuerte: { ancla: [6, 2], mapa: [
+      '....n..',
+      '..n..y.',
+      'nyyaaWW',
+      '..n..y.',
+      '....n..'] },
+    debil: { ancla: [3, 1], mapa: [
+      '..n.',
+      'nyaW',
+      '..n.'] },
+  },
+  NO: {
+    fuerte: { ancla: [4, 4], mapa: [
+      'n....',
+      '.yn.n',
+      '.na.y',
+      '...aW',
+      '.nyWW'] },
+    debil: { ancla: [2, 2], mapa: [
+      'n..',
+      '.an',
+      '.nW'] },
+  },
+  N: {
+    fuerte: { ancla: [2, 6], mapa: [
+      '..n..',
+      '..y..',
+      '.nyn.',
+      '..a..',
+      'n.a.n',
+      '.yWy.',
+      '..W..'] },
+    debil: { ancla: [1, 3], mapa: [
+      '.n.',
+      '.y.',
+      'nan',
+      '.W.'] },
+  },
+  /**
+   * Y cuando el caño apunta a la cámara o para el otro lado (el jinete dado vuelta en la silla, ver GIRO_ARMAS en
+   * estiloNuevo/gente.js), la lengua no se ve de largo: de frente es una estrella alrededor de la boca, y de espaldas
+   * apenas el resplandor que asoma detrás. Las dos van sobre la boca misma, no un punto más allá.
+   */
+  frente: {
+    fuerte: { ancla: [3, 3], mapa: [
+      'n..y..n',
+      '.n.a.n.',
+      '..aWa..',
+      'yaWWWay',
+      '..aWa..',
+      '.n.a.n.',
+      'n..y..n'] },
+    debil: { ancla: [1, 1], mapa: [
+      '.n.',
+      'nWn',
+      '.n.'] },
+  },
+  espalda: {
+    fuerte: { ancla: [2, 2], mapa: [
+      'n.y.n',
+      '.aWa.',
+      '..W..'] },
+    debil: { ancla: [1, 1], mapa: [
+      '.a.',
+      'nWn'] },
+  },
+  NE: {
+    fuerte: { ancla: [0, 4], mapa: [
+      '....n',
+      'n.ny.',
+      'y.an.',
+      'Wa...',
+      'WWyn.'] },
+    debil: { ancla: [0, 2], mapa: [
+      '..n',
+      'na.',
+      'Wn.'] },
+  },
+};
+// Hacia dónde, de a octavos de vuelta (el ángulo crece hacia abajo, como en el mundo), y un punto más allá del caño.
+const OCTAVOS = [['E', 1, 0], ['SE', 1, 1], ['S', 0, 1], ['SO', -1, 1], ['O', -1, 0], ['NO', -1, -1], ['N', 0, -1], ['NE', 1, -1]];
+
+function fogonazoEnLaGrilla(r, x, y, angulo, f, hacia) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const o = ((Math.round(angulo / (Math.PI / 4)) % 8) + 8) % 8;
+  const [dir, dx, dy] = hacia ? [hacia, 0, 0] : OCTAVOS[o];
+  const { ancla, mapa } = FOGONAZO[dir][f > 0.5 ? 'fuerte' : 'debil'];
+  // La boca es el centro de un punto del dibujo: su esquina, y desde ahí punto por punto.
+  const x0 = x - PASO / 2 + (dx - ancla[0]) * PASO;
+  const y0 = y - PASO / 2 + (dy - ancla[1]) * PASO;
+  for (let fila = 0; fila < mapa.length; fila++) {
+    for (let col = 0; col < mapa[fila].length; col++) {
+      const c = COLOR_FOGONAZO[mapa[fila][col]];
+      if (c != null) r.rect(x0 + col * PASO, y0 + fila * PASO, PASO, PASO, PALETA[c]);
+    }
+  }
 }

@@ -18227,7 +18227,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
 | P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
 | P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | ✅ los dos trenes, con la locomotora adentro y las esquinas redondas (falta probarla jugando: ver "LA LOCOMOTORA, ADENTRO") |
-| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera, el caballo y los jinetes (el jugador y la ley) hechos, y los de la ley ya apuntan; falta el resto de la E4, el fondo de la cabalgata, la huida y el jugador en el techo |
+| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera, el caballo y los jinetes (el jugador y la ley) hechos, y los de la ley ya apuntan con su fogonazo; falta el resto de la E4, el fondo de la cabalgata, la huida y el jugador en el techo |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
 | P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
 | P8 · Limpieza | Borrar el dibujo viejo | Falta |
@@ -19975,6 +19975,28 @@ El primero de los cuatro pasos de la E4 (apuntar, el fogonazo, caerse del caball
   - en la huida los de la ley apuntan con el dibujo viejo.
 - ⚠️ **Sin probar**: la pose de frente adentro del asalto (los del otro lado los tapa el tren), la noche.
 
+## ✅ E4 · EL FOGONAZO DE LOS JINETES (2026-11-06)
+
+El segundo paso de la E4 *(Santi: "vamos con el fogonazo")*.
+
+- **Sale de la boca del caño dibujado**: el dibujo del jinete anota dónde quedó la boca (`_boca`, igual que los
+  guardias de a pie con `_p3Boca`), y de ahí salen el fogonazo y la bala. La bala se ve salir a la altura de la boca y
+  bajar hasta la del pecho al llegar. *(Santi preguntó si al pasarle el dibujo nuevo al guardia de a pie habría que
+  configurar de vuelta el fogonazo: no, cada pose nueva sólo necesita su punto de boca.)*
+- 🐛 **El fogonazo viejo no se veía**: era de rayitas de un cuarto de punto y la grilla de 3×3 se las comía casi enteras.
+  Ahora hay uno dibujado en la grilla (`FOGONAZO` en entities/bullet.js): una lengua larga y dos abiertas, con el blanco
+  en la boca, a mano en las 8 direcciones y en dos cuadros (el tiro y el que queda). Lo usa también el jugador.
+- **De frente y de espaldas**, para los jinetes dados vuelta en la silla: el que te apunta de frente larga una estrella
+  alrededor de la boca, sobre el pecho (la lengua larga le bajaba por el cuerpo y parecía una raya); el de espaldas,
+  apenas el resplandor junto al sombrero.
+- **En la vista del techo** *(Santi: "pasalo a la vista del techo")*: el fogonazo de galería sale de la misma boca
+  dibujada, ya achicada en los de lejos, y no de un punto adivinado. El dibujo de ese fogonazo (la estrella con humo)
+  no cambió.
+- ⚠️ **Sin probar**: el fogonazo nuevo del jugador en todas las direcciones (visto de costado, sale de la boca); el
+  galope de noche (no logré que el asalto de prueba fuera de noche; desde el techo sí se vio de noche).
+- ⏳ **Sigue**: caerse del caballo y el jugador apuntando montado; pendiente, el guardia de a pie apuntando derecho
+  arriba o abajo. Idea sin decidir: distinguir con el fogonazo el tiro a ciegas del apuntado.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,
@@ -19995,7 +20017,7 @@ y quedó como manchas.
 | **E1 · La base** | Los huesos que faltaban (raíz, torso, cabeza) y la ropa pegada a cada uno; el jugador de costado ya se dibuja así | ✅ hecha |
 | E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, la caída al enganche, el sprint; piernas más finas | ✅ hecha y jugada |
 | E3 · Mirar con el mouse arriba | Te movés con las teclas y el cuerpo, el brazo y la cabeza miran a la mira; esqueleto de tres cuartos de frente y de espaldas | ✅ hecha, **sin jugar** |
-| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | En curso: los de la ley sacan el rifle y apuntan dados vuelta en la silla, con la cabeza en la culata; falta el fogonazo, la caída, el jugador apuntando montado y el guardia de a pie apuntando derecho arriba o abajo |
+| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | En curso: los de la ley sacan el rifle y apuntan dados vuelta en la silla, con la cabeza en la culata, y el fogonazo sale de la boca del caño dibujado (también desde el techo); falta la caída, el jugador apuntando montado y el guardia de a pie apuntando derecho arriba o abajo |
 
 ### ✅ E1 · La base (`ladoConHuesos` y `huesosDeLado`, entities/gente/costado.js)
 

@@ -263,6 +263,7 @@ function equilibrarCarriles(riders) {
  */
 const RIFLE = { sube: 0.25, queda: 0.35, baja: 0.3 };
 function sacarElRifle(rd, dt) {
+  rd.fogonazo = Math.max(0, (rd.fogonazo || 0) - dt);
   const apunta = rd.aimTimer > 0 || rd.entraATirar;
   if (apunta) rd.bajaRifle = RIFLE.queda;
   else rd.bajaRifle = Math.max(0, (rd.bajaRifle || 0) - dt);
@@ -558,9 +559,19 @@ function disparar(rd, world) {
   // cuando, parejo con todo el resto. Ver CONFIG.mira.fallaChance.
   const mira = CONFIG.mira;
   const angulo = rd.aimDir + world.rng.spreadDeTiro(dispersion, mira.fallaChance, mira.fallaMultiplicador);
+  /**
+   * 🆕 E4 · DE DÓNDE SALE: de la boca del caño dibujado (`_boca`, la anota drawRider en entities/rider.js), con el
+   * fogonazo. La bala sigue viajando por el piso (así la frena la pared), justo debajo de la boca, y se ve salir a su
+   * altura y bajar hasta la del pecho al llegar a donde apuntó. Sin dibujo reciente (fuera de la pantalla), como antes.
+   */
+  rd.fogonazo = CONFIG.feel.muzzleTime;
+  const y = rd.y - rd.side * 4;
+  const b = rd._boca && performance.now() - rd._boca.t < 500 ? rd._boca : null;
+  const blanco = rd.suprimiendo && rd.lastSeen ? rd.lastSeen : world.player;
+  const salida = b ? { x: rd.x + b.dx, altoSalida: y + 3.5 - (rd.y + b.dy), alto: CONFIG.golpe.alturaArma, distancia: Math.hypot(blanco.x - rd.x - b.dx, blanco.y - y) } : { x: rd.x };
   world.spawnBullet({
-    x: rd.x,
-    y: rd.y - rd.side * 4,
+    ...salida,
+    y,
     angle: angulo,
     speed: t.bulletSpeed,
     damage: t.damage,

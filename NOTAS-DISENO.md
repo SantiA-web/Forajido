@@ -18227,7 +18227,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | P2 · El jugador | 8 direcciones: quieto, caminar, trotar, agachado, cubierto, apuntar con las tres armas | ✅ hecha adentro del vagón |
 | P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
 | P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | ✅ los dos trenes, con la locomotora adentro y las esquinas redondas (falta probarla jugando: ver "LA LOCOMOTORA, ADENTRO") |
-| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera, el caballo y los jinetes (el jugador y la ley) hechos; falta la E4, el fondo de la cabalgata, la huida y el jugador en el techo |
+| P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera, el caballo y los jinetes (el jugador y la ley) hechos, y los de la ley ya apuntan; falta el resto de la E4, el fondo de la cabalgata, la huida y el jugador en el techo |
 | P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
 | P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
 | P8 · Limpieza | Borrar el dibujo viejo | Falta |
@@ -19927,7 +19927,7 @@ El orden lo eligió Santi: caballo, jinetes y después el fondo. Falta el fondo 
     - de frente, la culata junto a la rodilla;
     - de espaldas, la punta junto a la bota.
   - **Los chicos** llevan los colores de su guardia y también la funda.
-  - **Mientras apuntan siguen con el dibujo viejo**, hasta la E4.
+  - Apuntando: ver "E4 · LOS JINETES DE LA LEY APUNTAN" más abajo.
 - 🐛 **Los cuatro cuerpos montados**:
   - Al guardia ancho o con chaqueta se le borraba la silla.
   - *(Santi: "en el jinete flaco en la pose diagonal el brazo se le despega del cuerpo")*: con las riendas las dos manos
@@ -19939,6 +19939,41 @@ El orden lo eligió Santi: caballo, jinetes y después el fondo. Falta el fondo 
 - ⚠️ **Sin probar**: el Mustang en las vistas de frente y de espaldas, girar al galope y la huida. La huida sigue entera
   con el dibujo viejo, también el caballo. En el flaco en diagonal de espaldas queda un punto de aire junto a la mano de
   atrás.
+
+## ✅ E4 · LOS JINETES DE LA LEY APUNTAN (2026-11-06)
+
+El primero de los cuatro pasos de la E4 (apuntar, el fogonazo, caerse del caballo, el jugador apuntando montado).
+*(Santi: "No sigas con el fogonazo todavía")*.
+
+- **Las dos manos** *(Santi eligió "A: Las dos manos")*: sueltan las riendas (quedan sobre la cabeza de la silla), sacan
+  el rifle de la funda, que queda vacía, y se lo llevan al hombro en un cuarto de segundo. Tiran, se quedan apuntando un
+  ratito y lo guardan (`sacarElRifle` en systems/riders.js; `empuna` va de 0 a 1). Cuándo tiran no cambió.
+- **Se dan vuelta en la silla**: como van al costado del tren, casi siempre apuntan derecho para arriba o para abajo
+  de la pantalla, y de perfil el rifle quedaba escondido detrás del cuerpo.
+  - 🔁 Primero probamos que tiraran en diagonal, ubicándose un poco atrás tuyo *(Santi eligió "Tiran en diagonal")*.
+    No alcanzó: las ventanillas, los asientos y las cortinas casi nunca dejan ver cruzado, y en el dormitorio sólo se
+    ve derecho. Se sacó, y los jinetes se mueven y tiran como antes.
+  - Ahora las piernas quedan de perfil sobre el caballo y de la cintura para arriba se dan vuelta *(Santi: "las
+    piernas deberían quedar en su lugar y solo que se mueva el torso")*: de espaldas los de tu lado, de frente los del
+    otro (`lienzoJineteGente` en gente.js).
+  - 🔁 Al principio el caño subía por arriba del sombrero y parecía que le tiraban al cielo *(Santi: "se ve mal en el
+    asalto, porque parece que está apuntando hacia arriba... apunte normal, de última el rifle no se ve pero se ve
+    toda la dirección del cuerpo, y podrías hacer que ponga la cabeza como apoyándola en la culata")*. En esta cámara
+    la pared del tren se ve alta, y "para arriba" se lee como el cielo. Ahora apuntan derecho al tren: los codos
+    levantados, la cabeza caída sobre la culata y, del rifle, apenas la punta junto a la cabeza (de espaldas) o la boca
+    debajo del mentón (de frente). Brazos, manos y rifle dibujados a mano punto por punto (`GIRO_ARMAS`); del hombro
+    al codo se completa con una línea, porque el ancho de hombros cambia con el cuerpo. Con chaqueta, las mangas de lona.
+  - Revisado en los cuatro cuerpos, con y sin chaqueta.
+- **El aviso ya no es una raya** *(Santi: "sacala")*: la raya que salía del pecho del jinete hacia el tren se sacó. El
+  aviso es verlo sacar el rifle, darse vuelta y apoyar la cabeza, que dura lo mismo. Se perdió la diferencia de color
+  entre el tiro apuntado y el tiro a ciegas (al último lugar donde te vio): se puede retomar con el fogonazo.
+- ⏳ **Pendiente**:
+  - el guardia de a pie apuntando derecho para arriba o para abajo tiene el mismo problema (el rifle no se ve)
+    *(Santi: "dependiendo como queda probamos en el guardia de pie, déjalo pendiente en el de pie")*;
+  - el fogonazo, caerse del caballo y el jugador apuntando montado;
+  - el jinete chico (de lejos) sigue con el rifle en la funda aunque esté apuntando;
+  - en la huida los de la ley apuntan con el dibujo viejo.
+- ⚠️ **Sin probar**: la pose de frente adentro del asalto (los del otro lado los tapa el tren), la noche.
 
 ## 🦴 EL ESQUELETO (2026-10-08)
 
@@ -19960,7 +19995,7 @@ y quedó como manchas.
 | **E1 · La base** | Los huesos que faltaban (raíz, torso, cabeza) y la ropa pegada a cada uno; el jugador de costado ya se dibuja así | ✅ hecha |
 | E2 · Las posturas del techo | Agazapado de verdad, cuerpo a tierra arrastrándose, la caída al enganche, el sprint; piernas más finas | ✅ hecha y jugada |
 | E3 · Mirar con el mouse arriba | Te movés con las teclas y el cuerpo, el brazo y la cabeza miran a la mira; esqueleto de tres cuartos de frente y de espaldas | ✅ hecha, **sin jugar** |
-| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | En curso: los jinetes ya montados en la grilla nueva, con el rifle en la funda; falta apuntar, el fogonazo y la caída |
+| E4 · Los jinetes | Apuntan de verdad con el brazo (el fogonazo sale del arma) y se caen del caballo al morir | En curso: los de la ley sacan el rifle y apuntan dados vuelta en la silla, con la cabeza en la culata; falta el fogonazo, la caída, el jugador apuntando montado y el guardia de a pie apuntando derecho arriba o abajo |
 
 ### ✅ E1 · La base (`ladoConHuesos` y `huesosDeLado`, entities/gente/costado.js)
 

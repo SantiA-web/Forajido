@@ -579,7 +579,7 @@ function dibujarHumo(ctx, L, aMundo, espejo, PASO) {
 export function jineteNuevo(r, { x, y, cuadro, luz, destello, silla = true, vista = 'lado', gente = null }) {
   const PASO = CONFIG.estilo.punto / 4;
   const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
-  const L = gente ? lienzoJineteGente({ aspecto: gente.aspecto, tipo: gente.tipo, vista, cuadro, silla, fino }, luz, !!destello) : lienzoJinete({ vista, cuadro, fino, silla }, luz, !!destello);
+  const L = gente ? lienzoJineteGente({ aspecto: gente.aspecto, tipo: gente.tipo, vista, cuadro, silla, fino, empuna: gente.empuna, ang: gente.ang }, luz, !!destello) : lienzoJinete({ vista, cuadro, fino, silla }, luz, !!destello);
   const ix = x - (PIES_NUEVO[0] - 10) * PASO, iy = y - (PIES_NUEVO[1] - 27) * PASO;
   r.ctx.drawImage(L.img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
   if (fino) estiloNuevo.marcarGente(r.ctx, L.img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);

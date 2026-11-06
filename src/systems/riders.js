@@ -256,6 +256,21 @@ function equilibrarCarriles(riders) {
   }
 }
 
+/**
+ * 🆕 E4 · EL RIFLE, AFUERA O EN LA FUNDA *(Santi eligió que apunte con las dos manos)*. `rd.empuna` va de 0 (en la
+ * funda) a 1 (encarado): sube mientras apunta, se queda arriba un momento después del tiro (`rd.bajaRifle`, para que
+ * el tiro no salga de un rifle ya guardado) y baja. Sólo es el dibujo: cuándo tira lo sigue diciendo `aimTimer`.
+ */
+const RIFLE = { sube: 0.25, queda: 0.35, baja: 0.3 };
+function sacarElRifle(rd, dt) {
+  const apunta = rd.aimTimer > 0 || rd.entraATirar;
+  if (apunta) rd.bajaRifle = RIFLE.queda;
+  else rd.bajaRifle = Math.max(0, (rd.bajaRifle || 0) - dt);
+  const meta = apunta || rd.bajaRifle > 0 ? 1 : 0;
+  const e = rd.empuna || 0;
+  rd.empuna = meta > e ? Math.min(1, e + dt / RIFLE.sube) : Math.max(0, e - dt / RIFLE.baja);
+}
+
 export function updateRiders(riders, dt, world) {
   // 🐎 Arriba, entre el aviso de un jinete y el del siguiente pasa un rato:
   // que no tiren todos juntos (`carriles.entreAvisos`).
@@ -286,6 +301,7 @@ export function updateRiders(riders, dt, world) {
 
     seguirAlJugador(rd, dt, world);
     apuntarYDisparar(rd, dt, world);
+    sacarElRifle(rd, dt);
   }
 
   if (world.player.enTecho) equilibrarCarriles(riders);

@@ -75,6 +75,9 @@ export function drawRider(r, rd) {
   dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, 0, 2, {
     detalles: 'ley',
     ent: rd,
+    // 🆕 E4: cuánto tiene el rifle afuera y hacia dónde apunta (ver sacarElRifle en systems/riders.js).
+    empuna: rd.empuna || 0,
+    ang: rd.aimDir || 0,
     destello: rd.hitFlash > 0,
     // Los ojos se ponen rojos mientras apunta, igual que un guardia en combate.
     estado: rd.aimTimer > 0 ? 'alerta' : 'calma',
@@ -82,21 +85,8 @@ export function drawRider(r, rd) {
   montura.adelante();
 
   /**
-   * El aviso. Es lo mismo que hacen los guardias: se paran en seco y levantan
-   * el arma. Acá importa todavía más, porque la respuesta correcta (salirte de
-   * la ventanilla) tenés que poder tomarla ANTES de que salga el tiro. Sale
-   * del pecho del jinete, hacia el tren.
-   *
-   * El fuego de contención se avisa distinto: más corto y en otro color, para
-   * que se pueda distinguir "me está apuntando a mí" de "le está tirando al
-   * lugar donde yo estaba". Son dos amenazas distintas y se responden distinto.
+   * 🔁 E4 · EL AVISO YA NO ES UNA RAYA *(Santi: "sacala")*: antes salía una raya del pecho del jinete hacia el tren
+   * (más corta y de otro color en el fuego de contención). Ahora el aviso es verlo sacar el rifle, darse vuelta en
+   * la silla y apoyar la cabeza en la culata (`sacarElRifle` en systems/riders.js), que dura lo mismo.
    */
-  if (rd.aimTimer > 0) {
-    const hacia = rd.side > 0 ? -1 : 1;
-    const color = rd.suprimiendo ? '#a8794a' : '#d8cdbb';
-    const largo = rd.suprimiendo ? 7 : 11;
-    const pecho = rd.y - 12 + trote;
-    r.line(rd.x + 4, pecho, rd.x + 4, pecho + hacia * largo, color);
-    r.box(rd.x + 4, pecho + hacia * (largo + 2), 1, 1, rd.suprimiendo ? '#c89a5a' : '#fff6d0');
-  }
 }

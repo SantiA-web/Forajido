@@ -20,7 +20,7 @@
  */
 import { iluminar } from '../../engine/luz.js';
 import { sombrear, RGB } from '../../engine/paleta.js';
-import { C, ANCHO, ALTO, OX, OY, PARTE, cuadroJugador, armaEn, linea, bordeBrazos, montado, bordeSilla } from './jugador.js';
+import { C, ANCHO, ALTO, OX, OY, PARTE, cuadroJugador, armaEn, linea, bordeBrazos, montado, bordeSilla, puntosDeSilla, RIENDAS_SUELTAS } from './jugador.js';
 
 const mapa = (y, filas) => ({ y, filas });
 
@@ -2265,13 +2265,129 @@ export function lienzoSombreroSuelto(o, luz = 0) {
  * enfundado al costado de la silla. Devuelve también `mano`, de donde salen las riendas.
  */
 const jinetes = new Map();
-export function lienzoJineteGente({ aspecto = {}, tipo = 'guardia', vista = 'lado', cuadro = null, silla = true, rifle = true, fino = false }, luz = 0, destello = false) {
-  const clave = [JSON.stringify(aspecto), tipo, vista, cuadro ?? 'Q', silla, rifle, fino, luz, destello].join('|');
+/** 🆕 E4 · Desde qué ángulo (en el dibujo) el jinete de perfil se da vuelta en la silla para apuntar. */
+const GIRA_EN = Math.PI * 3 / 8 - 0.01;
+/**
+ * 🆕 E4 · LOS BRAZOS Y EL RIFLE DEL JINETE DADO VUELTA, dibujados a mano punto por punto (con los del guardia de a
+ * pie, derecho para arriba o para abajo, el rifle no se veía: *(Santi: "por ahora solo el jinete, dependiendo como
+ * queda probamos en el guardia de pie")*). Cada punto: [x, y, letra], en el lienzo de la persona.
+ * 🔁 *(Santi: "parece que está apuntando hacia arriba... apunte normal, de última el rifle no se ve pero se ve toda
+ * la dirección del cuerpo, y podrías hacer que ponga la cabeza como apoyándola en la culata")*: antes el caño subía
+ * por arriba del sombrero y parecía que le tiraba al cielo. Ahora apunta derecho al tren, que en esta cámara es
+ * hacia adentro de la pantalla: del rifle casi no se ve nada, y lo que se lee es el cuerpo dado vuelta, los codos
+ * levantados y la cabeza (`cabeza`: cuánto se corre) caída sobre la culata.
+ *  - espalda (te apunta desde tu lado del tren): la culata en el hombro derecho, la mano en la empuñadura y apenas la
+ *    punta del caño junto a la cabeza (`detras`: la tapa lo que esté). El brazo izquierdo va adelante, tapado.
+ *  - frente (desde el otro lado): la culata en el hombro, la mejilla encima, y el caño hacia vos: la boca, un
+ *    cuadradito claro con el agujero oscuro, y la mano izquierda debajo.
+ * Primero con el cuerpo normal *(Santi: "Primero hacelo únicamente con el cuerpo normal")* y después, aprobado, en
+ * los cuatro cuerpos y con chaqueta.
+ * El brazo de cada lado, del hombro (que cambia con el cuerpo) al codo, se completa con una línea (`brazoHasta`).
+ * Letras: L C c la manga (claro, medio, oscuro), P la mano; G g el caño (g, el claro), o la boca, r el guardamano, d la culata,
+ * y el bronce del cajón.
+ */
+const GIRO_ARMAS = {
+  espalda: {
+    cabeza: [1, 1],
+    detras: [[26, 11, 'G'], [26, 12, 'y'], [25, 13, 'd'], [26, 13, 'd']],
+    delante: [[27, 12, 'P'], [28, 13, 'c'], [20, 12, 'c'], [19, 12, 'C'], [18, 12, 'C'], [17, 13, 'c']],
+    codos: { izq: [17, 13], der: [28, 13] },
+    boca: [26, 11],
+  },
+  frente: {
+    cabeza: [-1, 1],
+    detras: [],
+    delante: [[19, 15, 'd'], [20, 15, 'y'], [20, 16, 'G'], [21, 16, 'g'], [22, 16, 'g'], [21, 17, 'g'], [22, 17, 'o'],
+      [17, 14, 'c'], [18, 15, 'C'], [19, 16, 'P'], [27, 15, 'c'], [26, 16, 'C'], [25, 17, 'C'], [24, 17, 'C'], [23, 17, 'P']],
+    codos: { izq: [17, 14], der: [27, 15] },
+    boca: [22, 17],
+  },
+};
+const COLOR_RIFLE = { G: 24, g: 25, o: 0, r: 5, d: 4, y: 45 };
+function brazoHasta(q, desde, hasta, color) {
+  let [x, y] = desde;
+  const [x1, y1] = hasta;
+  while (x !== x1 || y !== y1) {
+    const k = y * ANCHO + x;
+    q.idx[k] = color; q.duenio[k] = PARTE.brazo;
+    if (x !== x1) x += Math.sign(x1 - x);
+    if (y !== y1 && Math.abs(y1 - y) >= Math.abs(x1 - x)) y += Math.sign(y1 - y);
+  }
+}
+function armasDadoVuelta(q, girado, colores) {
+  const A = GIRO_ARMAS[girado];
+  const color = (l) => (COLOR_RIFLE[l] ?? colores[l]);
+  // Los hombros: la fila 14 del cuerpo, de punta a punta.
+  let x0 = ANCHO, x1 = -1;
+  for (let x = 0; x < ANCHO; x++) if (q.idx[14 * ANCHO + x] >= 0) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+  // La cabeza, caída sobre la culata.
+  const [cx, cy] = A.cabeza;
+  const cabeza = [];
+  for (let k = 0; k < ANCHO * ALTO; k++) if (q.idx[k] >= 0 && q.duenio[k] === PARTE.cabeza) { cabeza.push([k, q.idx[k]]); q.idx[k] = -1; q.duenio[k] = 0; }
+  for (const [k, c] of cabeza) { const n = k + cy * ANCHO + cx; q.idx[n] = c; q.duenio[n] = PARTE.cabeza; }
+  // Y las líneas finas de la cara (el bigote, los ojos), que van de a tercios de punto: las que quedan arriba de los hombros.
+  q.finos = (q.finos || []).map((f) => {
+    let deCabeza = true;
+    for (let n = 1; n < f.puntos.length; n += 2) if (f.puntos[n] >= 14 * 3) { deCabeza = false; break; }
+    return deCabeza ? { ...f, puntos: f.puntos.map((v, n) => v + (n % 2 ? cy : cx) * 3) } : f;
+  });
+  for (const [x, y, l] of A.detras) {
+    const k = y * ANCHO + x;
+    if (q.idx[k] < 0) { q.idx[k] = color(l); q.duenio[k] = PARTE.brazo; }
+  }
+  brazoHasta(q, [x0 - 1, 14], A.codos.izq, colores.C);
+  brazoHasta(q, [x1 + 1, 14], A.codos.der, colores.C);
+  for (const [x, y, l] of A.delante) { const k = y * ANCHO + x; q.idx[k] = color(l); q.duenio[k] = PARTE.brazo; }
+  q.boca = A.boca;
+}
+/**
+ * 🆕 E4 · APUNTANDO *(Santi eligió "las dos manos")*: con `empuna` (0 el rifle recién sacado y cruzado, 1 encarado) y
+ * `ang` (hacia dónde, en el dibujo), suelta las riendas y apunta como el guardia de a pie, con los brazos del arma.
+ * Sentado derecho, la silla debajo y la funda vacía. Las riendas quedan sobre la cabeza de la silla.
+ */
+export function lienzoJineteGente({ aspecto = {}, tipo = 'guardia', vista = 'lado', cuadro = null, silla = true, rifle = true, fino = false, empuna = null, ang = 0 }, luz = 0, destello = false) {
+  const clave = [JSON.stringify(aspecto), tipo, vista, cuadro ?? 'Q', silla, rifle, fino, luz, destello, empuna ?? '', empuna != null ? Math.round(ang * 100) : ''].join('|');
   let g = jinetes.get(clave);
   if (g) return g;
   if (jinetes.size > 600) jinetes.clear();
-  const { piernas, mano, brazos } = montado(vista, cuadro, { silla, rifle });
-  const q = cuadroGente({ ...aspecto, tipo, vista, piernas, ang: 0, brazos, fino });
+  const apunta = empuna != null;
+  const M = montado(vista, cuadro, { silla, rifle });
+  const { piernas } = M;
+  const mano = apunta ? RIENDAS_SUELTAS[vista] : M.mano;
+  /**
+   * 🆕 E4 · SE DA VUELTA EN LA SILLA *(Santi eligió la 1: "las piernas deberían quedar en su lugar y solo que se
+   * mueva el torso")*: de perfil, apuntando muy para arriba o muy para abajo, el rifle quedaba escondido detrás del
+   * cuerpo. Ahí las piernas siguen de costado sobre el caballo, y de la cintura para arriba va el guardia de espaldas
+   * (apunta para arriba) o de frente (para abajo), que es como gira el de a pie.
+   */
+  // (Recién sacado, con el rifle todavía cruzado, sigue de costado: se da vuelta al encararlo.)
+  const girado = apunta && empuna >= 0.5 && vista === 'lado' && Math.abs(ang) >= GIRA_EN ? (ang < 0 ? 'espalda' : 'frente') : null;
+  let q;
+  if (girado) {
+    const torso = cuadroGente({ ...aspecto, tipo, vista: girado, piernas: 'M0', ang: 0, brazos: { lista: [], props: [] }, fino });
+    const patas = cuadroGente({ ...aspecto, tipo, vista, piernas, ang: 0, brazos: M.brazos, fino });
+    q = { ...torso, idx: new Array(ANCHO * ALTO).fill(-1), duenio: new Array(ANCHO * ALTO).fill(0) };
+    for (let k = 0; k < ANCHO * ALTO; k++) {
+      if (patas.idx[k] >= 0 && patas.duenio[k] === PARTE.piernas) { q.idx[k] = patas.idx[k]; q.duenio[k] = PARTE.piernas; }
+      if (torso.idx[k] >= 0 && torso.duenio[k] !== PARTE.piernas) { q.idx[k] = torso.idx[k]; q.duenio[k] = torso.duenio[k]; }
+    }
+    // (Con chaqueta, las mangas de lona, como las pinta darForma en jugador.js.)
+    const colores = capasPersona({ ...aspecto, tipo, vista: girado }).colores;
+    armasDadoVuelta(q, girado, aspecto.chaqueta ? { ...colores, L: 37, C: 36, c: 35 } : colores);
+  } else {
+    q = apunta
+      ? cuadroGente({ ...aspecto, tipo, vista, piernas, ang, arma: 'winchester', empuna, fino })
+      : cuadroGente({ ...aspecto, tipo, vista, piernas, ang: 0, brazos: M.brazos, fino });
+  }
+  if (apunta && silla) {
+    // La silla, debajo de todo lo que ya está dibujado.
+    q.idx = q.idx.slice(); q.duenio = q.duenio.slice();
+    for (const [x, y, c] of puntosDeSilla(vista, { rifle, vacia: true })) {
+      const k = y * ANCHO + x;
+      if (x < 0 || y < 0 || x >= ANCHO || y >= ALTO || q.idx[k] >= 0) continue;
+      q.idx[k] = c; q.duenio[k] = PARTE.silla;
+    }
+  }
   const indices = destello ? q.idx.map((i) => (i > 0 ? sombrear(i, 4) : i)) : q.idx;
   const cv = document.createElement('canvas');
   cv.width = ANCHO; cv.height = ALTO;
@@ -2279,7 +2395,7 @@ export function lienzoJineteGente({ aspecto = {}, tipo = 'guardia', vista = 'lad
   const finos = (q.finos || []).map((f) => ({ color: f.fijo ? f.color : sombrear(f.color, luz), puntos: f.puntos }));
   const borde = bordeSilla(q);
   if (borde) finos.push({ color: 0, puntos: borde });
-  g = { img: cv, mano, finos };
+  g = { img: cv, mano, finos, boca: q.boca || null };
   jinetes.set(clave, g);
   return g;
 }

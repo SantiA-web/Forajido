@@ -598,6 +598,18 @@ export function dibujarSaltando(r, x, pies, montura) {
 }
 
 /**
+ * 🆕 E4 · Si está apuntando (`ropa.empuna` > 0): cuánto tiene el rifle encarado, de a cuartos, y hacia dónde en el
+ * dibujo (`ropa.ang`, en el mundo), de a dieciseisavos de vuelta. Mirando al este no apunta para atrás: hasta un
+ * poco más que derecho para arriba o para abajo.
+ */
+function apuntaDe(ropa, vista) {
+  if (!(ropa.empuna > 0)) return {};
+  const tope = Math.PI * 5 / 8;
+  const a = vista === 'lado' ? Math.max(-tope, Math.min(tope, ropa.ang || 0)) : ropa.ang || 0;
+  return { empuna: Math.round(Math.min(1, ropa.empuna) * 4) / 4, ang: Math.round(a / (Math.PI / 8)) * (Math.PI / 8) };
+}
+
+/**
  * 🆕 EL JUGADOR MONTADO EN EL ESTILO NUEVO, de costado *(Santi: "primero lo haría con el jugador para
  * establecer las bases")*.
  */
@@ -609,7 +621,7 @@ function jineteDeCostado(r, montura, ropa) {
   montura.tapa = (montura.chico ? tapaChico : tapa) || null;
   const luz = montura.noche ? -1 : 0;
   // 🆕 El jinete de la ley: un guardia, con su aspecto sorteado y guardado en él (`ropa.ent`).
-  const gente = ropa.detalles === 'ley' ? { aspecto: aspectoDe(ropa.ent || montura, 'guardia'), tipo: 'guardia' } : null;
+  const gente = ropa.detalles === 'ley' ? { aspecto: aspectoDe(ropa.ent || montura, 'guardia'), tipo: 'guardia', ...apuntaDe(ropa, vista) } : null;
   if (montura.chico) {
     const persona = jineteChico(r, { x: ox, y: oy, luz, destello: ropa.destello, vista, gente });
     dibujarCabezada(r, montura, persona.mano);
@@ -623,8 +635,8 @@ function jineteDeCostado(r, montura, ropa) {
 export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, montura = null) {
   const quien = ropa.detalles || 'jugador';
   // 🎨 Lo que ya está dibujado: el jugador, sin arma en la mano y de costado. El resto, con el dibujo viejo hasta que llegue.
-  // 🆕 Y el de la ley mientras no apunta (con el rifle en la funda); apuntando, el viejo hasta E4.
-  const leyEnfundado = quien === 'ley' && !ropa.apunta && ropa.arma !== 'rifleListo';
+  // 🆕 Y el de la ley: con el rifle en la funda, o apuntando con `empuna` (E4). En la huida, apuntando, el viejo.
+  const leyEnfundado = quien === 'ley' && (ropa.empuna != null || (!ropa.apunta && ropa.arma !== 'rifleListo'));
   if (estiloNuevo.activo && r.ctx && !r.plano && montura && montura.origen && hayJineteNuevo(montura) && ((quien === 'jugador' && !ropa.arma) || leyEnfundado)) return jineteDeCostado(r, montura, ropa);
   /**
    * 🔻 LA VISTA LA MANDA EL CABALLO *(Santi: "hay veces que el caballo no cambia

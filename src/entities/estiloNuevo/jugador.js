@@ -2468,6 +2468,24 @@ export function montado(vista = 'lado', cuadro = null, { silla = true, rifle = f
     brazos: { lista: M.lista(b), props: props.length ? props : undefined, recline: M.recline, cabezaX: M.cabezaX, cabezaMapa: M.cabezaMapa, porHombro: true },
   };
 }
+/**
+ * 🆕 E4 · LA SILLA SUELTA, EN PUNTOS DEL LIENZO DE LA PERSONA: para el que apunta montado, que se dibuja con los
+ * brazos del arma (no con los de las riendas) y la silla debajo. `vacia`: la funda sin el rifle (lo tiene en la mano).
+ */
+export function puntosDeSilla(vista = 'lado', { rifle = false, vacia = false } = {}) {
+  const puntos = [];
+  const pon = (m, tabla) => m.filas.forEach((f, j) => {
+    for (let x = 0; x < f.length; x++) {
+      if (f[x] === '.' || (vacia && (f[x] === 'h' || f[x] === 'j'))) continue;
+      puntos.push([x + OX, m.y + j + OY, tabla[f[x]]]);
+    }
+  });
+  pon(SILLA_DE[vista], COLORES_SILLA);
+  if (rifle) pon(FUNDA_RIFLE[vista], COLORES_FUNDA);
+  return puntos;
+}
+/** 🆕 E4 · Dónde quedan las riendas cuando suelta las dos manos para apuntar: sobre la cabeza de la silla. */
+export const RIENDAS_SUELTAS = { lado: [16, 16], diagF: [14, 16], diagE: [15, 16], frente: [10, 15], espalda: [11, 15] };
 export function lienzoJinete({ vista = 'lado', cuadro, mochila, fino, mascara, silla = true }, luz = 0, destello = false) {
   const { piernas, mano, brazos } = montado(vista, cuadro, { silla });
   return { ...lienzoJugador({ vista, piernas, ang: 0, mochila, fino, mascara, brazos }, luz, destello), mano };

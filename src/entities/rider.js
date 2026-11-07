@@ -76,7 +76,8 @@ export function drawRider(r, rd) {
   const T = 0.56;
   const zancada = { t: ((rd.gallop % T) + T) % T, T };
   const trote = Math.round(Math.cos((zancada.t / T - 0.15) * Math.PI * 2) * 1.2);
-  const montura = dibujarAnimal(r, rd.x, rd.y, zancada, trote, 1, 0);
+  // (🆕 Con el pelo de su caballo, `rd.pelaje`, y de noche con los colores de noche, como el tuyo.)
+  const montura = dibujarAnimal(r, rd.x, rd.y, zancada, trote, 1, 0, rd.pelaje || null, !gameState.esDeDia);
   // El jinete amortigua el rebote del lomo, igual que el jugador en el galope.
   const rebote = Math.cos((zancada.t / T - 0.25) * Math.PI * 2) * 1.2 * 0.5;
   const fig = dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, 0, 2, {
@@ -128,7 +129,7 @@ function dibujarCaida(r, rd) {
   r.ctx.globalAlpha = 0.25;
   r.box(rd.x, yCaballo + 7, 11, 2, '#000');
   r.ctx.globalAlpha = 1;
-  const montura = dibujarAnimal(r, rd.x, yCaballo, zancada, trote, 1, pose);
+  const montura = dibujarAnimal(r, rd.x, yCaballo, zancada, trote, 1, pose, rd.pelaje || null, !gameState.esDeDia);
   dibujarSilla(r, montura);
   if (montura.adelante) montura.adelante();
 

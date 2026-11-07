@@ -24,6 +24,7 @@ import { CONFIG } from '../data/config.js';
 import { RIDERS, RIDER_SPAWN, RIDER_SEPARACION_MINIMA } from '../data/riders.js';
 import { createRider } from '../entities/rider.js';
 import { CAIDA_PEGA } from '../entities/estiloNuevo/caida.js';
+import { pelajeDeJinete } from '../entities/estiloNuevo/caballo.js';
 import { distance, hasLineOfSight } from '../engine/collision.js';
 import { isHidden, damagePlayer } from '../entities/player.js';
 import { danioDeBala } from './golpe.js';
@@ -192,6 +193,8 @@ export function spawnRider(world, side, opts = {}) {
   rd.carril = 0;
   rd.carrilT = 0;
   rd.cooldown = world.rng.range(0, rd.tipo.fireCooldown);
+  // 🆕 El pelo de su caballo: gateado, zaino o la mezcla con la mancha blanca (ver pelajeDeJinete).
+  rd.pelaje = pelajeDeJinete(world.rng.range(0, 1));
 
   world.riders.push(rd);
   world.bus.emit('riderArrived', { x: rd.x, y: rd.y, side });

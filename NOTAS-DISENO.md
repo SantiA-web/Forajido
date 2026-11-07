@@ -20024,6 +20024,54 @@ viejo deslizándose. Santi eligió: **para atrás**, el caballo **se abre y se v
   cuerpos: sólo cambian los colores).
 - ⏳ **Sigue**: el jugador apuntando montado; pendiente, el guardia de a pie apuntando derecho arriba o abajo.
 
+## ✅ EL PAISAJE DEL GALOPE, EN EL ESTILO NUEVO (2026-11-07)
+
+Todo lo que se ve alrededor del tren cuando galopás, pasado a la grilla de 3×3. Santi, al ver las mesetas del medio:
+*"quedó espectacular"*.
+
+- **El desierto** (world/estiloNuevo/suelo.js) *(Santi, con una foto de un desierto de saguaros: "lo veo como con mucho
+  ruido al desierto")*: arena pálida de un tono y casi sin vetas; las plantas en manchones (jarillas, matas grandes,
+  pasto seco, ocotillos) con mucha arena lisa entre uno y otro.
+  - Del otro lado de la vía, cardones sueltos, más chicos por la distancia *(Santi: "tienen que ser más pequeños que
+    lo que hay acá")*: dos tamaños, cada uno dibujado aparte (3/4 cerca del tren, la mitad al fondo).
+  - **Rastros con historia** *(Santi eligió "rastros con historia")*: los postes del telégrafo pegados a la vía del
+    otro lado, con los cables colgando; la carreta abandonada, la cruz y la apacheta allá; de este lado sólo cosas
+    chatas (la osamenta de una vaca, una rueda tirada).
+- **Los obstáculos** (world/estiloNuevo/obstaculos.js) *(Santi eligió "los 4, grandes y con volumen")*: la roca, el
+  arbusto, el cardón (🔁 primero fue un saguaro) y el montículo, del ancho de su choque y del alto real al lado del
+  caballo. Golpeados quedan rotos, aplastados o tumbados.
+- **Las mesetas de colores, paradas en el desierto** *(Santi: "ponelas en el desierto de siempre, que no queden
+  'detrás'")*: tres, altas como el tren, en franjas como los cerros del norte *(eligió "cerros de colores")*.
+  - 🔁 **Formas naturales** *(Santi: "que no se vean tan estructurados... que tengan mordeduras, texturas, formas
+    naturales")*: a mano los bordes de cada fila, las mordeduras, las canaletas, las repisas y una aguja suelta; por
+    regla, la luz, la sombra y el talud.
+  - 🔁 **Colores apagados** *(Santi: "parece una bandera"; eligió "los 4 colores, apagados")*: las franjas en onda y
+    mezcladas con un tramado donde se tocan.
+- **El fondo** (world/estiloNuevo/horizonte.js): el cielo celeste *(Santi: "mejor hacelo celeste clásico")* con
+  nubes, sol, luna y estrellas, y dos capas de montañas en silueta *(eligió "dos capas de silueta")*.
+  - 🆕 **Las mesetas del medio, en dos niveles** *(Santi: "hacé algunas de nivel 1 y otras de nivel 2... Las de nivel 1
+    agrandalas apenas más que las 2, a las del 2 no las bajes del tamaño de la imagen. Poné unas dos o tres de cada
+    uno")*: entre las siluetas y las del desierto, más lavadas cuanto más lejos y más lentas; tres dibujos por nivel
+    (los del nivel 1 dibujados de nuevo, un cuarto más grandes, no agrandados).
+- **Los buitres** (world/estiloNuevo/buitres.js): dan vueltas en el cielo con su sombra en el piso, en 8 direcciones
+  dibujadas a mano, sólo de día y sólo del otro lado de la vía *(Santi: "sí o sí si aparece que sea de aquel
+  lado")*. Cada galope sortea cuándo aparecen. Se sacaron los remolinos.
+- **Los tres pelos del criollo** *(Santi: "quiero que el criollo tenga tres colores: el gateado que es el de ahora, y
+  agreguémosle el zaino y un intermedio entre ambos tonos, a esta mezcla entre ambos tonos agrégale una mancha blanca
+  en la cabeza, que sea como vertical"; "gateado 40%, zaino 35%, mezcla 25%")*: los llevan los caballos de los jinetes
+  de la ley, sorteados al aparecer (`pelajeDeJinete`). Tu caballo sigue gateado.
+  - La lista blanca: los puntos a mano en el primer cuadro de cada vista (de costado y en diagonal, grande y chico);
+    a los otros 7 cuadros la llevó un programa siguiendo la cabeza. No está dibujada cuadro por cuadro. En el grande
+    es de dos puntos de ancho (las riendas la cortaban en puntitos). No está en el caballo quieto ni en las vistas de
+    frente y de espaldas (los jinetes no las usan).
+  - 🐛 Los caballos de los jinetes tenían siempre los colores de día; ahora de noche usan los de noche.
+- **El choque cuenta desde las patas** *(Santi: "los obstáculos deberían contar recién desde las piernas, es una
+  cuestión de perspectiva de la cámara")*: antes era un círculo alrededor del lomo, y un cactus hasta 21 puntos más
+  al fondo que los cascos te frenaba. Ahora se mide entre el pie del obstáculo y los cascos, achatado como el piso
+  en diagonal: de hondo, la mitad del radio y 2 (6 en el cactus); a lo largo, el radio y 7. Probado en el juego. El
+  orden de dibujo usa la misma línea (los cascos); eso no lo miré en una foto.
+- ⚠️ **Sin probar**: la tormenta en el fondo nuevo, y el galope entero jugado de punta a punta por Santi.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

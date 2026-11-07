@@ -54,6 +54,10 @@ import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { distance } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { dibujarHorizonte } from '../world/horizonte.js';
+import { dibujarCampo } from '../world/estiloNuevo/suelo.js';
+import { dibujarHorizonteNuevo } from '../world/estiloNuevo/horizonte.js';
+import { dibujarObstaculoNuevo, tieneObstaculoNuevo } from '../world/estiloNuevo/obstaculos.js';
+import { dibujarBuitres, dibujarSombrasDeBuitres, nuevaSuerteDeBuitres } from '../world/estiloNuevo/buitres.js';
 
 export function createRideScene(services) {
   const { renderer, input, rng, scenes, hud, audio } = services;
@@ -65,6 +69,21 @@ export function createRideScene(services) {
    * abierto (lejos del tren). Pegado al tren, cero. Ver `cieloDeLejos`.
    */
   const CIELO_LEJOS = 44;
+  /**
+   * En el estilo nuevo, lo que la cámara sube de lejos para que asome el cielo. 🔁 Fue 80, cuando el horizonte era
+   * una franja pegada a la pantalla; ahora el horizonte está en el mundo (`HORIZONTE_Y`) y arriba de él no hay más
+   * que cielo, así que con lo de siempre alcanza.
+   */
+  const CIELO_LEJOS_NUEVO = 44;
+  /**
+   * 🆕 LA LÍNEA DEL HORIZONTE, EN EL MUNDO *(Santi: "la parte de las mesetas se comen el desierto y los obstáculos del
+   * desierto que está después de la vía... yo recomendaría que unificaras todo")*. El horizonte era una franja pegada
+   * arriba de la PANTALLA, y tapaba lo que hubiera del mundo debajo: los saguaros de allá quedaban cortados. Ahora el
+   * desierto termina en esta línea del mundo y el cielo empieza ahí: el horizonte baja y sube con la cámara como todo lo
+   * demás, y no tapa nada. Del otro lado del tren queda una franja de desierto con sus saguaros, y los de más allá se
+   * paran delante de las lomas, como en el desierto de verdad.
+   */
+  const HORIZONTE_Y = 10;
 
   /**
    * LA ZONA MUERTA DE LA POSE, en fracción de un tramo de giro. Ver
@@ -178,6 +197,7 @@ export function createRideScene(services) {
     gastado = 0;
     alcanzada = false;
     scroll = 0;
+    nuevaSuerteDeBuitres();
     trastabilla = 0;
     choque = 0;
     saltando = 0;
@@ -981,7 +1001,15 @@ export function createRideScene(services) {
         // El prefiltro tiene que acompañar al radio: con un número fijo, el
         // obstáculo más grande se descartaba antes de llegar a medirlo.
         if (ob.golpeado || Math.abs(ox - x) > radio + 14) continue;
-        if (distance(ox, ob.y, x, y) < radio + 6) { chocar(ob); break; }
+        /**
+         * 🔁 CUENTA DESDE LAS PATAS *(Santi: "los obstáculos deberían contar recién desde las piernas, es una cuestión
+         * de perspectiva de la cámara")*. Antes era un círculo alrededor del lomo (`y`): en tres cuartos, un cactus
+         * plantado detrás del caballo, que sólo le tapaba la cabeza o el lomo en el dibujo, ya te frenaba. Ahora se
+         * mide entre el pie del obstáculo y los cascos (`y + 7`) y la huella es achatada, como el piso visto en
+         * diagonal: a lo largo, lo que mide el obstáculo más medio caballo; de hondo, la mitad del obstáculo y un poco.
+         */
+        const largo = radio + 7, hondo = radio * 0.5 + 2, dx = (ox - x) / largo, dy = (ob.y - (y + 7)) / hondo;
+        if (dx * dx + dy * dy < 1) { chocar(ob); break; }
       }
     }
 
@@ -1178,11 +1206,20 @@ export function createRideScene(services) {
     for (const ob of obstaculos) {
       const ox = obX(ob);
       if (ox < camX - 20 || ox > camX + vistaW + 20) continue;
-      if (ob.y > y) delante.push(ob);
+      // (🔁 Por los cascos, `y + 7`, igual que el choque: con `y` un cactus parado entre el lomo y los cascos se
+      // pintaba delante del caballo.)
+      if (ob.y > y + 7) delante.push(ob);
       else dibujarObstaculo(r, ob, ox);
     }
     dibujarCaballo(r);
     for (const ob of delante) dibujarObstaculo(r, ob, obX(ob));
+    // 🆕 Los buitres (world/estiloNuevo/buitres.js): primero sus sombras, que oscurecen lo que haya abajo (la tierra,
+    // el tren o el caballo: 🔁 pintadas en la tierra, el tren las tapaba), y arriba de todo los pájaros, en lo alto.
+    if (estiloNuevo.activo) {
+      const cielo = { t: scroll, camX, camY, vistaW, vistaH, dia: gameState.esDeDia, franja: [HORIZONTE_Y + 4, train.map.height - altoDelTecho() - 20] };
+      dibujarSombrasDeBuitres(r.ctx, cielo);
+      dibujarBuitres(r.ctx, cielo);
+    }
 
     for (const b of balas) {
       /**
@@ -1236,13 +1273,27 @@ export function createRideScene(services) {
     const tinte = (hex) => (dia ? hex : escalarColor(hex, 0.32));
     r.clear(dia ? colors.desiertoDia : colors.desiertoNoche);
 
+    // 🆕 En el estilo nuevo, primero el horizonte (world/estiloNuevo/horizonte.js): el cielo y las montañas en silueta,
+    // de arriba de la pantalla hasta la línea del horizonte. El campo va encima: arriba de la línea es transparente,
+    // salvo lo que se para en el desierto de allá (las mesetas y los cardones), que así queda delante de las montañas.
+    if (estiloNuevo.activo) {
+      dibujarHorizonteNuevo(r.ctx, { hy: (HORIZONTE_Y - camY) * z, ancho: r.width, avance: camX + suelo, dia, tormenta: hayTormenta });
+    }
+
     // --- 1. El suelo y la vía ---
     r.ctx.save();
     r.ctx.scale(z, z);
-    r.ctx.translate(-camX, -camY);
-    dibujarAdornos(r, camX, camY, vistaW, vistaH, base, tinte);
-    dibujarVia(r, camX, vistaW, base, tinte);
+    // 🆕 En el estilo nuevo, el campo de la grilla: la tierra del asalto con las cosas del campo abierto y la vía
+    // nueva, todo en una pieza que corre con el suelo (world/estiloNuevo/suelo.js).
+    // (Los saguaros de allá, entre el horizonte y el tren.)
+    if (estiloNuevo.activo) dibujarCampo(r.ctx, camX, camY, vistaW, vistaH, suelo, !dia, base, [HORIZONTE_Y + 4, base - altoDelTecho() - 20], HORIZONTE_Y);
+    else {
+      r.ctx.translate(-camX, -camY);
+      dibujarAdornos(r, camX, camY, vistaW, vistaH, base, tinte);
+      dibujarVia(r, camX, vistaW, base, tinte);
+    }
     r.ctx.restore();
+
 
     /**
      * --- 2. El cielo de lejos, en pantalla ---
@@ -1254,7 +1305,8 @@ export function createRideScene(services) {
      * cordilleras se corren con lo que avanzaste SOBRE EL SUELO (`camX + suelo`)
      * y no contra el tren.
      */
-    dibujarHorizonte(r, {
+    // (En el estilo nuevo ya se dibujó, antes del campo.)
+    if (!estiloNuevo.activo) dibujarHorizonte(r, {
       hy: cieloDeLejos(z),
       avance: camX + suelo,
       dia,
@@ -1278,6 +1330,8 @@ export function createRideScene(services) {
      * EL BORDE DE ADELANTE DEL CAMPO: matas bajas que pasan rápido, justo afuera
      * de donde se galopa. Marcan el tope sin dibujar ninguna pared.
      */
+    // (🆕 En el estilo nuevo no van: son franjas del dibujo viejo, y las rayas de velocidad también.)
+    if (estiloNuevo.activo) { r.ctx.restore(); return; }
     drawParallax(r, P.capas.map((c, i) => ({
       ...c, v: c.v * P.velocidad, y: campoAbajo + 2 + i * 5,
     })), scroll, vistaW);
@@ -1298,7 +1352,7 @@ export function createRideScene(services) {
    */
   function cieloDeLejos(z) {
     const t = Math.max(0, Math.min(1, (0.75 - z) / (0.75 - A.zoomLejos)));
-    return Math.round(CIELO_LEJOS * t);
+    return Math.round((estiloNuevo.activo ? CIELO_LEJOS_NUEVO : CIELO_LEJOS) * t);
   }
 
   /**
@@ -1392,6 +1446,8 @@ export function createRideScene(services) {
    * cuando el zoom está lejos y todo se ve chiquito.
    */
   function dibujarObstaculo(r, ob, ox) {
+    // 🆕 En el estilo nuevo, los dibujados a mano en la grilla (world/estiloNuevo/obstaculos.js).
+    if (estiloNuevo.activo && tieneObstaculoNuevo(ob.tipo)) return dibujarObstaculoNuevo(r.ctx, ob, ox, !gameState.esDeDia);
     // El dibujo vive en world/obstaculosDesierto.js: la huida usa el mismo.
     dibujarObstaculoDesierto(r, ob, ox, radioDe(ob), !gameState.esDeDia);
   }

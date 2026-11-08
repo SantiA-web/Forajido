@@ -20143,6 +20143,42 @@ ven, y el jugador que tira desde el caballo.
 - ⚠️ **Un error viejo que no arreglé**: los mojones y los algarrobos que quedan muy atrás no vuelven a aparecer si
   volvés (la limpieza de `celdasSembradas` no los olvida nunca).
 
+## ✅ LOS JINETES DE LA HUIDA: EL RIFLE, EL BRILLO Y EL LAZO (2026-11-08)
+
+Los jinetes de la ley en la huida, terminados en el estilo nuevo: apuntan con su dibujo, avisan con un brillo y el lazo
+entero (enrollado, revoleo, tiro y enlazado) está dibujado en la grilla.
+
+- 🐛 **Se volvían el dibujo viejo** *(Santi: "encontré un error de que hay veces que los jinetes se transforman en el
+  dibujo viejo")*: en la huida van con el dibujo chico, y el chico no tenía torso apuntando; al sacar el rifle caían
+  al dibujo de antes. Ahora hay torsos chicos con el rifle en las 8 direcciones, a mano (JINETE_CHICO_RIFLE en
+  entities/estiloNuevo/jugador.js), con la funda vacía mientras apunta. El fogonazo y la bala salen de la boca del
+  caño. Medido: 30 s de huida con cero cuadros apuntando sin el dibujo nuevo.
+  - 🔁 **El galope de lejos nunca tuvo el error**: dije que sí y no; ahí los jinetes sólo aparecen en el asalto y van
+    con el dibujo grande. Lo que había tocado se volvió atrás.
+- **El brillo del caño** *(Santi: "haría algo más que avise que está por disparar"; eligió "el pequeño brillo")*: un
+  destello chico en la boca del rifle en el último tramo de la puntería (`brillo: 0.18` s en data/huida.js), 8 cuadros
+  a mano (BRILLO en entities/bullet.js).
+- **El lazo, en cuatro pasos** *(Santi: "el orden del lazo lo veo bien")*:
+  1. **Enrollado en la montura**, en el cuerno de adelante *(Santi: "el lazo enrollado no se nota mucho, pero es que a
+     este poco nivel de detalle no sé como mejorarlo"; eligió moverlo adelante)*, en las 5 vistas.
+  2. **El revoleo, mirando hacia vos** *(Santi: "hacia vos")*: el brazo arriba en las 8 direcciones y la argolla que
+     gira en 8 cuadros, chica y después grande cuando está por soltarla. 🔁 Dura **1,6 s** (era 0,7) *(Santi: "hoy lo
+     alza y le da apenas una vuelta"; eligió 1,6 s, unas 4 vueltas)*.
+  3. **El tiro**: el brazo estirado en las 8 direcciones y la argolla que vuela hacia vos achicándose en 8 cuadros,
+     con la soga desde la mano. Se dibuja encima de todo: si no, al llegar la tapaba tu caballo.
+  4. **El enlazado**: el que te enlazó tira de la soga dado vuelta hacia vos, con la mano junto al pecho (8
+     direcciones a mano), y vos tenés un aro de soga alrededor del pecho: la parte de atrás detrás del cuerpo y la de
+     adelante encima. La soga tensa va de su mano al borde del aro; su recorrido lo calcula el juego (une a dos que se
+     mueven), pero va en los puntos de la grilla.
+     - 🐛 Si el jinete venía de atrás la soga te pasaba por encima del sombrero y la cara: ahora se ordena con vos
+       (detrás si él está detrás, encima si está adelante).
+- 📏 **¿Con 1,6 s engancha muy poco?** *(Santi: "medí cuánto engancha con 1,6. Si es muy poco bajalo a 1,2")*: una
+  hora de huida por caso con un piloto automático (la tabla está en data/huida.js, en `revoleo`). Al que reacciona
+  con el envión lo engancha 0,98 por minuto con 0,7 s, 0,87 con 1,2 y **0,82 con 1,6**: un 16% menos, casi un
+  enganche por huida igual. Entre 1,2 y 1,6 no hay diferencia que se separe del azar. *(Santi: "dejálo en 1,6")*.
+  El piloto va derecho, sin obstáculos, y aprieta el envión siempre a tiempo: una persona puede apretarlo antes.
+- ⚠️ **Sin probar**: todo esto de noche. El lazo enrollado en la vista diagonal se sigue viendo poco.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

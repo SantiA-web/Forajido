@@ -655,16 +655,18 @@ export function polvoNuevo(r, x, y, k, noche = false) {
 }
 
 /** El jinete chico (de lejos): `x` e `y` son la esquina del caballo chico. Devuelve la mano, en sus puntos. */
-export function jineteChico(r, { x, y, luz, destello, persona = true, silla = true, vista = 'lado', gente = null, apunta = null }) {
+export function jineteChico(r, { x, y, luz, destello, persona = true, silla = true, vista = 'lado', gente = null, apunta = null, lazo = false, revolea = false, lanza = false, tiraSoga = false, enlazado = false }) {
   const punto = CONFIG.estilo.punto / 2;
   // 🆕 `apunta` (0 a 7, de la mira): el torso que se da vuelta en la silla con el Colt; devuelve también la boca.
-  const L = lienzoJineteChico({ persona, silla, vista, colores: gente ? coloresChicos(gente) : null, rifle: !!gente, apunta }, luz, !!destello);
+  const L = lienzoJineteChico({ persona, silla, vista, colores: gente ? coloresChicos(gente) : null, rifle: !!gente, apunta, lazo, revolea, lanza, tiraSoga, enlazado }, luz, !!destello);
   const iy = y + L.arriba * punto, w = L.img.width * punto, h = L.img.height * punto;
   r.ctx.drawImage(L.img, x, iy, w, h);
   estiloNuevo.marcarGente(r.ctx, L.img, x, iy, w, h);
   pintarBordes(r.ctx, L.finos, x, iy, punto);
   const boca = L.boca ? [x + L.boca[0] * punto, y + L.boca[1] * punto] : null;
-  return { mano: L.mano, boca, top: iy, arriba: iy, manoY: y + L.mano[1] * punto, pechoY: y + 4 * punto, x: x + 11 * punto, vista, espejo: false };
+  // (🆕 Enlazado: el medio de la argolla del pecho, en el mundo.)
+  const anillo = L.anillo ? [x + L.anillo[0] * punto, y + L.anillo[1] * punto] : null;
+  return { mano: L.mano, boca, anillo, top: iy, arriba: iy, manoY: y + L.mano[1] * punto, pechoY: y + 4 * punto, x: x + 11 * punto, vista, espejo: false };
 }
 
 function jugadorNuevo(r, f) {

@@ -35,7 +35,8 @@ import { applyRaidResult, recompensaTapada, gameState, numero } from '../state/g
 import { T } from '../text/es.js';
 import { GOLPES, dibujarAnimal, dibujarJinete, dibujarMontura, dibujarSilla } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
-import { dibujarFogonazo } from '../entities/bullet.js';
+import { dibujarFogonazo, brilloDelCano } from '../entities/bullet.js';
+import { argollaChica, argollaVolando, sogaEnGrilla } from '../entities/estiloNuevo/jugador.js';
 import { sembrarDesierto, pintarSuelo } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
@@ -1348,6 +1349,7 @@ export function createHuidaScene(services) {
 
       j.cooldown -= dt;
       j.bajaRifle = Math.max(0, j.bajaRifle - dt);
+      j.fogonazo = Math.max(0, (j.fogonazo || 0) - dt);
       const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
 
       /**
@@ -1490,8 +1492,11 @@ export function createHuidaScene(services) {
     // sobre los muslos en el mismo cuadro del disparo, el tiro saldría de un
     // jinete que ya tiene el arma guardada.
     j.bajaRifle = BAJA_RIFLE;
+    j.fogonazo = 0.06;
+    // (🆕 En el estilo nuevo, de la boca del rifle dibujado: `j.boca`, la deja `dibujarLey` cada cuadro.)
+    const [ox, oy] = estiloNuevo.activo && j.boca ? j.boca : [j.x + 6, j.y - 14];
     balas.push({
-      x: j.x + 6, y: j.y - 14,
+      x: ox, y: oy,
       vx: Math.cos(a) * J.velocidadBala,
       vy: Math.sin(a) * J.velocidadBala * PROFUNDIDAD,
       vida: J.duracionBala, mia: false,
@@ -2010,12 +2015,20 @@ export function createHuidaScene(services) {
         cosas.push({ y: ty, draw: () => lluvia.dibujarGotas(r.ctx, !dia, 0, CONFIG.estilo.punto / 2, ty, ty + TIRA) });
       }
     }
+    /**
+     * 🆕 La soga tensa, en el estilo nuevo, ordenada con vos: si el que te enlazó viene detrás, la soga va detrás de
+     * tu cuerpo (antes pasaba por encima de tu sombrero y tu cara); si viene adelante, encima.
+     */
+    if (estiloNuevo.activo && yo.lazo) {
+      cosas.push({ y: yo.y + 7 + (yo.lazo.j.y < yo.y ? -0.01 : 0.01), draw: () => dibujarLaSoga(r, dia) });
+    }
     cosas.sort((a, b) => a.y - b.y);
     for (const c of cosas) c.draw();
     // ☁️ La nube de polvo en el aire, encima de los caballos y con huecos (con lluvia no hay: barro).
     if (estiloNuevo.activo && !hayTormenta) polvo.dibujarAire(r, 0, !dia, CONFIG.estilo.punto / 2);
 
-    dibujarLaSoga(r);
+    if (!estiloNuevo.activo) dibujarLaSoga(r, dia);
+    dibujarArgollasQueVuelan(r);
     for (const b of balas) dibujarBala(r, b);
 
     if (!estiloNuevo.activo) {
@@ -2122,10 +2135,43 @@ export function createHuidaScene(services) {
     const apuntando = j.aimTimer <= 0 ? 0
       : j.aimTimer > H.jinetes.apuntar * 0.5 ? 1 : 2;
 
+    /**
+     * 🆕 EN EL ESTILO NUEVO, DADO VUELTA EN LA SILLA CON EL RIFLE *(Santi: "hay veces que los jinetes se transforman
+     * en el dibujo viejo")*: mientras apunta y un momento después del tiro, el torso que mira hacia donde tira (uno de
+     * 8, como el tuyo con el Colt). Antes, para eso, se dibujaba el jinete viejo. Mirando al oeste el caballo va en
+     * espejo, y el torso también: se elige el del ángulo espejado.
+     */
+    let apuntaChico = null;
+    /**
+     * 🆕 Y REVOLEANDO EL LAZO, DADO VUELTA HACIA VOS *(Santi eligió "hacia vos")*: el brazo arriba, con la argolla
+     * girando en la mano (`argollaChica`). Manda sobre el rifle: no se revolea y se apunta a la vez.
+     */
+    const revolea = estiloNuevo.activo && j.revolea > 0;
+    // 🆕 Y mientras la argolla vuela, el brazo estirado hacia vos (el paso 3 del lazo).
+    const lanza = estiloNuevo.activo && !revolea && j.soga > 0;
+    // 🆕 Y si ya te enlazó, tirando de la soga (el paso 4).
+    const tiraSoga = estiloNuevo.activo && !!yo.lazo && yo.lazo.j === j;
+    if (revolea || lanza || tiraSoga) {
+      let a = Math.atan2(yo.y - j.y, yo.x - j.x);
+      if (Math.cos(j.rumbo) < 0) a = Math.PI - a;
+      apuntaChico = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+    } else if (estiloNuevo.activo && apuntando + j.bajaRifle > 0) {
+      let a = Math.atan2(Math.sin(j.aimDir) * PROFUNDIDAD, Math.cos(j.aimDir));
+      if (Math.cos(j.rumbo) < 0) a = Math.PI - a;
+      apuntaChico = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+    }
+
+    let persona = null;
     dibujarCaballo(j, r, () => {
       const montura = dibujarAnimal(r, j.x, j.y, zancada, trote, 1, pose, j.pelaje || null, !dia);
       const rebote = Math.cos((zancada.t / T0 - 0.25) * Math.PI * 2) * 0.6;
-      dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, pose, 2, {
+      persona = dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, pose, 2, {
+        apuntaChico,
+        revolea,
+        lanza,
+        tiraSoga,
+        // 🆕 La soga enrollada en la silla, dibujada con el jinete (en el viejo la pinta `dibujarSuLazo`).
+        lazo: estiloNuevo.activo && lazoEnrollado(j),
         detalles: 'ley',
         ent: j,
         destello: j.hitFlash > 0,
@@ -2135,6 +2181,34 @@ export function createHuidaScene(services) {
       }, montura);
       montura.adelante();
     });
+
+    // La boca del rifle, en el mundo (si el caballo va en espejo, se da vuelta la x), y su fogonazo dibujado.
+    let mano = null;
+    if (persona && persona.boca) {
+      const [bx, by] = persona.boca;
+      mano = [Math.cos(j.rumbo) < 0 ? Math.round(j.x) * 2 - bx : bx, by];
+    }
+    j.boca = revolea || lanza || tiraSoga ? null : mano;
+    // (De dónde sale la soga tensa: ver `dibujarLaSoga`.)
+    j.manoSoga = tiraSoga ? mano : null;
+    if (revolea && mano) {
+      // La argolla: una vuelta cada 0,42 s (la de antes), y la grande en el último 40% del revoleo.
+      const listo = 1 - j.revolea / H.jinetes.lazo.revoleo;
+      const k = Math.floor((tiempo * 15) / (Math.PI * 2) * 8);
+      const P = CONFIG.estilo.punto / 2;
+      argollaChica(r, mano[0], mano[1] - P, k, listo > 0.6, P, !dia);
+    }
+    // La argolla que vuela se anota acá y se dibuja después de todo (ver `dibujarArgollasQueVuelan`).
+    j.vuela = lanza && mano ? { mano, noche: !dia } : null;
+    // 🆕 Y justo antes del tiro, el brillo en el caño (ver `jinetes.brillo` en data/huida.js).
+    const B = H.jinetes.brillo;
+    if (estiloNuevo.activo && j.boca && j.aimTimer > 0 && j.aimTimer < B) {
+      brilloDelCano(r, j.boca[0], j.boca[1], Math.floor((1 - j.aimTimer / B) * 8), CONFIG.estilo.punto / 2);
+    }
+    if (estiloNuevo.activo && j.fogonazo > 0 && j.boca) {
+      const a = Math.atan2(Math.sin(j.aimDir) * PROFUNDIDAD, Math.cos(j.aimDir));
+      dibujarFogonazo(r, j.boca[0], j.boca[1], a, j.fogonazo > 0.03 ? 1 : 0.4, null, CONFIG.estilo.punto / 2);
+    }
 
     if (j.lazo || j.revolea > 0 || j.soga > 0) dibujarSuLazo(r, j);
   }
@@ -2148,10 +2222,33 @@ export function createHuidaScene(services) {
    * está espejado cuando el caballo va al oeste, y una soga espejada saldría
    * del lado equivocado.
    */
+  /** Si trae el lazo enrollado en la silla: lo tiene y todavía no lo revoleó ni lo tiró. */
+  function lazoEnrollado(j) {
+    return !!j.lazo && !(j.revolea > 0) && !(j.soga > 0) && !(yo.lazo && yo.lazo.j === j);
+  }
+
+  /**
+   * 🆕 LA ARGOLLA QUE VUELA HACIA VOS (el paso 3 del lazo): de la mano del que la tiró hasta vos (donde iba la soga
+   * vieja), cerrándose en el camino. Encima de todo, como la soga tensa: si se dibujara con el que la tira, al llegar
+   * la taparía tu caballo.
+   */
+  function dibujarArgollasQueVuelan(r) {
+    if (!estiloNuevo.activo) return;
+    const P = CONFIG.estilo.punto / 2;
+    for (const j of jinetes) {
+      if (!j.vuela || !(j.soga > 0)) continue;
+      const { mano, noche } = j.vuela;
+      const t = Math.max(0, Math.min(1, 1 - j.soga / H.jinetes.lazo.vuelo));
+      argollaVolando(r, mano[0] + (yo.x - mano[0]) * t, mano[1] + (yo.y - 10 - mano[1]) * t, Math.floor(t * 8), P, mano, noche);
+    }
+  }
+
   function dibujarSuLazo(r, j) {
     const SOGA = '#d9c9a4';
     const lado = Math.cos(j.rumbo) < 0 ? -1 : 1;
 
+    // (🆕 En el estilo nuevo el revoleo va dibujado con el jinete: ver `dibujarLey`.)
+    if (j.revolea > 0 && estiloNuevo.activo) return;
     if (j.revolea > 0) {
       /**
        * 🪢 EL REVOLEO *(pedido de Santi)*: antes era un rectangulito dando
@@ -2179,6 +2276,8 @@ export function createHuidaScene(services) {
       return;
     }
 
+    // (🆕 En el estilo nuevo, la argolla que vuela va con el jinete: ver `dibujarLey`.)
+    if (j.soga > 0 && estiloNuevo.activo) return;
     if (j.soga > 0) {
       // Ya salió: la soga viaja hacia vos.
       const t = 1 - j.soga / H.jinetes.lazo.vuelo;
@@ -2193,6 +2292,8 @@ export function createHuidaScene(services) {
      * que vienen atrás y saber cuál te puede enlazar antes de que pase nada, así
      * que tiene que leerse de lejos.
      */
+    // (🆕 En el estilo nuevo va dibujado con el jinete: ver `lazoEnrollado`.)
+    if (estiloNuevo.activo) return;
     const ex = j.x - 6 * lado, ey = j.y - 9;
     dibujarAro(r, ex, ey, 3.2, 1.9, '#a89268');
     r.box(ex + 3.2 * lado, ey + 2.2, 0.5, 2, '#8f7c58');
@@ -2214,9 +2315,22 @@ export function createHuidaScene(services) {
    * LA SOGA TENSA, de su mano a tu caballo. Va con panza y se mueve: una línea
    * recta se lee como un palo, no como una soga.
    */
-  function dibujarLaSoga(r) {
+  function dibujarLaSoga(r, dia) {
     if (!yo.lazo) return;
     const j = yo.lazo.j;
+    /**
+     * 🆕 EN EL ESTILO NUEVO, DE SU MANO A LA ARGOLLA DE TU PECHO (el paso 4 del lazo): sale de la mano del que tira
+     * (`j.manoSoga`) y llega al borde de la argolla que tenés alrededor del torso (`yo.anillo`), del lado de él.
+     * Con la misma panza que se mueve, en los puntos de la grilla.
+     */
+    if (estiloNuevo.activo && j.manoSoga && yo.anillo) {
+      const P = CONFIG.estilo.punto / 2;
+      const [cx, cy] = yo.anillo, [hx, hy] = j.manoSoga;
+      const a = Math.atan2(hy - cy, hx - cx);
+      const borde = [cx + Math.cos(a) * 3 * P, cy + Math.sin(a) * P];
+      sogaEnGrilla(r, j.manoSoga, borde, 2 + Math.sin(tiempo * 11), P, !dia);
+      return;
+    }
     const lado = Math.cos(j.rumbo) < 0 ? -1 : 1;
     const x0 = j.x + 5 * lado, y0 = j.y - 20;
     const x1 = yo.x, y1 = yo.y - 10;
@@ -2275,7 +2389,12 @@ export function createHuidaScene(services) {
         arma: true,
         armaDir,
         apuntaChico,
+        // 🆕 Enlazado: la argolla alrededor del pecho (el paso 4 del lazo).
+        enlazado: estiloNuevo.activo && !!yo.lazo,
       }, montura);
+      // Y su medio, en el mundo, para que la soga llegue ahí (si el caballo va en espejo, se da vuelta la x).
+      yo.anillo = persona && persona.anillo
+        ? [Math.cos(yo.rumbo) < 0 ? Math.round(yo.x) * 2 - persona.anillo[0] : persona.anillo[0], persona.anillo[1]] : null;
       // La boca del Colt, en el mundo (si el caballo va en espejo, se da vuelta la x).
       if (persona && persona.boca) {
         const [bx, by] = persona.boca;

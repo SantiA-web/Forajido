@@ -40,7 +40,7 @@
  * donde está parado (engine/luz.js).
  */
 import { iluminar } from '../../engine/luz.js';
-import { sombrear, RGB } from '../../engine/paleta.js';
+import { sombrear, RGB, PALETA } from '../../engine/paleta.js';
 
 // ------------------------------------------------------------- los colores
 /** Cada letra de los mapas, a su color de la paleta. */
@@ -2696,6 +2696,51 @@ const FUNDA_CHICA = {
     '.....................m',
   ]),
 };
+/**
+ * 🆕 EL LAZO ENROLLADO, COLGADO DETRÁS DE LA SILLA *(Santi: "debemos ajustar lo del movimiento con el lazo que todavía
+ * tiene el dibujo viejo"; el orden: primero la soga enrollada, después el revoleo, el tiro y el enlazado)*. Es lo que
+ * te deja ver de lejos cuál de los que vienen atrás te puede enlazar. A mano en las 5 vistas, en puntos del caballo
+ * chico: un rollo de soga clara (S la luz, s la sombra) con el agujero del medio y la punta que cuelga. De frente y de
+ * espaldas se lo ve de canto, al costado.
+ */
+// (🔁 Primero era casi blanca, y con el agujero parecía una calavera: ahora la soga gastada, de cuero crudo.)
+// (Y adelante, contra el pecho oscuro del caballo, la luz vuelve a ser la clara: ya no hay agujero blanco.)
+const COLORES_LAZO = { S: 38, s: 36 };
+// (🔁 ADELANTE, COLGADO DEL CUERNO DE LA SILLA *(Santi: "el lazo enrollado no se nota mucho"; eligió ponerlo
+// adelante)*: detrás de la silla lo tapaban la pierna y la manta. Ahora cuelga sobre el pecho y la paleta del caballo,
+// que es donde lo lleva un vaquero; de frente, al costado del pecho, y de espaldas apenas asoma al costado.)
+const LAZO_CHICO = {
+  lado: mapa(9, [
+    '...............sSS.',
+    '...............S..S',
+    '...............sSs.',
+    '................s..',
+  ]),
+  diagF: mapa(8, [
+    '................sSS.',
+    '................S..S',
+    '................sSs.',
+    '.................s..',
+  ]),
+  diagE: mapa(9, [
+    '.................sSS.',
+    '.................S..S',
+    '.................sSs.',
+    '..................s..',
+  ]),
+  frente: mapa(5, [
+    '.........sS.',
+    '.........S.S',
+    '.........sS.',
+    '..........s.',
+  ]),
+  espalda: mapa(7, [
+    '...................sS',
+    '...................S.',
+    '...................sS',
+    '....................s',
+  ]),
+};
 const MANO_CHICO = { lado: [14.5, 5.5], diagF: [14.5, 4.5], diagE: [16.5, 5.5], frente: [14.5, 3.5], espalda: [15, 4] };
 /**
  * 🆕 TIRANDO DESDE EL CABALLO, CON EL COLT *(Santi eligió "se da vuelta en la silla": "las piernas quedan sobre el
@@ -2795,6 +2840,529 @@ const JINETE_CHICO_TIRA = [
     '...WWW......',
   ],
 ];
+/**
+ * 🆕 EL JINETE DE LA LEY CHICO, APUNTANDO CON EL RIFLE *(Santi: "hay veces que los jinetes se transforman en el dibujo
+ * viejo"; eligió dibujarlos apuntando)*. Como el Colt de arriba: de la cintura para arriba, dado vuelta en la silla, a
+ * mano en las 8 direcciones de la mira (0 este … 7 noreste), con el cinto en la última fila. El rifle con las dos
+ * manos: la culata (d, la madera) contra el hombro y la cara apoyada, la mano de adelante (P) debajo del caño, y el
+ * caño (a); la boca es la `a` de más afuera. Sin él, cuando apuntaba en la huida se dibujaba el jinete viejo.
+ */
+const JINETE_CHICO_RIFLE = [
+  [
+    '.....kHk......',
+    '...xKKKKKx....',
+    '.....pPn......',
+    '....rdddPaaa..',
+    '...UVCCC......',
+    '...UVv........',
+    '...UVv........',
+    '...VVv........',
+    '...WWy........',
+  ],
+  [
+    '....kHk......',
+    '..xKKKKKx....',
+    '....pPp......',
+    '...CrRdd.....',
+    '...CUVvLd....',
+    '....UVvCCP...',
+    '....UVv...a..',
+    '....VVv....a.',
+    '....WWy.....a',
+  ],
+  [
+    '....kHk....',
+    '..xKKKKKx..',
+    '....pPp....',
+    '...CRdSC...',
+    '...CPdvC...',
+    '....UaPC...',
+    '....VaVv...',
+    '....VaVv...',
+    '....WWy....',
+  ],
+  [
+    '......kHk....',
+    '....xKKKKKx..',
+    '......pPp....',
+    '.....ddRrC...',
+    '....dLUVvC...',
+    '...PCCUVv....',
+    '..a...UVv....',
+    '.a....VVv....',
+    'a.....WWy....',
+  ],
+  [
+    '......kHk.....',
+    '....xKKKKKx...',
+    '......nPp.....',
+    '..aaaPdddr....',
+    '......CCCVU...',
+    '........vVU...',
+    '........vVU...',
+    '........vVV...',
+    '........yWW...',
+  ],
+  [
+    'a.....kHk....',
+    '.a..xKKKKKx..',
+    '..P...qBq....',
+    '...dd.rRr....',
+    '.....CCUVv...',
+    '.......UVv...',
+    '.......UVv...',
+    '.......VVv...',
+    '.......WWW...',
+  ],
+  [
+    '.....kHk..a.',
+    '...xKKKKKxa.',
+    '.....qBq..P.',
+    '.....rRr.dC.',
+    '....CVVvCCC.',
+    '....cVVvc...',
+    '.....VVv....',
+    '.....VVv....',
+    '.....WWW....',
+  ],
+  [
+    '....kHk.....a',
+    '..xKKKKKx..a.',
+    '....qBB...P..',
+    '....rRR.dd...',
+    '...UVvCC.....',
+    '...UVv.......',
+    '...UVv.......',
+    '...VVv.......',
+    '...WWW.......',
+  ],
+];
+/**
+ * 🆕 EL REVOLEO: EL JINETE CHICO CON EL BRAZO ARRIBA *(Santi: el orden del lazo, el 2; eligió que revolee "hacia
+ * vos")*. Como el Colt y el rifle: de la cintura para arriba, dado vuelta en la silla hacia vos, a mano en las 8
+ * direcciones (0 este … 7 noreste), con el cinto en la última fila. El brazo derecho levantado por encima del
+ * sombrero (C la manga) y la mano arriba (la P de más arriba): de ahí gira la argolla (ARGOLLA, abajo). Dos filas más
+ * altas que el del Colt, por el brazo.
+ */
+const JINETE_CHICO_REVOLEA = [
+  [
+    '.........P..',
+    '.........C..',
+    '....kHk..C..',
+    '..xKKKKKxC..',
+    '....pPn.C...',
+    '....rR.C....',
+    '...UVCC.....',
+    '...UVv......',
+    '...UVv......',
+    '...VVv......',
+    '...WWy......',
+  ],
+  [
+    '.P...........',
+    '.C...........',
+    '.C..kHk......',
+    '.CxKKKKKx....',
+    '..C.pPp......',
+    '...CrRS......',
+    '...CUVvC.....',
+    '....UVvC.....',
+    '....UVv......',
+    '....VVv......',
+    '....WWy......',
+  ],
+  [
+    '.P.........',
+    '.C.........',
+    '.C..kHk....',
+    '.CxKKKKKx..',
+    '..C.pPp....',
+    '...CRSR....',
+    '...CUVvC...',
+    '....UVvC...',
+    '....UVvL...',
+    '....VVv....',
+    '....WWy....',
+  ],
+  [
+    '...........P.',
+    '...........C.',
+    '......kHk..C.',
+    '....xKKKKKxC.',
+    '......pPp.C..',
+    '......SRrC...',
+    '.....CUVvC...',
+    '.....CUVv....',
+    '......UVv....',
+    '......VVv....',
+    '......WWy....',
+  ],
+  [
+    '..P.........',
+    '..C.........',
+    '..C..kHk....',
+    '..CxKKKKKx..',
+    '...C.nPp....',
+    '....C.Rr....',
+    '.....CCVU...',
+    '......vVU...',
+    '......vVU...',
+    '......vVV...',
+    '......yWW...',
+  ],
+  [
+    '...........P.',
+    '...........C.',
+    '......kHk..C.',
+    '....xKKKKKxC.',
+    '......qBq.C..',
+    '......rRrC...',
+    '.....CVVvC...',
+    '.....cVVvc...',
+    '......VVv....',
+    '......VVv....',
+    '......WWW....',
+  ],
+  [
+    '..........P.',
+    '..........C.',
+    '.....kHk..C.',
+    '...xKKKKKxC.',
+    '.....qBq.C..',
+    '.....rRrC...',
+    '....CVVvC...',
+    '....cVVv....',
+    '.....VVv....',
+    '.....VVv....',
+    '.....WWW....',
+  ],
+  [
+    '.........P..',
+    '.........C..',
+    '....kHk..C..',
+    '..xKKKKKxC..',
+    '....qBB.C...',
+    '....rRRC....',
+    '...UVvC.....',
+    '...UVv......',
+    '...UVv......',
+    '...VVv......',
+    '...WWW......',
+  ],
+];
+
+/**
+ * 🆕 LA ARGOLLA QUE GIRA ENCIMA DE LA CABEZA: el lazo revoleado, acostado y visto en tres cuartos (un óvalo). 8 cuadros
+ * a mano por vuelta: la honda (H, el nudo donde la soga se cierra) da la vuelta al óvalo y la soga (r) va de la mano,
+ * en el centro, hasta ella. Lo de adelante, al sol (S); lo de atrás, en sombra (s). Dos tamaños: la de siempre y la
+ * grande del final, cuando está por salir *(como antes: "se agranda sobre el final: eso solo ya te avisa")*. El centro
+ * del mapa cae en la mano.
+ */
+const ARGOLLA = {
+  chica: [
+    ['...sssss...', '.ss.....ss.', 's.....rrrrH', '.SS.....SS.', '...SSSSS...'],
+    ['...sssss...', '.ss.....ss.', 's.....r...s', '.SS....rHS.', '...SSSSS...'],
+    ['...sssss...', '.ss.....ss.', 's.........s', '.SS..r..SS.', '...SSHSS...'],
+    ['...sssss...', '.ss.....ss.', 's...r.....s', '.SHr....SS.', '...SSSSS...'],
+    ['...sssss...', '.ss.....ss.', 'Hrrrr.....s', '.SS.....SS.', '...SSSSS...'],
+    ['...sssss...', '.sHr....ss.', 's...r.....s', '.SS.....SS.', '...SSSSS...'],
+    ['...ssHss...', '.ss..r..ss.', 's.........s', '.SS.....SS.', '...SSSSS...'],
+    ['...sssss...', '.ss....rHs.', 's.....r...s', '.SS.....SS.', '...SSSSS...'],
+  ],
+  grande: [
+    ['....sssssss....', '..ss.......ss..', '.s...........s.', 's.......rrrrrrH', '.S...........S.', '..SS.......SS..', '....SSSSSSS....'],
+    ['....sssssss....', '..ss.......ss..', '.s...........s.', 's.......r.....s', '.S.......rr..S.', '..SS.......HS..', '....SSSSSSS....'],
+    ['....sssssss....', '..ss.......ss..', '.s...........s.', 's.............s', '.S.....r.....S.', '..SS...r...SS..', '....SSSHSSS....'],
+    ['....sssssss....', '..ss.......ss..', '.s...........s.', 's.....r.......s', '.S..rr.......S.', '..SH.......SS..', '....SSSSSSS....'],
+    ['....sssssss....', '..ss.......ss..', '.s...........s.', 'Hrrrrrr.......s', '.S...........S.', '..SS.......SS..', '....SSSSSSS....'],
+    ['....sssssss....', '..sH.......ss..', '.s..rr.......s.', 's.....r.......s', '.S...........S.', '..SS.......SS..', '....SSSSSSS....'],
+    ['....sssHsss....', '..ss...r...ss..', '.s.....r.....s.', 's.............s', '.S...........S.', '..SS.......SS..', '....SSSSSSS....'],
+    ['....sssssss....', '..ss.......Hs..', '.s.......rr..s.', 's.......r.....s', '.S...........S.', '..SS.......SS..', '....SSSSSSS....'],
+  ],
+};
+// (🔁 Con la soga clara, la mitad de adelante era del color de la arena y no se veía: va más oscura que el suelo.)
+const COLOR_ARGOLLA = { S: 35, s: 34, H: 33, r: 35 };
+/**
+ * La argolla, cuadro `k` (0 a 7), con el centro en `x`, `y` (el centro de un punto) y puntos de `paso`.
+ * `grande`: la del final. `noche`: un escalón más oscura.
+ */
+export function argollaChica(r, x, y, k, grande, paso, noche = false) {
+  const m = ARGOLLA[grande ? 'grande' : 'chica'][((k % 8) + 8) % 8];
+  const cx = (m[0].length - 1) / 2, cy = (m.length - 1) / 2;
+  const x0 = x - paso / 2 - cx * paso, y0 = y - paso / 2 - cy * paso;
+  for (let fila = 0; fila < m.length; fila++) {
+    for (let col = 0; col < m[fila].length; col++) {
+      const c = COLOR_ARGOLLA[m[fila][col]];
+      if (c == null) continue;
+      r.rect(x0 + col * paso, y0 + fila * paso, paso, paso, PALETA[noche ? sombrear(c, -1) : c]);
+    }
+  }
+}
+/**
+ * 🆕 EL TIRO DEL LAZO: EL BRAZO ESTIRADO HACIA VOS *(Santi: el paso 3 del lazo)*. Mientras la argolla vuela, el
+ * jinete chico queda con el brazo derecho estirado hacia donde la tiró, la mano abierta (la P de más afuera): de ahí
+ * sale la soga. A mano en las 8 direcciones (0 este … 7 noreste), con el cinto en la última fila.
+ */
+const JINETE_CHICO_LANZA = [
+  [
+    '....kHk.....',
+    '..xKKKKKx...',
+    '....pPn..LP.',
+    '....rR.CC...',
+    '...UVCC.....',
+    '...UVv......',
+    '...UVv......',
+    '...VVv......',
+    '...WWy......',
+  ],
+  [
+    '....kHk......',
+    '..xKKKKKx....',
+    '....pPp......',
+    '....rRS......',
+    '...CUVvCC....',
+    '...CUVv..CL..',
+    '....UVv....P.',
+    '....VVv......',
+    '....WWy......',
+  ],
+  [
+    '....kHk....',
+    '..xKKKKKx..',
+    '....pPp....',
+    '...CRSR....',
+    '..CUUVvC...',
+    '..L.UVvC...',
+    '..P.UVv....',
+    '....VVv....',
+    '....WWy....',
+  ],
+  [
+    '......kHk....',
+    '....xKKKKKx..',
+    '......pPp....',
+    '......SRr....',
+    '....CCUVvC...',
+    '..LC..UVvC...',
+    '.P....UVv....',
+    '......VVv....',
+    '......WWy....',
+  ],
+  [
+    '.....kHk....',
+    '...xKKKKKx..',
+    '.PL..nPp....',
+    '...CC.Rr....',
+    '.....CCVU...',
+    '......vVU...',
+    '......vVU...',
+    '......vVV...',
+    '......yWW...',
+  ],
+  [
+    '.P....kHk....',
+    '..L.xKKKKKx..',
+    '...C..qBq....',
+    '....C.rRr....',
+    '.....CVVvC...',
+    '.....cVVvc...',
+    '......VVv....',
+    '......VVv....',
+    '......WWW....',
+  ],
+  [
+    '.....kHk..P.',
+    '...xKKKKKxL.',
+    '.....qBq.C..',
+    '.....rRrC...',
+    '....CVVvC...',
+    '....cVVvc...',
+    '.....VVv....',
+    '.....VVv....',
+    '.....WWW....',
+  ],
+  [
+    '....kHk....P',
+    '..xKKKKKx.L.',
+    '....qBB..C..',
+    '....rRR.C...',
+    '...UVvCC....',
+    '...UVv......',
+    '...UVv......',
+    '...VVv......',
+    '...WWW......',
+  ],
+];
+
+/**
+ * 🆕 LA ARGOLLA VOLANDO HACIA VOS: 8 cuadros a mano. Sale de la mano abierta y grande como en el final del revoleo, y
+ * se va cerrando y achatando mientras baja hasta vos. Sin honda dibujada: la soga llega al borde que tiene más cerca
+ * *(como antes: "la soga llega al BORDE del aro, no a su centro")*.
+ */
+const ARGOLLA_VUELA = [
+  ['....sssssss....', '..ss.......ss..', '.s...........s.', 's.............s', '.S...........S.', '..SS.......SS..', '....SSSSSSS....'],
+  ['...sssssss...', '.ss.......ss.', 's...........s', 's...........s', 'S...........S', '.SS.......SS.', '...SSSSSSS...'],
+  ['...sssssss...', '.ss.......ss.', 's...........s', '.SS.......SS.', '...SSSSSSS...'],
+  ['...sssss...', '.ss.....ss.', 's.........s', '.SS.....SS.', '...SSSSS...'],
+  ['..sssssss..', 'ss.......ss', 'SS.......SS', '..SSSSSSS..'],
+  ['..sssss..', 'ss.....ss', 'SS.....SS', '..SSSSS..'],
+  ['.sssssss.', 'S.......S', '.SSSSSSS.'],
+  ['.sssss.', 'S.....S', '.SSSSS.'],
+];
+/**
+ * La argolla volando, cuadro `k` (0 a 7), con el centro en `x`, `y`, y la soga desde `mano` (en el mundo)
+ * hasta su borde más cercano. La soga no es un dibujo: el juego calcula por qué puntos de la grilla pasa (va de una
+ * mano que se mueve a una argolla que vuela), pero va de a puntos enteros, como lo demás.
+ */
+export function argollaVolando(r, x, y, k, paso, mano, noche = false) {
+  const m = ARGOLLA_VUELA[Math.max(0, Math.min(7, k))];
+  const cx = (m[0].length - 1) / 2, cy = (m.length - 1) / 2;
+  const x0 = Math.round(x / paso - cx) * paso, y0 = Math.round(y / paso - cy) * paso;
+  const color = (c) => PALETA[noche ? sombrear(c, -1) : c];
+  const punto = (col, fila, c) => r.rect(x0 + col * paso, y0 + fila * paso, paso, paso, color(c));
+  // La soga: de la mano al punto de la argolla más cercano, punto por punto.
+  const hc = Math.round((mano[0] - x0) / paso - 0.5), hf = Math.round((mano[1] - y0) / paso - 0.5);
+  let borde = null, mejor = Infinity;
+  m.forEach((f, fila) => { for (let col = 0; col < f.length; col++) {
+    if (f[col] === '.') continue;
+    const d = (col - hc) ** 2 + (fila - hf) ** 2;
+    if (d < mejor) { mejor = d; borde = [col, fila]; }
+  } });
+  if (borde) {
+    const n = Math.max(Math.abs(borde[0] - hc), Math.abs(borde[1] - hf));
+    for (let i = 1; i < n; i++) punto(Math.round(hc + (borde[0] - hc) * i / n), Math.round(hf + (borde[1] - hf) * i / n), 36);
+  }
+  m.forEach((f, fila) => { for (let col = 0; col < f.length; col++) {
+    const c = COLOR_ARGOLLA[f[col]];
+    if (c != null) punto(col, fila, c);
+  } });
+}
+/**
+ * 🆕 YA TE ENLAZÓ: EL JINETE TIRANDO DE LA SOGA *(Santi: el paso 4 del lazo)*. Dado vuelta hacia vos, con la mano
+ * (la P de más afuera hacia vos) junto al pecho y el codo atrás: de ahí sale la soga tensa. De espaldas, la mano asoma
+ * al costado. A mano en las 8 direcciones (0 este … 7 noreste), con el cinto en la última fila.
+ */
+const JINETE_CHICO_TIRA_SOGA = [
+  [
+    '....kHk.....',
+    '..xKKKKKx...',
+    '....pPn.....',
+    '....rR......',
+    '..CUVvLP....',
+    '..CUVv......',
+    '...UVv......',
+    '...VVv......',
+    '...WWy......',
+  ],
+  [
+    '....kHk......',
+    '..xKKKKKx....',
+    '....pPp......',
+    '....rRS......',
+    '...CUVvLP....',
+    '...CUVv......',
+    '....UVv......',
+    '....VVv......',
+    '....WWy......',
+  ],
+  [
+    '....kHk....',
+    '..xKKKKKx..',
+    '....pPp....',
+    '...CRSRC...',
+    '...CLPLC...',
+    '....UVv....',
+    '....UVv....',
+    '....VVv....',
+    '....WWy....',
+  ],
+  [
+    '......kHk....',
+    '....xKKKKKx..',
+    '......pPp....',
+    '......SRr....',
+    '....PLUVvC...',
+    '......UVvC...',
+    '......UVv....',
+    '......VVv....',
+    '......WWy....',
+  ],
+  [
+    '.....kHk....',
+    '...xKKKKKx..',
+    '.....nPp....',
+    '......Rr....',
+    '....PLvVUC..',
+    '......vVUC..',
+    '......vVU...',
+    '......vVV...',
+    '......yWW...',
+  ],
+  [
+    '......kHk....',
+    '....xKKKKKx..',
+    '......qBq....',
+    '....PLrRrC...',
+    '.....CVVvC...',
+    '.....cVVvc...',
+    '......VVv....',
+    '......VVv....',
+    '......WWW....',
+  ],
+  [
+    '.....kHk....',
+    '...xKKKKKx..',
+    '.....qBq.P..',
+    '....CrRrCL..',
+    '....CVVvC...',
+    '....cVVvc...',
+    '.....VVv....',
+    '.....VVv....',
+    '.....WWW....',
+  ],
+  [
+    '....kHk.....',
+    '..xKKKKKx...',
+    '....qBB.....',
+    '...CrRRLP...',
+    '...UVvC.....',
+    '...UVv......',
+    '...UVv......',
+    '...VVv......',
+    '...WWW......',
+  ],
+];
+
+/**
+ * 🆕 LA ARGOLLA ALREDEDOR DE TU TORSO, cuando te enlazaron: un aro de soga clara a la altura del pecho, que te agarra
+ * los brazos. La fila de arriba es la parte de atrás y va DETRÁS del cuerpo; las otras dos, la de los costados y la de
+ * adelante, van encima. El centro del mapa (columna 3, fila 1) cae en el medio del torso, dos filas arriba del cinto.
+ */
+const ANILLO_ATRAS = ['.sssss.'];
+const ANILLO_ADELANTE = ['S.....S', '.SSSSS.'];
+const COLORES_ANILLO = { S: 38, s: 36 };
+
+/**
+ * 🆕 LA SOGA TENSA, EN LA GRILLA: de `desde` a `hasta` (en el mundo), con `panza` unidades de comba en el medio
+ * (se mueve: la calcula la escena). No es un dibujo: el juego calcula por qué puntos de la grilla pasa, porque une dos
+ * cosas que se mueven, pero va de a puntos enteros de `paso`, como lo demás.
+ */
+export function sogaEnGrilla(r, desde, hasta, panza, paso, noche = false) {
+  const [x0, y0] = desde, [x1, y1] = hasta;
+  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + panza * 2;
+  const n = Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / paso) * 2);
+  const vistos = new Set();
+  const color = PALETA[noche ? sombrear(36, -1) : 36];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, u = 1 - t;
+    // (Una curva de tres puntos: la del medio tira para abajo, y la soga pasa por la mitad de esa comba.)
+    const x = u * u * x0 + 2 * u * t * mx + t * t * x1, y = u * u * y0 + 2 * u * t * my + t * t * y1;
+    const cx = Math.floor(x / paso), cy = Math.floor(y / paso), k = cx + ',' + cy;
+    if (vistos.has(k)) continue;
+    vistos.add(k);
+    r.rect(cx * paso, cy * paso, paso, paso, color);
+  }
+}
 /** Hacia dónde apunta cada uno (para saber cuál `a` es la boca). */
 const HACIA_TIRA = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
 /** Dónde está el cinto de un mapa: la última fila con W, y su centro. */
@@ -2808,14 +3376,15 @@ function cintoDe(filas) {
   }
   return { j: filas.length - 1, centro: 0 };
 }
-const CHICO = { ancho: 26, alto: 20, arriba: -4 };
+// (🔁 Dos filas más arriba, para el brazo levantado del revoleo.)
+const CHICO = { ancho: 26, alto: 22, arriba: -6 };
 const chicos = new Map();
 /** `silla`: con la silla, y `persona`: con la persona. Devuelve también dónde tiene la mano, en puntos del caballo chico. */
 /**
  * 🆕 `colores`: los de otra persona (un jinete de la ley), encima de los del jugador; `rifle`: con la funda.
  */
-export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado', colores = null, rifle = false, apunta = null }, luz = 0, destello = false) {
-  const clave = [persona, silla, luz, destello, vista, colores ? JSON.stringify(colores) : '', rifle, apunta].join('|');
+export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado', colores = null, rifle = false, apunta = null, lazo = false, revolea = false, lanza = false, tiraSoga = false, enlazado = false }, luz = 0, destello = false) {
+  const clave = [persona, silla, luz, destello, vista, colores ? JSON.stringify(colores) : '', rifle, apunta, lazo, revolea, lanza, tiraSoga, enlazado].join('|');
   if (chicos.has(clave)) return chicos.get(clave);
   const { ancho, alto, arriba } = CHICO;
   const idx = new Int16Array(ancho * alto).fill(-1), esPersona = new Uint8Array(ancho * alto);
@@ -2828,26 +3397,48 @@ export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado'
     }
   });
   if (silla) pinta(SILLA_CHICA_DE[vista], 0);
-  if (silla && rifle) pinta(FUNDA_CHICA[vista], 0, COLORES_FUNDA);
-  let boca = null;
+  // (Apuntando, la funda queda vacía: sin la culata que asoma.)
+  if (silla && rifle) pinta(apunta == null || revolea || lanza || tiraSoga ? FUNDA_CHICA[vista] : { ...FUNDA_CHICA[vista], filas: FUNDA_CHICA[vista].filas.map((f) => f.replace(/h/g, '.')) }, 0, COLORES_FUNDA);
+  // (🆕 `lazo`: con la soga enrollada detrás de la silla, ver LAZO_CHICO.)
+  if (silla && lazo) pinta(LAZO_CHICO[vista], 0, { ...COLORES_SILLA, ...COLORES_LAZO });
+  let boca = null, anilloEn = null;
   if (persona && apunta == null) pinta(JINETE_CHICO_DE[vista], 1, tablaPersona);
   if (persona && apunta != null) {
     // 🆕 Tirando: las piernas de la vista del caballo (debajo del cinto) y, encima, el torso que apunta, cinto con cinto.
-    const V = JINETE_CHICO_DE[vista], cv = cintoDe(V.filas), U = JINETE_CHICO_TIRA[apunta], cu = cintoDe(U);
+    // (🆕 El de la ley, con el rifle: la madera de la culata es la `d`.)
+    const tabla = rifle ? { ...tablaPersona, d: 5, a: 23 } : tablaPersona;
+    // (🆕 `revolea`: el brazo arriba con el lazo; la "boca" es la mano de arriba, de donde gira la argolla.)
+    // (🆕 `lanza`: el brazo estirado después de tirar el lazo; la "boca" es la mano abierta.)
+    const U = (revolea ? JINETE_CHICO_REVOLEA : lanza ? JINETE_CHICO_LANZA : tiraSoga ? JINETE_CHICO_TIRA_SOGA
+      : rifle ? JINETE_CHICO_RIFLE : JINETE_CHICO_TIRA)[apunta];
+    const V = JINETE_CHICO_DE[vista], cv = cintoDe(V.filas), cu = cintoDe(U);
     pinta({ y: V.y + cv.j + 1, filas: V.filas.slice(cv.j + 1) }, 1, tablaPersona);
     const dx = Math.round(cv.centro - cu.centro), y0 = V.y + cv.j - cu.j;
     const [hx, hy] = HACIA_TIRA[apunta];
     let mejor = -Infinity;
+    // 🆕 Enlazado: la argolla alrededor del pecho, la parte de atrás antes del torso (ver ANILLO_ATRAS).
+    const ax = Math.round(dx + cu.centro) - 3, ay = y0 + cu.j - 3;
+    const anillo = (filas, desde, marca) => filas.forEach((f, j) => {
+      for (let i = 0; i < f.length; i++) {
+        const x = ax + i, y = ay + desde + j, k = (y - arriba) * ancho + x;
+        if (f[i] === '.' || x < 0 || x >= ancho || y - arriba < 0 || y - arriba >= alto) continue;
+        idx[k] = COLORES_ANILLO[f[i]];
+        esPersona[k] = marca;
+      }
+    });
+    if (enlazado) { anilloEn = [ax + 3.5, ay + 1.5]; anillo(ANILLO_ATRAS, 0, 0); }
     U.forEach((f, j) => {
       for (let i = 0; i < f.length; i++) {
         if (f[i] === '.') continue;
         const x = i + dx, y = y0 + j, k = (y - arriba) * ancho + x;
         if (x < 0 || x >= ancho || y - arriba < 0 || y - arriba >= alto) continue;
-        idx[k] = destello ? sombrear(tablaPersona[f[i]], 4) : tablaPersona[f[i]];
+        idx[k] = destello ? sombrear(tabla[f[i]], 4) : tabla[f[i]];
         esPersona[k] = 1;
-        if (f[i] === 'a' && x * hx + y * hy > mejor) { mejor = x * hx + y * hy; boca = [x + 0.5, y + 0.5]; }
+        if (!revolea && f[i] === (lanza || tiraSoga ? 'P' : 'a') && x * hx + y * hy > mejor) { mejor = x * hx + y * hy; boca = [x + 0.5, y + 0.5]; }
+        if (revolea && f[i] === 'P' && -y > mejor) { mejor = -y; boca = [x + 0.5, y + 0.5]; }
       }
     });
+    if (enlazado) anillo(ANILLO_ADELANTE, 1, 1);
   }
   // El borde fino de la persona encima de la silla, como el grande (ver bordeSilla).
   const puntos = [];
@@ -2859,7 +3450,7 @@ export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado'
       puntosDeBorde(puntos, nx, ny, dx, dy);
     }
   }
-  const g = { img: lienzoDeIndices(idx, ancho, alto, luz), arriba, mano: MANO_CHICO[vista], boca, finos: puntos.length ? [{ color: 0, puntos }] : [] };
+  const g = { img: lienzoDeIndices(idx, ancho, alto, luz), arriba, mano: MANO_CHICO[vista], boca, anillo: anilloEn, finos: puntos.length ? [{ color: 0, puntos }] : [] };
   chicos.set(clave, g);
   return g;
 }

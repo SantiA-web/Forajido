@@ -652,6 +652,11 @@ export const HUIDA = {
      * moverte en ese medio segundo es esquivar.
      */
     apuntar: 0.65,
+    /**
+     * 🆕 El brillo del caño *(Santi eligió "el pequeño brillo")*: los últimos segundos de `apuntar`, el sol en el
+     * caño (8 cuadros, ver `brilloDelCano` en entities/bullet.js). Es el "ahora": darse vuelta es el "me apunta".
+     */
+    brillo: 0.18,
 
     /** Cada cuánto tira cada uno, más un poco al azar para que no vayan en coro. */
     cadencia: 1.5,
@@ -891,8 +896,28 @@ export const HUIDA = {
       acerca: 110,
       acercaDura: 6,
 
-      /** Lo revolea esto antes de soltarlo: es TU aviso. */
-      revoleo: 0.7,
+      /**
+       * Lo revolea esto antes de soltarlo: es TU aviso. 🔁 Era 0,7: con la argolla dando 2,4 vueltas por segundo
+       * eran 1,7 vueltas *(Santi: "hoy lo alza y le da apenas una vuelta"; eligió 1,6 s, unas 4 vueltas)*.
+       *
+       * 📏 Medido *(Santi: "medí cuánto engancha con 1,6. Si es muy poco bajalo a 1,2")*: una hora de huida por fila
+       * (unas 50 corridas), cuatro jinetes, sin obstáculos y yendo derecho. "Reacciona" mete el envión a tiempo
+       * para que esté puesto cuando llega la soga y corta con [E]; "no" nunca reacciona.
+       *
+       * | revoleo | piloto    | revoleos/min | enganches/min | por revoleo |
+       * |---------|-----------|--------------|---------------|-------------|
+       * | 0,7     | no        | 4,97         | 2,40          | 0,48        |
+       * | 0,7     | reacciona | 3,20         | **0,98**      | 0,31        |
+       * | 1,2     | no        | 4,73         | 2,27          | 0,48        |
+       * | 1,2     | reacciona | 3,42         | **0,87**      | 0,25        |
+       * | 1,6     | no        | 4,45         | 1,82          | 0,41        |
+       * | 1,6     | reacciona | 3,88         | **0,82**      | 0,21        |
+       *
+       * Con 1,6 se engancha un 16% menos que con 0,7 al que reacciona (y un 24% menos al que no): casi un enganche
+       * por corrida igual, como pedía la tabla de arriba. Entre 1,2 y 1,6 no hay diferencia que se pueda separar
+       * del azar (unos 50 enganches por fila), así que quedó en 1,6.
+       */
+      revoleo: 1.6,
 
       /** Y la soga tarda esto en llegar, para que el tiron no sea instantaneo. */
       vuelo: 0.25,

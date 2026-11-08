@@ -280,6 +280,35 @@ const FOGONAZO = {
 // Hacia dónde, de a octavos de vuelta (el ángulo crece hacia abajo, como en el mundo), y un punto más allá del caño.
 const OCTAVOS = [['E', 1, 0], ['SE', 1, 1], ['S', 0, 1], ['SO', -1, 1], ['O', -1, 0], ['NO', -1, -1], ['N', 0, -1], ['NE', 1, -1]];
 
+/**
+ * 🆕 EL BRILLO DEL CAÑO, JUSTO ANTES DEL TIRO *(Santi: "haría algo más que avise que está por disparar"; eligió "el
+ * pequeño brillo")*: el sol que pega en el caño del rifle que te apunta. 8 cuadros a mano: nace un punto, se abre en
+ * cruz, llega a la estrella con sus diagonales y se apaga. W el blanco, Y el amarillo claro y y el dorado. El centro
+ * del mapa cae en la boca.
+ */
+const BRILLO = [
+  ['.......', '.......', '.......', '...Y...', '.......', '.......', '.......'],
+  ['.......', '.......', '...y...', '..yWy..', '...y...', '.......', '.......'],
+  ['.......', '...y...', '...Y...', '.yYWYy.', '...Y...', '...y...', '.......'],
+  ['...y...', '...Y...', '..yWy..', 'yYWWWYy', '..yWy..', '...Y...', '...y...'],
+  ['...y...', '.y.Y.y.', '..YWY..', 'yYWWWYy', '..YWY..', '.y.Y.y.', '...y...'],
+  ['.......', '...Y...', '..yWy..', '.YWWWY.', '..yWy..', '...Y...', '.......'],
+  ['.......', '.......', '...Y...', '..YWY..', '...Y...', '.......', '.......'],
+  ['.......', '.......', '.......', '...W...', '.......', '.......', '.......'],
+];
+const COLOR_BRILLO = { W: 30, Y: 29, y: 28 };
+/** El cuadro `k` (0 a 7) del brillo, con el centro en `x`, `y` (el centro de un punto) y puntos de `paso`. */
+export function brilloDelCano(r, x, y, k, paso) {
+  const m = BRILLO[Math.max(0, Math.min(7, k))];
+  const x0 = x - paso / 2 - 3 * paso, y0 = y - paso / 2 - 3 * paso;
+  for (let fila = 0; fila < 7; fila++) {
+    for (let col = 0; col < 7; col++) {
+      const c = COLOR_BRILLO[m[fila][col]];
+      if (c != null) r.rect(x0 + col * paso, y0 + fila * paso, paso, paso, PALETA[c]);
+    }
+  }
+}
+
 function fogonazoEnLaGrilla(r, x, y, angulo, f, hacia, paso = null) {
   const PASO = paso ?? CONFIG.estilo.punto / 4;
   const o = ((Math.round(angulo / (Math.PI / 4)) % 8) + 8) % 8;

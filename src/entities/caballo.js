@@ -630,7 +630,7 @@ function jineteDeCostado(r, montura, ropa) {
   // 🆕 El jinete de la ley: un guardia, con su aspecto sorteado y guardado en él (`ropa.ent`).
   const gente = ropa.detalles === 'ley' ? { aspecto: aspectoDe(ropa.ent || montura, 'guardia'), tipo: 'guardia', ...apuntaDe(ropa, vista) } : null;
   if (montura.chico) {
-    const persona = jineteChico(r, { x: ox, y: oy, luz, destello: ropa.destello, vista, gente, apunta: ropa.apuntaChico ?? null, lazo: !!ropa.lazo, revolea: !!ropa.revolea, lanza: !!ropa.lanza, tiraSoga: !!ropa.tiraSoga, enlazado: !!ropa.enlazado });
+    const persona = jineteChico(r, { x: ox, y: oy, luz, destello: ropa.destello, vista, gente, apunta: ropa.apuntaChico ?? null, lazo: !!ropa.lazo, revolea: !!ropa.revolea, lanza: !!ropa.lanza, tiraSoga: !!ropa.tiraSoga, armaLarga: ropa.armaLarga ?? null });
     // (Tirando, las riendas quedan sueltas: no hay mano que las lleve.)
     if (ropa.apuntaChico == null) dibujarCabezada(r, montura, persona.mano);
     else dibujarCabezada(r, montura);

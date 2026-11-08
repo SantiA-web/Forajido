@@ -34,9 +34,10 @@ import { caballoActual, HORSES, esperaDelImpulso, APROXIMACION as A } from '../d
 import { applyRaidResult, recompensaTapada, gameState, numero } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { GOLPES, dibujarAnimal, dibujarJinete, dibujarMontura, dibujarSilla } from '../entities/caballo.js';
-import { dibujarTendido } from '../entities/figura.js';
+import { dibujarTendido, caidaChica, polvoNuevo } from '../entities/figura.js';
+import { CAIDA_DURA, CAIDA_PEGA } from '../entities/estiloNuevo/caida.js';
 import { dibujarFogonazo, brilloDelCano } from '../entities/bullet.js';
-import { argollaChica, argollaVolando, sogaEnGrilla } from '../entities/estiloNuevo/jugador.js';
+import { argollaChica, argollaVolando, sogaEnGrilla, collarChico, nudoDelCollar } from '../entities/estiloNuevo/jugador.js';
 import { sembrarDesierto, pintarSuelo } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
@@ -494,11 +495,15 @@ export function createHuidaScene(services) {
     for (const s of sueltos) {
       s.vida -= dt;
       s.vel = Math.max(40, s.vel * (1 - 0.22 * dt));
+      // (Sigue derecho un momento, con el jinete cayéndose encima, y después se abre.)
+      s.t += dt;
+      if (s.t > 0.3 && s.t <= 0.6) s.rumbo += s.abre * dt / 0.3;
       s.x += Math.cos(s.rumbo) * s.vel * dt;
       s.y += Math.sin(s.rumbo) * s.vel * dt * PROFUNDIDAD;
       s.gallop += dt;
     }
     sueltos = sueltos.filter((s) => s.vida > 0);
+    if (estiloNuevo.activo) moverCaidos(dt);
     /**
      * 💰 LA BOLSA CAE, PICA UNA VEZ Y SUELTA MONEDAS. El rebote no es adorno:
      * antes la bolsa se clavaba en el piso de golpe y no se veía el momento en
@@ -800,7 +805,7 @@ export function createHuidaScene(services) {
     if (como === 'tirado') {
       f.j.alive = false;
       tirados += 1;
-      caidos.push({ x: f.j.x, y: f.j.y });
+      caerDelCaballo(f.j);
       audio.play('relincho');
       audio.play('hitFlesh');
       carteles.push({ x: f.j.x, y: f.j.y - 28, texto: T.huida.loTiraste, color: colors.bagLoot, vida: 1.8 });
@@ -1531,6 +1536,62 @@ export function createHuidaScene(services) {
     balas = balas.filter((b) => b.vida > 0);
   }
 
+  /**
+   * 🐎 SE CAE DEL CABALLO *(Santi eligió la caída de costado, como la del galope)*: el cuerpo va a la par del caballo
+   * mientras se cae, pega en la tierra y se frena arrastrándose (`moverCaidos`).
+   *
+   * Y EL CABALLO SIGUE SOLO. Hasta ahora, cuando bajabas a uno, el cuerpo quedaba en el suelo y **el animal se borraba del
+   * mundo**. Ahora queda suelto: abre para un costado y se va aflojando hasta perderse. No choca con nada ni te hace nada.
+   */
+  function caerDelCaballo(j) {
+    const vel = j.vel != null ? j.vel : H.jinetes.velocidad;
+    caidos.push({ x: j.x, y: j.y, j, rumbo: j.rumbo, vel, t: 0, polvo: [], polvoReloj: 0 });
+    sueltos.push({
+      x: j.x,
+      y: j.y,
+      pelaje: j.pelaje,
+      rumbo: j.rumbo,
+      abre: rng.range(0.5, 1.1) * (rng.chance(0.5) ? 1 : -1),
+      t: 0,
+      vel,
+      gallop: j.gallop,
+      vida: 6,
+    });
+  }
+
+  /** El cuerpo: a la par en el aire; desde que pega, se frena contra el suelo y levanta polvo, que se queda donde nació. */
+  function moverCaidos(dt) {
+    const FRENA = 0.25, POLVO_VIDA = 0.4;
+    for (const c of caidos) {
+      const antes = c.t;
+      c.t += dt;
+      for (const q of c.polvo) { q.t += dt; q.y -= 5 * dt; }
+      c.polvo = c.polvo.filter((q) => q.t < POLVO_VIDA);
+      const v = c.t < CAIDA_PEGA ? c.vel : c.vel * Math.exp(-(c.t - CAIDA_PEGA) / FRENA);
+      if (v < 2) continue;
+      c.x += Math.cos(c.rumbo) * v * dt;
+      c.y += Math.sin(c.rumbo) * v * dt * PROFUNDIDAD;
+      const lado = Math.cos(c.rumbo) < 0 ? -1 : 1;
+      const px = c.x - lado * 26, py = c.y + 6.5;
+      if (antes < CAIDA_PEGA && c.t >= CAIDA_PEGA) {
+        for (let i = 0; i < 5; i++) c.polvo.push({ x: px + (i * 6 - 12) * lado, y: py + rng.range(0, 2), t: 0 });
+      } else if (c.t > CAIDA_PEGA && v > 30) {
+        c.polvoReloj -= dt;
+        if (c.polvoReloj <= 0) { c.polvoReloj = 0.05; c.polvo.push({ x: px + rng.range(-8, 8), y: py + rng.range(0, 2), t: 0 }); }
+      }
+    }
+  }
+
+  // (De día más claro que el del galope: el del galope tiene el centro del color de esta arena y se veían aros huecos.)
+  const POLVO_DE_CAIDA = { D: 38, d: 37 };
+
+  function dibujarCaido(r, c, dia) {
+    const k = Math.min(8, Math.floor(c.t / CAIDA_DURA * 8));
+    // (El polvo antes que el cuerpo: el contorno de la gente se pinta al final, y con el polvo encima quedaba un muñeco crema.)
+    for (const q of c.polvo) polvoNuevo(r, q.x, q.y, Math.floor(q.t / 0.4 * 4), !dia, CONFIG.estilo.punto / 2, POLVO_DE_CAIDA);
+    dibujarCaballo(c, r, () => caidaChica(r, c.x, c.y, c.j, k, dia ? 0 : -1));
+  }
+
   function pegarle(j, danio, deCerca) {
     // De cerca no hay segundo tiro: lo voltea igual (ver `jinetes.remate`).
     j.health -= deCerca ? Math.max(danio, j.health) : danio;
@@ -1539,25 +1600,7 @@ export function createHuidaScene(services) {
     if (j.health > 0) return;
     j.alive = false;
     derribados += 1;
-    caidos.push({ x: j.x, y: j.y });
-    /**
-     * 🐎 Y EL CABALLO SIGUE SOLO. Hasta ahora, cuando bajabas a uno, el cuerpo
-     * quedaba en el suelo y **el animal se borraba del mundo**: desaparecía en
-     * el mismo cuadro, como si el jinete y su caballo fueran una sola cosa.
-     *
-     * Ahora queda suelto: abre para un costado —el susto lo saca de la fila— y
-     * se va aflojando hasta perderse. No choca con nada ni te hace nada; es lo
-     * que pasó, nada más.
-     */
-    sueltos.push({
-      x: j.x,
-      y: j.y,
-      pelaje: j.pelaje,
-      rumbo: j.rumbo + rng.range(0.5, 1.1) * (rng.chance(0.5) ? 1 : -1),
-      vel: j.vel != null ? j.vel : H.jinetes.velocidad,
-      gallop: j.gallop,
-      vida: 6,
-    });
+    caerDelCaballo(j);
     audio.play('relincho');
     audio.play('kill');
     carteles.push({ x: j.x, y: j.y - 28, texto: T.huida.derribado, color: colors.bagLoot, vida: 1.4 });
@@ -1957,7 +2000,11 @@ export function createHuidaScene(services) {
     });
 
     // Lo que quedó tirado en el campo: los caídos y las bolsas.
-    for (const c of caidos) dibujarTendido(r, c.x, c.y + 4, { tipo: 'jineteLey', cinta: '#4a78b8' });
+    // (🆕 En el estilo nuevo, el que ya terminó de caer va acá, en el suelo; el que se está cayendo, con los caballos.)
+    for (const c of caidos) {
+      if (!estiloNuevo.activo) dibujarTendido(r, c.x, c.y + 4, { tipo: 'jineteLey', cinta: '#4a78b8' });
+      else if (c.t >= CAIDA_DURA && !c.polvo.length) dibujarCaido(r, c, dia);
+    }
     for (const b of bolsas) dibujarBolsa(r, b);
 
     polvo.dibujar(r, 0, !dia);
@@ -2007,6 +2054,7 @@ export function createHuidaScene(services) {
     }
     // (🔁 Los caballos se ordenan por los cascos, `y + 7`, como en el galope: los obstáculos van por su pie.)
     for (const s of sueltos) cosas.push({ y: s.y + 7, draw: () => dibujarSuelto(r, s, dia) });
+    if (estiloNuevo.activo) for (const c of caidos) if (c.t < CAIDA_DURA || c.polvo.length) cosas.push({ y: c.y + 7.02, draw: () => dibujarCaido(r, c, dia) });
     cosas.push({ y: yo.y + 7, draw: () => dibujarme(r, dia) });
     // ⛈️ Las gotas, en el mundo: de a tiras según dónde pegan, ordenadas con los caballos y los obstáculos.
     if (estiloNuevo.activo && hayTormenta) {
@@ -2015,19 +2063,12 @@ export function createHuidaScene(services) {
         cosas.push({ y: ty, draw: () => lluvia.dibujarGotas(r.ctx, !dia, 0, CONFIG.estilo.punto / 2, ty, ty + TIRA) });
       }
     }
-    /**
-     * 🆕 La soga tensa, en el estilo nuevo, ordenada con vos: si el que te enlazó viene detrás, la soga va detrás de
-     * tu cuerpo (antes pasaba por encima de tu sombrero y tu cara); si viene adelante, encima.
-     */
-    if (estiloNuevo.activo && yo.lazo) {
-      cosas.push({ y: yo.y + 7 + (yo.lazo.j.y < yo.y ? -0.01 : 0.01), draw: () => dibujarLaSoga(r, dia) });
-    }
     cosas.sort((a, b) => a.y - b.y);
     for (const c of cosas) c.draw();
     // ☁️ La nube de polvo en el aire, encima de los caballos y con huecos (con lluvia no hay: barro).
     if (estiloNuevo.activo && !hayTormenta) polvo.dibujarAire(r, 0, !dia, CONFIG.estilo.punto / 2);
 
-    if (!estiloNuevo.activo) dibujarLaSoga(r, dia);
+    if (!estiloNuevo.activo) dibujarLaSoga(r);
     dibujarArgollasQueVuelan(r);
     for (const b of balas) dibujarBala(r, b);
 
@@ -2189,7 +2230,7 @@ export function createHuidaScene(services) {
       mano = [Math.cos(j.rumbo) < 0 ? Math.round(j.x) * 2 - bx : bx, by];
     }
     j.boca = revolea || lanza || tiraSoga ? null : mano;
-    // (De dónde sale la soga tensa: ver `dibujarLaSoga`.)
+    // (De dónde sale la soga tensa: ver `sogaAlPescuezo`.)
     j.manoSoga = tiraSoga ? mano : null;
     if (revolea && mano) {
       // La argolla: una vuelta cada 0,42 s (la de antes), y la grande en el último 40% del revoleo.
@@ -2315,22 +2356,9 @@ export function createHuidaScene(services) {
    * LA SOGA TENSA, de su mano a tu caballo. Va con panza y se mueve: una línea
    * recta se lee como un palo, no como una soga.
    */
-  function dibujarLaSoga(r, dia) {
+  function dibujarLaSoga(r) {
     if (!yo.lazo) return;
     const j = yo.lazo.j;
-    /**
-     * 🆕 EN EL ESTILO NUEVO, DE SU MANO A LA ARGOLLA DE TU PECHO (el paso 4 del lazo): sale de la mano del que tira
-     * (`j.manoSoga`) y llega al borde de la argolla que tenés alrededor del torso (`yo.anillo`), del lado de él.
-     * Con la misma panza que se mueve, en los puntos de la grilla.
-     */
-    if (estiloNuevo.activo && j.manoSoga && yo.anillo) {
-      const P = CONFIG.estilo.punto / 2;
-      const [cx, cy] = yo.anillo, [hx, hy] = j.manoSoga;
-      const a = Math.atan2(hy - cy, hx - cx);
-      const borde = [cx + Math.cos(a) * 3 * P, cy + Math.sin(a) * P];
-      sogaEnGrilla(r, j.manoSoga, borde, 2 + Math.sin(tiempo * 11), P, !dia);
-      return;
-    }
     const lado = Math.cos(j.rumbo) < 0 ? -1 : 1;
     const x0 = j.x + 5 * lado, y0 = j.y - 20;
     const x1 = yo.x, y1 = yo.y - 10;
@@ -2385,22 +2413,40 @@ export function createHuidaScene(services) {
     const apuntaChico = estiloNuevo.activo ? torsoQueApunta() : null;
     dibujarCaballo(yo, r, () => {
       const montura = dibujarAnimal(r, yo.x, yo.y, zancada, trote, 1, yo.pose, caballo.id, !dia);
+      /**
+       * 🆕 ENLAZADO, EL ARO VA AL PESCUEZO DEL CABALLO *(Santi: "pasá el aro al pescuezo")*. La soga, de la mano del que
+       * tira al nudo, encima del caballo pero debajo tuyo: si viene de atrás te pasa por detrás, no por la cara. Acá
+       * adentro el dibujo puede ir en espejo: por eso la mano se da vuelta. Viniendo hacia la cámara la cabeza se vuelve a pintar
+       * encima del jinete (`adelante`), así que el aro, y la soga si viene de adelante, van después.
+       */
+      const P = CONFIG.estilo.punto / 2;
+      const lazado = estiloNuevo.activo && yo.lazo && montura.chico ? yo.lazo.j : null;
+      const sogaAlPescuezo = () => {
+        const nudo = nudoDelCollar(montura.origen, montura.nombre, P);
+        if (!lazado.manoSoga || !nudo) return;
+        const [hx, hy] = lazado.manoSoga;
+        sogaEnGrilla(r, [Math.cos(yo.rumbo) < 0 ? Math.round(yo.x) * 2 - hx : hx, hy], nudo, 2 + Math.sin(tiempo * 11), P, !dia);
+      };
+      const deFrente = montura.nombre === 'sur' || montura.nombre === 'sudeste';
+      if (lazado && (!deFrente || lazado.y < yo.y)) sogaAlPescuezo();
+      if (lazado && !deFrente) collarChico(r, montura.origen, montura.nombre, P, !dia);
       const persona = dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, yo.pose, 2, {
         arma: true,
         armaDir,
         apuntaChico,
-        // 🆕 Enlazado: la argolla alrededor del pecho (el paso 4 del lazo).
-        enlazado: estiloNuevo.activo && !!yo.lazo,
+        // 🆕 El Winchester o la escopeta, con su propio dibujo (con el Colt y el Schofield, el del revólver).
+        armaLarga: arma.id === 'winchester' || arma.id === 'escopeta' ? arma.id : null,
       }, montura);
-      // Y su medio, en el mundo, para que la soga llegue ahí (si el caballo va en espejo, se da vuelta la x).
-      yo.anillo = persona && persona.anillo
-        ? [Math.cos(yo.rumbo) < 0 ? Math.round(yo.x) * 2 - persona.anillo[0] : persona.anillo[0], persona.anillo[1]] : null;
       // La boca del Colt, en el mundo (si el caballo va en espejo, se da vuelta la x).
       if (persona && persona.boca) {
         const [bx, by] = persona.boca;
         yo.boca = [Math.cos(yo.rumbo) < 0 ? Math.round(yo.x) * 2 - bx : bx, by];
       } else yo.boca = null;
       montura.adelante();
+      if (lazado && deFrente) {
+        if (lazado.y >= yo.y) sogaAlPescuezo();
+        collarChico(r, montura.origen, montura.nombre, P, !dia);
+      }
     });
 
     if (estiloNuevo.activo && yo.fogonazo > 0 && yo.boca) {

@@ -20179,6 +20179,32 @@ entero (enrollado, revoleo, tiro y enlazado) está dibujado en la grilla.
   El piloto va derecho, sin obstáculos, y aprieta el envión siempre a tiempo: una persona puede apretarlo antes.
 - ⚠️ **Sin probar**: todo esto de noche. El lazo enrollado en la vista diagonal se sigue viendo poco.
 
+## ✅ LA HUIDA: EL WINCHESTER, LA ESCOPETA, EL ARO EN EL PESCUEZO Y LA CAÍDA (2026-11-08)
+
+- **El Winchester y la escopeta desde el caballo** *(Santi: "sígamos con el Winchester y la escopeta tirando desde el
+  caballo")*: torso chico con cada arma en las 8 direcciones, a mano (JINETE_CHICO_WINCHESTER y JINETE_CHICO_ESCOPETA en
+  entities/estiloNuevo/jugador.js). El fogonazo y la bala salen de la boca del caño; la escopeta larga sus 6 perdigones.
+  - 🔁 La escopeta de costado parecía un pico al lado de la cara: bajó a la altura del pecho y se alargó. El caño del
+    Winchester se perdía contra el pescuezo oscuro: un tono más claro.
+  - 🐛 `cintoDe` tomaba el caño como si fuera la ropa cuando caía en la fila del cinto y corría 3 puntos el torso en las
+    diagonales de abajo. Ahora lo ignora; arregló también al Colt y a los jinetes de la ley.
+- 🔁 **El aro del lazo pasó del pecho al pescuezo del caballo** *(Santi: "pasá el aro al pescuezo")*: con la soga al
+  caballo se entiende que enlazado sigas tirando. Mapa a mano por vista (COLLAR_CHICO), con una sombra oscura: sin ella
+  el color claro parecía un agujero en el pescuezo. La soga va de la mano del que tira al nudo; si viene de atrás te
+  pasa por detrás. Corrige el paso 4 de la entrada anterior.
+- 🐛 **El [8] te dejaba con el Colt** *(Santi: "cuando yo aprieto 8 debería conservar las armas que me equipé en el
+  campamento")*: el [8] y el Shift+[7] ahora llevan el arma que tengas puesta, también la de los atajos [2] y [3].
+- **La caída de los jinetes en la huida** *(Santi: "hay que arreglar cuando matás a un jinete en la huída"; eligió
+  "Caída de costado")*: la del galope en chico. Se echa para atrás, se va por el anca y cae de cabeza, en 8 cuadros a
+  mano (CAIDA_CHICA), con el sombrero aparte; al pegar levanta polvo, se arrastra frenándose y queda tirado, con y sin
+  chaqueta (TIRADO_CHICO). El caballo sigue con la silla vacía y se abre; también si lo tirás en el forcejeo del lazo.
+  Los que van para arriba o para abajo de la pantalla caen con este mismo dibujo de costado.
+  - El polvo del galope tiene el centro del color de esta arena y se veían aros huecos: acá va más claro
+    (`POLVO_DE_CAIDA`). Y va detrás del cuerpo: el contorno de la gente se pinta al final, y con el polvo encima quedaba
+    un muñeco crema.
+- ⚠️ **Sin probar**: el Winchester, la escopeta y el aro de noche (la caída de noche sí); el Shift+[7]; una huida
+  entera jugada con la soga al pescuezo.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

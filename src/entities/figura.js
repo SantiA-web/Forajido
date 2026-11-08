@@ -35,6 +35,8 @@ import { PALETA } from '../engine/paleta.js';
 import { lienzoJugador, lienzoJinete, lienzoJineteChico, lienzoSilla, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
 import { lienzoGente, lienzoTendido, PIES_TENDIDO, ANCHO_TENDIDO, ALTO_TENDIDO, lienzoJineteGente, coloresDe } from './estiloNuevo/gente.js';
 import { C as COLORES_JUGADOR } from './estiloNuevo/jugador.js';
+import { lienzoCaidaChica } from './estiloNuevo/jugador.js';
+import { aspectoDe } from './estiloNuevo/gente.js';
 import { lienzoCaida, ANCHO_CAIDA, ALTO_CAIDA, OX_CAIDA, POLVO, COLOR_POLVO } from './estiloNuevo/caida.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
@@ -600,6 +602,23 @@ function coloresChicos(gente) {
   return { ...pc, R: pc.C, S: pc.L, r: pc.c, K: pc.H };
 }
 
+/**
+ * 🆕 El jinete de la ley cayéndose en la huida (o tirado, con `k` 8). `x`, `y`: donde iba el caballo; se dibuja mirando al
+ * este, y la escena lo espeja si iba al oeste.
+ */
+export function caidaChica(r, x, y, ent, k, luz = 0) {
+  const punto = CONFIG.estilo.punto / 2;
+  const aspecto = aspectoDe(ent, 'guardia');
+  const colores = coloresChicos({ aspecto, tipo: 'guardia' });
+  // (Con chaqueta, las mangas de lona, como en el grande.)
+  if (aspecto.chaqueta) Object.assign(colores, { L: 37, C: 36, c: 35 });
+  const g = lienzoCaidaChica(colores, !!aspecto.chaqueta, k, luz);
+  const ix = Math.round((x - 21.5) / punto) * punto - g.ox * punto, iy = Math.round((y - 22) / punto) * punto + g.arriba * punto;
+  const w = g.img.width * punto, h = g.img.height * punto;
+  r.ctx.drawImage(g.img, ix, iy, w, h);
+  estiloNuevo.marcarGente(r.ctx, g.img, ix, iy, w, h);
+}
+
 /** Los puntos finos de un lienzo (ver bordeBrazos en jugador.js), con `punto` unidades por punto del lienzo. */
 function pintarBordes(ctx, finos, ix, iy, punto) {
   for (const g of finos || []) {
@@ -644,10 +663,9 @@ export function origenDeCaida(x, y) {
 }
 
 /** 🆕 E4 · Una nube de polvo (estiloNuevo/caida.js), cuadro `k` de 4, centrada en `x`, `y`, punto por punto. */
-export function polvoNuevo(r, x, y, k, noche = false) {
-  const PASO = CONFIG.estilo.punto / 4;
+export function polvoNuevo(r, x, y, k, noche = false, PASO = CONFIG.estilo.punto / 4, colorDia = null) {
   const m = POLVO[Math.max(0, Math.min(POLVO.length - 1, k))];
-  const col = COLOR_POLVO[noche ? 'noche' : 'dia'];
+  const col = !noche && colorDia ? colorDia : COLOR_POLVO[noche ? 'noche' : 'dia'];
   const x0 = Math.round(x / PASO - m[0].length / 2) * PASO, y0 = Math.round(y / PASO - m.length / 2) * PASO;
   m.forEach((fila, j) => {
     for (let i = 0; i < fila.length; i++) if (col[fila[i]] != null) r.rect(x0 + i * PASO, y0 + j * PASO, PASO, PASO, PALETA[col[fila[i]]]);
@@ -655,18 +673,16 @@ export function polvoNuevo(r, x, y, k, noche = false) {
 }
 
 /** El jinete chico (de lejos): `x` e `y` son la esquina del caballo chico. Devuelve la mano, en sus puntos. */
-export function jineteChico(r, { x, y, luz, destello, persona = true, silla = true, vista = 'lado', gente = null, apunta = null, lazo = false, revolea = false, lanza = false, tiraSoga = false, enlazado = false }) {
+export function jineteChico(r, { x, y, luz, destello, persona = true, silla = true, vista = 'lado', gente = null, apunta = null, lazo = false, revolea = false, lanza = false, tiraSoga = false, armaLarga = null }) {
   const punto = CONFIG.estilo.punto / 2;
   // 🆕 `apunta` (0 a 7, de la mira): el torso que se da vuelta en la silla con el Colt; devuelve también la boca.
-  const L = lienzoJineteChico({ persona, silla, vista, colores: gente ? coloresChicos(gente) : null, rifle: !!gente, apunta, lazo, revolea, lanza, tiraSoga, enlazado }, luz, !!destello);
+  const L = lienzoJineteChico({ persona, silla, vista, colores: gente ? coloresChicos(gente) : null, rifle: !!gente, apunta, lazo, revolea, lanza, tiraSoga, armaLarga }, luz, !!destello);
   const iy = y + L.arriba * punto, w = L.img.width * punto, h = L.img.height * punto;
   r.ctx.drawImage(L.img, x, iy, w, h);
   estiloNuevo.marcarGente(r.ctx, L.img, x, iy, w, h);
   pintarBordes(r.ctx, L.finos, x, iy, punto);
   const boca = L.boca ? [x + L.boca[0] * punto, y + L.boca[1] * punto] : null;
-  // (🆕 Enlazado: el medio de la argolla del pecho, en el mundo.)
-  const anillo = L.anillo ? [x + L.anillo[0] * punto, y + L.anillo[1] * punto] : null;
-  return { mano: L.mano, boca, anillo, top: iy, arriba: iy, manoY: y + L.mano[1] * punto, pechoY: y + 4 * punto, x: x + 11 * punto, vista, espejo: false };
+  return { mano: L.mano, boca, top: iy, arriba: iy, manoY: y + L.mano[1] * punto, pechoY: y + 4 * punto, x: x + 11 * punto, vista, espejo: false };
 }
 
 function jugadorNuevo(r, f) {

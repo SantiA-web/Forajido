@@ -357,7 +357,7 @@ export function createCampScene(services) {
      */
     if (input.wasPressed('Digit7')) {
       if (input.isDown('ShiftLeft') || input.isDown('ShiftRight')) {
-        scenes.goTo('huida', { summary: { money: 400, kills: 0, outcome: 'escaped' }, jinetes: 4, prueba: true, clima: 'tormenta' });
+        scenes.goTo('huida', { summary: { money: 400, kills: 0, outcome: 'escaped' }, jinetes: 4, prueba: true, clima: 'tormenta', arma: WEAPONS[gameState.weapon] });
       } else {
         scenes.goTo('ride', { tipoTren: 'pasajeros', clima: 'tormenta' });
       }
@@ -372,7 +372,8 @@ export function createCampScene(services) {
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit8')) {
-      scenes.goTo('huida', { summary: { money: 400, kills: 0, outcome: 'escaped' }, jinetes: 4, prueba: true });
+      // (Con el arma que tengas puesta en el campamento, también la de los atajos [2] y [3] *(Santi)*.)
+      scenes.goTo('huida', { summary: { money: 400, kills: 0, outcome: 'escaped' }, jinetes: 4, prueba: true, arma: WEAPONS[gameState.weapon] });
       return;
     }
     if (input.wasPressed('Digit6')) {

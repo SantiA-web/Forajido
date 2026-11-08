@@ -2841,6 +2841,202 @@ const JINETE_CHICO_TIRA = [
   ],
 ];
 /**
+ * 🆕 VOS TIRANDO DESDE EL CABALLO CON EL WINCHESTER *(Santi: "el Winchester y la escopeta tirando desde el caballo")*.
+ * Con las dos manos, como en el tren: la culata (d) contra el hombro, el cajón de bronce (A), la mano de adelante (P) y
+ * el caño largo y fino (a; la boca es la de más afuera). A mano en las 8 direcciones de la mira (0 este … 7 noreste),
+ * con el cinto en la fila que tiene W; hacia abajo el caño pasa por delante y sigue por debajo del cinto.
+ */
+const JINETE_CHICO_WINCHESTER = [
+  [
+    '.....kHk......',
+    '...xKKKKKx....',
+    '.....pPn......',
+    '....rddAdPaaaa',
+    '...UVCCCCL....',
+    '...UVv........',
+    '...UVv........',
+    '...VVv........',
+    '...WWy........',
+  ],
+  [
+    '....kHk.......',
+    '..xKKKKKx.....',
+    '....pPp.......',
+    '...CrRdd......',
+    '...CUVvLA.....',
+    '....UVvCCP....',
+    '....UVv...a...',
+    '....VVv....a..',
+    '....WWy.....a.',
+    '.............a',
+  ],
+  [
+    '....kHk....',
+    '..xKKKKKx..',
+    '....pPp....',
+    '...CRdSC...',
+    '...CPAvC...',
+    '....UaPC...',
+    '....VaVv...',
+    '....VaVv...',
+    '....Way....',
+    '.....a.....',
+  ],
+  [
+    '.......kHk....',
+    '.....xKKKKKx..',
+    '.......pPp....',
+    '......ddRrC...',
+    '.....ALUVvC...',
+    '....PCCUVv....',
+    '...a...UVv....',
+    '..a....VVv....',
+    '.a.....WWy....',
+    'a.............',
+  ],
+  [
+    '......kHk.....',
+    '....xKKKKKx...',
+    '......nPp.....',
+    'aaaaPdAddr....',
+    '....LCCCCVU...',
+    '........vVU...',
+    '........vVU...',
+    '........vVV...',
+    '........yWW...',
+  ],
+  [
+    'a.............',
+    '.a.....kHk....',
+    '..a..xKKKKKx..',
+    '...P...qBq....',
+    '....Ad.rRr....',
+    '......CCUVv...',
+    '........UVv...',
+    '........UVv...',
+    '........VVv...',
+    '........WWW...',
+  ],
+  [
+    '..........a.',
+    '.....kHk..a.',
+    '...xKKKKKxa.',
+    '.....qBq..P.',
+    '.....rRr.dA.',
+    '....CVVvCCC.',
+    '....cVVvc...',
+    '.....VVv....',
+    '.....VVv....',
+    '.....WWW....',
+  ],
+  [
+    '.............a',
+    '....kHk.....a.',
+    '..xKKKKKx..a..',
+    '....qBB...P...',
+    '....rRR.dA....',
+    '...UVvCC......',
+    '...UVv........',
+    '...UVv........',
+    '...VVv........',
+    '...WWW........',
+  ],
+];
+/**
+ * 🆕 Y CON LA ESCOPETA: más corta que el Winchester y con el caño grueso, de dos puntos (u la cara de arriba, con luz;
+ * a el costado, y la boca es la a de más afuera), sin bronce. La misma culata y las dos manos. A mano en las 8 direcciones.
+ */
+const JINETE_CHICO_ESCOPETA = [
+  [
+    '.....kHk......',
+    '...xKKKKKx....',
+    '.....pPn......',
+    '....rdddPuuuu.',
+    '...UVCCCLaaaa.',
+    '...UVv........',
+    '...UVv........',
+    '...VVv........',
+    '...WWy........',
+  ],
+  [
+    '....kHk......',
+    '..xKKKKKx....',
+    '....pPp......',
+    '...CrRdd.....',
+    '...CUVvLd....',
+    '....UVvCCPu..',
+    '....UVv...au.',
+    '....VVv....au',
+    '....WWy......',
+  ],
+  [
+    '....kHk....',
+    '..xKKKKKx..',
+    '....pPp....',
+    '...CRdSC...',
+    '...CPdvC...',
+    '....UaPC...',
+    '....Vauv...',
+    '....Vauv...',
+    '....WWy....',
+  ],
+  [
+    '......kHk....',
+    '....xKKKKKx..',
+    '......pPp....',
+    '.....ddRrC...',
+    '....dLUVvC...',
+    '..uPCCUVv....',
+    '.ua...UVv....',
+    'ua....VVv....',
+    '......WWy....',
+  ],
+  [
+    '......kHk.....',
+    '....xKKKKKx...',
+    '......nPp.....',
+    '.uuuuPdddr....',
+    '.aaaaLCCCVU...',
+    '........vVU...',
+    '........vVU...',
+    '........vVV...',
+    '........yWW...',
+  ],
+  [
+    'au....kHk....',
+    '.au.xKKKKKx..',
+    '..P...qBq....',
+    '...dd.rRr....',
+    '.....CCUVv...',
+    '.......UVv...',
+    '.......UVv...',
+    '.......VVv...',
+    '.......WWW...',
+  ],
+  [
+    '.....kHk..au',
+    '...xKKKKKxau',
+    '.....qBq..P.',
+    '.....rRr.dC.',
+    '....CVVvCCC.',
+    '....cVVvc...',
+    '.....VVv....',
+    '.....VVv....',
+    '.....WWW....',
+  ],
+  [
+    '....kHk....ua',
+    '..xKKKKKx.ua.',
+    '....qBB...P..',
+    '....rRR.dd...',
+    '...UVvCC.....',
+    '...UVv.......',
+    '...UVv.......',
+    '...VVv.......',
+    '...WWW.......',
+  ],
+];
+/**
  * 🆕 EL JINETE DE LA LEY CHICO, APUNTANDO CON EL RIFLE *(Santi: "hay veces que los jinetes se transforman en el dibujo
  * viejo"; eligió dibujarlos apuntando)*. Como el Colt de arriba: de la cintura para arriba, dado vuelta en la silla, a
  * mano en las 8 direcciones de la mira (0 este … 7 noreste), con el cinto en la última fila. El rifle con las dos
@@ -3334,13 +3530,33 @@ const JINETE_CHICO_TIRA_SOGA = [
 ];
 
 /**
- * 🆕 LA ARGOLLA ALREDEDOR DE TU TORSO, cuando te enlazaron: un aro de soga clara a la altura del pecho, que te agarra
- * los brazos. La fila de arriba es la parte de atrás y va DETRÁS del cuerpo; las otras dos, la de los costados y la de
- * adelante, van encima. El centro del mapa (columna 3, fila 1) cae en el medio del torso, dos filas arriba del cinto.
+ * 🆕 EL ARO EN EL PESCUEZO DE TU CABALLO, cuando te enlazaron *(Santi: "pasá el aro al pescuezo"; la soga va al caballo y
+ * no a vos: por eso enlazado podés seguir tirando)*. A mano, una vista por dirección, en los puntos del caballo chico
+ * (x, y: la esquina del mapa). El pescuezo cae en el mismo lugar en los 8 cuadros del galope, así que el mapa sirve para
+ * todos; el mustang tiene el dibujo un punto más abajo y su `origen` ya baja con él. S la soga clara y d su sombra sobre
+ * el pelo: sin la sombra, el color claro parecía un agujero en el pescuezo. `nudo`: adonde llega la soga.
  */
-const ANILLO_ATRAS = ['.sssss.'];
-const ANILLO_ADELANTE = ['S.....S', '.SSSSS.'];
-const COLORES_ANILLO = { S: 38, s: 36 };
+const COLLAR_CHICO = {
+  este: { x: 17, y: 5, filas: ['S...', 'dS..', '.dS.', '..dS'], nudo: [19, 7] },
+  sudeste: { x: 15, y: 8, filas: ['S...', 'dSS.', '.ddS'], nudo: [17, 9.5] },
+  noreste: { x: 15, y: 7, filas: ['SSS..', 'dddSS', '...dd'], nudo: [17.5, 8] },
+  norte: { x: 14, y: 6, filas: ['SSS', 'ddd'], nudo: [15.5, 6.5] },
+  sur: { x: 13, y: 8, filas: ['S...S', 'dSSSd', '.ddd.'], nudo: [15.5, 9.5] },
+};
+/** Dónde llega la soga, en el mundo. */
+export function nudoDelCollar(origen, nombre, paso) {
+  const C = COLLAR_CHICO[nombre];
+  return C ? [origen.x + C.nudo[0] * paso, origen.y + C.nudo[1] * paso] : null;
+}
+/** Pinta el aro sobre el caballo chico. */
+export function collarChico(r, origen, nombre, paso, noche = false) {
+  const C = COLLAR_CHICO[nombre];
+  if (!C) return;
+  const de = (c) => PALETA[noche ? sombrear(c, -1) : c];
+  C.filas.forEach((f, j) => {
+    for (let i = 0; i < f.length; i++) if (f[i] !== '.') r.rect(origen.x + (C.x + i) * paso, origen.y + (C.y + j) * paso, paso, paso, de(f[i] === 'S' ? 38 : 3));
+  });
+}
 
 /**
  * 🆕 LA SOGA TENSA, EN LA GRILLA: de `desde` a `hasta` (en el mundo), con `panza` unidades de comba en el medio
@@ -3371,10 +3587,116 @@ function cintoDe(filas) {
     const f = filas[j];
     if (!f.includes('W')) continue;
     let a = -1, b = -1;
-    for (let i = 0; i < f.length; i++) if (f[i] !== '.') { if (a < 0) a = i; b = i; }
+    // (🐛 Sin contar el caño, que a veces pasa por la fila del cinto: en las diagonales de abajo corría el torso 3 puntos.)
+    for (let i = 0; i < f.length; i++) if (f[i] !== '.' && f[i] !== 'a') { if (a < 0) a = i; b = i; }
     return { j, centro: (a + b) / 2 };
   }
   return { j: filas.length - 1, centro: 0 };
+}
+/**
+ * 🆕 EL JINETE DE LA LEY QUE SE CAE EN LA HUIDA *(Santi eligió la caída de costado, como la del galope pero en chico)*.
+ * Los 8 cuadros y el tirado, a mano y por partes, con las columnas y filas del caballo chico mirando al este (la fila 19
+ * es el suelo): la misma caída que estiloNuevo/caida.js, redibujada a este tamaño. Cada parte es `[columna, fila, filas]`.
+ *   0 el golpe · 1 se va para atrás · 2 acostado sobre el anca · 3 se resbala por la grupa · 4 en el aire, de cabeza
+ *   5 llega al suelo con la mano · 6 el golpe de espaldas · 7 las piernas bajan · y después el tirado
+ * El sombrero vuela aparte. `a` es el pelo: acá se le ve la cabeza sin sombrero.
+ */
+const CAIDA_CHICA = [
+  [
+    [8, -2, ['..kHk..', 'xKKKKKx']],
+    [10, 1, ['pPn', '.rR']],
+    [10, 3, ['UVCC', 'UVv.', 'UVv.', 'VVv.', 'WWy.']],
+    [14, 1, ['.Pp', 'LC.']],
+    [11, 8, ['IT.', '.IT', 'IT.', 'QOO']],
+  ],
+  [
+    [3, -1, ['..kHk.', 'xKKKKx']],
+    [6, 3, ['pPn', '.rR']],
+    [7, 5, ['UVVC.', '.UVv.', '..WWy']],
+    [10, 2, ['Pp', 'LC', 'C.']],
+    [12, 6, ['.IT..', 'T.IT.', '...IT', '...QO']],
+  ],
+  [
+    [0, 0, ['.h', 'HH', 'Hk', '.k']],
+    [4, 6, ['nPP', 'aPq', 'aaa']],
+    [6, 6, ['UUVW', 'CVVG', 'vvvW']],
+    [5, 4, ['p', 'C']],
+    [8, 3, ['Pp', 'LC', 'C.']],
+    [10, 0, ['....QO', '...ITO', '...IT.', '..IT..', '..IT..', '.IT...', 'IT....']],
+  ],
+  [
+    [-5, 3, ['xKKKKKx', '..kHk..']],
+    [2, 8, ['...UW', '.UVVG', 'CVvvW', 'cww..']],
+    [-1, 9, ['nPP', 'aPq', 'aa.']],
+    [3, 11, ['c', 'C', 'q']],
+    [1, 6, ['Pp.', '.LC', '..L']],
+    [7, 3, ['....QO', '....IT', '...IT.', '...IT.', '..IT..', '.IT...', 'IT....']],
+  ],
+  [
+    [-9, 4, ['xKKKKx', '..kk..']],
+    [1, 5, ['...QOO', '...IT.', '..IT..', '..IT..', '.IT...', 'IT....']],
+    [-3, 9, ['...UW', '.UVVG', 'CVVvW', 'cvw..']],
+    [-6, 11, ['.nP', 'aPq', 'aa.']],
+    [-4, 12, ['.C', 'LC', 'C.', 'Pp']],
+  ],
+  [
+    [-11, 14, ['xKKKKx', '..kk..']],
+    [-1, 7, ['..QOO', '..IT.', '.IT..', '.IT..', 'IT...', 'IT...']],
+    [-4, 12, ['..UUW', '.UVVW', 'CVVvG', 'cvw..']],
+    [-7, 15, ['.nP', 'aPq', 'aa.']],
+    [-4, 16, ['.C', 'LC', 'Pp']],
+  ],
+  [
+    [-14, 16, ['xKKKKx', '..kk..']],
+    [-2, 12, ['..QO', '..IT', '.IT.', '.IT.', 'IT..', 'IT..']],
+    [-6, 17, ['..UUUW', 'CUVVVG', 'cvww..']],
+    [-9, 17, ['.nP', 'aPq', 'aaa']],
+    [-6, 15, ['Pp.', '.LC', '..L']],
+  ],
+  [
+    [-13, 15, ['xKKKKx', '..kk..']],
+    [-6, 17, ['..UUUW', 'CUVVVG', 'cVvvvW']],
+    [-9, 17, ['.nP', 'aPq', 'aaa']],
+    [-8, 15, ['Pp.', 'pLC']],
+    [-1, 16, ['..IT...QO', 'ITTt.IIOO', 'Tt...ttoo']],
+  ],
+];
+/** El tirado que queda en la tierra, con y sin chaqueta (con chaqueta, el costado en sombra y el brazo claro encima). */
+const TIRADO_CHICO = {
+  comun: [
+    [-14, 17, ['.kHk..', 'xKKKKx']],
+    [-9, 17, ['.nP', 'aPq', 'aaa']],
+    [-6, 17, ['..UUUW', 'CUVVVW', 'cVvvvW']],
+    [-1, 16, ['...IT....', '.ITTtI.QO', 'ITt.tIIOO', '......ooo']],
+    [-5, 18, ['LCCCPp']],
+  ],
+  chaqueta: [
+    [-14, 17, ['.kHk..', 'xKKKKx']],
+    [-9, 17, ['.nP', 'aPq', 'aaa']],
+    [-1, 16, ['...IT....', '.ITTtI.QO', 'ITt.tIIOO', '......ooo']],
+    [-6, 17, ['..UUEc', 'cUVVcc', 'Cccccc']],
+    [-5, 18, ['LLLLPp']],
+  ],
+};
+const OX_CAIDA_CHICA = 15, ARRIBA_CAIDA_CHICA = -3, ANCHO_CAIDA_CHICA = 36, ALTO_CAIDA_CHICA = 24;
+const caidasChicas = new Map();
+/** El cuadro `k` de la caída chica (con `k` 8, el tirado), con los colores de esa persona. */
+export function lienzoCaidaChica(colores, chaqueta, k, luz = 0) {
+  const clave = JSON.stringify(colores) + '|' + k + '|' + luz;
+  let g = caidasChicas.get(clave);
+  if (g) return g;
+  if (caidasChicas.size > 200) caidasChicas.clear();
+  const idx = new Int16Array(ANCHO_CAIDA_CHICA * ALTO_CAIDA_CHICA).fill(-1);
+  const piezas = k < CAIDA_CHICA.length ? CAIDA_CHICA[k] : TIRADO_CHICO[chaqueta ? 'chaqueta' : 'comun'];
+  for (const [x0, y0, filas] of piezas) filas.forEach((fila, j) => {
+    for (let i = 0; i < fila.length; i++) {
+      const c = colores[fila[i]], x = x0 + i + OX_CAIDA_CHICA, y = y0 + j - ARRIBA_CAIDA_CHICA;
+      if (fila[i] !== '.' && c != null && x >= 0 && y >= 0 && x < ANCHO_CAIDA_CHICA && y < ALTO_CAIDA_CHICA) idx[y * ANCHO_CAIDA_CHICA + x] = c;
+    }
+  });
+  g = { img: lienzoDeIndices(idx, ANCHO_CAIDA_CHICA, ALTO_CAIDA_CHICA, luz), ox: OX_CAIDA_CHICA, arriba: ARRIBA_CAIDA_CHICA };
+  caidasChicas.set(clave, g);
+  return g;
 }
 // (🔁 Dos filas más arriba, para el brazo levantado del revoleo.)
 const CHICO = { ancho: 26, alto: 22, arriba: -6 };
@@ -3383,8 +3705,8 @@ const chicos = new Map();
 /**
  * 🆕 `colores`: los de otra persona (un jinete de la ley), encima de los del jugador; `rifle`: con la funda.
  */
-export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado', colores = null, rifle = false, apunta = null, lazo = false, revolea = false, lanza = false, tiraSoga = false, enlazado = false }, luz = 0, destello = false) {
-  const clave = [persona, silla, luz, destello, vista, colores ? JSON.stringify(colores) : '', rifle, apunta, lazo, revolea, lanza, tiraSoga, enlazado].join('|');
+export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado', colores = null, rifle = false, apunta = null, lazo = false, revolea = false, lanza = false, tiraSoga = false, armaLarga = null }, luz = 0, destello = false) {
+  const clave = [persona, silla, luz, destello, vista, colores ? JSON.stringify(colores) : '', rifle, apunta, lazo, revolea, lanza, tiraSoga, armaLarga].join('|');
   if (chicos.has(clave)) return chicos.get(clave);
   const { ancho, alto, arriba } = CHICO;
   const idx = new Int16Array(ancho * alto).fill(-1), esPersona = new Uint8Array(ancho * alto);
@@ -3401,32 +3723,24 @@ export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado'
   if (silla && rifle) pinta(apunta == null || revolea || lanza || tiraSoga ? FUNDA_CHICA[vista] : { ...FUNDA_CHICA[vista], filas: FUNDA_CHICA[vista].filas.map((f) => f.replace(/h/g, '.')) }, 0, COLORES_FUNDA);
   // (🆕 `lazo`: con la soga enrollada detrás de la silla, ver LAZO_CHICO.)
   if (silla && lazo) pinta(LAZO_CHICO[vista], 0, { ...COLORES_SILLA, ...COLORES_LAZO });
-  let boca = null, anilloEn = null;
+  let boca = null;
   if (persona && apunta == null) pinta(JINETE_CHICO_DE[vista], 1, tablaPersona);
   if (persona && apunta != null) {
     // 🆕 Tirando: las piernas de la vista del caballo (debajo del cinto) y, encima, el torso que apunta, cinto con cinto.
     // (🆕 El de la ley, con el rifle: la madera de la culata es la `d`.)
-    const tabla = rifle ? { ...tablaPersona, d: 5, a: 23 } : tablaPersona;
+    // (🆕 Y vos con arma larga: A el bronce del Winchester y u la luz del caño de la escopeta.)
+    // (El caño del Winchester, un tono más claro, el mismo del tren: con el oscuro se perdía contra el cuello del caballo.)
+    const tabla = rifle || armaLarga ? { ...tablaPersona, d: 5, a: armaLarga === 'winchester' ? 24 : 23, A: 28, u: 24 } : tablaPersona;
     // (🆕 `revolea`: el brazo arriba con el lazo; la "boca" es la mano de arriba, de donde gira la argolla.)
     // (🆕 `lanza`: el brazo estirado después de tirar el lazo; la "boca" es la mano abierta.)
     const U = (revolea ? JINETE_CHICO_REVOLEA : lanza ? JINETE_CHICO_LANZA : tiraSoga ? JINETE_CHICO_TIRA_SOGA
-      : rifle ? JINETE_CHICO_RIFLE : JINETE_CHICO_TIRA)[apunta];
+      : rifle ? JINETE_CHICO_RIFLE : armaLarga === 'winchester' ? JINETE_CHICO_WINCHESTER
+      : armaLarga === 'escopeta' ? JINETE_CHICO_ESCOPETA : JINETE_CHICO_TIRA)[apunta];
     const V = JINETE_CHICO_DE[vista], cv = cintoDe(V.filas), cu = cintoDe(U);
     pinta({ y: V.y + cv.j + 1, filas: V.filas.slice(cv.j + 1) }, 1, tablaPersona);
     const dx = Math.round(cv.centro - cu.centro), y0 = V.y + cv.j - cu.j;
     const [hx, hy] = HACIA_TIRA[apunta];
     let mejor = -Infinity;
-    // 🆕 Enlazado: la argolla alrededor del pecho, la parte de atrás antes del torso (ver ANILLO_ATRAS).
-    const ax = Math.round(dx + cu.centro) - 3, ay = y0 + cu.j - 3;
-    const anillo = (filas, desde, marca) => filas.forEach((f, j) => {
-      for (let i = 0; i < f.length; i++) {
-        const x = ax + i, y = ay + desde + j, k = (y - arriba) * ancho + x;
-        if (f[i] === '.' || x < 0 || x >= ancho || y - arriba < 0 || y - arriba >= alto) continue;
-        idx[k] = COLORES_ANILLO[f[i]];
-        esPersona[k] = marca;
-      }
-    });
-    if (enlazado) { anilloEn = [ax + 3.5, ay + 1.5]; anillo(ANILLO_ATRAS, 0, 0); }
     U.forEach((f, j) => {
       for (let i = 0; i < f.length; i++) {
         if (f[i] === '.') continue;
@@ -3438,7 +3752,6 @@ export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado'
         if (revolea && f[i] === 'P' && -y > mejor) { mejor = -y; boca = [x + 0.5, y + 0.5]; }
       }
     });
-    if (enlazado) anillo(ANILLO_ADELANTE, 1, 1);
   }
   // El borde fino de la persona encima de la silla, como el grande (ver bordeSilla).
   const puntos = [];
@@ -3450,7 +3763,7 @@ export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado'
       puntosDeBorde(puntos, nx, ny, dx, dy);
     }
   }
-  const g = { img: lienzoDeIndices(idx, ancho, alto, luz), arriba, mano: MANO_CHICO[vista], boca, anillo: anilloEn, finos: puntos.length ? [{ color: 0, puntos }] : [] };
+  const g = { img: lienzoDeIndices(idx, ancho, alto, luz), arriba, mano: MANO_CHICO[vista], boca, finos: puntos.length ? [{ color: 0, puntos }] : [] };
   chicos.set(clave, g);
   return g;
 }

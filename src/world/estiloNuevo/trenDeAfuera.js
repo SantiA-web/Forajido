@@ -15,7 +15,7 @@
 
 import { CONFIG } from '../../data/config.js';
 import { DENSIDAD } from '../../engine/renderer.js';
-import { RGB } from '../../engine/paleta.js';
+import { RGB, PALETA } from '../../engine/paleta.js';
 
 const PASO = CONFIG.estilo.punto / DENSIDAD;
 const PX = 1 / PASO;
@@ -392,7 +392,7 @@ export const VENTILADOR = [
 ];
 
 /** LA CHIMENEA DE LA ESTUFA, sobre la linterna. */
-const CHIMENEA = [
+export const CHIMENEA = [
   '..ooooo..',
   '.oHHHHHo.',
   'oHoooooho',
@@ -644,6 +644,57 @@ export function ruedasYCarreton(ctx, x, cxs, base, recorrido, noche) {
     for (const dx of [-10, 10]) ctx.drawImage(rueda.img, x + (cx + dx - 8) * PASO, base - 17 * PASO, 17 * PASO, 17 * PASO);
     ctx.drawImage(P.carreton.img, x + (cx - 16) * PASO, base - 19 * PASO, 33 * PASO, 12 * PASO);
   }
+}
+
+/**
+ * 🧱 LO QUE CHOCA ARRIBA DE UN VAGÓN *(Santi: "chocan y además, en un futuro te vas a poder cubrir de las balas allí")*: los
+ * ventiladores y las chimeneas, en el mismo lugar de la lámina (ver `laminaCoche`). La linterna se sigue pisando: cruza
+ * casi todo el coche, justo en el lomo, que es lo único donde no se resbala. `x` e `y` son del mundo y del ancho del
+ * techo (0 a 160); `rx` y `ry` lo que ocupan.
+ */
+const estorbos = new Map();
+export function estorbosDeVagon(w) {
+  if (!w || !AFUERA[w.id]) return [];
+  const clave = w.id + '|' + w.x + '|' + w.width;
+  if (estorbos.has(clave)) return estorbos.get(clave);
+  const A = AFUERA[w.id], W = Math.round(w.width * PX), yTapa = 3, D = HONDO.puntos, en = (u) => yTapa + Math.round(D * u);
+  const xw = Math.floor(w.x / PASO) * PASO;
+  const nuevo = (columna, fila, mapa) => ({
+    columna, fila, mapa, xw,
+    x: xw + (columna + mapa[0].length / 2) * PASO, rx: (mapa[0].length / 2) * PASO * 0.8,
+    y: ((fila - yTapa) / D) * 160, ry: 10,
+  });
+  const lista = [];
+  if (A.techo === 'linterna') {
+    const honda = Math.round(D * 0.2), yBoca = en(0.6) - 6 - honda + Math.round(honda * 0.65);
+    for (const cx of [62, W - 71]) lista.push(nuevo(cx, yBoca, CHIMENEA));
+    for (const q of [0.33, 0.5, 0.67]) lista.push(nuevo(Math.round(W * q) - 3, yBoca, VENTILADOR));
+  } else if (A.techo === 'pasarela') {
+    for (const x of [40, W - 47]) lista.push(nuevo(x, en(0.72), VENTILADOR));
+  }
+  estorbos.set(clave, lista);
+  return lista;
+}
+/** Los estorbos del vagón que hay en esta `x`. */
+export function estorbosEn(train, x) {
+  if (!train || train.tramoAt(x) !== 'vagon') return [];
+  return estorbosDeVagon(train.wagons[train.wagonAt(x)]);
+}
+const estampasEstorbo = new Map();
+/**
+ * Vuelve a estampar un estorbo encima del que quedó detrás de él (en la lámina del tren ya está, pero debajo de la gente).
+ * Devuelve el rectángulo que ocupa, para borrarle el contorno a la persona que tapa.
+ */
+export function dibujarEstorbo(ctx, e, base, noche) {
+  const clave = (e.mapa === CHIMENEA ? 'c' : 'v') + (noche ? 'n' : 'd');
+  if (!estampasEstorbo.has(clave)) estampasEstorbo.set(clave, suelto(e.mapa, COL_FIERRO, noche));
+  const S = estampasEstorbo.get(clave);
+  const prev = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  const x = e.xw + e.columna * PASO, y = base - (H - (e.fila - e.mapa.length)) * PASO, w = S.an * PASO, h = S.al * PASO;
+  ctx.drawImage(S.img, x, y, w, h);
+  ctx.imageSmoothingEnabled = prev;
+  return { x, y, w, h };
 }
 
 /** Qué vagones ya tienen su dibujo nuevo de afuera. */
@@ -1067,28 +1118,131 @@ export function dibujarCocheNuevo(ctx, p, x0, ancho, base, vuelta, noche, t = 0,
 }
 
 /**
- * 🔗 EL ENGANCHE, VISTO DESDE ARRIBA: la chapa de paso se ve honda, a la altura del piso, con su frente y la barra debajo. Sale de una cuenta.
+ * 🔗 EL ENGANCHE, COMO EL DE ADENTRO *(Santi: "quiero que el enganche se vea diferente, como cuando estás en el interior
+ * del tren. Y ese mismo diseño pasalo al tren durante el galope")*: una plataforma de chapa remachada pegada a cada vagón,
+ * con su canto del lado del hueco; la chapa estriada del medio, que se desliza sobre las dos; cuatro postes y dos cadenas.
+ *
+ * A mano, cada una en su mapa: las dos plataformas y el poste. De una cuenta, porque cambian de largo: la chapa del medio y las
+ * cadenas. `XL` y `XR` son los bordes de verdad de los dos vagones, ya corridos; las plataformas se meten tres puntos debajo
+ * de su vagón, que se dibuja después.
  */
-const enganches = new Map();
-export function dibujarEngancheNuevo(ctx, x0, ancho, base, noche) {
-  const clave = Math.round(ancho) + '|' + (noche ? 'n' : 'd');
-  let hoja = enganches.get(clave);
-  if (!hoja) {
-    const W = Math.round(ancho * PX) + 4, Al = 40, ind = new Int16Array(W * Al).fill(-1);
-    const ton = (i) => (noche && NOCHE[i] !== undefined ? NOCHE[i] : i);
-    const r = (x, y, w, h, i) => { for (let j = y; j < y + h; j++) for (let q = x; q < x + w; q++) ind[j * W + q] = ton(i); };
-    const yT = 8, yF = 30;
-    r(0, yF + 4, W, 2, 1);
-    r(Math.round(W / 2) - 5, yF + 4, 10, 6, 0); r(Math.round(W / 2) - 4, yF + 5, 8, 4, 23);
-    r(0, yT - 1, W, 1, 0); r(0, yT, W, yF - yT, 24);
-    for (let j = yT + 1; j < yF; j += 2) for (let q = 1 + (j % 4 === 1 ? 1 : 0); q < W; q += 3) ind[j * W + q] = ton(23);
-    r(0, yT, W, 1, 25); r(0, yF, W, 1, 0); r(0, yF + 1, W, 2, 23); r(0, yF + 3, W, 1, 0);
-    hoja = { img: lienzo(ind, W, Al), W, Al };
-    enganches.set(clave, hoja);
-  }
+const PLATAFORMA_IZQ = [
+  'oooooooooooooooooooooooo',
+  'RRRRRRRRRRRRRRRRRRRRRGGo',
+  'RRRRRRRRRRRRRRRRRRRRRGGo',
+  'RRRRRrRRRRRRRRRRRRrRRGGo',
+  'RRRRRRRRRppRRRRRRRRRRGGo',
+  'RRRRRRRRppppRRRRRRRRRGGo',
+  'RRRRRRRRRpppRRRRRRRRRGGo',
+  'RRRRRrRRRRRRRRRRRRrRRGGo',
+  'RRRRRRRRRRRRRRRRRRRRRGGo',
+  'RRRRRRRRRRRRRRpRRRRRRGGo',
+  'RRRRRRRRRRRRRpppRRRRRGGo',
+  'RRRRRrRRRRRRRRppRRrRRGGo',
+  'RRRRRRRRRRRRRRRRRRRRRGGo',
+  'RRRRppRRRRRRRRRRRRRRRGGo',
+  'RRRppppRRRRRRRRRRRRRRGGo',
+  'RRRRRrRRRRRRRRRRRRrRRGGo',
+  'RRRRRRRRRRRRRRRRRRRRRGGo',
+  'RRRRRRRRRRRpRRRRRRRRRGGo',
+  'RRRRRRRRRRpppRRRRRRRRGGo',
+  'RRRRRrRRRRRRRRRRRRrRRGGo',
+  'RRRRRRRRRRRRRRRRRRRRRGGo',
+  'RRRRRRRRRRRRRRRRRRRRRGGo',
+  'RRRRRRRRRRRRRRRRRRRRRGGo',
+  'oooooooooooooooooooooooo',
+  'FFFFFFFFFFFFFFFFFFFFFGGo',
+  'FFFFFFFFFFFFFFFFFFFFFGGo',
+  'oooooooooooooooooooooooo',
+];
+const PLATAFORMA_DER = [
+  'oooooooooooooooooooooooo',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oGGRRrRRRRRRRRRRRRrRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oGGRRRRRRRRRRRRRRppRRRRR',
+  'oGGRRRRRRRRRRRRRppppRRRR',
+  'oGGRRrRRRRRRRRRRRRrRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oGGRRRRRRRpRRRRRRRRRRRRR',
+  'oGGRRRRRRpppRRRRRRRRRRRR',
+  'oGGRRrRRRRRRRRRRRRrRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRppRR',
+  'oGGRRRRRRRRRRRRRRRRppppR',
+  'oGGRRrRRRRRRRRRRRRrRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oGGRRRRRRRRRRRRpRRRRRRRR',
+  'oGGRRRRRRRRRRRpppRRRRRRR',
+  'oGGRRrRRRRRRRRRRRRrRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oGGRRRRRRRRRRRRRRRRRRRRR',
+  'oooooooooooooooooooooooo',
+  'oGGFFFFFFFFFFFFFFFFFFFFF',
+  'oGGFFFFFFFFFFFFFFFFFFFFF',
+  'oooooooooooooooooooooooo',
+];
+const POSTE_ENGANCHE = [
+  'ooo',
+  'oHo',
+  'oXo',
+  'oXo',
+  'oXo',
+  'oXo',
+  'oXo',
+  'oXo',
+  'ooo',
+];
+const COL_ENGANCHE = { d: { o: 0, R: 32, r: 35, p: 47, G: 23, F: 1, H: 24, X: 31 }, n: { o: 0, R: 1, r: 32, p: 32, G: 31, F: 0, H: 23, X: 1 } };
+const NOCHE_ENGANCHE = { 23: 31, 24: 23, 31: 1, 1: 0 };
+const piezasEnganche = { d: null, n: null };
+function piezasDelEnganche(noche) {
+  const k = noche ? 'n' : 'd';
+  if (!piezasEnganche[k]) piezasEnganche[k] = { izq: suelto(PLATAFORMA_IZQ, COL_ENGANCHE[k], false), der: suelto(PLATAFORMA_DER, COL_ENGANCHE[k], false), poste: suelto(POSTE_ENGANCHE, COL_ENGANCHE[k], false) };
+  return piezasEnganche[k];
+}
+
+export function dibujarEngancheNuevo(ctx, XL, XR, base, noche, g, E) {
+  const P = piezasDelEnganche(noche), Y0 = base - 49 * PASO, yT = 8, yF = 30, PLAT = 16;
+  const Lx = Math.floor(XL / PASO) * PASO, Rx = Math.floor(XR / PASO) * PASO;
   const liso = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(hoja.img, Math.floor((x0 - 1.5) / PASO) * PASO, base - 49 * PASO, hoja.W * PASO, hoja.Al * PASO);
+  const cuadro = (x, y, w, h, i) => { ctx.fillStyle = PALETA[noche && NOCHE_ENGANCHE[i] !== undefined ? NOCHE_ENGANCHE[i] : i]; ctx.fillRect(x, Y0 + y * PASO, w * PASO, h * PASO); };
+  const poner = (L, x, y) => ctx.drawImage(L.img, x, Y0 + y * PASO, L.an * PASO, L.al * PASO);
+
+  // Las dos plataformas, cada una con su vagón.
+  poner(P.izq, Lx - 3 * PASO, yT);
+  poner(P.der, Rx - 21 * PASO, yT);
+
+  // La chapa del medio, encima de las dos: estirado apenas las pisa, encogido las tapa.
+  const pa = Lx + 16 * PASO, ancho = Math.max(0, Math.round((Rx - 16 * PASO - pa) / PASO));
+  if (ancho > 0) {
+    const y0 = yT + 2, y1 = yF - 1;
+    cuadro(pa, y0, ancho, y1 - y0 + 2, 0);
+    cuadro(pa, y0 + 1, ancho, 1, 24);
+    cuadro(pa, y0 + 2, ancho, y1 - y0 - 3, 23);
+    for (let q = 2; q < ancho - 1; q += 3) cuadro(pa + q * PASO, y0 + 3, 1, y1 - y0 - 5, 24);
+    cuadro(pa, y1 - 1, ancho, 1, 31);
+    cuadro(pa, y0, 1, y1 - y0 + 2, 0);
+    cuadro(pa + (ancho - 1) * PASO, y0, 1, y1 - y0 + 2, 0);
+  }
+
+  // Los postes y las cadenas: primero los de allá, después los de acá. La cadena cuelga más cuanto más cerca están los postes.
+  const a = Lx + 19 * PASO, b = Rx - 20 * PASO, n = Math.round((b - a) / PASO);
+  const largoCadena = ((E ? E.max : 62) - 2 * PLAT) / PASO + 3;
+  const cuelga = Math.min(7, Math.sqrt(Math.max(0, largoCadena * largoCadena - n * n)) * 0.5);
+  const tiembla = !!(g && g.tenso > 0 && E && Math.floor(E.reloj * 30) % 2);
+  for (const pie of n >= 0 ? [yT + 1, yF - 1] : []) {
+    const arriba = pie - 8;
+    poner(P.poste, a - PASO, arriba);
+    poner(P.poste, b - PASO, arriba);
+    for (let q = 1; q < n; q++) {
+      const t = q / n, fila = arriba + 2 + Math.round(cuelga * 4 * t * (1 - t)) + (tiembla && q % 2 ? 1 : 0);
+      cuadro(a + q * PASO, fila, 1, 1, q % 2 ? 24 : 0);
+    }
+  }
   ctx.imageSmoothingEnabled = liso;
 }
 

@@ -369,6 +369,18 @@ export function createAudio() {
       noise({ duration: 0.06, cutoff: 900, endCutoff: 200, gain: 0.14 });
     },
 
+    /** La flecha del techo: dos toques que suben, viene algo que hay que saltar. */
+    avisoSaltar() {
+      tone({ from: 620, to: 620, duration: 0.07, gain: 0.12, type: 'triangle' });
+      tone({ from: 880, to: 880, duration: 0.1, gain: 0.12, type: 'triangle', delay: 0.09 });
+    },
+
+    /** La flecha del techo: dos toques que bajan, viene algo que te obliga a tirarte al piso. */
+    avisoTierra() {
+      tone({ from: 880, to: 880, duration: 0.07, gain: 0.12, type: 'triangle' });
+      tone({ from: 620, to: 620, duration: 0.1, gain: 0.12, type: 'triangle', delay: 0.09 });
+    },
+
     /** La suela raspando la chapa: estás resbalando por la curva del techo. */
     raspon() {
       noise({ duration: 0.18, cutoff: 2600, endCutoff: 1200, gain: 0.07, type: 'bandpass', q: 2.2 });

@@ -37,6 +37,7 @@ import { lienzoGente, lienzoTendido, PIES_TENDIDO, ANCHO_TENDIDO, ALTO_TENDIDO, 
 import { C as COLORES_JUGADOR } from './estiloNuevo/jugador.js';
 import { lienzoCaidaChica } from './estiloNuevo/jugador.js';
 import { aspectoDe } from './estiloNuevo/gente.js';
+import { lienzoPoseTecho, LIENZO_TECHO } from './estiloNuevo/jugadorTecho.js';
 import { lienzoCaida, ANCHO_CAIDA, ALTO_CAIDA, OX_CAIDA, POLVO, COLOR_POLVO } from './estiloNuevo/caida.js';
 
 /** Las tablas que traducen el nombre del juego al nombre del dibujo. */
@@ -693,6 +694,8 @@ function jugadorNuevo(r, f) {
   const agachado = (f.postura || 'pie') !== 'pie' || !!(gente && gente.agachado);
   let piernas = 'quieto';
   if (gente && gente.piernas) piernas = gente.piernas;
+  // (🆕 `f.piernas`: las del salto del techo.)
+  else if (f.piernas) piernas = f.piernas;
   else if (agachado) piernas = f.fase != null ? 'G' + cuadro8(f.fase, 'agachado') : 'agachado';
   else if (f.fase != null) {
     if (f.modo === 'caminar') piernas = 'W' + cuadro8(f.fase, 'caminar');
@@ -702,7 +705,8 @@ function jugadorNuevo(r, f) {
   const arma = gente ? gente.arma : !f.arma ? null : al ? (al.cadera ? 'escopeta' : 'winchester') : 'revolver';
   // Para el dibujo nuevo, cuál revólver: el Smith & Wesson es un Schofield; el resto, el Colt.
   const armaNueva = gente ? arma : arma === 'revolver' ? (f.armaId === 'smith' ? 'smith' : 'colt') : arma;
-  const a = f.angulo ?? 0;
+  // 🆕 `f.armaDir`: corriendo por el techo el cuerpo va para donde corrés y el arma, para adelante.
+  const a = (f.interior && f.tipo === 'jugador' ? f.armaDir : null) ?? f.angulo ?? 0;
   const ang = espejo ? Math.PI - a : a;
   // La sacudida (el que tiembla de miedo), de a un punto.
   const x = Math.round((f.x + (gente ? Math.sign(f.sacudida || 0) * PASO * (Math.abs(f.sacudida || 0) > 0.3 ? 1 : 0) : 0)) / PASO) * PASO;
@@ -710,7 +714,8 @@ function jugadorNuevo(r, f) {
   // Nunca más oscuro que un escalón: a vos te tenés que ver siempre, aunque
   // estés lejos de los faroles.
   // (A los demás, no: un guardia en la penumbra se ve en la penumbra.)
-  const luzLugar = estiloNuevo.luzEn ? estiloNuevo.luzEn(f.x, f.pies) : 0;
+  // (🆕 `f.luz`: arriba del techo la luz la dice el día, no los faroles de adentro.)
+  const luzLugar = f.luz ?? (estiloNuevo.luzEn ? estiloNuevo.luzEn(f.x, f.pies) : 0);
   const luz = gente ? luzLugar : Math.max(-1, luzLugar);
   const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
   // El culatazo: de los 8 cuadros, cuál toca.
@@ -752,6 +757,26 @@ function jugadorNuevo(r, f) {
   }
   const top = pies - 27 * PASO;
   return { x, mano: null, boca: aMundo(L.boca), hombro: aMundo(L.hombro), top, arriba: top, manoY: pies - 9, pechoY: pies - 11, vista, espejo };
+}
+
+/**
+ * 🆕 UNA POSE DEL JUGADOR ARRIBA DEL TECHO (estiloNuevo/jugadorTecho.js). `x` e `y` son el punto de la columna 0 y la
+ * fila 0 de sus mapas. Devuelve la boca del caño y el hombro, en el mundo.
+ */
+export function poseTecho(r, { x, y, espejo = false, luz = 0, destello = false, ...pose }) {
+  const PASO = CONFIG.estilo.punto / 4;
+  const L = lienzoPoseTecho(pose, luz, destello);
+  const { ANCHO, ALTO, OX, OY } = LIENZO_TECHO;
+  const qx = Math.round(x / PASO) * PASO, qy = Math.round(y / PASO) * PASO;
+  const ctx = r.ctx;
+  ctx.save();
+  ctx.translate(qx, qy);
+  if (espejo) ctx.scale(-1, 1);
+  ctx.drawImage(L.img, -OX * PASO, -OY * PASO, ANCHO * PASO, ALTO * PASO);
+  estiloNuevo.marcarGente(ctx, L.img, -OX * PASO, -OY * PASO, ANCHO * PASO, ALTO * PASO);
+  ctx.restore();
+  const aMundo = (p) => p && { x: qx + (espejo ? -1 : 1) * (p[0] - OX + 0.5) * PASO, y: qy + (p[1] - OY + 0.5) * PASO };
+  return { boca: aMundo(L.boca), hombro: aMundo(L.hombro) };
 }
 
 /**

@@ -97,6 +97,8 @@ export function escalarColor(hex, f) {
  * @param camX       borde izquierdo de lo que se ve, para no pintar de más
  * @param anchoVista cuánto mundo entra a lo ancho (con el zoom, no la pantalla)
  * @param opciones.noche  apaga la caja y prende las ventanillas
+ * @param opciones.corr   cuánto se corre el dibujo en cada `x` (los vagones se mueven: ver world/enganches.js)
+ * @param opciones.enganches  el estado de esos enganches, para el largo y el temblor de las cadenas
  */
 /** Dónde termina el tren visto desde afuera: en el estilo nuevo, la locomotora de afuera es más corta que su tramo. */
 export function finDelTrenDeAfuera(train) {
@@ -108,13 +110,22 @@ export function dibujarTrenTresCuartos(r, train, base, camX, anchoVista, opcione
   const noche = !!opciones.noche;
   const P = CONFIG.colors.costado;
   const size = train.map.size;
+  const corr = opciones.corr || (() => 0);
   const k = {
     r, base, P, noche,
     costado: !!opciones.costado,
     t: (typeof performance !== 'undefined' ? performance.now() : 0) / 1000,
     c: (hex) => (noche ? escalarColor(hex, 0.42) : hex),
     vidrio: noche ? P.vidrioNoche : P.vidrioDia,
+    corr, enganches: opciones.enganches || null,
   };
+
+  // Los enganches primero: cada vagón tapa la punta de su plataforma, de los dos lados igual.
+  for (const tramo of train.tramos) {
+    if (tramo.tipo !== 'enganche') continue;
+    const x0 = tramo.colStart * size, ancho = tramo.cols * size;
+    if (x0 <= camX + anchoVista + 90 && x0 + ancho >= camX - 90) dibujarEnganche(k, x0, ancho);
+  }
 
   for (const tramo of train.tramos) {
     const x0 = tramo.colStart * size;
@@ -124,16 +135,19 @@ export function dibujarTrenTresCuartos(r, train, base, camX, anchoVista, opcione
     if (desde > camX + anchoVista + 90 || hasta < camX - 90) continue;
     // (🚂 De afuera, la cabina y la caldera siguen siendo el dibujo viejo de la locomotora entera, que mide lo mismo que las dos.)
     if (tramo.tipo === 'vagon' && tramo.plantilla.id === 'cabina') continue;
+    // (Se corre el lienzo y no `x0`: la lámina de cada vagón se guarda por dónde está.)
+    r.ctx.save();
+    r.ctx.translate(corr(x0), 0);
     if (tramo.tipo === 'vagon') dibujarVagon(k, tramo.plantilla, x0, ancho);
-    else if (tramo.tipo === 'enganche') dibujarEnganche(k, x0, ancho);
     else if (tramo.tipo === 'salida') dibujarCola(k, x0, ancho);
     else if (tramo.tipo === 'locomotora') dibujarLocomotora(k, x0 - 18 * size);
+    r.ctx.restore();
   }
   // La luz del farol de cola, después de todo el tren: alumbra también al vagón que tiene al lado.
   if (noche && estiloNuevo.activo) {
     for (const tramo of train.tramos) {
       const x0 = tramo.colStart * size;
-      if (tramo.tipo === 'salida' && x0 < camX + anchoVista + 100 && x0 > camX - 100) dibujarLuzDeCola(r.ctx, x0, base, k.t);
+      if (tramo.tipo === 'salida' && x0 < camX + anchoVista + 100 && x0 > camX - 100) dibujarLuzDeCola(r.ctx, x0 + corr(x0), base, k.t);
     }
   }
 }
@@ -786,7 +800,11 @@ function cuerpoDeVagon(k, p, x0, ancho, capa = '') {
  * el desierto del otro lado, y es a donde saltás.
  */
 function dibujarEnganche(k, x0, ancho) {
-  if (estiloNuevo.activo && !k.costado) { dibujarEngancheNuevo(k.r.ctx, x0, ancho, k.base, k.noche); return; }
+  if (estiloNuevo.activo && !k.costado) {
+    const E = k.enganches, g = E ? E.lista.find((l) => l.x0 === x0) : null;
+    dibujarEngancheNuevo(k.r.ctx, x0 + k.corr(x0), x0 + ancho + k.corr(x0 + ancho), k.base, k.noche, g, E);
+    return;
+  }
   const { c, P } = k;
   pieza(k, x0 - 3, M.bastidor - 3, ancho + 6, 2, c(P.bastidor));
   pieza(k, x0 + ancho / 2 - 3, M.bastidor - 5, 6, 6, c(P.ruedas));

@@ -82,6 +82,16 @@ export const estiloNuevo = {
     hayGente = true;
   },
   /**
+   * 🆕 Lo que quedó tapado por algo dibujado después, sin contorno: el contorno de la gente se pinta al final, y si no
+   * se borra de la máscara se ve por encima de lo que la tapa. `x`, `y`, `w`, `h`, en el mundo.
+   */
+  borrarGente(ctx, x, y, w, h) {
+    if (!activo || CONFIG.estilo.bordeGente >= CONFIG.estilo.punto) return;
+    const m = laMascara(ctx.canvas);
+    m.setTransform(ctx.getTransform());
+    m.clearRect(x, y, w, h);
+  },
+  /**
    * Pinta puntos finos (`puntos`: x, y, x, y… en el mundo, cada uno de `lado`
    * unidades) de `color` en la capa fina, con la cámara de `ctx`. Cada punto
    * cae en píxeles enteros del lienzo. Sin el estilo nuevo, se pintan directo.

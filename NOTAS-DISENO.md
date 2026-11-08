@@ -20205,6 +20205,90 @@ entero (enrollado, revoleo, tiro y enlazado) está dibujado en la grilla.
 - ⚠️ **Sin probar**: el Winchester, la escopeta y el aro de noche (la caída de noche sí); el Shift+[7]; una huida
   entera jugada con la soga al pescuezo.
 
+## 📋 EL TECHO EN EL ESTILO NUEVO: QUÉ HAY Y QUÉ FALTA (2026-11-08)
+
+Mirado en el juego, de día, en el tren de pasajeros, antes de dibujar nada. 🔁 Ya está hecho: ver la entrada siguiente, "EL
+TECHO EN EL ESTILO NUEVO, TERMINADO". Esto describe lo que sigue viéndose con el estilo viejo.
+
+**Los obstáculos que aparecen en el techo** *(Santi: "anotá los obstaculos que aparecen en el techo")*. Son dos, salen
+en `updateTecho` (scenes/raidScene.js) con un sorteo mitad y mitad, y los dos tienen su flecha amarilla de aviso:
+
+| | El cartel (`agachar`) | El cajón (`saltar`) |
+|---|---|---|
+| Cómo es | Poste delante del tren, un brazo arriba y un cartel de madera colgado a la altura de la cabeza (26 × 11) | Cajón de madera con dos sogas, apoyado en el lomo del techo (18 × 8) |
+| Cómo se pasa | Sólo cuerpo a tierra | Saltando, o rodeándolo por la curva del techo |
+| Dibujo hoy | Viejo: `dibujarPorticoDeCostado` (world/techoDeCostado.js) | Viejo: `dibujarCajonDeCostado` |
+
+Los dos: uno cada 2,4 s (±25%), nacen 260 adelante tuyo, vienen a 165 por segundo hacia la cola, te alcanzan a 9 de
+distancia, sacan 1 de daño y hacen ruido en un radio de 280. Colgado del alero o cayendo al enganche no te pegan.
+Sin existir todavía (etapa 4 del techo): pórticos y tanques que se ven venir, túneles y curvas que empujan.
+
+**El jugador arriba, con el dibujo viejo** (`drawPlayerOnRoof`, entities/player.js):
+
+- Agazapado quieto, que es como vas por defecto, y agazapado caminando.
+- Cuerpo a tierra quieto (puede apuntar) y arrastrándose.
+- En el aire, saltando. Corriendo (el doble toque). Perdiendo pie y resbalando.
+- Colgado del alero de este lado (de espaldas, los brazos arriba, pataleando) y del lado de allá (sólo la copa del
+  sombrero y las dos manos).
+- Caído por un golpe, y cayendo al enganche con los brazos arriba.
+- Además del costado, el cuerpo se pone en tres cuartos hacia los jinetes de acá y de allá, y apunta con las armas.
+
+**Lo demás con el dibujo viejo:**
+
+- El enganche visto desde el techo: una plancha gris lisa con un cubo oscuro.
+- El fondo (`dibujarFondoDeCostado`): la franja gris con mesetas de bloques escalonados y los cerros marrones.
+- El suelo de los dos lados de la vía, las plantas y los postes: más oscuros y distintos del desierto pálido del galope.
+
+**Ya está en el estilo nuevo:** los vagones, el caboose con su cola y el ténder. 🔁 La nota de que arriba se mezclaban
+vagones de costado con locomotora y cola en 3/4 quedó vieja: el ténder y la cola se ven de costado como el resto (de la
+locomotora sólo se miró el ténder y el principio de la caldera).
+
+## ✅ EL TECHO EN EL ESTILO NUEVO, TERMINADO (2026-11-08)
+
+*(Santi: "para que no cambie de como se ve en el galope y durante el asalto".)* Con el estilo nuevo, el techo ya no es la
+vista lateral: es el mismo tren en 3/4 del galope, y caminás por toda la tapa.
+
+**Lo que hay:**
+
+- ✅ El jugador con todas sus poses de techo dibujadas en la grilla (entities/estiloNuevo/jugadorTecho.js). Cuerpo a tierra
+  siempre de perfil, este u oeste, y de ahí apunta. El atajo [8] lleva al techo; **Shift+[8], al techo con tormenta**.
+- ✅ El desierto del galope de fondo, con el suelo a 720 por segundo en el de pasajeros y a 590 en el de carga *(Santi:
+  "quiero que vaya más rápido, como estaba antes"; "el de carga un poco más lento")*. Buitres cuando no llueve.
+- ✅ **El cable** (se salta) y **el pórtico con el cartel** (sólo cuerpo a tierra), los dos en diagonal *(Santi: "el cartel no
+  se entiende entonces deberías como ponerlo en diagonal")*, con piedras al pie de cada poste. Reemplazan al cajón y al
+  cartel de la tabla de arriba, que quedan sólo para el estilo viejo.
+- ✅ Uno cada 5 s (±25%) *(Santi: "que hayan menos obstaculos")*, con 1,2 s de flecha en el borde de la pantalla, que parpadea
+  y suena: dos toques que suben para saltar, dos que bajan para tirarse. Vienen al 75% del suelo *(Santi: "son demasiado
+  rápidos. Bajalos un poco")*: medido, 540 por segundo y 0,47 s desde que salen en el de pasajeros, 443 y 0,58 s en el de
+  carga. Queda algo de patinada contra el suelo: es lo que se paga por esa velocidad.
+- ✅ Los estorbos de la tapa (ventiladores y chimeneas) chocan y te tapan si están más cerca de la cámara.
+- ✅ **El enganche nuevo**, igual al de adentro del tren, también en el galope *(Santi)*: plataformas, chapa del medio, postes y
+  dos cadenas que se comban y tiemblan.
+- ✅ **Los vagones se mueven** en el techo y en el galope: el enganche se encoge y se estira, y eso cambia el salto. El
+  salto llega a 72. Con huecos de 38 a 48 caés bien; con 52 o 58, según desde dónde saltes.
+- ✅ **Frenos rotos en el techo**: agachado o corriendo te vas al piso; cuerpo a tierra o en el aire, nada; colgado te caés
+  del tren *(Santi: "si estás colgado... te caés")*; en el hueco te aplasta.
+- ✅ **Los jinetes** ya no se clavan al apuntar arriba y ya no titilan: el aspecto se sorteaba de nuevo en cada cuadro
+  *(Santi: "siguen titilando")*.
+- ✅ **La lluvia** del galope (gotas, salpicaduras, charcos y relámpagos). Las gotas también pegan en la tapa. No van con el
+  suelo, porque a esa velocidad irían casi acostadas; las salpicaduras de la tierra, sí.
+- ✅ **Desde el caballo se oye el tren** (crujido, frenazo, acelerón y golpe) y sale el cartel cuando frena o acelera.
+
+**Probado en el banco, cuadro a cuadro:** tus tiros en las 6 direcciones (fogonazo en la boca del caño); pegarle a los
+cuatro jinetes; la regla del espejo cuerpo a tierra (en el medio no tirás; en la curva, sólo a los de tu lado); cable y
+pórtico sobre la góndola; la lluvia de día y de noche con el relámpago; los sonidos; 60 s sin que un obstáculo atraviese a
+nadie ni a 20 cuadros por segundo; el techo del estilo viejo sin errores.
+
+⚠️ **Sin probar:** nadie lo jugó de corrido; el Shift+[8] apretado de verdad; los sonidos nuevos oídos (se comprobó que se
+llaman, no cómo suenan).
+
+🔁 **La vista lateral no se borró:** es la que usa el estilo viejo, que sigue siendo el que ve quien abre el juego sin
+`?nuevo` y el que vuelve con [F9]. Sí se sacó la llave de prueba `techo.costado.tresCuartos`. El código viejo se va
+cuando se vaya el estilo viejo.
+
+**Después de todo lo del dibujo** *(Santi: "Las cosas nuevas se harán después de todo lo del dibujo")*: espiar por la
+linterna, túneles, curvas, tanques de agua, cubrirse detrás de ventiladores y chimeneas, y medirlo con el bot.
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

@@ -2050,6 +2050,8 @@ export const CONFIG = {
        * 🔁 VISTA LATERAL DE VERDAD: el techo se ve sólo de perfil. La tapa honda
        * (24) se quitó: era mirar desde arriba (Santi: "se ve 3/4").
        */
+      // En el estilo nuevo el techo es el tren del galope, en 3/4, y caminás por toda la tapa *(Santi: "para que no cambie de
+      // como se ve en el galope y durante el asalto")*. Estos números de la vista lateral quedan para el estilo viejo.
       perfil: 8,         // lo que mide el perfil redondeado del techo, del alero al lomo
       carbon: 6,         // lo que asoma el carbón de la góndola sobre su costado
       hundeAlla: 15,     // cuánto te hundís detrás del techo en el borde de allá: queda la cabeza
@@ -2108,6 +2110,8 @@ export const CONFIG = {
        * doble que visto desde adentro, y encima pasan rayas de velocidad.
        */
       velocidadFondo: 2.4,
+      // (Lo mismo que los obstáculos: 135 de 165.)
+      velocidadFondoPorTren: { carga: 0.82 },
       // Más suaves y del color del aire (eran 0,32): la velocidad la venden el suelo y los postes.
       rayas: { cantidad: 9, velocidad: 2600, largo: 34, color: '#fbf3e4', alpha: 0.16 },
     },
@@ -2304,8 +2308,13 @@ export const CONFIG = {
      * la cola. Cada uno pide UNA cosa: los altos hay que agacharse, los
      * bajos hay que saltarlos. Hacer lo otro, o no hacer nada, es chocar.
      */
-    obstaculoCada: 2.4,      // segundos entre uno y otro
-    obstaculoVel: 165,       // px/s con los que te barren, hacia la cola
+    // 🔁 Era 2.4: ahora vienen volando y con aviso, y *(Santi: "que hayan menos obstaculos")*.
+    obstaculoCada: 5,        // segundos entre uno y otro
+    // 🔁 Venían a 165, y los postes patinaban sobre el suelo: ahora van a la velocidad del suelo (`costado.velocidadFondo`).
+    // Como pasan en un tercio de segundo, primero sale la flecha en el borde de la pantalla.
+    obstaculoAviso: 1.2,     // segundos de flecha antes de que salga
+    // 🔁 Iban a 1 (lo mismo que el suelo) *(Santi: "los obstaculos son demasiado rápidos. Bajalos un poco")*.
+    obstaculoPorSuelo: 0.75, // qué parte de la velocidad del suelo llevan
     obstaculoAdelanto: 260,  // a qué distancia adelante tuyo aparecen
     obstaculoAncho: 9,       // media anchura de la zona donde te agarra
     obstaculoDanio: 1,
@@ -2313,7 +2322,9 @@ export const CONFIG = {
 
     /** Tu salto en el techo: para cruzar huecos Y para pasar los carteles bajos. */
     saltoDuracion: 0.72,
-    saltoBoost: 1.45,        // vas más rápido en el aire: es lo que cruza el hueco
+    // 🔁 Era 1.45 y llegaba a unas 81 unidades: cruzaba todo. Con 1.28 llega a 72: desde el filo pasás siempre, y si
+    // saltás tarde y el enganche está estirado, no *(Santi: "un salto de un jugador por los techos pueda o no llegar al otro vagón")*.
+    saltoBoost: 1.28,        // vas más rápido en el aire: es lo que cruza el hueco
 
     /**
      * CHOCAR NO TE TELETRANSPORTA. Te caés ahí mismo, tardás en levantarte, y

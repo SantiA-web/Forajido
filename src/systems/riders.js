@@ -415,7 +415,9 @@ function separarJinetes(riders) {
  * tirador de verdad se queda quieto para el tiro; esto hace lo mismo.
  */
 function seguirAlJugador(rd, dt, world) {
-  if (rd.aimTimer > 0) return;
+  // 🔁 Arriba del techo no se frenan *(Santi: "los jinetes a los costados se tildan")*: quedaban clavados medio segundo por
+  // cada tiro y después salían de golpe a alcanzarte. Ese tiro no sale del ángulo, sale de `chanceContraElTecho`.
+  if (rd.aimTimer > 0 && !world.player.enTecho) return;
 
   const t = rd.tipo;
   const p = world.player;

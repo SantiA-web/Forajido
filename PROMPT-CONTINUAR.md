@@ -136,7 +136,7 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   2026-10-15, al comedor; desde el 2026-10-17, al dormitorio y después a primera clase, que el tren trae
   siempre; desde el 2026-10-22, al enganche de atrás del blindado, con sus puertas empujables), [5] el cuchillo sin comprarlo (2026-10-10, para probar el tajo) y [6] el tren de
   pasajeros con el Sheriff en tu vagón (2026-10-15) y [7] la tormenta (el galope lloviendo; con Shift, la huida;
-  2026-11-08, reemplazó a los 950 de recompensa del Cazarrecompensas). El [8] hoy va a la huida. **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
+  2026-11-08, reemplazó a los 950 de recompensa del Cazarrecompensas). El [8] hoy va al techo (con Shift, al techo con tormenta). **Sacarlos antes de mostrar el juego**, junto con la prueba [F9]
   cuando el estilo nuevo esté terminado.
 - **Cuánta gente hay en cada vagón** *(Santi, 2026-10-15: "dejemos abierta la posibilidad de sumar
   más y modificar los pasajeros y guardias en ciertos vagones")*: el comedor tiene 5 pasajeros para 10
@@ -176,6 +176,11 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hay uno entonces no tiene sentido el sheriff")*. En su lugar, la **etapa
   final: la auditoría de 800 asaltos** (`banco-inspector.js`) para encontrar
   todo lo que hace ver tontos o inexpertos a los guardias.
+- **El techo en el estilo nuevo está terminado y subido** (2026-11-08; NOTAS-DISENO.md, "EL TECHO EN EL ESTILO NUEVO,
+  TERMINADO"): en 3/4, con el tren del galope, y falta jugarlo de corrido. **Lo próximo es seguir con lo que falte de
+  dibujo**; Santi: "Las cosas nuevas se harán después de todo lo del dibujo" (espiar por la linterna, túneles, curvas,
+  tanques, cubrirse, medir con el bot). También quedan: la huida, el muñeco del polvo; de noche, el Winchester, la escopeta
+  y el aro; el Shift+[7] sin probar.
 - **El techo nuevo** (plan en NOTAS-DISENO.md, "EL TECHO NUEVO"): cinco
   etapas, de a una y jugando cada una. **La 1 (sentirse arriba) está jugada y
   confirmada; la 1b dejó sus reglas (resbalar, colgarse, caerse del tren) pero

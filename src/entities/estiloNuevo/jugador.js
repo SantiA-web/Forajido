@@ -567,6 +567,18 @@ const PASOS = {
     [[9, 21], [9, 24], [10, 21], [8, 23]],
     [[9, 21], [8, 24], [11, 21], [11, 23]],
   ] },
+  // 🆕 EL SALTO DEL TECHO *(Santi: "seguí con el resto")*: 8 cuadros seguidos, sin repetir: empuja, sube, recoge las
+  // rodillas arriba del todo, las estira para caer y amortigua.
+  S: { cadera: 17, ocho: true, baja: [1, 0, -1, -1, -1, 0, 1, 2], cuadros: [
+    [[10, 21], [9, 24], [8, 21], [6, 24]],
+    [[12, 20], [12, 24], [8, 21], [6, 23]],
+    [[13, 19], [12, 22], [9, 20], [6, 22]],
+    [[13, 19], [11, 21], [11, 19], [8, 21]],
+    [[13, 19], [12, 22], [11, 19], [9, 22]],
+    [[12, 20], [13, 23], [10, 20], [9, 24]],
+    [[12, 21], [13, 24], [9, 21], [8, 24]],
+    [[12, 21], [13, 24], [8, 22], [7, 24]],
+  ] },
   G: { cadera: 20, baja: [3, 3, 2, 3, 3, 3, 2, 3], cuadros: [
     [[12, 21], [13, 24], [8, 22], [5, 24]],
     [[12, 21], [12, 24], [8, 22], [6, 23]],
@@ -620,8 +632,8 @@ function bota(vista, aca, ax, ay, pon) {
 /** Arma el mapa de un cuadro que se mueve, para una vista. */
 function piernasQueSeMueven(vista, tipo, k) {
   const P = PASOS[tipo], V = VER[vista];
-  const [rA, tA, rB, tB] = P.cuadros[k % 4];
-  const [kAca, aAca, kAlla, aAlla] = k < 4 ? [rA, tA, rB, tB] : [rB, tB, rA, tA];
+  const [rA, tA, rB, tB] = P.cuadros[P.ocho ? k : k % 4];
+  const [kAca, aAca, kAlla, aAlla] = k < 4 || P.ocho ? [rA, tA, rB, tB] : [rB, tB, rA, tA];
   const filas = [];
   const pon = (x, y, ch) => {
     const j = y - P.cadera;
@@ -660,7 +672,7 @@ for (const vista of Object.keys(VER)) {
  * Se hamaca al revés de la pierna de su lado; trotando el codo va doblado.
  * `ida` es cuánto va hacia adelante (de -1 a 1), `codo` cuánto se dobla (en radianes).
  */
-const BRAZO_LIBRE = { R: { ida: 0.75, codo: 1.2 }, W: { ida: 0.35, codo: 0.25 }, G: { ida: 0.25, codo: 0.6 } };
+const BRAZO_LIBRE = { R: { ida: 0.75, codo: 1.2 }, W: { ida: 0.35, codo: 0.25 }, G: { ida: 0.25, codo: 0.6 }, S: { ida: 0.55, codo: 0.7 } };
 const VER_BRAZO = {
   lado: { hombro: [9, 9], kx: 1, ky: 0 },
   frente: { hombro: [13, 9], kx: 0.15, ky: 0.35, derecha: true },
@@ -862,7 +874,7 @@ const ANCHO = 44, ALTO = 40, OX = 12, OY = 6;   // el lienzo, con lugar para el 
 export const PIES = [OX + 10, OY + 27];
 export { ANCHO, ALTO };
 // Para la gente del tren (gente.js): el mismo cuerpo, las mismas piernas y los mismos colores.
-export { VISTAS, COLORES as C, VER_BRAZO, linea, OX, OY };
+export { VISTAS, COLORES as C, VER_BRAZO, linea, OX, OY, MOCHILA };
 
 /** Una línea de puntos enteros, de a a b (Bresenham). */
 function linea([x0, y0], [x1, y1], poner) {

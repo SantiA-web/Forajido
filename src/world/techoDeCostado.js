@@ -28,11 +28,13 @@
 import { CONFIG } from '../data/config.js';
 import { dibujarTrenTresCuartos, MEDIDAS, LADO_GONDOLA, escalarColor } from './trenTresCuartos.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
-import { tieneAfueraNuevo, dibujarPerfilNuevo } from './estiloNuevo/trenDeAfuera.js';
+import { tieneAfueraNuevo, dibujarPerfilNuevo, ALTURAS_DE_FRENTE, HONDO } from './estiloNuevo/trenDeAfuera.js';
 import { dibujarHorizonte } from './horizonte.js';
 import { drawSpeedLines } from '../engine/parallax.js';
 import { adornoDelDesierto, adornoDeCerca } from './desierto.js';
 import { geoTecho } from './techoGeometria.js';
+import { dibujarCampo } from './estiloNuevo/suelo.js';
+import { dibujarHorizonteNuevo } from './estiloNuevo/horizonte.js';
 
 const M = MEDIDAS;
 const tono = (hex, f) => escalarColor(hex, f);
@@ -48,6 +50,12 @@ export function superficieEn(train, x, base) {
   const w = train.wagons[train.wagonAt(x)];
   if (!w || w.esCola || !w.tieneTecho) return null;
   const C = CONFIG.techo.costado;
+  // En 3/4 (el estilo nuevo) la tapa es la del dibujo del galope: `arriba` es su borde de allá y `abajo` el alero de acá.
+  if (estiloNuevo.activo) {
+    const medio = base - (w.carbon ? ALTURAS_DE_FRENTE.carbon : ALTURAS_DE_FRENTE.techo);
+    const hondo = HONDO.puntos * (CONFIG.estilo.punto / 4);
+    return { abajo: medio + hondo / 2, arriba: medio - hondo / 2, wagon: w, tresCuartos: true };
+  }
   const abajo = base - M.bastidor - (w.carbon ? LADO_GONDOLA : M.caja + M.alero);
   return { abajo, arriba: abajo - (w.carbon ? C.carbon : C.perfil), wagon: w };
 }
@@ -61,6 +69,8 @@ export function superficieEn(train, x, base) {
  *   curva de acá      bajás por delante, hasta el alero
  */
 export function piesEnTecho(sup, y, altoMapa) {
+  // En 3/4 el ancho del techo se ve entero: de borde a borde, sin esconderte detrás de la curva.
+  if (sup.tresCuartos) return { pies: sup.arriba + Math.max(0, Math.min(1, y / altoMapa)) * (sup.abajo - sup.arriba), detras: false, escala: 1 };
   const g = geoTecho(altoMapa);
   const d = y - g.medio;
   if (Math.abs(d) <= g.lomo) return { pies: sup.arriba, detras: false, escala: 1 };
@@ -74,12 +84,28 @@ export function piesEnTecho(sup, y, altoMapa) {
 
 // ------------------------------------------------------------ el fondo
 
+/** En el galope el horizonte queda a esta altura sobre la vía: con la misma cámara, acá también. */
+const HORIZONTE_SOBRE_LA_VIA = 150;
+/** Del horizonte al techo del tren: la tierra de allá, por donde vuelan los buitres y paran los cardones. */
+export const franjaDeAlla = (base) => [base - HORIZONTE_SOBRE_LA_VIA + 4, base - ALTURAS_DE_FRENTE.techo - 20];
+
 /**
  * EL AFUERA DE COSTADO: el cielo con sus cerros (el mismo del galope y la
  * huida, `dibujarHorizonte`), el campo que vuela hacia la cola y la vía. Va en
  * coordenadas de PANTALLA; `base` es la vía en pantalla.
  */
-export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel: velTren, dia, tormenta }) {
+export function dibujarFondoDeCostado(r, { base, hy, avance, scroll, vel: velTren, dia, tormenta, camX = 0, desfile = 0 }) {
+  // En 3/4, el desierto del galope: el mismo cielo, las mismas mesetas y la misma vía, pero a la velocidad de siempre del
+  // techo, con sus rayas *(Santi: "quiero que vaya más rápido, como estaba antes")*. Las montañas, lejos, siguen yendo despacio.
+  if (estiloNuevo.activo) {
+    const [desde, hasta] = franjaDeAlla(base);
+    r.clear(dia ? CONFIG.colors.desiertoDia : CONFIG.colors.desiertoNoche);
+    dibujarHorizonteNuevo(r.ctx, { hy: desde - 4, ancho: r.width, avance, dia, tormenta });
+    dibujarCampo(r.ctx, camX, 0, r.width, r.height, desfile, !dia, base, [desde, hasta], desde - 4, tormenta);
+    const R3 = CONFIG.techo.costado.rayas;
+    drawSpeedLines(r, scroll * 1.3, r.width, { ...R3, color: dia ? R3.color : escalarColor(R3.color, 0.45), velocidad: R3.velocidad * 1.4 * velTren, desde: base + 10, hasta: r.height - 2, semilla: 3.1 });
+    return;
+  }
   // 💨 Arriba va rapidísimo: el campo corre a más del doble (`velocidadFondo`).
   const vel = velTren * CONFIG.techo.costado.velocidadFondo;
   const C = CONFIG.colors.cielo;
@@ -279,7 +305,9 @@ function dibujarTelegrafo(r, { base, scroll, vel, dia }) {
  * arriba y el alero abajo. La góndola, recortada sobre su costado, con el
  * montón de carbón asomando.
  */
-export function dibujarTrenDeCostado(r, train, base, camX, ancho, noche) {
+export function dibujarTrenDeCostado(r, train, base, camX, ancho, noche, corr, enganches) {
+  // En 3/4, el tren del galope tal cual.
+  if (estiloNuevo.activo) { dibujarTrenTresCuartos(r, train, base, camX, ancho, { noche, corr, enganches }); return; }
   const P = CONFIG.colors.costado;
   const L = CONFIG.colors.locomotora;
   const visibles = train.wagons.filter((w) => !w.esCola && w.x < camX + ancho + 20 && w.x + w.width > camX - 20);

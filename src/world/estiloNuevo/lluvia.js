@@ -178,9 +178,10 @@ export function crearLluvia() {
      * @param suelo  cuánto terreno lleva corrido la escena (el galope; en la huida, 0): las gotas pegan en el suelo
      * @param puede  (x, y) => ¿hay tierra ahí donde caería? (no el cielo ni el tren); sin esto, toda la vista
      * @param lejos  (y) => ¿cae del otro lado de la vía? (la gota corta y apagada)
+     * @param arrastre  (y) => a cuánto se va la salpicadura con el suelo. Para el techo, donde las gotas van con el tren y la tierra pasa volando.
      */
-    actualizar(dt, vista, { suelo = 0, puede = null, lejos = null } = {}) {
-      for (const s of salpicaduras) s.t += dt;
+    actualizar(dt, vista, { suelo = 0, puede = null, lejos = null, arrastre = null } = {}) {
+      for (const s of salpicaduras) { s.t += dt; if (arrastre) s.x -= arrastre(s.y) * dt; }
       salpicaduras = salpicaduras.filter((s) => s.t < LLUVIA.dura);
       if (vista) {
         const [cx, cy, w, h] = vista;

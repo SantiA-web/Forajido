@@ -11,7 +11,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { dibujarPersona, dibujarTendido, faseDeAndar } from "./figura.js";
+import { dibujarPersona, dibujarTendido, faseDeAndar, poseTecho } from "./figura.js";
+import { estorbosEn } from "../world/estiloNuevo/trenDeAfuera.js";
 import { dibujarFogonazo } from './bullet.js';
 import { piezaDinamita } from './explosive.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
@@ -436,6 +437,8 @@ function updateOnRoof(p, dt, world) {
 
   p.aim = 0;
   p.techoResbalando = 0;
+  // (🆕 El reloj de las poses del techo que no dependen de cuánto caminaste.)
+  p.relojPose = (p.relojPose || 0) + dt;
   if (p.techoColgado) { updateColgado(p, dt, world); return; }
   p.techoSalto = Math.max(0, p.techoSalto - dt);
 
@@ -515,6 +518,8 @@ function updateOnRoof(p, dt, world) {
     : (corriendo || p.techoSaltoLargo) ? cp.speed
       : velAgachado;
   if (p.techoSalto > 0 && p.techoSaltoLargo) speed *= ct.saltoBoost;
+  // 🔗 En el aire sobre un enganche: uno estirado es más largo de cruzar y uno encogido, más corto (ver `pasoEn`).
+  if (p.techoSalto > 0 && world.pasoEnganche) speed *= world.pasoEnganche(p.x);
   // El arma pesada frena también en el techo (ver `velocidadPortando`).
   speed *= (p.weapon && p.weapon.velocidadPortando) ?? 1;
 
@@ -536,6 +541,7 @@ function updateOnRoof(p, dt, world) {
     dx *= inv; dy *= inv;
   }
 
+  const xAntes = p.x, yAntes = p.y;
   p.x = Math.max(p.hw, Math.min(world.map.width - p.hw, p.x + dx * speed * dt));
 
   /**
@@ -579,6 +585,19 @@ function updateOnRoof(p, dt, world) {
       p.techoResbalando = p.techoPerdio;
     }
     ny = Math.max(-2, Math.min(H + 2, ny));
+  }
+  /**
+   * 🧱 LOS VENTILADORES Y LAS CHIMENEAS CHOCAN *(Santi)*, en el 3/4. Saltando pasás por encima. Se prueba cada eje por
+   * separado para que te deslices al costado en vez de clavarte; y si ya estabas adentro de uno (te tiraron ahí), no te traba.
+   */
+  if (estiloNuevo.activo && p.techoSalto <= 0) {
+    const lista = estorbosEn(world.train, p.x);
+    const pisa = (x, y) => lista.some((e) => Math.abs(x - e.x) < e.rx + 3 && Math.abs(y - e.y) < e.ry + 6);
+    if (pisa(p.x, ny) && !pisa(xAntes, yAntes)) {
+      if (!pisa(xAntes, ny)) p.x = xAntes;
+      else if (!pisa(p.x, yAntes)) ny = yAntes;
+      else { p.x = xAntes; ny = yAntes; }
+    }
   }
   p.y = ny;
 }
@@ -1368,6 +1387,20 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
 
   if (p.techoColgado) { dibujarColgado(r, p, col); return; }
 
+  // 🆕 Lo que llevás encima, como adentro: se ve en todas las poses.
+  const mochilaTecho = (p.mochila || 0) > 0 ? 1 + Math.round(p.mochila * 3) : 0;
+  const luzTecho = p.luzTecho ?? 0;
+
+  /**
+   * 🆕 CAÍDO POR UN GOLPE (el cartel te llevó puesto): el golpe hacia atrás, el tirado de espaldas y se levanta, en 8
+   * cuadros repartidos en lo que dura estar caído.
+   */
+  if (p.techoCaido > 0 && estiloNuevo.activo && p.vistaCostado) {
+    const k = Math.min(7, Math.floor((1 - p.techoCaido / CONFIG.techo.levantarse) * 8));
+    poseTecho(r, { x: p.x, y: py + p.hh, espejo: (p.techoMira || 1) < 0, luz: luzTecho, destello: p.hitFlash > 0, pose: 'caido', k, mochila: mochilaTecho });
+    if (Math.floor(p.techoCaido * 10) % 2 === 0) r.text('!', p.x, py - 22, col.enemyAlert);
+    return;
+  }
   if (p.techoCaido > 0) {
     r.ctx.globalAlpha = 0.3;
     r.box(p.x, py + 5, 6, 2, '#000');
@@ -1396,6 +1429,29 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
       r.ctx.restore();
     }
     if (p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0) return;
+    /**
+     * 🆕 CUERPO A TIERRA Y CAYENDO, A MANO (estiloNuevo/jugadorTecho.js): quieto podés apuntar con el brazo estirado, de a
+     * 22,5°; arrastrándote, 8 cuadros con el brazo y la rodilla contrarios; cayendo, los brazos arriba y el sombrero que
+     * se te levanta.
+     */
+    if (estiloNuevo.activo) {
+      const espejo = ((cae ? cae.mira : p.techoMira) || 1) < 0;
+      if (cae) {
+        poseTecho(r, { x: p.x, y: py + p.hh, espejo, luz: luzTecho, destello: p.hitFlash > 0, pose: 'cayendo', k: Math.floor(cae.t * 15) % 8, mochila: mochilaTecho });
+        return;
+      }
+      const ang = brazoAcostado(p.aim, espejo ? -1 : 1);
+      const dir = espejo ? Math.PI - ang : ang;
+      const dirArma = Math.max(-4, Math.min(2, Math.round(Math.atan2(Math.sin(dir), Math.cos(dir)) / (Math.PI / 8))));
+      const t = poseTecho(r, {
+        x: p.x, y: py + p.hh, espejo, luz: luzTecho, destello: p.hitFlash > 0,
+        pose: p.moving ? 'arrastre' : 'tierra', k: Math.floor(((Math.abs(p.x) % 12) / 12) * 8) % 8, mochila: mochilaTecho,
+        arma: p.moving ? null : p.weapon && p.weapon.id, r: dirArma,
+      });
+      p.hombroCostado = t.hombro;
+      p.bocaCostado = t.boca;
+      return;
+    }
     const mira = cae ? cae.mira : p.techoMira;
     const tierra = dibujarPersona(r, {
       tipo: 'jugador', mascara: true, x: p.x, pies: py + p.hh,
@@ -1468,6 +1524,58 @@ function drawPlayerOnRoof(r, p, col, hearStepRadius) {
         : (frente > 0 ? 0 : Math.PI);
   const M = CONFIG.techo.mirada;
 
+  /** 🆕 PERDIENDO PIE: se va para atrás, las piernas tropiezan y los brazos dan la vuelta (estiloNuevo/jugadorTecho.js). */
+  if (estiloNuevo.activo && p.vistaCostado && p.techoPerdio && !enElAire) {
+    poseTecho(r, { x: p.x, y: by + p.hh, espejo: (p.techoMira || 1) < 0, luz: luzTecho, destello: p.hitFlash > 0, pose: 'perderPie', k: Math.floor((p.relojPose || 0) * 15) % 8, mochila: mochilaTecho });
+    return;
+  }
+  /**
+   * 🆕 SALTANDO Y CORRIENDO, CON EL DIBUJO NUEVO: en el aire, 8 cuadros de principio a fin del salto (empuja, recoge las
+   * rodillas, las estira y amortigua), con el cuerpo mirando a la mira. Corriendo, el trote de 8 cuadros de adentro; el
+   * cuerpo va para donde corrés y el arma para adelante, un poco hacia la mira.
+   */
+  if (estiloNuevo.activo && p.vistaCostado && (enElAire || corre)) {
+    const comun = {
+      tipo: 'jugador', mascara: true, x: p.x, pies: by + p.hh, interior: true, luz: luzTecho, destello: p.hitFlash > 0,
+      arma: armaDibujada(p), armaId: p.weapon && p.weapon.id, mochila: mochilaTecho, vaina: p.melee.id === 'cuchillo', empuna: p.empuna ?? 1, alza: p.alza ?? 0,
+    };
+    let nuevo;
+    if (enElAire) nuevo = dibujarPersona(r, { ...comun, angulo: p.aim, piernas: 'S' + Math.min(7, Math.floor(t * 8)) });
+    else {
+      const adelante = frente > 0 ? 0 : Math.PI;
+      const dif = Math.atan2(Math.sin(p.aim - adelante), Math.cos(p.aim - adelante));
+      nuevo = dibujarPersona(r, { ...comun, angulo: adelante, armaDir: adelante + Math.max(-Math.PI / 8, Math.min(Math.PI / 8, dif)), fase: pasoEnElTecho(p, frente, hacia) });
+    }
+    p.hombroCostado = nuevo.hombro;
+    p.bocaCostado = nuevo.boca;
+    return;
+  }
+
+  /**
+   * 🆕 AGAZAPADO, CON EL DIBUJO NUEVO *(Santi: "vamos con el jugador")*: el mismo agachado de adentro del vagón, quieto y
+   * con sus 8 cuadros de avanzar, en todas sus vistas. El cuerpo mira a la mira, como adentro. La grilla no achica: del
+   * lado de allá del techo ya no te ves más chico. Las otras poses del techo siguen con el dibujo viejo hasta que lleguen.
+   */
+  if (estiloNuevo.activo && p.vistaCostado && p.techoAgachado && !enElAire) {
+    const llenado = p.mochila || 0;
+    const nuevo = dibujarPersona(r, {
+      tipo: 'jugador', mascara: true, x: p.x, pies: by + p.hh, angulo: p.aim, interior: true,
+      fase: pasoEnElTecho(p, frente, hacia),
+      postura: 'agachado',
+      luz: p.luzTecho ?? 0,
+      destello: p.hitFlash > 0,
+      arma: armaDibujada(p),
+      armaId: p.weapon && p.weapon.id,
+      mochila: llenado > 0 ? 1 + Math.round(llenado * 3) : 0,
+      vaina: p.melee.id === 'cuchillo',
+      empuna: p.empuna ?? 1,
+      alza: p.alza ?? 0,
+    });
+    p.hombroCostado = nuevo.hombro;
+    p.bocaCostado = nuevo.boca;
+    return;
+  }
+
   // Igual que abajo: agachado se dobla, saltando sube entero.
   const fig = dibujarPersona(r, {
     tipo: 'jugador', mascara: true, x: p.x, pies: by + p.hh,
@@ -1535,6 +1643,18 @@ function dibujarColgado(r, p, col) {
   const g = p.bordesTecho || geoTecho(160);
   const c = p.techoColgado;
   const t = c.t;
+  /**
+   * 🆕 CON EL DIBUJO NUEVO (estiloNuevo/jugadorTecho.js), 8 cuadros: de este lado de espaldas, agarrado del filo y
+   * pataleando; del otro, sólo la copa del sombrero y las dos manos que tiemblan.
+   */
+  if (estiloNuevo.activo && p.vistaCostado) {
+    const mochila = (p.mochila || 0) > 0 ? 1 + Math.round(p.mochila * 3) : 0;
+    const k = Math.floor(t * 15) % 8;
+    if (c.lado > 0) poseTecho(r, { x: p.x + Math.sin(t * 5) * 0.8, y: g.abajo, luz: p.luzTecho ?? 0, destello: p.hitFlash > 0, pose: 'colgadoAca', k, mochila });
+    else poseTecho(r, { x: p.x, y: g.arriba, luz: p.luzTecho ?? 0, destello: p.hitFlash > 0, pose: 'colgadoAlla', k });
+    if (Math.floor(t * 4) % 2 === 0) r.text('!', p.x, (c.lado > 0 ? g.abajo : g.arriba) - 8, col.enemyAlert);
+    return;
+  }
   if (c.lado > 0) {
     const borde = g.abajo;
     // Un vaivén chiquito de lado a lado: estás colgado de los dedos.

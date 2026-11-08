@@ -366,14 +366,15 @@ export function createCampScene(services) {
     /**
      * 🧪 [8] UN TREN CON LOS FRENOS ROTOS, arrancando EN EL VAGÓN QUE SE ESTÁ EDITANDO (el tren lo trae
      * siempre: `forzarVagon`) *(Santi: "por el vagón que vayamos a editar quiero que el atajo 8 esté ocupado por ese
-     * vagón")*: hoy, LA HUIDA *(Santi: "con el 8 debería irme directo a la huída")*: con plata encima (si no, no
-     * hay nada que perder) y cuatro jinetes de la ley detrás.
+     * vagón")*: hoy, EL TECHO: arrancás arriba del primer vagón de pasajeros, para ir viendo al jugador en el estilo
+     * nuevo. (La huida quedó en Shift+[7].)
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit8')) {
-      // (Con el arma que tengas puesta en el campamento, también la de los atajos [2] y [3] *(Santi)*.)
-      scenes.goTo('huida', { summary: { money: 400, kills: 0, outcome: 'escaped' }, jinetes: 4, prueba: true, arma: WEAPONS[gameState.weapon] });
+      // (⛈️ Shift + [8]: el mismo techo, con tormenta.)
+      const clima = input.isDown('ShiftLeft') || input.isDown('ShiftRight') ? 'tormenta' : undefined;
+      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaVagon: 'pasajeros', enTecho: true, prueba: true, clima });
       return;
     }
     if (input.wasPressed('Digit6')) {

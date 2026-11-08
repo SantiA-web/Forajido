@@ -20,9 +20,13 @@ import { CONFIG } from '../data/config.js';
 import { dibujarTechoDesdeArriba, dibujarGondolaDesdeArriba, dibujarObstaculoTecho as obstaculoTecho } from '../world/techoDesdeArriba.js';
 import { geoTecho, yEnTecho } from '../world/techoGeometria.js';
 import {
-  superficieEn, piesEnTecho, dibujarFondoDeCostado, dibujarTrenDeCostado,
+  superficieEn, piesEnTecho, dibujarFondoDeCostado, dibujarTrenDeCostado, franjaDeAlla,
   dibujarPorticoDeCostado, dibujarCajonDeCostado,
 } from '../world/techoDeCostado.js';
+import { cruceDetras, sombraDelCruce, dibujarCruce, vaDetrasDeVos, xEnElAncho, dibujarAvisoDelCruce } from '../world/estiloNuevo/techoObstaculos.js';
+import { estorbosEn, dibujarEstorbo } from '../world/estiloNuevo/trenDeAfuera.js';
+import { dibujarBuitres, dibujarSombrasDeBuitres, nuevaSuerteDeBuitres } from '../world/estiloNuevo/buitres.js';
+import { crearLluvia } from '../world/estiloNuevo/lluvia.js';
 import { T } from '../text/es.js';
 
 import { createCamera } from '../engine/camera.js';
@@ -45,7 +49,7 @@ import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, osc
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
 import { crearEnganches, actualizarEnganches, empezarTiron, corrimientoEn, dibujarEnganches, cadenasDeEnganches, columnasDeEnganches, engancheEn, pasoEn, sacudiendo } from '../world/enganches.js';
-import { fijarHoraDelSorteo } from '../entities/estiloNuevo/gente.js';
+import { fijarHoraDelSorteo, aspectoDe } from '../entities/estiloNuevo/gente.js';
 import {
   updatePlayer, drawPlayer, golpearEnTecho, tumbar, dispersionActual, damagePlayer,
 } from '../entities/player.js';
@@ -111,6 +115,7 @@ export function createRaidScene(services) {
   /** Lo que se ve y se oye arriba del tren: viento, humo, bamboleo. */
   let sensacion = crearSensacionTecho();
   let vaivenTechoY = 0;
+  let desfileTecho = 0;   // cuánto corrió el suelo visto desde el techo (sumado de a poco: el traqueteo cambia la velocidad)
   let vientoTechoAntes = null;
   /** La vista de costado del techo: de qué vista venías y el fundido al cambiar. */
   let vistaAntes = null, fundidoVista = 0, ultimaSuperficie = null;
@@ -138,6 +143,7 @@ export function createRaidScene(services) {
   let bullets, explosives, riders, particles, floaters;
   let riderWatch;
   let techObstacles, techoBajarProgress, techoSpawnTimer;
+  let avisosTecho = [];   // las flechas de lo que está por venir por el techo
   let rasponTimer = 0;
   let avisoPerdio = false;
   // Cuánto llevás sosteniendo [E] para trepar o bajar del carbón (etapa 5).
@@ -149,6 +155,9 @@ export function createRaidScene(services) {
   // La tormenta que se oye (CONFIG.tormenta). `cubiertoAntes` guarda el estado
   // anterior para tocar el volumen sólo cuando cambia, no cada cuadro.
   let hayTormenta, truenoTimer, cubiertoAntes;
+  /** ⛈️ La lluvia del techo: la misma del galope (world/estiloNuevo/lluvia.js). */
+  const lluvia = crearLluvia();
+  let vistaLluvia = null;
   let traqueteoTimer, traqueteoFase, traqueteoFaseTimer, traqueteoVariante, traqueteoSwayX;
   /**
    * 🆕 LOS ENGANCHES QUE SE ESTIRAN (world/enganches.js) y cuánto se corre el dibujo: `anclaCorr` es lo que la
@@ -298,7 +307,7 @@ export function createRaidScene(services) {
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ spawnReinforcement, camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas, rodantes: () => rodantes });
+    if (params.prueba) window.RAID_BANCO = () => ({ avisosTecho, spawnReinforcement, camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas, rodantes: () => rodantes });
     enemies = train.enemies;
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
@@ -315,6 +324,7 @@ export function createRaidScene(services) {
     blastMarks = [];
     estiloNuevo.golpesRes = {};
     techObstacles = [];
+    avisosTecho = [];
     techoBajarProgress = 0;
     techoSpawnTimer = CONFIG.techo.obstaculoCada;
 
@@ -376,6 +386,8 @@ export function createRaidScene(services) {
     sensacion = crearSensacionTecho();
     lupaActual = DENSIDAD;
     vaivenTechoY = 0;
+    desfileTecho = 0;
+    nuevaSuerteDeBuitres();
     vientoTechoAntes = null;
     vistaAntes = null;
     fundidoVista = 0;
@@ -461,6 +473,8 @@ export function createRaidScene(services) {
       aimX: player.x, aimY: player.y,
       // 🎯 C3b · Tu tiro desde el techo se resuelve en la vista de costado.
       tiroDesdeElTecho: (options) => tiroDesdeElTecho(options),
+      // 🔗 Saltando en el techo, un enganche estirado es más largo de cruzar.
+      pasoEnganche: (x) => (enganches ? pasoEn(enganches, x) : 1),
       spawnBullet: (options) => {
         tiroteo = true;
         // Disparaste durante el "¡ALTO!": se terminó la charla.
@@ -1096,6 +1110,8 @@ export function createRaidScene(services) {
    */
   function arrancarTormenta() {
     hayTormenta = !!train.clima && train.clima.id === 'tormenta';
+    lluvia.limpiar();
+    vistaLluvia = null;
     truenoTimer = 0;
     cubiertoAntes = null;
     if (!hayTormenta) return;
@@ -1147,7 +1163,30 @@ export function createRaidScene(services) {
     truenoTimer -= dt;
     if (truenoTimer <= 0) {
       truenoTimer = t.truenoCada + rng.range(0, t.truenoVariacion);
-      audio.play(rng.chance(t.chanceCerca) ? 'truenoCerca' : 'truenoLejos');
+      const cerca = rng.chance(t.chanceCerca);
+      audio.play(cerca ? 'truenoCerca' : 'truenoLejos');
+      lluvia.relampago(cerca);
+    }
+
+    /**
+     * ⛈️ LAS GOTAS DEL TECHO. Caen en la tierra de los dos lados de la vía y también sobre la tapa de los vagones, que es donde
+     * estás parado. No se dejan llevar por el suelo: a la velocidad del tren irían casi acostadas y no se verían como lluvia.
+     * Lo único que se va con la tierra es la salpicadura.
+     */
+    if (estiloNuevo.activo) {
+      const base = baseCostado;
+      const veo = player.enTecho && base != null;
+      const [desde, hasta] = veo ? franjaDeAlla(base) : [0, 0];
+      const enLaTierra = (y) => y < hasta || y > base + 4;
+      lluvia.actualizar(dt, veo ? vistaLluvia : null, {
+        puede: (x, y) => {
+          if ((y >= desde && y < hasta) || y > base + 4) return true;
+          const so = superficieEn(train, x, base);
+          return !!so && y >= so.arriba + 2 && y < so.abajo - 1;
+        },
+        lejos: (y) => y < hasta,
+        arrastre: (y) => (enLaTierra(y) ? velDelSueloTecho() : 0),
+      });
     }
   }
 
@@ -1866,7 +1905,7 @@ export function createRaidScene(services) {
    */
   function updateTecho(dt) {
     const ct = CONFIG.techo;
-    if (!player.enTecho) { techObstacles.length = 0; return; }
+    if (!player.enTecho) { techObstacles.length = 0; avisosTecho.length = 0; return; }
 
     // --- Aparecen adelante, cada tanto ---
     techoSpawnTimer -= dt;
@@ -1874,27 +1913,38 @@ export function createRaidScene(services) {
       techoSpawnTimer = ct.obstaculoCada * rng.range(0.75, 1.25);
       const x = player.x + ct.obstaculoAdelanto;
       if (hayTechoEn(x)) {
-        techObstacles.push({
-          x,
-          tipo: rng.range(0, 1) > 0.5 ? 'agachar' : 'saltar',
-          resuelto: false,
-        });
+        const tipo = rng.range(0, 1) > 0.5 ? 'agachar' : 'saltar';
+        avisosTecho.push({ tipo, t: ct.obstaculoAviso });
+        audio.play(tipo === 'saltar' ? 'avisoSaltar' : 'avisoTierra');
       }
+    }
+    // 🚩 Primero la flecha, después sale de verdad *(Santi: vienen tan rápido como el suelo)*.
+    for (let i = avisosTecho.length - 1; i >= 0; i--) {
+      const a = avisosTecho[i];
+      a.t -= dt;
+      if (a.t > 0) continue;
+      techObstacles.push({ x: player.x + ct.obstaculoAdelanto, tipo: a.tipo, resuelto: false });
+      avisosTecho.splice(i, 1);
     }
 
     // --- Y te barren hacia la cola ---
     for (let i = techObstacles.length - 1; i >= 0; i--) {
       const ob = techObstacles[i];
-      ob.x -= ct.obstaculoVel * dt;
+      ob.x -= velDelSueloTecho() * ct.obstaculoPorSuelo * dt;
       if (ob.x < player.x - 120) { techObstacles.splice(i, 1); continue; }
 
-      if (ob.resuelto || Math.abs(ob.x - player.x) > ct.obstaculoAncho) continue;
+      // 🧵 En 3/4 cruza en diagonal: te alcanza en una x distinta según dónde estés a lo ancho.
+      const enTresCuartos = estiloNuevo.activo;
+      const xQueTePega = enTresCuartos ? xEnElAncho(ob, player.y) : ob.x;
+      // (A esta velocidad, en un cuadro lento pasaba de largo sin tocarte: cuenta desde que llega.)
+      if (ob.resuelto || xQueTePega - player.x > ct.obstaculoAncho) continue;
 
       // Te alcanzó. ¿Estabas haciendo lo correcto?
       // 🧗 El cajón ocupa SÓLO EL LOMO: por la curva se lo rodea (y colgado
       // del alero no te alcanza nada).
       const g = geoTecho(map.height);
-      const loRodeaste = ob.tipo === 'saltar' && Math.abs(player.y - g.medio) > g.lomo + 4;
+      // (🧵 El cable de la 3/4 cruza todo el ancho: no se rodea, se salta.)
+      const loRodeaste = ob.tipo === 'saltar' && !enTresCuartos && Math.abs(player.y - g.medio) > g.lomo + 4;
       // 🦵 El cartel ahora pega a la altura del que va agachado: sólo se pasa
       // cuerpo a tierra. El cajón, saltando.
       const zafó = player.techoColgado || player.caidaEnganche || loRodeaste ||
@@ -1968,6 +2018,12 @@ export function createRaidScene(services) {
    * levanta del suelo y te vas con lo que llevabas encima (y si hay jinetes
    * siguiéndote, a la huida). Es un final, no un tropezón.
    */
+  /** A cuánto pasa el suelo visto desde el techo, y con él lo que está clavado en el suelo: cada tren a la suya. */
+  function velDelSueloTecho() {
+    const C = CONFIG.techo.costado;
+    return CONFIG.parallax.suelo * CONFIG.parallax.velocidad * traqueteoVelMult * C.velocidadFondo * ((train.tipoTren && C.velocidadFondoPorTren[train.tipoTren.id]) ?? 1);
+  }
+
   function caerseDelTren() {
     player.techoColgado = null;
     floaters.push({
@@ -2026,6 +2082,15 @@ export function createRaidScene(services) {
     audio.play('hitWall');
     camera.shake(CONFIG.feel.shakeHit * 1.5, 0.4);
     if (!player.enTecho && !engancheEn(enganches, player.x)) trastabillar(player, -1, world);
+    /**
+     * 🛑 ARRIBA DEL TECHO EL FRENAZO TAMBIÉN TE AGARRA. Parado o corriendo te vas al piso, como con un obstáculo; cuerpo a
+     * tierra o en el aire, no te pasa nada. Colgado, te soltás *(Santi: "si estás colgado y el tren con frenos rotos hace ese
+     * movimiento que se juntan los vagones hasta chocarse, te caés")*. Cayendo al enganche, te aplasta (`aplastarEnLosEnganches`).
+     */
+    if (player.enTecho) {
+      if (player.techoColgado) caerseDelTren();
+      else if (!player.caidaEnganche && player.techoSalto <= 0 && !player.techoTendido) chocarEnTecho({ x: player.x - 1 });
+    }
     soltarPorElFrenazo();
     const dura = CONFIG.enganches.trastabilla;
     for (const e of enemies) {
@@ -2155,7 +2220,7 @@ export function createRaidScene(services) {
     for (const g of enganches.lista) {
       if (!g.aplasto) continue;
       const adentro = (o) => o.x >= g.x0 && o.x < g.x1;
-      if (player.alive && !player.enTecho && adentro(player)) {
+      if (player.alive && (!player.enTecho || player.caidaEnganche) && adentro(player)) {
         player.invuln = 0;
         damagePlayer(player, player.health + 999, player.x, player.y);
         spawnParticles(player.x, player.y, colors.blood, 14);
@@ -3450,6 +3515,7 @@ export function createRaidScene(services) {
      */
     if (congelado > 0) { congelado -= dt; return; }
     scroll += dt;
+    desfileTecho += velDelSueloTecho() * dt;
 
     /**
      * [TAB] ABRE Y CIERRA LA MOCHILA, y **el mundo sigue andando**.
@@ -5526,13 +5592,16 @@ export function createRaidScene(services) {
     const C = CONFIG.techo.costado;
     const base = Math.round(r.height * C.via);
     baseCostado = base;
-    const hy = Math.round(r.height * C.horizonte);
+    // (En 3/4 el horizonte es el del galope: un tiro que pega por encima del de antes también levanta tierra.)
+    const hy = estiloNuevo.activo ? franjaDeAlla(base)[0] - 4 : Math.round(r.height * C.horizonte);
     horizonteCostado = hy;
     const camX = desplazamientoX();
     const dia = gameState.esDeDia;
+    // 🔗 Lo que va arriba de un vagón se corre con él (los vagones se mueven: ver world/enganches.js).
+    const conElTren = (x, hacer) => { r.ctx.save(); r.ctx.translate(corrDibujo(x), 0); hacer(); r.ctx.restore(); };
     dibujarFondoDeCostado(r, {
       base, hy, avance: camX + scroll * 60, scroll,
-      vel: CONFIG.parallax.velocidad * traqueteoVelMult, dia, tormenta: hayTormenta,
+      vel: CONFIG.parallax.velocidad * traqueteoVelMult, dia, tormenta: hayTormenta, camX, desfile: desfileTecho,
     });
 
     r.ctx.save();
@@ -5542,6 +5611,8 @@ export function createRaidScene(services) {
     // Dónde van tus pies: en el lomo, bajando por la curva de acá, o hundido
     // detrás de la de allá. Sobre un hueco (en el aire), el último techo.
     const sup = (x) => superficieEn(train, x, base);
+    // En 3/4 lo que antes iba sobre el perfil (el cajón, el cartel, las astillas) va en la mitad de la tapa.
+    const enElLomo = (x) => { const o = sup(x); return o && o.tresCuartos ? { ...o, arriba: (o.arriba + o.abajo) / 2 } : o; };
     const s = sup(player.x) || ultimaSuperficie || { arriba: base - 71, abajo: base - 63 };
     ultimaSuperficie = s;
     const lugar = piesEnTecho(s, player.y, map.height);
@@ -5550,6 +5621,7 @@ export function createRaidScene(services) {
     player.escalaTecho = lugar.escala;
     player.bordesTecho = { arriba: s.arriba, abajo: s.abajo };
     player.vistaCostado = true;
+    player.luzTecho = dia ? 0 : -1;
     // Del lado de allá estás DETRÁS del techo: se te dibuja antes que el tren y
     // el perfil te tapa el cuerpo. Queda la cabeza.
     // 🕳️ Cayendo al enganche: los pies bajan por el hueco hasta la chapa.
@@ -5568,10 +5640,37 @@ export function createRaidScene(services) {
     const porCercania = [...riders].sort((a, b) => cercaniaDeJinete(a) - cercaniaDeJinete(b));
     for (const rd of porCercania) if (rd.side < 0) dibujarJineteDeCostado(r, rd, base);
     if (detras) drawPlayer(r, player, train.hearStepRadius);
-    dibujarTrenDeCostado(r, train, base, camX, r.width, !dia);
+    // 🧵 Los postes del lado de allá: detrás del tren. (Sobre un hueco, con la superficie del último techo.)
+    const en34 = estiloNuevo.activo;
+    if (en34) for (const ob of techObstacles) cruceDetras(r.ctx, ob, sup(ob.x) || s, base, !dia);
+    // 🦅 Los buitres del galope, con su sombra en la tierra de allá. (Con tormenta no vuelan.)
+    const cielo = en34 && !hayTormenta ? { t: scroll, camX, camY: 0, vistaW: r.width, vistaH: r.height, dia, franja: franjaDeAlla(base) } : null;
+    if (cielo) dibujarSombrasDeBuitres(r.ctx, cielo);
+    // ⛈️ Lo que cae del otro lado de la vía va detrás del tren; lo demás, después.
+    const lloviendo = en34 && hayTormenta;
+    const corteLluvia = franjaDeAlla(base)[1];
+    if (lloviendo) {
+      vistaLluvia = [camX, 0, r.width, r.height];
+      lluvia.dibujarSalpicaduras(r.ctx, !dia, 0, PASO, -Infinity, corteLluvia);
+      lluvia.dibujarGotas(r.ctx, !dia, 0, PASO, -Infinity, corteLluvia);
+    }
+    dibujarTrenDeCostado(r, train, base, camX, r.width, !dia, corrDibujo, enganches);
+    if (lloviendo) lluvia.dibujarSalpicaduras(r.ctx, !dia, 0, PASO, corteLluvia, Infinity);
+    // 🆕 Del lado de allá el techo te tapa las piernas, y también su contorno.
+    if (detras) estiloNuevo.borrarGente(r.ctx, player.x - 24, s.arriba, 48, 60);
 
+    // 🧵 La sombra va siempre debajo tuyo; el cable y la viga, según de qué lado estés.
+    const elCruce = (ob, tapa) => {
+      const tope = dibujarCruce(r.ctx, ob, sup(ob.x) || s, base, !dia, tapa);
+      if (!ob.resuelto) r.text(ob.tipo === 'saltar' ? '▲' : '▼', ob.x, tope, ob.tipo === 'saltar' ? colors.bagLoot : colors.enemySus);
+    };
+    if (en34) for (const ob of techObstacles) {
+      sombraDelCruce(r.ctx, ob, sup(ob.x) || s, base, !dia, (x) => sup(x - corrDibujo(x)));
+      if (vaDetrasDeVos(ob, player)) elCruce(ob, false);
+    }
     for (const ob of techObstacles) {
-      const so = sup(ob.x);
+      if (en34) break;
+      const so = enElLomo(ob.x);
       if (!so || ob.tipo !== 'saltar') continue;
       const tope = dibujarCajonDeCostado(r, ob, so);
       if (!ob.resuelto) r.text('▲', ob.x, tope - 4, colors.bagLoot);
@@ -5580,22 +5679,43 @@ export function createRaidScene(services) {
     if (caida) {
       // Te vas de cabeza: el giro ya no lo hace la escena (giraba la imagen y la
       // dejaba borrosa); lo hace el esqueleto, punto por punto (`cayendo`).
-      drawPlayer(r, player, train.hearStepRadius);
-      polvoDelEnganche(r, base);
+      conElTren(player.x, () => { drawPlayer(r, player, train.hearStepRadius); polvoDelEnganche(r, base); });
     } else if (!detras) {
-      drawPlayer(r, player, train.hearStepRadius);
-      if (player.techoResbalando && !player.techoColgado) polvoDeResbalar(r);
+      conElTren(player.x, () => { drawPlayer(r, player, train.hearStepRadius); if (player.techoResbalando && !player.techoColgado) polvoDeResbalar(r); });
+      // 🧱 Lo que te queda más cerca de la cámara que vos te tapa (va pegado en la lámina, debajo de la gente).
+      if (en34 && !player.techoColgado) for (const e of estorbosEn(train, player.x)) {
+        if (e.y <= player.y || Math.abs(e.x - player.x) > 18 || player.techoSalto > 0) continue;
+        let lugar;
+        conElTren(e.x, () => { lugar = dibujarEstorbo(r.ctx, e, base, !dia); });
+        estiloNuevo.borrarGente(r.ctx, lugar.x + corrDibujo(e.x), lugar.y, lugar.w, lugar.h);
+      }
     }
     marcaDelFilo(r, s);
-    astillasDelTecho(r, sup);
+    astillasDelTecho(r, enElLomo);
 
+    if (en34) for (const ob of techObstacles) if (!vaDetrasDeVos(ob, player)) elCruce(ob, true);
     for (const ob of techObstacles) {
-      const so = sup(ob.x);
+      if (en34) break;
+      const so = enElLomo(ob.x);
       if (!so || ob.tipo !== 'agachar') continue;
       dibujarPorticoDeCostado(r, ob, so, base);
       if (!ob.resuelto) r.text('▼', ob.x, so.arriba - C.alturaViga - 14, colors.enemySus);
     }
-    for (const rd of porCercania) if (rd.side > 0) dibujarJineteDeCostado(r, rd, base);
+    // ⛈️ Las gotas se ordenan con los jinetes de acá por dónde pegan: las que caen delante de un caballo lo tapan.
+    let desdeLluvia = corteLluvia;
+    for (const rd of porCercania) {
+      if (rd.side <= 0) continue;
+      if (lloviendo) {
+        const cascos = jineteDeCostado(rd, base).y + 7;
+        lluvia.dibujarGotas(r.ctx, !dia, 0, PASO, desdeLluvia, cascos);
+        desdeLluvia = Math.max(desdeLluvia, cascos);
+      }
+      dibujarJineteDeCostado(r, rd, base);
+    }
+    if (lloviendo) lluvia.dibujarGotas(r.ctx, !dia, 0, PASO, desdeLluvia, Infinity);
+    if (cielo) dibujarBuitres(r.ctx, cielo);
+    // 🚩 La flecha, en el borde de la pantalla; parpadea más rápido cuando está por salir.
+    if (en34) for (const a of avisosTecho) if (Math.floor(a.t * (a.t < 0.4 ? 16 : 6)) % 2 === 0) dibujarAvisoDelCruce(r.ctx, a.tipo, s, camX + r.width - 8);
     tirosDeJinetesDeCostado(base, s, sup);
     dibujarTiroDeGaleria(r, base);
     miraDeCostado(r, base);
@@ -5604,13 +5724,14 @@ export function createRaidScene(services) {
     const enPantalla = { dentroDe: [camX + 2, camX + r.width - 2] };
     for (const f of floaters) {
       // Los carteles flotan sobre el techo donde pasó la cosa.
-      const so = sup(f.x) || s;
+      const so = enElLomo(f.x) || s;
       r.ctx.globalAlpha = Math.min(1, f.life * 2);
       r.text(f.text, f.x, so.arriba - 30 + (f.y - player.y) * 0.15, f.color, 'center', enPantalla);
     }
     r.ctx.globalAlpha = 1;
     r.ctx.restore();
 
+    if (en34 && hayTormenta) lluvia.dibujarEnPantalla(r.ctx, r.width, r.height, !dia, hy);
     dibujarSensacionTecho(r, sensacion, { dia, camY: -vaivenTechoY });
     terminarCuadro(r);
   }
@@ -6151,6 +6272,9 @@ export function createRaidScene(services) {
         : `saturate(${0.7 - 0.1 * t}) contrast(${0.8 - 0.08 * t}) brightness(${0.92 - 0.04 * t})`;
     }
     // `side: 1`: de costado, el gesto de apuntar va siempre hacia arriba, hacia vos.
+    // 🐛 El aspecto se sortea una vez y se guarda en quien lo lleva. Sorteado sobre la copia, que es nueva en cada cuadro, le
+    // tocaba otra ropa cada vez *(Santi: "siguen titilando")*: se guarda en el jinete antes de copiarlo.
+    aspectoDe(rd, 'guardia');
     const copia = { ...rd, y, side: 1 };
     drawRider(r, copia);
     // 🆕 E4: dónde quedó la boca del caño, en el mundo (con lo que se achica de lejos): de ahí el fogonazo.
@@ -6263,7 +6387,8 @@ export function createRaidScene(services) {
 
     // 🎯 E3 · El fogonazo sale de la boca del caño dibujado (la sabe el esqueleto).
     const b = player.bocaCostado;
-    const arma = b && Math.abs(b.x - player.x) < 14 ? b
+    // (🔁 32: cuerpo a tierra el caño queda lejos del cuerpo, y con 14 el fogonazo salía del sombrero.)
+    const arma = b && Math.abs(b.x - player.x) < 32 ? b
       : { x: player.x + Math.cos(player.aim) * 6, y: (player.piesCostado ?? base - 71) - 12 + Math.sin(player.aim) * 6 };
     fogonazo(arma.x, arma.y);
     camera.shake(0.5, 0.06);
@@ -6883,18 +7008,22 @@ export function createRaidScene(services) {
       }
       const py = player.yPantalla ?? player.y;
       if (bordeParaBajar() !== null) {
-        r.text(T.prompts.bajar, player.x, py - 16, colors.doorGlow, 'center', enPantalla);
+        // (🆕 Más arriba con el dibujo nuevo: el sombrero llegaba hasta el cartel.)
+        const sube = estiloNuevo.activo ? 9 : 0;
+        r.text(T.prompts.bajar, player.x, py - 16 - sube, colors.doorGlow, 'center', enPantalla);
         if (techoBajarProgress > 0) {
           const w = 22;
-          r.rect(player.x - w / 2, py - 12, w, 3, '#1a1512');
-          r.rect(player.x - w / 2, py - 12,
+          r.rect(player.x - w / 2, py - 12 - sube, w, 3, '#1a1512');
+          r.rect(player.x - w / 2, py - 12 - sube,
             w * (techoBajarProgress / CONFIG.techo.bajarHold), 3, colors.doorGlow);
         }
       }
       // Las teclas cambian acá arriba, así que se recuerdan los primeros
       // segundos: nadie tiene por qué adivinar que Espacio dejó de agachar.
       if (scroll < 8) {
-        r.text(T.prompts.techoAyuda, player.x, py + 22, colors.textDim, 'center', enPantalla);
+        // (En 3/4 iba encima de la tapa: abajo del vagón, como el aviso de colgado.)
+        const yAyuda = estiloNuevo.activo && player.bordesTecho ? player.bordesTecho.abajo + 34 : py + 22;
+        r.text(T.prompts.techoAyuda, player.x, yAyuda, colors.textDim, 'center', enPantalla);
       }
       return;
     }

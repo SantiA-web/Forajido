@@ -42,6 +42,8 @@ import { CLIMA_POR_DEFECTO } from '../data/modifiers.js';
 import { gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { sortearComposicion, buildTrain, plataformasDe } from '../world/train.js';
+import { crearEnganches, actualizarEnganches, corrimientoEn } from '../world/enganches.js';
+import { DENSIDAD } from '../engine/renderer.js';
 import {
   dibujarTrenTresCuartos, finDelTrenDeAfuera, escalarColor, alturaDeAterrizaje, olvidarLaminas,
   altoDelTecho, alturaVentanilla, ALTO_DEL_ENGANCHE,
@@ -129,6 +131,16 @@ export function createRideScene(services) {
   // 🌳 Los algarrobos del otro lado de la vía (los de este lado van con los obstáculos: chocan).
   let arbolesAlla = [];
   let vida, invuln, tiradores, balas;
+  /**
+   * 🔗 LOS VAGONES SE MUEVEN TAMBIÉN DESDE AFUERA: el mismo estirarse y encogerse de adentro. El lugar donde se salta se
+   * corre con el enganche *(Santi: "recuerda de los movimientos del tren")*.
+   */
+  let enganchesTren = null;
+  // (Contra el vagón que tenés al lado, como la cámara de adentro: en un frenazo la punta del tren se corre 250 unidades, y si no
+  // se te iba todo el tren de al lado.)
+  let anclaTren = 0;
+  const PASO_TREN = CONFIG.estilo.punto / DENSIDAD;
+  const corrTren = (xw) => (enganchesTren ? Math.round((corrimientoEn(enganchesTren, xw) - anclaTren) / PASO_TREN) * PASO_TREN : 0);
   let calidadSalto, techoDestino, portonDestino, barra;
   /**
    * `suelo`: cuánto terreno lleva recorrido el tren. Es lo que hace que el
@@ -173,6 +185,8 @@ export function createRideScene(services) {
       { climaId: clima, estado, comportamientos, variantes, encubiertos, paquetes, cajaOculta, dia: !!gameState.esDeDia }
     );
     plataformas = plataformasDe(train.tramos, size);
+    enganchesTren = crearEnganches(train, rng, estado);
+    anclaTren = 0;
     largoTren = finDelTrenDeAfuera(train);   // (Lo que se ve: no se galopa más allá de la punta.)
 
     x = plataformas[1] - A.inicioDetras;
@@ -249,6 +263,8 @@ export function createRideScene(services) {
       get rumbo() { return rumbo; },
       get suelo() { return suelo; },
       get plataformas() { return plataformas; },
+      get enganches() { return enganchesTren; },
+      get corrTren() { return corrTren; },
       get plataformaActual() { return plataformaBajoElCaballo(); },
       get calidad() { return calidadDelSalto(); },
       get pegadoAlTren() { return distanciaAlTren() <= caballo.saltoDistancia; },
@@ -440,7 +456,7 @@ export function createRideScene(services) {
   const centroPorton = (P) => ((P.c0 + P.c1 + 1) / 2) * size;
   function portonBajoElCaballo() {
     for (const P of train.portones || []) {
-      if (P.abierto && Math.abs(x - centroPorton(P)) <= (3 * size) / 2 + caballo.saltoTolerancia) return P;
+      if (P.abierto && Math.abs(x - centroPorton(P) - corrTren(centroPorton(P))) <= (3 * size) / 2 + caballo.saltoTolerancia) return P;
     }
     return null;
   }
@@ -450,7 +466,7 @@ export function createRideScene(services) {
     for (let i = 1; i < plataformas.length; i++) {
       if (plataformas[i] === undefined) continue;
       const ancho = columnasDeSalto(i) * size / 2;
-      if (Math.abs(x - plataformas[i]) <= ancho + caballo.saltoTolerancia) return i;
+      if (Math.abs(x - plataformas[i] - corrTren(plataformas[i])) <= ancho + caballo.saltoTolerancia) return i;
     }
     return null;
   }
@@ -472,13 +488,13 @@ export function createRideScene(services) {
       const P = portonBajoElCaballo();
       if (!P) return { plataforma: null, grado: 'errado' };
       if (distanciaAlTren() > caballo.saltoDistancia) return { plataforma: null, porton: P, grado: 'lejos' };
-      const desvio = Math.abs(x - centroPorton(P));
+      const desvio = Math.abs(x - centroPorton(P) - corrTren(centroPorton(P)));
       return { plataforma: null, porton: P, grado: desvio <= caballo.saltoPreciso ? 'limpio' : 'sucio', desvio };
     }
     if (distanciaAlTren() > caballo.saltoDistancia) {
       return { plataforma: p, grado: 'lejos' };
     }
-    const desvio = Math.abs(x - plataformas[p]);
+    const desvio = Math.abs(x - plataformas[p] - corrTren(plataformas[p]));
     const grado = desvio <= caballo.saltoPreciso ? 'limpio' : 'sucio';
     return { plataforma: p, grado, desvio };
   }
@@ -555,8 +571,9 @@ export function createRideScene(services) {
   }
 
   function vagonAlLado() {
-    const w = train.wagonAt(x);
-    if (!w || train.tramoAt(x) !== 'vagon') return null;
+    const xTren = x - corrTren(x);
+    const w = train.wagonAt(xTren);
+    if (!w || train.tramoAt(xTren) !== 'vagon') return null;
     return train.wagons[w];
   }
 
@@ -656,7 +673,7 @@ export function createRideScene(services) {
 
   function dispararDesde(vagon) {
     // Sale de la ventanilla más cercana a tu altura, en el borde del tren.
-    const desdeX = Math.max(vagon.x + 8, Math.min(vagon.x + vagon.width - 8, x + rng.range(-30, 30)));
+    const desdeX = Math.max(vagon.x + 8, Math.min(vagon.x + vagon.width - 8, x + rng.range(-30, 30))) + corrTren(vagon.x);
     const desdeY = train.map.height - 2;
     const ang = Math.atan2(y - desdeY, x - desdeX) + rng.spread(A.disparoSpread);
     balas.push({
@@ -881,9 +898,27 @@ export function createRideScene(services) {
     audio.quitarAmbiente('galope');
   }
 
+  /**
+   * 🔗 LO QUE HACE EL TREN SE OYE TAMBIÉN DESDE EL CABALLO, con los mismos sonidos que adentro. Si frena o acelera de golpe, además
+   * sale el cartel: te está moviendo el hueco al que vas a saltar. (El de "te vieron" no dura un rato: a ése no se lo tapa.)
+   */
+  function avisoDelTren(evento) {
+    if (evento === 'aviso') audio.play('trenCruje');
+    else if (evento === 'frenazo') audio.play('hitWall');
+    else if (evento === 'frenazoAviso' || evento === 'arranconAviso') {
+      const frena = evento === 'frenazoAviso';
+      audio.play(frena ? 'trenFrena' : 'trenAcelera');
+      if (!aviso || aviso.life !== undefined) aviso = { texto: frena ? T.prompts.trenFrena : T.prompts.trenAcelera, color: colors.enemyAlert, life: 1.4 };
+    }
+  }
+
   function update(dt) {
     moverZoom(dt);
     scroll += dt;
+    if (enganchesTren) {
+      avisoDelTren(actualizarEnganches(enganchesTren, dt, rng, x));
+      anclaTren += (corrimientoEn(enganchesTren, x) - anclaTren) * Math.min(1, dt / CONFIG.enganches.camaraDemora);
+    }
     invuln = Math.max(0, invuln - dt);
     actualizarPolvo(dt);
     updateTormenta(dt);
@@ -1267,7 +1302,7 @@ export function createRideScene(services) {
 
     // `vistaW`: con el zoom alejado entra MUCHO más mundo del que mide la
     // pantalla, y sin decírselo el tren queda fuera del recorte y no se dibuja.
-    dibujarTrenTresCuartos(r, train, train.map.height, camX, vistaW, { noche: !gameState.esDeDia });
+    dibujarTrenTresCuartos(r, train, train.map.height, camX, vistaW, { noche: !gameState.esDeDia, corr: corrTren, enganches: enganchesTren });
     dibujarFogonazos(r, camX);
     dibujarMarcaDeSalto(r);
     dibujarMarcaTecho(r);
@@ -1512,7 +1547,7 @@ export function createRideScene(services) {
       if (t.fogonazo <= 0) continue;
       const vagon = train.wagons[t.wagon];
       if (!vagon) continue;
-      const px = Math.max(vagon.x + 8, Math.min(vagon.x + vagon.width - 8, x));
+      const px = Math.max(vagon.x + 8, Math.min(vagon.x + vagon.width - 8, x)) + corrTren(vagon.x);
       const base = train.map.height;
       const parpadeo = Math.floor(scroll * 22) % 2 === 0;
       // A la altura de las ventanillas del vagón (world/trenTresCuartos.js).
@@ -1553,7 +1588,7 @@ export function createRideScene(services) {
     const p = plataformaBajoElCaballo(), P = p ? null : portonBajoElCaballo();
     if (!p && !P) return;
 
-    const px = p ? plataformas[p] : centroPorton(P);
+    const px = p ? plataformas[p] + corrTren(plataformas[p]) : centroPorton(P) + corrTren(centroPorton(P));
     const base = train.map.height;
     const ancho = (p ? columnasDeSalto(p) : 3) * size / 2 + caballo.saltoTolerancia;
     const cerca = distanciaAlTren() <= caballo.saltoDistancia;
@@ -1592,7 +1627,7 @@ export function createRideScene(services) {
 
     const cerca = distanciaAlTren() <= caballo.saltoDistancia;
     const base = train.map.height;
-    r.rect(vagon.x + 4, base + 3, vagon.width - 8, 1, cerca ? colors.doorGlow : '#3a2f26');
+    r.rect(vagon.x + 4 + corrTren(vagon.x), base + 3, vagon.width - 8, 1, cerca ? colors.doorGlow : '#3a2f26');
 
     // Debajo de los cascos, por lo mismo que la flecha del enganche.
     if (cerca && Math.floor(scroll * 10) % 2 === 0) {

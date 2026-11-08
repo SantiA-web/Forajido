@@ -630,8 +630,10 @@ function jineteDeCostado(r, montura, ropa) {
   // 🆕 El jinete de la ley: un guardia, con su aspecto sorteado y guardado en él (`ropa.ent`).
   const gente = ropa.detalles === 'ley' ? { aspecto: aspectoDe(ropa.ent || montura, 'guardia'), tipo: 'guardia', ...apuntaDe(ropa, vista) } : null;
   if (montura.chico) {
-    const persona = jineteChico(r, { x: ox, y: oy, luz, destello: ropa.destello, vista, gente });
-    dibujarCabezada(r, montura, persona.mano);
+    const persona = jineteChico(r, { x: ox, y: oy, luz, destello: ropa.destello, vista, gente, apunta: ropa.apuntaChico ?? null });
+    // (Tirando, las riendas quedan sueltas: no hay mano que las lleve.)
+    if (ropa.apuntaChico == null) dibujarCabezada(r, montura, persona.mano);
+    else dibujarCabezada(r, montura);
     return persona;
   }
   const persona = jineteNuevo(r, { x: ox + col * P, y: oy + fila * P, cuadro: montura.cuadro, luz, destello: ropa.destello, vista, gente });
@@ -644,7 +646,9 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
   // 🎨 Lo que ya está dibujado: el jugador, sin arma en la mano y de costado. El resto, con el dibujo viejo hasta que llegue.
   // 🆕 Y el de la ley: con el rifle en la funda, o apuntando con `empuna` (E4). En la huida, apuntando, el viejo.
   const leyEnfundado = quien === 'ley' && (ropa.empuna != null || (!ropa.apunta && ropa.arma !== 'rifleListo'));
-  if (estiloNuevo.activo && r.ctx && !r.plano && montura && montura.origen && hayJineteNuevo(montura) && ((quien === 'jugador' && !ropa.arma) || leyEnfundado)) return jineteDeCostado(r, montura, ropa);
+  // 🆕 Y vos tirando desde el caballo chico (la huida), con `apuntaChico`: el torso que se da vuelta en la silla.
+  const yoTirandoChico = quien === 'jugador' && ropa.arma && montura && montura.chico && ropa.apuntaChico != null;
+  if (estiloNuevo.activo && r.ctx && !r.plano && montura && montura.origen && hayJineteNuevo(montura) && ((quien === 'jugador' && !ropa.arma) || yoTirandoChico || leyEnfundado)) return jineteDeCostado(r, montura, ropa);
   /**
    * 🔻 LA VISTA LA MANDA EL CABALLO *(Santi: "hay veces que el caballo no cambia
    * de dirección pero el personaje sí, entonces se ve raro")*. Antes el ángulo

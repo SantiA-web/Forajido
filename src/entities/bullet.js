@@ -119,10 +119,11 @@ export function drawBullet(r, b) {
  * Lo usan el jugador y los guardias: el fogonazo es del ARMA, no de quién la
  * tiene, y si cada uno tuviera el suyo habría que aprender dos.
  */
-export function dibujarFogonazo(r, x, y, angulo, fuerza = 1, hacia = null) {
+export function dibujarFogonazo(r, x, y, angulo, fuerza = 1, hacia = null, paso = null) {
   const f = Math.max(0, Math.min(1, fuerza));
   if (f <= 0) return;
-  if (estiloNuevo.activo) return fogonazoEnLaGrilla(r, x, y, angulo, f, hacia);
+  // (🆕 `paso`: el tamaño del punto; el del jinete chico de la huida es el doble.)
+  if (estiloNuevo.activo) return fogonazoEnLaGrilla(r, x, y, angulo, f, hacia, paso);
   const largo = (5 + f * 5) * PUNTO;
   for (const [da, esc] of [[0, 1], [-0.55, 0.62], [0.55, 0.62]]) {
     const a = angulo + da;
@@ -279,8 +280,8 @@ const FOGONAZO = {
 // Hacia dónde, de a octavos de vuelta (el ángulo crece hacia abajo, como en el mundo), y un punto más allá del caño.
 const OCTAVOS = [['E', 1, 0], ['SE', 1, 1], ['S', 0, 1], ['SO', -1, 1], ['O', -1, 0], ['NO', -1, -1], ['N', 0, -1], ['NE', 1, -1]];
 
-function fogonazoEnLaGrilla(r, x, y, angulo, f, hacia) {
-  const PASO = CONFIG.estilo.punto / 4;
+function fogonazoEnLaGrilla(r, x, y, angulo, f, hacia, paso = null) {
+  const PASO = paso ?? CONFIG.estilo.punto / 4;
   const o = ((Math.round(angulo / (Math.PI / 4)) % 8) + 8) % 8;
   const [dir, dx, dy] = hacia ? [hacia, 0, 0] : OCTAVOS[o];
   const { ancla, mapa } = FOGONAZO[dir][f > 0.5 ? 'fuerte' : 'debil'];

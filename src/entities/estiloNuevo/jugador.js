@@ -2697,14 +2697,125 @@ const FUNDA_CHICA = {
   ]),
 };
 const MANO_CHICO = { lado: [14.5, 5.5], diagF: [14.5, 4.5], diagE: [16.5, 5.5], frente: [14.5, 3.5], espalda: [15, 4] };
-const CHICO = { ancho: 26, alto: 19, arriba: -3 };
+/**
+ * 🆕 TIRANDO DESDE EL CABALLO, CON EL COLT *(Santi eligió "se da vuelta en la silla": "las piernas quedan sobre el
+ * caballo y el torso con los brazos y el revólver gira hacia donde apuntás")*. De la cintura para arriba, a mano, en las
+ * 8 direcciones de la mira (no las del caballo): 0 este, 1 sudeste, 2 sur, 3 sudoeste, 4 oeste, 5 noroeste, 6 norte,
+ * 7 noreste. La última fila es el cinto: se apoya sobre el cinto de la vista del caballo y de ahí para abajo quedan
+ * sus piernas. Mirando al sur, de frente (la cara y el pañuelo); al norte, la nuca. El brazo: C la manga, L el puño,
+ * P la mano y a el Colt (la boca es la `a` de más afuera).
+ */
+const JINETE_CHICO_TIRA = [
+  [
+    '....kHk.....',
+    '..xKKKKKx...',
+    '....pPn.....',
+    '....rR......',
+    '...UVCCLPaa.',
+    '...UVv......',
+    '...UVv......',
+    '...VVv......',
+    '...WWy......',
+  ],
+  [
+    '....kHk.....',
+    '..xKKKKKx...',
+    '....pPp.....',
+    '....rRS.....',
+    '...CUVvC....',
+    '...CUVvCC...',
+    '....UVv.LP..',
+    '....VVv...a.',
+    '....WWy....a',
+  ],
+  [
+    '....kHk....',
+    '..xKKKKKx..',
+    '....pPp....',
+    '....RSR....',
+    '...CUVvC...',
+    '...CUCLv...',
+    '....UPVv...',
+    '....VaVv...',
+    '....WWy....',
+  ],
+  [
+    '.....kHk....',
+    '...xKKKKKx..',
+    '.....pPp....',
+    '.....SRr....',
+    '....CUVvC...',
+    '...CCUVvC...',
+    '..PL.UVv....',
+    '.a...VVv....',
+    'a....WWy....',
+  ],
+  [
+    '.....kHk....',
+    '...xKKKKKx..',
+    '.....nPp....',
+    '......Rr....',
+    '.aaPLCCVU...',
+    '......vVU...',
+    '......vVU...',
+    '......vVV...',
+    '......yWW...',
+  ],
+  [
+    'a.....kHk....',
+    '.a..xKKKKKx..',
+    '..P...qBq....',
+    '...LC.rRr....',
+    '.....CVVvC...',
+    '.....cVVvc...',
+    '......VVv....',
+    '......VVv....',
+    '......WWW....',
+  ],
+  [
+    '.....kHk...',
+    '...xKKKKKx.',
+    '.....qBq.a.',
+    '.....rRr.P.',
+    '....CVVvCL.',
+    '....cVVvc..',
+    '.....VVv...',
+    '.....VVv...',
+    '.....WWW...',
+  ],
+  [
+    '....kHk.....',
+    '..xKKKKKx.a.',
+    '....qBB..a..',
+    '....rRR.P...',
+    '...UVvCL....',
+    '...UVvC.....',
+    '...UVv......',
+    '...VVv......',
+    '...WWW......',
+  ],
+];
+/** Hacia dónde apunta cada uno (para saber cuál `a` es la boca). */
+const HACIA_TIRA = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+/** Dónde está el cinto de un mapa: la última fila con W, y su centro. */
+function cintoDe(filas) {
+  for (let j = filas.length - 1; j >= 0; j--) {
+    const f = filas[j];
+    if (!f.includes('W')) continue;
+    let a = -1, b = -1;
+    for (let i = 0; i < f.length; i++) if (f[i] !== '.') { if (a < 0) a = i; b = i; }
+    return { j, centro: (a + b) / 2 };
+  }
+  return { j: filas.length - 1, centro: 0 };
+}
+const CHICO = { ancho: 26, alto: 20, arriba: -4 };
 const chicos = new Map();
 /** `silla`: con la silla, y `persona`: con la persona. Devuelve también dónde tiene la mano, en puntos del caballo chico. */
 /**
  * 🆕 `colores`: los de otra persona (un jinete de la ley), encima de los del jugador; `rifle`: con la funda.
  */
-export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado', colores = null, rifle = false }, luz = 0, destello = false) {
-  const clave = [persona, silla, luz, destello, vista, colores ? JSON.stringify(colores) : '', rifle].join('|');
+export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado', colores = null, rifle = false, apunta = null }, luz = 0, destello = false) {
+  const clave = [persona, silla, luz, destello, vista, colores ? JSON.stringify(colores) : '', rifle, apunta].join('|');
   if (chicos.has(clave)) return chicos.get(clave);
   const { ancho, alto, arriba } = CHICO;
   const idx = new Int16Array(ancho * alto).fill(-1), esPersona = new Uint8Array(ancho * alto);
@@ -2718,7 +2829,26 @@ export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado'
   });
   if (silla) pinta(SILLA_CHICA_DE[vista], 0);
   if (silla && rifle) pinta(FUNDA_CHICA[vista], 0, COLORES_FUNDA);
-  if (persona) pinta(JINETE_CHICO_DE[vista], 1, tablaPersona);
+  let boca = null;
+  if (persona && apunta == null) pinta(JINETE_CHICO_DE[vista], 1, tablaPersona);
+  if (persona && apunta != null) {
+    // 🆕 Tirando: las piernas de la vista del caballo (debajo del cinto) y, encima, el torso que apunta, cinto con cinto.
+    const V = JINETE_CHICO_DE[vista], cv = cintoDe(V.filas), U = JINETE_CHICO_TIRA[apunta], cu = cintoDe(U);
+    pinta({ y: V.y + cv.j + 1, filas: V.filas.slice(cv.j + 1) }, 1, tablaPersona);
+    const dx = Math.round(cv.centro - cu.centro), y0 = V.y + cv.j - cu.j;
+    const [hx, hy] = HACIA_TIRA[apunta];
+    let mejor = -Infinity;
+    U.forEach((f, j) => {
+      for (let i = 0; i < f.length; i++) {
+        if (f[i] === '.') continue;
+        const x = i + dx, y = y0 + j, k = (y - arriba) * ancho + x;
+        if (x < 0 || x >= ancho || y - arriba < 0 || y - arriba >= alto) continue;
+        idx[k] = destello ? sombrear(tablaPersona[f[i]], 4) : tablaPersona[f[i]];
+        esPersona[k] = 1;
+        if (f[i] === 'a' && x * hx + y * hy > mejor) { mejor = x * hx + y * hy; boca = [x + 0.5, y + 0.5]; }
+      }
+    });
+  }
   // El borde fino de la persona encima de la silla, como el grande (ver bordeSilla).
   const puntos = [];
   for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) {
@@ -2729,7 +2859,7 @@ export function lienzoJineteChico({ persona = true, silla = true, vista = 'lado'
       puntosDeBorde(puntos, nx, ny, dx, dy);
     }
   }
-  const g = { img: lienzoDeIndices(idx, ancho, alto, luz), arriba, mano: MANO_CHICO[vista], finos: puntos.length ? [{ color: 0, puntos }] : [] };
+  const g = { img: lienzoDeIndices(idx, ancho, alto, luz), arriba, mano: MANO_CHICO[vista], boca, finos: puntos.length ? [{ color: 0, puntos }] : [] };
   chicos.set(clave, g);
   return g;
 }

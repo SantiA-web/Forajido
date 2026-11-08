@@ -65,7 +65,6 @@ export function createCampScene(services) {
   let armaAntesDeLaPrueba = null;
   // 🧪 Lo que tenías para pegar antes de ponerte el cuchillo con [5].
   let meleeAntesDeLaPrueba = null;
-  let recompensaAntesDeLaPrueba = null;
 
   const colors = CONFIG.colors;
 
@@ -350,32 +349,30 @@ export function createCampScene(services) {
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     /**
-     * 🧪 [7] TE PONE 950 DE RECOMPENSA *(Santi: "un atajo que me pone más de 900 de recompensa
-     * para que en el asalto me aparezca el cazarrecompensas")*: desde 900, en el tren de pasajeros,
-     * sube siempre (ver `bountyMinimo` en data/bosses.js). Otra vez [7], vuelve la que tenías.
+     * 🧪 [7] LA TORMENTA *(Santi: "hacé un atajo para probar la tormenta, ponelo con el número 7")*: [7] el galope
+     * al lado del tren lloviendo, y Shift + [7] la huida lloviendo, con los cuatro jinetes (eligió "los dos").
+     * 🔁 Antes el [7] te ponía 950 de recompensa para el cazarrecompensas; Santi eligió reemplazarlo.
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit7')) {
-      if (recompensaAntesDeLaPrueba != null) {
-        gameState.bounty = recompensaAntesDeLaPrueba;
-        recompensaAntesDeLaPrueba = null;
+      if (input.isDown('ShiftLeft') || input.isDown('ShiftRight')) {
+        scenes.goTo('huida', { summary: { money: 400, kills: 0, outcome: 'escaped' }, jinetes: 4, prueba: true, clima: 'tormenta' });
       } else {
-        recompensaAntesDeLaPrueba = gameState.bounty;
-        gameState.bounty = Math.max(950, gameState.bounty);
+        scenes.goTo('ride', { tipoTren: 'pasajeros', clima: 'tormenta' });
       }
-      decir(T.camp.atajoRecompensa(gameState.bounty), 2);
+      return;
     }
     /**
      * 🧪 [8] UN TREN CON LOS FRENOS ROTOS, arrancando EN EL VAGÓN QUE SE ESTÁ EDITANDO (el tren lo trae
      * siempre: `forzarVagon`) *(Santi: "por el vagón que vayamos a editar quiero que el atajo 8 esté ocupado por ese
-     * vagón")*: hoy, LOS JINETES DE LA LEY: adentro del vagón de pasajeros, con cuatro jinetes ya galopando
-     * al lado del tren, dos de cada lado (`pruebaJinetes`). Se los ve por las ventanas y desde el techo.
+     * vagón")*: hoy, LA HUIDA *(Santi: "con el 8 debería irme directo a la huída")*: con plata encima (si no, no
+     * hay nada que perder) y cuatro jinetes de la ley detrás.
      *
      * ⚠️ SACARLO antes de mostrar el juego, con los otros.
      */
     if (input.wasPressed('Digit8')) {
-      scenes.goTo('raid', { tipoTren: 'pasajeros', caballoEn: 1, pruebaJinetes: true, prueba: true });
+      scenes.goTo('huida', { summary: { money: 400, kills: 0, outcome: 'escaped' }, jinetes: 4, prueba: true });
       return;
     }
     if (input.wasPressed('Digit6')) {

@@ -58,6 +58,7 @@ import { dibujarCampo } from '../world/estiloNuevo/suelo.js';
 import { dibujarHorizonteNuevo } from '../world/estiloNuevo/horizonte.js';
 import { dibujarObstaculoNuevo, tieneObstaculoNuevo } from '../world/estiloNuevo/obstaculos.js';
 import { dibujarBuitres, dibujarSombrasDeBuitres, nuevaSuerteDeBuitres } from '../world/estiloNuevo/buitres.js';
+import { crearLluvia } from '../world/estiloNuevo/lluvia.js';
 
 export function createRideScene(services) {
   const { renderer, input, rng, scenes, hud, audio } = services;
@@ -116,11 +117,17 @@ export function createRideScene(services) {
    */
   let zancadaIntervalo;
   const polvo = crearPolvo(CONFIG.colors.polvo);
+  /** ⛈️ La lluvia que se ve (world/estiloNuevo/lluvia.js): las gotas, las salpicaduras y los relámpagos. */
+  const lluvia = crearLluvia();
+  /** Dónde se vio la última vez el mundo (para sembrar las salpicaduras en lo que está a la vista). */
+  let vistaLluvia = null;
   let x, y, vel, aguante, reloj, gastado, scroll, alcanzada;
   /** En el estilo nuevo: el tamaño al que se va y el que se ve ahora. Ver `moverZoom`. */
   let zoomMeta = null, zoomVisto = null;
   let trastabilla, choque, saltando, terminado;
   let exposicion, visto, obstaculos, aviso;
+  // 🌳 Los algarrobos del otro lado de la vía (los de este lado van con los obstáculos: chocan).
+  let arbolesAlla = [];
   let vida, invuln, tiradores, balas;
   let calidadSalto, techoDestino, portonDestino, barra;
   /**
@@ -217,6 +224,7 @@ export function createRideScene(services) {
     tiradores = [];
     balas = [];
     obstaculos = sembrarObstaculos();
+    sembrarAlgarrobos();
     arrancarTormenta();
 
     services.ride = {
@@ -236,6 +244,7 @@ export function createRideScene(services) {
       get tiradores() { return tiradores; },
       get balas() { return balas; },
       get obstaculos() { return obstaculos; },
+      get arbolesAlla() { return arbolesAlla; },
       /** Hacia dónde apunta el caballo (radianes) y cuánto avanzó el tren. */
       get rumbo() { return rumbo; },
       get suelo() { return suelo; },
@@ -252,6 +261,8 @@ export function createRideScene(services) {
       /** En qué punto de la zancada va el caballo, y las bocanadas de polvo vivas. */
       get zancada() { return faseDeZancada(); },
       get polvo() { return polvo; },
+      /** ⛈️ La lluvia que se ve (para probar el relámpago desde la consola: `lluvia.relampago(true)`). */
+      get lluvia() { return lluvia; },
       /**
        * Para MIRAR el galope desde la consola: pone el caballo en (x, y) sin
        * tener que galopar hasta ahí. Sólo para sacar fotos de un lugar exacto
@@ -313,6 +324,30 @@ export function createRideScene(services) {
   }
 
   /**
+   * 🌳 LOS ALGARROBOS DE LA CABALGATA *(Santi: "en el galope poné que salga de forma aleatoria entre 1 y 3 en cualquier
+   * lado de la vía")*: de uno a tres por cabalgata, repartidos en el suelo que vas a cruzar en la primera media minuto
+   * (el tren corre a 90: unas 2.700 unidades), separados entre sí. Cada uno cae de este lado (con los obstáculos: su
+   * tronco choca y no se recicla) o del otro, al fondo del desierto de allá, en su dibujo chico.
+   */
+  function sembrarAlgarrobos() {
+    arbolesAlla = [];
+    const n = rng.int(1, 3), lugares = [];
+    for (let i = 0; i < 20 && lugares.length < n; i++) {
+      const gx = x + 300 + rng.range(0, 2400);
+      if (lugares.every((l) => Math.abs(l - gx) > 350)) lugares.push(gx);
+    }
+    const desde = HORIZONTE_Y + 4, hasta = train.map.height - altoDelTecho() - 20;
+    for (const gx of lugares) {
+      if (rng.chance(0.5)) {
+        obstaculos.push({ x: gx, y: train.map.height + rng.range(A.carrilCerca + 30, A.carrilLejos - 20),
+          tipo: 'algarrobo', golpeado: false, fijo: true });
+      } else {
+        arbolesAlla.push({ x: gx, y: rng.range(desde + 12, (desde + hasta) / 2), tipo: 'algarrobo', golpeado: false });
+      }
+    }
+  }
+
+  /**
    * DÓNDE ESTÁ ESTE OBSTÁCULO AHORA, en el marco del tren.
    *
    * Los obstáculos viven en coordenadas del SUELO (que está quieto de verdad) y
@@ -344,9 +379,10 @@ export function createRideScene(services) {
    */
   function reciclarObstaculos() {
     const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
-    const salto = A.obstaculoCada * obstaculos.length;
+    // (🌳 Los algarrobos no: están una sola vez.)
+    const salto = A.obstaculoCada * obstaculos.filter((ob) => !ob.fijo).length;
     for (const ob of obstaculos) {
-      if (obX(ob) > x - 700) continue;
+      if (ob.fijo || obX(ob) > x - 700) continue;
       ob.x += salto;
       ob.y = train.map.height + rng.range(A.carrilCerca + 4, A.carrilLejos - 6);
       ob.tipo = tipos[rng.int(0, tipos.length - 1)];
@@ -743,6 +779,7 @@ export function createRideScene(services) {
     velCaballoActual = 0;
     zancadaIntervalo = 0;
     polvo.limpiar();
+    lluvia.limpiar();
 
     hayTormenta = clima === 'tormenta' || (clima && clima.id === 'tormenta');
     truenoTimer = 0;
@@ -762,7 +799,20 @@ export function createRideScene(services) {
     truenoTimer -= dt;
     if (truenoTimer <= 0) {
       truenoTimer = t.truenoCada + rng.range(0, t.truenoVariacion);
-      audio.play(rng.chance(t.chanceCerca) ? 'truenoCerca' : 'truenoLejos');
+      const cerca = rng.chance(t.chanceCerca);
+      audio.play(cerca ? 'truenoCerca' : 'truenoLejos');
+      // ⛈️ Y se ve: el rayo y el fogonazo con el cercano, un parpadeo con el lejano.
+      lluvia.relampago(cerca);
+    }
+    if (estiloNuevo.activo) {
+      // 🔁 Las gotas caen sólo en la tierra: no en el cielo (arriba del horizonte) ni en el tren (entre el techo y el
+      // pie de la pared de acá). Las del otro lado de la vía, cortas y apagadas.
+      const { arriba, abajo } = franjaDelTren();
+      lluvia.actualizar(dt, vistaLluvia, {
+        suelo,
+        puede: (_, sy) => (sy > HORIZONTE_Y + 2 && sy < arriba) || sy > abajo,
+        lejos: (sy) => sy < arriba,
+      });
     }
   }
 
@@ -1056,6 +1106,11 @@ export function createRideScene(services) {
     return zoomVisto ?? (zoomContinuo(r) > A.zoomEscalon.baja ? 1 : A.zoomEscalon.lejos);
   }
 
+  /** ⛈️ Entre qué alturas del mundo está el tren (del techo al pie de la pared de acá): ahí no cae lluvia al suelo. */
+  function franjaDelTren() {
+    return { arriba: train.map.height - altoDelTecho() - 20, abajo: train.map.height + 4 };
+  }
+
   /** Lleva el zoom de un tamaño al otro. Ver `zoomEscalon` en data/horse.js. */
   function moverZoom(dt) {
     if (!estiloNuevo.activo) return;
@@ -1189,6 +1244,27 @@ export function createRideScene(services) {
     r.ctx.scale(z, z);
     r.ctx.translate(-camX, -camY);
 
+    /**
+     * ⛈️ LA LLUVIA, EN EL MUNDO *(Santi: "debería verse como parte del escenario")*: cada gota se dibuja con lo que
+     * está a su altura. Las que caen del otro lado de la vía, antes que el tren (las tapa); las de acá, entre el tren
+     * y el caballo o delante de él, según dónde peguen.
+     */
+    // 🌳 Los algarrobos de allá, al fondo, antes que el tren.
+    if (estiloNuevo.activo) {
+      for (const ob of arbolesAlla) {
+        const ox = obX(ob);
+        if (ox > camX - 60 && ox < camX + vistaW + 60) dibujarObstaculoNuevo(r.ctx, ob, ox, !gameState.esDeDia, hayTormenta, { lejos: true });
+      }
+    }
+    const lloviendo = estiloNuevo.activo && hayTormenta;
+    const celdaLluvia = (CONFIG.estilo.punto / 4) * (z >= 0.75 ? 1 : 2);
+    const franja = franjaDelTren(), noche = !gameState.esDeDia;
+    if (lloviendo) {
+      vistaLluvia = [camX, camY, vistaW, vistaH];
+      lluvia.dibujarSalpicaduras(r.ctx, noche, suelo, celdaLluvia, -Infinity, franja.arriba);
+      lluvia.dibujarGotas(r.ctx, noche, suelo, celdaLluvia, -Infinity, franja.arriba);
+    }
+
     // `vistaW`: con el zoom alejado entra MUCHO más mundo del que mide la
     // pantalla, y sin decírselo el tren queda fuera del recorte y no se dibuja.
     dibujarTrenTresCuartos(r, train, train.map.height, camX, vistaW, { noche: !gameState.esDeDia });
@@ -1211,11 +1287,20 @@ export function createRideScene(services) {
       if (ob.y > y + 7) delante.push(ob);
       else dibujarObstaculo(r, ob, ox);
     }
+    if (lloviendo) {
+      lluvia.dibujarSalpicaduras(r.ctx, noche, suelo, celdaLluvia, franja.arriba, Infinity);
+      lluvia.dibujarGotas(r.ctx, noche, suelo, celdaLluvia, franja.arriba, y + 7);
+    }
     dibujarCaballo(r);
     for (const ob of delante) dibujarObstaculo(r, ob, obX(ob));
+    if (lloviendo) lluvia.dibujarGotas(r.ctx, noche, suelo, celdaLluvia, y + 7, Infinity);
+    // ☁️ La nube de polvo en el aire, encima del caballo y con huecos; con el punto del dibujo que se ve (de lejos, el
+    // doble). Con lluvia no hay: barro.
+    if (estiloNuevo.activo && !hayTormenta) polvo.dibujarAire(r, suelo, !gameState.esDeDia, (CONFIG.estilo.punto / 4) * (z >= 0.75 ? 1 : 2));
     // 🆕 Los buitres (world/estiloNuevo/buitres.js): primero sus sombras, que oscurecen lo que haya abajo (la tierra,
     // el tren o el caballo: 🔁 pintadas en la tierra, el tren las tapaba), y arriba de todo los pájaros, en lo alto.
-    if (estiloNuevo.activo) {
+    // (⛈️ Con tormenta no vuelan.)
+    if (estiloNuevo.activo && !hayTormenta) {
       const cielo = { t: scroll, camX, camY, vistaW, vistaH, dia: gameState.esDeDia, franja: [HORIZONTE_Y + 4, train.map.height - altoDelTecho() - 20] };
       dibujarSombrasDeBuitres(r.ctx, cielo);
       dibujarBuitres(r.ctx, cielo);
@@ -1236,6 +1321,9 @@ export function createRideScene(services) {
     }
 
     r.ctx.restore();
+
+    // ⛈️ Las gotas y el relámpago, delante de todo (menos del panel). El rayo cae en el cielo que asoma de lejos.
+    if (estiloNuevo.activo && hayTormenta) lluvia.dibujarEnPantalla(r.ctx, r.width, r.height, !gameState.esDeDia, (HORIZONTE_Y - camY) * z);
 
     dibujarPanel(r);
   }
@@ -1286,7 +1374,7 @@ export function createRideScene(services) {
     // 🆕 En el estilo nuevo, el campo de la grilla: la tierra del asalto con las cosas del campo abierto y la vía
     // nueva, todo en una pieza que corre con el suelo (world/estiloNuevo/suelo.js).
     // (Los saguaros de allá, entre el horizonte y el tren.)
-    if (estiloNuevo.activo) dibujarCampo(r.ctx, camX, camY, vistaW, vistaH, suelo, !dia, base, [HORIZONTE_Y + 4, base - altoDelTecho() - 20], HORIZONTE_Y);
+    if (estiloNuevo.activo) dibujarCampo(r.ctx, camX, camY, vistaW, vistaH, suelo, !dia, base, [HORIZONTE_Y + 4, base - altoDelTecho() - 20], HORIZONTE_Y, hayTormenta);
     else {
       r.ctx.translate(-camX, -camY);
       dibujarAdornos(r, camX, camY, vistaW, vistaH, base, tinte);
@@ -1447,7 +1535,7 @@ export function createRideScene(services) {
    */
   function dibujarObstaculo(r, ob, ox) {
     // 🆕 En el estilo nuevo, los dibujados a mano en la grilla (world/estiloNuevo/obstaculos.js).
-    if (estiloNuevo.activo && tieneObstaculoNuevo(ob.tipo)) return dibujarObstaculoNuevo(r.ctx, ob, ox, !gameState.esDeDia);
+    if (estiloNuevo.activo && tieneObstaculoNuevo(ob.tipo)) return dibujarObstaculoNuevo(r.ctx, ob, ox, !gameState.esDeDia, hayTormenta);
     // El dibujo vive en world/obstaculosDesierto.js: la huida usa el mismo.
     dibujarObstaculoDesierto(r, ob, ox, radioDe(ob), !gameState.esDeDia);
   }
@@ -1704,6 +1792,8 @@ export function createRideScene(services) {
     polvo.sembrar({
       x, y, suelo, rumbo,
       fuerza: Math.min(1, velocidad / caballo.sprintSpeed),
+      // ⛈️ Con tormenta, barro en vez de polvo.
+      barro: hayTormenta,
       // Dónde cae cada casco, respecto del centro del caballo.
       pisadas: [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6], [GOLPES.delanteraAca, 6]],
     });

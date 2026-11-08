@@ -35,9 +35,16 @@ import { applyRaidResult, recompensaTapada, gameState, numero } from '../state/g
 import { T } from '../text/es.js';
 import { GOLPES, dibujarAnimal, dibujarJinete, dibujarMontura, dibujarSilla } from '../entities/caballo.js';
 import { dibujarTendido } from '../entities/figura.js';
+import { dibujarFogonazo } from '../entities/bullet.js';
 import { sembrarDesierto, pintarSuelo } from '../world/desierto.js';
 import { dibujarObstaculoDesierto } from '../world/obstaculosDesierto.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { DENSIDAD } from '../engine/renderer.js';
+import { dibujarSueloAbierto } from '../world/estiloNuevo/suelo.js';
+import { dibujarObstaculoNuevo, tieneObstaculoNuevo } from '../world/estiloNuevo/obstaculos.js';
+import { crearLluvia } from '../world/estiloNuevo/lluvia.js';
+import { pelajeDeJinete } from '../entities/estiloNuevo/caballo.js';
 import {
   DESTINOS, refugiosDeLaRegion, ACHATA, dibujarRefugio, dibujarDeLejos,
   chocaConElRefugio, adentroDelRefugio, esPared, esBosque, trozosDelParedon,
@@ -87,17 +94,30 @@ export function createHuidaScene(services) {
   let proximoLazo;
   /** El polvo de los cascos: el mismo del galope (world/polvoDeCascos.js). */
   const polvo = crearPolvo(colors.polvo);
+  /**
+   * ⛈️ LA TORMENTA TAMBIÉN TE SIGUE *(Santi: "hacemos la tormenta y las partículas de la lluvia... una vez tenemos
+   * todo eso lo pasás a la huida")*: si el tren venía con tormenta, la huida también (la manda el asalto en
+   * `params.clima`). La misma lluvia que el galope (world/estiloNuevo/lluvia.js), la arena mojada con sus charcos, el
+   * barro en vez de polvo, el agua y el viento que se oyen, y los truenos con su relámpago.
+   */
+  let hayTormenta = false, truenoTimer = 0, vistaLluvia = null;
+  const lluvia = crearLluvia();
+  const sembrarPolvo = (o) => polvo.sembrar({ ...o, barro: hayTormenta });
 
   /**
    * CUÁNTO MUNDO ENTRA EN PANTALLA CON NUESTRA LUPA. La escena se dibuja con
    * `HUIDA.zoom` (3) en vez de la del mundo (4): un tercio más de campo.
    */
   const vista = { w: 426, h: 300 };
+  /** 🆕 La lupa del mundo: la de lejos del galope en el estilo nuevo (`zoomNuevo`), la de siempre en el viejo. */
+  const zoomDelMundo = () => (estiloNuevo.activo ? H.zoomNuevo : H.zoom);
+  /** Mientras se dibuja el panel en el estilo nuevo, la lupa del panel (el mouse se mide con ella). */
+  let lupaDelPanel = null;
   function medirVista() {
     const c = renderer.canvas;
     if (!c || !c.width) return;
-    vista.w = Math.floor(c.width / H.zoom);
-    vista.h = Math.floor(c.height / H.zoom);
+    vista.w = Math.floor(c.width / zoomDelMundo());
+    vista.h = Math.floor(c.height / zoomDelMundo());
   }
 
   /**
@@ -204,12 +224,22 @@ export function createHuidaScene(services) {
     proximoLazo = H.jinetes.lazo.cada * 0.5;
     bamboleo = 0;
     polvo.limpiar();
+    lluvia.limpiar();
+    hayTormenta = params.clima === 'tormenta' || (params.clima && params.clima.id === 'tormenta');
     sembrarObstaculos();
 
     const a = CONFIG.ambiente;
     audio.ambiente('galope', { cutoff: 420, q: 0.6, type: 'lowpass',
       gain: a.galopeVientoGain,
       respira: { profundidad: a.vientoProfundidad, cada: a.vientoCada } });
+    if (hayTormenta) {
+      // (Los mismos volúmenes de afuera que el galope: a caballo, a la intemperie. Acá no hay tren: sin chapa.)
+      const t = CONFIG.tormenta;
+      audio.ambiente('agua', { cutoff: 1400, q: 0.7, type: 'highpass', gain: t.aguaAfuera * t.galopeMult });
+      audio.ambiente('viento', { cutoff: 240, q: 0.6, type: 'lowpass', gain: t.vientoAfuera * t.galopeMult,
+        respira: { profundidad: a.vientoProfundidad, cada: a.vientoCada } });
+      truenoTimer = t.truenoCada * 0.5;
+    }
 
     // Para mirar y medir desde la consola: FORAJIDO.services.huida
     services.huida = {
@@ -227,11 +257,15 @@ export function createHuidaScene(services) {
       get obstaculos() { return obstaculos; },
       get vista() { return vista; },
       get refugioTomado() { return refugioTomado; },
+      get lluvia() { return lluvia; },
+      get polvo() { return polvo; },
+      get hayTormenta() { return hayTormenta; },
     };
   }
 
   function exit() {
     audio.quitarAmbiente('galope');
+    if (hayTormenta) { audio.quitarAmbiente('agua'); audio.quitarAmbiente('viento'); }
     mostrarCursorDelSistema(true);
   }
 
@@ -383,6 +417,8 @@ export function createHuidaScene(services) {
       x: yo.x - Math.cos(yo.rumbo) * atras,
       y: yo.y - Math.sin(yo.rumbo) * atras * PROFUNDIDAD,
       rumbo: yo.rumbo,
+      // 🆕 El pelo de su caballo, como en el galope: gateado, zaino o la mezcla con la lista blanca.
+      pelaje: pelajeDeJinete(rng.range(0, 1)),
       alive: true,
       perdido: false,
       health: H.jinetes.vida ?? 1,
@@ -438,6 +474,17 @@ export function createHuidaScene(services) {
     bamboleo += dt;
     actualizarCascos(dt);
     polvo.actualizar(dt, 0);
+    if (hayTormenta) {
+      const t = CONFIG.tormenta;
+      truenoTimer -= dt;
+      if (truenoTimer <= 0) {
+        truenoTimer = t.truenoCada + rng.range(0, t.truenoVariacion);
+        const cerca = rng.chance(t.chanceCerca);
+        audio.play(cerca ? 'truenoCerca' : 'truenoLejos');
+        lluvia.relampago(cerca);
+      }
+      if (estiloNuevo.activo) lluvia.actualizar(dt, vistaLluvia);
+    }
 
     for (const c of carteles) { c.vida -= dt; c.y -= 12 * dt; }
     carteles = carteles.filter((c) => c.vida > 0);
@@ -675,7 +722,7 @@ export function createHuidaScene(services) {
 
     // Una estela de polvo, pero no una sola nube maciza: de a tres cuadros.
     if (yo.impulsoTimer > 0 && rng.chance(0.3)) {
-      polvo.sembrar({ x: yo.x, y: yo.y, suelo: 0, rumbo: 0, fuerza: 0.5,
+      sembrarPolvo({ x: yo.x, y: yo.y, suelo: 0, rumbo: yo.rumbo, fuerza: 0.5,
         pisadas: [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6]], cuantas: 1 });
     }
   }
@@ -982,14 +1029,55 @@ export function createHuidaScene(services) {
     audio.play(arma.perdigones ? 'escopetazo' : arma.id === 'winchester' ? 'rifleGuardia' : 'playerShot');
   }
 
-  /** De dónde sale tu tiro: a la altura del pecho del jinete. */
+  /**
+   * De dónde sale tu tiro: a la altura del pecho del jinete. 🆕 En el estilo nuevo, de la boca del Colt dibujado
+   * (`yo.boca`, la deja `dibujarme` cada cuadro).
+   */
   function boca() {
+    if (estiloNuevo.activo && yo.boca) return yo.boca;
     return [yo.x + 2, yo.y - 16];
+  }
+
+  /**
+   * 🆕 HACIA CUÁL DE LOS 8 TORSOS *(Santi: "se da vuelta en la silla")*: 0 este, 1 sudeste… 7 noreste, medido
+   * desde el pecho (no desde la boca, que se mueve con el dibujo: en el borde entre dos, saltaría de uno al otro).
+   * Mirando al oeste el caballo va en espejo, y el torso también: se elige el del ángulo espejado.
+   */
+  function torsoQueApunta() {
+    const m = mouseEnElMundo();
+    let a = Math.atan2(m.y - (yo.y - 16), m.x - (yo.x + 2));
+    if (Math.cos(yo.rumbo) < 0) a = Math.PI - a;
+    return ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+  }
+
+  /**
+   * ☁️ LA NUBE DE LA PARTIDA *(Santi: "para que se acumule debería ser un mínimo de tres y mientras más hayan más grande
+   * es con un límite de cinco")*: se juntan los caballos que van a menos de `H.polvoJuntos` uno de otro (en cadena:
+   * si A va con B y B con C, van los tres), y cada grupo de 3 o más levanta su nube grande, detrás del medio del grupo.
+   */
+  /** Devuelve los caballos que quedaron en algún grupo de 3 o más. */
+  function acumularPolvo(caballos) {
+    const juntos = new Set();
+    const grupo = caballos.map((_, i) => i);
+    const raiz = (i) => (grupo[i] === i ? i : (grupo[i] = raiz(grupo[i])));
+    for (let a = 0; a < caballos.length; a++) for (let b = a + 1; b < caballos.length; b++) {
+      if (Math.hypot(caballos[a].x - caballos[b].x, (caballos[a].y - caballos[b].y) / PROFUNDIDAD) < H.polvoJuntos) grupo[raiz(a)] = raiz(b);
+    }
+    const grupos = new Map();
+    caballos.forEach((c, i) => { const k = raiz(i); if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(c); });
+    for (const g of grupos.values()) {
+      if (g.length < 3) continue;
+      for (const c of g) juntos.add(c);
+      let x = 0, y = 0, cx = 0, cy = 0;
+      for (const c of g) { x += c.x; y += c.y; cx += Math.cos(c.rumbo); cy += Math.sin(c.rumbo); }
+      polvo.acumular({ x: x / g.length, y: y / g.length, rumbo: Math.atan2(cy, cx), cuantos: g.length });
+    }
+    return juntos;
   }
 
   /** Dónde cae el mouse EN LA PANTALLA, con nuestra lupa. */
   function mouseEnPantalla() {
-    const d = input.mouse.px !== undefined ? H.zoom : 1;
+    const d = input.mouse.px !== undefined ? (lupaDelPanel ?? zoomDelMundo()) : 1;
     return {
       x: (input.mouse.px !== undefined ? input.mouse.px : input.mouse.x) / d,
       y: (input.mouse.py !== undefined ? input.mouse.py : input.mouse.y) / d,
@@ -1358,7 +1446,7 @@ export function createHuidaScene(services) {
     }
     j.empujeVel = j.empuje > 0 ? j.vel * I.empuje : 0;
     if (j.empuje > 0 && rng.chance(0.3)) {
-      polvo.sembrar({ x: j.x, y: j.y, suelo: 0, rumbo: 0, fuerza: 0.6,
+      sembrarPolvo({ x: j.x, y: j.y, suelo: 0, rumbo: j.rumbo, fuerza: 0.6,
         pisadas: [[GOLPES.traseraAlla, -8]], cuantas: 1 });
     }
   }
@@ -1459,6 +1547,7 @@ export function createHuidaScene(services) {
     sueltos.push({
       x: j.x,
       y: j.y,
+      pelaje: j.pelaje,
       rumbo: j.rumbo + rng.range(0.5, 1.1) * (rng.chance(0.5) ? 1 : -1),
       vel: j.vel != null ? j.vel : H.jinetes.velocidad,
       gallop: j.gallop,
@@ -1571,10 +1660,15 @@ export function createHuidaScene(services) {
 
     // Y cada zancada levanta polvo: la tuya y la de ellos.
     const pisadas = [[GOLPES.traseraAlla, -8], [GOLPES.traseraAca, -6], [GOLPES.delanteraAca, 6]];
-    polvo.sembrar({ x: yo.x, y: yo.y, suelo: 0, rumbo: 0, fuerza: yo.choque > 0 ? 0.3 : 1, pisadas });
-    for (const j of siguiendo()) {
-      if (Math.hypot(j.x - yo.x, j.y - yo.y) > vista.w) continue;
-      polvo.sembrar({ x: j.x, y: j.y, suelo: 0, rumbo: 0, fuerza: 0.8, pisadas, cuantas: 3 });
+    // Primero quiénes van en grupo (la pelota grande), y después el polvo de cada uno: en grupo, más chico.
+    const cerca = [yo, ...siguiendo().filter((j) => Math.hypot(j.x - yo.x, j.y - yo.y) <= vista.w)];
+    const enGrupo = hayTormenta ? new Set() : acumularPolvo(cerca);
+    const aire = (c) => (enGrupo.has(c) ? H.polvoEnGrupo : 1);
+    // (🔁 Con el rumbo de cada uno: antes iba 0 para todos, y el polvo salía siempre como si corrieran al este.)
+    sembrarPolvo({ x: yo.x, y: yo.y, suelo: 0, rumbo: yo.rumbo, fuerza: yo.choque > 0 ? 0.3 : 1, pisadas, aire: aire(yo) });
+    for (const j of cerca) {
+      if (j === yo) continue;
+      sembrarPolvo({ x: j.x, y: j.y, suelo: 0, rumbo: j.rumbo, fuerza: 0.8, pisadas, cuantas: 3, aire: aire(j) });
     }
   }
 
@@ -1637,11 +1731,43 @@ export function createHuidaScene(services) {
     }
   }
 
+  /** 🌳 Los algarrobos, pocos y sueltos (ver `algarrobos` en data/huida.js). */
+  function sembrarAlgarrobos(alcance) {
+    const M = H.mundo.algarrobos;
+    if (!M || !(M.cada > 0) || M.chance <= 0) return;
+    const cx0 = Math.floor((yo.x - alcance) / M.cada), cx1 = Math.ceil((yo.x + alcance) / M.cada);
+    const cy0 = Math.floor((yo.y - alcance) / M.cada), cy1 = Math.ceil((yo.y + alcance) / M.cada);
+    const puede = (x, y) => {
+      if (pegadoAUnRefugio(x, y)) return false;
+      if (Math.hypot(x - yo.x, (y - yo.y) / PROFUNDIDAD) < 160) return false;
+      const t = terrenoDe(x, y);
+      if (t && (t.tipo === 'bosque' || t.tipo === 'rio')) return false;
+      return !obstaculos.some((ob) => ob.tipo === 'mojon' && Math.hypot(ob.x - x, ob.y - y) < 90);
+    };
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const clave = `A${cx},${cy}`;
+        if (celdasSembradas.has(clave)) continue;
+        celdasSembradas.add(clave);
+        if (!rng.chance(M.chance)) continue;
+        const x = cx * M.cada + rng.range(M.cada * 0.2, M.cada * 0.8);
+        const y = cy * M.cada + rng.range(M.cada * 0.2, M.cada * 0.8);
+        if (!puede(x, y)) continue;
+        obstaculos.push({ x, y, tipo: 'algarrobo', golpeado: false });
+        if (rng.chance(M.pareja)) {
+          const x2 = x + rng.pick([-1, 1]) * rng.range(55, 85), y2 = y + rng.range(-25, 25);
+          if (puede(x2, y2)) obstaculos.push({ x: x2, y: y2, tipo: 'algarrobo', golpeado: false });
+        }
+      }
+    }
+  }
+
   function sembrarObstaculos() {
     const CELDA = 150;
     const tipos = ['roca', 'arbusto', 'cactus', 'monticulo'];
     const alcance = vista.w;
     sembrarMojones(alcance);
+    sembrarAlgarrobos(alcance);
     const cx0 = Math.floor((yo.x - alcance) / CELDA);
     const cx1 = Math.ceil((yo.x + alcance) / CELDA);
     const cy0 = Math.floor((yo.y - alcance) / CELDA);
@@ -1716,13 +1842,20 @@ export function createHuidaScene(services) {
     return A.obstaculoRadios[ob.tipo] ?? A.obstaculoRadio;
   }
 
-  /** La misma cuenta del galope: a menos de radio + 6 del centro, chocaste. */
+  /**
+   * 🔁 LA MISMA CUENTA DEL GALOPE, DESDE LAS PATAS *(Santi: "los obstáculos deberían contar recién desde las piernas,
+   * es una cuestión de perspectiva de la cámara")*: entre el pie del obstáculo y los cascos (`y + 7`), en una huella
+   * achatada como el piso visto en diagonal. Antes era un círculo alrededor del lomo. `extra` agranda la huella (los
+   * jinetes esquivan con más margen).
+   */
   function chocaCon(x, y, extra = 6) {
     for (const ob of obstaculos) {
       if (ob.golpeado) continue;
       const radio = radioDe(ob);
       if (Math.abs(ob.x - x) > radio + 24) continue;
-      if (Math.hypot(ob.x - x, (ob.y - y) / PROFUNDIDAD) < radio + extra) return ob;
+      const largo = radio + extra + 1, hondo = radio * 0.5 + 2 + Math.max(0, extra - 6) * 0.5;
+      const dx = (ob.x - x) / largo, dy = (ob.y - (y + 7)) / hondo;
+      if (dx * dx + dy * dy < 1) return ob;
     }
     return null;
   }
@@ -1731,8 +1864,9 @@ export function createHuidaScene(services) {
 
   function render(r) {
     // NUESTRA LUPA: 3 en vez de 4, o sea un tercio más de campo (ver `zoom`).
-    r.lupa(H.zoom);
+    r.lupa(zoomDelMundo());
     medirVista();
+    PUNTO = 1 / zoomDelMundo();
     const dia = gameState.esDeDia;
 
     r.clear(dia ? colors.desiertoDia : colors.desiertoNoche);
@@ -1777,7 +1911,17 @@ export function createHuidaScene(services) {
      * grilla, así que no se borronea nada. El balanceo y el sacudón entran en
      * la misma cuenta: antes se sumaban con decimales y ensuciaban el dibujo.
      */
-    const aPunto = (v) => Math.round(v * H.zoom) / H.zoom;
+    /**
+     * 🐛 Y EN EL ESTILO NUEVO, DE A UN PUNTO DE LA GRILLA *(Santi: "en la huída veo unas vetas que titilan,
+     * arreglalo")*. El cuadro entero pasa al final por la grilla de 3×3 píxeles (engine/estiloNuevo.js), que se queda
+     * con el píxel del medio de cada cuadradito. Con esta lupa un cuadradito es una unidad y media, o sea DOS puntos
+     * del suelo: si la cámara se corre de a un píxel, la grilla agarra un cuadro un punto y al siguiente el de al
+     * lado, y las vetas del suelo (de un punto de alto) aparecían y desaparecían. Corriéndola de a un cuadradito
+     * entero, cada cuadradito agarra siempre el mismo punto. Y no se mueve más tosco que antes: lo que se ve en
+     * pantalla ya iba de a un cuadradito.
+     */
+    const paso = estiloNuevo.activo ? CONFIG.estilo.punto / zoomDelMundo() : 1 / zoomDelMundo();
+    const aPunto = (v) => Math.round(v / paso) * paso;
     const camX = aPunto(yo.x - vista.w / 2);
     const camY = aPunto(yo.y - vista.h / 2 - vaiven);
     r.ctx.translate(-camX, -camY);
@@ -1792,7 +1936,9 @@ export function createHuidaScene(services) {
      * manchas son el suelo mismo; el pasto y las piedritas van arriba, como en
      * la vida. Al revés el pasto quedaba enterrado.
      */
-    pintarSuelo(r, {
+    // 🆕 En el estilo nuevo, el desierto del galope en campo abierto (world/estiloNuevo/suelo.js).
+    if (estiloNuevo.activo) dibujarSueloAbierto(r.ctx, camX, camY, vista.w, vista.h, !dia, hayTormenta);
+    else pintarSuelo(r, {
       x0: camX, y0: camY, x1: camX + vista.w, y1: camY + vista.h,
       noche: !dia,
       base: dia ? colors.desiertoDia : colors.desiertoNoche,
@@ -1800,7 +1946,7 @@ export function createHuidaScene(services) {
       llenas: H.mundo.zonaLlenas,
     });
 
-    sembrarDesierto(r, {
+    if (!estiloNuevo.activo) sembrarDesierto(r, {
       x0: camX, y0: camY, x1: camX + vista.w, y1: camY + vista.h,
       noche: !dia, colores: colors.cielo, grandes: () => false,
     });
@@ -1810,6 +1956,7 @@ export function createHuidaScene(services) {
     for (const b of bolsas) dibujarBolsa(r, b);
 
     polvo.dibujar(r, 0, !dia);
+    if (estiloNuevo.activo && hayTormenta) { vistaLluvia = [camX, camY, vista.w, vista.h]; lluvia.dibujarSalpicaduras(r.ctx, !dia, 0, CONFIG.estilo.punto / 2); }
 
     /**
      * TODO SE DIBUJA POR DÓNDE PISA: lo que está más abajo tapa a lo que está
@@ -1844,30 +1991,71 @@ export function createHuidaScene(services) {
     }
     for (const ob of obstaculos) {
       if (Math.abs(ob.x - yo.x) > vista.w || Math.abs(ob.y - yo.y) > vista.h) continue;
-      cosas.push({ y: ob.y, draw: () => dibujarObstaculoDesierto(r, ob, ob.x, radioDe(ob), !dia) });
+      // (🆕 Los cuatro del galope con su dibujo nuevo; la aguja y el mojón, de los refugios, siguen con el viejo.)
+      cosas.push({ y: ob.y, draw: () => (estiloNuevo.activo && tieneObstaculoNuevo(ob.tipo)
+        ? dibujarObstaculoNuevo(r.ctx, ob, ob.x, !dia, hayTormenta, { chico: true })
+        : dibujarObstaculoDesierto(r, ob, ob.x, radioDe(ob), !dia)) });
     }
     for (const j of jinetes) {
       if (!j.alive || j.perdido) continue;
-      cosas.push({ y: j.y, draw: () => dibujarLey(r, j, dia) });
+      cosas.push({ y: j.y + 7, draw: () => dibujarLey(r, j, dia) });
     }
-    for (const s of sueltos) cosas.push({ y: s.y, draw: () => dibujarSuelto(r, s, dia) });
-    cosas.push({ y: yo.y, draw: () => dibujarme(r, dia) });
+    // (🔁 Los caballos se ordenan por los cascos, `y + 7`, como en el galope: los obstáculos van por su pie.)
+    for (const s of sueltos) cosas.push({ y: s.y + 7, draw: () => dibujarSuelto(r, s, dia) });
+    cosas.push({ y: yo.y + 7, draw: () => dibujarme(r, dia) });
+    // ⛈️ Las gotas, en el mundo: de a tiras según dónde pegan, ordenadas con los caballos y los obstáculos.
+    if (estiloNuevo.activo && hayTormenta) {
+      const TIRA = 8;
+      for (let ty = Math.floor(camY / TIRA) * TIRA; ty < camY + vista.h + 20; ty += TIRA) {
+        cosas.push({ y: ty, draw: () => lluvia.dibujarGotas(r.ctx, !dia, 0, CONFIG.estilo.punto / 2, ty, ty + TIRA) });
+      }
+    }
     cosas.sort((a, b) => a.y - b.y);
     for (const c of cosas) c.draw();
+    // ☁️ La nube de polvo en el aire, encima de los caballos y con huecos (con lluvia no hay: barro).
+    if (estiloNuevo.activo && !hayTormenta) polvo.dibujarAire(r, 0, !dia, CONFIG.estilo.punto / 2);
 
     dibujarLaSoga(r);
     for (const b of balas) dibujarBala(r, b);
 
-    for (const c of carteles) {
-      r.ctx.globalAlpha = Math.min(1, c.vida * 2);
-      r.text(c.texto, c.x, c.y, c.color);
+    if (!estiloNuevo.activo) {
+      for (const c of carteles) {
+        r.ctx.globalAlpha = Math.min(1, c.vida * 2);
+        r.text(c.texto, c.x, c.y, c.color);
+      }
+      r.ctx.globalAlpha = 1;
     }
-    r.ctx.globalAlpha = 1;
     r.ctx.restore();
 
+    // ⛈️ Las gotas y el relámpago, delante de todo menos del panel (acá no se ve el cielo: sin rayo, sólo el fogonazo).
+    if (estiloNuevo.activo && hayTormenta) lluvia.dibujarEnPantalla(r.ctx, r.width, r.height, !dia, 0);
+
+    if (!estiloNuevo.activo) {
+      dibujarAcoso(r);
+      dibujarMira(r);
+      dibujarPanel(r);
+      return;
+    }
+    /**
+     * 🆕 EL PANEL, CON LA LUPA DE SIEMPRE: el mundo va con la de lejos (la mitad) y, si el panel la usara, los
+     * carteles y los números quedarían de la mitad del tamaño. Mientras se dibuja, `vista` es la pantalla con esta
+     * lupa, y los carteles que flotan sobre el mundo se pasan a la pantalla.
+     */
+    const z = zoomDelMundo(), guarda = { w: vista.w, h: vista.h };
+    r.lupa(DENSIDAD);
+    lupaDelPanel = DENSIDAD;
+    vista.w = Math.floor(renderer.canvas.width / DENSIDAD);
+    vista.h = Math.floor(renderer.canvas.height / DENSIDAD);
+    for (const c of carteles) {
+      r.ctx.globalAlpha = Math.min(1, c.vida * 2);
+      r.text(c.texto, Math.round(((c.x - camX) * z) / DENSIDAD), Math.round(((c.y - camY) * z) / DENSIDAD), c.color);
+    }
+    r.ctx.globalAlpha = 1;
     dibujarAcoso(r);
     dibujarMira(r);
     dibujarPanel(r);
+    vista.w = guarda.w; vista.h = guarda.h;
+    lupaDelPanel = null;
   }
 
   /**
@@ -1904,7 +2092,7 @@ export function createHuidaScene(services) {
     r.box(s.x, s.y + 7, 11, 2, '#000');
     r.ctx.globalAlpha = Math.max(0, Math.min(1, s.vida / 1.5));
     dibujarCaballo(s, r, () => {
-      const montura = dibujarAnimal(r, s.x, s.y, zancada, trote, 1, pose, null, !dia);
+      const montura = dibujarAnimal(r, s.x, s.y, zancada, trote, 1, pose, s.pelaje || null, !dia);
       if (!dibujarSilla(r, montura)) dibujarMontura(r, montura.asiento.x, montura.asiento.y, pose);
       montura.adelante();
     });
@@ -1935,7 +2123,7 @@ export function createHuidaScene(services) {
       : j.aimTimer > H.jinetes.apuntar * 0.5 ? 1 : 2;
 
     dibujarCaballo(j, r, () => {
-      const montura = dibujarAnimal(r, j.x, j.y, zancada, trote, 1, pose, null, !dia);
+      const montura = dibujarAnimal(r, j.x, j.y, zancada, trote, 1, pose, j.pelaje || null, !dia);
       const rebote = Math.cos((zancada.t / T0 - 0.25) * Math.PI * 2) * 0.6;
       dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, pose, 2, {
         detalles: 'ley',
@@ -2080,16 +2268,26 @@ export function createHuidaScene(services) {
     const a = haciaDondeApunto();
     const armaDir = Math.atan2(Math.sin(a) * PROFUNDIDAD, Math.cos(a));
 
+    const apuntaChico = estiloNuevo.activo ? torsoQueApunta() : null;
     dibujarCaballo(yo, r, () => {
       const montura = dibujarAnimal(r, yo.x, yo.y, zancada, trote, 1, yo.pose, caballo.id, !dia);
-      dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, yo.pose, 2, {
+      const persona = dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, yo.pose, 2, {
         arma: true,
         armaDir,
+        apuntaChico,
       }, montura);
+      // La boca del Colt, en el mundo (si el caballo va en espejo, se da vuelta la x).
+      if (persona && persona.boca) {
+        const [bx, by] = persona.boca;
+        yo.boca = [Math.cos(yo.rumbo) < 0 ? Math.round(yo.x) * 2 - bx : bx, by];
+      } else yo.boca = null;
       montura.adelante();
     });
 
-    if (yo.fogonazo > 0) {
+    if (estiloNuevo.activo && yo.fogonazo > 0 && yo.boca) {
+      // 🆕 El fogonazo dibujado, el mismo del tren, con el punto del jinete chico; dos cuadros: el tiro y lo que queda.
+      dibujarFogonazo(r, yo.boca[0], yo.boca[1], haciaDondeApunto(), yo.fogonazo > 0.03 ? 1 : 0.4, null, CONFIG.estilo.punto / 2);
+    } else if (yo.fogonazo > 0) {
       const [ox, oy] = boca();
       const a = haciaDondeApunto();
       r.rect(ox + Math.cos(a) * 6 - 1.5, oy + Math.sin(a) * 6 - 1.5, 3, 3, colors.bulletP);
@@ -2243,7 +2441,7 @@ export function createHuidaScene(services) {
   }
 
   /** Un punto de pantalla, en unidades del mundo, con la lupa de esta escena. */
-  const PUNTO = 1 / H.zoom;
+  let PUNTO = 1 / H.zoom;
 
   /**
    * LA BALA: UN TRAZO, NO UN LADRILLO *(Santi: "vestir el pixel de esa bala de

@@ -706,6 +706,10 @@ export const APROXIMACION = {
      * campo abierto, que es lo que Santi eligió.
      */
     mojon: 30,
+    /**
+     * 🌳 EL ALGARROBO: choca sólo el tronco. La copa queda arriba de la cabeza y se pasa por debajo.
+     */
+    algarrobo: 6,
   },
 
   /** Para cualquier tipo que no esté en la tabla de arriba. */

@@ -21,6 +21,7 @@ import { CONFIG } from '../../data/config.js';
 import { DENSIDAD } from '../../engine/renderer.js';
 import { iluminar } from '../../engine/luz.js';
 import { OBSTACULOS } from './obstaculos.js';
+import { CHARCOS, COLOR_CHARCO } from './lluvia.js';
 
 const PASO = CONFIG.estilo.punto / DENSIDAD;
 const hash = (x, y) => ((((x * 73856093) ^ (y * 19349663)) >>> 0) % 1000) / 1000;
@@ -1073,11 +1074,13 @@ export function dibujarSueloDeAfuera(ctx, camX, camY, ancho, alto, desfile, noch
  * corrió el suelo; `base`, el pie del tren.
  */
 const campos = {};
-export function dibujarCampo(ctx, camX, camY, ancho, alto, desfile, noche, base, saguaros, horizonte) {
+export function dibujarCampo(ctx, camX, camY, ancho, alto, desfile, noche, base, saguaros, horizonte, mojado = false) {
   // ('saguaros': entre qué alturas del mundo van los saguaros del otro lado del tren; 'horizonte': dónde termina el
-  //  desierto: arriba, transparente, salvo los saguaros.)
-  const luz = noche ? CONFIG.tresCuartos.sueloNoche : 0, clave = base + '|' + luz + '|' + String(saguaros) + '|' + horizonte;
-  if (!campos[clave]) campos[clave] = tiraDeCampo(base, luz, saguaros, horizonte);
+  //  desierto: arriba, transparente, salvo los saguaros. 'mojado': ⛈️ con tormenta, la arena un escalón más oscura y
+  //  con charcos, ver world/estiloNuevo/lluvia.js.)
+  const luz = noche ? CONFIG.tresCuartos.sueloNoche : mojado ? -1 : 0;
+  const clave = base + '|' + luz + '|' + String(saguaros) + '|' + horizonte + '|' + (mojado ? 1 : 0);
+  if (!campos[clave]) campos[clave] = tiraDeCampo(base, luz, saguaros, horizonte, mojado);
   const { cv, arriba, filas } = campos[clave], k = Math.round(desfile / PASO);
   const p0 = Math.floor(camX / PASO), q0 = Math.floor(camY / PASO);
   const x0 = p0 * PASO - camX, y0 = q0 * PASO - camY;
@@ -1096,15 +1099,92 @@ export function dibujarCampo(ctx, camX, camY, ancho, alto, desfile, noche, base,
 }
 /** La vía de la cabalgata, en el mundo, desde el pie del tren (ver `VIA` para cada parte). */
 export const viaDeCampo = (base) => ({ piedra: [base - 22, base + 7], durmiente: [base - 19, base + 3.5], rieles: [base - 15, base + 1.25] });
-function tiraDeCampo(base, luz, saguaros, horizonte) {
+function tiraDeCampo(base, luz, saguaros, horizonte, mojado) {
   const arriba = Math.floor(-300 / PASO), filas = Math.ceil((base + 760) / PASO);
   const V = viaDeCampo(base), enV = fueraDe(V);
   const ind = new Int16Array(VUELTA * filas);
   pintarSuelo(ind, VUELTA, filas, 0, arriba, 0, { via: V, campo: true, saguaros, horizonte });
+  if (mojado) pintarCharcos(ind, VUELTA, filas, arriba, V, horizonte);
   const cv = document.createElement('canvas'); cv.width = VUELTA; cv.height = filas;
   const campo = (x, y) => (enV((arriba + y) * PASO) ? Math.floor(luz / 2) : luz);
   cv.getContext('2d').putImageData(new ImageData(iluminar({ ancho: VUELTA, alto: filas, indices: ind, campo }), VUELTA, filas), 0, 0);
   return { cv, arriba, filas };
+}
+
+/**
+ * 🏇 EL SUELO DE LA HUIDA *(Santi: "una vez tenemos todo eso lo pasás a la huida")*: el mismo desierto del galope
+ * (la arena pálida, los manchones de plantas, los medanitos y las huellas de carreta), pero en campo abierto, sin vía
+ * y para cualquier lado. Se pinta de a baldosas de 256 × 256 puntos que se guardan (las que quedan lejos se tiran),
+ * con la misma cuenta que el galope: cada baldosa sabe qué hay en el mundo, así se pegan sin costura.
+ */
+const BALDOSA = 256, TOPE_BALDOSAS = 48;
+const SIN_VIA = { piedra: [-1e9, -1e9 + 1], durmiente: [-1e9, -1e9 + 1], rieles: [-1e9, -1e9 + 1] };
+const baldosas = new Map();
+
+export function dibujarSueloAbierto(ctx, camX, camY, ancho, alto, noche, mojado = false) {
+  const luz = noche ? CONFIG.tresCuartos.sueloNoche : mojado ? -1 : 0;
+  const prev = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  const B = BALDOSA * PASO;
+  for (let ty = Math.floor(camY / B); ty * B < camY + alto; ty++) {
+    for (let tx = Math.floor(camX / B); tx * B < camX + ancho; tx++) {
+      const clave = tx + '|' + ty + '|' + luz + '|' + (mojado ? 1 : 0);
+      let cv = baldosas.get(clave);
+      if (!cv) {
+        const ind = new Int16Array(BALDOSA * BALDOSA);
+        pintarSuelo(ind, BALDOSA, BALDOSA, tx * BALDOSA, ty * BALDOSA, 0, { via: SIN_VIA, campo: true });
+        if (mojado) pintarCharcosAbiertos(ind, BALDOSA, BALDOSA, tx * BALDOSA, ty * BALDOSA);
+        cv = document.createElement('canvas'); cv.width = BALDOSA; cv.height = BALDOSA;
+        cv.getContext('2d').putImageData(new ImageData(iluminar({ ancho: BALDOSA, alto: BALDOSA, indices: ind, campo: () => luz }), BALDOSA, BALDOSA), 0, 0);
+        if (baldosas.size >= TOPE_BALDOSAS) baldosas.delete(baldosas.keys().next().value);
+        baldosas.set(clave, cv);
+      }
+      ctx.drawImage(cv, tx * B, ty * B, B, B);
+    }
+  }
+  ctx.imageSmoothingEnabled = prev;
+}
+
+/** Los charcos de la huida: los tres por todos lados (no hay "allá" de la vía), por cuadro del mundo, sin costura. */
+function pintarCharcosAbiertos(ind, w, h, p0, q0) {
+  const CW = 130, CH = 70;
+  const h1 = (a, b) => ((((a * 73856093) ^ (b * 19349663)) >>> 0) % 1000) / 1000;
+  for (let cy = Math.floor(q0 / CH) - 1; cy * CH < q0 + h; cy++) for (let cx = Math.floor(p0 / CW) - 1; cx * CW < p0 + w; cx++) {
+    if (h1(cx, cy + 301) < 0.3) continue;
+    const m = CHARCOS[Math.floor(h1(cx + 3, cy + 5) * CHARCOS.length)];
+    const x0 = cx * CW + Math.floor(h1(cx + 7, cy) * (CW - 36)) - p0, y0 = cy * CH + Math.floor(h1(cx, cy + 11) * (CH - 6)) - q0;
+    for (let j = 0; j < m.length; j++) for (let i = 0; i < m[j].length; i++) {
+      const l = m[j][i], x = x0 + i, y = y0 + j;
+      if (l === '.' || x < 0 || y < 0 || x >= w || y >= h || ind[y * w + x] !== ARENA) continue;
+      ind[y * w + x] = COLOR_CHARCO[l];
+    }
+  }
+}
+
+/**
+ * ⛈️ LOS CHARCOS (los dibujos, en world/estiloNuevo/lluvia.js): de este lado los tres, uno o ninguno por cuadro de
+ * 130 × 70 puntos; del otro lado, más lejos, sólo el chico (los grandes allá se verían del tamaño de los de acá).
+ * Se pintan sólo sobre arena lisa: no tapan plantas, piedras ni la vía.
+ */
+function pintarCharcos(ind, w, h, arriba, V, horizonte) {
+  const CW = 130, CH = 70;
+  const yAca = Math.ceil((V.piedra[1] + 6) / PASO) - arriba, yAlla = Math.floor((V.piedra[0] - 6) / PASO) - arriba;
+  const yTope = Math.ceil(((horizonte ?? -300) + 20) / PASO) - arriba;
+  const h1 = (a, b) => ((((a * 73856093) ^ (b * 19349663)) >>> 0) % 1000) / 1000;
+  for (let cy = 0; cy * CH < h; cy++) for (let cx = 0; cx * CW < w; cx++) {
+    if (h1(cx, cy + 301) < 0.3) continue;
+    const x0 = cx * CW + Math.floor(h1(cx + 7, cy) * (CW - 22)), y0 = cy * CH + Math.floor(h1(cx, cy + 11) * (CH - 6));
+    const alla = y0 < yAlla;
+    if (!alla && y0 < yAca) continue;
+    if (alla && y0 < yTope) continue;
+    const m = CHARCOS[alla ? 1 : Math.floor(h1(cx + 3, cy + 5) * CHARCOS.length)];
+    if (alla && y0 + m.length > yAlla) continue;
+    for (let j = 0; j < m.length; j++) for (let i = 0; i < m[j].length; i++) {
+      const l = m[j][i], x = (x0 + i) % w, y = y0 + j;
+      if (l === '.' || y >= h || ind[y * w + x] !== ARENA) continue;
+      ind[y * w + x] = COLOR_CHARCO[l];
+    }
+  }
 }
 
 /**

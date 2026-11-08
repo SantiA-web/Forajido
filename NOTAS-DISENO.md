@@ -20072,6 +20072,77 @@ Todo lo que se ve alrededor del tren cuando galopás, pasado a la grilla de 3×3
   orden de dibujo usa la misma línea (los cascos); eso no lo miré en una foto.
 - ⚠️ **Sin probar**: la tormenta en el fondo nuevo, y el galope entero jugado de punta a punta por Santi.
 
+## ✅ LA HUIDA EN EL ESTILO NUEVO, EL POLVO Y LA TORMENTA (2026-11-08)
+
+La huida (la persecución después del asalto) pasada a la grilla de 3×3, con el polvo de los cascos y la lluvia que se
+ven, y el jugador que tira desde el caballo.
+
+- **La huida, en el estilo nuevo** *(Santi: "una vez tenemos todo eso lo pasás a la huida")*: el mismo desierto del
+  galope, pero en campo abierto, sin vía y para cualquier lado (world/estiloNuevo/suelo.js, de a baldosas que se
+  guardan). Los cuatro obstáculos del galope con su dibujo nuevo, los caballos con sus tres pelos y el choque desde
+  las patas, igual que en el galope.
+  - **La lupa** *(Santi: "poné el zoom igual a cuando en el galope está lejos")*: `zoomNuevo: 2` (data/huida.js), la
+    mitad que la del mundo. Los caballos y los jinetes van con su dibujo chico, el de lejos del galope. El panel sigue
+    con la lupa de siempre.
+  - 🐛 **Las vetas que titilaban** *(Santi: "en la huída veo unas vetas que titilan, arreglalo")*: el cuadro entero
+    pasa por la grilla de 3×3, que se queda con el píxel del medio de cada cuadradito; con esta lupa un cuadradito son
+    dos puntos del suelo, y si la cámara se corría de a un píxel las vetas aparecían y desaparecían. Ahora la cámara
+    se corre de a un cuadradito entero. Medido: de un cuadro al otro el suelo se corre de a 3 píxeles exactos y no
+    cambia ningún otro.
+- **Tirando desde el caballo, con el Colt** *(Santi eligió "se da vuelta en la silla": "las piernas quedan sobre el
+  caballo y el torso con los brazos y el revólver gira hacia donde apuntás")*: de la cintura para arriba, a mano, en
+  las 8 direcciones de la mira (entities/estiloNuevo/jugador.js). La bala y el fogonazo dibujado salen de la boca del
+  Colt. Falta el Winchester y la escopeta.
+- **El polvo de los cascos** (world/polvoDeCascos.js y world/estiloNuevo/polvo.js) *(Santi: "agregale más polvo
+  detrás, que sea un poco más densa")*: bocanadas opacas dibujadas en la grilla, que se pisan hasta cerrar la nube, y
+  una nube en el aire por cada pisada. La tierra se queda atrás del caballo según el rumbo de cada uno.
+  - **La nube de la partida** *(Santi: "para que se acumule debería ser un mínimo de tres y mientras más hayan más
+    grande es con un límite de cinco"; eligió que cuenten todos los caballos, vos incluido, a menos de unos dos
+    cuerpos)*: con 3 o más juntos, una pelota grande en lo alto.
+    - 🔁 *"Una nube tipo pelota en lo alto, más que una estela"*, *"es como que se mueve junto con los caballos y eso
+      no debería ocurrir"* y *"se ve muy perfecta, muy circular"*: nace donde el grupo levanta la tierra y se queda
+      quieta en el aire; cuando el grupo se aleja nace otra, y las de atrás suben y se deshacen. Varios bultos
+      desparejos con el borde comido.
+    - *(Santi: "que el polvo de cada caballo sea más chico en grupo")*: en grupo, la nube de cada uno es más chica.
+- **La tormenta que se ve** (world/estiloNuevo/lluvia.js) *(Santi: "hacemos la tormenta y las partículas de la
+  lluvia"; eligió las gotas en diagonal, las salpicaduras, la arena mojada con charcos y los relámpagos)*: en el galope
+  y en la huida.
+  - 🔁 **En el mundo, no en la pantalla** *(Santi: "la lluvia tapa la pantalla cuando debería verse como parte del
+    escenario"; eligió "gotas que caen al piso")*: cada gota cae sobre un lugar del suelo y salpica ahí, se ordena con
+    el tren y los caballos, y del otro lado de la vía son cortas y apagadas. 🔁 Las salpicaduras sólo en la tierra
+    *(Santi: "impacta y hace partículas en el cielo, cuando eso no tiene ningún sentido")*.
+  - Las salpicaduras en 8 cuadros a mano; tres charcos a mano sobre la arena un escalón más oscura; dos rayos a mano
+    y el fogonazo blanco con el trueno cercano.
+  - Con lluvia no se levanta polvo: saltan granos de barro, y los buitres no vuelan. Si llovía en el tren, llueve en
+    la huida.
+- **Las rocas grandes de la huida, en la grilla nueva** *(Santi: "con textura, mordeduras y esas cosas, pero no le
+  pongas el color colorido, dejalas del mismo color")*: los mojones son tres mesetas a mano (la alta, la de dos pisos
+  con un pilar suelto y la baja), con la gorra de piedra dura, el labio al sol, canaletas, vetas y el talud; y dos
+  agujas. Los marrones de siempre.
+  - 🔁 La primera vuelta parecían cajones apilados (pisos derechos y canaletas parejas), y la tapa no se distinguía
+    de la arena; después la alta parecía un tronco cortado, y se le agregaron las vetas en franjas.
+- **Los algarrobos** *(Santi: "para hacerlo un poco más argentino... tienen que parecerse bastante y el tamaño
+  acorde, y no llenes el desierto de estos árboles")*: dos dibujos a mano (el grande del galope y el chico de la
+  huida), con el tronco torcido y la copa ancha y baja en manchones. Choca sólo el tronco; por debajo de la copa se
+  pasa.
+  - **En el galope** *(Santi: "que salga de forma aleatoria entre 1 y 3 en cualquier lado de la vía")*: de 1 a 3 por
+    galope, separados, de este lado (con choque) o del otro (de fondo, sin choque).
+  - **En la huida** (mi criterio): uno cada 300 unidades como mucho y con 20% de chance, a veces en pareja. Ni en el
+    bosque de piedras, ni en el río, ni pegados a un mojón.
+- **Los atajos del campamento**: el [8] lleva directo a la huida *(Santi: "con el 8 debería irme directo a la
+  huída")*, con plata encima y cuatro jinetes detrás. El [7] es la tormenta *(Santi: "hacé un atajo para probar la
+  tormenta, ponelo con el número 7")*: el galope lloviendo, y Shift + [7] la huida lloviendo. 🔁 Antes el [7] ponía
+  950 de recompensa para el Cazarrecompensas.
+- **La velocidad de la huida** *(Santi: "quiero que compruebes si en la huída el caballo va más lento que en el
+  galope")*: medida en el juego, con el criollo a fondo, es la misma (142 por segundo sobre el suelo), y las patas
+  van al mismo ritmo (0,62 segundos por zancada). No se cambió nada. Santi igual la siente más lenta *(Santi: "estoy
+  casi seguro que o va más lento o hay algo que lo hace ver más lento")*: queda para revisar. Puede ser el freno al
+  doblar (hasta 18%), que hacia arriba o abajo se avanza menos en pantalla, o los choques.
+- ⚠️ **Sin probar**: de noche (el polvo, la lluvia, la pelota de polvo y las mesetas), los algarrobos con tormenta, y
+  si el galope de lejos titila como titilaba la huida.
+- ⚠️ **Un error viejo que no arreglé**: los mojones y los algarrobos que quedan muy atrás no vuelven a aparecer si
+  volvés (la limpieza de `celdasSembradas` no los olvida nunca).
+
 ## 🦴 EL ESQUELETO (2026-10-08)
 
 *(Santi: "el esqueleto lo quiero usar para todo: caminar, portar arma,

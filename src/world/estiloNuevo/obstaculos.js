@@ -32,6 +32,11 @@ const COLOR = {
   W: 38, F: 37, f: 36,
   // La sombra en la tierra.
   s: 34, S: 33,
+  // 🏔️ Las mesas y las agujas de la huida, con los marrones de siempre: la tapa al sol, las repisas, la pared, la
+  // sombra y las canaletas, y lo más hondo de las mordeduras.
+  T: 37, A: 36, P: 35, p: 34, Q: 33, k: 32,
+  // 🌳 El algarrobo: la corteza (oscura, el medio y el lado al sol) y las chauchas.
+  B: 32, C: 33, c: 34, y: 16,
 };
 
 /** Cada obstáculo: su mapa parado, su mapa golpeado y dónde tiene el pie (columna, fila) en cada uno. */
@@ -176,13 +181,342 @@ export const OBSTACULOS = {
       '.ssssssssssss...',
     ],
   },
+  /**
+   * 🏔️ LOS MOJONES DE LA HUIDA, EN LA GRILLA *(Santi: "pasar las rocas grandes de la huída a la nueva grilla, con
+   * textura, mordeduras y esas cosas, pero no le pongas el color colorido, dejalas del mismo color")*. Eran tres
+   * rectángulos marrones con una raya de luz. Ahora son tres mesas dibujadas a mano, con los mismos marrones de antes:
+   * la tapa al sol (T), las repisas (A), la pared de frente (P), el lado en sombra y el fondo de las canaletas (Q) y las
+   * mordeduras más hondas (k). Cada canaleta tiene el labio de la izquierda al sol (mira a la derecha, de donde viene la
+   * luz) y el fondo en sombra; el borde de arriba y los costados están mordidos; al pie, el talud de piedras caídas y la
+   * sombra que cae para acá y a la izquierda.
+   * Van en el punto de la huida (`celda: 2`, el doble del punto del galope), del mismo tamaño en el mundo que las de
+   * antes (60 de ancho, el doble de su choque). Cuál sale en cada lugar lo decide el lugar: no titila.
+   *  - LA ALTA: un cerro solo, con su gorra de piedra dura arriba (la tapa, el labio al sol y la sombra que deja
+   *    abajo), la pared rayada de vetas que bajan, tres canaletas que nacen en las mordidas del labio y se van
+   *    cerrando, una cueva chica a la izquierda y el talud que se abre abajo.
+   *  - LA DE DOS PISOS: la torre de arriba, un rellano de piedras sueltas al sol, la pared de abajo y un pilar suelto a
+   *    la derecha, parado en el talud.
+   *  - LA BAJA: un solo piso, ancho, con la tapa partida y una piedra caída al pie.
+   * 🔁 La primera vuelta eran tres pisos apilados con canaletas derechas de arriba abajo, parejas: parecían cajones.
+   * Y la tapa iba del color de la arena clara y no se distinguía del suelo: ahora es un tono más oscuro, con el
+   * labio claro (como la tapa de antes, que era así). 🔁 Y con las vetas solas el cerro alto parecía un tronco cortado:
+   * ahora cada pared tiene capas de roca de costado (una repisa clara rota y su sombra abajo).
+   */
+  mojon: {
+    celda: 2,
+    variantes: [
+      {
+        pie: [21, 25],
+        mapa: [
+          '.............AAAAA..AAAAAAAAA...............',
+          '...........ATAAAAAATAAAAAAAAAA..............',
+          '..........AAAATAAAAAAAAATAAAAAAA............',
+          '..........TTTkTTTTTTkkTTTTTTTTTT............',
+          '..........QPPkPPPPPPkkPPPPPPPPAA............',
+          '..........QPpkPPpPPPQkPPPpPPPPAA............',
+          '..........QQQpQQQQkQQkQQQQQpQQQQ............',
+          '..........QQAkQPpPPAQkkPpPPpPAPAA...........',
+          '..........QQAkQPpPPAQkQPpPPpPAPAA...........',
+          '.........QQpAQPPpPPAQkPPpPPpPAPAA...........',
+          '.........QQpAQPPpPPAQQPPpPPpPAPAAA..........',
+          '.........QQpPQPPpPPPAQPPpPPpPAPAAA..........',
+          '.........QAApAAApAAAAQAApAAQAApAAA..........',
+          '..........QQpQQPpQQPAQQPpQAQpQAPAA..........',
+          '..........QpPpPPpPPPPQPPpPAQpPAPAA..........',
+          '..........QpPPpPpPPPPpPPpPAQPPAPAA..........',
+          '..........QpPPpPpPPpPpPPpPPQPPAPA...........',
+          '...........kAAApAAAApAAAApAQAApAA...........',
+          '...........QQQpQQPpQQQpQQpQQpPPAPA..........',
+          '..........QQpPpPpPPpPpPPpPPpPPAPAA..........',
+          '..........QppPppPpPppPpPpppPpPApAA..........',
+          '.........QQppQppQpppQpppQppQppQpQQ..........',
+          '.......pAPpAPPpPAPPpAPPpPAPPpAPPpAPpA.......',
+          '.....QpPpAPpQpPApPpQpAPpPQpApPpQPpAPpQp.....',
+          '...pQpPpApQpPpApQpPpAPpQpPpApQpPpApPpQpPA...',
+          '..QppAPpQpPPApQppPApPQppAPpPQpApPpPQpAPpQS..',
+          '.SQpApPpQ.pPApQpPpAQp.pApPQpPApQpp.ApPpQSSS.',
+          'SSSpSQpSS.pApSSpQSpp.SpApSsQss.pAss.sss.....',
+          '.SSSSSSSSSSSSSSSSSSSssssssssssssss..........',
+          '...SSSSSSSSSSSSsssssssssssssss..............',
+          '......sssssssssssssssssss...................',
+        ],
+      },
+      {
+        pie: [22, 25],
+        mapa: [
+          '...............AAAA.AAAAAAAAA.................',
+          '..............AATAAAAAAAAAAA..................',
+          '.............TTTTkTTTTTTTkTTT.................',
+          '.............QPPPkPPPPPPPkPAA............TTT..',
+          '.............QQppkQQQpQQQkQpp...........ATTTA.',
+          '.............QAkPPpPPAkPpPPPAA..........QPPPA.',
+          '.............QAQPPpPPAQPpPPPAA..........QPpPA.',
+          '............QQpQPPpPPAQPpPPAPA..........QkPPA.',
+          '............QQpPPPpPPAQPpPAQPA..........QQPPA.',
+          '............QAApAAApAAAApAAQAAA.........QPPpA.',
+          '.............QQpQQpQQpQQpQQQPAA.........QPPPA.',
+          '.............QppQppQpppQppQpQQ..........QpPAA.',
+          '.........AApAPAAPApAAPAAApAPAAAPpAAPA...QPPPA.',
+          '.......TAApAAPAAApAAPAAAPpAAAPAAApAATAA.QPpPA.',
+          '......QTTTTkTTTTTTTkkTTTTTTTTTTkTTTTTA..QPPPA.',
+          '......QAkPPpPPPPAkkPPpPPPpPPPAkPPPAPAA..QPPPA.',
+          '......QAQPPpPPPPAkQPPpPPPpPPPAQPPPAPAA..QPpPA.',
+          '......QQAQPpPPpPPAQPPpPPPpPPPAQPpPAPAA..QPPPA.',
+          '......QQpQPpPPpPPAQPpPPPpPPPPpQPPPAPAA..QkPPA.',
+          '......QAApAAAApAAAQApAAApAAAApAAAAAPA...QQPPA.',
+          '......QQQpQQpQQpQQQpQQpQQQpQQpQQPPApA...QPPpA.',
+          '......QppPppPppPPpppPpPppPppPpPPpPApA...QpPPA.',
+          '......QQppQppQppQpppQppQppQpQppQppQQQ...QpppA.',
+          '....pAPpAPPpPAPPpAPPpPAPPpAPPpAPpAPp....QQpQQ.',
+          '..QpPpAPpQpPApPpQpAPpPQpApPpQPpAPpQpApPpQpApA.',
+          '.QppAPpQpPPApQppPApPQppAPpPQpApPpPQpAPpQpApPS.',
+          'SQpApPpQ.pPApQpPpAQp.pApPQpPApQpp.ApPpQ.pApS..',
+          'SSSpSQpSS.pApSSpQSpp.SpApSsQss.pAss.sss.ss....',
+          '.SSSSSSSSSSSSSSSSSSSSSssssssssssssssss........',
+          '...SSSSSSSSSSSSSsssssssssssssssssss...........',
+          '.......sssssssssssssssssssss..................',
+        ],
+      },
+      {
+        pie: [22, 16],
+        mapa: [
+          '............AAAAAA.AAAA..AAAAAAAA.............',
+          '..........AAATAAAAAAATAAAAATAAAAAA............',
+          '.........TTTTTkTTTTTTTTTkkTTTTTTkTTT..........',
+          '.........QPPPAkPPPPPPPAkkPPPPPAkPPAA..........',
+          '.........QQppQkQQQpQQQQkkQQpQQQQkQQp..........',
+          '........QQpPPAkPPpPPPAkkPPpPPAkPPPAPA.........',
+          '........QQpPPAQPPpPPPAkQPPpPPAQPPPAPA.........',
+          '.......QQpPPpAQPPpPPPAQPPPpPPAQPpPAPAA........',
+          '.......QQpPPpPQPPpPPPPQPPPpPPPQPPPAPAA........',
+          '.......QAApAAAApAApAAAApAApAAApAAAAPAA........',
+          '.......QQQpQQpQQpQQQpQQpQQQpQQpQQPAPAA........',
+          '.......QpPPpPPpPPpPPPpPPpPPpPPpPPPAPAA........',
+          '..ATTA..QpPpPPpPPpPPpPPpPPpPPpPPPAPA..........',
+          '.QPPPA..QppPppPpPppPpPpppPpPppPpPApA..........',
+          '.QppQA.QQppQppQpppQpppQppQppQpQQppQQ..........',
+          '..QpPpAPpQpPApPpQpAPpPQpApPpQPpAPpQpApPpQpA...',
+          '.QppAPpQpPPApQppPApPQppAPpPQpApPpPQpAPpQpApS..',
+          'SQpApPpQ.pPApQpPpAQp.pApPQpPApQpp.ApPpQ.pAS...',
+          'SSSpSQpSS.pApSSpQSpp.SpApSsQss.pAss.sss.s.....',
+          '.SSSSSSSSSSSSSSSSSSSSssssssssssssssss.........',
+          '...SSSSSSSSSSSssssssssssssssssss..............',
+        ],
+      },
+    ],
+  },
+  /**
+   * 🗿 LAS AGUJAS DEL BOSQUE DE PIEDRAS, con los mismos colores: altas y angostas, de base más ancha, con su canaleta
+   * y la punta al sol. Dos, una alta y una más baja y torcida.
+   */
+  aguja: {
+    celda: 2,
+    variantes: [
+      {
+        pie: [6, 24],
+        mapa: [
+          '....TT......',
+          '...ATTA.....',
+          '...QPPA.....',
+          '...QPpA.....',
+          '...QPPPA....',
+          '...QAQPA....',
+          '..QPAQPA....',
+          '..QPAQPPA...',
+          '..QPPQPPA...',
+          '..QPPkPPA...',
+          '..QpPQPpA...',
+          '..QPPQPPA...',
+          '.QPPAQPPA...',
+          '.QPPAQPPPA..',
+          '.QPPAQPpPA..',
+          '.QPPAkPPPA..',
+          '.QpPAQPPPA..',
+          '.QPPAQPPpPA.',
+          '.QPPAQPPPPA.',
+          'QPPPAQPPPPA.',
+          'QPpPAQPPAQA.',
+          'QPPPAkPPAQPA',
+          'QpppAQppAQpA',
+          'QQpQQQQpQQQQ',
+          'pApQpPApQpAp',
+          'SpQpAp.pApS.',
+          'SSSSSSsssss.',
+          '.ssssssss...',
+        ],
+      },
+      {
+        pie: [5, 16],
+        mapa: [
+          '.....TT...',
+          '....ATTA..',
+          '....QPPA..',
+          '....QPpA..',
+          '...QPPPA..',
+          '...QPAQA..',
+          '...QPAQPA.',
+          '...QpAQPA.',
+          '..QPPAQPA.',
+          '..QPPAkPA.',
+          '..QPpAQPPA',
+          '..QPPAQPPA',
+          '.QPPPAQpPA',
+          '.QPPPAQPPA',
+          '.QpppAQppA',
+          '.QQpQQQpQQ',
+          'pApQpPApQp',
+          'SpQp.pApS.',
+          'SSSSsssss.',
+          '.sssssss..',
+        ],
+      },
+    ],
+  },
+  /**
+   * 🌳 EL ALGARROBO *(Santi: "quiero agregar cosas para hacerlo un poco más argentino a pesar de estar ambientado en la
+   * frontera americana: algarrobos. Tienen que parecerse bastante y el tamaño acorde")*. Como uno de verdad: el tronco
+   * corto y grueso, oscuro y con la corteza rajada (B, C, c), torcido y un poco inclinado, que se abre bajo en tres
+   * gajos que se van de costado —uno largo a la izquierda, uno derecho al medio y uno a la derecha que se parte en
+   * dos—; la copa ancha y chata como un paraguas, hecha de manchones de hoja fina con huecos por donde se ven las
+   * ramas; la luz arriba (sobre todo a la derecha, de donde viene el sol), el frente y la panza de la copa en sombra,
+   * algunas chauchas colgando (y) y la sombra de la copa en el suelo, rota por el sol que pasa entre las hojas.
+   * Mide unos 4 metros: la gente mide 30 puntos y él 64 hasta la copa, y la copa tiene 94 de ancho.
+   * Choca sólo el tronco (data/horse.js), y no se cae: chocado, sigue parado.
+   */
+  algarrobo: {
+    pie: [49, 63],
+    mapa: [
+      '..........................................................hhghhhhhhh............................',
+      '.....................................................hhhh.hhhhghhhhhhhhhh.......................',
+      '..................................................hhhgghhhhhhghhhgghhhhhhhhh....................',
+      '................................hhhhhhgg........hhggghhgghhhhhhghhhhgghhhhhhhhhh................',
+      '............................hggghhhhhhgghhhhh..gggdggghhhhgggghhhgghhhhhhhhhghhhhh..............',
+      '.........................hhgggghhgggghhhhhhgg.ggddgggghhgggdgggghhhhggghhhhhhghhhhh.............',
+      '.......................hgggddggghhgggghggghhh.dgggddgggggddggghhhggggdggghhhhgghhhgg............',
+      '......................gggddggggdggghgggghhhgggdddggggdggghhggggddggggdggghhhggggghggg...........',
+      '.....................ggdddggggddggghgggdggghggddgggdddggggddggghggggdddggghhgggdggggh...........',
+      '.....................gghggggdggghhgggdgggghggggggdgggghhgggdggggghhhggggdggghhggggghhh..........',
+      '....................hgggddggggdgggddggggdgggddddggggdddgggddggggdgggdddggggddddhhhhhhhhhh.......',
+      '....................dddDDddddDDDdddddDDddddDDDddddDDdddddDDDddddDDdddddDDDghhhgghhhhhhghhhhh....',
+      '............hhghhhhhDhhhgghhhhhhghhhhDhhhDhhhhghhhhhhhgghhhhhDDhhhghhhhhggdgggghhgggdgggghhhgg..',
+      '........hggghhhghhhhdgghgggghhggghgggghhhggghhggggdggghhgggghhhgghgghhhggghggggddggghhggggdgghh.',
+      '.....hhgggdgggghhhggggdggggddggghggggddggdggggddggghggggddggghhgggdgghhddgggghgggddggggdggghhgg.',
+      '....hgggddggghgggghhhgggddggggdgggddgggggggddgggdddggggdggggddgddgggdgggggddgggghgggddgggdggghhh',
+      '...ggddgggghgggddggghhddgggdddggggddgggdddddgggddggggdddggddddddddggdddddggghggggddgggdddggggggg',
+      '...dgggddggggddggghgghhdddggddddgggddddDDddddggdddDDddddggdddDDDDdddDDdgggdddggggddgggddggggddhh',
+      '..ggdddggghggdddggggggg...ddgggddggggdddddddggggdddgggggdddddddddgddddddggggdddggddddgggddggggdd',
+      '..dddgggddggggdgggddggg..C.dddggddddggdddddddgggdddddggddddDDDDddDDDDDdggggdddgggddggggdddgggdd.',
+      '..ddgggddgggdddggggddddd.C..ddDdddDDddddDDDddddddDDddddDDDdddddDDDD...ddgggddddggdddgggddddDDDD.',
+      '..dddDDdddDDddddDDDdddDDC...DDDDDdDDDDDDDDDDD..C.DDDdDDDDDDDDdDDDDD.c..ddDDDddddDDdddDDDDdddDDD.',
+      '..DggghhggggDgghhhhgggDD.....DDDDDDDDDDDDDDD..BCc.DDDDDDDDDDDDDDDD..c..DDggghhhDgggghhggghhhDD..',
+      '..ggghggggddggghggggddggg.....DDDDDDDDDDDDD...BCc...DDDDDDDDDDDDD...c..dgggghgggddgggghhgggddd..',
+      '..ddggggddgggdddggggddggg......DDDDDDDDDDD....BCc......DDDDDDDD.....c...gggddggggdgggddgggddd...',
+      '...dddgggdddggddddgggdddd.......DDDDDDDDD.....BCc...................c...ddgggdddggggddgggdddd...',
+      '...DDddddggddddDDDdddggdd.........DDDDD.......BCc.........ddgggddggdgggdddddggddddDDDdddDDDD....',
+      '...DDDdddDDDDddDDDdddDDD.....ddgggddgdddggddggBCc........dgggdddggddgggdddDDDDdddDDDDDddDDD.....',
+      '....DDDddDDDDDDdDDDDDDDD....gddgggdddggdddggddBCc........ddggddddgggdddggddDDDDdDDDDDDdDDD......',
+      '....DDDDDDDDDDDDDDDDDDD.....ddggddddggdddgggddBCc.........dddggddddggddddDDDDDDDDDDDDDDDD.......',
+      '......DDDDDDDDDDDDDDDDD.....dddgggddddggddddDDBCc.........DDdddggddddDDDDDDD..DDDDDDDDD.........',
+      '.........DDDDDDDDDDDDD.......DDdddggddddDDDDDDBCc..........DDdddgggdddDDDDD.....DDDDDD..........',
+      '............DDDDDDDDDD........DDDddgggddDDDDD.BCc...........DDDddDDDDDDDDD....BCc...............',
+      '...............DDDDDDBBCc......DDDDDDDDDDDDD..BCc.............DDDDDDDDDD....BCc.................',
+      '..............y........BCCcc.....DDDDDDDDD....BCc...............DDDDDD....BCc...................',
+      '..............y..........BCCcc.....DDDDD......BCc..............DDDDDDDD.BCc.....................',
+      '...........................BCCcc....y..y......BCc............BCc.....BCcc.......................',
+      '..............................BCCcc.y..y......BCc..........BCc...BCCcc..........................',
+      '.................................BCCcc........BCc.........BCc.BCCcc.............................',
+      '....................................BCCcc.....BCc........BCCBCCc................................',
+      '.......................................BCCcc..BCc.......BCCCcc..................................',
+      '..........................................BCCcBCc......BCCcc....................................',
+      '............................................BCcBCc...BCCcc......................................',
+      '.............................................BCCcCc.BCCc........................................',
+      '..............................................BCBCCBCcc.........................................',
+      '..............................................BCBCCBCcc.........................................',
+      '..............................................BCBCCBCcc.........................................',
+      '..............................................BCBCCBCcc.........................................',
+      '..............................................BCCBCCBcc.........................................',
+      '..............................................BCCBCCBcc.........................................',
+      '..............................................BCCBCCBcc.........................................',
+      '.............................................BCCBCCBcc..........................................',
+      '.............................................BCCBCCBcc..........................................',
+      '.............................................BCCBCBCcc..........................................',
+      '.............................................BCCBCBCcc..........................................',
+      '.............................................BCBCCBCcc..........................................',
+      '.............................................BCBCCBCcc..........................................',
+      '.............................................BCBCCBCcc..........................................',
+      '.............................................BCBCCBCcc..........................................',
+      '............................................BBCBCCBCcc..........................................',
+      '....................ssssss..ssssssssss.sssssBBCCBCCBCccsss......................................',
+      '..........ssssssss.ssssssssssssss..ssssssssBBBCCBCCBCccCcssss...................................',
+      '......ssssssssssss.ssssssssssssssssssss.sBSBBBCCCBCCBccCSCcssssss...............................',
+      '....ssssssssssssssssssssssssssssssssssssSBBSBSBBBSSBSCCSCScssssssss....sss......................',
+      '...sssssssssssssss.ssssssssssssssssssssssSSSSSSSSSSSSssssssssss..ssssss.........................',
+      '....sssssssss..ssssssssssssssssss.ssssssssssssssSSSssssssssssss...ssss..........................',
+      '......ssssssssss.ssssssssssss..ssssssssssssssssssss.ssssssssss.sss..............................',
+      '.........ssssssss..ssssssssssssss.ssssssssssssssssss..ssssss....................................',
+      '..............ssssssssss...ssssssssssssssss.ssssssssss..........................................',
+      '......................ssssssssssssss....ssssssss................................................',
+    ],
+  },
+  /**
+   * 🌳 EL ALGARROBO DE LA HUIDA (y el de lejos, del otro lado de la vía en el galope): el mismo árbol dibujado de
+   * nuevo con la mitad de los puntos. En la huida va con su punto (`celda: 2`), así que mide lo mismo que el del galope.
+   */
+  algarroboChico: {
+    celda: 2,
+    pie: [23, 31],
+    mapa: [
+      '.............................hhhhh..............',
+      '..........................hh.hhhhhhhh...........',
+      '................hhhh.....hhghhhhghhhhhh.........',
+      '..............hhgghhhg.gddgghhhgghhhhhhhg.......',
+      '............hggdggghhggdggddggghgggdgghhhh......',
+      '...........ggddgggdgghhDddgggddggdgggggdhhhhhg..',
+      '....hghhhhggdgggddgghgggggdggggddggghdgghgghhhh.',
+      '..hggdgghhddDDdddDDdddddddDDddddDDdddggddgggddhh',
+      '.ggddggghggDhhhghhhhDhhhhhhghhhhhDhhddgghgggddgg',
+      '.dggddgggddg.gghgggddgggggddgggghgg.ddgggddgggdd',
+      '.ddDdddDDdddC.ddgggdd.Bc.dddggdddd.cddDDDddDDddd',
+      '.DgghhDgghhD...dDDDd..Bc..dDDDDd....DgghhDggghh.',
+      '.gghgggddggg....DDD...Bc...DDDD......gggdggghh..',
+      '..ddgggddggg..dggdggddBc....dggddggdd.ddgggddd..',
+      '..DDDdddDDDD..ddgdddDDBc....ddgdddDDDD.ddDDDD...',
+      '...DDDDDDDDD...ddDDDDDBc.....DDdDDDDD...DDDD....',
+      '.....DDDDDDBc...DDDDD.Bc.......DDDDD..Bc........',
+      '.......y.....Bc...y...Bc......Bc....Bc..........',
+      '...............Bc.y...Bc.....Bc..BCc............',
+      '.................Bc...Bc....Bc.BCc..............',
+      '...................Bc.Bc...BCBCc................',
+      '.....................BcBc.BCc...................',
+      '......................BCcBc.....................',
+      '......................BCBCc.....................',
+      '......................BCBCc.....................',
+      '......................BCBCc.....................',
+      '.....................BCBCc......................',
+      '.....................BCBCc......................',
+      '.....................BCBCc......................',
+      '..........sss.sssss.sBCBCcss....................',
+      '.....ssss.ssssssssssBSBCCBCcss..................',
+      '..ssssssssssssssssssSBSBCSCSssss..ss............',
+      '.ssssssss.sssssssssssSSSSSSsssss.sss............',
+      '...ssssss.sssssssss.ssssssssss.ss...............',
+      '.......ssssssss..ssssssssss.....................',
+    ],
+  },
 };
 
 const guardados = new Map();
-function lienzo(tipo, golpeado, luz) {
-  const clave = tipo + '|' + (golpeado ? 1 : 0) + '|' + luz;
+/**
+ * El dibujo de un tipo ya pintado con su luz. `variante`: cuál de sus dibujos (los que tienen varios). Los que no
+ * tienen dibujo de golpeados (las mesas, las agujas, el algarrobo) siguen parados aunque los choquen.
+ */
+function lienzo(tipo, golpeado, luz, variante = 0) {
+  const T = OBSTACULOS[tipo];
+  const O = T.variantes ? T.variantes[variante % T.variantes.length] : T;
+  const caido = golpeado && !!T.golpeado;
+  const clave = tipo + '|' + variante + '|' + (caido ? 1 : 0) + '|' + luz;
   if (guardados.has(clave)) return guardados.get(clave);
-  const O = OBSTACULOS[tipo], mapa = golpeado ? O.golpeado : O.mapa;
+  const mapa = caido ? T.golpeado : O.mapa;
   const an = Math.max(...mapa.map((f) => f.length)), al = mapa.length;
   const indices = new Int16Array(an * al).fill(-1);
   mapa.forEach((fila, j) => {
@@ -191,23 +525,36 @@ function lienzo(tipo, golpeado, luz) {
   const cv = document.createElement('canvas');
   cv.width = an; cv.height = al;
   cv.getContext('2d').putImageData(new ImageData(iluminar({ ancho: an, alto: al, indices, campo: () => luz }), an, al), 0, 0);
-  const g = { img: cv, pie: golpeado ? O.golpeadoPie : O.pie, an, al };
+  const g = { img: cv, pie: caido ? T.golpeadoPie : O.pie, an, al };
   guardados.set(clave, g);
   return g;
 }
 
-/** ¿Este tipo tiene su dibujo nuevo? (La aguja y el mojón son de la huida, que sigue en el dibujo viejo.) */
+/** ¿Este tipo tiene su dibujo nuevo? */
 export const tieneObstaculoNuevo = (tipo) => !!OBSTACULOS[tipo];
+
+/** El revuelto de siempre: cuál variante le toca a cada lugar, siempre la misma. */
+function revolver(n) {
+  let t = (n * 374761393 + 668265263) | 0;
+  t = Math.imul(t ^ (t >>> 13), 1274126177);
+  return (t ^ (t >>> 16)) >>> 0;
+}
 
 /**
  * Dibuja el obstáculo con el pie en (`ox`, `ob.y`), en el mundo (`ctx` con la cámara puesta). Se apoya en un punto
  * entero de la grilla, como el suelo con el que corre.
  */
-export function dibujarObstaculoNuevo(ctx, ob, ox, noche) {
-  const L = lienzo(ob.tipo, ob.golpeado, noche ? CONFIG.tresCuartos.sueloNoche : 0);
-  const x = Math.round(ox / PASO) * PASO - L.pie[0] * PASO, y = Math.round(ob.y / PASO) * PASO - L.pie[1] * PASO;
+export function dibujarObstaculoNuevo(ctx, ob, ox, noche, mojado = false, o = {}) {
+  // (`o.chico`: en la huida, el que tenga su dibujo chico —el algarrobo— va con ése. `o.lejos`: del otro lado de la
+  //  vía en el galope, el chico con el punto del galope, o sea a la mitad.)
+  const tipo = (o.chico || o.lejos) && OBSTACULOS[ob.tipo + 'Chico'] ? ob.tipo + 'Chico' : ob.tipo;
+  const paso = o.lejos ? PASO : PASO * (OBSTACULOS[tipo].celda || 1);
+  const variante = revolver(Math.round(ob.x) * 31337 + Math.round(ob.y) * 6271);
+  // (⛈️ Con tormenta, un escalón más oscuros, como la arena mojada.)
+  const L = lienzo(tipo, ob.golpeado, noche ? CONFIG.tresCuartos.sueloNoche : mojado ? -1 : 0, variante);
+  const x = Math.round(ox / paso) * paso - L.pie[0] * paso, y = Math.round(ob.y / paso) * paso - L.pie[1] * paso;
   const prev = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(L.img, x, y, L.an * PASO, L.al * PASO);
+  ctx.drawImage(L.img, x, y, L.an * paso, L.al * paso);
   ctx.imageSmoothingEnabled = prev;
 }

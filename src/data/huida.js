@@ -51,6 +51,23 @@ export const HUIDA = {
    * con 3,5 los puntos caerían a medias y el dibujo se vería sucio.
    */
   zoom: 3,
+  /**
+   * 🆕 EN EL ESTILO NUEVO, LA DEL GALOPE DE LEJOS *(Santi: "poné el zoom igual a cuando en el galope está lejos")*: 2,
+   * o sea la mitad que la del mundo. Con 3 cada punto del dibujo nuevo medía dos píxeles y cuarto (unos más anchos que
+   * otros) y los carteles salían rotos; con 2, los caballos y los jinetes van con su dibujo chico, que es el de lejos
+   * del galope, y se ve el doble de campo que en el asalto. El panel no se achica: va con la lupa de siempre.
+   */
+  zoomNuevo: 2,
+  /**
+   * ☁️ A cuánto (unidades del mundo) tienen que ir dos caballos para que su polvo se junte *(Santi eligió "todos los
+   * caballos, cerca": unos dos cuerpos de caballo)*. Con 3 o más así, la nube grande.
+   */
+  polvoJuntos: 50,
+  /**
+   * ☁️ La nube de cada caballo cuando va en un grupo de 3 o más, en partes de la de uno solo *(Santi: "que el polvo
+   * de cada caballo sea más chico en grupo")*: así la que se ve es la pelota grande del grupo y no una estela ancha.
+   */
+  polvoEnGrupo: 0.4,
 
   /**
    * 🔺 CAMPO ABIERTO, NO UNA FRANJA *(Santi, después de jugarlo: "no me refería
@@ -86,6 +103,13 @@ export const HUIDA = {
      * (`mojon` en data/horse.js), varios juntos serían un laberinto.
      */
     mojones: { cada: 400, chance: 0.6 },
+    /**
+     * 🌳 LOS ALGARROBOS *(Santi: "no llenes el desierto de estos árboles... en la huída usá tu criterio")*: en su
+     * propia grilla, como los mojones, uno cada `cada` unidades como mucho y con `chance`; a veces (`pareja`) con
+     * otro cerca, como crecen en el monte. Ni en el bosque de piedras ni en el río (la llegada limpia), ni pegados a
+     * un mojón.
+     */
+    algarrobos: { cada: 300, chance: 0.2, pareja: 0.3 },
     /**
      * 🎲 DÓNDE CAEN LOS TRES, SORTEADO DE VERDAD *(Santi: "deberíamos hacer que
      * los puntos de llegada sean aleatorios sus ubicaciones, para que no

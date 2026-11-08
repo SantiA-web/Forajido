@@ -5098,6 +5098,8 @@ export function createRaidScene(services) {
     if (escaped && alarm.active && jinetesVivos > 0 && summary.money > 0) {
       scenes.goTo('huida', {
         summary, jinetes: jinetesVivos, arma: player.weapon, balas: player.ammo,
+        // ⛈️ Si llovía en el tren, llueve en la huida.
+        clima: train.clima ? train.clima.id : null,
       });
       return;
     }

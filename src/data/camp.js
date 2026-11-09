@@ -72,7 +72,8 @@ export const CAMPAMENTO = {
     },
     {
       id: 'cajon',
-      x: -44, y: 6,
+      // 🔁 Al fondo del campamento *(Santi: "llevala al fondo del campamento")*.
+      x: -4, y: -62,
       alcance: 24,
     },
     {
@@ -82,11 +83,30 @@ export const CAMPAMENTO = {
     },
     {
       id: 'cartel',
-      x: 12, y: 62,
+      // 🔁 Estaba en (12, 62), justo delante de la fogata, y la tapaba. Se corrió a la derecha.
+      x: 52, y: 50,
       alcance: 26,
     },
   ],
 };
+
+/**
+ * 🏕️ LO QUE ESTÁ PARA QUE EL LUGAR PAREZCA HABITADO Y NO SE USA *(Santi eligió darle vida, 2026-11-08)*. Sólo en el estilo nuevo.
+ * Va relativo al centro, ya en las medidas de hoy. `huella`: lo que ocupa en el piso (se choca con eso, igual que con los
+ * objetos).
+ */
+export const DECORADO = [
+  { id: 'tronco', x: -30, y: 15, huella: { x1: -6, x2: 6, y1: -15, y2: 15 } },
+  { id: 'montura', x: 96, y: 12, huella: { x1: -12, x2: 12, y1: -3, y2: 3 } },
+  { id: 'piedras', x: -68, y: 60, huella: { x1: -8, x2: 8, y1: -3, y2: 3 } },
+  { id: 'piedras', x: 14, y: 76, huella: { x1: -8, x2: 8, y1: -3, y2: 3 } },
+  { id: 'roca', x: -98, y: 40, huella: { x1: -10, x2: 10, y1: -4, y2: 4 } },
+  { id: 'cactus', x: -30, y: -74, huella: { x1: -5, x2: 5, y1: -3, y2: 3 } },
+  // (🌳 Bien atrás del caballo, separado: el tronco arranca detrás del lomo. La sombra de la copa le llega a las patas.)
+  { id: 'algarrobo', x: 50, y: -44, huella: { x1: -6, x2: 6, y1: -3, y2: 2 } },
+];
+/** Dónde te sentás cuando apretás [E] en la fogata: arriba del tronco, relativo al centro. */
+export const ASIENTO = { x: -30, y: 16 };
 
 // Las distancias al centro, a la pantalla de hoy.
 for (const o of CAMPAMENTO.objetos) {

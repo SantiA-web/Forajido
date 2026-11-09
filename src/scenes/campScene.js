@@ -27,7 +27,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
-import { CAMPAMENTO } from '../data/camp.js';
+import { CAMPAMENTO, DECORADO, ASIENTO } from '../data/camp.js';
 import { caballoActual, HORSES } from '../data/horse.js';
 import { WEAPONS } from '../data/weapons.js';
 import { MELEE } from '../data/melee.js';
@@ -36,6 +36,9 @@ import { crearMenu } from '../engine/menu.js';
 import { dibujarPersona, faseDeAndar, tono } from '../entities/figura.js';
 import { dibujarAnimal, ESCALA_PARADO } from '../entities/caballo.js';
 import { T } from '../text/es.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { DENSIDAD } from '../engine/renderer.js';
+import * as dibujoNuevo from '../world/estiloNuevo/campamento.js';
 
 /**
  * DE DÓNDE VIENE EL SOL. Un desplazamiento chico y para un solo lado: lo que
@@ -125,6 +128,13 @@ export function createCampScene(services) {
     return CAMPAMENTO.objetos.map((o) => ({ ...o, x: c.x + o.x, y: c.y + o.y }));
   }
 
+  /** Lo que está sólo para verse, con sus coordenadas absolutas. En el estilo viejo no hay nada de esto. */
+  function decoradoEnMundo() {
+    if (!estiloNuevo.activo) return [];
+    const c = CAMPAMENTO.centro;
+    return DECORADO.map((o) => ({ ...o, x: c.x + o.x, y: c.y + o.y }));
+  }
+
   /** El objeto que tenés al alcance de la mano, o null. El más cercano gana. */
   function objetoCerca() {
     let mejor = null;
@@ -149,6 +159,12 @@ export function createCampScene(services) {
     switch (o.id) {
       case 'fogata':
         sentado = !sentado;
+        // En el estilo nuevo te sentás en el tronco, mirando el fuego.
+        if (sentado && estiloNuevo.activo) {
+          x = CAMPAMENTO.centro.x + ASIENTO.x;
+          y = CAMPAMENTO.centro.y + ASIENTO.y;
+          mirando = 0;
+        }
         decir(sentado
           ? T.camp.fogataSentado(gameState.fame, gameState.honor)
           : T.camp.fogataParado);
@@ -486,17 +502,18 @@ export function createCampScene(services) {
    */
   const HUELLAS = {
     carpa: { x1: -28, x2: 20, y1: -9, y2: 2 },
-    cajon: { x1: -11, x2: 11, y1: -9, y2: 2 },
+    cajon: { x1: -14, x2: 14, y1: -8, y2: 2 },
     poste: { x1: -24, x2: 24, y1: -4, y2: 4 },    // el palenque y el caballo
-    cartel: { x1: -17, x2: 16, y1: -2, y2: 2 },
+    cartel: { x1: -16, x2: 16, y1: -13, y2: 2 },
     fogata: { radio: 13 },
   };
   /** Lo que ocupa el jugador alrededor de sus pies. */
   const PIES = { x: 4, y: 3 };
 
   function chocarConLasCosas() {
-    for (const o of objetosEnMundo()) {
-      const h = HUELLAS[o.id];
+    for (const o of [...objetosEnMundo(), ...decoradoEnMundo()]) {
+      // (En el estilo nuevo, el caballo atado está a la izquierda del poste y ocupa eso.)
+      const h = o.huella || (o.id === 'poste' && estiloNuevo.activo ? { x1: -47, x2: 4, y1: -4, y2: 4 } : HUELLAS[o.id]);
       if (!h) continue;
       if (h.radio) {
         const dx = x - o.x, dy = y - o.y;
@@ -588,7 +605,78 @@ export function createCampScene(services) {
     return alPiso(CAMPAMENTO.centro.y - CAMPAMENTO.radio) - 34;
   }
 
+  /**
+   * 🏕️ EL CAMPAMENTO DEL ESTILO NUEVO. Los dibujos están en world/estiloNuevo/campamento.js; acá se ponen en su lugar, de
+   * atrás para adelante. El fondo llena toda la ventana y las cosas siguen entrando enteras en el medio.
+   */
+  let origenNuevo = { x: 0, y: 0 };
+  function renderNuevo(r) {
+    /**
+     * 🐛 EL PUNTO SIEMPRE MIDE PÍXELES ENTEROS *(Santi: "el jugador se deforma mucho su forma al moverse, sobre todo su
+     * sombrero")*. Con la lupa de `escenaFija`, en una ventana de menos de 1680×944 cada punto medía 2,25 píxeles: algunos
+     * salían de 2 y otros de 3, y cambiaban a cada paso. Ahora van de 3; sólo en ventanas muy chicas, de 2.
+     */
+    if (r.canvas.width / DENSIDAD >= 280 && r.canvas.height / DENSIDAD >= 190) r.lupa(DENSIDAD);
+    else r.lupaLibre((2 * DENSIDAD) / CONFIG.estilo.punto);
+    const dia = gameState.esDeDia, ctx = r.ctx, o = r.centro;
+    const PASO = CONFIG.estilo.punto / DENSIDAD;
+    const c = CAMPAMENTO.centro;
+    // Si no entra todo, se recorta el cielo: el claro se ve entero.
+    const yCentrado = Math.min(o.y, r.height - (alPiso(c.y + CAMPAMENTO.radio) + 10));
+    const ox = Math.round(o.x / PASO) * PASO, oy = Math.round(yCentrado / PASO) * PASO;
+    origenNuevo = { x: ox, y: oy };
+    const fog = objetosEnMundo().find((z) => z.id === 'fogata');
+    const fuego = { x: fog.x, y: alPiso(fog.y) };
+    const cuadro = Math.floor(scroll * 10) % 8, pulso = dibujoNuevo.pulsoEn(scroll);
+    r.clear('#000');
+    dibujoNuevo.dibujarFondoCampamento(ctx, {
+      ancho: r.width, alto: r.height, ox, oy, hy: horizonte(), dia, fuego, pulso, t: scroll,
+      claro: { x: c.x, y: alPiso(c.y), radio: CAMPAMENTO.radio + 16 },
+    });
+    ctx.save();
+    ctx.translate(ox, oy);
+    const luzAca = (lx, ly) => (dia ? 0 : dibujoNuevo.luzDelFuego(lx, ly, fuego, pulso));
+    estiloNuevo.luzEn = dia ? null : luzAca;
+
+    const cosas = [...objetosEnMundo(), ...decoradoEnMundo()].map((z) => ({
+      y: z.y,
+      pinta: () => {
+        const py = alPiso(z.y);
+        if (z.id === 'fogata') dibujoNuevo.dibujarFogata(ctx, z.x, py, dia, fuego, cuadro, scroll);
+        else if (z.id === 'roca' || z.id === 'cactus' || z.id === 'algarrobo') dibujoNuevo.dibujarDelGalope(ctx, z.id, z.x, py, dia);
+        else if (z.id === 'poste') {
+          dibujoNuevo.dibujarCaballoAtado(ctx, z.x - 27, py, dia, fuego, scroll, caballoActual(gameState).id);
+        } else dibujoNuevo.dibujarCosa(ctx, z.id, z.x, py, dia, fuego, pulso);
+      },
+    })).concat([{ y, pinta: () => dibujarJugadorNuevo(r, luzAca) }]);
+    cosas.sort((a, b) => a.y - b.y);
+    for (const cosa of cosas) cosa.pinta();
+
+    ctx.restore();
+    estiloNuevo.luzEn = null;
+    dibujarInterfaz(r);
+    menu.render(r, colors, T.interior.dialogoAyuda);
+  }
+
+  /** Vos: el mismo del tren, con tus 8 direcciones. Sentado, de perfil sobre el tronco, mirando el fuego. */
+  function dibujarJugadorNuevo(r, luzAca) {
+    const py = alPiso(y);
+    if (!sentado) dibujoNuevo.dibujarSombraDePies(r.ctx, x, py, luzAca(x, py));
+    yo.x = x;
+    yo.y = y;
+    dibujarPersona(r, {
+      tipo: 'jugador', interior: true, x,
+      pies: sentado ? py - 3 : py,
+      angulo: sentado ? 0 : mirando,
+      piernas: sentado ? 'sentado' : undefined,
+      fase: sentado ? null : faseDeAndar(yo),
+      modo: 'caminar',
+      panuelo: true,
+    });
+  }
+
   function render(r) {
+    if (estiloNuevo.activo) { renderNuevo(r); return; }
     // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
     r.escenaFija();
     const dia = gameState.esDeDia;
@@ -1137,12 +1225,14 @@ export function createCampScene(services) {
           ? (gameState.esDeDia ? T.camp.prompts.carpaDia : T.camp.prompts.carpaNoche)
           : T.camp.prompts[o.id];
       // Sobre tu cabeza, así que corrido igual que el claro (ver `render`).
-      const c = r.centro;
-      r.text(texto, x + c.x, y + c.y - 16, colors.doorGlow);
+      const c = estiloNuevo.activo ? origenNuevo : r.centro;
+      // (En el estilo nuevo, sobre tu cabeza de verdad: la gente del tren es más alta y el piso se ve aplastado.)
+      const yTexto = estiloNuevo.activo ? alPiso(y) + c.y - 38 : y + c.y - 16;
+      r.text(texto, x + c.x, yTexto, colors.doorGlow);
       // El caballo es el único con dos verbos, así que lleva dos renglones.
       // El de salir del campamento va en otro color: no es una acción más de
       // las de acá, es la que te lleva a otro lado.
-      if (o.id === 'poste') r.text(T.camp.prompts.posteF, x + c.x, y + c.y - 26, colors.bagLoot);
+      if (o.id === 'poste') r.text(T.camp.prompts.posteF, x + c.x, yTexto - 10, colors.bagLoot);
     }
 
     if (mensaje) r.text(mensaje.texto, r.width / 2, r.height - 30, colors.text);

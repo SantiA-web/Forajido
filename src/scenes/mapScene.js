@@ -43,6 +43,9 @@ import { WAGONS } from '../data/wagons.js';
 import { sortearComposicion } from '../world/train.js';
 import { T } from '../text/es.js';
 import { gameState } from '../state/gameState.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { DENSIDAD } from '../engine/renderer.js';
+import * as mapaViejo from '../world/estiloNuevo/mapaViejo.js';
 
 /**
  * Cuánto tiempo real, como mucho, se simula de una sola vez al volver al mapa.
@@ -66,6 +69,13 @@ export function createMapScene(services) {
   let scroll = 0;
   let encima = null;
   let ultimoReloj = 0;
+  let origenNuevo = { x: 0, y: 0 };
+  // 🔁 Sobre el papel gastado, la tinta suave y los colores de dificultad quedaban lavados *(Santi: "muy poco legible")*.
+  // (De noche, más oscuras todavía: lejos del farol el papel se apaga y hay que seguir leyendo.)
+  let TINTA_SUAVE_NUEVA = '#5f4730';
+  const selloActual = () => (estiloNuevo.activo && !gameState.esDeDia ? '#5a1410' : colors.mapaSello);
+  const tintaFuerte = () => (estiloNuevo.activo && !gameState.esDeDia ? '#26180f' : colors.mapaTinta);
+  const oscurecido = (hex) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (gameState.esDeDia ? 0.62 : 0.36)).toString(16).padStart(2, '0')).join('');
 
   const nombreDe = (id) => {
     const lugar = REGION.lugares.find((l) => l.id === id);
@@ -457,7 +467,7 @@ export function createMapScene(services) {
     const anterior = encima;
     // La red va centrada en la pantalla (ver `render`): el cursor se lleva a
     // las mismas coordenadas antes de buscar la vía.
-    const c = services.renderer.centro;
+    const c = estiloNuevo.activo ? origenNuevo : services.renderer.centro;
     encima = rutaBajoElCursor(input.mouse.x - c.x, input.mouse.y - c.y);
     if (encima && encima !== anterior) audio.play('cover');
 
@@ -498,7 +508,58 @@ export function createMapScene(services) {
 
   // ------------------------------------------------------------------ dibujo
 
+  /** 🗺️ El mapa viejo, en la grilla nueva (world/estiloNuevo/mapaViejo.js). */
+  function renderNuevo(r) {
+    // (Como en el campamento: el punto mide siempre píxeles enteros.)
+    if (r.canvas.width / DENSIDAD >= 480 && r.canvas.height / DENSIDAD >= 270) r.lupa(DENSIDAD);
+    else r.lupaLibre((2 * DENSIDAD) / CONFIG.estilo.punto);
+    const PASO = CONFIG.estilo.punto / DENSIDAD, ctx = r.ctx, c = r.centro;
+    // (🔁 La hoja, corrida a la derecha hasta 12 unidades: es el lugar del farol grande.)
+    const corrido = Math.max(0, Math.min(12, c.x - 18));
+    const ox = Math.round((c.x + corrido) / PASO) * PASO, oy = Math.round(c.y / PASO) * PASO;
+    origenNuevo = { x: ox, y: oy };
+    const ayuda = { puntoEn, tangenteEn, enTunel };
+    r.clear('#000');
+    const noche = !gameState.esDeDia;
+    TINTA_SUAVE_NUEVA = noche ? '#33241a' : '#5f4730';
+    mapaViejo.dibujarHoja(ctx, { ancho: r.width, alto: r.height, ox, oy, noche });
+    mapaViejo.farol(ctx, r.height, noche, scroll);
+    ctx.save();
+    ctx.translate(ox, oy);
+    mapaViejo.dibujarVias(ctx, rutas, ayuda, noche);
+    if (encima) mapaViejo.viaResaltada(ctx, encima, ayuda);
+    // (🔁 Las letras, en la capa fina: en la grilla de 3×3 quedaban comidas.)
+    // (De noche sin halo: el color del papel de día brillaría alrededor de las letras.)
+    const halo = { halo: noche ? null : mapaViejo.COLOR_HALO, lienzo: estiloNuevo.lienzoFino(ctx) };
+    for (const p of REGION.lugares) {
+      const color = p.tipo === 'pueblo' ? tintaFuerte() : TINTA_SUAVE_NUEVA;
+      if (p.etiqueta === 'izq') r.text(p.nombre, p.x - 7, p.y, color, 'right', halo);
+      else if (p.etiqueta === 'der') r.text(p.nombre, p.x + 7, p.y, color, 'left', halo);
+      else if (p.etiqueta === 'arriba') r.text(p.nombre, p.x, p.y - 10, color, 'center', halo);
+      else r.text(p.nombre, p.x, p.y + 10, color, 'center', halo);
+    }
+    if (encima) {
+      for (const p of encima.paradas) {
+        const lugar = REGION.lugares.find((l) => l.id === p.lugar);
+        if (lugar) mapaViejo.anillo(ctx, lugar.x, lugar.y, 7, 32);
+      }
+      if (encima.circular && encima.terminal) {
+        const lugar = REGION.lugares.find((l) => l.id === encima.terminal);
+        if (lugar) { mapaViejo.anillo(ctx, lugar.x, lugar.y, 7, 9); mapaViejo.anillo(ctx, lugar.x, lugar.y, 9, 9); }
+      }
+    }
+    const k = REGION.campamento;
+    if (Math.floor(scroll * 3) % 2 === 0) mapaViejo.fueguito(ctx, k.x + 8, k.y + 1);
+    // (🔁 Al costado de la carpa y no abajo: abajo le tapaba un pedazo a la vía que pasa por ahí.)
+    r.text(T.mapa.campamento, k.x - 6, k.y + 9, selloActual(), 'left', halo);
+    for (const ruta of rutas) if (ruta.tren) mapaViejo.tren(ctx, puntoEn(ruta, ruta.tren.t), tangenteEn(ruta, ruta.tren.t), scroll);
+    r.text('N', 30, CONFIG.view.height - 30 - 16, tintaFuerte(), 'center', halo);
+    ctx.restore();
+    dibujarCartucho(r);
+  }
+
   function render(r) {
+    if (estiloNuevo.activo) { renderNuevo(r); return; }
     // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
     r.escenaFija();
     /**
@@ -827,52 +888,58 @@ export function createMapScene(services) {
     // dejarle a la RED todo el ancho del papel: con siete líneas cruzándose,
     // el espacio del mapa vale más que la simetría del recuadro.
     // Pegado a la esquina de abajo a la derecha, con el mismo margen de siempre.
-    const w = 180, h = 56, x = r.width - w - 8, y = r.height - h - 10;
-    r.rect(x, y, w, h, colors.mapaPapel);
-    marco(r, x, y, w, h, colors.mapaBorde);
-    marco(r, x + 2, y + 2, w - 4, h - 4, colors.mapaTintaSuave);
+    const w = 180, h = 56;
+    // (En el estilo nuevo el recuadro ya viene impreso en el papel: acá van sólo las letras.)
+    const nuevo = estiloNuevo.activo, C = mapaViejo.cartuchoEn();
+    const x = nuevo ? origenNuevo.x + C.x : r.width - w - 8, y = nuevo ? origenNuevo.y + C.y : r.height - h - 10;
+    if (!nuevo) {
+      r.rect(x, y, w, h, colors.mapaPapel);
+      marco(r, x, y, w, h, colors.mapaBorde);
+      marco(r, x + 2, y + 2, w - 4, h - 4, colors.mapaTintaSuave);
+    }
 
     const cx = x + w / 2;
-    const sin = { halo: null };   // adentro del cartucho el fondo ya está limpio
+    const suave = nuevo ? TINTA_SUAVE_NUEVA : colors.mapaTintaSuave;
+    const sin = { halo: null, lienzo: nuevo ? estiloNuevo.lienzoFino(r.ctx) : undefined };   // adentro del cartucho el fondo ya está limpio
 
     // Sin nada señalado, el cartucho hace de portada: dice qué mapa es.
     if (!encima) {
-      r.text(REGION.nombre, cx, y + 14, colors.mapaTinta, 'center', sin);
-      r.text(T.mapa.subtitulo, cx, y + 24, colors.mapaTintaSuave, 'center', sin);
-      r.text(T.mapa.ayuda, cx, y + 38, colors.mapaTinta, 'center', sin);
-      r.text(T.mapa.volver, cx, y + 48, colors.mapaTintaSuave, 'center', sin);
+      r.text(REGION.nombre, cx, y + 14, tintaFuerte(), 'center', sin);
+      r.text(T.mapa.subtitulo, cx, y + 24, suave, 'center', sin);
+      r.text(T.mapa.ayuda, cx, y + 38, tintaFuerte(), 'center', sin);
+      r.text(T.mapa.volver, cx, y + 48, suave, 'center', sin);
       return;
     }
 
-    r.text(encima.nombre, cx, y + 11, colors.mapaTinta, 'center', sin);
+    r.text(encima.nombre, cx, y + 11, tintaFuerte(), 'center', sin);
 
     // Ramal muerto: no hay nada más que decir.
     if (encima.servicio === false) {
-      r.text(T.mapa.sinServicio, cx, y + 30, colors.mapaTintaSuave, 'center', sin);
+      r.text(T.mapa.sinServicio, cx, y + 30, suave, 'center', sin);
       return;
     }
 
     // Viene de otra región y ahora mismo no hay ninguno: hay que esperarlo.
     if (!encima.tren) {
-      r.text(T.mapa.deOtraRegion, cx, y + 26, colors.mapaTintaSuave, 'center', sin);
-      r.text(T.mapa.sinTrenAhora, cx, y + 40, colors.mapaTinta, 'center', sin);
+      r.text(T.mapa.deOtraRegion, cx, y + 26, suave, 'center', sin);
+      r.text(T.mapa.sinTrenAhora, cx, y + 40, tintaFuerte(), 'center', sin);
       return;
     }
 
     const tren = encima.tren;
     r.text(`${tren.tipoTren.name} · ${tren.dificultad.short}`, cx, y + 21,
-      tren.dificultad.color, 'center', sin);
-    r.text(tren.tipoTren.pista, cx, y + 30, colors.mapaTintaSuave, 'center', sin);
+      nuevo ? oscurecido(tren.dificultad.color) : tren.dificultad.color, 'center', sin);
+    r.text(tren.tipoTren.pista, cx, y + 30, suave, 'center', sin);
 
     const proxima = proximaParada(encima);
     const texto = !proxima ? T.mapa.sigueDeLargo
       : proxima.esTerminal ? T.mapa.vuelveA(nombreDe(proxima.lugar))
       : T.mapa.paraEn(nombreDe(proxima.lugar));
-    r.text(texto, cx, y + 39, colors.mapaTintaSuave, 'center', sin);
+    r.text(texto, cx, y + 39, suave, 'center', sin);
 
     // Parpadea: es la única cosa urgente que dice este mapa.
     const vivo = Math.floor(scroll * 3) % 2 === 0;
-    r.text(T.mapa.salir, cx, y + 48, vivo ? colors.mapaSello : colors.mapaTinta, 'center', sin);
+    r.text(T.mapa.salir, cx, y + 48, vivo ? selloActual() : tintaFuerte(), 'center', sin);
   }
 
   function exit() {

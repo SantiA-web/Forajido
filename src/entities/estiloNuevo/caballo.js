@@ -13,7 +13,7 @@ import * as MUSTANG from '../../assets/mustangPuntos.js';
  * Los colores de cada letra. El Mustang es marrón rojizo *(Santi: "ponele colores rojizos")*,
  * sin los rojos puros de la paleta: con ellos "parece un caballo de fuego".
  */
-const PELOS = {
+export const PELOS = {
   criollo: { l: 6, b: 5, s: 4, o: 0, n: 1, L: 6, B: 5, S: 4 },
   mustang: { l: 12, b: 11, s: 47, o: 0, n: 39, L: 12, B: 11, S: 47 },
   /**
@@ -35,7 +35,7 @@ const PELOS = {
  * del color exacto del suelo de noche, y las patas finitas, que son casi todo
  * contorno, desaparecían.
  */
-const PELOS_NOCHE = {
+export const PELOS_NOCHE = {
   criollo: { l: 4, b: 33, s: 3, o: 1, n: 2, L: 4, B: 33, S: 3 },
   mustang: { l: 47, b: 39, s: 32, o: 1, n: 2, L: 47, B: 39, S: 32 },
   zaino: { l: 33, b: 3, s: 32, o: 1, n: 2, L: 33, B: 3, S: 32 },

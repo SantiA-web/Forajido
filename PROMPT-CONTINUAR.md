@@ -176,6 +176,9 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hay uno entonces no tiene sentido el sheriff")*. En su lugar, la **etapa
   final: la auditoría de 800 asaltos** (`banco-inspector.js`) para encontrar
   todo lo que hace ver tontos o inexpertos a los guardias.
+- **El campamento y el mapa en el estilo nuevo están subidos** (2026-11-08; NOTAS-DISENO.md, "EL CAMPAMENTO Y EL MAPA"), con el
+  farol que se prende de noche en el mapa. **Sigue P6: el pueblo y la tienda** (usan `escenaFija`, con el problema de los 2,25 px);
+  después P7 (efectos y letras) y P8 (limpieza). Sin probar: salir con clic por una ruta y el mapa en ventanas chicas.
 - **El techo en el estilo nuevo está terminado y subido** (2026-11-08; NOTAS-DISENO.md, "EL TECHO EN EL ESTILO NUEVO,
   TERMINADO"): en 3/4, con el tren del galope, y falta jugarlo de corrido. **Lo próximo es seguir con lo que falte de
   dibujo**; Santi: "Las cosas nuevas se harán después de todo lo del dibujo" (espiar por la linterna, túneles, curvas,

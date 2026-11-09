@@ -111,6 +111,14 @@ export const estiloNuevo = {
     destino.restore();
     if (activo) hayFinos = true;
   },
+  /** Para escribir letras en la capa fina: el lienzo, con la lupa de 'ctx' puesta. (Sin el estilo nuevo, 'ctx' mismo.) */
+  lienzoFino(ctx) {
+    if (!activo) return ctx;
+    const f = laCapaFina(ctx.canvas);
+    f.setTransform(ctx.getTransform());
+    hayFinos = true;
+    return f;
+  },
   /** Lo que se dibuja delante de la gente le tapa el borde (y los puntos finos). */
   taparGente(ctx, img, x, y, w, h) {
     if (activo && hayFinos) {

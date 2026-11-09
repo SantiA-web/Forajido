@@ -18228,7 +18228,7 @@ redondeo o cada hueso. Con ese método había un techo.
 | P3 · Guardias y pasajeros | Paso 1, diseño de la gente y sus variantes; P3a poses y animaciones; P3b variantes; P3c guardias especiales | ✅ paso 1 · P3a · P3b · P3c (el Dinamitero espera a su vagón) |
 | P4 · Los otros vagones | Primero el tren de pasajeros entero (comedor, dormitorio, primera clase, guardias, correo, blindado, caboose); después el de carga | ✅ los dos trenes, con la locomotora adentro y las esquinas redondas (falta probarla jugando: ver "LA LOCOMOTORA, ADENTRO") |
 | P5 · El techo y los jinetes | Vista de costado, el caballo nuevo, la E4 | En curso: el tren desde afuera, el caballo y los jinetes (el jugador y la ley) hechos, y los de la ley ya apuntan con su fogonazo y se caen del caballo; falta el jugador apuntando montado, el fondo de la cabalgata, la huida y el jugador en el techo |
-| P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Falta |
+| P6 · Afuera | Galope, huida, campamento, pueblo, mapa, tienda | Galope, huida, campamento y mapa ✅; faltan pueblo y tienda |
 | P7 · Efectos y letras | Fogonazos, humo, sangre, polvo, casquillos; letras de puntos | Falta |
 | P8 · Limpieza | Borrar el dibujo viejo | Falta |
 
@@ -20463,6 +20463,26 @@ raidScene.js, `CONFIG.techo.mirada`):
 Revisado agrandado en las tres vistas, para los dos lados, caminando y con las
 tres armas, y en el juego. Sin errores arriba (20 s con la mira y las teclas
 moviéndose), adentro del vagón y en la huida a caballo.
+
+## ✅ EL CAMPAMENTO Y EL MAPA EN EL ESTILO NUEVO (2026-11-08)
+
+**El campamento**: el fondo, las nubes (6 puntos por segundo, *"muy lento y pausado"* antes), el viento en las plantas, la
+sombra de la copa del algarrobo, el caballo (la hoja de Santi convertida, 50×38 puntos: eligió la opción B), el tronco a lo
+largo apuntando al fondo, la montura achicada sobre una piedra, y el cartel cambiado por una **mesa de madera con el mapa arriba**.
+
+**El mapa de rutas** (world/estiloNuevo/mapaViejo.js): *"quiero que se vea como un mapa de la epoca"*. Papel roto sobre la mesa,
+grabado en tinta sepia. Los dibujos son a mano; la madera y el desgaste (dobleces, manchas, aro de taza, quemadura) los arma el
+programa, siempre iguales. Las vías y las letras van en la **capa fina**, sin pasar por la grilla de 3×3 (*"muy poco legible
+porque se ve muy pixeleado"*): `renderer.text` acepta `lienzo` y `estiloNuevo.lienzoFino(ctx)` lo da.
+
+**El farol** (*"cuando sea de noche pongas un farol sobre la mesa al costado del mapa que alumbre"*): en el mapa, en 3/4 y grande
+(*"casi tapar el borde del mapa"*), prendido de noche con 8 cuadros de llama y apagado de día; la hoja se corre hasta 12 unidades
+a la derecha para hacerle lugar. De noche el papel y la mesa se apagan por escalones según la distancia a la llama, y las letras se
+oscurecen y pierden el halo. En la mesa del campamento hay uno chico, siempre apagado. Del farol grande, la mitad derecha es la
+izquierda dada vuelta por programa.
+
+Probado en 1920×1080. **Sin probar**: salir por una ruta con clic y jugarlo de corrido; el mapa en ventanas chicas (el farol tapa
+más ahí).
 
 ## Pendientes del concepto original (sin fase asignada todavía)
 

@@ -360,12 +360,16 @@ let buf = null, cv = null;
  * La franja entera, en pantalla. 'hy': su alto en unidades de pantalla (0 o menos, nada); 'ancho': el de la pantalla;
  * 'avance': cuánto se corrió el mundo sobre el suelo.
  */
-export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = false }) {
+export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = false, nubes = 0, partes = 'todo' }) {
+  // ('nubes': cuántos puntos se corrieron sólo las nubes, con el viento. En el campamento, donde el mundo no avanza.)
+  // ('partes': 'cielo', 'nubes' o 'tierra', para pintar cada capa aparte y que las nubes pasen entre el cielo y las montañas.)
   if (hy <= 0) return;
   const W = Math.ceil(ancho / PASO) + 1, H = Math.round(hy / PASO);
   if (H <= 0) return;
   if (!buf || buf.length < W * H) buf = new Int16Array(W * H);
   const ind = buf.subarray(0, W * H);
+  if (partes !== 'todo') ind.fill(-1);
+  const hayFondo = partes === 'todo' || partes === 'cielo';
   const cielo = tormenta ? 'tormenta' : dia ? 'dia' : 'noche';
   const pv = (x, y, i) => { if (x >= 0 && y >= 0 && x < W && y < H) ind[y * W + x] = i; };
   const estampar = (mapa, sx, sy, tono) => {
@@ -375,7 +379,7 @@ export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = 
     }
   };
   const capa = (C, piezas, piso, tono) => {
-    const dx = Math.round((avance * C.corre) / PASO);
+    const dx = Math.round((avance * C.corre) / PASO) + (C === CAPAS.nubes ? nubes : 0);
     for (let n = Math.floor(dx / C.cada) - 2; n <= Math.floor((dx + W) / C.cada) + 1; n++) {
       if (hash(n, C.cada) < C.vacio) continue;
       const p = piezas[Math.floor(hash(n, C.cada + 7) * piezas.length)];
@@ -386,24 +390,25 @@ export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = 
   };
 
   // 1. El cielo, por escalones.
-  for (let y = 0; y < H; y++) {
+  if (hayFondo) for (let y = 0; y < H; y++) {
     let c = CIELOS[cielo][0][1];
     for (const [desde, i] of CIELOS[cielo]) if (y >= desde * H) c = i;
     ind.fill(c, y * W, (y + 1) * W);
   }
   // 2. Las estrellas (de noche), el astro y las nubes (de día).
-  if (cielo === 'noche') {
+  if (hayFondo && cielo === 'noche') {
     for (let n = 0; n < 70; n++) {
       const sx = Math.floor(hash(n, 7) * W), sy = Math.floor(hash(n, 13) * (H * 0.6));
       pv(sx, sy, hash(n, 29) < 0.3 ? 30 : 22);
     }
   }
-  if (cielo !== 'tormenta' && H > 30) {
+  if (hayFondo && cielo !== 'tormenta' && H > 30) {
     const cx = Math.round(W * 0.78), cy = Math.round(H * 0.24);
     estampar(dia ? SOL : LUNA, cx - 3, cy - 3);
   }
-  if (cielo === 'dia') capa(CAPAS.nubes, NUBES, null);
+  if (cielo === 'dia' && (partes === 'todo' || partes === 'nubes')) capa(CAPAS.nubes, NUBES, null);
 
+  if (partes === 'todo' || partes === 'tierra') {
   // 3. Las dos capas de montañas, apoyadas en la línea del horizonte (abajo de la franja). Debajo de cada capa, su
   //    mismo tono hasta el piso, para que no queden huecos entre una pieza y la otra.
   const piso = H, [atras, adelante] = TONOS[cielo];
@@ -432,6 +437,8 @@ export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = 
         }
       }
     }
+  }
+
   }
 
   // (El cielo y las montañas ya vienen con su luz: no se oscurecen de noche.)

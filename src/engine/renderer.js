@@ -330,10 +330,12 @@ export function createRenderer(canvas, vista) {
     text(str, x, y, color, align = 'center', opciones = {}) {
       const tam = opciones.tam || TEXTO.tam;
       const halo = opciones.halo === undefined ? '#000' : opciones.halo;
+      // ('lienzo': dónde escribir, si no es el de siempre. El mapa escribe en la capa fina, que no pasa por la grilla.)
+      const lienzo = opciones.lienzo || ctx;
 
-      ctx.font = `${tam}px ${TEXTO.fuente}`;
-      ctx.textAlign = align;
-      ctx.textBaseline = 'middle';
+      lienzo.font = `${tam}px ${TEXTO.fuente}`;
+      lienzo.textAlign = align;
+      lienzo.textBaseline = 'middle';
 
       let px = q(x);
       const py = q(y);
@@ -346,17 +348,17 @@ export function createRenderer(canvas, vista) {
        */
       if (opciones.dentroDe && align === 'center') {
         const [x0, x1] = opciones.dentroDe;
-        const medio = ctx.measureText(str).width / 2 + 1;   // +1: el halo
+        const medio = lienzo.measureText(str).width / 2 + 1;   // +1: el halo
         if (x1 - x0 > medio * 2) px = Math.min(Math.max(px, x0 + medio), x1 - medio);
       }
 
       if (halo) {
-        ctx.fillStyle = halo;
-        for (const [dx, dy] of HALO) ctx.fillText(str, px + dx, py + dy);
+        lienzo.fillStyle = halo;
+        for (const [dx, dy] of HALO) lienzo.fillText(str, px + dx, py + dy);
       }
 
-      ctx.fillStyle = color;
-      ctx.fillText(str, px, py);
+      lienzo.fillStyle = color;
+      lienzo.fillText(str, px, py);
     },
   };
 }

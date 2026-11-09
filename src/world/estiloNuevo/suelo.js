@@ -105,6 +105,8 @@ const MANCHON = { an: 154, al: 66, hay: 0.6, radio: [20, 44], celda: [8, 5] };
  * corrido 'k' puntos (lo que pasó el tren).
  */
 export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
+  // ('o.claro': (x, y) => ¿este punto es un lugar sin plantas? El claro del campamento.)
+  // ('o.plantas': una lista donde juntar las plantas en vez de pintarlas, para que las mueva el viento: estamparPlantas.)
   // ('o.via': dónde va la vía, en el mundo; la del asalto si no se dice. 'o.campo': con las cosas del campo abierto.
   //  'o.saguaros': entre qué alturas del mundo (en unidades, [desde, hasta]) van los saguaros, del otro lado del tren.)
   const V = o.via || VIA, enLaVia = fueraDe(V), campo = !!o.campo;
@@ -116,6 +118,7 @@ export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
       if (l !== '.') pv(sx + i, sy + j, COLOR[l]);
     }
   };
+  const planta = o.plantas ? (mapa, sx, sy, quieta = false) => o.plantas.push([mapa, sx, sy, quieta]) : estampar;
   const libre = (sy, alto) => !enLaVia((sy + q0) * PASO - 2) && !enLaVia((sy + q0 + alto) * PASO);
   // La arena, de un tono.
   ind.fill(ARENA, 0, w * h);
@@ -154,9 +157,9 @@ export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
         const cual = hash(i + 41, j + nn * 13 + m);
         const mapa = cual < 0.38 ? JARILLA : cual < 0.46 ? MATA_G : cual < 0.78 ? PASTO : cual < 0.9 ? PASTO_C : cual < 0.95 ? PIEDRA_G : OCOTILLO;
         const sx = px - U0 - (mapa[0].length >> 1), sy = py - q0 - mapa.length;
-        if (!libre(sy, mapa.length)) continue;
-        estampar(mapa, sx, sy);
-        if (mapa === PIEDRA_G) estampar(PIEDRA, sx + 6, sy + 2);
+        if (!libre(sy, mapa.length) || (o.claro && o.claro(sx, sy + mapa.length))) continue;
+        planta(mapa, sx, sy, mapa === PIEDRA_G);
+        if (mapa === PIEDRA_G) planta(PIEDRA, sx + 6, sy + 2, true);
       }
     }
   }
@@ -166,7 +169,7 @@ export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
     for (let m = Math.floor((q0 - FILAS) / FILAS) * FILAS; m <= q0 + h; m += FILAS) {
       if (hash(nn * 13 + m, 41) > 0.07) continue;
       const sx = n * CUADRO + Math.round(hash(nn, m) * (CUADRO - 10)) - U0, sy = m + Math.floor(hash(m, nn) * (FILAS - 7)) - q0;
-      if (libre(sy, 6)) estampar(PASTO_C, sx, sy);
+      if (libre(sy, 6) && !(o.claro && o.claro(sx, sy + 6))) planta(PASTO_C, sx, sy);
     }
   }
   // Arriba del horizonte (si lo hay), nada: ahí está el cielo.
@@ -181,6 +184,33 @@ export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
   // Los rastros con historia, también sólo en la cabalgata.
   if (o.saguaros != null) pintarRastros(U0, q0, w, h, o.saguaros, V, libre, pv);
   pintarVia(ind, w, h, U0, q0, pv, V);
+}
+
+/** Cuánto se dobla una planta en cada uno de los 8 cuadros del viento, en medios puntos. */
+const VAIVEN = [0, 0, 1, 2, 2, 2, 1, 0];
+
+/**
+ * 🌬️ EL VIENTO EN LAS PLANTAS *(Santi: "un sutil viento hacia la izquierda (desde la dirección del caballo hacia la carpa)
+ * que haga que se muevan un poco la flora")*. Una copia de 'ind' con las plantas que juntó 'o.plantas', en ese cuadro del viento
+ * (de 0 a 7). El pie queda quieto y la punta se va a la izquierda, un punto las chicas y dos las altas; la ráfaga viaja de
+ * derecha a izquierda. Lo mueve esta cuenta: los dibujos de las plantas son siempre los mismos. Las piedras no se mueven.
+ */
+export function estamparPlantas(ind, w, h, lista, cuadro, horizonte) {
+  const copia = ind.slice();
+  const pv = (x, y, i) => { if (x >= 0 && y >= 0 && x < w && y < h) copia[y * w + x] = i; };
+  for (const [mapa, sx, sy, quieta] of lista) {
+    const alto = mapa.length, fuerza = quieta ? 0 : VAIVEN[md(cuadro + Math.floor(sx / 32), 8)] * (alto > 8 ? 1 : 0.5);
+    for (let j = 0; j < alto; j++) {
+      const dx = -Math.round(fuerza * ((alto - 1 - j) / (alto - 1)));
+      for (let i = 0; i < mapa[j].length; i++) {
+        const l = mapa[j][i], x = sx + i + dx, y = sy + j;
+        if (l !== '.' && x >= 0 && y >= 0 && x < w && y < h && copia[y * w + x] !== -1) copia[y * w + x] = COLOR[l];
+      }
+    }
+  }
+  // (Las mesetas tapan a las plantas que quedan detrás.)
+  if (horizonte != null) pintarMesetas(0, 0, w, h, horizonte, pv);
+  return copia;
 }
 
 /**
@@ -1118,7 +1148,7 @@ function tiraDeCampo(base, luz, saguaros, horizonte, mojado) {
  * con la misma cuenta que el galope: cada baldosa sabe qué hay en el mundo, así se pegan sin costura.
  */
 const BALDOSA = 256, TOPE_BALDOSAS = 48;
-const SIN_VIA = { piedra: [-1e9, -1e9 + 1], durmiente: [-1e9, -1e9 + 1], rieles: [-1e9, -1e9 + 1] };
+export const SIN_VIA = { piedra: [-1e9, -1e9 + 1], durmiente: [-1e9, -1e9 + 1], rieles: [-1e9, -1e9 + 1] };
 const baldosas = new Map();
 
 export function dibujarSueloAbierto(ctx, camX, camY, ancho, alto, noche, mojado = false) {

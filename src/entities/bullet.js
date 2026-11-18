@@ -4,9 +4,11 @@ import { CONFIG } from '../data/config.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { PALETA } from '../engine/paleta.js';
 
-export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon, tirador, alTecho, altoSalida, porEncima }) {
+export function createBullet({ x, y, angle, speed, damage, range, owner, fromRider, alto, distancia, zona, apuntado, caida, factor, perdigon, tirador, alTecho, altoSalida, porEncima, delCompanero }) {
   return {
     x, y,
+    // 🤝 La tiró el compañero (systems/companero.js): sus muertos son suyos, no te suben tu recompensa.
+    delCompanero: !!delCompanero,
     /**
      * 🎯 A QUÉ ALTURA VA, sólo para dibujarla (ver systems/golpe.js). La bala
      * viaja por el piso —así la frenan las paredes y la cobertura—, pero sale

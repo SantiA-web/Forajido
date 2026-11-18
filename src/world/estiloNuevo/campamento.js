@@ -42,10 +42,24 @@ const TRAMA = [0.36, 0.72];
 const ARENA_AL_FUEGO = [3, 47, 4, 5, 6, 44, 7];
 const NIVEL_MAXIMO = 6.6;
 
+/**
+ * 🌄 LA MADRUGADA: LA FOGATA EN BRASAS *(Santi: "brasas en la madrugada")*. La luz llega a menos de dos tercios y no
+ * sube tanto, y lejos del fuego la arena no es marrón sino fría, azulada: ya no hay fuego que la entibie.
+ */
+const BRASAS_LUZ = { alcance: 0.62, nivel: 5 };
+const ARENA_A_LAS_BRASAS = [41, 2, 47, 4, 5, 44, 6];
+
+/**
+ * ☀️ LA TARDE: LA ARENA DORADA *(Santi: "un color a la arena a cada parte del día")*. La misma arena de la mañana,
+ * corrida a los dorados: la de siempre al dorado, la pisada más oscura a su tostado y la más clara al durazno.
+ */
+const ARENA_DE_TARDE = { 37: 7, 36: 6, 38: 13 };
+
 /** En qué tono de esa escala está ese lugar. El piso se ve aplastado, así que la distancia en `y` vale más. */
 function nivelDelFuego(x, y, fuego, pulso) {
-  const t = Math.max(0, 1 - Math.hypot(x - fuego.x, (y - fuego.y) / 0.7) / ALCANCE[pulso]);
-  const f = NIVEL_MAXIMO * t ** 0.8;
+  const b = fuego.brasas ? BRASAS_LUZ : null;
+  const t = Math.max(0, 1 - Math.hypot(x - fuego.x, (y - fuego.y) / 0.7) / (ALCANCE[pulso] * (b ? b.alcance : 1)));
+  const f = (b ? b.nivel : NIVEL_MAXIMO) * t ** 0.8;
   // Escalones parejos, con el tramado sólo en la franja donde uno pasa al otro.
   const piso = Math.floor(f), resto = (f - piso - TRAMA[0]) / (TRAMA[1] - TRAMA[0]);
   return piso + Math.max(0, Math.min(0.99, resto));
@@ -56,16 +70,16 @@ const luzDeNivel = (n) => Math.min(-1, -3 + n / 2.2);
 export const luzDelFuego = (x, y, fuego, pulso) => luzDeNivel(nivelDelFuego(x, y, fuego, pulso));
 
 /** El suelo de noche: la arena con su escala cálida, y lo demás (plantas, mesetas) con la luz de siempre. */
-function sueloDeNoche(ind, W, H, nivel) {
+function sueloDeNoche(ind, W, H, nivel, escala = ARENA_AL_FUEGO) {
   const out = new Uint8ClampedArray(W * H * 4);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const k = y * W + x, i = ind[k], o = k * 4;
     if (i < 0) continue;
     const n = Math.max(0, Math.min(6, escalon(nivel(x, y), x, y)));
     let c;
-    if (i === 37) c = ARENA_AL_FUEGO[n];
-    else if (i === 36) c = ARENA_AL_FUEGO[Math.max(0, n - 1)];
-    else if (i === 38) c = ARENA_AL_FUEGO[Math.min(6, n + 1)];
+    if (i === 37) c = escala[n];
+    else if (i === 36) c = escala[Math.max(0, n - 1)];
+    else if (i === 38) c = escala[Math.min(6, n + 1)];
     else c = sombrear(i, Math.round(luzDeNivel(n)));
     const rgb = RGB[c];
     out[o] = rgb[0]; out[o + 1] = rgb[1]; out[o + 2] = rgb[2]; out[o + 3] = 255;
@@ -117,7 +131,7 @@ function armarIndices(W, H, ox, oy, hyPantalla, claro) {
  * lentamente")*, y el suelo se arma una sola vez por cada cuadro del viento y cada pulso de la llama. Se dibuja sin mover el
  * lienzo; `ox`, `oy` es dónde cae el origen del campamento.
  */
-export function dibujarFondoCampamento(ctx, { ancho, alto, ox, oy, hy, dia, fuego, claro, pulso, t }) {
+export function dibujarFondoCampamento(ctx, { ancho, alto, ox, oy, hy, dia, fuego, claro, pulso, t, parte = null }) {
   const W = Math.ceil(ancho / PASO), H = Math.ceil(alto / PASO);
   const clave = [W, H, ox, oy, hy].join('|');
   if (clave !== claveFondo) { fondos = {}; indiceSuelo = null; plantas = []; capasCielo = null; capaNubes = null; nubesPintadas = ''; claveFondo = clave; }
@@ -130,30 +144,38 @@ export function dibujarFondoCampamento(ctx, { ancho, alto, ox, oy, hy, dia, fueg
     g.clearRect(0, 0, cv.width, cv.height);
     g.imageSmoothingEnabled = false;
     g.setTransform(1 / PASO, 0, 0, 1 / PASO, 0, 0);
-    dibujarHorizonteNuevo(g, { hy: hyPantalla, ancho, avance: 0, dia, nubes, partes });
+    dibujarHorizonteNuevo(g, { hy: hyPantalla, ancho, avance: 0, dia, nubes, partes, parte });
     return cv;
   };
   capasCielo ||= {};
-  capasCielo[dia ? 'd' : 'n'] ||= { cielo: lienzoPara('cielo'), tierra: lienzoPara('tierra') };
-  const { cielo, tierra } = capasCielo[dia ? 'd' : 'n'];
-  const nubes = Math.floor(t * NUBES_POR_SEGUNDO);
-  if (dia && nubesPintadas !== nubes) { capaNubes = lienzoPara('nubes', nubes, capaNubes); nubesPintadas = nubes; }
-  const viento = vientoEn(t), id = (dia ? 'dia' : pulso) + '|' + viento;
+  // (🔁 Un cielo por cada parte del día, y nubes en las cuatro.)
+  const cualCielo = parte ?? (dia ? 'd' : 'n');
+  capasCielo[cualCielo] ||= { cielo: lienzoPara('cielo'), tierra: lienzoPara('tierra') };
+  const { cielo, tierra } = capasCielo[cualCielo];
+  const nubes = Math.floor(t * NUBES_POR_SEGUNDO), conNubes = dia || parte != null;
+  if (conNubes && nubesPintadas !== cualCielo + '|' + nubes) {
+    capaNubes = lienzoPara('nubes', nubes, capaNubes);
+    nubesPintadas = cualCielo + '|' + nubes;
+  }
+  const tarde = dia && parte === 1, brasas = !dia && fuego.brasas;
+  const viento = vientoEn(t), id = (dia ? (tarde ? 'tarde' : 'dia') : (brasas ? 'b' : '') + pulso) + '|' + viento;
   if (!fondos[id]) {
     indiceSuelo ||= armarIndices(W, H, ox, oy, hyPantalla, claro);
     const ind = estamparPlantas(indiceSuelo, W, H, plantas, viento, hyPantalla);
+    if (tarde) for (let k = 0; k < ind.length; k++) ind[k] = ARENA_DE_TARDE[ind[k]] ?? ind[k];
     const capa = document.createElement('canvas');
     capa.width = W; capa.height = H;
     capa.getContext('2d').putImageData(new ImageData(dia
       ? iluminar({ ancho: W, alto: H, indices: ind, campo: () => 0 })
-      : sueloDeNoche(ind, W, H, (x, y) => nivelDelFuego(x * PASO - ox, y * PASO - oy, fuego, pulso)), W, H), 0, 0);
+      : sueloDeNoche(ind, W, H, (x, y) => nivelDelFuego(x * PASO - ox, y * PASO - oy, fuego, pulso),
+        brasas ? ARENA_A_LAS_BRASAS : ARENA_AL_FUEGO), W, H), 0, 0);
     fondos[id] = capa;
   }
   const prev = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
   const ancho2 = (W + 2) * PASO;
   ctx.drawImage(cielo, 0, 0, ancho2, H * PASO);
-  if (dia) ctx.drawImage(capaNubes, 0, 0, ancho2, H * PASO);
+  if (conNubes) ctx.drawImage(capaNubes, 0, 0, ancho2, H * PASO);
   ctx.drawImage(tierra, 0, 0, ancho2, H * PASO);
   ctx.drawImage(fondos[id], 0, 0, W * PASO, H * PASO);
   ctx.imageSmoothingEnabled = prev;
@@ -366,6 +388,81 @@ const LLAMA = {
       '...rnaabbbbaanr.',
       '....rnaabbaanr..',
       '.....rnnaannr...',
+    ],
+  ],
+};
+
+/**
+ * 🌄 LAS BRASAS, 8 CUADROS *(Santi: "brasas en la madrugada")*: el fuego ya bajo, lenguitas que asoman entre los leños,
+ * nacen y se apagan. Mismo ancho y mismo pie que la llama.
+ */
+const BRASAS = {
+  pie: [9, 0],
+  colores: { r: 44, n: 45, a: 28, b: 29 },
+  cuadros: [
+    [
+      '................',
+      '.......r........',
+      '......rnr...r...',
+      '..r...rnr..rnr..',
+      '.rnr.rnanrrnanr.',
+      '.rnnrnaaanrnnnr.',
+    ],
+    [
+      '................',
+      '........r.......',
+      '.......rnr......',
+      '..r....rnr..r...',
+      '.rnr..rnanr.rnr.',
+      '.rnnrrnaanrrnnr.',
+    ],
+    [
+      '................',
+      '................',
+      '........r...r...',
+      '...r...rnr.rnr..',
+      '..rnr.rnanrrnnr.',
+      '.rnnnrnaaanrnnr.',
+    ],
+    [
+      '................',
+      '................',
+      '.......r........',
+      '...r..rnr...r...',
+      '..rnr.rnar.rnr..',
+      '.rnnrrnaanrrnnr.',
+    ],
+    [
+      '................',
+      '......r.........',
+      '......rr........',
+      '.r....rnr...r...',
+      '.rnr.rnanr.rnr..',
+      '.rnnrnaaanrnanr.',
+    ],
+    [
+      '.......r........',
+      '......rnr.......',
+      '......rnr..r....',
+      '..r..rnanr.rr...',
+      '.rnr.rnaanrrnr..',
+      '.rnnrnaaanrnnnr.',
+    ],
+    [
+      '................',
+      '.......r........',
+      '.......rr...r...',
+      '..r...rnnr.rnr..',
+      '.rnr.rnaanrrnnr.',
+      '.rnnrnaabanrnnr.',
+    ],
+    [
+      '................',
+      '................',
+      '......r.....r...',
+      '..r..rnr...rnr..',
+      '.rnr.rnanr.rnnr.',
+      '.rnnrnaaanrrnnr.',
     ],
   ],
 };
@@ -701,7 +798,26 @@ const PIEDRAS = {
   ],
 };
 
-export const DIBUJOS = { rueda: RUEDA, lena: LENA, olla: OLLA, carpa: CARPA, cajon: CAJON, cartel: CARTEL, poste: POSTE, comida: COMIDA, tronco: TRONCO, montura: MONTURA, piedras: PIEDRAS };
+/**
+ * ✉️ LA CARTA DEL TIPO, en el piso junto al fuego *(etapa 3: el primer encargo, firmado J.Mc.)*: un sobre de papel
+ * crema visto desde arriba en tres cuartos, con el sello de lacre rojo y una piedra chica encima para que no se la
+ * lleve el viento.
+ */
+const CARTA = {
+  pie: [6, 6],
+  colores: { ...SOMBRA, B: 30, P: 17, C: 16, c: 15, R: 9, r: 8, L: 25, M: 24, D: 23 },
+  mapa: [
+    '.....LLM.....',
+    '..BPPMDDPPP..',
+    '.BPPPPPCPPPc.',
+    '.PPPCRRCPPPc.',
+    '.PPPPrRPPPPc.',
+    '.cccccccccc..',
+    '..ssssssssss.',
+  ],
+};
+
+export const DIBUJOS = { rueda: RUEDA, lena: LENA, olla: OLLA, carpa: CARPA, cajon: CAJON, cartel: CARTEL, poste: POSTE, comida: COMIDA, tronco: TRONCO, montura: MONTURA, piedras: PIEDRAS, carta: CARTA };
 
 // ─────────────────────────── PASARLOS A IMAGEN ───────────────────────────
 
@@ -794,7 +910,7 @@ export function dibujarCosa(ctx, id, x, piso, dia, fuego, pulso) {
   const D = DIBUJOS[id];
   const X = enGrilla(x), Y = enGrilla(piso);
   const luz = dia ? () => 0 : (px, py) => luzDelFuego(px, py, fuego, pulso);
-  const L = imagen([id, X, Y, dia ? 'd' : pulso].join('|'), D.mapa, D.colores, D.pie, X, Y, luz);
+  const L = imagen([id, X, Y, dia ? 'd' : (fuego?.brasas ? 'b' : '') + pulso].join('|'), D.mapa, D.colores, D.pie, X, Y, luz);
   poner(ctx, L, X - D.pie[0] * PASO, Y - D.pie[1] * PASO);
 }
 
@@ -805,18 +921,20 @@ export function dibujarFogata(ctx, x, piso, dia, fuego, cuadro, t) {
   dibujarCosa(ctx, 'lena', x, piso + 2 * PASO, dia, fuego, pulso);
   const X = enGrilla(x), Y = enGrilla(piso);
   if (!dia) {
-    const c = LLAMA.cuadros[cuadro];
-    const L = imagen('llama|' + cuadro, c, LLAMA.colores, LLAMA.pie, 0, 0, () => 0, 1);
-    poner(ctx, L, X - LLAMA.pie[0] * PASO, Y + 2 * PASO - L.al * PASO);
+    // (En la madrugada, brasas en vez de llama.)
+    const F = fuego.brasas ? BRASAS : LLAMA, c = F.cuadros[cuadro];
+    const L = imagen((fuego.brasas ? 'brasas|' : 'llama|') + cuadro, c, F.colores, F.pie, 0, 0, () => 0, 1);
+    poner(ctx, L, X - F.pie[0] * PASO, Y + 2 * PASO - L.al * PASO);
   }
   dibujarCosa(ctx, 'olla', x, piso + 7 * PASO, dia, fuego, pulso);
   // Lo que sube: de noche, chispas; de día, un hilo de humo. Cada una con su hora, así no suben todas juntas.
-  const puntos = dia ? 9 : 6;
+  // (De las brasas suben pocas chispas y no tan alto.)
+  const puntos = dia ? 9 : fuego.brasas ? 3 : 6;
   for (let i = 0; i < puntos; i++) {
     const vida = (t * (dia ? 0.3 : 0.55) + i * 0.618) % 1;
-    const alto = Math.floor(vida * (dia ? 46 : 40));
+    const alto = Math.floor(vida * (dia ? 46 : fuego.brasas ? 24 : 40));
     const ladeo = Math.round(Math.sin(vida * 7 + i * 2.1) * (dia ? 2 + vida * 3 : 3));
-    const px = X + ladeo * PASO, py = Y - (30 + alto) * PASO;
+    const px = X + ladeo * PASO, py = Y - ((fuego.brasas ? 8 : 30) + alto) * PASO;
     const c = dia ? (vida < 0.5 ? 24 : 25) : (vida < 0.4 ? 29 : vida < 0.75 ? 45 : 44);
     if (!dia && vida > 0.92) continue;
     ctx.fillStyle = `rgb(${RGB[c].join(',')})`;

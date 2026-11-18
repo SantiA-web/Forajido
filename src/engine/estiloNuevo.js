@@ -85,7 +85,15 @@ export const estiloNuevo = {
    * 🆕 Lo que quedó tapado por algo dibujado después, sin contorno: el contorno de la gente se pinta al final, y si no
    * se borra de la máscara se ve por encima de lo que la tapa. `x`, `y`, `w`, `h`, en el mundo.
    */
-  borrarGente(ctx, x, y, w, h) {
+  borrarGente(ctx, x, y, w, h, finos = false) {
+    // (📜 `finos`: los puntos finos también. Lo usa el papel del diálogo, que tapa todo lo de atrás: sin esto le
+    // quedaban rayitas encima.)
+    if (finos && activo && hayFinos) {
+      const f = laCapaFina(ctx.canvas);
+      f.setTransform(ctx.getTransform());
+      f.clearRect(x, y, w, h);
+      f.setTransform(1, 0, 0, 1, 0, 0);
+    }
     if (!activo || CONFIG.estilo.bordeGente >= CONFIG.estilo.punto) return;
     const m = laMascara(ctx.canvas);
     m.setTransform(ctx.getTransform());

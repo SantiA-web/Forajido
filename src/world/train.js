@@ -42,7 +42,7 @@ import {
   PAQUETES, ESCONDITES, TILE_DE_ESCONDITE, CIVILES_QUE_SABEN, PAPELES_QUE_DICEN,
 } from '../data/paquetes.js';
 import { guardHealth, GUARD_TYPES, DEFAULT_GUARD_TYPE } from '../data/guards.js';
-import { crearObjeto, nivelDeBotin } from '../data/objetos.js';
+import { crearObjeto, nivelDeBotin, crearMaletin } from '../data/objetos.js';
 
 const ALTO = 10;   // todos los tramos miden 10 filas
 
@@ -384,6 +384,11 @@ function rondaEncargado(rng, tramos, map) {
 
 /** 📜 Los guardias que llevan papeles encima y se pueden registrar. */
 const REGISTRABLES = new Set(['encargado', 'dinamitero', 'pistolero']);
+/**
+ * ✉️ Dónde puede estar el maletín de J.Mc. (ver `maletin` en `buildTrain`): los vagones y sus escondites. En el caboose
+ * sólo el escritorio: debajo de la ventana lo tapa la pared y se ve nada más que el asa.
+ */
+export const ESCONDITES_DEL_MALETIN = { caboose: ['escritorio'], almacen: ['cajones'], cerrado: ['carga'] };
 
 function rondaDinamitero(rng, tramoArmas, tramos, map) {
   const size = map.size;
@@ -564,10 +569,16 @@ export function buildTrain(
   const {
     climaId = null, estado = [], comportamientos = [], variantes = [],
     encubiertos = [], paquetes = [], cajaOculta = false,
+    // (✉️ Si el encargo de J.Mc. está abierto: el tren de carga esconde el maletín. Ver más abajo.)
+    maletin = false,
     // (📦 De día o de noche: los portones del cerrado van abiertos o cerrados. Lo pasa quien sabe la hora.)
     dia = false,
     // (📦 Si saltaste del caballo por el portón abierto de un cerrado: el índice de ese vagón. Ver más abajo.)
     portonEn = null,
+    // (🕵️ En qué vagón va el maletín, si ya se decidió en el horario: ver `armarTren` en systems/horario.js.)
+    maletinEn = null,
+    // (🕵️ Y en qué vagón va la caja fuerte con más plata: ver abajo.)
+    cajaGordaEn = null,
   } = opciones;
   const tipoTren = TRAIN_TYPES[tipoTrenId] || TRAIN_TYPES[TIPO_TREN_POR_DEFECTO];
   composicion = composicion || sortearComposicion(rng, tipoTren);
@@ -1760,75 +1771,11 @@ export function buildTrain(
    */
   // Con pasajeros, la delatan ellos; sin pasajeros (el tren de carga), papeles.
   if (cajaOculta) {
-    const posibles = tramos.filter((t) => t.tipo === 'vagon' && ESCONDITES[t.plantilla.id]);
-    if (posibles.length) {
-      const tramo = rng.pick(posibles);
-      const plant = tramo.plantilla;
-      const escondite = rng.pick(ESCONDITES[plant.id]);
-      const mueble = TILE_DE_ESCONDITE[escondite];
-
-      /**
-       * 🐛 Y TIENE QUE PODER LLEGARSE CAMINANDO. No alcanza con que el tile
-       * sea pisable y tenga el mueble al lado.
-       *
-       * *(Santi, jugándolo: "un civil me dijo que la caja oculta estaba junto
-       * al corral del vagón 2. Fui al vagón de ganado y lo revisé y no
-       * encontré ninguna caja")* — y tenía razón: la caja estaba ahí, pero
-       * ENCERRADA. Los corrales del vagón de ganado son bloques huecos:
-       *
-       *     #..CCCCC..CCCCC..CCCCC.#
-       *     #..C...C..C...C..C...C.#     ← suelo libre, rodeado de corral
-       *     #..CCCCC..CCCCC..CCCCC.#
-       *
-       * El interior (donde viajan las reses) es suelo, y tiene 'C' arriba y
-       * abajo, así que pasaba el filtro de "pegado al mueble" perfectamente.
-       * Medido: **22 de 48 cajas que cayeron en el ganado quedaban
-       * inalcanzables** — casi la mitad. En los demás vagones, ninguna: por
-       * eso sólo aparecía ahí.
-       *
-       * `alcanzables` es un relleno por inundación que arranca en el PASILLO
-       * (las filas 4 y 5, por donde se camina) y se expande por todo lo que
-       * sea suelo. Un escondite sólo vale si el relleno llegó hasta él. Es
-       * genérico: cualquier vagón futuro con un rincón cerrado queda cubierto
-       * sin tener que acordarse de este caso.
-       */
-      const transitable = (ch) => ch === '.' || ch === '+' || ch === 'E';
-      const alcanzables = new Set();
-      const cola = [];
-      for (const fila of [4, 5]) {
-        for (let col = 0; col < plant.layout[fila].length; col++) {
-          if (!transitable(plant.layout[fila][col])) continue;
-          const k = col + ',' + fila;
-          if (!alcanzables.has(k)) { alcanzables.add(k); cola.push([col, fila]); }
-        }
-      }
-      while (cola.length) {
-        const [col, row] = cola.pop();
-        for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const nc = col + dc, nr = row + dr;
-          if (nr < 0 || nr >= plant.layout.length) continue;
-          if (nc < 0 || nc >= plant.layout[nr].length) continue;
-          const k = nc + ',' + nr;
-          if (alcanzables.has(k) || !transitable(plant.layout[nr][nc])) continue;
-          alcanzables.add(k); cola.push([nc, nr]);
-        }
-      }
-
-      const puntos = [];
-      for (let row = 1; row < plant.layout.length - 1; row++) {
-        const fila = plant.layout[row];
-        for (let col = 0; col < fila.length; col++) {
-          if (fila[col] !== '.') continue;
-          if (!alcanzables.has(col + ',' + row)) continue;
-          if (plant.layout[row - 1][col] === mueble || plant.layout[row + 1][col] === mueble) {
-            puntos.push({ col, row });
-          }
-        }
-      }
-
-      if (puntos.length) {
-        const donde = rng.pick(puntos);
-        const pos = map.tileCenter(donde.col + tramo.colStart, donde.row);
+    // (🧳 Dónde, en `buscarEscondite`: la usan la caja y el maletín de J.Mc.)
+    const hallado = buscarEscondite(rng, tramos, map);
+    if (hallado) {
+      const { tramo, escondite, pos } = hallado;
+      {
         const caja = createLootable(pos.x, pos.y, 'cajaOculta', rng);
         caja.wagon = tramo.wagon;
         caja.escondite = escondite;
@@ -1889,11 +1836,63 @@ export function buildTrain(
    * Pistoleros, muertos o noqueados, en los dos trenes. Si hay caja oculta,
    * los tres llevan el papel; si no, unos pesos (ver LOOT_TYPES.registro).
    */
+  /**
+   * ✉️ EL MALETÍN DE J.Mc. *(Santi: "que solo esté en el caboose, almacén o cerrados")*: en cada tren de carga
+   * mientras el encargo está abierto, escondido como la caja oculta (aparece cuando pasás al lado) y nunca en el mismo
+   * lugar que ella. Tres papeles de lo que se saquea y los que se registran dicen dónde está.
+   */
+  /**
+   * 🕵️ LA CAJA FUERTE CON MÁS PLATA, donde dijo el horario (y el espía): la primera caja de ese vagón se queda con lo
+   * que traía la más gorda del tren, y la más gorda con lo suyo. No cambia cuánta plata hay en el tren: sólo dónde.
+   */
+  if (cajaGordaEn) {
+    const cajas = loot.filter((l) => l.typeId === 'strongbox');
+    const suya = cajas.find((l) => l.wagon === cajaGordaEn);
+    const gorda = cajas.reduce((a, b) => (b.value > a.value ? b : a), cajas[0]);
+    if (suya && gorda && suya !== gorda) {
+      [suya.value, gorda.value] = [gorda.value, suya.value];
+      [suya.jackpot, gorda.jackpot] = [gorda.jackpot, suya.jackpot];
+    }
+  }
+
+  let elMaletin = null;
+  if (maletin && tipoTren.id === 'carga') {
+    const caja = loot.find((l) => l.typeId === 'cajaOculta');
+    // (🕵️ Primero en el vagón que dijo el horario —lo que vio el espía tiene que ser verdad—; si ahí no entra, en cualquiera.)
+    const enSuVagon = maletinEn ? tramos.filter((t) => t.wagon === maletinEn) : tramos;
+    for (let intento = 0; intento < 24 && !elMaletin; intento++) {
+      const h = buscarEscondite(rng, intento < 12 ? enSuVagon : tramos, map, ESCONDITES_DEL_MALETIN, true);
+      if (!h || (caja && Math.hypot(caja.x - h.pos.x, caja.y - h.pos.y) < map.size * 2)) continue;
+      elMaletin = createLootable(h.pos.x, h.pos.y, 'bag', rng);
+      ponerObjeto(elMaletin, crearMaletin());
+      // (Apoyado contra el mueble de atrás, no corrido hacia el medio del vagón como la mercadería.)
+      elMaletin.y = h.pos.y - 4;
+      elMaletin.wagon = h.tramo.wagon;
+      elMaletin.escondite = h.escondite;
+      elMaletin.oculto = true;
+      elMaletin.maletin = true;
+      loot.push(elMaletin);
+    }
+    if (elMaletin) {
+      const saqueables = loot.filter((l) => l !== elMaletin && l !== caja && !esCajaFuerte(l) && !l.taken && !l.papelCaja);
+      for (let i = saqueables.length - 1; i > 0; i--) {
+        const j = rng.int(0, i);
+        const tmp = saqueables[i]; saqueables[i] = saqueables[j]; saqueables[j] = tmp;
+      }
+      for (const l of saqueables.slice(0, PAPELES_QUE_DICEN)) {
+        l.papelMaletin = { caja: elMaletin, vagon: elMaletin.wagon, escondite: elMaletin.escondite };
+      }
+    } else {
+      avisos.push('no hubo dónde esconder el maletín de J.Mc.');
+    }
+  }
+
   const cajaDelTren = loot.find((l) => l.typeId === 'cajaOculta');
   for (const e of enemies) {
     if (!REGISTRABLES.has(e.type)) continue;
     e.registrable = true;
     if (cajaDelTren) e.papelCaja = { caja: cajaDelTren, vagon: cajaDelTren.wagon, escondite: cajaDelTren.escondite };
+    if (elMaletin) e.papelMaletin = { caja: elMaletin, vagon: elMaletin.wagon, escondite: elMaletin.escondite };
   }
 
   if (avisos.length) {
@@ -2039,6 +2038,86 @@ function centroDe(map, tramo) {
  * Un solo lugar donde se hace, para que no se pueda poner un objeto y olvidarse
  * de alguna de las dos cosas.
  */
+/**
+ * 🧳 DÓNDE ESCONDER ALGO EN EL TREN (la caja oculta y el maletín de J.Mc.): un vagón de `lista` (qué escondites tiene
+ * cada vagón; si no se dice, los de siempre), uno de sus escondites, y un lugar pisable pegado a ese mueble al que se
+ * llegue caminando.
+ * `delante`: sólo lugares con el mueble detrás (para lo que no es una caja alta y el mueble taparía entero).
+ * Devuelve `{ tramo, escondite, pos }`, o null si en ese vagón no hubo lugar.
+ */
+function buscarEscondite(rng, tramos, map, lista = ESCONDITES, delante = false) {
+  const posibles = tramos.filter((t) => t.tipo === 'vagon' && lista[t.plantilla.id]);
+  if (!posibles.length) return null;
+  const tramo = rng.pick(posibles);
+  const plant = tramo.plantilla;
+  const escondite = rng.pick(lista[plant.id]);
+  const mueble = TILE_DE_ESCONDITE[escondite];
+
+  /**
+   * 🐛 Y TIENE QUE PODER LLEGARSE CAMINANDO. No alcanza con que el tile
+   * sea pisable y tenga el mueble al lado.
+   *
+   * *(Santi, jugándolo: "un civil me dijo que la caja oculta estaba junto
+   * al corral del vagón 2. Fui al vagón de ganado y lo revisé y no
+   * encontré ninguna caja")* — y tenía razón: la caja estaba ahí, pero
+   * ENCERRADA. Los corrales del vagón de ganado son bloques huecos:
+   *
+   *     #..CCCCC..CCCCC..CCCCC.#
+   *     #..C...C..C...C..C...C.#     ← suelo libre, rodeado de corral
+   *     #..CCCCC..CCCCC..CCCCC.#
+   *
+   * El interior (donde viajan las reses) es suelo, y tiene 'C' arriba y
+   * abajo, así que pasaba el filtro de "pegado al mueble" perfectamente.
+   * Medido: **22 de 48 cajas que cayeron en el ganado quedaban
+   * inalcanzables** — casi la mitad. En los demás vagones, ninguna: por
+   * eso sólo aparecía ahí.
+   *
+   * `alcanzables` es un relleno por inundación que arranca en el PASILLO
+   * (las filas 4 y 5, por donde se camina) y se expande por todo lo que
+   * sea suelo. Un escondite sólo vale si el relleno llegó hasta él. Es
+   * genérico: cualquier vagón futuro con un rincón cerrado queda cubierto
+   * sin tener que acordarse de este caso.
+   */
+  const transitable = (ch) => ch === '.' || ch === '+' || ch === 'E';
+  const alcanzables = new Set();
+  const cola = [];
+  for (const fila of [4, 5]) {
+    for (let col = 0; col < plant.layout[fila].length; col++) {
+      if (!transitable(plant.layout[fila][col])) continue;
+      const k = col + ',' + fila;
+      if (!alcanzables.has(k)) { alcanzables.add(k); cola.push([col, fila]); }
+    }
+  }
+  while (cola.length) {
+    const [col, row] = cola.pop();
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nc = col + dc, nr = row + dr;
+      if (nr < 0 || nr >= plant.layout.length) continue;
+      if (nc < 0 || nc >= plant.layout[nr].length) continue;
+      const k = nc + ',' + nr;
+      if (alcanzables.has(k) || !transitable(plant.layout[nr][nc])) continue;
+      alcanzables.add(k); cola.push([nc, nr]);
+    }
+  }
+
+  const puntos = [];
+  for (let row = 1; row < plant.layout.length - 1; row++) {
+    const fila = plant.layout[row];
+    for (let col = 0; col < fila.length; col++) {
+      if (fila[col] !== '.') continue;
+      if (!alcanzables.has(col + ',' + row)) continue;
+      // (✉️ `delante`: sólo con el mueble detrás, arriba en el plano; con el mueble delante, el mueble lo tapa.)
+      if (plant.layout[row - 1][col] === mueble || (!delante && plant.layout[row + 1][col] === mueble)) {
+        puntos.push({ col, row });
+      }
+    }
+  }
+
+  if (!puntos.length) return null;
+  const donde = rng.pick(puntos);
+  return { tramo, escondite, pos: map.tileCenter(donde.col + tramo.colStart, donde.row) };
+}
+
 function ponerObjeto(l, objeto) {
   l.objeto = objeto;
   l.value = objeto.valor;

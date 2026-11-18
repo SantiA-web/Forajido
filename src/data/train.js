@@ -180,7 +180,7 @@ export const TRAIN_TYPES = {
     id: 'pasajeros',
     name: 'Tren de pasajeros',
     short: 'PASAJEROS',
-    hint: 'Gente, equipaje y plata encima. Cualquiera puede ser un testigo.',
+    hint: 'Gente, equipaje y dinero encima. Cualquiera puede ser un testigo.',
     pista: 'Mucha gente a bordo',
     composition: [
       'caboose', 'dormitorio', 'comedor', 'pasajeros', 'pasajeros',

@@ -192,6 +192,17 @@ export function createRenderer(canvas, vista) {
      * lupa del mundo; en un monitor chico baja hasta que la escena entre.
      */
     escenaFija() { usar(densidadFija()); },
+    /**
+     * 🐛 Lo mismo, pero con el punto del estilo nuevo siempre en píxeles enteros: con `escenaFija` en una ventana chica cada
+     * punto medía 2,25 píxeles y la gente se deformaba al caminar (ver el campamento). Prueba 3, 2 y 1 píxel por punto, y se queda
+     * con el más grande en que la escena entra.
+     */
+    escenaEntera() {
+      for (const d of [DENSIDAD, (2 * DENSIDAD) / 3, DENSIDAD / 3]) {
+        if (canvas.width / d >= vista.minimo.width && canvas.height / d >= vista.minimo.height) { usar(d); return; }
+      }
+      usar(DENSIDAD / 3);
+    },
 
     /**
      * BAJAR LA LUPA A PROPÓSITO, para ver más mundo *(Santi, sobre la huida:
@@ -327,6 +338,12 @@ export function createRenderer(canvas, vista) {
      *   defecto es negro, que es lo que sirve en las escenas oscuras. El mapa
      *   pasa el color del papel (ver el comentario de TEXTO, arriba).
      */
+    /** Cuánto mide un texto de `text` (para partirlo en renglones, ver engine/menu.js). */
+    medir(str, tam = TEXTO.tam) {
+      ctx.font = `${tam}px ${TEXTO.fuente}`;
+      return ctx.measureText(str).width;
+    },
+
     text(str, x, y, color, align = 'center', opciones = {}) {
       const tam = opciones.tam || TEXTO.tam;
       const halo = opciones.halo === undefined ? '#000' : opciones.halo;

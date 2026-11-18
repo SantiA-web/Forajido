@@ -7,6 +7,23 @@ así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
 `NOTAS-DISENO.md` es grande (11.000 líneas): usá Grep para ir a la sección que
 necesites en vez de leerlo entero cada vez.
 
+## LO ÚLTIMO (2026-11-18): LA BANDA NUEVA, POR ETAPAS
+
+Antes de tocar la banda, leé **`BRUJULA.md`** (qué juego es) y **`BANDA-NUEVA.md`** (la banda rehecha, aprobada;
+al final, "Las reglas que no se tocan" y el "Orden de construcción"). El resumen de lo hecho está en
+`NOTAS-DISENO.md`, "La brújula, el tiempo, el horario y la banda nueva".
+
+- ✅ **Etapa 1**: el telégrafo y el vigía en el asalto, y que lleguen a la huida.
+- ✅ **Etapa 2, parte 1**: la libreta, la lealtad de 0 a 5 y el ánimo en el plan (`src/systems/libreta.js`).
+- ⏭️ **Etapa 2, parte 2**: la pantalla del reparto **por cabeza** (12 / 18 Ambicioso / 5 el que se quedó; LO QUE
+  ESPERAN, GENEROSO, NADA; la queja o el favor se ve antes de confirmar). Reemplaza a los momentos "reparto" y "deMas".
+- ⏭️ **Etapa 2, parte 3**: la olla ($5 por persona por día) y J.Mc. ($200 por golpe, con deuda).
+- Después, etapas 3 a 6 (pizarra y tareas, habilidades con marcas, personalidades y fogata, tentación y traiciones,
+  cantina con los contratados: $20 por semana + 12 si van, −1 paso).
+
+Todo número nuevo va en un solo archivo de datos y se mide primero en `simulador/banda3.js` (`SIM='{...}'` para
+probar variantes). Antes de sacar una conclusión del simulador, revisar que la variante corra de verdad.
+
 ## LA SESIÓN PASADA: SE REESCRIBIÓ QUÉ ES CADA TREN
 
 Fue la sesión más grande en mucho tiempo: **ocho commits**, todo subido y la
@@ -176,6 +193,17 @@ la caja oculta, `CONFIG.honor.*`, `CONFIG.enemy.traicion*`, `RIDER_SPAWN.*`,
   hay uno entonces no tiene sentido el sheriff")*. En su lugar, la **etapa
   final: la auditoría de 800 asaltos** (`banco-inspector.js`) para encontrar
   todo lo que hace ver tontos o inexpertos a los guardias.
+- **🗄️ PENDIENTE PARA DESPUÉS: EL PUEBLO NUEVO** (2026-11-10). Santi lo pausó para concentrarse en las mecánicas del asalto: "pasá
+  el pueblo a la grilla nueva pero de manera simple [...] el nuevo pueblo déjalo archivado o para después". Hoy se juega el pueblo
+  de siempre, con el punto en píxeles enteros (`escenaEntera` en engine/renderer.js) y las letras en la capa fina. El plano nuevo
+  está guardado en BLOQUES y sin conectar: `src/data/puebloNuevo.js` y `src/scenes/puebloNuevo.js` (calle principal, 3 caminos,
+  calle de atrás angosta, horca enfrente del sheriff, iglesia al final de la calle central más ancha, cementerio, corral, patio de
+  tiro). Lo que eligió Santi: tono "desolado en la frontera, no que haya pasado una peste"; pocas construcciones, con callejones
+  angostos entre edificios ("serán importantes en la historia"); los techos tapan un poco la calle de atrás; cantina y comedor con
+  más de una puerta; banco clausurado; sin casas grandes. **Falta del plano**: el patio de tiro más chico y que se entre hablando
+  con el armero, desde la tienda (no por afuera). Después: materiales, dibujar, vida, noche y **el caballo al paso** con sus 8
+  GIFs (8 direcciones × 8 cuadros, en `tmp-ref/caballo-camina/`, que no se sube: pedírselos de nuevo si faltan). Para probar el
+  plano, volver a conectar `createPuebloNuevo` en scenes/townScene.js.
 - **El campamento y el mapa en el estilo nuevo están subidos** (2026-11-08; NOTAS-DISENO.md, "EL CAMPAMENTO Y EL MAPA"), con el
   farol que se prende de noche en el mapa. **Sigue P6: el pueblo y la tienda** (usan `escenaFija`, con el problema de los 2,25 px);
   después P7 (efectos y letras) y P8 (limpieza). Sin probar: salir con clic por una ruta y el mapa en ventanas chicas.

@@ -434,7 +434,7 @@ export const WAGONS = {
     id: 'armas',
     name: 'Vagón de armas',
     short: 'ARMAS',
-    hint: 'Cajones de pólvora. Acá no conviene tirotear.',
+    hint: 'Cajones de pólvora. Aquí no conviene tirotear.',
     /**
      * Los huecos entre estanterías caen justo sobre las ventanillas, como en
      * el correo: para llegar al vidrio hay que meterse entre los cajones.
@@ -868,7 +868,7 @@ export const WAGONS = {
 
     name: 'Vagón de observación',
     short: 'CABOOSE',
-    hint: 'La tripulación. Desde acá se mira la vía.',
+    hint: 'La tripulación. Desde aquí se mira la vía.',
     // (🔁 Una sola cama, la de arriba a la derecha; en el rincón de la otra, la caja del carbón. Y los cuatro
     // bultos del medio, desparejos *(Santi: "no estén perfectamente alineadas… se vería muy estructurado el
     // vagón"; "debería haber solo una cama")*: la estufa, el cofre de herramientas, el barril de agua y el

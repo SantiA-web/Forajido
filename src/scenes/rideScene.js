@@ -40,6 +40,7 @@ import {
 } from '../data/train.js';
 import { CLIMA_POR_DEFECTO } from '../data/modifiers.js';
 import { gameState } from '../state/gameState.js';
+import { MIEMBRO, quienHace, puedeIr } from '../data/banda.js';
 import { T } from '../text/es.js';
 import { sortearComposicion, buildTrain, plataformasDe } from '../world/train.js';
 import { crearEnganches, actualizarEnganches, corrimientoEn } from '../world/enganches.js';
@@ -110,7 +111,7 @@ export function createRideScene(services) {
 
   let caballo;
   let composicion, dificultad, tipoTren, clima, estado, comportamientos, variantes,
-    encubiertos, paquetes, cajaOculta, train, plataformas, largoTren;
+    encubiertos, paquetes, cajaOculta, train, plataformas, largoTren, maletinEn, cajaGordaEn;
   let hayTormenta, truenoTimer, cascoTimer, velCaballoActual;
   /**
    * `zancadaIntervalo`: cuánto dura la zancada que está sonando; con `cascoTimer`
@@ -149,6 +150,16 @@ export function createRideScene(services) {
    * dirección que apretás: es a dónde llegó el animal de girar hasta ahora.
    */
   let suelo, rumbo;
+  /**
+   * 🎭 EL DE LOS CABALLOS GALOPA CON VOS *(Santi: "al ir en el galope el que ayude con los caballos debería ir conmigo.
+   * Hacé que su caballo me siga apenas detrás mío. Y usá los dibujos ya hechos por ahora")*: cuando saltás al tren, es
+   * el que se lleva tu caballo. `{ id, x, y, pose }`, o null si no pusiste a nadie (o en el estilo viejo).
+   */
+  let companeroDeCaballos = null;
+  /** Dónde va, desde vos: un poco atrás y un poco más cerca de la cámara (en unidades). */
+  const DETRAS = { x: -22, y: 6 };
+  /** El pelo de su caballo, para que no sea el tuyo. */
+  const PELAJE_BANDA = { santiago: 'zaino', frank: 'mezcla', tommy: 'criollo' };
 
   /**
    * @param params lo que eligió el MAPA DE RUTAS (`scenes/mapScene.js`):
@@ -166,6 +177,10 @@ export function createRideScene(services) {
     // una, y el tren nuevo sortea otra composición (ver `olvidarLaminas`).
     olvidarLaminas();
     caballo = caballoActual(gameState);
+    {
+      const id = estiloNuevo.activo && gameState.banda ? quienHace(gameState.banda, 'caballos') : null;
+      companeroDeCaballos = id && puedeIr(gameState.banda, id) ? { id, x: null, y: null, pose: 0 } : null;
+    }
     tipoTren = TRAIN_TYPES[params.tipoTren] || TRAIN_TYPES[TIPO_TREN_POR_DEFECTO];
     composicion = params.composicion || sortearComposicion(rng, tipoTren);
     dificultad = DIFICULTADES[params.dificultad]
@@ -179,6 +194,9 @@ export function createRideScene(services) {
     encubiertos = params.encubiertos || [];
     paquetes = params.paquetes || [];
     cajaOculta = !!params.cajaOculta;
+    // (🕵️ En qué vagón va el maletín: pasa de largo hasta el asalto.)
+    maletinEn = params.maletinEn ?? null;
+    cajaGordaEn = params.cajaGordaEn ?? null;
 
     train = buildTrain(
       rng, 1, composicion, dificultad.id, undefined, tipoTren.id, undefined,
@@ -921,6 +939,7 @@ export function createRideScene(services) {
     }
     invuln = Math.max(0, invuln - dt);
     actualizarPolvo(dt);
+    moverCompanero(dt);
     updateTormenta(dt);
     updateCascos(dt);
 
@@ -940,6 +959,8 @@ export function createRideScene(services) {
           encubiertos,
           paquetes,
           cajaOculta,
+          maletinEn,
+          cajaGordaEn,
           tiempoGastado: A.cobrarTiempoAlAsalto ? gastado : 0,
           alarmaInicial: visto,
           saltoSucio: calidadSalto === 'sucio',
@@ -1326,7 +1347,11 @@ export function createRideScene(services) {
       lluvia.dibujarSalpicaduras(r.ctx, noche, suelo, celdaLluvia, franja.arriba, Infinity);
       lluvia.dibujarGotas(r.ctx, noche, suelo, celdaLluvia, franja.arriba, y + 7);
     }
+    // 🎭 El de los caballos: detrás tuyo si va más lejos de la cámara, delante si va más cerca.
+    const companeroAtras = companeroDeCaballos && companeroDeCaballos.y !== null && companeroDeCaballos.y < y;
+    if (companeroAtras) dibujarCompanero(r);
     dibujarCaballo(r);
+    if (companeroDeCaballos && !companeroAtras) dibujarCompanero(r);
     for (const ob of delante) dibujarObstaculo(r, ob, obX(ob));
     if (lloviendo) lluvia.dibujarGotas(r.ctx, noche, suelo, celdaLluvia, y + 7, Infinity);
     // ☁️ La nube de polvo en el aire, encima del caballo y con huecos; con el punto del dibujo que se ve (de lejos, el
@@ -1775,6 +1800,44 @@ export function createRideScene(services) {
    * zancada que está sonando, sobre `T` que dura. `null` si está parado (no
    * suena ningún casco, y las patas van derechas).
    */
+  /**
+   * 🎭 EL DE LOS CABALLOS, CADA CUADRO: va hacia su lugar (un poco detrás tuyo) con un poco de retraso, como un caballo
+   * que te sigue, con la misma pose que el tuyo. Se dibuja con lo que ya hay: el caballo del galope y el jinete de la
+   * ley con su ropa (`detalles: 'banda'`).
+   */
+  /** 🎭 Va hacia su lugar, un poco detrás tuyo, con retraso: como un caballo que te sigue. */
+  function moverCompanero(dt) {
+    const c = companeroDeCaballos;
+    if (!c) return;
+    if (c.x === null) { c.x = x + DETRAS.x; c.y = y + DETRAS.y; return; }
+    const k = Math.min(1, dt * 5);
+    c.x += (x + DETRAS.x - c.x) * k;
+    c.y += (y + DETRAS.y - c.y) * k;
+  }
+
+  function dibujarCompanero(r) {
+    const c = companeroDeCaballos;
+    if (c.x === null) moverCompanero(0);
+    const velAbsoluta = Math.abs(vel + A.trenVelocidad);
+    const esfuerzo = Math.min(1, velAbsoluta / caballo.sprintSpeed);
+    const z = faseDeZancada();
+    // (Medio paso corrido del tuyo: dos caballos que pisan juntos se ven como uno solo.)
+    const zancada = z ? { t: (z.t + z.T / 2) % z.T, T: z.T } : null;
+    const trote = zancada ? Math.round(Math.cos((zancada.t / zancada.T - 0.15) * Math.PI * 2) * (0.4 + esfuerzo * 0.8)) : 0;
+    const rebote = zancada ? Math.cos((zancada.t / zancada.T - 0.25) * Math.PI * 2) * (0.4 + esfuerzo * 0.8) * 0.5 : 0;
+    const pose = poseAnterior;
+    r.ctx.save();
+    r.ctx.globalAlpha = 0.25;
+    r.ctx.fillStyle = '#000';
+    r.ctx.beginPath();
+    r.ctx.ellipse(Math.round(c.x), Math.round(c.y + 7), 12, 2.5, rumbo * 0.5, 0, Math.PI * 2);
+    r.ctx.fill();
+    r.ctx.restore();
+    const montura = dibujarAnimal(r, c.x, c.y, zancada, trote, esfuerzo, pose, PELAJE_BANDA[c.id] || null, !gameState.esDeDia);
+    dibujarJinete(r, montura.asiento.x, montura.asiento.y + rebote, pose, esfuerzo * 2, { detalles: 'banda', aspecto: MIEMBRO[c.id].aspecto, ent: c }, montura);
+    montura.adelante();
+  }
+
   function faseDeZancada() {
     if (!zancadaIntervalo || Math.abs(velCaballoActual || 0) < 2) return null;
     return { t: Math.max(0, zancadaIntervalo - cascoTimer), T: zancadaIntervalo };

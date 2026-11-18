@@ -1327,8 +1327,9 @@ const PANZA_REDONDA = [
   [1, 0, 0, 1, 3], [1, 1, 1, 2, 3], [2, 1, 2, 2, 3], [3, 2, 3, 3, 3],
 ];
 
-export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara, arremangada, forma, doble, dobleModo = null }) {
-  const C = persona ? { ...COLORES, ...persona.colores } : COLORES;
+export function cuadroJugador({ vista, piernas, arma, ang, mochila, fino, golpe, empuna, tajo, vaina, persona, enfundado, desenfunda, aturdido, brazos, bandera, mascara, arremangada, forma, doble, dobleModo = null, colores = null }) {
+  // (🤝 `colores`: el compañero, con el dibujo del jugador y otros colores, provisorio: ver systems/companero.js.)
+  const C = persona ? { ...COLORES, ...persona.colores } : colores ? { ...COLORES, ...colores } : COLORES;
   // 🆕 Las manos: con guantes (el rico, ver GUANTES_RICO en gente.js), de su color; si no, la piel.
   const MP = C.mP ?? C.P, Mp = C.mp ?? C.p, Mq = C.mq ?? C.q;
   const TJ = tajo != null ? TAJO[tajo] : null;
@@ -2505,7 +2506,7 @@ export function lienzoJinete({ vista = 'lado', cuadro, mochila, fino, mascara, s
 export { bordeSilla };
 
 export function lienzoJugador(o, luz = 0, destello = false) {
-  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0, o.aturdido ?? '', o.brazos ? (o.brazos.props ? 2 : 1) : 0].join('|');
+  const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0, o.aturdido ?? '', o.brazos ? (o.brazos.props ? 2 : 1) : 0, o.colores ? JSON.stringify(o.colores) : ''].join('|');
   let g = guardados.get(clave);
   if (g) return g;
   if (guardados.size > 900) guardados.clear();

@@ -443,6 +443,20 @@ function piezaObjeto(dibujo, base, claro, oscuro) {
         p(cx + 2, cy + 3, 1, 1, '#fff6d8');
         break;
 
+      case 'maletin':                      // ✉️ el de J.Mc.: cuero, el asa arriba y dos broches de bronce
+        // 🔁 Más chato y con el asa gruesa: con la de antes se leía como un baúl.
+        p(cx - 9, cy - 15, 18, 10, NEGRO);
+        p(cx - 7, cy - 13, 14, 6, '#8a5a36');
+        p(cx - 7, cy - 13, 14, 2, '#a8744a');
+        p(cx - 4, cy - 10, 8, 5, NEGRO);
+        caja(0, 4, 40, 14, '#7a4a2a', '#9a6438');
+        p(cx - 20, cy + 2, 40, 2, '#4a2e1a');
+        p(cx - 14, cy - 1, 5, 6, NEGRO);
+        p(cx + 9, cy - 1, 5, 6, NEGRO);
+        p(cx - 13, cy, 3, 4, '#d8b24a');
+        p(cx + 10, cy, 3, 4, '#d8b24a');
+        break;
+
       case 'joyero':                       // cofrecito con tapa clara
       default:
         caja(0, 2, 24, 16, oscuro, null);

@@ -16,45 +16,36 @@
  *    Es el símbolo de ferrocarril de cualquier mapa de 1880: se reconoce sin
  *    explicación, y separa una vía de un río o un camino de un vistazo.
  *
- * 2. **Los trenes se mueven de verdad, en circuito.** No van y vuelven marcha
- *    atrás como un auto: dan la vuelta. Y no son un adorno — cada uno ES un
- *    tren concreto, con su tipo y su escolta, que va cambiando mientras
- *    recorre (ver `avanzarRuta` más abajo). El cartucho lo LEE; no lo inventa.
+ * 2. 🔁 🚂 **Los trenes tienen día y parte del día** (systems/horario.js) *(Santi: "esta decisión del mapa con trenes
+ *    que cambian constantemente [...] es hora de cambiarla")*. Antes daban vueltas por las vías en segundos de
+ *    verdad y cambiaban de tipo en la terminal; con el juego medido en días, no se podían planear. Ahora el cartucho
+ *    es el horario, y el tren que señalás se dibuja quieto donde lo esperarías.
  *
  * 3. **El cartucho de abajo es el único texto.** Todo lo demás son símbolos.
  *    Un mapa lleno de etiquetas explicándose es un menú con dibujitos.
  *
- * EL MAPA SIGUE CORRIENDO AUNQUE NO LO MIRES. El estado de los trenes vive en
- * el closure de la escena, no en `enter()`, y al abrir el mapa se adelanta
- * todo lo que pasó desde la última vez (`ponerseAlDia`). Dormir, comprar un
- * caballo o hacer un asalto entero mueve los trenes de verdad — si no, el
- * mapa sería un cuadro que se congela cuando le das la espalda.
+ * (🔁 Lo de "el mapa sigue corriendo aunque no lo mires" ya no hace falta: el horario vive en `gameState.horario` y
+ * se pone al día con el calendario.)
  */
 
 import { CONFIG } from '../data/config.js';
 import { REGION } from '../data/region.js';
-import { sortearTipoTren, sortearDificultad } from '../data/train.js';
-import {
-  CLIMA, CLIMA_POR_DEFECTO, sortearClima, sortearEstadoTren, sortearComportamiento,
-  variantesPermitidas, sortearCivilEncubierto,
-} from '../data/modifiers.js';
-import { sortearPaquete, CHANCE_CAJA_OCULTA } from '../data/paquetes.js';
-import { WAGONS } from '../data/wagons.js';
-import { sortearComposicion } from '../world/train.js';
+// 🚂 Los trenes ya no los arma el mapa: vienen del horario.
+import { completarHorario, conocidos, viajeDe, faltaPara, llegas, sacarDelHorario, dondeLoEsperas, esperarEnVia, ahora } from '../systems/horario.js';
+import { fechaDe } from '../systems/tiempo.js';
+import { encargoAbierto, tieneMaletin } from '../data/momentos.js';
 import { T } from '../text/es.js';
 import { gameState } from '../state/gameState.js';
+import { pasar } from '../systems/tiempo.js';
+import { TIEMPO } from '../data/tiempo.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { DENSIDAD } from '../engine/renderer.js';
 import * as mapaViejo from '../world/estiloNuevo/mapaViejo.js';
+import { BANDA, MIEMBRO, PAPELES, puedeIr, darPapel, quienHace, completarBanda, pronostico, ESCALERA } from '../data/banda.js';
+import { disposicionPara } from '../systems/animoEnJuego.js';
 
-/**
- * Cuánto tiempo real, como mucho, se simula de una sola vez al volver al mapa.
- * Si estuviste una hora en el pueblo no hace falta simular la hora entera:
- * cuatro minutos ya alcanzan para que todos los trenes hayan cambiado varias
- * veces, y evita un bucle largo al abrir la pantalla.
- */
-const MAXIMO_AL_DIA = 240;
-const PASO_AL_DIA = 0.25;
+/** 🚂 Cuántos trenes del horario entran en el cartucho a la vez. */
+const RENGLONES = 4;
 
 export function createMapScene(services) {
   const { input, scenes, hud, audio, rng } = services;
@@ -68,8 +59,23 @@ export function createMapScene(services) {
   let manchas = null;
   let scroll = 0;
   let encima = null;
-  let ultimoReloj = 0;
+  /**
+   * 🚂 EL HORARIO EN EL CARTUCHO: desde qué tren se muestra (se corre con la rueda o [W]/[S]), el tren del renglón
+   * bajo el cursor, y dónde quedaron los renglones la última vez que se dibujaron (para saber dónde hacés clic).
+   */
+  let desde = 0;
+  let trenEncima = null;
+  let renglones = [];
+  /**
+   * 🗞️ ESPERAR EN UNA VÍA *(Santi eligió "Esperar en una vía")*: la vía en la que ya hiciste un clic. Hace falta el
+   * segundo para salir, porque si no pasa nada se pierde el día entero.
+   */
+  let viaElegida = null;
   let origenNuevo = { x: 0, y: 0 };
+  /** 🎭 El renglón de "El plan" que tenés bajo el cursor ('caballos', 'pasajero' o null). Ver `dibujarPlan`. */
+  let planEncima = null;
+  /** Dónde quedó el recuadro del plan la última vez que se dibujó (relativo al papel), para saber dónde hacés clic. */
+  let planCaja = null;
   // 🔁 Sobre el papel gastado, la tinta suave y los colores de dificultad quedaban lavados *(Santi: "muy poco legible")*.
   // (De noche, más oscuras todavía: lejos del farol el papel se apaga y hay que seguir leyendo.)
   let TINTA_SUAVE_NUEVA = '#5f4730';
@@ -120,138 +126,15 @@ export function createMapScene(services) {
         espera: 0,
       };
 
-      // Los circuitos arrancan con su tren en cualquier punto del recorrido:
-      // que todos empiecen en su terminal se vería a coreografía.
-      if (ruta.circular) {
-        arrancarTren(ruta, rng.range(0, 1));
-      } else if (ruta.entraDesdeAfuera) {
-        // Y las de afuera arrancan mitad en camino, mitad todavía sin venir.
-        if (rng.chance(0.6)) arrancarTren(ruta, rng.range(0, 0.8));
-        else ruta.espera = rng.range(0, ruta.esperaMax);
-      }
-
       return ruta;
     });
-  }
-
-  /** Un tren nuevo en esa vía: tipo, escolta, formación, clima, estado y comportamientos sorteados de cero. */
-  function arrancarTren(ruta, t) {
-    ruta.tren = {
-      t, tipoTren: null, dificultad: null, composicion: null,
-      clima: null, estado: null, comportamientos: null, variantes: null,
-      encubiertos: null, paquetes: null, cajaOculta: false,
-    };
-    nuevoTipo(ruta.tren);
-    ruta.tren.dificultad = sortearDificultad(rng);
-  }
-
-  /**
-   * Otro tren. El tipo trae consigo su formación de vagones: cambiar de tipo
-   * sin recomponer el tren dejaría un tren con los vagones del otro.
-   *
-   * Clima, estado y comportamientos se sortean en el mismo momento: son
-   * parte de qué SERVICIO es este tren, no de la escolta (que cambia en
-   * cada parada, ver `avanzarRuta`). Un tren no se moja a mitad de camino,
-   * ni cambia de qué está hablando su gente.
-   *
-   * SON DOS LLAVES, NO UNA (ver data/train.js):
-   *
-   *   `modificadores` — clima, estado del tren, comportamiento por vagón y
-   *     tipos de guardia. La tienen LOS DOS trenes: el clima y una redada no
-   *     son la identidad de nadie, son el día que le tocó a ese servicio.
-   *
-   *   `gente` — paquetes, civiles encubiertos y caja fuerte oculta. Sólo el de
-   *     pasajeros, porque las tres dependen de tener a quién amenazar: la
-   *     única forma de saber dónde está la caja oculta es que te lo suelte un
-   *     pasajero, y el de carga lleva un solo vagón con gente.
-   */
-  function nuevoTipo(tren) {
-    tren.tipoTren = sortearTipoTren(rng);
-    tren.composicion = sortearComposicion(rng, tren.tipoTren);
-    if (tren.tipoTren.modificadores) {
-      tren.clima = sortearClima(rng);
-      // `gameState.bounty`: la recompensa que ya tenías al mirar el mapa —
-      // es lo que decide si `redada` entra en la bolsa (ver data/modifiers.js).
-      tren.estado = sortearEstadoTren(rng, gameState.bounty);
-      /**
-       * Un comportamiento por vagón. El blindado queda afuera (como redada:
-       * sus guardias tienen sus propias reglas) y siempre patrulla normal.
-       * `conversando` necesita 2+ patrullas y `vigilandoCaja` necesita una
-       * caja fuerte de verdad en ese vagón — `sortearComportamiento` ya
-       * sabe sacarlos de la bolsa si no cumplen (ver data/modifiers.js).
-       */
-      tren.comportamientos = tren.composicion.map((id) => {
-        /**
-         * Y cualquier vagón que lo pida en su plantilla (`sinComportamiento`).
-         * Hoy: primera clase, donde "Conversando" se llevaría a los
-         * guardaespaldas lejos de los ricos; la góndola, donde no vive nadie;
-         * y el vagón de guardias, que ya viene "Conversando" de franco.
-         */
-        if (id === 'blindado' || WAGONS[id].sinComportamiento) return 'normal';
-        const patrullas = (WAGONS[id].enemies || []).length;
-        const tieneCaja = (WAGONS[id].loot || []).some((l) => l.type === 'strongbox');
-        return sortearComportamiento(rng, patrullas >= 2, tieneCaja);
-      });
-      /**
-       * QUÉ TIPOS DE GUARDIA PUEDEN VIAJAR EN ESTE TREN (Fase 4, ver
-       * VARIANTES_GUARDIA en data/modifiers.js). Acá sólo se decide QUÉ ESTÁ
-       * PERMITIDO — a qué guardia le toca se sortea después, uno por uno, al
-       * armar el tren (`buildTrain`).
-       *
-       * Se mira la misma foto de `gameState` que ya decide si entra `redada`:
-       * la recompensa Y el honor que traías al abrir el mapa. El Pistolero
-       * necesita las dos cosas — que paguen caro por vos y que te tengan
-       * miedo.
-       */
-      tren.variantes = variantesPermitidas(gameState.bounty, gameState.honor);
-    } else {
-      tren.clima = CLIMA[CLIMA_POR_DEFECTO];
-      tren.estado = [];
-      tren.comportamientos = tren.composicion.map(() => 'normal');
-      tren.variantes = [];
-    }
-
-    if (tren.tipoTren.gente) {
-      /**
-       * ¿QUÉ VAGONES LLEVAN UN CIVIL ENCUBIERTO? Array paralelo a
-       * `composicion`, como `comportamientos`: uno por vagón, como mucho uno
-       * por vagón, y sólo donde de verdad viaja gente (el correo o el
-       * blindado no tienen a quién disfrazar). Ver data/modifiers.js.
-       */
-      tren.encubiertos = tren.composicion.map((id) =>
-        sortearCivilEncubierto(rng, (WAGONS[id].passengers || []).length));
-      /**
-       * EL PAQUETE DE CADA VAGÓN (Fase 5, ver data/paquetes.js): un objetivo
-       * valioso con su custodia, metido en un vagón cualquiera. La mayoría
-       * de los vagones no lleva ninguno — `sortearPaquete` devuelve `null` la
-       * mayor parte de las veces, a diferencia de los comportamientos, donde
-       * siempre sale algo.
-       */
-      tren.paquetes = tren.composicion.map((id) =>
-        sortearPaquete(rng, (WAGONS[id].passengers || []).length > 0));
-      /**
-       * ¿ESTE TREN ESCONDE UNA CAJA FUERTE? Es del TREN, no de un vagón (ver
-       * data/paquetes.js): puede terminar en cualquiera menos el blindado, y
-       * los tres pasajeros que saben dónde está viajan donde les toque. Acá
-       * sólo se decide si la hay; el vagón, el escondite y quiénes lo saben
-       * se sortean al armar el tren, que es donde se conoce el mapa de verdad.
-       */
-      tren.cajaOculta = rng.chance(CHANCE_CAJA_OCULTA);
-    } else {
-      tren.encubiertos = tren.composicion.map(() => false);
-      tren.paquetes = tren.composicion.map(() => null);
-      /**
-       * 📜 EL TREN DE CARGA TAMBIÉN ESCONDE CAJAS, con la misma chance. Acá no
-       * hay pasajeros que te lo digan: lo dicen PAPELES metidos en lo que se
-       * saquea (ver `PAPELES_QUE_DICEN`, data/paquetes.js).
-       */
-      tren.cajaOculta = rng.chance(CHANCE_CAJA_OCULTA);
-    }
   }
 
   function enter() {
     hud.hide();
     encima = null;
+    planEncima = null;
+    gameState.banda = completarBanda(gameState.banda);
 
     /**
      * Lo más callado del juego, y tiene que serlo: el mapa no es un lugar, es
@@ -283,123 +166,38 @@ export function createMapScene(services) {
       }
     }
 
-    ponerseAlDia();
+    // 🚂 El horario, al día (systems/horario.js).
+    completarHorario(gameState);
+    desde = 0;
+    viaElegida = null;
 
     // Para depurar desde la consola: FORAJIDO.services.mapa
     services.mapa = {
       get encima() { return encima ? encima.id : null; },
       get rutas() { return rutas; },
-      get conTren() { return rutas.filter((r) => r.tren).map((r) => r.id); },
-      /** Qué tren hay hoy en cada vía, en una línea legible. */
+      /** 🚂 Los trenes que vienen, en una línea legible cada uno. */
       get trenes() {
-        return rutas.map((r) => `${r.id}: ` + (r.tren
-          ? `${r.tren.tipoTren.id}/${r.tren.dificultad.id} clima=${r.tren.clima.id} `
-            + `estado=${r.tren.estado.join(',') || '-'} `
-            + `comportamientos=[${r.tren.comportamientos.join(',')}] t=${r.tren.t.toFixed(2)}`
-          : (r.servicio === false ? 'sin servicio' : `esperando ${r.espera.toFixed(1)}s`)));
+        return completarHorario(gameState).map((t) => `#${t.id} día ${t.dia} ${TIEMPO.partes[t.parte]} ${t.ruta} ${t.tipoTren.id} sabes=${t.sabes}${t.falso ? ' FALSO' : ''} viaje=${viajeDe(t.ruta)} falta=${faltaPara(gameState, t)}`);
       },
-      /** Adelantar el mapa a mano, para probar los sorteos sin esperar. */
-      adelantar(segundos) {
-        let falta = segundos;
-        while (falta > 0) {
-          const paso = Math.min(PASO_AL_DIA, falta);
-          for (const r of rutas) avanzarRuta(r, paso);
-          falta -= paso;
-        }
-      },
+      /** Salir a un tren del horario por su número, sin el mouse. */
+      salir: (id) => { const t = completarHorario(gameState).find((x) => x.id === id); if (t) salir(t); return !!t; },
+      /** 🗞️ Ir a esperar a una vía (y un día), sin el mouse. */
+      esperar: (rutaId, dia = null) => esperar(rutaId, dia),
     };
   }
 
-  /**
-   * Adelantar el mapa por todo el tiempo que pasó mientras no lo mirabas.
-   *
-   * Se simula a pasos chicos en vez de saltar de una: los trenes tienen que
-   * PASAR por sus paradas para que se sorteen, y un salto de un minuto se
-   * saltearía todas.
-   */
-  function ponerseAlDia() {
-    const ahora = performance.now() / 1000;
-    if (ultimoReloj > 0) {
-      let falta = Math.min(ahora - ultimoReloj, MAXIMO_AL_DIA);
-      while (falta > 0) {
-        const paso = Math.min(PASO_AL_DIA, falta);
-        for (const r of rutas) avanzarRuta(r, paso);
-        falta -= paso;
-      }
-    }
-    ultimoReloj = ahora;
+  /** 🚂 El tren que se dibuja en el mapa: el del renglón señalado, o el próximo de la vía señalada. */
+  function trenMarcado() {
+    if (trenEncima) return trenEncima;
+    if (!encima) return null;
+    return conocidos(gameState).find((t) => t.ruta === encima.id && llegas(gameState, t)) || null;
   }
 
-  // ------------------------------------------------------------------ lógica
-
-  /** ¿El tren cruzó el punto `p` del recorrido yendo de `a` a `b`? */
-  function cruzo(a, b, p) {
-    return (a < p && b >= p) || (a < p + 1 && b >= p + 1);
-  }
-
-  /**
-   * UN PASO DE LA VIDA DE ESA VÍA. Acá vive todo el sistema:
-   *
-   *  - **Al pasar por una parada** se sortea de nuevo la DIFICULTAD. En cada
-   *    estación sube y baja escolta, así que el mismo tren puede endurecerse o
-   *    aflojarse mientras lo mirás.
-   *  - **Al completar la vuelta** (volver a su terminal) se sortea de nuevo el
-   *    TIPO DE TREN: ya no es el mismo tren, es el siguiente servicio de esa
-   *    línea.
-   *  - **Las que vienen de afuera no dan la vuelta**: llegan al otro extremo,
-   *    se van del mapa, y la vía queda vacía un rato hasta que asoma otro.
-   */
-  function avanzarRuta(ruta, dt) {
-    if (ruta.servicio === false || ruta.total === 0) return;
-
-    if (!ruta.tren) {
-      ruta.espera -= dt;
-      if (ruta.espera <= 0) arrancarTren(ruta, 0);
-      return;
-    }
-
-    const tren = ruta.tren;
-    const velocidad = REGION.velocidadTren / ruta.total;   // fracción por segundo
-    const antes = tren.t;
-    tren.t += velocidad * dt;
-
-    for (const p of ruta.paradas) {
-      if (cruzo(antes, tren.t, p.t)) tren.dificultad = sortearDificultad(rng);
-    }
-
-    if (tren.t >= 1) {
-      if (ruta.circular) {
-        tren.t -= 1;
-        nuevoTipo(tren);                       // dio la vuelta: otro tren
-        tren.dificultad = sortearDificultad(rng);
-      } else {
-        ruta.tren = null;                      // se fue del mapa
-        ruta.espera = rng.range(ruta.esperaMin, ruta.esperaMax);
-      }
-    }
-  }
-
-  /**
-   * La próxima vez que ese tren para. Para un circuito, volver a la terminal
-   * cuenta como parada — y es la más importante de todas, porque ahí deja de
-   * ser este tren y pasa a ser otro.
-   */
-  function proximaParada(ruta) {
-    const tren = ruta.tren;
-    if (!tren) return null;
-
-    const puntos = [...ruta.paradas];
-    if (ruta.circular) puntos.push({ lugar: ruta.terminal, t: 1, esTerminal: true });
-    if (puntos.length === 0) return null;
-
-    let mejor = null;
-    let mejorDist = Infinity;
-    for (const p of puntos) {
-      let d = p.t - tren.t;
-      if (d < 0 && ruta.circular) d += 1;
-      if (d >= 0 && d < mejorDist) { mejorDist = d; mejor = p; }
-    }
-    return mejor;
+  /** 🚂 La fracción del recorrido de un punto de la vía (`{ i, f }`: tramo y fracción del tramo). */
+  function tDe(ruta, p) {
+    let hasta = 0;
+    for (let k = 0; k < p.i; k++) hasta += ruta.largos[k];
+    return ruta.total ? (hasta + ruta.largos[p.i] * p.f) / ruta.total : 0;
   }
 
   /** ¿La fracción t de esta ruta va por dentro de un túnel? */
@@ -460,19 +258,62 @@ export function createMapScene(services) {
 
   function update(dt) {
     scroll += dt;
-    ultimoReloj = performance.now() / 1000;
-
-    for (const r of rutas) avanzarRuta(r, dt);
-
+    if (negativa) negativa.t -= dt;
     const anterior = encima;
     // La red va centrada en la pantalla (ver `render`): el cursor se lleva a
     // las mismas coordenadas antes de buscar la vía.
     const c = estiloNuevo.activo ? origenNuevo : services.renderer.centro;
     encima = rutaBajoElCursor(input.mouse.x - c.x, input.mouse.y - c.y);
-    if (encima && encima !== anterior) audio.play('cover');
 
-    // Clic en una vía con tren: salís a alcanzarlo.
-    if (input.mouse.pressed && encima && encima.tren) salir(encima);
+    /**
+     * 🚂 EL HORARIO: el renglón bajo el cursor resalta su vía en el mapa; con el cursor sobre una vía, la lista se corre
+     * hasta su próximo tren. La rueda (o [W]/[S]) la corre a mano.
+     */
+    const trenes = conocidos(gameState);
+    const trenAntes = trenEncima;
+    trenEncima = null;
+    for (const f of renglones) if (input.mouse.x >= f.x && input.mouse.x <= f.x + f.w && input.mouse.y >= f.y - 7 && input.mouse.y < f.y + 2) trenEncima = f.tren;
+    if (trenEncima) encima = rutas.find((r) => r.id === trenEncima.ruta) || null;
+    else if (encima && encima !== anterior) {
+      const i = trenes.findIndex((t) => t.ruta === encima.id);
+      if (i >= 0 && (i < desde || i >= desde + RENGLONES)) desde = i;
+    }
+    const corre = (input.mouse.wheel > 0 || input.wasPressed('KeyS') ? 1 : 0) - (input.mouse.wheel < 0 || input.wasPressed('KeyW') ? 1 : 0);
+    desde = Math.max(0, Math.min(Math.max(0, trenes.length - RENGLONES), desde + corre));
+    if ((encima && encima !== anterior) || (trenEncima && trenEncima !== trenAntes)) audio.play('cover');
+
+    /**
+     * 🎭 EL PLAN: el renglón bajo el cursor, y el clic (o [1] [2]) que cambia quién lo hace. Sólo en el estilo nuevo,
+     * que es el que lo dibuja. (Si el cursor está sobre el plan, no está sobre ninguna vía.)
+     */
+    const planAntes = planEncima;
+    planEncima = null;
+    if (estiloNuevo.activo && planCaja) {
+      const mx = input.mouse.x - c.x, my = input.mouse.y - c.y, P = planCaja;
+      if (mx >= P.x && mx <= P.x + P.w) PAPELES.forEach((p, i) => { if (my >= P.filas[i] - 5 && my < P.filas[i] + 12) planEncima = p; });
+    }
+    if (planEncima) encima = null;
+    if (planEncima && planEncima !== planAntes) audio.play('cover');
+    if (input.mouse.pressed && planEncima) cambiarPapel(planEncima);
+    if (estiloNuevo.activo && input.wasPressed('Digit1')) cambiarPapel('caballos');
+    if (estiloNuevo.activo && input.wasPressed('Digit2')) cambiarPapel('pasajero');
+    // 📡 🔭 Los dos papeles nuevos (BANDA-NUEVA.md, etapa 1).
+    if (estiloNuevo.activo && input.wasPressed('Digit3')) cambiarPapel('telegrafo');
+    if (estiloNuevo.activo && input.wasPressed('Digit4')) cambiarPapel('vigia');
+
+    // 🚂 Clic en un tren del horario: salís a esperarlo a su vía (si llegás). 🗞️ De un rumor no sabés la parte del
+    // día: vas a esperar a su vía todo ese día.
+    if (input.mouse.pressed && !planEncima && trenEncima) {
+      if (!llegas(gameState, trenEncima)) audio.play('cover');
+      else if (trenEncima.sabes === 'rumor') esperar(trenEncima.ruta, trenEncima.dia);
+      else salir(trenEncima);
+    } else if (input.mouse.pressed && !planEncima && encima) {
+      // 🗞️ Clic en una vía: el primero la elige, el segundo sale a esperar.
+      if (viaElegida === encima.id) esperar(encima.id);
+      else { viaElegida = encima.id; audio.play('cock'); }
+    }
+    // (Si el cursor se va de esa vía, hay que volver a elegirla.)
+    if (!encima || trenEncima || viaElegida !== encima.id) viaElegida = null;
 
     // Volver: Escape o clic derecho, que en un mapa es el gesto de doblarlo.
     if (input.wasPressed('Escape') || input.mouse.right) {
@@ -481,16 +322,58 @@ export function createMapScene(services) {
   }
 
   /**
-   * Salir a alcanzar ese tren.
-   *
-   * Le pasa al galope EL TREN QUE ESTABAS MIRANDO — el mismo que venía dando
-   * vueltas por esa vía, con el tipo y la escolta que tenía en el momento en
-   * que hiciste clic. Lo que leíste en el cartucho es lo que te vas a
-   * encontrar; el mapa no vuelve a sortear nada al salir.
+   * 🎭 EL QUE SIGUE EN ESE PAPEL: pasa por "nadie" y por los de la banda que pueden ir (siguen con vos, no están
+   * heridos) y no tienen ya el otro papel. Cada uno hace un solo papel, y cada papel lo hace uno solo.
    */
-  function salir(ruta) {
+  function cambiarPapel(papel) {
+    const b = gameState.banda;
+    const candidatos = [null, ...BANDA.map((m) => m.id).filter((id) => puedeIr(b, id) && (!b[id].papel || b[id].papel === papel))];
+    const ahora = quienHace(b, papel);
+    if (ahora) b[ahora].papel = null;
+    // 🙂 🙅 El que sigue puede no querer el puesto hoy (por su humor o por quién es): se lo saltea y lo dice en el plan.
+    // (Se sortea una vez por día y por puesto: volver a hacer clic no lo convence.)
+    let i = candidatos.indexOf(ahora);
+    for (let n = 0; n < candidatos.length; n++) {
+      i = (i + 1) % candidatos.length;
+      const sigue = candidatos[i];
+      if (!sigue) break;
+      if (disposicionPara(gameState, sigue, papel) === 'seNiega') { negativa = { papel, id: sigue, t: 2.5 }; continue; }
+      darPapel(b, sigue, papel);
+      break;
+    }
+    audio.play('cock');
+  }
+  /** 🙅 El último que no quiso un puesto, para decirlo en el plan un rato. */
+  let negativa = null;
+
+  /**
+   * Salir a esperar ese tren.
+   *
+   * 🔁 🚂 *(BRUJULA: "salir a un tren hace pasar el tiempo hasta que pasa")*: el tiempo corre hasta la parte del día en
+   * que pasa (el viaje está adentro: si salís temprano, esperás en la vía), y el asalto se juega con esa luz. La vuelta
+   * cuesta lo mismo que la ida (`gameState.viajeDeVuelta`, ver scenes/resultsScene.js). El tren sale del horario.
+   */
+  /**
+   * 🗞️ IR A ESPERAR A UNA VÍA (ver `esperarEnVia` en systems/horario.js): si en ese rato pasa un tren, salís a él como
+   * a cualquiera del horario. Si no pasa ninguno, esperaste hasta la noche y volvés al campamento con el día perdido
+   * (lo que tardaste en volver, también).
+   */
+  function esperar(rutaId, dia = null) {
+    const { tren, hasta } = esperarEnVia(gameState, rutaId, dia);
+    if (tren) { salir(tren); return true; }
     audio.play('escape');
-    const tren = ruta.tren;
+    pasar(gameState, hasta - ahora(gameState) + 1 + viajeDe(rutaId));
+    if (gameState.campamento) (gameState.campamento.noticias = gameState.campamento.noticias || []).push('sinTren');
+    scenes.goTo('camp');
+    return false;
+  }
+
+  function salir(tren) {
+    audio.play('escape');
+    pasar(gameState, faltaPara(gameState, tren));
+    gameState.viajeDeVuelta = viajeDe(tren.ruta);
+    sacarDelHorario(gameState, tren.id);
+    const ruta = rutas.find((r) => r.id === tren.ruta);
     scenes.goTo('ride', {
       composicion: tren.composicion,
       dificultad: tren.dificultad.id,
@@ -502,7 +385,11 @@ export function createMapScene(services) {
       encubiertos: tren.encubiertos,
       paquetes: tren.paquetes,
       cajaOculta: tren.cajaOculta,
+      maletinEn: tren.maletinEn ?? null,
+      cajaGordaEn: tren.cajaGordaEn ?? null,
       ruta: ruta.id,
+      // 🎭 El plan: quién hace cada papel (también queda en gameState.banda). Lo usa la etapa 5.
+      papeles: Object.fromEntries(PAPELES.map((p) => [p, quienHace(gameState.banda, p)])),
     });
   }
 
@@ -538,24 +425,23 @@ export function createMapScene(services) {
       else if (p.etiqueta === 'arriba') r.text(p.nombre, p.x, p.y - 10, color, 'center', halo);
       else r.text(p.nombre, p.x, p.y + 10, color, 'center', halo);
     }
-    if (encima) {
-      for (const p of encima.paradas) {
-        const lugar = REGION.lugares.find((l) => l.id === p.lugar);
-        if (lugar) mapaViejo.anillo(ctx, lugar.x, lugar.y, 7, 32);
-      }
-      if (encima.circular && encima.terminal) {
-        const lugar = REGION.lugares.find((l) => l.id === encima.terminal);
-        if (lugar) { mapaViejo.anillo(ctx, lugar.x, lugar.y, 7, 9); mapaViejo.anillo(ctx, lugar.x, lugar.y, 9, 9); }
-      }
-    }
     const k = REGION.campamento;
     if (Math.floor(scroll * 3) % 2 === 0) mapaViejo.fueguito(ctx, k.x + 8, k.y + 1);
     // (🔁 Al costado de la carpa y no abajo: abajo le tapaba un pedazo a la vía que pasa por ahí.)
     r.text(T.mapa.campamento, k.x - 6, k.y + 9, selloActual(), 'left', halo);
-    for (const ruta of rutas) if (ruta.tren) mapaViejo.tren(ctx, puntoEn(ruta, ruta.tren.t), tangenteEn(ruta, ruta.tren.t), scroll);
+    // 🚂 El tren del renglón que señalás (o el próximo de la vía señalada), quieto donde lo esperarías.
+    const marcado = trenMarcado();
+    if (marcado) {
+      const ruta = rutas.find((x) => x.id === marcado.ruta), p = dondeLoEsperas(marcado.ruta);
+      const t = tDe(ruta, p);
+      // (Con un anillo del color del sello, que parpadea: el tren solo es un punto y no se encontraba.)
+      if (Math.floor(scroll * 3) % 2 === 0) mapaViejo.anillo(ctx, p.x, p.y, 7, 32);
+      mapaViejo.tren(ctx, puntoEn(ruta, t), tangenteEn(ruta, t), scroll);
+    }
     r.text('N', 30, CONFIG.view.height - 30 - 16, tintaFuerte(), 'center', halo);
     ctx.restore();
     dibujarCartucho(r);
+    dibujarPlan(r);
   }
 
   function render(r) {
@@ -578,9 +464,9 @@ export function createMapScene(services) {
     for (const ruta of rutas) if (ruta !== encima) dibujarVia(r, ruta, false);
     if (encima) dibujarVia(r, encima, true);
     dibujarLugares(r);
-    if (encima) dibujarParadas(r, encima);
     dibujarCampamento(r);
-    for (const ruta of rutas) if (ruta.tren) dibujarTren(r, ruta);
+    const marcado = trenMarcado();
+    if (marcado) dibujarTren(r, rutas.find((x) => x.id === marcado.ruta), tDe(rutas.find((x) => x.id === marcado.ruta), dondeLoEsperas(marcado.ruta)));
     r.ctx.restore();
     dibujarRosaDeLosVientos(r);
     dibujarCartucho(r);
@@ -771,9 +657,9 @@ export function createMapScene(services) {
    * los trenes siempre van para adelante por su circuito, así que el "atrás"
    * lo dice la propia curva.
    */
-  function dibujarTren(r, ruta) {
-    const p = puntoEn(ruta, ruta.tren.t);
-    const u = tangenteEn(ruta, ruta.tren.t);
+  function dibujarTren(r, ruta, t) {
+    const p = puntoEn(ruta, t);
+    const u = tangenteEn(ruta, t);
 
     r.box(p.x, p.y, 2, 2, colors.mapaTinta);
     r.box(p.x, p.y, 1, 1, colors.mapaSello);
@@ -810,28 +696,6 @@ export function createMapScene(services) {
 
       const color = p.tipo === 'pueblo' ? colors.mapaTinta : colors.mapaTintaSuave;
       etiqueta(r, p.nombre, p.x, p.y, p.etiqueta, color);
-    }
-  }
-
-  /**
-   * DÓNDE PARA EL TREN QUE ESTÁS MIRANDO.
-   *
-   * Sólo de la vía señalada, y sólo mientras la señalás. Es lo que hace que la
-   * regla del sorteo se pueda VER en vez de tener que leerla: estos son los
-   * puntos donde a ese tren le cambia la escolta, y el doble anillo es su
-   * terminal, donde deja de ser este tren y pasa a ser otro.
-   */
-  function dibujarParadas(r, ruta) {
-    for (const p of ruta.paradas) {
-      const lugar = REGION.lugares.find((l) => l.id === p.lugar);
-      if (lugar) r.circle(lugar.x, lugar.y, 6, colors.mapaResalte, 0.8);
-    }
-    if (ruta.circular && ruta.terminal) {
-      const lugar = REGION.lugares.find((l) => l.id === ruta.terminal);
-      if (lugar) {
-        r.circle(lugar.x, lugar.y, 6, colors.mapaSello, 0.9);
-        r.circle(lugar.x, lugar.y, 8, colors.mapaSello, 0.6);
-      }
     }
   }
 
@@ -876,12 +740,7 @@ export function createMapScene(services) {
    * leyenda; acá es lo único que habla. Va abajo, fijo, y no siguiendo al
    * cursor: un cartel que persigue al mouse tapa justo lo que querés mirar.
    *
-   * Lo que dice de una vía con tren es todo lo que necesitás para decidir SIN
-   * salir a buscarlo: qué tren es, una idea de su carga, con cuánta escolta
-   * viaja, y —lo más importante— DÓNDE PARA PRÓXIMO, porque en la próxima
-   * parada esa escolta se vuelve a sortear y en la terminal cambia el tren
-   * entero. Sin esa última línea, ver la dificultad cambiar sola sería un
-   * misterio; con ella, la ves venir.
+   * 🔁 🚂 Ya no dice qué tren va por la vía señalada (los trenes ya no dan vueltas): es el horario. Ver abajo.
    */
   function dibujarCartucho(r) {
     // Abajo a la derecha, que es donde se imprimía. Corrido del centro para
@@ -902,44 +761,97 @@ export function createMapScene(services) {
     const suave = nuevo ? TINTA_SUAVE_NUEVA : colors.mapaTintaSuave;
     const sin = { halo: null, lienzo: nuevo ? estiloNuevo.lienzoFino(r.ctx) : undefined };   // adentro del cartucho el fondo ya está limpio
 
-    // Sin nada señalado, el cartucho hace de portada: dice qué mapa es.
-    if (!encima) {
-      r.text(REGION.nombre, cx, y + 14, tintaFuerte(), 'center', sin);
-      r.text(T.mapa.subtitulo, cx, y + 24, suave, 'center', sin);
-      r.text(T.mapa.ayuda, cx, y + 38, tintaFuerte(), 'center', sin);
-      r.text(T.mapa.volver, cx, y + 48, suave, 'center', sin);
-      return;
-    }
-
-    r.text(encima.nombre, cx, y + 11, tintaFuerte(), 'center', sin);
-
-    // Ramal muerto: no hay nada más que decir.
-    if (encima.servicio === false) {
-      r.text(T.mapa.sinServicio, cx, y + 30, suave, 'center', sin);
-      return;
-    }
-
-    // Viene de otra región y ahora mismo no hay ninguno: hay que esperarlo.
-    if (!encima.tren) {
-      r.text(T.mapa.deOtraRegion, cx, y + 26, suave, 'center', sin);
-      r.text(T.mapa.sinTrenAhora, cx, y + 40, tintaFuerte(), 'center', sin);
-      return;
-    }
-
-    const tren = encima.tren;
-    r.text(`${tren.tipoTren.name} · ${tren.dificultad.short}`, cx, y + 21,
-      nuevo ? oscurecido(tren.dificultad.color) : tren.dificultad.color, 'center', sin);
-    r.text(tren.tipoTren.pista, cx, y + 30, suave, 'center', sin);
-
-    const proxima = proximaParada(encima);
-    const texto = !proxima ? T.mapa.sigueDeLargo
-      : proxima.esTerminal ? T.mapa.vuelveA(nombreDe(proxima.lugar))
-      : T.mapa.paraEn(nombreDe(proxima.lugar));
-    r.text(texto, cx, y + 39, suave, 'center', sin);
-
-    // Parpadea: es la única cosa urgente que dice este mapa.
+    /**
+     * 🚂 EL HORARIO *(BRUJULA, "Elegir el tren: el horario")*: arriba, la vía del tren señalado y lo que cuesta el
+     * viaje (o el título y cómo volver); abajo, un renglón por tren, en orden: el día, la parte y el tipo. El de la vía
+     * señalada va en el color del sello; al que ya no llegás, en tinta suave y con "no llegas".
+     */
+    // 🗞️ (Sólo los que sabés: los de pasajeros y los rumores. Y con una vía elegida, arriba se pide el segundo clic.)
+    const trenes = conocidos(gameState);
+    const tm = trenMarcado();
+    const Tm = T.mapa;
     const vivo = Math.floor(scroll * 3) % 2 === 0;
-    r.text(T.mapa.salir, cx, y + 48, vivo ? selloActual() : tintaFuerte(), 'center', sin);
+    const rutaArriba = !trenEncima && encima ? encima : tm ? rutas.find((x) => x.id === tm.ruta) : null;
+    if (viaElegida && encima && encima.id === viaElegida && !trenEncima) {
+      r.text(Tm.esperarOtraVez, cx, y + 11, vivo ? selloActual() : tintaFuerte(), 'center', sin);
+    } else if (trenEncima && trenEncima.visto) {
+      // 🕵️ (Uno que fue a mirar alguien de la banda: arriba, lo que te contó. El básico, el vagón especial; el completo,
+      // la escolta, la caja más gorda y el vagón del maletín, si J.Mc. lo espera.)
+      const t = trenEncima, completo = t.visto === 'completo';
+      const lleva = t.maletinEn && encargoAbierto(gameState) && !tieneMaletin(gameState);
+      const texto = completo
+        ? Tm.escolta(t.dificultad.short) + (t.cajaGordaEn ? Tm.cajaEn(t.cajaGordaEn) : '') + (lleva ? Tm.maletinEn(t.maletinEn) : '')
+        : (Tm.especial[t.especial] || '') + (lleva ? Tm.conMaletin : '');
+      r.text(texto, cx, y + 11, tintaFuerte(), 'center', sin);
+    } else if (rutaArriba) {
+      r.text(`${rutaArriba.nombre} · ${Tm.viaje(viajeDe(rutaArriba.id))}`, cx, y + 11, tintaFuerte(), 'center', sin);
+    } else {
+      r.text(Tm.horario, cx, y + 11, tintaFuerte(), 'center', sin);
+    }
+    renglones = [];
+    trenes.slice(desde, desde + RENGLONES).forEach((t, i) => {
+      const yy = y + 22 + i * 9;
+      const f = fechaDe(t.dia), llega = llegas(gameState, t);
+      // (🗞️ De un rumor, el día sin la parte: "JUE 21 · CARGA · RUMOR".)
+      const cuando = t.sabes === 'rumor' ? Tm.dia(T.tiempo.semanaLarga[f.semana], f.dia)
+        : `${Tm.dia(T.tiempo.semanaLarga[f.semana], f.dia)}, ${T.tiempo.partesMin[TIEMPO.partes[t.parte]].toUpperCase()}`;
+      const texto = `${cuando} · ${t.tipoTren.short}` + (t.sabes === 'rumor' ? ' · ' + (t.visto ? Tm.cierto : Tm.rumor) : t.visto ? ' · ' + Tm.visto : '')
+        + (llega ? '' : ' · ' + Tm.noLlegas);
+      const color = t === trenEncima ? (vivo ? selloActual() : tintaFuerte())
+        : !llega ? suave
+        : encima && encima.id === t.ruta ? selloActual() : tintaFuerte();
+      r.text(texto, cx, yy, color, 'center', sin);
+      renglones.push({ x, y: yy, w, tren: t });
+    });
+    if (!trenes.length) r.text(Tm.sinTrenes, cx, y + 30, suave, 'center', sin);
+    // (Si hay más arriba o abajo, una flechita al costado.)
+    if (desde > 0) r.text('▲', x + w - 8, y + 22, suave, 'center', sin);
+    if (desde + RENGLONES < trenes.length) r.text('▼', x + w - 8, y + 22 + (RENGLONES - 1) * 9, suave, 'center', sin);
+  }
+
+  /**
+   * 🎭 EL PLAN, en su recuadro impreso en el papel (`mapaViejo.planEn`), a la izquierda del cartucho: cada papel en un
+   * renglón y abajo quién lo hace. El papel bajo el cursor va en el color del sello.
+   */
+  function dibujarPlan(r) {
+    const P = mapaViejo.planEn(), b = gameState.banda;
+    const X = origenNuevo.x + P.x, Y = origenNuevo.y + P.y, cx = X + mapaViejo.PLAN.w / 2;
+    // (Cada papel ocupa dos renglones, el suyo y el del nombre; el clic vale en los dos.)
+    planCaja = { x: P.x, w: mapaViejo.PLAN.w, filas: PAPELES.map((_, i) => P.y + 21 + i * 19) };
+    const sin = { halo: null, lienzo: estiloNuevo.lienzoFino(r.ctx) };
+    r.text(T.mapa.plan, cx, Y + 10, tintaFuerte(), 'center', sin);
+    PAPELES.forEach((p, i) => {
+      const quien = quienHace(b, p);
+      const color = planEncima === p ? selloActual() : TINTA_SUAVE_NUEVA;
+      const yy = origenNuevo.y + planCaja.filas[i];
+      r.text(T.mapa.papeles[p], cx, yy, color, 'center', sin);
+      // (🙅 Si recién alguien no quiso este puesto, se dice ahí un rato.)
+      const no = negativa && negativa.papel === p && negativa.t > 0 ? negativa : null;
+      // (Un punto más chica, para que entre en el cuadro.)
+      r.text(no ? T.mapa.noQuiere(MIEMBRO[no.id].corto.toUpperCase()) : quien ? MIEMBRO[quien].corto.toUpperCase() : T.mapa.nadie,
+        cx, yy + 8, no || planEncima === p ? selloActual() : tintaFuerte(), 'center', no ? { ...sin, tam: 7 } : sin);
+      // 📒 Con el cursor encima: de cada 100 veces cuántas sale bien, y los dos motivos que más pesan (BANDA-NUEVA.md:
+      // "el plan lo muestra con una palabra y dos motivos"). ⚠️ Sin la parte del día: se sabe al salir al tren.
+      if (planEncima === p && quien && !no && b[quien].libreta) {
+        const e = b[quien], disp = disposicionPara(gameState, quien, p);
+        const resaca = !!(e.resaca || (quien === 'frank' && gameState.campamento && gameState.campamento.marcas && gameState.campamento.marcas.frankResaca));
+        const pr = pronostico(e, p, { resaca, disp });
+        const bien = ESCALERA[pr.pasos][0];
+        const motivos = pr.motivos.slice().sort((a, c) => Math.abs(c[1]) - Math.abs(a[1])).slice(0, 2)
+          .map(([k, v]) => `${T.libreta.pasos[k].toUpperCase()} ${v > 0 ? '+' : '−'}${Math.abs(v)}`).join(' · ');
+        const t1 = T.libreta.pronostico(MIEMBRO[quien].corto.toUpperCase(), bien);
+        // (🔁 Sobre un papelito limpio, con su raya: encima de las vías no se leía.)
+        const an = Math.ceil(Math.max(r.medir(t1, 7), motivos ? r.medir(motivos, 7) : 0)) + 10, al = motivos ? 20 : 12;
+        const px0 = Math.round(cx - an / 2), py0 = Math.round(Y - 4 - al);
+        // (En la capa fina, como las vías: si no, quedaban encima del papelito.)
+        const fino = sin.lienzo, caja = (x0, y0, w0, h0, c) => { fino.fillStyle = c; fino.fillRect(x0, y0, w0, h0); };
+        caja(px0, py0, an, al, mapaViejo.COLOR_HALO);
+        caja(px0, py0, an, 1, TINTA_SUAVE_NUEVA); caja(px0, py0 + al - 1, an, 1, TINTA_SUAVE_NUEVA);
+        caja(px0, py0, 1, al, TINTA_SUAVE_NUEVA); caja(px0 + an - 1, py0, 1, al, TINTA_SUAVE_NUEVA);
+        r.text(t1, cx, py0 + 6, tintaFuerte(), 'center', { ...sin, tam: 7 });
+        if (motivos) r.text(motivos, cx, py0 + 14, TINTA_SUAVE_NUEVA, 'center', { ...sin, tam: 7 });
+      }
+    });
   }
 
   function exit() {

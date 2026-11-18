@@ -17,6 +17,8 @@
  */
 
 import { CONFIG } from '../data/config.js';
+// (✉️ El maletín de J.Mc.: si el tren de carga lo esconde.)
+import { encargoAbierto, tieneMaletin } from '../data/momentos.js';
 import { dibujarTechoDesdeArriba, dibujarGondolaDesdeArriba, dibujarObstaculoTecho as obstaculoTecho } from '../world/techoDesdeArriba.js';
 import { geoTecho, yEnTecho } from '../world/techoGeometria.js';
 import {
@@ -35,7 +37,7 @@ import {
   crearSensacionTecho, actualizarSensacionTecho, lupaDelTecho, bamboleoDelTecho,
   sombraDelTren, dibujarSensacionTecho,
 } from '../world/sensacionTecho.js';
-import { distance, moveAndCollide } from '../engine/collision.js';
+import { distance, moveAndCollide, overlapsSolid, hasLineOfSight, angleDifference } from '../engine/collision.js';
 import { drawParallax, drawSpeedLines } from '../engine/parallax.js';
 import { escalarColor, ALTO_DEL_ENGANCHE, MEDIDAS } from '../world/trenTresCuartos.js';
 import { sembrarDesierto, pintarLechoDeVia } from '../world/desierto.js';
@@ -44,7 +46,7 @@ import { dibujarSueloDeAfuera, sombraDelSuelo } from '../world/estiloNuevo/suelo
 import { cerrarCortinas, cortinasAlPasar } from '../world/cortinas.js';
 import { crearPortones, actualizarPortones, dibujarPorton } from '../world/porton.js';
 import { TRAIN_TYPES } from '../data/train.js';
-import { sortearComposicion } from '../world/train.js';
+import { sortearComposicion, ESCONDITES_DEL_MALETIN } from '../world/train.js';
 import { buildTrain, drawPisoDelTren, cosasAltasDelTren, luzDeLosVentanales, oscuridadDeNoche, farolesDelTren, isInsideZone } from '../world/train.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { vagonesNuevos, estamparPieza, PASO } from '../world/estiloNuevo/vagones.js';
@@ -73,6 +75,8 @@ import {
 import { jefeParaEsteAsalto, BOSSES } from '../data/bosses.js';
 import { guardHealth } from '../data/guards.js';
 import { robTimeDe } from '../data/paquetes.js';
+import { MIEMBRO, PLAN as PLAN_BANDA, sortearPlan, herir, PAPELES_NUEVOS, jinetesMenos, demoraVigia } from '../data/banda.js';
+import { TIEMPO } from '../data/tiempo.js';
 import {
   updatePassenger, drawPassenger, panic, amenazado, sePuedeAmenazar, baseDeDibujo,
 } from '../entities/passenger.js';
@@ -85,15 +89,16 @@ import {
   updateRiders, createRiderWatch, chanceContraElTecho, damageRider, abrirJinete, punteriaPorCarril, spawnRider,
 } from '../systems/riders.js';
 import { puedeTirarDesdeElTecho, trastabillar } from '../entities/player.js';
-import { andar } from '../entities/figura.js';
+import { andar, dibujarPersona, faseDeAndar, tendidoNuevo } from '../entities/figura.js';
 import { maxJinetesPara } from '../data/riders.js';
 import { createLootable, drawLootable, esCajaFuerte } from '../entities/lootable.js';
 import {
   updateDoor, puertaTapaVision, drawDoor, trabarPuerta, destrabarPuerta, dañarPuerta, hojaChoca, partesDePuerta,
 } from '../entities/door.js';
 import {
-  updateEnemy, alertTo, alertCombat, alertaEnGuardia, separateEnemies, armarGuardia,
+  updateEnemy, alertTo, alertCombat, alertaEnGuardia, separateEnemies, armarGuardia, canSeeFrom, viajarHacia,
 } from '../systems/ai.js';
+import { crearCompanero, crearPasajeroDeBanda, actualizarCompanero, blancoDelGuardia, blancoDelJinete, ordenar, ordenAlAlcance, PESO_COMPANERO, ORDENES, pedirForma, NOMBRES_DE_FORMA } from '../systems/companero.js';
 import { updateBullets } from '../systems/combat.js';
 import { updateExplosives, prenderCajon, soltarExplosivo } from '../systems/explosives.js';
 import { createCajon } from '../entities/cajon.js';
@@ -148,6 +153,9 @@ export function createRaidScene(services) {
   let avisoPerdio = false;
   // Cuánto llevás sosteniendo [E] para trepar o bajar del carbón (etapa 5).
   let carbonProgress = 0;
+  // ✉️ Revisar un mueble buscando el doble fondo del maletín (ver `dondeRevisar`).
+  let revisarProgress = 0, revisarSoltar = false, maletinBuscado = false;
+  const TIEMPO_DE_REVISAR = 1.2;   // (segundos: más que una bolsa, menos que una caja fuerte)
   let rodantes, rodanteTimer, rodanteRafaga, rodanteRafagaTimer;
   let tranqueras, estampidas, estampidaSiguienteId;
   // Los cajones de pólvora del vagón de armas (Fase 6a, entities/cajon.js).
@@ -182,6 +190,48 @@ export function createRaidScene(services) {
   let vaivenCamaraX = 0;
   let vaivenPeso = 0;
   let timeLeft, duracionInicial, fondoTotal, collected, kills, civilians, amenazados, escapeProgress;
+  /**
+   * 🎭 EL PLAN DE ESTE ASALTO (ver `PLAN` en data/banda.js): `{ caballos, caballoTarde, pasajero }`, o null (el estilo
+   * viejo y las pruebas no lo usan, salvo que la prueba lo traiga en `params.plan`). `caballoEspera`: los segundos que
+   * le faltan al caballo que llega tarde (null hasta que llegás a la salida por primera vez). `pasajeroBanda`: el
+   * pasajero que es de la banda. `distraccionUsada`: la [Q] es una sola por asalto.
+   */
+  let plan = null, caballoEspera = null, pasajeroBanda = null, distraccionUsada = false;
+  // 📡 🔭 Cuándo se avisa cómo le fue al del telégrafo y al vigía, y de qué refuerzo ya avisó el vigía.
+  let anuncioPlan = 0, avisoVigia = -1;
+  /**
+   * 🎭 `dejoLaSalida`: subiste donde está el caballo, así que recién cuenta cuando volvés a la salida después de
+   * haberte ido. `datosPlan`: lo que dice el pasajero, arriba de la pantalla, con lo que le falta para irse.
+   */
+  let dejoLaSalida = false, datosPlan = null;
+  /**
+   * 🐎 EL CABALLO QUE LLAMASTE A OTRO ENGANCHE (ver `PLAN.llamarCaballo`): `{ tramo, queda }`. Llega cuando `queda` es 0,
+   * y desde ese enganche te podés escapar como desde la salida.
+   */
+  let llamado = null;
+  /** 🎭 Si ya le hablaste al de la banda que va de pasajero (te dio los datos). */
+  let hablasteConElPasajero = false;
+  /** ⛓️ El guardia que va a esposar al pasajero de la banda (uno por vez), y tu [E] para liberarlo. */
+  let esposador = null, rescateProgress = 0;
+  // 🤝 Los muertos del compañero: son suyos *(Santi: "cada personaje tiene su recompensa por su cabeza, es decir que el
+  // jugador no debería quedar afectado por lo que hace el otro")*. No entran en `kills` ni en `civilians`.
+  let killsCompanero = 0, civilesCompanero = 0;
+  // Cómo terminó el compañero: 'escapo', 'quedo' o 'cayo' (lo anota `endRaid`).
+  let companeroFinal = null;
+  /** 🎭 Cómo terminó el pasajero de la banda, si lo activaste: `{ id, final: 'escapo'|'bajo'|'preso', herido }`. */
+  let pasajeroFinal = null;
+  /** 🎒 Lo que robó el compañero y si quedó para vos (ver `endRaid`). */
+  let companeroBotin = null;
+  /**
+   * 📣 LAS ÓRDENES ([F]): cuánto llevás sosteniéndola (un civil se marca sosteniendo, ver `ordenesAlCompanero`), si
+   * este apretón ya dio su orden, y la marca chica que queda un momento donde lo mandaste.
+   */
+  let fSostenida = 0;
+  let fUsada = false;
+  let marcaOrden = null;
+  /** 🔁 Si la [F] está apretada (la orden sale al soltarla) y el círculo que se ve mientras tanto. */
+  let fApretada = false;
+  let circuloOrden = null;
   /**
    * LO QUE LLEVÁS ENCIMA QUE NO ES PLATA (ver data/objetos.js). Va aparte de
    * `collected` a propósito: `collected` es el dinero, y sobre el dinero están
@@ -249,6 +299,8 @@ export function createRaidScene(services) {
    */
   let alto, altoUsado, tiroteo;
   let wagonActual, wagonMasProfundo, ultimoVisto;
+  // 🤝 El compañero (systems/companero.js): null si asaltás solo.
+  let companero = null;
   let scroll = 0;
   let blastMarks = [];
   let world, alarm;
@@ -283,12 +335,25 @@ export function createRaidScene(services) {
         encubiertos: params.encubiertos || [],
         paquetes: params.paquetes || [],
         cajaOculta: !!params.cajaOculta,
+        // (✉️ Mientras el encargo de J.Mc. está abierto y no lo tienes ya, el de carga esconde el maletín.)
+        maletin: !!gameState.campamento && encargoAbierto(gameState) && !tieneMaletin(gameState),
+        maletinEn: params.maletinEn ?? null,
+        cajaGordaEn: params.cajaGordaEn ?? null,
         dia: !!gameState.esDeDia,
         portonEn: params.portonEn ?? null,
       }
     );
     map = train.map;
+    maletinBuscado = !!gameState.campamento && encargoAbierto(gameState) && !tieneMaletin(gameState) && train.tipoTren && train.tipoTren.id === 'carga';
     player = train.player;
+    /**
+     * 🤝 EL COMPAÑERO SUBE CON VOS, un paso al lado *(Santi: "el compañero quiero que sea más importante, al punto de
+     * que no se puede jugar el asalto solo")*. Para asaltar solo: `solo: true`, o `?solo` en la dirección.
+     * (Elegir antes del asalto si va o no, y si va de jinete, es un paso que todavía no está.)
+     */
+    // 🔁 EL COMPAÑERO DEL TREN, GUARDADO *(Santi, 2026-11-13: la banda no entra al tren, ver BRUJULA.md)*: sólo con
+    // `?companero` en la dirección (o `params.companero`), para probarlo.
+    companero = params.companero || /[?&]companero\b/.test(location.search) ? crearCompanero(player.x, player.y, gameState.formaCompanero) : null;
 
     // 🆕 La ropa de la gente se sortea según la hora (de noche, más mangas largas).
     fijarHoraDelSorteo(gameState.esDeDia);
@@ -303,11 +368,37 @@ export function createRaidScene(services) {
     }
 
     /**
+     * 🎭 EL PLAN: se sortea si le salió bien al de los caballos, y el que va de pasajero toma el lugar de uno de los
+     * sentados (que no sea encubierto, rico, ni de los que saben de la caja oculta).
+     */
+    plan = params.plan || (estiloNuevo.activo && !params.prueba ? sortearPlan(gameState.banda, Math.random, (gameState.campamento && gameState.campamento.marcas) || {}, gameState.tiempo ? TIEMPO.partes[gameState.tiempo.parte] : null) : null);
+    anuncioPlan = plan && (plan.telegrafo || plan.vigia) ? 1.5 : 0; avisoVigia = -1;
+    caballoEspera = null; pasajeroBanda = null; distraccionUsada = false; dejoLaSalida = false; datosPlan = null;
+    hablasteConElPasajero = false;
+    llamado = null;
+    esposador = null; rescateProgress = 0;
+    // (Las pruebas que traen su plan hecho: si no dice, el de los caballos viene salvo que le haya salido mal.)
+    if (plan && plan.llamable === undefined) plan.llamable = !!plan.caballos && !plan.caballoTarde;
+    if (plan && plan.pasajero) {
+      // 🔁 Sólo en los vagones donde circula gente (`PLAN.vagonesDelPasajero`): en el tren de carga no viaja.
+      const vagonesConGente = new Set(train.tramos
+        .filter((t) => t.tipo === 'vagon' && PLAN_BANDA.vagonesDelPasajero.includes(t.plantilla.id)).map((t) => t.wagon));
+      const sentados = train.passengers.filter((pa) => pa.sentado && vagonesConGente.has(pa.wagon) && !pa.encubierto && !pa.bartender && !pa.sabeDeCaja && !pa.botin);
+      if (sentados.length) {
+        pasajeroBanda = sentados[rng.int(0, sentados.length - 1)];
+        pasajeroBanda.banda = plan.pasajero;
+        pasajeroBanda.dormido = false;
+        pasajeroBanda._aspecto = { ...MIEMBRO[plan.pasajero].aspecto };
+      }
+    }
+
+    /**
      * 🔬 EL BANCO DE PRUEBAS, igual que el de la huida: sólo con `prueba`, y
      * sólo para mirar. Sirve para llevar la cámara a cualquier vagón sin
      * tener que caminarlo.
      */
-    if (params.prueba) window.RAID_BANCO = () => ({ avisosTecho, spawnReinforcement, camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas, rodantes: () => rodantes });
+    // (🧪 `FORAJIDO_BANCO`: para mirar adentro de un asalto de verdad, con el plan sorteado, sin el modo de prueba.)
+    if (params.prueba || globalThis.FORAJIDO_BANCO) window.RAID_BANCO = () => ({ plan, llamado, floaters, esposador: () => esposador, pasajeroFinal: () => pasajeroFinal, caballoEspera, pasajeroBanda, alarm, exitZone: train.exitZone, endRaid, loot,  avisosTecho, spawnReinforcement, camera, player, train, enemies, bullets, vaivenCamaraX, vaivenPeso, world, timeLeft, duracionInicial, collected, objetos, alforjas, alarma: alarm.active, companero: () => companero, techObstacles, astillas, riders: () => riders, enganches: () => enganches, caidas: () => caidas, rodantes: () => rodantes });
     enemies = train.enemies;
     // Cada uno con su arma desde el primer cuadro, aunque esté lejos y congelado
     // (ver data/armasGuardia.js). Los que llegan después la reciben al moverse.
@@ -431,6 +522,16 @@ export function createRaidScene(services) {
     arrastre = null;
     kills = 0;
     civilians = 0;
+    killsCompanero = 0;
+    civilesCompanero = 0;
+    companeroFinal = null;
+    companeroBotin = null;
+    pasajeroFinal = null;
+    fSostenida = 0;
+    fUsada = false;
+    marcaOrden = null;
+    fApretada = false;
+    circuloOrden = null;
     amenazados = 0;
     rendidosMatados = 0;
     noqueadosRematados = 0;
@@ -443,6 +544,8 @@ export function createRaidScene(services) {
     sheriffMuerto = false;
     auraTimer = 0;
     escapeProgress = 0;
+    revisarProgress = 0;
+    revisarSoltar = false;
     finished = false;
     endTimer = 0;
     outcome = null;
@@ -462,7 +565,9 @@ export function createRaidScene(services) {
     ultimoVisto = { x: player.x, y: player.y };
 
     world = {
-      map, player, enemies, passengers, bullets, explosives, riders, loot, doors,
+      // 🤝 A quién le tira cada jinete (systems/riders.js): vos o el compañero.
+      blancoDeJinete: (rd) => blancoDelJinete(rd, player, companero, world),
+      map, player, companero, enemies, passengers, bullets, explosives, riders, loot, doors,
       // (🆕 Las cortinas de los camarotes, de noche: ver world/cortinas.js.)
       cortinas: train.cortinas || [],
       // (🆕 La puertita vaivén de la barra de primera clase: ver world/porton.js.)
@@ -529,24 +634,6 @@ export function createRaidScene(services) {
        */
       get objetos() { return objetos; },
       get casillas() { return casillasUsadas(); },
-      /**
-       * `F` EMPUJA UN CAJÓN SI TENÉS UNO AL LADO; SI NO, GOLPEA.
-       *
-       * Lo pregunta `updatePlayer` (entities/player.js) y devuelve si hubo
-       * empujón, para no hacer las dos cosas con la misma tecla. Es el mismo
-       * criterio que ya tiene `[E]`, que roba, amenaza, abre una tranquera o
-       * escapa según qué tengas más cerca — un verbo, varias cosas, y el cartel
-       * sobre la cabeza dice cuál.
-       *
-       * LA RUEDITA SIGUE SIENDO SIEMPRE EL CUCHILLO, a propósito: si querés
-       * golpear a alguien parado al lado de un cajón, ése es el gesto. Las dos
-       * teclas del cuerpo a cuerpo dejaron de ser idénticas y ésa es la
-       * diferencia.
-       */
-      empujarCajon: () => {
-        const c = cajonCerca(false);
-        return c ? empujarCajon(c) : false;
-      },
       // El sacudón del tren traicionero (CONFIG.traqueteo): cuánto se le suma
       // a la dispersión de CUALQUIERA que dispare mientras dura el efecto.
       // 0 el resto del tiempo, y siempre 0 si este tren no tiene el sistema.
@@ -715,13 +802,21 @@ export function createRaidScene(services) {
       return map.isSolidForMovementAt(x, y);
     };
 
-    alarm = createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm });
+    // 🔭 El vigía de la banda: si vio venir a los de la locomotora, llegan más tarde (ver `demoraVigia` en data/banda.js).
+    alarm = createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm, demora: demoraVigia(plan) });
     /**
      * El techo de jinetes de este asalto se fija ACÁ, con la recompensa que ya
      * traías al subir al tren — no lo que hagas durante este asalto. Ver
      * data/riders.js (maxJinetesPara) y NOTAS-DISENO.md, paso B.
      */
-    riderWatch = createRiderWatch({ bus, audio, max: maxJinetesPara(gameState.bounty) });
+    // 🤕 El forastero que ayudaste (ver `PLAN` en data/banda.js): agradecido, la ley tarda más; soplón, viene con uno más.
+    const forastero = plan && plan.forastero;
+    riderWatch = createRiderWatch({
+      bus, audio,
+      // 📡 El del telégrafo cortó el cable: la ley se entera tarde y sale con menos (siempre al menos uno).
+      max: Math.max(PAPELES_NUEVOS.jinetesMin, maxJinetesPara(gameState.bounty) + (forastero === 'soplon' ? PLAN_BANDA.forasteroJinetes : 0) - jinetesMenos(plan)),
+      demora: forastero === 'agradecido' ? PLAN_BANDA.forasteroDemora : 0,
+    });
     // 🧪 EL ATAJO [8] DE HOY: los jinetes de la ley ya galopando al lado del tren, dos de cada lado, para verlos sin
     // esperar la alarma *(Santi: "como querés que me fije lo de los jinetes si aprieto 8 y no me lleva a ningún lado")*.
     if (params.pruebaJinetes) for (const lado of [1, -1, 1, -1]) spawnRider(world, lado);
@@ -760,6 +855,13 @@ export function createRaidScene(services) {
       if (v && params.pruebaPuertas) for (const d of doors) if (d.kind === 'blindada' && d.x > v.x - map.size && d.x < v.x + v.width + map.size) d.empujable = true;
     }
 
+    // 🤝 El compañero, un paso detrás tuyo (ya acomodado vos). Si entraste por el techo, él entra por la plataforma
+    // de abajo, donde quedó el caballo (subir al techo con vos es una orden que todavía no está).
+    if (companero && !player.enTecho) {
+      companero.x = player.x - 14; companero.y = player.y;
+      if (overlapsSolid(companero, map.isSolidAt)) companero.x = player.x + 14;
+    }
+
     camera.snap(player.x, player.y, map.bounds);
     listen();
     hud.show();
@@ -773,6 +875,11 @@ export function createRaidScene(services) {
       text: `${T.hud.wagon(train.boardedAt)} · ${v.short}`,
       life: 2.4, color: colors.text,
     });
+    /**
+     * 🎭 LO QUE TE DICE EL QUE VA DE PASAJERO: en qué vagón va la caja fuerte y cuántos guardias hay. Y que con [Q]
+     * distrae a uno.
+     */
+    // 🔁 Ya no te dice nada al subir: lo tenés que encontrar y hablarle (ver `hablarConElPasajero`).
 
     /**
      * ENTRAR CON LA ALARMA YA SONANDO.
@@ -1229,7 +1336,7 @@ export function createRaidScene(services) {
         }
       }),
 
-      bus.on('enemyKilled', ({ enemy, byPlayer, rendido, indefenso }) => {
+      bus.on('enemyKilled', ({ enemy, byPlayer, rendido, indefenso, delCompanero }) => {
         dejarParaRegistrar(enemy);
         /**
          * MATAR AL CAZARRECOMPENSAS NO CUENTA COMO UN MUERTO MÁS.
@@ -1298,7 +1405,8 @@ export function createRaidScene(services) {
           });
         }
 
-        kills++;
+        if (delCompanero) killsCompanero++;
+        else kills++;
 
         /**
          * PARA `honor` (ver `honorDelta`, state/gameState.js): distinguir un
@@ -1307,7 +1415,8 @@ export function createRaidScene(services) {
          * mute el estado); para bala o dinamita nadie lo capturó, así que se
          * lee directo del enemigo — nada le tocó esos campos antes de morir.
          */
-        if (byPlayer && enemy) {
+        // (🤝 Los remates del compañero no son tu honor.)
+        if (byPlayer && enemy && !delCompanero) {
           // Mismo criterio que systems/melee.js: si ya se estaba parando para
           // traicionarte, matarlo de un balazo tampoco es un remate indefenso.
           const eraRendido = rendido ?? (enemy.rendido && !enemy.traicionLevantando);
@@ -1326,8 +1435,9 @@ export function createRaidScene(services) {
         audio.play('kill');
       }),
 
-      bus.on('passengerKilled', () => {
-        civilians++;
+      bus.on('passengerKilled', ({ delCompanero } = {}) => {
+        if (delCompanero) civilesCompanero++;
+        else civilians++;
         audio.play('kill');
       }),
 
@@ -1427,6 +1537,8 @@ export function createRaidScene(services) {
       }),
 
       bus.on('playerHit', () => {
+        // 🤝 Si el guardia estaba peleando con el compañero, el golpe fue para él (ver `conBlanco`).
+        if (world.player !== player) { audio.play('playerHurt'); return; }
         camera.shake(CONFIG.feel.shakeHit, 0.24);
         audio.play('playerHurt');
       }),
@@ -1439,7 +1551,12 @@ export function createRaidScene(services) {
         });
       }),
 
-      bus.on('playerDown', () => endRaid('capturedDead')),
+      bus.on('playerDown', () => {
+        // 🤝 Lo mismo: si el que cayó es el compañero, el asalto sigue.
+        if (world.player !== player) { companeroCayo(); return; }
+        endRaid('capturedDead');
+      }),
+      bus.on('companeroCae', () => companeroCayo()),
 
       // 🤝 "¡TE CUBRO!" / "¡AVANZO!" (systems/escuadra.js).
       bus.on('guardiaGrita', ({ guardia, texto }) => {
@@ -1458,6 +1575,8 @@ export function createRaidScene(services) {
        * recompensa")*. Con más, te quieren muerto: tiran directo.
        */
       bus.on('guardiaTeVio', ({ guardia }) => {
+        // 🤝 El "¡ALTO!" es para vos: si al que vio es el compañero, no hay charla.
+        if (world.player !== player) return;
         if (altoUsado || tiroteo || finished || !player.alive) return;
         if (gameState.bounty >= CONFIG.rendicion.recompensaMax) return;
         if (guardia.esJefe || (guardia.sinArmaDeFuego && !guardia.armaId)) return;
@@ -1592,9 +1711,10 @@ export function createRaidScene(services) {
        * lado. Un grito no se corta a la mitad de un vagón, y un tabique de
        * madera no aísla a nadie de un tiroteo.
        */
-      bus.on('guardAlerted', ({ wagon }) => {
-        // Te vieron: acá sí saben exactamente dónde estás.
-        marcarPosicion(player.x, player.y);
+      bus.on('guardAlerted', ({ x, y, wagon }) => {
+        // 🐛 Antes anotaba SIEMPRE dónde estabas vos, aunque el que gritó sólo hubiera encontrado un cuerpo: todo el
+        // vagón te iba a buscar derecho. Ahora anota lo que vio el que gritó (a vos, tus pisadas o el cuerpo).
+        marcarPosicion(x ?? player.x, y ?? player.y);
         const centro = wagon ?? wagonActual;
         if (alarm.active) spreadAlarm(alarm.radius, centro);
         else alarm.trigger(centro);
@@ -1619,8 +1739,10 @@ export function createRaidScene(services) {
         camera.shake(1.2, 0.2);
       }),
 
-      bus.on('riderKilled', () => {
-        kills++;
+      bus.on('riderKilled', ({ delCompanero } = {}) => {
+        // (🤝 Los jinetes que baja el compañero son suyos.)
+        if (delCompanero) killsCompanero++;
+        else kills++;
         camera.shake(CONFIG.feel.shakeKill, 0.16);
         audio.play('kill');
       }),
@@ -1801,6 +1923,210 @@ export function createRaidScene(services) {
       const viene = e.wagon <= centro;
       alertCombat(e, viene ? x : e.x, viene ? y : e.y, world);
     }
+  }
+
+  /**
+   * 🤝 EL GUARDIA PIENSA CONTRA QUIEN VE: vos o el compañero. Toda la cabeza de los guardias (systems/ai.js) mira a
+   * `world.player`; en vez de cambiarla entera, mientras piensa un guardia que tiene al compañero de blanco, "el
+   * jugador" es el compañero (ver `blancoDelGuardia` en systems/companero.js). Así lo ve, sospecha de él, le tira y
+   * le pega con las mismas reglas que a vos. Los avisos de "te pegaron" se fijan en esto (`world.player !== player`).
+   */
+  function conBlanco(e, fn) {
+    const b = companero ? blancoDelGuardia(e, player, companero, world, canSeeFrom) : player;
+    if (b === player) return fn();
+    world.player = b;
+    try { fn(); } finally { world.player = player; }
+  }
+
+  /**
+   * 🎭 ¿LO VIERON ACUCHILLAR? *(Santi: "si lo ve acuchillando a uno pasa a pertenecer dentro de los objetivos de
+   * disparo del guardia, y es como si hubiera visto al jugador, sería el mismo sistema")*: si el guardia que iba a
+   * acuchillar cayó en este cuadro, cuenta una cuchillada, y todo guardia que lo esté viendo en ese momento entra en
+   * combate. Desde ahí está `descubierto`: los guardias le apuntan como a vos (ver `blancoDelGuardia`).
+   */
+  function vigilarCuchillada(blanco, estabaVivo) {
+    if (!blanco || !estabaVivo || (blanco.alive && !(blanco.inconsciente > 0))) return;
+    const c = companero;
+    c.cuchilladas++;
+    for (const e of enemies) {
+      if (e === blanco || !e.alive || e.inconsciente > 0 || e.rendido) continue;
+      if (!testigoVe(e, c)) continue;
+      if (!c.descubierto) floaters.push({ x: c.x, y: c.y - 26, text: T.plan.loVieron(MIEMBRO[c.banda].corto.toUpperCase()), life: 2.2, color: colors.enemyAlert });
+      c.descubierto = true;
+      e.blancoCompanero = true;
+      alertCombat(e, c.x, c.y, world, true);
+    }
+  }
+
+  /**
+   * 🎭 ¿EL GUARDIA VE LA CUCHILLADA? Como `canSeeFrom` (su cono y su alcance), pero **su propia mesa no le tapa** *(Santi:
+   * "fue a asesinar a un guardia sentado en el vagón de guardias y después de asesinarlo el tipo que estaba frente suyo no
+   * lo vio")*: la mesa de naipes es una casilla de carga, que tapa la vista como un cajón alto, y el sentado del otro
+   * lado no veía nada. Lo que no es pared y está a menos de `MESA_PROPIA` del que mira, no le tapa. Sólo para esto: a
+   * vos los guardias sentados te siguen viendo como siempre.
+   */
+  const MESA_PROPIA = 40;
+  function testigoVe(e, c) {
+    if (distance(e.x, e.y, c.x, c.y) > ((e.ai && e.ai.viewDistance) || CONFIG.enemy.viewDistance)) return false;
+    const cono = (e.ai && e.ai.viewAngle) || CONFIG.enemy.viewAngle;
+    if (Math.abs(angleDifference(e.facing, Math.atan2(c.y - e.y, c.x - e.x))) > cono) return false;
+    const tapa = (x, y) => map.blocksSightAt(x, y) && (map.tileAtPixel(x, y) === '#' || distance(x, y, e.x, e.y) > MESA_PROPIA);
+    return hasLineOfSight(e.x, e.y, c.x, c.y, tapa);
+  }
+
+  /**
+   * ⛓️ VAN A ESPOSARLO (ver `PLAN.esposanDesde` en data/banda.js): al pasajero de la banda descubierto, escondido o
+   * tirado. Con `esposanDesde` guardias o más en su vagón va el más cercano mientras los otros te pelean; con menos,
+   * sólo si vos estás en otro vagón. El que va deja de pensar como guardia: camina hasta él y, al lado, tarda
+   * `esposar` segundos. Si deja de poder (vos volvés al vagón, lo bajás, lo liberaste), lo suelta.
+   */
+  function actualizarEsposar() {
+    const c = companero;
+    const valido = c && c.pasajero && c.descubierto && !c.esposado && !c.arrastrado && !c.enTecho;
+    if (!valido) { soltarEsposador(); return; }
+    const vagon = train.wagonAt(c.x);
+    const aptos = enemies.filter((e) => e.alive && !(e.inconsciente > 0) && !e.rendido && !e.manosArriba && !e.maquinista &&
+      !e.esJefe && !(e.tirado > 0) && !e.enTecho && train.wagonAt(e.x) === vagon);
+    if (!aptos.length || (aptos.length < PLAN_BANDA.esposanDesde && train.wagonAt(player.x) === vagon)) { soltarEsposador(); return; }
+    if (esposador && aptos.includes(esposador)) return;
+    soltarEsposador();
+    esposador = aptos.reduce((m, e) => !m || distance(e.x, e.y, c.x, c.y) < distance(m.x, m.y, c.x, c.y) ? e : m, null);
+    esposador.esposarT = 0;
+  }
+
+  function soltarEsposador() {
+    if (esposador) esposador.esposarT = 0;
+    esposador = null;
+    if (companero) companero.esposandolo = false;
+  }
+
+  /** ⛓️ Un cuadro del que va a esposarlo (en vez de su cabeza de guardia). */
+  function moverEsposador(e, dt) {
+    const c = companero;
+    e.hitFlash = Math.max(0, (e.hitFlash || 0) - dt);
+    // (El de franco que estaba descolgando el arma la sigue descolgando: si no, se quedaba a medio paso para siempre.)
+    e.desenfundando = Math.max(0, (e.desenfundando || 0) - dt);
+    const d = distance(e.x, e.y, c.x, c.y);
+    // (A unos pasos ya se rinde: no tiene con qué pelear.)
+    c.esposandolo = d < 24;
+    if (d > 12) {
+      // (El de franco, sentado en su cajón, primero se levanta hacia el pasillo: desde ahí adentro el buscador de
+      // caminos no encuentra salida y se quedaba empujando la mesa.)
+      const S = map.size, col = Math.floor(e.x / S), row = Math.floor(e.y / S);
+      if (e.cajon && e.cajon.col === col && e.cajon.row === row) {
+        const libres = [-1, 1].filter((dr) => !map.isSolidTile(col, row + dr));
+        if (libres.length) {
+          const dr = libres.reduce((m, q) => Math.abs((row + q + 0.5) * S - c.y) < Math.abs((row + m + 0.5) * S - c.y) ? q : m);
+          e.y += dr * CONFIG.enemy.speed * dt;
+          e.moving = true;
+          return;
+        }
+      }
+      viajarHacia(e, dt, world, c.x, c.y, CONFIG.enemy.speed);
+      return;
+    }
+    e.facing = Math.atan2(c.y - e.y, c.x - e.x);
+    e.esposarT = (e.esposarT || 0) + dt;
+    if (e.esposarT < PLAN_BANDA.esposar) return;
+    c.esposado = true;
+    c.esposandolo = false;
+    c.cover = null;
+    c.liberado = false;
+    c.vieneAlCaballo = false;
+    floaters.push({ x: c.x, y: c.y - 26, text: T.plan.esposaron(MIEMBRO[c.banda].corto.toUpperCase()), life: 2.4, color: colors.enemyAlert });
+    audio.play('cock');
+    esposador = null;
+    e.esposarT = 0;
+  }
+
+  /** ⛓️ El pasajero de la banda esposado o tirado, al alcance de tu mano: lo podés liberar o levantar. */
+  function rescateCerca() {
+    const c = companero;
+    if (!c || !c.pasajero || c.arrastrado || player.enTecho || !(c.esposado || !c.alive)) return null;
+    return distance(player.x, player.y, c.x, c.y) < CONFIG.loot.radius ? c : null;
+  }
+
+  /**
+   * ⛓️ LO LIBERASTE (la [E] sostenida `PLAN.liberar`): esposado y sano, corre con vos; tirado (con o sin esposas), lo
+   * llevás arrastrando *(Santi: "Si está herido deberá irlo arrastrando. Si solo está esposado correrá con él")*.
+   */
+  function rescatar(c) {
+    soltarEsposador();
+    c.esposado = false;
+    c.sinEsposas = true;
+    if (!c.alive) c.arrastrado = true;
+    else c.liberado = true;
+    floaters.push({ x: c.x, y: c.y - 26, text: T.plan.vamos, life: 1.4, color: colors.bagLoot });
+    audio.play('cover');
+  }
+
+  /** ⛓️ Arrastrado: va detrás tuyo, tirado, a un largo de brazo. */
+  function arrastrarPasajero() {
+    const c = companero;
+    if (!c || !c.arrastrado) return;
+    const dx = c.x - player.x, dy = c.y - player.y, d = Math.hypot(dx, dy), largo = 12;
+    if (d > largo) { c.x = player.x + dx / d * largo; c.y = player.y + dy / d * largo; }
+  }
+
+  /**
+   * 🐎 ¿HAY QUE ESPERARLO PARA IRSE? `null` si no (no hay pasajero de la banda, o está con vos, o lo arrastrás);
+   * `'viene'` si está libre y puede venir solo; `'atrapado'` si está esposado o tirado: hay que ir a buscarlo.
+   */
+  function pasajeroPendiente() {
+    const c = companero;
+    if (!c || !c.pasajero || c.arrastrado) return null;
+    const libre = c.alive && !c.esposado && !c.esposandolo;
+    if (libre && distance(c.x, c.y, player.x, player.y) < 40) return null;
+    return libre ? 'viene' : 'atrapado';
+  }
+
+  /**
+   * 🐎 ESCAPAR CON EL PASAJERO DE LA BANDA *(Santi: "si está libre (no esposado), el caballo espera hasta que llegue. Si
+   * no querés esperar una E larga te saca igual y él queda preso")*: el primer apretón para escapar lo llama, y viene
+   * corriendo (hay que soltar la [E]: así no te vas sin querer). Mientras no llega, la [E] tiene que ser larga
+   * (`PLAN.irseSinEl`); cuando llega, la de siempre. Esposado o tirado no viene: la larga, o ir a buscarlo. Devuelve
+   * cuánto hay que sostenerla.
+   */
+  function tiempoDeEscape() {
+    const pend = pasajeroPendiente();
+    if (pend === 'viene' && !companero.vieneAlCaballo) {
+      companero.vieneAlCaballo = true;
+      soltarParaEscapar = true;
+      escapeProgress = 0;
+      floaters.push({ x: player.x, y: player.y - 22, text: T.plan.esperandoA(MIEMBRO[companero.banda].corto.toUpperCase()), life: 2, color: colors.bagLoot });
+      audio.play('cover');
+      return Infinity;
+    }
+    return pend ? PLAN_BANDA.irseSinEl : CONFIG.raid.escapeHold;
+  }
+
+  /** 🐎 El cartel para escapar (en la salida o en el enganche donde llegó el caballo), con lo de esperarlo. */
+  function cartelEscape(r, enPantalla) {
+    const pend = pasajeroPendiente();
+    const tope = pend ? PLAN_BANDA.irseSinEl : CONFIG.raid.escapeHold;
+    if (pend && (pend === 'atrapado' || companero.vieneAlCaballo)) {
+      const nombre = MIEMBRO[companero.banda].corto.toUpperCase();
+      r.text(pend === 'viene' ? T.plan.esperandoA(nombre) : T.plan.atrapado(nombre, !companero.alive), player.x, player.y - 22, colors.enemyAlert, 'center', enPantalla);
+      r.text(T.plan.irseSinEl, player.x, player.y - 16, colors.doorGlow, 'center', enPantalla);
+    } else r.text(T.prompts.escape, player.x, player.y - 16, colors.doorGlow, 'center', enPantalla);
+    if (escapeProgress > 0) {
+      const w = 22;
+      r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+      r.rect(player.x - w / 2, player.y - 12, w * Math.min(1, escapeProgress / tope), 3, colors.doorGlow);
+    }
+  }
+
+  /** El compañero cayó: por ahora queda tirado (la cárcel y la horca vienen después, ver NOTAS-DISENO.md). */
+  function companeroCayo() {
+    if (!companero || companero.avisoCaida) return;
+    companero.avisoCaida = true;
+    // 🎭 El pasajero de la banda no muere: queda tirado, tan herido que no se mueve más *(Santi: "en realidad no muere
+    // pero está tan herido que no huye más")*. Lo podés levantar y llevar arrastrando (ver `rescatar`).
+    if (companero.pasajero) {
+      floaters.push({ x: companero.x, y: companero.y - 26, text: T.plan.tirado(MIEMBRO[companero.banda].corto.toUpperCase()), life: 2.6, color: colors.enemyAlert });
+      return;
+    }
+    floaters.push({ x: companero.x, y: companero.y - 26, text: T.prompts.companeroCae, life: 2.6, color: colors.enemyAlert });
   }
 
   /** Dónde te vieron o te oyeron por última vez. Es lo único que saben. */
@@ -3071,7 +3397,8 @@ export function createRaidScene(services) {
   }
 
   /**
-   * EMPUJAR UN CAJÓN — `F`, y sale rodando hacia la cola.
+   * EMPUJAR UN CAJÓN — 🔁 ahora con la `[E]` (era la `F`, que pasó a ser la de las órdenes al compañero), y sale
+   * rodando hacia la cola.
    *
    * *(Santi: "se debería poder empujarlos con F para que rueden hacia atrás y
    * así el jugador puede usar el barril como arma. Esto da más libertad a la
@@ -3205,6 +3532,258 @@ export function createRaidScene(services) {
     if (fraccion <= m.sinCostoHasta) return 0;
     const excedente = (fraccion - m.sinCostoHasta) / (1 - m.sinCostoHasta);
     return Math.min(m.frenoMaximo, excedente * m.frenoMaximo);
+  }
+
+  /** ¿Este cajón tiene un cartucho que te podés llevar ahora? (Si no, la [E] lo empuja.) */
+  function cartuchoParaVos(c) {
+    return c.tieneCartucho && player.dynamite < CONFIG.player.dynamiteMax && entraEnLaMochila(FORMA_DINAMITA);
+  }
+
+  /**
+   * 📣 LAS ÓRDENES AL COMPAÑERO, CON LA [F] Y LA [V] *(Santi eligió la "A": una tecla que lee lo que tenés bajo la
+   * mira, "pero que la tecla a apretar sea la F")*. Apuntás y apretás [F]:
+   *  - **un guardia** bajo la mira → "atacá ahí";
+   *  - **un civil** → también "atacá ahí", pero sólo **sosteniendo** la [F] un momento (`civilSostenida`): a un civil no
+   *    se le tira sin una orden tuya *(Santi: "A los civiles no les tira a menos que haya una orden del jugador")*, y
+   *    así nunca es sin querer;
+   *  - **un botín** cerca de la mira → "robá aquello";
+   *  - **un lugar** del piso → "cubrí acá".
+   * [V] es "seguime". Si lo que marcaste está a más de un vagón del tuyo, contesta "muy lejos" (la correa: ver
+   * `ordenVigente` en systems/companero.js). Arriba del techo no hay órdenes: eso va en su propio apartado.
+   *
+   * 🔁 AHORA ES UN CÍRCULO, NO UN PUNTO (`ORDENES.radio`, ver `ordenDeZona`) *(Santi: "quiero que los comandos funcionen
+   * no como un punto exacto sino un circulo, un area")*. Mientras tenés la [F] apretada se ve el círculo; la orden sale
+   * al soltarla, así que un toque también sirve *(Santi: "que si solo aprieto F también funcione")*. El civil sigue
+   * siendo aparte: apuntarle justo a él y sostener.
+   */
+  function ordenesAlCompanero(dt, mx) {
+    if (marcaOrden && (marcaOrden.vida -= dt) <= 0) marcaOrden = null;
+    circuloOrden = null;
+    const puede = companero && companero.alive && player.alive && !player.enTecho && !mochilaAbierta;
+    if (!puede) { fSostenida = 0; fUsada = false; fApretada = false; return; }
+    if (input.wasPressed('KeyV')) avisoCompanero(ordenar(companero, { tipo: 'seguir' }));
+    if (companero.pasajero) { ordenesAlPasajero(dt, mx); return; }
+    // 🎭 [1] [2] [3]: pasivo, agresivo, ladrón (cambia a los `CAMBIO_DE_FORMA` segundos; ver systems/companero.js).
+    ['Digit1', 'Digit2', 'Digit3'].forEach((k, i) => {
+      if (input.wasPressed(k)) avisoCompanero(pedirForma(companero, NOMBRES_DE_FORMA[i]));
+    });
+    if (input.isDown('KeyF')) {
+      if (!fApretada) { fApretada = true; fSostenida = 0; fUsada = false; }
+      fSostenida += dt;
+      if (fUsada) return;
+      circuloOrden = { x: mx, y: world.miraY };
+      // El civil: sólo apuntándole justo a él (la mira se pega a sus pies, ver `blancoBajoLaMira`) y sosteniendo.
+      const civil = passengers.find((q) => q.alive && q.x === world.aimX && q.y === world.aimY);
+      if (civil && fSostenida >= ORDENES.civilSostenida) {
+        fUsada = true;
+        darOrden({ tipo: 'atacar', blancos: [civil], x: civil.x, y: civil.y }, false);
+      }
+      return;
+    }
+    if (!fApretada) return;
+    fApretada = false;
+    if (fUsada) return;
+    darOrden(ordenDeZona(mx, world.miraY), true);
+  }
+
+  /**
+   * 🎭 LA [F] DEL PASAJERO DE LA BANDA: un toque (al soltarla) con la mira sobre un guardia → lo va a acuchillar por la
+   * espalda, hasta `PLAN.cuchilladas` por asalto; sobre una puerta trabada → la va a abrir. Nada más: no roba ni cubre.
+   */
+  function ordenesAlPasajero(dt, mx) {
+    if (input.isDown('KeyF')) {
+      if (!fApretada) { fApretada = true; fSostenida = 0; fUsada = false; }
+      circuloOrden = { x: mx, y: world.miraY };
+      return;
+    }
+    if (!fApretada) return;
+    fApretada = false;
+    const x = mx, y = world.miraY, R = ORDENES.radio;
+    let guardia = null, d0 = R;
+    for (const e of enemies) {
+      if (!e.alive || e.rendido || e.manosArriba || e.inconsciente > 0) continue;
+      const d = distance(e.x, e.y, x, y);
+      if (d < d0) { d0 = d; guardia = e; }
+    }
+    if (guardia) {
+      if (companero.cuchilladas >= PLAN_BANDA.cuchilladas) { avisoCompanero('basta'); return; }
+      marcaOrden = { x: guardia.x, y: guardia.y, vida: ORDENES.marca, circulo: true };
+      avisoCompanero(ordenar(companero, { tipo: 'atacar', blancos: [guardia], x: guardia.x, y: guardia.y }));
+      return;
+    }
+    const puerta = doors.find((d) => d.trabada && !d.broken && d.kind !== 'blindada' && distance(d.x, d.y, x, y) <= R);
+    if (puerta) {
+      marcaOrden = { x: puerta.x, y: puerta.y, vida: ORDENES.marca, circulo: true };
+      avisoCompanero(ordenar(companero, { tipo: 'abrir', puerta, x: puerta.x, y: puerta.y }));
+      return;
+    }
+    avisoCompanero('soloEso');
+  }
+
+  /**
+   * 🎭 HASTA DÓNDE TE SIGUE EL PASAJERO DE LA BANDA *(Santi: "sigue de lejos pero solo circula por vagones dónde vayan
+   * personas")*: si ibas a un vagón con gente, hasta vos; si no, se queda en el suyo (o vuelve al más cercano que
+   * tenga gente, si una orden lo dejó en otro). Descubierto ya no se hace pasar por pasajero: te sigue a donde sea.
+   */
+  function seguirHasta(c, destino) {
+    if (c.descubierto) return destino;
+    const conGente = (x) => { const t = train.tramos.find((q) => q.tipo === 'vagon' && q.wagon === train.wagonAt(x)); return !!t && PLAN_BANDA.vagonesDelPasajero.includes(t.plantilla.id); };
+    if (conGente(destino.x)) return destino;
+    if (conGente(c.x)) return null;
+    let mejor = null;
+    for (const w of train.wagons) {
+      if (!w || !conGente(w.x + w.width / 2)) continue;
+      const q = { x: w.x + w.width / 2, y: map.height / 2 };
+      if (!mejor || Math.abs(q.x - c.x) < Math.abs(mejor.x - c.x)) mejor = q;
+    }
+    return mejor;
+  }
+
+  /** Le da la orden (o le dice por qué no), y deja la marca de dónde lo mandaste. */
+  function darOrden(orden, circulo) {
+    if (!orden) { avisoCompanero('ahiNo'); return; }
+    if (!ordenAlAlcance(orden, player, (x) => train.wagonAt(x))) { avisoCompanero('muyLejos'); return; }
+    marcaOrden = { x: orden.centro ? orden.centro.x : orden.x, y: orden.centro ? orden.centro.y : orden.y, vida: ORDENES.marca, circulo };
+    const dice = ordenar(companero, orden);
+    avisoCompanero(orden.sinReparo ? 'sinReparo' : dice);
+  }
+
+  /**
+   * 🔁 QUÉ ORDEN ES, SEGÚN LO QUE HAY ADENTRO DEL CÍRCULO, en este orden:
+   *  1. **guardias** → "atacá ahí", contra todos los del círculo, de a uno (los civiles no: ver arriba);
+   *  2. **botín o pasajeros** → "robá aquello": agarra lo que hay y amenaza a los pasajeros;
+   *  3. **nada** → "cubrí acá": el mejor reparo DENTRO del círculo, de cara a lo que hay más allá del punto (la
+   *     dirección que va de vos a ese punto: marcás una puerta y la defiende mirándola). Si no hay ninguno, el centro.
+   */
+  function ordenDeZona(x, y) {
+    const R = ORDENES.radio;
+    const dentro = (q) => distance(q.x, q.y, x, y) <= R;
+    const guardias = enemies.filter((e) => e.alive && !e.rendido && !e.manosArriba && !(e.inconsciente > 0) && dentro(e));
+    if (guardias.length) return { tipo: 'atacar', blancos: guardias, x, y };
+    const botines = loot.filter((l) => !l.taken && !l.oculto && !(l.guardia && l.guardia.alive && !(l.guardia.inconsciente > 0)) && dentro(l));
+    const pasajeros = passengers.filter((pa) => sePuedeAmenazar(pa) && dentro(pa));
+    if (botines.length || pasajeros.length) return { tipo: 'robar', botines, pasajeros, x, y };
+    // 🔁 El reparo ya no lo elijo acá: lo busca él dentro del círculo, de cara al peligro, y lo vuelve a buscar si el
+    // peligro cambia (`revisarLugar` en systems/companero.js) *(Santi: "Yo necesito que el compañero sepa hacia dónde
+    // mirar y que busque una cobertura automaticamente dentro del área")*.
+    return { tipo: 'cubrir', x, y, centro: { x, y } };
+  }
+
+  /**
+   * 🎭 EL PASAJERO DE LA BANDA, DIBUJADO COMO EL PASAJERO QUE ES: con su ropa, caminando o agachado (el cuerpo y las
+   * piernas de la gente del tren). ⚠️ El tajo del cuchillo todavía no tiene dibujo propio en la gente: acuchilla
+   * agachado, sin mover el brazo. Caído, tirado en el piso.
+   */
+  function dibujarPasajeroDeBanda(r, c) {
+    // ⛓️ Herido (o arrastrado): el mismo cuerpo acostado de la gente del tren, sin dibujo nuevo.
+    if (!c.alive) {
+      tendidoNuevo(r, c.x, c.y, { tipo: 'pasajero', modo: 'desmayado', sinZ: true, sangre: true, espejo: c.arrastrado ? player.x > c.x : false, aspecto: { ...c._aspecto } });
+      return;
+    }
+    const pies = c.y + c.hh;
+    /**
+     * ⛓️ ESPOSADO: de rodillas con las manos en la cabeza, la pose del civil en el pánico *(Santi: "si hay una pose
+     * parecida a esposado y es la del civil, fijate")*. Existe de frente y de espaldas: va de frente.
+     */
+    if (c.esposado) {
+      r.ctx.globalAlpha = 0.25;
+      r.box(c.x, pies, 5, 2, '#000');
+      r.ctx.globalAlpha = 1;
+      dibujarPersona(r, {
+        tipo: 'pasajero', x: c.x, pies, angulo: Math.PI / 2, interior: true,
+        nuevo: { arma: null, funda: false, aspecto: { ...c._aspecto }, piernas: 'rodillas', brazos: 'cubrirse' },
+        destello: c.hitFlash > 0,
+      });
+      return;
+    }
+    r.ctx.globalAlpha = 0.25;
+    r.box(c.x, pies, 5, 2, '#000');
+    r.ctx.globalAlpha = 1;
+    dibujarPersona(r, {
+      tipo: 'pasajero', x: c.x, pies, angulo: c.aim, fase: faseDeAndar(c), modo: 'caminar',
+      postura: c.sneaking ? 'agachado' : 'pie', interior: true,
+      nuevo: { arma: null, funda: false, aspecto: { ...c._aspecto }, agachado: !!c.sneaking },
+      destello: c.hitFlash > 0,
+    });
+  }
+
+  /** El botín más cerca de la mira (sin agarrar y a la vista), o null. */
+  function botinBajoLaMira(mx, my) {
+    let mejor = null, d0 = ORDENES.botinRadio;
+    for (const l of loot) {
+      if (l.taken || l.oculto) continue;
+      if (l.guardia && l.guardia.alive && !(l.guardia.inconsciente > 0)) continue;
+      const d = distance(mx, my, l.x, l.y);
+      if (d < d0) { d0 = d; mejor = l; }
+    }
+    return mejor;
+  }
+
+  /** Lo que contesta el compañero, arriba de su cabeza. */
+  function avisoCompanero(clave) {
+    if (!clave || !companero) return;
+    floaters.push({
+      x: companero.x, y: companero.y - 26, text: T.prompts.companeroOrden[clave], life: 1.3,
+      color: clave === 'ahiNo' || clave === 'muyLejos' || clave === 'noEntra' ? colors.textDim : colors.text,
+    });
+  }
+
+  /**
+   * 🎒 EL COMPAÑERO AGARRA UN BOTÍN ("robá aquello"): lo mismo que `takeLoot`, pero a SU carga, no a tu mochila. La
+   * plata siempre entra; un objeto, si le queda lugar (sus casillas son las mismas que las tuyas). Devuelve si pudo.
+   */
+  function tomarBotinCompanero(l) {
+    const c = companero;
+    if (l.objeto) {
+      const usadas = c.carga.reduce((s, o) => s + (o.slots || 1), 0);
+      if (usadas + (l.objeto.slots || 1) > CONFIG.mochila.casillas) return false;
+      c.carga.push(l.objeto);
+    } else c.plata += numero(l.value, 'el valor de un botin del companero');
+    l.taken = true;
+    l.progress = 0;
+    if (l.guardia) l.guardia.registrado = true;
+    const raro = l.objeto && l.objeto.nivel === 'raro';
+    const color = l.jackpot || raro ? '#ffd84a' : l.objeto ? colors.strongbox : colors.bagLoot;
+    floaters.push({
+      x: l.x, y: l.y - 8, life: 1.8, color,
+      text: l.jackpot ? T.prompts.jackpot(l.value) : l.objeto ? l.objeto.nombre : `+$${l.value}`,
+    });
+    spawnParticles(l.x, l.y, color, 6);
+    audio.play(l.noisy ? 'strongbox' : 'loot');
+    // El papel que dice dónde está la caja oculta: lo lee él, y te lo dice igual.
+    if (l.papelCaja && l.papelCaja.caja.oculto) {
+      const { vagon, escondite } = l.papelCaja;
+      floaters.push({
+        x: l.x, y: l.y - 20, text: T.ambiente.papelCaja(vagon, T.ambiente.escondites[escondite]),
+        life: 4, color: colors.strongbox,
+      });
+    }
+    leerPapelMaletin(l);
+    if (l.noisy) bus.emit('noise', { x: l.x, y: l.y, radius: 900 });
+    return true;
+  }
+
+  /**
+   * 🔁 EL COMPAÑERO AMENAZA A UN PASAJERO ("robá aquello" con un pasajero en el círculo): lo mismo que `robarPasajero`,
+   * pero la plata va a SU bolsillo, y no te cuenta a vos como amenaza (lo suyo es suyo). El pasajero queda con las
+   * manos arriba y después grita, igual que con vos.
+   */
+  function robarPasajeroCompanero(pa) {
+    const c = CONFIG.passenger;
+    const rango = pa.botin || { min: c.robMin, max: c.robMax };
+    const valor = numero(rng.int(rango.min, rango.max), 'el botin de un pasajero (companero)');
+    companero.plata += valor;
+    amenazado(pa);
+    floaters.push({ x: pa.x, y: pa.y - 10, text: `+$${valor}`, life: 1.4, color: colors.bagLoot });
+    spawnParticles(pa.x, pa.y, colors.bagLoot, 5);
+    audio.play('loot');
+    if (pa.sabeDeCaja && pa.sabeDeCaja.oculto && pa.pistaCaja) {
+      const { vagon, escondite } = pa.pistaCaja;
+      floaters.push({
+        x: pa.x, y: pa.y - 22, text: T.ambiente.pistaCaja(vagon, T.ambiente.escondites[escondite]),
+        life: 3.4, color: colors.strongbox,
+      });
+    }
   }
 
   /** Reventado a tiros: se hace astillas y deja de ser un problema. */
@@ -3471,6 +4050,32 @@ export function createRaidScene(services) {
    * Entra por la punta de adelante y camina hacia atrás buscándote. Nunca por
    * atrás, porque atrás está el aire libre y tu caballo.
    */
+  /**
+   * 📡 🔭 LO QUE HACEN AFUERA EL DEL TELÉGRAFO Y EL VIGÍA, A LA VISTA *(BANDA-NUEVA.md: "todo lo que cuenta se ve")*: al
+   * rato de subir se dice cómo le fue a cada uno, y el vigía grita `PAPELES_NUEVOS.vigiaAviso` segundos antes de cada
+   * refuerzo de la locomotora (si los vio: bien o flojo).
+   */
+  function avisosDeLaBanda(dt) {
+    if (!plan) return;
+    if (anuncioPlan > 0) {
+      anuncioPlan -= dt;
+      if (anuncioPlan <= 0) {
+        let dy = 0;
+        for (const papel of ['telegrafo', 'vigia']) {
+          const id = plan[papel];
+          if (!id) continue;
+          const res = plan[papel + 'Res'];
+          floaters.push({ x: player.x, y: player.y - 30 - dy, text: T.plan[papel][res](MIEMBRO[id].corto.toUpperCase()), life: 3.2, color: res === 'mal' ? colors.enemyAlert : colors.doorGlow });
+          dy += 12;
+        }
+      }
+    }
+    if (plan.vigia && (plan.vigiaRes === 'bien' || plan.vigiaRes === 'flojo') && alarm.active && alarm.nextIn <= PAPELES_NUEVOS.vigiaAviso && avisoVigia !== alarm.spawned) {
+      avisoVigia = alarm.spawned;
+      floaters.push({ x: player.x, y: player.y - 30, text: T.plan.vigiaGrita(MIEMBRO[plan.vigia].corto.toUpperCase()), life: 2.6, color: colors.enemyAlert });
+    }
+  }
+
   function spawnReinforcement() {
     /**
      * 🚂 SALEN DE LA CABINA Y ABREN LA PUERTA BLINDADA AL PASAR: es la oportunidad de entrar sin dinamita. Nacen adentro, pegados a la puerta,
@@ -3561,6 +4166,7 @@ export function createRaidScene(services) {
 
     actualizarVaivenCamara(dt);
     actualizarArriba(dt);
+    actualizarPlan(dt);
 
     // El apuntado usa la cámara SIN la sacudida: si no, el temblor te haría fallar.
     //
@@ -3596,6 +4202,7 @@ export function createRaidScene(services) {
     world.aimY = blanco ? blanco.y : world.miraY;
     world.aimAlto = blanco ? blanco.alto : null;
     world.aimZona = blanco ? blanco.zona : null;
+    ordenesAlCompanero(dt, miraMundoX);
 
     // El lastre se calcula ANTES de mover al jugador: es lo que decide a qué
     // velocidad camina este cuadro (ver `lastreActual` y CONFIG.peso).
@@ -3603,6 +4210,15 @@ export function createRaidScene(services) {
     // reservado en la grilla (la pudo tirar o agarrar en cualquier lado).
     sincronizarDinamita();
     player.lastre = lastreActual();
+    // ⛓️ Arrastrando al pasajero de la banda vas más lento (`PLAN.arrastreFreno`).
+    if (companero && companero.arrastrado) player.lastre = Math.max(player.lastre, PLAN_BANDA.arrastreFreno);
+    // 🎒 Al compañero también le pesa lo que carga, pero menos (`PESO_COMPANERO`, systems/companero.js).
+    if (companero) {
+      const m = CONFIG.mochila;
+      const fr = companero.carga.reduce((s, o) => s + (o.slots || 1), 0) / m.casillas;
+      companero.lastre = fr <= m.sinCostoHasta ? 0
+        : Math.min(m.frenoMaximo, (fr - m.sinCostoHasta) / (1 - m.sinCostoHasta) * m.frenoMaximo) * PESO_COMPANERO;
+    }
     /**
      * QUÉ TAN LLENA ESTÁ LA MOCHILA (0 a 1), sólo para dibujarla en la espalda.
      *
@@ -3614,6 +4230,36 @@ export function createRaidScene(services) {
     player.mochila = casillasUsadas() / CONFIG.mochila.casillas;
 
     updatePlayer(player, dt, world);
+    if (companero) {
+      // 🎭 (El guardia que el pasajero de la banda va a acuchillar, para saber si lo acuchilló en este cuadro.)
+      const blancoAntes = companero.pasajero && companero.orden && companero.orden.tipo === 'atacar' ? companero.orden.blanco : null;
+      const blancoVivo = !!blancoAntes && blancoAntes.alive && !(blancoAntes.inconsciente > 0);
+      const cambio = actualizarCompanero(companero, dt, world, {
+        alarma: alarm.active, player,
+        // 📣 Para las órdenes: en qué vagón está cada cosa (la correa) y cómo agarra un botín.
+        vagonDe: (x) => train.wagonAt(x),
+        // (Y dónde queda la mitad de cada vagón: para saber de qué lado de una puerta está el peligro.)
+        mitadDelVagon: (x) => { const w = train.wagons[train.wagonAt(x)]; return w ? w.x + w.width / 2 : x; },
+        tomarBotin: (c, l) => tomarBotinCompanero(l),
+        robarPasajero: (c, pa) => robarPasajeroCompanero(pa),
+        // 🎭 El pasajero de la banda: hasta dónde te sigue y cómo abre una puerta trabada.
+        seguirHasta,
+        abrirPuerta: (c, d) => { d.trabada = false; d.trabadaDeOrigen = false; audio.play('cock'); },
+      });
+      if (companero.pasajero) vigilarCuchillada(blancoAntes, blancoVivo);
+      arrastrarPasajero();
+      if (cambio) floaters.push({
+        x: companero.x, y: companero.y - 26,
+        text: T.prompts[cambio === 'pelea' ? 'companeroPelea' : 'companeroSigilo'], life: 1.6,
+        color: cambio === 'pelea' ? colors.enemyAlert : colors.textDim,
+      });
+      // 🔫 "¡RECARGO!", como los guardias: para que se sepa por qué dejó de tirar.
+      if (companero.aviso === 'recarga') floaters.push({
+        x: companero.x, y: companero.y - 20, text: T.prompts.recargo, life: 1.1, color: colors.textDim,
+      });
+      else if (companero.aviso) avisoCompanero(companero.aviso);
+      companero.aviso = null;
+    }
     actualizarAlto(dt);
     if (finished) return;
     updateTecho(dt);
@@ -3694,6 +4340,7 @@ export function createRaidScene(services) {
     updateRiders(riders, dt, world);
     riderWatch.update(dt, world);
     alarm.update(dt);
+    avisosDeLaBanda(dt);
     updateWagon();
     updateInteraction(dt);
     updateEffects(dt);
@@ -3761,6 +4408,87 @@ export function createRaidScene(services) {
    * 🙌 LA VENTANA DEL "¡ALTO!": con H te rendís. Se cierra sola cuando pasa el
    * tiempo, si disparás (ver `spawnBullet`) o si el que gritó cae.
    */
+  /**
+   * 🎭 EL PLAN, MIENTRAS DURA EL ASALTO: el caballo que llega tarde va descontando, y [Q] le pide al de la banda que
+   * va de pasajero que distraiga al guardia más cercano (ver `PLAN` en data/banda.js).
+   */
+  function actualizarPlan(dt) {
+    if (!plan) return;
+    if (datosPlan && (datosPlan.queda -= dt) <= 0) datosPlan = null;
+    if (!isInsideZone(player, train.exitZone)) dejoLaSalida = true;
+    if (llamado && llamado.queda > 0) {
+      llamado.queda -= dt;
+      if (llamado.queda <= 0) {
+        llamado.queda = 0;
+        floaters.push({ x: player.x, y: player.y - 22, text: T.plan.llego(MIEMBRO[plan.caballos].corto.toUpperCase()), life: 2.4, color: colors.doorGlow });
+        audio.play('escape');
+      }
+    }
+    if (caballoEspera !== null && caballoEspera > 0) {
+      caballoEspera -= dt;
+      if (caballoEspera <= 0) {
+        caballoEspera = 0;
+        floaters.push({ x: player.x, y: player.y - 22, text: T.plan.llego(plan.caballos && MIEMBRO[plan.caballos].corto.toUpperCase()), life: 2.4, color: colors.doorGlow });
+        audio.play('escape');
+      }
+    }
+    // 🔁 La [Q] que distraía a un guardia se fue *(Santi: "la habilidad del pasajero la veo muy inútil")*: ahora le hablás
+    // con [E] (`hablarConElPasajero`), y después acuchilla y abre puertas.
+  }
+
+  /** 🐎 El enganche en el que estás parado (no el de la salida), si hay un plan con alguien en los caballos. */
+  function engancheAqui() {
+    if (!plan || !plan.caballos || player.enTecho || isInsideZone(player, train.exitZone)) return null;
+    const c = Math.floor(player.x / map.size);
+    return train.tramos.find((t) => t.tipo === 'enganche' && c >= t.colStart && c < t.colStart + t.cols) || null;
+  }
+
+  /** 🎭 El de la banda que va de pasajero, si está al alcance de la mano y todavía no le hablaste. */
+  function pasajeroParaHablar() {
+    const pa = pasajeroBanda;
+    if (!pa || hablasteConElPasajero || !pa.alive || player.enTecho) return null;
+    return distance(player.x, player.y, pa.x, pa.y) < CONFIG.loot.radius ? pa : null;
+  }
+
+  /**
+   * 🎭 LE HABLÁS Y TE DA LOS DATOS *(Santi: "informa dónde está la caja fuerte oculta (si es que tocó una), dónde están
+   * las otras cajas fuertes")*: arriba de la pantalla, un rato largo, para que lo leas mientras seguís.
+   */
+  function hablarConElPasajero() {
+    hablasteConElPasajero = true;
+    const nombre = MIEMBRO[plan.pasajero].corto.toUpperCase();
+    const pista = (passengers.find((pa) => pa.pistaCaja) || {}).pistaCaja;
+    const oculta = pista ? T.plan.oculta(pista.vagon, T.ambiente.escondites[pista.escondite]) : T.plan.sinOculta;
+    const cajas = [...new Set(loot.filter((l) => l.typeId === 'strongbox' && !l.oculto).map((l) => train.wagonAt(l.x)))].sort((a, b) => a - b);
+    datosPlan = { texto: nombre + ': ' + oculta, ayuda: T.plan.cajas(cajas), desde: 0, queda: 9 };
+    /**
+     * 🎭 Y DESDE AHORA TE SIGUE Y RECIBE ÓRDENES: deja de ser un pasajero sentado y pasa a ser el compañero en su versión
+     * pasajero (`crearPasajeroDeBanda`, systems/companero.js). Se levanta de donde estaba.
+     */
+    const pa = pasajeroBanda;
+    companero = crearPasajeroDeBanda(pa.x, pa.y, plan.pasajero, pa._aspecto);
+    if (overlapsSolid(companero, map.isSolidAt)) { companero.x = player.x; companero.y = player.y; }
+    // 🐛 Y al mundo, que se armó al subir (sin él): si no, las balas no lo encontraban y no le pegaba ninguna.
+    world.companero = companero;
+    passengers.splice(passengers.indexOf(pa), 1);
+    pa.activado = true;
+    floaters.push({ x: pasajeroBanda.x, y: pasajeroBanda.y - 22, text: T.plan.psst, life: 1.6, color: colors.bagLoot });
+    audio.play('cover');
+  }
+
+  /** 🎭 Si el caballo no llegó todavía (le salió mal al de los caballos y te está haciendo esperar). */
+  function caballoNoLlego() {
+    return !!plan && plan.caballoTarde && dejoLaSalida && caballoEspera !== 0;
+  }
+
+  /** 🎭 Lo que dice el pasajero de la banda al subir, arriba de la pantalla (en la lupa del mundo). */
+  function dibujarDatosPlan(r) {
+    if (!datosPlan) return;
+    const cx = r.width / 2, halo = { halo: '#120d0a' };
+    r.text(datosPlan.texto, cx, 34, colors.bagLoot, 'center', halo);
+    r.text(datosPlan.ayuda, cx, 44, colors.strongbox, 'center', halo);
+  }
+
   function actualizarAlto(dt) {
     if (!alto) return;
     if (input.wasPressed('KeyH')) {
@@ -3776,6 +4504,7 @@ export function createRaidScene(services) {
     const cull = CONFIG.raid.cullPatrolDistance;
     // 🤝 Primero se reparten los roles; después cada guardia hace lo suyo.
     actualizarEscuadras(world, dt);
+    actualizarEsposar();
     for (const e of enemies) {
       /**
        * El mini jefe corre SIEMPRE, a cualquier distancia y sin pasar por el
@@ -3792,6 +4521,8 @@ export function createRaidScene(services) {
       // 🧍 Lo que se cae y lo que viene por el pasillo: el que se está salvando no hace otra cosa (systems/peligro.js).
       if (esquivarPeligro(e, dt, world)) { e.hitFlash = Math.max(0, (e.hitFlash || 0) - dt); continue; }
       if (e.esJefe) { updateBoss(e, dt, world); continue; }
+      // ⛓️ El que va a esposar al pasajero de la banda.
+      if (e === esposador) { moverEsposador(e, dt); continue; }
 
       /**
        * El Sheriff y su escolta corren SIEMPRE, sin culling: mientras se
@@ -3817,7 +4548,7 @@ export function createRaidScene(services) {
        */
       const lejos = Math.abs(e.x - player.x) > cull;
       if (lejos && !e.rondaLarga && e.state !== 'combat' && e.state !== 'suspicious') continue;
-      updateEnemy(e, dt, world);
+      conBlanco(e, () => updateEnemy(e, dt, world));
     }
 
     /**
@@ -3871,10 +4602,55 @@ export function createRaidScene(services) {
     if (updateTreparCarbon(dt)) return;
 
     const holding = input.isDown('KeyE') && player.alive && !mochilaAbierta;
+    // 🎭 Hablarle al de la banda va antes que todo: es un toque, y está sentado entre los que se pueden robar.
+    if (pasajeroParaHablar() && input.wasPressed('KeyE') && player.alive && !mochilaAbierta) { hablarConElPasajero(); return; }
+    /**
+     * ⛓️ SOLTARLO Y VOLVER A AGARRARLO CUANDO QUIERAS *(Santi: "yo puedo irlo soltando y arrastrando cuando quiera,
+     * obviamente al soltarlo herido no podrá escapar")*: arrastrándolo, un toque de [E] lo suelta (menos donde la [E]
+     * es para escapar); tirado y ya sin esposas, otro toque lo vuelve a agarrar. Si mientras tanto lo esposan, otra vez
+     * la [E] sostenida.
+     */
+    const dondeSeEscapa = isInsideZone(player, train.exitZone) || !!engancheAqui();
+    if (companero && companero.arrastrado && input.wasPressed('KeyE') && player.alive && !mochilaAbierta && !dondeSeEscapa) {
+      companero.arrastrado = false;
+      audio.play('cover');
+      return;
+    }
+    // ⛓️ Liberarlo o levantarlo, con la [E] sostenida.
+    const aRescatar = rescateCerca();
+    if (aRescatar && !aRescatar.alive && aRescatar.sinEsposas && !aRescatar.esposado) {
+      if (input.wasPressed('KeyE') && player.alive && !mochilaAbierta) { rescateProgress = 0; aRescatar.arrastrado = true; audio.play('cover'); return; }
+    } else
+    if (!aRescatar || !holding) rescateProgress = 0;
+    else {
+      rescateProgress += dt;
+      if (rescateProgress >= PLAN_BANDA.liberar) { rescateProgress = 0; rescatar(aRescatar); }
+      escapeProgress = 0;
+      return;
+    }
     const nearest = nearestLoot();
     const victima = nearest ? null : nearestPassenger();
     const cajon = (nearest || victima) ? null : cajonCerca();
     const tranquera = (nearest || victima || cajon) ? null : tranqueraCerca();
+
+    /**
+     * 🔁 EMPUJAR EL CAJÓN, CON LA [E] *(Santi eligió: "Empujar con la E")*. Un toque de [E] al lado de un cajón lo
+     * empuja, salvo que tenga un cartucho que te puedas llevar: entonces la [E] sostenida primero te lo da, y el
+     * cajón vacío se empuja con otro toque. Con la dinamita al tope o sin lugar en la mochila, el toque lo empuja.
+     */
+    const suelto = (nearest || victima) ? null : cajonCerca(false);
+    if (suelto && input.wasPressed('KeyE') && player.alive && !mochilaAbierta && !cartuchoParaVos(suelto)) {
+      empujarCajon(suelto);
+      return;
+    }
+
+    // ✉️ Revisar buscando el doble fondo del maletín: la [E] sostenida, con nada más a mano (ver `dondeRevisar`).
+    const aRevisar = (nearest || victima || cajon || suelto || tranquera) ? null : dondeRevisar();
+    if (!holding) revisarSoltar = false;
+    if (aRevisar && holding && !revisarSoltar) {
+      revisarProgress += dt;
+      if (revisarProgress >= TIEMPO_DE_REVISAR) { revisarProgress = 0; revisarSoltar = true; revisar(); }
+    } else revisarProgress = 0;
 
     /**
      * EL PROGRESO DE UNA CAJA FUERTE NO SE PIERDE.
@@ -4027,6 +4803,20 @@ export function createRaidScene(services) {
     }
 
     if (!nearest && !victima && !cajon && !tranquera && isInsideZone(player, train.exitZone)) {
+      /**
+       * 🎭 EL CABALLO NO ESTÁ (le salió mal al de los caballos, o no pusiste a nadie): la primera vez que llegás, empieza
+       * a contar; hasta que llegue no podés cargar ni escaparte.
+       */
+      if (caballoNoLlego()) {
+        if (caballoEspera === null) {
+          caballoEspera = PLAN_BANDA.caballoTarde;
+          floaters.push({ x: player.x, y: player.y - 22, text: T.plan.caballoNoEsta(plan.caballos && MIEMBRO[plan.caballos].corto.toUpperCase()), life: 2.4, color: colors.enemyAlert });
+          audio.play('hitWall');
+        }
+        escapeProgress = 0;
+        cargaProgress = 0;
+        return;
+      }
       if (!holding) soltarParaEscapar = false;
       /**
        * AL LADO DEL CABALLO, [E] PRIMERO CARGA Y DESPUÉS ESCAPA. Si llevás algo
@@ -4046,11 +4836,37 @@ export function createRaidScene(services) {
       } else if (holding && !soltarParaEscapar) {
         cargaProgress = 0;
         escapeProgress += dt;
-        if (escapeProgress >= CONFIG.raid.escapeHold) endRaid('escaped');
+        // (🐎 Si hay que esperar al pasajero de la banda, la [E] es larga: ver `tiempoDeEscape`.)
+        if (escapeProgress >= tiempoDeEscape()) endRaid('escaped');
       } else {
         escapeProgress = 0;
         cargaProgress = 0;
       }
+    } else if (!nearest && !victima && !cajon && !tranquera && engancheAqui()) {
+      /**
+       * 🐎 EN UN ENGANCHE: un toque de [E] llama al de los caballos (si viene: ver `plan.llamable`); cuando llega,
+       * [E] sostenida te escapa por acá, como en la salida.
+       */
+      const t = engancheAqui();
+      cargaProgress = 0;
+      const nombre = MIEMBRO[plan.caballos].corto.toUpperCase();
+      if (!llamado || llamado.tramo !== t) {
+        escapeProgress = 0;
+        if (!input.wasPressed('KeyE') || !player.alive || mochilaAbierta) return;
+        if (!plan.llamable) {
+          floaters.push({ x: player.x, y: player.y - 22, text: T.plan.noViene(nombre), life: 2.4, color: colors.enemyAlert });
+          audio.play('hitWall');
+          return;
+        }
+        llamado = { tramo: t, queda: PLAN_BANDA.llamarCaballo + (plan.caballoTarde ? PLAN_BANDA.caballoTarde : 0) };
+        floaters.push({ x: player.x, y: player.y - 22, text: T.plan.viene(nombre), life: 2, color: colors.bagLoot });
+        audio.play('cover');
+        return;
+      }
+      if (!holding) soltarParaEscapar = false;
+      if (llamado.queda > 0 || !holding || soltarParaEscapar) { escapeProgress = 0; return; }
+      escapeProgress += dt;
+      if (escapeProgress >= tiempoDeEscape()) endRaid('escaped');
     } else {
       escapeProgress = 0;
       cargaProgress = 0;
@@ -4261,12 +5077,14 @@ export function createRaidScene(services) {
        * pasar justo por ahí, y el tren es largo.
        */
       const d = distance(player.x, player.y, l.x, l.y);
+      // ✉️ 🔁 El maletín ya no aparece al pasar: va en un doble fondo y hay que revisar el lugar (ver `dondeRevisar`).
+      if (l.oculto && l.maletin) continue;
       if (l.oculto) {
         if (d < CONFIG.loot.radius) {
           l.oculto = false;
           floaters.push({
             x: l.x, y: l.y - 14,
-            text: T.ambiente.cajaDelatada, life: 2.2, color: colors.strongbox,
+            text: l.maletin ? T.ambiente.maletinDelatado : T.ambiente.cajaDelatada, life: 2.2, color: colors.strongbox,
           });
           spawnParticles(l.x, l.y, colors.strongbox, 6);
           audio.play('loot');
@@ -4277,6 +5095,39 @@ export function createRaidScene(services) {
       if (d < nearestDist) { nearestDist = d; nearest = l; }
     }
     return nearest;
+  }
+
+  /**
+   * ✉️ 🔁 EL MALETÍN VA EN UN DOBLE FONDO *(Santi eligió la C: "el maletín debería estar en un lugar más rebuscado")*.
+   * Antes aparecía solo al pasar al lado, y cualquiera que recorriera el tren se lo topaba. Ahora no se ve nunca: en
+   * los vagones donde puede ir (caboose, almacén, cerrado) la [E] sostenida con nada más a mano REVISA el lugar donde
+   * estás parado, y sólo si es el mueble justo aparece. Sin el papel o sin el espía, es revisar a ciegas un tren entero
+   * con los guardias encima.
+   *
+   * El cartel sale en esos vagones aunque este tren no lo lleve: si sólo saliera donde está, lo delataría.
+   */
+  function dondeRevisar() {
+    if (!maletinBuscado || player.enTecho || !player.alive || mochilaAbierta) return null;
+    if (isInsideZone(player, train.exitZone) || engancheAqui()) return null;
+    const m = loot.find((l) => l.maletin);
+    if (m && (!m.oculto || m.taken)) return null;
+    const w = train.wagons[train.wagonAt(player.x)];
+    return w && ESCONDITES_DEL_MALETIN[w.id] ? w : null;
+  }
+
+  /** ✉️ Lo que sale de revisar: el maletín si estás en su lugar, y si no, nada. */
+  function revisar() {
+    const m = loot.find((l) => l.maletin && l.oculto && !l.taken);
+    if (m && distance(player.x, player.y, m.x, m.y) < CONFIG.loot.radius) {
+      m.oculto = false;
+      floaters.push({ x: m.x, y: m.y - 26, text: T.ambiente.maletinDelatado, life: 2.4, color: colors.strongbox });
+      floaters.push({ x: m.x, y: m.y - 18, text: T.ambiente.dobleFondo, life: 2.4, color: colors.text });
+      spawnParticles(m.x, m.y, colors.strongbox, 6);
+      audio.play('loot');
+    } else {
+      floaters.push({ x: player.x, y: player.y - 22, text: T.ambiente.nadaAqui, life: 1.4, color: colors.textDim });
+      audio.play('cover');
+    }
   }
 
   /** El pasajero al alcance de la mano, si es que se le puede sacar algo. */
@@ -4744,8 +5595,24 @@ export function createRaidScene(services) {
     const l = createLootable(e.x, e.y, 'registro', rng);
     l.guardia = e;
     l.papelCaja = e.papelCaja || null;
+    l.papelMaletin = e.papelMaletin || null;
     e.registro = l;
     loot.push(l);
+  }
+
+  /**
+   * ✉️ EL PAPEL QUE DICE DÓNDE ESTÁ EL MALETÍN DE J.Mc. (ver `maletin` en world/train.js): como el de la caja, más
+   * arriba por si el mismo botín trae los dos. Si el maletín ya apareció, no dice nada nuevo. Devuelve si lo mostró.
+   */
+  function leerPapelMaletin(l) {
+    if (!l.papelMaletin || !l.papelMaletin.caja.oculto) return false;
+    const { vagon, escondite } = l.papelMaletin;
+    floaters.push({
+      x: l.x, y: l.y - (l.papelCaja && l.papelCaja.caja.oculto ? 32 : 20),
+      text: T.ambiente.papelMaletin(vagon, T.ambiente.escondites[escondite]),
+      life: 4, color: colors.strongbox,
+    });
+    return true;
   }
 
   function takeLoot(l) {
@@ -4811,6 +5678,11 @@ export function createRaidScene(services) {
         life: 4, color: colors.strongbox,
       });
       audio.play('cock');
+    }
+    if (leerPapelMaletin(l)) audio.play('cock');
+    // 🗞️ El encargado lleva la hoja de ruta: dice de un tren de carga que viene (se lee en el campamento, si escapás).
+    if (l.guardia && l.guardia.type === 'encargado') {
+      floaters.push({ x: l.x, y: l.y - 44, text: T.ambiente.hojaDeRuta, life: 3, color: colors.strongbox });
     }
 
     // La caja fuerte hace un ruido que se oye en el vagón entero y en los de
@@ -5012,6 +5884,50 @@ export function createRaidScene(services) {
     if (finished) return;
     finished = true;
     outcome = result;
+    /**
+     * 🤝 ¿Y EL COMPAÑERO? Si escapaste, se va con vos si estaba cerca tuyo o junto al caballo (te sigue, así que casi
+     * siempre lo está). Si te agarraron a vos, se salva si estaba cerca del caballo. Si no, queda en el tren.
+     * (⚠️ Provisorio: la cuenta de verdad —lo que le falta hasta la salida y cuántos guardias quedan— y la cárcel
+     * vienen después, ver NOTAS-DISENO.md.)
+     */
+    /**
+     * 🎭 EL PASAJERO DE LA BANDA, AL TERMINAR: si se va con vos (cerca tuyo o del caballo), se fue; si nadie lo vio,
+     * se baja tranquilo en la próxima estación, como cualquier pasajero; si lo vieron acuchillar o cayó, queda preso
+     * *(Santi: "si el jugador huye sin el, irá preso y este se enojará por dejarlo varado en el tren")*. Si le
+     * pegaron, además queda herido.
+     */
+    if (companero && companero.pasajero) {
+      const c = companero;
+      const cerca = distance(c.x, c.y, player.x, player.y) < 110;
+      const centro = train.exitZone.x + train.exitZone.width / 2;
+      const enganche = llamado && llamado.queda === 0 ? (llamado.tramo.colStart + llamado.tramo.cols / 2) * map.size : null;
+      const alCaballo = isInsideZone(c, train.exitZone) || Math.abs(c.x - centro) < 200 || (enganche !== null && Math.abs(c.x - enganche) < 200);
+      // (🔁 ⛓️ Al escapar, se va con vos sólo si está a tu lado o lo arrastrás: el caballo lo espera, así que si no está
+      // es porque te fuiste sin él con la [E] larga. Esposado o tirado, nunca se baja solo.)
+      const libre = c.alive && !c.esposado && !c.esposandolo;
+      const conVos = c.arrastrado || (libre && distance(c.x, c.y, player.x, player.y) < 60);
+      void cerca;
+      const final = (result === 'escaped' ? conVos : libre && alCaballo) ? 'escapo'
+        : libre && !c.descubierto ? 'bajo' : 'preso';
+      pasajeroFinal = { id: c.banda, final, herido: !c.alive || c.pegado };
+    } else if (companero) {
+      const cerca = distance(companero.x, companero.y, player.x, player.y) < 110;
+      const centro = train.exitZone.x + train.exitZone.width / 2;
+      const alCaballo = isInsideZone(companero, train.exitZone) || Math.abs(companero.x - centro) < 200;
+      companeroFinal = !companero.alive ? 'cayo'
+        : (result === 'escaped' ? cerca || alCaballo : alCaballo) ? 'escapo' : 'quedo';
+      /**
+       * 🎒 LO QUE ROBÓ ÉL: si se fue, se fue con eso; si cayó o quedó en el tren, se perdió *(Santi: "Lo que el
+       * compañero lleva se pierde si cae")*. Si escaparon los dos, hoy se suma a lo tuyo. (⚠️ Provisorio: cómo se
+       * reparte la plata entre los dos es del paso 5.)
+       */
+      const cosas = companero.carga.length;
+      if (companeroFinal === 'escapo' && (companero.plata || cosas)) {
+        const tuyo = result === 'escaped';
+        companeroBotin = { plata: companero.plata, cosas, tuyo };
+        if (tuyo) { collected += companero.plata; objetos.push(...companero.carga); }
+      }
+    }
     endTimer = result === 'escaped' ? 0.5 : 1.2;
     camera.shake(2, 0.3);
     audio.play(result === 'escaped' ? 'escape' : 'captured');
@@ -5086,6 +6002,8 @@ export function createRaidScene(services) {
 
     const summary = {
       outcome,
+      // 🗞️ Si registraste al encargado y escapaste, la hoja de ruta (ver scenes/resultsScene.js).
+      hojaDeRuta: escaped && enemies.some((e) => e.type === 'encargado' && e.registrado),
       money: escaped ? collected + cleanBonus + rachaBonus : rescate,
       collected,
 
@@ -5126,6 +6044,11 @@ export function createRaidScene(services) {
       leftBehind,
       kills,
       civilians,
+      // 🤝 El compañero: cómo terminó y sus muertos (que no son tuyos).
+      companero: companeroFinal,
+      botinCompanero: companeroBotin,
+      killsCompanero,
+      civilesCompanero,
       amenazados,
       perdonados,
       rendidosMatados,
@@ -5161,9 +6084,31 @@ export function createRaidScene(services) {
      * son bolsas, y sin nada que soltar serían 15 segundos sin nada en juego.
      */
     const jinetesVivos = riders.filter((rd) => rd.alive).length;
+    // 🎭 Si el de la banda que iba de pasajero cayó en el asalto, queda herido (ver `PLAN.herida`).
+    summary.heridos = [];
+    // (🔁 Ahora sólo si lo activaste y le pegaron: sentado, nadie le tira.)
+    if (pasajeroFinal && pasajeroFinal.herido && gameState.banda[pasajeroFinal.id]) {
+      herir(gameState.banda, pasajeroFinal.id, PLAN_BANDA.herida);
+      summary.heridos.push(pasajeroFinal.id);
+    }
+    // 🎭 Si quedó preso (lo que pasa con eso, en el campamento: ver data/momentos.js).
+    summary.preso = pasajeroFinal && pasajeroFinal.final === 'preso' ? pasajeroFinal.id : null;
+    // 🙂 Si acuchilló a alguien (para saber qué habilidad usó: el cuchillo o hacerse pasar por pasajero).
+    summary.cuchilladas = (companero && companero.cuchilladas) || 0;
+    // 🎭 Si el caballo llegó tarde y lo tuviste que esperar (el que lo traía; si no había nadie, nadie a quien reprochar).
+    summary.caballoTarde = plan && plan.caballoTarde && caballoEspera !== null ? plan.caballos : null;
+    // 📡 🔭 Cómo le fue al del telégrafo y al vigía (para la pantalla del final).
+    // (📒 Con los pasos, para el favor "Salió bien": con +2 lo tenía fácil y cuenta 1 de cada 2. Y los caballos.)
+    summary.papeles = plan ? {
+      telegrafo: plan.telegrafo ? { id: plan.telegrafo, res: plan.telegrafoRes, pasos: plan.telegrafoPasos } : null,
+      vigia: plan.vigia ? { id: plan.vigia, res: plan.vigiaRes, pasos: plan.vigiaPasos } : null,
+      caballos: plan.caballos && plan.caballosRes ? { id: plan.caballos, res: plan.caballosRes, pasos: plan.caballosPasos } : null,
+    } : null;
     if (escaped && alarm.active && jinetesVivos > 0 && summary.money > 0) {
       scenes.goTo('huida', {
         summary, jinetes: jinetesVivos, arma: player.weapon, balas: player.ammo,
+        // 🎭 El plan: si el caballo llegó tarde, la ley arranca más cerca y con uno más.
+        plan,
         // ⛈️ Si llovía en el tren, llueve en la huida.
         clima: train.clima ? train.clima.id : null,
       });
@@ -5420,6 +6365,8 @@ export function createRaidScene(services) {
     if (!player.enTecho) {
       if (conCarbon) cosas.push({ base: pies(player) - 0.001, draw: corrido(player.x, () => dibujarPiesEnCarbon(r, caidas, player, map, gameState.esDeDia, true)) });
       cosas.push({ base: pies(player), draw: corrido(player.x, metido(player, () => drawPlayer(r, player, train.hearStepRadius))) });
+      // 🤝 El compañero, con las mismas reglas de dibujo que vos.
+      if (companero && !companero.enTecho) cosas.push({ base: pies(companero), draw: corrido(companero.x, metido(companero, () => companero.pasajero ? dibujarPasajeroDeBanda(r, companero) : drawPlayer(r, companero, train.hearStepRadius))) });
       if (conCarbon && player.enCarbon) cosas.push({ base: pies(player) + 0.001, draw: corrido(player.x, () => dibujarPiesEnCarbon(r, caidas, player, map, gameState.esDeDia)) });
     }
     cosas.sort((a, b) => a.base - b.base);
@@ -5539,6 +6486,28 @@ export function createRaidScene(services) {
     // Sin salirse de la pantalla: el aviso de entrada nace sobre el jugador, y
     // la plataforma de atrás está pegada al borde del mapa.
     const enPantalla = { dentroDe: [swayX + 2, swayX + r.width - 2] };
+    // 📣 Adónde mandaste al compañero: una marca chica que se apaga sola.
+    // 🔁 Y el círculo de la orden: mientras tenés la [F] apretada, y un momento después de soltarla.
+    const circulo = (cx, cy, alfa) => {
+      r.ctx.globalAlpha = alfa;
+      r.ctx.strokeStyle = colors.text;
+      r.ctx.lineWidth = 0.75;
+      r.ctx.setLineDash([2, 2]);
+      r.ctx.beginPath();
+      r.ctx.arc(cx, cy, ORDENES.radio, 0, Math.PI * 2);
+      r.ctx.stroke();
+      r.ctx.setLineDash([]);
+      r.ctx.globalAlpha = 1;
+    };
+    if (circuloOrden) circulo(circuloOrden.x, circuloOrden.y, 0.7);
+    if (marcaOrden) {
+      if (marcaOrden.circulo) circulo(marcaOrden.x, marcaOrden.y, Math.min(0.7, marcaOrden.vida));
+      r.ctx.globalAlpha = Math.min(1, marcaOrden.vida * 2);
+      const mx = marcaOrden.x, my = marcaOrden.y;
+      r.rect(mx - 3, my - 0.5, 2, 1, colors.text); r.rect(mx + 1, my - 0.5, 2, 1, colors.text);
+      r.rect(mx - 0.5, my - 3, 1, 2, colors.text); r.rect(mx - 0.5, my + 1, 1, 2, colors.text);
+      r.ctx.globalAlpha = 1;
+    }
     for (const fl of floaters) {
       const f = sobreElTecho(fl);
       r.ctx.globalAlpha = Math.min(1, f.life * 2);
@@ -5573,6 +6542,7 @@ export function createRaidScene(services) {
     }
     // La mochila y todo lo que se mide en update van con la lupa del mundo.
     r.nuevoCuadro();
+    dibujarDatosPlan(r);
     if (mochilaAbierta) drawMochila(r);
   }
 
@@ -7046,11 +8016,22 @@ export function createRaidScene(services) {
       return;
     }
 
+    // ✉️ Revisar buscando el doble fondo, con su barrita.
+    if (!nearestPassenger() && !cajonCerca() && !cajonCerca(false) && !tranqueraCerca() && dondeRevisar()) {
+      r.text(T.prompts.revisar, player.x, player.y - 16, colors.textDim, 'center', enPantalla);
+      if (revisarProgress > 0) {
+        const w = 22;
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12, w * (revisarProgress / TIEMPO_DE_REVISAR), 3, colors.doorGlow);
+      }
+      return;
+    }
+
     /**
      * EL CAJÓN TIENE DOS VERBOS, ASÍ QUE EL CARTEL TIENE DOS LÍNEAS — el mismo
      * caso que el poste del campamento, que es lo único que se atiende y se
      * monta. Arriba lo que hace la `[E]` (o por qué no hace nada), abajo el
-     * `[F]` que siempre está disponible.
+     * empujón (🔁 ahora un toque de `[E]`, cuando no hay cartucho para llevarse).
      *
      * SON TRES CASOS, y el cartel los separa sin que haya que mirar la franja:
      *   con cartucho  → la [E] y su barrita, más el empujón abajo.
@@ -7073,7 +8054,8 @@ export function createRaidScene(services) {
           r.rect(player.x - w / 2, player.y - 12,
             w * (cajon.progreso / EXPLOSIVES.cajonPolvora.abrirHold), 3, colors.dynamite);
         }
-        r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim, 'center', enPantalla);
+        // (Mientras te puedas llevar el cartucho, la [E] es para eso: el empujón aparece cuando no.)
+        if (!cartuchoParaVos(cajon)) r.text(T.prompts.empujarCajon, player.x, player.y + 16, colors.textDim, 'center', enPantalla);
       } else {
         r.text(T.prompts.empujarCajon, player.x, player.y - 16, colors.text, 'center', enPantalla);
       }
@@ -7092,6 +8074,32 @@ export function createRaidScene(services) {
       return;
     }
 
+    // ⛓️ Liberar o levantar al pasajero de la banda.
+    const aRescatar = rescateCerca();
+    if (aRescatar && !aRescatar.alive && aRescatar.sinEsposas && !aRescatar.esposado) {
+      r.text(T.plan.agarrar(MIEMBRO[aRescatar.banda].corto.toUpperCase()), player.x, player.y - 16, colors.bagLoot, 'center', enPantalla);
+      return;
+    }
+    // (Arrastrándolo: cómo soltarlo, abajo, sin tapar los otros carteles.)
+    if (companero && companero.arrastrado && !isInsideZone(player, train.exitZone) && !engancheAqui()) {
+      r.text(T.plan.soltar(MIEMBRO[companero.banda].corto.toUpperCase()), player.x, player.y + 16, colors.textDim, 'center', enPantalla);
+    }
+    if (aRescatar) {
+      const nombre = MIEMBRO[aRescatar.banda].corto.toUpperCase();
+      r.text(aRescatar.alive ? T.plan.liberar(nombre) : T.plan.levantar(nombre), player.x, player.y - 16, colors.bagLoot, 'center', enPantalla);
+      if (rescateProgress > 0) {
+        const w = 22;
+        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
+        r.rect(player.x - w / 2, player.y - 12, w * (rescateProgress / PLAN_BANDA.liberar), 3, colors.bagLoot);
+      }
+      return;
+    }
+
+    if (pasajeroParaHablar()) {
+      r.text(T.plan.hablar(MIEMBRO[plan.pasajero].corto.toUpperCase()), player.x, player.y - 16, colors.bagLoot, 'center', enPantalla);
+      return;
+    }
+
     const victima = nearestPassenger();
     if (victima) {
       r.text(T.prompts.threaten, player.x, player.y - 16, colors.civilianRun, 'center', enPantalla);
@@ -7101,6 +8109,22 @@ export function createRaidScene(services) {
         r.rect(player.x - w / 2, player.y - 12,
           w * (victima.robProgress / robTimeDe(victima)), 3, colors.bagLoot);
       }
+      return;
+    }
+
+    // 🎭 Esperando al caballo que llega tarde.
+    if (isInsideZone(player, train.exitZone) && caballoNoLlego() && caballoEspera !== null) {
+      r.text(T.plan.esperando(Math.ceil(caballoEspera)), player.x, player.y - 16, colors.enemyAlert, 'center', enPantalla);
+      return;
+    }
+
+    // 🐎 En un enganche: llamar al de los caballos, esperarlo, o escapar.
+    const enganche = engancheAqui();
+    if (enganche) {
+      const nombre = MIEMBRO[plan.caballos].corto.toUpperCase();
+      if (!llamado || llamado.tramo !== enganche) r.text(T.plan.llamar(nombre), player.x, player.y - 16, colors.doorGlow, 'center', enPantalla);
+      else if (llamado.queda > 0) r.text(T.plan.esperando(Math.ceil(llamado.queda)), player.x, player.y - 16, colors.enemyAlert, 'center', enPantalla);
+      else cartelEscape(r, enPantalla);
       return;
     }
 
@@ -7115,15 +8139,7 @@ export function createRaidScene(services) {
     }
 
     if (isInsideZone(player, train.exitZone)) {
-      r.text(T.prompts.escape, player.x, player.y - 16, colors.doorGlow, 'center', enPantalla);
-      if (escapeProgress > 0) {
-        const w = 22;
-        r.rect(player.x - w / 2, player.y - 12, w, 3, '#1a1512');
-        r.rect(
-          player.x - w / 2, player.y - 12,
-          w * (escapeProgress / CONFIG.raid.escapeHold), 3, colors.doorGlow
-        );
-      }
+      cartelEscape(r, enPantalla);
       return;
     }
 

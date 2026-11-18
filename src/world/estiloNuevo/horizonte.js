@@ -28,11 +28,35 @@ const d = (n) => '.'.repeat(n), R = (c, n) => c.repeat(n);
 const COLOR = { u: 30, v: 22, w: 21, o: 30, O: 17, Q: 17, q: 30 };
 
 /**
+ * 🌅 UN CIELO PARA CADA PARTE DEL DÍA *(Santi, 2026-11-15: "quiero ponerle un cielo a cada parte … Algo importante sería
+ * el sol, luna para darse cuenta también"; "las nubes también son importantes")*. Sólo cuando la escena pasa la parte
+ * del día (hoy, el campamento); el tren y la huida siguen con 'dia' y 'noche'.
+ *  - Mañana: el celeste clásico, el sol bajo a la izquierda (sale por el este), nubes blancas.
+ *  - Tarde: el celeste se aclara y abajo queda una franja durazno; el sol naranja, bajo a la derecha (se pone); nubes
+ *    doradas con la panza durazno.
+ *  - Noche: el azul de noche con estrellas, la luna alta, nubes oscuras con el borde que le da la luna.
+ *  - Madrugada: casi negro arriba y la primera luz violeta abajo; la luna baja a la derecha; menos estrellas.
+ */
+const PARTES_DEL_DIA = ['manana', 'tarde', 'noche', 'madrugada'];
+/** Las nubes de cada cielo: [la luz, el cuerpo, la panza]. */
+const NUBES_DE = {
+  dia: [30, 22, 21], manana: [30, 22, 21],
+  tarde: [29, 13, 45],
+  noche: [19, 41, 18],
+  madrugada: [46, 2, 41],
+};
+/** Con qué tabla se lavan las mesetas de atrás: las de día o las de noche. */
+const LUZ_DE = { dia: 'dia', manana: 'dia', tarde: 'dia', noche: 'noche', madrugada: 'noche', tormenta: 'tormenta' };
+
+/**
  * El tono de cada capa de montañas, con cada cielo: [la de atrás, la de adelante]. Apenas distintos del cielo que
  * tienen detrás: de día, más claros (la bruma); de noche, un poco más oscuros.
  */
 const TONOS = {
   dia: [22, 25],
+  manana: [22, 25],
+  tarde: [16, 12],
+  madrugada: [2, 1],
   noche: [19, 1],
   tormenta: [25, 24],
 };
@@ -119,11 +143,58 @@ const NUBES = [
 const SOL = ['..OOO..', '.OoooO.', 'OoooooO', 'OoooooO', 'OoooooO', '.OoooO.', '..OOO..'];
 const LUNA = ['..qqq..', '.qqQ...', 'qqQ....', 'qqQ....', 'qqQ....', '.qqQ...', '..qqq..'];
 
+/** El sol y la luna grandes de las cuatro partes del día: 13 puntos, para que se vean de lejos. */
+const SOL_GRANDE = [
+  '....OOOOO....',
+  '..OOoooooOO..',
+  '.OoooooooooO.',
+  '.OoooooooooO.',
+  'OoooooooooooO',
+  'OoooooooooooO',
+  'OoooooooooooO',
+  'OoooooooooooO',
+  'OoooooooooooO',
+  '.OoooooooooO.',
+  '.OoooooooooO.',
+  '..OOoooooOO..',
+  '....OOOOO....',
+];
+const LUNA_GRANDE = [
+  '....qqqqq....',
+  '..qqqqQQ.....',
+  '.qqqqQ.......',
+  '.qqqQ........',
+  'qqqqQ........',
+  'qqqQ.........',
+  'qqqQ.........',
+  'qqqQ.........',
+  'qqqqQ........',
+  '.qqqQ........',
+  '.qqqqQ.......',
+  '..qqqqQQ.....',
+  '....qqqqq....',
+];
+/**
+ * Dónde está el astro en cada cielo (el medio, en partes del ancho y del alto de la franja) y de qué color: [el
+ * cuerpo, el borde]. 'dia' y 'noche' son los de siempre, para el tren y la huida.
+ */
+const ASTROS = {
+  dia: { mapa: SOL, x: 0.78, y: 0.24 },
+  noche: { mapa: LUNA, x: 0.78, y: 0.24 },
+  manana: { mapa: SOL_GRANDE, x: 0.1, y: 0.58, colores: { o: 30, O: 29 } },
+  tarde: { mapa: SOL_GRANDE, x: 0.86, y: 0.62, colores: { o: 29, O: 45 } },
+  noche4: { mapa: LUNA_GRANDE, x: 0.7, y: 0.22, colores: { q: 30, Q: 17 } },
+  madrugada: { mapa: LUNA_GRANDE, x: 0.9, y: 0.62, colores: { q: 17, Q: 25 } },
+};
+
 /** Los escalones del cielo, de arriba para abajo (y en qué parte de la franja empieza cada uno). */
 // 🔁 De día, el celeste de siempre *(Santi: "el cambio de los tres colores es muy fuerte, entonces mejor hacelo celeste
 // clásico")*: un solo celeste. (Se probó tramar el paso de un celeste al otro y se leía como una fila de puntitos.)
 const CIELOS = {
   dia: [[0, 21]],
+  manana: [[0, 21]],
+  tarde: [[0, 21], [0.5, 22], [0.74, 13]],
+  madrugada: [[0, 40], [0.4, 18], [0.72, 46]],
   noche: [[0, 40], [0.45, 18]],
   tormenta: [[0, 31], [0.4, 23]],
 };
@@ -360,7 +431,7 @@ let buf = null, cv = null;
  * La franja entera, en pantalla. 'hy': su alto en unidades de pantalla (0 o menos, nada); 'ancho': el de la pantalla;
  * 'avance': cuánto se corrió el mundo sobre el suelo.
  */
-export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = false, nubes = 0, partes = 'todo' }) {
+export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = false, nubes = 0, partes = 'todo', parte = null }) {
   // ('nubes': cuántos puntos se corrieron sólo las nubes, con el viento. En el campamento, donde el mundo no avanza.)
   // ('partes': 'cielo', 'nubes' o 'tierra', para pintar cada capa aparte y que las nubes pasen entre el cielo y las montañas.)
   if (hy <= 0) return;
@@ -370,12 +441,15 @@ export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = 
   const ind = buf.subarray(0, W * H);
   if (partes !== 'todo') ind.fill(-1);
   const hayFondo = partes === 'todo' || partes === 'cielo';
-  const cielo = tormenta ? 'tormenta' : dia ? 'dia' : 'noche';
+  // ('parte': 0 a 3, la parte del día. Sin ella, el cielo de día o de noche de siempre.)
+  const cielo = tormenta ? 'tormenta' : parte != null ? PARTES_DEL_DIA[parte] : dia ? 'dia' : 'noche';
   const pv = (x, y, i) => { if (x >= 0 && y >= 0 && x < W && y < H) ind[y * W + x] = i; };
-  const estampar = (mapa, sx, sy, tono) => {
+  const [nu, nv, nw] = NUBES_DE[cielo] || NUBES_DE.dia;
+  const colores = { ...COLOR, u: nu, v: nv, w: nw };
+  const estampar = (mapa, sx, sy, tono, propios) => {
     for (let j = 0; j < mapa.length; j++) for (let i = 0; i < mapa[j].length; i++) {
       const l = mapa[j][i];
-      if (l !== '.') pv(sx + i, sy + j, tono ?? COLOR[l]);
+      if (l !== '.') pv(sx + i, sy + j, tono ?? propios?.[l] ?? colores[l]);
     }
   };
   const capa = (C, piezas, piso, tono) => {
@@ -396,17 +470,22 @@ export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = 
     ind.fill(c, y * W, (y + 1) * W);
   }
   // 2. Las estrellas (de noche), el astro y las nubes (de día).
-  if (hayFondo && cielo === 'noche') {
-    for (let n = 0; n < 70; n++) {
-      const sx = Math.floor(hash(n, 7) * W), sy = Math.floor(hash(n, 13) * (H * 0.6));
+  if (hayFondo && (cielo === 'noche' || cielo === 'madrugada')) {
+    // (En la madrugada, menos y sólo arriba: abajo ya aclara.)
+    const madrugada = cielo === 'madrugada';
+    for (let n = 0; n < (madrugada ? 30 : 70); n++) {
+      const sx = Math.floor(hash(n, 7) * W), sy = Math.floor(hash(n, 13) * (H * (madrugada ? 0.35 : 0.6)));
       pv(sx, sy, hash(n, 29) < 0.3 ? 30 : 22);
     }
   }
   if (hayFondo && cielo !== 'tormenta' && H > 30) {
-    const cx = Math.round(W * 0.78), cy = Math.round(H * 0.24);
-    estampar(dia ? SOL : LUNA, cx - 3, cy - 3);
+    const A = ASTROS[cielo === 'noche' && parte != null ? 'noche4' : cielo];
+    const lado = A.mapa.length, cx = Math.round(W * A.x), cy = Math.round(H * A.y);
+    estampar(A.mapa, cx - (lado >> 1), cy - (lado >> 1), undefined, A.colores);
   }
-  if (cielo === 'dia' && (partes === 'todo' || partes === 'nubes')) capa(CAPAS.nubes, NUBES, null);
+  // (🔁 Las nubes, en todos los cielos de las cuatro partes; sin la parte del día, sólo de día como siempre.)
+  const conNubes = cielo !== 'tormenta' && (parte != null || cielo === 'dia');
+  if (conNubes && (partes === 'todo' || partes === 'nubes')) capa(CAPAS.nubes, NUBES, null);
 
   if (partes === 'todo' || partes === 'tierra') {
   // 3. Las dos capas de montañas, apoyadas en la línea del horizonte (abajo de la franja). Debajo de cada capa, su
@@ -420,7 +499,7 @@ export function dibujarHorizonteNuevo(ctx, { hy, ancho, avance, dia, tormenta = 
   // 4. Las mesetas del medio, en sus dos capas, delante de las siluetas, con el pie hundido detrás del horizonte. Cada punto toma su
   //    franja con la misma onda y el mismo tramado que las de adelante (suelo.js, pintarMesetas).
   for (const C of CAPAS_MEDIAS) {
-    const tabla = LAVADOS[cielo === 'dia' ? C.lavado : cielo], MEDIAS_C = C.mapas;
+    const luz = LUZ_DE[cielo], tabla = LAVADOS[luz === 'dia' ? C.lavado : luz], MEDIAS_C = C.mapas;
     const dx = Math.round((avance * C.corre) / PASO);
     for (let n = Math.floor(dx / C.cada) - 2; n <= Math.floor((dx + W) / C.cada) + 1; n++) {
       if (hash(n, C.cada) < C.vacio) continue;

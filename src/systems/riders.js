@@ -349,8 +349,17 @@ export function updateRiders(riders, dt, world) {
       rd.carril = 0; rd.carrilT = 0; rd.entraATirar = false; rd.huye = 0;
     }
 
-    seguirAlJugador(rd, dt, world);
-    apuntarYDisparar(rd, dt, world);
+    /**
+     * 🤝 PIENSA CONTRA QUIEN VE: vos o el compañero (`blancoDeJinete`, que pone la escena: ver systems/companero.js).
+     * Mientras piensa, "el jugador" es su blanco: lo sigue, le apunta y le tira con las mismas reglas.
+     */
+    const vos = world.player;
+    const blanco = world.blancoDeJinete ? world.blancoDeJinete(rd) : vos;
+    world.player = blanco;
+    try {
+      seguirAlJugador(rd, dt, world);
+      apuntarYDisparar(rd, dt, world);
+    } finally { world.player = vos; }
     sacarElRifle(rd, dt);
   }
 
@@ -684,7 +693,7 @@ export function damageRider(rd, amount) {
  * piso de la tabla (2), para que llamarlo sin `max` siga dando el
  * comportamiento de siempre.
  */
-export function createRiderWatch({ bus, audio, max = RIDER_SPAWN.maxPorRecompensa[0].max }) {
+export function createRiderWatch({ bus, audio, max = RIDER_SPAWN.maxPorRecompensa[0].max, demora = 0 }) {
   let timer = 0;
   let salieron = 0;
   let corriendo = false;
@@ -695,7 +704,8 @@ export function createRiderWatch({ bus, audio, max = RIDER_SPAWN.maxPorRecompens
     arrancar() {
       if (corriendo) return;
       corriendo = true;
-      timer = RIDER_SPAWN.firstAfterAlarm;
+      // (🤕 `demora`: lo que tarda de más la ley, ver el forastero en data/banda.js.)
+      timer = RIDER_SPAWN.firstAfterAlarm + demora;
     },
 
     update(dt, world) {

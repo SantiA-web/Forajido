@@ -29,6 +29,7 @@
  */
 
 import { CONFIG } from './config.js';
+import { BANDA } from './banda.js';
 
 /**
  * Los números de este archivo son de la pantalla vieja (384×216) y se estiran
@@ -81,6 +82,7 @@ export const CAMPAMENTO = {
       x: 76, y: -14,
       alcance: 32,
     },
+    // 🤠 (La banda se agrega abajo, desde data/banda.js: cada uno en su `lugar`. 🔁 Antes acá estaba el compañero.)
     {
       id: 'cartel',
       // 🔁 Estaba en (12, 62), justo delante de la fogata, y la tapaba. Se corrió a la derecha.
@@ -107,6 +109,14 @@ export const DECORADO = [
 ];
 /** Dónde te sentás cuando apretás [E] en la fogata: arriba del tronco, relativo al centro. */
 export const ASIENTO = { x: -30, y: 16 };
+
+// 🔥 Lo que aparece sólo cuando trae un momento (ver data/momentos.js): la carta del tipo junto al fuego y el
+// forastero, en la orilla del claro.
+CAMPAMENTO.objetos.push({ id: 'carta', momento: true, x: -6, y: 56, alcance: 16 });
+CAMPAMENTO.objetos.push({ id: 'forastero', momento: true, x: -70, y: 6, alcance: 22, huella: { x1: -4, x2: 4, y1: -3, y2: 2 } });
+
+// 🤠 La banda alrededor del fuego: se les habla con [E] (`miembro`: los dibuja y los atiende campScene).
+for (const m of BANDA) CAMPAMENTO.objetos.push({ id: m.id, miembro: true, x: m.lugar.x, y: m.lugar.y, alcance: 22, huella: { x1: -4, x2: 4, y1: -3, y2: 2 } });
 
 // Las distancias al centro, a la pantalla de hoy.
 for (const o of CAMPAMENTO.objetos) {

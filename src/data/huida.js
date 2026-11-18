@@ -511,6 +511,91 @@ export const HUIDA = {
     margen: 14,
   },
 
+  /**
+   * 🎭 LA BANDA GALOPA CON VOS *(BRUJULA.md: "en la huida, la banda va a caballo con vos y le tira a la ley"; Santi
+   * eligió que vayan sólo los que tienen papel: el de los caballos y el pasajero)*. ⚠️ Números de primer tanteo.
+   */
+  banda: {
+    /** Dónde va cada uno, desde vos: `atras` hacia atrás y `lado` hacia un costado (en unidades). */
+    // (🔁 Cuatro lugares: con el telégrafo y el vigía pueden ir tres de la banda; el tercero, más atrás y al medio.)
+    lugares: [{ atras: 18, lado: 24 }, { atras: 18, lado: -24 }, { atras: 40, lado: 0 }, { atras: 40, lado: 40 }],
+    /**
+     * 📡 🔭 EL DEL TELÉGRAFO Y EL VIGÍA LLEGAN A MITAD DE LA HUIDA *(BANDA-NUEVA.md, pregunta 9; Santi aprobó)*: a los
+     * `llegan` segundos aparecen `llegaDesde` unidades detrás tuyo y galopan apurados hasta su lugar. ⚠️ Primer tanteo:
+     * la huida dura hasta `tope` (90) y los de la ley aflojan a los 45.
+     */
+    llegan: 20,
+    llegaDesde: 260,
+    /** Cada cuánto tira (más un poco al azar), cuánto apunta antes, hasta dónde llega y cuánto se le abre el tiro. */
+    cadencia: 2.4,
+    cadenciaAzar: 1.0,
+    apuntar: 0.5,
+    alcance: 220,
+    dispersion: 0.18,
+    /** Lo que saca cada tiro suyo (los de la ley aguantan `jinetes.vida`). */
+    danio: 1,
+    /** Los tiros que aguanta él antes de quedar herido y quedarse atrás. */
+    vida: 3,
+    /** 🗣️ Con Valiente aguanta uno más *(VOCES.md: "no se queda atrás con el primer tiro")*. */
+    valiente: 1,
+    /** De cada tiro de la ley, la chance de que sea para uno de la banda y no para vos. */
+    chanceDeApuntarle: 0.2,
+    /** 🎯 Con Buena puntería erra menos *(Santi: "erra menos")*: su tiro se abre la mitad. */
+    punteria: 0.5,
+    /**
+     * 🐎 [F]: SE SEPARA Y SE LLEVA A LA MITAD *(Santi, 2026-11-15)*. Una vez por huida; con otra [F] vuelve.
+     *  - `abre`: cuánto se abre de tu rumbo al irse (en radianes, para su lado).
+     *  - `riendas`: con Veloz en las riendas su caballo corre esto más *(Santi: "un 5% más rápido")*. Sin el rasgo,
+     *    corre como los de la ley.
+     *  - `vuelve`: al volver corre esto más que de costumbre, para alcanzarte; `llego`: a esta distancia ya está.
+     *  - `abandono`: si a vos ya no te sigue nadie y te alejás esto de él mientras a él lo siguen, lo dejaste solo
+     *    *(Santi: "si vos logras matarlos primero puedes escapar")*. Llegar a un refugio así, también.
+     *  - `lejos`: separado, se abre de tu rumbo hasta esta distancia y no se va más lejos: corre a la par tuya.
+     *  - Si lo dejaste solo, según los jinetes que le quedan *(Santi)*: con Veloz en las riendas vuelve sano con
+     *    `sanoHasta` o menos, y herido con más; sin el rasgo, preso con `presoDesde` o más, y herido con menos.
+     */
+    aparte: { abre: 0.6, riendas: 1.05, vuelve: 1.3, llego: 16, abandono: 420, sanoHasta: 3, presoDesde: 4, lejos: 200 },
+    /**
+     * 🧠 CÓMO PIENSA EN EL TIROTEO *(Santi: "debe ser real, no solo un caballo que corre en línea recta. Debería saber
+     * pensar"; "cuando está al lado mío también intentaría rodear, ponerse de costado, esquivar")*.
+     *  - `ve` / `veRiendas`: la chance de ver el brillo del caño del que le apunta y hacer un quiebre (cambiar de
+     *    carril de golpe) para que el tiro salga a donde estaba. Con Veloz en las riendas lo ve y lo hace más.
+     *  - `quiebre`: cuánto dura el quiebre (s) y cuánto se abre de su rumbo (radianes).
+     *  - `giro` / `giroRiendas`: lo que dobla por segundo (radianes). Los de la ley doblan `jinetes.giro`.
+     *  - `costado`: separado, a qué ángulo del que lo amenaza corre, para tenerlo de costado y no pegado atrás.
+     *  - `rodea`: al lado tuyo, cuánto se adelanta o se atrasa de su lugar para ponerse a la par del más cercano.
+     *  - `vuelveCon`: separado, con esta vida o menos se vuelve a buscarte, con los suyos detrás.
+     */
+    piensa: {
+      ve: 0.6, veRiendas: 0.8,
+      quiebre: { dura: 0.35, angulo: 1.0 },
+      giro: 2.2, giroRiendas: 2.8,
+      costado: 1.3,
+      rodea: 40,
+      vuelveCon: 1,
+      /**
+       * SOLO SE CONCENTRA: separado tira más seguido (`cadencia` en vez de la de arriba), se le abre menos el tiro
+       * (`dispersion`) y se juega más (`vidaExtra` tiros más que aguanta, desde que se separa). Medido en el banco
+       * (Frank, sin ayuda tuya) para la "columna A" que eligió Santi: contra 1 casi siempre gana, contra 2 dos de cada
+       * tres, contra 3 uno de cada tres, contra 4 o más casi nunca. Al lado tuyo sigue con los de arriba: la huida de
+       * siempre no cambia.
+       * 🔁 `vidaExtra` de 2 a 1 *(Santi: "bajalo a 1 tiro")*: con el contragolpe, 2 los dejaba a todos muy fuertes.
+       * Medido así (10 huidas por fila, sin ayuda tuya), cuántas gana contra 1 / 2 / 3 / 4:
+       * Frank 10 / 6 / 3 / 2; Tommy 9 / 6 / 5 / 4; Santiago 9 / 6 / 5 / 3. Las que no gana, casi siempre vuelve herido
+       * a buscarte; ninguna cae sin avisar.
+       */
+      solo: { cadencia: 1.0, dispersion: 0.12, vidaExtra: 1 },
+      /**
+       * EL CONTRAGOLPE *(Santi eligió "la 1")*: cuando esquiva un tiro, aprovecha y tira enseguida (sin esperar su
+       * cadencia), y apunta esto de rápido (una fracción de `apuntar`). Así el que esquiva más (Veloz en las riendas)
+       * también baja más, y las peleas no se estiran.
+       */
+      contragolpe: 0.5,
+    },
+    /** 🎯 Si él está más cerca del jinete que vos, la chance de que le apunten a él (si no, `chanceDeApuntarle`). */
+    apuntarleCerca: 0.5,
+  },
+
   jinetes: {
     /**
      * LA VELOCIDAD DE LOS CABALLOS DE LA LEY. 🔺 SUBIÓ DE 130 A 142, la del

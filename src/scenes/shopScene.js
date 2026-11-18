@@ -32,6 +32,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { TIENDAS } from '../data/tienda.js';
 import { gameState, numero } from '../state/gameState.js';
 import { T } from '../text/es.js';
@@ -192,7 +193,8 @@ export function createShopScene(services) {
 
   function render(r) {
     // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
-    r.escenaFija();
+    // (🔁 En el estilo nuevo, con el punto en píxeles enteros: ver `escenaEntera`.)
+    if (estiloNuevo.activo) r.escenaEntera(); else r.escenaFija();
     r.clear('#120d0b');
 
     // Armada para `CONFIG.view` y centrada en la pantalla de hoy. Los textos

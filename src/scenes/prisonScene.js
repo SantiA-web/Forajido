@@ -53,7 +53,7 @@ export function createPrisonScene(services) {
    */
   function continuar() {
     if (resultado.horca) resetGame();
-    scenes.goTo('camp');
+    scenes.goTo('camp', { desde: 'prision' });
   }
 
   function update() {

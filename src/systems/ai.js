@@ -391,15 +391,22 @@ export function updateEnemy(e, dt, world) {
       // Los guardias de abajo no te ven a través del techo, pase lo que
       // pase con la geometría de línea de visión: te oyen (oirPisadas,
       // sin cambios) pero nunca te ven.
-      const visible = player.alive && !player.enTecho &&
+      /**
+       * 🎭 DISTRAÍDO por el de la banda que va de pasajero (`PLAN.distraccion` en data/banda.js): mientras dura no te
+       * ve ni te oye, y se queda quieto mirando para el otro lado. Si ya estaba peleando no le hace nada.
+       */
+      if (e.distraido > 0) e.distraido = Math.max(0, e.distraido - dt);
+      const distraido = e.distraido > 0 && e.state !== 'combat';
+      const visible = !distraido && player.alive && !player.enTecho &&
         canSeeFrom(e.x, e.y, e.facing, player, world.map, true, conoCorto, conoAngosto);
 
       updateSuspicion(e, dt, world, visible);
       contagiarCharla(e, dt);
-      if (!visible) oirPisadas(e, dt, world);
-      if (!visible && e.state !== 'combat') noticeBodies(e, dt, world);
+      if (!visible && !distraido) oirPisadas(e, dt, world);
+      if (!visible && !distraido && e.state !== 'combat') noticeBodies(e, dt, world);
 
-      switch (e.state) {
+      if (distraido) e.facing = Math.atan2(e.y - player.y, e.x - player.x);
+      else switch (e.state) {
         case 'patrol':     doPatrol(e, dt, world); break;
         case 'suspicious': doInvestigate(e, dt, world); break;
         case 'combat':     doCombat(e, dt, world); break;
@@ -610,10 +617,11 @@ export function alertTo(e, x, y) {
 }
 
 /** Otro guardia gritó: este ya sabe que hay alguien y va directo al combate. */
-export function alertCombat(e, x, y, world) {
+export function alertCombat(e, x, y, world, grita = false) {
   if (!e.alive || e.state === 'combat') return;
   e.lastSeen = { x, y };
-  enterCombat(e, world, false);
+  // (🎭 `grita`: como cuando te ve a vos, con el silbato; lo usa el que ve acuchillar al pasajero de la banda.)
+  enterCombat(e, world, grita);
 }
 
 /**
@@ -715,8 +723,12 @@ function enterCombat(e, world, shout = true) {
     world.audio.play('whistle');
     // Va el vagón, no solo la posición: la alarma se propaga por vagones, no
     // por un círculo de píxeles que corta un vagón por la mitad.
+    // 🔁 Y la posición es la de LO QUE VIO (`lastSeen`: a vos, tus pisadas o un cuerpo), no la del guardia: el que
+    // encuentra un cuerpo avisa dónde está el cuerpo *(Santi: "si un guardia ve un cuerpo no sabe que ya hay alguien en
+    // el tren, sino que saben exactamente dónde estás")*.
+    const donde = e.lastSeen || { x: e.x, y: e.y };
     world.bus.emit('guardAlerted', {
-      x: e.x, y: e.y,
+      x: donde.x, y: donde.y,
       wagon: e.wagon,
       radius: CONFIG.enemy.shoutRadius,
     });

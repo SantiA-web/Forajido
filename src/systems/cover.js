@@ -54,9 +54,13 @@ export function findCoverSurface(x, y, hw, hh, map, reach) {
        * mismo con lo que choca fino, como el borde de las estacas de la plataforma *(Santi: "al apretar shift en el nuevo
        * borde se buguea")*. 🔁 Y si pegado a la casilla el cuerpo queda adentro de otra cosa, en el vagón cerrado te
        * dejaba trabado para siempre: en todos esos casos se camina de a medio paso, con el cuerpo entero, hasta tocar.)
+       * (🐛 Y si "pegado a la casilla" queda para ATRÁS de donde estás: la pared del fondo del vagón, en el estilo nuevo,
+       * es más finita que su casilla —`paredPunta`—, y apretando [Shift] contra ella te corría 12 para atrás y no te
+       * cubría. Lo encontré haciendo que el compañero defienda una puerta.)
        */
       const movil = map.coberturaMovilAt && map.coberturaMovilAt(probeX, probeY);
-      if (movil || (map.choqueFinoAt && map.choqueFinoAt(probeX, probeY)) || cuerpoChoca(flushX, flushY)) {
+      const paraAtras = (flushX - x) * dir.dx + (flushY - y) * dir.dy < -1;
+      if (movil || paraAtras || (map.choqueFinoAt && map.choqueFinoAt(probeX, probeY)) || cuerpoChoca(flushX, flushY)) {
         let k = 0;
         while (k < offset && !cuerpoChoca(x + dir.dx * (k + 0.5), y + dir.dy * (k + 0.5))) k += 0.5;
         flushX = x + dir.dx * k;

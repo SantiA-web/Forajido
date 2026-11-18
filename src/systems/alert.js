@@ -22,7 +22,11 @@
 
 import { CONFIG } from '../data/config.js';
 
-export function createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm }) {
+/**
+ * 🔭 `demora`: los segundos de más que tarda el primero de la locomotora porque el vigía de la banda los vio venir (ver
+ * `demoraVigia` en data/banda.js). Sin vigía, o si no vio nada, 0: como siempre.
+ */
+export function createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm, demora = 0 }) {
   let active = false;
   let timerRefuerzo = 0;
   let spawned = 0;
@@ -46,7 +50,7 @@ export function createAlertSystem({ bus, audio, spawnReinforcement, spreadAlarm 
       if (active) return;
       active = true;
       radio = alcance;
-      timerRefuerzo = CONFIG.alert.firstReinforcement;
+      timerRefuerzo = CONFIG.alert.firstReinforcement + demora;
       audio.play('whistle');
       bus.emit('alarm', { wagon: centro });
       spreadAlarm(radio, centro);

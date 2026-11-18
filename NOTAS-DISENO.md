@@ -20484,6 +20484,320 @@ izquierda dada vuelta por programa.
 Probado en 1920×1080. **Sin probar**: salir por una ruta con clic y jugarlo de corrido; el mapa en ventanas chicas (el farol tapa
 más ahí).
 
+## 🛠 EN DISEÑO · Lo que pasa durante el asalto: "si pasa X e Y, pasa Z" (2026-11-10)
+
+*(Santi: "Yo quiero cosas que pasen durante, cosas que el jugador no se espera. Por ejemplo: si pasa X e Y,
+entonces pasa Z, pero X, Y y Z pasan DURANTE el asalto, no se barajean antes")*
+
+**Nada de esto está construido.** Lo que se sortea antes de entrar (curvas, túneles, noche, truenos) es otra
+cosa: esto lo dispara lo que hace el jugador. Regla para todas: **la sorpresa avisa un segundo antes** (un grito,
+el chirrido de los frenos), para que se sienta "fui yo" y no "el juego me hizo trampa".
+
+| # | Si pasa... | ...entonces | Qué cambia |
+|---|---|---|---|
+| 1 | **El maquinista se entera.** La alarma sonó en dos vagones y seguís hacia la locomotora | Frena a fondo (o acelera): frenazo largo, lo suelto se cae y rueda, en la huida los jinetes llegan antes | Los frenazos pasan a ser respuesta, no azar |
+| 2 | **El que corre a avisar.** Un pasajero te ve y no lo frenás antes de que cruce la puerta | El vagón siguiente te espera: guardias cubiertos, apuntando a la puerta | La denuncia se vuelve una carrera que se ve |
+| 3 | **La bala perdida.** Un tiro (tuyo o de un guardia) pega en un barril o un farol | Fuego que crece y pasa al vagón siguiente; los guardias dejan de tirarte y van por los baldes de arena | El incendio de la fase 7 pasa a ser consecuencia, no sorteo |
+| 4 | **El caído que encuentran.** Ya existe (`noticeBodies` en systems/ai.js) | ⚠️ **Hay que arreglarlo**: hoy el que encuentra un cuerpo actúa como si supiera **dónde estás**. Tiene que saber sólo que **hay alguien en el tren**: queda alerta y busca, no va derecho a vos | |
+| 5 | **El que se lleva la plata.** Matás al que manda en el vagón y queda uno solo | Agarra la bolsa o la caja y corre al vagón siguiente; si lo alcanzás es tuya, si llega se suma a los que te esperan | Botín que se escapa |
+| 7 | **El pasajero que se envalentona.** Le das la espalda a uno que ya entregó y hay un arma tirada cerca | La levanta | La traición deja de ser sólo de los guardias rendidos |
+| 8 | **Un jinete sube al tren.** La alarma dura mucho y hay una plataforma o un vagón abierto sin guardias | Un jinete de la ley salta al tren y aparece detrás tuyo | La vuelta deja de ser segura |
+| 9 | **Tirarle al farol de noche.** | El vagón queda a oscuras; los guardias tiran al último fogonazo que vieron | Apagar la luz es decisión tuya, pero tirar te delata |
+
+**Descartadas por Santi:**
+- **6, el sacudón con la mochila llena** (se te cae algo y rueda): *(Santi: "empieza a aparecer una decisión en el
+  jugador que es nunca llevar la mochila llena (ya te reduce movimiento y ahora encima se te caen las cosas)")*.
+- **10, el telegrafista del correo** (si llega al telégrafo, más jinetes en la huida).
+
+**Encadenadas** se arman solas: el pasajero corre a avisar → tiroteo en la puerta → una bala perdida prende un
+barril → alarma en dos vagones → el maquinista frena.
+
+**Pendiente de decidir:** si cada una pasa **siempre** que se dan las condiciones (mi recomendación: así se
+aprenden a evitar o a provocar) o con una chance; y en qué orden se hacen. Ojo: si el asalto pasa a ser de a dos (se está charlando), varias
+cambian, porque uno puede perseguir mientras el otro aguanta.
+
+---
+
+## 🛠 EN DISEÑO · El compañero: el asalto es de a dos (2026-11-10)
+
+*(Santi: "ahora creo que el compañero quiero que sea más importante, al punto de que no se puede jugar el asalto
+solo")*. **Se hace antes que lo de "si pasa X e Y, pasa Z"**: todos los números del asalto están pensados para uno
+solo, y varias de esas ideas cambian con dos. Nada construido todavía.
+
+**Lo que decidió Santi:**
+- **Desde el principio del juego hay uno en el campamento.** Es alguien importante de la historia y con
+  experiencia, porque más adelante es el que explica el tutorial. Por ahora: **un amigo del padre del jugador**
+  (se puede cambiar).
+- **Cada uno tiene su propia recompensa por su cabeza**: lo que hace el compañero no le sube la tuya.
+- **La plata: 50% para el jugador**, y el otro 50% se divide entre los compañeros que lleve (con uno, mitad y
+  mitad).
+- **Antes del asalto se elige su lugar**: **jinete** al costado del tren, o **sube** con vos.
+- **Su forma de ser, que se elige antes y se puede cambiar adentro** (el cambio tarda un poco):
+  **pasivo** (se repliega y busca cubrirse), **agresivo** (va al ataque) o **ladrón** (roba toda la plata que
+  pueda).
+- **Órdenes rápidas en el asalto**: cubrí acá, robá aquello, atacá ahí, subí al techo. Y el **"botón rojo"**: huí,
+  el asalto está perdido.
+- **Si cae, queda preso** (no muere en el asalto). **Si no tiene plata suficiente, muere en la horca.**
+- **Si caés vos**, que se salve o no depende del camino que le queda hasta la salida.
+- **La confianza** (que la mueva la historia, el honor y otras cosas) queda **para el futuro**. Mientras no exista,
+  **no puede irse ni abandonar el asalto** por su cuenta.
+- **Solo se puede, pero no conviene**: *(Santi: "no se compartiría nada pero sería muy riesgoso para el jugador
+  hacerlo solo")*.
+
+**Lo que se cerró después, con mis recomendaciones** *(Santi: "de acuerdo con tus recomendaciones")*:
+- **De jinete lleva tu caballo** y lo acerca al vagón donde estás (la salida te sigue), y les tira a los jinetes
+  de la ley desde afuera.
+- **Una sola tecla de orden que depende de adónde apuntás** (caja o pasajero: roba; guardia: ataca; escalera:
+  sube al techo; piso: se cubre ahí), otra para cambiar su forma de ser, y el **botón rojo mantenido un segundo**.
+- **Tiene su propia bolsa**: al final se suma todo y se reparte; si cae preso, se pierde lo que cargaba él.
+- **La cárcel la paga con su plata y vos ponés lo que falte**, con unos días antes de la horca. Más adelante, los
+  trenes de prisioneros (ver más arriba) para ir a rescatarlo.
+- **Si caés vos, se resuelve con una cuenta** (lo que le falta a la salida y cuántos guardias quedan).
+- **El orden**: el cuerpo que encuentran → el compañero arriba del tren (con un dibujo provisorio) → órdenes y formas
+  de ser → jinete → plata, recompensas, cárcel y horca → su dibujo → los números del asalto para dos.
+- **Arranca con un Colt y un cuchillo** (más adelante se los cambia) *(Santi: "Debe tener muy claro cuando está en
+  sigilo y cuando no")*.
+- **Sin decidir:** cómo es y cómo se llama.
+
+**Estado (2026-11-10):**
+- ✅ **El cuerpo que encuentran**: el grito avisa dónde está lo que vio el guardia (`guardAlerted` lleva
+  `lastSeen`), no dónde estás vos. Medido: el que encontró el cuerpo fue hasta el cuerpo, los del vagón de al lado
+  quedaron en amarillo buscando, y nadie fue hacia el jugador escondido.
+- ✅ **Paso 2, primera versión** (`systems/companero.js`): sube con vos, te sigue por adentro, en **sigilo**
+  agachado y sin tirar nunca (degüella sólo al guardia que está por descubrirlos y lo tiene de espaldas), y en
+  **pelea** saca el Colt y le tira al guardia más cercano que ve. Lo dice arriba de la cabeza al cambiar. Los
+  guardias lo ven, le tiran y le pegan con las mismas reglas que a vos (`conBlanco` en scenes/raidScene.js). Si
+  cae, queda tirado y el asalto sigue. `?solo` en la dirección para asaltar solo.
+- ✅ **Se cubre** con tu misma cobertura (la de [Shift]): en pelea busca un reparo cerca que no lo aleje de vos, se
+  pega, se asoma para tirar (tu clic derecho) y se esconde mientras recarga o cuando le acaban de pegar. Sale si te
+  alejás o si ya no queda nadie. Se acuerda 2,5 s del último guardia que vio (escondido no ve). Probado: 7 s de
+  tiroteo, la mitad cubierto y casi todo ese rato asomado tirando.
+- ✅ **La salida**: si escapás, se va con vos si está cerca tuyo o junto al caballo; si te agarran a vos, se salva si
+  estaba cerca del caballo; si no, queda en el tren. El resumen lo dice ("Tu compañero: se fue con vos / quedó en el
+  tren / cayó").
+- ✅ **Sus muertos son suyos** *(Santi: "el jugador no debería quedar afectado por lo que hace el otro")*: sus balas
+  y su cuchillo no suman a tus guardias ni a tus civiles muertos (no te suben la recompensa ni tocan tu honor). El
+  resumen los muestra aparte ("Los que mató él"). Probado: mató a uno, tus guardias muertos quedaron en 0 y tu
+  recompensa en $0.
+- ✅ **Lo que vio Santi probándolo** *(Santi: "aunque pueda dispararles a los jinetes no elige dispararles. Además,
+  no veo que recargue y no sé si entiende la dinamita")*:
+  - **Les tira a los jinetes** cuando los ve por una ventanilla o una baranda (la misma regla del espejo: sólo si
+    desde ahí él también lo vería), sin buscar reparo contra ellos. Los que baja son suyos. Se descubrió un error:
+    con dos blancos a la misma distancia saltaba de uno al otro y no tiraba nunca; ahora se queda con el que tenía
+    mientras lo vea. Probado en la plataforma de un enganche: en 20 s vio un jinete 1,1 s y le tiró 2 veces. En el
+    pasillo de un vagón de pasajeros casi nunca se los ve (ni vos): tapan los asientos y la pared.
+  - **Recarga sin esperar a quedarse seco**: cuando no tiene a nadie a tiro, o en silencio, llena el tambor. Avisa
+    "¡RECARGO!" arriba de la cabeza, como los guardias.
+  - **Entiende la dinamita**: una encendida (tuya o de un guardia) a menos de su `fleeRadius` y sin pared de por
+    medio, se despega del reparo y corre para el otro lado. Probado: se alejó 78 y salió entero.
+- ✅ **La segunda tanda** *(Santi: "hacé esas dos cosas. Además, veo el problema de que no sabe distinguir una
+  cobertura baja de una cobertura normal, porque en la barra sus balas pegaban en ella en vez de pasar por encima")*:
+  - **Los jinetes le tiran a él también**: cada jinete le tira al que ve por la ventanilla (al más cercano si ve a los
+    dos; si no ve a ninguno, al de antes). Con vos en el techo, a vos. Probado: con vos lejos y él en una ventanilla,
+    los jinetes pasaron a apuntarle a él; le pegan tan poco como a vos (casi todas las balas dan en el marco).
+  - **Esquiva los cajones de pólvora** que vienen rodando por su carril: se sale del reparo y se corre de carril,
+    como los guardias. Probado: no lo volteó.
+  - **La barra**: tirando parado ahora apunta (tu clic derecho), así que la bala pasa por encima de la cobertura baja.
+    Y apareció otro error, que también era tuyo: asomado detrás de la barra con el guardia casi enfrente, se asomaba a
+    un lado, el guardia le quedaba del otro, se asomaba al otro… y cada tiro salía apuntado desde donde estaba un
+    momento antes, así que erraba siempre. Ahora, ya asomado, sólo cambia de lado si apuntás claramente al otro
+    (`umbralLado`, entities/player.js). Probado: 30 s detrás de la barra, 29 tiros, ninguno en la madera y los 29 en
+    el guardia (estaba a 52).
+- ✅ **Paso 3 · Los estados y las órdenes** (hechos los dos; falta jugarlo de verdad). Primero entender al
+  personaje y después la tecla *(Santi: "antes de hacer literalmente los comandos, debería entender el personaje que
+  significa cada estado y cada orden a darle y después se le implementa una tecla")*.
+  - **Reglas para todos**:
+    - **Nunca empieza un tiroteo solo** *(Santi: "NUNCA puede empezar un tiroteo solo")*, sea cual sea su estado.
+    - **A los civiles no les tira** salvo orden tuya.
+    - **Las órdenes las cumple aunque lo vean** *(Santi: "Los comandos que pueden alertar a un guardia los hace
+      igual, no importa si lo ven")*: el riesgo lo elegís vos al darla.
+    - **La correa**: puede alejarse hasta un vagón atrás o uno adelante del vagón donde estás vos; con "cubrí acá" no
+      tiene límite (se queda donde lo dejaste).
+    - **Lo que carga se pierde si cae**, y le pesa como a vos pero menos (también en el vagón de carga).
+  - **Estados** (su forma de ser: cómo decide sin órdenes). Se elige antes del asalto y se cambia en el asalto con
+    una demora corta y un cartel:
+    - **Pasivo**: en silencio sólo usa el cuchillo si un guardia está por descubrirlos; en pelea se cubre, se queda
+      más lejos, le tira sólo al que les tira; herido, retrocede.
+    - **Agresivo**: en silencio acuchilla a cualquier guardia de espaldas (sin hacer ruido: no empieza tiroteos); en
+      pelea avanza, busca el costado y le tira a cualquiera que vea.
+    - **Ladrón**: se aparta a agarrar el botín que ve cerca y lo carga en su mochila; evita pelear (se cubre, tira
+      poco); entre cubrirte y la plata, la plata.
+  - **Órdenes** (mandan sobre el estado hasta cumplirse):
+    - **Cubrí acá**: va al lugar marcado, se pega al reparo más cercano y vigila para ese lado, hasta otra orden.
+      (No hace falta "esperá": *(Santi: "sería lo mismo que 'Cubrí acá', porque le estás diciendo que tome un lugar
+      y que lo defienda")*.)
+    - **Robá aquello**: va a lo marcado, lo agarra (tarda como vos) y vuelve con vos.
+    - **Atacá ahí**: contra el guardia marcado; en silencio, agachado y cuchillo por la espalda; en pelea, primero a
+      ése. (Un civil, sólo así.)
+    - **Seguime**: cancela todo y vuelve detrás tuyo.
+    - **Subí al techo**: va aparte, con su propio sistema *(Santi: "lo del techo hay que tener cuidado, haría un
+      apartado solo para ese sistema")*.
+  - ✅ **Las teclas: la "A", con la [F]** *(Santi: "vamos con la A pero que la tecla a apretar sea la F, y lo que haya
+    en la F eliminalo")*. Apuntás y apretás [F]: un guardia bajo la mira → "atacá ahí"; un botín cerca de la mira →
+    "robá aquello"; un lugar del piso → "cubrí acá". Un civil, sólo **sosteniendo** la [F] medio segundo (así nunca es
+    sin querer). [V] es "seguime". Contesta arriba de la cabeza ("¡voy!", "cubro acá", "lo agarro", "te sigo", "muy
+    lejos", "ahí no", "no me entra") y queda una marca chica donde lo mandaste. En el techo no hay órdenes.
+    - 🔁 **Lo que había en la [F]**: era el cuchillo de respaldo (sigue la ruedita) y **empujar el cajón de pólvora**,
+      que pasó a la [E] *(Santi eligió "Empujar con la E")*: un toque al lado de un cajón lo empuja, salvo que tenga
+      un cartucho que te puedas llevar (entonces la [E] sostenida te lo da y otro toque lo empuja); con la dinamita al
+      tope o sin lugar, el toque lo empuja. Fuera del asalto la [F] sigue montando el caballo e yendo al pueblo.
+    - **Lo que roba** es suyo: le pesa (0,6 de lo que te pesaría a vos, ⚠️ provisorio hasta la tabla del ladrón), se
+      pierde si cae o queda en el tren; si escapan los dos, hoy se suma a lo tuyo y el resumen dice "Lo que robó él";
+      si te agarran y él se va, "Lo que se llevó él". El reparto de verdad es del paso 5.
+    - 🐛 **Su cuchillo no llegaba**: lo usaba a 17 y el cuchillo llega a 15. Ahora a 14, y para "atacá ahí" busca la
+      espalda de verdad (si justo detrás hay un asiento, un poco a un lado) y va agachado aunque esté lejos tuyo.
+    - Probado: "cubrí acá" fue al lugar y se quedó aunque me alejé; [V] lo trajo de vuelta. "Robá aquello" en una caja
+      fuerte: 8 s, como vos, y volvió con $181. "Atacá ahí" en silencio, con el guardia mirando para tres lados: tres
+      veces lo mató por la espalda sin que subiera la sospecha. Civil: un toque no hace nada, sostenida lo mata. El
+      cajón con la [E]: los tres casos. ⚠️ Sin probar: "atacá ahí" en medio de un tiroteo (le tira primero a ése) y
+      la correa de un vagón en un asalto jugado.
+  - ✅ **Los estados, con [1] [2] [3] y en el campamento** *(Santi: "dale, con el 1,2 y 3. Y poné al personaje en el
+    campamento y que yo me pueda acercar y apretar la 'E' y de ahí elegir su estado")*.
+    - **En el campamento** está parado del otro lado de la fogata, mirando el fuego. Con [E] ("HABLAR CON TU
+      COMPAÑERO") sale "¿Cómo vamos hoy?" con los tres; elegís uno y te contesta una frase. Se guarda
+      (`gameState.formaCompanero`, arranca en pasivo) y así entra al asalto.
+    - **En el asalto**, [1] pasivo, [2] agresivo, [3] ladrón: contesta "entendido…" y a los 2 s cambia ("ahora,
+      agresivo"). Si pedís otro antes, vale el último; si pedís el que ya tenía, se cancela.
+    - **Lo que cambia cada uno** (`FORMAS` en systems/companero.js, ⚠️ números de primer tanteo):
+      - **Pasivo**: te sigue a 34; en silencio, el cuchillo sólo si un guardia está por descubrirlos; en pelea le tira
+        sólo a los que están peleando, prefiere reparos lejos (110) y herido sin reparo retrocede.
+      - **Agresivo**: te sigue a 18; en silencio va solo a acuchillar a un guardia de espaldas a la vista a menos de
+        60 (y lo deja si se da vuelta); en pelea no se cubre (salvo "cubrí acá"), tira más seguido y, si el blanco está
+        a más de 90, se le acerca por un costado tirando.
+      - **Ladrón**: te sigue a 22; en silencio o a los tiros va solo a agarrar un botín de su vagón a menos de 120;
+        en pelea tira la mitad de seguido. Después de "seguime" no sale solo por 6 s (si no, se volvía enseguida).
+      - Ninguno empieza un tiroteo; todos con la correa de un vagón.
+    - 🐛 Para el botín no alcanza "a la vista": los respaldos de los asientos tapan la vista aunque el botín se vea
+      en el dibujo. El ladrón lo busca en su mismo vagón.
+    - Probado: en el campamento, la [E] abre el menú y lo elegido llega al asalto; [3] cambia a los 2,0 s. Con un
+      guardia de espaldas a 50: el agresivo lo fue a buscar y lo mató en 1,1 s sin que se enterara; de frente, no;
+      pasivo y ladrón, no. El ladrón agarró solo un botín a 50 en 2,8 s. En pelea, con un guardia patrullando a 100
+      durante 8 s: pasivo 0 tiros, agresivo 11, ladrón 6. ⚠️ Con todos los guardias del vagón juntos no lo pude
+      probar: en el banco de pruebas a vos te descubren en el primer segundo.
+  - ✅ **Las órdenes son un círculo, no un punto** *(Santi: "quiero que los comandos funcionen no como un punto exacto
+    sino un circulo, un area. Por ejemplo: si yo cliceo una puerta no quiero que se quede parado al lado sin cobertura
+    [...] Lo unico que hay que definir es el diametro del area")*. Eligió el diámetro que le recomendé, **80** (40 de
+    radio, 5 casillas; `ORDENES.radio`), *"pero que si solo aprieto F también funcione"*.
+    - **La [F]**: mientras la tenés apretada se ve el círculo punteado; la orden sale al soltarla, así que un toque
+      también sirve. Después queda un momento el círculo y la cruz de dónde lo mandaste.
+    - **Qué orden es, según lo que hay adentro**, en este orden: (1) **guardias** → los ataca a todos, de a uno, el más
+      cerca primero; (2) **botín o pasajeros** → agarra lo que hay y amenaza a los pasajeros (la plata va a su
+      bolsillo, con las manos arriba y la pista de la caja igual que con vos; no te cuenta como amenaza tuya); (3)
+      **nada** → "cubrí acá" en el mejor reparo DEL CÍRCULO, de cara a lo que hay más allá del punto (la dirección de
+      vos al punto: marcás una puerta y la defiende mirándola). Si no hay reparo, contesta "no hay reparo" y se queda
+      en el punto.
+    - **El civil sigue aparte**: apuntarle justo a él y sostener la [F] medio segundo. Con un toque sobre un civil, es
+      "robá" (lo amenaza), no "matalo".
+    - **El reparo** (`reparoEnZona` en la escena) busca de a 4 unidades, con su cuerpo entero, con la misma cuenta que
+      tu [Shift], y que siga valiendo corrido 2 para cada lado (si no, elegía la puntita de un asiento).
+    - 🐛 **Arreglado de paso, también para vos**: contra la pared del fondo del vagón (la finita, `paredPunta`) el
+      [Shift] no te cubría: te corría 12 para atrás. Ahora te pegás a ella (systems/cover.js).
+    - 🐛 **Sus últimos pasos, finos**: el buscador de caminos de los guardias va por casillas y no llegaba pegado a esa
+      pared ni rodeaba los muebles que frenan sin ser casilla sólida. Cerca del destino (64) busca el camino de a 4.
+    - Probado (vagón de primera, sin guardias salvo los puestos): marcando la puerta, en tres lugares distintos, se
+      pegó a la pared al lado de la puerta mirándola (11 s desde la otra punta); en el medio del pasillo, contra un
+      asiento. Dos guardias de espaldas en el mismo círculo: los mató a los dos en silencio (6,3 y 7,0 s). Una bolsa y
+      un pasajero en el círculo: la bolsa a los 7,4 s, el pasajero con las manos arriba a los 10,5 s, $282 para él.
+      Sostener la [F] 1 s: nada hasta soltar, y el círculo se dibuja sin errores. Civil: a 0,17 s nada, a 0,67 s
+      "atacá" al civil; con un toque, "robá". ⚠️ Sin probar: "atacá" con el círculo en medio de un tiroteo, y si el
+      cambio del [Shift] contra la pared del fondo cambia algo en cómo se cubren los guardias.
+  - ✅ **Ajustes después de que Santi lo jugó** *(Santi: "cuando lo mando a cubrir detrás de una pared y después lo mando
+    a cubrir otra no va [...] se traba con las habitaciones del vagón dormitorio y con sillones en el vagón de pasajeros
+    [...] Se tarda mucho y se tilda en ir desde una cobertura hacia el pasillo [...] Yo necesito que el compañero sepa
+    hacia dónde mirar y que busque una cobertura automaticamente dentro del área")*.
+    - **Mira al peligro** (eligió "al peligro"): el guardia más cerca del círculo que él conoce (peleando, sospechando
+      o a la vista de él o del círculo, en ese vagón o en los de al lado); si no conoce a ninguno, la puerta más cerca
+      del círculo, del lado de afuera. Cada 0,5 s se fija si el peligro se corrió más de unos 35°: si apareció un
+      guardia por otro lado, busca otro reparo del círculo y va (`revisarLugar`, `peligroDelArea` en
+      systems/companero.js). Ya en su lugar y sin nadie a quien tirarle, mira para ese lado.
+    - **Si en el círculo no hay reparo, busca más afuera** (eligió eso): 24 y 48 más. Si tampoco, se queda en el medio.
+      Ya no dice "no hay reparo". La búsqueda se mudó de la escena al compañero (`reparoEnArea`).
+    - 🐛 **La segunda orden**: pegado a un reparo, no se despegaba para ir al lugar nuevo. Ahora se despega y va.
+    - 🐛 **Las trabas**: el buscador de caminos de los guardias va por casillas y no ve los sillones, las piezas del
+      dormitorio ni la pared finita del fondo. Hasta 320 de distancia, si no puede ir derecho, camina con un camino
+      propio de a 4 unidades con su cuerpo entero (`caminoFino`, buscando hacia la meta primero), y corta derecho
+      hasta el punto más lejos al que llega sin chocar.
+    - **Más rápido**: con una orden ya no va siempre agachado; sólo si hay un guardia a menos de 140 (y siempre para
+      acuchillar). Sin orden, como antes.
+    - Probado, sin guardias, órdenes una detrás de otra por todo el vagón en primera, pasajeros y dormitorio (también
+      entrando y saliendo de las piezas, y a los tiros): todas las de cubrir llegaron y se cubrió, en 1 a 8 s; también al
+      vagón de al lado (4,8 s). Con un guardia que aparece del otro lado del círculo, en los tres vagones: cambió de
+      reparo y quedó cubierto del otro lado en 1 s. ⚠️ Al dar cada orden quedan 3 a 5 cuadros lentos (25 a 45 ms):
+      se puede notar un tironcito. ⚠️ Sin probar con varios guardias tirándole de verdad.
+- ⚠️ **Falta en el paso 2**: que suba al techo (va en su propio apartado, ver arriba; hoy te espera abajo; arriba el juego cambia de vista y todo está
+  armado para el jugador solo: es lo más grande que queda); en la huida no aparece todavía (va con el paso del
+  jinete); su dibujo tirado con sus colores (sale el del jugador). Si el jefe lo mata él, cuenta igual que si lo
+  matás vos (bajarte la recompensa por matar a un jefe). Dibujo **provisorio**: el del jugador
+  con sombrero gris, chaleco azul, pañuelo verde y la cara a la vista.
+- 📝 **Cambios pedidos para más adelante** *(Santi: "Algunos cambios a futuro sería que te siga de más lejos y a tu
+  espalda, y que pueda dispararles a los jinetes. Lo de dibujo, nombre y eso lo haremos bien al final")*:
+  - Que te siga **de más lejos y a tu espalda** (hoy, a unos 30 puntos, del lado de donde viene).
+  - Que **les tire a los jinetes** por las ventanillas.
+  - ✅ **La puntería: la A2** *(Santi: "dale con la A2")*. Medida contra un guardia quieto, 80 tiros por
+    distancia:
+
+    | Nivel | a 50 | a 100 | a 150 |
+    |---|---|---|---|
+    | A · como antes (tu tiro sin apuntar) | 98% | 76% | 68% |
+    | **A2 · bueno (elegido)** | **95%** | **55%** | **33%** |
+    | B · regular | 91% | 36% | 25% |
+    | C · flojo | 74% | 16% | 20% |
+    | D · como un guardia | 68% | 14% | 10% |
+
+    (`PUNTERIA` en systems/companero.js: 0,045 rad de cerca, 0,07 de lejos.) La zona del cuerpo se sortea como la
+    de los guardias (15% cabeza, 60% torso, 25% piernas).
+  - ✅ **Lo que le mueve el pulso** (`PULSO` en systems/companero.js) *(Santi: "OK")*: recién le apunta a uno,
+    ×1,5 de desvío; quieto apuntando al mismo, baja hasta ×0,7 en 1,5 s; si le pegaron, ×1,6 durante 1 s;
+    tirando mientras camina, ×2 (hoy no pasa: se planta para tirar). Medido, 100 tiros por distancia:
+
+    | Caso | a 50 | a 100 | a 150 |
+    |---|---|---|---|
+    | A2 sin esto (la elegida) | 95% | 55% | 33% |
+    | Contra uno quieto, apuntándole todo el rato | 97% | 73% | 39% |
+    | Tiroteo: un guardia nuevo cada 2 s y le pegan cada 1,5 s | 82% | 51% | 18% |
+  - El dibujo y el nombre, **al final**.
+
+---
+
+## ✅ LA BRÚJULA, EL TIEMPO, EL HORARIO Y LA BANDA NUEVA (2026-11-13 al 2026-11-18)
+
+Lo grande de estas sesiones vive en tres documentos de la raíz, que mandan sobre esta nota:
+- **`BRUJULA.md`** *(Santi, 2026-11-13)*: qué juego es. James solo en el tren, la banda con papeles afuera y en la
+  huida, partidas cortas y rejugables. El tiempo en días, el horario de trenes, los rumores, el espía y el maletín.
+- **`VOCES.md`**: cómo habla cada uno de la banda (aprobado: "Las voces de la brujula están bien").
+- **`BANDA-NUEVA.md`** (v10, aprobada el 2026-11-17 con todas mis recomendaciones): la banda rehecha desde cero,
+  medida con el simulador (`simulador/banda3.js`, resultados en `simulador/resultados-banda3.md`). Al final, "Las
+  reglas que no se tocan".
+
+✅ **Hecho y en el juego:**
+- **El tiempo en días** (`src/systems/tiempo.js`, `src/data/tiempo.js`): cuatro partes por día, el cielo de cada
+  una, la carpa (descansar, dormir, esperar) y el **calendario** con [C] (`src/scenes/calendario.js`).
+- **El horario de trenes** (`src/systems/horario.js`): trenes con día y parte en vez de trenes que dan vueltas; los
+  de pasajeros publicados, los de carga por rumores (la banda según sus rasgos, el forastero, mitad y mitad); **mandar a
+  uno a mirar un tren** (lo que trae depende de Buena vista o Curioso); **el maletín en un doble fondo** ([E] sostenida).
+- **La ficha de la banda** con [TAB] (`src/scenes/ficha.js`): cara, lealtad, ánimo y rasgos como sellos de tinta.
+- **Los rasgos** (`src/data/rasgos.js`): habilidades que se practican y se olvidan, con estrellita; personalidades.
+- **Los momentos del campamento** (`src/data/momentos.js`) y **el encargo de J.Mc.** (`src/data/encargo.js`).
+- **Etapa 1 de la banda nueva** *(Santi: "dale, empezá con la primer etapa")*: **el telégrafo** (la ley sale con 2 o 1
+  jinetes menos) y **el vigía** (los refuerzos tardan 20 o 10 s más, +5 con Buena puntería, y grita 5 s antes). Bien,
+  flojo o mal lo decide la **escalera del pronóstico**. Los dos llegan a la huida a los 20 s. Las vías del mapa ya no
+  le pasan por encima al cuadro del plan.
+- **Etapa 2, parte 1** *(Santi: "andá con la etapa 2")*: **la libreta y la lealtad de 0 a 5** (`src/data/libreta.js`,
+  `src/systems/libreta.js`, llave `LIBRETA.activa`). Cada cosa se anota como favor o queja con su motivo; cada noche
+  se gana o pierde una marca; el ánimo sale de la libreta y suma o resta en el plan; "no quiere ir de…" sólo con ganas.
+  El plan del mapa muestra de cada 100 cuántas sale bien y los dos motivos. Los caballos también con la escalera.
+
+🔁 **El reparto pasó a por cabeza** *(Santi, 2026-11-18: "quiero que la codicia pague en este juego al largo plazo y
+premie al que cuida de los suyos"; "Micah vs Arthur Morgan")*. Me pidió elegir la paga con datos: 12 de cada 100 el
+que fue, 18 el Ambicioso, 5 el que se quedó; los contratados, $20 por semana más 12 si van (nada si se quedan) y −1
+paso en los papeles. Medido: el que cuida $1673, el que cambia la banda por contratados $665. (Un error mío hacía que
+por cabeza los contratados cobraran $0 y me había llevado a recomendar el tercio.)
+
+⏭️ **Sigue:** la etapa 2, parte 2 (la pantalla del reparto) y parte 3 (la olla por día y J.Mc. con deuda). El pueblo
+nuevo sigue archivado; el compañero adentro del tren, también (BRUJULA.md).
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

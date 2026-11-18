@@ -29,6 +29,8 @@
 
 import { CONFIG } from '../data/config.js';
 import { HUIDA as H } from '../data/huida.js';
+import { PLAN as PLAN_BANDA, MIEMBRO, herir } from '../data/banda.js';
+import { tiene, marcaFuerte } from '../systems/animo.js';
 import { WEAPONS, DEFAULT_WEAPON } from '../data/weapons.js';
 import { caballoActual, HORSES, esperaDelImpulso, APROXIMACION as A } from '../data/horse.js';
 import { applyRaidResult, recompensaTapada, gameState, numero } from '../state/gameState.js';
@@ -73,6 +75,17 @@ export function createHuidaScene(services) {
   const colors = CONFIG.colors;
 
   let summary, caballo, arma, prueba;
+  /** 🎭 Cuánto más cerca arranca la ley porque el caballo llegó tarde (ver `PLAN` en data/banda.js). */
+  let masCerca = 0;
+  /**
+   * 🎭 LOS DE LA BANDA QUE GALOPAN CON VOS (ver `HUIDA.banda`): el de los caballos y el pasajero. Son como un jinete de
+   * la ley (para dibujarlos con lo mismo) más `banda` (su id), `aspecto` y su lugar al lado tuyo.
+   */
+  let banda = [];
+  // 📡 🔭 El del telégrafo y el vigía, que llegan a mitad de la huida (ver `HUIDA.banda.llegan`): quiénes faltan.
+  let porLlegar = [];
+  /** 🐎 Si ya usaste el [F] en esta huida (una sola vez), y las bolsas que recogiste al final. */
+  let usoElF = false, recogidas = 0, plataRecogida = 0;
   let yo, jinetes, balas, bolsas, caidos, carteles, obstaculos, celdasSembradas;
   /** Los caballos que quedaron sin jinete y siguen galopando (ver `pegarle`). */
   let sueltos;
@@ -197,12 +210,14 @@ export function createHuidaScene(services) {
      * cuánta jugarla mal. Sin esto hay que adivinar, y adivinar fue lo que
      * llevó a poner las riendas en 0,7 cuando correspondían 0,5.
      */
-    if (prueba) window.HUIDA_BANCO = () => ({ yo, jinetes, obstaculos, refugios, tiempo, fin, perdido, soltadas, tirados, derribados, bolsas });
+    if (prueba || globalThis.FORAJIDO_BANCO) window.HUIDA_BANCO = () => ({ summary, vista,  banda, yo, jinetes, obstaculos, refugios, tiempo, fin, perdido, soltadas, tirados, derribados, bolsas });
 
     sembrarRefugios();
 
     jinetes = [];
-    const n = Math.max(1, params.jinetes || 1);
+    // 🎭 Si el caballo llegó tarde (ver `PLAN` en data/banda.js): la ley arranca más cerca y con uno más.
+    masCerca = params.plan && params.plan.caballoTarde ? PLAN_BANDA.huidaMasCerca : 0;
+    const n = Math.max(1, params.jinetes || 1) + (params.plan && params.plan.caballoTarde ? PLAN_BANDA.huidaJinetesMas : 0);
     for (let i = 0; i < n; i++) jinetes.push(crearJinete(i, n));
 
     balas = [];
@@ -210,6 +225,10 @@ export function createHuidaScene(services) {
     caidos = [];
     sueltos = [];
     carteles = [];
+    usoElF = false;
+    recogidas = 0;
+    plataRecogida = 0;
+    banda = crearBanda(params.plan);
     obstaculos = [];
     celdasSembradas = new Set();
     tiempo = 0;
@@ -402,6 +421,391 @@ export function createHuidaScene(services) {
    * Cada jinete arranca detrás tuyo, abierto en abanico, y tiene su carril: a
    * qué ángulo de tu cola se planta y a qué distancia.
    */
+  /** 🎭 Los de la banda que tienen papel y están sanos, cada uno en su lugar al lado tuyo. */
+  function crearBanda(plan) {
+    porLlegar = [];
+    if (!plan || !estiloNuevo.activo) return [];
+    // (🔁 El pasajero no va nunca a la huida *(Santi: "Este pasajero no va a la huida nunca")*: sólo el de los caballos.)
+    const sano = (id) => id && gameState.banda[id] && gameState.banda[id].esta && !gameState.banda[id].herido;
+    const ids = [plan.caballos].filter(sano);
+    // 📡 🔭 El del telégrafo y el vigía están afuera, a caballo: llegan a mitad de la huida (BANDA-NUEVA.md, pregunta 9).
+    porLlegar = [plan.telegrafo, plan.vigia].filter(sano);
+    const lista = ids.map((id, i) => jineteDeBanda(id, i));
+    if (lista.length) {
+      carteles.push({ x: yo.x, y: yo.y - 40, texto: T.huida.bandaContigo(lista.map((a) => MIEMBRO[a.banda].corto.toUpperCase())), color: colors.bagLoot, vida: 2.6 });
+      carteles.push({ x: yo.x, y: yo.y - 25, texto: T.huida.separarAyuda, color: colors.textDim, vida: 3.2 });
+    }
+    return lista;
+  }
+
+  /**
+   * 📡 🔭 LOS QUE LLEGAN A MITAD DE LA HUIDA: a los `HUIDA.banda.llegan` segundos aparecen detrás, lejos, y galopan
+   * apurados hasta su lugar al lado tuyo (como el que vuelve después de separarse).
+   */
+  function lleganLosDeAfuera() {
+    if (!porLlegar.length || tiempo < H.banda.llegan) return;
+    const nuevos = porLlegar.map((id, k) => {
+      const a = jineteDeBanda(id, banda.length + k);
+      const c = Math.cos(yo.rumbo), s = Math.sin(yo.rumbo);
+      a.x -= c * H.banda.llegaDesde;
+      a.y -= s * H.banda.llegaDesde * PROFUNDIDAD;
+      a.aparte = 'vuelve';
+      return a;
+    });
+    porLlegar = [];
+    const habia = banda.some((a) => a.alive);
+    banda.push(...nuevos);
+    carteles.push({ x: yo.x, y: yo.y - 40, texto: T.huida.llegan(nuevos.map((a) => MIEMBRO[a.banda].corto.toUpperCase())), color: colors.bagLoot, vida: 2.6 });
+    if (!habia) carteles.push({ x: yo.x, y: yo.y - 25, texto: T.huida.separarAyuda, color: colors.textDim, vida: 3.2 });
+  }
+
+  /** Uno de la banda a caballo, en el lugar `i` al lado tuyo. */
+  function jineteDeBanda(id, i) {
+    const B = H.banda;
+    const lugar = B.lugares[i % B.lugares.length];
+    const p = lugarDe(lugar);
+    return {
+      banda: id, aspecto: MIEMBRO[id].aspecto, lugar,
+      x: p.x, y: p.y, rumbo: yo.rumbo, vel: 0,
+      pelaje: pelajeDeJinete(rng.range(0, 1)),
+      alive: true, health: B.vida + (marcaFuerte(gameState.banda[id], 'valiente') ? B.valiente : 0), quedando: 0,
+      cooldown: B.cadencia * 0.5 + rng.range(0, B.cadenciaAzar),
+      aimTimer: 0, aimDir: 0, bajaRifle: 0, fogonazo: 0, gallop: rng.range(0, 1), hitFlash: 0,
+      // 🎯 🐎 Lo que sabe: tira mejor con Buena puntería, su caballo corre más con Veloz en las riendas.
+      punteria: tiene(gameState.banda[id], 'punteria'), riendas: tiene(gameState.banda[id], 'riendas'),
+      // 🐎 'solo' (se separó con [F]), 'vuelve' (viene a tu lado) o null (va a tu lado).
+      aparte: null, rumboAparte: 0,
+      // 🧠 El quiebre que está haciendo (ver `HUIDA.banda.piensa`) y si se chocó con algo.
+      quiebre: 0, rumboQuiebre: 0, choque: 0,
+    };
+  }
+
+  /** Dónde queda ese lugar ahora, desde vos y hacia donde vas. */
+  function lugarDe(lugar) {
+    const c = Math.cos(yo.rumbo), s = Math.sin(yo.rumbo);
+    return {
+      x: yo.x - c * lugar.atras - s * lugar.lado,
+      y: yo.y + (-s * lugar.atras + c * lugar.lado) * PROFUNDIDAD,
+    };
+  }
+
+  /**
+   * 🎭 LA BANDA, CADA CUADRO: va a su lugar al lado tuyo y le tira al de la ley más cercano. El que quedó herido afloja
+   * y se queda atrás.
+   */
+  function moverBanda(dt) {
+    const B = H.banda;
+    for (const a of banda) {
+      a.gallop += dt;
+      a.hitFlash = Math.max(0, a.hitFlash - dt);
+      a.bajaRifle = Math.max(0, a.bajaRifle - dt);
+      a.fogonazo = Math.max(0, a.fogonazo - dt);
+      if (!a.alive) {
+        // Herido: sigue derecho, aflojando, hasta perderse atrás.
+        a.quedando += dt;
+        a.vel = Math.max(0, a.vel - 60 * dt);
+        a.x += Math.cos(a.rumbo) * a.vel * dt;
+        a.y += Math.sin(a.rumbo) * a.vel * dt * PROFUNDIDAD;
+        continue;
+      }
+      // 🧠 (🔁 Antes iba pegado a su lugar, siempre con tu rumbo: ahora galopa y piensa, ver `pensar`.)
+      pensar(a, dt);
+
+      a.cooldown -= dt;
+      if (a.aimTimer > 0) {
+        a.aimTimer -= dt;
+        if (a.aimTimer <= 0) tirarBanda(a);
+      } else if (a.cooldown <= 0) {
+        const blanco = aQuienTirarle(a);
+        if (blanco) {
+          a.blanco = blanco;
+          a.aimTimer = B.apuntar * (a.contragolpe ? B.piensa.contragolpe : 1);
+          a.contragolpe = false;
+          a.aimDir = Math.atan2((blanco.y - 8 - (a.y - 14)) / PROFUNDIDAD, blanco.x - (a.x + 6));
+        }
+        a.cooldown = (a.aparte === 'solo' ? B.piensa.solo.cadencia : B.cadencia) + rng.range(0, B.cadenciaAzar);
+      }
+    }
+    banda = banda.filter((a) => !a.fuera && (a.alive || a.quedando < 3));
+  }
+
+  /**
+   * 🐎 [F] *(Santi, 2026-11-15: "que se separe y se lleve a la mitad de los jinetes")*. Se lleva a la mitad de los que
+   * te siguen, los más cercanos a él (si son impares, el de más queda con vos). Una sola vez por huida; con otra [F]
+   * vuelve a tu lado, y los suyos lo siguen hasta ahí. Nadie se niega.
+   */
+  function separarOVolver() {
+    const a = banda.find((x) => x.alive);
+    if (!a || fin) return;
+    const nombre = MIEMBRO[a.banda].corto.toUpperCase();
+    if (a.aparte === 'solo') {
+      a.aparte = 'vuelve';
+      carteles.push({ x: a.x, y: a.y - 30, texto: T.huida.vuelve(nombre), color: colors.bagLoot, vida: 1.8 });
+      return;
+    }
+    if (a.aparte || usoElF) return;
+    const ocupado = (j) => (yo.forcejeo && yo.forcejeo.j === j) || (yo.lazo && yo.lazo.j === j) || j.revolea > 0 || j.soga > 0;
+    const libres = siguiendo().filter((j) => !j.persigue && !ocupado(j));
+    const n = Math.floor(libres.length / 2);
+    if (n < 1) {
+      carteles.push({ x: a.x, y: a.y - 30, texto: T.huida.noAlcanza, color: colors.textDim, vida: 1.4 });
+      return;
+    }
+    const lejos = (j) => Math.hypot(j.x - a.x, (j.y - a.y) / PROFUNDIDAD);
+    libres.sort((p, q) => lejos(p) - lejos(q));
+    for (const j of libres.slice(0, n)) {
+      j.persigue = a;
+      j.corta = 0; j.arrima = 0; j.lazando = 0; j.alcanzando = false;
+    }
+    usoElF = true;
+    a.health += H.banda.piensa.solo.vidaExtra;
+    a.aparte = 'solo';
+    a.rumboAparte = yo.rumbo + Math.sign(a.lugar.lado || 1) * H.banda.aparte.abre;
+    audio.play('relincho');
+    carteles.push({ x: a.x, y: a.y - 30, texto: T.huida.seSepara(nombre, n), color: colors.bagLoot, vida: 2 });
+  }
+
+  /** 🐎 Lo que corre su caballo: como los de la ley, o un 5% más con Veloz en las riendas. */
+  function fondoDe(a) {
+    return H.jinetes.velocidad * (a.riendas ? H.banda.aparte.riendas : 1);
+  }
+
+  /** 🧠 Lo que hay de él a otra cosa, en el campo (sin el achatado del tres cuartos). */
+  function distancia(p, q) {
+    return Math.hypot(q.x - p.x, (q.y - p.y) / PROFUNDIDAD);
+  }
+  function rumboHacia(p, q) {
+    return Math.atan2((q.y - p.y) / PROFUNDIDAD, q.x - p.x);
+  }
+  function diferencia(a, b) {
+    return Math.atan2(Math.sin(a - b), Math.cos(a - b));
+  }
+
+  /**
+   * 🧠 EL QUE MÁS LO AMENAZA: el que le está apuntando a él; si no, el más cercano de los que lo siguen; si no, el de
+   * la ley más cercano a tiro.
+   */
+  function amenazaDe(a) {
+    const B = H.banda;
+    const vivos = jinetes.filter((j) => j.alive && !j.perdido && distancia(a, j) < B.alcance * 1.3);
+    const apuntando = vivos.filter((j) => j.aimTimer > 0 && j.blanco === a);
+    const lista = apuntando.length ? apuntando : vivos.filter((j) => j.persigue === a).length ? vivos.filter((j) => j.persigue === a) : vivos;
+    let mejor = null;
+    for (const j of lista) if (!mejor || distancia(a, j) < distancia(a, mejor)) mejor = j;
+    return mejor;
+  }
+
+  /** 🧠 A QUIÉN LE TIRA: primero al que lo está apuntando, después al más cercano. No tira de más lejos que su alcance. */
+  function aQuienTirarle(a) {
+    const B = H.banda;
+    const aTiro = jinetes.filter((j) => j.alive && !j.perdido && distancia(a, j) < B.alcance);
+    const apuntando = aTiro.filter((j) => j.aimTimer > 0 && j.blanco === a);
+    const lista = apuntando.length ? apuntando : aTiro;
+    let mejor = null;
+    for (const j of lista) if (!mejor || distancia(a, j) < distancia(a, mejor)) mejor = j;
+    return mejor;
+  }
+
+  /**
+   * 🧠 CÓMO PIENSA, CADA CUADRO *(Santi: "debería saber pensar")* (los números, en `HUIDA.banda.piensa`):
+   *  1. VE VENIR EL TIRO: si uno le apunta, ve el brillo del caño y a veces hace un quiebre de costado.
+   *  2. SEPARADO: corre de costado al que lo amenaza, para tenerlo a tiro y no pegado atrás (pegado atrás, el tiro
+   *     sale derecho por donde va). Con poca vida, vuelve a buscarte.
+   *  3. AL LADO TUYO: va en su lugar, pero se adelanta o se atrasa para ponerse a la par del más cercano (de costado).
+   *  4. ESQUIVA lo que tiene adelante, como los de la ley; si se lo come, se frena.
+   *  Apuntando no dobla (igual que ellos), salvo que haga un quiebre.
+   */
+  function pensar(a, dt) {
+    const B = H.banda, P = B.piensa, AP = B.aparte;
+    const fondo = fondoDe(a);
+    const giro = a.riendas ? P.giroRiendas : P.giro;
+
+    // 1. Ve venir el tiro.
+    for (const j of jinetes) {
+      if (!j.alive || j.aimTimer <= 0 || j.blanco !== a || j.visto) continue;
+      j.visto = true;
+      if (a.quiebre <= 0 && rng.chance(a.riendas ? P.veRiendas : P.ve)) {
+        a.quiebre = P.quiebre.dura;
+        a.rumboQuiebre = a.rumbo + (rng.chance(0.5) ? 1 : -1) * P.quiebre.angulo;
+        a.aimTimer = 0;
+        // (El contragolpe: tira enseguida, y apurado.)
+        a.cooldown = 0;
+        a.contragolpe = true;
+      }
+    }
+
+    // Con poca vida, el que estaba solo se vuelve a buscarte.
+    if (a.aparte === 'solo' && a.health <= P.vuelveCon) {
+      a.aparte = 'vuelve';
+      carteles.push({ x: a.x, y: a.y - 30, texto: T.huida.vieneHerido(MIEMBRO[a.banda].corto.toUpperCase()), color: colors.enemyAlert, vida: 2 });
+    }
+
+    let rumbo, vel;
+    const amenaza = amenazaDe(a);
+    const p = lugarDe(a.lugar);
+    const lejos = distancia(a, p);
+    if (a.aparte === 'solo') {
+      // 2. Su rumbo: abierto de tu rumbo mientras está cerca, a la par tuya en `lejos` y hacia vos si se pasó.
+      const abre = Math.max(-1, Math.min(1, (AP.lejos - distancia(a, yo)) / AP.lejos));
+      a.rumboAparte = yo.rumbo + Math.sign(a.lugar.lado || 1) * AP.abre * abre;
+      // De costado al que lo amenaza: de los dos costados, el que queda más cerca de su rumbo.
+      rumbo = a.rumboAparte;
+      if (amenaza) {
+        const th = rumboHacia(a, amenaza);
+        const r1 = th + P.costado, r2 = th - P.costado;
+        rumbo = Math.abs(diferencia(r1, a.rumboAparte)) < Math.abs(diferencia(r2, a.rumboAparte)) ? r1 : r2;
+      }
+      vel = fondo;
+    } else if (a.aparte === 'vuelve' && lejos > 60) {
+      // Volviendo y todavía lejos: derecho a su lugar, apurado.
+      rumbo = rumboHacia(a, p);
+      vel = fondo * AP.vuelve;
+    } else {
+      if (a.aparte === 'vuelve' && lejos < AP.llego) a.aparte = null;
+      // 3. A tu lado: su lugar, corrido sobre tu rumbo para quedar a la par del más cercano.
+      const c = Math.cos(yo.rumbo), s = Math.sin(yo.rumbo);
+      let adelante = 0;
+      if (amenaza) {
+        const delJinete = (amenaza.x - p.x) * c + ((amenaza.y - p.y) / PROFUNDIDAD) * s;
+        adelante = Math.max(-P.rodea, Math.min(P.rodea, delJinete));
+      }
+      const ox = p.x + c * adelante, oy = p.y + s * adelante * PROFUNDIDAD;
+      // Cuánto le falta, sobre tu rumbo (adelante) y de costado.
+      const dx = ox - a.x, dy = (oy - a.y) / PROFUNDIDAD;
+      const sobre = dx * c + dy * s, costado = -dx * s + dy * c;
+      rumbo = yo.rumbo + Math.max(-0.8, Math.min(0.8, costado * 0.03));
+      vel = Math.max(0, Math.min(fondo * 1.25, yo.vel + sobre * 2.5));
+    }
+
+    // El quiebre manda sobre todo lo demás.
+    if (a.quiebre > 0) {
+      a.quiebre -= dt;
+      rumbo = a.rumboQuiebre;
+    }
+    // 4. Apuntando no dobla (salvo el quiebre); si no, dobla y esquiva lo que viene.
+    if (a.aimTimer <= 0 || a.quiebre > 0) {
+      girarHacia(a, rumbo, a.quiebre > 0 ? giro * 2 : giro, dt);
+      esquivarConElCaballo(a, dt);
+    }
+    if (a.choque > 0) { a.choque -= dt; vel *= A.choqueFactor; }
+    a.vel = vel;
+    avanzar(a, vel, dt);
+    const ob = chocaCon(a.x, a.y);
+    if (ob && a.choque <= 0) {
+      ob.golpeado = true;
+      a.choque = A.obstaculoFrenado;
+      audio.play('hitWall');
+    }
+  }
+
+  /**
+   * 🐎 CADA CUADRO, EL QUE SE SEPARÓ: si ya no le queda ninguno detrás, vuelve y les tira a los tuyos por detrás
+   * *(Santi: "se acerca a vos y les dispara por detrás")*. Si te alejaste mucho mientras lo seguían, lo dejaste solo.
+   */
+  function vigilarAlQueSeFue() {
+    for (const a of banda) {
+      if (!a.alive || !a.aparte) continue;
+      const suyos = jinetes.filter((j) => j.persigue === a && j.alive && !j.perdido);
+      if (a.aparte === 'vuelve') {
+        // (Volviendo con los suyos detrás: si te alejás mucho igual, lo dejaste solo.)
+        if (suyos.length && teLoSacasteDeEncima() && distancia(a, yo) > H.banda.aparte.abandono) abandonar(a);
+        continue;
+      }
+      if (!suyos.length) {
+        a.aparte = 'vuelve';
+        carteles.push({ x: a.x, y: a.y - 30, texto: T.huida.gano(MIEMBRO[a.banda].corto.toUpperCase()), color: colors.bagLoot, vida: 2 });
+        continue;
+      }
+      if (teLoSacasteDeEncima() && distancia(a, yo) > H.banda.aparte.abandono) abandonar(a);
+    }
+  }
+
+  /** 🐎 A vos ya no te sigue nadie (los que siguen al que se separó no cuentan). */
+  function teLoSacasteDeEncima() {
+    return !siguiendo().some((j) => !j.persigue);
+  }
+
+  /**
+   * 🐎 LO DEJASTE SOLO *(Santi)*: según cuántos lo siguen todavía y si es Veloz en las riendas. Con el rasgo, 3 o menos
+   * vuelve sano y 4 o más herido; sin el rasgo, 4 o más lo agarran y 3 o menos vuelve herido. Se enoja igual (ver
+   * `abandonado` en systems/animoEnJuego.js), salvo si lo agarran: ahí le pega quedar preso.
+   */
+  function abandonar(a) {
+    const AP = H.banda.aparte;
+    const n = jinetes.filter((j) => j.persigue === a && j.alive && !j.perdido).length;
+    const como = a.riendas ? (n <= AP.sanoHasta ? 'sano' : 'herido') : (n >= AP.presoDesde ? 'preso' : 'herido');
+    // Los suyos se quedan con él: ya no te siguen.
+    for (const j of jinetes) if (j.persigue === a && j.alive) j.perdido = true;
+    a.alive = false;
+    a.fuera = true;
+    a.aparte = null;
+    summary.abandonado = { id: a.banda, como };
+    if (como === 'herido') {
+      herir(gameState.banda, a.banda, PLAN_BANDA.herida);
+      (summary.heridos || (summary.heridos = [])).push(a.banda);
+    }
+    if (como === 'preso') summary.presoHuida = a.banda;
+    carteles.push({ x: yo.x, y: yo.y - 40, texto: T.huida.loDejaste(MIEMBRO[a.banda].corto.toUpperCase()), color: colors.enemyAlert, vida: 2.4 });
+  }
+
+  function leyMasCerca(a, alcance) {
+    let mejor = null, d0 = alcance;
+    for (const j of jinetes) {
+      if (!j.alive || j.perdido) continue;
+      const d = Math.hypot(j.x - a.x, (j.y - a.y) / PROFUNDIDAD);
+      if (d < d0) { d0 = d; mejor = j; }
+    }
+    return mejor;
+  }
+
+  function tirarBanda(a) {
+    const B = H.banda, J = H.jinetes;
+    // (Apunta adonde estaba el blanco al encarar: si se movió, puede errarle.)
+    const t = a.blanco && a.blanco.alive ? a.blanco : leyMasCerca(a, B.alcance);
+    if (t) a.aimDir = Math.atan2((t.y - 8 - (a.y - 14)) / PROFUNDIDAD, t.x - (a.x + 6));
+    const base = a.aparte === 'solo' ? B.piensa.solo.dispersion : B.dispersion;
+    const ang = a.aimDir + rng.spreadDeTiro(base * (a.punteria ? B.punteria : 1), CONFIG.mira.fallaChance, CONFIG.mira.fallaMultiplicador);
+    a.bajaRifle = BAJA_RIFLE;
+    a.fogonazo = 0.06;
+    const [ox, oy] = estiloNuevo.activo && a.boca ? a.boca : [a.x + 6, a.y - 14];
+    balas.push({
+      x: ox, y: oy,
+      vx: Math.cos(ang) * J.velocidadBala,
+      vy: Math.sin(ang) * J.velocidadBala * PROFUNDIDAD,
+      vida: J.duracionBala, mia: true, deBanda: true, danio: B.danio,
+    });
+    audio.play('enemyShot');
+  }
+
+  /** 🎭 Le dieron a uno de la banda: queda herido (se pierde los próximos asaltos) y se queda atrás. */
+  function pegarleABanda(a) {
+    a.health -= 1;
+    a.hitFlash = 0.12;
+    audio.play('hitFlesh');
+    if (a.health > 0) return;
+    a.alive = false;
+    a.aimTimer = 0;
+    const nombre = MIEMBRO[a.banda].corto.toUpperCase();
+    // 🐎 Separado con [F] *(Santi)*: con Veloz en las riendas escapa herido; sin el rasgo, lo agarra la ley. Los que lo
+    // seguían se quedan con él.
+    if (a.aparte) {
+      for (const j of jinetes) if (j.persigue === a && j.alive) j.perdido = true;
+      a.aparte = null;
+      if (!a.riendas) {
+        a.fuera = true;
+        summary.presoHuida = a.banda;
+        carteles.push({ x: a.x, y: a.y - 28, texto: T.huida.loAgarraron(nombre), color: colors.enemyAlert, vida: 2.4 });
+        return;
+      }
+      carteles.push({ x: a.x, y: a.y - 38, texto: T.huida.escapoHerido(nombre), color: colors.enemyAlert, vida: 2.4 });
+    }
+    // (Los que lo seguían al lado tuyo, ahora te siguen a vos.)
+    for (const j of jinetes) if (j.persigue === a) j.persigue = null;
+    herir(gameState.banda, a.banda, PLAN_BANDA.herida);
+    (summary.heridos || (summary.heridos = [])).push(a.banda);
+    carteles.push({ x: a.x, y: a.y - 28, texto: T.huida.bandaHerido(nombre), color: colors.enemyAlert, vida: 2 });
+  }
+
   function crearJinete(i, n) {
     const J = H.jinetes;
     const lado = i % 2 === 0 ? -1 : 1;
@@ -413,7 +817,7 @@ export function createHuidaScene(services) {
     const O = J.olas;
     const enElPeloton = i < O.peloton;
     const atras = enElPeloton
-      ? J.distanciaInicial + i * J.separacionInicial
+      ? J.distanciaInicial - masCerca + i * J.separacionInicial
       : O.segundaDesde + (i - O.peloton) * O.segundaSeparacion;
     return {
       x: yo.x - Math.cos(yo.rumbo) * atras,
@@ -540,6 +944,7 @@ export function createHuidaScene(services) {
     if (fin) {
       fin.timer -= dt;
       moverJinetes(dt, true);
+      moverBanda(dt);
       if (fin.timer <= 0) terminar();
       return;
     }
@@ -556,7 +961,11 @@ export function createHuidaScene(services) {
     forcejear(dt);
     tironearDelLazo(dt);
     disparar(dt);
+    if (input.wasPressed('KeyF')) separarOVolver();
     moverJinetes(dt, false);
+    lleganLosDeAfuera();
+    moverBanda(dt);
+    vigilarAlQueSeFue();
     moverBalas(dt);
 
     if (!fin && (siguiendo().length === 0 || tiempo >= H.tope)) {
@@ -1144,7 +1553,8 @@ export function createHuidaScene(services) {
     const TAC = H.jinetes.tactica;
     proximoCortador -= dt;
     proximoLazo -= dt;
-    const siguiendoAhora = siguiendo();
+    // (🐎 Los que siguen al que se separó no te cortan ni te lazan.)
+    const siguiendoAhora = siguiendo().filter((j) => !j.persigue);
     // Uno por vez y nada más: ni dos cortando, ni uno cortando y otro colgado,
     // ni uno colgado y otro revoleando el lazo.
     if (siguiendoAhora.some((j) => j.corta > 0 || j.arrima > 0 || j.lazando > 0 || j.revolea > 0 || j.soga > 0)) return;
@@ -1267,6 +1677,9 @@ export function createHuidaScene(services) {
         continue;
       }
 
+      // 🐎 Los que siguen al que se separó: van detrás de él y le tiran a él.
+      if (j.persigue) { seguirAlQueSeFue(j, dt); continue; }
+
       const lejos = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
       if (lejos > J.perdida) {
         j.perdido = true;
@@ -1372,9 +1785,59 @@ export function createHuidaScene(services) {
           audio.play('gritoLey');
         }
         j.aimTimer = J.apuntar;
-        j.aimDir = Math.atan2((yo.y - 8 - (j.y - 14)) / PROFUNDIDAD, yo.x - (j.x + 6));
+        // 🎭 A veces, a uno de la banda que galopa con vos (ver `HUIDA.banda.chanceDeApuntarle`).
+        // (🎯 Y si él está más cerca que vos, le apuntan más a él *(Santi: "los jinetes también deberían tenerlo como
+        //  objetivo a él")*.)
+        const vivos = banda.filter((a) => a.alive && !a.aparte);
+        let blanco = yo;
+        if (vivos.length) {
+          const otro = vivos.reduce((m, a) => (distancia(j, a) < distancia(j, m) ? a : m));
+          const chance = distancia(j, otro) < d ? H.banda.apuntarleCerca : H.banda.chanceDeApuntarle;
+          if (rng.chance(chance)) blanco = otro;
+        }
+        j.blanco = blanco;
+        j.visto = false;
+        j.aimDir = Math.atan2((blanco.y - 8 - (j.y - 14)) / PROFUNDIDAD, blanco.x - (j.x + 6));
         j.cooldown = (J.cadencia + rng.range(0, J.cadenciaAzar)) * lejano;
       }
+    }
+  }
+
+  /**
+   * 🐎 UN JINETE QUE SIGUE AL QUE SE SEPARÓ: lo mismo que el de la cola, pero detrás de él (su carril y su distancia),
+   * sin cortar ni lazar, y le tira a él.
+   */
+  function seguirAlQueSeFue(j, dt) {
+    const J = H.jinetes, a = j.persigue;
+    if (j.choque > 0) {
+      j.choque -= dt;
+      avanzar(j, velocidadDe(velocidadDelJinete(j), j.choque), dt);
+      j.aimTimer = 0;
+      return;
+    }
+    const anticipo = J.tactica.anticipo;
+    const fx = a.x + Math.cos(a.rumbo) * a.vel * anticipo, fy = a.y + Math.sin(a.rumbo) * a.vel * PROFUNDIDAD * anticipo;
+    const objetivo = { x: fx - Math.cos(a.rumbo + j.carril) * j.atras, y: fy - Math.sin(a.rumbo + j.carril) * j.atras * PROFUNDIDAD };
+    if (j.aimTimer > 0) {
+      j.aimTimer -= dt;
+      if (j.aimTimer <= 0) tirar(j);
+    } else {
+      girarHacia(j, Math.atan2((objetivo.y - j.y) / PROFUNDIDAD, objetivo.x - j.x), J.giro, dt);
+      esquivarConElCaballo(j, dt);
+    }
+    empujarJinete(j, dt);
+    avanzar(j, velocidadDelJinete(j) + j.empujeVel, dt);
+    chocarJinete(j);
+    j.cooldown -= dt;
+    j.bajaRifle = Math.max(0, j.bajaRifle - dt);
+    j.fogonazo = Math.max(0, (j.fogonazo || 0) - dt);
+    const d = Math.hypot(a.x - j.x, (a.y - j.y) / PROFUNDIDAD);
+    if (j.cooldown <= 0 && d < J.alcance && j.aimTimer <= 0) {
+      j.aimTimer = J.apuntar;
+      j.blanco = a;
+      j.visto = false;
+      j.aimDir = Math.atan2((a.y - 8 - (j.y - 14)) / PROFUNDIDAD, a.x - (j.x + 6));
+      j.cooldown = (J.cadencia + rng.range(0, J.cadenciaAzar)) * (d > J.cadenciaLejosDesde ? J.cadenciaLejos : 1);
     }
   }
 
@@ -1483,7 +1946,8 @@ export function createHuidaScene(services) {
    */
   function dispersionDelJinete(j) {
     const J = H.jinetes;
-    const d = Math.hypot(yo.x - j.x, (yo.y - j.y) / PROFUNDIDAD);
+    const blanco = j.blanco && j.blanco.alive !== false ? j.blanco : yo;
+    const d = Math.hypot(blanco.x - j.x, (blanco.y - j.y) / PROFUNDIDAD);
     const extra = (Math.max(0, d - J.dispersionDesde) / 100) * J.dispersionPorCien;
     return Math.min(J.dispersionTope, J.dispersion + extra);
   }
@@ -1519,11 +1983,14 @@ export function createHuidaScene(services) {
           if (!j.alive || j.perdido) continue;
           if (Math.abs(b.x - j.x) < 12 && Math.abs(b.y - (j.y - 8)) < 10) {
             b.vida = 0;
-            const cerca = Math.hypot(j.x - yo.x, (j.y - yo.y) / PROFUNDIDAD) < H.jinetes.remate;
+            const cerca = !b.deBanda && Math.hypot(j.x - yo.x, (j.y - yo.y) / PROFUNDIDAD) < H.jinetes.remate;
             pegarle(j, b.danio, cerca);
             break;
           }
         }
+      } else if (banda.some((a) => a.alive && Math.abs(b.x - a.x) < 11 && Math.abs(b.y - (a.y - 8)) < 9)) {
+        b.vida = 0;
+        pegarleABanda(banda.find((a) => a.alive && Math.abs(b.x - a.x) < 11 && Math.abs(b.y - (a.y - 8)) < 9));
       } else if (yo.invuln <= 0 && Math.abs(b.x - yo.x) < 11 && Math.abs(b.y - (yo.y - 8)) < 9) {
         b.vida = 0;
         soltarBolsa();
@@ -1628,6 +2095,9 @@ export function createHuidaScene(services) {
 
   function empezarFin(como) {
     if (fin) return;
+    for (const a of banda) {
+      if (a.alive && a.aparte && jinetes.some((j) => j.persigue === a && j.alive && !j.perdido)) abandonar(a);
+    }
     fin = { como, timer: 1.8 };
     balas = balas.filter((b) => b.mia);
     audio.play('escape');
@@ -1668,8 +2138,17 @@ export function createHuidaScene(services) {
      * que va neto es la plata con la que te vas.
      */
     const premio = cobrarElPremio();
+    /**
+     * 💰 QUEDARON TODOS MUERTOS: vas a buscar la mitad de las bolsas que se te cayeron, redondeado para abajo
+     * *(Santi, 2026-11-15)*. Aparte de lo de la quebrada, que se cobra además.
+     */
+    if (fin && fin.como === 'limpio' && soltadas > 0) {
+      recogidas = Math.floor(soltadas / 2);
+      const bolsa = Math.max(1, Math.round(dineroInicial * H.bolsaFraccion));
+      plataRecogida = Math.min(Math.max(0, perdido - premio.plata), recogidas * bolsa);
+    }
     summary.money = Math.max(0, numero(summary.money || 0, 'la plata con la que entraste a la huida')
-      - numero(perdido, 'las bolsas que soltaste') + premio.plata);
+      - numero(perdido, 'las bolsas que soltaste') + premio.plata + plataRecogida);
     summary.huida = {
       jinetes: jinetes.length, derribados, tirados, bolsas: soltadas, perdido,
       // Cómo terminó: 'llegaste' (a un refugio), 'limpio' (no quedó ninguno) o
@@ -1678,6 +2157,7 @@ export function createHuidaScene(services) {
       lugar: refugioTomado ? refugioTomado.nombre : null,
       tipo: refugioTomado ? refugioTomado.tipo : null,
       devueltas: premio.devueltas, plata: premio.plata,
+      recogidas, plataRecogida,
     };
     // Un jinete derribado acá es un jinete derribado: cuenta como en el asalto.
     summary.kills = (summary.kills || 0) + derribados;
@@ -2052,6 +2532,8 @@ export function createHuidaScene(services) {
       if (!j.alive || j.perdido) continue;
       cosas.push({ y: j.y + 7, draw: () => dibujarLey(r, j, dia) });
     }
+    // 🎭 La banda, con lo mismo que la ley pero con su ropa.
+    for (const a of banda) cosas.push({ y: a.y + 7, draw: () => dibujarLey(r, a, dia) });
     // (🔁 Los caballos se ordenan por los cascos, `y + 7`, como en el galope: los obstáculos van por su pie.)
     for (const s of sueltos) cosas.push({ y: s.y + 7, draw: () => dibujarSuelto(r, s, dia) });
     if (estiloNuevo.activo) for (const c of caidos) if (c.t < CAIDA_DURA || c.polvo.length) cosas.push({ y: c.y + 7.02, draw: () => dibujarCaido(r, c, dia) });
@@ -2174,7 +2656,7 @@ export function createHuidaScene(services) {
      * caballo.js); acá sólo se decide en qué tiempo está.
      */
     const apuntando = j.aimTimer <= 0 ? 0
-      : j.aimTimer > H.jinetes.apuntar * 0.5 ? 1 : 2;
+      : j.aimTimer > (j.banda ? H.banda.apuntar : H.jinetes.apuntar) * 0.5 ? 1 : 2;
 
     /**
      * 🆕 EN EL ESTILO NUEVO, DADO VUELTA EN LA SILLA CON EL RIFLE *(Santi: "hay veces que los jinetes se transforman
@@ -2213,7 +2695,8 @@ export function createHuidaScene(services) {
         tiraSoga,
         // 🆕 La soga enrollada en la silla, dibujada con el jinete (en el viejo la pinta `dibujarSuLazo`).
         lazo: estiloNuevo.activo && lazoEnrollado(j),
-        detalles: 'ley',
+        detalles: j.banda ? 'banda' : 'ley',
+        aspecto: j.aspecto,
         ent: j,
         destello: j.hitFlash > 0,
         estado: j.aimTimer > 0 ? 'alerta' : 'calma',
@@ -2557,8 +3040,9 @@ export function createHuidaScene(services) {
       const hechos = '●'.repeat(yo.lazo.golpes) + '○'.repeat(Math.max(0, L.golpes - yo.lazo.golpes));
       r.text(`[E] ${hechos}`, centro, 20, colors.bagLoot);
     } else {
-      r.text(T.huida.teSiguen(siguiendo().length), centro, 8, colors.enemyAlert);
+      r.text(T.huida.teSiguen(siguiendo().filter((j) => !j.persigue).length), centro, 8, colors.enemyAlert);
       dibujarBrujula(r);
+      dibujarAlQueSeFue(r, centro);
     }
 
     r.text(`$${Math.max(0, dineroInicial - perdido)}`, 6, 9, colors.bagLoot, 'left');
@@ -2698,6 +3182,24 @@ export function createHuidaScene(services) {
   }
 
   /**
+   * 🐎 EL QUE SE SEPARÓ: cuántos lo siguen y, si no se ve, una flecha en el borde con su inicial, para ir a ayudarlo.
+   */
+  function dibujarAlQueSeFue(r, centro) {
+    const a = banda.find((x) => x.alive && x.aparte);
+    if (!a) return;
+    const nombre = MIEMBRO[a.banda].corto.toUpperCase();
+    const suyos = jinetes.filter((j) => j.persigue === a && j.alive && !j.perdido).length;
+    if (a.aparte === 'solo') r.text(T.huida.loSiguen(nombre, suyos), centro, 20, colors.bagLoot);
+    const dx = a.x - yo.x, dy = a.y - yo.y;
+    if (Math.abs(dx) < vista.w * 0.45 && Math.abs(dy) < vista.h * 0.42) return;
+    const ang = Math.atan2(dy / PROFUNDIDAD, dx);
+    const x = Math.max(18, Math.min(vista.w - 18, vista.w / 2 + Math.cos(ang) * vista.w * 0.44));
+    const y = Math.max(18, Math.min(vista.h - 50, vista.h / 2 + Math.sin(ang) * vista.h * 0.42));
+    dibujarSenal(r, { tipo: 'banda' }, x, y, ang, colors.bagLoot);
+    r.text(nombre[0], x, y + 3, colors.bagLoot);
+  }
+
+  /**
    * EL CARTELITO DE UN REFUGIO: su silueta y la flecha que apunta.
    *
    * Las siluetas son las mismas que se ven de lejos en el campo, en chiquito:
@@ -2715,6 +3217,8 @@ export function createHuidaScene(services) {
       r.rect(x - 5, y - 3, 2, 7, color);
       r.rect(x - 1, y - 5, 2, 9, color);
       r.rect(x + 3, y - 2, 2, 6, color);
+    } else if (d.tipo === 'banda') {
+      // (🐎 El de la banda que se separó: la inicial la pone `dibujarAlQueSeFue`.)
     } else {
       // Cualquier refugio que todavía no tenga dibujo: su inicial.
       r.text(T.huida.brujula[d.tipo] || '?', x, y + 3, color);

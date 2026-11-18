@@ -46,7 +46,7 @@ export const MELEE = {
     id: 'culata',
     name: 'Culata del arma',
     short: 'CULATA',
-    hint: 'Lo que ya tenés en la mano. Rápida y silenciosa, pero no mata.',
+    hint: 'Lo que ya tienes en la mano. Rápida y silenciosa, pero no mata.',
 
     damage: 0,
     cooldown: 0.30,

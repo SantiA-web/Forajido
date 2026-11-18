@@ -238,6 +238,18 @@ const SOMBREROS = {
     espalda: mapa(-1, ['........hHHHk', '.....hh.hHHHk.kk', '.....hhhbbbbbkkk', '......hHHHHHHHk', '.......xkkkkkx']),
   },
   /**
+   * 🆕 EL SOMBRERO GASTADO DE FRANK *(Santi: "a Frank ponele el sombrero que tenía Tommy pero que se note más
+   * desgastado")*: el curvo, con la copa hundida arriba (el punto oscuro del medio), un ala caída de un lado (no
+   * sube en la punta), un mordisco en el borde del ala y el fieltro desteñido (ver COLOR_SOMBRERO.gastado).
+   */
+  gastado: {
+    frente: mapa(-1, ['........hHkHk', '.....hh.hHHHk', '.....hhhbbbbbkkk', '......hHHHHHHHkk', '.......xk.kkkx']),
+    diagF: mapa(-1, ['.........hHkHk', '.....hh..hHHHk', '.....hhhhbbbbbkkk', '......hhHHHHHHkk', '.......xkk.kkx']),
+    lado: mapa(-1, ['........hHkHk', '....h...hHHHk', '....hh..bbbbb...', '.....hhhHHHHHkkkk', '......xk.kkkkx']),
+    diagE: mapa(-1, ['........hkHHk', '.....hh.hHHHk', '.....hhhbbbbbkkk', '......hHHHHHHHkk', '.......xkkk.kx']),
+    espalda: mapa(-1, ['........hHkHk', '.....hh.hHHHk', '.....hhhbbbbbkkk', '......hHHHHHHHkk', '.......xkk.kkx']),
+  },
+  /**
    * 🆕 P4 · LA GALERA DEL RICO (primera clase): la copa alta y derecha, la cinta y el ala angosta.
    */
   galera: {
@@ -788,6 +800,153 @@ export function aspectoSheriff(azar = Math.random) {
   return { piel: 'media', pelo: 'canas', peinado: 'corto', barba: elegir(PESO.barbaCanas, azar), sombrero: 'alto', cuerpo: 'normal', chaqueta: false, arremangada: false };
 }
 /**
+ * 🆕 EL PONCHO DE SANTIAGO, ECHADO SOBRE EL HOMBRO DERECHO *(Santi: "quiero que Santiago lleve un poncho"; "que el
+ * poncho en el pecho esté abierto y que solo le cubra un hombro")*: de lana gris parda, con una guarda crema y roja
+ * cerca del ruedo. Cuelga del hombro derecho (el de él) hasta la cadera, adelante y atrás: tapa ese brazo; el pecho
+ * queda abierto y se ve la camisa y el otro brazo.
+ *
+ * Como cae de UN hombro, no se puede espejar como el resto de la gente: mirando a la izquierda (las tres vistas que
+ * se dibujan en espejo) el hombro derecho es el de allá. Por eso son ocho mapas, uno por dirección, todos a mano:
+ * los de `…Esp` se dibujan mirando a la derecha y el espejo los da vuelta. Los del hombro de allá van en sombra.
+ * Letras: `o` contorno, `l` luz, `b` lana, `s` sombra, `c` guarda crema, `r` guarda roja; `.` deja lo que hay.
+ * Cada mapa empieza en la fila de los hombros (la de abajo del pañuelo) y en la columna `x`. `detras`: sólo pinta
+ * donde no hay nada (asoma por detrás de la espalda). ⚠️ Hecho para estar parado (el campamento): con los brazos
+ * arriba (apuntar, a caballo) falta.
+ */
+const PONCHO = {
+  // De frente: el hombro derecho es el de la izquierda de la pantalla.
+  frente: { x: 15, filas: [
+    '...olb.........',
+    '..olbbs........',
+    '.olbbbso.......',
+    '.olbbbso.......',
+    'olbbbbso.......',
+    'olbbbbso.......',
+    'occcccco.......',
+    'orrcrrco.......',
+    'occcccco.......',
+    'olbbbbso.......',
+    '.oooooo........',
+  ] },
+  // Tres cuartos de frente, mirando a la derecha: el hombro de acá, más ancho (se le ve de lleno).
+  diagF: { x: 15, filas: [
+    '...olbb........',
+    '..olbbbs.......',
+    '.olbbbbso......',
+    '.olbbbbso......',
+    'olbbbbbso......',
+    'olbbbbbso......',
+    'occccccco......',
+    'orrcrrcro......',
+    'occccccco......',
+    'olbbbbbso......',
+    '.ooooooo.......',
+  ] },
+  // Tres cuartos de frente, mirando a la izquierda (en espejo): el hombro de allá, una tira en sombra.
+  diagFEsp: { x: 15, filas: [
+    '..........obo..',
+    '.........obbso.',
+    '.........obbso.',
+    '.........obbso.',
+    '..........obbso',
+    '..........obbso',
+    '..........occco',
+    '..........orcro',
+    '..........occco',
+    '..........obbso',
+    '...........ooo.',
+  ] },
+  // De costado mirando a la derecha: el hombro de acá. Cubre el brazo y el costado; adelante, en el pecho, abierto.
+  lado: { x: 16, filas: [
+    '..olbbo...',
+    '..olbbo...',
+    '.olbbbbo..',
+    '.olbbbbo..',
+    '.olbbbbo..',
+    '.olbbbbbo.',
+    '.occcccco.',
+    '.orrcrrco.',
+    '.occcccco.',
+    '.olbbbbso.',
+    '..oooooo..',
+  ] },
+  // De costado mirando a la izquierda (en espejo): el hombro de allá; asoma por detrás de la espalda, en sombra.
+  ladoEsp: { x: 16, detras: true, filas: [
+    '..os......',
+    '.oss......',
+    '.oss......',
+    'osss......',
+    'osss......',
+    'osss......',
+    'occc......',
+    'orcr......',
+    'occc......',
+    'osss......',
+    '.ooo......',
+  ] },
+  // Tres cuartos de espaldas, mirando a la derecha: el hombro de acá es el de la derecha de la pantalla.
+  diagE: { x: 15, filas: [
+    '.......olbbo...',
+    '......olbbbso..',
+    '......olbbbbso.',
+    '......olbbbbso.',
+    '......olbbbbbso',
+    '......olbbbbbso',
+    '......occccccco',
+    '......orrcrrcro',
+    '......occccccco',
+    '......olbbbbbso',
+    '.......ooooooo.',
+  ] },
+  // Tres cuartos de espaldas, mirando a la izquierda (en espejo): el de allá, una tira en sombra.
+  diagEEsp: { x: 15, filas: [
+    '...obo.........',
+    '..osso.........',
+    '.ossbo.........',
+    '.ossbo.........',
+    'ossbo..........',
+    'ossbo..........',
+    'occco..........',
+    'orcro..........',
+    'occco..........',
+    'ossbo..........',
+    '.ooo...........',
+  ] },
+  // De espaldas: el hombro derecho es el de la derecha de la pantalla.
+  espalda: { x: 15, filas: [
+    '........olbo...',
+    '.......olbbso..',
+    '.......olbbbso.',
+    '.......olbbbso.',
+    '.......olbbbbso',
+    '.......olbbbbso',
+    '.......occcccco',
+    '.......orrcrrco',
+    '.......occcccco',
+    '.......olbbbbso',
+    '........ooooo..',
+  ] },
+};
+const COLOR_PONCHO = { o: 0, l: 16, b: 15, s: 14, c: 17, r: 9 };
+function ponchoEncima(q, vista, espejo) {
+  const M = (espejo && PONCHO[vista + 'Esp']) || PONCHO[vista], A = 44;
+  if (!M) return {};
+  const idx = q.idx.slice(), duenio = q.duenio ? q.duenio.slice() : null;
+  // Los hombros: la fila de abajo de la primera del pañuelo (rojo). Si no lo encuentra, la de siempre.
+  let hombros = 14;
+  for (let y = 8; y < 30; y++) if ([8, 9].some((c) => idx.subarray(y * A, y * A + A).includes(c))) { hombros = y + 1; break; }
+  M.filas.forEach((fila, j) => { for (let i = 0; i < fila.length; i++) {
+    const letra = fila[i];
+    if (letra === '.') continue;
+    const k = (hombros + j) * A + M.x + i;
+    if (M.detras && idx[k] >= 0) continue;
+    idx[k] = COLOR_PONCHO[letra];
+    // (Sin dueño: así no se le dibuja encima el borde fino de los brazos que tapa.)
+    if (duenio) duenio[k] = 0;
+  } });
+  return duenio ? { idx, duenio } : { idx };
+}
+/**
  * 🆕 P3c · EL CAZARRECOMPENSAS (el jefe que sube por vos; siempre el mismo): el cuerpo del civil con
  * el chaleco de cuero negro, la camisa clara, el pañuelo rojo, **hombros anchos** y **la capa roja
  * larga** hasta las rodillas *(Santi eligió la B de tres capas y la A de dos para el frente)*.
@@ -1221,6 +1380,7 @@ const COLOR_SOMBRERO = {
   // Con `colorSombrero: 'marron'`, marrón oscuro con la cinta crema (ver COLOR_MARRON).
   plano: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   curvo: { h: 23, H: 31, k: 0, x: 0, b: 32 },
+  gastado: { h: 36, H: 35, k: 33, x: 32, b: 14 },   // 🆕 el de Frank: fieltro marrón desteñido por el sol, la cinta gris
   bombin: { h: 23, H: 31, k: 0, x: 0, b: 32 },
   paja: { h: 38, H: 37, k: 6, x: 5, b: 33 },
   gorra: { h: 41, H: 18, k: 40, x: 0, b: 40 },
@@ -1473,6 +1633,7 @@ export function cuadroGente(o) {
   if (o.tipo === 'rico') q0.idx = sacoSinHuecos(q0.idx, o.vista, /^R/.test(o.piernas || ''), { ...C, ...persona.colores }, ['L', 'C', 'c']);
   if (o.tipo === 'escolta') q0.idx = camisaRecta(q0, persona.colores, o.vista, o.cuerpo);
   if (o.tipo === 'cazarrecompensas') q0.idx = capaCazador(q0.idx, o.vista, o.piernas || '');
+  if (o.ropa === 'poncho') Object.assign(q0, ponchoEncima(q0, o.vista, o.ponchoEsp));
   if (o.tipo === 'bartender' && o.cuerpo === 'gordito') q0.idx = bartenderGordito(q0, o.vista);
   if (o.tipo === 'bartender' && (o.vista === 'espalda' || o.vista === 'diagE')) q0.idx = delantalEntrePiernas(q0, o.vista);
   if (o.tipo === 'bartender') q0.idx = sinSueltos(q0.idx);
@@ -2406,7 +2567,7 @@ export function coloresDe(aspecto = {}, tipo = 'guardia', vista = 'lado') {
 }
 
 const guardados = new Map();
-const CLAVES = ['pala', 'paleo', 'mandos', 'manos', 'dinamita', 'cartuchos', 'tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado', 'mesa', 'saco', 'chaleco', 'guantes', 'recostado'];
+const CLAVES = ['pala', 'paleo', 'mandos', 'manos', 'dinamita', 'cartuchos', 'tipo', 'vista', 'piernas', 'arma', 'ang', 'empuna', 'golpe', 'desenfunda', 'aturdido', 'brazos', 'accion', 'k', 'lleva', 'bandera', 'fuma', 'fumaModo', 'cartas', 'enfundado', 'fino', 'sombrero', 'piel', 'pelo', 'uniforme', 'barba', 'peinado', 'panuelo', 'colorSombrero', 'funda', 'ropa', 'arremangada', 'cuerpo', 'chaqueta', 'doble', 'dobleModo', 'orilla', 'orillaLado', 'mesa', 'saco', 'chaleco', 'guantes', 'recostado', 'ponchoEsp'];
 /** El cuadro iluminado, como canvas, con la boca y el hombro (se guarda). `destello`: el balazo que recibió. */
 export function lienzoGente(o, luz = 0, destello = false) {
   const clave = CLAVES.map((k) => (k === 'ang' ? Math.round((o.ang || 0) * 100) : o[k] ?? '')).join('|') + '|' + luz + (destello ? '|d' : '');

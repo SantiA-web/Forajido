@@ -184,7 +184,8 @@ export function amenazado(pa) {
  * segundos es la moneda cara — y eso sí es una decisión.
  */
 export function sePuedeAmenazar(pa) {
-  return pa.alive && !pa.robado && pa.state !== 'amenazado';
+  // (🎭 Al de la banda que va de pasajero no se le roba: es de los tuyos.)
+  return pa.alive && !pa.robado && pa.state !== 'amenazado' && !pa.banda;
 }
 
 export function updatePassenger(pa, dt, world) {
@@ -201,6 +202,12 @@ export function updatePassenger(pa, dt, world) {
    * encañonás).
    */
   if (pa.encubierto && actualizarEncubierto(pa, dt, world)) return;
+
+  /**
+   * 🎭 EL DE LA BANDA QUE VA DE PASAJERO (ver `PLAN` en data/banda.js): sabe a qué vino. Se queda sentado, tranquilo,
+   * pase lo que pase: no se asusta, no grita y no huye.
+   */
+  if (pa.banda) { pa.state = 'idle'; pa.panicTimer = 0; pa.dormido = false; return; }
 
   /**
    * 🆕 DORMIDO (de noche, ver CONFIG.passenger.dormidos): no ve nada. Lo

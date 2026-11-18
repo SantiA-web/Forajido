@@ -33,6 +33,11 @@ import { T } from '../text/es.js';
 import { dibujarPersona, faseDeAndar, tono } from '../entities/figura.js';
 import { dibujarAnimal, ESCALA_PARADO } from '../entities/caballo.js';
 import { caballoActual } from '../data/horse.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
+import { crearMenu } from '../engine/menu.js';
+import { pistasDelDiario } from '../systems/horario.js';
+import { completarTiempo } from '../systems/tiempo.js';
+// (🗄️ El pueblo nuevo, en bloques, queda guardado para después: scenes/puebloNuevo.js y data/puebloNuevo.js. Ver PROMPT-CONTINUAR.md.)
 
 /**
  * Alto de la loma del fondo. Lo comparten el cielo (que llega hasta donde ella
@@ -41,12 +46,17 @@ import { caballoActual } from '../data/horse.js';
  * el que da la distancia.
  */
 const ALTO_LOMA = 16;
+const PASO = CONFIG.estilo.punto / 4;
+/** Para escribir en la capa fina (sin el estilo nuevo, el lienzo de siempre). */
+const fino = (r) => ({ lienzo: estiloNuevo.lienzoFino(r.ctx) });
 
 export function createTownScene(services) {
   const { renderer, input, scenes, hud, audio, rng } = services;
   const colors = CONFIG.colors;
   const camera = createCamera(renderer);
   const bounds = { width: PUEBLO.ancho, height: PUEBLO.alto };
+  // 🗞️ (Para el diario: el mismo diálogo en papel que el campamento.)
+  const menu = crearMenu(audio);
 
   let x, y, mensaje, scroll, gente;
   /**
@@ -109,6 +119,9 @@ export function createTownScene(services) {
       get mensaje() { return mensaje ? mensaje.texto : null; },
       get gente() { return gente; },
       get edificios() { return PUEBLO.edificios; },
+      // 🗞️ (Hablar con alguien sin ir caminando, y si hay un diálogo abierto: para probar el diario.)
+      get dialogo() { return menu.activo(); },
+      usar: (id) => usar({ id, tipo: 'persona' }),
     };
   }
 
@@ -147,6 +160,7 @@ export function createTownScene(services) {
    * ignorarlo, y después cuesta el doble que lo vuelvan a mirar.
    */
   function usar(o) {
+    if (o.tipo === 'persona' && o.id === 'chico') { abrirDiario(); return; }
     if (o.tipo === 'persona') {
       decir(T.pueblo.dichos[o.id]);
       audio.play('cover');
@@ -167,6 +181,31 @@ export function createTownScene(services) {
     scenes.goTo('interior', { id: o.id });
   }
 
+  /**
+   * 🗞️ EL DIARIO *(Santi: "el jugador puede comprar diarios en el pueblo y ver menciones, que sean pistas, no algo muy
+   * explícito")*: el chico lo vende. Trae un par de pistas de trenes de carga de la semana (qué se despacha y más o menos
+   * cuándo, nunca la vía ni el día: eso lo deducís vos) y alguna noticia del pueblo. No se anota en el horario: si te
+   * convence, vas a esperar a la vía. Uno por día; el de hoy se puede volver a leer.
+   */
+  function abrirDiario() {
+    const D = T.pueblo.diario, hoy = completarTiempo(gameState).dia;
+    const leer = () => menu.abrir(D.nombre, [{ id: 'ok', texto: D.doblar }], () => false, gameState.diario.lineas.join('\n'));
+    if (gameState.diario && gameState.diario.dia === hoy) { leer(); return; }
+    const opciones = [
+      ...(gameState.money >= D.precio ? [{ id: 'comprar', texto: D.comprar(D.precio) }] : []),
+      { id: 'no', texto: D.no },
+    ];
+    menu.abrir(D.chico, opciones, (id) => {
+      if (id !== 'comprar') return false;
+      gameState.money -= D.precio;
+      const pistas = pistasDelDiario(gameState).map((p) => D.pistas[p.ruta](D.cuando[p.semana]));
+      const otra = D.otras[rng.int(0, D.otras.length - 1)];
+      gameState.diario = { dia: hoy, lineas: pistas.length ? [...pistas, otra] : [D.nada, otra] };
+      leer();
+      return true;
+    }, gameState.money >= D.precio ? D.pregon(D.precio) : D.sinPlata(D.precio));
+  }
+
   function update(dt) {
     scroll += dt;
     audio.updateMusica(dt);
@@ -176,6 +215,8 @@ export function createTownScene(services) {
     }
 
     moverGente(dt);
+    // 🗞️ (Con el diario abierto no caminás.)
+    if (menu.update(input)) return;
 
     let dx = 0, dy = 0;
     if (input.anyDown('KeyA', 'ArrowLeft')) dx -= 1;
@@ -235,8 +276,11 @@ export function createTownScene(services) {
 
   function render(r) {
     // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
-    r.escenaFija();
+    // 🔁 En el estilo nuevo, simple *(Santi: "pasá el pueblo a la grilla nueva pero de manera simple, que sea más funcional")*: el
+    // mismo pueblo, con el punto en píxeles enteros y la cámara corrida de a un punto, así nada tiembla al caminar.
+    if (estiloNuevo.activo) r.escenaEntera(); else r.escenaFija();
     const dia = gameState.esDeDia;
+    const camX = estiloNuevo.activo ? Math.round(camera.renderX / PASO) * PASO : camera.renderX;
     /**
      * EL CIELO VA ANTES DEL `translate`, y no es un detalle: está
      * infinitamente lejos, así que no puede correrse con la cámara. Si entrara
@@ -253,7 +297,7 @@ export function createTownScene(services) {
       colors.puebloCielo, colors.puebloCieloHorizonte);
 
     r.ctx.save();
-    r.ctx.translate(-camera.renderX, bajar);
+    r.ctx.translate(-camX, bajar);
 
     dibujarTierra(r);
     for (const e of PUEBLO.edificios) dibujarEdificio(r, e, dia);
@@ -271,7 +315,7 @@ export function createTownScene(services) {
       r.ctx.restore();
       r.tinte(CONFIG.hora.velo, CONFIG.hora.veloAlpha);
       r.ctx.save();
-      r.ctx.translate(-camera.renderX, bajar);
+      r.ctx.translate(-camX, bajar);
       for (const e of PUEBLO.edificios) dibujarLuces(r, e);
     }
 
@@ -371,7 +415,8 @@ export function createTownScene(services) {
     r.ctx.restore();
 
     // El letrero, que es lo que hace que un cajón marrón sea una armería.
-    r.text(T.pueblo.letreros[e.id], e.x, top - 4, colors.puebloLetrero);
+    // (De día, en la capa fina para que se lean; de noche no, porque la capa fina no se oscurece con el velo.)
+    r.text(T.pueblo.letreros[e.id], e.x, top - 4, colors.puebloLetrero, 'center', gameState.esDeDia ? fino(r) : undefined);
 
     // La puerta: marco, hueco oscuro, las dos hojas de vaivén y la manija.
     r.rect(e.x - 9, base - 27, 18, 27, colors.puebloPuerta);
@@ -514,19 +559,21 @@ export function createTownScene(services) {
     const o = objetoCerca();
     if (o) {
       r.text(T.pueblo.prompts[o.id], x, y - 16,
-        o.tipo === 'caballo' ? colors.bagLoot : colors.doorGlow);
+        o.tipo === 'caballo' ? colors.bagLoot : colors.doorGlow, 'center', fino(r));
     }
   }
 
   function dibujarInterfaz(r) {
-    r.text(T.pueblo.title, r.width / 2, 12, colors.text);
-    r.text(`$${gameState.money}`, r.width - 8, 12, colors.bagLoot, 'right');
+    // (Las letras van en la capa fina: en la grilla de 3×3 se comían.)
+    r.text(T.pueblo.title, r.width / 2, 12, colors.text, 'center', fino(r));
+    r.text(`$${gameState.money}`, r.width - 8, 12, colors.bagLoot, 'right', fino(r));
     if (gameState.bounty > 0) {
-      r.text(`☠ $${gameState.bounty}`, 8, 12, colors.enemyAlert, 'left');
+      r.text(`☠ $${gameState.bounty}`, 8, 12, colors.enemyAlert, 'left', fino(r));
     }
 
-    if (mensaje) r.text(mensaje.texto, r.width / 2, r.height - 28, colors.text);
-    else if (scroll < 9) r.text(T.pueblo.keys, r.width / 2, r.height - 14, colors.textDim);
+    if (menu.activo()) { menu.render(r, colors, T.interior.dialogoAyuda); return; }
+    if (mensaje) r.text(mensaje.texto, r.width / 2, r.height - 28, colors.text, 'center', fino(r));
+    else if (scroll < 9) r.text(T.pueblo.keys, r.width / 2, r.height - 14, colors.textDim, 'center', fino(r));
   }
 
   function exit() {

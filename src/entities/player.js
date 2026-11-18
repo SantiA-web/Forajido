@@ -302,7 +302,9 @@ export function updatePlayer(p, dt, world) {
    * Alcanza con moverla apenas, en cualquier dirección. La gracia es que la
    * mano del mouse ya está apuntando: no tenés que soltar el apuntado ni
    * estirar el meñique para matar a alguien que tenés pegado a la espalda.
-   * F sigue funcionando como respaldo.
+   * (🔁 La [F] era el respaldo de la ruedita y el empujón del cajón: ahora es la tecla de las órdenes al compañero
+   * *(Santi: "que la tecla a apretar sea la F, y lo que haya en la F eliminalo")*. El cajón se empuja con la [E],
+   * ver `updateInteraction` en scenes/raidScene.js.)
    */
   /**
    * Y `F` TIENE UN SEGUNDO USO: EMPUJAR UN CAJÓN DE PÓLVORA (Fase 6a).
@@ -317,13 +319,10 @@ export function updatePlayer(p, dt, world) {
    * ser idénticas pero ninguna se pierde: al lado de un cajón, la ruedita
    * sigue siendo el cuchillo.
    */
-  const quiereCuchillo = input.wheelMoved() || input.wasPressed('KeyF');
+  const quiereCuchillo = input.wheelMoved();
   if (quiereCuchillo && p.meleeTimer <= 0) {
-    const empujó = input.wasPressed('KeyF') && world.empujarCajon && world.empujarCajon();
-    if (!empujó) {
-      if (p.melee.impacto) empezarCulatazo(p, world);
-      else playerMelee(p, world);
-    }
+    if (p.melee.impacto) empezarCulatazo(p, world);
+    else playerMelee(p, world);
   }
 
   // La dinamita va ANTES que el arma y puede quedarse con el clic: si tenés una
@@ -940,7 +939,14 @@ function updateInCover(p, dt, world, dx, dy, toggle) {
   // Asomarse: clic derecho. Te asomás hacia el lado al que estés apuntando.
   const wantsPeek = world.input.mouse.right;
   const aimSlide = Math.cos(p.aim) * cover.sx + Math.sin(p.aim) * cover.sy;
-  if (wantsPeek && Math.abs(aimSlide) > 0.05) p.peekSide = Math.sign(aimSlide);
+  /**
+   * 🐛 Ya asomado, sólo se pasa al otro lado si apuntás claramente para allá. Con el blanco casi enfrente (el
+   * guardia del otro lado de la barra) se asomaba a un lado, el blanco le quedaba del otro, se asomaba al otro… y
+   * cada tiro salía apuntado desde donde estaba un momento antes: erraba siempre por unos 10 (se vio con el
+   * compañero en la barra).
+   */
+  const umbralLado = p.peek > 0.1 ? 0.3 : 0.05;
+  if (wantsPeek && Math.abs(aimSlide) > umbralLado) p.peekSide = Math.sign(aimSlide);
 
   // No se asoma del todo: solo hasta peekMax. Menos cuerpo expuesto = menos
   // castigo por asomarse, pero también más difícil pegarle al que se asoma.
@@ -1097,6 +1103,7 @@ function shoot(p, world) {
         caida: w.caida,
         factor: w.factorPerdigon,
         perdigon: disparo,
+        delCompanero: !!p.esCompanero,
       });
     }
   }
@@ -1129,6 +1136,8 @@ function shoot(p, world) {
     // `tapaLaBala`, systems/combat.js.
     porEncima: tiraPorEncima(p, world),
     caida: w.caida,
+    // 🤝 Si el que tira es el compañero (ver systems/companero.js).
+    delCompanero: !!p.esCompanero,
   });
 
   p.ammo -= 1;
@@ -1271,7 +1280,9 @@ export function drawPlayer(r, p, hearStepRadius = CONFIG.enemy.hearStepRadius) {
   const bulto = llenado > 0 ? 1 + Math.round(llenado * 3) : 0;
   const fig = dibujarPersona(r, {
     // En el asalto, con el pañuelo subido (ver CARA_ASALTO en estiloNuevo/jugador.js).
-    tipo: 'jugador', mascara: true, x: bx, pies, angulo: p.aim,
+    tipo: 'jugador', mascara: !p.sinMascara, x: bx, pies, angulo: p.aim,
+    // 🤝 El compañero: los colores del jugador cambiados, provisorios (ver systems/companero.js).
+    colores: p.colores || null,
     // 🎨 Adentro del vagón: con la prueba del estilo nuevo ([F9]) va el dibujo nuevo.
     interior: true,
     // A cubierto no caminás: los pies se quedan pegados a la pared y lo que

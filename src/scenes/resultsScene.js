@@ -11,6 +11,12 @@ import { T } from '../text/es.js';
 import { gameState } from '../state/gameState.js';
 import { formatTime } from '../ui/hud.js';
 import { CONFIG } from '../data/config.js';
+import { pasarAsalto, completarBanda, encarcelar, MIEMBRO } from '../data/banda.js';
+import { pasar } from '../systems/tiempo.js';
+import { TIEMPO } from '../data/tiempo.js';
+import { completarCampamento, cerrarAsalto } from '../data/momentos.js';
+import { despuesDelAsalto } from '../systems/animoEnJuego.js';
+import { rumorDeCarga } from '../systems/horario.js';
 
 export function createResultsScene(services) {
   const { input, scenes, hud } = services;
@@ -24,6 +30,45 @@ export function createResultsScene(services) {
     // Escapaste o no es la única bifurcación del juego que cambia a dónde vas.
     // Una prueba no te manda a ningún lado: volvés al campamento.
     capturado = summary.outcome !== 'escaped' && !summary.prueba;
+    /**
+     * 🔥 Para el campamento (ver data/momentos.js): un asalto más, cuánto trajiste (la pelea por el reparto), y la
+     * banda pasa la noche: los heridos se curan un poco y los papeles se vacían. Las pruebas no cuentan.
+     */
+    if (!summary.prueba) {
+      gameState.campamento = completarCampamento(gameState.campamento);
+      gameState.campamento.asaltos++;
+      // 🎭 Y lo que la banda va a saber (etapa 6): civiles muertos, quién quedó herido y si el caballo llegó tarde.
+      gameState.ultimoAsalto = {
+        // 🐛 Lo que de verdad trajiste a casa (`money`: después de la huida, con las bolsas que se cayeron y lo que
+        // rescataste), no lo que agarraste en el tren (`collected`) *(Santi: "me decía que perdía exactamente el dinero
+        // que tenía… los NPC no tienen en cuenta el dinero que me lleve, sino el dinero con el que llegué en la huida")*.
+        botin: summary.outcome === 'escaped' ? summary.money || 0 : 0, recien: true,
+        civiles: summary.civilians || 0, heridos: summary.heridos || [], caballoTarde: summary.caballoTarde || null,
+      };
+      completarBanda(gameState.banda);
+      // 🙂 Lo que vivió la banda en el asalto, y el puesto de cada uno cuenta como un uso de su habilidad.
+      despuesDelAsalto(gameState, summary);
+      // ⛓️ El pasajero de la banda que quedó en el tren, preso (ver `pasajeroFinal` en scenes/raidScene.js).
+      if (summary.preso && gameState.banda[summary.preso]) {
+        encarcelar(gameState.banda, summary.preso, gameState.tiempo ? gameState.tiempo.dia : 0);
+        (gameState.campamento.noticias = gameState.campamento.noticias || []).push('preso:' + summary.preso);
+      }
+      // 🐎 El de los caballos que se separó en la huida ([F]) y lo agarró la ley.
+      if (summary.presoHuida && gameState.banda[summary.presoHuida]) {
+        encarcelar(gameState.banda, summary.presoHuida, gameState.tiempo ? gameState.tiempo.dia : 0);
+        (gameState.campamento.noticias = gameState.campamento.noticias || []).push('preso:' + summary.presoHuida);
+      }
+      cerrarAsalto(gameState);
+      pasarAsalto(gameState.banda);
+      // 📅 El asalto y la vuelta al campamento (el viaje de ida se gastó al salir del mapa).
+      // (🔁 🚂 La vuelta cuesta lo mismo que la ida: lo lejos que queda la vía, ver systems/horario.js.)
+      pasar(gameState, 1 + (gameState.viajeDeVuelta || TIEMPO.cuesta.asaltoYVuelta - 1));
+      // 🗞️ La hoja de ruta del encargado (ver `takeLoot` en scenes/raidScene.js): un tren de carga de la semana.
+      if (summary.hojaDeRuta) {
+        const tren = rumorDeCarga(gameState, 7);
+        if (tren) gameState.campamento.noticias.push('rumorHoja:' + tren.id);
+      }
+    }
     overlay.classList.remove('hidden');
     overlay.innerHTML = buildPanel(summary);
 
@@ -37,7 +82,7 @@ export function createResultsScene(services) {
   }
 
   function continuar() {
-    scenes.goTo(capturado ? 'prision' : 'camp');
+    scenes.goTo(capturado ? 'prision' : 'camp', capturado ? undefined : { desde: 'asalto' });
   }
 
   function update() {
@@ -85,6 +130,11 @@ function buildPanel(s) {
      * los mataste, así que no suman recompensa ni cuentan como muertes.
      */
     s.huida && s.huida.tirados > 0 ? row(T.results.huidaTirados(s.huida.tirados), String(s.huida.tirados), true) : '',
+    // 📡 🔭 Cómo le fue al del telégrafo y al vigía (BANDA-NUEVA.md: todo lo que cuenta se ve, con su motivo).
+    ...['telegrafo', 'vigia'].map((p) => {
+      const x = s.papeles && s.papeles[p];
+      return x && MIEMBRO[x.id] ? row(T.results.papel[p](MIEMBRO[x.id].corto), T.results.papelRes[p][x.res], x.res === 'bien', x.res === 'mal') : '';
+    }),
     s.huida && s.huida.fin === 'llegaste' && s.huida.lugar
       ? row(T.results.huidaQuebrada, T.results.huidaQuebradaSi(s.huida.lugar), true) : '',
     /**
@@ -94,6 +144,11 @@ function buildPanel(s) {
      */
     s.huida && s.huida.devueltas > 0
       ? row(T.results.huidaPremioBolsa(s.huida.devueltas), `+$${s.huida.plata}`, true) : '',
+    s.huida && s.huida.recogidas > 0
+      ? row(T.results.huidaRecogidas(s.huida.recogidas), `+$${s.huida.plataRecogida}`, true) : '',
+    // 🐎 El que se separó con [F]: si lo dejaste solo, o si lo agarraron.
+    s.abandonado ? row(T.results.huidaAbandonado(MIEMBRO[s.abandonado.id].corto), T.results.huidaAbandonadoComo[s.abandonado.como], false, s.abandonado.como !== 'sano') : '',
+    s.presoHuida && !s.abandonado ? row(T.results.huidaPreso(MIEMBRO[s.presoHuida].corto), T.results.huidaPresoComo, false, true) : '',
     s.huida && s.killsSinTestigos > 0 && s.bountyAhorrado > 0
       ? row(T.results.huidaPremioBosque(s.killsSinTestigos), `−$${s.bountyAhorrado}`, true) : '',
     s.cleanBonus > 0 ? row(T.results.clean, `+$${s.cleanBonus}`, true) : '',
@@ -103,6 +158,13 @@ function buildPanel(s) {
     row(T.results.lost, `$${s.leftBehind + (escaped ? 0 : s.collected - s.rescate)}`),
     row(T.results.kills, String(s.kills)),
     row(T.results.civilians, String(s.civilians)),
+    // 🤝 El compañero: cómo terminó y los que mató él (no te suben tu recompensa).
+    s.companero ? row(T.results.companero, T.results.companeroFinal[s.companero]) : '',
+    s.companero && (s.killsCompanero || s.civilesCompanero)
+      ? row(T.results.companeroMuertos, String(s.killsCompanero + s.civilesCompanero)) : '',
+    // 🎒 Lo que robó él: si escaparon los dos, ya está sumado a lo tuyo; si te agarraron, se lo llevó él.
+    s.botinCompanero ? row(s.botinCompanero.tuyo ? T.results.companeroTrajo : T.results.companeroSeLlevo,
+      T.results.companeroBotin(s.botinCompanero.plata, s.botinCompanero.cosas)) : '',
     row(T.results.alarm, s.alarm ? T.results.alarmYes : T.results.alarmNo),
     row(T.results.time, formatTime(s.timeUsed)),
     row(T.results.boarded, String(s.boardedAt)),

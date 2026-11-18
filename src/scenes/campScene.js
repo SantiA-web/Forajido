@@ -31,14 +31,35 @@ import { CAMPAMENTO, DECORADO, ASIENTO } from '../data/camp.js';
 import { caballoActual, HORSES } from '../data/horse.js';
 import { WEAPONS } from '../data/weapons.js';
 import { MELEE } from '../data/melee.js';
-import { gameState } from '../state/gameState.js';
-import { crearMenu } from '../engine/menu.js';
+import { gameState, resetGame } from '../state/gameState.js';
+import { crearMenu, papel, TINTAS } from '../engine/menu.js';
+import { crearFicha } from './ficha.js';
+import { crearCalendario } from './calendario.js';
+import { pasar, partesHasta, partesDeDias, completarTiempo, fechaDe, loQueViene } from '../systems/tiempo.js';
+import { TIEMPO } from '../data/tiempo.js';
+import { rumorDeCarga, rumorFalso } from '../systems/horario.js';
+import { chanceDeRumor, practicar, fuerza, tiene } from '../systems/animo.js';
+import { ANIMO, palabraDeHumor } from '../data/rasgos.js';
 import { dibujarPersona, faseDeAndar, tono } from '../entities/figura.js';
 import { dibujarAnimal, ESCALA_PARADO } from '../entities/caballo.js';
 import { T } from '../text/es.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { DENSIDAD } from '../engine/renderer.js';
 import * as dibujoNuevo from '../world/estiloNuevo/campamento.js';
+import { BANDA, MIEMBRO, palabraDe, completarBanda } from '../data/banda.js';
+import { completarAnimo, practicandoAhora, mandarAPracticar, PRACTICABLES, mandarAEspiar, trenesMirados, PARTES_DE_PRACTICA, lePaso, jugarUnaMano } from '../systems/animoEnJuego.js';
+import { espiables } from '../systems/horario.js';
+import { ESCONDITES_DEL_MALETIN } from '../world/train.js';
+import { completarCampamento, visitaNueva, pendienteDe, opcionesDe as opcionesDelMomento, elegir, MOMENTOS, revisarEncargo, encargoAbierto, tieneMaletin } from '../data/momentos.js';
+
+/**
+ * 🔥 EL FORASTERO HERIDO que pide agua (un momento, ver data/momentos.js): la gente del tren, flaco, de bombín marrón
+ * y patillas, para que no se confunda con ninguno de la banda.
+ */
+const ASPECTO_FORASTERO = {
+  piel: 'clara', pelo: 'castano', peinado: 'corto', sombrero: 'bombin', colorSombrero: 'marron', barba: 'patillas',
+  cuerpo: 'flaco', ropa: 'camisa', arremangada: false, panuelo: 'pardo',
+};
 
 /**
  * DE DÓNDE VIENE EL SOL. Un desplazamiento chico y para un solo lado: lo que
@@ -62,6 +83,9 @@ function revolver(n) {
   return (t ^ (t >>> 16)) >>> 0;
 }
 
+/** 🗞️ Hasta cuántas letras entra un aviso en la línea de abajo (más largo, va en el papel: ver `avisar`). */
+const LARGO_DE_UNA_LINEA = 100;
+
 export function createCampScene(services) {
   const { input, scenes, hud, audio } = services;
   // 🧪 El arma que tenías antes de ponerte la escopeta con [2] (ver `update`).
@@ -73,6 +97,10 @@ export function createCampScene(services) {
 
   let x, y, sentado, mensaje, scroll, avisoLejos, chispaTimer;
   const menu = crearMenu(audio);
+  // 📋 La ficha de cada uno de la banda, con [TAB] (scenes/ficha.js).
+  const ficha = crearFicha(audio);
+  // 📅 El calendario, con [C] (scenes/calendario.js).
+  const calendario = crearCalendario(audio);
   /**
    * HACIA DÓNDE MIRA, en radianes como en todo el juego. Antes no hacía falta
    * —eras una caja— y ahora sí: la persona tiene ocho direcciones y hay que
@@ -88,6 +116,22 @@ export function createCampScene(services) {
 
   function enter(params = {}) {
     hud.hide();
+    // 🤠 (Una partida de antes de la banda: la banda arranca acá.)
+    gameState.banda = completarBanda(gameState.banda);
+    completarAnimo(gameState.banda);
+    // 📅 (Una partida de antes del calendario: arranca hoy.)
+    completarTiempo(gameState);
+    /**
+     * 🔥 UNA VISITA NUEVA (al empezar, después de un asalto, al salir de la cárcel; ir al pueblo o al mapa y volver es
+     * la misma): se va el que estaba en 0 y ya había avisado, y se elige el momento de esta visita (data/momentos.js).
+     * Sólo en el estilo nuevo, que es el que dibuja a la banda, la carta y el forastero.
+     */
+    gameState.campamento = completarCampamento(gameState.campamento);
+    const nueva = !params.desde || params.desde === 'asalto' || params.desde === 'prision';
+    const seFueron = nueva && estiloNuevo.activo ? visitaNueva(gameState) : [];
+    if (nueva && estiloNuevo.activo && gameState.banda) traerRumores();
+    // ✉️ (Y si es la noche de J.Mc., o si ya pasó y no estabas: la carta junto a la carpa.)
+    const deJmc = estiloNuevo.activo ? revisarEncargo(gameState) : null;
     const c = CAMPAMENTO.centro;
     // Arrancás al lado del fuego, mirando el resto del campamento. Salvo que
     // vuelvas del pueblo: entonces aparecés donde dejaste el caballo, que es
@@ -105,9 +149,16 @@ export function createCampScene(services) {
     y = donde ? c.y + donde.y + 16 : c.y + 40;
     sentado = false;
     mensaje = null;
+    // 🎭 Y lo que trajo el asalto (ver `cerrarAsalto` en data/momentos.js).
+    // (🔁 Siempre que haya, no sólo al volver de un asalto: la de "volvió" se da al volver del pueblo.)
+    const noticias = sacarNoticias();
+    const avisos = [...seFueron.map((n) => T.camp.banda.seFue(n)), ...noticias, ...(deJmc === 'entrega' ? [T.camp.momentos.esLaNoche] : [])];
+    if (avisos.length) avisar(avisos);
     avisoLejos = 0;
     scroll = 0;
     arrancarSonido();
+    // 🏁 (Si la partida ya terminó, el final, siempre.)
+    if (gameState.finDelJuego) abrirFin();
 
     // Para depurar desde la consola: FORAJIDO.services.camp
     services.camp = {
@@ -117,15 +168,101 @@ export function createCampScene(services) {
       get cerca() { const o = objetoCerca(); return o ? o.id : null; },
       get objetos() { return objetosEnMundo(); },
       get mensaje() { return mensaje ? mensaje.texto : null; },
+      get dialogo() { return menu.activo(); },
+      // 🧪 (Para las pruebas: leer el papel abierto y elegir una opción.)
+      get papel() { return menu.leer(); },
+      elegir: (id) => menu.elegirOpcion(id),
+      get ficha() { return ficha.activa(); },
+      abrirFicha: (i = 0) => abrirFicha(i),
+      /** Usar un objeto (o hablar con alguien) sin ir caminando: para probar los diálogos. */
+      usar: (id) => { const o = objetosEnMundo().find((ob) => ob.id === id); if (o) usar(o); return !!o; },
     };
   }
 
   // ------------------------------------------------------------------ lógica
 
+  /**
+   * 🎭 LAS NOTICIAS QUE ESPERAN (ver `cerrarAsalto` en data/momentos.js y systems/animoEnJuego.js), ya en palabras, y
+   * las saca de la lista. ('preso:id' y 'volvio:id' llevan el nombre; las de las habilidades, 'gano:id:hab', además
+   * la habilidad.)
+   */
+  function sacarNoticias() {
+    if (!estiloNuevo.activo || !gameState.campamento) return [];
+    const lista = (gameState.campamento.noticias || []).map((n) => {
+      const [clave, id, hab] = n.split(':');
+      // 🗞️ (Los rumores llevan el número del tren: 'rumorHoja:12', y los de la banda quién y por qué: 'rumor:frank:12:alcoholico'.)
+      // 🕵️ (Y lo que trajo el que fue a mirar un tren: 'espia:tommy:12:visto'.)
+      if (clave === 'espia') {
+        const [, , trenId, que, ruta] = n.split(':');
+        const tren = (gameState.horario && gameState.horario.trenes.find((t) => String(t.id) === trenId)) || { ruta, id: trenId };
+        return que === 'visto' && !tren.composicion ? null : informeDelEspia(id, tren, que);
+      }
+      if (clave === 'rumorHoja') {
+        const tren = gameState.horario && gameState.horario.trenes.find((t) => String(t.id) === id);
+        return tren ? contarRumor('hoja', tren) : null;
+      }
+      if (clave === 'rumor') {
+        const [, , trenId, porque] = n.split(':');
+        const tren = gameState.horario && gameState.horario.trenes.find((t) => String(t.id) === trenId);
+        if (!tren || !MIEMBRO[id]) return null;
+        const R = T.rumores, f = fechaDe(tren.dia);
+        return R.banda(MIEMBRO[id].corto, R.dondeLoOyo[porque] || R.dondeLoOyo.pueblo, `${R.dias[f.semana]} ${f.dia}`, R.vias[tren.ruta] || tren.ruta);
+      }
+      const f = T.camp.noticias[clave];
+      if (!id) return f;
+      return f(MIEMBRO[id] ? MIEMBRO[id].corto : id, hab ? T.rasgos[hab] || hab : undefined);
+    });
+    gameState.campamento.noticias = [];
+    return lista.filter(Boolean);
+  }
+
+  /**
+   * 🔁 🗞️ LOS RUMORES DE LA BANDA *(Santi: "mejor que Frank no sea el único que traiga rumores [...] hay otros rasgos
+   * que hacen hablar")*: en cada visita nueva, cada uno de los que están (ni preso ni herido) tira con su chance
+   * (`chanceDeRumor`, systems/animo.js). Si le sale, el tren de carga más cercano que todavía no sabés pasa al horario
+   * como rumor; al mentiroso, la mitad de las veces se lo inventa. Contarlo con la baraja o con labia es usarla.
+   */
+  function traerRumores() {
+    const C = gameState.campamento, dia = completarTiempo(gameState).dia;
+    C.noticias = C.noticias || [];
+    // 🔁 (Uno por visita como mucho: tiran en un orden cualquiera, y el primero al que le sale es el que cuenta.)
+    const orden = BANDA.slice().sort(() => Math.random() - 0.5);
+    for (const m of orden) {
+      const e = gameState.banda[m.id];
+      if (!e || !e.esta || e.preso || e.herido) continue;
+      const { chance, porque } = chanceDeRumor(e);
+      if (Math.random() >= chance) continue;
+      const miente = Math.random() < ANIMO.rumores.mentiroso * (fuerza(e, 'mentiroso') > 0 ? 1 : 0);
+      const tren = miente ? rumorFalso(gameState) : rumorDeCarga(gameState);
+      if (!tren) continue;
+      C.noticias.push(`rumor:${m.id}:${tren.id}:${porque || 'pueblo'}`);
+      // (Las dos, si tiene las dos: las usó para enterarse, aunque el aviso nombre una sola.)
+      for (const hab of ['baraja', 'labia']) {
+        if (!tiene(e, hab)) continue;
+        const r = practicar(e, hab, dia);
+        if (r) C.noticias.push(`${r}:${m.id}:${hab}`);
+      }
+      break;
+    }
+  }
+
+  /** 🗞️ Un rumor en palabras: quién lo cuenta (`T.rumores[quien]`), el día y la vía. */
+  function contarRumor(quien, tren) {
+    const R = T.rumores, f = fechaDe(tren.dia);
+    return R[quien](`${R.dias[f.semana]} ${f.dia}`, R.vias[tren.ruta] || tren.ruta);
+  }
+
   /** Los objetos con sus coordenadas ya absolutas (en data van relativas al centro). */
   function objetosEnMundo() {
     const c = CAMPAMENTO.centro;
-    return CAMPAMENTO.objetos.map((o) => ({ ...o, x: c.x + o.x, y: c.y + o.y }));
+    // 🤠 (La banda: sólo el que sigue con vos, y sólo en el estilo nuevo, que es el que la dibuja.)
+    return CAMPAMENTO.objetos
+      .filter((o) => !o.miembro || (estiloNuevo.activo && gameState.banda && gameState.banda[o.id] && gameState.banda[o.id].esta))
+      // (🎯 El que se fue a practicar no está, salvo de noche, que descansa acá.)
+      .filter((o) => !o.miembro || !practicandoAhora(gameState, o.id))
+      // (🔥 La carta y el forastero, sólo mientras traen su momento.)
+      .filter((o) => !o.momento || (estiloNuevo.activo && gameState.campamento && pendienteDe(gameState, o.id)))
+      .map((o) => ({ ...o, x: c.x + o.x, y: c.y + o.y }));
   }
 
   /** Lo que está sólo para verse, con sus coordenadas absolutas. En el estilo viejo no hay nada de esto. */
@@ -148,6 +285,17 @@ export function createCampScene(services) {
 
   function decir(texto, life = 2.6) {
     mensaje = { texto, life };
+  }
+
+  /**
+   * 🗞️ AVISOS QUE NO ENTRAN EN UNA LÍNEA (dos rumores juntos, lo que vio el espía): la línea de abajo no corta renglones
+   * y se salían de la pantalla. Si son largos, van en el papel del diálogo, un aviso por renglón; si no, como siempre.
+   */
+  function avisar(lineas) {
+    const texto = lineas.join(' ');
+    if (texto.length <= LARGO_DE_UNA_LINEA) { decir(texto, 4 + 2 * (lineas.length - 1)); return; }
+    mensaje = null;
+    menu.abrir(T.camp.enElCampamento, [{ id: 'seguir', texto: T.camp.momentos.seguir }], () => false, lineas.join('\n'), {});
   }
 
   /**
@@ -179,9 +327,10 @@ export function createCampScene(services) {
          * que dormir pasa a ser una decisión: no es "pasar el tiempo", es
          * "abrir la mitad del pueblo y cerrar la otra".
          */
-        gameState.esDeDia = !gameState.esDeDia;
-        decir(gameState.esDeDia ? T.camp.amanece : T.camp.anochece);
-        audio.play('cover');
+        // 📅 🔁 Ya no da vuelta el día de un golpe: abre el papel para descansar hasta la próxima parte del día,
+        // dormir hasta la mañana o esperar varios días, con lo que va a pasar mientras tanto *(Santi: "la idea de la
+        // carpa me gustó"; antes "solo apretás E muchas veces")*.
+        abrirCarpa();
         break;
 
       case 'cajon':
@@ -193,6 +342,12 @@ export function createCampScene(services) {
         // único objeto del campamento con dos verbos, porque es el único que
         // además de ser una cosa es un VEHÍCULO.
         abrirPoste();
+        break;
+
+      default:
+        // (🔥 Si trae un momento, el momento; si no, la charla de siempre.)
+        if (abrirMomento(o.id)) break;
+        if (MIEMBRO[o.id]) abrirCharla(o.id);
         break;
 
       case 'cartel':
@@ -286,6 +441,314 @@ export function createCampScene(services) {
     });
   }
 
+  /**
+   * 🤠 HABLAR CON UNO DE LA BANDA: te saluda según cómo está con vos (su lealtad, en palabras), y le podés preguntar
+   * cómo anda. (🔁 Reemplaza a la charla con el compañero de las formas, guardado en systems/companero.js.) Los momentos
+   * que piden una decisión vienen en la etapa 3 de la rebanada.
+   */
+  /**
+   * 🔥 UN MOMENTO DEL CAMPAMENTO (ver data/momentos.js): lo que pasa, arriba; lo que podés contestar, abajo. Al elegir
+   * se ve lo que pasó después, lo que pagaste y a quién le cambió la lealtad (en palabras). Devuelve false si `quien`
+   * no trae nada.
+   */
+  /**
+   * 📜 LA FIGURA DEL QUE HABLA, para el papel del diálogo (engine/menu.js): uno de la banda o el forastero, parado de
+   * frente, con su ropa de siempre.
+   */
+  function figuraDe(id) {
+    const aspecto = id === 'forastero' ? ASPECTO_FORASTERO : MIEMBRO[id] && MIEMBRO[id].aspecto;
+    if (!aspecto) return null;
+    return (r, fx, pies) => dibujarPersona(r, {
+      tipo: 'pasajero', interior: true, x: fx, pies, angulo: Math.PI / 2,
+      nuevo: { arma: null, funda: true, aspecto, piernas: 'quieto' },
+    });
+  }
+
+  /** Las figuras de un momento: el que lo trae y los que vienen con él (el reparto: Frank y Santiago). */
+  function figurasDelMomento(p) {
+    const ids = [p.quien, ...((MOMENTOS[p.id] && MOMENTOS[p.id].tambien) || [])]
+      .filter((id) => id === 'forastero' || (gameState.banda && gameState.banda[id] && gameState.banda[id].esta));
+    return ids.map(figuraDe).filter(Boolean);
+  }
+
+  /** 📅 El cartelito de la fecha: "6 de agosto · Noche", en un papel chico arriba al medio. */
+  function cartelDeLaFecha(r) {
+    const Tt = T.tiempo, t = completarTiempo(gameState), f = fechaDe(t.dia);
+    const texto = Tt.cartel(Tt.fecha(f.dia, Tt.meses[f.mes]), Tt.partes[TIEMPO.partes[t.parte]]);
+    const w = Math.ceil(r.medir(texto)) + 18, h = 16, x = Math.round(r.width / 2 - w / 2);
+    papel(r, x, 3, w, h);
+    r.text(texto, r.width / 2, 3 + h / 2 + 0.5, TINTAS.TINTA, 'center', { halo: null });
+  }
+
+  /**
+   * 📅 LA CARPA: descansar hasta la próxima parte del día, dormir hasta la mañana, o esperar varios días. Abajo de la
+   * pregunta, lo que va a pasar en esos días (quién se cura), para decidir si esperar.
+   */
+  function abrirCarpa() {
+    const Tt = T.tiempo, K = Tt.carpa, t = completarTiempo(gameState);
+    const siguiente = (t.parte + 1) % TIEMPO.partes.length;
+    const opciones = [{ id: 'descansar', texto: K.descansar(Tt.partesMin[TIEMPO.partes[siguiente]]) }];
+    // (Si la próxima ya es la mañana, "dormir hasta la mañana" sería lo mismo.)
+    if (siguiente !== 0) opciones.push({ id: 'dormir', texto: K.dormir });
+    opciones.push({ id: 'esperar', texto: K.esperar }, { id: 'nada', texto: K.nada });
+    mensaje = null;
+    menu.abrir(K.titulo, opciones, (op) => {
+      if (op === 'descansar') dejarPasar(1);
+      else if (op === 'dormir') dejarPasar(partesHasta(gameState, 0));
+      else if (op === 'esperar') { abrirEsperar(); return true; }
+      return false;
+    }, K.cuerpo + '\n' + resumenDeLoQueViene(Math.max(...TIEMPO.esperarDias)));
+  }
+
+  function abrirEsperar() {
+    const Tt = T.tiempo, K = Tt.carpa, t = gameState.tiempo;
+    const opciones = TIEMPO.esperarDias.map((n) => {
+      const f = fechaDe(t.dia + n);
+      return { id: String(n), texto: K.dias(n, Tt.fecha(f.dia, Tt.meses[f.mes])) };
+    });
+    opciones.push({ id: 'no', texto: K.volver });
+    menu.abrir(K.esperarTitulo, opciones, (op) => {
+      if (op !== 'no') dejarPasar(partesDeDias(Number(op)));
+      return false;
+    }, resumenDeLoQueViene(Math.max(...TIEMPO.esperarDias)));
+  }
+
+  /** "Lo que viene:" y abajo, un renglón por cosa: "10 de agosto: Tommy se cura" (o que no hay nada marcado). */
+  function resumenDeLoQueViene(dias) {
+    const Tt = T.tiempo, lista = loQueViene(gameState, dias);
+    if (!lista.length) return Tt.carpa.vieneNada;
+    return Tt.carpa.viene + '\n' + lista.map((x) => {
+      const f = fechaDe(x.dia);
+      return `${Tt.fecha(f.dia, Tt.meses[f.mes])}: ${x.que === 'jmc' ? Tt.jmc : Tt.secura(MIEMBRO[x.quien].corto)}`;
+    }).join('\n');
+  }
+
+  /** Deja pasar el tiempo y cuenta cómo quedó: el día, la parte del día y quién se curó. */
+  function dejarPasar(partes) {
+    const { curados } = pasar(gameState, partes);
+    const Tt = T.tiempo, t = gameState.tiempo, f = fechaDe(t.dia);
+    let texto = Tt.ahora(Tt.fecha(f.dia, Tt.meses[f.mes]), Tt.partesMin[TIEMPO.partes[t.parte]]);
+    for (const id of curados) texto += ' ' + Tt.curado(MIEMBRO[id].corto);
+    // (🙂 Y lo que pasó mientras: quién volvió de practicar, quién aprendió o perdió algo.)
+    const noticias = sacarNoticias();
+    // ✉️ (Si caíste en la noche de J.Mc.)
+    if (revisarEncargo(gameState) === 'entrega') noticias.push(T.camp.momentos.esLaNoche);
+    avisar([texto, ...noticias]);
+    audio.play('cover');
+  }
+
+  /** 📋 La ficha: los de la banda que siguen con vos, en el orden de siempre. */
+  function abrirFicha(i = 0) {
+    const ids = BANDA.map((m) => m.id).filter((id) => gameState.banda && gameState.banda[id] && gameState.banda[id].esta);
+    mensaje = null;
+    return ficha.abrir(ids, i, figuraDe);
+  }
+
+  function abrirMomento(quien) {
+    const p = gameState.campamento && pendienteDe(gameState, quien);
+    if (!p) return false;
+    const M = T.camp.momentos;
+    if (p.id === 'aviso') {
+      menu.abrir(MIEMBRO[quien].corto, [{ id: 'ok', texto: M.aviso.ok }], () => { elegir(gameState, p, 'ok'); return false; }, M.aviso[quien], { figuras: [figuraDe(quien)].filter(Boolean) });
+      return true;
+    }
+    const textos = M[p.id];
+    // (🎭 Algunos dependen de quién lo trae: el herido, el de los caballos.)
+    const nombre = MIEMBRO[p.quien] ? MIEMBRO[p.quien].corto : '';
+    const segun = (v) => (typeof v === 'function' ? v(nombre) : v);
+    // (🗣️ El humor con que lo agarras, antes de elegir: lo que contesta depende de eso.)
+    const elQueHabla = gameState.banda && gameState.banda[p.quien];
+    const humorAntes = elQueHabla ? palabraDeHumor(elQueHabla.humor) : 'tranquilo';
+    // (🎭 Lo que hay que pagar entero, como el médico, no se ofrece si no te alcanza.)
+    const opciones = opcionesDelMomento(p.id, gameState).filter((op) => !op.pagoEntero || gameState.money >= op.dinero).map((op) => {
+      const t = textos.opciones[op.id];
+      return { id: op.id, texto: typeof t === 'function' ? t(Math.min(op.dinero || 0, gameState.money)) : t };
+    });
+    const figuras = figurasDelMomento(p);
+    menu.abrir(segun(textos.titulo), opciones, (opId) => {
+      const r = elegir(gameState, p, opId);
+      const lineas = [segun(porHumor(textos.resultado[opId], humorAntes))];
+      if (r.dinero) lineas.push(M.pagaste(r.dinero));
+      // 🗞️ (Lo que contó el forastero, que ya quedó en el horario.)
+      if (r.rumor) lineas.push(contarRumor('forastero', r.rumor));
+      for (const c of r.cambios) lineas.push(M.cambio(MIEMBRO[c.id].corto, T.camp.banda.palabras[c.palabra]));
+      // 📒 Lo que anotó cada uno en su libreta (todo lo que cuenta se ve, con su motivo).
+      for (const a of r.anotes || []) lineas.push(T.libreta.anota(MIEMBRO[a.id].corto, a.lado, motivoDeLibreta(a.motivo, a.lado), a.veces));
+      for (const c of r.humores || []) lineas.push(M.cambioHumor(MIEMBRO[c.id].corto, T.camp.banda.humor[c.humor]));
+      // (Se abre otro encima: `true` deja abierto el nuevo.)
+      // (🏁 Si con esto terminó la partida, al seguir viene el final.)
+      menu.abrir(segun(textos.titulo), [{ id: 'seguir', texto: M.seguir }], () => {
+        if (!gameState.finDelJuego) return false;
+        abrirFin();
+        return true;
+      }, lineas.join('\n'), { figuras });
+      return true;
+    }, segun(textos.texto), { figuras });
+    return true;
+  }
+
+  /**
+   * 🏁 EL FINAL *(Santi: "que se quede ahí el juego. O sea, es el único final por ahora")*: le diste a J.Mc. lo que
+   * pedía. No se cierra: la única salida es empezar de nuevo.
+   */
+  function abrirFin() {
+    const F = T.camp.momentos.fin;
+    menu.abrir(F.titulo, [{ id: 'otra', texto: F.otra }], () => {
+      resetGame();
+      scenes.goTo('camp');
+      return false;
+    }, F.texto, {});
+  }
+
+  /**
+   * 🗣️ Lo que contesta según el humor (VOCES.md: "dos o tres respuestas según el humor con que lo agarras"): un texto
+   * suelto vale para todos; si no, `contento`, `tranquilo`, y `mal` para de malas y furioso.
+   */
+  /** 📒 El texto de una línea de la libreta. */
+  function motivoDeLibreta(motivo, lado) {
+    const L = T.libreta.motivos, m = L[motivo];
+    const t = m && (typeof m === 'string' ? m : m[lado === 'borra' ? 'q' : lado]);
+    return t || (lado === 'f' ? L.otroFavor : L.otraQueja);
+  }
+
+  function porHumor(v, humor) {
+    if (!v || typeof v !== 'object') return v;
+    const mal = humor === 'deMalas' || humor === 'furioso';
+    return v[humor] ?? (mal ? v.mal : null) ?? v.tranquilo;
+  }
+
+  /**
+   * 🗣️ "¿CÓMO ESTÁS?" (VOCES.md: "contesta con su humor y con lo que le pasó hace poco"). Lo fuerte que le pasó en los
+   * últimos días va primero (la cárcel, una herida, lo que le diste o le negaste); si no, su humor de hoy.
+   */
+  function comoEsta(id, e) {
+    const C = T.camp.banda.comoEsta[id], h = palabraDeHumor(e.humor), lealtad = palabraDe(e);
+    const fue = (que, dias = 3) => lePaso(gameState, e, que, dias);
+    let k = null;
+    if (fue('fianza')) k = 'fianza';
+    else if (id === 'santiago') {
+      k = e.herido ? 'herido' : fue('miParte:dar') || fue('miParte:trato') ? 'miParte' : fue('mexico:dar', 4) && h !== 'furioso' ? 'mexico' : null;
+    } else if (id === 'frank') {
+      // (La única vez que nombra a su esposa: muy firme contigo y de malas. Una sola vez en la partida.)
+      if (lealtad === 'firme' && h === 'deMalas' && !e.dijoEsposa) { k = 'esposa'; e.dijoEsposa = true; }
+      else k = e.herido ? 'herido' : fue('botella:quitar', 2) ? 'botella' : e.resaca && h === 'tranquilo' ? 'resaca' : null;
+    } else if (id === 'tommy') {
+      k = fue('adelanteCumplido') ? 'adelante' : fue('civilesHonorable', 4) ? 'civiles' : e.herido ? 'herido' : null;
+    }
+    return (k && C[k]) || C[h];
+  }
+
+  /** 🃏 La mano de cartas con Frank: el resultado, y a quién le cambió el humor. */
+  function abrirMano(id, figuras) {
+    const B = T.camp.banda, M = T.camp.momentos;
+    const r = jugarUnaMano(gameState, id);
+    const lineas = [B.manoTexto, r.gano ? B.manoGana : B.manoPierde];
+    for (const c of r.humores) lineas.push(M.cambioHumor(MIEMBRO[c.id].corto, B.humor[c.humor]));
+    if (r.baraja && T.camp.noticias[r.baraja]) lineas.push(T.camp.noticias[r.baraja](MIEMBRO[id].corto, T.rasgos.baraja));
+    audio.play('cover');
+    menu.abrir(MIEMBRO[id].corto, [{ id: 'seguir', texto: M.seguir }], () => false, lineas.join('\n'), { figuras });
+  }
+
+  function abrirCharla(id) {
+    const m = MIEMBRO[id], estado = gameState.banda[id];
+    const palabra = palabraDe(estado);
+    const B = T.camp.banda;
+    // (📜 En el papel: su nombre, lo que te dice al verte, y lo que contesta, en el mismo papel.)
+    const figuras = [figuraDe(id)].filter(Boolean);
+    // 🎯 Mandarlo a practicar: si no está herido ni practicando ya.
+    const puedePracticar = !estado.herido && !estado.practica;
+    // 🕵️ Mandarlo a mirar un tren: igual que practicar, y si hay alguno que se pueda mirar.
+    const puedeEspiar = puedePracticar && espiables(gameState, PARTES_DE_PRACTICA, trenesMirados(gameState)).length > 0;
+    // 🃏 Una mano de cartas: con el que es Bueno con la baraja, si está aquí y no jugó hoy.
+    const puedeMano = tiene(estado, 'baraja') && !estado.practica && estado.manoDia !== (gameState.tiempo ? gameState.tiempo.dia : 0);
+    menu.abrir(m.corto, [
+      { id: 'como', texto: B.comoAndas },
+      ...(puedePracticar ? [{ id: 'practicar', texto: B.practicar }] : []),
+      ...(puedeEspiar ? [{ id: 'espiar', texto: B.espiar }] : []),
+      ...(puedeMano ? [{ id: 'mano', texto: B.mano }] : []),
+      { id: 'nada', texto: B.nada },
+    ], (op) => {
+      if (op === 'practicar') { abrirPractica(id, figuras); return true; }
+      if (op === 'espiar') { abrirEspia(id, figuras); return true; }
+      if (op === 'mano') { abrirMano(id, figuras); return true; }
+      if (op !== 'como') return false;
+      const dice = comoEsta(id, estado) + (estado.herido ? ' ' + B.herido : '')
+        + (estado.practica ? ' ' + (estado.practica.espia ? B.espiando : B.practicando(T.rasgos[estado.practica.hab])) : '');
+      menu.abrir(m.corto, [{ id: 'seguir', texto: T.camp.momentos.seguir }], () => false, dice, { figuras });
+      return true;
+    }, B.saludo[id][palabra][palabraDeHumor(estado.humor)], { figuras });
+  }
+
+  /**
+   * 🎯 QUÉ PRACTICA *(Santi eligió "la A"; "el NPC se toma el día completo")*: se va el día entero desde ahora, y a la
+   * noche descansa en el campamento. Al volver cuenta un tercio de un uso de verdad. Sólo hablado: las latas y lo demás
+   * se dibujan después.
+   */
+  function abrirPractica(id, figuras) {
+    const m = MIEMBRO[id], e = gameState.banda[id], B = T.camp.banda;
+    const opciones = PRACTICABLES.map((hab) => {
+      const h = e.habilidades && e.habilidades[hab];
+      return { id: hab, texto: B.practicarOpcion(T.rasgos[hab], !!(h && h.tiene), !!(h && h.estrella)) };
+    });
+    opciones.push({ id: 'no', texto: B.practicarVolver });
+    menu.abrir(B.practicarTitulo(m.corto), opciones, (hab) => {
+      if (hab === 'no') return false;
+      mandarAPracticar(gameState, id, hab);
+      decir(B.seVaAPracticar(m.corto, T.rasgos[hab]), 3.5);
+      audio.play('cover');
+      return false;
+    }, B.practicarCuerpo, { figuras });
+  }
+
+  /**
+   * 🕵️ QUÉ TREN VA A MIRAR (etapa C, BRUJULA: "Mandar a uno de la banda a mirarlo"): los que sabés y todavía no viste,
+   * si vuelve antes de que pasen. Se va el día entero, como a practicar; a la noche cuenta lo que vio
+   * (`volvioElEspia` en systems/horario.js, y `informeDelEspia` acá).
+   */
+  function abrirEspia(id, figuras) {
+    const m = MIEMBRO[id], B = T.camp.banda, Tm = T.mapa, R = T.rumores;
+    const trenes = espiables(gameState, PARTES_DE_PRACTICA, trenesMirados(gameState)).slice(0, 5);
+    const opciones = trenes.map((t) => {
+      const f = fechaDe(t.dia);
+      const cuando = t.sabes === 'rumor' ? Tm.dia(T.tiempo.semanaLarga[f.semana], f.dia)
+        : `${Tm.dia(T.tiempo.semanaLarga[f.semana], f.dia)}, ${T.tiempo.partesMin[TIEMPO.partes[t.parte]].toUpperCase()}`;
+      return { id: String(t.id), texto: `${cuando} · ${t.tipoTren.short}${t.sabes === 'rumor' ? ' · ' + Tm.rumor : ''} · ${R.vias[t.ruta] || t.ruta}` };
+    });
+    opciones.push({ id: 'no', texto: B.practicarVolver });
+    menu.abrir(B.espiarTitulo(m.corto), opciones, (op) => {
+      if (op === 'no') return false;
+      const tren = trenes.find((t) => String(t.id) === op);
+      mandarAEspiar(gameState, id, tren.id);
+      decir(B.seVaAEspiar(m.corto, R.vias[tren.ruta] || tren.ruta), 3.5);
+      audio.play('cover');
+      return false;
+    }, B.espiarCuerpo, { figuras });
+  }
+
+  /** 🕵️ Lo que cuenta el que volvió de mirar un tren, en palabras. */
+  function informeDelEspia(id, tren, que) {
+    const E = T.espia, R = T.rumores, nombre = MIEMBRO[id] ? MIEMBRO[id].corto : id;
+    const via = R.vias[tren.ruta] || tren.ruta;
+    if (que === 'falso') return E.falso(nombre, via);
+    if (que === 'tarde') return E.tarde(nombre);
+    const f = fechaDe(tren.dia);
+    // (De un rumor sigue sin saberse la parte del día: sólo el día.)
+    const cuando = `${R.dias[f.semana]} ${f.dia}` + (tren.sabes === 'rumor' ? '' : ` a la ${T.tiempo.partesMin[TIEMPO.partes[tren.parte]]}`);
+    let texto = E.basico(nombre, cuando, via, E.tipos[tren.tipoTren.id] || tren.tipoTren.short, E.especiales[tren.especial] || '');
+    // (El maletín, sólo si J.Mc. lo está esperando y todavía no lo tenés.)
+    const lleva = tren.maletinEn && encargoAbierto(gameState) && !tieneMaletin(gameState);
+    if (tren.visto !== 'completo') return texto + (lleva ? E.maletinVa : '');
+    const lista = tren.composicion.map((w) => E.vagones[w] || w);
+    texto += E.completo(lista, tren.dificultad.short.toLowerCase());
+    if (tren.cajaGordaEn) { const w = tren.composicion[tren.cajaGordaEn - 1]; texto += E.caja(tren.cajaGordaEn, E.vagones[w] || w); }
+    if (lleva) {
+      const w = tren.composicion[tren.maletinEn - 1];
+      const donde = (T.ambiente.escondites[(ESCONDITES_DEL_MALETIN[w] || [])[0]] || '').toLowerCase();
+      texto += E.maletin(tren.maletinEn, E.vagones[w] || w, donde);
+    }
+    return texto;
+  }
+
   // ----------------------------------------------------------------- sonido
 
   /**
@@ -337,6 +800,14 @@ export function createCampScene(services) {
 
     // Con el cajón abierto no caminás: tenés las dos manos adentro.
     if (menu.update(input)) return;
+    // 🏁 (Terminada la partida, el final no se puede cerrar.)
+    if (gameState.finDelJuego) { abrirFin(); return; }
+    // 📋 Con la ficha abierta, tampoco.
+    if (ficha.update(input)) return;
+    if (input.wasPressed('Tab') && abrirFicha()) return;
+    // 📅 El calendario, igual.
+    if (calendario.update(input)) return;
+    if (input.wasPressed('KeyC') && calendario.abrir()) return;
 
     // 🗑️ El atajo [1] al techo con jinetes ya no existe *(Santi: "quiero que
     // borres el atajo al techo")*.
@@ -476,6 +947,8 @@ export function createCampScene(services) {
     if (o && o.id === 'poste' && input.wasPressed('KeyF')) {
       decir(T.camp.posteMontar, 1.0);
       audio.play('escape');
+      // 📅 Ir al pueblo gasta una parte del día.
+      pasar(gameState, TIEMPO.cuesta.pueblo);
       scenes.goTo('town');
     }
   }
@@ -505,6 +978,7 @@ export function createCampScene(services) {
     cajon: { x1: -14, x2: 14, y1: -8, y2: 2 },
     poste: { x1: -24, x2: 24, y1: -4, y2: 4 },    // el palenque y el caballo
     cartel: { x1: -16, x2: 16, y1: -13, y2: 2 },
+    companero: { x1: -4, x2: 4, y1: -3, y2: 2 },
     fogata: { radio: 13 },
   };
   /** Lo que ocupa el jugador alrededor de sus pies. */
@@ -626,11 +1100,13 @@ export function createCampScene(services) {
     const ox = Math.round(o.x / PASO) * PASO, oy = Math.round(yCentrado / PASO) * PASO;
     origenNuevo = { x: ox, y: oy };
     const fog = objetosEnMundo().find((z) => z.id === 'fogata');
-    const fuego = { x: fog.x, y: alPiso(fog.y) };
+    // (🔁 Un cielo y una arena por cada parte del día; en la madrugada, la fogata en brasas *(Santi: "brasas en la madrugada")*.)
+    const parte = gameState.tiempo?.parte ?? null;
+    const fuego = { x: fog.x, y: alPiso(fog.y), brasas: parte === 3 };
     const cuadro = Math.floor(scroll * 10) % 8, pulso = dibujoNuevo.pulsoEn(scroll);
     r.clear('#000');
     dibujoNuevo.dibujarFondoCampamento(ctx, {
-      ancho: r.width, alto: r.height, ox, oy, hy: horizonte(), dia, fuego, pulso, t: scroll,
+      ancho: r.width, alto: r.height, ox, oy, hy: horizonte(), dia, fuego, pulso, t: scroll, parte,
       claro: { x: c.x, y: alPiso(c.y), radio: CAMPAMENTO.radio + 16 },
     });
     ctx.save();
@@ -646,7 +1122,9 @@ export function createCampScene(services) {
         else if (z.id === 'roca' || z.id === 'cactus' || z.id === 'algarrobo') dibujoNuevo.dibujarDelGalope(ctx, z.id, z.x, py, dia);
         else if (z.id === 'poste') {
           dibujoNuevo.dibujarCaballoAtado(ctx, z.x - 27, py, dia, fuego, scroll, caballoActual(gameState).id);
-        } else dibujoNuevo.dibujarCosa(ctx, z.id, z.x, py, dia, fuego, pulso);
+        } else if (z.miembro) dibujarMiembroNuevo(r, z, fog, luzAca);
+        else if (z.id === 'forastero') dibujarMiembroNuevo(r, z, fog, luzAca, ASPECTO_FORASTERO);
+        else dibujoNuevo.dibujarCosa(ctx, z.id, z.x, py, dia, fuego, pulso);
       },
     })).concat([{ y, pinta: () => dibujarJugadorNuevo(r, luzAca) }]);
     cosas.sort((a, b) => a.y - b.y);
@@ -656,6 +1134,8 @@ export function createCampScene(services) {
     estiloNuevo.luzEn = null;
     dibujarInterfaz(r);
     menu.render(r, colors, T.interior.dialogoAyuda);
+    ficha.render(r, gameState.banda);
+    calendario.render(r, gameState);
   }
 
   /** Vos: el mismo del tren, con tus 8 direcciones. Sentado, de perfil sobre el tronco, mirando el fuego. */
@@ -672,6 +1152,21 @@ export function createCampScene(services) {
       fase: sentado ? null : faseDeAndar(yo),
       modo: 'caminar',
       panuelo: true,
+    });
+  }
+
+  /**
+   * 🤠 Uno de la banda, parado alrededor del fuego y mirándolo: la gente del tren con su aspecto fijo (data/banda.js),
+   * con el revólver en la funda. Si estás cerca, te mira a vos.
+   */
+  function dibujarMiembroNuevo(r, z, fog, luzAca, aspecto = MIEMBRO[z.id].aspecto) {
+    const py = alPiso(z.y);
+    dibujoNuevo.dibujarSombraDePies(r.ctx, z.x, py, luzAca(z.x, py));
+    const cerca = Math.hypot(x - z.x, y - z.y) < z.alcance + 10;
+    const a = cerca ? Math.atan2(y - z.y, x - z.x) : Math.atan2(fog.y - z.y, fog.x - z.x);
+    dibujarPersona(r, {
+      tipo: 'pasajero', interior: true, x: z.x, pies: py, angulo: a,
+      nuevo: { arma: null, funda: true, aspecto, piernas: 'quieto' },
     });
   }
 
@@ -708,6 +1203,8 @@ export function createCampScene(services) {
     // Encima de todo, pero sin tapar el campamento: seguís parado al lado de
     // tu fogata mientras elegís.
     menu.render(r, colors, T.interior.dialogoAyuda);
+    ficha.render(r, gameState.banda);
+    calendario.render(r, gameState);
   }
 
   function dibujarObjeto(r, z, dia) {
@@ -1206,7 +1703,9 @@ export function createCampScene(services) {
   }
 
   function dibujarInterfaz(r) {
-    r.text(T.camp.title, r.width / 2, 12, colors.text);
+    // 📅 🔁 Arriba, en vez del título, un cartelito de papel con el día y la parte del día *(Santi: "un cartelito
+    // arriba en el campamento que dice el día y el mes")*.
+    cartelDeLaFecha(r);
     // 🧪 El atajo de prueba del techo (ver `update`). Sacarlo con él.
     r.text(T.camp.atajoCorreo, 8, 26, colors.textDim, 'left');
     r.text(`$${gameState.money}`, r.width - 8, 12, colors.bagLoot, 'right');
@@ -1216,13 +1715,15 @@ export function createCampScene(services) {
 
     // El cartel de qué va a hacer [E], sobre tu cabeza. Mismo lenguaje que el
     // asalto: el juego siempre te dice cuál de las acciones va a pasar.
-    const o = objetoCerca();
+    // (Con una ventana abierta, el cartel no: quedaba pisando el título.)
+    const o = menu.activo() ? null : objetoCerca();
     if (o) {
       const texto = o.id === 'fogata' && sentado ? T.camp.prompts.fogataDe
         // La carpa dice A QUÉ hora vas a despertarte, no sólo "dormir": así la
         // decisión se toma antes de apretar, no después de ver el resultado.
         : o.id === 'carpa'
           ? (gameState.esDeDia ? T.camp.prompts.carpaDia : T.camp.prompts.carpaNoche)
+          : o.miembro ? T.camp.prompts.miembro(MIEMBRO[o.id].corto)
           : T.camp.prompts[o.id];
       // Sobre tu cabeza, así que corrido igual que el claro (ver `render`).
       const c = estiloNuevo.activo ? origenNuevo : r.centro;
@@ -1235,9 +1736,23 @@ export function createCampScene(services) {
       if (o.id === 'poste') r.text(T.camp.prompts.posteF, x + c.x, yTexto - 10, colors.bagLoot);
     }
 
+    /**
+     * 🔥 EL "!" SOBRE QUIEN TRAE UN MOMENTO (o sobre la carta): así sabés a quién ir a hablarle. Se va cuando lo
+     * atendés.
+     */
+    if (estiloNuevo.activo && gameState.campamento) {
+      const c = origenNuevo;
+      for (const p of gameState.campamento.pendientes) {
+        const z = objetosEnMundo().find((ob) => ob.id === p.quien);
+        if (!z) continue;
+        const arriba = z.id === 'carta' ? 12 : 34;
+        r.text('!', z.x + c.x, alPiso(z.y) + c.y - arriba, colors.bagLoot, 'center', { tam: 16 });
+      }
+    }
+
     if (mensaje) r.text(mensaje.texto, r.width / 2, r.height - 30, colors.text);
     else if (avisoLejos > 0) r.text(T.camp.lejos, r.width / 2, r.height - 30, colors.textDim);
-    else if (scroll < 9) r.text(T.camp.keys, r.width / 2, r.height - 14, colors.textDim);
+    else if (scroll < 9 && !menu.activo()) r.text(T.camp.keys, r.width / 2, r.height - 14, colors.textDim);
   }
 
   return { enter, exit, update, render };

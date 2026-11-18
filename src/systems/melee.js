@@ -58,7 +58,7 @@ export function playerMelee(p, world, yaEmpezado = false) {
     pa.alive = false;
     world.audio.play('takedown');
     world.bus.emit('impact', { x: pa.x, y: pa.y, kind: 'flesh' });
-    world.bus.emit('passengerKilled', { passenger: pa, byPlayer: true, silent: true });
+    world.bus.emit('passengerKilled', { passenger: pa, byPlayer: true, silent: true, delCompanero: !!p.esCompanero });
     world.bus.emit('noise', { x: pa.x, y: pa.y, radius: m.quietNoise });
     return;
   }
@@ -129,7 +129,7 @@ export function playerMelee(p, world, yaEmpezado = false) {
     world.audio.play('takedown');
     world.bus.emit('impact', { x: e.x, y: e.y, kind: 'flesh' });
     world.bus.emit('enemyKilled', {
-      enemy: e, byPlayer: true, silent: true, rendido: eraRendido, indefenso: eraNoqueado,
+      enemy: e, byPlayer: true, silent: true, rendido: eraRendido, indefenso: eraNoqueado, delCompanero: !!p.esCompanero,
     });
     world.bus.emit('noise', { x: e.x, y: e.y, radius: m.quietNoise });
     return;
@@ -155,7 +155,7 @@ export function playerMelee(p, world, yaEmpezado = false) {
 
   world.audio.play('melee');
   world.bus.emit('impact', { x: e.x, y: e.y, kind: 'flesh' });
-  if (died) world.bus.emit('enemyKilled', { enemy: e, byPlayer: true });
+  if (died) world.bus.emit('enemyKilled', { enemy: e, byPlayer: true, delCompanero: !!p.esCompanero });
   world.bus.emit('noise', { x: p.x, y: p.y, radius: m.loudNoise });
 }
 

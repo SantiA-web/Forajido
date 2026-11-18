@@ -139,7 +139,7 @@ export const WEAPONS = {
     noiseWagons: 0,
 
     price: 0,
-    hint: 'El que traés desde siempre. Seis balas y buena puntería.',
+    hint: 'El que traes desde siempre. Seis balas y buena puntería.',
   },
 
   /**

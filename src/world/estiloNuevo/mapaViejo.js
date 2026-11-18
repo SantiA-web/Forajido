@@ -30,6 +30,15 @@ export const COLOR_HALO = PALETA[37];
 export const CARTUCHO = { w: 180, h: 56 };
 /** Dónde va el cartucho, desde el origen del mapa. */
 export const cartuchoEn = () => ({ x: CONFIG.view.width - CARTUCHO.w - 8, y: CONFIG.view.height - CARTUCHO.h - 10 });
+/**
+ * 🎭 EL PLAN (quién va con los caballos y quién de pasajero): un recuadro chico a la izquierda del cartucho, alineado
+ * con su borde de abajo. Como el cartucho, viene impreso en el papel y limpio por dentro; las letras las pone mapScene.
+ * 🔁 Primero medía lo que midieran las letras y tapaba "San Cristóbal" y un cactus: ahora es angosto (el papel arriba,
+ * el nombre abajo) y fijo.
+ */
+// (🔁 56 → 94 de alto: cuatro papeles, con el telégrafo y el vigía.)
+export const PLAN = { w: 74, h: 94 };
+export const planEn = () => { const C = cartuchoEn(); return { x: C.x - PLAN.w - 6, y: C.y + CARTUCHO.h - PLAN.h }; };
 
 // ─────────────────────────── LOS DIBUJOS, A MANO ───────────────────────
 // (t tinta, s tinta suave, r sello rojo, p borra lo que haya abajo, . nada.)
@@ -239,6 +248,12 @@ function armar(W, H, ox, oy, luz) {
   for (let y = cy0; y <= cy1; y++) for (let x = cx0; x <= cx1; x++) pon(x, y, 0);
   for (let x = cx0; x <= cx1; x++) { pon(x, cy0, TINTA); pon(x, cy1, TINTA); pon(x, cy0 + 2, SUAVE); pon(x, cy1 - 2, SUAVE); }
   for (let y = cy0; y <= cy1; y++) { pon(cx0, y, TINTA); pon(cx1, y, TINTA); if (y >= cy0 + 2 && y <= cy1 - 2) { pon(cx0 + 2, y, SUAVE); pon(cx1 - 2, y, SUAVE); } }
+  // 🎭 El plan, igual: limpio por dentro y con marco doble.
+  const P = planEn();
+  const px0 = px(P.x), py0 = py(P.y), px1 = px(P.x + PLAN.w), py1 = py(P.y + PLAN.h);
+  for (let y = py0; y <= py1; y++) for (let x = px0; x <= px1; x++) pon(x, y, 0);
+  for (let x = px0; x <= px1; x++) { pon(x, py0, TINTA); pon(x, py1, TINTA); pon(x, py0 + 2, SUAVE); pon(x, py1 - 2, SUAVE); }
+  for (let y = py0; y <= py1; y++) { pon(px0, y, TINTA); pon(px1, y, TINTA); if (y >= py0 + 2 && y <= py1 - 2) { pon(px0 + 2, y, SUAVE); pon(px1 - 2, y, SUAVE); } }
 
   // ── El borde roto.
   const mordida = (t, lado) => {
@@ -257,7 +272,12 @@ function armar(W, H, ox, oy, luz) {
   // ── Lo gastado.
   const pliegueX = [L + Math.round(AN / 3), L + Math.round((2 * AN) / 3)], pliegueY = T + Math.round(AL / 2);
   // (Dónde se comen las vías, que van aparte: en la raya de cada doblez, uno de cada dos.)
+  // 🔁 Las vías van aparte y le pasaban por arriba al recuadro del plan (con cuatro papeles creció y la vía tapaba
+  // "[1] CABALLOS"): adentro del plan y del cartucho no se imprimen, como el resto, que está limpio por dentro.
+  const P0 = planEn(), C0 = cartuchoEn();
+  const enCaja = (ux, uy, c, m) => ux >= c.x - 1 && ux <= c.x + m.w + 1 && uy >= c.y - 1 && uy <= c.y + m.h + 1;
   cortes = (ux, uy) => {
+    if (enCaja(ux, uy, P0, PLAN) || enCaja(ux, uy, C0, CARTUCHO)) return true;
     const x = px(ux), y = py(uy);
     return (pliegueX.includes(x) || y === pliegueY) && azar(Math.round(ux * 2), Math.round(uy * 2)) < 0.5;
   };

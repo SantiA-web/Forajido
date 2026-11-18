@@ -12,6 +12,9 @@
 
 import { CONFIG } from '../data/config.js';
 import { BOSSES } from '../data/bosses.js';
+import { bandaInicial } from '../data/banda.js';
+import { tiempoInicial } from '../systems/tiempo.js';
+import { campamentoInicial } from '../data/momentos.js';
 
 export const SAVE_VERSION = 1;
 
@@ -44,6 +47,11 @@ export function createNewGame() {
      * solo, sin que nadie te lo explique.
      */
     esDeDia: false,
+    /**
+     * 📅 EL CALENDARIO (systems/tiempo.js): el día de la partida (0 = el 6 de agosto) y la parte del día (mañana, tarde,
+     * noche, madrugada). 🔁 Desde 2026-11-15 `esDeDia` sale de acá: mañana y tarde son de día.
+     */
+    tiempo: tiempoInicial(),
 
     // Progresión (todavía sin usar, pero el hueco ya está)
     weapon: 'colt',
@@ -54,6 +62,20 @@ export function createNewGame() {
      * data/melee.js.
      */
     melee: 'culata',
+    /**
+     * 🎭 LA FORMA DE SER DEL COMPAÑERO ('pasivo', 'agresivo' o 'ladron', ver `FORMAS` en systems/companero.js). Se la
+     * elegís en el campamento hablándole con [E]; en el asalto se cambia con [1] [2] [3] (eso no se guarda acá).
+     */
+    formaCompanero: 'pasivo',
+    /**
+     * 🤠 LA BANDA (ver data/banda.js y BRUJULA.md): de cada uno, su lealtad de 0 a 10 (no se muestra como número: se
+     * lee en palabras), si sigue con vos, si está herido y qué papel tiene en el próximo asalto. Lo que no cambia —quién es, cómo se ve— está en data/banda.js.
+     */
+    banda: bandaInicial(),
+    /** 🔥 Lo del campamento: las visitas, los momentos que ya pasaron y lo que espera (ver data/momentos.js). */
+    campamento: campamentoInicial(),
+    /** Lo del último asalto que le importa al campamento: cuánto trajiste (`recien`: todavía no pasó una visita). */
+    ultimoAsalto: null,
     skills: {},
     horse: null,
     gang: [],

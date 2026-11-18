@@ -22,10 +22,12 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { INTERIORES, PARED_ALTO } from '../data/interiors.js';
 import { gameState, numero } from '../state/gameState.js';
 import { crearMenu } from '../engine/menu.js';
 import { tasarLote } from '../data/perista.js';
+import { MIEMBRO, PLAN as PLAN_BANDA, presos, liberar } from '../data/banda.js';
 import { T } from '../text/es.js';
 import { dibujarPersona as dibujarGente, faseDeAndar, tono } from '../entities/figura.js';
 import { dibujarAnimal, ESCALA_PARADO } from '../entities/caballo.js';
@@ -106,6 +108,8 @@ export function createInteriorScene(services) {
       get mensaje() { return mensaje ? mensaje.lineas.join(" ") : null; },
       get puntos() { return def.puntos; },
       get dialogo() { return menu.activo(); },
+      /** Hablar con alguien sin ir caminando: para probar los diálogos. */
+      usar: (pid) => { const p = def.puntos.find((q) => q.id === pid); if (p) usar(p); return !!p; },
       get sala() { return def.sala; },
       get muebles() { return def.muebles; },
       /** Para depurar la colisión desde la consola sin adivinarla de nuevo. */
@@ -170,8 +174,25 @@ export function createInteriorScene(services) {
     menu.abrir(
       T.interior.preguntas[p.id] || '"¿Qué desea?"',
       p.dialogo.map((o) => ({ id: o.id, texto: T.interior.opciones[o.id] })),
-      (id) => { elegirOpcion(p, p.dialogo.find((o) => o.id === id)); return false; }
+      (id) => { elegirOpcion(p, p.dialogo.find((o) => o.id === id)); return false; },
+      null, { figuras: figurasDe(p) }
     );
+  }
+
+  /**
+   * 📜 EL QUE TE ATIENDE, en el papel del diálogo (engine/menu.js): parado de frente, con su ropa de siempre
+   * (`ROPA_DE`), aunque esté sentado detrás de la mesa.
+   */
+  function figurasDe(p) {
+    if (!p) return [];
+    return [(r, fx, pies) => dibujarGente(r, {
+      tipo: ROPA_DE[p.id] || 'pasajero', x: fx, pies, angulo: Math.PI / 2, postura: 'pie',
+    })];
+  }
+
+  /** El ayudante del sheriff, para ponerlo en el papel de la fianza y del cartel. */
+  function figurasDelAyudante() {
+    return figurasDe(def.puntos.find((p) => p.id === 'ayudante'));
   }
 
   /**
@@ -184,7 +205,9 @@ export function createInteriorScene(services) {
    * se rendía un guardia— tenga un precio.
    */
   function vender() {
-    const objetos = gameState.owned.objetos;
+    // (✉️ Lo de la historia, como el maletín de J.Mc., no se vende: se queda contigo.)
+    const todos = gameState.owned.objetos;
+    const objetos = todos.filter((o) => !o.historia);
     if (!objetos.length) {
       decir(T.interior.dichos.peristaVacio);
       audio.play('cover');
@@ -195,7 +218,9 @@ export function createInteriorScene(services) {
     gameState.money += numero(t.total, 'lo que te paga el perista');
     // `length = 0` y no una lista nueva: es el mismo array que mira el resto
     // del juego, igual que los arrays del mundo en el asalto.
-    objetos.length = 0;
+    const quedan = todos.filter((o) => o.historia);
+    todos.length = 0;
+    todos.push(...quedan);
 
     decir(T.interior.venta(t));
     audio.play('loot');
@@ -226,6 +251,9 @@ export function createInteriorScene(services) {
    */
   function hablarConElAyudante() {
     const recompensa = gameState.bounty;
+    // ⛓️ Si tenés a alguien de la banda preso, lo primero es eso.
+    const preso = presos(gameState.banda)[0];
+    if (preso) { pagarFianza(preso); return; }
     if (!(recompensa > 0)) {
       decir(T.interior.dichos.ayudante);
       audio.play('cover');
@@ -234,6 +262,7 @@ export function createInteriorScene(services) {
     const precio = Math.round(recompensa * CONFIG.bounty.precioLimpiar);
     const A = T.interior.ayudante;
     mensaje = null;
+    const figuras = figurasDelAyudante();
     menu.abrir(A.pregunta(precio), [
       { id: 'limpiar', texto: A.limpiar(precio) },
       { id: 'nada', texto: T.interior.opciones.nada },
@@ -259,9 +288,32 @@ export function createInteriorScene(services) {
         decir(A.pagado(precio), 4);
         audio.play('loot');
         return false;
-      });
+      }, null, { figuras });
       return true;
-    });
+    }, null, { figuras });
+  }
+
+  /**
+   * ⛓️ LA FIANZA *(Santi: "para sacarlo tenés que pagar su precio en el sheriff")*: `PLAN.fianza` (data/banda.js), toda
+   * junta. Vuelve al campamento enojado (`liberar`), y allá te lo dice.
+   */
+  function pagarFianza(id) {
+    const A = T.interior.ayudante, nombre = MIEMBRO[id].corto, precio = PLAN_BANDA.fianza;
+    mensaje = null;
+    menu.abrir(A.fianzaPregunta(nombre, precio), [
+      { id: 'pagar', texto: A.fianza(nombre, precio) },
+      { id: 'nada', texto: T.interior.opciones.nada },
+    ], (op) => {
+      if (op !== 'pagar') { decir(A.fianzaNada(nombre)); audio.play('cover'); return false; }
+      if (gameState.money < precio) { decir(A.falta(precio, precio - gameState.money)); audio.play('cover'); return false; }
+      gameState.money -= precio;
+      liberar(gameState.banda, id, gameState.tiempo ? gameState.tiempo.dia : 0);
+      const C = gameState.campamento;
+      if (C) (C.noticias = C.noticias || []).push('volvio:' + id);
+      decir(A.fianzaPagada(nombre), 4);
+      audio.play('loot');
+      return false;
+    }, null, { figuras: figurasDelAyudante() });
   }
 
   function usar(p) {
@@ -386,7 +438,8 @@ export function createInteriorScene(services) {
 
   function render(r) {
     // Esta escena está armada para CONFIG.view: usa la lupa que le entre.
-    r.escenaFija();
+    // (🔁 En el estilo nuevo, con el punto en píxeles enteros: ver `escenaEntera`.)
+    if (estiloNuevo.activo) r.escenaEntera(); else r.escenaFija();
     r.clear('#120d0b');
     /**
      * EL CUARTO VA CENTRADO: está armado para `CONFIG.view` (ver

@@ -628,7 +628,9 @@ function jineteDeCostado(r, montura, ropa) {
   montura.tapa = (montura.chico ? tapaChico : tapa) || null;
   const luz = montura.noche ? -1 : 0;
   // 🆕 El jinete de la ley: un guardia, con su aspecto sorteado y guardado en él (`ropa.ent`).
-  const gente = ropa.detalles === 'ley' ? { aspecto: aspectoDe(ropa.ent || montura, 'guardia'), tipo: 'guardia', ...apuntaDe(ropa, vista) } : null;
+  // 🎭 Y el de la banda (la huida): con su aspecto (`ropa.aspecto`), vestido como en el campamento.
+  const gente = ropa.detalles === 'ley' ? { aspecto: aspectoDe(ropa.ent || montura, 'guardia'), tipo: 'guardia', ...apuntaDe(ropa, vista) }
+    : ropa.detalles === 'banda' ? { aspecto: ropa.aspecto, tipo: 'pasajero', ...apuntaDe(ropa, vista) } : null;
   if (montura.chico) {
     const persona = jineteChico(r, { x: ox, y: oy, luz, destello: ropa.destello, vista, gente, apunta: ropa.apuntaChico ?? null, lazo: !!ropa.lazo, revolea: !!ropa.revolea, lanza: !!ropa.lanza, tiraSoga: !!ropa.tiraSoga, armaLarga: ropa.armaLarga ?? null });
     // (Tirando, las riendas quedan sueltas: no hay mano que las lleve.)
@@ -645,11 +647,12 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
   const quien = ropa.detalles || 'jugador';
   // 🎨 Lo que ya está dibujado: el jugador, sin arma en la mano y de costado. El resto, con el dibujo viejo hasta que llegue.
   // 🆕 Y el de la ley: con el rifle en la funda, o apuntando con `empuna` (E4). En la huida, apuntando, el viejo.
-  const leyEnfundado = quien === 'ley' && (ropa.empuna != null || (!ropa.apunta && ropa.arma !== 'rifleListo'));
+  const deRifle = quien === 'ley' || quien === 'banda';
+  const leyEnfundado = deRifle && (ropa.empuna != null || (!ropa.apunta && ropa.arma !== 'rifleListo'));
   // 🆕 Y vos tirando desde el caballo chico (la huida), con `apuntaChico`: el torso que se da vuelta en la silla.
   const yoTirandoChico = quien === 'jugador' && ropa.arma && montura && montura.chico && ropa.apuntaChico != null;
   // 🆕 Y el de la ley chico apuntando con el rifle (la huida), también con `apuntaChico`.
-  const leyApuntaChico = quien === 'ley' && montura && montura.chico && ropa.apuntaChico != null;
+  const leyApuntaChico = deRifle && montura && montura.chico && ropa.apuntaChico != null;
   if (estiloNuevo.activo && r.ctx && !r.plano && montura && montura.origen && hayJineteNuevo(montura) && ((quien === 'jugador' && !ropa.arma) || yoTirandoChico || leyApuntaChico || leyEnfundado)) return jineteDeCostado(r, montura, ropa);
   /**
    * 🔻 LA VISTA LA MANDA EL CABALLO *(Santi: "hay veces que el caballo no cambia

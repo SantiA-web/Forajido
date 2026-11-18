@@ -286,7 +286,7 @@ export function updateBullets(bullets, dt, world) {
         pa.hitFlash = 0.12;
         hitCivilian = true;
         world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
-        world.bus.emit('passengerKilled', { passenger: pa, byPlayer: b.owner === 'player' });
+        world.bus.emit('passengerKilled', { passenger: pa, byPlayer: b.owner === 'player', delCompanero: b.delCompanero });
         break;
       }
       if (hitCivilian) break;
@@ -308,7 +308,7 @@ export function updateBullets(bullets, dt, world) {
         const died = damageEnemy(e, puntos, b.x - b.vx, b.y - b.vy);
         if (!died && zona === 'piernas') pegarEnLaPierna(e, world);
         world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona, puntos, queria: b.zonaElegida ? b.zona : null, deJugador: b.owner === 'player', apuntada: b.zonaElegida, victima: e, porGuardia: b.owner === 'enemy' ? (b.tirador || null) : undefined });
-        if (died) world.bus.emit('enemyKilled', { enemy: e, byPlayer: b.owner === 'player' });
+        if (died) world.bus.emit('enemyKilled', { enemy: e, byPlayer: b.owner === 'player', delCompanero: b.delCompanero });
         break;
       }
       if (hitEnemy) break;
@@ -323,10 +323,34 @@ export function updateBullets(bullets, dt, world) {
           hitRider = true;
           const murio = damageRider(rd, b.damage);
           world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona: b.zona, deJugador: b.owner === 'player', apuntada: b.zonaElegida });
-          if (murio) world.bus.emit('riderKilled', { rider: rd });
+          if (murio) world.bus.emit('riderKilled', { rider: rd, delCompanero: b.delCompanero });
           break;
         }
         if (hitRider) break;
+      }
+
+      /**
+       * 🤝 Y AL COMPAÑERO (systems/companero.js), con las mismas reglas que a vos: la cobertura baja, el que está
+       * agachado bajo la ventanilla. Avisa con `companeroHerido` y `companeroCae`, no con los tuyos.
+       * 🔁 CON LAS BALAS DE TODOS, NO SÓLO LAS DE LOS GUARDIAS *(Santi: "las balas de todas las armas debería hacerle
+       * daño, recuerda que también tiene vida")*: también las tuyas y las de los jinetes. Las suyas no.
+       */
+      const cp = world.companero;
+      if (b.alive && !b.delCompanero && cp && cp.alive && cp !== world.player && pointInBody(b.x, b.y, cp) && !(b.fromRider && isHidden(cp))) {
+        const defC = defensaBaja(world, b, cp, !!(cp.sneaking || isHidden(cp)));
+        if (defC !== 'encima') {
+          if (defC) { b.alive = false; world.bus.emit('impact', { x: defC.x, y: defC.y, kind: 'wall', zona: b.zona }); break; }
+          const { puntos, zona } = danioDeBala(b, cp, 'jugador', world.rng);
+          if (b.perdigon != null && cp.ultimoPerdigon === b.perdigon) cp.invuln = 0;
+          if (damagePlayer(cp, puntos, b.x - b.vx, b.y - b.vy)) {
+            if (b.perdigon != null) cp.ultimoPerdigon = b.perdigon;
+            b.alive = false;
+            world.bus.emit('impact', { x: b.x, y: yDeBala(b), kind: 'flesh', zona, puntos, tirador: b.tirador, deJugador: b.owner === 'player' });
+            world.bus.emit('companeroHerido', {});
+            if (!cp.alive) world.bus.emit('companeroCae', {});
+            break;
+          }
+        }
       }
 
       if (b.owner === 'enemy') {
@@ -375,6 +399,7 @@ export function updateBullets(bullets, dt, world) {
             if (!p.alive) world.bus.emit('playerDown', {});
           }
         }
+
       }
     }
   }

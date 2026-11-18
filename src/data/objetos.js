@@ -160,6 +160,17 @@ export const OBJETOS = {
   lingotes:    { id: 'lingotes',    nombre: 'Lingotes de plata',   nivel: 'raro',    slots: 4, forma: [2, 2], dibujo: 'lingotes' },
 };
 
+/**
+ * ✉️ EL MALETÍN DE J.Mc. No es mercadería: no sale en ningún sorteo, no vale nada para el perista (no lo compra:
+ * `historia`) y sólo lo esconde el tren de carga mientras el encargo está abierto (ver world/train.js).
+ */
+export function crearMaletin() {
+  return {
+    id: 'maletin', nombre: 'Maletín de cuero', nivel: 'historia', historia: true,
+    slots: 2, forma: [2, 1], dibujo: 'maletin', valor: 0,
+  };
+}
+
 /** Los ids de un nivel. Se calcula una vez y no en cada sorteo. */
 const POR_NIVEL = Object.values(OBJETOS).reduce((acc, o) => {
   (acc[o.nivel] = acc[o.nivel] || []).push(o.id);

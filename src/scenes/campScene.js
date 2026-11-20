@@ -35,6 +35,8 @@ import { gameState, resetGame } from '../state/gameState.js';
 import { crearMenu, papel, TINTAS } from '../engine/menu.js';
 import { crearFicha } from './ficha.js';
 import { crearCalendario } from './calendario.js';
+import { ponerTarea, proximoDiaLibre, paraMirarEl } from '../systems/pizarra.js';
+import { crearReparto } from './reparto.js';
 import { pasar, partesHasta, partesDeDias, completarTiempo, fechaDe, loQueViene } from '../systems/tiempo.js';
 import { TIEMPO } from '../data/tiempo.js';
 import { rumorDeCarga, rumorFalso } from '../systems/horario.js';
@@ -100,7 +102,10 @@ export function createCampScene(services) {
   // 📋 La ficha de cada uno de la banda, con [TAB] (scenes/ficha.js).
   const ficha = crearFicha(audio);
   // 📅 El calendario, con [C] (scenes/calendario.js).
-  const calendario = crearCalendario(audio);
+  // (📋 Con la pizarra adentro: abre sus menús en el de la escena, y hace pasar el tiempo como la carpa.)
+  const calendario = crearCalendario(audio, { menu, alPasar: (partes) => dejarPasar(partes) });
+  // 💰 El reparto, por cabeza: se abre solo al volver de un asalto con botín (scenes/reparto.js).
+  const reparto = crearReparto(audio);
   /**
    * HACIA DÓNDE MIRA, en radianes como en todo el juego. Antes no hacía falta
    * —eras una caja— y ahora sí: la persona tiene ocho direcciones y hay que
@@ -121,6 +126,8 @@ export function createCampScene(services) {
     completarAnimo(gameState.banda);
     // 📅 (Una partida de antes del calendario: arranca hoy.)
     completarTiempo(gameState);
+    // 📋 (Si un golpe terminó por otro lado —la cárcel—, ya no hay golpe en curso.)
+    if (gameState.campamento) gameState.campamento.golpeEnCurso = false;
     /**
      * 🔥 UNA VISITA NUEVA (al empezar, después de un asalto, al salir de la cárcel; ir al pueblo o al mapa y volver es
      * la misma): se va el que estaba en 0 y ya había avisado, y se elige el momento de esta visita (data/momentos.js).
@@ -129,7 +136,8 @@ export function createCampScene(services) {
     gameState.campamento = completarCampamento(gameState.campamento);
     const nueva = !params.desde || params.desde === 'asalto' || params.desde === 'prision';
     const seFueron = nueva && estiloNuevo.activo ? visitaNueva(gameState) : [];
-    if (nueva && estiloNuevo.activo && gameState.banda) traerRumores();
+    // (📋 Con la pizarra, los rumores los trae el que baja al pueblo: es una tarea, BANDA-NUEVA.md pregunta 13.)
+    if (nueva && estiloNuevo.activo && gameState.banda && !TIEMPO.pizarra.activo) traerRumores();
     // ✉️ (Y si es la noche de J.Mc., o si ya pasó y no estabas: la carta junto a la carpa.)
     const deJmc = estiloNuevo.activo ? revisarEncargo(gameState) : null;
     const c = CAMPAMENTO.centro;
@@ -174,6 +182,7 @@ export function createCampScene(services) {
       elegir: (id) => menu.elegirOpcion(id),
       get ficha() { return ficha.activa(); },
       abrirFicha: (i = 0) => abrirFicha(i),
+      get reparto() { return reparto.activa(); },
       /** Usar un objeto (o hablar con alguien) sin ir caminando: para probar los diálogos. */
       usar: (id) => { const o = objetosEnMundo().find((ob) => ob.id === id); if (o) usar(o); return !!o; },
     };
@@ -196,6 +205,16 @@ export function createCampScene(services) {
         const [, , trenId, que, ruta] = n.split(':');
         const tren = (gameState.horario && gameState.horario.trenes.find((t) => String(t.id) === trenId)) || { ruta, id: trenId };
         return que === 'visto' && !tren.composicion ? null : informeDelEspia(id, tren, que);
+      }
+      // 📋 (Lo que trajeron de las tareas del calendario: 'tarea:frank+santiago:cazar:6:3', ver systems/tareas.js.)
+      if (clave === 'tarea') {
+        const [, quienes, que, ...datos] = n.split(':');
+        const nombres = quienes.split('+').map((q) => (MIEMBRO[q] ? MIEMBRO[q].corto : q));
+        const f = T.camp.noticias.tarea[que];
+        if (!f) return null;
+        // (El que curó: el nombre del otro.)
+        if (que === 'curar') datos[0] = MIEMBRO[datos[0]] ? MIEMBRO[datos[0]].corto : datos[0];
+        return f(nombres.join(' y '), nombres.length > 1, ...datos);
       }
       if (clave === 'rumorHoja') {
         const tren = gameState.horario && gameState.horario.trenes.find((t) => String(t.id) === id);
@@ -330,7 +349,8 @@ export function createCampScene(services) {
         // 📅 🔁 Ya no da vuelta el día de un golpe: abre el papel para descansar hasta la próxima parte del día,
         // dormir hasta la mañana o esperar varios días, con lo que va a pasar mientras tanto *(Santi: "la idea de la
         // carpa me gustó"; antes "solo apretás E muchas veces")*.
-        abrirCarpa();
+        // (📋 Con la pizarra, la carpa abre el calendario: ahí se hace pasar el tiempo.)
+        if (TIEMPO.pizarra.activo) calendario.abrir(gameState); else abrirCarpa();
         break;
 
       case 'cajon':
@@ -537,6 +557,20 @@ export function createCampScene(services) {
     audio.play('cover');
   }
 
+  /** 💰 El reparto, y al terminar, lo que anotó cada uno. */
+  function abrirReparto() {
+    mensaje = null;
+    return reparto.abrir(gameState, figuraDe, (anotes, total, jmc, olla) => {
+      const R = T.libreta.reparto;
+      const lineas = [R.hecho(total), ...anotes.map((a) => T.libreta.anota(MIEMBRO[a.id].corto, a.lado, motivoDeLibreta(a.motivo, a.lado), a.veces))];
+      if (!anotes.length) lineas.push(R.nadieAnota);
+      // (🍲 La olla de los días de la vuelta, y ✉️ después J.Mc. se lleva lo suyo.)
+      if (olla) lineas.push(olla.pago ? R.ollaPaga(olla.costo) : R.ollaNo(olla.costo));
+      if (jmc) lineas.push(T.camp.noticias.jmcCobro(jmc.lleva, jmc.deuda));
+      avisar(lineas);
+    });
+  }
+
   /** 📋 La ficha: los de la banda que siguen con vos, en el orden de siempre. */
   function abrirFicha(i = 0) {
     const ids = BANDA.map((m) => m.id).filter((id) => gameState.banda && gameState.banda[id] && gameState.banda[id].esta);
@@ -555,7 +589,8 @@ export function createCampScene(services) {
     const textos = M[p.id];
     // (🎭 Algunos dependen de quién lo trae: el herido, el de los caballos.)
     const nombre = MIEMBRO[p.quien] ? MIEMBRO[p.quien].corto : '';
-    const segun = (v) => (typeof v === 'function' ? v(nombre) : v);
+    // (✉️ Y algunos, de la partida: lo que le debes a J.Mc.)
+    const segun = (v) => (typeof v === 'function' ? v(nombre, gameState) : v);
     // (🗣️ El humor con que lo agarras, antes de elegir: lo que contesta depende de eso.)
     const elQueHabla = gameState.banda && gameState.banda[p.quien];
     const humorAntes = elQueHabla ? palabraDeHumor(elQueHabla.humor) : 'tranquilo';
@@ -658,7 +693,8 @@ export function createCampScene(services) {
     // 🎯 Mandarlo a practicar: si no está herido ni practicando ya.
     const puedePracticar = !estado.herido && !estado.practica;
     // 🕵️ Mandarlo a mirar un tren: igual que practicar, y si hay alguno que se pueda mirar.
-    const puedeEspiar = puedePracticar && espiables(gameState, PARTES_DE_PRACTICA, trenesMirados(gameState)).length > 0;
+    const puedeEspiar = puedePracticar && (TIEMPO.pizarra.activo ? paraMirarEl(gameState, proximoDiaLibre(gameState), id).length > 0
+      : espiables(gameState, PARTES_DE_PRACTICA, trenesMirados(gameState)).length > 0);
     // 🃏 Una mano de cartas: con el que es Bueno con la baraja, si está aquí y no jugó hoy.
     const puedeMano = tiene(estado, 'baraja') && !estado.practica && estado.manoDia !== (gameState.tiempo ? gameState.tiempo.dia : 0);
     menu.abrir(m.corto, [
@@ -693,8 +729,15 @@ export function createCampScene(services) {
     opciones.push({ id: 'no', texto: B.practicarVolver });
     menu.abrir(B.practicarTitulo(m.corto), opciones, (hab) => {
       if (hab === 'no') return false;
-      mandarAPracticar(gameState, id, hab);
-      decir(B.seVaAPracticar(m.corto, T.rasgos[hab]), 3.5);
+      // (📋 Con la pizarra, queda puesto ahí: hoy si todavía es de mañana, si no desde mañana. *(Santi: "En los dos lados")*)
+      if (TIEMPO.pizarra.activo) {
+        const dia = proximoDiaLibre(gameState);
+        ponerTarea(gameState, id, dia, 0, { que: 'practicar', hab });
+        decir(dia === gameState.tiempo.dia ? B.seVaAPracticar(m.corto, T.rasgos[hab]) : B.vaAPracticarManana(m.corto, T.rasgos[hab]), 3.5);
+      } else {
+        mandarAPracticar(gameState, id, hab);
+        decir(B.seVaAPracticar(m.corto, T.rasgos[hab]), 3.5);
+      }
       audio.play('cover');
       return false;
     }, B.practicarCuerpo, { figuras });
@@ -707,7 +750,8 @@ export function createCampScene(services) {
    */
   function abrirEspia(id, figuras) {
     const m = MIEMBRO[id], B = T.camp.banda, Tm = T.mapa, R = T.rumores;
-    const trenes = espiables(gameState, PARTES_DE_PRACTICA, trenesMirados(gameState)).slice(0, 5);
+    const diaP = proximoDiaLibre(gameState);
+    const trenes = (TIEMPO.pizarra.activo ? paraMirarEl(gameState, diaP, id) : espiables(gameState, PARTES_DE_PRACTICA, trenesMirados(gameState))).slice(0, 5);
     const opciones = trenes.map((t) => {
       const f = fechaDe(t.dia);
       const cuando = t.sabes === 'rumor' ? Tm.dia(T.tiempo.semanaLarga[f.semana], f.dia)
@@ -718,8 +762,13 @@ export function createCampScene(services) {
     menu.abrir(B.espiarTitulo(m.corto), opciones, (op) => {
       if (op === 'no') return false;
       const tren = trenes.find((t) => String(t.id) === op);
-      mandarAEspiar(gameState, id, tren.id);
-      decir(B.seVaAEspiar(m.corto, R.vias[tren.ruta] || tren.ruta), 3.5);
+      if (TIEMPO.pizarra.activo) {
+        ponerTarea(gameState, id, diaP, 0, { que: 'mirar', tren: tren.id });
+        decir((diaP === gameState.tiempo.dia ? B.seVaAEspiar : B.vaAEspiarManana)(m.corto, R.vias[tren.ruta] || tren.ruta), 3.5);
+      } else {
+        mandarAEspiar(gameState, id, tren.id);
+        decir(B.seVaAEspiar(m.corto, R.vias[tren.ruta] || tren.ruta), 3.5);
+      }
       audio.play('cover');
       return false;
     }, B.espiarCuerpo, { figuras });
@@ -802,12 +851,15 @@ export function createCampScene(services) {
     if (menu.update(input)) return;
     // 🏁 (Terminada la partida, el final no se puede cerrar.)
     if (gameState.finDelJuego) { abrirFin(); return; }
+    // 💰 El reparto: cuando se cierran los avisos de la llegada, si hay botín para repartir.
+    if (!reparto.activa() && gameState.campamento && gameState.campamento.reparto) abrirReparto();
+    if (reparto.update(input)) return;
     // 📋 Con la ficha abierta, tampoco.
     if (ficha.update(input)) return;
     if (input.wasPressed('Tab') && abrirFicha()) return;
     // 📅 El calendario, igual.
-    if (calendario.update(input)) return;
-    if (input.wasPressed('KeyC') && calendario.abrir()) return;
+    if (calendario.update(input, gameState)) return;
+    if (input.wasPressed('KeyC') && calendario.abrir(gameState)) return;
 
     // 🗑️ El atajo [1] al techo con jinetes ya no existe *(Santi: "quiero que
     // borres el atajo al techo")*.
@@ -1133,9 +1185,11 @@ export function createCampScene(services) {
     ctx.restore();
     estiloNuevo.luzEn = null;
     dibujarInterfaz(r);
+    // (📋 El calendario abajo del menú: los menús de la pizarra y los avisos van encima.)
+    calendario.render(r, gameState);
     menu.render(r, colors, T.interior.dialogoAyuda);
     ficha.render(r, gameState.banda);
-    calendario.render(r, gameState);
+    reparto.render(r);
   }
 
   /** Vos: el mismo del tren, con tus 8 direcciones. Sentado, de perfil sobre el tronco, mirando el fuego. */
@@ -1202,9 +1256,10 @@ export function createCampScene(services) {
     dibujarInterfaz(r);
     // Encima de todo, pero sin tapar el campamento: seguís parado al lado de
     // tu fogata mientras elegís.
+    calendario.render(r, gameState);
     menu.render(r, colors, T.interior.dialogoAyuda);
     ficha.render(r, gameState.banda);
-    calendario.render(r, gameState);
+    reparto.render(r);
   }
 
   function dibujarObjeto(r, z, dia) {

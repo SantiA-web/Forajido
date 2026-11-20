@@ -57,6 +57,12 @@ export const PUEBLO = {
    */
   edificios: [
     { id: 'establo', x: 170, ancho: 86, alto: 62, alcance: 40 },
+    /**
+     * 🛒 EL ALMACÉN *(Santi, 2026-11-18: "El almacén está en el pueblo")*: comida por porciones (data/comida.js). Entre
+     * el establo y la armería, cerca de donde dejas el caballo: es lo que más seguido se viene a buscar.
+     */
+    // (62 de ancho: con menos, las ventanas tocan la puerta.)
+    { id: 'almacen', x: 247, ancho: 62, alto: 52, alcance: 30 },
     { id: 'armeria', x: 320, ancho: 78, alto: 70, alcance: 38 },
     { id: 'cantina', x: 470, ancho: 96, alto: 76, alcance: 44 },
     { id: 'sheriff', x: 630, ancho: 74, alto: 58, alcance: 36 },
@@ -92,7 +98,8 @@ export const PUEBLO = {
    * delata a un maniquí.
    */
   gente: [
-    { id: 'viejo',    x: 240, rango: 26, vel: 9,  alcance: 22 },
+    // (🔁 El viejo caminaba delante de donde ahora está el almacén y le tapaba la puerta: pasa a la entrada del pueblo.)
+    { id: 'viejo',    x: 115, rango: 12, vel: 9,  alcance: 22 },
     { id: 'mujer',    x: 400, rango: 40, vel: 14, alcance: 22 },
     { id: 'borracho', x: 520, rango: 14, vel: 6,  alcance: 22 },
     { id: 'chico',    x: 590, rango: 58, vel: 22, alcance: 22 },

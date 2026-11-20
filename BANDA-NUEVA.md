@@ -612,8 +612,11 @@ ser una pieza de esta propuesta.
 1. ✅ **El telégrafo y el vigía** en el asalto, y que lleguen a la huida (hecha el 2026-11-17; falta jugarla).
 2. **La libreta, la lealtad 0–5, el ánimo en el plan** (✅ hecho el 2026-11-18: `src/data/libreta.js` y
    `src/systems/libreta.js`, con la llave `LIBRETA.activa`) **y el reparto en una pantalla** (por cabeza, el sueldo de los
-   contratados, la olla por día, J.Mc. con deuda). Desde acá la banda se juega de verdad.
+   contratados, la olla por día, J.Mc. con deuda). Desde acá la banda se juega de verdad. ✅ El reparto, J.Mc. en cuotas
+   y la comida en porciones (en vez de la olla), hechos el 2026-11-18.
 3. **La pizarra y las tareas** que faltan, y **las habilidades con marcas** que se oxidan; los rumores con su origen.
+   ✅ La pizarra en el calendario, las tareas y las marcas (2026-11-18); ✅ los tratos con el perista (2026-11-20,
+   `TRATOS.md`). ⏭️ Falta: los rumores con su origen.
 4. **Las personalidades** con sus escalones, y **la fogata**.
 5. **La tentación, señales, traiciones, ofertas, promesas rotas y límites.**
 6. **La cantina.**

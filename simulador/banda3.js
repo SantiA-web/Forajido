@@ -10,6 +10,9 @@
  * Correr: node simulador/banda3.js   (PARTIDAS=1000 para ir rápido; SIM='{"…"}' para variar números)
  */
 import { writeFileSync } from 'node:fs';
+// 🤝 v17: los tratos usan EL MISMO archivo que el juego (src/systems/tratos.js): lo que se mide es lo que se juega.
+import { oferta as ofertaTrato, jugadas as jugadasTrato, resolver as resolverTrato, jugadaDe as jugadaDeTrato, honorSegun, quimicaPosible } from '../src/systems/tratos.js';
+import { TRATOS, SORTEO } from '../src/data/tratos.js';
 
 // ── TODOS LOS NÚMEROS ──
 export const N = {
@@ -27,8 +30,13 @@ export const N = {
     // quedó, media; el Ambicioso, una y media). Así perder a uno no te ahorra nada. (null = porcentaje por cabeza.)
     // 🔁 v11 (Santi, 2026-11-18): por cabeza otra vez (null). Con el error del contratado arreglado, el que cuida gana
     // igual a todos; el tercio (1 / 3) queda como variante.
-    bolsa: null, parteQueda: 0.5, parteAmbicioso: 1.5 },
+    bolsa: null, parteQueda: 0.5, parteAmbicioso: 1.5,
+    // 🔁 v12 (Santi, 2026-11-18: "es lo mismo darle 5 dólares a darle apenas un poco menos"): al que fue, darle menos
+    // de `miseria` de lo que espera es queja doble ("Una miseria"), como no darle nada. (0 = sin este escalón.)
+    miseria: 0.67 },
   // 🔁 v5: la olla por día ($5 por persona; cazar cubre ese día). Calmar y parar, más caros (siempre convenían).
+  // 🔁 v12 (Santi: "si es 8 por cabeza y son 4"): `ollaJames` 1 = James también come de la olla.
+  ollaJames: 1,
   ollaDia: 5, ollaDiaMontana: 8, botella: 15, medico: 60 /* 🔁 v9: a $100 casi no valía (−2 puntos por $131) */, fianza: 400, calmar: 40, pararPelea: 80, jmc: 200,
   // 🔁 v6: más dura (con la de antes, el que cuida tenía casi todo bien y la partida era plana).
   escalera: { 2: [88, 9, 3], 1: [78, 15, 7], 0: [67, 21, 12], '-1': [52, 26, 22], '-2': [37, 30, 33], '-3': [22, 30, 48] },
@@ -51,14 +59,68 @@ export const N = {
   // 🔁 v6: la ley sale con 4 (con 3 y al menos uno siempre, el telégrafo no valía casi nada).
   huida: { jinetes: 4, heridaPorJinete: 0.04, botinPorJinete: 0.05, bandaTira: 2, herida: 6 /* días, como la brújula */, llegaTarde: 0.5 },
   cocinero: 1.05,                      // James con un tiro más: un poco más de botín
-  perista: { comun: 0.6, negociante: 0.8 },
+  // 🤝 v17 (TRATOS.md): el perista ofrece el 75% y se trata con él (regatear, apretar, el chantaje del Rastrero). Los
+  // números están en src/data/tratos.js; acá, sólo lo que el simulador no sabe: qué parte de los golpes da la alarma
+  // (`caliente`) y cuánto le pesa a James un dólar de recompensa al elegir (`costoRecompensa`). La fama no se simula (0).
+  // 🔁 (2026-11-20) `honorSegun`: el honor según quién es el perista; `quimica`: el que mandas y el perista.
+  tratos: { activo: true, caliente: 0.5, costoRecompensa: 1, honorSegun: true, quimica: true },
+  perista: { comun: 0.6, negociante: 0.8,
+    // 🔁 v16 (Santi, 2026-11-18: "tenemos que buscar algún posible plus, algo que no pase siempre pero que sea probable
+    // de que al mandar a uno pase para que el jugador o vaya él o se arriesgue"; eligió "Regatea: 1 de 3, +30%"). Como
+    // en el juego: James cobra el 100% más su honor (`J.honor`, de −0,2 a +0,2); el de la banda, el 100% sin el honor,
+    // y regatea `regatea` de las veces (+`mas`; el negociante `negociante`); el Rastrero, `rastrero` de las veces, se
+    // guarda `guarda`. `manda` (del jugador): 'mejor' manda a uno sólo si le conviene más que ir él; 'nunca'; 'siempre'.
+    nuevo: true, jugador: 1, regatea: 1 / 3, negociante: 2 / 3, mas: 0.3, rastrero: 0.25, guarda: 0.25 },
   cartas: { gana: 30, conBaraja: 2 / 3, sinBaraja: 1 / 3, pelea: 1 / 6, recompensaPelea: 30 },   // una noche por golpe
   rumorPueblo: { base: 0.2 /* 🔁 v8: como tarea, con 5 sólo convenía mandar a Santiago */, labia: 0.2, baraja: 0.1, alcoholico: 0.1, curioso: 0.25 },
   cazarSin: 0.5,
+  // 🔁 v12 (Santi, 2026-11-18: "según la región en la que estés vaya cambiando las cosas"): las tareas por región
+  // (por golpe, con `regiones`). `cazarSin`: la chance sin Buena puntería (con ella, siempre); `cazarDias`: los días de
+  // olla que cubre lo que caza el de puntería; `perista`: cuánto mejor o peor paga; `puebloDia`: bajar al pueblo ocupa
+  // mañana y tarde (el camino de la montaña).
+  region: { activo: true,
+    cazarSin: { desierto: 1 / 3, pradera: 0.5, bosque: 1, montana: 1 / 3 },
+    cazarDias: { desierto: 1, pradera: 1, bosque: 2, montana: 1 },
+    perista: { desierto: 1.25, pradera: 1, bosque: 0.75, montana: 1 },
+    puebloDia: { desierto: false, pradera: false, bosque: false, montana: true } },
+  // 🔁 v12 (Santi: "la parte de los rumores la midás más"): de dónde viene cada rumor y cuánto miente. La cantina es
+  // `info.falso`; el forastero y el diario, la chance por golpe de que traigan uno (0 = nunca).
+  // 🔁 v13 (Santi, 2026-11-18: "que no sea sí caza o no, sino que caza y cuánto caza"): LA CAZA EN PORCIONES. Una
+  // porción es la comida de uno por un día; cada día comen todos los que están (y James). Lo que se caza va a la
+  // despensa y dura `dura` días. Por región: la chance de cazar (sin y con Buena puntería) y cuántas porciones trae
+  // (de `min` a `max`, más `punteria` con ella). La pesca: se va `dias` días enteros y siempre trae algo.
+  // (dura: lo que aguanta la carne en cada región; con el calor del desierto se pasa antes, con el frío de la montaña dura más.)
+  // 🔁 v15 (Santi, 2026-11-18: "quiero que Rastreador deje mucha mejor recompensa que buena puntería, que buena
+  // puntería sea un detallito"): la puntería suma un poco de chance y una porción; el Rastreador mucha chance y la
+  // presa más grande (`por`).
+  caza: { activo: true, dura: { desierto: 3, pradera: 4, bosque: 4, montana: 6 },
+    punteria: { chance: 0.1, porciones: 1 },
+    desierto: { chance: 0.4, min: 2, max: 4 },
+    pradera: { chance: 0.7, min: 3, max: 6 },
+    bosque: { chance: 1, min: 4, max: 6 },
+    montana: { chance: 0.2, min: 8, max: 14 },
+    // (`siempre`: el bot manda a pescar al que tenga los días libres, aunque la despensa esté llena.)
+    pesca: { activa: true, dias: 2, min: 4, max: 10, siempre: true, elige: true },
+    // 🔁 v14: los rasgos que ayudan. El Rastreador encuentra la presa (+chance, también si va con el que caza); el
+    // Cocinero sala lo cazado esa noche (dura `sala` veces más); el Paciente pesca 2 porciones más, el Impulsivo 2 menos.
+    // 🔁 v15 (Santi: "paciente sí debería tener una recompensa notable e impulsivo una caída en la recompensa"): la
+    // pesca del Paciente rinde `paciente` veces; la del Impulsivo, `impulsivo` veces.
+    rastreador: { chance: 0.35, por: 1.5 }, sala: 2, paciente: 1.5, impulsivo: 0.6 },
+  // 🔁 v14 (Santi, 2026-11-18: "ya no existiría el precio de la olla porque todo es por porciones de comida"): LA
+  // COMIDA. No hay olla: comen de la despensa, y lo que falta se compra en el almacén del pueblo, por porción (`precio`,
+  // por región) o en packs con descuento. Lo comprado (provisiones secas) dura `dura` días. Vender: la mitad,
+  // 🔁 v15 redondeada para abajo (Santi: "que se redondeé hacia abajo el precio de venta"). Si no hay qué comer, ese día no comen (queja).
+  comida: { activo: true, precio: { desierto: 6, pradera: 4, bosque: 5, montana: 8 }, packs: [[10, 0.15], [5, 0.1]], dura: 12, vende: true,
+    // (Cómo juega el bot: al salir compra para `reserva` días, y el que baja al pueblo completa otra vez hasta `reserva`.)
+    reserva: 3 },
+  rumor: { mentirosoFalso: 0.5, forastero: 0, forasteroFalso: 0.5, diario: 0, diarioFalso: 0.25 },
   curar: 3, medicoDias: 3,
   recompensa: { porGolpe: 50, civiles: 100, pendenciero: 30, botinPor1000: 0.08, tope: 0.3 },
   // 🔁 v5: la tiene al llegar a 5 marcas y la pierde recién al bajar de 3 (antes, con una sola marca oxidada).
-  habilidad: { marcas: 5, pierdeDebajo: 3, usoGolpe: 1, practica: 0.5, conGanas: 0.5, oxidaCada: 6, recuperar: 2 },
+  habilidad: { marcas: 5, pierdeDebajo: 3, usoGolpe: 1, practica: 0.5, conGanas: 0.5, oxidaCada: 6, recuperar: 2,
+    // ⭐ 🔁 v12 (Santi: "es muy importante que midás lo de la estrellita"): con la habilidad ya tenida, 8 golpes usándola
+    // la dominan y no se oxida más (sólo cuentan los golpes: con todos los usos salían 6 por partida). 0 = sin estrellita.
+    estrella: 8, estrellaGolpe: true },
   escalon: [1, 0.5, 0.2],             // fuerte, gris, casi blanca: chance de que su regla corra
   bajarCada: 4,
   pedido: { chance: 0.5, costo: 50 },
@@ -182,10 +244,11 @@ function nuevoContratado(rng, n, dia) {
 function corre(rng, m, p) { const x = m.pers[p]; return !!x && rng() < N.escalon[x.escalon]; }
 const tieneP = (m, p) => !!m.pers[p];          // para lo que se ve sin tirada (no quiere ir de, etc.)
 const sabe = (m, h) => !!(m.hab[h] && m.hab[h].activa);
+const regionDe = (g) => (g >= N.regiones.montana ? 'montana' : g >= N.regiones.bosque ? 'bosque' : g >= N.regiones.pradera ? 'pradera' : 'desierto');
 function revisarHab(x) { if (x.marcas >= N.habilidad.marcas) x.activa = true; else if (x.marcas < N.habilidad.pierdeDebajo) x.activa = false; }
 function bajar(m, p) { const x = m.pers[p]; if (!x || x.escalon >= 2) return; if (++x.cuenta >= N.bajarCada) { x.cuenta = 0; x.escalon++; } }
 
-function usar(m, h, dia, cuanto) {
+function usar(m, h, dia, cuanto, enGolpe = false) {
   if (!m.hab[h]) m.hab[h] = { marcas: 0, ultimoUso: dia, tuvo: false };
   const x = m.hab[h];
   const rapido = x.tuvo && x.marcas >= 2 ? N.habilidad.recuperar : 1;
@@ -193,11 +256,15 @@ function usar(m, h, dia, cuanto) {
   x.marcas = Math.min(N.habilidad.marcas, x.marcas + cuanto * rapido);
   x.ultimoUso = dia;
   revisarHab(x);
+  // ⭐ (v12) Con la habilidad ya tenida, cada uso suma para dominarla: la dominada no se oxida nunca.
+  // (Con `estrellaGolpe`, sólo cuentan los usos en un golpe: las tareas y la práctica la mantienen, no la dominan.)
+  if (N.habilidad.estrella && antes && x.activa && !x.domina && (!N.habilidad.estrellaGolpe || enGolpe)) { x.extra = (x.extra || 0) + cuanto; if (x.extra >= N.habilidad.estrella) x.domina = true; }
   if (x.activa && !antes) { x.tuvo = true; return true; }
   return false;
 }
+let OXIDADAS = 0;   // (v12: las que se perdieron por óxido en la partida)
 function oxidar(m, dia) {
-  for (const x of Object.values(m.hab)) if (x.marcas > 0 && dia - x.ultimoUso >= N.habilidad.oxidaCada) { x.marcas = Math.max(0, x.marcas - 1); x.ultimoUso = dia; revisarHab(x); }
+  for (const x of Object.values(m.hab)) if (x.marcas > 0 && !x.domina && dia - x.ultimoUso >= N.habilidad.oxidaCada) { const a = x.activa; x.marcas = Math.max(0, x.marcas - 1); x.ultimoUso = dia; revisarHab(x); if (a && !x.activa) OXIDADAS++; }
 }
 
 function anotar(m, lado, motivo, dia, chica = false, veces = 1) {
@@ -244,6 +311,7 @@ function tirada(rng, p, s) { s.pasos[p] = (s.pasos[p] || 0) + 1; const [b, f] = 
 
 // ── UNA PARTIDA ──
 function partida(J, semilla) {
+  OXIDADAS = 0;
   const rng = rngDe(semilla);
   const banda = Object.fromEntries(IDS.map((id) => [id, nuevoMiembro(id)]));
   const ctx = { rel: { 'frank-santiago': 'roces', 'frank-tommy': 'bien', 'santiago-tommy': 'bien' } };
@@ -251,10 +319,75 @@ function partida(J, semilla) {
     perdidos: [], traiciones: 0, senales: 0, cortadas: 0, negativas: 0, planeados: 0, peleas: 0, graves: 0,
     plata: 300, deuda: 0, recompensa: 0, objetos: 0, pasos: {}, plataMin: 300, acusoMal: 0, mentiras: [],
     papelVacio: 0, papelesTot: 0, aprendidas: 0, oxidadas: 0, contratados: 0, sueldos: 0, contratadosTraicion: 0,
-    porTarea: {}, cartas: 0, perista: 0, vendioPlan: false, lealtadFinal: 0, tentFinal: 0,
+    porTarea: {}, cartas: 0, perista: 0, mandoPerista: 0, fueJames: 0, regateos: 0, seGuardo: 0,
+    trato: 0, tratoDia: 0, regMalHasta: -1, enojo: 0, rasgosP: [], objCal: 0, diaGolpe: -99, chantajes: 0, hablo: 0, soplo: 0, recTratos: 0,
+    jug: { aceptar: 0, regatear: 0, apretar: 0, irte: 0, salio: { regatear: 0, apretar: 0 } }, ventas: 0, porTramo: [0, 0, 0], peleasPerista: 0, vendioPlan: false, lealtadFinal: 0, tentFinal: 0,
+    despensa: [], cubre: {}, pescas: {}, compraComida: 0, ventaComida: 0, porciones: 0, comidas: 0, faltaron: 0, ollaPagada: 0,
   };
   let contratados = [];
   let ncon = 0;
+  // 🤝 El perista de esta partida: uno o dos rasgos sorteados (src/data/tratos.js, SORTEO).
+  if (N.tratos.activo) {
+    const S = SORTEO.perista, de = [...S.de];
+    s.rasgosP.push(de.splice(Math.floor(rng() * de.length), 1)[0]);
+    if (rng() < S.dos) {
+      const ok = de.filter((r) => !S.noJuntos.some((p) => p.includes(r) && p.includes(s.rasgosP[0])));
+      if (ok.length) s.rasgosP.push(ok[Math.floor(rng() * ok.length)]);
+    }
+    if (N.tratos.rasgos) s.rasgosP = [...N.tratos.rasgos];
+  }
+  // 🤝 Un trato con el perista: `quien` es el de la banda que fue (o null, James). Devuelve si vendió.
+  const venderTrato = (dia, g, quien) => {
+    const TT = TRATOS.trato;
+    const pasos = Math.floor((dia - s.tratoDia) / TT.bajaCadaDias);
+    if (pasos > 0 && s.trato) { s.trato = s.trato > 0 ? Math.max(0, s.trato - pasos) : Math.min(0, s.trato + pasos); s.tratoDia = dia; }
+    const reg = N.region.activo ? N.region.perista[regionDe(g)] : 1;
+    const h = J.honor || 0;
+    const ctx = {
+      tipo: 'vende', oficio: 'perista', rasgos: s.rasgosP, valor: s.objetos * reg * (quien ? 1 : 1 + (N.tratos.honorSegun ? honorSegun(s.rasgosP, h) : h)),
+      caliente: s.objetos ? s.objCal / s.objetos : 0, recien: dia - s.diaGolpe <= TRATOS.chantaje.recienDias,
+      recompensa: s.recompensa, fama: 0, honor: h <= -0.08 ? -50 : h >= 0.08 ? 50 : 0,
+      trato: s.trato, enojo: dia <= s.regMalHasta ? s.enojo : 0, leyCerca: s.recompensa >= 720, deudaJmc: s.deuda > 0,
+      quien: quien ? { negociante: sabe(quien, 'negociante'), pendenciero: tieneP(quien, 'pendenciero'), honorable: tieneP(quien, 'honorable'),
+        fuerzas: N.tratos.quimica ? Object.fromEntries(Object.entries(quien.pers).map(([p, x]) => [p, 100 * N.escalon[x.escalon]])) : {} } : null,
+    };
+    const of = ofertaTrato(ctx, rng);
+    if (of.chantaje) s.chantajes++;
+    const k = N.tratos.costoRecompensa;
+    // James: según cómo juega (`J.trata`: 'acepta', 'regatea', 'aprieta' o 'mejor', el que mira lo que conviene).
+    const elegir = (lista) => {
+      const de = (id) => lista.find((j) => j.id === id);
+      if (quien) return jugadaDeTrato(ctx.quien, lista, of);
+      const t = J.trata || 'mejor';
+      if (of.chantaje && J.chantaje === 'paga') return de('aceptar');
+      if (t === 'acepta') return de('aceptar');
+      if (t === 'regatea') return de('regatear') || de('aceptar');
+      if (t === 'aprieta') return de('apretar') || de('regatear') || de('aceptar');
+      const vale = (j) => {
+        const c = j.chance == null ? 1 : j.chance / 100;
+        if (j.id === 'irte') return of.chantaje ? of.monto - k * TRATOS.chantaje.recompensa * TRATOS.chantaje.habla - 5 : -1;
+        const mal = j.id === 'regatear' ? j.siNo.monto : of.chantaje ? of.monto - k * TRATOS.chantaje.recompensa : of.monto * (1 - TRATOS.apretar.siNo) * (1 - TRATOS.trato.porPunto);
+        return c * j.monto + (1 - c) * mal - (j.siNo && j.siNo.sopla ? k * j.siNo.sopla : 0);
+      };
+      return lista.reduce((a, b) => (vale(b) > vale(a) ? b : a));
+    };
+    let j = elegir(jugadasTrato(ctx, of));
+    let r = resolverTrato(ctx, of, j, rng);
+    s.jug[j.id]++; if (r.sale && s.jug.salio[j.id] !== undefined) s.jug.salio[j.id]++;
+    if (r.pelea) s.peleasPerista++;
+    if (r.sigue) { const j2 = quien ? jugadaDeTrato(ctx.quien, r.sigue, { quimica: of.quimica }) : r.sigue[0]; const r2 = resolverTrato(ctx, of, j2, rng); r = { ...r, cierra: r2.cierra, monto: r2.monto }; }
+    s.recompensa += r.recompensa; s.recTratos += r.recompensa; if (r.habla) s.hablo++; if (r.sopla) s.soplo++;
+    if (r.trato) s.trato = Math.max(TT.min, Math.min(TT.max, s.trato + r.trato));
+    if (r.trato) s.tratoDia = dia;
+    if (r.enojo) { s.regMalHasta = dia + r.enojo.dias; s.enojo = r.enojo.cuanto; }
+    if (!r.cierra) return false;
+    let p = r.monto;
+    if (quien && of.guarda) { p *= 1 - of.guarda; s.seGuardo++; }
+    else if (quien && tieneP(quien, 'rastrero') && rng() < N.perista.rastrero && corre(rng, quien, 'rastrero')) { p *= 1 - N.perista.guarda; s.seGuardo++; }
+    s.porTramo[s.recompensa >= 600 ? 2 : s.recompensa >= 200 ? 1 : 0]++; s.ventas++;
+    s.plata += p; s.perista += p; s.objetos = 0; s.objCal = 0;
+    return true;
+  };
   const historia = () => IDS.map((id) => banda[id]).filter((m) => !m.fuera);
   const todos = () => historia().concat(contratados.filter((c) => !c.fuera));
   const libres = () => todos().filter((m) => !m.herido && !m.preso && !m.ausente);
@@ -362,9 +495,42 @@ function partida(J, semilla) {
     // ── LOS DÍAS ENTRE GOLPES ──
     const dias = sortear(N.diasEntreGolpes[0], N.diasEntreGolpes[1]);
     const rumores = [];                 // { botin, falso, visto }
-    let cazado = false, cocinado = false, mejorCaja = false, cartasEsteGolpe = false, diasCazados = 0;
+    let cazado = false, cocinado = false, mejorCaja = false, cartasEsteGolpe = false, diasCazados = 0, sinComida = 0;
+    const traer = (n, dura = N.caza.dura[regionDe(g)]) => { const p = { n, vence: dia + dura, carne: true }; s.despensa.push(p); s.porciones += n; return p; };
+    const precio = N.comida.precio[regionDe(g)], comenTodos = () => todos().length + N.ollaJames;
+    // 🛒 (v14) Comprar en el almacén lo que falta para `cuantos` días.
+    const comprar = (cuantos) => {
+      if (!N.comida.activo || cuantos <= 0) return;
+      const hay = s.despensa.reduce((t, p) => t + p.n, 0);
+      let falta = Math.max(0, comenTodos() * cuantos - hay), compra = 0;
+      const costo = (n, d = 0) => Math.ceil(n * precio * (1 - d));
+      for (const [n, d] of N.comida.packs) while (falta >= n && s.plata >= costo(n, d)) { s.plata -= costo(n, d); s.compraComida += costo(n, d); compra += n; falta -= n; }
+      while (falta > 0 && s.plata >= precio) { s.plata -= precio; s.compraComida += precio; compra++; falta--; }
+      if (compra) s.despensa.push({ n: compra, vence: dia + N.comida.dura, carne: false });
+    };
+    comprar(Math.min(N.comida.reserva, dias));
+    // (🔁 v12: el forastero y el diario también traen rumores; el diario cuesta $5.)
+    const nuevoRumor = (falso) => ({ botin: N.info.carga[0] + rng() * (N.info.carga[1] - N.info.carga[0]), falso: rng() < falso, visto: false });
+    if (N.rumor.forastero && rng() < N.rumor.forastero) rumores.push(nuevoRumor(N.rumor.forasteroFalso));
+    if (N.rumor.diario && rng() < N.rumor.diario) { s.plata -= 5; rumores.push(nuevoRumor(N.rumor.diarioFalso)); }
     for (let d = 0; d < dias; d++) {
       dia++;
+      // 🍖 (v13) Vuelve el que pescaba; se tira lo que se pasó; comen de la despensa y lo que falta es olla.
+      if (N.caza.activo) {
+        for (const m of todos()) if (m.pescaVuelve === dia) {
+          const P = N.caza.pesca, por = (corre(rng, m, 'paciente') ? N.caza.paciente : 1) * (corre(rng, m, 'impulsivo') ? N.caza.impulsivo : 1);
+          const n = Math.max(1, Math.round((P.min + Math.floor(rng() * (P.max - P.min + 1))) * por));
+          traer(n); m.pescaVuelve = null;
+          const q = (s.pescas[m.id] = s.pescas[m.id] || { veces: 0, n: 0 }); q.veces++; q.n += n;
+        }
+        s.despensa = s.despensa.filter((p) => p.vence >= dia);
+        let comen = todos().length + N.ollaJames;
+        s.despensa.sort((a, b) => a.vence - b.vence);
+        for (const p of s.despensa) { const t = Math.min(p.n, comen); p.n -= t; comen -= t; s.comidas += t; }
+        s.despensa = s.despensa.filter((p) => p.n > 0);
+        sinComida += comen; s.faltaron += comen;
+        { const rg = regionDe(g), c = (s.cubre[rg] = s.cubre[rg] || { comen: 0, faltan: 0 }); c.comen += todos().length + N.ollaJames; c.faltan += comen; }
+      }
       for (const m of todos()) { oxidar(m, dia); m.quejas = m.quejas.filter((q) => dia - q.dia < N.libreta.dias); m.favores = m.favores.filter((f) => dia - f.dia < N.libreta.dias); }
       for (const m of todos()) { if (m.herido) m.herido--; if (m.ausente) m.ausente--; }
       // El Divertido: 5 días sin nada → queja.
@@ -377,7 +543,7 @@ function partida(J, semilla) {
       const usa = { dia: ['m', 't'], m: ['m'], n: ['n'], una: null };
       const libreEn = (x, como) => { if (como === 'una') return x.partes.m || x.partes.t; return usa[como].every((p) => x.partes[p]); };
       const ocupar = (x, como) => { if (como === 'una') { if (x.partes.m) x.partes.m = false; else x.partes.t = false; } else for (const p of usa[como]) x.partes[p] = false; };
-      const disp = libres().slice();
+      const disp = libres().filter((x) => !(x.pescaVuelve > dia));
       const tomar = (filtro, como = 'dia') => { const x = disp.find((y) => libreEn(y, como) && filtro(y)); if (x) ocupar(x, como); return x || null; };
       let cazadoHoy = false;
       const gusta = (m, t) => { if (N.favorChicoTarea && m.favorTareaGolpe !== g) { m.favorTareaGolpe = g; anotar(m, 'f', 'Le gustó ' + t, dia, true); } };
@@ -394,9 +560,74 @@ function partida(J, semilla) {
       // 3) Cocinar la noche antes del golpe.
       if (cazadoHoy && !apagado('cocinar')) { const c = tomar((m) => sabe(m, 'cocinero'), 'n'); if (c) { cocinado = true; usar(c, 'cocinero', dia, 1); tareaHecha('cocinar'); } }
       // 4) Vender lo robado.
-      if (J.vende && s.objetos > 0 && !apagado('vender')) { const v = tomar((m) => sabe(m, 'negociante'), 'una'); const pct = v ? N.perista.negociante : null; if (v) { let p = s.objetos * pct; if (tieneP(v, 'rastrero')) p *= 0.75; s.plata += p; s.perista += p; s.objetos = 0; usar(v, 'negociante', dia, 1); tareaHecha('vender'); } }
+      if (N.tratos.activo && J.vende && s.objetos > 0 && !apagado('vender') && (J.manda || 'mejor') !== 'nunca') {
+        // 🤝 Manda a uno si le conviene: el negociante regatea mejor, y el de la banda no carga el honor bajo de James.
+        const sirve = (x) => J.manda === 'siempre' || sabe(x, 'negociante') || (J.honor || 0) < 0;
+        // 🧪 `J.elige`: 'quimica' manda al que mejor se lleva con el perista (como si ya lo conociera); 'cualquiera', al
+        // primero libre; si no, lo de siempre (el negociante, y si no, uno que no sea rastrero).
+        const fz = (m) => Object.fromEntries(Object.entries(m.pers).map(([p, x]) => [p, 100 * N.escalon[x.escalon]]));
+        const vale = (m) => quimicaPosible(fz(m), s.rasgosP).reduce((t, q) => t + (q.chance / 100) * ((q.regatear || 0) * 0.3 + (q.apretar || 0) * 0.4
+          + (q.chantaje === 'nada' || q.chantaje === 'aprieta' ? 15 : q.chantaje === 'seVuelve' ? -10 : 0) - (q.guarda ? 25 : 0) - (q.pelea ? 40 : 0) + (q.noSopla ? 10 : 0) - (q.chantajeX ? 15 : 0)), 0)
+          + (sabe(m, 'negociante') ? 5 : 0);
+        let v = null;
+        if (J.elige === 'quimica') { const mejor = disp.filter((y) => libreEn(y, 'una') && sirve(y)).sort((a, b) => vale(b) - vale(a))[0]; if (mejor) v = tomar((x) => x === mejor, 'una'); }
+        else if (J.elige === 'cualquiera') v = tomar(sirve, 'una');
+        else v = tomar((x) => sabe(x, 'negociante') && sirve(x), 'una') || tomar((x) => !tieneP(x, 'rastrero') && sirve(x), 'una') || tomar(sirve, 'una');
+        if (v) { if (venderTrato(dia, g, v)) s.mandoPerista++; if (sabe(v, 'negociante')) usar(v, 'negociante', dia, 1); tareaHecha('vender'); }
+      }
+      if (!N.tratos.activo && N.perista.nuevo && J.vende && s.objetos > 0 && !apagado('vender') && (J.manda || 'mejor') !== 'nunca') {
+        const P = N.perista, propio = P.jugador * (1 + (J.honor || 0));
+        const vale = (x) => P.jugador * (1 + P.mas * (sabe(x, 'negociante') ? P.negociante : P.regatea)) * (tieneP(x, 'rastrero') ? 1 - P.rastrero * P.guarda : 1);
+        const sirve = (x) => (J.manda === 'siempre' || vale(x) > propio);
+        const v = tomar((x) => sabe(x, 'negociante') && sirve(x), 'una') || tomar((x) => !tieneP(x, 'rastrero') && sirve(x), 'una') || tomar(sirve, 'una');
+        if (v) {
+          let p = s.objetos * P.jugador * (N.region.activo ? N.region.perista[regionDe(g)] : 1);
+          if (rng() < (sabe(v, 'negociante') ? P.negociante : P.regatea)) { p *= 1 + P.mas; s.regateos++; }
+          if (rng() < P.rastrero && corre(rng, v, 'rastrero')) { p *= 1 - P.guarda; s.seGuardo++; }
+          s.plata += p; s.perista += p; s.objetos = 0; s.mandoPerista++; if (sabe(v, 'negociante')) usar(v, 'negociante', dia, 1); tareaHecha('vender');
+        }
+      }
+      if (!N.perista.nuevo && J.vende && s.objetos > 0 && !apagado('vender')) { const v = tomar((m) => sabe(m, 'negociante'), 'una'); const pct = v ? N.perista.negociante : null; if (v) { let p = s.objetos * pct * (N.region.activo ? N.region.perista[regionDe(g)] : 1); if (tieneP(v, 'rastrero')) p *= 0.75; s.plata += p; s.perista += p; s.objetos = 0; usar(v, 'negociante', dia, 1); tareaHecha('vender'); } }
       // 5) Cazar, cartas (lo de cada uno) antes de practicar.
-      if (!apagado('cazar')) { const m = tomar((x) => sabe(x, 'punteria'), 'm'); /* 🔁 v6: el Rastreador ya no caza (pisaba a Puntería) */ if (m) { cazado = true; cazadoHoy = true; diasCazados++; usar(m, 'punteria', dia, 1); gusta(m, 'cazar'); tareaHecha('cazar'); } }
+      if (N.caza.activo && !apagado('cazar')) {
+        const C = N.caza[regionDe(g)];
+        // (El de puntería caza cada mañana; si no hay, uno cualquiera, si la región da 1 de 2 o más.)
+        let m = tomar((x) => sabe(x, 'punteria'), 'm');
+        if (!m) m = tomar((x) => sabe(x, 'rastreador'), 'm');
+        if (!m && C.chance >= 0.5) m = tomar(() => true, 'm');
+        if (m) {
+          const p = sabe(m, 'punteria');
+          if (p) usar(m, 'punteria', dia, 1);
+          tareaHecha('cazar');
+          // (v14) El Rastreador: el que caza, o uno que va con él.
+          const ras = sabe(m, 'rastreador') ? m : tomar((x) => sabe(x, 'rastreador'), 'm');
+          if (ras) usar(ras, 'rastreador', dia, 1);
+          const PU = N.caza.punteria, RA = N.caza.rastreador;
+          if (rng() < Math.min(1, C.chance + (p ? PU.chance : 0) + (ras ? RA.chance : 0))) {
+            cazado = true; cazadoHoy = true;
+            const presa = traer(Math.round((C.min + Math.floor(rng() * (C.max - C.min + 1))) * (ras ? RA.por : 1)) + (p ? PU.porciones : 0));
+            gusta(m, 'cazar');
+            // (v14) El Cocinero la sala esa noche: dura más, y además cocina (James, un tiro más).
+            const co = !apagado('cocinar') && tomar((x) => sabe(x, 'cocinero'), 'n');
+            if (co) { presa.vence = dia + N.caza.dura[regionDe(g)] * N.caza.sala; cocinado = true; usar(co, 'cocinero', dia, 1); tareaHecha('cocinar'); }
+          }
+        }
+      }
+      // 🎣 (v13) La pesca: si lo de la despensa no alcanza para dos días y vuelve antes del golpe.
+      if (N.caza.activo && N.caza.pesca.activa && !apagado('pescar') && d + N.caza.pesca.dias <= dias - 1) {
+        const hay = s.despensa.reduce((t, p) => t + p.n, 0), comen = todos().length + N.ollaJames;
+        // (`elige`: el bot manda primero al Paciente y deja al Impulsivo para el final.)
+        const quien = () => N.caza.pesca.elige ? tomar((x) => tieneP(x, 'paciente'), 'dia') || tomar((x) => !tieneP(x, 'impulsivo'), 'dia') || tomar(() => true, 'dia') : tomar(() => true, 'dia');
+        const f = N.caza.pesca.siempre || hay < 2 * comen ? quien() : null;
+        if (f) { f.partes.n = false; f.pescaVuelve = dia + N.caza.pesca.dias; tareaHecha('pescar'); }
+      }
+      if (!N.caza.activo && !apagado('cazar')) {
+        const RG = N.region, reg = regionDe(g);
+        let m = tomar((x) => sabe(x, 'punteria'), 'm'), caza = !!m;   /* 🔁 v6: el Rastreador ya no caza (pisaba a Puntería) */
+        // (🔁 v12: sin puntería también se caza, donde vale la pena: 1 de 2 o más.)
+        if (!m && RG.activo && RG.cazarSin[reg] >= 0.5) { m = tomar(() => true, 'm'); caza = !!m && rng() < RG.cazarSin[reg]; }
+        if (m && caza) { cazado = true; cazadoHoy = true; const p = sabe(m, 'punteria'); diasCazados += RG.activo && p ? RG.cazarDias[reg] : 1; if (p) usar(m, 'punteria', dia, 1); gusta(m, 'cazar'); tareaHecha('cazar'); }
+      }
       if (!apagado('cartas') && !cartasEsteGolpe) { const m = tomar((x) => sabe(x, 'baraja'), 'n'); if (m) { cartasEsteGolpe = true; if (rng() < N.cartas.pelea) s.recompensa += N.cartas.recompensaPelea; const gana = rng() < (sabe(m, 'baraja') ? N.cartas.conBaraja : N.cartas.sinBaraja); const dif = gana ? N.cartas.gana : -N.cartas.gana; s.plata += dif; s.cartas += dif; usar(m, 'baraja', dia, 1); m.ultimaDiversion = dia; if (tieneP(m, 'divertido')) gusta(m, 'las cartas'); tareaHecha('cartas'); } }
       // 6) Practicar lo que falta para los papeles.
       if (J.practica && !apagado('practicar')) {
@@ -410,20 +641,25 @@ function partida(J, semilla) {
         }
       }
       // 7) Bajar al pueblo (rumores): el que tenga una parte libre (uno por día: es la tarea de ir).
-      for (const m of disp.filter((x) => libreEn(x, 'una')).slice(0, 1)) {
+      const comoPueblo = N.region.activo && N.region.puebloDia[regionDe(g)] ? 'dia' : 'una';
+      for (const m of disp.filter((x) => libreEn(x, comoPueblo)).slice(0, 1)) {
         if (apagado('pueblo')) break;
-        ocupar(m, 'una');
+        ocupar(m, comoPueblo);
         const R = N.rumorPueblo;
         let ch = R.base + (sabe(m, 'labia') ? R.labia : 0) + (sabe(m, 'baraja') ? R.baraja : 0) + (corre(rng, m, 'alcoholico') ? R.alcoholico : 0) + (corre(rng, m, 'curioso') ? R.curioso : 0);
         if (tieneP(m, 'mentiroso')) ch *= 0.5;
         if (sabe(m, 'labia')) usar(m, 'labia', dia, 1);
-        if (rng() < ch) rumores.push({ botin: N.info.carga[0] + rng() * (N.info.carga[1] - N.info.carga[0]), falso: rng() < (tieneP(m, 'mentiroso') ? 0.5 : N.info.falso), visto: false });
+        // 🛒 (v14) Y vende en el almacén la carne que mañana ya no sirve (a la mitad, redondeada para abajo).
+        if (N.comida.activo && N.comida.vende) for (const p of s.despensa) if (p.carne && p.vence <= dia) { const v = p.n * Math.floor(precio / 2); s.plata += v; s.ventaComida += v; p.n = 0; }
+        comprar(Math.min(N.comida.reserva, dias - d - 1));
+        if (rng() < ch) rumores.push({ botin: N.info.carga[0] + rng() * (N.info.carga[1] - N.info.carga[0]), falso: rng() < (tieneP(m, 'mentiroso') ? N.rumor.mentirosoFalso : N.info.falso), visto: false });
         if (corre(rng, m, 'pendenciero')) s.recompensa += N.recompensa.pendenciero;
         tareaHecha('pueblo');
       }
     }
     // (Sin el negociante, James vende él mismo, al 60%, cuando pasa por el pueblo.)
-    if (J.vende && s.objetos > 0) { const p = s.objetos * N.perista.comun; s.plata += p; s.perista += p; s.objetos = 0; }
+    if (N.tratos.activo && J.vende && s.objetos > 0) { if (venderTrato(dia, g, null)) s.fueJames++; }
+    else if (J.vende && s.objetos > 0) { const p = s.objetos * (N.perista.nuevo ? N.perista.jugador * (1 + (J.honor || 0)) : N.perista.comun) * (N.region.activo ? N.region.perista[regionDe(g)] : 1); s.plata += p; s.perista += p; s.objetos = 0; if (N.perista.nuevo) s.fueJames++; }
 
     // ── EL TREN: se elige el mejor de los que conoces ──
     let botin = N.botin.min + rng() * (N.botin.max - N.botin.min);   // el de pasajeros del horario
@@ -433,6 +669,7 @@ function partida(J, semilla) {
     const ciego = rumores.find((r) => !r.visto);
     if (visto && visto.botin > botin) { botin = visto.botin; tipo = 'carga'; }
     else if (!visto && ciego && rng() < N.info.vaSinMirar) { tipo = 'carga'; botin = ciego.falso ? 0 : ciego.botin; if (ciego.falso) s.rumorFalso = (s.rumorFalso || 0) + 1; }
+    if (tipo === 'carga') s.cargas = (s.cargas || 0) + 1;
     if (mejorCaja) botin *= N.info.buenaVistaCaja;
     if (cocinado) botin *= N.cocinero;
     if (g === N.golpes) botin *= N.botin.ultimoGolpe;
@@ -475,8 +712,8 @@ function partida(J, semilla) {
       if (!N.escaleraTodos && papel === 'pasajero') pasosDe[papel] = 0;   /* como hoy: lo juegas tú (un jugador promedio) */
       res[papel] = tirada(rng, pasosDe[papel], s);
       if (papel !== 'telegrafo') botin *= P[res[papel]];
-      for (const h of [].concat(AYUDA[papel])) if (m.hab[h]) usar(m, h, dia, N.habilidad.usoGolpe);
-      if (papel === 'vigia' && sabe(m, 'punteria')) usar(m, 'punteria', dia, 1);
+      for (const h of [].concat(AYUDA[papel])) if (m.hab[h]) usar(m, h, dia, N.habilidad.usoGolpe, true);
+      if (papel === 'vigia' && sabe(m, 'punteria')) usar(m, 'punteria', dia, 1, true);
     }
     if (s.vendioPlan) { botin *= 0.5; s.vendioPlan = false; }
     botin = Math.round(botin);
@@ -506,6 +743,7 @@ function partida(J, semilla) {
     // ── LA NOCHE DEL GOLPE ──
     const plata = Math.round(botin * (1 - N.botin.objetos));
     s.objetos += botin - plata;
+    if (N.tratos.activo) { s.diaGolpe = dia; if (rng() < N.tratos.caliente) s.objCal += botin - plata; }
     s.plata += plata;
     if (s.deuda) { const p = Math.min(s.deuda, s.plata); s.plata -= p; s.deuda -= p; }
     s.recompensa += N.recompensa.porGolpe + (civiles ? N.recompensa.civiles : 0);
@@ -550,6 +788,7 @@ function partida(J, semilla) {
       da = Math.min(da, Math.max(0, s.plata)); s.plata -= da;
       dado[m.id] = da / Math.max(1, espera);
       if (da <= 0.01 && fueron.has(m)) anotar(m, 'q', 'Nada', dia, false, 2);
+      else if (R.miseria && fueron.has(m) && da < espera * R.miseria - 0.5) anotar(m, 'q', 'Una miseria', dia, false, 2);
       else if (da < espera - 0.5) anotar(m, 'q', 'Me diste poco', dia);
       else if (da >= espera * N.reparto.generoso - 0.5) {
         m.genSeguidos = (m.genSeguidos || 0) + 1;
@@ -577,8 +816,11 @@ function partida(J, semilla) {
     }
     contratados = contratados.filter((c) => !c.fuera && !c.porTrabajo);
     // La olla (cazar la paga) y J.Mc.
-    const olla = (dias - diasCazados) * todos().length * (g >= N.regiones.montana ? N.ollaDiaMontana : N.ollaDia);
-    if (s.plata >= olla) s.plata -= olla; else for (const m of historia()) anotar(m, 'q', 'No hay comida', dia);
+    const precioOlla = g >= N.regiones.montana ? N.ollaDiaMontana : N.ollaDia;
+    const olla = N.comida.activo ? 0 : N.caza.activo ? sinComida * precioOlla : Math.max(0, dias - diasCazados) * (todos().length + N.ollaJames) * precioOlla;
+    s.ollaPagada += s.plata >= olla ? olla : 0;
+    if (N.comida.activo) { if (sinComida > 0) for (const m of historia()) anotar(m, 'q', 'No hay comida', dia, true); }
+    else if (s.plata >= olla) s.plata -= olla; else for (const m of historia()) anotar(m, 'q', 'No hay comida', dia);
     { const p = Math.min(N.jmc, s.plata); s.plata -= p; s.deuda += N.jmc - p; }
     // Pedidos.
     if (rng() < N.pedido.chance) {
@@ -631,7 +873,9 @@ function partida(J, semilla) {
   for (const m of IDS.map((id) => banda[id])) if (!m.fuera && m.preso) s.perdidos.push({ id: m.id, como: 'preso', golpe: N.golpes });
   // Lo que sabe la banda al final.
   s.habilidadesFinal = historia().reduce((t, m) => t + Object.values(m.hab).filter((x) => x.marcas >= N.habilidad.marcas).length, 0);
-  s.plata += s.objetos * N.perista.comun;
+  s.plata += s.objetos * (N.tratos.activo ? 0.75 * (1 + (J.honor || 0)) : N.perista.nuevo ? N.perista.jugador * (1 + (J.honor || 0)) : N.perista.comun);
+  s.oxidadas = OXIDADAS;
+  s.estrellas = historia().reduce((t, m) => t + Object.values(m.hab).filter((x) => x.domina).length, 0);
   return s;
 }
 
@@ -658,7 +902,7 @@ const esPrincipal = process.argv[1] && import.meta.url.endsWith(process.argv[1].
 if (esPrincipal) {
   const pct = (a, b) => `${Math.round((100 * a) / b)}%`;
   const filas = Object.entries(JUGADORES).map(([k, J]) => ({ k, J, r: correr(J) }));
-  let t = `# Resultados del simulador de la banda v11 (banda3.js)\n\n${PARTIDAS} partidas de ${N.golpes} golpes por jugador, por días, con tareas, cuatro papeles y la cantina.\n\n`;
+  let t = `# Resultados del simulador de la banda v17 (banda3.js, con los tratos)\n\n${PARTIDAS} partidas de ${N.golpes} golpes por jugador, por días, con tareas, cuatro papeles y la cantina.\n\n`;
   t += '## 1. A cuántos pierde\n\n| Jugador | Nadie | 1 | 2 | 3 | Ve alguna señal | Traiciones | Plata al final |\n|---|---|---|---|---|---|---|---|\n';
   for (const { J, r } of filas) t += `| ${J.nombre} | ${pct(r.pierde[0], r.n)} | ${pct(r.pierde[1], r.n)} | ${pct(r.pierde[2], r.n)} | ${pct(r.pierde[3], r.n)} | ${pct(r.conSenal, r.n)} | ${(r.traiciones / r.n).toFixed(2)} | $${Math.round(r.plata / r.n)} |\n`;
   t += '\n## 2. Cómo se pierden (por cada 100 partidas)\n\n| Jugador | Se fue | Con plata | Vendió | Declaró (Tommy) | Echado | Límite | Se entregó | Preso |\n|---|---|---|---|---|---|---|---|---|\n';
@@ -701,4 +945,4 @@ if (esPrincipal) {
   writeFileSync(new URL('./resultados-banda3.md', import.meta.url), t);
   console.log(t);
 }
-export { JUGADORES, partida };
+export { JUGADORES, partida, HABILIDAD, PERSONALIDAD };

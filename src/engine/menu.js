@@ -137,7 +137,8 @@ export function crearMenu(audio) {
    */
   function abrir(titulo, opciones, alElegir, cuerpo = null, extra = {}) {
     if (!opciones || opciones.length === 0) return false;
-    abierto = { titulo, opciones, sel: 0, alElegir, cuerpo, renglones: null, figuras: extra.figuras || [] };
+    // (`extra.sel`: con qué opción marcada abre; el almacén vuelve a abrir en la que elegiste.)
+    abierto = { titulo, opciones, sel: Math.max(0, Math.min(opciones.length - 1, extra.sel || 0)), alElegir, cuerpo, renglones: null, figuras: extra.figuras || [] };
     audio.play('cover');
     return true;
   }
@@ -158,8 +159,8 @@ export function crearMenu(audio) {
   /** 🧪 Elegir una opción por su id, como si la hubieras apretado (para las pruebas). */
   function elegirOpcion(id) {
     if (!abierto) return;
-    const seguir = abierto.alElegir(id);
-    if (!seguir) abierto = null;
+    const antes = abierto, seguir = abierto.alElegir(id);
+    if (!seguir && abierto === antes) abierto = null;
   }
 
   /**
@@ -180,10 +181,12 @@ export function crearMenu(audio) {
     }
     if (input.wasPressed('KeyE') || input.wasPressed('Enter')) {
       const op = abierto.opciones[abierto.sel];
-      const seguir = abierto.alElegir(op.id);
+      const antes = abierto, seguir = abierto.alElegir(op.id);
       // Si la acción pide seguir abierta, se refresca la lista por si los
       // textos cambiaron (el arma equipada ahora es otra).
-      if (!seguir) abierto = null;
+      // 🔁 (Y si la acción abrió otro papel, ése queda: al esperar días en la carpa, un aviso largo —"no alcanzó para
+      // la olla"— abría su papel y éste lo cerraba enseguida, sin que se leyera.)
+      if (!seguir && abierto === antes) abierto = null;
     }
     if (input.wasPressed('Escape')) cerrar();
     return true;

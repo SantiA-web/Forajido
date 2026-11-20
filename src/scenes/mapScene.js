@@ -37,6 +37,7 @@ import { encargoAbierto, tieneMaletin } from '../data/momentos.js';
 import { T } from '../text/es.js';
 import { gameState } from '../state/gameState.js';
 import { pasar } from '../systems/tiempo.js';
+import { guisoParaElGolpe } from '../systems/tareas.js';
 import { TIEMPO } from '../data/tiempo.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { DENSIDAD } from '../engine/renderer.js';
@@ -370,6 +371,10 @@ export function createMapScene(services) {
 
   function salir(tren) {
     audio.play('escape');
+    // 📋 (Mientras dura el golpe, los que tienen papel no salen a las tareas de la pizarra.)
+    if (gameState.campamento) gameState.campamento.golpeEnCurso = true;
+    // 🍲 (El guiso del Cocinero de esta noche o de anoche: James entra con un tiro más. Ver systems/tareas.js.)
+    gameState.guisoTiros = guisoParaElGolpe(gameState);
     pasar(gameState, faltaPara(gameState, tren));
     gameState.viajeDeVuelta = viajeDe(tren.ruta);
     sacarDelHorario(gameState, tren.id);

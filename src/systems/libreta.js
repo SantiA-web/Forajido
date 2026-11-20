@@ -13,8 +13,9 @@
  * (`sincronizar`), con un número que cae justo en su palabra (con ganas → contento).
  */
 
-import { LIBRETA, LEALTAD5, NO_QUIERE } from '../data/libreta.js';
-import { marcaFuerte } from './animo.js';
+import { LIBRETA, LEALTAD5, NO_QUIERE, REPARTO, OLLA, JMC } from '../data/libreta.js';
+import { marcaFuerte, fuerza } from './animo.js';
+import { COMIDA } from '../data/comida.js';
 
 /** El humor de 1 a 100 que corresponde a cada ánimo (cae justo en la palabra de `HUMOR.palabras`). */
 const HUMOR_DE = { conGanas: 80, tranquilo: 57, deMalas: 32, furioso: 10 };
@@ -134,4 +135,180 @@ export function disposicionLibreta(e, papel, dia) {
   if (a === 'furioso') return marcaFuerte(e, 'confiable') ? 'malaGana' : 'seNiega';
   if (papel && a !== 'conGanas' && noQuiere(e, papel)) return 'seNiega';
   return a === 'conGanas' ? 'potenciado' : a === 'deMalas' ? 'malaGana' : 'normal';
+}
+
+// ─────────────────────────── 💰 EL REPARTO, POR CABEZA ───────────────────────────
+// (Los números en `REPARTO`, data/libreta.js. La pantalla, en scenes/reparto.js.)
+
+/** La parte del botín que espera: el que fue, el Ambicioso que fue, o el que se quedó. */
+export function parteDe(e, fue) {
+  if (!fue) return REPARTO.queda;
+  return marcaFuerte(e, 'ambicioso') ? REPARTO.ambicioso : REPARTO.va;
+}
+
+/** Cuánto espera, en pesos. */
+export function esperaDe(e, fue, botin) {
+  return Math.round(botin * parteDe(e, fue));
+}
+
+/** Cuánto es "generoso" para él: un cuarto más de lo que espera. */
+export function generosoDe(espera) {
+  return Math.round(espera * REPARTO.generoso);
+}
+
+/**
+ * 📝 LO QUE VA A ANOTAR si le das `da` (para mostrarlo ANTES de confirmar): una lista de `{ lado, motivo, veces }`,
+ * vacía si no anota nada. Con `loEspera: true`, fue generoso pero ya no cuenta como favor.
+ */
+export function consecuenciaDelReparto(e, fue, espera, da) {
+  const seguidos = (e.repartos && e.repartos.generosos) || 0;
+  const out = [];
+  if (espera <= 0) return out;
+  const gen = generosoDe(espera);
+  if (da <= 0 && fue) out.push({ lado: 'q', motivo: 'repartoNada', veces: 2 });
+  // (🔁 Una miseria: al que fue, menos de 2/3 de lo que espera cuenta como no darle nada. Ver `REPARTO.miseria`.)
+  else if (fue && REPARTO.miseria && da < espera * REPARTO.miseria) out.push({ lado: 'q', motivo: 'repartoMiseria', veces: 2 });
+  else if (da < espera) out.push({ lado: 'q', motivo: 'repartoPoco', veces: 1 });
+  else if (da >= gen) {
+    if (seguidos >= REPARTO.acostumbra) out.push({ lado: null, motivo: 'repartoLoEspera', veces: 0 });
+    else out.push({ lado: 'f', motivo: 'repartoGeneroso', veces: 1 });
+  }
+  if (da < gen && seguidos >= REPARTO.acostumbra) out.push({ lado: 'q', motivo: 'repartoYaNo', veces: 1 });
+  return out;
+}
+
+/**
+ * 💰 REPARTE: le paga a cada uno lo que le das (de tu plata) y anota lo que corresponde. `filas`: `[{ id, fue,
+ * espera, da }]`. El Sentimental, a veces, lo cuenta doble (según lo fuerte que es). Devuelve lo anotado, para decirlo.
+ */
+export function repartir(g, filas, azar = Math.random) {
+  const dia = g.tiempo ? g.tiempo.dia : 0, anotes = [];
+  for (const f of filas) {
+    const e = g.banda[f.id];
+    if (!e) continue;
+    const da = Math.max(0, Math.min(f.da, g.money));
+    g.money -= da;
+    for (const c of consecuenciaDelReparto(e, f.fue, f.espera, da)) {
+      if (!c.lado) continue;
+      const veces = c.lado === 'f' && azar() < fuerza(e, 'sentimental') ? 2 : c.veces;
+      anotar(e, c.lado, c.motivo, dia, { veces });
+      anotes.push({ id: f.id, lado: c.lado, motivo: c.motivo, veces: Math.min(LIBRETA.vecesMax, veces) });
+    }
+    e.repartos = e.repartos || { generosos: 0 };
+    e.repartos.generosos = f.espera > 0 && da >= generosoDe(f.espera) ? e.repartos.generosos + 1 : 0;
+  }
+  return anotes;
+}
+
+
+// ─────────────────────────── 🍲 LA OLLA ───────────────────────────
+// (Los números en `OLLA`, data/libreta.js.)
+
+/** Los que comen de la olla: los de la banda que están en el campamento (el preso, no). */
+function comen(g) {
+  return Object.entries(g.banda || {}).filter(([, e]) => e && e.esta).map(([id]) => id);
+}
+
+/** Lo que cuesta la olla de un día, hoy. */
+export function costoDeLaOlla(g) {
+  // (🍖 Con la comida en porciones, no hay olla: ver data/comida.js.)
+  if (!OLLA.activa || COMIDA.activo) return 0;
+  const montana = g.campamento && g.campamento.asaltos >= OLLA.montanaDesde;
+  // (Y James, que también come: `OLLA.james`.)
+  return (comen(g).length + (OLLA.james ? 1 : 0)) * (montana ? OLLA.diaMontana : OLLA.dia);
+}
+
+/**
+ * 🍲 PAGA LA OLLA DEL DÍA (al empezar cada día). Devuelve `{ costo, pago }`, y `quejas`: quiénes anotaron que no hubo
+ * (los que ya tenían esa queja, no la anotan de nuevo).
+ */
+export function pagarLaOlla(g, dia) {
+  const costo = costoDeLaOlla(g);
+  if (!costo) return { costo, pago: true, quejas: [] };
+  // 🔁 (Los días de la vuelta, con el reparto pendiente, se pagan al repartir: como en el simulador —botín, deuda,
+  // reparto, olla, J.Mc.—. Antes la olla de la vuelta se comía la bolsa antes de repartir: con la deuda de J.Mc.,
+  // llegabas al reparto con $0. Ver `pagarOllaDeLaVuelta`.)
+  const C = g.campamento;
+  if (C && C.reparto) { C.ollaDeLaVuelta = (C.ollaDeLaVuelta || 0) + costo; return { costo, pago: true, quejas: [], despues: true }; }
+  return cobrarOlla(g, costo, dia);
+}
+
+/** 🍲 La olla de los días de la vuelta (ver `pagarLaOlla`), al repartir. Devuelve `{ costo, pago, quejas }`, o null. */
+export function pagarOllaDeLaVuelta(g, dia) {
+  const C = g.campamento, costo = (C && C.ollaDeLaVuelta) || 0;
+  if (!costo) return null;
+  C.ollaDeLaVuelta = 0;
+  return cobrarOlla(g, costo, dia);
+}
+
+/** Lo que debe la olla de la vuelta (para la hoja del reparto). */
+export function ollaDeLaVuelta(g) {
+  return (g.campamento && g.campamento.ollaDeLaVuelta) || 0;
+}
+
+/** Paga `costo` de olla, o (si no alcanza) no paga nada y cada uno anota su queja chica. */
+function cobrarOlla(g, costo, dia) {
+  if (g.money >= costo) { g.money -= costo; return { costo, pago: true, quejas: [] }; }
+  const quejas = [];
+  for (const id of comen(g)) {
+    const e = g.banda[id];
+    if (!e.libreta || e.libreta.quejas.some((q) => q.motivo === 'olla')) continue;
+    anotar(e, 'q', 'olla', dia, { chica: true });
+    quejas.push(id);
+  }
+  return { costo, pago: false, quejas };
+}
+
+// ─────────────────────────── ✉️ J.Mc. EN CUOTAS ───────────────────────────
+// (Los números en `JMC`, data/libreta.js.)
+
+/** Lo de J.Mc. en la partida: `{ deuda, roto }`. */
+export function completarJmc(g) {
+  const C = g.campamento;
+  if (!C) return { deuda: 0, roto: false };
+  // (🐛 El mismo objeto siempre: si se armaba uno nuevo en cada llamada, la deuda se anotaba en una copia y se perdía.)
+  if (!C.jmc) C.jmc = {};
+  if (C.jmc.deuda == null) C.jmc.deuda = 0;
+  if (C.jmc.roto == null) C.jmc.roto = false;
+  return C.jmc;
+}
+
+/** Si J.Mc. cobra: desde que leíste su primera carta y mientras no rompas con él. */
+export function jmcCobra(g) {
+  return JMC.activo && !!(g.campamento && g.campamento.encargo) && !completarJmc(g).roto;
+}
+
+/** Lo que le debes a J.Mc. */
+export function deudaConJmc(g) {
+  return g.campamento ? completarJmc(g).deuda : 0;
+}
+
+/** Lo que se va a llevar después del reparto si te quedan `queda`: `{ lleva, debe }` (debe: lo que faltaría). */
+export function cuotaDeJmc(g, queda) {
+  if (!jmcCobra(g)) return { lleva: 0, debe: 0 };
+  const lleva = Math.max(0, Math.min(JMC.porGolpe, queda));
+  return { lleva, debe: JMC.porGolpe - lleva };
+}
+
+/** ✉️ SE LLEVA SU CUOTA del golpe (después del reparto). Devuelve `{ lleva, debe, deuda }`, o null si no cobra. */
+export function cobrarJmc(g) {
+  if (!jmcCobra(g)) return null;
+  const J = completarJmc(g), { lleva, debe } = cuotaDeJmc(g, g.money);
+  g.money -= lleva;
+  J.deuda += debe;
+  return { lleva, debe, deuda: J.deuda };
+}
+
+/** ✉️ Lo que le debías, primero, de lo que trajiste (antes del reparto). Devuelve lo que pagaste. */
+export function pagarDeudaConJmc(g) {
+  if (!jmcCobra(g)) return 0;
+  const J = completarJmc(g), paga = Math.max(0, Math.min(J.deuda, g.money));
+  g.money -= paga;
+  J.deuda -= paga;
+  return paga;
+}
+
+/** ✉️ Le entregaste el maletín: te perdona la deuda. */
+export function perdonarDeuda(g) {
+  if (g.campamento) completarJmc(g).deuda = 0;
 }

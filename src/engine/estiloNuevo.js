@@ -127,6 +127,13 @@ export const estiloNuevo = {
     hayFinos = true;
     return f;
   },
+  /** Borra toda la capa fina (lo llama `clear`, engine/renderer.js). */
+  limpiarFinos(ctx) {
+    if (!activo || !hayFinos || !finos || finos.width !== ctx.canvas.width) return;
+    finosCtx.setTransform(1, 0, 0, 1, 0, 0);
+    finosCtx.clearRect(0, 0, finos.width, finos.height);
+    hayFinos = false;
+  },
   /** Lo que se dibuja delante de la gente le tapa el borde (y los puntos finos). */
   taparGente(ctx, img, x, y, w, h) {
     if (activo && hayFinos) {
@@ -179,12 +186,17 @@ export const estiloNuevo = {
     if (hayGente) this.bordeFino(ctx, w, h, k);
     if (hayFinos) {
       ctx.drawImage(finos, 0, 0);
+      // 🐛 Sin la lupa: las letras dejan puesta la de la cámara (`lienzoFino`), y con ella se borraba sólo un pedazo y
+      // las letras de un cuadro viejo quedaban pegadas (el cartel del vagón donde subiste, encima del de ahora).
+      finosCtx.setTransform(1, 0, 0, 1, 0, 0);
+      finosCtx.globalAlpha = 1;
       finosCtx.clearRect(0, 0, finos.width, finos.height);
       hayFinos = false;
     }
     ctx.restore();
     renderer.nuevoCuadro();
-    renderer.text(T.estiloNuevo, 4, renderer.height - 6, '#e8b84a', 'left');
+    // (Ya pasó por la grilla: directo en el lienzo, no en la capa fina, que ya se puso.)
+    renderer.text(T.estiloNuevo, 4, renderer.height - 6, '#e8b84a', 'left', { lienzo: ctx });
   },
 
   /** Traza el borde fino alrededor de lo marcado en la máscara, y la limpia. */

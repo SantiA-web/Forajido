@@ -37,6 +37,8 @@ import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { crearMenu } from '../engine/menu.js';
 import { pistasDelDiario } from '../systems/horario.js';
 import { completarTiempo } from '../systems/tiempo.js';
+import { COMIDA } from '../data/comida.js';
+import { porciones, diasQueAlcanza, comensales, precioPorcion, precioVenta, precioDe, comprar, vender } from '../systems/comida.js';
 // (🗄️ El pueblo nuevo, en bloques, queda guardado para después: scenes/puebloNuevo.js y data/puebloNuevo.js. Ver PROMPT-CONTINUAR.md.)
 
 /**
@@ -122,6 +124,8 @@ export function createTownScene(services) {
       // 🗞️ (Hablar con alguien sin ir caminando, y si hay un diálogo abierto: para probar el diario.)
       get dialogo() { return menu.activo(); },
       usar: (id) => usar({ id, tipo: 'persona' }),
+      // 🛒 (Y pararse delante de una puerta: para probar el almacén.)
+      irA: (nx) => { x = nx; },
     };
   }
 
@@ -171,6 +175,13 @@ export function createTownScene(services) {
      * cierre de noche (el establo y la armería son negocios), y entonces la
      * puerta te lo dice — que es lo que le da un trabajo real a dormir.
      */
+    // 🛒 (El almacén no tiene interior: es el mostrador.)
+    if (o.id === 'almacen') {
+      if (COMIDA.soloDeDia && !gameState.esDeDia) { decir(T.pueblo.cerrado(T.pueblo.almacen.nombre)); audio.play('hitWall'); return; }
+      audio.play('cover');
+      abrirAlmacen();
+      return;
+    }
     const interior = INTERIORES[o.id];
     if (interior && interior.soloDeDia && !gameState.esDeDia) {
       decir(T.pueblo.cerrado(interior.nombre));
@@ -204,6 +215,31 @@ export function createTownScene(services) {
       leer();
       return true;
     }, gameState.money >= D.precio ? D.pregon(D.precio) : D.sinPlata(D.precio));
+  }
+
+  /**
+   * 🛒 EL ALMACÉN *(Santi: "El que vende también puede vender en packs de porciones")*: por porción o en packs (con
+   * su descuento, `COMIDA.packs`), y te compra a la mitad, redondeada para abajo. Arriba, lo que tienes y para cuántos
+   * días te alcanza. Después de cada compra o venta, vuelve a abrirse con los números nuevos.
+   */
+  function abrirAlmacen(marcada = null) {
+    const A = T.pueblo.almacen, g = gameState, n = porciones(g), comen = comensales(g);
+    const opciones = [];
+    for (const k of [1, ...COMIDA.packs.map((p) => p.n)]) {
+      const costo = precioDe(g, k);
+      if (g.money >= costo) opciones.push({ id: 'c' + k, texto: A.comprar(k, costo) });
+    }
+    for (const k of [1, 5]) if (n >= k && precioVenta(g) > 0) opciones.push({ id: 'v' + k, texto: A.vender(k, k * precioVenta(g)) });
+    opciones.push({ id: 'no', texto: A.nada });
+    const cuerpo = A.hay(n, diasQueAlcanza(g), comen) + '\n' + A.precios(precioPorcion(g), precioVenta(g));
+    menu.abrir(A.nombre, opciones, (id) => {
+      if (id === 'no') return false;
+      const k = Number(id.slice(1));
+      const hecho = id[0] === 'c' ? comprar(g, k) : vender(g, k);
+      if (hecho != null) audio.play('cover');
+      abrirAlmacen(id);
+      return true;
+    }, cuerpo, { sel: Math.max(0, opciones.findIndex((o) => o.id === marcada)) });
   }
 
   function update(dt) {

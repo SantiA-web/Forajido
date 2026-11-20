@@ -12,6 +12,7 @@
 
 import { TIEMPO } from '../data/tiempo.js';
 import { alEmpezarElDia, pasaUnaParte } from './animoEnJuego.js';
+import { arrancarTareas } from './pizarra.js';
 
 export function tiempoInicial() {
   return { dia: 0, parte: TIEMPO.parteInicial };
@@ -61,6 +62,9 @@ export function pasar(g, partes) {
     }
     // 🎯 Los que están practicando: una parte menos.
     pasaUnaParte(g);
+    // 📋 Empieza una parte: cada uno sale a lo que tiene puesto ahí en la pizarra (systems/pizarra.js). (🔁 Antes,
+    // sólo la mañana: ahora hay tareas de una parte y de la noche.)
+    if (t.parte !== TIEMPO.cambiaElDia) arrancarTareas(g, t.parte);
   }
   g.esDeDia = TIEMPO.deDia[t.parte];
   return { dias, curados };

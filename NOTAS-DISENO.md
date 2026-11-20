@@ -20793,8 +20793,45 @@ que fue, 18 el Ambicioso, 5 el que se quedó; los contratados, $20 por semana m�
 paso en los papeles. Medido: el que cuida $1673, el que cambia la banda por contratados $665. (Un error mío hacía que
 por cabeza los contratados cobraran $0 y me había llevado a recomendar el tercio.)
 
-⏭️ **Sigue:** la etapa 2, parte 2 (la pantalla del reparto) y parte 3 (la olla por día y J.Mc. con deuda). El pueblo
-nuevo sigue archivado; el compañero adentro del tren, también (BRUJULA.md).
+✅ **Hecho después (2026-11-18 al 2026-11-20), ver la sección siguiente.** El pueblo nuevo sigue archivado; el
+compañero adentro del tren, también (BRUJULA.md).
+
+---
+
+## ✅ EL REPARTO, LA COMIDA, EL CALENDARIO CON TAREAS Y LOS TRATOS (2026-11-18 al 2026-11-20)
+
+- **Etapa 2, parte 2: la pantalla del reparto, por cabeza** (`src/scenes/reparto.js`): se abre sola al volver con
+  botín; un renglón por cada uno con lo que espera (12 de cada 100 el que fue, 18 el Ambicioso, 5 el que se quedó),
+  LO QUE ESPERAN / GENEROSO / NADA, de a $5, y la queja o el favor se ve antes de repartir.
+- **Etapa 2, parte 3: J.Mc. en cuotas** *(Santi eligió "hasta romper con él")*: $200 por golpe con deuda (`JMC`,
+  data/libreta.js); el maletín paga la deuda. **La comida en porciones** *(Santi: "ya no existiría el precio de la
+  olla porque todo es por porciones")*: cada día que empieza come cada uno una porción de la despensa; el almacén
+  del pueblo vende por región y en packs (`src/data/comida.js`, `src/systems/comida.js`).
+- **Etapa 3: la pizarra dentro del calendario [C]** *(Santi: "que sean menos teclas y funciones")*
+  (`src/systems/pizarra.js`): cada uno con su tarea por parte del día, la rutina que se repite, [Espacio] una parte,
+  [Shift+Espacio] un día. **Las tareas** (`src/data/tareas.js`, `src/systems/tareas.js`): cazar (en grupo, porciones
+  por región), pescar (dos días), bajar al pueblo (rumores o comida), vender lo robado, curar, cartas en la cantina,
+  cocinar (el guiso da un tiro más de vida en el golpe). Lo que traen llega como noticia al campamento.
+- **Los tratos** *(Santi, 2026-11-19: "Este sistema te lo voy a dejar a vos"; "recuerda que es un complemento y no un
+  juego de regateo")*: diseñados con cuatro jueces, medidos en el simulador (v17) y construida la etapa 1, el perista.
+  **Todo en `TRATOS.md`** (manda sobre esta nota). El perista ofrece el 75% y tienes una jugada: aceptar, regatear,
+  apretarlo (si te conocen) o irte, cada una con su chance "de cada 100". Cada partida es otro perista (uno o dos de
+  Ambicioso, Cobarde, Valiente, Rastrero, Honorable), que se le van notando jugando; el Rastrero chantajea. 🔁 *(Santi,
+  2026-11-20: "no siempre con buen honor el perista te da más dinero, es muy depende de quien es el perista")*: el
+  honor según quién (el Rastrero lo da vuelta). Y **la química** del que mandas a vender con el perista *("El jugador
+  no solo debería elegir mandar a alguien por habilidad sino también por quien es con el que va a negociar"; "es más
+  probabilidad, no algo asegurado")*: 13 parejas, cada una con la fuerza del rasgo del que va; se ve en el calendario
+  sólo si ya conoces al perista. La fama ahora sube también con un golpe en el diario o una racha limpia.
+  Archivos: `src/data/tratos.js` (números), `src/systems/tratos.js` (reglas puras, las usa el simulador),
+  `src/systems/tratosEnJuego.js`, `src/scenes/trato.js` (el papel). 🔁 Cambió lo que Santi había elegido para mandar a
+  vender (regatea 1 de 3, +30%): ahora juega con las mismas reglas que James, porque si no mandar le ganaba siempre.
+- **Medido (simulador v17):** el que cuida a la banda termina con $2766 (con el perista al 100% eran $3938) y no
+  pierde a nadie el 95%; el que no usa los días pasa de 23% a 2%.
+
+⚠️ **Sin jugar de punta a punta.** Probado por partes en el juego, sin errores. Sin probar: el Pendenciero y el
+Cobarde yendo a vender (nadie los tiene al empezar), la fama subiendo en un golpe real.
+
+⏭️ **Sigue:** ver PROMPT-CONTINUAR.md.
 
 ---
 

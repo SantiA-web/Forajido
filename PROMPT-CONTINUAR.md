@@ -7,7 +7,13 @@ así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
 `NOTAS-DISENO.md` es grande (11.000 líneas): usá Grep para ir a la sección que
 necesites en vez de leerlo entero cada vez.
 
-## LO ÚLTIMO (2026-11-18): LA BANDA NUEVA, POR ETAPAS
+## LO ÚLTIMO (2026-11-20): LOS TRATOS CON EL PERISTA
+
+Santi me dejó a mí el sistema de tratos (comprar y vender con cualquier tratante). Está todo en **`TRATOS.md`**:
+hecha la etapa 1 (el perista, la tarea "vender", el honor según quién, la química del que mandas). Las tiendas
+(armero, establo) quedan para después *(Santi, 2026-11-20)*. Falta además que el chantaje y el soplo vayan a la libreta.
+
+## ANTES (2026-11-18): LA BANDA NUEVA, POR ETAPAS
 
 Antes de tocar la banda, leé **`BRUJULA.md`** (qué juego es) y **`BANDA-NUEVA.md`** (la banda rehecha, aprobada;
 al final, "Las reglas que no se tocan" y el "Orden de construcción"). El resumen de lo hecho está en
@@ -15,11 +21,12 @@ al final, "Las reglas que no se tocan" y el "Orden de construcción"). El resume
 
 - ✅ **Etapa 1**: el telégrafo y el vigía en el asalto, y que lleguen a la huida.
 - ✅ **Etapa 2, parte 1**: la libreta, la lealtad de 0 a 5 y el ánimo en el plan (`src/systems/libreta.js`).
-- ⏭️ **Etapa 2, parte 2**: la pantalla del reparto **por cabeza** (12 / 18 Ambicioso / 5 el que se quedó; LO QUE
-  ESPERAN, GENEROSO, NADA; la queja o el favor se ve antes de confirmar). Reemplaza a los momentos "reparto" y "deMas".
-- ⏭️ **Etapa 2, parte 3**: la olla ($5 por persona por día) y J.Mc. ($200 por golpe, con deuda).
-- Después, etapas 3 a 6 (pizarra y tareas, habilidades con marcas, personalidades y fogata, tentación y traiciones,
-  cantina con los contratados: $20 por semana + 12 si van, −1 paso).
+- ✅ **Etapa 2, partes 2 y 3**: la pantalla del reparto por cabeza (`src/scenes/reparto.js`), J.Mc. en cuotas y la
+  comida en porciones (`src/systems/comida.js`, reemplaza a la olla).
+- ✅ **Etapa 3**: la pizarra dentro del calendario [C] y las tareas (`src/systems/pizarra.js`, `src/systems/tareas.js`);
+  los tratos con el perista (`TRATOS.md`).
+- ⏭️ **Etapa 3, parte 4**: los rumores con su origen. Después, etapas 4 a 6 (personalidades con escalones y la fogata,
+  tentación y traiciones, cantina con los contratados).
 
 Todo número nuevo va en un solo archivo de datos y se mide primero en `simulador/banda3.js` (`SIM='{...}'` para
 probar variantes). Antes de sacar una conclusión del simulador, revisar que la variante corra de verdad.

@@ -15,6 +15,7 @@ import { BOSSES } from '../data/bosses.js';
 import { bandaInicial } from '../data/banda.js';
 import { tiempoInicial } from '../systems/tiempo.js';
 import { campamentoInicial } from '../data/momentos.js';
+import { famaDelGolpe } from '../systems/tratosEnJuego.js';
 
 export const SAVE_VERSION = 1;
 
@@ -205,7 +206,9 @@ export function applyRaidResult(summary) {
    * tenés.
    */
   if (summary.objetos && summary.objetos.length) {
-    gameState.owned.objetos.push(...summary.objetos);
+    // 🤝 (Con el día del golpe: lo caliente RECIÉN robado es lo que dispara el chantaje del Rastrero, TRATOS.md.)
+    const dia = gameState.tiempo ? gameState.tiempo.dia : 0;
+    gameState.owned.objetos.push(...summary.objetos.map((o) => ({ ...o, dia })));
   }
 
   if (summary.outcome === 'escaped') {
@@ -226,6 +229,9 @@ export function applyRaidResult(summary) {
    * la arranca.
    */
   gameState.rachaLimpia = summary.racha || 0;
+
+  // 🤝 LA FAMA (TRATOS.md): un golpe que sale en el diario o una racha limpia hacen que se hable de ti.
+  summary.famaGolpe = famaDelGolpe(gameState, summary);
 
   // Se guarda en el summary (no sólo en gameState.bounty) para que la
   // pantalla de resultados pueda mostrar cuánto subió ESTE asalto sin

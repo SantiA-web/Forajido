@@ -126,6 +126,12 @@ export function nuevoDia(banda, ids, dia, descanso) {
     }
     // 5. Lo que no usa, se le olvida.
     for (const [hab, h] of Object.entries(e.habilidades || {})) {
+      // (●●●●● Con las marcas, el óxido: una marca cada tantos días sin usarla.)
+      if (ANIMO.habilidad.marcas.activo) {
+        const que = oxidar(e, hab, h, dia);
+        if (que) notas.push({ id, que, habilidad: hab });
+        continue;
+      }
       // (⭐ La que tiene estrellita no se olvida nunca.)
       if (h.estrella || dia - h.ultimo <= ANIMO.habilidad.gracia) continue;
       e.rasgos[hab] = Math.max(0, (e.rasgos[hab] || 0) - ANIMO.habilidad.olvido);
@@ -182,9 +188,10 @@ export function cambioDeFalla(disp) {
  * más lento, y por debajo de lo más alto que llegó alguna vez, más rápido (recuperarla es más fácil que aprenderla).
  * Devuelve `'gano'`, `'recupero'` o null. (Si llega a la estrellita, queda `habilidades[hab].estrella`.)
  */
-export function practicar(e, hab, dia, rinde = 1) {
+export function practicar(e, hab, dia, rinde = 1, { como = 'uso', enGolpe = false } = {}) {
   const H = ANIMO.habilidad;
   if (!e.habilidades) e.habilidades = {};
+  if (H.marcas.activo) return practicarMarcas(e, hab, dia, como, enGolpe);
   const h = e.habilidades[hab] || (e.habilidades[hab] = { tiene: false, techo: 0, ultimo: dia });
   h.ultimo = dia;
   const nivel = e.rasgos[hab] || 0;
@@ -232,6 +239,69 @@ export function revisarSiSeVa(e) {
 /** El estado de las habilidades al empezar: las que trae, ya aprendidas. */
 export function habilidadesIniciales(rasgos) {
   const out = {};
-  for (const [id, n] of Object.entries(rasgos)) if (!esPersonalidad(id)) out[id] = { tiene: true, techo: n, ultimo: 0, yaLaTuvo: true };
+  // (●●●●● Con las marcas, las que trae las trae enteras.)
+  for (const [id, n] of Object.entries(rasgos)) if (!esPersonalidad(id)) out[id] = { tiene: true, techo: n, ultimo: 0, yaLaTuvo: true, marcas: ANIMO.habilidad.marcas.total, golpes: 0 };
   return out;
+}
+
+// ─────────────────────────── ●●●●● LAS MARCAS ───────────────────────────
+// (Los números en `ANIMO.habilidad.marcas`, data/rasgos.js.)
+
+/**
+ * USAR O PRACTICAR CON MARCAS. `como`: 'uso' (en un golpe o en una tarea: una marca), 'practica' (un día: media, una
+ * entera con ganas) o 'mano' (una mano de cartas: no suma, pero la mantiene fresca). `enGolpe`: cuenta para la
+ * estrellita. Devuelve `'gano'`, `'recupero'` o null (la estrellita queda en `estrella`).
+ */
+function practicarMarcas(e, hab, dia, como, enGolpe) {
+  const M = ANIMO.habilidad.marcas;
+  const h = e.habilidades[hab] || (e.habilidades[hab] = { tiene: false, techo: 0, ultimo: dia, marcas: 0, golpes: 0 });
+  if (h.marcas == null) h.marcas = h.tiene ? M.total : 0;
+  const antes = h.tiene;
+  h.ultimo = dia;
+  const conGanas = e.humor >= ANIMO.disposicion.potenciado;
+  let n = como === 'practica' ? M.practica + (conGanas ? M.conGanas : 0) : como === 'mano' ? 0 : M.uso;
+  // (Recuperarla es más rápido mientras no haya bajado de 2.)
+  if (h.yaLaTuvo && h.marcas >= 2) n *= M.recuperar;
+  h.marcas = Math.min(M.total, h.marcas + n);
+  // (El número de 0 a 100 sigue al lado, para lo que todavía lo lee: la ficha lista los rasgos por él.)
+  e.rasgos[hab] = Math.round((100 * h.marcas) / M.total);
+  // ⭐ Con la habilidad ya tenida, los golpes usándola la dominan.
+  if (enGolpe && antes && !h.estrella && ++h.golpes >= M.estrella) { h.estrella = true; h.ganoEstrella = dia; }
+  if (!h.tiene && h.marcas >= M.total) {
+    h.tiene = true;
+    const ya = h.yaLaTuvo;
+    h.yaLaTuvo = true;
+    moverHumor(e, ANIMO.habilidad.humorGana);
+    return ya ? 'recupero' : 'gano';
+  }
+  return null;
+}
+
+/**
+ * 🟤 EL ÓXIDO DE UN DÍA (lo llama `nuevoDia`): cada `oxidaCada` días sin usarla pierde una marca. Devuelve lo que
+ * hay que avisar: `'oxida'` (perdió una marca y todavía la tiene) o `'perdio'`.
+ */
+function oxidar(e, hab, h, dia) {
+  const M = ANIMO.habilidad.marcas;
+  if (h.marcas == null) h.marcas = h.tiene ? M.total : 0;
+  if (h.estrella || M.noOxidan.includes(hab) || h.marcas <= 0 || dia - h.ultimo < M.oxidaCada) return null;
+  h.marcas = Math.max(0, h.marcas - 1);
+  h.ultimo = dia;
+  e.rasgos[hab] = Math.round((100 * h.marcas) / M.total);
+  if (h.tiene && h.marcas < M.pierdeDebajo) { h.tiene = false; moverHumor(e, ANIMO.habilidad.humorPierde); return 'perdio'; }
+  return h.tiene ? 'oxida' : null;
+}
+
+/** Cuántos días le faltan para perder una marca de esa habilidad (null si no se oxida). */
+export function diasParaOxidarse(e, hab, dia) {
+  const M = ANIMO.habilidad.marcas, h = e.habilidades && e.habilidades[hab];
+  if (!M.activo || !h || h.estrella || M.noOxidan.includes(hab) || !(h.marcas > 0)) return null;
+  return Math.max(0, M.oxidaCada - (dia - h.ultimo));
+}
+
+/** Las marcas de esa habilidad (0 a `total`; con medias). */
+export function marcasDe(e, hab) {
+  const h = e.habilidades && e.habilidades[hab];
+  if (!h) return 0;
+  return h.marcas ?? (h.tiene ? ANIMO.habilidad.marcas.total : 0);
 }

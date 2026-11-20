@@ -32,4 +32,12 @@ export const TIEMPO = {
   esperarDias: [1, 2, 3, 5, 7],
   /** Cuántos días adelante muestra el calendario en "lo que viene". */
   avisoDias: 14,
+
+  /**
+   * 📋 LA PIZARRA ADENTRO DEL CALENDARIO (systems/pizarra.js, scenes/calendario.js) *(Santi, 2026-11-18: "y si la
+   * pizarra la ponemos junto al calendario")*. Lo que eligió: `dias` a la vista ("7 días"), sin el mes entero, las
+   * tareas también hablándoles ("En los dos lados") y [Espacio] una parte, [Shift]+[Espacio] un día. Practicar y
+   * mirar ocupan la mañana y la tarde (`partesTarea`: el que sale a la mañana vuelve a la noche).
+   */
+  pizarra: { activo: true, dias: 7, partesTarea: 2 },
 };

@@ -11,7 +11,9 @@ import { T } from '../text/es.js';
 import { gameState } from '../state/gameState.js';
 import { formatTime } from '../ui/hud.js';
 import { CONFIG } from '../data/config.js';
-import { pasarAsalto, completarBanda, encarcelar, MIEMBRO } from '../data/banda.js';
+import { pasarAsalto, completarBanda, encarcelar, MIEMBRO, BANDA } from '../data/banda.js';
+import { REPARTO, LIBRETA } from '../data/libreta.js';
+import { pagarDeudaConJmc, cobrarJmc } from '../systems/libreta.js';
 import { pasar } from '../systems/tiempo.js';
 import { TIEMPO } from '../data/tiempo.js';
 import { completarCampamento, cerrarAsalto } from '../data/momentos.js';
@@ -59,10 +61,33 @@ export function createResultsScene(services) {
         (gameState.campamento.noticias = gameState.campamento.noticias || []).push('preso:' + summary.presoHuida);
       }
       cerrarAsalto(gameState);
+      // ✉️ J.Mc. EN CUOTAS (data/libreta.js, `JMC`): de lo que trajiste, primero lo que le debías.
+      if (summary.outcome === 'escaped') {
+        const pago = pagarDeudaConJmc(gameState);
+        if (pago) (gameState.campamento.noticias = gameState.campamento.noticias || []).push('jmcDeuda:' + pago);
+      }
+      // 💰 EL REPARTO, POR CABEZA (BANDA-NUEVA.md): quién fue a un papel se anota ANTES de vaciar los papeles; la
+      // pantalla se abre al llegar al campamento (scenes/reparto.js). Sólo si trajiste algo.
+      if (REPARTO.activo && LIBRETA.activa && gameState.ultimoAsalto.botin > 0) {
+        gameState.campamento.reparto = {
+          botin: gameState.ultimoAsalto.botin,
+          // { id: papel } de los que fueron.
+          fueron: Object.fromEntries(BANDA.map((m) => [m.id, gameState.banda[m.id] && gameState.banda[m.id].papel]).filter(([, p]) => p)),
+        };
+      } else if (summary.outcome === 'escaped') {
+        // (✉️ Sin reparto —no trajiste nada—, J.Mc. cobra igual: sale todo de deuda o de tu bolsa. Con reparto, cobra
+        // al repartir: scenes/reparto.js.)
+        const jmc = cobrarJmc(gameState);
+        if (jmc) (gameState.campamento.noticias = gameState.campamento.noticias || []).push('jmcCobro:' + jmc.lleva + ':' + jmc.deuda);
+      }
       pasarAsalto(gameState.banda);
       // 📅 El asalto y la vuelta al campamento (el viaje de ida se gastó al salir del mapa).
       // (🔁 🚂 La vuelta cuesta lo mismo que la ida: lo lejos que queda la vía, ver systems/horario.js.)
       pasar(gameState, 1 + (gameState.viajeDeVuelta || TIEMPO.cuesta.asaltoYVuelta - 1));
+      // 📋 (Volvieron: desde ahora salen otra vez a las tareas de la pizarra.)
+      if (gameState.campamento) gameState.campamento.golpeEnCurso = false;
+      // 🃏 (Las cartas en la cantina, una vez entre golpe y golpe: ya se puede de nuevo.)
+      if (gameState.campamento) gameState.campamento.cartasYa = false;
       // 🗞️ La hoja de ruta del encargado (ver `takeLoot` en scenes/raidScene.js): un tren de carga de la semana.
       if (summary.hojaDeRuta) {
         const tren = rumorDeCarga(gameState, 7);

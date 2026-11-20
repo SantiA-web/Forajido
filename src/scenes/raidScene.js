@@ -873,7 +873,7 @@ export function createRaidScene(services) {
     floaters.push({
       x: player.x, y: player.y - 20,
       text: `${T.hud.wagon(train.boardedAt)} · ${v.short}`,
-      life: 2.4, color: colors.text,
+      life: 2.4, color: colors.text, deVagon: true,
     });
     /**
      * 🎭 LO QUE TE DICE EL QUE VA DE PASAJERO: en qué vagón va la caja fuerte y cuántos guardias hay. Y que con [Q]
@@ -920,6 +920,16 @@ export function createRaidScene(services) {
      */
     if (params.vidaInicial !== undefined) {
       player.health = Math.max(1, Math.min(player.maxHealth, params.vidaInicial));
+    }
+    /**
+     * 🍲 EL GUISO DEL COCINERO (systems/tareas.js, `cocinar`): la noche antes, un tiro más de vida (más arriba del máximo
+     * de siempre, y se suma a lo que traigas del galope).
+     */
+    if (gameState.guisoTiros > 0) {
+      const mas = gameState.guisoTiros * CONFIG.golpe.danio.puntosPorTiro.jugador;
+      player.maxHealth += mas;
+      player.health += mas;
+      gameState.guisoTiros = 0;
     }
 
     /**
@@ -4577,7 +4587,10 @@ export function createRaidScene(services) {
 
     const v = train.wagons[ahora];
     const limpio = !v.esCola && v.guardiasVivos <= 0;
+    // (🔤 El cartel del vagón nuevo saca al del anterior: con las letras finas se leían los dos encimados.)
+    for (let i = floaters.length - 1; i >= 0; i--) if (floaters[i].deVagon) floaters.splice(i, 1);
     floaters.push({
+      deVagon: true,
       x: player.x, y: player.y - 20,
       text: v.esCola ? T.prompts.cola : `${T.hud.wagon(ahora)} · ${v.short}`,
       life: 1.8,

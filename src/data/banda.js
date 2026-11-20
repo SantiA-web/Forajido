@@ -344,10 +344,13 @@ export function completarBanda(banda) {
   return b;
 }
 
-/** Si puede hacer un papel: sigue con vos, no está herido y no se fue a practicar. */
+/**
+ * Si puede hacer un papel: sigue con vos, no está herido y no se fue a practicar. 📋 (Lo de la pizarra, sí: como se
+ * repite solo, si no, el que practica todos los días no podría ir nunca a un golpe de día. Ver `darPapel`.)
+ */
 export function puedeIr(banda, id) {
   const e = banda[id];
-  return !!e && e.esta && !e.herido && !e.practica;
+  return !!e && e.esta && !e.herido && (!e.practica || !!e.practica.dePizarra);
 }
 
 /** Quién tiene ese papel (o null). */
@@ -362,6 +365,8 @@ export function quienHace(banda, papel) {
 export function darPapel(banda, id, papel) {
   if (papel && !puedeIr(banda, id)) return false;
   if (papel) for (const m of BANDA) if (banda[m.id].papel === papel) banda[m.id].papel = null;
+  // (📋 Lo llamás: deja lo de la pizarra de hoy y viene al golpe.)
+  if (papel && banda[id].practica && banda[id].practica.dePizarra) banda[id].practica = null;
   banda[id].papel = papel;
   return true;
 }

@@ -1,4 +1,4 @@
-# Resultados del simulador de la banda v11 (banda3.js)
+# Resultados del simulador de la banda v17 (banda3.js, con los tratos)
 
 3000 partidas de 30 golpes por jugador, por días, con tareas, cuatro papeles y la cantina.
 
@@ -6,91 +6,91 @@
 
 | Jugador | Nadie | 1 | 2 | 3 | Ve alguna señal | Traiciones | Plata al final |
 |---|---|---|---|---|---|---|---|
-| Cuida a la banda | 93% | 5% | 1% | 1% | 59% | 0.10 | $1673 |
-| Cuida y contrata a sueldo | 83% | 10% | 4% | 3% | 63% | 0.30 | $985 |
-| Cuida y contrata por trabajo | 91% | 6% | 2% | 1% | 60% | 0.12 | $1371 |
-| Cuida, pero no usa los días | 0% | 3% | 26% | 70% | 100% | 2.42 | $96 |
-| Tacaño | 0% | 0% | 6% | 94% | 100% | 2.35 | $389 |
-| Violento (mata civiles) | 0% | 17% | 39% | 44% | 96% | 1.15 | $847 |
-| Descuidado | 0% | 0% | 0% | 100% | 100% | 2.18 | $52 |
-| Tacaño que cambia la banda por contratados | 0% | 0% | 11% | 89% | 100% | 2.51 | $665 |
-| Echa al que da señal y contrata | 43% | 40% | 14% | 3% | 60% | 0.00 | $1312 |
-| El que busca la trampa | 36% | 42% | 15% | 7% | 98% | 0.98 | $1245 |
+| Cuida a la banda | 95% | 4% | 1% | 0% | 61% | 0.06 | $2766 |
+| Cuida y contrata a sueldo | 91% | 6% | 2% | 1% | 60% | 0.14 | $1755 |
+| Cuida y contrata por trabajo | 95% | 4% | 1% | 0% | 60% | 0.06 | $2458 |
+| Cuida, pero no usa los días | 2% | 5% | 29% | 64% | 99% | 2.31 | $148 |
+| Tacaño | 0% | 0% | 1% | 99% | 100% | 2.39 | $305 |
+| Violento (mata civiles) | 0% | 16% | 40% | 44% | 97% | 1.14 | $1102 |
+| Descuidado | 0% | 0% | 0% | 100% | 100% | 2.16 | $66 |
+| Tacaño que cambia la banda por contratados | 0% | 0% | 2% | 98% | 100% | 2.64 | $1324 |
+| Echa al que da señal y contrata | 43% | 40% | 15% | 2% | 60% | 0.00 | $2439 |
+| El que busca la trampa | 36% | 51% | 10% | 3% | 98% | 0.83 | $2099 |
 
 ## 2. Cómo se pierden (por cada 100 partidas)
 
 | Jugador | Se fue | Con plata | Vendió | Declaró (Tommy) | Echado | Límite | Se entregó | Preso |
 |---|---|---|---|---|---|---|---|---|
-| Cuida a la banda | 5 | 5 | 0 | 1 | 0 | 0 | 0 | 0 |
-| Cuida y contrata a sueldo | 12 | 11 | 0 | 1 | 1 | 0 | 0 | 1 |
-| Cuida y contrata por trabajo | 6 | 6 | 0 | 0 | 0 | 0 | 0 | 1 |
-| Cuida, pero no usa los días | 139 | 91 | 0 | 12 | 12 | 2 | 0 | 11 |
-| Tacaño | 130 | 80 | 0 | 25 | 56 | 0 | 0 | 3 |
-| Violento (mata civiles) | 45 | 69 | 0 | 0 | 12 | 0 | 99 | 2 |
-| Descuidado | 103 | 90 | 0 | 24 | 24 | 2 | 49 | 8 |
-| Tacaño que cambia la banda por contratados | 124 | 80 | 0 | 25 | 58 | 1 | 0 | 1 |
+| Cuida a la banda | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Cuida y contrata a sueldo | 6 | 6 | 0 | 0 | 1 | 0 | 0 | 1 |
+| Cuida y contrata por trabajo | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Cuida, pero no usa los días | 133 | 88 | 0 | 10 | 12 | 2 | 0 | 9 |
+| Tacaño | 137 | 78 | 0 | 24 | 59 | 0 | 0 | 1 |
+| Violento (mata civiles) | 44 | 69 | 0 | 0 | 13 | 0 | 99 | 1 |
+| Descuidado | 103 | 89 | 0 | 24 | 26 | 3 | 48 | 7 |
+| Tacaño que cambia la banda por contratados | 136 | 80 | 0 | 24 | 58 | 1 | 0 | 1 |
 | Echa al que da señal y contrata | 0 | 0 | 0 | 0 | 76 | 0 | 0 | 0 |
-| El que busca la trampa | 28 | 59 | 0 | 5 | 0 | 0 | 0 | 0 |
+| El que busca la trampa | 17 | 59 | 0 | 4 | 0 | 0 | 0 | 0 |
 
 ## 3. Quién se pierde (por cada 100 partidas)
 
 | Jugador | Tommy | Frank | Santiago |
 |---|---|---|---|
-| Cuida a la banda | 2 | 4 | 5 |
-| Cuida y contrata a sueldo | 5 | 10 | 11 |
-| Cuida y contrata por trabajo | 1 | 5 | 7 |
-| Cuida, pero no usa los días | 71 | 98 | 97 |
-| Tacaño | 94 | 100 | 100 |
-| Violento (mata civiles) | 100 | 51 | 77 |
+| Cuida a la banda | 1 | 2 | 3 |
+| Cuida y contrata a sueldo | 2 | 5 | 6 |
+| Cuida y contrata por trabajo | 1 | 3 | 3 |
+| Cuida, pero no usa los días | 65 | 96 | 93 |
+| Tacaño | 99 | 100 | 100 |
+| Violento (mata civiles) | 100 | 50 | 77 |
 | Descuidado | 100 | 100 | 100 |
-| Tacaño que cambia la banda por contratados | 90 | 99 | 100 |
-| Echa al que da señal y contrata | 9 | 23 | 44 |
-| El que busca la trampa | 18 | 16 | 59 |
+| Tacaño que cambia la banda por contratados | 98 | 100 | 100 |
+| Echa al que da señal y contrata | 7 | 25 | 44 |
+| El que busca la trampa | 14 | 8 | 59 |
 
 ## 4. Los papeles y las negativas
 
 | Jugador | Papeles vacíos | Se niega (1 de cada…) | Discusiones | Peleas |
 |---|---|---|---|---|
-| Cuida a la banda | 19% | 12 golpes | 6.6 | 0.4 |
-| Cuida y contrata a sueldo | 4% | 15 golpes | 7.2 | 0.6 |
-| Cuida y contrata por trabajo | 8% | 8 golpes | 6.7 | 0.4 |
-| Cuida, pero no usa los días | 48% | 8 golpes | 7.5 | 2.1 |
-| Tacaño | 71% | 6 golpes | 4.9 | 1.5 |
-| Violento (mata civiles) | 55% | 11 golpes | 4.1 | 1.0 |
-| Descuidado | 82% | 10 golpes | 3.1 | 3.1 |
-| Tacaño que cambia la banda por contratados | 14% | 3 golpes | 5.4 | 1.7 |
-| Echa al que da señal y contrata | 10% | 8 golpes | 6.3 | 0.4 |
-| El que busca la trampa | 5% | 14 golpes | 4.7 | 0.1 |
+| Cuida a la banda | 18% | 12 golpes | 6.6 | 0.3 |
+| Cuida y contrata a sueldo | 3% | 17 golpes | 6.9 | 0.5 |
+| Cuida y contrata por trabajo | 7% | 8 golpes | 6.6 | 0.3 |
+| Cuida, pero no usa los días | 45% | 8 golpes | 5.8 | 1.0 |
+| Tacaño | 78% | 7 golpes | 4.0 | 1.2 |
+| Violento (mata civiles) | 56% | 11 golpes | 4.0 | 0.9 |
+| Descuidado | 82% | 10 golpes | 3.0 | 3.0 |
+| Tacaño que cambia la banda por contratados | 13% | 3 golpes | 4.4 | 1.3 |
+| Echa al que da señal y contrata | 10% | 8 golpes | 6.2 | 0.3 |
+| El que busca la trampa | 4% | 14 golpes | 4.6 | 0.1 |
 
 ## 5. El pronóstico
 
 | Jugador | −3 | −2 | −1 | 0 | +1 | +2 |
 |---|---|---|---|---|---|---|
-| Cuida a la banda | 0% | 0% | 3% | 19% | 49% | 28% |
-| Cuida y contrata a sueldo | 0% | 0% | 16% | 20% | 41% | 23% |
-| Cuida y contrata por trabajo | 0% | 0% | 13% | 18% | 43% | 25% |
-| Cuida, pero no usa los días | 0% | 2% | 16% | 32% | 32% | 17% |
-| Tacaño | 0% | 2% | 16% | 49% | 26% | 7% |
-| Violento (mata civiles) | 0% | 1% | 8% | 32% | 55% | 5% |
-| Descuidado | 0% | 5% | 24% | 48% | 20% | 2% |
-| Tacaño que cambia la banda por contratados | 0% | 1% | 61% | 25% | 10% | 3% |
-| Echa al que da señal y contrata | 0% | 0% | 15% | 19% | 42% | 24% |
-| El que busca la trampa | 0% | 1% | 25% | 23% | 36% | 16% |
+| Cuida a la banda | 0% | 1% | 3% | 19% | 47% | 31% |
+| Cuida y contrata a sueldo | 0% | 0% | 16% | 19% | 39% | 26% |
+| Cuida y contrata por trabajo | 0% | 0% | 14% | 18% | 41% | 28% |
+| Cuida, pero no usa los días | 0% | 2% | 16% | 34% | 31% | 17% |
+| Tacaño | 0% | 5% | 25% | 50% | 17% | 3% |
+| Violento (mata civiles) | 0% | 1% | 9% | 32% | 52% | 5% |
+| Descuidado | 0% | 6% | 25% | 49% | 18% | 2% |
+| Tacaño que cambia la banda por contratados | 0% | 1% | 70% | 23% | 5% | 1% |
+| Echa al que da señal y contrata | 0% | 0% | 15% | 18% | 39% | 27% |
+| El que busca la trampa | 0% | 1% | 24% | 22% | 35% | 18% |
 
 ## 6. Las habilidades, la cantina y las tareas
 
 | Jugador | Habilidades aprendidas | Que tiene al final la banda | Contratados | Sueldos pagados | Contratados que se fueron mal | Cartas | Perista |
 |---|---|---|---|---|---|---|---|
-| Cuida a la banda | 5.0 | 5.2 | 0.0 | $0 | 0.00 | $285 | $3014 |
-| Cuida y contrata a sueldo | 4.9 | 4.7 | 2.0 | $1470 | 0.21 | $290 | $3309 |
-| Cuida y contrata por trabajo | 5.0 | 5.1 | 13.4 | $804 | 0.00 | $291 | $3169 |
-| Cuida, pero no usa los días | 0.0 | 0.3 | 0.0 | $0 | 0.00 | $0 | $1975 |
-| Tacaño | 2.4 | 0.1 | 0.0 | $0 | 0.00 | $86 | $1571 |
-| Violento (mata civiles) | 4.9 | 1.7 | 0.0 | $0 | 0.00 | $224 | $2022 |
-| Descuidado | 0.0 | 0.0 | 0.0 | $0 | 0.00 | $0 | $1173 |
-| Tacaño que cambia la banda por contratados | 2.6 | 0.3 | 3.9 | $3788 | 1.03 | $101 | $2741 |
-| Echa al que da señal y contrata | 4.9 | 4.1 | 14.6 | $855 | 0.00 | $281 | $3083 |
-| El que busca la trampa | 4.6 | 3.7 | 2.7 | $2302 | 0.17 | $268 | $3285 |
+| Cuida a la banda | 3.5 | 5.5 | 0.0 | $0 | 0.00 | $292 | $3890 |
+| Cuida y contrata a sueldo | 3.3 | 5.2 | 2.2 | $1548 | 0.07 | $285 | $4178 |
+| Cuida y contrata por trabajo | 3.4 | 5.5 | 13.8 | $831 | 0.00 | $293 | $4075 |
+| Cuida, pero no usa los días | 0.0 | 0.4 | 0.0 | $0 | 0.00 | $0 | $2608 |
+| Tacaño | 0.9 | 0.0 | 0.0 | $0 | 0.00 | $62 | $1898 |
+| Violento (mata civiles) | 2.1 | 1.3 | 0.0 | $0 | 0.00 | $225 | $2581 |
+| Descuidado | 0.0 | 0.0 | 0.0 | $0 | 0.00 | $0 | $1543 |
+| Tacaño que cambia la banda por contratados | 1.1 | 0.0 | 4.1 | $4424 | 0.56 | $66 | $3295 |
+| Echa al que da señal y contrata | 3.3 | 4.2 | 15.2 | $891 | 0.00 | $280 | $3958 |
+| El que busca la trampa | 3.1 | 4.3 | 2.8 | $2368 | 0.06 | $268 | $4100 |
 
 ## 7. Cuánto vale cada cosa (el que cuida a la banda, apagándola)
 
@@ -98,23 +98,23 @@ Plata al final y partidas sin perder a nadie, comparado con tenerla.
 
 | Sin… | Plata | Sin perder a nadie (puntos) |
 |---|---|---|
-| la tarea "mirar" | -1244 | -47 |
-| la tarea "pueblo" | -886 | -16 |
-| la tarea "cazar" | -1049 | -38 |
-| la tarea "cartas" | -375 | -13 |
-| la tarea "practicar" | -795 | -19 |
-| el vigía | -675 | -11 |
-| el telégrafo | -548 | -9 |
-| los dos papeles nuevos (como hoy) | -746 | -56 |
-| usar los días (ninguna tarea) | -1577 | -92 |
-| ser generoso a veces | -382 | -32 |
-| calmar (dar la razón o dejarlo) | -208 | -18 |
-| cortar las señales | -70 | -49 |
-| la botella | 47 | -1 |
-| conceder pedidos | 407 | -22 |
-| asaltar el tren de Frank (nunca) | 35 | -1 |
-| (al revés) asaltar el tren de Frank (siempre) | -37 | 1 |
-| dejar pensar a Tommy (nunca) | -44 | 0 |
-| decir la verdad de J.Mc. (mentir siempre) | -15 | -1 |
-| (al revés) con contratando uno a sueldo | -689 | -10 |
-| (al revés) con contratando por trabajo | -303 | -2 |
+| la tarea "mirar" | -1726 | -24 |
+| la tarea "pueblo" | -1471 | -8 |
+| la tarea "cazar" | -1193 | -12 |
+| la tarea "cartas" | -626 | -9 |
+| la tarea "practicar" | -894 | -4 |
+| el vigía | -856 | -2 |
+| el telégrafo | -698 | -3 |
+| los dos papeles nuevos (como hoy) | -1284 | -53 |
+| usar los días (ninguna tarea) | -2618 | -93 |
+| ser generoso a veces | -607 | -30 |
+| calmar (dar la razón o dejarlo) | -442 | -18 |
+| cortar las señales | -117 | -53 |
+| la botella | -35 | -1 |
+| conceder pedidos | 222 | -24 |
+| asaltar el tren de Frank (nunca) | -10 | -1 |
+| (al revés) asaltar el tren de Frank (siempre) | -8 | 1 |
+| dejar pensar a Tommy (nunca) | -75 | 0 |
+| decir la verdad de J.Mc. (mentir siempre) | -54 | -1 |
+| (al revés) con contratando uno a sueldo | -1011 | -5 |
+| (al revés) con contratando por trabajo | -308 | -1 |

@@ -56,6 +56,12 @@
  * etiqueta "recorta" el fondo en vez de traer una sombra— y además un contorno
  * negro sobre papel sepia rompería la paleta entera del mapa.
  */
+import { estiloNuevo } from './estiloNuevo.js';
+import { CONFIG } from '../data/config.js';
+
+/** El color del borde fino de la gente (`bordeFino`, engine/estiloNuevo.js): el contorno de las letras. */
+const BORDE_GENTE = '#140c1c';
+
 const TEXTO = {
   fuente: 'Verdana, Tahoma, "DejaVu Sans", sans-serif',
   tam: 8,
@@ -238,6 +244,9 @@ export function createRenderer(canvas, vista) {
     clear(color) {
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, anchoU(), altoU());
+      // (🔤 Y la capa fina: lo que se escribió antes de borrar ya no va. El techo dibuja una vista, la borra y dibuja la
+      // otra en el mismo cuadro, y las letras de la primera quedaban encima.)
+      estiloNuevo.limpiarFinos(ctx);
     },
 
     /**
@@ -346,9 +355,20 @@ export function createRenderer(canvas, vista) {
 
     text(str, x, y, color, align = 'center', opciones = {}) {
       const tam = opciones.tam || TEXTO.tam;
-      const halo = opciones.halo === undefined ? '#000' : opciones.halo;
       // ('lienzo': dónde escribir, si no es el de siempre. El mapa escribe en la capa fina, que no pasa por la grilla.)
-      const lienzo = opciones.lienzo || ctx;
+      /**
+       * 🔤 TODAS LAS LETRAS, EN LA CAPA FINA *(Santi, 2026-11-18: "la parte de los escritos ponelo en pixeles de 1x1 y
+       * poneles el filtro que usamos para los bordes de los personajes"; "sí, pasa todos los textos a capa fina")*: con el
+       * estilo nuevo, la grilla de 3×3 se comía las letras. Ahora van a la capa fina (que se pone encima después de la
+       * grilla) con el contorno de 1 píxel del borde de la gente (`bordeFino`, engine/estiloNuevo.js): del color de su
+       * halo si lo traen (el mapa, el pueblo), y si no, del color del borde. Sin el estilo nuevo, como siempre.
+       */
+      const lienzo = opciones.lienzo || estiloNuevo.lienzoFino(ctx);
+      const enFina = lienzo !== ctx;
+      const halo = enFina ? (opciones.halo || BORDE_GENTE) : opciones.halo === undefined ? '#000' : opciones.halo;
+      const haloPx = opciones.haloPx || (enFina ? CONFIG.estilo.bordeGente : 0);
+      // (La capa fina no sabe de la transparencia con la que se está dibujando: se la pasa.)
+      if (enFina) { lienzo.save(); lienzo.globalAlpha = ctx.globalAlpha; }
 
       lienzo.font = `${tam}px ${TEXTO.fuente}`;
       lienzo.textAlign = align;
@@ -371,11 +391,15 @@ export function createRenderer(canvas, vista) {
 
       if (halo) {
         lienzo.fillStyle = halo;
-        for (const [dx, dy] of HALO) lienzo.fillText(str, px + dx, py + dy);
+        // ('haloPx': el contorno de ese ancho en píxeles de pantalla, no en unidades. Es para las letras de la capa fina:
+        // el mismo borde de 1 píxel que la gente, ver `bordeFino` en engine/estiloNuevo.js.)
+        const d = haloPx ? haloPx / (lienzo.getTransform().a || 1) : 1;
+        for (const [dx, dy] of HALO) lienzo.fillText(str, px + dx * d, py + dy * d);
       }
 
       lienzo.fillStyle = color;
       lienzo.fillText(str, px, py);
+      if (enFina) lienzo.restore();
     },
   };
 }

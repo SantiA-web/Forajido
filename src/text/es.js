@@ -4,6 +4,10 @@
  */
 // (✉️ Lo que pide J.Mc. y en cuántos días: los números viven en un solo lugar.)
 import { ENCARGO } from '../data/encargo.js';
+import { JMC } from '../data/libreta.js';
+
+/** ✉️ Lo que le debes a J.Mc. (ver systems/libreta.js; acá sin importarlo, para no dar la vuelta). */
+const deudaDe = (g) => (g && g.campamento && g.campamento.jmc && g.campamento.jmc.deuda) || 0;
 
 export const T = {
   /** El cartelito de la prueba del estilo nuevo (engine/estiloNuevo.js). */
@@ -534,16 +538,19 @@ export const T = {
       // 🎯 Mandarlo a practicar (sólo hablado por ahora *(Santi: "Que solo sea hablado, luego el dibujo")*).
       practicar: 'Ve a practicar algo.',
       practicarTitulo: (nombre) => `¿Qué practica ${nombre}?`,
-      practicarCuerpo: 'Se va el día entero. A la noche descansa aquí; lo que tenga para hablar, te lo dice entonces.',
+      // 🔁 (Con la pizarra: sale a la mañana, vuelve a la noche, y lo sigue haciendo hasta que lo cambies.)
+      practicarCuerpo: 'Sale a la mañana y vuelve a la noche. Lo sigue haciendo los días que siguen: se cambia en el calendario [C].',
       practicarOpcion: (hab, tiene, domina) => `${hab}${domina ? ' (la domina)' : tiene ? ' (la tiene)' : ''}`,
       practicarVolver: 'Mejor no.',
-      seVaAPracticar: (nombre, hab) => `${nombre} se va a practicar "${hab}". Vuelve en un día.`,
+      seVaAPracticar: (nombre, hab) => `${nombre} se va a practicar "${hab}". Vuelve a la noche.`,
+      vaAPracticarManana: (nombre, hab) => `${nombre} va a practicar "${hab}" desde mañana temprano.`,
       practicando: (hab) => `Hoy practica "${hab}".`,
       // 🕵️ Mandarlo a mirar un tren (etapa C, ver `abrirEspia` en scenes/campScene.js).
       espiar: 'Ve a mirar un tren.',
       espiarTitulo: (nombre) => `¿Qué tren va a mirar ${nombre}?`,
-      espiarCuerpo: 'Se va el día entero y a la noche vuelve con lo que vio. Si el tren pasa antes de que vuelva, no sirve.',
-      seVaAEspiar: (nombre, via) => `${nombre} sale a mirar el tren de ${via}. Vuelve en un día.`,
+      espiarCuerpo: 'Sale a la mañana y a la noche vuelve con lo que vio. Si el tren pasa antes de que vuelva, no sirve.',
+      seVaAEspiar: (nombre, via) => `${nombre} sale a mirar el tren de ${via}. Vuelve a la noche.`,
+      vaAEspiarManana: (nombre, via) => `${nombre} sale mañana temprano a mirar el tren de ${via}.`,
       espiando: 'Hoy anda mirando un tren.',
       // 🎭 Los papeles del asalto (ver PAPELES en data/banda.js), como se leen en el mapa.
       papeles: { caballos: 'Los caballos', pasajero: 'De pasajero', telegrafo: 'El telégrafo', vigia: 'De vigía' },
@@ -573,9 +580,65 @@ export const T = {
       gano: (nombre, hab) => `${nombre} aprendió "${hab}".`,
       recupero: (nombre, hab) => `${nombre} recuperó "${hab}".`,
       perdio: (nombre, hab) => `${nombre} perdió "${hab}": hace mucho que no la usa.`,
+      // (🟤 Perdió una marca y todavía la tiene: ver `ANIMO.habilidad.marcas`.)
+      oxida: (nombre, hab) => `A ${nombre} se le está oxidando "${hab}": si no la usa, la va a perder.`,
       estrella: (nombre, hab) => `${nombre} domina "${hab}". Ya no la va a olvidar.`,
       practico: (nombre, hab) => `${nombre} volvió de practicar "${hab}".`,
       // 📒 Ganó o perdió una marca de lealtad esa noche (`palabra`: cómo quedó).
+      // 🍲 (No alcanzó para la olla del día: ver `pagarLaOlla` en systems/libreta.js.)
+      // ✉️ (J.Mc. en cuotas: systems/libreta.js.)
+      jmcDeuda: (paga) => 'De lo que trajiste, J.Mc. se cobró primero los $' + paga + ' que le debías.',
+      jmcCobro: (lleva, deuda) => 'J.Mc. se lleva $' + lleva + ' de este golpe' + (Number(deuda) ? '. Le debes $' + deuda + ': te los cobra del próximo.' : '.'),
+      sinOlla: (costo) => 'No alcanzó para la olla ($' + costo + ' por día): hoy la banda no come, y se queja.',
+      // 🍖 (La despensa: systems/comida.js.)
+      sinComida: 'No queda comida: hoy la banda no comió, y se queja. En el almacén del pueblo venden.',
+      pocaComida: (dias) => Number(dias) ? 'Queda comida para ' + dias + (Number(dias) === 1 ? ' día.' : ' días.') : 'Mañana no hay qué comer.',
+      // 📋 (Lo que trajeron de las tareas del calendario: systems/tareas.js. `quien` puede ser "Frank y Santiago".)
+      tarea: {
+        cazar: (quien, varios, n, dias) => Number(n)
+          ? `${quien} ${varios ? 'volvieron' : 'volvió'} de cazar con ${n} porciones. La comida alcanza para ${dias} ${Number(dias) === 1 ? 'día' : 'días'}.`
+          : `${quien} ${varios ? 'volvieron' : 'volvió'} de cazar sin nada.`,
+        pescar: (quien, varios, n, dias) => `${quien} volvió de pescar con ${n} porciones. La comida alcanza para ${dias} ${Number(dias) === 1 ? 'día' : 'días'}.`,
+        puebloNada: (quien) => `${quien} volvió del pueblo sin ningún rumor.`,
+        pelea: (quien, varios, n) => `${quien} se agarró a trompadas en la cantina: tu recompensa sube $${n}.`,
+        compra: (quien, varios, n, costo, falto) => Number(n)
+          ? `${quien} compró ${n} porciones en el almacén por $${costo}.` + (Number(falto) ? ' No alcanzó la plata para más.' : '')
+          : Number(falto) ? `${quien} fue al almacén, pero no alcanzó la plata.` : `${quien} fue al almacén: ya había comida de sobra.`,
+        cartas: (quien, varios, dif, pelea) => (Number(dif) > 0 ? `${quien} ganó $${dif} a las cartas.` : Number(dif) < 0 ? `${quien} perdió $${-dif} a las cartas.` : `${quien} jugó a las cartas: ni ganó ni perdió.`)
+          + (Number(pelea) ? ` Se armó una pelea: tu recompensa sube $${pelea}.` : ''),
+        curar: (quien, varios, otro, quedan) => `${quien} curó a ${otro}` + (Number(quedan) ? `: le faltan ${quedan} ${Number(quedan) === 1 ? 'día' : 'días'}.` : ': ya está sano.'),
+        cocinar: (quien, varios, salo) => `${quien} cocinó un guiso` + (Number(salo) ? ` y saló la carne de hoy (${salo} porciones): ahora dura el doble.` : '.')
+          + ' Si sales al golpe esta noche o mañana, entras con un tiro más de vida.',
+        // 🤝 (`como`: lo que pasó en el trato, systems/tareas.js: a aceptó, r regateó, rm regateó mal, p apretó, pm apretó y
+        // le cerraron, c pagó el chantaje, h lo chantajearon y habló, n se volvió sin vender; `rec`: lo que subió tu recompensa.)
+        // (🧪 f se pelearon, v lo chantajearon y se volvió sin pagar; `quimica`: lo que pasó entre los dos, 'palabra.loCalma'.)
+        vender: (quien, varios, total, como, guarda, rec, quimica = '') => ({
+          f: `${quien} y el perista se fueron a las manos. No vendió nada.`,
+          v: `El perista chantajeó a ${quien}, y se volvió sin vender. Por ahora no habló.`,
+          a: `${quien} le vendió lo robado al perista por $${total}.`,
+          r: `${quien} le vendió lo robado al perista por $${total}, regateando.`,
+          rm: `${quien} quiso regatear con el perista y le salió mal: lo vendió por $${total}.`,
+          p: `${quien} apretó al perista y sacó $${total}.`,
+          pm: `${quien} quiso apretar al perista y le cerró la puerta. Lo robado sigue aquí.`,
+          c: `El perista chantajeó a ${quien}: le pagó $${total} por callarse.`,
+          h: `El perista chantajeó a ${quien}, y habló. Lo robado sigue aquí.`,
+          n: `${quien} se volvió del perista sin vender.`,
+        }[como] || `${quien} le vendió lo robado al perista por $${total}.`)
+          + quimica.split('.').filter(Boolean).map((q) => ({
+            idioma: ' Hablaron el mismo idioma: plata.',
+            palabra: ' Se dieron la mano como gente de palabra.',
+            loEnfrenta: ' Lo enfrentó en vez de pagar.',
+            noSeEntienden: ' No se entendieron.',
+            niSeInmuta: ' Ni pestañeó: el perista no se animó a chantajearlo.',
+            nervioso: ' El perista se puso nervioso con él.',
+            seCaenBien: ' Se cayeron bien.',
+            loCalma: ' Lo calmó: el perista no fue con el chisme.',
+            loAsusta: ' El perista le tuvo miedo.',
+            loHuele: ' El perista le olió el miedo.',
+          }[q] || '')).join('')
+          + (Number(rec) > 0 ? ` Tu recompensa sube $${rec}.` : '')
+          + (Number(guarda) ? ' Algo no cierra: parece que se guardó una parte.' : ''),
+      },
       marcaGano: (nombre, palabra) => `${nombre} confía más en ti: ahora está ${{ firme: 'firme', conforme: 'conforme', dudoso: 'dudoso', aPuntoDeIrse: 'a punto de irse' }[palabra] || palabra}.`,
       marcaPerdio: (nombre, palabra) => `${nombre} confía menos en ti: ahora está ${{ firme: 'firme', conforme: 'conforme', dudoso: 'dudoso', aPuntoDeIrse: 'a punto de irse' }[palabra] || palabra}.`,
     },
@@ -583,7 +646,10 @@ export const T = {
       encargo: {
         titulo: 'Una carta junto al fuego',
         // (🔁 ✉️ Con un pedido que se puede cumplir *(Santi: "que la carta tenga un objetivo más concreto a cumplir")*.)
-        texto: `Alguien la dejó mientras dormías. "En ${ENCARGO.dias} días paso por tu campamento, de noche. Deja junto a tu carpa $${ENCARGO.dinero} y el maletín de cuero que viaja en el tren de carga, y te diré dónde vieron a tu padre por última vez. —J.Mc."`,
+        // (✉️ 🔁 Con J.Mc. en cuotas, `JMC` en data/libreta.js: $200 de cada tren y, en 15 días, el maletín.)
+        texto: JMC.activo
+          ? `Alguien la dejó mientras dormías. "De cada tren que asaltes me dejarás $${JMC.porGolpe} junto a tu carpa. Y en ${ENCARGO.dias} días paso por tu campamento, de noche: deja el maletín de cuero que viaja en el tren de carga, y te diré dónde vieron a tu padre por última vez. —J.Mc."`
+          : `Alguien la dejó mientras dormías. "En ${ENCARGO.dias} días paso por tu campamento, de noche. Deja junto a tu carpa $${ENCARGO.dinero} y el maletín de cuero que viaja en el tren de carga, y te diré dónde vieron a tu padre por última vez. —J.Mc."`,
         opciones: { contar: 'Contarle a la banda lo que te prometió', guardar: 'Guardártelo' },
         resultado: {
           contar: 'Se lo cuentas a la banda. Nadie dice nada, pero todos se quedan mirando el fuego.',
@@ -753,22 +819,28 @@ export const T = {
        */
       entrega: {
         titulo: 'La noche de J.Mc.',
-        texto: `Es la noche que dijo la carta. Antes del amanecer, J.Mc. pasará junto a tu carpa. Pidió $${ENCARGO.dinero} y el maletín de cuero.`,
+        texto: JMC.activo
+          ? (n, g) => `Es la noche que dijo la carta. Antes del amanecer, J.Mc. pasará junto a tu carpa. Pidió el maletín de cuero${deudaDe(g) ? ` y los $${deudaDe(g)} que le debes` : ''}.`
+          : `Es la noche que dijo la carta. Antes del amanecer, J.Mc. pasará junto a tu carpa. Pidió $${ENCARGO.dinero} y el maletín de cuero.`,
         opciones: {
-          entregar: `Dejar los $${ENCARGO.dinero} y el maletín`,
-          mentir: `Dejar sólo los $${ENCARGO.dinero} y decir que no encontraste el maletín`,
+          entregar: JMC.activo ? 'Dejar el maletín (paga lo que le debes)' : `Dejar los $${ENCARGO.dinero} y el maletín`,
+          mentir: JMC.activo
+            ? (d) => (d ? `Dejar los $${d} que le debes y decir que no encontraste el maletín` : 'Decir que no encontraste el maletín')
+            : `Dejar sólo los $${ENCARGO.dinero} y decir que no encontraste el maletín`,
           nada: 'No dejar nada',
         },
         resultado: {
-          entregar: 'Dejas el dinero y el maletín junto a la carpa. Antes del amanecer ya no están.',
-          mentir: `Dejas el dinero y una nota. El maletín, con sus documentos, se queda contigo. A la mañana hay otra carta: "Ese maletín viajaba en el tren. No cumpliste. Tienes ${ENCARGO.dias} días más. —J.Mc."`,
+          entregar: JMC.activo ? 'Dejas el maletín junto a la carpa. Antes del amanecer ya no está.' : 'Dejas el dinero y el maletín junto a la carpa. Antes del amanecer ya no están.',
+          mentir: `Dejas ${JMC.activo ? 'una nota' : 'el dinero y una nota'}. El maletín, con sus documentos, se queda contigo. A la mañana hay otra carta: "Ese maletín viajaba en el tren. No cumpliste. Tienes ${ENCARGO.dias} días más. —J.Mc."`,
           nada: `No dejas nada. A la mañana hay otra carta: "No cumpliste. Tienes ${ENCARGO.dias} días más. —J.Mc."`,
         },
       },
       // ✉️ No estabas esa noche: la carta que te espera.
       plazo: {
         titulo: 'Otra carta',
-        texto: `"Pasé por tu campamento y no había nada. No cumpliste. Tienes ${ENCARGO.dias} días más: $${ENCARGO.dinero} y el maletín, junto a tu carpa. —J.Mc."`,
+        texto: JMC.activo
+          ? `"Pasé por tu campamento y no había nada. No cumpliste. Tienes ${ENCARGO.dias} días más para dejarme el maletín junto a tu carpa. Y no olvides lo de cada tren. —J.Mc."`
+          : `"Pasé por tu campamento y no había nada. No cumpliste. Tienes ${ENCARGO.dias} días más: $${ENCARGO.dinero} y el maletín, junto a tu carpa. —J.Mc."`,
         opciones: { leer: 'Guardar la carta' },
         resultado: { leer: 'Te la guardas en el bolsillo. Esta vez no puedes faltar.' },
       },
@@ -821,6 +893,7 @@ export const T = {
        * exactamente lo informal.
        */
       perista: 'EMPEÑOS',
+      almacen: 'ALMACÉN',
     },
 
     prompts: {
@@ -835,6 +908,7 @@ export const T = {
        * mirándolo, no midiendo. Y de paso dice lo mismo que la fachada.
        */
       perista: '[E] EMPEÑOS',
+      almacen: '[E] ALMACÉN',
       caballo: '[F] VOLVER AL CAMPAMENTO',
       viejo: '[E] HABLAR',
       mujer: '[E] HABLAR',
@@ -876,6 +950,15 @@ export const T = {
       chico: '"¿Es verdad que asaltaron el de las seis?"',
     },
     volver: 'Montas y vuelves al campamento.',
+    /** 🛒 EL ALMACÉN (systems/comida.js): se compra y se vende comida por porciones. */
+    almacen: {
+      nombre: 'Almacén',
+      hay: (n, dias, comen) => 'Tienes ' + n + (n === 1 ? ' porción' : ' porciones') + ': ' + (dias ? 'alcanza para ' + dias + (dias === 1 ? ' día' : ' días') : 'no alcanza ni para hoy') + ' (comen ' + comen + ').',
+      precios: (p, v) => 'La porción, $' + p + '. Te pago $' + v + ' por cada una.',
+      comprar: (n, costo) => (n === 1 ? 'Comprar 1 porción' : 'Comprar ' + n + ' porciones') + ' - $' + costo,
+      vender: (n, cobro) => (n === 1 ? 'Vender 1 porción' : 'Vender ' + n + ' porciones') + ' - $' + cobro,
+      nada: 'Nada más',
+    },
     cerrado: (lugar) => `${lugar}. Cerrado hasta que amanezca.`,
     /**
      * 🗞️ EL DIARIO que vende el chico (ver `abrirDiario` en scenes/townScene.js). Las pistas dicen qué se despacha y
@@ -952,6 +1035,56 @@ export const T = {
      * mercadería toda caliente no hay bono que mostrar, y con el honor entre
      * −15 y 15 no hay ajuste.
      */
+    /**
+     * 🤝 LOS TRATOS (TRATOS.md, systems/tratos.js): el papel de un trato con cualquier tratante. Cada jugada dice su
+     * plata, su chance "de cada 100" y lo que pasa si no sale; la línea del tratante tiene la voz de su rasgo (así se
+     * le van notando, jugando).
+     */
+    tratos: {
+      oficio: { perista: 'EMPEÑOS', armero: 'ARMERÍA', caballerizo: 'ESTABLO' },
+      rasgo: { ambicioso: 'ambicioso', cobarde: 'cobarde', valiente: 'valiente', rastrero: 'rastrero', honorable: 'honorable', curioso: 'curioso' },
+      titulo: (oficio, conocidos) => oficio + ' · ' + (conocidos.length ? conocidos.join(', ') : '?'),
+      // Lo que mira (con lo que ya se desglosaba: lo limpio y tu nombre).
+      mira: (t) => (t.cantidad === 1 ? 'Mira la única cosa que trajiste: $' + t.base : 'Revisa las ' + t.cantidad + ' cosas: $' + t.base)
+        + (t.bonoLimpio > 0 ? ', +$' + t.bonoLimpio + ' porque nadie las busca' : '')
+        + (t.porHonor > 0 ? ', +$' + t.porHonor + ' por tu nombre' : t.porHonor < 0 ? ', −$' + (-t.porHonor) + ' por tu nombre' : '') + '.',
+      dice: {
+        ambicioso: (m, te, grande) => (grande ? '"Ahora sí hablamos. $' + m + '."' : '"Por esto, $' + m + '. Tráeme más y hablamos."'),
+        cobarde: (m, te) => (te ? 'Mira la puerta antes de mirarte a ti. "$' + m + '... ¿está bien?"' : '"$' + m + '. Y rápido, por favor."'),
+        valiente: (m, te) => (te ? '"Sé quién eres. Me da igual. $' + m + '."' : '"$' + m + '. Lo tomas o lo dejas."'),
+        rastrero: (m) => '"No pregunto de dónde sale. $' + m + '."',
+        honorable: (m, te, grande, honor) => (honor > 15 ? '"Contigo se puede hablar. $' + m + '."' : honor < -15 ? '"Tu nombre no te ayuda. $' + m + '."' : '"Te doy $' + m + ', y es mi palabra."'),
+        otro: (m) => '"Te doy $' + m + '."',
+      },
+      enojado: (m) => '"Todavía me acuerdo de la otra vez. $' + m + '."',
+      chantaje: (x) => '"Sé de dónde salió esto. $' + x + ', y me olvido de tu cara."',
+      op: {
+        aceptar: (m) => 'Aceptar: $' + m,
+        aceptarChantaje: (m) => 'Aceptar: $' + m + ' y se calla',
+        regatear: (m, c, por, siNo) => 'Regatear: $' + m + ' (' + c + ' de cada 100' + por + ') · si no, $' + siNo,
+        apretar: (m, c, por, sopla) => 'Apretarlo: $' + m + ' (' + c + ' de cada 100' + por + ') · si no, cierra' + (sopla ? ' · y sopla' : ''),
+        apretarChantaje: (m, c, por, sopla) => 'Apretarlo: $' + m + ' (' + c + ' de cada 100' + por + ') · si no, habla' + (sopla ? ' · y sopla' : ''),
+        irte: 'Irte',
+        irteChantaje: (c) => 'Irte (habla ' + c + ' de cada 100)',
+      },
+      // La razón que más pesa, al lado de la chance.
+      por: { cartel: 'tu cartel', buscado: 'te buscan', conocido: 'te conocen', temido: 'te temen', fama: 'tu fama', cobarde: 'se asusta', ambicioso: 'es duro', trato: 'te conoce', negociante: 'sabe negociar' },
+      resultado: {
+        vendio: (m) => 'Te paga $' + m + '.',
+        regateo: (m) => 'Lo piensa. "Está bien." Te paga $' + m + '.',
+        regateoMal: (m) => 'No le gustó nada. "Ahora te doy $' + m + '."',
+        apreto: (m) => 'Traga saliva. Te paga $' + m + '.',
+        apretoChantaje: (m) => 'Se le va el color. "Está bien, está bien." Te paga $' + m + '.',
+        apretoMal: 'Te cierra la puerta en la cara. "Vuelve mañana."',
+        sopla: (n) => 'Cuando sales, lo ves ir derecho a lo del sheriff.   Recompensa +$' + n,
+        pagoChantaje: (m) => 'Cuenta los billetes. Te da $' + m + '. "Yo no te vi."',
+        habla: (n) => '"Tú lo quisiste." Esa tarde, el sheriff sabe de dónde salió.   Recompensa +$' + n,
+        callo: 'No dice nada. Por ahora.',
+        teVas: 'Juntas tus cosas y te vas.',
+        cerrado: '"Hoy no. Vuelve mañana."',
+      },
+    },
+
     venta: (t) => {
       const lineas = [];
       lineas.push(t.cantidad === 1
@@ -1166,7 +1299,60 @@ export const T = {
       viene: 'Lo que viene',
       vieneNada: 'Nada marcado.',
       hoy: (fecha, parte) => `Hoy: ${fecha}, ${parte}`,
-      ayuda: '[A/D] OTRO MES     [C/ESC] CERRAR',
+      ayudaMes: '[A/D] OTRO MES     [C/ESC] CERRAR',
+      // 📋 (La pizarra adentro del calendario: scenes/calendario.js.)
+      ayuda: '[WASD] MOVERSE   [E] TAREA   [ESPACIO] UNA PARTE   [SHIFT+ESPACIO] UN DÍA   [C] CERRAR',
+      trenes: 'Trenes',
+      letraParte: ['M', 'T', 'N'],
+      mananaYTarde: 'mañana y tarde',
+      corto: { punteria: 'PUNT', riendas: 'RIEN', cuchillero: 'CUCH', actor: 'ACTO', baraja: 'BARA', mirar: 'MIRA',
+        // 📋 (Las tareas nuevas: en una barra de dos o tres casillas, y en una sola, `cortito`.)
+        cazar: 'CAZA', pescar: 'PESC', pueblo: 'PUEB', comida: 'ALMA', vender: 'VEND', curar: 'CURA', cartas: 'CART', cocinar: 'COCI' },
+      cortito: { cazar: 'CZ', pescar: 'PE', pueblo: 'PB', comida: 'AL', vender: 'VE', curar: 'CU', cartas: 'CT', cocinar: 'CO' },
+      tren: (tipo, via, cuando, como) => `Tren de ${tipo}, ${via}, ${cuando}${como}`,
+      deRumor: ' (un rumor)', delHorario: ' (del horario)', mirado: '. Ya lo miraron.',
+      sinTrenes: 'No pasa ningún tren que sepas.',
+      jmc: 'Esa noche pasa J.Mc.',
+      noche: 'de noche descansa (las tareas de la noche vienen después)',
+      descansa: 'descansa',
+      practica: (hab) => `practica "${hab}"`,
+      mira: (via) => `mira el tren de ${via}`,
+      pesca: (dia) => `está pescando (vuelve el ${dia} a la noche)`,
+      haceRumores: 'baja al pueblo a buscar rumores',
+      haceComida: 'baja al almacén a comprar comida',
+      hace: { cazar: 'sale a cazar', vender: 'le vende lo robado al perista', curar: 'cura a un herido', cartas: 'juega a las cartas en la cantina', cocinar: 'cocina' },
+      celda: (nombre, animo, cuando, que) => `${nombre} (${animo}) · ${cuando}: ${que}`,
+      yaPaso: ' (ya empezó)',
+      herido: (nombre, cuando) => `${nombre} está herido: se cura el ${cuando}.`,
+      oxida: (nombre, hab, dias) => `${nombre}: "${hab}", ` + (dias ? `${dias} ${dias === 1 ? 'día' : 'días'} para oxidarse` : 'se oxida hoy'),
+      comida: (n, dias, comen) => `Comida: ${n} ${n === 1 ? 'porción' : 'porciones'}, ` + (dias ? `alcanza para ${dias} ${dias === 1 ? 'día' : 'días'}` : 'no alcanza ni para mañana') + ` (comen ${comen}).`,
+      menuTitulo: (nombre, cuando) => `${nombre}, ${cuando}`,
+      menuPracticar: (hab, la) => `Practicar "${hab}"` + (la ? ' (ya la tiene)' : ''),
+      menuMirar: 'Mirar un tren',
+      menuPracticarCual: 'Practicar…',
+      practicarTitulo: (nombre) => `¿Qué practica ${nombre}?`,
+      menuCon: (texto, rasgos) => `${texto} (${rasgos})`,
+      menuCazar: 'Salir a cazar',
+      menuPescar: 'Ir a pescar (dos días)',
+      menuRumores: 'Bajar al pueblo a buscar rumores',
+      menuComida: (dias) => `Bajar al almacén a comprar comida (para ${dias} días)`,
+      menuVender: 'Venderle lo robado al perista',
+      // 🧪 (La química con el perista, si ya le conoces algo: "lo pone nervioso 80 de 100".)
+      menuQuimica: (texto, cosas) => texto + ' · ' + cosas.join(', '),
+      quimica: (id, chance) => ({
+        idioma: 'hablan el mismo idioma', palabra: 'gente de palabra', loEnfrenta: 'no se deja chantajear',
+        noSeEntienden: 'no se entienden', niSeInmuta: 'no se deja chantajear', nervioso: 'lo pone nervioso',
+        porFuera: 'se arreglan por fuera', seCaenBien: 'se caen bien', loCalma: 'lo calma', loAsusta: 'lo asusta',
+        pelea: 'se pelean', loHuele: 'le huele el miedo', aEspaldas: 'se arreglan por fuera',
+      }[id] || id) + ' ' + chance + ' de 100',
+      menuCurar: 'Curar a un herido',
+      menuCartas: 'Jugar a las cartas en la cantina',
+      menuCocinar: 'Cocinar',
+      menuDescansar: 'Descansar',
+      menuNada: 'Dejarlo así',
+      menuCuerpo: 'Practicar y mirar un tren ocupan la mañana y la tarde; cazar, la mañana; pescar, dos días. Lo que pones sigue los días que siguen, hasta que lo cambies; mirar, pescar y vender son sólo ese día.',
+      menuCuerpoNoche: 'A las cartas se juega una vez entre golpe y golpe.',
+      mirarTitulo: (nombre) => `¿Qué tren va a mirar ${nombre}?`,
     },
   },
 
@@ -1275,6 +1461,40 @@ export const T = {
       'm:miParte': { f: 'Me diste mi parte', q: 'No me diste mi parte' },
       'm:adelante': { f: 'Me dejaste ir adelante', q: 'No me dejaste ir adelante' },
       'm:forastero': { f: 'Ayudaste al forastero', q: 'Echaste al forastero' },
+      // (💰 El reparto, por cabeza: scenes/reparto.js.)
+      repartoNada: 'No me diste nada',
+      repartoPoco: 'Me diste poco',
+      repartoMiseria: 'Una miseria',
+      repartoGeneroso: 'Fuiste generoso',
+      repartoYaNo: 'Ya no me das como antes',
+      olla: 'No hubo para la olla',
+      comida: 'No hubo qué comer',
+    },
+    /** 💰 LA PANTALLA DEL REPARTO (scenes/reparto.js). */
+    reparto: {
+      titulo: 'EL REPARTO',
+      botin: (n) => 'BOTÍN: $' + n,
+      fue: { caballos: 'Fue con los caballos', pasajero: 'Fue de pasajero', telegrafo: 'Fue al telégrafo', vigia: 'Fue de vigía' },
+      quedo: 'Se quedó',
+      espera: 'ESPERA',
+      leDas: 'LE DAS',
+      anota: 'LO QUE ANOTA',
+      favor: (t) => 'Favor: ' + t,
+      queja: (t) => 'Queja: ' + t,
+      quejaDoble: (t) => 'Queja doble: ' + t,
+      loEspera: 'Ya lo espera',
+      nada: 'Conforme',
+      bolsa: (tienes, quedan) => 'TU BOLSA: $' + tienes + '   TE QUEDAN: $' + quedan,
+      botones: { espera: '[1] LO QUE ESPERAN', generoso: '[2] GENEROSO', nada: '[3] NADA' },
+      ayuda: '[W][S] ELEGIR   [A][D] DE A $5   [E] REPARTIR',
+      jmc: (lleva, debe) => 'J.MC.: $' + lleva + (debe ? '  (LE DEBERÁS $' + debe + ')' : ''),
+      // 🍲 (La olla de los días de la vuelta, que se paga al repartir.)
+      olla: (costo) => 'OLLA: $' + costo,
+      sinOlla: (costo) => 'OLLA: $' + costo + ' (NO ALCANZA)',
+      ollaPaga: (costo) => 'La olla de los días de vuelta: $' + costo + '.',
+      ollaNo: (costo) => 'No alcanzó para la olla de los días de vuelta ($' + costo + '): la banda no comió, y se queja.',
+      hecho: (total) => 'Repartiste $' + total + '.',
+      nadieAnota: 'Nadie anota nada.',
     },
   },
   mapa: {

@@ -23,13 +23,20 @@ import { nuevoDia, moverHumor, moverLealtad, practicar, fuerza, disposicion, hab
 import { volvioElEspia } from './horario.js';
 // 📒 La libreta (BANDA-NUEVA.md, etapa 2): con ella, cada cosa que pasa se anota como favor o queja.
 import { LIBRETA, EVENTOS_LIBRETA } from '../data/libreta.js';
-import { completarLibreta, anotar, borrarQueja, caducar, revisarMarca, disposicionLibreta, sincronizar } from './libreta.js';
+import { COMIDA } from '../data/comida.js';
+import { TIEMPO } from '../data/tiempo.js';
+import { comerDelDia, diasQueAlcanza } from './comida.js';
+import { terminarTareas } from './tareas.js';
+import { completarLibreta, anotar, borrarQueja, caducar, revisarMarca, disposicionLibreta, sincronizar, pagarLaOlla } from './libreta.js';
 
 const IDS = BANDA.map((m) => m.id);
 const E = ANIMO.eventos;
 
-/** Cuántas partes del día se va a practicar (el día entero). */
-export const PARTES_DE_PRACTICA = 4;
+/**
+ * Cuántas partes del día se va a practicar (el día entero). 🔁 Con la pizarra, la mañana y la tarde: sale a la mañana
+ * y vuelve a la noche (`TIEMPO.pizarra.partesTarea`).
+ */
+export const PARTES_DE_PRACTICA = TIEMPO.pizarra.activo ? TIEMPO.pizarra.partesTarea : 4;
 /** La parte del día en que el que practica descansa en el campamento: la noche. */
 const PARTE_NOCHE = 2;
 /**
@@ -92,7 +99,7 @@ export function jugarUnaMano(g, id, azar = Math.random) {
   actividad(b, aca, id, dia);
   eventoDeAnimo(g, id, gano ? 'manoGana' : 'manoPierde');
   const habAntes = !!(e.habilidades && e.habilidades.baraja && e.habilidades.baraja.estrella);
-  const r = practicar(e, 'baraja', dia, ANIMO.habilidad.practica);
+  const r = practicar(e, 'baraja', dia, ANIMO.habilidad.practica, { como: 'mano' });
   const baraja = !habAntes && e.habilidades.baraja.estrella ? 'estrella' : r;
   const humores = aca.map((x) => ({ id: x, humor: palabraDeHumor(b[x].humor) })).filter((c) => c.humor !== antes[c.id]);
   return { gano, humores, baraja };
@@ -104,6 +111,8 @@ export function alEmpezarElDia(g, dia, azar = Math.random) {
   completarAnimo(g.banda);
   for (const n of nuevoDia(g.banda, IDS, dia, HUMOR.descanso)) {
     if (n.que === 'perdio') noticia(g, `perdio:${n.id}:${n.habilidad}`);
+    // (🟤 Perdió una marca: se está oxidando.)
+    if (n.que === 'oxida') noticia(g, `oxida:${n.id}:${n.habilidad}`);
   }
   // 📒 Cada noche: se caen las líneas viejas de la libreta y se mira si gana o pierde una marca (una por noche).
   for (const id of IDS) {
@@ -112,6 +121,28 @@ export function alEmpezarElDia(g, dia, azar = Math.random) {
     caducar(e, dia);
     const que = revisarMarca(e, dia);
     if (que === 'gano' || que === 'perdio') noticia(g, `${que === 'gano' ? 'marcaGano' : 'marcaPerdio'}:${id}:${palabraDe(e)}`);
+  }
+  // 🍲 La olla del día que empieza (después de mirar las marcas: la queja de hoy cuenta para la noche de mañana).
+  // Sólo se avisa cuando no alcanzó.
+  if (g.tiempo && g.money != null) {
+    const olla = pagarLaOlla(g, dia);
+    // (Una sola vez, aunque duermas varios días sin plata.)
+    if (!olla.pago && !(g.campamento && (g.campamento.noticias || []).includes('sinOlla:' + olla.costo))) noticia(g, 'sinOlla:' + olla.costo);
+  }
+  // 🍖 Comen de la despensa (data/comida.js). Se avisa si no hubo, o (una vez cada vez que baja) si queda para poco.
+  if (g.tiempo && COMIDA.activo) {
+    const c = comerDelDia(g, dia), C = g.campamento;
+    // (Si ya no hubo, el "queda para poco" de antes sobra.)
+    if (c && c.faltan) {
+      C.noticias = (C.noticias || []).filter((n) => !n.startsWith('pocaComida'));
+      if (!C.noticias.includes('sinComida')) noticia(g, 'sinComida');
+      C.avisoComida = true;
+    }
+    else {
+      const d = diasQueAlcanza(g);
+      if (d <= COMIDA.avisaDias && !C.avisoComida) { noticia(g, 'pocaComida:' + d); C.avisoComida = true; }
+      if (d > COMIDA.avisaDias) C.avisoComida = false;
+    }
   }
   // 🍾 El alcohólico toma esa noche según lo fuerte que es (80: cuatro noches de cada cinco). Con resaca, falla más
   // con los caballos (`PLAN.resaca`).
@@ -124,12 +155,16 @@ export function alEmpezarElDia(g, dia, azar = Math.random) {
 /** 🎯 PASA UNA PARTE DEL DÍA para los que están practicando. Al terminar, cuenta lo practicado. */
 export function pasaUnaParte(g) {
   if (!g.banda) return;
+  // 📋 (Los que vuelven de las tareas nuevas —cazar, el pueblo, las cartas…—: se cuentan todos juntos al final, porque
+  // los que cazaron juntos traen una sola presa. Ver systems/tareas.js.)
+  const volvieron = [];
   for (const id of IDS) {
     const e = g.banda[id];
     if (!e || !e.practica) continue;
     if (!e.esta) { e.practica = null; continue; }
     e.practica.quedan--;
     if (e.practica.quedan > 0) continue;
+    if (e.practica.tarea) { volvieron.push([id, e.practica]); e.practica = null; continue; }
     const hab = e.practica.hab;
     // 🕵️ (El que fue a mirar un tren no practicó nada: cuenta lo que vio. Ver `volvioElEspia` en systems/horario.js.)
     if (e.practica.espia) {
@@ -143,16 +178,22 @@ export function pasaUnaParte(g) {
     }
     e.practica = null;
     const estrellaAntes = !!(e.habilidades && e.habilidades[hab] && e.habilidades[hab].estrella);
-    const r = practicar(e, hab, g.tiempo ? g.tiempo.dia : 0, ANIMO.habilidad.practica);
+    const r = practicar(e, hab, g.tiempo ? g.tiempo.dia : 0, ANIMO.habilidad.practica, { como: 'practica' });
     const estrella = !estrellaAntes && e.habilidades[hab].estrella;
     noticia(g, `${estrella ? 'estrella' : r || 'practico'}:${id}:${hab}`);
   }
+  if (volvieron.length) terminarTareas(g, volvieron);
 }
 
-/** Si está practicando ahora (no está en el campamento): todo el día menos la noche. */
+/**
+ * Si está afuera, en una tarea (no está en el campamento). Con la pizarra: mientras dure la tarea, salvo las que se
+ * hacen en el campamento (curar, cocinar). Sin ella, todo el día menos la noche.
+ */
 export function practicandoAhora(g, id) {
   const e = g.banda && g.banda[id];
-  return !!(e && e.practica && (!g.tiempo || g.tiempo.parte !== PARTE_NOCHE));
+  if (!e || !e.practica) return false;
+  if (TIEMPO.pizarra.activo) return !e.practica.enCampo;
+  return !g.tiempo || g.tiempo.parte !== PARTE_NOCHE;
 }
 
 /** 🕵️ Mandarlo a mirar un tren (por su número): se va el día entero desde ahora, como a practicar. */
@@ -283,6 +324,8 @@ export function despuesDelAsalto(g, s) {
     // 📡 🔭 El telégrafo, el telegrafista; el vigía, la buena vista.
     if (e.papel === 'telegrafo') usos.push([id, 'telegrafista']);
     if (e.papel === 'vigia') usos.push([id, 'vista']);
+    // (🔭 Y el vigía que además tira: la puntería.)
+    if (e.papel === 'vigia' && tiene(e, 'punteria')) usos.push([id, 'punteria']);
   }
   // 📒 "Salió bien": favor para el que hizo bien su papel (con +2 lo tenía fácil: cuenta 1 de cada 2, y se dice).
   if (s.papeles) for (const x of Object.values(s.papeles)) {
@@ -293,7 +336,7 @@ export function despuesDelAsalto(g, s) {
   for (const [id, hab] of usos) {
     const e = b[id];
     const estrellaAntes = !!(e.habilidades[hab] && e.habilidades[hab].estrella);
-    const r = practicar(e, hab, dia);
+    const r = practicar(e, hab, dia, 1, { enGolpe: true });
     if (!estrellaAntes && e.habilidades[hab].estrella) noticia(g, `estrella:${id}:${hab}`);
     else if (r) noticia(g, `${r}:${id}:${hab}`);
   }

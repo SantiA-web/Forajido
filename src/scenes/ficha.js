@@ -19,7 +19,8 @@
 import { PALETA } from '../engine/paleta.js';
 import { papel, cara, TINTAS } from '../engine/menu.js';
 import { MIEMBRO, palabraDe } from '../data/banda.js';
-import { nivelDeMarca, palabraDeHumor, esPersonalidad } from '../data/rasgos.js';
+import { nivelDeMarca, palabraDeHumor, esPersonalidad, ANIMO } from '../data/rasgos.js';
+import { marcasDe } from '../systems/animo.js';
 import { T } from '../text/es.js';
 import { LEALTAD5 } from '../data/libreta.js';
 
@@ -111,11 +112,24 @@ export function crearFicha(audio) {
       const tinta = TINTA_DE[nivelDeMarca(rasgo, fuerza)];
       // (⭐ La que domina lleva su estrellita en la punta del sello *(Santi: "pasa a tener una estrellita")*.)
       const estrella = !!(h && h.estrella);
-      const w = Math.ceil(r.medir(nombre)) + 12 + (estrella ? 8 : 0), h2 = 15;
+      // (🟤 ■■■□□ La que se está oxidando lleva sus marcas en la punta, como los cuadraditos de la lealtad: las que le
+      // quedan llenas, la media llena hasta la mitad.)
+      const M = ANIMO.habilidad.marcas, marcas = h && M.activo && !estrella ? marcasDe(e, rasgo) : null;
+      const oxida = marcas != null && marcas < M.total;
+      const extra = estrella ? 8 : oxida ? 6 * M.total + 2 : 0;
+      const w = Math.ceil(r.medir(nombre)) + 12 + extra, h2 = 15;
       if (sx + w > x + HOJA.w - 14) { sx = x + 14; sy += h2 + 6; }
       sello(r, sx, sy, w, h2, tinta);
-      r.text(nombre, sx + (w - (estrella ? 8 : 0)) / 2, sy + h2 / 2 + 0.5, tinta, 'center', sinHalo);
+      r.text(nombre, sx + (w - extra) / 2, sy + h2 / 2 + 0.5, tinta, 'center', sinHalo);
       if (estrella) estrellita(r, sx + w - 11, sy + 5, SELLO);
+      if (oxida) for (let k = 0; k < M.total; k++) {
+        const mx = sx + w - 7 - 6 * (M.total - 1 - k) - 4, my = sy + 5, lleno = marcas - k;
+        if (lleno >= 1) r.rect(mx, my, 5, 5, SELLO);
+        else {
+          r.rect(mx, my, 5, 1, TINTA_SUAVE); r.rect(mx, my + 4, 5, 1, TINTA_SUAVE); r.rect(mx, my, 1, 5, TINTA_SUAVE); r.rect(mx + 4, my, 1, 5, TINTA_SUAVE);
+          if (lleno > 0) r.rect(mx, my + 2, 5, 3, SELLO);
+        }
+      }
       sx += w + 8;
     }
 

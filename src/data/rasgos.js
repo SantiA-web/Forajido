@@ -169,6 +169,26 @@ export const ANIMO = {
      * "hacé las dos")*: con la mitad, al que cuida a la banda le salían 4 o 5 estrellitas por partida.
      */
     arriba: 1 / 3, estrella: 100,
+
+    /**
+     * 🔁 ●●●●● LAS MARCAS *(BANDA-NUEVA.md, "Las habilidades"; Santi aprobó todo lo recomendado, 2026-11-18)*: reemplazan
+     * al número de 0 a 100 de arriba (que queda para la llave apagada). Se tiene o no se tiene, y se ve con `total`
+     * marcas. Usarla en un golpe o en una tarea da `uso`; practicar un día, `practica` (y `conGanas` más si está con
+     * ganas). La tiene recién con `total`; cada `oxidaCada` días sin usarla pierde una marca (con aviso), y con menos de
+     * `pierdeDebajo` ya no la tiene. Recuperarla va `recuperar` veces más rápido mientras no haya bajado de 2.
+     * `noOxidan`: se tienen o no, no hay cómo practicarlas a voluntad.
+     * ⭐ LA ESTRELLITA *(Santi: "es muy importante que midás lo de la estrellita")*: con la habilidad ya tenida,
+     * `estrella` golpes usándola la dominan y no se oxida nunca más. Sólo cuentan los golpes: contando las tareas, las
+     * que se usan todos los días (cazar, bajar al pueblo) la sacaban enseguida, unas 6 por partida. Medido (simulador
+     * banda3.js v12, `estrellaGolpe`): con 8 golpes, 2,7 estrellitas por partida; con 12, 2,0; con 6, 2,9. No cambia la
+     * plata ni a cuántos perdés: es un premio, no una ventaja.
+     */
+    marcas: {
+      /** 🔑 La llave: con false, vuelve el número de 0 a 100. */
+      activo: true,
+      total: 5, pierdeDebajo: 3, uso: 1, practica: 0.5, conGanas: 0.5, oxidaCada: 6, recuperar: 2, estrella: 8,
+      noOxidan: ['aguante', 'leer'],
+    },
   },
 
   // ── LAS PERSONALIDADES ──

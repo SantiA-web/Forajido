@@ -21,6 +21,8 @@ import { moverPersonalidad, marcaFuerte, actividad } from '../systems/animo.js';
 import { eventoDeAnimo, multDelReparto, recordar, anotarPor } from '../systems/animoEnJuego.js';
 import { ENCARGO } from './encargo.js';
 import { rumorDelForastero } from '../systems/horario.js';
+import { REPARTO, JMC } from './libreta.js';
+import { deudaConJmc, perdonarDeuda } from '../systems/libreta.js';
 
 /**
  * 🙂 🔁 LOS MOMENTOS MUEVEN EL HUMOR *(Santi: "conectá todo lo del ánimo", 2026-11-15)*. Cada opción dice qué evento del
@@ -102,6 +104,12 @@ export const REACCIONES = { repartoDesde: 501, repartoCada: 4, medico: 100, algo
 /** 🗣️ Si Santiago está y se le nota lo egoísta (entonces pide su parte él solo: ver `miParte`). */
 const santiagoEgoista = (g) => esta(g, 'santiago') && marcaFuerte(g.banda.santiago, 'egoista');
 
+/**
+ * 💰 🔁 Con el reparto por cabeza (scenes/reparto.js, llave `REPARTO.activo`) el botín se reparte siempre en su
+ * pantalla: "la pelea por el reparto", "¿y nuestra parte?" y "mi parte, ahora" ya no salen.
+ */
+const repartoViejo = () => !REPARTO.activo;
+
 /** Si ya pasaron los asaltos que tienen que pasar desde el último reparto. */
 function repartoDisponible(g) {
   const C = g.campamento;
@@ -141,8 +149,20 @@ export const MOMENTOS = {
     quien: 'carta', repite: true,
     cuando: () => false,
     opciones: (g) => {
-      const puede = g.money >= ENCARGO.dinero && tieneMaletin(g);
       const sabe = !!g.campamento.marcas.bandaSabeLaPromesa;
+      // ✉️ 🔁 J.Mc. en cuotas (`JMC`, data/libreta.js): pide el maletín y lo que le debas. Entregarle el maletín paga
+      // la deuda; mentir es quedártelo y pagarle lo que le debes de tu bolsa (si te alcanza).
+      if (JMC.activo) {
+        const deuda = deudaConJmc(g);
+        return [
+          ...(tieneMaletin(g) ? [
+            { id: 'entregar', encargo: 'cumplido', animo: sabe ? { tommy: 'pedidoSi', santiago: 'pedidoNo' } : {} },
+            { id: 'mentir', dinero: deuda, pagoEntero: true, encargo: 'mentira', animo: sabe ? [['tommy', 'peleaPierde'], ['frank', 'pedidoNo', 0.5], ['santiago', 'pedidoSi']] : [] },
+          ] : []),
+          { id: 'nada', encargo: 'fallado', animo: sabe ? { tommy: 'pedidoNo' } : {} },
+        ];
+      }
+      const puede = g.money >= ENCARGO.dinero && tieneMaletin(g);
       return [
         ...(puede ? [
           { id: 'entregar', dinero: ENCARGO.dinero, pagoEntero: true, encargo: 'cumplido', animo: sabe ? { tommy: 'pedidoSi', santiago: 'pedidoNo' } : {} },
@@ -192,7 +212,7 @@ export const MOMENTOS = {
    */
   reparto: {
     quien: 'frank', tambien: ['santiago'], prioridad: 50, repite: true,
-    cuando: (g) => recien(g) && g.ultimoAsalto.botin >= REACCIONES.repartoDesde && repartoDisponible(g),
+    cuando: (g) => repartoViejo() && recien(g) && g.ultimoAsalto.botin >= REACCIONES.repartoDesde && repartoDisponible(g),
     opciones: (g) => {
       const b = g.ultimoAsalto ? g.ultimoAsalto.botin : 0;
       // (🙂 El reparto rinde distinto según quién es: al ambicioso y al egoísta el "me lo guardo" les pega más.)
@@ -250,7 +270,7 @@ export const MOMENTOS = {
   // 10. Te llevaste mucho y no hubo reparto: Santiago pregunta por su parte.
   deMas: {
     quien: (g) => (esta(g, 'santiago') ? 'santiago' : 'frank'), prioridad: 45, repite: true,
-    cuando: (g) => recien(g) && g.ultimoAsalto.botin >= REACCIONES.repartoDesde && !repartoDisponible(g) && !santiagoEgoista(g),
+    cuando: (g) => repartoViejo() && recien(g) && g.ultimoAsalto.botin >= REACCIONES.repartoDesde && !repartoDisponible(g) && !santiagoEgoista(g),
     opciones: (g) => [
       { id: 'algo', animo: { santiago: 'pedidoSi', frank: 'pedidoSi' }, dinero: Math.round(g.ultimoAsalto.botin * REACCIONES.algo) },
       { id: 'mio', animo: { santiago: 'pedidoNo', frank: 'pedidoNo' } },
@@ -263,7 +283,7 @@ export const MOMENTOS = {
    */
   miParte: {
     quien: 'santiago', prioridad: 45, repite: true,
-    cuando: (g) => recien(g) && g.ultimoAsalto.botin >= REACCIONES.repartoDesde && !repartoDisponible(g) && santiagoEgoista(g),
+    cuando: (g) => repartoViejo() && recien(g) && g.ultimoAsalto.botin >= REACCIONES.repartoDesde && !repartoDisponible(g) && santiagoEgoista(g),
     opciones: (g) => {
       const parte = Math.round(g.ultimoAsalto.botin / 4);
       const ops = [
@@ -409,6 +429,8 @@ function resolverEncargo(g, como) {
   if (como === 'cumplido') {
     const i = g.owned.objetos.findIndex((o) => o.id === 'maletin');
     if (i >= 0) g.owned.objetos.splice(i, 1);
+    // (✉️ El maletín le paga lo que le debías.)
+    perdonarDeuda(g);
     E.cumplido = true;
     g.finDelJuego = 'jmc';
     return;

@@ -27,6 +27,8 @@ import { INTERIORES, PARED_ALTO } from '../data/interiors.js';
 import { gameState, numero } from '../state/gameState.js';
 import { crearMenu } from '../engine/menu.js';
 import { tasarLote } from '../data/perista.js';
+import { TRATOS } from '../data/tratos.js';
+import { abrirVenta } from './trato.js';
 import { MIEMBRO, PLAN as PLAN_BANDA, presos, liberar } from '../data/banda.js';
 import { T } from '../text/es.js';
 import { dibujarPersona as dibujarGente, faseDeAndar, tono } from '../entities/figura.js';
@@ -211,6 +213,18 @@ export function createInteriorScene(services) {
     if (!objetos.length) {
       decir(T.interior.dichos.peristaVacio);
       audio.play('cover');
+      return;
+    }
+
+    // 🤝 LOS TRATOS (TRATOS.md, scenes/trato.js): el perista te hace una oferta y tienes una jugada para cambiarla.
+    if (TRATOS.activo) {
+      abrirVenta({
+        g: gameState, id: 'perista', objetos, menu,
+        figuras: figurasDe(def.puntos.find((p) => p.id === 'perista')),
+        decir: (lineas) => decir(lineas, 4.5),
+        sonar: (s) => audio.play(s),
+        cobrar: (m) => { gameState.money += numero(m, 'lo que te paga el perista'); },
+      });
       return;
     }
 

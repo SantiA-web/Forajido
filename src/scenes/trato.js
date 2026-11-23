@@ -12,7 +12,8 @@
 import { T } from '../text/es.js';
 import { oferta, jugadas, resolver, tramoDe, famaDe } from '../systems/tratos.js';
 import { TRATOS } from '../data/tratos.js';
-import { contextoDeVenta, aplicarTrato, conocidos, sacarVendido, cerradoHoy, tratanteDe } from '../systems/tratosEnJuego.js';
+import { contextoDeVenta, aplicarTrato, conocidos, sacarVendido, cerradoHoy, tratanteDe, libretaDelTrato } from '../systems/tratosEnJuego.js';
+import { MIEMBRO } from '../data/banda.js';
 
 /** La línea del tratante al hacer la oferta, con la voz de su primer rasgo. */
 function lineaDe(ctx, of, K) {
@@ -70,7 +71,9 @@ export function abrirVenta({ g, id, objetos, menu, figuras, decir, sonar, cobrar
       aplicarTrato(g, id, r);
       if (r.sigue) { abrirLista(r.sigue, K.resultado.regateoMal(r.sigue[0].monto)); sonar('cover'); return false; }
       if (r.cierra) { cobrar(r.monto); sacarVendido(g); }
-      decir(resultadoDe(j, r, of, K));
+      // 📒 (El chantaje o el soplo, a la libreta de la banda: se dice en el momento.)
+      const anotes = libretaDelTrato(g, { chantaje: of.chantaje, sopla: r.sopla });
+      decir([...resultadoDe(j, r, of, K), ...anotes.map((a) => T.libreta.anota(MIEMBRO[a.id] ? MIEMBRO[a.id].corto : a.id, a.lado, T.libreta.motivos[a.motivo]))]);
       sonar(r.cierra ? 'loot' : 'cover');
       return false;
     }, cuerpo, { figuras });

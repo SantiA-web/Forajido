@@ -24,7 +24,7 @@ import { conocidos, momento, ahora } from '../systems/horario.js';
 import { tareaEn, ponerTarea, sePuedeCambiar, sePuedePoner, paraMirarEl, otroBajaAlPueblo, VA_EN, PARTES_PIZARRA } from '../systems/pizarra.js';
 import { paraVender, yaHuboCartas, mejoraDe } from '../systems/tareas.js';
 import { tiene } from '../systems/animo.js';
-import { TAREAS } from '../data/tareas.js';
+import { TAREAS, RUMORES } from '../data/tareas.js';
 import { quimicaConocida } from '../systems/tratosEnJuego.js';
 import { PRACTICABLES } from '../systems/animoEnJuego.js';
 import { diasParaOxidarse } from '../systems/animo.js';
@@ -196,7 +196,9 @@ export function crearCalendario(audio, { menu = null, alPasar = null } = {}) {
   function textoDelTren(tr) {
     const K = T.tiempo.calendario, f = fechaDe(tr.dia);
     const cuando = `${T.rumores.dias[f.semana]} ${f.dia}` + (tr.sabes === 'rumor' ? '' : `, ${T.tiempo.partesMin[TIEMPO.partes[tr.parte]]}`);
-    return K.tren(tr.tipoTren.short.toLowerCase(), T.rumores.vias[tr.ruta] || tr.ruta, cuando, tr.sabes === 'rumor' ? K.deRumor : K.delHorario)
+    // (🗞️ De un rumor, de dónde salió y cuánto es cierto: ver `RUMORES` en data/tareas.js. Ya mirado, no hace falta.)
+    const deRumor = !tr.visto && tr.de && K.rumorDe[tr.de] ? K.rumorDe[tr.de](RUMORES[tr.de]) : K.deRumor;
+    return K.tren(tr.tipoTren.short.toLowerCase(), T.rumores.vias[tr.ruta] || tr.ruta, cuando, tr.sabes === 'rumor' ? deRumor : K.delHorario)
       + (tr.visto ? K.mirado : '');
   }
 

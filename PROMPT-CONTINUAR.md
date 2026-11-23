@@ -7,7 +7,25 @@ así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
 `NOTAS-DISENO.md` es grande (11.000 líneas): usá Grep para ir a la sección que
 necesites en vez de leerlo entero cada vez.
 
-## LO ÚLTIMO (2026-11-20): LOS TRATOS CON EL PERISTA
+## LO ÚLTIMO (2026-11-22): LA HISTORIA, Y LAS CADENAS ESCRITAS A MANO
+
+Antes de tocar nada de la historia, leé **`PERSONAJES.md`**: los personajes como para una novela (John, James, su
+padre, Santiago, Frank, Tommy, los de afuera y los cuatro pueblos). Manda sobre lo que diga cualquier otra página.
+
+- **Dos tipos de decisiones** *(Santi, 2026-11-22)*: las **Diarias** (repetidas, con peso que se junta) y las **de
+  Historia**, cadenas escritas a mano: "si pasó X, en N golpes pasa Z, a menos que hagas K" (como *Beholder:
+  Conductor*). **Nada de reglas "cada N golpes".** Los finales y los arcos salen de las dos.
+- **El camino** *(Santi: "subilo y vamos con el camino del medio")*: 1) el esqueleto de las cadenas de las cuatro
+  regiones, una página por región, que decide también cuántos golpes tiene cada una (Santi pidió alargarlas, para
+  que entren la otra banda, el Marshal, la Pinkerton, un prisionero importante y la gente de los pueblos); 2) el
+  desierto en detalle, construido con un **motor de cadenas** (hechos, plazos en golpes, condiciones, "a menos
+  que"), que se hace una sola vez; 3) subir, que Santi lo pruebe entero "ya casi como juego terminado"; 4) ajustar y
+  seguir con la pradera.
+- **Etapa 5, parte 1 hecha** (tentación, señal, traición; `src/systems/tentacion.js`) con textos provisorios. Las
+  partes 2 y 3 (promesas rotas, el ejército, los límites) se hacen como cadenas de historia. Las reglas que se
+  repiten (las ofertas cada 4 golpes, el tramo +1, los choques de la fogata) se reemplazan por hechos escritos.
+
+## ANTES (2026-11-20): LOS TRATOS CON EL PERISTA
 
 Santi me dejó a mí el sistema de tratos (comprar y vender con cualquier tratante). Está todo en **`TRATOS.md`**:
 hecha la etapa 1 (el perista, la tarea "vender", el honor según quién, la química del que mandas). Las tiendas
@@ -25,8 +43,10 @@ al final, "Las reglas que no se tocan" y el "Orden de construcción"). El resume
   comida en porciones (`src/systems/comida.js`, reemplaza a la olla).
 - ✅ **Etapa 3**: la pizarra dentro del calendario [C] y las tareas (`src/systems/pizarra.js`, `src/systems/tareas.js`);
   los tratos con el perista (`TRATOS.md`).
-- ⏭️ **Etapa 3, parte 4**: los rumores con su origen. Después, etapas 4 a 6 (personalidades con escalones y la fogata,
-  tentación y traiciones, cantina con los contratados).
+- ✅ **Etapa 3, parte 4**: los rumores con su origen (`RUMORES` en `src/data/tareas.js`).
+- ✅ **Etapa 4**: las personalidades con escalones (`BAJA` en `src/data/rasgos.js`) y la fogata (`src/systems/fogata.js`).
+- ✅ **Etapa 5, parte 1**: la tentación, la señal y la traición (`src/systems/tentacion.js`). Lo demás de la etapa 5
+  va como cadenas de historia (arriba). ⏭️ Después, la etapa 6 (la cantina con los contratados).
 
 Todo número nuevo va en un solo archivo de datos y se mide primero en `simulador/banda3.js` (`SIM='{...}'` para
 probar variantes). Antes de sacar una conclusión del simulador, revisar que la variante corra de verdad.

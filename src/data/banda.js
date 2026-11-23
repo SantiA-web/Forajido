@@ -16,7 +16,7 @@
  * ⚠️ Propuesta mía, a confirmar con Santi.
  */
 import { RASGOS_DE, HUMOR, ANIMO } from './rasgos.js';
-import { habilidadesIniciales, moverHumor, moverLealtad, cambioDeFalla, tiene, marcaFuerte } from '../systems/animo.js';
+import { habilidadesIniciales, moverHumor, moverLealtad, cambioDeFalla, tiene, marcaFuerte, contradecir } from '../systems/animo.js';
 // 📒 La libreta y la lealtad de 0 a 5 (BANDA-NUEVA.md, etapa 2).
 import { LIBRETA, LEALTAD5 } from './libreta.js';
 import { completarLibreta, palabraDeLealtad5, anotar } from '../systems/libreta.js';
@@ -157,15 +157,18 @@ export const ESCALERA = {
 };
 
 /** Los pasos de uno para un papel, con sus motivos (para mostrarlos): `{ pasos, motivos: [[texto, n], …] }`. */
-export function pronostico(e, papel, { resaca = false, disp = null, parte = null } = {}) {
+export function pronostico(e, papel, { resaca = false, disp = null, parte = null, enemigo = false } = {}) {
   const motivos = [];
   const ay = [].concat(PAPELES_NUEVOS.ayuda[papel] || []);
   const sabe = ay.some((h) => tiene(e, h));
   if (sabe) motivos.push(['habilidad', 1]);
   if (disp === 'potenciado') motivos.push(['conGanas', 1]);
-  if (disp === 'malaGana') motivos.push(['malaGana', -1]);
+  // (😐 El Serio, de malas, no pierde el paso: su humor casi no se mueve. Mientras se le nota.)
+  if (disp === 'malaGana') motivos.push(marcaFuerte(e, 'serio') ? ['malaGanaSerio', 0] : ['malaGana', -1]);
   if (e.lealtad5 ? e.lealtad <= LEALTAD5.baja : palabraDeLealtad(e.lealtad) === 'aPuntoDeIrse') motivos.push(['lealtad', -1]);
   if (resaca) motivos.push(['resaca', -1]);
+  // (🔥 Va al golpe con uno que es su enemigo: un paso abajo. Ver data/fogata.js.)
+  if (enemigo) motivos.push(['enemigo', -1]);
   if (papel === 'vigia' && parte === 'noche' && !sabe) motivos.push(['noche', -1]);
   if (papel === 'telegrafo' && parte === 'madrugada') motivos.push(['madrugada', 1]);
   const n = motivos.reduce((t, [, v]) => t + v, 0);
@@ -258,7 +261,7 @@ export const PLAN = {
  * 🎲 EL PLAN DE ESTE ASALTO, sorteado al subir: quién cuida los caballos y si le salió mal, y quién va de pasajero.
  * `azar`: para las pruebas.
  */
-export function sortearPlan(banda, azar = Math.random, marcas = {}, parte = null) {
+export function sortearPlan(banda, azar = Math.random, marcas = {}, parte = null, conEnemigo = () => false) {
   const caballos = quienHace(banda, 'caballos'), pasajero = quienHace(banda, 'pasajero');
   // 🙂 Con resaca (le dejaste la botella, o tomó esa noche), cómo lo hace hoy (de mala gana falla más, contento menos)
   // y si es Veloz en las riendas (falla menos).
@@ -273,7 +276,7 @@ export function sortearPlan(banda, azar = Math.random, marcas = {}, parte = null
   // está; flojo, llega tarde; mal, llega tarde y no viene a otro enganche.
   let caballosRes = null, caballosPasos = null;
   if (LIBRETA.activa && ec && ec.lealtad5) {
-    const p = pronostico(ec, 'caballos', { resaca: resaca > 0, disp, parte });
+    const p = pronostico(ec, 'caballos', { resaca: resaca > 0, disp, parte, enemigo: conEnemigo(caballos) });
     caballosPasos = p.pasos;
     caballosRes = tirarEscalera(p.pasos, azar);
     caballoTarde = caballosRes !== 'bien';
@@ -285,7 +288,7 @@ export function sortearPlan(banda, azar = Math.random, marcas = {}, parte = null
     if (!id) return { id: null, res: 'nadie', pasos: null };
     const e = banda[id];
     const resacaN = (id === 'frank' && marcas.frankResaca) || e.resaca;
-    const p = pronostico(e, papel, { resaca: !!resacaN, disp: e.disposiciones ? e.disposiciones[papel] : null, parte });
+    const p = pronostico(e, papel, { resaca: !!resacaN, disp: e.disposiciones ? e.disposiciones[papel] : null, parte, enemigo: conEnemigo(id) });
     return { id, res: tirarEscalera(p.pasos, azar), pasos: p.pasos };
   };
   const tel = nuevo('telegrafo'), vig = nuevo('vigia');
@@ -406,6 +409,8 @@ export function encarcelar(banda, id, dia = 0) {
   // (📒 Lo dejaste preso: queja doble.)
   if (e.libreta) anotar(e, 'q', 'dejadoAtras', dia, { veces: 2 });
   else sentir(e, ANIMO.eventos.dejadoAtras);
+  // (🎚️ Al Frío, quedar preso se le mete adentro: ver `BAJA` en data/rasgos.js.)
+  contradecir(e, 'frio');
   e.practica = null;
   e.preso = true;
   e.esta = false;
@@ -434,6 +439,8 @@ export function presos(banda) {
 export function seVa(banda, id) {
   banda[id].esta = false;
   banda[id].papel = null;
+  // (🎚️ Al Sentimental le pega que se vaya uno: ver `BAJA` en data/rasgos.js.)
+  for (const [otro, e] of Object.entries(banda)) if (otro !== id && e && e.esta) contradecir(e, 'sentimental');
 }
 
 /**

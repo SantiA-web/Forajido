@@ -12,6 +12,19 @@
  *    queda lejos: bajar ocupa la mañana y la tarde.
  *  - **Cartas en la cantina**, **cocinar**: la noche.
  */
+/**
+ * 🗞️ DE DÓNDE VIENE CADA RUMOR Y CUÁNTO CONFIAR (BANDA-NUEVA.md, "Los rumores: de dónde vienen y cuánto confiar"; etapa
+ * 3, parte 4): cuántas de cada 100 veces es cierto, según de dónde salió. El tren lo recuerda (`tren.de`) y el mapa y el
+ * calendario lo dicen. Mirar el tren lo confirma o lo desmiente.
+ *  - `cantina`: lo trajo uno de la banda que bajó al pueblo.
+ *  - `dudoso`: lo trajo el Mentiroso (sale "dudoso": la mitad se lo inventa).
+ *  - `forastero`: el forastero herido del campamento.
+ *  - `papeles`: la hoja de ruta del encargado, que te llevas de un asalto. Siempre cierto.
+ * (El diario no entra: trae pistas sin anotar en el horario, *Santi: "que sean pistas, no algo muy explícito"*. El
+ * telégrafo y los papeles que lee el que Sabe leer llegan con los contratados, etapa 6.)
+ */
+export const RUMORES = { cantina: 75, dudoso: 50, forastero: 50, papeles: 100 };
+
 export const TAREAS = {
   /**
    * 🗞️ BAJAR AL PUEBLO. Uno solo de la banda por día. Al elegirlo se dice para qué va *(Santi: "Al elegirlo, para qué

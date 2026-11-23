@@ -14,7 +14,7 @@
  */
 
 import { LIBRETA, LEALTAD5, NO_QUIERE, REPARTO, OLLA, JMC } from '../data/libreta.js';
-import { marcaFuerte, fuerza } from './animo.js';
+import { marcaFuerte, fuerza, contradecir } from './animo.js';
 import { COMIDA } from '../data/comida.js';
 
 /** El humor de 1 a 100 que corresponde a cada ánimo (cae justo en la palabra de `HUMOR.palabras`). */
@@ -120,10 +120,11 @@ export function revisarMarca(e, dia) {
 }
 
 /** 🙅 Si no quiere ir de ese papel por quién es (ver `NO_QUIERE`): sólo va con ganas. */
-export function noQuiere(e, papel) {
+export function noQuiere(e, papel, animoHoy = null) {
   // (El Confiable no se niega nunca a los caballos.)
   if (papel === 'caballos' && marcaFuerte(e, 'confiable')) return false;
-  return Object.entries(NO_QUIERE).some(([p, lista]) => lista.includes(papel) && marcaFuerte(e, p));
+  // (😄 El Divertido no quiere el telégrafo —solo en un poste— sólo de malas: tranquilo, va. BANDA-NUEVA.md.)
+  return Object.entries(NO_QUIERE).some(([p, lista]) => lista.includes(papel) && marcaFuerte(e, p) && (p !== 'divertido' || animoHoy === 'deMalas'));
 }
 
 /**
@@ -133,7 +134,7 @@ export function noQuiere(e, papel) {
 export function disposicionLibreta(e, papel, dia) {
   const a = animo(e, dia);
   if (a === 'furioso') return marcaFuerte(e, 'confiable') ? 'malaGana' : 'seNiega';
-  if (papel && a !== 'conGanas' && noQuiere(e, papel)) return 'seNiega';
+  if (papel && a !== 'conGanas' && noQuiere(e, papel, a)) return 'seNiega';
   return a === 'conGanas' ? 'potenciado' : a === 'deMalas' ? 'malaGana' : 'normal';
 }
 
@@ -193,6 +194,8 @@ export function repartir(g, filas, azar = Math.random) {
       const veces = c.lado === 'f' && azar() < fuerza(e, 'sentimental') ? 2 : c.veces;
       anotar(e, c.lado, c.motivo, dia, { veces });
       anotes.push({ id: f.id, lado: c.lado, motivo: c.motivo, veces: Math.min(LIBRETA.vecesMax, veces) });
+      // (🎚️ Ser generoso con el Egoísta le va sacando lo egoísta: ver `BAJA` en data/rasgos.js.)
+      if (c.motivo === 'repartoGeneroso') contradecir(e, 'egoista');
     }
     e.repartos = e.repartos || { generosos: 0 };
     e.repartos.generosos = f.espera > 0 && da >= generosoDe(f.espera) ? e.repartos.generosos + 1 : 0;

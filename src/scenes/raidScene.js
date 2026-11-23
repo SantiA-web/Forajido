@@ -106,6 +106,7 @@ import { nuevoReguero, sumarAlReguero, prenderReguero, regueroQueArde, pisarCarb
 import { actualizarPrimeraClase } from '../systems/primeraClase.js';
 import { createAlertSystem } from '../systems/alert.js';
 import { applyRaidResult, gameState, numero } from '../state/gameState.js';
+import { conEnemigoEnElPlan } from '../systems/fogata.js';
 
 export function createRaidScene(services) {
   const { renderer, input, bus, rng, scenes, hud, audio } = services;
@@ -371,7 +372,7 @@ export function createRaidScene(services) {
      * 🎭 EL PLAN: se sortea si le salió bien al de los caballos, y el que va de pasajero toma el lugar de uno de los
      * sentados (que no sea encubierto, rico, ni de los que saben de la caja oculta).
      */
-    plan = params.plan || (estiloNuevo.activo && !params.prueba ? sortearPlan(gameState.banda, Math.random, (gameState.campamento && gameState.campamento.marcas) || {}, gameState.tiempo ? TIEMPO.partes[gameState.tiempo.parte] : null) : null);
+    plan = params.plan || (estiloNuevo.activo && !params.prueba ? sortearPlan(gameState.banda, Math.random, (gameState.campamento && gameState.campamento.marcas) || {}, gameState.tiempo ? TIEMPO.partes[gameState.tiempo.parte] : null, (id) => conEnemigoEnElPlan(gameState, id)) : null);
     anuncioPlan = plan && (plan.telegrafo || plan.vigia) ? 1.5 : 0; avisoVigia = -1;
     caballoEspera = null; pasajeroBanda = null; distraccionUsada = false; dejoLaSalida = false; datosPlan = null;
     hablasteConElPasajero = false;

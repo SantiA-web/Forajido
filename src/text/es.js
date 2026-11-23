@@ -7,6 +7,9 @@ import { ENCARGO } from '../data/encargo.js';
 import { JMC } from '../data/libreta.js';
 
 /** ✉️ Lo que le debes a J.Mc. (ver systems/libreta.js; acá sin importarlo, para no dar la vuelta). */
+// 🔥 (Los dos de la fogata de esta noche: "Frank y Santiago".)
+const CORTO_FOGATA = { frank: 'Frank', santiago: 'Santiago', tommy: 'Tommy' };
+const parDeLaFogata = (g) => { const F = g.campamento.fogata; return `${CORTO_FOGATA[F.a] || F.a} y ${CORTO_FOGATA[F.b] || F.b}`; };
 const deudaDe = (g) => (g && g.campamento && g.campamento.jmc && g.campamento.jmc.deuda) || 0;
 
 export const T = {
@@ -724,6 +727,49 @@ export const T = {
           frank: '"Al que más grita, más le toca", dice Santiago, y se va a dormir sin cenar.',
         },
       },
+      /**
+       * 🔥 LA FOGATA (etapa 4, data/fogata.js): la noche del golpe, los dos que peor se llevan. Discuten por el próximo
+       * golpe (qué tren, quién va de pasajero), cada uno con su voz (VOCES.md): Santiago dice "McCoy"; Frank, "jefe";
+       * Tommy habla de usted.
+       */
+      discusion: {
+        titulo: (nombre, g) => parDeLaFogata(g),
+        texto: (nombre, g) => ({
+          'frank-santiago': 'Junto al fuego, la voz sube. "Al próximo no voy con él, McCoy", dice Santiago. "No le confío ni los caballos." "¿Y tú qué sabes de caballos?", le contesta Frank. Los dos te miran.',
+          'frank-tommy': '"El chico quiere ir adelante y no sabe ni cargar el revólver, jefe." "Por lo menos yo llego sobrio, Frank." Los dos esperan que digas algo.',
+          'santiago-tommy': '"Para Tommy todo es honor. El honor no paga, McCoy." "Usted sólo piensa en su parte, Santiago." Los dos esperan que digas algo.',
+        }[g.campamento.fogata.par] || 'Discuten junto al fuego por el próximo golpe. Los dos te miran.'),
+        opciones: {},
+        resultado: {},
+      },
+      pelea: {
+        titulo: (nombre, g) => parDeLaFogata(g),
+        texto: (nombre, g) => `${parDeLaFogata(g)} ya no se hablan. Esta noche, junto al fuego, uno empuja al otro. Van a irse a las manos.`,
+        opciones: {},
+        resultado: {},
+      },
+      fogata: {
+        op: {
+          razon: (n) => `Darle la razón a ${n}`,
+          calmar: (n) => `Calmarlos con una botella (−$${n})`,
+          calmarLabia: (n) => `Que ${n} los calme (con su labia)`,
+          dejar: 'Que lo arreglen solos',
+          parar: (n) => `Meterte en el medio y pagar la ronda (−$${n})`,
+          noMeterse: 'No meterte',
+        },
+        res: {
+          razon: (gana, pierde) => `${gana} asiente. ${pierde} se levanta y se va a dormir lejos del fuego.`,
+          serio: (n) => `A ${n} no le importa ganar.`,
+          calmar: 'Pones una botella en el medio y hablan hasta tarde. Al final se dan la mano.',
+          calmarLabia: (n) => `${n} se mete con una historia larga y los hace reír. Al final se dan la mano.`,
+          enemigos: (a, b) => `Los dejas. Siguen hasta que se apaga el fuego. Desde esta noche, ${a} y ${b} no se hablan.`,
+          divertido: (n) => `Los dejas. ${n} se mete con un chiste y al final todos se ríen. No pasó a mayores, pero nadie los escuchó.`,
+          parar: 'Te metes en el medio y pagas la ronda para todos. Por esta noche, alcanza.',
+          herido: (n, dias) => `Ruedan por el suelo hasta que uno no se levanta. ${n} queda herido ${dias} días. Después, cada uno a su manta.`,
+        },
+        rie: (div, otro, motivo) => `${div} se pasa la noche contando historias junto al fuego. ${otro} se olvida de una queja: "${motivo}".`,
+        sinResolver: (a, b) => `${a} y ${b} siguieron discutiendo sin ti. Ya no se hablan.`,
+      },
       // 🎭 Lo que vuelve del asalto (etapa 6).
       civiles: {
         titulo: 'Tommy',
@@ -1263,6 +1309,8 @@ export const T = {
     },
     hoja: (dia, via) => `La hoja de ruta del encargado: el ${dia} sale uno de carga por ${via}.`,
     forastero: (dia, via) => `"Que Dios se lo pague. El ${dia} pasa uno de carga por ${via}. Lo sé de buena fuente."`,
+    // 🗞️ (Lo que trae el Mentiroso: se dice que es dudoso.)
+    dudoso: ' Viniendo de él, es dudoso.',
   },
 
   tiempo: {
@@ -1311,6 +1359,13 @@ export const T = {
       cortito: { cazar: 'CZ', pescar: 'PE', pueblo: 'PB', comida: 'AL', vender: 'VE', curar: 'CU', cartas: 'CT', cocinar: 'CO' },
       tren: (tipo, via, cuando, como) => `Tren de ${tipo}, ${via}, ${cuando}${como}`,
       deRumor: ' (un rumor)', delHorario: ' (del horario)', mirado: '. Ya lo miraron.',
+      // 🗞️ (De dónde salió el rumor y cuánto es cierto.)
+      rumorDe: {
+        cantina: (n) => ` (cantina: cierto ${n} de cada 100)`,
+        dudoso: (n) => ` (dudoso: cierto ${n} de cada 100)`,
+        forastero: (n) => ` (forastero: cierto ${n} de cada 100)`,
+        papeles: () => ' (papeles del tren: cierto)',
+      },
       sinTrenes: 'No pasa ningún tren que sepas.',
       jmc: 'Esa noche pasa J.Mc.',
       noche: 'de noche descansa (las tareas de la noche vienen después)',
@@ -1428,8 +1483,19 @@ export const T = {
       ? `${nombre} se olvida de una queja: "${texto}".`
       : `${nombre} lo anota${veces > 1 ? ' dos veces' : ''}: ${lado === 'f' ? 'favor' : 'queja'}, "${texto}".`),
     // Los pasos del pronóstico, con su motivo (ver `pronostico` en data/banda.js).
-    pasos: { habilidad: 'sabe hacerlo', conGanas: 'con ganas', malaGana: 'de malas', lealtad: 'a punto de irse', resaca: 'con resaca', noche: 'de noche', madrugada: 'de madrugada' },
+    pasos: { habilidad: 'sabe hacerlo', conGanas: 'con ganas', malaGana: 'de malas', malaGanaSerio: 'de malas, pero es serio', enemigo: 'con su enemigo', lealtad: 'a punto de irse', resaca: 'con resaca', noche: 'de noche', madrugada: 'de madrugada' },
     pronostico: (nombre, bien) => `${nombre}: SALE BIEN ${bien} DE CADA 100`,
+    // 🎚️ Lo que contradice una personalidad (ver `BAJA` en data/rasgos.js): la cuenta, y cuando baja.
+    baja: {
+      por: {
+        honorable: 'otro golpe con civiles', valiente: 'lo hirieron', sentimental: 'se fue uno de la banda',
+        alcoholico: 'le sacaste la botella', confiable: 'rompiste tu palabra', divertido: 'se aburre',
+        frio: 'lo dejaste preso', egoista: 'fuiste generoso con él', serio: 'volvió con ganas',
+      },
+      porOtro: 'algo lo cambió',
+      cuenta: (nombre, rasgo, por, n, de) => `${nombre}, ${rasgo} (${n} de ${de}): ${por}.`,
+      bajo: (nombre, rasgo, por, ahora) => `${nombre}, ${rasgo}: ${por}. Se le gasta: queda en ${ahora} de 100.`,
+    },
     motivos: {
       otroFavor: 'Le gustó lo que hiciste',
       otraQueja: 'No le gustó lo que hiciste',
@@ -1461,6 +1527,9 @@ export const T = {
       'm:miParte': { f: 'Me diste mi parte', q: 'No me diste mi parte' },
       'm:adelante': { f: 'Me dejaste ir adelante', q: 'No me dejaste ir adelante' },
       'm:forastero': { f: 'Ayudaste al forastero', q: 'Echaste al forastero' },
+      // (🔥 La fogata.)
+      'm:discusion': { f: 'Me diste la razón', q: 'Le diste la razón al otro' },
+      'm:pelea': { f: 'Paraste la pelea', q: 'No paraste la pelea' },
       // (💰 El reparto, por cabeza: scenes/reparto.js.)
       repartoNada: 'No me diste nada',
       repartoPoco: 'Me diste poco',
@@ -1468,7 +1537,19 @@ export const T = {
       repartoGeneroso: 'Fuiste generoso',
       repartoYaNo: 'Ya no me das como antes',
       olla: 'No hubo para la olla',
+      // (🤝 El chantaje o el soplo del perista: TRATOS.md, "La banda".)
+      peristaSucio: 'Nos ensuciamos con el perista',
+      // (😄 El Divertido, a los días sin cartas.)
+      meAburro: 'Me aburro',
+      // (🔥 La fogata.)
+      nadieNosEscucho: 'Nadie nos escuchó',
+      laPelea: 'Me lastimaron en la pelea',
+      peristaDuro: 'Así se trata a un perista',
       comida: 'No hubo qué comer',
+      // (😈 La señal: acusaste al que no era; le pagaste dos veces a otro; echaste a su amigo.)
+      meAcusaste: 'Me acusaste sin razón',
+      loQuePidio: 'A él le diste, a mí no',
+      echasteAMiAmigo: 'Echaste a mi amigo',
     },
     /** 💰 LA PANTALLA DEL REPARTO (scenes/reparto.js). */
     reparto: {
@@ -1496,6 +1577,71 @@ export const T = {
       hecho: (total) => 'Repartiste $' + total + '.',
       nadieAnota: 'Nadie anota nada.',
     },
+  },
+  /**
+   * 😈 LA TENTACIÓN, LAS SEÑALES Y LAS TRAICIONES (etapa 5, parte 1; data/tentacion.js, systems/tentacion.js).
+   * ⚠️ PROVISORIOS: los reescribimos cuando esté la historia de cada uno *(Santi, 2026-11-22: armar los personajes "como
+   * se arma para escribir novelas")*. Cada uno con su voz (VOCES.md): Santiago dice "McCoy"; Frank, "jefe"; Tommy
+   * habla de usted.
+   */
+  tentacion: {
+    noticias: {
+      tramo: (region) => ({
+        pradera: 'Dejaron atrás el desierto. En la pradera hay más pueblos, más trenes y más gente que ofrece cosas.',
+        bosque: 'Entraron al bosque. Aquí nadie los conoce, y eso a algunos les da ideas.',
+        montana: 'Empiezan a subir a la montaña. El final está cerca, y cada uno piensa en lo suyo.',
+      }[region] || 'Llegaron a otra parte del viaje.'),
+      oferta: (nombre, tipo) => ({
+        otraBanda: `En el pueblo, unos hombres de otra banda le ofrecieron a ${nombre} irse con ellos.`,
+        mujer: `${nombre} conoció a una mujer en el pueblo. Habla de quedarse.`,
+      }[tipo] || `A ${nombre} le ofrecieron algo en el pueblo. No dice qué.`),
+      ofertaLey: (nombre) => `Tu cabeza ya vale mucho. Alguien de la ley le habló a ${nombre}: el perdón, a cambio de entregarte.`,
+      senal: (nombre) => ({
+        Santiago: 'Santiago volvió del pueblo con botas nuevas. No dice de dónde sacó la plata.',
+        Frank: 'Frank pasó la noche hablando con unos jinetes que no son de aquí. Cuando te acercaste, se callaron.',
+        Tommy: 'Tommy escribió una carta y no te dijo para quién.',
+      }[nombre] || `${nombre} anda raro: se calla cuando llegas.`) + ' Si sales al próximo golpe así, no va a estar.',
+      senalDos: (a, b) => `Alguien volvió del pueblo con botas nuevas: ${a} o ${b}. No sabes cuál. Si sales al próximo golpe así, no va a estar.`,
+      traicion: (nombre, como, plata) => ({
+        seFue: `${nombre} no apareció en la vía. Se fue de la banda.`,
+        seFueConPlata: `${nombre} no apareció en la vía. Cuando volviste, faltaba su manta… y $${plata} de tu bolsa.`,
+        vendio: `${nombre} no apareció en la vía: le vendió tus planes a la ley. Van a estar esperándote.`,
+      }[como] || `${nombre} se fue de la banda.`),
+      leyEspera: (perdido) => `La ley sabía que venías y te estaba esperando: perdiste la mitad del botín ($${perdido}).`,
+    },
+    /** Lo que se habla con el de la señal (en la charla de siempre, la primera opción). */
+    charla: {
+      opcion: 'Tenemos que hablar',
+      texto: (nombre) => ({
+        Santiago: '"¿Las botas? Las gané a las cartas, McCoy." No te mira. "Aunque si la parte fuera más grande, uno no tendría que andar buscando."',
+        Frank: '"Me ofrecieron un trabajo, jefe. Mejor paga, menos tiros." Escupe al fuego. "No dije que sí. Todavía."',
+        Tommy: '"No es nada, señor." Guarda la carta. "Sólo… a veces pienso si esto es lo que yo quería."',
+      }[nombre] || `${nombre} no te mira a los ojos.`),
+      duda: (a, b) => `Uno de los dos, ${a} o ${b}, anda en algo. No sabes cuál.`,
+      yaNo: 'Ya no alcanza con plata.',
+      pagar: (n) => `Darle lo que pide para quedarse (−$${n})`,
+      acusar: (n) => `Es él: darle lo que pide (−$${n})`,
+      vigilar: (n) => `Vigilarlo esta noche (−$${n})`,
+      vigilarGratis: (n) => `Que ${n} lo siga esta noche`,
+      echar: 'Echarlo de la banda',
+      ahoraNo: 'Ahora no',
+      pagado: (nombre, n) => `Le das $${n}. ${nombre} los guarda sin decir nada.`,
+      sigue: (nombre) => `Pero ${nombre} sigue pensando en irse: todavía lo tienta.`,
+      seQueda: (nombre) => `Por ahora, ${nombre} se queda.`,
+      esEl: (nombre) => `Lo sigues hasta el pueblo. Era ${nombre}.`,
+      noEsEl: (nombre, real) => `Lo sigues toda la noche: ${nombre} no hizo nada raro. Era ${real}.`,
+      equivocado: (nombre) => `No era ${nombre}. Te mira como si no te conociera.`,
+      // (Acusaste al que no era: el de la señal se va esa misma noche.)
+      seVaDeNoche: (nombre, como, plata) => ({
+        seFue: `${nombre} juntó sus cosas antes del amanecer y se fue.`,
+        seFueConPlata: `${nombre} se fue antes del amanecer. Con él se fueron $${plata} de tu bolsa.`,
+        vendio: `${nombre} se fue antes del amanecer, a contarle tus planes a la ley.`,
+      }[como] || `${nombre} se fue de la banda.`),
+      echado: (nombre, n) => `Le dices que se vaya. ${nombre} junta sus cosas y se va sin mirar atrás. Sabe tus planes: tu recompensa sube $${n} y la ley te va a estar esperando en el próximo golpe.`,
+    },
+    /** El papelito del plan, si sales con la señal. */
+    plan: 'TIENE LA SEÑAL: SI SALES, NO VA',
+    ficha: { tentacion: 'Tentación', senal: 'SEÑAL', duda: '¿SEÑAL?' },
   },
   mapa: {
     subtitulo: 'RUTAS DEL FERROCARRIL',
@@ -1541,6 +1687,11 @@ export const T = {
     sinTrenes: 'NO HAY TRENES ANOTADOS',
     // 🗞️ Un tren del que sólo te contaron, y el segundo clic para ir a esperar a una vía.
     rumor: 'RUMOR',
+    // 🗞️ De dónde salió el rumor y cuántas de cada 100 es cierto (los papeles, siempre).
+    rumorDe: {
+      cantina: (n) => `CANTINA ${n}/100`, dudoso: (n) => `DUDOSO ${n}/100`, forastero: (n) => `FORASTERO ${n}/100`,
+      papeles: () => 'PAPELES: CIERTO',
+    },
     esperarOtraVez: 'CLIC OTRA VEZ: ESPERAR AQUÍ',
     // 🕵️ Uno que fue a mirar alguien de la banda: el renglón y, señalándolo, la escolta y el vagón del maletín.
     visto: 'VISTO',

@@ -90,7 +90,7 @@ export function createResultsScene(services) {
       if (gameState.campamento) gameState.campamento.cartasYa = false;
       // 🗞️ La hoja de ruta del encargado (ver `takeLoot` en scenes/raidScene.js): un tren de carga de la semana.
       if (summary.hojaDeRuta) {
-        const tren = rumorDeCarga(gameState, 7);
+        const tren = rumorDeCarga(gameState, 7, 'papeles');
         if (tren) gameState.campamento.noticias.push('rumorHoja:' + tren.id);
       }
     }

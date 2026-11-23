@@ -44,6 +44,20 @@ export const MARCA = {
   piso: 15,
 };
 
+/**
+ * 🎚️ LO QUE BAJA UNA PERSONALIDAD (BANDA-NUEVA.md, "Las personalidades", columna "Qué la baja"; etapa 4) *(Santi,
+ * 2026-11-20, eligió la A: "vamos con la A")*: la fuerza sigue siendo un número (Tommy Honorable 80 = su regla corre
+ * 80 de cada 100) y cada vez que la contradices suma uno al contador, que se ve en la ficha y en los avisos ("2 de
+ * 4"). A las `cada` veces baja `cuanto`: de 80 a 50 (gris), de 50 a 20, y después al piso (`MARCA.piso`), nunca a cero.
+ * Lo que la contradice (`por`), una vez cada vez que pasa:
+ *  - Honorable: un golpe con civiles muertos. Valiente: que lo hieran. Sentimental: que se vaya uno de la banda.
+ *  - Alcohólico: sacarle la botella. Confiable: que rompas tu palabra con él. Divertido: que se aburra ("me aburro").
+ *  - Frío: que lo dejes preso. Egoísta: ser generoso con él en el reparto. Serio: volver de un golpe con ganas.
+ * Medido (simulador v19, el que cuida): $2740 y no pierde a nadie 97 de cada 100 (con escalones 100/50/20, $2770 y
+ * 96); al Egoísta se le gasta unas 2 veces por partida, al Serio 1,7, al Alcohólico 1,2.
+ */
+export const BAJA = { cada: 4, cuanto: 30 };
+
 export function nivelDeMarca(id, fuerza) {
   if (!esPersonalidad(id)) return 'fuerte';
   if (fuerza <= MARCA.piso) return 'blanca';

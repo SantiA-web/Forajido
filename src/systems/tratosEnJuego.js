@@ -14,7 +14,7 @@ import { honorSegun, quimicaPosible } from './tratos.js';
 import { CONFIG } from '../data/config.js';
 import { tasarLote, ajustePorHonor } from '../data/perista.js';
 import { tiene, fuerza } from './animo.js';
-import { deudaConJmc } from './libreta.js';
+import { deudaConJmc, anotar } from './libreta.js';
 
 export const diaDe = (g) => (g.tiempo ? g.tiempo.dia : 0);
 
@@ -100,6 +100,25 @@ export function aplicarTrato(g, id, r) {
   if (r.enojo) { t.enojo = r.enojo.cuanto; t.enojoHasta = dia + r.enojo.dias; }
   if (r.cerrado) t.cerradoHasta = dia;
   for (const rasgo of r.revela) t.conoce[rasgo] = true;
+}
+
+/**
+ * 📒 LO QUE LA BANDA ANOTA DE UNA VISITA AL TRATANTE (TRATOS.md, "La banda"): si hubo chantaje o el apretar terminó
+ * en soplo, el Honorable lo anota como queja ("Nos ensuciamos con el perista") y el Pendenciero como favor, cada uno
+ * con la fuerza de su rasgo como chance. Llamarla una vez por visita. Devuelve `[{ id, lado, motivo }]`.
+ */
+export function libretaDelTrato(g, { chantaje, sopla }, azar = Math.random) {
+  const L = TRATOS.libreta;
+  if (!L || !L.activo || !(chantaje || sopla) || !g.banda) return [];
+  const dia = diaDe(g), out = [];
+  for (const [id, e] of Object.entries(g.banda)) {
+    if (!e || !e.esta || e.preso || !e.libreta) continue;
+    for (const rasgo of ['honorable', 'pendenciero']) {
+      const { lado, motivo } = L[rasgo];
+      if (azar() < fuerza(e, rasgo) && anotar(e, lado, motivo, dia)) out.push({ id, lado, motivo });
+    }
+  }
+  return out;
 }
 
 /** Saca del inventario lo vendido (lo de la historia, como el maletín, se queda). Mismo array: lo mira todo el juego. */

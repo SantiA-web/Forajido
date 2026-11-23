@@ -39,11 +39,14 @@ import { gameState } from '../state/gameState.js';
 import { pasar } from '../systems/tiempo.js';
 import { guisoParaElGolpe } from '../systems/tareas.js';
 import { TIEMPO } from '../data/tiempo.js';
+import { RUMORES } from '../data/tareas.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { DENSIDAD } from '../engine/renderer.js';
 import * as mapaViejo from '../world/estiloNuevo/mapaViejo.js';
 import { BANDA, MIEMBRO, PAPELES, puedeIr, darPapel, quienHace, completarBanda, pronostico, ESCALERA } from '../data/banda.js';
 import { disposicionPara } from '../systems/animoEnJuego.js';
+import { conEnemigoEnElPlan } from '../systems/fogata.js';
+import { traicionesAlSalir } from '../systems/tentacion.js';
 
 /** 🚂 Cuántos trenes del horario entran en el cartucho a la vez. */
 const RENGLONES = 4;
@@ -373,6 +376,8 @@ export function createMapScene(services) {
     audio.play('escape');
     // 📋 (Mientras dura el golpe, los que tienen papel no salen a las tareas de la pizarra.)
     if (gameState.campamento) gameState.campamento.golpeEnCurso = true;
+    // 😈 (El que tiene la señal no va: traiciona. Se cuenta al volver. Ver systems/tentacion.js.)
+    if (gameState.campamento) (gameState.campamento.noticias = gameState.campamento.noticias || []).push(...traicionesAlSalir(gameState));
     // 🍲 (El guiso del Cocinero de esta noche o de anoche: James entra con un tiro más. Ver systems/tareas.js.)
     gameState.guisoTiros = guisoParaElGolpe(gameState);
     pasar(gameState, faltaPara(gameState, tren));
@@ -800,7 +805,10 @@ export function createMapScene(services) {
       // (🗞️ De un rumor, el día sin la parte: "JUE 21 · CARGA · RUMOR".)
       const cuando = t.sabes === 'rumor' ? Tm.dia(T.tiempo.semanaLarga[f.semana], f.dia)
         : `${Tm.dia(T.tiempo.semanaLarga[f.semana], f.dia)}, ${T.tiempo.partesMin[TIEMPO.partes[t.parte]].toUpperCase()}`;
-      const texto = `${cuando} · ${t.tipoTren.short}` + (t.sabes === 'rumor' ? ' · ' + (t.visto ? Tm.cierto : Tm.rumor) : t.visto ? ' · ' + Tm.visto : '')
+      // (🗞️ Y de dónde salió el rumor, con cuánto es cierto: "CANTINA 75/100". Ver `RUMORES` en data/tareas.js. Al que
+      // ya no llegás, sólo "RUMOR": con "NO LLEGAS" no entra en el renglón, y ya no importa.)
+      const rumor = llega && t.de && Tm.rumorDe[t.de] ? Tm.rumorDe[t.de](RUMORES[t.de]) : Tm.rumor;
+      const texto = `${cuando} · ${t.tipoTren.short}` + (t.sabes === 'rumor' ? ' · ' + (t.visto ? Tm.cierto : rumor) : t.visto ? ' · ' + Tm.visto : '')
         + (llega ? '' : ' · ' + Tm.noLlegas);
       const color = t === trenEncima ? (vivo ? selloActual() : tintaFuerte())
         : !llega ? suave
@@ -840,13 +848,15 @@ export function createMapScene(services) {
       if (planEncima === p && quien && !no && b[quien].libreta) {
         const e = b[quien], disp = disposicionPara(gameState, quien, p);
         const resaca = !!(e.resaca || (quien === 'frank' && gameState.campamento && gameState.campamento.marcas && gameState.campamento.marcas.frankResaca));
-        const pr = pronostico(e, p, { resaca, disp });
+        const pr = pronostico(e, p, { resaca, disp, enemigo: conEnemigoEnElPlan(gameState, quien) });
         const bien = ESCALERA[pr.pasos][0];
         const motivos = pr.motivos.slice().sort((a, c) => Math.abs(c[1]) - Math.abs(a[1])).slice(0, 2)
-          .map(([k, v]) => `${T.libreta.pasos[k].toUpperCase()} ${v > 0 ? '+' : '−'}${Math.abs(v)}`).join(' · ');
+          .map(([k, v]) => `${T.libreta.pasos[k].toUpperCase()} ${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}`).join(' · ');
         const t1 = T.libreta.pronostico(MIEMBRO[quien].corto.toUpperCase(), bien);
+        // (😈 Si tiene la señal, y se sabe que es él: si sales así, no va.)
+        const t3 = e.senal && !e.senalOculta ? T.tentacion.plan : null;
         // (🔁 Sobre un papelito limpio, con su raya: encima de las vías no se leía.)
-        const an = Math.ceil(Math.max(r.medir(t1, 7), motivos ? r.medir(motivos, 7) : 0)) + 10, al = motivos ? 20 : 12;
+        const an = Math.ceil(Math.max(r.medir(t1, 7), motivos ? r.medir(motivos, 7) : 0, t3 ? r.medir(t3, 7) : 0)) + 10, al = (motivos ? 20 : 12) + (t3 ? 8 : 0);
         const px0 = Math.round(cx - an / 2), py0 = Math.round(Y - 4 - al);
         // (En la capa fina, como las vías: si no, quedaban encima del papelito.)
         const fino = sin.lienzo, caja = (x0, y0, w0, h0, c) => { fino.fillStyle = c; fino.fillRect(x0, y0, w0, h0); };
@@ -855,6 +865,7 @@ export function createMapScene(services) {
         caja(px0, py0, 1, al, TINTA_SUAVE_NUEVA); caja(px0 + an - 1, py0, 1, al, TINTA_SUAVE_NUEVA);
         r.text(t1, cx, py0 + 6, tintaFuerte(), 'center', { ...sin, tam: 7 });
         if (motivos) r.text(motivos, cx, py0 + 14, TINTA_SUAVE_NUEVA, 'center', { ...sin, tam: 7 });
+        if (t3) r.text(t3, cx, py0 + al - 6, selloActual(), 'center', { ...sin, tam: 7 });
       }
     });
   }

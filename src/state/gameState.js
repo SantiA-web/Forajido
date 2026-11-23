@@ -191,6 +191,17 @@ export function applyRaidResult(summary) {
    * agarraron lejos del caballo, el rescate si estabas cerca, o el botín
    * entero (con los bonos) si escapaste.
    */
+  /**
+   * 😈 LA LEY TE ESPERA (data/tentacion.js): echaste a uno que sabía tus planes, o uno te vendió. En el golpe que
+   * sigue, la mitad del botín se pierde. (Las pruebas no cuentan.)
+   */
+  const C = gameState.campamento;
+  if (!summary.prueba && C && C.marcas && C.marcas.leyEspera) {
+    delete C.marcas.leyEspera;
+    const perdido = Math.floor(numero(summary.money, 'summary.money') / 2);
+    summary.money -= perdido;
+    if (perdido > 0) (C.noticias = C.noticias || []).push('leyEspera:' + perdido);
+  }
   gameState.money += numero(summary.money, 'summary.money');
 
   /**

@@ -13,6 +13,8 @@ import { writeFileSync } from 'node:fs';
 // 🤝 v17: los tratos usan EL MISMO archivo que el juego (src/systems/tratos.js): lo que se mide es lo que se juega.
 import { oferta as ofertaTrato, jugadas as jugadasTrato, resolver as resolverTrato, jugadaDe as jugadaDeTrato, honorSegun, quimicaPosible } from '../src/systems/tratos.js';
 import { TRATOS, SORTEO } from '../src/data/tratos.js';
+// 🎚️ v19: la fuerza de cada personalidad, la misma que el juego (Tommy Honorable 80 = su regla corre 80 de cada 100).
+import { RASGOS_DE } from '../src/data/rasgos.js';
 
 // ── TODOS LOS NÚMEROS ──
 export const N = {
@@ -63,7 +65,7 @@ export const N = {
   // números están en src/data/tratos.js; acá, sólo lo que el simulador no sabe: qué parte de los golpes da la alarma
   // (`caliente`) y cuánto le pesa a James un dólar de recompensa al elegir (`costoRecompensa`). La fama no se simula (0).
   // 🔁 (2026-11-20) `honorSegun`: el honor según quién es el perista; `quimica`: el que mandas y el perista.
-  tratos: { activo: true, caliente: 0.5, costoRecompensa: 1, honorSegun: true, quimica: true },
+  tratos: { activo: true, caliente: 0.5, costoRecompensa: 1, honorSegun: true, quimica: true, libreta: true },
   perista: { comun: 0.6, negociante: 0.8,
     // 🔁 v16 (Santi, 2026-11-18: "tenemos que buscar algún posible plus, algo que no pase siempre pero que sea probable
     // de que al mandar a uno pase para que el jugador o vaya él o se arriesgue"; eligió "Regatea: 1 de 3, +30%"). Como
@@ -121,7 +123,10 @@ export const N = {
     // ⭐ 🔁 v12 (Santi: "es muy importante que midás lo de la estrellita"): con la habilidad ya tenida, 8 golpes usándola
     // la dominan y no se oxida más (sólo cuentan los golpes: con todos los usos salían 6 por partida). 0 = sin estrellita.
     estrella: 8, estrellaGolpe: true },
-  escalon: [1, 0.5, 0.2],             // fuerte, gris, casi blanca: chance de que su regla corra
+  escalon: [1, 0.5, 0.2],             // fuerte, gris, casi blanca: chance de que su regla corra (modo 'escalones')
+  // 🎚️ v19 *(Santi, 2026-11-20: "vamos con la A")*: la fuerza es un número (la chance de que corra su regla); cada
+  // `bajarCada` veces que la contradices baja `baja`, hasta el `piso`. 'escalones' es el modo de antes (100/50/20).
+  personalidad: { modo: 'numero', baja: 30, piso: 15, contratado: 75 },
   bajarCada: 4,
   pedido: { chance: 0.5, costo: 50 },
   pasoLealtad5: false,                // 🔁 v5: sin el +1 por lealtad 5 (con él, 67% de los papeles en +2: casi todo salía bien)
@@ -224,7 +229,7 @@ const JUGADORES = {
 function habilidades(lista) { return Object.fromEntries(lista.map((h) => [h, { marcas: N.habilidad.marcas, ultimoUso: 0, tuvo: true, activa: true }])); }
 function nuevoMiembro(id) {
   return {
-    id, nombre: id, deLaHistoria: true, pers: Object.fromEntries(PERSONALIDAD[id].map((p) => [p, { escalon: 0, cuenta: 0 }])),
+    id, nombre: id, deLaHistoria: true, pers: Object.fromEntries(PERSONALIDAD[id].map((p) => [p, { escalon: 0, cuenta: 0, fuerza: (RASGOS_DE[id] || {})[p] ?? 75 }])),
     hab: habilidades(HABILIDAD[id]), lealtad: N.lealtad.inicio[id], tentacion: N.tentacion.inicio[id],
     quejas: [], favores: [], herido: 0, preso: false, fuera: null, ausente: 0, cortes: 0, senal: false, civiles: 0,
     ultimaDiversion: 0, resaca: false, deMalasHasta: -1, favorTareaGolpe: -1, cuentaPaga: 0,
@@ -234,19 +239,29 @@ function nuevoContratado(rng, n, dia) {
   const h = HABS_CONTRATADO[Math.floor(rng() * HABS_CONTRATADO.length)];
   const p = PERS_CONTRATADO[Math.floor(rng() * PERS_CONTRATADO.length)];
   return {
-    id: 'c' + n, contratado: true, pers: { [p]: { escalon: 0, cuenta: 0 } }, hab: habilidades([h]), lealtad: N.contratado.lealtad,
+    id: 'c' + n, contratado: true, pers: { [p]: { escalon: 0, cuenta: 0, fuerza: N.personalidad.contratado } }, hab: habilidades([h]), lealtad: N.contratado.lealtad,
     tentacion: p === 'rastrero' ? 2 : 0, quejas: [], favores: [], herido: 0, preso: false, fuera: null, ausente: 0, cortes: 0,
     senal: false, civiles: 0, ultimaDiversion: dia, resaca: false, deMalasHasta: -1, favorTareaGolpe: -1, cuentaPaga: 0, golpesPagados: 0,
   };
 }
 
 // ¿Corre la regla de esta personalidad hoy? (fuerte siempre; gris 1 de 2; casi blanca 1 de 5)
-function corre(rng, m, p) { const x = m.pers[p]; return !!x && rng() < N.escalon[x.escalon]; }
+const chanceP = (x) => (N.personalidad.modo === 'numero' ? x.fuerza / 100 : N.escalon[x.escalon]);
+function corre(rng, m, p) { const x = m.pers[p]; return !!x && rng() < chanceP(x); }
 const tieneP = (m, p) => !!m.pers[p];          // para lo que se ve sin tirada (no quiere ir de, etc.)
 const sabe = (m, h) => !!(m.hab[h] && m.hab[h].activa);
 const regionDe = (g) => (g >= N.regiones.montana ? 'montana' : g >= N.regiones.bosque ? 'bosque' : g >= N.regiones.pradera ? 'pradera' : 'desierto');
 function revisarHab(x) { if (x.marcas >= N.habilidad.marcas) x.activa = true; else if (x.marcas < N.habilidad.pierdeDebajo) x.activa = false; }
-function bajar(m, p) { const x = m.pers[p]; if (!x || x.escalon >= 2) return; if (++x.cuenta >= N.bajarCada) { x.cuenta = 0; x.escalon++; } }
+const BAJADAS = {};
+function bajar(m, p) {
+  const x = m.pers[p]; if (!x) return;
+  if (N.personalidad.modo === 'numero') {
+    if (x.fuerza <= N.personalidad.piso) return;
+    if (++x.cuenta >= N.bajarCada) { x.cuenta = 0; x.fuerza = Math.max(N.personalidad.piso, x.fuerza - N.personalidad.baja); BAJADAS[p] = (BAJADAS[p] || 0) + 1; }
+    return;
+  }
+  if (x.escalon >= 2) return; if (++x.cuenta >= N.bajarCada) { x.cuenta = 0; x.escalon++; BAJADAS[p] = (BAJADAS[p] || 0) + 1; }
+}
 
 function usar(m, h, dia, cuanto, enGolpe = false) {
   if (!m.hab[h]) m.hab[h] = { marcas: 0, ultimoUso: dia, tuvo: false };
@@ -349,7 +364,7 @@ function partida(J, semilla) {
       recompensa: s.recompensa, fama: 0, honor: h <= -0.08 ? -50 : h >= 0.08 ? 50 : 0,
       trato: s.trato, enojo: dia <= s.regMalHasta ? s.enojo : 0, leyCerca: s.recompensa >= 720, deudaJmc: s.deuda > 0,
       quien: quien ? { negociante: sabe(quien, 'negociante'), pendenciero: tieneP(quien, 'pendenciero'), honorable: tieneP(quien, 'honorable'),
-        fuerzas: N.tratos.quimica ? Object.fromEntries(Object.entries(quien.pers).map(([p, x]) => [p, 100 * N.escalon[x.escalon]])) : {} } : null,
+        fuerzas: N.tratos.quimica ? Object.fromEntries(Object.entries(quien.pers).map(([p, x]) => [p, 100 * chanceP(x)])) : {} } : null,
     };
     const of = ofertaTrato(ctx, rng);
     if (of.chantaje) s.chantajes++;
@@ -377,6 +392,12 @@ function partida(J, semilla) {
     if (r.pelea) s.peleasPerista++;
     if (r.sigue) { const j2 = quien ? jugadaDeTrato(ctx.quien, r.sigue, { quimica: of.quimica }) : r.sigue[0]; const r2 = resolverTrato(ctx, of, j2, rng); r = { ...r, cierra: r2.cierra, monto: r2.monto }; }
     s.recompensa += r.recompensa; s.recTratos += r.recompensa; if (r.habla) s.hablo++; if (r.sopla) s.soplo++;
+    // 📒 v18: el chantaje o el soplo, a la libreta (TRATOS.md, "La banda"): queja del Honorable, favor del Pendenciero.
+    if (N.tratos.libreta && (of.chantaje || r.sopla)) for (const m of todos()) {
+      if (m.preso || m.ausente) continue;
+      if (tieneP(m, 'honorable') && rng() < chanceP(m.pers.honorable)) { anotar(m, 'q', 'Perista', dia); s.quejaPerista = (s.quejaPerista || 0) + 1; }
+      if (tieneP(m, 'pendenciero') && rng() < chanceP(m.pers.pendenciero)) anotar(m, 'f', 'Perista', dia);
+    }
     if (r.trato) s.trato = Math.max(TT.min, Math.min(TT.max, s.trato + r.trato));
     if (r.trato) s.tratoDia = dia;
     if (r.enojo) { s.regMalHasta = dia + r.enojo.dias; s.enojo = r.enojo.cuanto; }
@@ -391,7 +412,7 @@ function partida(J, semilla) {
   const historia = () => IDS.map((id) => banda[id]).filter((m) => !m.fuera);
   const todos = () => historia().concat(contratados.filter((c) => !c.fuera));
   const libres = () => todos().filter((m) => !m.herido && !m.preso && !m.ausente);
-  const perder = (m, como, golpe) => { m.fuera = como; if (!m.contratado) s.perdidos.push({ id: m.id, como, golpe }); else s.contratadosTraicion++; };
+  const perder = (m, como, golpe) => { if (!m.contratado) for (const o of historia()) if (o !== m && tieneP(o, 'sentimental')) bajar(o, 'sentimental'); m.fuera = como; if (!m.contratado) s.perdidos.push({ id: m.id, como, golpe }); else s.contratadosTraicion++; };
   const tope = (g) => (g >= N.regiones.montana ? N.tentacion.maxMontana : N.tentacion.max);
   const tentar = (m, n, g) => { m.tentacion = Math.min(tope(g), m.tentacion + n); };
   const sortear = (a, b) => a + Math.floor(rng() * (b - a + 1));
@@ -534,7 +555,7 @@ function partida(J, semilla) {
       for (const m of todos()) { oxidar(m, dia); m.quejas = m.quejas.filter((q) => dia - q.dia < N.libreta.dias); m.favores = m.favores.filter((f) => dia - f.dia < N.libreta.dias); }
       for (const m of todos()) { if (m.herido) m.herido--; if (m.ausente) m.ausente--; }
       // El Divertido: 5 días sin nada → queja.
-      for (const m of historia()) if (tieneP(m, 'divertido') && dia - m.ultimaDiversion >= 5 && corre(rng, m, 'divertido')) { anotar(m, 'q', 'Me aburro', dia, true); m.ultimaDiversion = dia; }
+      for (const m of historia()) if (tieneP(m, 'divertido') && dia - m.ultimaDiversion >= 5 && corre(rng, m, 'divertido')) { anotar(m, 'q', 'Me aburro', dia, true); m.ultimaDiversion = dia; bajar(m, 'divertido'); }
       if (!J.tareas) continue;
       // Las tareas: cada libre hace una. (El jugador las reparte por prioridad.)
       // 🔁 v5: por partes del día (brújula). Cada uno tiene mañana, tarde y noche. Mirar y practicar: mañana y tarde.
@@ -565,7 +586,7 @@ function partida(J, semilla) {
         const sirve = (x) => J.manda === 'siempre' || sabe(x, 'negociante') || (J.honor || 0) < 0;
         // 🧪 `J.elige`: 'quimica' manda al que mejor se lleva con el perista (como si ya lo conociera); 'cualquiera', al
         // primero libre; si no, lo de siempre (el negociante, y si no, uno que no sea rastrero).
-        const fz = (m) => Object.fromEntries(Object.entries(m.pers).map(([p, x]) => [p, 100 * N.escalon[x.escalon]]));
+        const fz = (m) => Object.fromEntries(Object.entries(m.pers).map(([p, x]) => [p, 100 * chanceP(x)]));
         const vale = (m) => quimicaPosible(fz(m), s.rasgosP).reduce((t, q) => t + (q.chance / 100) * ((q.regatear || 0) * 0.3 + (q.apretar || 0) * 0.4
           + (q.chantaje === 'nada' || q.chantaje === 'aprieta' ? 15 : q.chantaje === 'seVuelve' ? -10 : 0) - (q.guarda ? 25 : 0) - (q.pelea ? 40 : 0) + (q.noSopla ? 10 : 0) - (q.chantajeX ? 15 : 0)), 0)
           + (sabe(m, 'negociante') ? 5 : 0);
@@ -754,6 +775,7 @@ function partida(J, semilla) {
       if (res[papel] === 'mal' && Object.keys(m.pers).some((p) => (NO_QUIERE[p] || []).includes(papel))) anotar(m, 'q', 'Me pusiste donde no quería', dia);
       if (m.preso) {
         anotar(m, 'q', 'Me dejaste preso', dia, false, 2);
+        if (tieneP(m, 'frio')) bajar(m, 'frio');
         if (corre(rng, m, 'egoista')) m.seEscapa = g + 2;
         const fianza = todos().some((o) => sabe(o, 'actor') && o !== m) ? N.fianza / 2 : N.fianza;
         if (rng() < J.fianza && s.plata >= fianza) { s.plata -= fianza; m.preso = false; anotar(m, 'f', 'Pagaste la fianza', dia); }
@@ -764,7 +786,7 @@ function partida(J, semilla) {
       }
     }
     if (civiles) for (const m of historia()) {
-      if (tieneP(m, 'honorable')) { anotar(m, 'q', 'Civiles', dia); m.civiles++; }
+      if (tieneP(m, 'honorable')) { anotar(m, 'q', 'Civiles', dia); m.civiles++; bajar(m, 'honorable'); }
       else if (corre(rng, m, 'sentimental')) anotar(m, 'q', 'Civiles', dia);
     }
     if (!banda.tommy.fuera && banda.tommy.civiles >= N.limites.tommyCiviles) { s.recompensa *= 2; perder(banda.tommy, 'seEntrego', g); }
@@ -836,7 +858,7 @@ function partida(J, semilla) {
     for (const m of historia()) {
       if (m.preso) continue;
       const d = m.favores.length - m.quejas.length, umbral = corre(rng, m, 'frio') ? N.libreta.diferenciaFrio : N.libreta.diferencia;
-      if (d >= umbral) { if (m.lealtad < N.lealtad.max) m.lealtad++; m.tentacion = Math.max(0, m.tentacion - 1); m.quejas = []; m.favores = []; m.conGanasHasta = g + 1; }
+      if (d >= umbral) { if (m.lealtad < N.lealtad.max) m.lealtad++; m.tentacion = Math.max(0, m.tentacion - 1); m.quejas = []; m.favores = []; m.conGanasHasta = g + 1; if (tieneP(m, 'serio')) bajar(m, 'serio'); }
       else if (-d >= umbral && m.lealtad > 0) { m.lealtad--; m.quejas = []; m.favores = []; m.deMalasHasta = g + 1; }
     }
     // 5. La fogata.
@@ -883,6 +905,7 @@ function partida(J, semilla) {
 const PARTIDAS = Number(process.env.PARTIDAS) || 3000;
 export function correr(J, partidas = PARTIDAS) {
   const r = { pierde: [0, 0, 0, 0], como: {}, quien: { tommy: 0, frank: 0, santiago: 0 }, conSenal: 0, senales: 0, traiciones: 0, cortadas: 0, negativas: 0, planeados: 0, peleas: 0, graves: 0, plata: 0, plataMin: Infinity, pasos: {}, vacio: 0, papeles: 0, aprendidas: 0, habFinal: 0, contratados: 0, sueldos: 0, contratadosTraicion: 0, tareas: {}, cartas: 0, perista: 0 };
+  for (const k of Object.keys(BAJADAS)) BAJADAS[k] = 0;
   for (let i = 0; i < partidas; i++) {
     const s = partida(J, i * 7919 + 13);
     r.pierde[Math.min(3, s.perdidos.length)]++;
@@ -895,6 +918,7 @@ export function correr(J, partidas = PARTIDAS) {
     for (const [k, v] of Object.entries(s.porTarea)) r.tareas[k] = (r.tareas[k] || 0) + v;
   }
   r.n = partidas;
+  r.bajadas = { ...BAJADAS };
   return r;
 }
 
@@ -902,7 +926,7 @@ const esPrincipal = process.argv[1] && import.meta.url.endsWith(process.argv[1].
 if (esPrincipal) {
   const pct = (a, b) => `${Math.round((100 * a) / b)}%`;
   const filas = Object.entries(JUGADORES).map(([k, J]) => ({ k, J, r: correr(J) }));
-  let t = `# Resultados del simulador de la banda v17 (banda3.js, con los tratos)\n\n${PARTIDAS} partidas de ${N.golpes} golpes por jugador, por días, con tareas, cuatro papeles y la cantina.\n\n`;
+  let t = `# Resultados del simulador de la banda v19 (banda3.js, con los tratos y las personalidades en número)\n\n${PARTIDAS} partidas de ${N.golpes} golpes por jugador, por días, con tareas, cuatro papeles y la cantina.\n\n`;
   t += '## 1. A cuántos pierde\n\n| Jugador | Nadie | 1 | 2 | 3 | Ve alguna señal | Traiciones | Plata al final |\n|---|---|---|---|---|---|---|---|\n';
   for (const { J, r } of filas) t += `| ${J.nombre} | ${pct(r.pierde[0], r.n)} | ${pct(r.pierde[1], r.n)} | ${pct(r.pierde[2], r.n)} | ${pct(r.pierde[3], r.n)} | ${pct(r.conSenal, r.n)} | ${(r.traiciones / r.n).toFixed(2)} | $${Math.round(r.plata / r.n)} |\n`;
   t += '\n## 2. Cómo se pierden (por cada 100 partidas)\n\n| Jugador | Se fue | Con plata | Vendió | Declaró (Tommy) | Echado | Límite | Se entregó | Preso |\n|---|---|---|---|---|---|---|---|---|\n';

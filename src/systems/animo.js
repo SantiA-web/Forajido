@@ -15,7 +15,7 @@
  *    avisó que se va (`avisado`).
  */
 
-import { ANIMO, HUMOR, MARCA, esPersonalidad, palabraDeHumor } from '../data/rasgos.js';
+import { ANIMO, HUMOR, MARCA, BAJA, esPersonalidad, palabraDeHumor } from '../data/rasgos.js';
 
 /** Qué tan fuerte es una personalidad en él, de 0 a 1 (0 si no la tiene). */
 export function fuerza(e, id) {
@@ -222,6 +222,27 @@ export function practicar(e, hab, dia, rinde = 1, { como = 'uso', enGolpe = fals
 export function moverPersonalidad(e, id, n) {
   if (!e.rasgos || e.rasgos[id] == null) return;
   e.rasgos[id] = Math.max(MARCA.piso, Math.min(100, e.rasgos[id] + n));
+}
+
+/**
+ * 🎚️ LA CONTRADIJISTE (ver `BAJA` en data/rasgos.js): suma uno a su contador y, a las `BAJA.cada`, la baja
+ * `BAJA.cuanto` (hasta el piso). Deja el aviso en `e.avisosBaja` (lo cuenta el campamento) y devuelve
+ * `{ rasgo, cuenta, bajo, ahora }`, o null si no tiene esa personalidad o ya está en el piso.
+ */
+export function contradecir(e, rasgo) {
+  if (!e || !e.rasgos || !esPersonalidad(rasgo) || e.rasgos[rasgo] == null || e.rasgos[rasgo] <= MARCA.piso) return null;
+  e.baja = e.baja || {};
+  let cuenta = (e.baja[rasgo] || 0) + 1, bajo = false;
+  if (cuenta >= BAJA.cada) { moverPersonalidad(e, rasgo, -BAJA.cuanto); bajo = true; e.baja[rasgo] = 0; }
+  else e.baja[rasgo] = cuenta;
+  const r = { rasgo, cuenta, bajo, ahora: Math.round(e.rasgos[rasgo]) };
+  (e.avisosBaja = e.avisosBaja || []).push(r);
+  return r;
+}
+
+/** 🎚️ Cuántas veces la contradijiste desde la última vez que bajó (de 0 a `BAJA.cada` − 1). */
+export function contadorDe(e, rasgo) {
+  return (e && e.baja && e.baja[rasgo]) || 0;
 }
 
 /**

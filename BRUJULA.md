@@ -35,6 +35,8 @@ Los cuatro con nombre son la historia. A cada uno el tipo le hizo una promesa qu
 | **Frank Monroe**, el borracho | El nombre del hombre que mató a su esposa. |
 | **Tommy Kennedy**, el joven | Gloria y honor, para honrar a su padre militar. |
 
+- **Quiénes son**, como para una novela (qué quieren, por qué, de dónde vienen, su secreto y su arco): en
+  **PERSONAJES.md** *(Santi, 2026-11-22)*.
 - **Pueden morir, irse o traicionarte.** La lealtad va de 0 a 10 y se lee en palabras (firme, conforme, dudoso, a
   punto de irse). El que llega a 0 avisa una vez; si en la visita siguiente sigue en 0, se va durante la noche.
 - **La banda puede crecer:** en la cantina se contrata gente. Los contratados no tienen historia larga, pero sí un
@@ -298,6 +300,10 @@ El campamento no es un descanso: es donde se pagan las cuentas de lo que hiciste
   reacciona.
 - **La presión crece sola:** la ley se acerca, la recompensa sube, se acaba la comida, hay una deuda que vence.
 - **Corto:** uno o dos minutos por visita. Pocas decisiones, pero que importen.
+- **Dos tipos de decisiones** *(Santi, 2026-11-22)*: las **Diarias**, que se repiten pero acumulan peso (Tommy no
+  aguanta para siempre que mates civiles; Frank se enoja más si nunca lo dejas tomar), y las **De Historia**,
+  escritas a mano, con peso mayor: cadenas de causa y consecuencia ("si pasó X, en 4 golpes pasará Z, a menos que
+  hagas K"), como en *Beholder: Conductor*. Nada de "cada 4 golpes pasa tal cosa". Ver PERSONAJES.md.
 - **Elegir el próximo golpe es parte del juego:** dos o tres trenes con información distinta. Por ejemplo, la paga de
   una mina bien custodiada, el tren donde va preso alguien que te importa, o uno fácil que paga poco.
 - **El plan:** antes de salir, se reparten los papeles.

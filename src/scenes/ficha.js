@@ -19,10 +19,14 @@
 import { PALETA } from '../engine/paleta.js';
 import { papel, cara, TINTAS } from '../engine/menu.js';
 import { MIEMBRO, palabraDe } from '../data/banda.js';
-import { nivelDeMarca, palabraDeHumor, esPersonalidad, ANIMO } from '../data/rasgos.js';
+import { nivelDeMarca, palabraDeHumor, esPersonalidad, ANIMO, BAJA } from '../data/rasgos.js';
+import { contadorDe } from '../systems/animo.js';
 import { marcasDe } from '../systems/animo.js';
 import { T } from '../text/es.js';
 import { LEALTAD5 } from '../data/libreta.js';
+import { gameState } from '../state/gameState.js';
+import { senalDe, topeDeTentacion } from '../systems/tentacion.js';
+import { TENTACION } from '../data/tentacion.js';
 
 const { TINTA, TINTA_SUAVE, SELLO, PAPEL_SUCIO } = TINTAS;
 /** La tinta de cada sello según qué tan fuerte es el rasgo *(Santi: "gris… y más blanca")*. */
@@ -98,6 +102,15 @@ export function crearFicha(audio) {
     }
     const h = palabraDeHumor(e.humor ?? 50);
     renglon(F.humor, e.libreta ? T.libreta.animo[ANIMO_DE[h]] : B.humor[h], y + 60);
+    // 😈 La tentación: un triangulito por punto, llenos los que tiene (hasta 4; 5 en la montaña). Y la señal: si no se
+    // sabe cuál de los dos es, con signo de pregunta.
+    if (TENTACION.activa && e.tentacion != null) {
+      const TF = T.tentacion.ficha, tope = topeDeTentacion(gameState);
+      r.text(TF.tentacion, tx, y + 74, TINTA_SUAVE, 'left', sinHalo);
+      for (let k = 0; k < tope; k++) triangulito(r, tx + 52 + k * 8, y + 71, k < e.tentacion);
+      const s = senalDe(gameState, id);
+      if (s) r.text(s.oculta ? TF.duda : TF.senal, tx + 52 + tope * 8 + 4, y + 74, SELLO, 'left', { tam: 7, halo: null });
+    }
 
     // Los rasgos: sellos de tinta, uno al lado del otro, y bajan de renglón cuando no entran.
     const ry0 = y + 14 + CARA.lado + 16;
@@ -116,12 +129,20 @@ export function crearFicha(audio) {
       // quedan llenas, la media llena hasta la mitad.)
       const M = ANIMO.habilidad.marcas, marcas = h && M.activo && !estrella ? marcasDe(e, rasgo) : null;
       const oxida = marcas != null && marcas < M.total;
-      const extra = estrella ? 8 : oxida ? 6 * M.total + 2 : 0;
+      // (🎚️ □■■□ La personalidad que contradijiste: un cuadradito lleno por vez, de `BAJA.cada` − 1; a la siguiente baja.)
+      const contra = esPersonalidad(rasgo) ? contadorDe(e, rasgo) : 0;
+      const nc = BAJA.cada - 1;
+      const extra = estrella ? 8 : oxida ? 6 * M.total + 2 : contra ? 6 * nc + 2 : 0;
       const w = Math.ceil(r.medir(nombre)) + 12 + extra, h2 = 15;
       if (sx + w > x + HOJA.w - 14) { sx = x + 14; sy += h2 + 6; }
       sello(r, sx, sy, w, h2, tinta);
       r.text(nombre, sx + (w - extra) / 2, sy + h2 / 2 + 0.5, tinta, 'center', sinHalo);
       if (estrella) estrellita(r, sx + w - 11, sy + 5, SELLO);
+      if (contra) for (let k = 0; k < nc; k++) {
+        const mx = sx + w - 7 - 6 * (nc - 1 - k) - 4, my = sy + 5;
+        if (k < contra) r.rect(mx, my, 5, 5, SELLO);
+        else { r.rect(mx, my, 5, 1, TINTA_SUAVE); r.rect(mx, my + 4, 5, 1, TINTA_SUAVE); r.rect(mx, my, 1, 5, TINTA_SUAVE); r.rect(mx + 4, my, 1, 5, TINTA_SUAVE); }
+      }
       if (oxida) for (let k = 0; k < M.total; k++) {
         const mx = sx + w - 7 - 6 * (M.total - 1 - k) - 4, my = sy + 5, lleno = marcas - k;
         if (lleno >= 1) r.rect(mx, my, 5, 5, SELLO);
@@ -161,6 +182,12 @@ export function crearFicha(audio) {
     const L = T.libreta.motivos, m = L[motivo];
     const t = m && (typeof m === 'string' ? m : m[lado]);
     return t || (lado === 'f' ? L.otroFavor : L.otraQueja);
+  }
+
+  /** 😈 Un triangulito de 5×4 puntos, a mano: lleno o sólo el borde. */
+  function triangulito(r, ex, ey, lleno) {
+    const MAPA = lleno ? ['..#..', '.###.', '.###.', '#####'] : ['..#..', '.#.#.', '.#.#.', '#####'];
+    MAPA.forEach((fila, j) => { for (let i = 0; i < 5; i++) if (fila[i] === '#') r.rect(ex + i, ey + j, 1, 1, lleno ? SELLO : TINTA_SUAVE); });
   }
 
   /** ⭐ La estrellita, de 5×5 puntos, dibujada a mano: la punta arriba, los brazos y las dos patas. */

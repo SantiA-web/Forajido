@@ -616,9 +616,12 @@ ser una pieza de esta propuesta.
    y la comida en porciones (en vez de la olla), hechos el 2026-11-18.
 3. **La pizarra y las tareas** que faltan, y **las habilidades con marcas** que se oxidan; los rumores con su origen.
    ✅ La pizarra en el calendario, las tareas y las marcas (2026-11-18); ✅ los tratos con el perista (2026-11-20,
-   `TRATOS.md`). ⏭️ Falta: los rumores con su origen.
-4. **Las personalidades** con sus escalones, y **la fogata**.
-5. **La tentación, señales, traiciones, ofertas, promesas rotas y límites.**
+   `TRATOS.md`). ✅ Los rumores con su origen (2026-11-20).
+4. ✅ **Las personalidades** con sus escalones, y **la fogata** (2026-11-20).
+5. **La tentación, señales, traiciones, ofertas, promesas rotas y límites.** ✅ Parte 1: la tentación, la señal y la
+   traición (2026-11-21, textos provisorios). 🔁 *(Santi, 2026-11-22)*: lo que falta (promesas rotas, el ejército,
+   los límites) y las ofertas se hacen como **cadenas de historia escritas a mano** (ver `PERSONAJES.md`), no como
+   reglas que se repiten cada tantos golpes.
 6. **La cantina.**
 
 ---

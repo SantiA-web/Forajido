@@ -41,7 +41,7 @@ import { pasar, partesHasta, partesDeDias, completarTiempo, fechaDe, loQueViene 
 import { TIEMPO } from '../data/tiempo.js';
 import { rumorDeCarga, rumorFalso } from '../systems/horario.js';
 import { chanceDeRumor, practicar, fuerza, tiene } from '../systems/animo.js';
-import { ANIMO, palabraDeHumor } from '../data/rasgos.js';
+import { ANIMO, BAJA as BAJA_RASGO, palabraDeHumor } from '../data/rasgos.js';
 import { dibujarPersona, faseDeAndar, tono } from '../entities/figura.js';
 import { dibujarAnimal, ESCALA_PARADO } from '../entities/caballo.js';
 import { T } from '../text/es.js';
@@ -49,10 +49,12 @@ import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { DENSIDAD } from '../engine/renderer.js';
 import * as dibujoNuevo from '../world/estiloNuevo/campamento.js';
 import { BANDA, MIEMBRO, palabraDe, completarBanda } from '../data/banda.js';
-import { completarAnimo, practicandoAhora, mandarAPracticar, PRACTICABLES, mandarAEspiar, trenesMirados, PARTES_DE_PRACTICA, lePaso, jugarUnaMano } from '../systems/animoEnJuego.js';
+import { completarAnimo, practicandoAhora, mandarAPracticar, PRACTICABLES, mandarAEspiar, trenesMirados, PARTES_DE_PRACTICA, lePaso, jugarUnaMano, avisosDeBaja } from '../systems/animoEnJuego.js';
 import { espiables } from '../systems/horario.js';
 import { ESCONDITES_DEL_MALETIN } from '../world/train.js';
-import { completarCampamento, visitaNueva, pendienteDe, opcionesDe as opcionesDelMomento, elegir, MOMENTOS, revisarEncargo, encargoAbierto, tieneMaletin } from '../data/momentos.js';
+import { completarTentacion, senalDe, precioDeLaSenal, rastreadorPara, vigilar, pagarLaSenal, echar } from '../systems/tentacion.js';
+import { TENTACION } from '../data/tentacion.js';
+import { completarCampamento, visitaNueva, pendienteDe, opcionesDe as opcionesDelMomento, elegir, MOMENTOS, revisarEncargo, encargoAbierto, tieneMaletin, tambienDe } from '../data/momentos.js';
 
 /**
  * 🔥 EL FORASTERO HERIDO que pide agua (un momento, ver data/momentos.js): la gente del tren, flaco, de bombín marrón
@@ -123,6 +125,8 @@ export function createCampScene(services) {
     hud.hide();
     // 🤠 (Una partida de antes de la banda: la banda arranca acá.)
     gameState.banda = completarBanda(gameState.banda);
+    // 😈 (La tentación de arranque, también en las partidas de antes.)
+    completarTentacion(gameState);
     completarAnimo(gameState.banda);
     // 📅 (Una partida de antes del calendario: arranca hoy.)
     completarTiempo(gameState);
@@ -197,6 +201,8 @@ export function createCampScene(services) {
    */
   function sacarNoticias() {
     if (!estiloNuevo.activo || !gameState.campamento) return [];
+    // 🎚️ (Lo que contradijiste de cada uno: 'baja:tommy:honorable:2:0:80'.)
+    avisosDeBaja(gameState);
     const lista = (gameState.campamento.noticias || []).map((n) => {
       const [clave, id, hab] = n.split(':');
       // 🗞️ (Los rumores llevan el número del tren: 'rumorHoja:12', y los de la banda quién y por qué: 'rumor:frank:12:alcoholico'.)
@@ -216,6 +222,30 @@ export function createCampScene(services) {
         if (que === 'curar') datos[0] = MIEMBRO[datos[0]] ? MIEMBRO[datos[0]].corto : datos[0];
         return f(nombres.join(' y '), nombres.length > 1, ...datos);
       }
+      // 📒 (Lo que alguien anotó en la libreta por algo que pasó en una tarea: 'libreta:tommy:q:peristaSucio'.)
+      // 🎚️ (Una personalidad contradicha: la cuenta, o que bajó.)
+      // 🔥 (La fogata: el Divertido que le borró una queja chica a otro, y la discusión que dejaste sin resolver.)
+      if (clave === 'fogataRie') {
+        const [, , otro, motivo] = n.split(':');
+        return MIEMBRO[id] && MIEMBRO[otro] ? T.camp.momentos.fogata.rie(MIEMBRO[id].corto, MIEMBRO[otro].corto, motivoDeLibreta(motivo, 'q')) : null;
+      }
+      if (clave === 'fogataSinResolver') {
+        const [, , otro] = n.split(':');
+        return MIEMBRO[id] && MIEMBRO[otro] ? T.camp.momentos.fogata.sinResolver(MIEMBRO[id].corto, MIEMBRO[otro].corto) : null;
+      }
+      if (clave === 'baja') {
+        const [, , rasgo, cuenta, bajo, ahora] = n.split(':');
+        const L = T.libreta.baja, nombre = MIEMBRO[id] ? MIEMBRO[id].corto : id, r = T.rasgos[rasgo] || rasgo;
+        const por = L.por[rasgo] || L.porOtro;
+        return bajo === '1' ? L.bajo(nombre, r, por, ahora) : L.cuenta(nombre, r, por, cuenta, BAJA_RASGO.cada);
+      }
+      // 😈 (La tentación: el tramo, las ofertas, las señales y las traiciones. Los ids pasan a nombres.)
+      const TN = T.tentacion.noticias;
+      if (TN[clave]) return TN[clave](...n.split(':').slice(1).map((x) => (MIEMBRO[x] ? MIEMBRO[x].corto : x)));
+      if (clave === 'libreta') {
+        const [, , lado, motivo] = n.split(':');
+        return MIEMBRO[id] ? T.libreta.anota(MIEMBRO[id].corto, lado, motivoDeLibreta(motivo, lado)) : null;
+      }
       if (clave === 'rumorHoja') {
         const tren = gameState.horario && gameState.horario.trenes.find((t) => String(t.id) === id);
         return tren ? contarRumor('hoja', tren) : null;
@@ -225,7 +255,8 @@ export function createCampScene(services) {
         const tren = gameState.horario && gameState.horario.trenes.find((t) => String(t.id) === trenId);
         if (!tren || !MIEMBRO[id]) return null;
         const R = T.rumores, f = fechaDe(tren.dia);
-        return R.banda(MIEMBRO[id].corto, R.dondeLoOyo[porque] || R.dondeLoOyo.pueblo, `${R.dias[f.semana]} ${f.dia}`, R.vias[tren.ruta] || tren.ruta);
+        return R.banda(MIEMBRO[id].corto, R.dondeLoOyo[porque] || R.dondeLoOyo.pueblo, `${R.dias[f.semana]} ${f.dia}`, R.vias[tren.ruta] || tren.ruta)
+          + (tren.de === 'dudoso' ? R.dudoso : '');
       }
       const f = T.camp.noticias[clave];
       if (!id) return f;
@@ -252,7 +283,8 @@ export function createCampScene(services) {
       const { chance, porque } = chanceDeRumor(e);
       if (Math.random() >= chance) continue;
       const miente = Math.random() < ANIMO.rumores.mentiroso * (fuerza(e, 'mentiroso') > 0 ? 1 : 0);
-      const tren = miente ? rumorFalso(gameState) : rumorDeCarga(gameState);
+      const de = fuerza(e, 'mentiroso') > 0 ? 'dudoso' : 'cantina';
+      const tren = miente ? rumorFalso(gameState, de) : rumorDeCarga(gameState, 4, de);
       if (!tren) continue;
       C.noticias.push(`rumor:${m.id}:${tren.id}:${porque || 'pueblo'}`);
       // (Las dos, si tiene las dos: las usó para enterarse, aunque el aviso nombre una sola.)
@@ -486,7 +518,7 @@ export function createCampScene(services) {
 
   /** Las figuras de un momento: el que lo trae y los que vienen con él (el reparto: Frank y Santiago). */
   function figurasDelMomento(p) {
-    const ids = [p.quien, ...((MOMENTOS[p.id] && MOMENTOS[p.id].tambien) || [])]
+    const ids = [p.quien, ...(MOMENTOS[p.id] ? tambienDe(MOMENTOS[p.id], gameState) : [])]
       .filter((id) => id === 'forastero' || (gameState.banda && gameState.banda[id] && gameState.banda[id].esta));
     return ids.map(figuraDe).filter(Boolean);
   }
@@ -596,13 +628,14 @@ export function createCampScene(services) {
     const humorAntes = elQueHabla ? palabraDeHumor(elQueHabla.humor) : 'tranquilo';
     // (🎭 Lo que hay que pagar entero, como el médico, no se ofrece si no te alcanza.)
     const opciones = opcionesDelMomento(p.id, gameState).filter((op) => !op.pagoEntero || gameState.money >= op.dinero).map((op) => {
-      const t = textos.opciones[op.id];
+      // (🔥 Algunas traen su texto armado: la fogata, con los nombres.)
+      const t = op.texto || textos.opciones[op.id];
       return { id: op.id, texto: typeof t === 'function' ? t(Math.min(op.dinero || 0, gameState.money)) : t };
     });
     const figuras = figurasDelMomento(p);
     menu.abrir(segun(textos.titulo), opciones, (opId) => {
       const r = elegir(gameState, p, opId);
-      const lineas = [segun(porHumor(textos.resultado[opId], humorAntes))];
+      const lineas = [r.texto || segun(porHumor(textos.resultado[opId], humorAntes))];
       if (r.dinero) lineas.push(M.pagaste(r.dinero));
       // 🗞️ (Lo que contó el forastero, que ya quedó en el horario.)
       if (r.rumor) lineas.push(contarRumor('forastero', r.rumor));
@@ -697,7 +730,10 @@ export function createCampScene(services) {
       : espiables(gameState, PARTES_DE_PRACTICA, trenesMirados(gameState)).length > 0);
     // 🃏 Una mano de cartas: con el que es Bueno con la baraja, si está aquí y no jugó hoy.
     const puedeMano = tiene(estado, 'baraja') && !estado.practica && estado.manoDia !== (gameState.tiempo ? gameState.tiempo.dia : 0);
+    // 😈 Si anda en algo (la señal, o "uno de los dos"), es lo primero que hay que hablar.
+    const conSenal = !!senalDe(gameState, id);
     menu.abrir(m.corto, [
+      ...(conSenal ? [{ id: 'senal', texto: T.tentacion.charla.opcion }] : []),
       { id: 'como', texto: B.comoAndas },
       ...(puedePracticar ? [{ id: 'practicar', texto: B.practicar }] : []),
       ...(puedeEspiar ? [{ id: 'espiar', texto: B.espiar }] : []),
@@ -707,12 +743,58 @@ export function createCampScene(services) {
       if (op === 'practicar') { abrirPractica(id, figuras); return true; }
       if (op === 'espiar') { abrirEspia(id, figuras); return true; }
       if (op === 'mano') { abrirMano(id, figuras); return true; }
+      if (op === 'senal') { abrirSenal(id, figuras); return true; }
       if (op !== 'como') return false;
       const dice = comoEsta(id, estado) + (estado.herido ? ' ' + B.herido : '')
         + (estado.practica ? ' ' + (estado.practica.espia ? B.espiando : B.practicando(T.rasgos[estado.practica.hab])) : '');
       menu.abrir(m.corto, [{ id: 'seguir', texto: T.camp.momentos.seguir }], () => false, dice, { figuras });
       return true;
     }, B.saludo[id][palabra][palabraDeHumor(estado.humor)], { figuras });
+  }
+
+  /**
+   * 😈 LA SEÑAL (systems/tentacion.js): pagarle lo que pide (si no se sabe cuál de los dos es, es acusarlo), vigilarlo
+   * ("uno de los dos": se sabe cuál), echarlo, o dejarlo para después. Si sales al golpe con la señal, traiciona.
+   */
+  function abrirSenal(id, figuras) {
+    const s = senalDe(gameState, id);
+    if (!s) return;
+    const K = T.tentacion.charla, nombre = MIEMBRO[id].corto, corto = (x) => MIEMBRO[x].corto;
+    const precio = precioDeLaSenal(gameState, id);
+    const rastreador = s.oculta ? rastreadorPara(gameState, s.real, s.otro) : null;
+    const opciones = [];
+    if (s.oculta && (rastreador || gameState.money >= TENTACION.vigilar)) opciones.push({ id: 'vigilar', texto: rastreador ? K.vigilarGratis(corto(rastreador)) : K.vigilar(TENTACION.vigilar) });
+    if (precio != null && gameState.money >= precio) opciones.push({ id: 'pagar', texto: s.oculta ? K.acusar(precio) : K.pagar(precio) });
+    if (!s.oculta) opciones.push({ id: 'echar', texto: K.echar });
+    opciones.push({ id: 'no', texto: K.ahoraNo });
+    const dice = (s.oculta ? K.duda(nombre, corto(s.real === id ? s.otro : s.real)) : K.texto(nombre))
+      + (precio == null ? ' ' + K.yaNo : '');
+    const anota = (quien, motivo, veces = 1) => T.libreta.anota(corto(quien), 'q', motivoDeLibreta(motivo, 'q'), veces);
+    menu.abrir(nombre, opciones, (op) => {
+      if (op === 'no') return false;
+      const lineas = [];
+      if (op === 'vigilar') {
+        const r = vigilar(gameState, id);
+        lineas.push(r.real === id ? K.esEl(nombre) : K.noEsEl(nombre, corto(r.real)));
+        if (r.pago) lineas.push(T.camp.momentos.pagaste(r.pago));
+      } else if (op === 'pagar') {
+        const r = pagarLaSenal(gameState, id);
+        if (!r) return false;
+        if (r.que === 'equivocado') {
+          lineas.push(K.equivocado(nombre), anota(id, 'meAcusaste', 2), K.seVaDeNoche(corto(r.traicion.id), r.traicion.como, r.traicion.plata));
+        } else {
+          lineas.push(K.pagado(nombre, r.precio), r.sigue ? K.sigue(nombre) : K.seQueda(nombre));
+          if (r.queja) lineas.push(anota(r.queja, 'loQuePidio'));
+        }
+      } else if (op === 'echar') {
+        const r = echar(gameState, id);
+        lineas.push(K.echado(nombre, TENTACION.echadoRecompensa));
+        for (const q of r.quejas) lineas.push(anota(q, 'echasteAMiAmigo'));
+      }
+      audio.play('cover');
+      menu.abrir(nombre, [{ id: 'seguir', texto: T.camp.momentos.seguir }], () => false, lineas.join('\n'), { figuras });
+      return true;
+    }, dice, { figuras });
   }
 
   /**

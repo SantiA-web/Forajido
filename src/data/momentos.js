@@ -17,12 +17,20 @@
  */
 import { BANDA, MIEMBRO, cambiarLealtad, seVa } from './banda.js';
 import { ANIMO } from './rasgos.js';
-import { moverPersonalidad, marcaFuerte, actividad } from '../systems/animo.js';
+import { moverPersonalidad, marcaFuerte, actividad, contradecir } from '../systems/animo.js';
 import { eventoDeAnimo, multDelReparto, recordar, anotarPor } from '../systems/animoEnJuego.js';
 import { ENCARGO } from './encargo.js';
 import { rumorDelForastero } from '../systems/horario.js';
 import { REPARTO, JMC } from './libreta.js';
 import { deudaConJmc, perdonarDeuda } from '../systems/libreta.js';
+import { FOGATA } from './fogata.js';
+import { prepararFogata, fogataDe, quienCalma, terminarDiscusion, terminarPelea } from '../systems/fogata.js';
+import { fuerza } from '../systems/animo.js';
+import { nocheDelGolpe } from '../systems/tentacion.js';
+import { T } from '../text/es.js';
+
+/** 🔥 Los textos de la fogata (text/es.js, `T.camp.momentos.fogata`). */
+const textosFogata = () => T.camp.momentos.fogata;
 
 /**
  * 🙂 🔁 LOS MOMENTOS MUEVEN EL HUMOR *(Santi: "conectá todo lo del ánimo", 2026-11-15)*. Cada opción dice qué evento del
@@ -51,6 +59,8 @@ export function cerrarAsalto(g) {
       // (📒 Con la libreta: favor, o queja doble por la palabra rota.)
       if (b.tommy.libreta) anotarPor(g, 'tommy', cumpliste ? 1 : -2, 'promesaTommy');
       else cambiarLealtad(b, 'tommy', cumpliste ? 1 : -2);
+      // (🎚️ Romperle la palabra al Confiable le va sacando lo confiable: ver `BAJA` en data/rasgos.js.)
+      if (!cumpliste) contradecir(b.tommy, 'confiable');
       C.noticias.push(cumpliste ? 'tommyCumplida' : 'tommyRota');
     }
   }
@@ -182,7 +192,8 @@ export const MOMENTOS = {
     quien: 'frank',
     cuando: (g) => g.campamento.vistos.includes('encargo'),
     opciones: [
-      { id: 'quitar', animo: { frank: 'sacarBotella' }, personalidad: [['frank', 'alcoholico', -ANIMO.personalidad.contra]], sinResaca: 'frank' },
+      // (🎚️ 🔁 Sacarle la botella ya no le baja 5 de golpe: suma al contador, y a las 4 baja 30. Ver `BAJA`.)
+      { id: 'quitar', animo: { frank: 'sacarBotella' }, contradice: [['frank', 'alcoholico']], sinResaca: 'frank' },
       // (🗣️ Y cuenta como actividad para el Divertido: "cartas, una botella".)
       { id: 'dejar', animo: [['frank', 'botella', 1, 'botella']], personalidad: [['frank', 'alcoholico', ANIMO.personalidad.aFavor]], marca: 'frankResaca', actividad: 'frank' },
     ],
@@ -231,6 +242,58 @@ export const MOMENTOS = {
   /**
    * 🎭 LO DEL ASALTO VUELVE (etapa 6; Santi eligió las cuatro). Pasan cada vez que se da el caso, recién vuelto.
    */
+  /**
+   * 🔥 LA FOGATA (etapa 4; data/fogata.js, systems/fogata.js): la noche del golpe, el par que peor se lleva. Pasa
+   * siempre que haya uno (la prioridad más alta) y ocupa uno de los dos lugares. Lo trae el primero del par; el otro
+   * está al lado.
+   *  - `discusion` (roces): darle la razón a uno (al Serio, según su fuerza, no le importa ganar: no anota favor),
+   *    calmarlos ($40, o gratis con la Labia de un tercero) o dejarlo.
+   *  - `pelea` (enemigos): pararlos ($80) o no meterse.
+   */
+  discusion: {
+    quien: (g) => (fogataDe(g, 'roces') || {}).a || null, tambien: (g) => [(fogataDe(g, 'roces') || {}).b].filter(Boolean),
+    prioridad: 1000, repite: true,
+    cuando: (g) => !!fogataDe(g, 'roces'),
+    opciones: (g) => {
+      const F = fogataDe(g, 'roces'), K = textosFogata(), t = quienCalma(g);
+      const razon = (gana, pierde) => ({
+        id: 'razon:' + gana, texto: K.op.razon(MIEMBRO[gana].corto),
+        animo: [[pierde, 'peleaPierde']],
+        // (😐 Al Serio, según su fuerza, no le importa ganar: no anota favor, y se dice.)
+        alElegir: (gg) => {
+          terminarDiscusion(gg, 'razon');
+          const texto = K.res.razon(MIEMBRO[gana].corto, MIEMBRO[pierde].corto);
+          if (Math.random() < fuerza(gg.banda[gana], 'serio')) return { texto: texto + ' ' + K.res.serio(MIEMBRO[gana].corto) };
+          const r = eventoDeAnimo(gg, gana, 'peleaGana', 1, 'm:discusion');
+          return { texto, anotes: r && r.anota ? [{ id: gana, ...r.anota }] : [] };
+        },
+      });
+      return [
+        razon(F.a, F.b), razon(F.b, F.a),
+        t ? { id: 'calmar', texto: K.op.calmarLabia(MIEMBRO[t].corto), alElegir: (gg) => { terminarDiscusion(gg, 'calmar'); return { texto: K.res.calmarLabia(MIEMBRO[t].corto) }; } }
+          : { id: 'calmar', texto: K.op.calmar(FOGATA.calmar), dinero: FOGATA.calmar, pagoEntero: true, alElegir: (gg) => { terminarDiscusion(gg, 'calmar'); return { texto: K.res.calmar }; } },
+        { id: 'dejar', texto: K.op.dejar, alElegir: (gg) => {
+          const r = terminarDiscusion(gg, 'dejar');
+          return { texto: r.que === 'divertido' ? K.res.divertido(MIEMBRO[r.divertido].corto) : K.res.enemigos(MIEMBRO[F.a].corto, MIEMBRO[F.b].corto), anotes: r.anotes };
+        } },
+      ];
+    },
+  },
+  pelea: {
+    quien: (g) => (fogataDe(g, 'enemigos') || {}).a || null, tambien: (g) => [(fogataDe(g, 'enemigos') || {}).b].filter(Boolean),
+    prioridad: 1000, repite: true,
+    cuando: (g) => !!fogataDe(g, 'enemigos'),
+    opciones: () => {
+      const K = textosFogata();
+      return [
+        { id: 'parar', texto: K.op.parar(FOGATA.parar), dinero: FOGATA.parar, pagoEntero: true, alElegir: (gg) => { terminarPelea(gg, 'parar'); return { texto: K.res.parar }; } },
+        { id: 'dejar', texto: K.op.noMeterse, alElegir: (gg) => {
+          const r = terminarPelea(gg, 'dejar');
+          return { texto: K.res.herido(MIEMBRO[r.herido].corto, FOGATA.herida), anotes: r.anotes };
+        } },
+      ];
+    },
+  },
   // 7. Mataste civiles: Tommy, que quiere honor, te lo reprocha.
   civiles: {
     quien: 'tommy', prioridad: 60, repite: true,
@@ -323,6 +386,11 @@ export const MOMENTOS = {
   },
 };
 
+/** 🔥 Los que vienen con el que lo trae (puede depender de la partida: la fogata). */
+export function tambienDe(M, g) {
+  return (typeof M.tambien === 'function' ? M.tambien(g) : M.tambien) || [];
+}
+
 /** Las opciones de un momento ya armadas para esta partida. */
 export function opcionesDe(id, g) {
   const M = MOMENTOS[id];
@@ -333,7 +401,7 @@ export function opcionesDe(id, g) {
 function estanTodos(M, g) {
   const q = typeof M.quien === 'function' ? M.quien(g) : M.quien;
   if (!q) return false;
-  const ids = [q, ...(M.tambien || [])].filter((x) => MIEMBRO[x]);
+  const ids = [q, ...tambienDe(M, g)].filter((x) => MIEMBRO[x]);
   return ids.every((id) => esta(g, id));
 }
 
@@ -356,6 +424,10 @@ export function visitaNueva(g, azar = Math.random) {
     C.avisados[m.id] = true;
     C.pendientes.push({ id: 'aviso', quien: m.id });
   }
+  // 🔥 La noche del golpe (recién vuelto de un asalto): la fogata. Lo que pasó junto al fuego, a las noticias.
+  if (recien(g)) for (const n of prepararFogata(g, azar)) (C.noticias = C.noticias || []).push(n);
+  // 😈 Y la tentación: el tramo nuevo del viaje, las ofertas y las señales (systems/tentacion.js).
+  if (recien(g)) for (const n of nocheDelGolpe(g, azar)) (C.noticias = C.noticias || []).push(n);
   // Un momento: de los que pueden pasar, el de más prioridad; entre iguales, al azar.
   let posibles = Object.entries(MOMENTOS)
     .filter(([id, M]) => (M.repite || !C.vistos.includes(id)) && estanTodos(M, g) && M.cuando(g))
@@ -490,9 +562,13 @@ export function elegir(g, pendiente, opcionId) {
     if (r && r.humor) humores.push({ id, humor: r.humor });
   }
   for (const [id, rasgo, n] of op.personalidad || []) if (esta(g, id)) moverPersonalidad(g.banda[id], rasgo, n);
+  for (const [id, rasgo] of op.contradice || []) if (esta(g, id)) contradecir(g.banda[id], rasgo);
   // 🗣️ (Lo que elegiste queda en lo que le pasó hace poco, para "¿Cómo estás?"; y la botella es una actividad.)
   if (g.banda && g.banda[pendiente.quien]) recordar(g, pendiente.quien, `${pendiente.id}:${opcionId}`);
   if (op.actividad && esta(g, op.actividad)) actividad(g.banda, IDS.filter((id) => esta(g, id)), op.actividad, g.tiempo ? g.tiempo.dia : 0);
   if (op.sinResaca && g.banda[op.sinResaca]) g.banda[op.sinResaca].resaca = false;
-  return { cambios, humores, anotes, dinero, rumor };
+  // 🔥 (Lo que hace la opción al elegirla, y lo que se cuenta en vez del resultado de siempre: la fogata.)
+  let texto = null;
+  if (op.alElegir) { const x = op.alElegir(g) || {}; texto = x.texto || null; anotes.push(...(x.anotes || [])); }
+  return { cambios, humores, anotes, dinero, rumor, texto };
 }

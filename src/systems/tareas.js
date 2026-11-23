@@ -18,10 +18,11 @@ import { MIEMBRO } from '../data/banda.js';
 import { fuerza, tiene, practicar } from './animo.js';
 import { regionDeLaBanda, despensa, diasQueAlcanza, comensales, comprar } from './comida.js';
 import { rumorDeCarga, rumorFalso } from './horario.js';
+import { RUMORES } from '../data/tareas.js';
 import { tasarLote } from '../data/perista.js';
 import { TRATOS } from '../data/tratos.js';
 import { oferta, jugadas, resolver, jugadaDe, quimicaQueImporto } from './tratos.js';
-import { contextoDeVenta, aplicarTrato, sacarVendido, cerradoHoy } from './tratosEnJuego.js';
+import { contextoDeVenta, aplicarTrato, sacarVendido, cerradoHoy, libretaDelTrato } from './tratosEnJuego.js';
 
 /** Cuántas partes del día dura cada una (hasta que vuelve). Practicar y mirar, en systems/animoEnJuego.js. */
 export const DURA = { cazar: 1, pueblo: 1, vender: 1, curar: 1, cartas: 1, cocinar: 1, pescar: 6 };
@@ -158,9 +159,10 @@ function pueblo(g, id, datos, azar) {
   if (mentiroso) chance *= P.mentiroso;
   for (const hab of ['labia', 'baraja']) usar(g, id, hab);
   if (!al(chance, azar)) { noticia(g, `tarea:${id}:puebloNada`); return; }
-  // (Lo de la cantina, 1 de cada 4 es mentira; lo del Mentiroso, la mitad. Mirar el tren te lo dice.)
-  const falso = azar() < (mentiroso ? P.mentiroso : 0.25);
-  const tren = falso ? rumorFalso(g) : rumorDeCarga(g) || rumorFalso(g);
+  // 🗞️ (De dónde viene, y cuánto es cierto: la cantina, 75 de cada 100; el Mentiroso, "dudoso", 50. Ver `RUMORES`.)
+  const de = mentiroso ? 'dudoso' : 'cantina';
+  const falso = azar() * 100 >= RUMORES[de];
+  const tren = falso ? rumorFalso(g, de) : rumorDeCarga(g, 4, de) || rumorFalso(g, de);
   if (!tren) { noticia(g, `tarea:${id}:puebloNada`); return; }
   noticia(g, `rumor:${id}:${tren.id}:pueblo`);
 }
@@ -202,6 +204,8 @@ function cartas(g, id, azar) {
   const pelea = azar() < C.pelea;
   if (pelea) g.bounty = (g.bounty || 0) + C.recompensaPelea;
   usar(g, id, 'baraja');
+  // (😄 Al Divertido, una noche de cartas lo saca del aburrimiento.)
+  if (e.animo) e.animo.sinActividad = 0;
   noticia(g, `tarea:${id}:cartas:${dif}:${pelea ? C.recompensaPelea : 0}`);
 }
 
@@ -277,11 +281,11 @@ function venderTratando(g, id, e, objetos, azar) {
   const lista = jugadas(ctx, of), j = jugadaDe(ctx.quien, lista, of);
   let r = resolver(ctx, of, j, azar), como = { aceptar: of.chantaje ? 'c' : 'a', regatear: 'r', apretar: 'p', irte: 'n', pelea: 'f' }[j.id];
   aplicarTrato(g, 'perista', r);
-  let rec = r.recompensa;
+  let rec = r.recompensa, sopla = !!r.sopla;
   if (r.sigue) {
     r = resolver(ctx, of, jugadaDe(ctx.quien, r.sigue, { quimica: of.quimica }), azar);
     aplicarTrato(g, 'perista', r);
-    rec += r.recompensa; como = 'rm';
+    rec += r.recompensa; como = 'rm'; sopla = sopla || !!r.sopla;
   }
   if (j.id === 'apretar' && !r.cierra) como = r.habla ? 'h' : 'pm';
   if (j.id === 'irte' && r.habla) como = 'h';
@@ -298,6 +302,8 @@ function venderTratando(g, id, e, objetos, azar) {
   usar(g, id, 'negociante');
   // (Y la química que pasó, para que la noticia cuente por qué: 'palabra.loCalma'.)
   noticia(g, `tarea:${id}:vender:${total}:${como}:${guarda}:${rec}:${quimicaQueImporto(of, como).join('.')}`);
+  // 📒 (El chantaje o el soplo, a la libreta de la banda: 'libreta:tommy:q:peristaSucio'.)
+  for (const a of libretaDelTrato(g, { chantaje: of.chantaje, sopla }, azar)) noticia(g, `libreta:${a.id}:${a.lado}:${a.motivo}`);
 }
 
 /** Para que la hoja diga quién hace mejor cada tarea (el rasgo que la mejora y si lo tiene). */

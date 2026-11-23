@@ -17,6 +17,9 @@ export const TRATOS = {
   // del jefe: un golpe que sale en el diario (algo raro, o el maletín) y cada `cadaLimpios` golpes limpios seguidos.
   fama: { seHabla: 100, leyenda: 300 },
   famaSube: { diario: 40, limpios: 30, cadaLimpios: 3 },
+  // 📒 LA BANDA LO ANOTA (TRATOS.md, "La banda"): sólo el chantaje y el apretar que termina en soplo, una vez por
+  // visita, y cada uno según la fuerza de su rasgo (Tommy, Honorable al 80: 8 de cada 10). Que no sea rutina.
+  libreta: { activo: true, honorable: { lado: 'q', motivo: 'peristaSucio' }, pendenciero: { lado: 'f', motivo: 'peristaDuro' } },
   honor: { respetado: 40, temido: -40 },          // abre el fiado / suma a apretar
 
   // La memoria de cada tratante contigo: cada punto mueve su primera oferta un `porPunto`. 🔁 Medido (v17): si aceptar

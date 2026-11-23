@@ -19,6 +19,7 @@ import { BANDA, MIEMBRO } from '../data/banda.js';
 import { REPARTO } from '../data/libreta.js';
 import { esperaDe, generosoDe, consecuenciaDelReparto, repartir, cuotaDeJmc, cobrarJmc, pagarOllaDeLaVuelta, ollaDeLaVuelta } from '../systems/libreta.js';
 import { T } from '../text/es.js';
+import { despuesDelReparto } from '../systems/fogata.js';
 
 const { TINTA, TINTA_SUAVE, SELLO, PAPEL_SUCIO, PAPEL_CLARO } = TINTAS;
 /** El papel: el ancho fijo; el alto, según cuántos son. Las columnas, desde el borde izquierdo. */
@@ -90,6 +91,8 @@ export function crearReparto(audio) {
   function confirmar() {
     const { g, filas, alListo } = abierto, t = total();
     const anotes = repartir(g, filas);
+    // 🔥 (A uno un cuarto más de lo que esperaba y al otro lo esperado o menos: se llevan peor. Ver data/fogata.js.)
+    despuesDelReparto(g, filas, generosoDe);
     // 🍲 Después del reparto, la olla de los días de la vuelta (como en el simulador).
     const olla = pagarOllaDeLaVuelta(g, g.tiempo ? g.tiempo.dia : 0);
     // ✉️ Y al final, J.Mc. se lleva su cuota (lo que falte, queda como deuda).

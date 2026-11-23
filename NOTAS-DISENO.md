@@ -20835,6 +20835,47 @@ Cobarde yendo a vender (nadie los tiene al empezar), la fama subiendo en un golp
 
 ---
 
+## ✅ LOS RUMORES, LA FOGATA, LA TENTACIÓN Y LA HISTORIA (2026-11-20 al 2026-11-22)
+
+- **Etapa 3, parte 4: los rumores con su origen** (`RUMORES` en `src/data/tareas.js`): cada rumor de carga recuerda de
+  dónde salió (`tren.de`): la cantina, 75 de cada 100 cierto; el Mentiroso, "dudoso", 50; el forastero, 50; los papeles
+  del encargado, siempre. El mapa y el calendario lo dicen; mirar el tren lo confirma o lo desmiente.
+- **Etapa 4: las personalidades con escalones** *(Santi, 2026-11-20: "vamos con la A")* (`BAJA` en
+  `src/data/rasgos.js`): cada vez que contradices una personalidad suma uno al contador (se ve en la ficha, "2 de 4"),
+  y a las 4 la fuerza baja 30, hasta el piso. **La fogata** (`src/data/fogata.js`, `src/systems/fogata.js`): cada par
+  está bien, con roces o enemigos (Frank y Santiago arrancan con roces); la noche del golpe el par que peor se lleva
+  discute (darle la razón a uno, calmarlos o dejarlo) o pelea (pararlos o no meterse: uno queda herido). Con enemigos,
+  si van los dos al golpe, cada uno va un paso abajo. El Serio de malas no pierde el paso. Medido (simulador v19): unas
+  6,5 discusiones por partida y 0,3 peleas.
+- **Etapa 5, parte 1: la tentación, la señal y la traición** *(Santi: "sí, arrancá con la parte 1")*
+  (`src/data/tentacion.js`, `src/systems/tentacion.js`): cada uno tiene tentación de 0 a 4 (5 en la montaña), que se
+  ve en la ficha con triangulitos. Sube con el tramo nuevo, las ofertas y la oferta de la ley (recompensa desde $600);
+  baja cuando gana lealtad. Al tope, **la señal**: "Tenemos que hablar" en la charla (pagar, echar o "ahora no"); desde
+  el asalto 17 la señal no dice quién es ("uno de los dos": vigilar o acusar, y acusar mal cuesta). Si sales al tren
+  con uno con señal, te traiciona: el Egoísta se lleva un cuarto de tu plata, el Rastrero o el Mentiroso te venden a la
+  ley (perdés la mitad del botín) y los demás se van. Medido: el que cuida ve una señal en la mitad de las partidas y
+  casi nunca una traición; el tacaño, 2,4 traiciones. ⚠️ **Los textos son provisorios**, y las reglas que se repiten
+  ("cada 4 golpes una oferta", el tramo +1) se van a reemplazar por cadenas escritas (abajo).
+- **La historia, como para una novela** *(Santi, 2026-11-22: "deberíamos armar los personajes y el entorno y backstory
+  como se arma para escribir novelas")*: **`PERSONAJES.md`** (nuevo, manda sobre esta nota). La noche de Barranca Yaco
+  (1865), John McKenzy y quién lo sostiene (Capizzu), James, su padre, Santiago, Frank, Tommy, los de afuera (los
+  Rennick, Reuben Cole, Kate Harlow, Wes "el Manco" Calloway, Martín Moreira) y los cuatro pueblos con su gente
+  (Cardón Rojo, Vacas Gordas, Terra Capizzo, El Lobo).
+- **🔁 Las decisiones se escriben a mano** *(Santi: "En Beholder: Conductor no dicen 'cada 3 paradas sube un
+  pasajero'... 'Si pasó X, Z e Y, entonces pasará W a menos que el jugador haga K'")*: dos tipos, las **Diarias**
+  (repetidas con peso: los civiles y el reproche de Tommy, la botella de Frank, el reparto) y las **de Historia**
+  (cadenas escritas a mano). Los finales salen de las dos. La libreta, la lealtad y la tentación quedan abajo, como
+  termómetro que las cadenas pueden leer.
+
+⚠️ **Sin jugar de punta a punta.** La tentación se probó por partes en el juego (tramo, señal, pagar dos veces, señal
+anónima, vigilar, acusar mal, traición al salir, la ley esperando, la ficha, el plan), sin errores.
+
+⏭️ **Sigue** *(Santi: "subilo y vamos con el camino del medio")*: el esqueleto de las cadenas de las cuatro regiones
+(y cuántos golpes tiene cada una), después el desierto en detalle, construido con un motor de cadenas, para probarlo
+entero.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

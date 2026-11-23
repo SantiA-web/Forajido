@@ -26,6 +26,7 @@
  * el día.
  */
 import { REGION } from '../data/region.js';
+import { RUMORES } from '../data/tareas.js';
 import { WAGONS } from '../data/wagons.js';
 import { sortearTipoTren, sortearDificultad, TRAIN_TYPES } from '../data/train.js';
 import {
@@ -247,20 +248,20 @@ export function esperarEnVia(g, rutaId, dia = null) {
  * 🗞️ UN RUMOR DE CARGA (Frank, la hoja de ruta del Encargado): el tren de carga más cercano que todavía no sabés y al que
  * llegás de verdad (no sólo a su día: a su parte), dentro de `dias` días. Pasa a saberse como rumor. Devuelve el tren, o null si no hay ninguno.
  */
-export function rumorDeCarga(g, dias = 4) {
+export function rumorDeCarga(g, dias = 4, de = null) {
   const hoy = completarTiempo(g).dia;
   const tren = completarHorario(g).find((tr) => !tr.sabes && !tr.falso && tr.tipoTren.id === 'carga'
     && tr.dia <= hoy + dias && faltaPara(g, tr) >= viajeDe(tr.ruta));
-  if (tren) tren.sabes = 'rumor';
+  if (tren) { tren.sabes = 'rumor'; tren.de = de; }
   return tren || null;
 }
 
 /** 🗞️ UN RUMOR QUE NO ES NADA: un tren de carga que no existe, en una vía cualquiera, de 1 a 3 días adelante. */
-export function rumorFalso(g) {
+export function rumorFalso(g, de = null) {
   const hoy = completarTiempo(g).dia;
   const tren = {
     id: siguienteId++, dia: hoy + rng.int(1, 3), parte: null, ruta: rng.pick(VIAS).id,
-    tipoTren: TRAIN_TYPES.carga, sabes: 'rumor', falso: true,
+    tipoTren: TRAIN_TYPES.carga, sabes: 'rumor', falso: true, de,
   };
   completarHorario(g).push(tren);
   completarHorario(g);
@@ -300,7 +301,7 @@ export function volvioElEspia(g, trenId, completo = false) {
 }
 
 export function rumorDelForastero(g) {
-  return (rng.chance(0.5) && rumorDeCarga(g, 3)) || rumorFalso(g);
+  return (rng.chance(RUMORES.forastero / 100) && rumorDeCarga(g, 3, 'forastero')) || rumorFalso(g, 'forastero');
 }
 
 /**

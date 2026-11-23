@@ -19,7 +19,7 @@
 
 import { ANIMO, HUMOR, RASGOS_DE, palabraDeHumor, esPersonalidad } from '../data/rasgos.js';
 import { BANDA, palabraDe } from '../data/banda.js';
-import { nuevoDia, moverHumor, moverLealtad, practicar, fuerza, disposicion, habilidadesIniciales, tiene, marcaFuerte, actividad } from './animo.js';
+import { nuevoDia, moverHumor, moverLealtad, practicar, fuerza, disposicion, habilidadesIniciales, tiene, marcaFuerte, actividad, contradecir } from './animo.js';
 import { volvioElEspia } from './horario.js';
 // 📒 La libreta (BANDA-NUEVA.md, etapa 2): con ella, cada cosa que pasa se anota como favor o queja.
 import { LIBRETA, EVENTOS_LIBRETA } from '../data/libreta.js';
@@ -27,7 +27,8 @@ import { COMIDA } from '../data/comida.js';
 import { TIEMPO } from '../data/tiempo.js';
 import { comerDelDia, diasQueAlcanza } from './comida.js';
 import { terminarTareas } from './tareas.js';
-import { completarLibreta, anotar, borrarQueja, caducar, revisarMarca, disposicionLibreta, sincronizar, pagarLaOlla } from './libreta.js';
+import { alGanarMarca, revisarSenalesDeLaMadrugada } from './tentacion.js';
+import { completarLibreta, anotar, borrarQueja, caducar, revisarMarca, disposicionLibreta, sincronizar, pagarLaOlla, animo as animoLibreta } from './libreta.js';
 
 const IDS = BANDA.map((m) => m.id);
 const E = ANIMO.eventos;
@@ -114,6 +115,18 @@ export function alEmpezarElDia(g, dia, azar = Math.random) {
     // (🟤 Perdió una marca: se está oxidando.)
     if (n.que === 'oxida') noticia(g, `oxida:${n.id}:${n.habilidad}`);
   }
+  // 😄 EL DIVERTIDO QUE SE ABURRE (BANDA-NUEVA.md, "Las personalidades"): con la libreta, a los `aguanta` días sin
+  // cartas ni nada que hacer, según su fuerza, queja chica "Me aburro", y se le va lo divertido (ver `BAJA`). (El
+  // diseño decía 3 días; el juego y el simulador ya usaban 5: `ANIMO.divertido.aguanta`.)
+  for (const id of IDS) {
+    const e = g.banda[id];
+    if (!e || !e.libreta || !e.esta || !e.animo || fuerza(e, 'divertido') <= 0) continue;
+    if (e.animo.sinActividad < ANIMO.divertido.aguanta || azar() >= fuerza(e, 'divertido')) continue;
+    e.animo.sinActividad = 0;
+    anotar(e, 'q', 'meAburro', dia, { chica: true });
+    noticia(g, `libreta:${id}:q:meAburro`);
+    contradecir(e, 'divertido');
+  }
   // 📒 Cada noche: se caen las líneas viejas de la libreta y se mira si gana o pierde una marca (una por noche).
   for (const id of IDS) {
     const e = g.banda[id];
@@ -121,7 +134,11 @@ export function alEmpezarElDia(g, dia, azar = Math.random) {
     caducar(e, dia);
     const que = revisarMarca(e, dia);
     if (que === 'gano' || que === 'perdio') noticia(g, `${que === 'gano' ? 'marcaGano' : 'marcaPerdio'}:${id}:${palabraDe(e)}`);
+    // 😈 (Ganó una marca, o le sobraron favores con la lealtad en 5: −1 de tentación. Ver data/tentacion.js.)
+    if (que === 'gano' || que === 'lleno') alGanarMarca(g, id);
   }
+  // 😈 La madrugada después de un golpe: las señales otra vez, ya movida la lealtad (BANDA-NUEVA, pasos 3 y 7).
+  for (const n of revisarSenalesDeLaMadrugada(g, azar)) noticia(g, n);
   // 🍲 La olla del día que empieza (después de mirar las marcas: la queja de hoy cuenta para la noche de mañana).
   // Sólo se avisa cuando no alcanzó.
   if (g.tiempo && g.money != null) {
@@ -236,6 +253,9 @@ export function eventoDeAnimo(g, id, evento, mult = 1, motivo = null, azar = Mat
   return { id, lealtad: ahoraL !== antesL ? ahoraL : null, humor: ahoraH !== antesH ? ahoraH : null };
 }
 
+/** 💕 Lo que al Sentimental le pega doble (BANDA-NUEVA.md): el favor de un pedido; la queja de una herida. */
+const SENTIMENTAL_DOBLE = ['pedidoSi', 'herido'];
+
 /** 📒 Un evento, en la libreta. Devuelve lo que el jugador nota: `{ id, lealtad: null, humor, anota: { lado, motivo } }`. */
 function anotarEvento(g, id, evento, mult, motivo, azar) {
   const e = g.banda[id], ev = EVENTOS_LIBRETA[evento];
@@ -245,9 +265,28 @@ function anotarEvento(g, id, evento, mult, motivo, azar) {
   const dia = g.tiempo ? g.tiempo.dia : 0, antesH = palabraDeHumor(e.humor);
   let anota = null;
   if (ev.borra) { const q = borrarQueja(e, dia); if (q) anota = { lado: 'borra', motivo: q.motivo }; }
-  else { anotar(e, ev.lado, motivo || evento, dia, { veces: ev.veces || 1, chica: !!ev.chica }); anota = { lado: ev.lado, motivo: motivo || evento, veces: ev.veces || 1 }; }
+  else {
+    // (💕 Al Sentimental, el favor de un pedido y la queja de una herida le pegan doble, según su fuerza.)
+    const veces = SENTIMENTAL_DOBLE.includes(evento) && azar() < fuerza(e, 'sentimental') ? 2 : ev.veces || 1;
+    anotar(e, ev.lado, motivo || evento, dia, { veces, chica: !!ev.chica });
+    anota = { lado: ev.lado, motivo: motivo || evento, veces };
+  }
   const ahoraH = palabraDeHumor(e.humor);
   return { id, lealtad: null, humor: ahoraH !== antesH ? ahoraH : null, anota };
+}
+
+/**
+ * 🎚️ LOS AVISOS DE LO QUE BAJÓ UNA PERSONALIDAD (`contradecir`, systems/animo.js), como noticias del campamento:
+ * 'baja:tommy:honorable:2:0:80' (quién, qué, la cuenta, si bajó, cuánto quedó).
+ */
+export function avisosDeBaja(g) {
+  const C = g.campamento, out = [];
+  for (const [id, e] of Object.entries(g.banda || {})) {
+    for (const a of (e && e.avisosBaja) || []) out.push(`baja:${id}:${a.rasgo}:${a.cuenta}:${a.bajo ? 1 : 0}:${a.ahora}`);
+    if (e) e.avisosBaja = [];
+  }
+  if (C) C.noticias = [...(C.noticias || []), ...out];
+  return out;
 }
 
 /**
@@ -302,7 +341,9 @@ export function despuesDelAsalto(g, s) {
   // Salió mal: te agarraron, o volviste sin nada.
   const mal = s.outcome !== 'escaped' || !(s.money > 0);
   if (mal) for (const id of aca) eventoDeAnimo(g, id, 'asaltoMal');
-  for (const id of s.heridos || []) eventoDeAnimo(g, id, 'herido');
+  for (const id of s.heridos || []) { eventoDeAnimo(g, id, 'herido'); contradecir(b[id], 'valiente'); }
+  // 🎚️ (El Serio que vuelve con ganas: se le va lo serio, de a poco. Ver `BAJA` en data/rasgos.js.)
+  for (const id of aca) if (b[id].libreta && animoLibreta(b[id], dia) === 'conGanas') contradecir(b[id], 'serio');
   // 🐎 Se separó en la huida y lo dejaste solo: se enoja (si lo agarraron, ya le pega quedar preso).
   if (s.abandonado && s.abandonado.como !== 'preso') eventoDeAnimo(g, s.abandonado.id, 'abandonado');
   // Mataste civiles: a todos les pesa un poco; al honorable y al sentimental, mucho más.
@@ -311,6 +352,7 @@ export function despuesDelAsalto(g, s) {
       eventoDeAnimo(g, id, 'civilesResto');
       eventoDeAnimo(g, id, 'civilesHonorable', fuerza(b[id], 'honorable'));
       eventoDeAnimo(g, id, 'civilesSentimental', fuerza(b[id], 'sentimental'));
+      contradecir(b[id], 'honorable');
     }
   }
   // Lo que hizo en su puesto cuenta como un uso de su habilidad: los caballos, las riendas; el pasajero, el cuchillo si

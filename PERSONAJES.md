@@ -30,7 +30,10 @@ está dudoso o menos…").
 ## La noche del tren del oro (el secreto que ata a todos)
 
 *(Santi, 2026-11-22: "quería una historia más dura, más del oeste americano salvaje y no tanto de papeles, abogados
-o tierras".)* Hace unos veinte años, en la guerra, una banda de guerrilleros quemaba pueblos de la frontera. La
+o tierras".)* Hace unos veinte años, en la Guerra Civil, una banda de guerrilleros **del Sur** quemaba pueblos de la
+frontera *(como los Raiders de Quantrill, que quemaron Lawrence, Kansas, en 1863, y con los que cabalgó Jesse James;
+la "frontera" era la línea entre los dos bandos, no la de México)*. El oro era la paga del ejército del Norte, y del
+Norte eran el capitán Cole y el padre de Tommy. La
 mandaba **John McKenzy**; su segundo era **el padre de James**. Terminaron con el golpe más grande de su vida: **el
 oro de la paga del ejército, robado de un tren en Barranca Yaco**. Esa noche John los vendió a todos: le pasó a un oficial del otro
 bando dónde encontrarlos (ese oficial es hoy **el Marshal**). Casi todos murieron o cayeron presos; uno se salvó (hoy

@@ -15,6 +15,9 @@ padre, Santiago, Frank, Tommy, los de afuera y los cuatro pueblos). Manda sobre 
 - **Dos tipos de decisiones** *(Santi, 2026-11-22)*: las **Diarias** (repetidas, con peso que se junta) y las **de
   Historia**, cadenas escritas a mano: "si pasó X, en N golpes pasa Z, a menos que hagas K" (como *Beholder:
   Conductor*). **Nada de reglas "cada N golpes".** Los finales y los arcos salen de las dos.
+- ✅ **Hecho el esqueleto (`HISTORIA.md`) y el guion del desierto (`HISTORIA-DESIERTO.md`)**, con los encargos y el
+  prólogo de James (falta que Santi elija su forma). Golpes: desierto 14, pradera 9, bosque 12, montaña 6.
+  ⏭️ **Ahora: el motor de cadenas**, construido con el desierto.
 - **El camino** *(Santi: "subilo y vamos con el camino del medio")*: 1) el esqueleto de las cadenas de las cuatro
   regiones, una página por región, que decide también cuántos golpes tiene cada una (Santi pidió alargarlas, para
   que entren la otra banda, el Marshal, la Pinkerton, un prisionero importante y la gente de los pueblos); 2) el

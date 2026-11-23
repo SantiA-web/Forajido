@@ -20870,9 +20870,18 @@ Cobarde yendo a vender (nadie los tiene al empezar), la fama subiendo en un golp
 ⚠️ **Sin jugar de punta a punta.** La tentación se probó por partes en el juego (tramo, señal, pagar dos veces, señal
 anónima, vigilar, acusar mal, traición al salir, la ley esperando, la ficha, el plan), sin errores.
 
-⏭️ **Sigue** *(Santi: "subilo y vamos con el camino del medio")*: el esqueleto de las cadenas de las cuatro regiones
-(y cuántos golpes tiene cada una), después el desierto en detalle, construido con un motor de cadenas, para probarlo
-entero.
+- **El esqueleto de la historia** *(Santi eligió el camino del medio)*: **`HISTORIA.md`**, qué cadena arranca y se
+  cobra en cada región. Los golpes por región, decididos por Santi: **desierto 14, pradera 9, bosque 12 (más largo en
+  días que en golpes), montaña 6** ("corta pero asfixiante", un par de golpes sueltos y tres vías): 41 en total.
+- **El desierto en detalle**: **`HISTORIA-DESIERTO.md`**, el guion asalto por asalto, con los textos y las opciones.
+  Se van al norte por la D (J.Mc. tira, el desierto se seca, la ley empuja; Santiago no quiere). **Los encargos**
+  *(Santi: "John debería hacer pedidos concretos a la banda")*: de J.Mc., del pueblo, de la banda y de los
+  contratados, que se cumplen adentro del tren (traer, no matar, hablar, liberar, dejar). Las mecánicas del tren se
+  producen después *(Santi)*. **El prólogo de James** *(Santi: "tiene que conocer la historia de él desde el
+  principio, porque es su historia")*: lo que cuenta está escrito; la forma (cuadros con narración, jugable o texto)
+  está por decidir. Los Cuervos eran guerrilleros del Sur (PERSONAJES.md).
+
+⏭️ **Sigue** *(Santi: "subilo y vamos con la cadena")*: el motor de cadenas, con el desierto.
 
 ---
 

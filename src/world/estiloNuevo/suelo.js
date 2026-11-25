@@ -97,6 +97,96 @@ const MEDANO_C = ['...FFFFFFF...', 'FFFFFFFFFFFF.', '.sssFFFsssss.'];
 const COLOR = { a: 25, b: 24, c: 23, s: 36, h: 43, g: 27, d: 26, D: 42, t: 33, k: 38, m: 15, n: 14, F: 38 };
 /** La arena, y las dos vetas: la que se hunde y la que agarra el sol. */
 const ARENA = 37, VETA = [36, 38];
+
+/**
+ * 🏜️ LA TEXTURA DE LA ARENA DEL CAMPO *(Santi, 2026-11-24: "a la textura de la arena le falta algo, porque si ves solo
+ * tiene un color liso, y hace que lo vea un poco infantil")*. Ojo con lo de antes: con mucho ruido se veía sucio (ver
+ * arriba); esto va suave. Tres cosas, que se prenden con letras en `o.textura` (en el campo, `CAMPO.suelo.textura`):
+ *  - `g` EL GRANO: puntos sueltos un tono más claro, más gris o más oscuro, ralos.
+ *  - `m` LAS MANCHAS: zonas de costra pálida (caliche) y otras de tierra colorada, con el borde salpicado.
+ *  - `d` LOS DETALLES: ondas de viento (una raya clara con su sombra) y pedregales chicos, cada uno en su zona.
+ */
+// (🔁 La tierra colorada era dorada (7): *(Santi: "yo vi que suele ser un poco más rojizos los desiertos de la frontera")*;
+//  eligió la rojiza (12) entre cuatro. La costra pálida es caliche: la cal que deja el agua al secarse.)
+const TEX_DIA = { costra: 16, tibia: 12, claro: 38, oscuro: 36, gris: 16, piedra: [25, 24] };
+// (De noche, la costra gris (16, de la escala de la tela) se iba al violeta y parecía un charco: de noche, arena clara.
+//  Lo mismo la tierra colorada (12, de la piel), que se iba a un violeta casi negro, como un pozo: de noche, la arena
+//  oscura (36), azulada como un charco: de noche no está. El rojo de noche no se ve.)
+const TEX_NOCHE = { ...TEX_DIA, costra: 38, gris: 38, tibia: ARENA };
+function h2(a, b, c = 0) {
+  let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+function ruidoP(x, y, s) {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+  const v = (i, j) => h2(ix + i, iy + j, s);
+  const a = v(0, 0) + (v(1, 0) - v(0, 0)) * sx, b = v(0, 1) + (v(1, 1) - v(0, 1)) * sx;
+  return a + (b - a) * sy;
+}
+function pintarTextura(ind, w, h, U0, q0, tex, noche = false) {
+  const TEX = noche ? TEX_NOCHE : TEX_DIA;
+  const pv = (x, y, i) => { if (x >= 0 && y >= 0 && x < w && y < h) ind[y * w + x] = i; };
+  if (tex.includes('m')) {
+    // (El ruido se calcula cada 4 puntos y en el medio se mezcla: punto por punto, armar un pedazo de suelo nuevo
+    //  tardaba 50 ms y el galope daba un tirón.)
+    const G = 4, gw = Math.ceil(w / G) + 2, gh = Math.ceil(h / G) + 2;
+    const gx0 = Math.floor(U0 / G), gy0 = Math.floor(q0 / G);
+    const N = new Float32Array(gw * gh), Tt = new Float32Array(gw * gh);
+    for (let b = 0; b < gh; b++) for (let a = 0; a < gw; a++) {
+      const X = (gx0 + a) * G, Y = (gy0 + b) * G;
+      N[b * gw + a] = 0.7 * ruidoP(X / 170, Y / 110, 11) + 0.3 * ruidoP(X / 60, Y / 40, 12);
+      Tt[b * gw + a] = 0.7 * ruidoP(X / 210, Y / 130, 13) + 0.3 * ruidoP(X / 70, Y / 45, 14);
+    }
+    const mezcla = (A, X, Y) => {
+      const fx = X / G - gx0, fy = Y / G - gy0, a = Math.floor(fx), b = Math.floor(fy), u = fx - a, v = fy - b;
+      const k = b * gw + a;
+      return (A[k] * (1 - u) + A[k + 1] * u) * (1 - v) + (A[k + gw] * (1 - u) + A[k + gw + 1] * u) * v;
+    };
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const X = U0 + i, Y = q0 + j;
+      const n = mezcla(N, X, Y), t = mezcla(Tt, X, Y);
+      // (El borde, salpicado: en la franja de la orilla, un punto sí y uno no.)
+      const salpica = (X + Y) & 1;
+      if (n > 0.73 || (n > 0.715 && salpica)) ind[j * w + i] = TEX.costra;
+      else if (t > 0.74 || (t > 0.725 && salpica)) ind[j * w + i] = TEX.tibia;
+    }
+  }
+  if (tex.includes('g')) {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const r = h2(U0 + i, q0 + j, 21);
+      if (r < 0.008) ind[j * w + i] = TEX.claro;
+      else if (r < 0.016) ind[j * w + i] = TEX.gris;
+      else if (r < 0.019) ind[j * w + i] = TEX.oscuro;
+    }
+  }
+  if (tex.includes('d')) {
+    // Las ondas de viento: donde sopla (una zona del ruido), rayas cortas cada 4 filas, clara arriba y sombra abajo.
+    for (let j = 0; j < h; j++) {
+      const Y = q0 + j;
+      if (((Y % 4) + 4) % 4 !== 0) continue;
+      for (let X = Math.floor(U0 / 16) * 16; X < U0 + w; X += 16) {
+        if (ruidoP(X / 140, Y / 90, 31) < 0.7) continue;
+        const r = h2(X, Y, 32);
+        if (r > 0.35) continue;
+        const x0 = X + Math.floor(h2(X, Y, 33) * 6) - U0, largo = 4 + Math.floor(r * 10);
+        for (let k = 0; k < largo; k++) pv(x0 + k, j, TEX.claro);
+        for (let k = 1; k < largo - 1; k++) pv(x0 + k, j + 1, TEX.oscuro);
+      }
+    }
+    // Los pedregales: piedritas de uno o dos puntos con su sombra, juntas en su zona.
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const X = U0 + i, Y = q0 + j;
+      if (h2(X, Y, 41) > 0.01) continue;
+      if (ruidoP(X / 120, Y / 80, 42) < 0.7) continue;
+      const c = TEX.piedra[h2(X, Y, 43) < 0.5 ? 0 : 1];
+      pv(i, j, c);
+      if (h2(X, Y, 44) < 0.5) pv(i + 1, j, c);
+      pv(i, j + 1, TEX.oscuro);
+    }
+  }
+}
 /** Los manchones: uno o ninguno por cuadro grande (154 × 66 puntos), de 20 a 44 puntos de ancho. */
 const MANCHON = { an: 154, al: 66, hay: 0.6, radio: [20, 44], celda: [8, 5] };
 
@@ -107,10 +197,15 @@ const MANCHON = { an: 154, al: 66, hay: 0.6, radio: [20, 44], celda: [8, 5] };
 export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
   // ('o.claro': (x, y) => ¿este punto es un lugar sin plantas? El claro del campamento.)
   // ('o.plantas': una lista donde juntar las plantas en vez de pintarlas, para que las mueva el viento: estamparPlantas.)
+  // ('o.densidad': (x, y) del mundo => cuánto de los manchones va ahí (1 = como el galope; 0 = arena lisa). La del
+  //  campo, en manchones: `verdor` en world/campoRelieve.js.)
   // ('o.via': dónde va la vía, en el mundo; la del asalto si no se dice. 'o.campo': con las cosas del campo abierto.
   //  'o.saguaros': entre qué alturas del mundo (en unidades, [desde, hasta]) van los saguaros, del otro lado del tren.)
   const V = o.via || VIA, enLaVia = fueraDe(V), campo = !!o.campo;
   const U0 = p0 + k;
+  // (El galope da la vuelta cada `VUELTA` puntos, así el suelo empalma; el campo no: ahí se vería el mismo dibujo
+  //  repetido a lo ancho.)
+  const vuelta = (n, cada) => (o.densidad ? n : md(n, cada));
   const pv = (x, y, i) => { if (x >= 0 && y >= 0 && x < w && y < h) ind[y * w + x] = i; };
   const estampar = (mapa, sx, sy) => {
     for (let j = 0; j < mapa.length; j++) for (let i = 0; i < mapa[j].length; i++) {
@@ -122,12 +217,14 @@ export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
   const libre = (sy, alto) => !enLaVia((sy + q0) * PASO - 2) && !enLaVia((sy + q0 + alto) * PASO);
   // La arena, de un tono.
   ind.fill(ARENA, 0, w * h);
+  // 🏜️ En el campo, la textura de la arena (ver `pintarTextura`).
+  if (o.textura) pintarTextura(ind, w, h, U0, q0, o.textura, !!o.noche);
   // Las vetas, pocas: cada seis filas, y en uno de cada siete tramos.
   for (let y = 0; y < h; y++) {
     const q = q0 + y;
     if (md(q, 6) !== 0 || enLaVia(q * PASO)) continue;
     for (let n = Math.floor(U0 / TRAMO) - 1; n <= Math.floor((U0 + w) / TRAMO) + 1; n++) {
-      const nn = md(n, VUELTA / TRAMO), hz = hash(nn * 7 + 3, q * 13 + 1);
+      const nn = vuelta(n, VUELTA / TRAMO), hz = hash(nn * 7 + 3, q * 13 + 1);
       if (hz > 0.14) continue;
       const largo = 10 + Math.floor(hash(nn, q * 5) * 24), x0 = n * TRAMO + Math.floor(hash(q, nn) * (TRAMO - 8)) - U0;
       const col = VETA[hz < 0.07 ? 0 : 1];
@@ -139,12 +236,14 @@ export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
   if (campo) pintarHuellas(U0, q0, w, h, V, pv);
   // Los manchones de plantas.
   for (let n = Math.floor(U0 / MANCHON.an) - 1; n <= Math.floor((U0 + w) / MANCHON.an) + 1; n++) {
-    const nn = md(n, VUELTA / MANCHON.an);
+    const nn = vuelta(n, VUELTA / MANCHON.an);
     for (let m = Math.floor(q0 / MANCHON.al) * MANCHON.al - MANCHON.al; m <= q0 + h + MANCHON.al; m += MANCHON.al) {
-      if (hash(nn * 31 + m, 5) > MANCHON.hay) continue;
+      const hay = hash(nn * 31 + m, 5);
+      if (!o.densidad && hay > MANCHON.hay) continue;
       const rx = MANCHON.radio[0] + Math.floor(hash(nn, m + 11) * (MANCHON.radio[1] - MANCHON.radio[0])), ry = Math.round(rx * 0.4);
       const cx = n * MANCHON.an + rx + Math.floor(hash(nn + 2, m) * (MANCHON.an - 2 * rx));
       const cy = m + ry + Math.floor(hash(m + 1, nn) * Math.max(1, MANCHON.al - 2 * ry));
+      if (o.densidad && hay > Math.min(0.95, MANCHON.hay * o.densidad(cx * PASO, cy * PASO))) continue;
       const [CX, CY] = MANCHON.celda;
       // (Fila por fila de arriba para abajo: lo de más acá tapa a lo de más allá.)
       for (let j = -ry; j <= ry; j += CY) for (let i = -rx; i <= rx; i += CX) {
@@ -165,10 +264,12 @@ export function pintarSuelo(ind, w, h, p0, q0, k, o = {}) {
   }
   // Afuera de los manchones, casi nada: alguna mata de pasto suelta.
   for (let n = Math.floor(U0 / CUADRO) - 1; n <= Math.floor((U0 + w) / CUADRO) + 1; n++) {
-    const nn = md(n, VUELTA / CUADRO);
+    const nn = vuelta(n, VUELTA / CUADRO);
     for (let m = Math.floor((q0 - FILAS) / FILAS) * FILAS; m <= q0 + h; m += FILAS) {
-      if (hash(nn * 13 + m, 41) > 0.07) continue;
+      const suelta = hash(nn * 13 + m, 41);
+      if (suelta > 0.07) continue;
       const sx = n * CUADRO + Math.round(hash(nn, m) * (CUADRO - 10)) - U0, sy = m + Math.floor(hash(m, nn) * (FILAS - 7)) - q0;
+      if (o.densidad && suelta > 0.07 * o.sueltas) continue;
       if (libre(sy, 6) && !(o.claro && o.claro(sx, sy + 6))) planta(PASTO_C, sx, sy);
     }
   }
@@ -1148,28 +1249,45 @@ function tiraDeCampo(base, luz, saguaros, horizonte, mojado) {
  * con la misma cuenta que el galope: cada baldosa sabe qué hay en el mundo, así se pegan sin costura.
  */
 const BALDOSA = 256, TOPE_BALDOSAS = 48;
+
+/**
+ * Copia un pedazo ya pintado con sus bordes justo en píxeles enteros de la pantalla. *(Santi: "se ve unas líneas negras
+ * en el cambio")*: con la lupa entre dos tamaños, el borde de una baldosa caía en medio píxel, quedaba a medias y entre
+ * baldosa y baldosa se veía el fondo (de noche, una raya oscura). Redondeando los dos bordes, la que sigue empieza en el
+ * mismo píxel donde termina la anterior.
+ */
+export function copiarPegado(ctx, img, x, y, w, h) {
+  const m = ctx.getTransform();
+  if (m.b || m.c) { ctx.drawImage(img, x, y, w, h); return; }
+  const x0 = Math.round(m.a * x + m.e), x1 = Math.round(m.a * (x + w) + m.e);
+  const y0 = Math.round(m.d * y + m.f), y1 = Math.round(m.d * (y + h) + m.f);
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(img, x0, y0, x1 - x0, y1 - y0);
+  ctx.restore();
+}
 export const SIN_VIA = { piedra: [-1e9, -1e9 + 1], durmiente: [-1e9, -1e9 + 1], rieles: [-1e9, -1e9 + 1] };
 const baldosas = new Map();
 
-export function dibujarSueloAbierto(ctx, camX, camY, ancho, alto, noche, mojado = false) {
+export function dibujarSueloAbierto(ctx, camX, camY, ancho, alto, noche, mojado = false, densidad = null, sueltas = 1, textura = '') {
   const luz = noche ? CONFIG.tresCuartos.sueloNoche : mojado ? -1 : 0;
   const prev = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
   const B = BALDOSA * PASO;
   for (let ty = Math.floor(camY / B); ty * B < camY + alto; ty++) {
     for (let tx = Math.floor(camX / B); tx * B < camX + ancho; tx++) {
-      const clave = tx + '|' + ty + '|' + luz + '|' + (mojado ? 1 : 0);
+      const clave = tx + '|' + ty + '|' + luz + '|' + (mojado ? 1 : 0) + (densidad ? '|d' : '') + '|' + textura;
       let cv = baldosas.get(clave);
       if (!cv) {
         const ind = new Int16Array(BALDOSA * BALDOSA);
-        pintarSuelo(ind, BALDOSA, BALDOSA, tx * BALDOSA, ty * BALDOSA, 0, { via: SIN_VIA, campo: true });
+        pintarSuelo(ind, BALDOSA, BALDOSA, tx * BALDOSA, ty * BALDOSA, 0, { via: SIN_VIA, campo: true, densidad, sueltas, textura, noche });
         if (mojado) pintarCharcosAbiertos(ind, BALDOSA, BALDOSA, tx * BALDOSA, ty * BALDOSA);
         cv = document.createElement('canvas'); cv.width = BALDOSA; cv.height = BALDOSA;
         cv.getContext('2d').putImageData(new ImageData(iluminar({ ancho: BALDOSA, alto: BALDOSA, indices: ind, campo: () => luz }), BALDOSA, BALDOSA), 0, 0);
         if (baldosas.size >= TOPE_BALDOSAS) baldosas.delete(baldosas.keys().next().value);
         baldosas.set(clave, cv);
       }
-      ctx.drawImage(cv, tx * B, ty * B, B, B);
+      copiarPegado(ctx, cv, tx * B, ty * B, B, B);
     }
   }
   ctx.imageSmoothingEnabled = prev;

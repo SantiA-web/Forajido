@@ -26,7 +26,10 @@ import { deudaConJmc, perdonarDeuda } from '../systems/libreta.js';
 import { FOGATA } from './fogata.js';
 import { prepararFogata, fogataDe, quienCalma, terminarDiscusion, terminarPelea } from '../systems/fogata.js';
 import { fuerza } from '../systems/animo.js';
-import { nocheDelGolpe } from '../systems/tentacion.js';
+import { nocheDelGolpe, ofertasSinFama } from '../systems/tentacion.js';
+import { ESCENAS } from './escenas.js';
+import { HISTORIA } from './historia.js';
+import { historiaActiva, antesDeLaVisita, maletinAbierto, anotar as anotarHecho, revisarFama, dejarRecado, perderRecado } from '../systems/historia.js';
 import { T } from '../text/es.js';
 
 /** 🔥 Los textos de la fogata (text/es.js, `T.camp.momentos.fogata`). */
@@ -210,7 +213,8 @@ export const MOMENTOS = {
   // 4. Santiago recibe noticias de México.
   mexico: {
     quien: 'santiago',
-    cuando: (g) => g.campamento.asaltos >= 1 && g.money >= 50,
+    // (📖 Con la historia, lo reemplaza "la plata para casa", data/escenas.js.)
+    cuando: (g) => g.campamento.asaltos >= 1 && g.money >= 50 && !historiaActiva(),
     opciones: [
       { id: 'dar', animo: { santiago: 'pedidoSi' }, dinero: 50 },
       { id: 'despues', animo: { santiago: 'pedidoNo' } },
@@ -386,6 +390,16 @@ export const MOMENTOS = {
   },
 };
 
+/**
+ * 📖 LA HISTORIA ESCRITA (data/escenas.js, HISTORIA-DESIERTO.md): las escenas se suman a los momentos. La primera carta
+ * es la de siempre (muchos momentos esperan a que esté leída), con otro texto y una sola opción: mostrarla o no se
+ * decide en "¿Por qué él manda?".
+ */
+if (HISTORIA.activa) {
+  Object.assign(MOMENTOS, ESCENAS);
+  MOMENTOS.encargo = { ...MOMENTOS.encargo, prioridad: 300, opciones: [{ id: 'leer' }] };
+}
+
 /** 🔥 Los que vienen con el que lo trae (puede depender de la partida: la fogata). */
 export function tambienDe(M, g) {
   return (typeof M.tambien === 'function' ? M.tambien(g) : M.tambien) || [];
@@ -413,8 +427,9 @@ export function visitaNueva(g, azar = Math.random) {
   const C = g.campamento;
   C.visitas++;
   const seFueron = [];
-  // (Lo que quedó sin atender de la visita anterior: los avisos se vuelven a decidir abajo; los momentos se pierden.)
-  C.pendientes = [];
+  // (Lo que quedó sin atender de la visita anterior: los avisos se vuelven a decidir abajo; los momentos se pierden.
+  // 📖 Las escenas de la historia no: siguen esperando, como una carta junto a la carpa.)
+  C.pendientes = C.pendientes.filter((p) => ESCENAS[p.id] && historiaActiva());
   for (const m of BANDA) {
     const e = g.banda[m.id];
     if (!e || !e.esta) continue;
@@ -428,10 +443,15 @@ export function visitaNueva(g, azar = Math.random) {
   if (recien(g)) for (const n of prepararFogata(g, azar)) (C.noticias = C.noticias || []).push(n);
   // 😈 Y la tentación: el tramo nuevo del viaje, las ofertas y las señales (systems/tentacion.js).
   if (recien(g)) for (const n of nocheDelGolpe(g, azar)) (C.noticias = C.noticias || []).push(n);
+  // 📖 La historia: lo del tren del que volviste, los encargos que se te pasaron, los trenes nuevos que marca y sus
+  // escenas (van primero y no cuentan en el tope).
+  revisarHistoria(g, recien(g));
   // Un momento: de los que pueden pasar, el de más prioridad; entre iguales, al azar.
+  const tomados = new Set(C.pendientes.map((p) => p.quien));
   let posibles = Object.entries(MOMENTOS)
-    .filter(([id, M]) => (M.repite || !C.vistos.includes(id)) && estanTodos(M, g) && M.cuando(g))
-    .map(([id, M]) => ({ id, quien: quienTrae(id, g), p: M.prioridad || 0 }));
+    .filter(([id, M]) => !ESCENAS[id] && (M.repite || !C.vistos.includes(id)) && estanTodos(M, g) && M.cuando(g))
+    .map(([id, M]) => ({ id, quien: quienTrae(id, g), p: M.prioridad || 0 }))
+    .filter((x) => !historiaActiva() || !tomados.has(x.quien));
   /**
    * 🔁 HASTA DOS POR VISITA (`REACCIONES.porVisita`; antes era uno): el de más prioridad, y entre iguales al azar; cada
    * uno lo trae alguien distinto. (Si al que le toca ya tiene un aviso pendiente, primero el aviso.)
@@ -453,6 +473,59 @@ export function visitaNueva(g, azar = Math.random) {
 }
 
 /**
+ * 📖 LA HISTORIA, CADA VEZ QUE SE MIRA: en cada visita nueva y cada vez que pasa el tiempo en el campamento (dormir,
+ * esperar en la carpa o con el calendario, volver del pueblo o del mapa) *(🔁 2026-11-23: por días, no por asaltos;
+ * antes sólo en las visitas nuevas, que son la noche de un golpe)*. Lo del tren del que volviste (`recienVuelto`), los
+ * encargos que se te pasaron, los trenes nuevos que marca, y las escenas que ya pueden pasar: una por cada uno que la
+ * trae (las de James, todas), sin pisar lo que ya está pendiente. Devuelve cuántas escenas nuevas aparecieron.
+ */
+export function revisarHistoria(g, recienVuelto = false) {
+  if (!historiaActiva() || !g.campamento) return 0;
+  const C = g.campamento;
+  C.noticias = C.noticias || [];
+  const h = antesDeLaVisita(g, recienVuelto);
+  for (const n of h.noticias) C.noticias.push(n);
+  for (const p of h.perdidos) {
+    C.noticias.push('hPerdido:' + p.id);
+    // (Si era de J.Mc., desconfía; si era de uno de la banda, le queda una queja.)
+    if (p.de === 'jmc') anotarHecho(g, 'jmcDesconfia');
+    else if (esta(g, p.de)) anotarPor(g, p.de, -1, 'm:h_perdido');
+  }
+  const nuevas = Object.entries(ESCENAS)
+    .filter(([id, M]) => !C.vistos.includes(id) && !C.pendientes.some((p) => p.id === id) && estanTodos(M, g) && M.cuando(g))
+    // (Lo que abre algo nuevo ya no llega después de "Cole viene por ti": ver `abreAlgo` en data/escenas.js.)
+    .filter(([, M]) => !(M.abreAlgo && C.historia && C.historia.hechos.h_cole_viene != null))
+    .map(([id, M]) => ({ id, quien: quienTrae(id, g), p: M.prioridad || 0 }))
+    .sort((a, b) => b.p - a.p);
+  let n = 0;
+  for (const x of nuevas) {
+    // 🍺 (Los recados no llegan solos: quedan en la cantina hasta que alguien baja al pueblo. Ver `recogerRecados`.)
+    if (x.quien === 'recado') { dejarRecado(g, x.id); continue; }
+    if (x.quien !== 'james' && C.pendientes.some((p) => p.quien === x.quien)) continue;
+    C.pendientes.push({ id: x.id, quien: x.quien });
+    n++;
+  }
+  // 🍺 (Los recados que trajo el que bajó al pueblo, uno detrás de otro. Si lo que pedían ya no puede ser —el tren de la
+  // paga ya pasó, o Cole ya viene y no se empieza nada nuevo—, es como si se hubiera perdido.)
+  for (const [id, x] of Object.entries(C.historia.recados)) {
+    if (x.estado !== 'traido') continue;
+    const M = ESCENAS[id], tarde = M.abreAlgo && C.historia.hechos.h_cole_viene != null;
+    if (tarde || !M.cuando(g)) { perderRecado(g, id); continue; }
+    x.estado = 'entregado';
+    C.pendientes.push({ id, quien: 'recado' });
+    n++;
+  }
+  // ✉️ (Las cartas de J.Mc. por la fama: las decide la cuenta, y esperan junto a la carpa una detrás de otra.)
+  for (const id of revisarFama(g)) {
+    C.pendientes.push({ id, quien: 'carta' });
+    n++;
+  }
+  // 😈 (Y si el Cuervo no suena, otras bandas le hablan al que duda: systems/tentacion.js, `ofertasSinFama`.)
+  for (const nota of ofertasSinFama(g)) (C.noticias = C.noticias || []).push(nota);
+  return n;
+}
+
+/**
  * ✉️ EL ENCARGO DE J.Mc. (`C.encargo`: `{ vence, fallos, cumplido }`; los números en data/encargo.js).
  *
  * *(Santi eligió todo lo recomendado)*: J.Mc. pasa **la noche del día `vence`, hasta el amanecer** (la noche de ese día
@@ -466,7 +539,8 @@ export function revisarEncargo(g) {
   // (Una partida que ya había leído la primera carta antes de esto: el plazo arranca hoy.)
   if (!C.encargo && C.vistos.includes('encargo')) C.encargo = { vence: g.tiempo.dia + ENCARGO.dias, fallos: 0 };
   const E = C.encargo;
-  if (!E || E.cumplido) return null;
+  // (📖 Con la historia, J.Mc. no pasa a buscar el maletín en una fecha: ver data/escenas.js.)
+  if (!E || E.cumplido || E.historia) return null;
   const { dia, parte } = g.tiempo;
   // (La madrugada ya es del día siguiente: ver systems/tiempo.js.)
   const esLaNoche = (dia === E.vence && parte === 2) || (dia === E.vence + 1 && parte === 3);
@@ -481,7 +555,9 @@ export function revisarEncargo(g) {
 }
 
 /** Si el encargo de J.Mc. sigue abierto (para esconder el maletín en el tren de carga). */
-export function encargoAbierto(g) {
+export function encargoAbierto(g, tren = null) {
+  // (📖 Con la historia, el maletín va sólo en el tren de su encargo: ver systems/historia.js.)
+  if (historiaActiva()) return !!g.campamento && maletinAbierto(g, tren);
   const E = g.campamento && g.campamento.encargo;
   return !!(E && !E.cumplido);
 }
@@ -528,12 +604,14 @@ export function elegir(g, pendiente, opcionId) {
   const op = opcionesDe(pendiente.id, g).find((o) => o.id === opcionId);
   // (Los que se repiten no quedan como vistos; el reparto anota cuándo fue.)
   if (!MOMENTOS[pendiente.id].repite) C.vistos.push(pendiente.id);
+  // 📖 (Cada escena de la historia que pasó es un hecho: "2 días después de ¿Por qué él manda?".)
+  if (ESCENAS[pendiente.id]) anotarHecho(g, pendiente.id);
   // (El médico: unos días menos de herida.)
   if (op.cura && g.banda[pendiente.quien]) g.banda[pendiente.quien].herido = Math.max(0, g.banda[pendiente.quien].herido - op.cura);
   const dinero = Math.min(op.dinero || 0, g.money);
   g.money -= dinero;
   if (op.marca) C.marcas[op.marca] = true;
-  if (pendiente.id === 'encargo') C.encargo = { vence: g.tiempo.dia + ENCARGO.dias, fallos: 0 };
+  if (pendiente.id === 'encargo') C.encargo = historiaActiva() ? { historia: true } : { vence: g.tiempo.dia + ENCARGO.dias, fallos: 0 };
   if (op.encargo) resolverEncargo(g, op.encargo);
   // 🤕 (Al ayudar al forastero se sortea qué era, y se sabe recién después del asalto que sigue.)
   if (op.marca === 'forasteroAyudado') C.marcas.forastero = Math.random() < 0.5 ? 'agradecido' : 'soplon';
@@ -570,5 +648,7 @@ export function elegir(g, pendiente, opcionId) {
   // 🔥 (Lo que hace la opción al elegirla, y lo que se cuenta en vez del resultado de siempre: la fogata.)
   let texto = null;
   if (op.alElegir) { const x = op.alElegir(g) || {}; texto = x.texto || null; anotes.push(...(x.anotes || [])); }
+  // 📖 (Lo que sigue enseguida: "esa noche, junto a la carpa, otra carta", lo que le cuentas a Tommy del veterano.)
+  if (ESCENAS[pendiente.id]) revisarHistoria(g);
   return { cambios, humores, anotes, dinero, rumor, texto };
 }

@@ -281,6 +281,19 @@ const dibujar = (ctx, cv, x, y, alfa) => {
   ctx.drawImage(cv, sx, sy, cv.width * PASO, cv.height * PASO);
 };
 
+/**
+ * 🌵 UN BUITRE SUELTO, para el campo (world/senales.js): el mismo dibujo, en (x, y) del mundo, volando hacia (dx, dy).
+ * Con `sombra`, su silueta oscura y transparente, para la tierra.
+ */
+export function dibujarUnBuitre(ctx, x, y, dx, dy, alfa = 1, sombra = false) {
+  const dir = ORDEN[((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8];
+  const prevS = ctx.imageSmoothingEnabled, prevA = ctx.globalAlpha;
+  ctx.imageSmoothingEnabled = false;
+  dibujar(ctx, lienzo(dir, sombra), x, y, sombra ? alfa * OSCURO : alfa);
+  ctx.globalAlpha = prevA;
+  ctx.imageSmoothingEnabled = prevS;
+}
+
 /** Las sombras ('ctx' con la cámara puesta; después del tren y del caballo, antes de los buitres). Sólo de día. */
 export function dibujarSombrasDeBuitres(ctx, { t, camX, camY, vistaW, vistaH, dia, franja }) {
   if (!dia) return;

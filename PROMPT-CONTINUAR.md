@@ -7,7 +7,46 @@ así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
 `NOTAS-DISENO.md` es grande (11.000 líneas): usá Grep para ir a la sección que
 necesites en vez de leerlo entero cada vez.
 
-## LO ÚLTIMO (2026-11-22): LA HISTORIA, Y LAS CADENAS ESCRITAS A MANO
+## LO ÚLTIMO (2026-11-25): EL CAMPO, SUS ANIMALES Y LA HISTORIA EN PAPELES
+
+- **El campo** *(Santi, 2026-11-24: "con tu caballo recorrés el lugar… como en la huida pero zoom"; "vamos con la
+  prueba chica")*: montar en el poste (`F`) ya no lleva al pueblo sino a cabalgar el desierto entero
+  (`src/scenes/campoScene.js`, números en `src/data/campo.js`, llave `CAMPO.activa`). Trote y galope con aguante, a pie
+  con `F`, `[M]` el mapa, el tiempo pasa mientras cabalgas, la granja de los Hale con la pista de los Rennick, las
+  huellas y su campamento escondido, entrar al pueblo y volver al campamento con `[E]`. Dibujo de prueba con figuras
+  básicas *(Santi)*.
+- **El plano** (`src/data/plano.js`): terreno y vías pensados juntos "visto desde un ingeniero"; líneas de ida y
+  vuelta, cada una con a quién lleva; el mapa de papel (`data/region.js`) y el campo salen de ahí. Relieve (mesetas,
+  cerros, ríos, caminos de carreta: `world/campoRelieve.js`), vías a la medida del galope (`world/campoVias.js`), la
+  lupa en dos tamaños y los bordes con mojones.
+- **El campo con vida, etapas 1 a 3 de 6** (plan aprobado el 2026-11-24): 1) el suelo en manchones con la textura que
+  eligió; 2) las señales de lejos (humo, fogata, remolinos, buitres: `world/senales.js`); 3) la caza
+  (`world/fauna.js`): liebres, berrendos (el más rápido; cuernos de trofeo), venados, coyotes que molestan, zorro rojo
+  de noche y la tropilla de guanacos; carnear con `[E]`, la carne a la despensa y los cueros al almacén. ⏭️ Faltan 4)
+  carretas y jinetes, 5) campamentos de paso y viaje rápido, 6) la ley que patrulla según la recompensa.
+- **El venado y el berrendo dibujados** (camino B: 3D de Blender pasado a puntos y retocado;
+  `src/assets/venadoPuntos.js`, `src/assets/berrendoPuntos.js`, `src/entities/estiloNuevo/venado.js` y `berrendo.js`;
+  llave `CAMPO.caza.dibujoNuevo`). Dos tamaños; quieto, pastando y muerto de costado, caminar y galopar en 4 vistas
+  *(Santi)*. Retocado: cabezas, cuernos exagerados del berrendo *(Santi: "más exagerados")*, el muerto simple *(Santi:
+  "Figura más simple y sencilla")* y, en el berrendo, **un solo cuerpo en todos los cuadros** *(Santi: "eso es una
+  obviedad lo de cuerpo fijo")*. ⏸️ **El pulido queda para cuando se complete el juego** *(Santi, 2026-11-25: "ahí
+  recién pulimos bien los dibujos")*: las patas a mano de cada cuadro (el galope recogido son manchas), las vistas
+  norte y sur sin retocar, el venado sin cuerpo fijo, y en `berrendo.py` las franjas del cuello cuelgan del torso.
+- **La historia en marcha** (2026-11-22 y 23): el motor de cadenas (`src/systems/historia.js`; escenas en
+  `data/escenas.js`, números y encargos en `data/historia.js`, textos en `text/historia.js`), **todo por días y no por
+  asaltos** *(Santi: "Nadie sabe cuántos asaltos va a durar la región o el juego")*; los papeles que se ven como papeles
+  (carta, nota, diario, cartel: `engine/papeles.js`, con letras de mano en `assets/letras/`); las escenas partidas en
+  pasos con la cara de quien habla (`systems/pasos.js`); la primera página del libro de James con `[L]` (la barra de
+  la fama del Cuervo: `scenes/libro.js`); los sellos de las habilidades en la ficha (`data/sellos.js`); y el simulador
+  de la fama (`simulador/fama.js`), con el que Santi eligió Cole con fama 300 o recompensa $900.
+
+⚠️ **Sin jugar de punta a punta.** El campo es una prueba para saber si cabalgar es divertido antes de llenarlo; el
+venado y el berrendo no se vieron todavía andando en el juego.
+
+⏭️ **Sigue**: que Santi cabalgue el campo y diga si es divertido; después, la etapa 4 del campo con vida (carretas
+y jinetes). Los dibujos se pulen al final.
+
+## ANTES (2026-11-22): LA HISTORIA, Y LAS CADENAS ESCRITAS A MANO
 
 Antes de tocar nada de la historia, leé **`PERSONAJES.md`**: los personajes como para una novela (John, James, su
 padre, Santiago, Frank, Tommy, los de afuera y los cuatro pueblos). Manda sobre lo que diga cualquier otra página.

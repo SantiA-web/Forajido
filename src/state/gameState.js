@@ -16,6 +16,7 @@ import { bandaInicial } from '../data/banda.js';
 import { tiempoInicial } from '../systems/tiempo.js';
 import { campamentoInicial } from '../data/momentos.js';
 import { famaDelGolpe } from '../systems/tratosEnJuego.js';
+import { historiaActiva, famaDelGolpeNueva, subirFama } from '../systems/historia.js';
 
 export const SAVE_VERSION = 1;
 
@@ -243,11 +244,24 @@ export function applyRaidResult(summary) {
 
   // 🤝 LA FAMA (TRATOS.md): un golpe que sale en el diario o una racha limpia hacen que se hable de ti.
   summary.famaGolpe = famaDelGolpe(gameState, summary);
+  /**
+   * 📣 LA FAMA DEL CUERVO (data/historia.js, `fama`; 2026-11-23): con la historia, además, el golpe que salió bien, el
+   * grande, los guardias y los civiles. Y la recompensa sube con la mitad de toda la fama del golpe *(Santi: "La
+   * recompensa debería subir con la fama")*: va en `bountyGain`, para que los resultados la muestren junta. (Lo de
+   * `famaDelGolpe` ya estaba sumado: se saca y se vuelve a sumar todo junto, para que cuente el día que subió.)
+   */
+  let recompensaDeLaFama = 0;
+  if (historiaActiva() && !summary.prueba) {
+    const toda = summary.famaGolpe + famaDelGolpeNueva(summary);
+    gameState.fame -= summary.famaGolpe;
+    recompensaDeLaFama = subirFama(gameState, toda, { conRecompensa: false });
+    summary.famaGolpe = toda;
+  }
 
   // Se guarda en el summary (no sólo en gameState.bounty) para que la
   // pantalla de resultados pueda mostrar cuánto subió ESTE asalto sin
   // duplicar la fórmula.
-  summary.bountyGain = numero(bountyDelta(summary), 'la recompensa del asalto');
+  summary.bountyGain = numero(bountyDelta(summary), 'la recompensa del asalto') + recompensaDeLaFama;
   gameState.bounty += summary.bountyGain;
 
   // Mismo patrón que `bountyGain`: se guarda en el summary para que la

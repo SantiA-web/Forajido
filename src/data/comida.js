@@ -20,7 +20,8 @@ export const COMIDA = {
    * LA REGIÓN, por los golpes que llevas (el juego todavía no tiene los tramos del viaje; los mismos cortes que el
    * simulador): el desierto hasta el golpe 8, la pradera desde el 9, el bosque desde el 17 y la montaña desde el 25.
    */
-  regionDesde: { pradera: 9, bosque: 17, montana: 25 },
+  // (📖 🔁 Los golpes de cada región, de Santi *(2026-11-22)*: desierto 14, pradera 9, bosque 12, montaña 6. Antes, 8 cada una.)
+  regionDesde: { pradera: 15, bosque: 24, montana: 36 },
 
   /** James también come *(Santi: "si es 8 por cabeza y son 4 por qué dice pagar 15?")*. */
   james: true,

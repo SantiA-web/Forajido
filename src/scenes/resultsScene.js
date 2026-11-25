@@ -46,7 +46,10 @@ export function createResultsScene(services) {
         // que tenía… los NPC no tienen en cuenta el dinero que me lleve, sino el dinero con el que llegué en la huida")*.
         botin: summary.outcome === 'escaped' ? summary.money || 0 : 0, recien: true,
         civiles: summary.civilians || 0, heridos: summary.heridos || [], caballoTarde: summary.caballoTarde || null,
+        // 📖 (Lo que llevaba ese tren para la historia: ver systems/historia.js.)
+        historia: (gameState.trenDelGolpe && gameState.trenDelGolpe.historia) || [],
       };
+      delete gameState.trenDelGolpe;
       completarBanda(gameState.banda);
       // 🙂 Lo que vivió la banda en el asalto, y el puesto de cada uno cuenta como un uso de su habilidad.
       despuesDelAsalto(gameState, summary);
@@ -195,6 +198,8 @@ function buildPanel(s) {
     row(T.results.boarded, String(s.boardedAt)),
     row(T.results.deepest, String(s.deepest)),
     row(T.results.total, `$${gameState.money}`, true),
+    // 📣 (La fama del Cuervo que dio este golpe: data/historia.js, `fama`.)
+    s.famaGolpe > 0 ? row(T.results.famaCuervo, `+${s.famaGolpe}`, true) : '',
     s.bountyGain > 0 ? row(T.results.bounty, `+$${s.bountyGain}`, false, true) : '',
     /**
      * El premio del cazarrecompensas va DESPUÉS de lo que subió y ANTES del

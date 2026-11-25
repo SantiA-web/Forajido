@@ -2505,6 +2505,78 @@ export function lienzoJinete({ vista = 'lado', cuadro, mochila, fino, mascara, s
 }
 export { bordeSilla };
 
+/**
+ * 🆕 VOS APUNTANDO MONTADO, EN GRANDE (el campo, de cerca) *(Santi eligió la A: armarlo como el jinete de la ley que
+ * apunta montado)*. No es dibujo nuevo: son piezas que ya están a mano. Las piernas montadas de la vista del caballo y,
+ * de la cintura para arriba, tus brazos con tu arma del tren (el Colt, el Schofield, el Winchester o la escopeta).
+ * De perfil, apuntando muy arriba o muy abajo, el torso se da vuelta en la silla: de espaldas (arriba) o de frente
+ * (abajo), con las piernas que siguen de costado, igual que el de la ley. Las riendas quedan sueltas sobre la silla.
+ * `ang`: hacia dónde apunta en el dibujo (ya dado vuelta si el caballo va al oeste). `empuna`: 0 a 1.
+ */
+const GIRA_MONTADO = Math.PI * 3 / 8 - 0.01;
+/** Qué torso de a pie mira a cada una de las 8 direcciones (0 al este, de a 45° en el sentido del reloj), y si va dado vuelta. */
+const TORSO_HACIA = [['lado', false], ['diagF', false], ['frente', false], ['diagF', true], ['lado', true], ['diagE', true], ['espalda', false], ['diagE', false]];
+/** Un cuadro dado vuelta de izquierda a derecha, como el de a pie cuando mira al oeste (el eje en el pie, PIES[0]). */
+function espejarCuadro(q) {
+  const eje = 2 * PIES[0] - 1;
+  const idx = new Int16Array(ANCHO * ALTO).fill(-1), duenio = new Uint8Array(ANCHO * ALTO);
+  for (let y = 0; y < ALTO; y++) for (let x = 0; x < ANCHO; x++) {
+    const k = y * ANCHO + x, nx = eje - x;
+    if (q.idx[k] < 0 || nx < 0 || nx >= ANCHO) continue;
+    idx[y * ANCHO + nx] = q.idx[k]; duenio[y * ANCHO + nx] = q.duenio[k];
+  }
+  const espejaFinos = (p) => { if (!p) return p; const r = p.slice(); for (let i = 0; i < r.length; i += 2) r[i] = 3 * (eje + 1) - 1 - r[i]; return r; };
+  return { ...q, idx, duenio, boca: q.boca && [eje - q.boca[0], q.boca[1]], hombro: q.hombro && [eje - q.hombro[0], q.hombro[1]], finos: espejaFinos(q.finos) };
+}
+const apuntando = new Map();
+export function lienzoJineteApunta({ vista = 'lado', cuadro = null, arma = 'colt', ang = 0, empuna = 1, fino = false, mascara = false }, luz = 0, destello = false) {
+  const clave = [vista, cuadro ?? 'Q', arma, Math.round(ang * 100), empuna, fino ? 1 : 0, mascara ? 1 : 0, luz, destello ? 1 : 0].join('|');
+  let g = apuntando.get(clave);
+  if (g) return g;
+  if (apuntando.size > 600) apuntando.clear();
+  const M = montado(vista, cuadro, { silla: true });
+  /**
+   * 🔁 EL TORSO GIRA HACIA DONDE APUNTÁS, EN TODAS LAS VISTAS *(Santi: "cuando el caballo mira hacia el norte el jugador
+   * solo mueve el brazo al apuntar, pésimo, debería mover el torso"; y de costado, "no mueve su torso cuando apunta
+   * hacia atrás, tampoco la mano")*. De la cintura para arriba va el torso de a pie del tren que mira a ese lado (las
+   * mismas 8 direcciones y los mismos dibujos de cuando caminás), y las piernas quedan montadas en la vista del caballo.
+   * Si el torso mira para el mismo lado que el caballo, va el dibujo montado entero. De perfil, hasta 67° arriba o abajo
+   * sigue de costado (como antes): ahí el brazo solo alcanza.
+   */
+  const s = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8;
+  let [haciaVista, espejo] = TORSO_HACIA[s];
+  if (vista === 'lado' && Math.abs(ang) < GIRA_MONTADO) { haciaVista = 'lado'; espejo = false; }
+  const girado = empuna >= 0.5 && (haciaVista !== vista || espejo) ? haciaVista : null;
+  let q;
+  if (girado) {
+    const angTorso = espejo ? Math.atan2(Math.sin(Math.PI - ang), Math.cos(Math.PI - ang)) : ang;
+    const derecho = cuadroJugador({ vista: girado, piernas: 'M0', arma, ang: angTorso, empuna, fino, mascara });
+    const torso = espejo ? espejarCuadro(derecho) : derecho;
+    const patas = cuadroJugador({ vista, piernas: M.piernas, ang: 0, brazos: M.brazos, fino, mascara });
+    q = { ...torso, idx: new Int16Array(ANCHO * ALTO).fill(-1), duenio: new Uint8Array(ANCHO * ALTO) };
+    for (let k = 0; k < ANCHO * ALTO; k++) {
+      if (patas.idx[k] >= 0 && patas.duenio[k] === PARTE.piernas) { q.idx[k] = patas.idx[k]; q.duenio[k] = PARTE.piernas; }
+      if (torso.idx[k] >= 0 && torso.duenio[k] !== PARTE.piernas) { q.idx[k] = torso.idx[k]; q.duenio[k] = torso.duenio[k]; }
+    }
+  } else {
+    q = cuadroJugador({ vista, piernas: M.piernas, arma, ang, empuna, fino, mascara });
+    q = { ...q, idx: Int16Array.from(q.idx), duenio: Uint8Array.from(q.duenio) };
+  }
+  // La silla (con la funda vacía), debajo de todo lo que ya está dibujado.
+  for (const [x, y, c] of puntosDeSilla(vista, { vacia: true })) {
+    const k = y * ANCHO + x;
+    if (x < 0 || y < 0 || x >= ANCHO || y >= ALTO || q.idx[k] >= 0) continue;
+    q.idx[k] = c; q.duenio[k] = PARTE.silla;
+  }
+  const indices = destello ? q.idx.map((i) => (i > 0 ? sombrear(i, 4) : i)) : q.idx;
+  const cv = lienzoDeIndices(indices, ANCHO, ALTO, luz);
+  const borde = [...(bordeBrazos(q) || []), ...(bordeSilla(q) || [])];
+  g = { img: cv, mano: RIENDAS_SUELTAS[vista], boca: q.boca || null, hacia: girado === 'frente' || girado === 'espalda' ? girado : null,
+    finos: [...(q.finos ? [{ color: sombrear(CUERVO.color, luz), puntos: q.finos }] : []), ...(borde.length ? [{ color: 0, puntos: borde }] : [])] };
+  apuntando.set(clave, g);
+  return g;
+}
+
 export function lienzoJugador(o, luz = 0, destello = false) {
   const clave = [o.vista, o.piernas, o.arma || '', Math.round(o.ang * 100), o.mochila || 0, luz, destello ? 1 : 0, o.fino ? 1 : 0, o.golpe ?? '', o.empuna ?? 1, o.tajo ?? '', o.vaina ? 1 : 0, o.mascara ? 1 : 0, o.aturdido ?? '', o.brazos ? (o.brazos.props ? 2 : 1) : 0, o.colores ? JSON.stringify(o.colores) : ''].join('|');
   let g = guardados.get(clave);

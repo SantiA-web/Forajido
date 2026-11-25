@@ -268,8 +268,9 @@ let lienzoAire = null;
 /**
  * Pinta la nube de todos los copos juntos. `copos`: [{ x, y, r, s }] (centro en el mundo, radio, espesor de 0 a 1);
  * `celda`: el punto de la grilla en unidades del mundo (el del dibujo cercano o el doble, el del chico).
+ * 🌵 `colores` { L, D, S }: los de la luz, el medio y la sombra (el humo del campo, world/senales.js, la pinta gris).
  */
-export function dibujarNubeDeAire(ctx, copos, noche, celda) {
+export function dibujarNubeDeAire(ctx, copos, noche, celda, colores = COLOR_AIRE) {
   if (!copos.length) return;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const c of copos) {
@@ -312,7 +313,7 @@ export function dibujarNubeDeAire(ctx, copos, noche, celda) {
     // pelota, la cuenta de cerca hacía estrellas de luz adentro.)
     const P = 3, gx = v(i + P, j) - v(i - P, j), gy = v(i, j + P) - v(i, j - P);
     const hacia = -gx + gy, largo = Math.hypot(gx, gy);
-    indices[j * W + i] = largo > 0.12 && hacia > 0.5 * largo ? COLOR_AIRE.L : largo > 0.12 && hacia < -0.5 * largo ? COLOR_AIRE.S : COLOR_AIRE.D;
+    indices[j * W + i] = largo > 0.12 && hacia > 0.5 * largo ? colores.L : largo > 0.12 && hacia < -0.5 * largo ? colores.S : colores.D;
   }
   if (!lienzoAire) lienzoAire = document.createElement('canvas');
   if (lienzoAire.width !== W || lienzoAire.height !== H) { lienzoAire.width = W; lienzoAire.height = H; }

@@ -32,6 +32,8 @@ import { CONFIG } from '../data/config.js';
 import { REGION } from '../data/region.js';
 // 🚂 Los trenes ya no los arma el mapa: vienen del horario.
 import { completarHorario, conocidos, viajeDe, faltaPara, llegas, sacarDelHorario, dondeLoEsperas, esperarEnVia, ahora } from '../systems/horario.js';
+import { etiquetaDelTren } from '../systems/historia.js';
+import { TH } from '../text/historia.js';
 import { fechaDe } from '../systems/tiempo.js';
 import { encargoAbierto, tieneMaletin } from '../data/momentos.js';
 import { T } from '../text/es.js';
@@ -383,6 +385,8 @@ export function createMapScene(services) {
     pasar(gameState, faltaPara(gameState, tren));
     gameState.viajeDeVuelta = viajeDe(tren.ruta);
     sacarDelHorario(gameState, tren.id);
+    // 📖 (Lo que lleva ese tren para la historia: el encargo, la paga. Se lee en el asalto y al volver.)
+    gameState.trenDelGolpe = { historia: tren.historia || [] };
     const ruta = rutas.find((r) => r.id === tren.ruta);
     scenes.goTo('ride', {
       composicion: tren.composicion,
@@ -542,6 +546,7 @@ export function createMapScene(services) {
       switch (t.tipo) {
         case 'sierra':   dibujarSierra(r, t.puntos); break;
         case 'rio':      dibujarRio(r, t.puntos); break;
+        case 'arroyo':   dibujarArroyo(r, t.puntos); break;
         case 'meseta':   dibujarMeseta(r, t); break;
         case 'cactus':   dibujarCactus(r, t.x, t.y); break;
         case 'dunas':    dibujarDunas(r, t.x, t.y); break;
@@ -563,6 +568,18 @@ export function createMapScene(services) {
     for (let i = 0; i < puntos.length - 1; i++) {
       r.line(puntos[i][0], puntos[i][1], puntos[i + 1][0], puntos[i + 1][1], colors.mapaRio);
       r.line(puntos[i][0] + 1, puntos[i][1], puntos[i + 1][0] + 1, puntos[i + 1][1], colors.mapaRio);
+    }
+  }
+
+  /** Un arroyo seco: línea cortada en tinta suave. */
+  function dibujarArroyo(r, puntos) {
+    for (let i = 0; i < puntos.length - 1; i++) {
+      const [a, b] = puntos[i], [c, d] = puntos[i + 1];
+      const largo = Math.max(1, Math.ceil(Math.hypot(c - a, d - b) / 3));
+      for (let k = 0; k < largo; k += 2) {
+        const u = k / largo, v = (k + 1) / largo;
+        r.line(a + (c - a) * u, b + (d - b) * u, a + (c - a) * v, b + (d - b) * v, colors.mapaTintaSuave);
+      }
     }
   }
 
@@ -788,7 +805,7 @@ export function createMapScene(services) {
       // 🕵️ (Uno que fue a mirar alguien de la banda: arriba, lo que te contó. El básico, el vagón especial; el completo,
       // la escolta, la caja más gorda y el vagón del maletín, si J.Mc. lo espera.)
       const t = trenEncima, completo = t.visto === 'completo';
-      const lleva = t.maletinEn && encargoAbierto(gameState) && !tieneMaletin(gameState);
+      const lleva = t.maletinEn && encargoAbierto(gameState, t) && !tieneMaletin(gameState);
       const texto = completo
         ? Tm.escolta(t.dificultad.short) + (t.cajaGordaEn ? Tm.cajaEn(t.cajaGordaEn) : '') + (lleva ? Tm.maletinEn(t.maletinEn) : '')
         : (Tm.especial[t.especial] || '') + (lleva ? Tm.conMaletin : '');
@@ -809,6 +826,8 @@ export function createMapScene(services) {
       // ya no llegás, sólo "RUMOR": con "NO LLEGAS" no entra en el renglón, y ya no importa.)
       const rumor = llega && t.de && Tm.rumorDe[t.de] ? Tm.rumorDe[t.de](RUMORES[t.de]) : Tm.rumor;
       const texto = `${cuando} · ${t.tipoTren.short}` + (t.sabes === 'rumor' ? ' · ' + (t.visto ? Tm.cierto : rumor) : t.visto ? ' · ' + Tm.visto : '')
+        // (📖 El tren de un encargo, o la paga: "J.MC.", "TOMMY", "PAGA". Ver text/historia.js.)
+        + (etiquetaDelTren(gameState, t) ? ' · ' + TH.mapa[etiquetaDelTren(gameState, t)] : '')
         + (llega ? '' : ' · ' + Tm.noLlegas);
       const color = t === trenEncima ? (vivo ? selloActual() : tintaFuerte())
         : !llega ? suave

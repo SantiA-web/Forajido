@@ -45,10 +45,11 @@ import { TIEMPO } from '../data/tiempo.js';
  *    3 a 6 para elegir — ver la nota en NOTAS-DISENO).
  *  - `dias`: cuántos días adelante está armado.
  *  - `viaje`: lo que cuesta llegar a una vía, en partes del día, según lo lejos que pase del campamento (en unidades
- *    del mapa): hasta `cerca`, 1; hasta `lejos`, 2; más, 3. Medido en el mapa de hoy: la del Desierto, la del Norte y
- *    la de la Mina quedan a 1; la de las Llanuras y la del Territorio, a 2; el Ramal del Río, a 3.
+ *    del mapa): hasta `cerca`, 1; hasta `lejos`, 2; más, 3. 🔁 Medido con el mapa del plano y el campamento al medio:
+ *    la troncal y la del Norte pasan a 27 (1 parte); el Ramal de San Cristóbal a 119 y el de la Viuda a 131 (los dos
+ *    salen de Piedra Roja: 2 partes). `lejos` subió de 120 a 140 para que esos dos queden iguales.
  */
-export const HORARIO = { porDia: 2, dias: 7, viaje: { cerca: 40, lejos: 120 } };
+export const HORARIO = { porDia: 2, dias: 7, viaje: { cerca: 40, lejos: 140 } };
 
 const rng = createRng();
 
@@ -102,9 +103,15 @@ export function dondeLoEsperas(rutaId) {
  * los paquetes y la caja oculta. (🔁 Es lo que hacía el mapa al dar la vuelta cada tren —`nuevoTipo`—, mudado acá sin
  * cambios: las razones de cada sorteo están en la historia de scenes/mapScene.js y en data/modifiers.js.)
  * `bounty` y `honor`: la recompensa y el honor de cuando se arma (deciden la redada y los tipos de guardia).
+ * 🔁 `via`: la vía por donde pasa. Cada línea tiene su chance de pasajeros (`pasajeros`, del plano) *(Santi: "No
+ * solo sirven para llevar algo, sino también personas")*: el ramal de la mina lleva casi sólo mineral; la troncal,
+ * más gente. Sin vía, como antes: mitad y mitad por los pesos de data/train.js.
  */
-export function armarTren(bounty = 0, honor = 0) {
-  const tren = { tipoTren: sortearTipoTren(rng) };
+export function armarTren(bounty = 0, honor = 0, via = null) {
+  const tipo = via && typeof via.pasajeros === 'number'
+    ? (rng.chance(via.pasajeros) ? TRAIN_TYPES.pasajeros : TRAIN_TYPES.carga)
+    : sortearTipoTren(rng);
+  const tren = { tipoTren: tipo };
   tren.composicion = sortearComposicion(rng, tren.tipoTren);
   // 🕵️ (En el de carga, en qué vagón va el maletín de J.Mc. si el encargo está abierto: se decide acá, y no al armar el
   // asalto, para que el espía lo pueda ver. El número es el del vagón contando desde atrás, como en los papeles.)
@@ -157,7 +164,7 @@ function armarDia(g, dia) {
   for (let n = 0; n < HORARIO.porDia && vias.length; n++) {
     const via = vias.splice(rng.int(0, vias.length - 1), 1)[0];
     const parte = rng.int(0, TIEMPO.partes.length - 1);
-    const tren = { id: siguienteId++, dia, parte, ruta: via.id, ...armarTren(g.bounty || 0, g.honor || 0) };
+    const tren = { id: siguienteId++, dia, parte, ruta: via.id, ...armarTren(g.bounty || 0, g.honor || 0, via) };
     // 🗞️ (Los de pasajeros están en el horario publicado; los de carga, no.)
     tren.sabes = tren.tipoTren.id === 'carga' ? null : 'horario';
     out.push(tren);
@@ -191,7 +198,8 @@ export function completarHorario(g) {
   if (!g.horario) g.horario = { hasta: t.dia - 1, trenes: [] };
   const H = g.horario;
   const ya = ahora(g);
-  H.trenes = H.trenes.filter((tr) => sigue(tr, ya));
+  // 🔁 (Y los de una vía que ya no existe: las partidas guardadas antes del plano tienen trenes en los circuitos viejos.)
+  H.trenes = H.trenes.filter((tr) => sigue(tr, ya) && VIAS.some((v) => v.id === tr.ruta));
   while (H.hasta < t.dia + HORARIO.dias) {
     H.hasta++;
     H.trenes.push(...armarDia(g, H.hasta).filter((tr) => sigue(tr, ya)));
@@ -254,6 +262,39 @@ export function rumorDeCarga(g, dias = 4, de = null) {
     && tr.dia <= hoy + dias && faltaPara(g, tr) >= viajeDe(tr.ruta));
   if (tren) { tren.sabes = 'rumor'; tren.de = de; }
   return tren || null;
+}
+
+/**
+ * 📖 MARCAR UN TREN PARA LA HISTORIA (systems/historia.js): el primer tren de ese tipo, sin otra marca, desde `desde`
+ * días adelante y al que llegas con tiempo. Si no hay ninguno en el horario, se arma uno. Queda en `tren.historia`
+ * (la lista de marcas: un encargo, la paga) y, si se dice, cómo lo sabes (`sabes`, `de`). Devuelve el tren.
+ * 📅 `exacto`: ese mismo día y no otro ("4 días después", "el mismo día que el del veterano"); si no hay uno, se arma.
+ */
+export function marcarTren(g, marca, tipoId, { sabes = null, de = null, desde = 1, exacto = false } = {}) {
+  const hoy = completarTiempo(g).dia;
+  const libre = (tr) => !tr.falso && !(tr.historia && tr.historia.length) && tr.tipoTren.id === tipoId
+    && (exacto ? tr.dia === hoy + desde : tr.dia >= hoy + desde) && faltaPara(g, tr) >= viajeDe(tr.ruta) + 2;
+  let tren = completarHorario(g).find(libre);
+  if (!tren) {
+    let armado = null, via = null;
+    for (let i = 0; i < 60 && !armado; i++) {
+      via = rng.pick(VIAS);
+      const x = armarTren(g.bounty || 0, g.honor || 0, via);
+      if (x.tipoTren.id === tipoId) armado = x;
+    }
+    if (!armado) return null;
+    tren = { id: siguienteId++, dia: hoy + desde + (exacto ? 0 : 1), parte: rng.int(0, TIEMPO.partes.length - 1), ruta: via.id, ...armado, sabes: null };
+    g.horario.trenes.push(tren);
+    completarHorario(g);
+  }
+  tren.historia = [...(tren.historia || []), marca];
+  if (sabes === 'horario' || (sabes && !tren.sabes)) { tren.sabes = sabes; tren.de = de; }
+  return tren;
+}
+
+/** 📖 El tren que lleva esa marca, o null (si ya pasó o lo asaltaste, ya no está). */
+export function trenConMarca(g, marca) {
+  return completarHorario(g).find((tr) => (tr.historia || []).includes(marca)) || null;
 }
 
 /** 🗞️ UN RUMOR QUE NO ES NADA: un tren de carga que no existe, en una vía cualquiera, de 1 a 3 días adelante. */

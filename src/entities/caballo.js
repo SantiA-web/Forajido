@@ -247,7 +247,8 @@ export function dibujarAnimal(r, x, y, zancada, trote, esfuerzo, pose = 0, pelaj
   const ox = pegar(x - m.centro * PASO * achata, pantalla?.a, pantalla?.e);
   const oy = pegar((y + 7) - m.suelo * PASO, pantalla?.d, pantalla?.f);
   // Si un punto del dibujo no llega a 2 píxeles (el zoom del galope, de lejos), va el dibujo chico.
-  const chico = enPuntos && escala === 1 && pantalla.a * P < 2;
+  // (🐛 Con `Math.abs`: dado vuelta para el oeste la escala es negativa, y salía siempre el chico.)
+  const chico = enPuntos && escala === 1 && Math.abs(pantalla.a) * P < 2;
   const lienzo = enPuntos
     ? lienzoCaballo({ fila, cuadro: zancada ? col : null, grande: escala > 1, chico, pelaje: pelaje || 'criollo' }, noche ? -2 : 0)
     : null;
@@ -638,7 +639,12 @@ function jineteDeCostado(r, montura, ropa) {
     else dibujarCabezada(r, montura);
     return persona;
   }
-  const persona = jineteNuevo(r, { x: ox + col * P, y: oy + fila * P, cuadro: montura.cuadro, luz, destello: ropa.destello, vista, gente });
+  // 🆕 Vos apuntando de cerca (el campo): tus brazos con tu arma, las piernas montadas (ver lienzoJineteApunta).
+  // (Sin el tope de la ley: vos te das vuelta en la silla hacia cualquier lado.)
+  const yoApunta = !gente && ropa.empuna > 0 ? { arma: ropa.armaNueva || 'colt', empuna: Math.round(Math.min(1, ropa.empuna) * 4) / 4, ang: Math.round((ropa.ang || 0) / (Math.PI / 8)) * (Math.PI / 8) } : null;
+  // (El Colt y el Schofield doblan el codo en 3 pasos; las largas, en 4.)
+  if (yoApunta && (yoApunta.arma === 'colt' || yoApunta.arma === 'smith')) yoApunta.empuna = Math.round(yoApunta.empuna * 2) / 2;
+  const persona = jineteNuevo(r, { x: ox + col * P, y: oy + fila * P, cuadro: montura.cuadro, luz, destello: ropa.destello, vista, gente, apunta: yoApunta });
   dibujarCabezada(r, montura, [persona.mano[0] + col, persona.mano[1] + fila]);
   return persona;
 }
@@ -653,7 +659,9 @@ export function dibujarJinete(r, x, asiento, pose = 0, inclina = 0, ropa = {}, m
   const yoTirandoChico = quien === 'jugador' && ropa.arma && montura && montura.chico && ropa.apuntaChico != null;
   // 🆕 Y el de la ley chico apuntando con el rifle (la huida), también con `apuntaChico`.
   const leyApuntaChico = deRifle && montura && montura.chico && ropa.apuntaChico != null;
-  if (estiloNuevo.activo && r.ctx && !r.plano && montura && montura.origen && hayJineteNuevo(montura) && ((quien === 'jugador' && !ropa.arma) || yoTirandoChico || leyApuntaChico || leyEnfundado)) return jineteDeCostado(r, montura, ropa);
+  // 🆕 Y vos apuntando en grande (el campo, de cerca), con `empuna`.
+  const yoApuntaGrande = quien === 'jugador' && ropa.arma && montura && !montura.chico && ropa.empuna > 0;
+  if (estiloNuevo.activo && r.ctx && !r.plano && montura && montura.origen && hayJineteNuevo(montura) && ((quien === 'jugador' && !ropa.arma) || yoTirandoChico || yoApuntaGrande || leyApuntaChico || leyEnfundado)) return jineteDeCostado(r, montura, ropa);
   /**
    * 🔻 LA VISTA LA MANDA EL CABALLO *(Santi: "hay veces que el caballo no cambia
    * de dirección pero el personaje sí, entonces se ve raro")*. Antes el ángulo

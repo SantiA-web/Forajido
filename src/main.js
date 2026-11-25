@@ -25,6 +25,7 @@ import { createShopScene } from './scenes/shopScene.js';
 import { createRideScene } from './scenes/rideScene.js';
 import { createRaidScene } from './scenes/raidScene.js';
 import { createHuidaScene } from './scenes/huidaScene.js';
+import { createCampoScene } from './scenes/campoScene.js';
 import { createResultsScene } from './scenes/resultsScene.js';
 import { createPrisonScene } from './scenes/prisonScene.js';
 import { gameState, resetGame } from './state/gameState.js';
@@ -53,6 +54,7 @@ scenes.register('tienda', createShopScene(services));
 scenes.register('ride', createRideScene(services));
 scenes.register('raid', createRaidScene(services));
 scenes.register('huida', createHuidaScene(services));
+scenes.register('campo', createCampoScene(services));
 scenes.register('results', createResultsScene(services));
 scenes.register('prision', createPrisonScene(services));
 

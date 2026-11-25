@@ -59,14 +59,16 @@ foreach ($f in $archivos) {
 
   # LA MUSICA TAMBIEN VIAJA ADENTRO. Los .js que nombran un audio de
   # `src/assets/` se reescriben con el audio entero en base64: el archivo suelto
-  # tiene que sonar sin depender de ninguna carpeta al lado.
-  $codigo = [regex]::Replace($codigo, "(['""])src/assets/([^'""]+\.(mp3|m4a|ogg))\1", {
+  # tiene que sonar sin depender de ninguna carpeta al lado. (Y las letras de
+  # mano de las cartas, los .ttf de src/assets/letras, igual.)
+  $codigo = [regex]::Replace($codigo, "(['""])src/assets/([^'""]+\.(mp3|m4a|ogg|ttf))\1", {
     param($m)
     $ruta = Join-Path $src ('assets/' + $m.Groups[2].Value)
     if (-not (Test-Path $ruta)) { return $m.Value }
     $tipo = switch ($m.Groups[3].Value) {
       'm4a' { 'audio/mp4' }
       'ogg' { 'audio/ogg' }
+      'ttf' { 'font/ttf' }
       default { 'audio/mpeg' }
     }
     $bytes = [System.IO.File]::ReadAllBytes($ruta)

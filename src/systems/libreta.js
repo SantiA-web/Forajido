@@ -16,6 +16,9 @@
 import { LIBRETA, LEALTAD5, NO_QUIERE, REPARTO, OLLA, JMC } from '../data/libreta.js';
 import { marcaFuerte, fuerza, contradecir } from './animo.js';
 import { COMIDA } from '../data/comida.js';
+// (De la historia, sólo los números: importar systems/historia.js de acá arma un círculo —banda → libreta → historia →
+// horario → tiempo → … → fogata → banda— y el juego no arranca.)
+import { HISTORIA } from '../data/historia.js';
 
 /** El humor de 1 a 100 que corresponde a cada ánimo (cae justo en la palabra de `HUMOR.palabras`). */
 const HUMOR_DE = { conGanas: 80, tranquilo: 57, deMalas: 32, furioso: 10 };
@@ -289,8 +292,17 @@ export function deudaConJmc(g) {
 /** Lo que se va a llevar después del reparto si te quedan `queda`: `{ lleva, debe }` (debe: lo que faltaría). */
 export function cuotaDeJmc(g, queda) {
   if (!jmcCobra(g)) return { lleva: 0, debe: 0 };
-  const lleva = Math.max(0, Math.min(JMC.porGolpe, queda));
-  return { lleva, debe: JMC.porGolpe - lleva };
+  const cuota = cuotaJmc(g);
+  const lleva = Math.max(0, Math.min(cuota, queda));
+  return { lleva, debe: cuota - lleva };
+}
+
+/** ✉️ Lo que cobra por golpe: lo de siempre, o más si desconfía porque el Cuervo no suena (data/historia.js, `jmc`). */
+export function cuotaJmc(g) {
+  // (Lo mismo que `jmcDesconfiaDeLaFama` en systems/historia.js: la cuenta en la etapa 2.)
+  const H = g.campamento && g.campamento.historia;
+  const desconfia = HISTORIA.activa && !!(H && H.cuenta && H.cuenta.etapa === 2);
+  return desconfia ? HISTORIA.jmc.cuotaDesconfia : JMC.porGolpe;
 }
 
 /** ✉️ SE LLEVA SU CUOTA del golpe (después del reparto). Devuelve `{ lleva, debe, deuda }`, o null si no cobra. */

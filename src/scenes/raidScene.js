@@ -337,7 +337,7 @@ export function createRaidScene(services) {
         paquetes: params.paquetes || [],
         cajaOculta: !!params.cajaOculta,
         // (✉️ Mientras el encargo de J.Mc. está abierto y no lo tienes ya, el de carga esconde el maletín.)
-        maletin: !!gameState.campamento && encargoAbierto(gameState) && !tieneMaletin(gameState),
+        maletin: !!gameState.campamento && encargoAbierto(gameState, gameState.trenDelGolpe || { historia: [] }) && !tieneMaletin(gameState),
         maletinEn: params.maletinEn ?? null,
         cajaGordaEn: params.cajaGordaEn ?? null,
         dia: !!gameState.esDeDia,
@@ -345,7 +345,7 @@ export function createRaidScene(services) {
       }
     );
     map = train.map;
-    maletinBuscado = !!gameState.campamento && encargoAbierto(gameState) && !tieneMaletin(gameState) && train.tipoTren && train.tipoTren.id === 'carga';
+    maletinBuscado = !!gameState.campamento && encargoAbierto(gameState, gameState.trenDelGolpe || { historia: [] }) && !tieneMaletin(gameState) && train.tipoTren && train.tipoTren.id === 'carga';
     player = train.player;
     /**
      * 🤝 EL COMPAÑERO SUBE CON VOS, un paso al lado *(Santi: "el compañero quiero que sea más importante, al punto de

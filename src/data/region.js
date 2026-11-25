@@ -9,305 +9,185 @@
  *     rayitas cruzadas). Es EL símbolo de ferrocarril en cualquier mapa de
  *     1880, y se reconoce sin que nadie lo explique. Una línea pelada sería
  *     un camino.
- *   - **Los trenes se mueven de verdad por el riel.** "Ver si hay un tren
- *     andando" no es un cartel que lo diga: es un puntito con humo avanzando
- *     por la línea. Un mapa donde algo se mueve es un mapa vivo; uno donde
- *     todo está quieto es una ilustración.
  *   - **Hay ramales sin servicio.** Si todas las líneas sirvieran siempre,
  *     el mapa sería una lista de botones dibujada bonita. Que uno esté
  *     muerto es lo que convierte mirar el mapa en leerlo.
  *
- * LAS VÍAS SON CIRCUITOS, NO IDAS Y VUELTAS. Un tren no llega a un punto y se
- * vuelve marcha atrás por donde vino: hace un CIRCUITO — sale de una estación,
- * para en unas cuantas, y termina volviendo a la misma de donde salió. Por eso
- * cada ruta circular tiene su `puntos` cerrado (el último punto es el primero),
- * su `terminal` (de dónde sale y a dónde vuelve) y sus `paradas`.
+ * 🔁 EL PAPEL SALE DEL PLANO (`data/plano.js`) *(Santi: "que sí quede coherente. Por ejemplo, por qué pasa por acá,
+ * por qué hace esta curva, visto desde un lado de un ingeniero")*. Antes este archivo tenía sus propias vías, que
+ * eran CIRCUITOS dibujados para que se vieran lindos; el campo se armó con el plano, con líneas de ida y vuelta, y
+ * las dos cosas tienen que ser el mismo mundo. Ahora acá sólo quedan los NOMBRES y de qué lado va cada uno: los
+ * lugares, las vías y el terreno se leen del plano y se pasan a símbolos de mapa viejo.
  *
- * Y ESO ES LO QUE MUEVE EL SORTEO. El tren no es algo que inventa el cursor
- * cuando mirás: es un objeto que da vueltas y va cambiando solo.
+ * Los trenes ya no dan vueltas por el papel: los trae el horario (`systems/horario.js`), y cada línea tiene su
+ * chance de pasajeros (`pasajeros`, del plano) *(Santi: "No solo sirven para llevar algo, sino también personas")*.
  *
- *   - Al completar la vuelta entera (vuelve a su terminal) → se sortea de
- *     nuevo QUÉ TIPO DE TREN es. Es otro tren: otra formación, otra carga.
- *   - Al pasar por una parada → se sortea de nuevo la DIFICULTAD. Puede subir,
- *     bajar o quedarse igual: en cada estación sube y baja escolta.
- *
- * Consecuencia buena, y sale sola de la geometría: **como todos los trenes
- * andan a la misma velocidad real, el tamaño del circuito decide cada cuánto
- * cambia el tren.** El circuito chico da la vuelta en ~25s y cambia de tipo
- * seguido; el grande tarda más de un minuto y es "el tren de esa línea"
- * durante toda tu visita. El tamaño dejó de ser decoración.
- *
- * MÁS LAS QUE VIENEN DE OTRA REGIÓN (`entraDesdeAfuera`). No son circuitos:
- * entran por el borde derecho del papel, cruzan y se pierden por otro lado.
- * Cuando se van, esa vía queda sin tren un rato hasta que aparece OTRO
- * (`esperaMin`/`esperaMax`), y ése viene con tipo y dificultad nuevos. Son la
- * costura con las regiones que todavía no existen, y de paso le enseñan al
- * mapa algo que ninguna otra vía puede: que a veces no hay nada que robar y
- * hay que esperar.
- *
- * Todo está en coordenadas de la vista: el mapa se ve entero, sin cámara. Un
- * mapa que hay que arrastrar para ver es un mapa que no se puede leer de un
- * vistazo, y de un vistazo es exactamente como hay que leerlo.
- *
- * LOS NÚMEROS DE ABAJO SON DE LA PANTALLA VIEJA (384×216), y se estiran en
- * proporción al final de este archivo (`estirarRegion`) a la de hoy. Se
- * dejaron escritos así a propósito: los trazados se afinaron MIRANDO el dibujo
- * en esa pantalla, y reescribirlos a mano en otra escala perdería ese ajuste.
+ * LOS NÚMEROS DEL PLANO SON DE LA PANTALLA VIEJA (384×216), y se estiran en
+ * proporción al final de este archivo (`estirarRegion`) a la de hoy.
  */
 
 import { CONFIG } from './config.js';
+import { PLANO } from './plano.js';
+
+/**
+ * LOS NOMBRES DE LOS LUGARES y de qué lado del símbolo va cada uno (`etiqueta`: izq, der, arriba o abajo). El lado
+ * NO es decoración: es el único donde no le pasa una vía por encima. Si se mueve una vía en el plano, hay que volver a
+ * mirar los nombres. (La granja y los Rennick no van en el papel: no son de la compañía ni del ferrocarril.)
+ */
+const NOMBRES = {
+  piedraroja:   { tipo: 'pueblo', nombre: 'PIEDRA ROJA',   etiqueta: 'arriba' },
+  pasodeloro:   { tipo: 'pueblo', nombre: 'PASO DEL ORO',  etiqueta: 'abajo' },
+  fuertebravo:  { tipo: 'pueblo', nombre: 'FUERTE BRAVO',  etiqueta: 'abajo' },
+  alamoseco:    { tipo: 'pueblo', nombre: 'ÁLAMO SECO',    etiqueta: 'abajo' },
+  sancristobal: { tipo: 'pueblo', nombre: 'SAN CRISTÓBAL', etiqueta: 'abajo' },
+  laviuda:      { tipo: 'mina',   nombre: 'MINA LA VIUDA', etiqueta: 'der' },
+  puestoseco:   { tipo: 'puesto', nombre: 'PUESTO SECO',   etiqueta: 'arriba' },
+};
+
+/** Los nombres de las vías en el papel (los del plano, en mayúsculas; el del norte, corto para que entre). */
+const NOMBRES_VIAS = {
+  troncal: 'LÍNEA DE LAS LLANURAS',
+  mina: 'RAMAL DE LA VIUDA',
+  norte: 'LÍNEA DEL NORTE',
+  sur: 'RAMAL DE SAN CRISTÓBAL',
+  vieja: 'LA VÍA VIEJA',
+};
+
+const MARCO = { x: 6, y: 6, w: 372, h: 204 };
+const lugarDelPlano = (id) => PLANO.lugares.find((l) => l.id === id);
+
+// --------------------------------------------------------------- las vías
+
+/** Lo más cerca de (x, y) que pasa la polilínea: `{ i, f, d }` (tramo, fracción del tramo, distancia). */
+function masCerca(puntos, x, y) {
+  let mejor = { i: 0, f: 0, d: Infinity };
+  for (let i = 0; i < puntos.length - 1; i++) {
+    const [ax, ay] = puntos[i], [bx, by] = puntos[i + 1];
+    const dx = bx - ax, dy = by - ay;
+    const f = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1)));
+    const d = Math.hypot(x - ax - dx * f, y - ay - dy * f);
+    if (d < mejor.d) mejor = { i, f, d };
+  }
+  return mejor;
+}
+
+/** En qué fracción del recorrido entero (0 a 1) cae el punto de la vía más cerca de (x, y). */
+function fraccionDe(puntos, x, y) {
+  const { i, f } = masCerca(puntos, x, y);
+  let hasta = 0, total = 0;
+  for (let k = 0; k < puntos.length - 1; k++) {
+    const l = Math.hypot(puntos[k + 1][0] - puntos[k][0], puntos[k + 1][1] - puntos[k][1]);
+    if (k < i) hasta += l;
+    if (k === i) hasta += l * f;
+    total += l;
+  }
+  return total ? hasta / total : 0;
+}
+
+/**
+ * Una línea del plano, pasada a ruta del papel. Las estaciones se vuelven `paradas` (el índice del punto, como
+ * las quiere el mapa): si la estación no cae justo en un punto de la vía, se le agrega uno ahí. Los túneles, que el
+ * plano marca con sus dos bocas, se vuelven fracciones del recorrido. Las puntas que salen del papel se recortan al
+ * borde, para que la vía no tape el marco.
+ */
+function rutaDesdeLinea(l) {
+  const puntos = l.puntos.map(([x, y]) => [
+    Math.max(MARCO.x - 2, Math.min(MARCO.x + MARCO.w + 2, x)),
+    Math.max(MARCO.y - 2, Math.min(MARCO.y + MARCO.h + 2, y)),
+  ]);
+  const paradas = [];
+  for (const id of l.estaciones || []) {
+    const lu = lugarDelPlano(id);
+    if (!lu) continue;
+    const c = masCerca(puntos, lu.x, lu.y);
+    let i;
+    if (c.f < 0.08 || Math.hypot(puntos[c.i][0] - lu.x, puntos[c.i][1] - lu.y) < 3) i = c.i;
+    else if (c.f > 0.92 || Math.hypot(puntos[c.i + 1][0] - lu.x, puntos[c.i + 1][1] - lu.y) < 3) i = c.i + 1;
+    else {
+      const [ax, ay] = puntos[c.i], [bx, by] = puntos[c.i + 1];
+      puntos.splice(c.i + 1, 0, [ax + (bx - ax) * c.f, ay + (by - ay) * c.f]);
+      for (const p of paradas) if (p.i > c.i) p.i++;
+      i = c.i + 1;
+    }
+    paradas.push({ i, lugar: id });
+  }
+  const tuneles = (l.tuneles || []).map(([a, b]) => {
+    const fa = fraccionDe(puntos, a[0], a[1]), fb = fraccionDe(puntos, b[0], b[1]);
+    return [Math.min(fa, fb), Math.max(fa, fb)];
+  });
+  return {
+    id: l.id,
+    nombre: NOMBRES_VIAS[l.id] || l.nombre.toUpperCase(),
+    entraDesdeAfuera: !!l.entraDesdeAfuera,
+    servicio: l.servicio !== false,
+    pasajeros: l.pasajeros ?? 0.5,
+    puntos, paradas, tuneles,
+  };
+}
+
+// ------------------------------------------------------------- el terreno
+
+const centro = (pts) => [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
+
+/**
+ * EL TERRENO DEL PLANO, EN SÍMBOLOS DE MAPA VIEJO: la sierra y el cerro en chevrones (la sierra, a lo largo de su
+ * pie), las mesas en su caja rayada, las lomas en dunitas, los ríos en doble línea y los arroyos secos en línea
+ * cortada. El malpaís va pegado al borde del oeste, debajo del marco: no se dibuja. Unos cactus sueltos donde no hay
+ * nada, para que el llano no quede pelado.
+ */
+function terrenoDesdePlano() {
+  const out = [];
+  for (const r of PLANO.relieve) {
+    if (r.tipo === 'sierra') {
+      out.push({ tipo: 'sierra', puntos: r.puntos.filter(([x, y]) => y > 12 && x > 12 && x < 372).map(([x, y]) => [x, y - 6]) });
+    } else if (r.tipo === 'cerro') {
+      out.push({ tipo: 'sierra', puntos: [centro(r.puntos)] });
+    } else if (r.tipo === 'meseta') {
+      const xs = r.puntos.map((p) => p[0]), ys = r.puntos.map((p) => p[1]);
+      const x = Math.min(...xs), y = Math.min(...ys);
+      out.push({ tipo: 'meseta', x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y });
+    } else if (r.tipo === 'lomas') {
+      const [cx, cy] = centro(r.puntos);
+      out.push({ tipo: 'dunas', x: cx, y: cy });
+      for (const k of [0, 2]) out.push({ tipo: 'dunas', x: (cx + r.puntos[k][0]) / 2, y: (cy + r.puntos[k][1]) / 2 });
+    } else if (r.tipo === 'rio' || r.tipo === 'arroyo') {
+      // (Los bordes del plano siguen del otro lado del marco: en el papel se recortan.)
+      out.push({ tipo: r.tipo, puntos: r.puntos.map(([x, y]) => [Math.max(MARCO.x + 2, Math.min(MARCO.x + MARCO.w - 2, x)), Math.max(MARCO.y + 2, Math.min(y, MARCO.y + MARCO.h - 4))]) });
+    }
+  }
+  for (const [x, y] of [[132, 150], [160, 50], [318, 70], [268, 182], [44, 176], [118, 60]]) out.push({ tipo: 'cactus', x, y });
+  return out;
+}
+
+const k = lugarDelPlano('campamento');
 
 export const REGION = {
   nombre: 'REGIÓN DESIERTO',
 
   /** El marco del papel. Todo lo demás vive adentro. */
-  marco: { x: 6, y: 6, w: 372, h: 204 },
+  marco: { ...MARCO },
 
-  /**
-   * LOS LUGARES. No son visitables todavía (el pueblo que existe es uno solo,
-   * `scenes/townScene.js`), pero son lo que le da sentido a que una vía vaya
-   * de un lado a otro: sin puntas, las líneas no van a ninguna parte.
-   *
-   * No son todos pueblos, y eso importa: una MINA y un PUESTO explican por qué
-   * hay ramales que no unen dos ciudades. En 1880 el ferrocarril iba a buscar
-   * mineral tanto como gente.
-   *
-   * `etiqueta` es de qué lado del símbolo va el nombre, para que ninguno se
-   * pise con otro ni con una vía.
-   */
-  /**
-   * `etiqueta` es de qué lado del símbolo va el nombre, y NO es decoración:
-   * cada uno está puesto en la única dirección donde no le pasa una vía por
-   * encima. Si se mueve una ruta, hay que volver a mirar los nombres.
-   */
-  lugares: [
-    /**
-     * El oeste es el único lado de Piedra Roja sin una vía encima (le entran
-     * cuatro ramales: noroeste, noreste, este y sudoeste), así que el nombre
-     * va sí o sí ahí — y "PIEDRA ROJA" mide 54px, o sea que el pueblo no
-     * puede estar más cerca del borde que esto o el nombre se sale del papel.
-     */
-    { id: 'piedraroja',   tipo: 'pueblo', nombre: 'PIEDRA ROJA',   x: 76,  y: 74,  etiqueta: 'izq' },
-    { id: 'alamoseco',    tipo: 'pueblo', nombre: 'ÁLAMO SECO',    x: 296, y: 36,  etiqueta: 'arriba' },
-    { id: 'fuertebravo',  tipo: 'pueblo', nombre: 'FUERTE BRAVO',  x: 340, y: 108, etiqueta: 'abajo' },
-    { id: 'sancristobal', tipo: 'pueblo', nombre: 'SAN CRISTÓBAL', x: 72,  y: 174, etiqueta: 'abajo' },
-    { id: 'pasodeloro',   tipo: 'pueblo', nombre: 'PASO DEL ORO',  x: 186, y: 104, etiqueta: 'arriba' },
-    { id: 'laviuda',      tipo: 'mina',   nombre: 'MINA LA VIUDA', x: 92,  y: 28,  etiqueta: 'arriba' },
-    { id: 'puestoseco',   tipo: 'puesto', nombre: 'PUESTO SECO',   x: 232, y: 126, etiqueta: 'der' },
-  ],
+  /** LOS LUGARES: los del plano que tienen nombre en el papel (pueblos, la mina y el puesto). */
+  lugares: Object.entries(NOMBRES).map(([id, n]) => {
+    const lu = lugarDelPlano(id);
+    return { id, ...n, x: lu.x, y: lu.y };
+  }),
 
   /** Dónde estás vos. Marcado con una carpita, como corresponde. */
-  campamento: { x: 112, y: 80, nombre: 'TU CAMPAMENTO' },
+  campamento: { x: k.x, y: k.y, nombre: 'TU CAMPAMENTO' },
+
+  terreno: terrenoDesdePlano(),
 
   /**
-   * A QUÉ VELOCIDAD REAL ANDAN LOS TRENES, en píxeles de mapa por segundo.
+   * LAS RUTAS, de las líneas del plano.
    *
-   * Es UNA sola para todos, y ahí está el truco: como el circuito chico mide
-   * la tercera parte que el grande, darle la vuelta le lleva la tercera parte
-   * del tiempo — y como la vuelta completa es lo que sortea de nuevo el tipo
-   * de tren, el circuito chico cambia de tren tres veces más seguido. No hace
-   * falta escribirle un número a cada ruta: sale de su tamaño.
-   */
-  velocidadTren: 7,
-
-  /**
-   * EL TERRENO. Puro símbolo de mapa viejo: sierras en chevrones, un río, un
-   * par de mesetas y cactus sueltos. No afecta a nada mecánicamente — y aun
-   * así es lo que hace que esto se lea como una región y no como un diagrama
-   * de cuatro líneas.
-   */
-  terreno: [
-    /**
-     * LAS SIERRAS ESTÁN PUESTAS DONDE PASAN LOS TÚNELES, no al revés.
-     * Un túnel dibujado en el llano se lee como un error de imprenta; lo que
-     * lo explica es la montaña encima. Si se mueve un túnel, hay que mover su
-     * sierra — están atadas por la vista, aunque el código no lo obligue.
-     */
-    { tipo: 'sierra', puntos: [[102, 38], [114, 34]] },    // túnel de la Línea del Norte
-    { tipo: 'sierra', puntos: [[337, 53], [349, 45]] },    // túnel del Ramal del Río
-
-    // Y unas sierras decorativas, sin vía, para que la cordillera no parezca
-    // hecha sólo de los pedazos que le hacían falta al ferrocarril.
-    { tipo: 'sierra', puntos: [[236, 56]] },
-    { tipo: 'sierra', puntos: [[318, 76]] },
-
-    { tipo: 'rio', puntos: [[370, 18], [364, 50], [370, 84], [362, 116], [368, 148], [360, 180]] },
-
-    { tipo: 'meseta', x: 248, y: 102, w: 32, h: 12 },
-    { tipo: 'meseta', x: 96, y: 110, w: 26, h: 11 },
-
-    { tipo: 'cactus', x: 68, y: 46 },
-    { tipo: 'cactus', x: 166, y: 58 },
-    { tipo: 'cactus', x: 306, y: 72 },
-    { tipo: 'cactus', x: 150, y: 190 },
-    { tipo: 'cactus', x: 60, y: 122 },
-    { tipo: 'dunas', x: 232, y: 92 },
-    { tipo: 'dunas', x: 110, y: 152 },
-    { tipo: 'dunas', x: 330, y: 100 },
-  ],
-
-  /**
-   * LAS RUTAS.
-   *
-   * `puntos` es la polilínea por donde corre la vía.
-   *
-   *   circular       el último punto ES el primero: el tren da la vuelta y
-   *                  sigue, no rebota. `puntos[0]` es la terminal.
-   *   terminal       id del lugar de donde sale y a donde vuelve. Al pasar por
-   *                  acá se sortea de nuevo QUÉ TIPO DE TREN es.
-   *   paradas        `{ i, lugar }` — `i` es el índice dentro de `puntos`, así
-   *                  que mover una coordenada no obliga a recalcular nada. Al
-   *                  pasar por una parada se sortea de nuevo la DIFICULTAD.
-   *   entraDesdeAfuera  no es un circuito: entra por el borde derecho del
-   *                  papel, cruza y se va. Cuando se va, la vía queda vacía
-   *                  entre `esperaMin` y `esperaMax` segundos, y después
-   *                  aparece OTRO tren (tipo y dificultad nuevos).
+   *   paradas        `{ i, lugar }` — `i` es el índice dentro de `puntos`.
+   *   entraDesdeAfuera  viene de otra región: entra por un borde del papel.
    *   servicio       false = ramal muerto, nunca tiene tren.
-   *   tuneles        tramos por donde la vía va bajo tierra, en fracciones
-   *                  del recorrido (0 a 1).
+   *   pasajeros      de cada 10 trenes de la línea, cuántos son de pasajeros (lo usa el horario).
+   *   tuneles        tramos por donde la vía va bajo tierra, en fracciones del recorrido (0 a 1).
    */
-  rutas: [
-    {
-      /**
-       * EL CIRCUITO DE LA MINA — el más chico del mapa, y por eso el que
-       * cambia de tren más seguido: da la vuelta en unos 25 segundos. Sube el
-       * mineral de La Viuda hasta Piedra Roja y vuelve por el faldeo.
-       */
-      id: 'mina',
-      nombre: 'CIRCUITO DE LA MINA',
-      circular: true,
-      terminal: 'piedraroja',
-      /**
-       * Sale de Piedra Roja hacia el NOROESTE y vuelve por el NORESTE. Los dos
-       * ramales tienen que llegar al pueblo con ángulos bien distintos: en la
-       * primera versión éste y la Vía del Desierto entraban los dos desde el
-       * este, casi paralelos, y se leían como una sola vía gruesa.
-       */
-      puntos: [
-        [76, 74], [62, 54], [54, 36], [72, 28], [92, 28],
-        [100, 44], [94, 58], [86, 68], [76, 74],
-      ],
-      paradas: [{ i: 4, lugar: 'laviuda' }],
-      tuneles: [],
-    },
-    {
-      /**
-       * LA LÍNEA DEL NORTE — el circuito grande: más de un minuto de vuelta.
-       * Es "el tren de esa línea" durante toda tu visita al mapa, porque no
-       * llega a completar el giro mientras lo mirás.
-       */
-      id: 'norte',
-      nombre: 'LÍNEA DEL NORTE',
-      circular: true,
-      terminal: 'alamoseco',
-      /**
-       * Va por el filo de arriba y vuelve por un arco alto que pasa BIEN por
-       * encima del Paso del Oro sin tocarlo. Bajarla hasta el Paso le habría
-       * dado una parada más, pero ese pueblo ya recibe cuatro ramales y el
-       * quinto convertía el cruce en un borrón.
-       */
-      puntos: [
-        [296, 36], [252, 42], [204, 46], [158, 46], [120, 40], [92, 28],
-        [118, 52], [150, 70], [186, 76], [222, 72], [258, 58], [296, 36],
-      ],
-      paradas: [{ i: 5, lugar: 'laviuda' }],
-      // Se mete bajo la sierra justo antes de llegar a la mina.
-      tuneles: [[0.33, 0.375]],
-    },
-    {
-      /**
-       * LA VÍA DEL DESIERTO — el circuito del sur. Baja de Piedra Roja a San
-       * Cristóbal, cruza al Paso del Oro y vuelve por el llano.
-       */
-      id: 'desierto',
-      nombre: 'VÍA DEL DESIERTO',
-      circular: true,
-      terminal: 'piedraroja',
-      puntos: [
-        [76, 74], [46, 98], [44, 132], [56, 154], [72, 174],
-        [108, 170], [136, 150], [162, 128], [186, 104],
-        [152, 112], [116, 104], [94, 88], [76, 74],
-      ],
-      paradas: [{ i: 4, lugar: 'sancristobal' }, { i: 8, lugar: 'pasodeloro' }],
-      tuneles: [],
-    },
-    {
-      /**
-       * EL RAMAL DEL RÍO — circuito corto del este, entre Fuerte Bravo y
-       * Álamo Seco, con el río al costado y un túnel en la garganta.
-       */
-      id: 'rio',
-      nombre: 'RAMAL DEL RÍO',
-      circular: true,
-      terminal: 'fuertebravo',
-      /**
-       * Los dos ramales salen de Fuerte Bravo hacia ARRIBA (noreste y
-       * oeste-noroeste), y eso es a propósito: deja el sur del pueblo
-       * despejado para su nombre, que si no queda cruzado por la propia vía.
-       */
-      puntos: [
-        [340, 108], [362, 84], [354, 56], [332, 42], [296, 36],
-        [284, 58], [284, 84], [302, 100], [340, 108],
-      ],
-      paradas: [{ i: 4, lugar: 'alamoseco' }],
-      tuneles: [[0.29, 0.35]],
-    },
-
-    /**
-     * LAS DOS QUE VIENEN DE AFUERA.
-     *
-     * Entran por la derecha del papel, cruzan la región y se pierden por otro
-     * lado. No dan la vuelta: se van, y esa vía queda muerta un rato hasta que
-     * asoma el próximo. Son la única parte del mapa que a veces NO tiene nada
-     * que robar, y esperar a que aparezca uno es una jugada como cualquier
-     * otra.
-     */
-    {
-      id: 'territorio',
-      nombre: 'LÍNEA DEL TERRITORIO',
-      entraDesdeAfuera: true,
-      // Roza el norte de la región y se va por arriba. No para en ningún lado:
-      // es un expreso que pasa, no un tren de acá.
-      puntos: [[382, 30], [344, 24], [306, 18], [268, 14], [232, 12], [196, 12], [168, 10]],
-      paradas: [],
-      esperaMin: 16, esperaMax: 32,
-      tuneles: [],
-    },
-    {
-      id: 'llanuras',
-      nombre: 'LÍNEA DE LAS LLANURAS',
-      entraDesdeAfuera: true,
-      // Cruza el sur entero de este a oeste y se va por el borde izquierdo.
-      /**
-       * Va casi horizontal por el sur, y tiene que pasar por el pasillo que
-       * queda entre el nombre de Fuerte Bravo y el techo del cartucho: son
-       * unos pocos píxeles de aire, y por eso este trazado se afinó mirando
-       * el dibujo, no calculándolo.
-       */
-      puntos: [
-        [382, 128], [350, 134], [318, 138], [286, 140], [256, 142],
-        [228, 142], [200, 140], [172, 138], [144, 134], [112, 130],
-        [76, 128], [14, 126],
-      ],
-      paradas: [],
-      esperaMin: 20, esperaMax: 38,
-      tuneles: [],
-    },
-
-    {
-      /**
-       * EL RAMAL MUERTO. Existe para que el mapa se LEA en vez de mirarse: si
-       * todas las líneas tuvieran tren, elegir sería apretar cualquiera. Que
-       * termine en un puesto abandonado y no en un pueblo lo explica solo.
-       */
-      id: 'puesto',
-      nombre: 'RAMAL DEL PUESTO',
-      servicio: false,
-      puntos: [[186, 104], [210, 116], [232, 126]],
-      paradas: [],
-      tuneles: [],
-    },
-  ],
+  rutas: PLANO.lineas.map(rutaDesdeLinea),
 };
 
 /**
@@ -328,7 +208,10 @@ export const REGION = {
   lugar(REGION.campamento);
   for (const t of REGION.terreno) {
     if (t.puntos) t.puntos = t.puntos.map(punto);
-    else lugar(t);
+    else {
+      if (t.w !== undefined) { t.w = Math.round(t.w * kx); t.h = Math.round(t.h * ky); }
+      lugar(t);
+    }
   }
   for (const r of REGION.rutas) r.puntos = r.puntos.map(punto);
 })();

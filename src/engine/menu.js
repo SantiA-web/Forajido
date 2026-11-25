@@ -24,7 +24,18 @@
  */
 
 import { PALETA } from './paleta.js';
+import { CONFIG } from '../data/config.js';
 import { estiloNuevo } from './estiloNuevo.js';
+import { esPapel, dibujarPapel, letrasDe, hastaLetras, papelCrudo, semillaDe } from './papeles.js';
+
+/**
+ * 🎭 LAS ESCENAS, DE A UNO *(Santi, 2026-11-23: "la historia es muy buena, pero no la estamos mostrando como se
+ * merece"; eligió mi recomendación A)*: en vez de un párrafo entero de golpe, la escena va **paso por paso**: cada uno
+ * dice lo suyo con su cara y su nombre, las letras salen de a poco y se pasa con [E]; las respuestas, recién al final.
+ * Los papeles (la carta, el diario, el cartel) se ven grandes, en el medio: engine/papeles.js.
+ * `LETRAS_POR_CUADRO`: lo rápido que se escribe (a 60 cuadros por segundo, unas 90 letras por segundo).
+ */
+const LETRAS_POR_CUADRO = 1.5;
 
 /**
  * 📜 EL DIÁLOGO EN PAPEL DE ÉPOCA *(Santi, 2026-11-14: "quiero cambiarle totalmente la interfaz del dialogo"; eligió
@@ -43,13 +54,69 @@ const TINTA = PALETA[32], TINTA_SUAVE = PALETA[34], SELLO = PALETA[8], SOMBRA = 
 const ESCALA_FIGURA = 4, MARCO = { w: 44, h: 44 }, ALTO_PERSONA = 22;
 
 /**
+ * 🎬 LA FRANJA DE CINE (ver `franja`): el margen a los costados, el tamaño de la letra y lo que hay entre renglones; los
+ * escalones de arriba (cuánto más arriba, alto de cada uno y cuán oscuro) y el negro de la franja. Los colores de las
+ * letras van en la capa fina, que no pasa por la paleta.
+ */
+const FRANJA = { margen: 16, tam: 9, entre: 12, fundido: 12 };
+/** (El orden en que se prenden los puntos de un cuadrado de 4×4 al tramar.) */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+/**
+ * 🎬 Lo más que entra en una franja: si lo que se dice o se cuenta es más largo, se parte en varias (por párrafos y, si
+ * hace falta, por oraciones). 🔁 Con la página entera del prólogo la franja tapaba medio campamento.
+ */
+const LETRAS_POR_FRANJA = 260;
+
+/** 🎬 Dónde cae el renglón `n` (o el alto de los `n` primeros): los renglones en blanco entre párrafos, a media altura. */
+function altoDe(n, renglones) {
+  let y = 0;
+  for (let i = 0; i < n; i++) y += renglones[i] ? FRANJA.entre : FRANJA.entre / 2;
+  return y;
+}
+
+/** 🎬 Parte los pasos de texto largos en varios del mismo tipo y del mismo que habla (los papeles no se tocan). */
+function trocear(pasos) {
+  const out = [];
+  for (const p of pasos) {
+    if ((p.tipo !== 'dice' && p.tipo !== 'narra') || !p.texto || p.texto.length <= LETRAS_POR_FRANJA) { out.push(p); continue; }
+    const trozos = [];
+    for (const parrafo of p.texto.split(/\n\s*\n/)) {
+      const oraciones = parrafo.match(/[^.!?…]+[.!?…]+["»”)]*\s*|[^.!?…]+$/g) || [parrafo];
+      let actual = '';
+      for (const o of oraciones) {
+        if (actual && (actual + o).length > LETRAS_POR_FRANJA) { trozos.push(actual.trim()); actual = ''; }
+        actual += o;
+      }
+      if (actual.trim()) trozos.push(actual.trim());
+    }
+    // (Párrafos cortos seguidos van juntos, con su línea en blanco, mientras entren.)
+    const juntos = [];
+    for (const t of trozos) {
+      const ult = juntos[juntos.length - 1];
+      if (ult && (ult + '\n\n' + t).length <= LETRAS_POR_FRANJA) juntos[juntos.length - 1] = ult + '\n\n' + t; else juntos.push(t);
+    }
+    juntos.forEach((t) => out.push({ ...p, texto: t }));
+  }
+  return out;
+}
+
+const LETRA_FRANJA = { fuente: 'Georgia, "Times New Roman", serif', estilo: '' };
+const NOMBRE = '#a3402a', DICHO = '#ddd0b4', NARRADO = '#a3967c', OPCION = '#8a7d66', OPCION_ELEGIDA = '#eee2c6', AYUDA = '#6c6050';
+
+/**
  * 📜 LA CARA DE ALGUIEN EN SU RECUADRO (el diálogo y la ficha de la banda): un recuadro de papel más sucio, como un
  * grabado pegado, con la persona dibujada entera agrandada ×`escala` y cortada para que se vea sólo la cabeza.
  * `dibujar(r, x, pies)` dibuja a la persona parada en `x, pies`.
  */
-export function cara(r, dibujar, mx, my, w = MARCO.w, h = MARCO.h, escala = ESCALA_FIGURA) {
-  r.rect(mx - 1, my - 1, w + 2, h + 2, BORDE);
-  r.rect(mx, my, w, h, PAPEL_SUCIO);
+export function cara(r, dibujar, mx, my, w = MARCO.w, h = MARCO.h, escala = ESCALA_FIGURA, estilo = {}) {
+  r.rect(mx - 1, my - 1, w + 2, h + 2, estilo.borde || BORDE);
+  // (🔁 `dibujar.fondo`: `[cielo, piso]` de la parte del día, si el que dibuja lo trae y `estilo.cielo`: el que habla en la franja, parado afuera. El cartel de se busca, no.)
+  const fondo = estilo.cielo && dibujar && dibujar.fondo;
+  if (fondo) {
+    const horizonte = Math.round(h * 0.6);
+    r.rect(mx, my, w, horizonte, PALETA[fondo[0]]);
+    r.rect(mx, my + horizonte, w, h - horizonte, PALETA[fondo[1]]);
+  } else r.rect(mx, my, w, h, estilo.fondo || PAPEL_SUCIO);
   const ctx = r.ctx;
   ctx.save();
   ctx.beginPath();
@@ -66,6 +133,20 @@ export function cara(r, dibujar, mx, my, w = MARCO.w, h = MARCO.h, escala = ESCA
   estiloNuevo.borrarGente(ctx, mx - ancho, my + h, w + 2 * ancho, alto, true);
   estiloNuevo.borrarGente(ctx, mx - ancho, my - 4, ancho, h + 4, true);
   estiloNuevo.borrarGente(ctx, mx + w, my - 4, ancho, h + 4, true);
+  // 🔁 (`estilo.apagar`: la cara gastada, media desteñida, como un retrato viejo *(Santi: "más crudos, duros y
+  // reales")*. Le saca color y la oscurece un poco hacia el sepia.)
+  if (estilo.apagar) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'saturation';
+    ctx.globalAlpha = estilo.apagar;
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(mx, my, w, h);
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = '#b89a78';
+    ctx.fillRect(mx, my, w, h);
+    ctx.restore();
+  }
 }
 
 /** Las tintas del papel, para lo que se escribe encima fuera de este archivo (la ficha). */
@@ -77,6 +158,14 @@ export const TINTAS = { PAPEL, PAPEL_SUCIO, PAPEL_CLARO, BORDE, TINTA, TINTA_SUA
  * posición, no del azar.
  */
 export function papel(r, x, y, w, h) {
+  // 🔁 PAPEL CRUDO *(Santi, 2026-11-23: "los rectángulos y carteles se ven muy infantil. Deberían verse más crudos,
+  // duros y reales")*: la libreta, el reparto y el calendario, en el mismo papel roto y manoseado que las cartas
+  // (engine/papeles.js). El de antes queda abajo, sin usar, por si hay que volver.
+  papelCrudo(r, x, y, w, h, semillaDe(`${Math.round(w)}x${Math.round(h)}`), { tono: 'carta', manchas: 1, soloAbajo: true });
+}
+
+/** (🔁 El papel de antes: rectángulo con marco impreso. Sin usar desde el papel crudo.) */
+export function papelViejo(r, x, y, w, h) {
   const ctx = r.ctx;
   // 🐛 El contorno de la gente se pinta al final de todo: sin borrarlo acá, la gente que queda detrás del papel
   // se veía en líneas por encima. (La figura del recuadro se dibuja después, así que ella sí lleva el suyo.)
@@ -143,6 +232,26 @@ export function crearMenu(audio) {
     return true;
   }
 
+  /**
+   * 🎭 UNA ESCENA PASO POR PASO. `pasos`: `{ tipo: 'dice', quien, nombre, texto }` (uno que habla: con su cara si es de
+   * la banda), `{ tipo: 'narra', texto }` (lo que pasa, sin nadie), o un papel (`carta`, `nota`, `diario`, `cartel`:
+   * engine/papeles.js). Las `opciones` aparecen en el último paso, cuando terminó de escribirse. `extra.caras`: `{ id:
+   * dibujar }` de los que pueden hablar.
+   */
+  function escena(pasos, opciones, alElegir, extra = {}) {
+    if (!pasos || !pasos.length || !opciones || !opciones.length) return false;
+    pasos = trocear(pasos);
+    abierto = { modo: 'escena', titulo: extra.titulo || '', pasos, i: 0, letras: 0, opciones, sel: 0, alElegir, caras: extra.caras || {}, renglones: null, figuras: [] };
+    audio.play('cover');
+    return true;
+  }
+
+  /** (Lo de la escena abierta: el paso de ahora, si terminó de escribirse y si es el último.) */
+  function pasoDeAhora() {
+    const p = abierto.pasos[abierto.i];
+    return { p, listo: abierto.letras >= letrasDe(p), ultimo: abierto.i === abierto.pasos.length - 1 };
+  }
+
   function cerrar() {
     abierto = null;
     audio.play('cover');
@@ -153,7 +262,10 @@ export function crearMenu(audio) {
 
   /** 🧪 Lo que dice el papel abierto (para las pruebas): el título, el cuerpo y las opciones. */
   function leer() {
-    return abierto ? { titulo: abierto.titulo, cuerpo: abierto.cuerpo, opciones: abierto.opciones.map((o) => o.texto) } : null;
+    // (🧪 `ids`: para elegir por id en las pruebas.)
+    // (🎭 De una escena, el cuerpo son todos sus pasos juntos, y `pasos` los tipos: para las pruebas.)
+    const cuerpo = abierto && abierto.modo === 'escena' ? abierto.pasos.map((p) => [p.nombre, p.titular, p.texto, p.por].filter(Boolean).join(': ')).join('\n\n') : abierto && abierto.cuerpo;
+    return abierto ? { titulo: abierto.titulo, cuerpo, opciones: abierto.opciones.map((o) => o.texto), ids: abierto.opciones.map((o) => o.id), pasos: abierto.modo === 'escena' ? abierto.pasos.map((p) => p.tipo) : null } : null;
   }
 
   /** 🧪 Elegir una opción por su id, como si la hubieras apretado (para las pruebas). */
@@ -169,6 +281,24 @@ export function crearMenu(audio) {
    */
   function update(input) {
     if (!abierto) return false;
+
+    // 🎭 La escena: las letras salen de a poco; [E] las termina de escribir, y con todo escrito pasa al que sigue. Las
+    // respuestas, recién en el último. [ESC] salta al último paso, y en el último cierra como siempre (vuelve después).
+    if (abierto.modo === 'escena') {
+      const { p, listo, ultimo } = pasoDeAhora();
+      if (!listo) abierto.letras += LETRAS_POR_CUADRO;
+      const ok = input.wasPressed('KeyE') || input.wasPressed('Enter') || input.wasPressed('Space');
+      if (input.wasPressed('Escape')) {
+        if (listo && ultimo) cerrar();
+        else { abierto.i = abierto.pasos.length - 1; abierto.letras = 1e9; abierto.renglones = null; }
+        return true;
+      }
+      if (!listo || !ultimo) {
+        if (ok && !listo) abierto.letras = letrasDe(p);
+        else if (ok) { abierto.i++; abierto.letras = 0; abierto.renglones = null; audio.play('cock'); }
+        return true;
+      }
+    }
 
     const n = abierto.opciones.length;
     if (input.wasPressed('KeyW') || input.wasPressed('ArrowUp')) {
@@ -201,38 +331,89 @@ export function crearMenu(audio) {
 
   function render(r, colors, ayuda) {
     if (!abierto) return;
+    if (abierto.modo === 'escena') { renderEscena(r, ayuda); return; }
 
-    const opciones = abierto.opciones, figuras = abierto.figuras;
-    // A lo ancho de la pantalla, con un margen; las figuras ocupan su columna a la izquierda.
-    const bx = 10, w = r.width - 20;
-    const anchoFiguras = figuras.length ? figuras.length * (MARCO.w + 4) + 8 : 0;
-    const tx = bx + 12 + anchoFiguras, anchoTexto = w - 24 - anchoFiguras;
+    // 🎬 (La misma franja que las escenas: el título arriba, el cuerpo entero, las respuestas.)
+    const figuras = abierto.figuras;
+    const anchoTexto = anchoDelTexto(r, figuras.length);
     // (Los renglones del cuerpo se arman una vez: se corta por palabras donde ya no entra.)
-    if (abierto.cuerpo && !abierto.renglones) abierto.renglones = partir(r, abierto.cuerpo, anchoTexto);
+    if (abierto.cuerpo && (!abierto.renglones || abierto.renglonesAncho !== anchoTexto)) { abierto.renglones = partir(r, abierto.cuerpo, anchoTexto); abierto.renglonesAncho = anchoTexto; }
     const renglones = abierto.renglones || [];
-    const alto = renglones.length ? renglones.length * 10 + 5 : 0;
-    const h = Math.max(24 + alto + opciones.length * 12 + 6, figuras.length ? MARCO.h + 14 : 0);
-    const by = r.height - 10 - h;
+    franja(r, { figuras, nombre: abierto.titulo, renglones, visibles: renglones, color: DICHO, opciones: abierto.opciones, sel: abierto.sel, ayuda });
+  }
 
-    papel(r, bx, by, w, h);
-
-    // El que habla, agrandado, cada uno en su recuadro de papel más sucio (como un grabado pegado).
-    figuras.forEach((dibujar, i) => cara(r, dibujar, bx + 10 + i * (MARCO.w + 4), by + 7));
-
-    const sinHalo = { halo: null };
-    r.text(abierto.titulo, tx, by + 11, renglones.length ? SELLO : TINTA, 'left', sinHalo);
-    // Una raya de tinta debajo del nombre, como en un formulario viejo.
-    if (renglones.length) r.rect(tx, by + 17, Math.min(anchoTexto, r.medir(abierto.titulo) + 6), 1, TINTA_SUAVE);
-    renglones.forEach((t, i) => r.text(t, tx, by + 25 + i * 10, TINTA, 'left', sinHalo));
-
-    opciones.forEach((o, i) => {
-      const oy = by + 27 + alto + i * 12;
-      const activa = i === abierto.sel;
-      if (activa) r.rect(tx - 4, oy - 5, anchoTexto + 8, 11, PAPEL_SUCIO);
-      r.text((activa ? '▸ ' : '  ') + o.texto, tx, oy, activa ? SELLO : TINTA_SUAVE, 'left', sinHalo);
+  /**
+   * 🎭 UN PASO DE LA ESCENA: un papel grande en el medio, o abajo el papel del diálogo con la cara y el nombre del que
+   * habla y lo que dice escribiéndose. El alto del papel se calcula con el texto entero, para que no crezca mientras se
+   * escribe.
+   */
+  function renderEscena(r, ayuda) {
+    const { p, listo, ultimo } = pasoDeAhora();
+    const opciones = listo && ultimo ? abierto.opciones : null;
+    const sigue = ultimo ? '[E] terminar de leer' : '[E] seguir';
+    if (esPapel(p)) { dibujarPapel(r, p, { letras: abierto.letras, opciones, sel: abierto.sel, caras: abierto.caras, ayuda: sigue }); return; }
+    const dibujar = p.tipo === 'dice' && abierto.caras[p.quien];
+    const anchoTexto = anchoDelTexto(r, dibujar ? 1 : 0);
+    // 🐛 (Los renglones se guardan con el ancho con que se partieron: el primer cuadro, antes de que la pantalla tome su
+    // tamaño, los partía angostos y la página del prólogo salía en una columna finita.)
+    if (!abierto.renglones || abierto.renglonesAncho !== anchoTexto) { abierto.renglones = partir(r, p.texto, anchoTexto); abierto.renglonesAncho = anchoTexto; }
+    const renglones = abierto.renglones, nombre = p.tipo === 'dice' ? p.nombre : null;
+    // (Lo que pasa, sin nadie que hable, más apagado: se distingue de lo que se dice.)
+    franja(r, {
+      figuras: dibujar ? [dibujar] : [], nombre, renglones, visibles: hastaLetras(renglones, abierto.letras),
+      color: p.tipo === 'narra' ? NARRADO : DICHO, opciones, sel: abierto.sel, ayuda: opciones ? ayuda : sigue,
     });
+  }
 
-    r.text(ayuda, bx + w - 8, by + h - 7, TINTA_SUAVE, 'right', { tam: 7, halo: null });
+  /**
+   * 🎬 EL FUNDIDO DE ARRIBA DE LA FRANJA: puntos negros de la grilla, cada vez más juntos hacia abajo (un tramado de
+   * Bayer de 4×4, el de siempre en pixel art), de `y` a `y + alto`.
+   */
+  function tramado(r, y, alto) {
+    const P = CONFIG.estilo.punto / 4, filas = Math.round(alto / P), cols = Math.ceil(r.width / P) + 1;
+    const y0 = Math.round(y / P) * P;
+    r.ctx.fillStyle = SOMBRA;
+    for (let j = 0; j < filas; j++) {
+      const cuanto = (j + 1) / (filas + 1);
+      for (let i = 0; i < cols; i++) if (BAYER[(j % 4) * 4 + (i % 4)] / 16 < cuanto) r.rect(i * P, y0 + j * P, P, P, SOMBRA);
+    }
+  }
+
+  /** 🎬 Lo que queda para el texto a lo ancho, con `n` caras a la izquierda. */
+  function anchoDelTexto(r, n) {
+    return r.width - 2 * FRANJA.margen - (n ? n * (MARCO.w + 6) + 10 : 0) - 12;
+  }
+
+  /**
+   * 🎬 LA FRANJA DE CINE *(Santi, 2026-11-23: "los rectángulos y carteles se ven muy infantil. Deberían verse más
+   * crudos, duros y reales"; eligió la B)*: abajo, una franja negra que se funde con la noche de arriba por escalones;
+   * a la izquierda la cara del que habla, gastada y en marco negro; su nombre en mayúsculas, en rojo apagado; lo que
+   * dice en letra clara con serifa, y las respuestas debajo. Sin marco ni papel: el papel queda para lo que se lee
+   * (engine/papeles.js).
+   */
+  function franja(r, { figuras, nombre, renglones, visibles, color, opciones, sel, ayuda }) {
+    const ctx = r.ctx, M = FRANJA.margen, E = FRANJA.entre;
+    const anchoFiguras = figuras.length ? figuras.length * (MARCO.w + 6) + 10 : 0;
+    const tx = M + anchoFiguras + 6, anchoTexto = anchoDelTexto(r, figuras.length);
+    const arriba = nombre ? 22 : 10, alto = altoDe(renglones.length, renglones);
+    const h = Math.max(arriba + alto + (opciones ? opciones.length * 12 + 10 : 12), figuras.length ? MARCO.h + 16 : 0);
+    const by = r.height - 8 - h, top = by - 6;
+    // (🐛 El contorno de la gente y los puntos finos se pintan al final: lo que la franja tapa, se borra.)
+    estiloNuevo.borrarGente(ctx, 0, top, r.width, r.height - top, true);
+    // 🔁 (Negra entera, y arriba un tramado de puntos que se va cerrando: con transparencia, la paleta dejaba ver un
+    // fantasma del fuego en rojo a través de la franja.)
+    r.rect(0, top, r.width, r.height - top, SOMBRA);
+    tramado(r, top - FRANJA.fundido, FRANJA.fundido);
+    figuras.forEach((dibujar, i) => cara(r, dibujar, M + i * (MARCO.w + 6), by + 6, MARCO.w, MARCO.h, ESCALA_FIGURA, { borde: SOMBRA, fondo: PALETA[32], cielo: true }));
+    const L = { halo: false, letra: LETRA_FRANJA, tam: FRANJA.tam };
+    if (nombre) r.text(nombre.toUpperCase(), tx, by + 10, NOMBRE, 'left', { ...L, tam: 7 });
+    visibles.forEach((t, i) => r.text(t, tx, by + arriba + altoDe(i, renglones), color, 'left', L));
+    (opciones || []).forEach((o, i) => {
+      const oy = by + arriba + alto + 6 + i * 12, activa = i === sel;
+      if (activa) r.rect(tx - 4, oy - 6, anchoTexto + 8, 12, PALETA[32]);
+      r.text((activa ? '▸ ' : '   ') + o.texto, tx, oy, activa ? OPCION_ELEGIDA : OPCION, 'left', { ...L, tam: 8 });
+    });
+    r.text(ayuda, r.width - M, r.height - 7, AYUDA, 'right', { ...L, tam: 6 });
   }
 
   /** Parte un texto en renglones que entren en `ancho` (los saltos de línea del texto se respetan). */
@@ -242,12 +423,12 @@ export function crearMenu(audio) {
       let linea = '';
       for (const palabra of parrafo.split(' ')) {
         const prueba = linea ? linea + ' ' + palabra : palabra;
-        if (linea && r.medir(prueba) > ancho) { out.push(linea); linea = palabra; } else linea = prueba;
+        if (linea && r.medir(prueba, FRANJA.tam, LETRA_FRANJA) > ancho) { out.push(linea); linea = palabra; } else linea = prueba;
       }
       out.push(linea);
     }
     return out;
   }
 
-  return { abrir, cerrar, activo, update, refrescar, render, leer, elegirOpcion };
+  return { abrir, escena, cerrar, activo, update, refrescar, render, leer, elegirOpcion };
 }

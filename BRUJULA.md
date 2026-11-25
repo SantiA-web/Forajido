@@ -399,7 +399,9 @@ decisión de la historia.
   Más adelante, si el juego está sólido, capaz que uno solo en un golpe especial.
 - **No hay diligencias, bancos ni otros lugares.** El tren es el corazón. Un banco, si entra, sería un momento especial
   de la historia, como el final, y recién con el tren terminado.
-- **No es un mundo abierto.** El viaje se hace de golpe en golpe y de campamento en campamento.
+- **No es un mundo abierto de exploración.** 🔁 *(2026-11-24)* Entre golpe y golpe se puede salir al campo y cabalgar
+  la región entera (cazar, las granjas, los caminos, dar con los Rennick), pero el corazón sigue siendo el tren *(Santi:
+  "No quiero que sea de exploración, pero que sea mucho más inmersivo")*. Es una prueba: se llena si cabalgar divierte.
 - **No son 20 horas.** Primero una partida de 5 a 6 horas que esté completa. Si funciona, se alarga.
 
 ## Por decidir

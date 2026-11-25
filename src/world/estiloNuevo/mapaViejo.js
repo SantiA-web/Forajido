@@ -231,6 +231,16 @@ function armar(W, H, ox, oy, luz) {
           linea(a + (c - a) * u + 3.5, b + (d - b) * u, a + (c - a) * v + 3.5, b + (d - b) * v, RIO);
         }
       }
+    } else if (t.tipo === 'arroyo') {
+      // Un arroyo seco: una línea cortada de tinta suave (si fuera de color río, se leería como agua).
+      for (let i = 0; i < t.puntos.length - 1; i++) {
+        const [a, b] = t.puntos[i], [c, d] = t.puntos[i + 1];
+        const largo = Math.max(1, Math.ceil(Math.hypot(c - a, d - b) / 3));
+        for (let k = 0; k < largo; k += 2) {
+          const u = k / largo, v = (k + 1) / largo;
+          linea(a + (c - a) * u, b + (d - b) * u, a + (c - a) * v, b + (d - b) * v, SUAVE);
+        }
+      }
     } else if (t.tipo === 'meseta') centrado(MESETA, t.x + t.w / 2, t.y + t.h / 2);
     else if (t.tipo === 'cactus') centrado(CACTUS, t.x, t.y);
     else if (t.tipo === 'dunas') centrado(DUNAS, t.x, t.y);

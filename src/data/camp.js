@@ -113,6 +113,8 @@ export const ASIENTO = { x: -30, y: 16 };
 // 🔥 Lo que aparece sólo cuando trae un momento (ver data/momentos.js): la carta del tipo junto al fuego y el
 // forastero, en la orilla del claro.
 CAMPAMENTO.objetos.push({ id: 'carta', momento: true, x: -6, y: 56, alcance: 16 });
+// 📖 (El recado de la gente del pueblo: Rosa, Dagget, el capataz. Ver data/escenas.js.)
+CAMPAMENTO.objetos.push({ id: 'recado', momento: true, x: 22, y: 58, alcance: 16 });
 CAMPAMENTO.objetos.push({ id: 'forastero', momento: true, x: -70, y: 6, alcance: 22, huella: { x1: -4, x2: 4, y1: -3, y2: 2 } });
 
 // 🤠 La banda alrededor del fuego: se les habla con [E] (`miembro`: los dibuja y los atiende campScene).

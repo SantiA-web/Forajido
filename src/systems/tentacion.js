@@ -14,13 +14,16 @@
  * historia de cada uno *(Santi, 2026-11-22: armar los personajes "como se arma para escribir novelas")*.
  */
 import { TENTACION } from '../data/tentacion.js';
-import { BANDA, seVa } from '../data/banda.js';
+import { TIEMPO } from '../data/tiempo.js';
+import { BANDA, seVa, palabraDe } from '../data/banda.js';
+import { HISTORIA } from '../data/historia.js';
 import { fuerza, tiene } from './animo.js';
 import { anotar } from './libreta.js';
 import { regionDeLaBanda } from './comida.js';
 import { relacion } from './fogata.js';
 
 const IDS = BANDA.map((m) => m.id);
+const PARTES = TIEMPO.partes;
 const aca = (g) => IDS.filter((id) => g.banda && g.banda[id] && g.banda[id].esta && !g.banda[id].preso);
 const diaDe = (g) => (g.tiempo ? g.tiempo.dia : 0);
 const honorable = (e) => fuerza(e, 'honorable') > 0;
@@ -71,10 +74,12 @@ export function nocheDelGolpe(g, azar = Math.random) {
     for (const id of aca(g)) if (!honorable(g.banda[id])) tentar(g, id, 1);
     notas.push('tramo:' + region);
   }
-  // 💌 Una oferta cada tantos golpes, a uno al azar (al Honorable nunca).
+  // 💌 Una oferta cada tantos golpes, a uno al azar (al Honorable nunca). 🔁 Con la historia del desierto, no: ahí las
+  // ofertas llegan cuando el Cuervo no suena (`ofertasSinFama`, abajo).
   const cada = region === 'montana' ? TENTACION.ofertaCadaMontana : TENTACION.ofertaCada;
   const tentables = aca(g).filter((id) => !honorable(g.banda[id]));
-  if (C.asaltos > 0 && C.asaltos % cada === 0 && tentables.length) {
+  const conHistoria = HISTORIA.activa && region === 'desierto';
+  if (!conHistoria && C.asaltos > 0 && C.asaltos % cada === 0 && tentables.length) {
     const id = alAzar(tentables, azar);
     tentar(g, id, 1);
     notas.push(`oferta:${id}:${region === 'montana' ? 'mujer' : alAzar(['otraBanda', 'mujer'], azar)}`);
@@ -90,6 +95,49 @@ export function nocheDelGolpe(g, azar = Math.random) {
   // (Y otra vez en la madrugada, después de moverse la lealtad: BANDA-NUEVA, "La noche del golpe", pasos 3 y 7.)
   C.revisarSenales = true;
   return notas;
+}
+
+/**
+ * 😈 LAS OFERTAS CUANDO EL CUERVO NO SUENA (data/historia.js, `ofertas`; HISTORIA-DESIERTO.md, "Las ofertas a la
+ * banda"). Lee la cuenta de J.Mc. (`campamento.historia.cuenta`: desde cuándo no suena) directo, sin importar
+ * systems/historia.js (así no se arma un círculo de imports). A los días de `ofertas.dias`, una oferta de otra banda al
+ * que menos te quiere de los dudosos o peor (+1 de tentación), y enseguida se miran las señales: si le alcanza, el
+ * aviso dice que hables con él antes del próximo golpe. Devuelve las noticias. Lo llama `revisarHistoria`.
+ */
+export function ofertasSinFama(g) {
+  const C = g.campamento, H = C && C.historia, K = H && H.cuenta, O = HISTORIA.ofertas, notas = [];
+  if (!TENTACION.activa || !HISTORIA.activa || !K || !g.banda || !O) return notas;
+  if (H.hechos && H.hechos.h_cole_viene != null) return notas;
+  const dias = Math.floor((momentoDe(g) - K.desde) / 4);
+  K.ofertas = K.ofertas || 0;
+  let hubo = false;
+  while (K.ofertas < O.dias.length && dias >= O.dias[K.ofertas]) {
+    K.ofertas++;
+    const id = tentadoSinFama(g);
+    if (!id) continue;
+    tentar(g, id, 1);
+    notas.push(`ofertaSinFama:${id}:${O.dias[K.ofertas - 1]}`);
+    hubo = true;
+  }
+  if (hubo) notas.push(...revisarSenales(g));
+  return notas;
+}
+
+/** El que tentaría una oferta ahora: de los dudosos o peor (no el Honorable), el de menos lealtad; o null. */
+export function tentadoSinFama(g) {
+  const O = HISTORIA.ofertas;
+  const candidatos = aca(g).filter((id) => !honorable(g.banda[id]) && !g.banda[id].senal
+    && O.quienes.includes(palabraDe(g.banda[id])));
+  // (El de menos lealtad; si empatan, el más tentado; si no, el orden de la banda.)
+  candidatos.sort((a, b) => g.banda[a].lealtad - g.banda[b].lealtad || (g.banda[b].tentacion || 0) - (g.banda[a].tentacion || 0));
+  return candidatos[0] || null;
+}
+
+/** El momento de ahora, como lo cuenta la historia (día × 4 + la parte; la madrugada es la primera). */
+function momentoDe(g) {
+  const t = g.tiempo || { dia: 0, parte: 0 };
+  const orden = { madrugada: 0, manana: 1, tarde: 2, noche: 3 };
+  return t.dia * 4 + (orden[PARTES[t.parte]] ?? 0);
 }
 
 /**

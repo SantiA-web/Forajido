@@ -155,7 +155,7 @@ luz de la fogata, y el suelo se apaga antes de que llegues al borde.
 | Qué hay | Qué hace |
 |---|---|
 | **La fogata** | Sentarte. Y es el reloj: **encendida = de noche** |
-| **El poste** | Tus caballos: **`E` lo atiende y elegís cuál montás, `F` te lleva al pueblo** |
+| **El poste** | Tus caballos: **`E` lo atiende y elegís cuál montás, `F` montás y salís al campo** (el pueblo está en el campo; `[M]` el mapa, `[E]` entrar o volver) |
 | **La carpa** | **Dormir: cambia de día a noche y al revés** |
 | **El cajón** | **Con qué salís: elegís entre todas las armas que tenés** |
 | **El cartel** | **El mapa de rutas: por acá salís a robar** |

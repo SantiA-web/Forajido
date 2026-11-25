@@ -348,8 +348,9 @@ export function createRenderer(canvas, vista) {
      *   pasa el color del papel (ver el comentario de TEXTO, arriba).
      */
     /** Cuánto mide un texto de `text` (para partirlo en renglones, ver engine/menu.js). */
-    medir(str, tam = TEXTO.tam) {
-      ctx.font = `${tam}px ${TEXTO.fuente}`;
+    // (📜 `letra`: otra fuente para los papeles de la historia, ver engine/papeles.js: `{ fuente, estilo }`.)
+    medir(str, tam = TEXTO.tam, letra = null) {
+      ctx.font = `${letra && letra.estilo ? letra.estilo + ' ' : ''}${tam}px ${letra && letra.fuente ? letra.fuente : TEXTO.fuente}`;
       return ctx.measureText(str).width;
     },
 
@@ -365,12 +366,16 @@ export function createRenderer(canvas, vista) {
        */
       const lienzo = opciones.lienzo || estiloNuevo.lienzoFino(ctx);
       const enFina = lienzo !== ctx;
-      const halo = enFina ? (opciones.halo || BORDE_GENTE) : opciones.halo === undefined ? '#000' : opciones.halo;
+      // (🐛 `halo: false`: sin contorno ni en la capa fina. Con `null` la capa fina le ponía igual el borde oscuro de la
+      // gente, y la letra de las cartas salía gorda, como en negrita.)
+      const halo = opciones.halo === false ? null : enFina ? (opciones.halo || BORDE_GENTE) : opciones.halo === undefined ? '#000' : opciones.halo;
       const haloPx = opciones.haloPx || (enFina ? CONFIG.estilo.bordeGente : 0);
       // (La capa fina no sabe de la transparencia con la que se está dibujando: se la pasa.)
       if (enFina) { lienzo.save(); lienzo.globalAlpha = ctx.globalAlpha; }
 
-      lienzo.font = `${tam}px ${TEXTO.fuente}`;
+      // (📜 `opciones.letra`: `{ fuente, estilo }`, para las cartas y el diario de la historia.)
+      const letra = opciones.letra;
+      lienzo.font = `${letra && letra.estilo ? letra.estilo + ' ' : ''}${tam}px ${letra && letra.fuente ? letra.fuente : TEXTO.fuente}`;
       lienzo.textAlign = align;
       lienzo.textBaseline = 'middle';
 
@@ -397,7 +402,16 @@ export function createRenderer(canvas, vista) {
         for (const [dx, dy] of HALO) lienzo.fillText(str, px + dx * d, py + dy * d);
       }
 
-      lienzo.fillStyle = color;
+      // (🖋️ `opciones.tinta: [al empezar, al terminar]`: la tinta que se va gastando a lo largo del renglón, ver
+      // engine/papeles.js. Un degradado de izquierda a derecha sobre lo que ocupa el texto.)
+      if (opciones.tinta) {
+        const an = Math.max(1, lienzo.measureText(str).width);
+        const x0 = align === 'left' ? px : align === 'right' ? px - an : px - an / 2;
+        const g = lienzo.createLinearGradient(x0, 0, x0 + an, 0);
+        g.addColorStop(0, opciones.tinta[0]);
+        g.addColorStop(1, opciones.tinta[1]);
+        lienzo.fillStyle = g;
+      } else lienzo.fillStyle = color;
       lienzo.fillText(str, px, py);
       if (enFina) lienzo.restore();
     },

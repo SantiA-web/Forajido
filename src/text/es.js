@@ -392,7 +392,7 @@ export const T = {
     // 🗞️ El título del papel con los avisos largos al llegar (ver `avisar` en scenes/campScene.js).
     enElCampamento: 'En el campamento',
     title: 'EL CAMPAMENTO',
-    keys: '[W A S D] MOVERSE     [E] USAR     [TAB] LA BANDA     [C] CALENDARIO     [ALT+ENTER] PANTALLA COMPLETA',
+    keys: '[W A S D] MOVERSE     [E] USAR     [TAB] LA BANDA     [C] CALENDARIO     [L] EL LIBRO     [ALT+ENTER] PANTALLA COMPLETA',
     lejos: 'MEJOR NO ALEJARSE DE LA FOGATA',
     // 🧪 El atajo de prueba de los guardias (ver campScene.js). Sacarlo con él.
     atajoCorreo: 'PRUEBA · [2] ESCOPETA · [3] WINCHESTER · [4] 1ª CLASE · [5] CUCHILLO · [6] SHERIFF · [7] TORMENTA (SHIFT: HUIDA)',
@@ -421,6 +421,7 @@ export const T = {
       carpaDia: '[E] DESCANSAR',
       // 🔥 Lo que aparece para un momento (ver data/momentos.js).
       carta: '[E] LEER LA CARTA',
+      recado: '[E] LEER EL RECADO',
       forastero: '[E] HABLAR CON EL FORASTERO',
       carpaNoche: '[E] DESCANSAR',
     },
@@ -1003,6 +1004,8 @@ export const T = {
       precios: (p, v) => 'La porción, $' + p + '. Te pago $' + v + ' por cada una.',
       comprar: (n, costo) => (n === 1 ? 'Comprar 1 porción' : 'Comprar ' + n + ' porciones') + ' - $' + costo,
       vender: (n, cobro) => (n === 1 ? 'Vender 1 porción' : 'Vender ' + n + ' porciones') + ' - $' + cobro,
+      /** 🦌 Los cueros y los cuernos de la caza, todos juntos. */
+      cueros: (n, cobro) => 'Vender lo que cazaste (' + n + (n === 1 ? ' pieza' : ' piezas') + ') - $' + cobro,
       nada: 'Nada más',
     },
     cerrado: (lugar) => `${lugar}. Cerrado hasta que amanezca.`,
@@ -1023,12 +1026,10 @@ export const T = {
       cuando: ['el fin de semana', 'a principios de semana', 'a principios de semana', 'a mitad de semana',
         'a mitad de semana', 'antes del fin de semana', 'el fin de semana'],
       pistas: {
+        troncal: (c) => `Los ganaderos de las llanuras embarcan su ganado ${c}.`,
         mina: (c) => `La Mina La Viuda despacha su mineral ${c}.`,
         norte: (c) => `En Álamo Seco esperan un cargamento de herramientas ${c}.`,
-        desierto: (c) => `Los comerciantes de San Cristóbal esperan mercadería ${c}.`,
-        rio: (c) => `El Fuerte Bravo recibe sus provisiones ${c}.`,
-        territorio: (c) => `Una compañía del Territorio manda su carga hacia el este ${c}.`,
-        llanuras: (c) => `Los ganaderos de las llanuras embarcan su ganado ${c}.`,
+        sur: (c) => `Los comerciantes de San Cristóbal esperan mercadería ${c}.`,
       },
       nada: 'Esta semana no se habla de cargamentos.',
       otras: [
@@ -1294,8 +1295,8 @@ export const T = {
   rumores: {
     dias: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'],
     vias: {
-      mina: 'el Circuito de la Mina', norte: 'la Línea del Norte', desierto: 'la Vía del Desierto',
-      rio: 'el Ramal del Río', territorio: 'la Línea del Territorio', llanuras: 'la Línea de las Llanuras',
+      troncal: 'la Línea de las Llanuras', mina: 'el Ramal de la Viuda', norte: 'la Línea del Norte',
+      sur: 'el Ramal de San Cristóbal',
     },
     // (Santi: "Frank, al ser alcohólico, va a la cantina seguido y es el que trae los rumores".)
     // 🔁 Ya no sólo Frank: cualquiera de la banda, y dónde lo oyó según el rasgo que más pesó (ver `chanceDeRumor`).
@@ -1424,6 +1425,48 @@ export const T = {
     humilde: 'Humilde', pendenciero: 'Pendenciero', pacifico: 'Pacífico', supersticioso: 'Supersticioso',
     esceptico: 'Escéptico', divertido: 'Divertido', serio: 'Serio', alcoholico: 'Alcohólico', vengativo: 'Vengativo',
     curioso: 'Curioso', jugador: 'Jugador', loco: 'Loco',
+  },
+
+  /**
+   * 🔖 LO QUE HACE CADA RASGO, en corto, para el cartelito que sale al pasar el mouse por un sello de la ficha *(Santi,
+   * 2026-11-23: "al pasar el cursor por encima te dice que es ese rasgo y brevemente que hace")*. Sale de las tablas
+   * de BANDA-NUEVA.md ("Las habilidades" y "Las personalidades"). Los que todavía no hacen nada no tienen.
+   */
+  rasgosQueHace: {
+    tipo: { habilidad: 'Habilidad', personalidad: 'Personalidad' },
+    punteria: 'De vigía, además de avisar, dispara. En la huida tumba a un jinete. Siempre vuelve con caza.',
+    riendas: 'Con los caballos rinde más. En la huida lo hieren la mitad de las veces.',
+    cuchillero: 'De pasajero rinde más. En una pelea de la fogata, el herido es siempre el otro.',
+    ganzua: 'Abre puertas trabadas y cajas sin llave. Con él en la banda, revisas el maletín en la mitad del tiempo.',
+    manoLigera: 'De pasajero roba bolsillos. En las cartas también, aunque a veces lo ven.',
+    actor: 'De pasajero rinde más. Le miente al sheriff: la fianza sale a la mitad.',
+    aguante: 'Puede ir herido a un golpe. Sus heridas duran la mitad.',
+    baraja: 'Gana a las cartas y saca más rumores.',
+    labia: 'Saca más rumores, calma las discusiones y consigue gente más barata.',
+    negociante: 'El perista le paga mejor y en la armería le cobran menos.',
+    vista: 'De vigía rinde más, también de noche. Al mirar un tren, lo ve todo.',
+    rastreador: 'En la huida recupera la mitad de las bolsas que se caen. Sabe encontrar al traidor.',
+    telegrafista: 'En el telégrafo rinde más. En la estación consigue un rumor cierto.',
+    cocinero: 'Cocina la caza del día y te cura un poco. En el pueblo puede vender guisos.',
+    curandero: 'Las heridas se curan tres días antes. Cose esa misma noche al herido de una pelea.',
+    dinamitero: 'Se encarga de la dinamita.',
+    leer: 'Lee los papeles del tren y el diario: rumores ciertos. Puede abrir el maletín.',
+    honorable: 'Nunca te vende. Pero se queja de cada golpe con civiles muertos.',
+    valiente: 'No huye y cuesta atraparlo. Pero en la huida lo hieren el doble.',
+    sentimental: 'Cada favor le pesa el doble. Cada queja, también.',
+    alcoholico: 'Con una botella olvida una queja y saca más rumores. Al otro día, resaca.',
+    confiable: 'Aunque esté furioso, va igual. Pero si rompes tu palabra, se queja el doble.',
+    divertido: 'En la fogata le borra quejas a otro. Si pasa tres días sin cartas, se aburre y se queja.',
+    frio: 'Las heridas no le dejan quejas. Pero le cuesta cambiar lo que piensa de ti.',
+    egoista: 'Preso, se escapa solo. Pero si se va, se lleva un cuarto de tu bolsa.',
+    serio: 'Su humor casi no se mueve. Pero nadie lo levanta, y ganar una discusión no le importa.',
+    cobarde: 'En la huida nunca lo hieren. Pero no dispara.',
+    ambicioso: 'Si le das lo que espera, rinde más. Pero espera más que los otros.',
+    rastrero: 'Nunca dice que no. Pero es más fácil que te traicione.',
+    pendenciero: 'De pasajero los guardias se rinden antes. Pero en el pueblo se mete en peleas.',
+    mentiroso: 'De pasajero tardan en descubrirlo. Pero sus rumores son dudosos.',
+    curioso: 'Ve mucho y saca más rumores. Pero se mete en tus secretos.',
+    pacifico: 'Para las peleas de la fogata. Pero no acuchilla ni dispara.',
   },
 
   plan: {
@@ -1595,6 +1638,8 @@ export const T = {
         otraBanda: `En el pueblo, unos hombres de otra banda le ofrecieron a ${nombre} irse con ellos.`,
         mujer: `${nombre} conoció a una mujer en el pueblo. Habla de quedarse.`,
       }[tipo] || `A ${nombre} le ofrecieron algo en el pueblo. No dice qué.`),
+      // 😈 (Cuando el Cuervo no suena: la historia del desierto.)
+      ofertaSinFama: (nombre, dias) => `Hace ${dias} días que nadie habla del Cuervo. Unos jinetes de otra banda pasaron cerca del campamento y hablaron con ${nombre}: "Con ese no vas a ningún lado. Vente con nosotros."`,
       ofertaLey: (nombre) => `Tu cabeza ya vale mucho. Alguien de la ley le habló a ${nombre}: el perdón, a cambio de entregarte.`,
       senal: (nombre) => ({
         Santiago: 'Santiago volvió del pueblo con botas nuevas. No dice de dónde sacó la plata.',
@@ -1790,6 +1835,7 @@ export const T = {
     jefe: (nombre) => `Mataste a ${nombre || 'el mini jefe'}`,
     jefeSinRebaja: 'SE ACABÓ',
     fama: 'Se habla de ti',
+    famaCuervo: 'La fama del Cuervo',
     bountyTotal: 'Recompensa por tu cabeza',
     honor: 'Cómo te vieron ahí',
     honorTotal: 'Cómo te ven',

@@ -105,7 +105,7 @@ export function crearReparto(audio) {
 
   function render(r) {
     if (!abierto) return;
-    const R = T.libreta.reparto, sinHalo = { halo: null }, { filas, g } = abierto;
+    const R = T.libreta.reparto, sinHalo = { halo: false }, { filas, g } = abierto;
     const alto = HOJA.arriba + filas.length * HOJA.renglon + HOJA.abajo;
 
     r.ctx.globalAlpha = 0.5;
@@ -116,7 +116,7 @@ export function crearReparto(audio) {
     papel(r, x, y, HOJA.w, alto);
 
     // El título, en tinta de sello, y el botín.
-    r.text(R.titulo, x + 14, y + 17, SELLO, 'left', { tam: 12, halo: null });
+    r.text(R.titulo, x + 14, y + 17, SELLO, 'left', { tam: 12, halo: false });
     r.rect(x + 14, y + 26, r.medir(R.titulo, 12) + 4, 1, TINTA_SUAVE);
     // (El botín y tu bolsa, arriba a la derecha: abajo se pisaban con los botones.)
     r.text(R.botin(abierto.botin), x + HOJA.w - 14, y + 14, TINTA, 'right', sinHalo);

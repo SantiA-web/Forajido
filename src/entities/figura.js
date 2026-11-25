@@ -32,7 +32,7 @@ import { tendido, TENDIDO } from './gente/tendido.js';
 import { tresCuartosConHuesos } from './gente/tresCuartos.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { PALETA } from '../engine/paleta.js';
-import { lienzoJugador, lienzoJinete, lienzoJineteChico, lienzoSilla, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
+import { lienzoJugador, lienzoJinete, lienzoJineteApunta, lienzoJineteChico, lienzoSilla, PIES as PIES_NUEVO, ANCHO as ANCHO_NUEVO, ALTO as ALTO_NUEVO } from './estiloNuevo/jugador.js';
 import { lienzoGente, lienzoTendido, PIES_TENDIDO, ANCHO_TENDIDO, ALTO_TENDIDO, lienzoJineteGente, coloresDe } from './estiloNuevo/gente.js';
 import { C as COLORES_JUGADOR } from './estiloNuevo/jugador.js';
 import { lienzoCaidaChica } from './estiloNuevo/jugador.js';
@@ -580,10 +580,11 @@ function dibujarHumo(ctx, L, aMundo, espejo, PASO) {
  * de la persona: las saca el caballo de su propio dibujo, así van los dos pegados punto por punto.
  */
 /** 🆕 `gente`: { aspecto, tipo } si es otra persona (un jinete de la ley, con el rifle en la funda). */
-export function jineteNuevo(r, { x, y, cuadro, luz, destello, silla = true, vista = 'lado', gente = null }) {
+// 🆕 `apunta`: { arma, ang, empuna } si sos vos apuntando montado (el campo, de cerca; ver lienzoJineteApunta).
+export function jineteNuevo(r, { x, y, cuadro, luz, destello, silla = true, vista = 'lado', gente = null, apunta = null }) {
   const PASO = CONFIG.estilo.punto / 4;
   const fino = CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
-  const L = gente ? lienzoJineteGente({ aspecto: gente.aspecto, tipo: gente.tipo, vista, cuadro, silla, fino, empuna: gente.empuna, ang: gente.ang }, luz, !!destello) : lienzoJinete({ vista, cuadro, fino, silla }, luz, !!destello);
+  const L = apunta ? lienzoJineteApunta({ vista, cuadro, fino, ...apunta }, luz, !!destello) : gente ? lienzoJineteGente({ aspecto: gente.aspecto, tipo: gente.tipo, vista, cuadro, silla, fino, empuna: gente.empuna, ang: gente.ang }, luz, !!destello) : lienzoJinete({ vista, cuadro, fino, silla }, luz, !!destello);
   const ix = x - (PIES_NUEVO[0] - 10) * PASO, iy = y - (PIES_NUEVO[1] - 27) * PASO;
   r.ctx.drawImage(L.img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);
   if (fino) estiloNuevo.marcarGente(r.ctx, L.img, ix, iy, ANCHO_NUEVO * PASO, ALTO_NUEVO * PASO);

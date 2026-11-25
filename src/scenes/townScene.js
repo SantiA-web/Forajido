@@ -38,6 +38,7 @@ import { crearMenu } from '../engine/menu.js';
 import { pistasDelDiario } from '../systems/horario.js';
 import { completarTiempo } from '../systems/tiempo.js';
 import { COMIDA } from '../data/comida.js';
+import { CAMPO } from '../data/campo.js';
 import { porciones, diasQueAlcanza, comensales, precioPorcion, precioVenta, precioDe, comprar, vender } from '../systems/comida.js';
 // (🗄️ El pueblo nuevo, en bloques, queda guardado para después: scenes/puebloNuevo.js y data/puebloNuevo.js. Ver PROMPT-CONTINUAR.md.)
 
@@ -230,16 +231,33 @@ export function createTownScene(services) {
       if (g.money >= costo) opciones.push({ id: 'c' + k, texto: A.comprar(k, costo) });
     }
     for (const k of [1, 5]) if (n >= k && precioVenta(g) > 0) opciones.push({ id: 'v' + k, texto: A.vender(k, k * precioVenta(g)) });
+    const cueros = cuerosQueTraes(g);
+    if (cueros.n) opciones.push({ id: 'cueros', texto: A.cueros(cueros.n, cueros.valor) });
     opciones.push({ id: 'no', texto: A.nada });
     const cuerpo = A.hay(n, diasQueAlcanza(g), comen) + '\n' + A.precios(precioPorcion(g), precioVenta(g));
     menu.abrir(A.nombre, opciones, (id) => {
       if (id === 'no') return false;
+      if (id === 'cueros') { g.money += cueros.valor; g.campo.carga.cueros = {}; g.campo.carga.cuernos = 0; g.campo.carga.menos = 0; audio.play('cover'); abrirAlmacen(); return true; }
       const k = Number(id.slice(1));
       const hecho = id[0] === 'c' ? comprar(g, k) : vender(g, k);
       if (hecho != null) audio.play('cover');
       abrirAlmacen(id);
       return true;
     }, cuerpo, { sel: Math.max(0, opciones.findIndex((o) => o.id === marcada)) });
+  }
+
+  /**
+   * 🦌 LOS CUEROS DE LA CAZA (los que trae el caballo del campo, CAMPO.caza): el almacén los compra todos juntos, cada
+   * uno a su precio (el de guanaco, el más caro), y los cuernos de berrendo como trofeo. Son mercadería legal: el
+   * perista queda para lo robado.
+   */
+  function cuerosQueTraes(g) {
+    const carga = g.campo && g.campo.carga;
+    if (!carga) return { n: 0, valor: 0 };
+    let n = carga.cuernos || 0, valor = (carga.cuernos || 0) * (CAMPO.caza.animales.berrendo.trofeo || 0);
+    for (const [tipo, k] of Object.entries(carga.cueros)) { n += k; valor += k * CAMPO.caza.animales[tipo].cuero; }
+    // (🩸 Los cueros agujereados valen menos: lo que se les descontó al carnearlos.)
+    return { n, valor: Math.max(0, Math.round(valor - (carga.menos || 0))) };
   }
 
   function update(dt) {
@@ -283,6 +301,8 @@ export function createTownScene(services) {
 
   function volver() {
     audio.play('escape');
+    // 🌵 (Si llegaste cabalgando por el campo, sales al campo, a la puerta del pueblo: scenes/campoScene.js.)
+    if (gameState.campo && gameState.campo.enPueblo) { scenes.goTo('campo', { volviendo: true }); return; }
     scenes.goTo('camp', { desde: 'pueblo' });
   }
 

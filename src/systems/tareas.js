@@ -18,6 +18,7 @@ import { MIEMBRO } from '../data/banda.js';
 import { fuerza, tiene, practicar } from './animo.js';
 import { regionDeLaBanda, despensa, diasQueAlcanza, comensales, comprar } from './comida.js';
 import { rumorDeCarga, rumorFalso } from './horario.js';
+import { alBajarAlPueblo } from './historia.js';
 import { RUMORES } from '../data/tareas.js';
 import { tasarLote } from '../data/perista.js';
 import { TRATOS } from '../data/tratos.js';
@@ -150,6 +151,8 @@ function pescar(g, id, azar) {
 
 function pueblo(g, id, datos, azar) {
   const e = g.banda[id], P = TAREAS.pueblo;
+  // 📖 (Frank, desde el asalto 6, ve el cartel de Santiago en la oficina de Dagget: ver data/escenas.js.)
+  alBajarAlPueblo(g, id);
   // 😤 (El Pendenciero se agarra a trompadas en la cantina: tu recompensa sube.)
   if (azar() < fuerza(e, 'pendenciero')) { g.bounty = (g.bounty || 0) + P.pendenciero; noticia(g, `tarea:${id}:pelea:${P.pendenciero}`); }
   if (datos && datos.para === 'comida') { comprarComida(g, id); return; }

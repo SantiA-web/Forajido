@@ -10,11 +10,19 @@ arranca dónde, de qué depende y dónde se cobra. El texto de cada escena se es
 
 - **Hecho** (en *cursiva*): algo que el juego anota y no se borra (*Le perdonaste la vida al Marshal*). Las cadenas
   preguntan por hechos.
-- **Cadena**: "si pasó X, en N golpes pasa Z, a menos que hagas K". El plazo se cuenta en golpes.
+- **Cadena**: "si pasó X, en N días pasa Z, a menos que hagas K". 🔁 *(Santi, 2026-11-23: "Nadie sabe cuántos
+  asaltos va a durar la región o el juego… Que sea por días y por partes de día… Las cosas tienen que depender de los
+  días y otras estadísticas como fama, honor, recompensa, lealtad")*: **nada se cuenta en golpes**. Los plazos van en
+  días, y las condiciones leen lo que el jugador ve (fama, recompensa, honor, plata, deuda, la lealtad en palabras).
+  Casi todas piden días **y** algo que hiciste, para que esperar en la carpa no dispare la historia.
 - **El termómetro**: la libreta, la lealtad, el ánimo y la tentación. Las cadenas lo pueden leer ("si Tommy está
   dudoso o menos…"), pero nunca disparan solas una escena de historia.
 - **Diaria**: lo que se repite (los civiles, la botella, el reparto). Cada una tiene su **contador** a la vista del
-  juego, y las cadenas lo leen ("si mataste civiles en 2 golpes o más…").
+  juego, y las cadenas lo leen ("si mataste civiles en 2 golpes o más…": eso sí es algo que hiciste y se ve).
+- **El objetivo** 🔁 *(2026-11-23, Santi: "no existe un objetivo claro")*: **la fama del Cuervo** es la barra de la
+  historia. En el desierto, Cole viene cuando el Cuervo pesa (HISTORIA-DESIERTO.md, "El objetivo"); cada región tiene
+  el suyo, a la vista en el libro de James.
+- ⚠️ Las regiones 2 a 4 todavía dicen "en N golpes": se pasan a días cuando se escriba el guion de cada una.
 - 🌱 = se siembra acá. 💰 = se cobra acá. ↪ = viene de una región anterior.
 
 ## Lo que corre por debajo de todo el viaje (los hilos)
@@ -36,17 +44,18 @@ arranca dónde, de qué depende y dónde se cobra. El texto de cada escena se es
 
 ## 1. Desierto: Cardón Rojo — "La banda se conoce"
 
-**El guion, asalto por asalto, está en HISTORIA-DESIERTO.md** (manda sobre esta sección). Ahí están también **los
+**El guion, con cuándo pasa cada cosa, está en HISTORIA-DESIERTO.md** (manda sobre esta sección). Ahí están también **los
 encargos** *(Santi, 2026-11-22)*: pedidos concretos de J.Mc., del pueblo, de la banda y de los contratados, que se
 cumplen adentro del tren (traer algo, no matar, hablar, liberar, dejar algo).
 
-**Por qué se van al norte** *(Santi eligió la D)*: J.Mc. tira (la carta "al norte", asalto 11), el desierto se seca
-(según lo que hiciste con la paga de la mina) y la ley empuja (el Marshal, asalto 14). Santiago no quiere: el norte lo
+**Por qué se van al norte** *(Santi eligió la D)*: J.Mc. tira (la carta de Cole, que termina "después, al norte"), el
+desierto se seca (según lo que hiciste con la paga de la mina) y la ley empuja (el Marshal, que viene cuando el Cuervo
+pesa). Santiago no quiere: el norte lo
 aleja de su familia.
 
 **De qué trata**: cuatro desconocidos que se miran de reojo. Todos parecen querer lo mismo (plata, cumplir con
 J.Mc.). James aprende a robar trenes. El nombre "El Cuervo" empieza a correr. **Termina** cuando el Marshal aparece
-de verdad y hay que irse al norte.
+de verdad (cuando la fama del Cuervo pesa) y hay que irse al norte.
 
 ### Cadenas que arrancan y se cobran acá
 - **"¿Por qué él manda?"** El primer golpe con botín, en la fogata, alguien pregunta por qué James es el jefe (Frank
@@ -54,15 +63,15 @@ de verdad y hay que irse al norte.
   chiste. Lo que elegiste lo recuerdan: si mostraste la carta, cada uno sabe que J.Mc. te eligió a ti, y en el
   bosque eso pesa.
 - **El tren de la paga (el capataz de la Mina La Viuda)**. Por plata te dice cuándo pasa. Si lo asaltas dos veces
-  (*Asaltaste dos veces la paga*), la mina lo culpa, y **en 3 golpes te vende a Dagget**, **a menos que** le hayas
-  dado su parte. Si te vende: el sheriff espera en el próximo golpe (la ley ya está en el tren).
+  (*Asaltaste dos veces la paga*), la mina lo culpa, y **te vende a Dagget**, **a menos que** le hayas dado su parte.
+  Si te vende: la ley ya está adentro del tren de Cole.
 - **El pañuelo y Dagget**. Si bajas al pueblo con el pañuelo puesto después de que "El Cuervo" salió en el diario,
   Dagget lo ve de cerca (*Dagget vio el pañuelo*): deja de venderse, y **te persigue él mismo** con la escopeta de
   dos caños (en la huida del próximo golpe hay un jinete más, y no se compra). **A menos que** te hayas sacado el
   pañuelo para bajar, o mandes a otro.
 - **Rosa**. Si le compras, no haces lío en la cantina y la tratas bien (lo cuenta una Diaria del pueblo), **cuando te
   busquen te esconde una noche**: se cobra en el cierre del desierto.
-- **El Marshal en la mira** *(el cierre de la región)*. En un golpe del final del desierto, **Reuben Cole viaja en el
+- **El Marshal en la mira** *(el cierre de la región)*. Cuando la fama del Cuervo pesa, **Reuben Cole viaja en el
   tren**. James lo reconoce por los carteles y lo tiene a tiro. James cree que mató a su padre.
   - Lo matas → *Mataste al Marshal*: se pierde el único aliado posible contra John. La ley sigue con otro marshal
     sin historia, y Kate llega antes (en la pradera, desde el primer golpe).
@@ -73,7 +82,7 @@ de verdad y hay que irse al norte.
 ### Se siembra para después
 - 🌱 **"El Cuervo" en los diarios**: con el primer golpe grande, el diario lo nombra. Es lo que Wes lee (pradera).
 - **Les pisas un tren a los Rennick** *(pasó de la pradera al desierto, 2026-11-22: la pradera quedó en 9 golpes)*:
-  un rumor de la cantina era de ellos. Lo asaltas igual → *Les pisaste un tren a los Rennick*. **En 3 golpes**, Eli te
+  un rumor de la cantina era de ellos. Lo asaltas igual → *Les pisaste un tren a los Rennick*. **3 días después**, Eli te
   manda un aviso clavado en un poste. Si lo vuelves a hacer, **emboscan el campamento**. Si en esa pelea le perdonas la
   vida a uno → 🌱 *Le perdonaste la vida a un Rennick* (Clay ofrece, en la pradera). Si muere Abel → *Murió Abel*: no
   hay paz posible.
@@ -206,7 +215,11 @@ pocos trenes: **apenas tres vías**, así que el horario casi no da para elegir,
 
 ## Cuántos golpes tiene cada región
 
-Hoy son **8 por región** (la pradera desde el golpe 9, el bosque desde el 17, la montaña desde el 25: `regionDesde`
+🔁 **Ya no se mide así** *(Santi, 2026-11-23)*: una región termina cuando se cierra su cadena final (en el desierto,
+Cole), no en un golpe fijo. Los números de abajo quedan como lo que Santi imaginó de largo para cada una: sirven para
+medir en el simulador cuántos días dura una región jugando normal, no como regla del juego.
+
+Antes eran **8 por región** (la pradera desde el golpe 9, el bosque desde el 17, la montaña desde el 25: `regionDesde`
 en `src/data/comida.js`), unos 32 golpes en total.
 
 Cuento lo que tiene que entrar. Una cadena necesita unos **3 o 4 golpes** de largo (arranca, se avisa, se cobra), y
@@ -229,7 +242,7 @@ desierto. ⚠️ Una partida de 41 golpes es más larga que la de 30 que decía 
 
 ## Lo que hace falta construir (una sola vez)
 
-**El motor de cadenas**: anota hechos, cuenta plazos en golpes, revisa condiciones ("si pasó X y Tommy está dudoso o
+**El motor de cadenas**: anota hechos, cuenta plazos en días (🔁 antes en golpes), revisa condiciones ("si pasó X y Tommy está dudoso o
 menos"), y los "a menos que". Cada cadena se escribe como datos en un archivo (quién, cuándo arranca, plazo, qué la
 corta, qué escena muestra), igual que los momentos del campamento de hoy. Se construye con el desierto y sirve para
 todo el viaje.

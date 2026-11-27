@@ -7,7 +7,24 @@ así que confiá en ellos más que en cualquier cosa que yo te diga de memoria.
 `NOTAS-DISENO.md` es grande (11.000 líneas): usá Grep para ir a la sección que
 necesites en vez de leerlo entero cada vez.
 
-## LO ÚLTIMO (2026-11-26): LAS CARRETAS DEL CAMPO Y SUS ASALTOS (etapa 4 del campo con vida)
+## LO ÚLTIMO (2026-11-27): LAS CARRETAS PULIDAS
+
+Santi me dejó a cargo de pulir las carretas, con jueces revisando cada tanda (detalle en NOTAS-DISENO, 2026-11-27):
+- **El escopetero a pie** (`src/world/escopeteros.js`): se cubre de verdad detrás de la carreta, recarga sólo
+  escondido, usa piedras cuando lo acosas, baja y sube caminando, esquiva piedras y matas, y no se lo engaña al volver.
+- **Las piedras y las lonas paran las balas**, para todos.
+- **Sin tirones** al galopar al lado de una carreta (frena y arranca de a poco; el dibujo no salta de grilla).
+- **Los pasajeros y el conductor vuelven a subir** caminando al terminar el asalto; la carreta los espera.
+- **En fila sin encimarse**; **la vuelta de la mina** paga ~$160 (la muestra de mineral vale [110, 150]).
+
+⚠️ Probado con el banco y medido, pero Santi jugó sólo la primera tanda ("Bastante mejor"); lo de los pasajeros, la
+fila, el esquive y la vuelta de la mina todavía no lo jugó.
+
+⏭️ **Sigue: etapa 5 del campo con vida** (campamentos de paso y viaje rápido): plan con opciones primero. Quedan de las
+carretas, que Santi no considera necesarios: la carreta se esfuma cerca del pueblo, los desvíos no se guardan al
+recargar, el día de las carretas puede desfasarse, el daño de los perdigones, el conductor aparece de golpe al bajarse.
+
+## ANTES (2026-11-26): LAS CARRETAS DEL CAMPO Y SUS ASALTOS (etapa 4 del campo con vida)
 
 - **Las carretas andan por los caminos** (`src/world/carretas.js`, números en `CAMPO.carretas` de `src/data/campo.js`)
   *(Santi, 2026-11-25: "pondría varios tipos de carretas… de menos a más")*: colonos (con lona), carga y mina (sin lona;

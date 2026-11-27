@@ -210,6 +210,8 @@ export function crearEscolta({ carretas, C, PROF, audio, james, escopeteros, gal
   /** Le pega tu bala al jinete `j` de la carreta `id`: { que: 'escopetero' | 'muerto', id }. */
   function herir(id, j, fuerza = 1) {
     alertar(id);
+    // (🔁 Herido, reacciona ya: antes, si lo herías sin que se hubiera dado cuenta, tardaba la reacción entera.)
+    j.reaccion = Math.min(j.reaccion, 0.2);
     j.vida -= G.danio.aGuardia * fuerza;
     const E = estadoDe(id);
     if (j.vida > 0) { if (!E.heridos) E.heridos = {}; E.heridos[j.i] = j.vida; return { que: 'escopetero', id }; }

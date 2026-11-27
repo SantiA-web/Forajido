@@ -44,7 +44,7 @@ import { dibujarPersona, faseDeAndar } from '../entities/figura.js';
 import { dibujarFogonazo } from '../entities/bullet.js';
 import { crearPolvo } from '../world/polvoDeCascos.js';
 import { dibujarSueloAbierto } from '../world/estiloNuevo/suelo.js';
-import { dibujarObstaculoNuevo } from '../world/estiloNuevo/obstaculos.js';
+import { dibujarObstaculoNuevo, piedraEn } from '../world/estiloNuevo/obstaculos.js';
 import { ACHATA } from '../world/destinos.js';
 import { armarVias, dibujarVias, crearPintor } from '../world/campoVias.js';
 import { armarRelieve } from '../world/campoRelieve.js';
@@ -274,6 +274,9 @@ export function createCampoScene(services) {
   /** 🔫 Asaltarlas (world/asaltoCarreta.js, CAMPO.carretas.asalto). */
   const asalto = crearAsaltoCarreta({ carretas, C: CAMPO.carretas, PROF, g: () => gameState, decir: (t, v) => decir(t, v), menu, TC, audio, subirFama,
     james: () => dondeEstaJames(), herirJames: (p, perdigon) => herirJames(p, perdigon), galope: HORSES.criollo.sprintSpeed,
+    piedra: (x0, y0, x1, y1, b) => piedraEnElTiro(x0, y0, x1, y1, b),
+    // (🪨 Las piedras de un rectángulo: el escopetero se cubre detrás de ellas.)
+    rocas: (x0, y0, x1, y1) => obstaculosCerca(x0, y0, x1, y1).filter((ob) => ob.tipo === 'roca' && !ob.golpeado),
     // (Adónde escapa campo traviesa una diligencia: los pueblos.)
     pueblos: () => pueblos,
     // (Dónde puede estar el caballo de un guardia: sin piedra, mata ni carreta, y en el llano —no sube a las mesetas—.)
@@ -361,6 +364,26 @@ export function createCampoScene(services) {
     return lista;
   }
 
+  /**
+   * 🪨 Dónde se queda en una piedra la bala que va de (x0, y0) a (x1, y1) en este cuadro: { x, y }, o null *(Santi,
+   * 2026-11-26: "arreglá que las lonas y piedras paren las balas")*. Se mira sobre el dibujo de la roca, como la lona sobre
+   * el de la carreta. `b`: la bala, con dónde salió (`sx`, `sy`), hasta dónde apuntaba (`largo`) y si salió de arriba
+   * de un caballo o de un pescante (`alto`): ésa pasa por encima, salvo cerca de adonde iba (`CAMPO.balaEnPiedra`).
+   * Vale igual para tus balas y las de los guardias *(memoria: lo que golpea vale igual para todos)*.
+   */
+  function piedraEnElTiro(x0, y0, x1, y1, b) {
+    const rocas = obstaculosCerca(Math.min(x0, x1) - 14, Math.min(y0, y1) - 6, Math.max(x0, x1) + 14, Math.max(y0, y1) + 16)
+      .filter((ob) => ob.tipo === 'roca' && !ob.golpeado);
+    if (!rocas.length) return null;
+    const pasos = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.5));
+    for (let i = 1; i <= pasos; i++) {
+      const x = x0 + ((x1 - x0) * i) / pasos, y = y0 + ((y1 - y0) * i) / pasos;
+      if (b.alto && Math.hypot(x - b.sx, y - b.sy) < CAMPO.balaEnPiedra.altoPasa * b.largo) continue;
+      for (const ob of rocas) if (piedraEn(ob, x, y)) return { x, y };
+    }
+    return null;
+  }
+
   // (🌿 `aPie`: a pie, al arbusto te metés; ver arbustoEn.)
   function chocaCon(x, y, aPie = false) {
     // 🛞 (La carreta choca igual que una piedra: montado te frena el golpe; a pie, no pasás.)
@@ -423,6 +446,9 @@ export function createCampoScene(services) {
   function puedeEsperar() {
     const E = CAMPO.esperar;
     if (!E.activa || carneo) return false;
+    // (🔁 No en medio de un asalto ni con una carreta defendiéndose: el salto de horas la movía kilómetros, con el conductor
+    // y los pasajeros parados en el desierto.)
+    if (CAMPO.carretas.activa && (asalto.ahora || Object.keys(asalto.defensas).length)) return false;
     if (cerca && cerca.lugar && cerca.tipo !== 'campamento') return true;
     return CAMPO.carretas.activa && carretas.activas.some((c) => Math.hypot(c.x - yo.x, (c.y - yo.y) / PROF) < E.carretaA);
   }
@@ -752,7 +778,7 @@ export function createCampoScene(services) {
     const lejos = Math.hypot(m.x - bx, m.y - by);
     const bala = (a, fuerza) => {
       const meta = [bx + Math.cos(a) * lejos, by + Math.sin(a) * lejos];
-      tiros.push({ x: bx, y: by, vx: Math.cos(a) * arma.bulletSpeed, vy: Math.sin(a) * arma.bulletSpeed, recorrido: 0, fuerza, meta, aPie: !!yo.aPie, conductor: CAMPO.carretas.activa ? asalto.apuntado(meta) : null });
+      tiros.push({ x: bx, y: by, vx: Math.cos(a) * arma.bulletSpeed, vy: Math.sin(a) * arma.bulletSpeed, recorrido: 0, fuerza, meta, aPie: !!yo.aPie, sx: bx, sy: by, largo: lejos, alto: !yo.aPie, conductor: CAMPO.carretas.activa ? asalto.apuntado(meta) : null });
     };
     if (arma.perdigones) {
       for (let i = 0; i < arma.perdigones; i++) bala(hacia + (i / (arma.perdigones - 1) - 0.5) * 2 * medio + rng.spread(medio / arma.perdigones), arma.damage * arma.factorPerdigon);
@@ -774,11 +800,13 @@ export function createCampoScene(services) {
       b.x += b.vx * dt; b.y += b.vy * dt; b.antes = [x0, y0];
       b.recorrido += Math.hypot(b.x - x0, (b.y - y0) / PROF);
       if (b.recorrido > arma.range) { b.fin = true; continue; }
+      // 🪨 (Una piedra en el medio: la bala llega hasta ahí y no sigue. Lo que esté antes de la piedra, sí le pega.)
+      const pi = piedraEnElTiro(x0, y0, b.x, b.y, b), hx = pi ? pi.x : b.x, hy = pi ? pi.y : b.y;
       // 🔫 (El conductor de una carreta: la bala lo mata. La lona la para; la madera, sólo si tiraste a pie.)
-      const enCarreta = CAMPO.carretas.activa && asalto.bala(x0, y0, b.x, b.y, b.conductor, b.aPie, b.fuerza);
+      const enCarreta = CAMPO.carretas.activa && asalto.bala(x0, y0, hx, hy, b.conductor, b.aPie, b.fuerza);
       if (enCarreta) { b.fin = true; audio.play(enCarreta === 'tela' || enCarreta === 'madera' ? 'hitWall' : 'hitFlesh'); continue; }
-      const golpe = fauna.impacto(x0, y0, b.x, b.y, b.meta);
-      if (!golpe) continue;
+      const golpe = fauna.impacto(x0, y0, hx, hy, b.meta);
+      if (!golpe) { if (pi) { b.fin = true; audio.play('hitWall'); } continue; }
       b.fin = true;
       const lejos = b.recorrido / arma.range;
       const fuerza = b.fuerza * (lejos > caida.plenoHasta ? 1 + (caida.alFinal - 1) * (lejos - caida.plenoHasta) / Math.max(0.001, 1 - caida.plenoHasta) : 1);
@@ -1255,11 +1283,12 @@ export function createCampoScene(services) {
     // conductor: antes no se sabía si la mira estaba bien puesta.)
     const que = CAMPO.carretas.activa ? asalto.forzandoQue : null;
     const frenando = CAMPO.carretas.activa ? asalto.frenando : null;
-    const forzando = CAMPO.carretas.activa ? asalto.forzando ?? frenando : null;
+    const seVa = CAMPO.carretas.activa && !que && frenando == null ? asalto.seVa : null;
+    const forzando = CAMPO.carretas.activa ? asalto.forzando ?? frenando ?? seVa : null;
     if (forzando != null) {
       // (Más arriba que la del carneo: abajo va el cartel de lo que se puede usar.)
       const sx = Math.round(((yo.x - cam.x) * lupa()) / DENSIDAD), sy = Math.round(((yo.y - yo.alto - cam.y) * lupa()) / DENSIDAD) - 40;
-      const texto = que === 'cofre' ? TC.carreta.forzando : que ? TC.carreta.tomando[que] : TC.carreta.frenando;
+      const texto = que === 'cofre' ? TC.carreta.forzando : que ? TC.carreta.tomando[que] : frenando != null ? TC.carreta.frenando : TC.carreta.seVaBarra;
       r.text(texto, sx, sy - 4, '#f3e2a0', 'center', { tam: 7 });
       r.rect(sx - 20, sy, 40, 4, 'rgba(20,14,10,0.75)');
       r.rect(sx - 19, sy + 1, Math.round(38 * forzando), 2, '#d8b060');

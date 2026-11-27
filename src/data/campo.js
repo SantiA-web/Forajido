@@ -197,6 +197,14 @@ export const CAMPO = {
   /** 🆕 Apuntar (clic derecho): cuánto tarda en sacar el arma y en guardarla, y cuánto queda arriba después de un tiro (s). */
   apuntar: { saca: 0.25, guarda: 0.4, queda: 1.5 },
   /**
+   * 🪨 LAS PIEDRAS PARAN LAS BALAS (scenes/campoScene.js, `piedraEnElTiro`) *(Santi, 2026-11-26: "arreglá que las lonas y
+   * piedras paren las balas")*: la bala se queda donde cruza el dibujo de la roca (no su sombra). Así, agachado detrás de
+   * una te cubre entero; parado, el pecho asoma por encima y te pueden pegar (y tú a él). Montado (o sentado en un
+   * pescante) el arma va más alta y la bala pasa por encima, salvo cerca de adonde iba, donde ya bajó: `altoPasa` es la
+   * parte del tiro (desde el que tira) en que todavía va por encima.
+   */
+  balaEnPiedra: { altoPasa: 0.6 },
+  /**
    * 🛞 LAS CARRETAS (etapa 4 del campo con vida, paso 1; world/carretas.js) *(Santi, 2026-11-25: "pondría varios tipos de
    * carretas… vamos de menos a más"; "arrancá por el 1")*. Andan por los caminos del plano, por su derecha
    * (`porLaDerecha`, unidades del medio del camino), y antes que ellas se ve su polvo.
@@ -226,7 +234,12 @@ export const CAMPO = {
     saleHasta: 0.6,
     // (🔁 `rapidaDe`: asustadas, las pesadas van al trote —con mineral o mercadería, mulas o bueyes, no galopan—; la
     // diligencia, liviana, con `rapida`. Revisión: todas iban a 25 km/h.)
-    vel: { paso: 0.16, rapida: 0.6, rapidaDe: { carga: 0.3, mina: 0.3, colono: 0.3 } },
+    // (🔁 2026-11-27: `acelera` y `frena`, cuánto cambia el ritmo por segundo —1 es el paso—: antes cambiaba de golpe y
+    // daba tirones. Al paso frena en un cuarto de segundo; la diligencia apurada, en uno.)
+    vel: { paso: 0.16, rapida: 0.6, rapidaDe: { carga: 0.3, mina: 0.3, colono: 0.3 }, acelera: 1.5, frena: 4 },
+    // (🔁 2026-11-27: cuándo se dibuja contada desde la cámara —ver `desdeDonde` en world/carretas.js—: con la diferencia
+    // entre su velocidad y la tuya por debajo de `pegadaEntra` de la suya; vuelve al suelo por encima de `pegadaSale`.)
+    pegadaEntra: 0.3, pegadaSale: 0.5,
     /**
      * 🐎 EL SUSTO: apura a los caballos (`vel.rapida`) si un jinete viene al galope hacia ella a menos de `ve` metros, o
      * si suena un tiro a menos de `oye` metros. Sigue rápida `dura` segundos desde el último susto. (Cuando la manejes
@@ -257,12 +270,21 @@ export const CAMPO = {
     asalto: {
       activa: true,
       // (🔁 `sueltaRendido`: la que se rindió porque mataste a sus guardias —quizás de lejos— te espera más.)
-      frena: { metros: 25, apuntar: 1.5, cerca: 8, suelta: 5, sueltaRendido: 12 },
+      // (🔁 2026-11-26, revisión con jueces, por Santi: "el conductor solo me hace caso cuando le apunto desde arriba del
+      // caballo". A pie no se puede ir al paso de la carreta: el mouse queda quieto, ella sigue, y la mira se le salía del
+      // pecho antes de 1,5 s; y cada vez que se salía, la cuenta bajaba y se borraba. Ahora vale apuntarle a la carreta
+      // entera —`conductor.carreta`—, alcanza `apuntar` 1 s, salirse un momento sólo la baja a la mitad y se borra
+      // recién a los `perdona` segundos sin apuntarle. `suelta` era 5: a los `aviso` segundos te avisa que se va.)
+      frena: { metros: 25, apuntar: 1.0, perdona: 0.6, cerca: 8, suelta: 8, aviso: 2, sueltaRendido: 12 },
       usarA: 5,
       // (🔁 Lo que se tarda en tomar la plata, la carga o lo de los pasajeros, con el mundo andando: antes era al
       // instante, con el menú abierto y los tiros parados en el aire.)
       tomar: 1.5,
-      conductor: { adelante: 1.7, alto: 1.1, pecho: 0.6, radio: 0.45, mira: 1.2, caido: 1.8, lona: 2.0, lonaMira: 2.2, bajado: 1.6, pechoDePie: 1.25,
+      // (🔁 `pecho` era 0,6: el punto caía en el regazo, lejos de la cabeza. `mira` era 1,2. `carreta`: el óvalo alrededor
+      // de la carreta donde también vale apuntar —a `alto` metros del suelo, de `radio` metros, `aplasta` más alto que
+      // ancho—.)
+      conductor: { adelante: 1.7, alto: 1.1, pecho: 0.95, radio: 0.45, mira: 1.8, caido: 1.8, lona: 2.0, lonaMira: 2.2, bajado: 1.6, pechoDePie: 1.25,
+        carreta: { alto: 1.3, radio: 3.0, aplasta: 1.3 },
         // (El pescante de la diligencia, más alto y más atrás que el de las carretas.)
         de: { diligencia: { adelante: 1.42, alto: 1.97, bajado: 2.3 } } },
       botin: {
@@ -270,7 +292,13 @@ export const CAMPO = {
         carga: { plata: [20, 40], bultos: 2, valor: [30, 40] },
         // (🔁 2026-11-26, Santi: "voy con tus recomendaciones": de ida a la mina lleva la paga de los mineros en un cofre
         // que se fuerza en `cofre.forzar` segundos; de vuelta, mineral, que no te puedes llevar: sólo la plata del conductor.)
-        mina: { plata: [20, 40], cofre: [150, 250] },
+        // (🔁 Revisión: el cofre era [150, 250]: con tres Winchester pagaba menos que la diligencia. Y la de vuelta, que tiene
+        // el mismo escopetero y un jinete, daba sólo la plata del conductor: ahora lleva una muestra de mineral que se
+        // vende al perista —`minaVuelta`—.)
+        mina: { plata: [20, 40], cofre: [250, 350] },
+        // (🔁 2026-11-27, Santi: "mejor elijamos la C, que no tendremos que dibujar más". La muestra valía [50, 70]: con la
+        // plata, ~$90, menos que la de carga y con un Winchester y un jinete. Ahora ~$160. Un cofre de oro pedía dibujo nuevo.)
+        minaVuelta: { plata: [20, 40], bultos: 1, valor: [110, 150], mineral: true },
         // (🆕 La diligencia: el cochero, los `pasajeros` —entre los dos números— con `porPasajero` cada uno, y la caja del
         // correo bajo el pescante, que se fuerza como el cofre.)
         // (🔁 La caja era [200, 400]: la diligencia daba ~$410 con un solo guardia, la mejor y la más fácil. Ahora lleva
@@ -280,11 +308,17 @@ export const CAMPO = {
       // (Los pasajeros de la diligencia, bajados en fila detrás del cochero, cada `entre` metros; uno sí y uno no,
       // `afuera` metros más lejos de la diligencia.)
       pasajeros: { entre: 1.5, afuera: 1.0 },
+      // (🚶 Terminado el asalto, el conductor y los pasajeros vuelven caminando a `vuelven` m/s: él a su asiento, ellos a
+      // la puerta. La carreta los espera. 2026-11-27, Santi: "los pasajeros desaparecen al terminar el asalto".)
+      vuelven: 1.4,
       cofre: { forzar: 8 },
       bultosMax: 2, comidaMax: 4,
       // (🔁 Revisión: la recompensa por robar, según lo que vale —era 150 para todas—; y matar a un civil con testigo
       // cuesta más que robar —era 110, menos que robar: matar a todos salía siempre mejor—.)
-      cuentas: { testigoA: 90, recompensa: { colono: 30, carga: 60, mina: 120, diligencia: 150 }, fama: { colono: 2, carga: 3, mina: 8, diligencia: 20 }, matar: { honor: -25, recompensa: 200, fama: 5 } },
+      // (🔁 Revisión: `testigoA` era 90, el triple de lo que se ve; ahora 60, y avisa. `denuncia`: lo que cuesta que una
+      // que se te escapó te denuncie sin que te llevaras nada —antes costaba lo mismo que robarla, y regalaba fama—.)
+      cuentas: { testigoA: 60, recompensa: { colono: 30, carga: 60, mina: 120, minaVuelta: 60, diligencia: 150 }, fama: { colono: 2, carga: 3, mina: 8, minaVuelta: 4, diligencia: 20 }, matar: { honor: -25, recompensa: 200, fama: 5 },
+        denuncia: { recompensa: 50, fama: 0 } },
     },
     /**
      * 🔫 LOS ESCOPETEROS (paso 2B, parte 1; world/escopeteros.js) *(Santi, 2026-11-26: "propongo que el escopetero pueda
@@ -318,7 +352,27 @@ export const CAMPO = {
       // (🔁 2026-11-26, Santi: "la atraviesan, no usan los espacios": a pie anda por un anillo alrededor de la carreta
       // —`largo` y `ancho` metros desde el medio, más que ella—, escondido entre `escondido` segundos y asomado por una
       // punta o `afuera` veces más lejos; tira `rafaga` tiros, o hasta `asomadoMax` segundos, y vuelve a cubrirse.)
-      pie: { velocidad: 2.4, largo: 2.7, ancho: 1.8, afuera: 1.5, escondido: [1.0, 2.2], rafaga: 2, asomadoMax: 5, aparte: 0.7 },
+      // 🔁 (2026-11-26, revisión con un juez, por Santi: "el escopetero no es bueno, se queda demasiado vulnerable".) Antes
+      // caminaba a 2,4 m/s, se asomaba hasta 5 s apuntando desde cero y escondido esperaba [1, 2,2]: quedaba a la vista
+      // tres cuartos del tiempo. Ahora apunta mientras está escondido (sabe dónde estás) y al asomarse tira a los
+      // `primerTiro` segundos (según su arma), el segundo tras la pausa del arma (`rafagaPausa`), y vuelve a cubrirse
+      // (`asomadoMax` 1,6). Se asoma por un punto a menos de `asomaHasta` metros de su reparo si hay (sorteado entre los que
+      // hay), y si te quedas quieto más de `flanquea` segundos a menos de `flanqueaA` metros, sale por la otra punta.
+      // Herido, se cubre enseguida y espera `herido` segundos más.
+      // (🔁 2026-11-27, Santi: "no se oculta detrás de la carreta, recarga enfrente mío, no usa el entorno". `reparo`: la caja
+      // de la carreta que lo tapa de verdad —metros atrás y adelante del medio, y a cada lado; sin la lanza—: la línea
+      // entre él y tú tiene que pasar por adentro. `roca`: se cubre también detrás de una piedra a menos de `a` metros de
+      // la carreta, a `lejos` metros del medio de la piedra; elige lo que menos cuesta: lo que camina, cada metro a la
+      // vista `expuesto` veces más, y la piedra `costo` metros de más.)
+      pie: { velocidad: 3.6, largo: 2.7, ancho: 1.8, afuera: 1.5, escondido: [0.8, 2.8], rafaga: 2, asomadoMax: 1.6, aparte: 0.7,
+        primerTiro: { escopeta: 0.25, winchester: 0.3 }, asomaHasta: 2.0, flanquea: 4, flanqueaA: 15, herido: 1.0,
+        // (`acosado`: cada vez que lo sacas de su reparo o lo hieres, la piedra le cuesta esos metros menos —hasta
+        // `acosadoMax` veces—; se le pasa uno cada `calma` segundos. 🔁 `acosado` era 3: con el camino contado de verdad,
+        // nunca le convenía. 🔁 `lejos` era 1,2: rodeándola, de costado le pasaba por adentro.)
+        reparo: { atras: 1.7, adelante: 1.8, ancho: 1.0 }, roca: { a: 12, lejos: 1.5, expuesto: 3, costo: 0, acosado: 5, acosadoMax: 3, calma: 6 } },
+      // (🔁 La escopeta llega más lejos en el campo —×1,5: unos 14 m—: si no, entre sus 10 m y los 19 de tu Colt nunca
+      // se asomaba, y tú le tirabas tranquilo. De lejos el abanico se abre y entran pocos perdigones.)
+      alcancePor: { escopeta: 1.5 },
       // 🛡️ DEFENDERSE (🔁 2026-11-26, Santi: "puedo estar bastante lejos de la carreta y les puedo disparar de frente
       // porque no se cubren, ni se bajan"; eligió "según dónde estés" y que el conductor se baje y se cubra). Una carreta
       // con guardias, amenazada (oyó tu tiro, le apuntaste o la viste con el arma afuera): si estás adelante —a menos de
@@ -328,7 +382,12 @@ export const CAMPO = {
       // (🔁 Si le pegas, frena al instante. Y se van también si estás fuera del alcance de sus armas más `margen` metros:
       // antes, entre 10 y 40 m con la escopeta, nadie hacía nada nunca. Parada —le cortaste el camino, o de noche—,
       // se defiende aunque no estés adelante: no puede escapar.)
-      defensa: { adelante: 50, frena: 1.2, calma: 20, suelta: 40, margen: 5 },
+      // (🔁 `frena` era 1,2: se quedaba sentado al descubierto mientras la carreta frenaba.)
+      // (🔁 `margen` era 5: con la escopeta a 14 m, a 19 m ya volvían caminando a sus asientos a la vista y tu Colt los
+      // alcanzaba. Con 20, vuelven cuando tus armas ya no llegan: tu Winchester, a 32 m.)
+      // (`vuelven`: volviendo a sus asientos, si te acercas a menos de la distancia a la que se fueron, menos estos metros,
+      // se dan cuenta y vuelven a cubrirse. 2026-11-27, Santi: "el escopetero se puede engañar mientras vuelve a subir".)
+      defensa: { adelante: 50, frena: 0.7, calma: 20, suelta: 40, margen: 20, vuelven: 5 },
       cuerpo: { pecho: 1.25, agachado: 0.8 },
       // 🎯 (🔁 2026-11-26, Santi: "veo como si las balas no le pegaran siempre cuando sí debería") Dónde pega una bala: una
       // columna del tamaño del dibujo (world/cuerpos.js), de `abajo` metros sobre los pies hasta `pie`, `agachado` o
@@ -376,6 +435,10 @@ export const CAMPO = {
     // costado). Las que se cruzan de frente se corren `cruce` metros cada una a su derecha, desde `cruceVe` metros
     // (antes se atravesaban).
     rodeo: { aparte: 5, largo: 14, entra: 8, lateral: 0.6, cruce: 1.5, cruceVe: 14 },
+    // 🚦 (2026-11-27, Santi: "dos carretas que van para el mismo lado pueden encimarse".) La de atrás, con otra que anda
+    // delante por el mismo camino (a menos de `ancho` metros de costado): desde `ve` metros se acomoda a su paso, y a
+    // `cerca` metros (de medio a medio) frena.
+    sigue: { ve: 14, cerca: 8, ancho: 2.5 },
     // 🏃 ESCAPAR CAMPO TRAVIESA (2026-11-26, Santi: "si te ponés enfrente de la carreta, el conductor podría elegir
     // salirse del camino y seguir escapando. Debería tener como prioridad llegar a un pueblo"; me preguntó qué sería lo
     // más normal). Las de `tipos` —la diligencia: liviana y rápida, con plata y correo— no frenan si te pones adelante

@@ -544,6 +544,19 @@ function revolver(n) {
  * Dibuja el obstáculo con el pie en (`ox`, `ob.y`), en el mundo (`ctx` con la cámara puesta). Se apoya en un punto
  * entero de la grilla, como el suelo con el que corre.
  */
+/**
+ * 🪨 Si el punto (x, y) del mundo cae sobre la roca `ob` parada (en la piedra, no en su sombra): ahí se queda una bala
+ * *(Santi, 2026-11-26: "arreglá que las lonas y piedras paren las balas")*. Se mira sobre el mismo mapa que se dibuja, así
+ * que lo que tapa es lo que se ve. Rota (golpeada), ya no tapa.
+ */
+export function piedraEn(ob, x, y) {
+  if (ob.tipo !== 'roca' || ob.golpeado) return false;
+  const T = OBSTACULOS.roca;
+  const ox = Math.round(ob.x / PASO) * PASO - T.pie[0] * PASO, oy = Math.round(ob.y / PASO) * PASO - T.pie[1] * PASO;
+  const fila = T.mapa[Math.floor((y - oy) / PASO)], ch = fila && fila[Math.floor((x - ox) / PASO)];
+  return !!ch && ch !== '.' && ch !== 's' && ch !== 'S';
+}
+
 export function dibujarObstaculoNuevo(ctx, ob, ox, noche, mojado = false, o = {}) {
   // (`o.chico`: en la huida, el que tenga su dibujo chico —el algarrobo— va con ése. `o.lejos`: del otro lado de la
   //  vía en el galope, el chico con el punto del galope, o sea a la mitad.)

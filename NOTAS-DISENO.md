@@ -20965,6 +20965,48 @@ Después: etapa 5 del campo con vida (campamentos de paso y viaje rápido).
 
 ---
 
+## ✅ 2026-11-27: LAS CARRETAS PULIDAS (el escopetero, los tirones, las balas en piedras y lonas)
+
+Santi me dejó a cargo *("Yo te voy a dejar al mando para que resuelvas todos los problemas de la carreta y lo que
+conlleva, hazlo con subagentes que funcionen como jueces")*. Cada tanda la revisó un juez y se arregló lo que encontró.
+
+- ✅ **Las piedras y las lonas paran las balas** *(Santi: "arreglá que las lonas y piedras paren las balas")*: la bala se
+  queda donde toca el dibujo de la roca (`piedraEn`, `world/estiloNuevo/obstaculos.js`; `piedraEnElTiro` en
+  `scenes/campoScene.js`), igual para ti y para los guardias; la que sale de arriba de un caballo o un pescante pasa por
+  encima salvo cerca de adonde iba (`CAMPO.balaEnPiedra`).
+- ✅ **El escopetero a pie** (`world/escopeteros.js`) *(Santi: "no se oculta detrás de la carreta, recarga enfrente mío
+  lo que lo deja desprotegido, no usa el entorno, se buguea con la carreta")*:
+  - cubierto sólo si la carreta está de verdad entre los dos, en el suelo (`detras`, la caja `pie.reparo`); antes se
+    "escondía" en la punta de la lanza;
+  - recarga sólo escondido; sin dónde taparse, te tira en vez de agacharse a cargar; el Winchester carga lo que le falta;
+  - se cubre también detrás de las piedras (`reparo`, `pie.roca`): cuando lo sacas de su lugar o lo hieres
+    (`acosado`), si desde ahí te puede tirar y el camino no es a la vista (contado metro a metro);
+  - baja y sube del pescante caminando, y se baja con la carreta casi quieta;
+  - él y el conductor esquivan piedras y matas al caminar *(Santi: "al caminar, ninguno de los dos esquiva piedras ni
+    matas")*; sin salida, pasan igual;
+  - no se lo engaña mientras vuelve a subir *(Santi: "el escopetero se puede engañar mientras vuelve a subir")*: si te
+    acercas de nuevo (`defensa.vuelven`), se cubren otra vez;
+  - un cuelgue de medio segundo por cuadro (el conductor de una carreta lejana buscando piedras) se cortó.
+  - Simulado contra un jugador que anticipa: lo mata en 10 a 17 s y recibe 25 a 61 de daño.
+- ✅ **Sin tirones** *(Santi: "la carreta da tirones cuando galopo")*: frena y arranca de a poco (`vel.acelera`,
+  `vel.frena`, `ritmos` en `world/carretas.js`), y el dibujo deja de saltar entre la grilla de la cámara y la del
+  suelo (`desdeDonde`, `pegadaEntra`/`pegadaSale`).
+- ✅ **Los pasajeros vuelven a subir** *(Santi: "los pasajeros desaparecen al terminar el asalto")*: terminado el
+  asalto, el conductor camina a su asiento y los pasajeros a la puerta (`volviendo` en `world/asaltoCarreta.js`); la
+  carreta los espera y después sigue. Si le tiras a uno, cuenta como matar a un civil.
+- ✅ **En fila sin encimarse** *(Santi: "dos carretas que van para el mismo lado pueden encimarse")*: la de atrás se
+  acomoda al paso de la de adelante por el mismo camino (`siguiendo`, `CAMPO.carretas.sigue`).
+- ✅ **La vuelta de la mina vale más** *(Santi: "mejor elijamos la C, que no tendremos que dibujar más")*: la muestra de
+  mineral vale [110, 150] (era [50, 70]): ~$160 con la plata. La opción del cofre de oro pedía dibujo nuevo.
+
+⏭️ **Queda de las carretas** (Santi no los considera necesarios): la carreta se esfuma al llegar cerca del pueblo; los
+desvíos no se guardan al recargar; el día de las carretas puede desfasarse del del juego; el daño de los perdigones;
+los pasajeros que vuelven no esquivan matas y entran por el mismo punto de la puerta; el conductor aparece de golpe en
+el suelo al bajarse.
+Sigue: etapa 5 del campo con vida (campamentos de paso y viaje rápido), con plan primero.
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

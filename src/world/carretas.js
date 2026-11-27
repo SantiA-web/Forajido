@@ -105,6 +105,13 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
   /** Los segundos que le quedan de susto a cada viaje (no se guarda: si te vas, se calma). */
   const sustos = {};
   /**
+   * 🐎 El ritmo de cada viaje ahora (1 = al paso, 0 = parada, más de 1 = apurada; no se guarda). 🔁 (2026-11-27, Santi:
+   * "la carreta da tirones cuando galopo"): galopando hacia ella se asustaba y pasaba del paso a la carrera en un cuadro
+   * —la diligencia, casi cuatro veces más rápido—, y se paraba en seco si te le ponías adelante. Ahora el ritmo va hacia
+   * el que toca de a poco: arranca y apura con `vel.acelera` por segundo, frena con `vel.frena`.
+   */
+  const ritmos = {};
+  /**
    * 🛞 Lo que cada carreta se acuerda entre cuadros (no se guarda): `desvios` (el rodeo: cuántos metros va corrida a su
    * derecha `d`, cuánto tuerce el rumbo `giro`, dónde estaba `s`, si espera detrás de una parada `espera`) y `rastros`
    * (dónde estuvo, para el polvo).
@@ -168,12 +175,22 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
       if (deDia && asusta && asusta(c)) sustos[v.id] = C.susto.dura;
       if (sustos[v.id] > 0) { sustos[v.id] -= dt; if (sustos[v.id] <= 0) delete sustos[v.id]; }
       if (p.parada || SU) { /* (quieta para siempre; o suelta, que ya se movió) */ }
-      else if (deDia && frente(c)) { A[v.id] = (A[v.id] || 0) + dt; c.anda = false; }
-      else if (deDia && sustos[v.id]) {
-        // 🐎 Rápida: lo que anda de más, como un atraso para el otro lado (la posición sigue saliendo de la hora).
-        A[v.id] = (A[v.id] || 0) - dt * (rapidaDe(v.tipo) / C.vel.paso - 1);
-        c.rapida = true;
-      }
+      else if (deDia) {
+        // 🐎 Parada si hay alguien delante; rápida si está asustada; si no, al paso. Lo que anda de menos o de más se
+        // cuenta como un atraso (la posición sigue saliendo de la hora). 🔁 Antes cambiaba de golpe (ver `ritmos`).
+        let meta = frente(c) ? 0 : sustos[v.id] ? rapidaDe(v.tipo) / C.vel.paso : 1;
+        // 🚦 (2026-11-27, Santi: "dos carretas que van para el mismo lado pueden encimarse".) Si otra que anda va
+        // delante, para el mismo lado y por el mismo camino, a menos de `sigue.ve` metros, ésta se acomoda a su paso; a
+        // menos de `sigue.cerca`, frena. Las paradas no cuentan: a ésas las rodea (ver `rodear`).
+        if (meta > 0) meta = Math.min(meta, siguiendo(c));
+        let r = ritmos[v.id] == null ? 1 : ritmos[v.id];
+        r = meta > r ? Math.min(meta, r + C.vel.acelera * dt) : Math.max(meta, r - C.vel.frena * dt);
+        ritmos[v.id] = r;
+        A[v.id] = (A[v.id] || 0) + dt * (1 - r);
+        c.ritmo = r;
+        if (r < 0.02) c.anda = false;
+        if (r > 1.05) c.rapida = true;
+      } else ritmos[v.id] = 0;   // (De noche, quieta: al amanecer arranca de a poco, no con el ritmo de la tarde.)
       // Ocho vistas: la del rumbo de verdad más cercano (cada una cubre 45°). 🔁 Eran cuatro *(Santi: "te pasé 5 vistas para
       // que añadieras las diagonales de la carreta y pase a 8 vistas")*.
       c.vista = VISTAS[(Math.round(Math.atan2(-c.dy, c.dx) / (Math.PI / 4)) + 8) % 8];
@@ -198,6 +215,8 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
     // (si no, irse del campo era un truco para que no te denuncie).
     for (const k in A) if (!ids.has(k)) delete A[k];
     for (const k in sustos) if (!ids.has(k)) delete sustos[k];
+    for (const k in ritmos) if (!ids.has(k)) delete ritmos[k];
+    for (const k in pegadas) if (!ids.has(k)) delete pegadas[k];
     for (const k in desvios) if (!ids.has(k)) delete desvios[k];
     for (const k in rastros) { const R = rastros[k]; if (!ids.has(k) || !R.length || reloj - R[R.length - 1].t > C.polvo.vida + 0.5) delete rastros[k]; }
     const SUS = sueltas();
@@ -207,6 +226,9 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
       if (!(E && (E.llego || E.s != null))) llegar({ id: k, tipo: SUS[k].tipo || 'diligencia' }, SUS[k]);
       delete SUS[k];
     }
+    // (🔁 Y lo anotado de cada asalto —robada, conductor muerto, pasajeros—: antes se juntaba para siempre en la partida.
+    // Después de las sueltas: si no, una que ya había llegado perdía su `llego` y te volvía a denunciar.)
+    { const EST = estados(); for (const k in EST) if (!ids.has(k)) delete EST[k]; }
   }
 
   /** 🏃 Una suelta llegó a su pueblo: su viaje termina ahí y el asalto decide si te denuncia (`alLlegar`). */
@@ -482,9 +504,10 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
         // (Trabada: ni por un lado ni por el otro. Espera detrás, como si tuviera a alguien delante. 🔁 Si iba apurada,
         // se deshace también lo del susto: si no, "esperando" seguía avanzando y se metía en la parada.)
         if (c.anda) {
-          const r = c.rapida ? rapidaDe(c.tipo) / C.vel.paso : 1;
+          const r = c.ritmo != null ? c.ritmo : c.rapida ? rapidaDe(c.tipo) / C.vel.paso : 1;
           atrasos()[c.id] = (atrasos()[c.id] || 0) + dtAhora * r;
           c.anda = false; c.rapida = false;
+          ritmos[c.id] = 0;   // (y arranca de a poco cuando haya paso)
         }
         D.espera = true;
         poner(c, D);
@@ -501,6 +524,26 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
       poner(c, D);
     }
     for (const k in rodeos) if (!usados.has(k)) delete rodeos[k];
+  }
+
+  /** 🚦 Hasta qué ritmo puede ir `c` por la que tiene delante en su mismo camino (1 o más si no hay ninguna cerca). */
+  function siguiendo(c) {
+    const S = C.sigue;
+    let tope = Infinity;
+    if (!S) return tope;
+    for (const o of activas) {
+      // (🔁 Revisión con un juez: del mismo camino y para el mismo lado; si no, en un cruce cada una veía a la otra
+      // "delante" y se frenaban las dos.)
+      if (o.id === c.id || !o.anda || o.suelta || o.dx * c.dx + o.dy * c.dy < 0.7) continue;
+      if (o.v && c.v && (o.v.cam !== c.v.cam || o.v.vuelta !== c.v.vuelta)) continue;
+      const ex = (o.x - c.x) / POR_METRO, ey = (o.y - c.y) / POR_METRO / PROF;
+      const a = ex * c.dx + ey * c.dy, b = -ex * c.dy + ey * c.dx;
+      if (a <= 0 || a > S.ve || Math.abs(b) > S.ancho) continue;
+      // (Cerca, frena; un poco más lejos, de a poco hasta el paso de la de adelante.)
+      const suya = o.ritmo ?? 1, f = (a - S.cerca) / (S.ve - S.cerca);
+      tope = Math.min(tope, a < S.cerca ? 0 : suya + Math.max(0, 1 - suya) * f);
+    }
+    return tope;
   }
 
   /** 🛞 Cuántos metros va corrida de su camino la carreta `id` ahora (para que quede ahí si se para por un asalto). */
@@ -525,6 +568,33 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
   }
 
   /**
+   * 🔁 (2026-11-27, Santi: "la carreta da tirones cuando galopo".) Contada siempre desde la cámara, galopando a su lado
+   * —la cámara corriendo más rápido que ella— la carreta avanzaba sobre el suelo a saltos desparejos: medio punto, dos,
+   * nada, dos y medio. Ahora se cuenta desde la cámara sólo mientras va a tu paso (ahí sí, si no daba saltitos a tu
+   * lado); si no, pegada al suelo, como todo lo quieto. Para no saltar de una a otra, entra a contarse desde la cámara
+   * con la diferencia de velocidades por debajo de `pegadaEntra` de la suya, y sale por encima de `pegadaSale`.
+   */
+  const pegadas = {};
+  function desdeDonde(c, ancla) {
+    if (!ancla) return null;
+    const g = pegadas[c.id], k = 0.25;
+    if (!g) { pegadas[c.id] = { x: c.x, y: c.y, ax: ancla.x, ay: ancla.y, vx: 0, vy: 0, cx: 0, cy: 0, conCamara: false, reloj }; return null; }
+    // (Si estuvo un rato sin dibujarse —fuera de la pantalla—, empieza de cero: si no, tomaba el salto por velocidad.)
+    if (reloj - g.reloj > 0.2) { Object.assign(g, { x: c.x, y: c.y, ax: ancla.x, ay: ancla.y, vx: 0, vy: 0, cx: 0, cy: 0, conCamara: false, reloj }); return null; }
+    if (g.reloj !== reloj) {
+      // (Las velocidades, suavizadas: el paso de James cambia un poco cada cuadro.)
+      g.vx += (c.x - g.x - g.vx) * k; g.vy += (c.y - g.y - g.vy) * k;
+      g.cx += (ancla.x - g.ax - g.cx) * k; g.cy += (ancla.y - g.ay - g.cy) * k;
+      Object.assign(g, { x: c.x, y: c.y, ax: ancla.x, ay: ancla.y, reloj });
+      const suya = Math.hypot(g.vx, g.vy / PROF), dif = Math.hypot(g.vx - g.cx, (g.vy - g.cy) / PROF), cam = Math.hypot(g.cx, g.cy / PROF);
+      const q = suya > 1e-4 ? dif / suya : cam > 1e-4 ? 99 : (g.conCamara ? 0 : 99);
+      if (g.conCamara && q > C.pegadaSale) g.conCamara = false;
+      else if (!g.conCamara && q < C.pegadaEntra) g.conCamara = true;
+    }
+    return g.conCamara ? ancla : null;
+  }
+
+  /**
    * `ancla`: la cámara sin pegar a la grilla (la que sigue a James); `cam`, la pegada. 🔁 Pegada a la grilla de la
    * pantalla nada más, la carreta daba saltitos de un punto para adelante y para atrás cuando ibas a su lado *(Santi:
    * "al moverse da unos pequeños saltitos")*: ella y la cámara se pegaban a la grilla en cuadros distintos. Ahora se
@@ -532,6 +602,7 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
    * punto, parejo.
    */
   function dibujar(r, c, noche, ancla, cam, conductor) {
+    ancla = desdeDonde(c, ancla);
     const T = r.ctx.getTransform();
     const chico = Math.abs(T.a) * PT < 2, pt = chico ? 2 * PT : PT;
     const fino = !!C.bordeFino && CONFIG.estilo.bordeGente < CONFIG.estilo.punto;
@@ -655,5 +726,7 @@ export function crearCarretas({ relieve, PROF, C, galope, segundosPorParte, part
     /** El polvo en el aire (después de todo lo de la tierra). */
     dibujarAire(ctx, cam, vista, celda) { const cs = copos(cam, vista); if (cs.length) dibujarNubeDeAire(ctx, cs, false, celda); },
     get activas() { return activas; }, caminos, viajes, luz, POR_METRO,
+    /** (Para el banco de pruebas: si se cuenta desde la cámara.) */
+    pegadaConCamara: (id) => !!(pegadas[id] && pegadas[id].conCamara),
   };
 }

@@ -364,8 +364,9 @@ const FORMAS = {
   guanaco:  { L: 17, H: 5, P: 7, lomo: '#b08458', panza: '#f0e6d6', patas: '#8a6440', cuello: 4, cabeza: [3, 3] },
 };
 
-function dibujar(r, a, noche = false) {
-  if (nuevo(a)) { dibujarVenado(r, a, noche); return; }
+/** `ancla` y `cam`: la cámara sin pegar a la grilla y la pegada (ver dibujarVenado). */
+function dibujar(r, a, noche = false, ancla = null, cam = null) {
+  if (nuevo(a)) { dibujarVenado(r, a, noche, ancla, cam); return; }
   const s = TAM[a.tipo];
   r.ctx.save(); r.ctx.translate(a.x, a.y); r.ctx.scale(s, s); r.ctx.translate(-a.x, -a.y);
   (a.vivo ? parado : tendido)(r, a, FORMAS[a.tipo]);
@@ -446,7 +447,7 @@ function poseVenado(a) {
   return { vista: deCostado, pose: geometria(a, FORMAS[a.tipo]).pasta ? 'pasta' : 'quieto', cuadro: 0 };
 }
 
-function dibujarVenado(r, a, noche) {
+function dibujarVenado(r, a, noche, ancla = null, cam = null) {
   const T = r.ctx.getTransform();
   // De lejos (un punto no llega a 2 píxeles) va el dibujo chico, como el caballo.
   const chico = Math.abs(T.a) * PT < 2, pt = chico ? 2 * PT : PT;
@@ -456,11 +457,17 @@ function dibujarVenado(r, a, noche) {
   const D = DIBUJOS[a.tipo].dibujo({ tam: chico ? 'chico' : 'grande', ...elige, fino }, noche);
   // (pegado a la grilla de la pantalla, como el caballo: si no, tiembla un punto al correr)
   const pegar = (v, esc, corre) => (T.b || T.c ? v : (Math.round((esc * v + corre) / CONFIG.estilo.punto) * CONFIG.estilo.punto - corre) / esc);
-  const ox = pegar(a.x - D.x * pt, T.a, T.e), oy = pegar(a.y - D.y * pt, T.d, T.f);
+  // 🔁 (Contado desde la cámara sin pegar, como las carretas: pegado a la grilla de la pantalla nada más, el que corría a
+  // tu lado daba saltitos de un punto para adelante y para atrás; ella y la cámara se pegaban en cuadros distintos.
+  // *Santi: "poneselo a los animales también"*.)
+  const P = CONFIG.estilo.punto / Math.abs(T.a || 1);
+  const desde = (v, an, k) => (an != null && k != null && !(T.b || T.c) ? k + Math.round((v - an) / P) * P : v);
+  const ox = pegar(desde(a.x - D.x * pt, ancla && ancla.x, cam && cam.x), T.a, T.e), oy = pegar(desde(a.y - D.y * pt, ancla && ancla.y, cam && cam.y), T.d, T.f);
   const deFrente = elige.vista === 'norte' || elige.vista === 'sur';
   r.ctx.save();
   r.ctx.globalAlpha = 0.25; r.ctx.fillStyle = '#000';
-  r.ctx.beginPath(); r.ctx.ellipse(a.x, a.y, deFrente ? 4 : 10, deFrente ? 5 : 2, 0, 0, Math.PI * 2); r.ctx.fill();
+  // (la sombra, pegada como el dibujo: suelta, se deslizaba debajo de las patas)
+  r.ctx.beginPath(); r.ctx.ellipse(ox + D.x * pt, oy + D.y * pt, deFrente ? 4 : 10, deFrente ? 5 : 2, 0, 0, Math.PI * 2); r.ctx.fill();
   r.ctx.restore();
   r.ctx.drawImage(D.lienzo, ox, oy, D.lienzo.width * pt, D.lienzo.height * pt);
   // 🧪 El borde fino de un píxel, el de la gente: se marca en la máscara y se traza al final del cuadro.

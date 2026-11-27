@@ -87,7 +87,8 @@ export function armarRelieve(plano, aMundo, R) {
     }
   }
   for (const c of plano.caminos || []) {
-    const pts = linea(c.puntos, 900);
+    // 🔁 (Sin suavizar: tramos rectos con quiebres, así la carreta va alineada. Ver PLANO.caminos.)
+    const pts = c.puntos.map(plana);
     caminos.push({ nombre: c.nombre, pts, caja: caja(pts, R.anchoCamino) });
   }
 
@@ -158,7 +159,10 @@ export function armarRelieve(plano, aMundo, R) {
     ctx.fillStyle = color; ctx.beginPath();
     for (let k = 0; k < pts.length - 1; k++) {
       const a = pts[k], b = pts[k + 1], n = normalAchatada(a, b);
-      const dx = (b[0] - a[0]) * 0.2, dy = (b[1] - a[1]) * 0.2;
+      // (Cada tramo, estirado un poco para que se unan: un quinto de su largo, pero no más que el medio ancho; si no, en
+      // los caminos de tramos largos sobresalía una punta en cada esquina.)
+      const largo = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, estira = Math.min(0.2, medio / largo);
+      const dx = (b[0] - a[0]) * estira, dy = (b[1] - a[1]) * estira;
       ctx.moveTo(a[0] - dx + n[0] * medio, a[1] - dy + n[1] * medio + bajar);
       ctx.lineTo(b[0] + dx + n[0] * medio, b[1] + dy + n[1] * medio + bajar);
       ctx.lineTo(b[0] + dx - n[0] * medio, b[1] + dy - n[1] * medio + bajar);
@@ -202,8 +206,7 @@ export function armarRelieve(plano, aMundo, R) {
     for (const c of caminos) {
       if (!tocaCaja(c.caja, x0, y0, x1, y1)) continue;
       banda(ctx, c.pts, R.anchoCamino / 2, COLOR.camino);
-      rayas(ctx, c.pts, 7, COLOR.huella, 2);
-      rayas(ctx, c.pts, -7, COLOR.huella, 2);
+      // 🔁 (Sin las huellas de las ruedas: lisos *(Santi: "a los caminos no les pongas los huecos de las carretas")*.)
     }
     for (const r of rios) {
       if (!tocaCaja(r.caja, x0, y0, x1, y1)) continue;

@@ -18,6 +18,9 @@ export const TC = {
     sur: 'Del otro lado está México. Por ahora, no tienes nada que hacer allí.',
   },
 
+  /** 🌇 Esperar hasta la noche (de día) o hasta el día (de noche), cerca de un lugar o de una carreta. */
+  esperar: { noche: '[N] Esperar hasta la noche', dia: '[N] Esperar hasta el día', yaNoche: 'Cayó la noche.', yaDia: 'Amaneció.' },
+
   /** Lo que dice la etiqueta al acercarte a algo. */
   usar: {
     campamento: '[E] Volver al campamento',
@@ -31,6 +34,62 @@ export const TC = {
     montar: '[F] Subir al caballo',
     tanque: '[E] Dar de beber al caballo',
     puesto: '[E] Puesto Seco',
+    carreta: '[E] Asaltar la carreta',
+  },
+
+  /** 🔫 Asaltar una carreta (world/asaltoCarreta.js). */
+  carreta: {
+    alto: '¡Alto! El conductor frena y levanta las manos.',
+    siguio: 'La carreta sigue su camino, a toda prisa.',
+    mataste: 'Mataste al conductor.',
+    seRinde: '¡Me rindo! ¡No dispares!',
+    niLoSuenes: '¡Ni lo sueñes! ¡Llevo escolta!',
+    escapa: '¡La diligencia se sale del camino y escapa!',
+    denuncia: (que, pueblo, n) => que + ' llegó a ' + pueblo + ' y te denunció. Recompensa: +$' + n + '.',
+    seDefienden: 'La carreta frena: se bajan a pelear.',
+    titulo: { colono: 'La carreta de los colonos', carga: 'La carreta de carga', mina: 'La carreta de la mina', diligencia: 'La diligencia' },
+    cuerpo: 'El conductor tiene las manos arriba y no te quita los ojos de encima.',
+    cuerpoMuerto: 'El conductor está tirado al lado de la carreta.',
+    opciones: {
+      plata: (n) => 'Llevarte la plata del conductor ($' + n + ')',
+      plataMuerto: (n) => 'Revisarle los bolsillos ($' + n + ')',
+      comida: (n) => 'Llevarte la comida (' + n + ' porciones)',
+      bultos: (n) => 'Llevarte la carga (' + n + (n === 1 ? ' bulto' : ' bultos') + ' de mercadería)',
+      irse: 'Dejarlo ir',
+      irseMuerto: 'Irte',
+    },
+    bulto: 'Bulto de mercadería',
+    tomaste: {
+      plata: (n) => 'Te llevaste $' + n + '.',
+      comida: (n) => 'Cargaste ' + n + (n === 1 ? ' porción' : ' porciones') + ' de comida en el caballo.',
+      bultos: (n) => 'Cargaste ' + n + (n === 1 ? ' bulto' : ' bultos') + ' en el caballo. Véndelos al perista.',
+    },
+    noCabeBultos: 'El caballo no carga más bultos.',
+    noCabeComida: 'El caballo no carga más comida.',
+    cofre: (n) => 'Forzar el cofre de la paga ($' + n + ')',
+    cajaCorreo: (n) => 'Forzar la caja del correo ($' + n + ')',
+    pasajeros: (k, n) => 'Robarles a los ' + k + ' pasajeros ($' + n + ')',
+    robastePasajeros: (n) => 'Los pasajeros te dieron todo: $' + n + '.',
+    matastePasajero: 'Mataste a un pasajero.',
+    cuerpoDiligencia: 'El cochero tiene las manos arriba y los pasajeros bajaron detrás de él. Bajo el pescante va la caja del correo.',
+    forzando: 'Forzando el candado…',
+    forzaste: (n) => 'Lo abriste: $' + n + '.',
+    dejasteElCofre: 'Lo dejaste a medias.',
+    dejasteAMedias: 'Te alejaste: lo dejaste a medias.',
+    tomando: { plata: 'Tomando la plata…', carga: 'Cargando el caballo…', pasajeros: 'Revisando a los pasajeros…' },
+    frenando: '¡Alto!…',
+    cuerpoMina: 'El conductor tiene las manos arriba. En la caja hay un cofre con candados.',
+    escopetero: ({ recompensa, fama }) => 'Mataste al escopetero.' + (recompensa ? ' Recompensa +$' + recompensa + ' · Fama +' + fama : ' Nadie te vio.'),
+    jinete: ({ recompensa, fama }) => 'Mataste a un jinete de la escolta.' + (recompensa ? ' Recompensa +$' + recompensa + ' · Fama +' + fama : ' Nadie te vio.'),
+    caiste: 'Caíste herido. Te esposaron ahí mismo.',
+    cuentas: ({ recompensa, fama, honor, testigo }) => {
+      const p = [];
+      if (recompensa) p.push('Recompensa +$' + recompensa);
+      if (fama) p.push('Fama +' + fama);
+      if (honor) p.push('Honor ' + honor);
+      return (testigo ? 'Te vieron. ' : 'Nadie te vio. ') + (p.length ? p.join(' · ') : 'Nadie sabe que fue el Cuervo.');
+    },
+    descargaste: (bultos, comida) => [bultos ? bultos + (bultos === 1 ? ' bulto' : ' bultos') + ' para el perista' : '', comida ? comida + (comida === 1 ? ' porción' : ' porciones') + ' de comida a la despensa' : ''].filter(Boolean).join(' y ') + '.',
   },
 
   /** Lo que no se puede cruzar (lo dice al chocar). */
@@ -93,8 +152,10 @@ export const TC = {
   },
   noCargaCarne: (n) => 'El caballo no carga más carne: dejaste ' + n + (n === 1 ? ' porción.' : ' porciones.'),
   noCargaCuero: 'No cabe otro cuero en el caballo: véndelos en el almacén.',
-  carga: (carne, maxCarne, cueros, maxCueros, cuernos) =>
-    'Carne ' + carne + '/' + maxCarne + ' · Cueros ' + cueros + '/' + maxCueros + (cuernos ? ' · Cuernos ' + cuernos : ''),
+  /** 🩸 Tu vida, cuando no está entera. */
+  vida: (n) => 'Vida ' + Math.max(0, Math.round(n)),
+  carga: (carne, maxCarne, cueros, maxCueros, cuernos, bultos, comida) =>
+    'Carne ' + carne + '/' + maxCarne + ' · Cueros ' + cueros + '/' + maxCueros + (cuernos ? ' · Cuernos ' + cuernos : '') + (bultos ? ' · Bultos ' + bultos : '') + (comida ? ' · Comida ' + comida : ''),
   descargaste: (n) => 'Bajaste ' + n + (n === 1 ? ' porción' : ' porciones') + ' de carne para la banda.',
   pistaEnElMapa: 'El sur, para el lado de las Llanuras: lo marcaste en el mapa.',
 

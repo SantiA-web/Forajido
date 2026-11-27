@@ -599,6 +599,15 @@ export const CONFIG = {
      */
     colorBloqueado: '#c86a52',
     alpha: 0.75,
+    /**
+     * 🔁 LA MIRA NUEVA (entities/estiloNuevo/mira.js) *(Santi, 2026-11-26: "un puntito como el de GTA V que esté
+     * relleno... la escopeta... como un paréntesis")*: el círculo de arriba ya no se dibuja (sus números quedan para
+     * lo que todavía los usa). Colores de la paleta de 48: `relleno` suelta, `rellenoApuntando` con clic derecho,
+     * `rellenoBloqueado` cuando no se puede tirar. `escopeta` y `escopetaApuntando`: a cuántos puntos del centro van
+     * los paréntesis. Tamaño fijo: no cambia con la distancia.
+     */
+    relleno: 17, rellenoApuntando: 30, rellenoBloqueado: 10,
+    escopeta: 6, escopetaApuntando: 3,
   },
 
   enemy: {

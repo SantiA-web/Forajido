@@ -197,14 +197,25 @@ export const PLANO = {
     },
   ],
 
+  /**
+   * 🛞 LOS CAMINOS: tramos rectos, cada uno derecho, acostado o en diagonal justa (tantos de ancho como de alto), y en
+   * las esquinas un quiebre, sin curvas. 🔁 Eran líneas libres suavizadas: hacían panzas, y la carreta (que tiene ocho
+   * vistas) quedaba torcida *(Santi, 2026-11-25: "hacelos de vuelta, intentando que no hagan curvas o panzas… la
+   * carreta está desalineada con el camino")*. Unen los mismos lugares, rodean las mesetas y no van por la vía.
+   */
   caminos: [
     { nombre: 'Camino Real', porque: 'El camino viejo de la frontera a la mina, de antes del tren. La vía lo copió.',
-      puntos: [[74, 199], [72, 174], [70, 130], [72, 100], [76, 74], [84, 50], [92, 30]] },
+      // (derecho al norte por San Cristóbal hasta Piedra Roja, sigue al norte por el oeste del arroyo y sube en diagonal a la mina)
+      puntos: [[74, 199], [74, 76], [76, 74], [76, 40], [86, 30], [92, 30]] },
     { nombre: 'Camino del Fuerte', porque: 'Del fuerte al vado del este: por ahí patrulla el ejército.',
-      puntos: [[340, 108], [326, 140], [306, 176], [300, 200]] },
+      // (sale al sur, cruza las Lomas del Bravo en diagonal y baja derecho al vado)
+      puntos: [[340, 108], [340, 124], [300, 164], [300, 200]] },
     { nombre: 'Camino de las Carretas', porque: 'Del Paso al vado del medio, por Puesto Seco. Por acá pasan las carretas que no pagan el tren.',
-      puntos: [[186, 104], [184, 130], [200, 148], [232, 148], [224, 180], [218, 202]] },
+      // (baja al oeste del arroyo, lo cruza en diagonal, rodea la Mesa Quemada por el oeste y el sur, y del puesto
+      // derecho al sur hasta el vado; derecho por el arroyo iba encima del cauce)
+      puntos: [[186, 104], [180, 110], [180, 122], [206, 148], [232, 148], [232, 188], [218, 202]] },
     { nombre: 'Camino de la Granja', porque: 'De Piedra Roja al Paso, por los Hale.',
-      puntos: [[76, 74], [112, 86], [140, 90], [160, 102], [186, 104]] },
+      // (al este por el norte de la vía, baja a la granja, y va entre la Mesa Larga y la vía hasta el Paso)
+      puntos: [[76, 74], [124, 74], [140, 90], [150, 100], [182, 100], [186, 104]] },
   ],
 };

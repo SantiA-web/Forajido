@@ -21,6 +21,7 @@
  * o cosas ya hechas")*.
  */
 import { CONFIG } from '../data/config.js';
+import { dibujarMira as dibujarMiraNueva } from '../entities/estiloNuevo/mira.js';
 import { CAMPO } from '../data/campo.js';
 import { REGION } from '../data/region.js';
 import { TIEMPO } from '../data/tiempo.js';
@@ -30,13 +31,14 @@ import { caballoActual, APROXIMACION as A, HORSES } from '../data/horse.js';
 import { gameState } from '../state/gameState.js';
 import { T } from '../text/es.js';
 import { TC } from '../text/campo.js';
-import { pasar, fechaDe } from '../systems/tiempo.js';
+import { pasar, fechaDe, partesHasta } from '../systems/tiempo.js';
 import { despensa } from '../systems/comida.js';
-import { anotar, hay } from '../systems/historia.js';
+import { anotar, hay, subirFama } from '../systems/historia.js';
 import { revisarHistoria } from '../data/momentos.js';
 import { crearMenu, papel, TINTAS } from '../engine/menu.js';
 import { estiloNuevo } from '../engine/estiloNuevo.js';
 import { DENSIDAD } from '../engine/renderer.js';
+import { PALETA } from '../engine/paleta.js';
 import { dibujarAnimal, dibujarJinete, dibujarSilla, GOLPES } from '../entities/caballo.js';
 import { dibujarPersona, faseDeAndar } from '../entities/figura.js';
 import { dibujarFogonazo } from '../entities/bullet.js';
@@ -48,6 +50,9 @@ import { armarVias, dibujarVias, crearPintor } from '../world/campoVias.js';
 import { armarRelieve } from '../world/campoRelieve.js';
 import { crearSenales } from '../world/senales.js';
 import { crearFauna } from '../world/fauna.js';
+import { crearCarretas } from '../world/carretas.js';
+import { crearAsaltoCarreta } from '../world/asaltoCarreta.js';
+import { columnaDe, columnaMontado } from '../world/cuerpos.js';
 import { PLANO } from '../data/plano.js';
 import { HUIDA } from '../data/huida.js';
 
@@ -149,6 +154,10 @@ export function createCampoScene(services) {
   }
 
   let yo, estado, arma, tiempoParte, carteles, tiros, cerca, mapaAbierto, vista, casco;
+  /** 🐎 Hace cuánto sonó tu último tiro (para las carretas que lo oyen). */
+  let tiroReciente = 0;
+  /** 🌇 La espera hasta la noche: { t, salto } mientras dura (el cielo tapa el desierto). */
+  let espera = null;
   /** 🔪 Lo que estás carneando ({ presa, t, total }), y cuánto hace que no te movés (para el berrendo curioso). */
   let carneo = null, quieto = 0, quietoEn = null;
   /** 🚶 El caballo que dejaste al bajarte: { x, y, rumbo, pose, sobre, alto }, o null si vas montado. */
@@ -217,21 +226,25 @@ export function createCampoScene(services) {
     const f = relieve.formaEn(yo.x, yo.y);
     if (f) { yo.sobre = f; yo.alto = f.alto; }
     tiempoParte = 0;
+    espera = null;
     carteles = [];
     tiros = [];
     yo.balas = arma.magazine; yo.recargando = 0; yo.apuntado = 0; yo.retroceso = 0;
+    // 🩸 Tu vida en el campo (CAMPO.carretas.guardias.james): la que te quedó la última vez; se cura en el campamento.
+    yo.vida = estado.vida ?? CAMPO.carretas.guardias.james.vida; yo.invuln = 0; yo.perdigon = null; yo.caido = null;
     mapaAbierto = false;
     lupaMeta = lupaVista = lupaPide = 1; lupaEspera = 0;
     casco = 0;
     polvo.limpiar();
     carneo = null; quieto = 0; quietoEn = null; caballo = null;
+    asalto.reiniciar();
     audio.ambiente('galope', { cutoff: 420, q: 0.6, type: 'lowpass', gain: CONFIG.ambiente.galopeVientoGain * 0.6,
       respira: { profundidad: CONFIG.ambiente.vientoProfundidad, cada: CONFIG.ambiente.vientoCada } });
 
     // Para mirar y probar desde la consola: FORAJIDO.services.campo
     services.campo = {
       get yo() { return yo; }, get animales() { return fauna.activos; }, get estado() { return estado; }, fauna, get carneo() { return carneo; },
-      LUGARES, huellas, ANCHO, ALTO, ESCALA, deX, deY, red, relieve, M, senales,
+      LUGARES, huellas, ANCHO, ALTO, ESCALA, deX, deY, red, relieve, M, senales, carretas, asalto,
       ir(id) { const l = lugar(id); if (l) { yo.x = l.x + 40; yo.y = l.y + 40; } },
       get cerca() { return queHayCerca(); }, get lupa() { return lupa(); }, get caballo() { return caballo; }, bajarOSubir: () => bajarOSubir(), obstaculosCerca, get tiros() { return tiros; }, mouse: () => mouseEnElMundo(),
       usar() { const c = queHayCerca(); if (c) usar(c); return c && c.tipo; },
@@ -242,7 +255,10 @@ export function createCampoScene(services) {
 
   function exit() {
     audio.quitarAmbiente('galope');
-    if (yo) { const c = yo.aPie && caballo ? caballo : yo; estado.x = c.x; estado.y = c.y; estado.rumbo = c.rumbo; }
+    { const lienzo = renderer && (renderer.canvas || renderer.ctx.canvas); if (lienzo) lienzo.style.cursor = ''; }
+    asalto.terminar();
+    if (yo && yo.caido) { estado.x = estado.y = null; estado.vida = CAMPO.carretas.guardias.james.vida; return; }
+    if (yo) { const c = yo.aPie && caballo ? caballo : yo; estado.x = c.x; estado.y = c.y; estado.rumbo = c.rumbo; estado.vida = yo.vida; }
   }
 
   /** 🌵 Cuánto verde hay en (x, y): ver `verdor` (world/campoRelieve.js) y `CAMPO.suelo`. */
@@ -253,6 +269,68 @@ export function createCampoScene(services) {
 
   /** 🦌 Los animales (world/fauna.js, CAMPO.caza). Las velocidades, en galopes del Criollo. */
   const fauna = crearFauna({ relieve, deX, deY, PROF, C: CAMPO.caza, galope: HORSES.criollo.sprintSpeed, ANCHO, ALTO, partida: () => guardado() });
+  /** 🛞 Las carretas de los caminos (world/carretas.js, CAMPO.carretas). */
+  const carretas = crearCarretas({ relieve, PROF, C: CAMPO.carretas, galope: HORSES.criollo.sprintSpeed, segundosPorParte: CAMPO.segundosPorParte, partida: () => guardado() });
+  /** 🔫 Asaltarlas (world/asaltoCarreta.js, CAMPO.carretas.asalto). */
+  const asalto = crearAsaltoCarreta({ carretas, C: CAMPO.carretas, PROF, g: () => gameState, decir: (t, v) => decir(t, v), menu, TC, audio, subirFama,
+    james: () => dondeEstaJames(), herirJames: (p, perdigon) => herirJames(p, perdigon), galope: HORSES.criollo.sprintSpeed,
+    // (Adónde escapa campo traviesa una diligencia: los pueblos.)
+    pueblos: () => pueblos,
+    // (Dónde puede estar el caballo de un guardia: sin piedra, mata ni carreta, y en el llano —no sube a las mesetas—.)
+    libre: (x, y) => { if (chocaCon(x, y)) return false; const p = relieve.moverse(null, x, y, (a, b) => red.cerca(a, b, 70)); return p.ok && !p.sobre; } });
+
+  /**
+   * 🛞 Dónde puede estar una carreta (para el rodeo y para la que escapa campo traviesa): sin piedra ni mata, en el
+   * llano (no sube a una meseta), y no encima tuyo ni de tu caballo.
+   */
+  carretas.terreno = (x, y) => {
+    // (🔁 Dentro de la región: la que escapa, esquivando cerca del borde, podía salirse del mapa.)
+    if (x < 0 || x > ANCHO || y < 0 || y > ALTO) return false;
+    const M = carretas.POR_METRO, lejos = (o) => !o || Math.hypot(o.x - x, (o.y - y) / PROF) > CAMPO.carretas.huida.aTi * M;
+    if (!lejos(yo) || !lejos(caballo)) return false;
+    for (const ob of obstaculosCerca(x - 40, y - 40, x + 40, y + 40)) {
+      const radio = A.obstaculoRadios[ob.tipo] ?? A.obstaculoRadio;
+      const dx = (ob.x - x) / radio, dy = (ob.y - y) / (radio * 0.5 + 2);
+      if (dx * dx + dy * dy < 1) return false;
+    }
+    const p = relieve.moverse(null, x, y, (a, b) => red.cerca(a, b, 70));
+    return p.ok && !p.sobre;
+  };
+
+  /**
+   * 🧍 Dónde está James para los guardias: el suelo, el pecho (adonde te apuntan) y la `columna` donde les pegan sus
+   * balas (world/cuerpos.js; la misma medida que a ellos). Montado, desde la silla del último dibujo (`yo.asiento`).
+   */
+  function dondeEstaJames() {
+    const G = CAMPO.carretas.guardias, K = G.james, M = carretas.POR_METRO, agachado = !!(yo.aPie && yo.agachado);
+    const suelo = yo.y - yo.alto;
+    if (!yo.aPie) {
+      const sx = yo.x + (yo.asiento ? yo.asiento.dx : 0), sy = suelo + (yo.asiento ? yo.asiento.dy : -10.5);
+      return { x: yo.x, y: suelo, pecho: sy - K.montado * M, agachado: false, aPie: false, columna: columnaMontado(sx, sy, G.columna, M) };
+    }
+    return { x: yo.x, y: suelo, pecho: suelo - (agachado ? K.agachado : K.pecho) * M, agachado, aPie: true,
+      columna: columnaDe(yo.x, suelo, agachado ? 'agachado' : 'pie', G.columna, M) };
+  }
+
+  /**
+   * 🩸 Te pegan (los escopeteros): como en el tren, `invulnerable` segundos sin que te vuelvan a pegar, salvo los
+   * perdigones del mismo tiro. En 0, caes herido: te esposan ahí mismo y vas preso, como en el tren; lo que llevabas en
+   * el caballo se pierde.
+   */
+  function herirJames(puntos, perdigon) {
+    if (yo.caido) return;
+    if (yo.invuln > 0 && !(perdigon && perdigon === yo.perdigon)) return;
+    if (yo.invuln <= 0) yo.invuln = CAMPO.carretas.guardias.james.invulnerable;
+    yo.perdigon = perdigon;
+    yo.vida -= puntos;
+    audio.play('playerHurt');
+    if (yo.vida > 0) return;
+    yo.vida = 0;
+    yo.caido = { t: CAMPO.carretas.guardias.james.caido };
+    // (A caballo, caes al suelo: el caballo queda ahí, ensillado.)
+    if (!yo.aPie) { caballo = { x: yo.x, y: yo.y, rumbo: yo.rumbo, pose: yo.pose, sobre: yo.sobre, alto: yo.alto }; yo.aPie = true; yo.vel = 0; yo.y += CAMPO.aPie.bajaAdelante; yo.mira = Math.PI / 2; }
+    decir(TC.carreta.caiste, 3);
+  }
 
   // ── Las piedras y las matas: por celda, siempre las mismas ──
   // (Cada celda se arma una sola vez y se guarda: mirar si cae cerca de una vía o de un lugar cuesta.)
@@ -285,6 +363,8 @@ export function createCampoScene(services) {
 
   // (🌿 `aPie`: a pie, al arbusto te metés; ver arbustoEn.)
   function chocaCon(x, y, aPie = false) {
+    // 🛞 (La carreta choca igual que una piedra: montado te frena el golpe; a pie, no pasás.)
+    if (CAMPO.carretas.activa && carretas.choca(x, y + 7)) return { tipo: 'carreta' };
     for (const ob of obstaculosCerca(x - 40, y - 40, x + 40, y + 40)) {
       if (aPie && ob.tipo === 'arbusto') continue;
       const radio = A.obstaculoRadios[ob.tipo] ?? A.obstaculoRadio;
@@ -302,6 +382,7 @@ export function createCampoScene(services) {
     for (const c of carteles) c.vida -= dt;
     carteles = carteles.filter((c) => c.vida > 0);
 
+    if (espera) { esperar(dt); return; }
     if (menu.update(input)) return;
     if (mapaAbierto) {
       if (input.wasPressed('KeyM') || input.wasPressed('Escape')) mapaAbierto = false;
@@ -310,9 +391,23 @@ export function createCampoScene(services) {
     if (input.wasPressed('KeyM')) { mapaAbierto = true; audio.play('cover'); return; }
 
     if (!carneo && input.wasPressed('KeyF')) bajarOSubir();
+    yo.invuln = Math.max(0, yo.invuln - dt);
+    // 🩸 Caído: no te mueves; a los `caido` segundos, preso.
+    if (yo.caido) {
+      if ((yo.caido.t -= dt) <= 0 && !yo.caido.ido) {
+        yo.caido.ido = true;
+        const carga = estado.carga;
+        carga.carne = []; carga.cueros = {}; carga.cuernos = 0; carga.comida = 0; carga.bultos = [];
+        asalto.terminar();
+        gameState.stats.captures += 1;
+        scenes.goTo('prision');
+      }
+      return;
+    }
     if (carneo) carnear(dt); else if (yo.aPie) moverAPie(dt); else moverme(dt);
     moverLupa(dt);
     moverAnimales(dt);
+    moverCarretas(dt);
     apuntar(dt);
     disparar(dt);
     moverBalas(dt);
@@ -321,6 +416,31 @@ export function createCampoScene(services) {
 
     cerca = queHayCerca();
     if (cerca && input.wasPressed('KeyE')) usar(cerca);
+    if (input.wasPressed('KeyN') && puedeEsperar()) { espera = { t: 0, salto: false, hacia: gameState.esDeDia ? 'noche' : 'dia' }; audio.play('cover'); }
+  }
+
+  /** 🌇 Si se puede esperar (hasta la noche, o hasta el día): cerca de un lugar (no el campamento) o de una carreta. */
+  function puedeEsperar() {
+    const E = CAMPO.esperar;
+    if (!E.activa || carneo) return false;
+    if (cerca && cerca.lugar && cerca.tipo !== 'campamento') return true;
+    return CAMPO.carretas.activa && carretas.activas.some((c) => Math.hypot(c.x - yo.x, (c.y - yo.y) / PROF) < E.carretaA);
+  }
+
+  /** 🌇 La espera: el cielo tapa, a la mitad pasa el tiempo hasta la noche, y destapa. El mundo, quieto. */
+  function esperar(dt) {
+    const E = CAMPO.esperar;
+    espera.t += dt;
+    if (!espera.salto && espera.t >= E.tapa + E.cielo / 2) {
+      espera.salto = true;
+      const t = gameState.tiempo || { dia: 0, parte: 0 };
+      // (de la mañana o la tarde, a la noche; de la noche o la madrugada, a la mañana)
+      const hasta = espera.hacia === 'noche' ? 2 - t.parte : partesHasta(gameState, 0);
+      if (hasta > 0) { pasar(gameState, hasta); revisarHistoria(gameState); }
+      tiempoParte = 0;
+      moverCarretas(0);
+    }
+    if (espera.t >= E.tapa + E.cielo + E.destapa) { decir(espera.hacia === 'noche' ? TC.esperar.yaNoche : TC.esperar.yaDia, 2.5); espera = null; }
   }
 
   /** 🦌 Los animales, con lo que necesitan saber de ti: dónde estás, si galopás y cuánto hace que estás quieto. */
@@ -332,6 +452,23 @@ export function createCampoScene(services) {
     tapan = !yo.aPie ? [] : obstaculosCerca(yo.x - SN.tapan - 20, yo.y - SN.tapan - 20, yo.x + SN.tapan + 20, yo.y + SN.tapan + 20)
       .filter((ob) => (ob.tipo === 'roca' || ob.tipo === 'arbusto') && Math.hypot(ob.x - yo.x, (ob.y - yo.y - 7) / PROF) < SN.tapan);
     fauna.actualizar(dt, { yo, quieto, dia: t.dia, parte: TIEMPO.partes[t.parte], como: SN.como[comoVoy()], tapado: tapadoPara, noche: !gameState.esDeDia });
+  }
+
+  /** 🛞 Las carretas: donde dice la hora; se paran si estás delante (tú o tu caballo suelto). */
+  function moverCarretas(dt) {
+    if (!CAMPO.carretas.activa) return;
+    const t = gameState.tiempo || { dia: 0, parte: 0 };
+    tiroReciente = Math.max(0, tiroReciente - dt);
+    const TR = CAMPO.carretas.susto, M = carretas.POR_METRO;
+    // 🐎 Lo que la asusta: tu tiro cerca, o tú viniendo al galope hacia ella.
+    const asusta = (c) => {
+      const ex = c.x - yo.x, ey = (c.y - yo.y) / PROF, d = Math.hypot(ex, ey);
+      if (tiroReciente > 0 && d < TR.oye * M) return true;
+      return !yo.aPie && yo.galope && d < TR.ve * M && Math.cos(yo.rumbo) * ex + Math.sin(yo.rumbo) * ey > 0;
+    };
+    // (Las que escapan campo traviesa no frenan porque estés delante: te esquivan —ver `carretas.terreno`—.)
+    carretas.actualizar(dt, { dia: t.dia, parte: t.parte, va: tiempoParte }, (c) => asalto.retiene(c) || (!c.suelta && (carretas.delante(c, yo.x, yo.y + 7) || !!(caballo && carretas.delante(c, caballo.x, caballo.y + 7)))), asusta);
+    asalto.actualizar(dt, { yo, apuntando: input.mouse.right && !carneo, mira: mouseEnElMundo(), empuna: yo.empuna || 0 });
   }
 
   /** 👂👁️ Cómo vas, para los sentidos de los animales (ver CAMPO.caza.sentidos.como). */
@@ -408,6 +545,13 @@ export function createCampoScene(services) {
     const buena = carga.carne.filter((c) => c.vence >= hoy), n = buena.reduce((s, c) => s + c.n, 0);
     for (const c of buena) despensa(gameState).push({ n: c.n, vence: c.vence, carne: true });
     carga.carne = [];
+    // 🔫 Lo de las carretas: la comida (seca, dura como la que se compra) a la despensa, y los bultos con lo demás que
+    // se le vende al perista (gameState.owned.objetos).
+    const comida = carga.comida || 0, bultos = (carga.bultos || []).length;
+    if (comida) despensa(gameState).push({ n: comida, vence: hoy + COMIDA.duraProvision, carne: false });
+    if (bultos) gameState.owned.objetos.push(...carga.bultos.map((o) => ({ ...o, dia: hoy })));
+    carga.comida = 0; carga.bultos = [];
+    if (comida || bultos) decir(TC.carreta.descargaste(bultos, comida), 3);
     return n;
   }
 
@@ -525,13 +669,10 @@ export function createCampoScene(services) {
 
   /** El tiempo pasa mientras cabalgás (no en los menús ni con el mapa abierto). */
   function pasarElTiempo(dt) {
+    // 🔁 Sólo el reloj de adentro (las carretas): la parte del día, y la luz, quedan las de la salida. Antes, cada
+    // `segundosPorParte` pasaba una parte y la luz cambiaba de golpe *(Santi: "se ve muy directo y fuerte el
+    // cambio")*. El tiempo pasa esperando hasta la noche ([N]) y al volver al campamento.
     tiempoParte += dt;
-    if (tiempoParte < CAMPO.segundosPorParte) return;
-    tiempoParte = 0;
-    pasar(gameState, 1);
-    revisarHistoria(gameState);
-    const t = gameState.tiempo, f = fechaDe(t.dia);
-    decir(T.tiempo.ahora(T.tiempo.fecha(f.dia, T.tiempo.meses[f.mes]), T.tiempo.partesMin[TIEMPO.partes[t.parte]]));
   }
 
   /** Lo que se ve de lejos: la granja (queda en el mapa) y el campamento de los Rennick. */
@@ -599,6 +740,8 @@ export function createCampoScene(services) {
     if (yo.balas <= 0) { recargar(); return; }
     yo.fuego = arma.fireRate || 0.4;
     yo.balas -= 1;
+    tiroReciente = 0.2;   // (🐎 las carretas que lo oyen se ponen al trote)
+    if (CAMPO.carretas.activa) asalto.oirTiro(yo.x, yo.y);   // (🔫 y los escopeteros que lo oyen se ponen en guardia)
     // (El tiro sale en el momento: el brazo se levanta de golpe y queda arriba un rato.)
     yo.empuna = 1; yo.trasTiro = CAMPO.apuntar.queda; yo.fogonazo = 0.08;
     audio.play(arma.perdigones ? 'escopetazo' : arma.id === 'winchester' ? 'rifleGuardia' : 'playerShot');
@@ -607,7 +750,10 @@ export function createCampoScene(services) {
     const hacia = Math.atan2(m.y - by, m.x - bx), medio = dispersion(), mira = CONFIG.mira;
     // (`meta`: adonde iba la mira, ya corrida por la dispersión: ahí pega si cae sobre el animal; ver fauna.impacto.)
     const lejos = Math.hypot(m.x - bx, m.y - by);
-    const bala = (a, fuerza) => tiros.push({ x: bx, y: by, vx: Math.cos(a) * arma.bulletSpeed, vy: Math.sin(a) * arma.bulletSpeed, recorrido: 0, fuerza, meta: [bx + Math.cos(a) * lejos, by + Math.sin(a) * lejos] });
+    const bala = (a, fuerza) => {
+      const meta = [bx + Math.cos(a) * lejos, by + Math.sin(a) * lejos];
+      tiros.push({ x: bx, y: by, vx: Math.cos(a) * arma.bulletSpeed, vy: Math.sin(a) * arma.bulletSpeed, recorrido: 0, fuerza, meta, aPie: !!yo.aPie, conductor: CAMPO.carretas.activa ? asalto.apuntado(meta) : null });
+    };
     if (arma.perdigones) {
       for (let i = 0; i < arma.perdigones; i++) bala(hacia + (i / (arma.perdigones - 1) - 0.5) * 2 * medio + rng.spread(medio / arma.perdigones), arma.damage * arma.factorPerdigon);
     } else bala(hacia + rng.spreadDeTiro(medio, mira.fallaChance, mira.fallaMultiplicador), arma.damage * (arma.factorBala ?? 1));
@@ -628,6 +774,9 @@ export function createCampoScene(services) {
       b.x += b.vx * dt; b.y += b.vy * dt; b.antes = [x0, y0];
       b.recorrido += Math.hypot(b.x - x0, (b.y - y0) / PROF);
       if (b.recorrido > arma.range) { b.fin = true; continue; }
+      // 🔫 (El conductor de una carreta: la bala lo mata. La lona la para; la madera, sólo si tiraste a pie.)
+      const enCarreta = CAMPO.carretas.activa && asalto.bala(x0, y0, b.x, b.y, b.conductor, b.aPie, b.fuerza);
+      if (enCarreta) { b.fin = true; audio.play(enCarreta === 'tela' || enCarreta === 'madera' ? 'hitWall' : 'hitFlesh'); continue; }
       const golpe = fauna.impacto(x0, y0, b.x, b.y, b.meta);
       if (!golpe) continue;
       b.fin = true;
@@ -646,6 +795,9 @@ export function createCampoScene(services) {
     const presa = fauna.presaCerca(yo.x, yo.y, al);
     // 🔪 Se carnea a pie *(paso 4: "hoy James carnea montado, y eso no tiene sentido")*: montado, te dice que te bajes.
     if (presa) return { tipo: 'presa', presa, montado: !yo.aPie };
+    // 🔫 La carreta que frenaste (montado o a pie).
+    const carreta = CAMPO.carretas.activa ? asalto.cerca(yo) : null;
+    if (carreta) return { tipo: 'carreta', carreta };
     // 🚶 A pie no se entra a ningún lado: primero, el caballo.
     if (yo.aPie) return caballo && Math.hypot(caballo.x - yo.x, (caballo.y - yo.y) / PROF) <= CAMPO.aPie.subir ? { tipo: 'montar' } : null;
     let mejor = null, dMejor = Infinity;
@@ -660,6 +812,7 @@ export function createCampoScene(services) {
 
   function usar(c) {
     if (c.tipo === 'montar') { bajarOSubir(); return; }
+    if (c.tipo === 'carreta') { asalto.usar(c.carreta, estado.carga); return; }
     if (c.tipo === 'presa') {
       if (c.montado) { decir(TC.bajateParaCarnear, 2); return; }
       empezarCarneo(c.presa);
@@ -668,6 +821,7 @@ export function createCampoScene(services) {
     if (c.tipo === 'campamento') {
       const n = descargar();
       if (n) decir(TC.descargaste(n), 3);
+      yo.vida = CAMPO.carretas.guardias.james.vida;   // (🩸 en el campamento te curan)
       audio.play('escape');
       scenes.goTo('camp', { desde: estado.fuePueblo ? 'pueblo' : 'campo' });
       return;
@@ -765,7 +919,11 @@ export function createCampoScene(services) {
       if (!enVista(l.x, l.y, 300)) continue;
       for (const pieza of piezasDe(l, noche)) cosas.push({ y: pieza.y, draw: () => pieza.draw(r) });
     }
-    if (CAMPO.caza.activa) for (const a of fauna.visibles()) if (enVista(a.x, a.y)) cosas.push({ y: a.y, draw: () => fauna.dibujar(r, a, noche) });
+    // (La cámara sin pegar a la grilla: los que se mueven se cuentan desde ella, para no dar saltitos a tu lado.)
+    const camCruda = { x: yo.x - vista.w / 2, y: yo.y - yo.alto - vista.h / 2 };
+    if (CAMPO.caza.activa) for (const a of fauna.visibles()) if (enVista(a.x, a.y)) cosas.push({ y: a.y, draw: () => fauna.dibujar(r, a, noche, camCruda, cam) });
+    if (CAMPO.carretas.activa) cosas.push(...carretas.cosas(r, cam, vista, noche, camCruda, (rr, c, gx, gy, antes) => asalto.dibujarConductor(rr, c, gx, gy, noche, antes)));
+    if (CAMPO.carretas.activa) cosas.push(...asalto.cosas(r, noche, enVista));
     for (const [mx, my] of mojonesEn(cam)) cosas.push({ y: my, draw: () => dibujarMojon(r, mx, my, noche) });
     // Lo alto: delante o detrás de James según de qué lado de su borde de abajo esté (en la columna de James).
     for (const f of relieve.formas) {
@@ -783,6 +941,8 @@ export function createCampoScene(services) {
     cosas.sort((a, b) => a.y - b.y);
     for (const c of cosas) c.draw();
     if (estiloNuevo.activo) polvo.dibujarAire(r, 0, noche, celdaAire);
+    // 🛞 (El polvo de las carretas: de día, que es cuando andan.)
+    if (CAMPO.carretas.activa && dia) carretas.dibujarAire(r.ctx, cam, vista, celdaAire);
     if (conSenales) senales.dibujarAire(r.ctx, cam, vista, dia, TIEMPO.partes[gameState.tiempo.parte], celdaAire);
     // 💥 Las balas: una raya corta de donde estaban a donde están.
     for (const t of tiros) {
@@ -790,12 +950,15 @@ export function createCampoScene(services) {
       r.ctx.strokeStyle = '#f3e2a0'; r.ctx.lineWidth = 0.6;
       r.ctx.beginPath(); r.ctx.moveTo(x0, y0); r.ctx.lineTo(t.x, t.y); r.ctx.stroke();
     }
-    // 🎯 La mira: el círculo dice hasta dónde se puede ir la bala a esa distancia; en rojo, recargando.
-    if (!menu.activo() && !mapaAbierto && !carneo) {
-      const m = mouseEnElMundo(), [bx, by] = yo.boca || [yo.x, yo.y - 12], M = CONFIG.mira;
-      const radio = Math.max(1.5, Math.tan(dispersion()) * Math.hypot(m.x - bx, m.y - by));
-      r.circle(m.x, m.y, radio, yo.recargando > 0 ? M.colorBloqueado : M.color, M.alpha);
-    }
+    if (CAMPO.carretas.activa) asalto.dibujarBalas(r);
+    // 🎯 La mira: el punto relleno, el mismo que en el asalto (entities/estiloNuevo/mira.js); en rojo, recargando.
+    // 🔁 (Antes un círculo que crecía con la distancia. Santi: "eso no debería haber estado desde un principio".)
+    // El cursor de Windows, escondido mientras se ve la mira; con el menú o el mapa, vuelve.
+    const conMira = !menu.activo() && !mapaAbierto && !carneo;
+    const lienzo = r.canvas || r.ctx.canvas;
+    if (lienzo) lienzo.style.cursor = conMira ? 'none' : '';
+    // (Se toma acá, con el lienzo del mundo, y se dibuja al final, encima del velo de la noche: si no, la apagaba.)
+    const miraEn = conMira ? { m: mouseEnElMundo(), T: r.ctx.getTransform() } : null;
     r.ctx.restore();
 
     // 🌙 (De noche, un velo encima del mundo, más claro alrededor de James: el suelo nuevo no tiene noche propia.)
@@ -807,11 +970,18 @@ export function createCampoScene(services) {
       if (conSenales) { r.ctx.save(); r.ctx.translate(-cam.x, -cam.y); senales.dibujarNoche(r.ctx, cam, vista, celdaAire / 2); r.ctx.restore(); }
     }
 
+    if (miraEn) {
+      r.ctx.save(); r.ctx.setTransform(miraEn.T);
+      dibujarMiraNueva(r, miraEn.m.x, miraEn.m.y, { apuntado: yo.apuntado, escopeta: !!arma.perdigones, bloqueada: yo.recargando > 0 });
+      r.ctx.restore();
+    }
+
     // El panel, con la lupa de siempre.
     r.lupa(DENSIDAD);
     const w = Math.floor(renderer.canvas.width / DENSIDAD), h = Math.floor(renderer.canvas.height / DENSIDAD);
     dibujarPanel(r, w, h, cam);
     if (mapaAbierto) dibujarMapa(r, w, h);
+    if (espera) dibujarEspera(r, w, h);
     menu.render(r, colors, T.interior.dialogoAyuda);
   }
 
@@ -991,7 +1161,7 @@ export function createCampoScene(services) {
     const enMano = !apunta ? null : arma.perdigones ? 'escopetaListo' : arma.id === 'winchester' ? 'winchesterListo' : { angulo, largo: 7, color: '#8a8074' };
     const fig = dibujarPersona(r, {
       tipo: 'jugador', mascara: false, x: X, pies: Y + 7, angulo, interior: true, luz: noche ? -1 : 0,
-      fase: faseDeAndar(yo), postura: yo.agachado || presa ? 'agachado' : 'pie',
+      fase: faseDeAndar(yo), postura: yo.agachado || presa || yo.caido ? 'agachado' : 'pie',   // (🩸 caído herido: agachado; no hay James tirado dibujado)
       arma: enMano, armaId: arma.id, empuna: yo.empuna, alza: yo.empuna,
     });
     yo.boca = fig && fig.boca ? [fig.boca.x, fig.boca.y - yo.alto] : null;
@@ -1033,6 +1203,8 @@ export function createCampoScene(services) {
       apuntaChico: ((Math.round(enDibujo / (Math.PI / 4)) % 8) + 8) % 8,
     } : {};
     const persona = dibujarJinete(r, montura.asiento.x, montura.asiento.y, yo.pose, 2, ropa, montura);
+    // (Dónde quedó la silla, para que las balas de los guardias te peguen donde te ves. Dado vuelta, del otro lado.)
+    yo.asiento = { dx: (alOeste ? -1 : 1) * (montura.asiento.x - X), dy: montura.asiento.y - Y };
     yo.chico = !!montura.chico;
     yo.hacia = persona && persona.boca && persona.boca.hacia || null;
     const b = persona && persona.boca;
@@ -1065,9 +1237,12 @@ export function createCampoScene(services) {
     r.rect(9, h - 17, Math.round(58 * estado.aguante), 3, yo.reventado ? '#b04030' : '#d8b060');
     r.text(yo.aPie ? TC.ayudaAPie : TC.ayuda, w - 6, h - 6, '#e8d8b0', 'right', { tam: 6 });
     if (yo.escondido) r.text(TC.escondido, 8, h - 30, '#c8d8a8', 'left', { tam: 7 });
+    // 🩸 La vida, cuando no está entera.
+    if (yo.vida < CAMPO.carretas.guardias.james.vida) r.text(TC.vida(yo.vida), 8, h - 50, yo.vida <= 25 ? '#e06040' : '#e8d8b0', 'left', { tam: 7 });
     // 🦌 Lo que lleva el caballo (si lleva algo).
     const carga = estado.carga, carne = carga.carne.reduce((s, c) => s + c.n, 0), cueros = Object.values(carga.cueros).reduce((s, k) => s + k, 0);
-    if (carne || cueros || carga.cuernos) r.text(TC.carga(carne, CAMPO.caza.carga.carne, cueros, CAMPO.caza.carga.cueros, carga.cuernos), 76, h - 22, '#e8d8b0', 'left', { tam: 6 });
+    const bultos = (carga.bultos || []).length;
+    if (carne || cueros || carga.cuernos || bultos || carga.comida) r.text(TC.carga(carne, CAMPO.caza.carga.carne, cueros, CAMPO.caza.carga.cueros, carga.cuernos, bultos, carga.comida), 76, h - 22, '#e8d8b0', 'left', { tam: 6 });
     // 🔪 Carneando: la barrita sobre James.
     if (carneo) {
       const sx = Math.round(((yo.x - cam.x) * lupa()) / DENSIDAD), sy = Math.round(((yo.y - yo.alto - cam.y) * lupa()) / DENSIDAD) - 26;
@@ -1075,13 +1250,31 @@ export function createCampoScene(services) {
       r.rect(sx - 20, sy, 40, 4, 'rgba(20,14,10,0.75)');
       r.rect(sx - 19, sy + 1, Math.round(38 * Math.min(1, carneo.t / carneo.total)), 2, '#d8b060');
     }
+    // 🔐 Forzando el cofre: la barrita sobre James, como al carnear.
+    // (🔁 Y tomando la plata, la carga o lo de los pasajeros, que ahora lleva tiempo; y frenándola, mientras le apuntas al
+    // conductor: antes no se sabía si la mira estaba bien puesta.)
+    const que = CAMPO.carretas.activa ? asalto.forzandoQue : null;
+    const frenando = CAMPO.carretas.activa ? asalto.frenando : null;
+    const forzando = CAMPO.carretas.activa ? asalto.forzando ?? frenando : null;
+    if (forzando != null) {
+      // (Más arriba que la del carneo: abajo va el cartel de lo que se puede usar.)
+      const sx = Math.round(((yo.x - cam.x) * lupa()) / DENSIDAD), sy = Math.round(((yo.y - yo.alto - cam.y) * lupa()) / DENSIDAD) - 40;
+      const texto = que === 'cofre' ? TC.carreta.forzando : que ? TC.carreta.tomando[que] : TC.carreta.frenando;
+      r.text(texto, sx, sy - 4, '#f3e2a0', 'center', { tam: 7 });
+      r.rect(sx - 20, sy, 40, 4, 'rgba(20,14,10,0.75)');
+      r.rect(sx - 19, sy + 1, Math.round(38 * forzando), 2, '#d8b060');
+    }
     // Lo que se puede usar, sobre la cabeza.
-    if (cerca && !carneo && !menu.activo() && !mapaAbierto) {
+    if (cerca && !carneo && !yo.caido && !menu.activo() && !mapaAbierto) {   // (🩸 caído, nada que usar)
       const U = TC.usar;
       const txt = cerca.tipo === 'pueblo' ? (cerca.lugar.puebloId === PUEBLO_DE_VERDAD ? U.pueblo(cerca.lugar.nombre) : U.puebloLejos(cerca.lugar.nombre))
         : cerca.tipo === 'presa' ? (cerca.montado ? U.presaMontado(TC.animal[cerca.presa.tipo]) : U.presa(TC.animal[cerca.presa.tipo])) : U[cerca.tipo];
       const sx = ((yo.x - cam.x) * lupa()) / DENSIDAD, sy = ((yo.y - yo.alto - cam.y) * lupa()) / DENSIDAD - 22;
       r.text(txt, Math.round(sx), Math.round(sy), '#f3e2a0', 'center', { tam: 7 });
+    }
+    if (!espera && !menu.activo() && !mapaAbierto && puedeEsperar()) {
+      const sx = ((yo.x - cam.x) * lupa()) / DENSIDAD, sy = ((yo.y - yo.alto - cam.y) * lupa()) / DENSIDAD - (cerca ? 32 : 22);
+      r.text(gameState.esDeDia ? TC.esperar.noche : TC.esperar.dia, Math.round(sx), Math.round(sy), '#f3e2a0', 'center', { tam: 7 });
     }
     // Los carteles: abajo, en el medio.
     let cy = h - 40;
@@ -1094,6 +1287,90 @@ export function createCampoScene(services) {
     }
     r.ctx.globalAlpha = 1;
     void TINTA;
+  }
+
+  /**
+   * 🌇 EL CIELO DE LA ESPERA. 🔁 Era de franjas de la paleta que cambiaban de a escalones, y el paso a la grilla de 48
+   * colores lo hacía saltar *(Santi: "la animación para que se haga noche es muy tildada y trabada")*. Ahora se pinta en
+   * la capa fina, la que va encima de la grilla: degradés que se mueven parejo, el sol que baja (o sube) con su brillo,
+   * las estrellas que se prenden (o se apagan) titilando y el perfil de las mesetas.
+   * Cada cielo: los colores de arriba abajo hasta el horizonte, el del sol y el de la tierra.
+   */
+  const CIELOS = {
+    manana:     { cielo: ['#5a8ccf', '#7aa8d8', '#9cc4e0', '#c4dce6', '#e6eee4'], tierra: '#6a4a32', sol: '#fff6c8' },
+    tarde:      { cielo: ['#4a78b0', '#6a98c8', '#8cb6d6', '#b4d2e0', '#dce8e4'], tierra: '#6a4a32', sol: '#fff0a0' },
+    atardecer:  { cielo: ['#2e4466', '#5a5a86', '#9a6a86', '#e0884a', '#f4b45a'], tierra: '#4e3424', sol: '#f8a040' },
+    crepusculo: { cielo: ['#121a38', '#2a2a52', '#5a3a62', '#a04a4a', '#d4784a'], tierra: '#2e1e1c', sol: '#e05a30' },
+    noche:      { cielo: ['#060a1a', '#0a1026', '#111a36', '#1a2444', '#263252'], tierra: '#120c12', sol: '#e05a30' },
+    alba:       { cielo: ['#1c2244', '#3a3a6a', '#7a5a86', '#d08a7a', '#f0c088'], tierra: '#3a2620', sol: '#ffd080' },
+  };
+  const ESTRELLAS = Array.from({ length: 70 }, (_, i) => [((i * 97) % 211) / 211, (((i * 61) % 89) / 89) * 0.62, 0.6 + (i % 4) * 0.25, i * 1.7]);
+  const hexA = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const mezclar = (a, b, k) => { const A = hexA(a), B = hexA(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * k)).join(',')})`; };
+  const suave = (k) => k * k * (3 - 2 * k);
+  /** El cielo a u (0 a 1) del camino: entre los de la lista, parejo. */
+  function cieloEn(lista, u) {
+    const n = lista.length - 1, x = Math.max(0, Math.min(n, u * n)), i = Math.min(n - 1, Math.floor(x)), k = suave(x - i);
+    const A = CIELOS[lista[i]], B = CIELOS[lista[i + 1]];
+    return { cielo: A.cielo.map((c, j) => mezclar(c, B.cielo[j], k)), tierra: mezclar(A.tierra, B.tierra, k), sol: mezclar(A.sol, B.sol, k) };
+  }
+  function dibujarEspera(r, w, h) {
+    const E = CAMPO.esperar, t = espera.t, aNoche = espera.hacia === 'noche';
+    // (tapa y destapa parejo)
+    const tapa = t < E.tapa ? t / E.tapa : t > E.tapa + E.cielo ? 1 - (t - E.tapa - E.cielo) / E.destapa : 1;
+    const opaco = suave(Math.max(0, Math.min(1, tapa)));
+    if (opaco <= 0) return;
+    const u = Math.max(0, Math.min(1, (t - E.tapa) / E.cielo));
+    const C = cieloEn(aNoche ? ['tarde', 'atardecer', 'crepusculo', 'noche'] : ['noche', 'alba', 'manana'], u);
+    // En la capa fina: encima de la grilla de la paleta, y de las letras y el borde de la gente de antes.
+    const f = estiloNuevo.activo ? estiloNuevo.lienzoFino(r.ctx) : r.ctx;
+    const horizonte = h * 0.72;
+    f.save();
+    f.globalAlpha = opaco;
+    const g = f.createLinearGradient(0, 0, 0, horizonte);
+    C.cielo.forEach((c, j) => g.addColorStop(j / (C.cielo.length - 1), c));
+    f.fillStyle = g;
+    f.fillRect(0, 0, w, horizonte + 1);
+    // las estrellas: se prenden al oscurecer (o se apagan al aclarar), titilando
+    const brillo = aNoche ? Math.max(0, (u - 0.55) / 0.4) : Math.max(0, 1 - u / 0.4);
+    if (brillo > 0) {
+      for (const [ex, ey, tam, fase] of ESTRELLAS) {
+        f.globalAlpha = opaco * Math.min(1, brillo) * (0.65 + 0.35 * Math.sin(t * 2.6 + fase));
+        f.fillStyle = '#f4f0dc';
+        f.fillRect(ex * w, ey * horizonte, tam, tam);
+      }
+      f.globalAlpha = opaco;
+    }
+    // el sol: baja a la derecha (o sube a la izquierda), con su brillo alrededor
+    const altura = aNoche ? 1 - suave(Math.min(1, u / 0.72)) : suave(Math.max(0, (u - 0.3) / 0.7));
+    const R = h * 0.055, sx = w * (aNoche ? 0.64 : 0.36), sy = horizonte + R * 1.2 - altura * (horizonte * 0.62 + R * 1.2);
+    if (sy - R < horizonte) {
+      const halo = f.createRadialGradient(sx, sy, R * 0.6, sx, sy, R * 4.5);
+      halo.addColorStop(0, C.sol); halo.addColorStop(1, 'rgba(0,0,0,0)');
+      f.globalAlpha = opaco * 0.35;
+      f.fillStyle = halo; f.fillRect(0, 0, w, horizonte);
+      f.globalAlpha = opaco;
+      f.save();
+      f.beginPath(); f.rect(0, 0, w, horizonte); f.clip();
+      f.fillStyle = C.sol; f.beginPath(); f.arc(sx, sy, R, 0, Math.PI * 2); f.fill();
+      f.restore();
+    }
+    // la tierra: el desierto lejos, con el perfil de las mesetas (con sus faldas)
+    f.fillStyle = C.tierra;
+    f.beginPath();
+    f.moveTo(0, h); f.lineTo(0, horizonte);
+    for (const [x0, ancho, alto] of [[0.05, 0.17, 0.07], [0.31, 0.08, 0.04], [0.68, 0.24, 0.09], [0.9, 0.06, 0.05]]) {
+      const a = x0 * w, b = (x0 + ancho) * w, y = horizonte - alto * h;
+      f.lineTo(a - 0.035 * w, horizonte); f.lineTo(a, y + alto * h * 0.12); f.lineTo(a + 0.01 * w, y);
+      f.lineTo(b - 0.01 * w, y); f.lineTo(b, y + alto * h * 0.15); f.lineTo(b + 0.045 * w, horizonte);
+    }
+    f.lineTo(w, horizonte); f.lineTo(w, h); f.closePath(); f.fill();
+    f.restore();
+    // la fecha y la parte, arriba: se ve pasar a la noche (o a la mañana)
+    if (opaco > 0.95) {
+      const tt = gameState.tiempo || { dia: 0, parte: 0 }, fe = fechaDe(tt.dia);
+      r.text(`${T.tiempo.fecha(fe.dia, T.tiempo.meses[fe.mes])} · ${T.tiempo.partesMin[TIEMPO.partes[tt.parte]]}`, Math.round(w / 2), 14, '#f3e2a0', 'center', { tam: 8 });
+    }
   }
 
   /** 🗺️ El mapa: el papel de la región, con lo que sabés y dónde estás. */

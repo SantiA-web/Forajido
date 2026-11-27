@@ -20927,6 +20927,44 @@ carreta")*. Corregido en BRUJULA.md, "Lo que NO es".
 
 ---
 
+## ✅ 2026-11-26: LAS CARRETAS DEL CAMPO Y SUS ASALTOS (etapa 4 del campo con vida)
+
+- **Las carretas andan por los caminos** (`src/world/carretas.js`, números en `CAMPO.carretas` de `src/data/campo.js`)
+  *(Santi, 2026-11-25: "pondría varios tipos de carretas… de menos a más")*: colonos (con lona), carga y mina (sin lona;
+  la de la mina de ida lleva el cofre de la paga) y la diligencia *(Santi: "ármala vos a la diligencia")*. Dibujo de
+  Blender pasado a puntos (`src/entities/estiloNuevo/carreta.js`, `src/assets/carreta*Puntos.js`), sin caballos todavía.
+  Dónde está cada una sale del horario, no de un sorteo: el reloj de las carretas se guarda en la partida y nunca va para
+  atrás; los atrasos y sustos duran todo el viaje. Andan sólo con luz. Rodean lo que está parado acordándose del lado
+  (si los dos lados están tapados, esperan), se cruzan de frente cada una por su derecha y no se pisan.
+- **Asaltarlas** (`src/world/asaltoCarreta.js`): frenarla apuntándole al conductor o cortándole el paso; el conductor
+  se baja con las manos arriba; `[E]` para la plata, la carga, los pasajeros, el cofre o la caja del correo, cada cosa con
+  su barra de tiempo (si te alejas, queda a medias). Recompensa por tipo (colonos $30, carga $60, mina $120, diligencia
+  $150) sólo si quedan testigos; matar al conductor baja el honor siempre.
+- **Los guardias**: el escopetero sentado al lado del conductor (`src/world/escopeteros.js`; algunos con Winchester) que
+  se baja y pelea cubierto detrás de la carreta, y la escolta a caballo de la mina y la diligencia (`src/world/escolta.js`).
+  Con guardias vivos nadie se rinde ("¡Ni lo sueñes! ¡Llevo escolta!"); se calman si te alejas más que el alcance de sus
+  armas. La diligencia, de día, **escapa campo traviesa** hasta un pueblo buscando el camino entre piedras y barrancas,
+  y te denuncia sólo si la amenazaste.
+- **Dónde pega una bala** (`src/world/cuerpos.js`): cada persona del campo es una columna del tamaño de lo que se ve
+  *(Santi: "fijate la hitbox de los guardias…")*.
+- **La mira nueva, la misma en todo el juego** (`src/entities/estiloNuevo/mira.js`) *(Santi: "un puntito como el de GTA
+  V que esté relleno… la escopeta… como un paréntesis")*: tamaño fijo; la dispersión sigue pero no se ve.
+- **Sin tirones**: el bucle (`src/engine/loop.js`) redondea los cuadros que duran casi justo un paso *(Santi: "se sigue
+  viendo esos tirones", la carreta)*.
+- **Revisión general con dos revisores** (movimiento y asaltos), que quedaron conformes en la segunda vuelta.
+
+⚠️ Los últimos retoques de la revisión (el grito de la escolta, la escolta que se calma sin escopetero, que paguen sólo
+los pasajeros vivos, la diligencia a 0,7 y que deje de buscar camino cuando está perdida) están revisados de sintaxis
+pero no jugados.
+
+⏭️ **Pendiente de las carretas**: la lona y las piedras no paran balas contra los sentados; los pasajeros desaparecen al
+terminar el asalto; la carreta se esfuma al llegar cerca del pueblo; los desvíos no se guardan al recargar; dos que van
+para el mismo lado o por caminos que se cruzan pueden encimarse; el día de las carretas puede desfasarse del del juego;
+el escopetero se puede engañar mientras vuelve a subir; la vuelta de la mina vale poco; el daño de los perdigones.
+Después: etapa 5 del campo con vida (campamentos de paso y viaje rápido).
+
+---
+
 ## Pendientes del concepto original (sin fase asignada todavía)
 
 Campamento, historia principal, fama, compañeros y sus relaciones, caballos,

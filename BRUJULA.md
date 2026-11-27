@@ -397,7 +397,8 @@ decisión de la historia.
 
 - **No hay compañeros manejados por el juego adentro del tren.** Lo que se hizo queda guardado, como el pueblo nuevo.
   Más adelante, si el juego está sólido, capaz que uno solo en un golpe especial.
-- **No hay diligencias, bancos ni otros lugares.** El tren es el corazón. Un banco, si entra, sería un momento especial
+- 🔁 *(2026-11-26)* **Hay carretas y diligencias en los caminos del campo** (se asaltan, con escopeteros y escolta), pero
+  son lo de entre golpe y golpe. **No hay bancos ni otros lugares.** El tren es el corazón. Un banco, si entra, sería un momento especial
   de la historia, como el final, y recién con el tren terminado.
 - **No es un mundo abierto de exploración.** 🔁 *(2026-11-24)* Entre golpe y golpe se puede salir al campo y cabalgar
   la región entera (cazar, las granjas, los caminos, dar con los Rennick), pero el corazón sigue siendo el tren *(Santi:

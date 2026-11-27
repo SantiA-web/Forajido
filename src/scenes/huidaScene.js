@@ -28,6 +28,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { dibujarMira as dibujarMiraNueva } from '../entities/estiloNuevo/mira.js';
 import { HUIDA as H } from '../data/huida.js';
 import { PLAN as PLAN_BANDA, MIEMBRO, herir } from '../data/banda.js';
 import { tiene, marcaFuerte } from '../systems/animo.js';
@@ -2977,12 +2978,10 @@ export function createHuidaScene(services) {
   }
 
   /** El círculo dice la dispersión real, con la misma regla que el asalto. */
+  // 🔁 (Santi, 2026-11-26: el punto relleno de entities/estiloNuevo/mira.js, el mismo en todo el juego, de tamaño fijo.)
   function dibujarMira(r) {
-    const m = CONFIG.mira;
-    const radio = Math.max(m.radioMin, Math.min(m.radioMax,
-      Math.tan(dispersionAhora()) * m.distanciaReferencia * m.escala));
     const p = mouseEnPantalla();
-    r.circle(p.x, p.y, radio, yo.recargando > 0 ? m.colorBloqueado : m.color, m.alpha);
+    dibujarMiraNueva(r, p.x, p.y, { apuntado: yo.apuntado, escopeta: !!arma.perdigones, bloqueada: yo.recargando > 0 });
   }
 
   /** El borde se pone rojo cuando te tienen encima. */

@@ -17,6 +17,7 @@
  */
 
 import { CONFIG } from '../data/config.js';
+import { dibujarMira as dibujarMiraNueva } from '../entities/estiloNuevo/mira.js';
 // (✉️ El maletín de J.Mc.: si el tren de carga lo esconde.)
 import { encargoAbierto, tieneMaletin } from '../data/momentos.js';
 import { dibujarTechoDesdeArriba, dibujarGondolaDesdeArriba, dibujarObstaculoTecho as obstaculoTecho } from '../world/techoDesdeArriba.js';
@@ -7071,7 +7072,10 @@ export function createRaidScene(services) {
      */
     // Donde está el mouse, no el blanco: si le apuntás a una cabeza, la mira
     // queda en la cabeza aunque la bala vaya a sus pies (ver `blancoBajoLaMira`).
-    r.circle(world.miraX ?? world.aimX, world.miraY ?? world.aimY, radio, color, m.alpha);
+    // 🔁 (Santi, 2026-11-26: el punto relleno de entities/estiloNuevo/mira.js, el mismo en todo el juego; el círculo de
+    // arriba —`radio`, `color`— ya no se dibuja.)
+    void radio; void color;
+    dibujarMiraNueva(r, world.miraX ?? world.aimX, world.miraY ?? world.aimY, { apuntado: player.apuntado, escopeta: !!(player.weapon && player.weapon.perdigones), bloqueada: !puedeDisparar });
   }
 
   /**
@@ -7584,8 +7588,8 @@ export function createRaidScene(services) {
     const rd = jineteEn(mira.x, mira.y, base);
     const tapado = rd && chanceContraElTecho(player, rd.side, map.height) <= 0;
     const puede = player.reloadTimer <= 0 && puedeTirarDesdeElTecho(player, world) && !tapado;
-    const color = !puede ? m.colorBloqueado : player.apuntado > 0.55 ? m.colorApuntando : m.color;
-    r.circle(mira.x, mira.y, radioDeMira(), color, m.alpha);
+    void m;
+    dibujarMiraNueva(r, mira.x, mira.y, { apuntado: player.apuntado, escopeta: !!(player.weapon && player.weapon.perdigones), bloqueada: !puede });
   }
 
   /**
